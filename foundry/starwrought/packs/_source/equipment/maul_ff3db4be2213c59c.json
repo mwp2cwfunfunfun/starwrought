@@ -1,0 +1,35 @@
+{
+  "_id": "ff3db4be2213c59c",
+  "name": "Maul",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "technical",
+    "group": "Hammers",
+    "damage": {
+      "die": 12,
+      "type": "bludgeoning"
+    },
+    "reach": 5,
+    "traits": [
+      "Two-Handed"
+    ],
+    "price": "5 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ff3db4be2213c59c"
+}

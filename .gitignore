@@ -1,0 +1,18 @@
+# Build output. `dist/` is rebuilt by assets/package_system.mjs on every release.
+dist/
+node_modules/
+
+# Pre-version snapshots. Large, and git already keeps the history.
+backup/
+
+# LevelDB's per-process files. The compiled packs themselves are committed, so the release
+# workflow can archive them without running the whole pipeline in CI, but these are made fresh
+# by whatever Foundry opens them and must never be shared between machines.
+foundry/starwrought/packs/*/LOCK
+foundry/starwrought/packs/*/LOG
+foundry/starwrought/packs/*/LOG.old
+
+# Python and Word leavings.
+__pycache__/
+*.pyc
+~$*.docx

@@ -1,0 +1,19 @@
+{
+  "_id": "1848a358b584fae5",
+  "name": "Recovery Check",
+  "type": "script",
+  "author": null,
+  "img": "icons/svg/heal.svg",
+  "scope": "global",
+  "command": "// A Recovery check: Endure against 10 + your level + your Dying value.\nconst actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;\nif ( !actor ) ui.notifications.warn(\"Select a token, or set a player character.\");\nelse await actor.rollRecovery();",
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!macros!1848a358b584fae5"
+}

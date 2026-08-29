@@ -1,0 +1,188 @@
+{{!-- One step at a time, with the build so far along the side. --}}
+<div class="sw-chargen-body">
+
+  <section class="sw-chargen-main">
+
+    {{#if (eq stepId "start")}}
+    <div class="sw-panel">
+      <h3 class="sw-panel-title">{{localize "STARWROUGHT.Chargen.step.start"}}</h3>
+      <p class="sw-note">{{localize "STARWROUGHT.Chargen.startBlurb"}}</p>
+      <ul class="sw-item-list">
+        {{#each freeTrainings as |t|}}
+        <li class="sw-item-row">
+          <i class="fa-solid fa-star sw-free-mark"></i>
+          <span class="sw-item-name">{{t.name}}</span>
+          <span class="sw-item-tag">{{t.root}}</span>
+          {{#if t.owned}}<span class="sw-item-tag sw-good-tag">{{localize "STARWROUGHT.Chargen.granted"}}</span>{{/if}}
+        </li>
+        {{/each}}
+      </ul>
+      <p class="sw-note">{{localize "STARWROUGHT.Chargen.startFooter"}}</p>
+    </div>
+    {{/if}}
+
+    {{#if cards}}
+    <div class="sw-panel">
+      <h3 class="sw-panel-title">
+        {{localize (concat "STARWROUGHT.Chargen.step." stepId)}}
+        {{#if parentName}}<span class="sw-points">{{parentName}}</span>{{/if}}
+      </h3>
+      <p class="sw-note">{{localize (concat "STARWROUGHT.Chargen.blurb." stepId)}}</p>
+      <div class="sw-choice-grid">
+        {{#each cards as |card|}}
+        <a class="sw-choice {{#if card.chosen}}chosen{{/if}}"
+           data-action="{{@root.chooseAction}}" data-key="{{card.key}}">
+          <div class="sw-choice-head">
+            {{#if card.img}}<img src="{{card.img}}" alt="{{card.name}}">{{/if}}
+            <span class="sw-choice-name">{{card.name}}</span>
+            {{#if card.chosen}}<i class="fa-solid fa-circle-check"></i>{{/if}}
+          </div>
+          {{#if card.lines.length}}
+          <div class="sw-choice-lines">
+            {{#each card.lines as |line|}}<span class="sw-item-tag">{{line}}</span>{{/each}}
+          </div>
+          {{/if}}
+          <div class="sw-choice-text">{{{card.description}}}</div>
+        </a>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    {{#each slots as |slot|}}
+    <div class="sw-panel sw-slot {{#if slot.done}}sw-slot-done{{/if}} {{#if slot.stuck}}sw-slot-stuck{{/if}}"
+         data-slot-id="{{slot.id}}">
+      <h3 class="sw-panel-title">
+        {{slot.label}}
+        <span class="sw-points">
+          {{#if slot.done}}<i class="fa-solid fa-circle-check"></i> {{localize "STARWROUGHT.Chargen.spent"}}
+          {{else}}{{slot.remaining}} {{localize "STARWROUGHT.Chargen.unspent"}}{{/if}}
+        </span>
+      </h3>
+      {{#if slot.hint}}<p class="sw-note">{{slot.hint}}</p>{{/if}}
+
+      {{#if slot.spent.length}}
+      <div class="sw-trait-list">
+        {{#each slot.spent as |s|}}
+        <span class="sw-trait sw-spent-chip {{#if s.auto}}sw-auto-chip{{/if}}">
+          {{s.constellation}}: {{s.name}}
+          {{#if s.auto}}
+          {{!-- Nothing else was legal, so there is nothing to take it back to. --}}
+          <i class="fa-solid fa-lock" data-tooltip="{{localize 'STARWROUGHT.Chargen.autoSpent'}}"></i>
+          {{else}}
+          <a data-action="undoSpend" data-slot="{{slot.id}}" data-item="{{s.itemId}}"
+             data-tooltip="{{localize 'STARWROUGHT.Chargen.undoSpend'}}"><i class="fa-solid fa-xmark"></i></a>
+          {{/if}}
+        </span>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      {{#unless slot.done}}
+      {{#if slot.stuck}}
+      <p class="sw-note sw-warn">{{localize "STARWROUGHT.Chargen.stuck"}}</p>
+      {{else}}
+      <div class="sw-picker">
+        {{#if slot.single}}
+        <div class="sw-picker-single">{{slot.singleName}}</div>
+        {{else}}
+        {{!-- Every Constellation this point may go to, shown. A dropdown that opens already set to
+              the first entry reads as a decision somebody already made for you. --}}
+        <div class="sw-picker-hint {{#if slot.selected}}sw-hidden{{/if}}">
+          {{localize "STARWROUGHT.Chargen.pickConstellation"}}
+        </div>
+        {{#each slot.chipGroups as |grp|}}
+        <div class="sw-chip-group">
+          {{#if (gt slot.chipGroups.length 1)}}<span class="sw-chip-group-label">{{grp.label}}</span>{{/if}}
+          <div class="sw-chip-row">
+            {{#each grp.constellations as |c|}}
+            <a class="sw-con-chip {{#if c.active}}active{{/if}}" data-action="pickConstellation"
+               data-slot="{{slot.id}}" data-slug="{{c.slug}}">
+              <span class="sw-glyph sw-glyph-{{c.attribute}}">{{c.glyph}}</span>
+              <span class="sw-con-chip-name">{{c.name}}</span>
+              <em>{{c.available}}</em>
+            </a>
+            {{/each}}
+          </div>
+        </div>
+        {{/each}}
+        {{/if}}
+
+        {{!-- Every list is rendered; the chips show one of them. Toggling beats re-rendering. --}}
+        {{#each slot.groups as |g|}}
+        <ul class="sw-talent-options {{#if g.active}}active{{/if}}" data-group="{{g.slug}}">
+          {{#each g.talents as |t|}}
+          <li class="sw-talent-option {{#unless t.ok}}locked{{/unless}}">
+            <button type="button" {{#unless t.ok}}disabled data-tooltip="{{t.why}}"{{/unless}}
+                    data-action="buyTalent" data-slot="{{slot.id}}" data-slug="{{t.slug}}" data-talent="{{t.id}}">
+              <span class="sw-tier sw-tier-{{t.tier}}">{{t.tier}}</span>
+              <span class="sw-talent-name">{{t.name}}{{#if t.root}} <em class="sw-root-mark">✧</em>{{/if}}</span>
+            </button>
+            <div class="sw-talent-effect">{{{t.effect}}}</div>
+          </li>
+          {{/each}}
+        </ul>
+        {{/each}}
+      </div>
+      {{/if}}
+      {{/unless}}
+    </div>
+    {{/each}}
+
+    {{#if (eq stepId "review")}}
+    <div class="sw-panel">
+      <h3 class="sw-panel-title">{{localize "STARWROUGHT.Chargen.step.review"}}</h3>
+      <p class="sw-note">{{localize "STARWROUGHT.Chargen.blurb.review"}}</p>
+      <label class="sw-field sw-wide">
+        <span>{{localize "STARWROUGHT.Chargen.name"}}</span>
+        <input type="text" name="charname" value="{{actor.name}}">
+      </label>
+      <div class="sw-review-grid">
+        <div><span>{{localize "STARWROUGHT.Chassis.ancestry"}}</span><strong>{{system.details.ancestry.name}}</strong></div>
+        <div><span>{{localize "STARWROUGHT.Chassis.bloodline"}}</span><strong>{{system.details.bloodline.name}}</strong></div>
+        <div><span>{{localize "STARWROUGHT.Chassis.culture"}}</span><strong>{{system.details.culture.name}}</strong></div>
+        <div><span>{{localize "STARWROUGHT.Chassis.background"}}</span><strong>{{system.details.background.name}}</strong></div>
+        <div><span>{{localize "STARWROUGHT.Chassis.calling"}}</span><strong>{{system.details.calling.name}}</strong></div>
+        <div><span>{{localize "STARWROUGHT.Field.languages"}}</span><strong>{{system.details.languages}}</strong></div>
+      </div>
+    </div>
+    {{/if}}
+
+  </section>
+
+  <aside class="sw-chargen-rail">
+    <h4>{{localize "STARWROUGHT.Chargen.buildSoFar"}}</h4>
+
+    <div class="sw-rail-attributes">
+      {{#each summary.attributes as |a|}}
+      <div class="sw-rail-attribute" data-tooltip="{{a.label}}: {{a.points}} {{localize 'STARWROUGHT.Field.points'}}">
+        <span class="sw-glyph sw-glyph-{{a.key}}">{{a.glyph}}</span>
+        <strong>{{swSigned a.mod}}</strong>
+      </div>
+      {{/each}}
+    </div>
+
+    <div class="sw-rail-line">
+      <span>{{localize "STARWROUGHT.Field.hpShort"}}</span><strong>{{summary.hp}}</strong>
+    </div>
+    {{#each summary.defenses as |d|}}
+    <div class="sw-rail-line">
+      <span>{{d.label}}</span><strong>{{swSigned d.mod}} / {{d.threshold}}</strong>
+    </div>
+    {{/each}}
+
+    <h4>{{localize "STARWROUGHT.Chargen.talentsSoFar"}} <span class="sw-points">{{summary.talents}}</span></h4>
+    <ul class="sw-rail-constellations">
+      {{#each summary.constellations as |c|}}
+      <li>
+        <span class="sw-glyph">{{c.glyph}}</span>
+        <span class="sw-rail-name">{{c.name}}</span>
+        <span class="sw-points">{{c.points}}</span>
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Chargen.nothingYet"}}</li>
+      {{/each}}
+    </ul>
+  </aside>
+
+</div>

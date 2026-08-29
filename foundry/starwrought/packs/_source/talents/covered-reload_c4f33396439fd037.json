@@ -1,0 +1,47 @@
+{
+  "_id": "c4f33396439fd037",
+  "name": "Covered Reload ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "crossbow-fighting",
+    "constellationName": "Crossbow Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Crossbow Fighting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Take Cover, then Interact to reload. As normal, you must meet the requirements to Take Cover.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "8c23a5e18c02daf0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c4f33396439fd037"
+}

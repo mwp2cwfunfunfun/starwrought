@@ -1,0 +1,47 @@
+{
+  "_id": "2cea04214d239314",
+  "name": "Elegant Buckler",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "bravo",
+    "constellationName": "Bravo",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Panache"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Raise a Shield ◆ to gain a circumstance bonus to Guard from a buckler, increase the bonus from +1 to +2.<br>While you have a buckler raised, if a creature critically misses you with a Strike, you gain Panache.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ddc479129bd4bd5d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2cea04214d239314"
+}

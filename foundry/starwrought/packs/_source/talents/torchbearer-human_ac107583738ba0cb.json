@@ -1,0 +1,45 @@
+{
+  "_id": "ac107583738ba0cb",
+  "name": "Torchbearer Human",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "human",
+    "constellationName": "Human",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Allies within 15 feet gain a +1 circumstance bonus to their first Defense roll each round while they can see or hear you.",
+    "description": "<p>Some humans carry the light everyone else steers by.</p>",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "42704b4e7190f5c8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ac107583738ba0cb"
+}

@@ -1,0 +1,28 @@
+{
+  "_id": "7f9da261f3dfeccf",
+  "name": "Stealth",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/stealth.png",
+  "system": {
+    "slug": "stealth",
+    "category": "skill",
+    "attribute": "agility",
+    "meta": "Skill constellation • Agility",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Skill constellation • Agility</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7f9da261f3dfeccf"
+}

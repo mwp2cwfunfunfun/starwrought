@@ -1,0 +1,47 @@
+{
+  "_id": "f1b5376b6b6a26af",
+  "name": "Weapon Familiarity",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weapons",
+    "constellationName": "Weapons",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Weapons Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Choose a Weapon Group or a Technical weapon. You are Familiar with weapons in that group or that Technical weapon.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "Weapon Group or Technical Weapon",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "307927e092735135",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f1b5376b6b6a26af"
+}

@@ -1,0 +1,32 @@
+{{!-- Actions and Activities the character has picked up. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.actions"}}
+      <button type="button" class="sw-inline-button" data-action="itemCreate" data-type="action">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.actions"}}</p>
+    <ol class="sw-item-list">
+      {{#each actionItems as |action|}}
+      <li class="sw-item-row sw-action-row" data-item-id="{{action.id}}">
+        <img src="{{action.img}}" alt="{{action.name}}">
+        <span class="sw-action-glyph">{{action.system.glyph}}</span>
+        <a class="sw-item-name" data-action="itemUse">{{action.name}}</a>
+        {{#if action.system.category}}<span class="sw-item-tag">{{action.system.category}}</span>{{/if}}
+        {{#each action.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+        <div class="sw-item-controls">
+          <a data-action="itemChat"><i class="fa-solid fa-comment"></i></a>
+          <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+        </div>
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noActions"}}</li>
+      {{/each}}
+    </ol>
+  </div>
+
+</section>

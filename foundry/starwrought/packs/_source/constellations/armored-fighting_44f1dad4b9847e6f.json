@@ -1,0 +1,28 @@
+{
+  "_id": "44f1dad4b9847e6f",
+  "name": "Armored Fighting",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/armored-fighting.png",
+  "system": {
+    "slug": "armored-fighting",
+    "category": "combatStyle",
+    "attribute": "presence",
+    "meta": "Combat Style • Presence (the harness as a weapon)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Combat Style • Presence (the harness as a weapon)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!44f1dad4b9847e6f"
+}

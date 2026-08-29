@@ -1,0 +1,47 @@
+{
+  "_id": "1714074c6342c45e",
+  "name": "Quick Draw",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weapons",
+    "constellationName": "Weapons",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Weapons Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Use a reaction to draw or stow an item, weapon, or shield in each hand (or in both hands, if it requires two hands).",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "307927e092735135",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1714074c6342c45e"
+}

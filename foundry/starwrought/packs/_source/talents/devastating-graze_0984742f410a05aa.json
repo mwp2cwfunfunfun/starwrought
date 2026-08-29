@@ -1,0 +1,47 @@
+{
+  "_id": "0984742f410a05aa",
+  "name": "Devastating Graze",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "great-weapon-fighting",
+    "constellationName": "Great Weapon Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Great Weapon Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "If you Strike and it results in a Graze, you add your Might bonus to the damage.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "018dc0d2e8a4ecff",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0984742f410a05aa"
+}

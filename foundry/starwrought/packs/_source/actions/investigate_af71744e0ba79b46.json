@@ -1,0 +1,25 @@
+{
+  "_id": "af71744e0ba79b46",
+  "name": "Investigate",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Exploration Mode",
+    "requirements": "Travel Speed: Half",
+    "traits": [],
+    "description": "<p>Roll a relevant Lore or Skill check to recall information about your surroundings, and roll it again for initiative if the encounter is related.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!af71744e0ba79b46"
+}

@@ -1,0 +1,557 @@
+{
+  "_id": "489b438244686d7b",
+  "name": "STARWROUGHT Reference",
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 2
+  },
+  "flags": {},
+  "categories": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "pages": [
+    {
+      "_id": "f1ab0e9a318e15d3",
+      "_key": "!journal.pages!489b438244686d7b.f1ab0e9a318e15d3",
+      "name": "Key Terms: Talent Points",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Type</th><th>May be spent on</th><th>Flare required?</th></tr></thead><tbody><tr><td>Origin Talent Point</td><td>Your Origin Constellation only (Ancestry, Bloodline, Culture)</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Calling Talent Point</td><td>Calling Constellations only</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Defense Talent Point</td><td>The four Defense Constellations only: Awareness, Evade, Guard, or Endure</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Skill Talent Point</td><td>Skill Constellations only (includes Lore)</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Lore Talent Point</td><td>Lore Constellations only</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Opening Talent Point</td><td>Opening a new Constellation only, whatever kind. It buys a Root Talent and nothing else</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Comet</td><td>Anything you qualify for</td><td>No</td></tr><tr><td>Milestone Talent Point</td><td>Anything you qualify for</td><td>Yes. If no Constellation is Flared, it becomes a Deferred Talent Point</td></tr><tr><td>Deferred Talent Point</td><td>Anything you qualify for</td><td>Yes; must be spent the instant a Constellation is Flared</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 0,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "c6a0e167ee97f8e3",
+      "_key": "!journal.pages!489b438244686d7b.c6a0e167ee97f8e3",
+      "name": "Character Creation",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Step</th><th>You choose</th><th>You get</th><th>Talent Points</th></tr></thead><tbody><tr><td>1. Ancestry</td><td>Your body and blood. This forms the core of your Origin Constellation and gives you starting Hit Points, Speed, and unique characteristics.</td><td>Hit Points per level, Size, Speed, and 1 Special Ability.</td><td>1 Origin (your Ancestry's root Talent)</td></tr><tr><td>2. Bloodline</td><td>Your lineage. This adds a branch to your Origin Constellation and gives you additional unique characteristics.</td><td>1 Special Ability.</td><td>1 Origin (your Bloodline's root Talent)</td></tr><tr><td>3. Culture</td><td>Where you were raised. This adds a branch to your Origin Constellation.</td><td>Starting language(s), and a bonus to Diplomacy checks with those who share your Culture.</td><td>1 Origin (your Culture's Root Talent)</td></tr><tr><td>4. Background</td><td>Your trade. This grants 1 Lore Talent Point and 2 Skill Talent Points.</td><td>—</td><td>1 Lore / 2 Skill</td></tr><tr><td>5. Calling</td><td>Your adventuring identity. This adds special techniques such as entering a rage or sneak attacking.</td><td>Training in one Skill or other Constellation.</td><td>1 Calling</td></tr><tr><td>6. Defenses</td><td>Your defensive posture (Awareness, Evade, Guard, and Endure).</td><td>—</td><td>1 Defense</td></tr><tr><td>7. Comets</td><td>Comets, which are Talent Points that can be used for any purpose (as long as you still meet the prerequisite).</td><td>—</td><td>3 Comets</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 100,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "3e045431d4ddf6fc",
+      "_key": "!journal.pages!489b438244686d7b.3e045431d4ddf6fc",
+      "name": "Skills",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Skill</th><th>Key Attribute</th><th>Covers</th></tr></thead><tbody><tr><td>Acrobatics</td><td>Agility</td><td>Balance, tumbling, Tumble Through a foe's space, escapes</td></tr><tr><td>Athletics</td><td>Might</td><td>Climb, Swim, Leap, and every Grapple / Shove / Trip / Disarm / Reposition</td></tr><tr><td>Diplomacy</td><td>Presence</td><td>Rally, Talk Them Down, Aid, and making an impression</td></tr><tr><td>Guile</td><td>Wits</td><td>Feint, Lie, Look Harmless, and reading a mark</td></tr><tr><td>Intimidation</td><td>Presence</td><td>Demoralize, Coerce, and No Quarter</td></tr><tr><td>Lore</td><td>Wits</td><td>Deep knowledge of a chosen field (take it once per field)</td></tr><tr><td>Stealth</td><td>Agility</td><td>Hide, Sneak, and staying off the bottom rung of the ladder</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 200,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "bc7a9b35fa9342fb",
+      "_key": "!journal.pages!489b438244686d7b.bc7a9b35fa9342fb",
+      "name": "Combat Styles",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Style</th><th>Key Attribute</th><th>How you wield</th></tr></thead><tbody><tr><td>Archery</td><td>Agility</td><td>Bows and careful ranged attacks</td></tr><tr><td>Armored Fighting</td><td>Presence</td><td>Using matched harnesses for additional benefits</td></tr><tr><td>Brawling</td><td>Might</td><td>Fists, feet, tusks, headbutts</td></tr><tr><td>Crossbow Fighting</td><td>Wits</td><td>Prepared mechanical ranged weapons</td></tr><tr><td>Dueling</td><td>Agility</td><td>One one-handed weapon, other hand free</td></tr><tr><td>Great Weapon Fighting</td><td>Might</td><td>Two-handed, non-hafted weapons</td></tr><tr><td>Missile Skirmishing</td><td>Agility</td><td>Slings, thrown weapons, bolas</td></tr><tr><td>Shield Fighting</td><td>Presence</td><td>Weapon and shield as one machine</td></tr><tr><td>Spear & Polearm Fighting</td><td>Wits</td><td>Hafted weapons: polearms and spears</td></tr><tr><td>Two-Weapon Fighting</td><td>Agility</td><td>A weapon in each hand</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 300,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "aeafe0e9849123af",
+      "_key": "!journal.pages!489b438244686d7b.aeafe0e9849123af",
+      "name": "Defenses",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Defense</th><th>Key Attribute</th><th>In a word</th><th>Physical</th><th>Mental</th></tr></thead><tbody><tr><td>Awareness</td><td>Wits</td><td>Don't be surprised.</td><td>Sneak, Hidden foes, ambushes, Initiative</td><td>Feint, Lie, Illusions</td></tr><tr><td>Evade</td><td>Agility</td><td>Don't be there.</td><td>Weapon attacks, physical traps</td><td>—</td></tr><tr><td>Guard</td><td>Presence</td><td>Don't let it through.</td><td>Weapon attacks, physical traps</td><td>Mental traps, fear, charm, confusion</td></tr><tr><td>Endure</td><td>Might</td><td>Survive what does come through.</td><td>Poison, disease, Wounded, Dying</td><td>—</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 400,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "35ee7b6b93251cf3",
+      "_key": "!journal.pages!489b438244686d7b.35ee7b6b93251cf3",
+      "name": "Zones and Critical Hits",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Zone</th><th>Critical Hit</th><th>Critical Hit on an Exposed Zone</th></tr></thead><tbody><tr><td>Head</td><td>The target cannot use reactions until it Recenters.</td><td>As left, and the target's Wounded value increases by 3.</td></tr><tr><td>Torso</td><td>The target is Off-Guard until it Recenters.</td><td>As left, and the target's Wounded value increases by 2.</td></tr><tr><td>Arms</td><td>The target takes a −2 circumstance penalty to attack rolls until it Recenters.</td><td>As left, and the target's Wounded value increases by 1.</td></tr><tr><td>Legs</td><td>The target's Speed is halved until it Recenters.</td><td>As left, and the target's Wounded value increases by 1.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 500,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "a0c1589242140c07",
+      "_key": "!journal.pages!489b438244686d7b.a0c1589242140c07",
+      "name": "Damage: order of operations",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Step</th><th>Do this</th></tr></thead><tbody><tr><td>1</td><td>Apply Immunity.</td></tr><tr><td>2</td><td>Add up all remaining dice, damage bonuses, and damage modifiers.</td></tr><tr><td>3</td><td>Add Weakness of the applicable damage type(s).</td></tr><tr><td>4</td><td>Subtract Resistance from the dice rolls of the applicable damage type(s).</td></tr><tr><td>5</td><td>Double the total if it was a Critical Hit.</td></tr><tr><td>6</td><td>Subtract Protection from the total (if applicable).</td></tr><tr><td>7</td><td>Deal damage to Temporary Hit Points (if applicable).</td></tr><tr><td>8</td><td>Deal damage to Hit Points.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 600,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "75844af43f3ee547",
+      "_key": "!journal.pages!489b438244686d7b.75844af43f3ee547",
+      "name": "Protection: finding a Zone's number",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Step</th><th>Do this</th></tr></thead><tbody><tr><td>1</td><td>If the Zone is Exposed, its Protection is 0; you can stop here.</td></tr><tr><td>2</td><td>Start with the Protection of the piece worn there. No piece worn means 0.</td></tr><tr><td>3</td><td>Add any bonus that applies to that Zone (a matched harness adds 1 to your Torso; some Talents add to every Zone).</td></tr><tr><td>4</td><td>Subtract 1 if the incoming damage type is the one that piece's material turns poorly. A Zone with no armor has no material, and so has no such weakness.</td></tr><tr><td>5</td><td>Subtract any Protection the attacker ignores.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 700,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "c3cae07e8900711a",
+      "_key": "!journal.pages!489b438244686d7b.c3cae07e8900711a",
+      "name": "Conditions",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Off-Guard</td><td>−2 circumstance to Evade and Guard against all foes.</td></tr><tr><td>Wrong-Footed [X]</td><td>Off-Guard against that creature only.</td></tr><tr><td>Frightened N</td><td>−N to all checks and Thresholds; reduce by 1 at end of each of your turns.</td></tr><tr><td>Prone</td><td>Off-Guard, −2 to Attacks; +2 circumstance to Evade vs. ranged Attacks. Stand ◆ to clear.</td></tr><tr><td>Grabbed</td><td>Off-Guard and can't Move or Step; Escape ◆ to break free.</td></tr><tr><td>Heedless</td><td>Commitment so complete that you have stopped thinking. Actions and Activities with Concentrate take 1 extra action.</td></tr><tr><td>Restrained</td><td>As Grabbed but can't take any action other than Escape ◆.</td></tr><tr><td>Stunned N</td><td>Lose the next N actions; may carry over across turns.</td></tr><tr><td>Slowed N</td><td>Lose N actions at the start of each of your turns. Reduce by 1 at end of each of your turns.</td></tr><tr><td>Fatigued</td><td>−1 to Evade and Guard; can't use Exploration Mode Activities.</td></tr><tr><td>Persistent Damage</td><td>Take it at end of each turn; Endure check (10 + the level of the effect + the amount you just took) to end.</td></tr><tr><td>Dying / Wounded</td><td>You're Dying and unconscious. Recovery checks at the start of each of your turns.</td></tr><tr><td>Exposed [Zone]</td><td>That Zone's Protection counts as 0 and ordinary Hits can land there instead of your Torso. Recenter ◆ to clear.</td></tr><tr><td>Blinded</td><td>Cannot see. Cannot Observe any creature. Is Off-Guard.</td></tr><tr><td>Deafened</td><td>Cannot hear. Immune to any Auditory Action or Activity.</td></tr><tr><td>Unconscious</td><td>You have 0 Hit Points, you drop everything you are holding, and you are also Prone.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 800,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "a636f6f0cb8144a6",
+      "_key": "!journal.pages!489b438244686d7b.a636f6f0cb8144a6",
+      "name": "Weapon Traits",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Agile</td><td>Your multiple attack penalty with it is −4 and −8 rather than −5 and −10.</td></tr><tr><td>Armor-Piercing [N]</td><td>Ignore N Protection when dealing piercing damage with this weapon.</td></tr><tr><td>Capacity [N]</td><td>The weapon can fire N times before it must be reloaded. Reloading its full capacity takes the listed Reload actions.</td></tr><tr><td>Close</td><td>You may attack with it while you are Grabbed, while Squeezing, and against a creature you have Grabbed, with no penalty.</td></tr><tr><td>Deadly dX</td><td>On a critical hit, add one die of the listed size to the damage.</td></tr><tr><td>Finesse</td><td>You may use Agility instead of Might on attack rolls with this weapon. Damage still uses Might.</td></tr><tr><td>Grapple, Trip, Disarm, Shove</td><td>You may attempt that maneuver with this weapon in hand rather than a free hand.</td></tr><tr><td>Mechanical</td><td>You do not add Might to damage with this weapon.</td></tr><tr><td>Nonlethal</td><td>It knocks out rather than kills.</td></tr><tr><td>Parry</td><td>Spend ◆ to gain a +1 circumstance bonus to Guard for physical Attacks until the start of your next turn.</td></tr><tr><td>Ranged [N]</td><td>You may Strike a target up to N feet away. Use Agility instead of Might for the Attack roll.</td></tr><tr><td>Reload [N]</td><td>It takes N actions to reload before it can be fired again.</td></tr><tr><td>Sweep</td><td>+1 circumstance bonus to attack a target you have not yet attacked this turn.</td></tr><tr><td>Thrown X</td><td>You may throw it up to X feet, using Might for the attack roll.</td></tr><tr><td>Two-Hand dX</td><td>Wielded in two hands, its damage die becomes dX.</td></tr><tr><td>Two-Handed</td><td>It requires both hands.</td></tr><tr><td>Unwieldy [N]</td><td>You take a −2 circumstance penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed.</td></tr><tr><td>Versatile X</td><td>You may deal X damage instead of its usual type.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 900,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "c1a729ea671663c1",
+      "_key": "!journal.pages!489b438244686d7b.c1a729ea671663c1",
+      "name": "Armor Traits",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Comfort</td><td>You can sleep in it without waking fatigued.</td></tr><tr><td>Noisy</td><td>−1 circumstance penalty to Stealth, on top of your Load Strain.</td></tr><tr><td>Quiet</td><td>Your Load Strain never applies to Stealth while this is your only armor.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1000,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "e0ef7a71e489c317",
+      "_key": "!journal.pages!489b438244686d7b.e0ef7a71e489c317",
+      "name": "Action Traits",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Attack</td><td>Counts toward your multiple attack penalty, and suffers it. Your first attack in a turn is unpenalized, your second takes −5, and your third and beyond take −10.</td></tr><tr><td>Move</td><td>You change position under your own power. Moving out of a foe's reach may provoke a reaction from anyone who has a Talent that allows it.</td></tr><tr><td>Manipulate</td><td>You use your hands. You need at least one free, and fine work near an enemy can provoke a reaction from them.</td></tr><tr><td>Concentrate</td><td>Actions and Activities with this Trait take an extra action to complete if you are Heedless.</td></tr><tr><td>Stance</td><td>A way of standing and holding yourself. You can be in only one stance at a time, and it lasts until you leave it, fall unconscious, or enter another.</td></tr><tr><td>Press</td><td>You may use it only while you are already suffering a multiple attack penalty, and never on someone else's turn. Some press actions add an effect on a failure; that effect never applies on a critical failure.</td></tr><tr><td>Auditory</td><td>It works through sound. It fails on the deafened, and on anyone who cannot hear you.</td></tr><tr><td>Visual</td><td>It works through sight. It fails on the blinded, and on anyone who cannot see you.</td></tr><tr><td>Mental</td><td>It works on the mind. It fails on anything mindless.</td></tr><tr><td>Emotion</td><td>A mental effect that works on feeling. Anything immune to emotion ignores it.</td></tr><tr><td>Reaction</td><td>Not a Trait so much as a cost: it happens on someone else's turn, and you have one per round.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1100,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "5fe254437ff540d9",
+      "_key": "!journal.pages!489b438244686d7b.5fe254437ff540d9",
+      "name": "Weapon Handling",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Handling</th><th>Meaning</th><th>If you lack Familiarity</th></tr></thead><tbody><tr><td>Intuitive</td><td>General weapon training transfers easily</td><td>Use your full Weapons Proficiency Bonus</td></tr><tr><td>Practiced</td><td>Requires familiarity with that weapon family</td><td>Use your Weapons Proficiency Bonus one rank lower</td></tr><tr><td>Technical</td><td>Requires specialized instruction</td><td>You are Untrained</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1200,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "4310e7ea2df06eaf",
+      "_key": "!journal.pages!489b438244686d7b.4310e7ea2df06eaf",
+      "name": "Armor Materials",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Material</th><th>Turns this damage type poorly</th></tr></thead><tbody><tr><td>Padded</td><td>slashing</td></tr><tr><td>Leather</td><td>slashing</td></tr><tr><td>Mail</td><td>piercing</td></tr><tr><td>Scale</td><td>nothing</td></tr><tr><td>Plate</td><td>bludgeoning</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1300,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "069ed7320e10b3b7",
+      "_key": "!journal.pages!489b438244686d7b.069ed7320e10b3b7",
+      "name": "Size, Space and Reach",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Size</th><th>Space</th><th>Natural Reach</th><th>Evade and Guard</th></tr></thead><tbody><tr><td>Tiny</td><td>1 ft x 1 ft</td><td>Adjacent</td><td>+2 Evade, −2 Guard</td></tr><tr><td>Small</td><td>2 ft x 2 ft</td><td>1 ft</td><td>+1 Evade, −1 Guard</td></tr><tr><td>Medium</td><td>3 ft x 3 ft</td><td>2 ft</td><td>No effect</td></tr><tr><td>Large</td><td>5 ft x 5 ft</td><td>4 ft</td><td>−1 Evade, +1 Guard</td></tr><tr><td>Huge</td><td>Varies</td><td>Varies</td><td>−2 Evade, +2 Guard</td></tr><tr><td>Gargantuan</td><td>Varies</td><td>Varies</td><td>−2 Evade, +2 Guard</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1400,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "eaf5e5976fa46fd2",
+      "_key": "!journal.pages!489b438244686d7b.eaf5e5976fa46fd2",
+      "name": "Detection",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>State</th><th>What your foe knows</th><th>Effect</th><th>Examples</th></tr></thead><tbody><tr><td>Observed</td><td>Exactly what squares you are in, and precisely where you are positioned.</td><td>—</td><td>Your foe can plainly see all of you.</td></tr><tr><td>Concealed</td><td>Exactly what squares you are in, but something prevents them seeing all of you.</td><td>+2 circumstance bonus to Evade and Guard for physical Attacks.</td><td>Mist, dim light, foliage.</td></tr><tr><td>Hidden</td><td>That you are present, but not what squares you occupy.</td><td>They must guess one of your squares to attack you, and you gain +4 to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.</td><td>Your foe is blind, or you succeeded on a Sneak.</td></tr><tr><td>Undetected</td><td>No idea you are even present.</td><td>You cannot be targeted at all. Your foe is Wrong-Footed to you.</td><td>Your foe cannot see, hear, smell, or feel you.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1500,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "44fe995ea4691a2d",
+      "_key": "!journal.pages!489b438244686d7b.44fe995ea4691a2d",
+      "name": "Light",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>If a creature is in</th><th>Effect on you</th></tr></thead><tbody><tr><td>Bright light</td><td>Nothing. You see them normally.</td></tr><tr><td>Dim light</td><td>They are Concealed to you.</td></tr><tr><td>Darkness</td><td>They are Hidden to you, or Undetected if you did not already know something was there.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1600,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "970a5ca93d225cb0",
+      "_key": "!journal.pages!489b438244686d7b.970a5ca93d225cb0",
+      "name": "Cover",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Zones covered</th><th>Grade</th><th>Effect</th></tr></thead><tbody><tr><td>1</td><td>Lesser Cover</td><td>+1 circumstance bonus to your Evade and Guard for physical Attacks.</td></tr><tr><td>2</td><td>Cover</td><td>+2 circumstance bonus to your Evade and Guard for physical Attacks.</td></tr><tr><td>3</td><td>Greater Cover</td><td>+4 circumstance bonus to your Evade and Guard for physical Attacks.</td></tr><tr><td>4</td><td>Total Cover</td><td>You cannot be targeted at all for physical Attacks.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1700,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "6d6f958832f86ea2",
+      "_key": "!journal.pages!489b438244686d7b.6d6f958832f86ea2",
+      "name": "Recovery Checks",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Result</th><th>Effect</th></tr></thead><tbody><tr><td>Critical success</td><td>Your Dying ends. You are conscious, on your feet if you spend an action to stand, with 1 Hit Point.</td></tr><tr><td>Success</td><td>Your Dying value drops by 1. If it reaches 0, your Dying ends and you are stable: still unconscious, but no longer sliding.</td></tr><tr><td>Failure</td><td>Your Dying value rises by 1.</td></tr><tr><td>Critical failure</td><td>Your Dying value rises by 2.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1800,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "244e06ec8afc9892",
+      "_key": "!journal.pages!489b438244686d7b.244e06ec8afc9892",
+      "name": "Languages",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Language</th><th>Rarity</th><th>Notes</th></tr></thead><tbody><tr><td>Common</td><td>Common</td><td>The trade tongue of the roads, ports, and mercenary camps: everyone's second language and nobody's first.</td></tr><tr><td>Serrovine</td><td>Uncommon</td><td>The tongue of Serrovane: precise, clause-ridden, and built for oaths that will be read back to you later.</td></tr><tr><td>Reachspeak</td><td>Uncommon</td><td>The dock-cant of the Kestrel Reach: fast, borrowed from six directions, and rich in words for a bad deal.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1900,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    }
+  ],
+  "_key": "!journal!489b438244686d7b"
+}

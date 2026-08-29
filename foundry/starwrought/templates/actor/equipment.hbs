@@ -1,0 +1,159 @@
+{{!-- Equipment, sorted by where it is: in your hands, on your body, or in the pack. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.held"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Section.heldHint"}}</span>
+    </h3>
+    <ol class="sw-item-list">
+      {{#each inventory.held as |thing|}}
+      <li class="sw-item-row {{#if thing.raised}}sw-raised{{/if}}" data-item-id="{{thing.id}}">
+        <img src="{{thing.img}}" alt="{{thing.name}}">
+
+        {{#if thing.isWeapon}}
+        <a class="sw-item-name" data-action="itemUse" data-tooltip="STARWROUGHT.Roll.strikeHint">{{thing.name}}</a>
+        <span class="sw-item-tag sw-attack">{{swSigned thing.attackMod}}</span>
+        <span class="sw-item-tag">{{thing.damage}}</span>
+        <span class="sw-item-tag" data-tooltip="{{thing.reachHint}}">{{localize "STARWROUGHT.Field.reach"}} {{thing.reach}}</span>
+        {{else if thing.isShield}}
+        <a class="sw-item-name" data-action="itemUse" data-tooltip="STARWROUGHT.Action.raiseShieldHint">{{thing.name}}</a>
+        <span class="sw-item-tag">{{localize "STARWROUGHT.Defense.guard"}} {{swSigned thing.bonus}}</span>
+        <span class="sw-item-tag">{{localize "STARWROUGHT.Field.hardness"}} {{thing.hardness}}</span>
+        {{#if thing.raised}}<span class="sw-item-tag sw-good-tag">{{localize "STARWROUGHT.Action.raised"}}</span>{{/if}}
+        {{else}}
+        <a class="sw-item-name" data-action="itemChat">{{thing.name}}</a>
+        {{/if}}
+
+        <div class="sw-item-controls">
+          {{#if thing.isWeapon}}
+          <a data-action="itemUse" data-tooltip="STARWROUGHT.Roll.strike"><i class="fa-solid fa-dice-d20"></i></a>
+          {{/if}}
+          <a data-action="setCarry" data-state="worn" data-tooltip="STARWROUGHT.Carry.stowHint">
+            <i class="fa-solid fa-arrow-down"></i>
+          </a>
+          <a data-action="itemChat"><i class="fa-solid fa-comment"></i></a>
+          <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+        </div>
+        {{#if thing.traits}}<span class="sw-item-traits">{{thing.traits}}</span>{{/if}}
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.emptyHanded"}}</li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.armor"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.armor"}}</p>
+    {{#if inventory.inEncounter}}
+    <p class="sw-note sw-warn">{{localize "STARWROUGHT.Hint.armorInCombat"}}</p>
+    {{/if}}
+    <table class="sw-armor-table">
+      <thead>
+        <tr>
+          <th>{{localize "STARWROUGHT.Field.zone"}}</th>
+          <th>{{localize "STARWROUGHT.Field.piece"}}</th>
+          <th>{{localize "STARWROUGHT.Field.protection"}}</th>
+          <th>{{localize "STARWROUGHT.Field.load"}}</th>
+          <th>{{localize "STARWROUGHT.Field.material"}}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each inventory.armorRows as |row|}}
+        <tr class="{{#if row.exposed}}sw-row-exposed{{/if}}" {{#if row.item}}data-item-id="{{row.item.id}}"{{/if}}>
+          <td class="sw-zone-cell">{{row.label}}</td>
+          <td>
+            {{#if row.item}}
+            <a data-action="itemEdit">{{row.item.name}}</a>
+            {{else}}
+            {{#with (lookup @root.inventory.stowedArmorByZone row.zone) as |options|}}
+            {{#if options.length}}
+            <span class="sw-wear-options">
+              {{#each options as |o|}}
+              <a class="sw-wear-link" data-action="wearArmor" data-item-id="{{o.id}}"
+                 data-tooltip="{{localize 'STARWROUGHT.Carry.wearHint'}}">{{o.name}}</a>
+              {{/each}}
+            </span>
+            {{else}}
+            <em>{{localize "STARWROUGHT.Protection.unarmored"}}</em>
+            {{/if}}
+            {{/with}}
+            {{/if}}
+          </td>
+          <td class="sw-num">{{row.protection}}</td>
+          <td class="sw-num">{{#if row.item}}{{row.item.system.load}}{{else}}0{{/if}}</td>
+          <td>{{#if row.item}}{{localize row.item.system.materialLabel}}{{/if}}</td>
+          <td class="sw-item-controls">
+            {{#if row.item}}
+            <a data-action="setCarry" data-state="carried" data-tooltip="STARWROUGHT.Carry.takeOffHint">
+              <i class="fa-solid fa-arrow-down"></i>
+            </a>
+            <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+            {{else}}
+            <a data-action="itemCreate" data-type="armor" data-zone="{{row.zone}}"><i class="fa-solid fa-plus"></i></a>
+            {{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.gear"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Section.gearHint"}}</span>
+      <span class="sw-panel-buttons">
+        <button type="button" class="sw-inline-button" data-action="itemCreate" data-type="weapon"
+                data-tooltip="{{localize 'STARWROUGHT.Type.weapon'}}"><i class="fa-solid fa-plus"></i> <i class="fa-solid fa-khanda"></i></button>
+        <button type="button" class="sw-inline-button" data-action="itemCreate" data-type="shield"
+                data-tooltip="{{localize 'STARWROUGHT.Type.shield'}}"><i class="fa-solid fa-plus"></i> <i class="fa-solid fa-shield"></i></button>
+        <button type="button" class="sw-inline-button" data-action="itemCreate" data-type="gear"
+                data-tooltip="{{localize 'STARWROUGHT.Type.gear'}}"><i class="fa-solid fa-plus"></i> <i class="fa-solid fa-sack"></i></button>
+      </span>
+    </h3>
+    <ol class="sw-item-list">
+      {{#each inventory.stowed as |thing|}}
+      <li class="sw-item-row" data-item-id="{{thing.id}}">
+        <img src="{{thing.img}}" alt="{{thing.name}}">
+        <a class="sw-item-name" data-action="itemChat">{{thing.name}}</a>
+        <span class="sw-item-tag sw-state-{{thing.state}}">
+          <i class="{{lookup (lookup @root.SW.CARRY_STATES thing.state) 'icon'}}"></i> {{thing.stateLabel}}
+        </span>
+        {{#if thing.isArmor}}
+        <span class="sw-item-tag">{{thing.zoneLabel}}</span>
+        <span class="sw-item-tag">{{localize "STARWROUGHT.Field.protection"}} {{thing.protection}}</span>
+        <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Carry.donTimeHint'}}">{{thing.donTime}} min</span>
+        {{/if}}
+        {{#if thing.isWeapon}}<span class="sw-item-tag">{{thing.damage}}</span>{{/if}}
+        {{#if thing.isShield}}<span class="sw-item-tag">{{localize "STARWROUGHT.Defense.guard"}} {{swSigned thing.bonus}}</span>{{/if}}
+
+        <div class="sw-item-controls">
+          {{#if thing.isArmor}}
+          <a data-action="setCarry" data-state="worn" data-tooltip="STARWROUGHT.Carry.wearHint">
+            <i class="fa-solid fa-shirt"></i>
+          </a>
+          {{else}}
+          <a data-action="setCarry" data-state="held" data-tooltip="STARWROUGHT.Carry.drawHint">
+            <i class="fa-solid fa-hand-fist"></i>
+          </a>
+          {{/if}}
+          <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+        </div>
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noGear"}}</li>
+      {{/each}}
+    </ol>
+    <div class="sw-currency">
+      <label><span>gp</span><input type="number" name="system.currency.gp" value="{{system.currency.gp}}" min="0"></label>
+      <label><span>sp</span><input type="number" name="system.currency.sp" value="{{system.currency.sp}}" min="0"></label>
+      <label><span>cp</span><input type="number" name="system.currency.cp" value="{{system.currency.cp}}" min="0"></label>
+    </div>
+  </div>
+
+</section>

@@ -1,0 +1,28 @@
+{
+  "_id": "2135a122465be0fa",
+  "name": "Dueling",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/dueling.png",
+  "system": {
+    "slug": "dueling",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "meta": "Combat Style • Agility (one one-handed weapon, other hand free)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Combat Style • Agility (one one-handed weapon, other hand free)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2135a122465be0fa"
+}

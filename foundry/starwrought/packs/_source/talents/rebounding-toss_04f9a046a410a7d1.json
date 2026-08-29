@@ -1,0 +1,47 @@
+{
+  "_id": "04f9a046a410a7d1",
+  "name": "Rebounding Toss ◆◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "missile-skirmishing",
+    "constellationName": "Missile Skirmishing",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Missile Skirmishing Training"
+    ],
+    "prerequisites": "",
+    "attribute": "wits",
+    "effect": "Requirements You are wielding a thrown weapon.<br>You bounce your weapon off one foe to strike another. Make a ranged Strike with a thrown weapon. If this Strike hits, the weapon rebounds toward an enemy within 10 feet of the original target. Make an additional Strike against this second target. Both attacks count toward your multiple attack penalty, but the penalty doesn't increase until after you've made both attacks.",
+    "description": "",
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "1217b0942014335f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!04f9a046a410a7d1"
+}

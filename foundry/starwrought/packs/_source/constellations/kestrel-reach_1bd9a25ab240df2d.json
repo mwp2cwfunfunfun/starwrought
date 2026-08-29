@@ -1,0 +1,28 @@
+{
+  "_id": "1bd9a25ab240df2d",
+  "name": "Kestrel Reach",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
+  "system": {
+    "slug": "kestrel-reach",
+    "category": "origin",
+    "attribute": "wits",
+    "meta": "Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": true,
+    "description": "<p>Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1bd9a25ab240df2d"
+}

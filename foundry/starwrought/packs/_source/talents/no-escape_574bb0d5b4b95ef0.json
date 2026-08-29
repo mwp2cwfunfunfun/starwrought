@@ -1,0 +1,47 @@
+{
+  "_id": "574bb0d5b4b95ef0",
+  "name": "No Escape ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "hunter",
+    "constellationName": "Hunter",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Mark Prey"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger Your prey Strides away from you.<br>Effect Stride up to your Speed toward it. This does not provoke reactions from your prey.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ae92852dbc6da00d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!574bb0d5b4b95ef0"
+}

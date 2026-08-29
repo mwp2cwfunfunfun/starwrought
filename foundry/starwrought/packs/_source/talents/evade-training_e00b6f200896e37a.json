@@ -1,0 +1,45 @@
+{
+  "_id": "e00b6f200896e37a",
+  "name": "Evade Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "evade",
+    "constellationName": "Evade",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in Evade: add this Constellation's Proficiency Bonus to your Evade checks. It is the number attack rolls are measured against when you try to slip a blow, and the check you roll against area effects, traps, and hazards.<br>You gain the Give Ground ↺ posture:<br>You gain a +2 circumstance bonus to Evade for the triggering attack.<br>A Zone of your choice becomes Exposed immediately, win or lose.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57c800027a3ec530",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e00b6f200896e37a"
+}

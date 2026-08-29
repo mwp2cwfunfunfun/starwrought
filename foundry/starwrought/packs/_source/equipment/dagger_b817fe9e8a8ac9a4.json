@@ -1,0 +1,38 @@
+{
+  "_id": "b817fe9e8a8ac9a4",
+  "name": "Dagger",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "intuitive",
+    "group": "Knives",
+    "damage": {
+      "die": 4,
+      "type": "piercing"
+    },
+    "reach": 0,
+    "traits": [
+      "Agile",
+      "Close",
+      "Finesse",
+      "Thrown 10 ft"
+    ],
+    "price": "1 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b817fe9e8a8ac9a4"
+}

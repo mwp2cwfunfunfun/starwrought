@@ -1,0 +1,28 @@
+{
+  "_id": "079d6a57e199be24",
+  "name": "Missile Skirmishing",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/missile-skirmishing.png",
+  "system": {
+    "slug": "missile-skirmishing",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "meta": "Combat Style • Agility (slings, thrown weapons, bolas)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Combat Style • Agility (slings, thrown weapons, bolas)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!079d6a57e199be24"
+}

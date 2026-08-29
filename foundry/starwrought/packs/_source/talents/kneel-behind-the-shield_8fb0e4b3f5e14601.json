@@ -1,0 +1,47 @@
+{
+  "_id": "8fb0e4b3f5e14601",
+  "name": "Kneel Behind the Shield ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "guard",
+    "constellationName": "Guard",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Guard Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "(posture) You must have a shield Raised.<br>+4 to your Guard against every attack until the start of your next turn. Your Arms become Exposed, and your Speed is 0 until you spend an action to rise.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "de321617406058a3",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8fb0e4b3f5e14601"
+}

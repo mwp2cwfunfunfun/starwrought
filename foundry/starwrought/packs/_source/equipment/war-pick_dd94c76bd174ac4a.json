@@ -1,0 +1,36 @@
+{
+  "_id": "dd94c76bd174ac4a",
+  "name": "War Pick",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "technical",
+    "group": "Picks",
+    "damage": {
+      "die": 8,
+      "type": "piercing"
+    },
+    "reach": 3,
+    "traits": [
+      "Armor-Piercing 1",
+      "Deadly d10"
+    ],
+    "price": "3 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!dd94c76bd174ac4a"
+}

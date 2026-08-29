@@ -1,0 +1,47 @@
+{
+  "_id": "5b11d61fc91e8f01",
+  "name": "Turn the Scales ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "armored-fighting",
+    "constellationName": "Armored Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Armored Fighting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "wits",
+    "effect": "Once per round when you would be Hit, shift the blow to another armored, non-Exposed Zone.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "44d6df065b4c25a0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5b11d61fc91e8f01"
+}

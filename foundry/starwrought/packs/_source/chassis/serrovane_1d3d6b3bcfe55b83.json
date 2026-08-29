@@ -1,0 +1,27 @@
+{
+  "_id": "1d3d6b3bcfe55b83",
+  "name": "Serrovane",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/serrovane.png",
+  "system": {
+    "kind": "culture",
+    "constellation": "serrovane",
+    "attribute": "presence",
+    "languages": "Serrovine, Common",
+    "description": "<p>A lowland order-state where nothing is real until it is written and witnessed. Serrovane settles its disputes by formal challenge, keeps its ledgers in triplicate, and considers a broken oath a more serious crime than the violence that follows it.</p>",
+    "specialAbility": "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ae2a6da93bc423e9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1d3d6b3bcfe55b83"
+}

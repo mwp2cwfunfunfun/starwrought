@@ -1,0 +1,30 @@
+{
+  "_id": "fed1b99931e6a28a",
+  "name": "Bravo",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/bravo.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "bravo",
+    "attribute": "presence",
+    "hp": 3,
+    "grants": [
+      "Acrobatics"
+    ],
+    "specialAbility": "<p>Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Evade and +5 ft Speed while you hold it.</p>",
+    "description": "<p>Grants Training in Acrobatics, and 3 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fed1b99931e6a28a"
+}

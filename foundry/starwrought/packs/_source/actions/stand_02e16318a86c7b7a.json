@@ -1,0 +1,28 @@
+{
+  "_id": "02e16318a86c7b7a",
+  "name": "Stand",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Moving",
+    "traits": [
+      "Move"
+    ],
+    "description": "<p>Get up from prone.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57b789ecf25288d5",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!02e16318a86c7b7a"
+}

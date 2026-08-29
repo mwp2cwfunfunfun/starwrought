@@ -1,0 +1,47 @@
+{
+  "_id": "a1c4e4b4e4ce524c",
+  "name": "Punishing Blow",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weaponmaster",
+    "constellationName": "Weaponmaster",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Drilled"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your Reactive Strike disrupts the triggering action on a Hit, if the Zone struck was Exposed.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "c24b24d1fba469af",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a1c4e4b4e4ce524c"
+}

@@ -1,0 +1,28 @@
+{
+  "_id": "fcd1a0277bae5928",
+  "name": "Interact",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Handling things",
+    "traits": [
+      "Manipulate"
+    ],
+    "description": "<p>Draw or stow a weapon, open a door, pull a potion from your pack, pick something up, work a lever.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0a5854411327b700",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fcd1a0277bae5928"
+}

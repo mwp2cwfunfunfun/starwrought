@@ -1,0 +1,47 @@
+{
+  "_id": "acffd902ac772bdd",
+  "name": "Lock Down ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "armored-fighting",
+    "constellationName": "Armored Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Armored Fighting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "might",
+    "effect": "You settle your weight into your Full Plate harness.<br>While in this Stance: +1 status bonus to Guard for physical Attacks; you cannot be forcibly moved more than 3 feet by a single effect unless it critically succeeds; your Speed is reduced by 5 feet.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "44d6df065b4c25a0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!acffd902ac772bdd"
+}

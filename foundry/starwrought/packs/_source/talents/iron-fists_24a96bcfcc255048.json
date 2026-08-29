@@ -1,0 +1,47 @@
+{
+  "_id": "24a96bcfcc255048",
+  "name": "Iron Fists",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "brawling",
+    "constellationName": "Brawling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Brawling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your unarmed strikes deal 1d6 and count as weapons (lethal by default, your choice).",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0e60f938940988c1",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!24a96bcfcc255048"
+}

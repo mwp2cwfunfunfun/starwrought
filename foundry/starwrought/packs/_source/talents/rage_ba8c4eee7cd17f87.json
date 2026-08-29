@@ -1,0 +1,45 @@
+{
+  "_id": "ba8c4eee7cd17f87",
+  "name": "Rage ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "berserker",
+    "constellationName": "Berserker",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br>Rage ◆  Duration 10 rounds<br>You gain Temp HP = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, you're fatigued until you spend three actions to catch your breath.<br>You may end your Rage as a free action, becoming fatigued as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "71886e4f2559caea",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ba8c4eee7cd17f87"
+}

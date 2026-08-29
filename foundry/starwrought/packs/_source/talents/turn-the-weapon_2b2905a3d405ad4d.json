@@ -1,0 +1,47 @@
+{
+  "_id": "2b2905a3d405ad4d",
+  "name": "Turn the Weapon",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weapons",
+    "constellationName": "Weapons",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Weapon Familiarity"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You may deal bludgeoning damage with any Familiar melee weapon you wield, striking with the pommel, the haft, or the flat. Its damage die drops one step when you do (d12 to d10 to d8 to d6 to d4).",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "307927e092735135",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2b2905a3d405ad4d"
+}

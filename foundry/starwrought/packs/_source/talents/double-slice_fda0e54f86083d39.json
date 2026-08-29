@@ -1,0 +1,47 @@
+{
+  "_id": "fda0e54f86083d39",
+  "name": "Double Slice ◆◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "two-weapon-fighting",
+    "constellationName": "Two-Weapon Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Two-Weapon Fighting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Strike with each weapon at your current multiple attack penalty; combine the damage for purposes of bypassing Protection.",
+    "description": "",
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "b2ad479977fa3e79",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fda0e54f86083d39"
+}

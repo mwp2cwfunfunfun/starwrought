@@ -1,0 +1,19 @@
+{
+  "_id": "7ba47471d1da5891",
+  "name": "Roll Initiative by Activity",
+  "type": "script",
+  "author": null,
+  "img": "icons/svg/eye.svg",
+  "scope": "global",
+  "command": "// Initiative is whatever you were already doing.\nconst combat = game.combat;\nif ( !combat ) return ui.notifications.warn(\"No encounter is running.\");\nconst actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;\nconst combatant = actor ? combat.getCombatantsByActor(actor)[0] : null;\nif ( !combatant ) return ui.notifications.warn(\"That character is not in the encounter.\");\nconst choices = Object.fromEntries(Object.values(actor.system.constellations)\n  .sort((a, b) => a.name.localeCompare(b.name)).map(c => [c.slug, c.name]));\nconst slug = await foundry.applications.api.DialogV2.prompt({\n  window: { title: \"Initiative\" },\n  content: `<p>What were you actually doing?</p>\n    <select name=\"slug\">${Object.entries(choices).map(([k, v]) =>\n      `<option value=\"${k}\">${v}</option>`).join(\"\")}</select>`,\n  ok: { callback: (event, button) => button.form.elements.slug.value }\n});\nif ( slug ) await combat.rollInitiativeWithCheck(combatant.id, slug);",
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!macros!7ba47471d1da5891"
+}

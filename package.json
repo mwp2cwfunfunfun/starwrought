@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "docx": "^9.7.1"
+  },
+  "devDependencies": {
+    "@foundryvtt/foundryvtt-cli": "^3.0.4"
+  }
+}

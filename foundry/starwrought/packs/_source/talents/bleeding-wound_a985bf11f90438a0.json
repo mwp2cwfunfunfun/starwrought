@@ -1,0 +1,47 @@
+{
+  "_id": "a985bf11f90438a0",
+  "name": "Bleeding Wound",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "ambusher",
+    "constellationName": "Ambusher",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Sneak Attack"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9309f573d0dc8d61",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a985bf11f90438a0"
+}

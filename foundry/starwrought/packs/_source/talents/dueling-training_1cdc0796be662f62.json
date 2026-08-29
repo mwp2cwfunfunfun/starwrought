@@ -1,0 +1,45 @@
+{
+  "_id": "1cdc0796be662f62",
+  "name": "Dueling Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dueling",
+    "constellationName": "Dueling",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Measure action.<br>The Measure ◆ (stance) You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the same Defense it used against your previous Strike, until you leave the stance or name another. At Master rank you may name a new creature as a free action.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4e363b3d724f4315",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1cdc0796be662f62"
+}

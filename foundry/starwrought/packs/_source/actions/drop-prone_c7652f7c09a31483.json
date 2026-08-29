@@ -1,0 +1,26 @@
+{
+  "_id": "c7652f7c09a31483",
+  "name": "Drop Prone",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "free",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Handling things",
+    "traits": [],
+    "description": "<p>Fall prone.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0a5854411327b700",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c7652f7c09a31483"
+}

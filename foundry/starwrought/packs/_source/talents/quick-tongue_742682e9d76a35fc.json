@@ -1,0 +1,47 @@
+{
+  "_id": "742682e9d76a35fc",
+  "name": "Quick Tongue ◇",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kestrel-reach",
+    "constellationName": "Kestrel Reach",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Reacher"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the Quick Tongue action:<br>Quick Tongue ◇<br>Trigger You critically fail a Diplomacy check.<br>Requirements You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
+    "description": "",
+    "cost": "free",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "d11b952536b11224",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!742682e9d76a35fc"
+}

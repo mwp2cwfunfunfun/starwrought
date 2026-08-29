@@ -1,0 +1,33 @@
+{
+  "_id": "37a8c75cf388fdc9",
+  "name": "Gambeson",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 1,
+    "load": 0,
+    "material": "padded",
+    "traits": [
+      "Padded",
+      "Comfort",
+      "Quiet"
+    ],
+    "price": "1 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!37a8c75cf388fdc9"
+}

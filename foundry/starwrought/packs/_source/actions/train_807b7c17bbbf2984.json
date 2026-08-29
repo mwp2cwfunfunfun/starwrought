@@ -1,0 +1,25 @@
+{
+  "_id": "807b7c17bbbf2984",
+  "name": "Train",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Downtime Mode",
+    "requirements": "7 days",
+    "traits": [],
+    "description": "<p>You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. Only once between Milestones.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "b938ff7019fcd374",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!807b7c17bbbf2984"
+}

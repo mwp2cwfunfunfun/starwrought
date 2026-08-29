@@ -1,0 +1,45 @@
+{
+  "_id": "cceb6f35d935b4f3",
+  "name": "Humanity",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "human",
+    "constellationName": "Human",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +1 status bonus on checks to Aid. If you are Expert in Human, this becomes a +2 status bonus. If you are Master, +3. If you are Legendary, +4.",
+    "description": "<p>Short lives teach humans to close ranks and pull together.</p>",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "42704b4e7190f5c8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!cceb6f35d935b4f3"
+}

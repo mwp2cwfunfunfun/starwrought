@@ -1,0 +1,45 @@
+{
+  "_id": "8f93fda75725047e",
+  "name": "Two-Weapon Fighting Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "two-weapon-fighting",
+    "constellationName": "Two-Weapon Fighting",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Twin Openings action.<br>Twin Openings ◆ (stance) You must have a weapon in each hand. While you are in this stance, the first time each turn that you hit the same creature with both of your weapons, you may make one of its zones Exposed after resolving the attack and damage.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "b2ad479977fa3e79",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8f93fda75725047e"
+}

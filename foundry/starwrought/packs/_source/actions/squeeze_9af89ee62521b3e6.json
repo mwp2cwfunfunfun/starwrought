@@ -1,0 +1,28 @@
+{
+  "_id": "9af89ee62521b3e6",
+  "name": "Squeeze",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Moving",
+    "traits": [
+      "Move"
+    ],
+    "description": "<p>Requirements You are entering a space narrower than your token size, but at least half as wide.<br>Move up to 5 feet, regardless of your Speed. While any part of you is in that space you are Off-Guard, Evade is unavailable, and you can attack only with Close weapons. A space narrower than half your own stops you entirely: for a Medium creature, a gap of 1½ feet or less.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57b789ecf25288d5",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9af89ee62521b3e6"
+}

@@ -1,0 +1,47 @@
+{
+  "_id": "b78f4c6648574aad",
+  "name": "Short Grip Strike ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spear-and-polearm-fighting",
+    "constellationName": "Spear & Polearm Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spear & Polearm Training"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "Flourish<br>Requirements You are wielding a hafted weapon.<br>Reduce your weapon's Unwieldy value by 2 ft.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e6deec17c276985e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b78f4c6648574aad"
+}

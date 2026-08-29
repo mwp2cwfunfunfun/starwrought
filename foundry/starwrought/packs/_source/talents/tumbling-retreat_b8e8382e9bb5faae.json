@@ -1,0 +1,47 @@
+{
+  "_id": "b8e8382e9bb5faae",
+  "name": "Tumbling Retreat ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Acrobatics Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Step 6 feet instead of 3. You still cannot Step in Difficult Terrain or Greater Difficult Terrain.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "53dcb9125a4b0bf1",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b8e8382e9bb5faae"
+}

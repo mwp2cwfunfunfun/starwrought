@@ -1,0 +1,32 @@
+{
+  "_id": "a91bfcc1848b35ad",
+  "name": "Mail shirt",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 3,
+    "load": 1,
+    "material": "mail",
+    "traits": [
+      "Mail",
+      "Noisy"
+    ],
+    "price": "10 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a91bfcc1848b35ad"
+}

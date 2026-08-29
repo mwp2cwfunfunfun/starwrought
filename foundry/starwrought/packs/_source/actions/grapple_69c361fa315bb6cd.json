@@ -1,0 +1,28 @@
+{
+  "_id": "69c361fa315bb6cd",
+  "name": "Grapple",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "category": "Attacking",
+    "traits": [
+      "Attack"
+    ],
+    "description": "<p>Athletics against Evade or Guard. Needs a free hand or a Grapple weapon; target within reach and at most one Size larger.<br><b>Critical Success</b> Restrained until the end of your next turn. <b>Success</b> Grabbed until the end of your next turn. <b>Graze</b> No effect, but the defender still pays the Graze cost. <b>Miss</b> You overcommit and are Off-Guard.<br><b>◆◆ Tackle.</b> Stride, then Grapple; success also knocks them Prone and you fall Prone adjacent.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "31a74ef61055ca21",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!69c361fa315bb6cd"
+}

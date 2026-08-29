@@ -1,0 +1,47 @@
+{
+  "_id": "9b8e72df496c615a",
+  "name": "Steady the Line ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "human",
+    "constellationName": "Human",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Torchbearer Human"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger An adjacent ally is Grazed.<br>Effect No zone of theirs becomes Exposed. Once per round.",
+    "description": "<p>Your voice finds the one who is faltering.</p>",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "42704b4e7190f5c8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9b8e72df496c615a"
+}

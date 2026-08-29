@@ -1,0 +1,47 @@
+{
+  "_id": "5fa493a39883e115",
+  "name": "Sure Grip",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weapons",
+    "constellationName": "Weapons",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Weapon Familiarity"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "+2 circumstance bonus to your Guard against Disarm regarding a Familiar weapon. When a Disarm against you would succeed, you keep hold of the weapon and suffer only the loosened grip.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "307927e092735135",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5fa493a39883e115"
+}

@@ -1,0 +1,28 @@
+{
+  "_id": "7ba232be0f12978d",
+  "name": "Disarm",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "3",
+    "costMode": "or",
+    "category": "Attacking",
+    "traits": [
+      "Attack"
+    ],
+    "description": "<p>Athletics against Evade or Guard. Needs a free hand or a Disarm weapon.<br><b>Critical Success</b> The item drops in one of their squares. <b>Success</b> Grip loosened: −2 to attacks with it, and the next Disarm ignores your multiple attack penalty, until they Interact to resettle it. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>Special</b> If the target's Arms are Exposed, increase the degree of success by one.<br><b>◆◆◆ Wrench.</b> A critical success throws it 1d10 squares.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "31a74ef61055ca21",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7ba232be0f12978d"
+}

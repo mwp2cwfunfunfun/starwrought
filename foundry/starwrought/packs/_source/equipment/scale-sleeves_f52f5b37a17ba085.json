@@ -1,0 +1,32 @@
+{
+  "_id": "f52f5b37a17ba085",
+  "name": "Scale sleeves",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "arms",
+    "protection": 3,
+    "load": 2,
+    "material": "scale",
+    "traits": [
+      "Scale",
+      "Noisy"
+    ],
+    "price": "6 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f52f5b37a17ba085"
+}

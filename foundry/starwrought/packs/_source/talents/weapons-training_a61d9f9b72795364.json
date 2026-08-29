@@ -1,0 +1,45 @@
+{
+  "_id": "a61d9f9b72795364",
+  "name": "Weapons Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weapons",
+    "constellationName": "Weapons",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in weapons: add this Constellation's Proficiency Bonus to your attack rolls with any weapon.<br>Special Intuitive weapons use your full Weapons Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Handling.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "307927e092735135",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a61d9f9b72795364"
+}

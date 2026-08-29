@@ -1,0 +1,32 @@
+{
+  "_id": "a4dfe088c7bb8e85",
+  "name": "Scale coif",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 3,
+    "load": 2,
+    "material": "scale",
+    "traits": [
+      "Scale",
+      "Noisy"
+    ],
+    "price": "5 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a4dfe088c7bb8e85"
+}

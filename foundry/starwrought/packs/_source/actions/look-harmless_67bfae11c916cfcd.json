@@ -1,0 +1,25 @@
+{
+  "_id": "67bfae11c916cfcd",
+  "name": "Look Harmless",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Exploration Mode",
+    "requirements": "Travel Speed: Half",
+    "traits": [],
+    "description": "<p>Requirements No weapon with Reach greater than Adjacent, and worn armor totalling Load 1 or less.<br>Roll Guile for Initiative against each enemy's Awareness. On a success they are Wrong-Footed to your first attack; on a critical success, until the end of your first turn.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!67bfae11c916cfcd"
+}

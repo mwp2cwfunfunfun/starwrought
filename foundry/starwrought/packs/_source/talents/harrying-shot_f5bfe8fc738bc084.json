@@ -1,0 +1,47 @@
+{
+  "_id": "f5bfe8fc738bc084",
+  "name": "Harrying Shot",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "missile-skirmishing",
+    "constellationName": "Missile Skirmishing",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Missile Skirmishing Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Graze with a sling or thrown weapon, the target takes a −1 circumstance penalty to its next Attack before the end of its next turn.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "1217b0942014335f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f5bfe8fc738bc084"
+}

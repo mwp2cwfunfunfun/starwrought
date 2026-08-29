@@ -1,0 +1,26 @@
+{
+  "_id": "be01c29d1141f1b5",
+  "name": "Delay",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "free",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Defending & recovering",
+    "traits": [],
+    "description": "<p>Taken at the start of your turn, before anything else. Give up the rest of your turn, and your reaction until you act. At the end of any other creature's turn this round you may take your turn; your new place in the order stays there for the encounter. Delaying ends anything that would have ended on your turn.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4068fcccad329588",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!be01c29d1141f1b5"
+}

@@ -1,0 +1,47 @@
+{
+  "_id": "33d77c2d3a6b4f72",
+  "name": "Loose and Move",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "archery",
+    "constellationName": "Archery",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Archery Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "After making a Strike with a bow, you may Step 3 feet as a free action once per turn.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "cdfba94f08c33d6c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!33d77c2d3a6b4f72"
+}

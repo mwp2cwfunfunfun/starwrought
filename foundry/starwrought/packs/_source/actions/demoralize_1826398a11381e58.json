@@ -1,0 +1,31 @@
+{
+  "_id": "1826398a11381e58",
+  "name": "Demoralize",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "category": "Watching, deceiving & helping",
+    "traits": [
+      "Auditory",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "description": "<p>Intimidation against the target's Guard.<br><b>Critical Success</b> Frightened 2. <b>Success</b> Frightened 1. <b>Failure</b> Nothing. <b>Critical Failure</b> It is emboldened: +1 to its Attacks against you until the end of its next turn.<br><b>◆◆ Break Them.</b> Frightened 3 and Heedless on a critical success; Frightened 1 even on a failure.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9c4c1eb78a540a57",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1826398a11381e58"
+}

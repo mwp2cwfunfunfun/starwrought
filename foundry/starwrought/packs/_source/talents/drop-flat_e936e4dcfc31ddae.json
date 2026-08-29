@@ -1,0 +1,47 @@
+{
+  "_id": "e936e4dcfc31ddae",
+  "name": "Drop Flat ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "evade",
+    "constellationName": "Evade",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Evade Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "(posture) +4 to your Evade against every attack until the start of your next turn. You end prone.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57c800027a3ec530",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e936e4dcfc31ddae"
+}

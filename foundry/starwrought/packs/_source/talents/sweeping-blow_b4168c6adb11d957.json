@@ -1,0 +1,47 @@
+{
+  "_id": "b4168c6adb11d957",
+  "name": "Sweeping Blow ◆◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "great-weapon-fighting",
+    "constellationName": "Great Weapon Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Great Weapon Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "One attack roll against two creatures within your reach, resolved separately against each one's chosen Defense. Both count as a single attack for your multiple attack penalty.",
+    "description": "",
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "018dc0d2e8a4ecff",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b4168c6adb11d957"
+}

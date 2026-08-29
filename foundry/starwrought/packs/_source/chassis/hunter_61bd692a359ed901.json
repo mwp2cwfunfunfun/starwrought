@@ -1,0 +1,30 @@
+{
+  "_id": "61bd692a359ed901",
+  "name": "Hunter",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/hunter.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "hunter",
+    "attribute": "wits",
+    "hp": 3,
+    "grants": [
+      "Awareness"
+    ],
+    "specialAbility": "<p>Mark Prey: +1d8 precision damage the first time each round you Hit your prey, and you always know roughly where it is.</p>",
+    "description": "<p>Grants Training in Awareness, and 3 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!61bd692a359ed901"
+}

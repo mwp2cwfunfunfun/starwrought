@@ -1,0 +1,61 @@
+{{!-- Everything you have to decide before the die leaves your hand. --}}
+<form class="starwrought check-dialog-form">
+
+  <ul class="sw-card-modifiers">
+    {{#each parts as |mod|}}
+    <li><span>{{mod.label}}</span><strong>{{swSigned mod.value}}</strong></li>
+    {{/each}}
+    <li class="sw-total"><span>{{localize "STARWROUGHT.Roll.beforeTheDie"}}</span><strong>{{swSigned total}}</strong></li>
+  </ul>
+
+  <div class="form-group">
+    <label>{{localize "STARWROUGHT.Roll.situational"}}</label>
+    <div class="form-fields">
+      <input type="number" name="bonus" value="0" step="1" autofocus>
+    </div>
+  </div>
+
+  {{#if targetDefenses}}
+  <div class="form-group">
+    <label>{{localize "STARWROUGHT.Roll.targetDefense"}}{{#if targetName}} · {{targetName}}{{/if}}</label>
+    <div class="form-fields">
+      <select name="threshold">
+        {{#each targetDefenses as |def|}}
+        <option value="{{def.threshold}}" {{#if (eq def.threshold @root.threshold)}}selected{{/if}}>
+          {{def.label}} ({{def.threshold}})
+        </option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+  {{else}}
+  <div class="form-group">
+    <label>{{localize "STARWROUGHT.Field.threshold"}}</label>
+    <div class="form-fields">
+      <input type="number" name="threshold" value="{{threshold}}"
+             placeholder="{{localize 'STARWROUGHT.Roll.thresholdPlaceholder'}}">
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isAttack}}
+  <div class="form-group">
+    <label>{{localize "STARWROUGHT.Roll.map"}}</label>
+    <div class="form-fields">
+      <select name="mapIndex">
+        {{#each mapLadder as |step|}}
+        <option value="{{step.index}}" {{#if (eq step.index @root.cfg.mapIndex)}}selected{{/if}}>{{step.label}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+  {{/if}}
+
+  <div class="form-group">
+    <label>{{localize "CHAT.RollVisibility"}}</label>
+    <div class="form-fields">
+      <select name="rollMode">{{selectOptions rollModes selected=rollMode localize=true}}</select>
+    </div>
+  </div>
+
+</form>

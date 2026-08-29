@@ -1,0 +1,1040 @@
+/* ==========================================================================
+   STARWROUGHT
+   A night sky with gold in it. Sheets, chat cards and the wizard are scoped
+   under .starwrought; the scrollbars below are the one deliberate exception,
+   because a scrollbar you cannot see is a scrollbar you do not use.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Scrollbars, everywhere in the game.
+   A pane that scrolls has to look like one. Chromium honours the standard
+   properties and ignores the ::-webkit rules whenever both are present, so the
+   standard pair carries the design and the webkit block is only a fallback for
+   older engines.
+   -------------------------------------------------------------------------- */
+
+:root,
+.window-app,
+.application,
+.app {
+  --sw-scroll-thumb: #a8842c;
+  --sw-scroll-thumb-hover: #e3b23c;
+  --sw-scroll-track: rgba(0, 0, 0, 0.5);
+}
+
+html,
+body,
+.application,
+.window-app,
+.app,
+[data-application-part],
+.scrollable,
+.window-content,
+#sidebar,
+#chat-log,
+.directory-list,
+.tab,
+ol, ul, section, div, aside, nav, textarea, pre {
+  scrollbar-width: auto;
+  scrollbar-color: var(--sw-scroll-thumb, #a8842c) var(--sw-scroll-track, rgba(0, 0, 0, 0.5));
+}
+
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track {
+  background: var(--sw-scroll-track, rgba(0, 0, 0, 0.5));
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sw-scroll-thumb, #a8842c);
+  border: 2px solid #171326;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--sw-scroll-thumb-hover, #e3b23c); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+.starwrought {
+  --sw-ink: #e8e4f5;
+  --sw-ink-dim: #a49dc4;
+  --sw-night: #171326;
+  --sw-night-2: #1f1a33;
+  --sw-night-3: #2a2344;
+  --sw-edge: #3d3560;
+  --sw-gold: #e3b23c;
+  --sw-gold-dim: #a8842c;
+  --sw-flare: #ffd867;
+  --sw-blood: #b4453f;
+  --sw-green: #5f9e6a;
+  --sw-might: #d8734a;
+  --sw-agility: #6fc2b0;
+  --sw-wits: #7aa6e8;
+  --sw-presence: #c07ad8;
+  --sw-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Frame
+   -------------------------------------------------------------------------- */
+
+.starwrought.sheet .window-content {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(96, 78, 160, 0.35), transparent 60%),
+    radial-gradient(ellipse at 90% 10%, rgba(60, 90, 160, 0.25), transparent 55%),
+    var(--sw-night);
+  color: var(--sw-ink);
+  padding: 0;
+  gap: 0;
+}
+
+.starwrought.sheet .window-content > * { padding-inline: 0.75rem; }
+
+.starwrought input,
+.starwrought select,
+.starwrought textarea {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  color: var(--sw-ink);
+  font-family: inherit;
+}
+
+.starwrought input::placeholder,
+.starwrought textarea::placeholder {
+  color: var(--sw-ink-dim);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.starwrought input:focus,
+.starwrought select:focus {
+  border-color: var(--sw-gold);
+  box-shadow: 0 0 6px rgba(227, 178, 60, 0.35);
+  outline: none;
+}
+
+.starwrought a { color: var(--sw-ink); cursor: pointer; }
+.starwrought a:hover { color: var(--sw-flare); text-shadow: 0 0 6px rgba(255, 216, 103, 0.4); }
+
+.starwrought button {
+  background: linear-gradient(180deg, var(--sw-night-3), var(--sw-night-2));
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  color: var(--sw-ink);
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+}
+.starwrought button:hover:not(:disabled) { border-color: var(--sw-gold); color: var(--sw-flare); }
+.starwrought button:disabled { opacity: 0.4; cursor: default; }
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-header {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--sw-edge);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent);
+}
+
+.starwrought .sw-portrait {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border: 2px solid var(--sw-gold-dim);
+  border-radius: var(--sw-radius);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.starwrought .sw-item-portrait { width: 64px; height: 64px; }
+
+.starwrought .sw-header-body { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+
+.starwrought .sw-name-row { display: flex; gap: 0.5rem; align-items: center; }
+
+.starwrought .sw-charname {
+  flex: 1;
+  font-family: var(--font-h1, inherit);
+  font-size: 1.4rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--sw-edge);
+  border-radius: 0;
+  color: var(--sw-gold);
+}
+
+.starwrought .sw-level,
+.starwrought .sw-milestone { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
+.starwrought .sw-level input,
+.starwrought .sw-milestone input { width: 3rem; text-align: center; }
+
+.starwrought .sw-identity {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.3rem 0.5rem;
+}
+
+.starwrought .sw-field { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; }
+.starwrought .sw-field > span { color: var(--sw-ink-dim); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.65rem; }
+.starwrought .sw-field input,
+.starwrought .sw-field select { padding: 0.15rem 0.3rem; font-size: 0.85rem; }
+.starwrought .sw-field.sw-wide { grid-column: 1 / -1; }
+.starwrought .sw-field input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.15rem 0 0;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+.starwrought .sw-field.sw-readonly strong { font-size: 0.95rem; color: var(--sw-gold); }
+.starwrought .sw-field.sw-alert strong { color: var(--sw-blood); }
+
+.starwrought .sw-item-type { color: var(--sw-ink-dim); font-size: 0.8rem; }
+.starwrought .sw-item-subline { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8rem; }
+
+/* Vitals */
+
+.starwrought .sw-vitals { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+.starwrought .sw-hp { flex: 1 1 220px; }
+
+.starwrought .sw-hp-track {
+  position: relative;
+  height: 26px;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.starwrought .sw-hp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #6d2320, var(--sw-blood));
+  transition: width 200ms ease;
+}
+.starwrought .sw-hp-text {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 100%;
+  font-weight: 600;
+  text-shadow: 0 1px 2px #000;
+}
+.starwrought .sw-hp-text input {
+  width: 3.5rem;
+  text-align: right;
+  background: transparent;
+  border: none;
+  font-weight: 600;
+}
+.starwrought .sw-hp-meta { display: flex; gap: 0.75rem; align-items: center; font-size: 0.7rem; margin-top: 0.2rem; }
+.starwrought .sw-hp-meta input { width: 3rem; }
+.starwrought .sw-hint { color: var(--sw-ink-dim); }
+
+/* The three-action turn. */
+.starwrought .sw-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-actions-turn {
+  border-color: var(--sw-gold);
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.16), transparent);
+  box-shadow: 0 0 10px rgba(227, 178, 60, 0.25);
+}
+.starwrought .sw-actions-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-pips { display: flex; gap: 0.2rem; align-items: center; }
+.starwrought .sw-pip {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--sw-gold);
+  text-shadow: 0 0 6px rgba(227, 178, 60, 0.45);
+}
+.starwrought .sw-pip.spent { color: var(--sw-edge); text-shadow: none; }
+.starwrought .sw-pip-reaction { font-size: 1rem; color: var(--sw-agility); }
+.starwrought .sw-pip-reaction.spent { color: var(--sw-edge); }
+.starwrought .sw-actions-reset { font-size: 0.7rem; color: var(--sw-ink-dim); }
+
+.starwrought .sw-counters { display: flex; gap: 0.5rem; }
+.starwrought .sw-counter {
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  padding: 0.2rem 0.4rem;
+  text-align: center;
+  min-width: 74px;
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-counter.sw-alert { border-color: var(--sw-gold-dim); }
+.starwrought .sw-counter.sw-danger { border-color: var(--sw-blood); box-shadow: 0 0 8px rgba(180, 69, 63, 0.4); }
+.starwrought .sw-counter-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--sw-ink-dim); }
+.starwrought .sw-counter input { width: 100%; text-align: center; }
+.starwrought .sw-stepper { display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
+.starwrought .sw-stepper strong { font-size: 1.05rem; }
+.starwrought .sw-stepper strong em { font-size: 0.7rem; color: var(--sw-ink-dim); }
+
+/* --------------------------------------------------------------------------
+   Tabs
+   -------------------------------------------------------------------------- */
+
+.starwrought .sheet-tabs {
+  border-block: 1px solid var(--sw-edge);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.25rem 0.5rem;
+  gap: 0.25rem;
+}
+.starwrought .sheet-tabs a {
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--sw-radius);
+  color: var(--sw-ink-dim);
+  font-size: 0.85rem;
+}
+.starwrought .sheet-tabs a.active {
+  background: var(--sw-night-3);
+  color: var(--sw-gold);
+  box-shadow: inset 0 -2px 0 var(--sw-gold);
+}
+
+.starwrought .sw-tab { display: none; flex-direction: column; gap: 0.6rem; padding: 0.6rem 0; }
+.starwrought .sw-tab.active { display: flex; }
+
+/* --------------------------------------------------------------------------
+   Panels
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-panel {
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.5rem 0.6rem 0.6rem;
+}
+
+.starwrought .sw-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--sw-edge);
+  font-family: var(--font-h2, inherit);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-gold);
+}
+
+.starwrought .sw-subtitle {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sw-ink-dim);
+}
+
+.starwrought .sw-inline-button {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.starwrought .sw-note { margin: 0.3rem 0 0; font-size: 0.72rem; color: var(--sw-ink-dim); line-height: 1.35; }
+.starwrought .sw-note.sw-warn { color: #d8a25a; }
+.starwrought .sw-note.sw-good { color: var(--sw-green); }
+.starwrought .sw-empty { color: var(--sw-ink-dim); font-style: italic; padding: 0.3rem 0; }
+.starwrought .sw-empty-panel { text-align: center; }
+
+.starwrought .sw-body-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.4rem 0.6rem;
+}
+
+/* --------------------------------------------------------------------------
+   Attributes
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-attribute-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.starwrought .sw-attribute {
+  display: grid;
+  grid-template-areas: "glyph mod" "glyph name" "glyph points";
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+}
+
+.starwrought .sw-glyph { grid-area: glyph; font-size: 1.5rem; line-height: 1; }
+.starwrought .sw-glyph-might { color: var(--sw-might); }
+.starwrought .sw-glyph-agility { color: var(--sw-agility); }
+.starwrought .sw-glyph-wits { color: var(--sw-wits); }
+.starwrought .sw-glyph-presence { color: var(--sw-presence); }
+
+.starwrought .sw-attribute-mod { grid-area: mod; font-size: 1.3rem; font-weight: 600; color: var(--sw-gold); line-height: 1.1; }
+.starwrought .sw-attribute-name { grid-area: name; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.starwrought .sw-attribute-points { grid-area: points; font-size: 0.65rem; color: var(--sw-ink-dim); }
+
+/* --------------------------------------------------------------------------
+   Defenses
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-defense-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.starwrought .sw-defense {
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  padding: 0.4rem 0.5rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+}
+
+.starwrought .sw-defense-roll { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4rem; }
+.starwrought .sw-defense-name { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.starwrought .sw-defense-mod { font-size: 1.25rem; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-defense-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 0.2rem; font-size: 0.65rem; color: var(--sw-ink-dim); }
+.starwrought .sw-threshold strong { color: var(--sw-ink); font-size: 0.8rem; }
+
+.starwrought .sw-npc-defense { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.starwrought .sw-npc-defense input { width: 4rem; text-align: center; font-size: 1rem; color: var(--sw-gold); }
+
+.starwrought .sw-rank {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--sw-edge);
+}
+.starwrought .sw-rank-untrained { color: var(--sw-ink-dim); }
+.starwrought .sw-rank-trained { color: #8fc7a4; border-color: #3d6b4f; }
+.starwrought .sw-rank-expert { color: #7aa6e8; border-color: #3a5480; }
+.starwrought .sw-rank-master { color: #c07ad8; border-color: #5f3a72; }
+.starwrought .sw-rank-legendary { color: var(--sw-flare); border-color: var(--sw-gold-dim); }
+
+/* --------------------------------------------------------------------------
+   Zones
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-zone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+
+.starwrought .sw-zone {
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  padding: 0.4rem 0.5rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.starwrought .sw-zone-exposed {
+  border-color: var(--sw-blood);
+  background: linear-gradient(160deg, rgba(180, 69, 63, 0.22), transparent);
+}
+.starwrought .sw-zone-head { display: flex; align-items: center; justify-content: space-between; }
+.starwrought .sw-zone-name { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.starwrought .sw-zone-protection { display: flex; align-items: baseline; gap: 0.3rem; }
+.starwrought .sw-protection-value { font-size: 1.4rem; font-weight: 600; color: var(--sw-gold); line-height: 1; }
+.starwrought .sw-protection-label { font-size: 0.6rem; color: var(--sw-ink-dim); text-transform: uppercase; }
+.starwrought .sw-zone-piece { font-size: 0.7rem; color: var(--sw-ink-dim); }
+.starwrought .sw-zone-weak { font-size: 0.62rem; color: #d8a25a; }
+.starwrought .sw-zone-flag { font-size: 0.62rem; color: var(--sw-blood); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* --------------------------------------------------------------------------
+   Constellations
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-constellation {
+  border: 1px solid transparent;
+  border-radius: var(--sw-radius);
+  padding: 0.25rem 0.35rem;
+  margin-bottom: 0.2rem;
+}
+.starwrought .sw-constellation.sw-flared {
+  border-color: var(--sw-gold-dim);
+  background: linear-gradient(90deg, rgba(255, 216, 103, 0.12), transparent 70%);
+}
+
+.starwrought .sw-constellation-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.starwrought .sw-collapse { width: 1rem; text-align: center; color: var(--sw-ink-dim); }
+.starwrought .sw-constellation-img { width: 24px; height: 24px; border: none; border-radius: 3px; object-fit: cover; }
+.starwrought .sw-constellation-name { flex: 1; font-weight: 600; display: flex; align-items: center; gap: 0.35rem; min-width: 8rem; }
+.starwrought .sw-constellation-name .sw-glyph { font-size: 0.95rem; }
+.starwrought .sw-points { font-size: 0.68rem; color: var(--sw-ink-dim); }
+.starwrought .sw-next { font-size: 0.64rem; color: var(--sw-ink-dim); }
+.starwrought .sw-next em { color: var(--sw-gold-dim); font-style: normal; }
+
+.starwrought .sw-flare { color: var(--sw-edge); font-size: 0.9rem; }
+.starwrought .sw-flared .sw-flare { color: var(--sw-flare); text-shadow: 0 0 8px rgba(255, 216, 103, 0.6); }
+
+.starwrought .sw-talent-list { list-style: none; margin: 0.25rem 0 0; padding: 0 0 0 1.4rem; }
+.starwrought .sw-talent {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.12rem 0.25rem;
+  border-radius: 3px;
+}
+.starwrought .sw-talent:hover { background: rgba(255, 255, 255, 0.05); }
+.starwrought .sw-talent-img { width: 20px; height: 20px; border: none; border-radius: 3px; }
+.starwrought .sw-talent-name { flex: 1; font-size: 0.82rem; }
+.starwrought .sw-root-mark { color: var(--sw-gold); font-style: normal; }
+.starwrought .sw-capstone { color: var(--sw-flare); }
+
+.starwrought .sw-tier {
+  width: 1.1rem;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 3px;
+  border: 1px solid var(--sw-edge);
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-tier-T { color: #8fc7a4; }
+.starwrought .sw-tier-E { color: #7aa6e8; }
+.starwrought .sw-tier-M { color: #c07ad8; }
+.starwrought .sw-tier-L { color: var(--sw-flare); }
+
+.starwrought .sw-talent-controls,
+.starwrought .sw-item-controls { display: flex; gap: 0.3rem; opacity: 0.35; font-size: 0.75rem; }
+.starwrought .sw-talent:hover .sw-talent-controls,
+.starwrought .sw-item-row:hover .sw-item-controls,
+.starwrought tr:hover .sw-item-controls { opacity: 1; }
+
+/* --------------------------------------------------------------------------
+   Item lists and tables
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-item-list { list-style: none; margin: 0; padding: 0; }
+.starwrought .sw-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.25rem;
+  border-radius: 3px;
+  flex-wrap: wrap;
+}
+.starwrought .sw-item-row:hover { background: rgba(255, 255, 255, 0.05); }
+.starwrought .sw-item-row.sw-disabled { opacity: 0.5; }
+.starwrought .sw-item-row.sw-raised { box-shadow: inset 3px 0 0 var(--sw-gold); }
+.starwrought .sw-item-row img { width: 24px; height: 24px; border: none; border-radius: 3px; flex: 0 0 auto; }
+.starwrought .sw-item-name { flex: 1 1 8rem; font-size: 0.85rem; }
+.starwrought .sw-item-tag {
+  font-size: 0.68rem;
+  color: var(--sw-ink-dim);
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  padding: 0.02rem 0.4rem;
+  white-space: nowrap;
+}
+.starwrought .sw-item-tag.sw-attack { color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+/* Traits wrap onto their own line, but the controls stay up on the name row. */
+.starwrought .sw-item-traits {
+  order: 10;
+  flex: 1 1 100%;
+  font-size: 0.65rem;
+  color: var(--sw-ink-dim);
+  padding-left: 1.8rem;
+}
+.starwrought .sw-item-row .sw-item-controls { order: 5; margin-left: auto; }
+.starwrought .sw-action-glyph { color: var(--sw-gold); font-size: 0.85rem; letter-spacing: -0.1em; }
+
+.starwrought .sw-trait {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--sw-edge);
+  background: rgba(255, 255, 255, 0.04);
+}
+.starwrought .sw-trait-list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.starwrought .sw-add-row { display: flex; gap: 0.3rem; margin-top: 0.4rem; }
+.starwrought .sw-add-row input { flex: 1; }
+
+.starwrought table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.starwrought table th {
+  text-align: left;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sw-ink-dim);
+  border-bottom: 1px solid var(--sw-edge);
+  padding: 0.2rem 0.3rem;
+  font-weight: 600;
+}
+.starwrought table td { padding: 0.15rem 0.3rem; border-bottom: 1px solid rgba(61, 53, 96, 0.4); }
+.starwrought table input,
+.starwrought table select { width: 100%; padding: 0.1rem 0.25rem; font-size: 0.8rem; }
+.starwrought .sw-num { text-align: center; }
+.starwrought .sw-zone-cell { text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em; color: var(--sw-ink-dim); }
+.starwrought .sw-row-exposed { background: rgba(180, 69, 63, 0.18); }
+.starwrought .sw-threshold-cell { color: var(--sw-gold); font-weight: 600; }
+
+/* Carry state, and the armor Zones you can fill from the pack. */
+.starwrought .sw-state-held { color: var(--sw-flare); border-color: var(--sw-gold-dim); }
+.starwrought .sw-state-worn { color: #8fc7a4; border-color: #3d6b4f; }
+.starwrought .sw-state-carried { color: var(--sw-ink-dim); }
+.starwrought .sw-wear-options { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.starwrought .sw-wear-link {
+  font-size: 0.72rem;
+  color: var(--sw-ink-dim);
+  border: 1px dashed var(--sw-edge);
+  border-radius: 999px;
+  padding: 0 0.4rem;
+}
+.starwrought .sw-wear-link:hover { color: var(--sw-flare); border-color: var(--sw-gold-dim); border-style: solid; }
+.starwrought .sw-panel-buttons { display: flex; gap: 0.25rem; }
+
+.starwrought .sw-currency { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.starwrought .sw-currency label { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; }
+.starwrought .sw-currency input { width: 4.5rem; }
+
+.starwrought .sw-button-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.starwrought .sw-button-row button em { color: var(--sw-ink-dim); font-size: 0.7rem; }
+
+.starwrought prose-mirror { min-height: 8rem; display: block; }
+
+/* --------------------------------------------------------------------------
+   Character creation
+   -------------------------------------------------------------------------- */
+
+.starwrought.sw-chargen .window-content {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(96, 78, 160, 0.35), transparent 60%),
+    var(--sw-night);
+  color: var(--sw-ink);
+  padding: 0;
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.starwrought .sw-chargen-trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--sw-edge);
+  background: rgba(0, 0, 0, 0.3);
+}
+.starwrought .sw-trail-step {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-ink-dim);
+  cursor: default;
+}
+.starwrought .sw-trail-step.done {
+  color: var(--sw-ink);
+  border-color: var(--sw-edge);
+  cursor: pointer;
+}
+.starwrought .sw-trail-step.done:hover { border-color: var(--sw-gold); color: var(--sw-flare); }
+.starwrought .sw-trail-step.active {
+  color: var(--sw-night);
+  background: var(--sw-gold);
+  border-color: var(--sw-gold);
+  font-weight: 600;
+}
+
+.starwrought .sw-chargen-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 230px;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  overflow: auto;
+  align-items: start;
+}
+.starwrought .sw-chargen-main { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+
+.starwrought .sw-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.5rem;
+}
+.starwrought .sw-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+  cursor: pointer;
+}
+.starwrought .sw-choice:hover { border-color: var(--sw-gold-dim); }
+.starwrought .sw-choice.chosen {
+  border-color: var(--sw-gold);
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.16), transparent);
+  box-shadow: 0 0 10px rgba(227, 178, 60, 0.25);
+}
+.starwrought .sw-choice-head { display: flex; align-items: center; gap: 0.4rem; }
+.starwrought .sw-choice-head img { width: 32px; height: 32px; border: none; border-radius: 4px; }
+.starwrought .sw-choice-name { flex: 1; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-choice-head .fa-circle-check { color: var(--sw-flare); }
+.starwrought .sw-choice-lines { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+.starwrought .sw-choice-text { font-size: 0.72rem; color: var(--sw-ink-dim); line-height: 1.35; }
+.starwrought .sw-choice-text p { margin: 0 0 0.3rem; }
+
+.starwrought .sw-slot { border-color: var(--sw-gold-dim); }
+.starwrought .sw-slot-done { border-color: var(--sw-edge); opacity: 0.85; }
+.starwrought .sw-slot-done .sw-panel-title { color: var(--sw-green); }
+.starwrought .sw-slot-stuck { border-color: #7a5a2a; }
+.starwrought .sw-spent-chip { border-color: var(--sw-gold-dim); color: var(--sw-flare); text-transform: none; }
+.starwrought .sw-auto-chip { border-color: #3d6b4f; color: #8fc7a4; }
+.starwrought .sw-auto-chip .fa-lock { opacity: 0.6; font-size: 0.6rem; }
+
+.starwrought .sw-picker { display: flex; flex-direction: column; gap: 0.4rem; }
+.starwrought .sw-picker-single {
+  font-size: 0.78rem;
+  color: var(--sw-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.starwrought .sw-hidden { display: none !important; }
+
+/* Where a point may go, all of it visible. Nothing is selected until it is clicked. */
+.starwrought .sw-picker-hint {
+  font-size: 0.72rem;
+  color: #d8a25a;
+  font-style: italic;
+}
+.starwrought .sw-chip-group { display: flex; flex-direction: column; gap: 0.2rem; }
+.starwrought .sw-chip-group-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-chip-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.starwrought .sw-con-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+.starwrought .sw-con-chip:hover { border-color: var(--sw-gold-dim); background: rgba(255, 255, 255, 0.06); }
+.starwrought .sw-con-chip.active {
+  border-color: var(--sw-gold);
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.2), rgba(255, 216, 103, 0.06));
+  color: var(--sw-flare);
+  box-shadow: 0 0 8px rgba(227, 178, 60, 0.25);
+}
+.starwrought .sw-con-chip .sw-glyph { font-size: 0.85rem; }
+.starwrought .sw-con-chip em {
+  font-style: normal;
+  font-size: 0.62rem;
+  color: var(--sw-ink-dim);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+  padding: 0 0.3rem;
+}
+.starwrought .sw-con-chip.active em { color: var(--sw-flare); }
+/* One list per Constellation, all rendered, only the selected one shown. */
+.starwrought .sw-talent-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: none;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.35rem;
+}
+.starwrought .sw-talent-options.active { display: grid; }
+.starwrought .sw-talent-option {
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  padding: 0.3rem 0.4rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+.starwrought .sw-talent-option.locked { opacity: 0.45; }
+.starwrought .sw-talent-option button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-size: 0.82rem;
+}
+.starwrought .sw-talent-option button:hover:not(:disabled) { color: var(--sw-flare); }
+.starwrought .sw-talent-effect {
+  font-size: 0.68rem;
+  color: var(--sw-ink-dim);
+  line-height: 1.3;
+  margin-top: 0.2rem;
+  max-height: 4.4rem;
+  overflow: hidden;
+}
+
+.starwrought .sw-chargen-rail {
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  font-size: 0.75rem;
+}
+.starwrought .sw-chargen-rail h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-gold);
+  border-bottom: 1px solid var(--sw-edge);
+  padding-bottom: 0.2rem;
+  display: flex;
+  justify-content: space-between;
+}
+.starwrought .sw-rail-attributes { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+.starwrought .sw-rail-attribute { display: flex; align-items: center; gap: 0.2rem; }
+.starwrought .sw-rail-attribute .sw-glyph { font-size: 1rem; }
+.starwrought .sw-rail-attribute strong { color: var(--sw-gold); }
+.starwrought .sw-rail-line { display: flex; justify-content: space-between; padding: 0.05rem 0; }
+.starwrought .sw-rail-line span { color: var(--sw-ink-dim); }
+.starwrought .sw-rail-constellations { list-style: none; margin: 0.3rem 0 0; padding: 0; }
+.starwrought .sw-rail-constellations li { display: flex; align-items: center; gap: 0.3rem; padding: 0.05rem 0; }
+.starwrought .sw-rail-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.starwrought .sw-chargen-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-top: 1px solid var(--sw-edge);
+  background: rgba(0, 0, 0, 0.3);
+}
+.starwrought .sw-chargen-nav { display: flex; gap: 0.4rem; }
+
+/* What is still blocking Next, named in the footer so it does not depend on noticing the
+   scrollbar. Clicking it scrolls the slot into view and flashes it. */
+.starwrought .sw-outstanding {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  margin-inline: 0.6rem;
+  font-size: 0.72rem;
+  color: #d8a25a;
+  min-width: 0;
+}
+.starwrought .sw-outstanding i { flex: 0 0 auto; }
+.starwrought .sw-outstanding a {
+  color: #d8a25a;
+  text-decoration: underline dotted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.starwrought .sw-outstanding a:hover { color: var(--sw-flare); }
+
+@keyframes sw-slot-flash {
+  0%, 100% { box-shadow: none; }
+  25%, 75% { box-shadow: 0 0 0 2px var(--sw-flare), 0 0 14px rgba(255, 216, 103, 0.5); }
+}
+.starwrought .sw-slot-flash { animation: sw-slot-flash 1.1s ease-in-out 1; }
+.starwrought button.sw-primary {
+  border-color: var(--sw-gold-dim);
+  color: var(--sw-flare);
+  background: linear-gradient(180deg, rgba(255, 216, 103, 0.2), rgba(255, 216, 103, 0.06));
+}
+.starwrought button.sw-cancel { color: #c88; }
+
+.starwrought .sw-chargen-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-color: var(--sw-gold-dim);
+  background: linear-gradient(120deg, rgba(255, 216, 103, 0.14), transparent 70%);
+}
+.starwrought .sw-chargen-banner h3 { margin: 0; color: var(--sw-gold); font-size: 0.95rem; }
+.starwrought .sw-chargen-banner button { white-space: nowrap; }
+.starwrought .sw-free-mark { color: var(--sw-gold); }
+.starwrought .sw-good-tag { color: var(--sw-green); border-color: #3d6b4f; }
+.starwrought .sw-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.3rem 0.6rem;
+  margin-top: 0.5rem;
+}
+.starwrought .sw-review-grid > div { display: flex; flex-direction: column; }
+.starwrought .sw-review-grid span {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sw-ink-dim);
+}
+
+/* --------------------------------------------------------------------------
+   Chat cards
+   -------------------------------------------------------------------------- */
+
+.starwrought.check-card,
+.starwrought.damage-card,
+.starwrought.applied-card,
+.starwrought.item-card,
+.starwrought.action-card,
+.starwrought.refuse-death {
+  --sw-ink: #e8e4f5;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+  padding: 0.5rem 0.6rem;
+}
+
+.starwrought .sw-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.starwrought .sw-card-header img { width: 36px; height: 36px; border: 1px solid var(--sw-edge); border-radius: 4px; }
+.starwrought .sw-card-titles { min-width: 0; }
+.starwrought .sw-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--sw-gold);
+  border: none;
+  font-family: var(--font-h3, inherit);
+}
+.starwrought .sw-card-subtitle { font-size: 0.7rem; color: var(--sw-ink-dim); }
+
+.starwrought .sw-card-roll {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.35);
+}
+.starwrought .sw-card-total { font-size: 1.6rem; font-weight: 700; color: var(--sw-gold); line-height: 1; }
+.starwrought .sw-card-total.sw-nat20 { color: var(--sw-flare); text-shadow: 0 0 10px rgba(255, 216, 103, 0.7); }
+.starwrought .sw-card-total.sw-nat1 { color: var(--sw-blood); }
+.starwrought .sw-card-formula { font-size: 0.7rem; color: var(--sw-ink-dim); }
+
+.starwrought .sw-card-modifiers { list-style: none; margin: 0.3rem 0 0; padding: 0; font-size: 0.7rem; }
+.starwrought .sw-card-modifiers li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.05rem 0.2rem; }
+.starwrought .sw-card-modifiers li:nth-child(odd) { background: rgba(255, 255, 255, 0.04); }
+.starwrought .sw-card-modifiers .sw-total { border-top: 1px solid var(--sw-edge); margin-top: 0.15rem; color: var(--sw-gold); }
+
+.starwrought .sw-card-threshold {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-card-threshold strong { color: var(--sw-ink); }
+
+.starwrought .sw-card-outcome {
+  margin-top: 0.4rem;
+  padding: 0.25rem;
+  text-align: center;
+  border-radius: var(--sw-radius);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+.starwrought .sw-outcome-critical { background: rgba(255, 216, 103, 0.2); color: var(--sw-flare); }
+.starwrought .sw-outcome-hit { background: rgba(95, 158, 106, 0.2); color: #8fc7a4; }
+.starwrought .sw-outcome-graze { background: rgba(216, 162, 90, 0.18); color: #d8a25a; }
+.starwrought .sw-outcome-miss { background: rgba(122, 122, 140, 0.18); color: var(--sw-ink-dim); }
+
+.starwrought .sw-card-outcomes { list-style: none; margin: 0.4rem 0 0; padding: 0; font-size: 0.72rem; }
+.starwrought .sw-card-outcomes li { padding: 0.15rem 0.25rem; border-left: 2px solid var(--sw-edge); margin-bottom: 0.15rem; }
+.starwrought .sw-card-outcomes li.sw-active { border-left-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
+
+.starwrought .sw-card-flare { margin-top: 0.4rem; }
+.starwrought .sw-card-flare button {
+  width: 100%;
+  border-color: var(--sw-gold-dim);
+  color: var(--sw-flare);
+  background: linear-gradient(180deg, rgba(255, 216, 103, 0.18), rgba(255, 216, 103, 0.06));
+}
+.starwrought .sw-flare-card h3 { color: var(--sw-flare); }
+
+.starwrought .sw-card-buttons { display: flex; gap: 0.3rem; margin-top: 0.4rem; }
+.starwrought .sw-card-buttons button { flex: 1; font-size: 0.75rem; white-space: nowrap; padding-inline: 0.35rem; }
+
+/* The chat sidebar is narrow, so the Apply row stacks rather than squeezing. */
+.starwrought .sw-card-apply { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; }
+.starwrought .sw-zone-select {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-zone-select select { flex: 1; font-size: 0.75rem; padding: 0.15rem 0.3rem; }
+.starwrought .sw-card-apply .sw-card-buttons { margin-top: 0; }
+
+.starwrought .sw-card-note { font-size: 0.7rem; color: var(--sw-ink-dim); margin: 0.3rem 0 0; }
+.starwrought .sw-card-note.sw-warn { color: #d8a25a; }
+.starwrought .sw-card-note.sw-danger { color: var(--sw-blood); }
+.starwrought .sw-card-note.sw-good { color: var(--sw-green); }
+.starwrought .sw-card-description { font-size: 0.78rem; margin-top: 0.4rem; line-height: 1.4; }
+.starwrought .sw-card-description p:first-child { margin-top: 0; }
+
+.starwrought.action-card h3,
+.starwrought.refuse-death h3 { margin: 0 0 0.25rem; color: var(--sw-gold); border: none; font-size: 0.95rem; }
+.starwrought.sw-overspend { border-color: var(--sw-blood); background: linear-gradient(160deg, rgba(180, 69, 63, 0.25), var(--sw-night)); }
+.starwrought.sw-overspend h3 { color: #e08a84; }
+.starwrought.action-card p,
+.starwrought.refuse-death p { margin: 0; font-size: 0.8rem; }
+
+/* Roll dialog */
+
+.starwrought.dialog .window-content,
+.starwrought.check-dialog .window-content {
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+}
+.starwrought.dialog select { width: 100%; }
+.starwrought .check-dialog-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.starwrought .check-dialog-form .form-group { display: flex; align-items: center; gap: 0.5rem; }
+.starwrought .check-dialog-form label { flex: 0 0 10rem; font-size: 0.8rem; color: var(--sw-ink-dim); }
+.starwrought .check-dialog-form .form-fields { flex: 1; }

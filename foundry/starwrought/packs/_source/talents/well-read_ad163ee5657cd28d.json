@@ -1,0 +1,47 @@
+{
+  "_id": "ad163ee5657cd28d",
+  "name": "Well Read ◇",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Deep Knowledge"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per scene, Recall Knowledge about your field as a free action.",
+    "description": "",
+    "cost": "free",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "f59506a3bbc6d7ef",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ad163ee5657cd28d"
+}

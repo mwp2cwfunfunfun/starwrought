@@ -1,0 +1,28 @@
+{
+  "_id": "1c30027bad15a8bc",
+  "name": "Acrobatics",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/acrobatics.png",
+  "system": {
+    "slug": "acrobatics",
+    "category": "skill",
+    "attribute": "agility",
+    "meta": "Skill constellation • Agility",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Skill constellation • Agility</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1c30027bad15a8bc"
+}

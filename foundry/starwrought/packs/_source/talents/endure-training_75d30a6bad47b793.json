@@ -1,0 +1,45 @@
+{
+  "_id": "75d30a6bad47b793",
+  "name": "Endure Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "endure",
+    "constellationName": "Endure",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0faabe9a5cfa92a4",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!75d30a6bad47b793"
+}

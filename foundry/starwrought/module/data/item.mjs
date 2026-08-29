@@ -1,0 +1,518 @@
+/**
+ * Item data models.
+ *
+ * Talents, Constellations, and the chassis pieces (Ancestry, Bloodline, Culture, Background,
+ * Calling) are all Items, because that is what makes them compendium content. Equipment carries
+ * its Traits as authored text and derives the mechanical flags from them, so a weapon's rules
+ * come from its Trait line rather than from a second place that can drift.
+ */
+
+import * as SW from "../config.mjs";
+
+const fields = foundry.data.fields;
+
+/* -------------------------------------------- */
+/*  Trait parsing                               */
+/* -------------------------------------------- */
+
+/**
+ * Read the mechanical flags out of a weapon's Trait line. "A Trait is never flavor: if the word
+ * is in a Trait line, some rule cares about it."
+ * @param {string[]} traits
+ * @returns {object}
+ */
+export function parseWeaponTraits(traits = []) {
+  const flags = {
+    agile: false,
+    finesse: false,
+    close: false,
+    parry: false,
+    sweep: false,
+    mechanical: false,
+    nonlethal: false,
+    twoHanded: false,
+    ranged: null,
+    thrown: null,
+    reload: 0,
+    capacity: 0,
+    unwieldy: 0,
+    armorPiercing: 0,
+    deadly: null,
+    twoHandDie: null,
+    versatile: null,
+    maneuvers: []
+  };
+  for (const raw of traits) {
+    const trait = String(raw).trim();
+    const lower = trait.toLowerCase();
+    let m;
+    if (lower === "agile") flags.agile = true;
+    else if (lower === "finesse") flags.finesse = true;
+    else if (lower === "close") flags.close = true;
+    else if (lower === "parry") flags.parry = true;
+    else if (lower === "sweep") flags.sweep = true;
+    else if (lower === "mechanical") flags.mechanical = true;
+    else if (lower === "nonlethal") flags.nonlethal = true;
+    else if (lower === "two-handed") flags.twoHanded = true;
+    else if ((m = lower.match(/^ranged\s+(\d+)/))) flags.ranged = Number(m[1]);
+    else if ((m = lower.match(/^thrown\s+(\d+)/))) flags.thrown = Number(m[1]);
+    else if ((m = lower.match(/^reload\s+\[?(\d+)/))) flags.reload = Number(m[1]);
+    else if ((m = lower.match(/^capacity\s+\[?(\d+)/))) flags.capacity = Number(m[1]);
+    else if ((m = lower.match(/^unwieldy\s+\[?(\d+)/))) flags.unwieldy = Number(m[1]);
+    else if ((m = lower.match(/^armor-piercing\s+\[?(\d+)/))) flags.armorPiercing = Number(m[1]);
+    else if ((m = lower.match(/^deadly\s+d(\d+)/))) flags.deadly = Number(m[1]);
+    else if ((m = lower.match(/^two-hand\s+d(\d+)/))) flags.twoHandDie = Number(m[1]);
+    else if ((m = lower.match(/^versatile\s+([bps])\b/))) flags.versatile = SW.DAMAGE_ABBR[m[1].toUpperCase()];
+    else if (/^(grapple|trip|disarm|shove)$/.test(lower)) flags.maneuvers.push(lower);
+    else if (/^(grapple|trip|disarm|shove)(,\s*(grapple|trip|disarm|shove))+$/.test(lower)) {
+      flags.maneuvers.push(...lower.split(/,\s*/));
+    }
+  }
+  return flags;
+}
+
+/** Split an authored Trait line ("Agile, Close, Finesse, Thrown 10 ft") into an array. */
+export function splitTraits(line) {
+  if (Array.isArray(line)) return line;
+  return String(line ?? "")
+    .split(/,(?![^(]*\))/)
+    .map(t => t.trim())
+    .filter(t => t && t !== "—" && t !== "-");
+}
+
+/* -------------------------------------------- */
+/*  Shared fields                               */
+/* -------------------------------------------- */
+
+/**
+ * The action cost of a Talent or an Action. Several cost a range rather than a number, and the
+ * two ends are not always continuous: Strike is one action to three, Disarm is one or three.
+ */
+function costFields(initial = "1") {
+  return {
+    cost: new fields.StringField({
+      required: true, choices: Object.keys(SW.ACTION_COSTS), initial
+    }),
+    /** The upper end, when there is one. Blank means the cost is fixed. */
+    costMax: new fields.StringField({
+      required: false, blank: true, choices: [...Object.keys(SW.ACTION_COSTS), ""], initial: ""
+    }),
+    /** "to" for a continuous range, "or" when only the two ends are legal. */
+    costMode: new fields.StringField({
+      required: true, choices: ["to", "or"], initial: "to"
+    })
+  };
+}
+
+/**
+ * Render a cost as the handbook prints it: "◆", "◆ to ◆◆◆", "◆ or ◆◆◆".
+ * @param {object} system  Anything carrying cost, costMax and costMode.
+ */
+function costGlyph(system) {
+  const min = SW.ACTION_COSTS[system.cost]?.glyph ?? "";
+  if (!system.costMax || (system.costMax === system.cost)) return min;
+  const max = SW.ACTION_COSTS[system.costMax]?.glyph ?? "";
+  const joiner = game.i18n.localize(system.costMode === "or"
+    ? "STARWROUGHT.Action.joinOr"
+    : "STARWROUGHT.Action.joinTo");
+  return `${min} ${joiner} ${max}`;
+}
+
+/** Description plus the Trait line, which every Item in the game has. */
+function describedFields() {
+  return {
+    description: new fields.HTMLField({ initial: "" }),
+    traits: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+    source: new fields.StringField({ initial: "" })
+  };
+}
+
+/** Fields that only a thing you can carry needs. */
+function physicalFields(state = "worn") {
+  return {
+    quantity: new fields.NumberField({ required: true, integer: true, min: 0, initial: 1 }),
+    price: new fields.StringField({ initial: "" }),
+    load: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+    /** Held, worn, or carried. See SW.CARRY_STATES. */
+    state: new fields.StringField({
+      required: true, choices: Object.keys(SW.CARRY_STATES), initial: state
+    })
+  };
+}
+
+/**
+ * Turn the old boolean into the three-state model, so a character built before this change keeps
+ * their armor on and their sword in hand.
+ * @param {object} source
+ * @param {string} type
+ */
+function migrateCarryState(source, type) {
+  if (source.state !== undefined) return source;
+  if (source.equipped === undefined) return source;
+  // Armor that is off the body is in a pack; a weapon that is not in hand is still on your belt.
+  source.state = source.equipped ? SW.ACTIVE_STATE[type] : (type === "armor" ? "carried" : "worn");
+  delete source.equipped;
+  return source;
+}
+
+/** Shared derived flags for anything you can carry. */
+function prepareCarry(system, type) {
+  system.held = system.state === "held";
+  system.worn = system.state === "worn";
+  system.stowed = system.state === "carried";
+  /** Doing its job: armor Protects while worn, a weapon or shield works while held. */
+  system.equipped = system.state === SW.ACTIVE_STATE[type];
+  system.stateLabel = SW.CARRY_STATES[system.state]?.label ?? "";
+  system.stateIcon = SW.CARRY_STATES[system.state]?.icon ?? "";
+}
+
+/* -------------------------------------------- */
+
+/** The common ancestor, so `item.system.description` is always safe to read. */
+export class SwItemData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    return describedFields();
+  }
+
+  /** The chat-card summary a roll uses. */
+  get chatDescription() {
+    return this.description;
+  }
+}
+
+/* -------------------------------------------- */
+/*  Constellation                               */
+/* -------------------------------------------- */
+
+/**
+ * A Constellation Item is the sky itself: its Key Attribute, its category, and its art. The
+ * points and the rank live on the character, derived from the Talents owned.
+ */
+export class SwConstellationData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), {
+      slug: new fields.StringField({ initial: "" }),
+      category: new fields.StringField({
+        required: true, choices: Object.keys(SW.CATEGORIES), initial: "skill"
+      }),
+      attribute: new fields.StringField({
+        required: true, choices: Object.keys(SW.ATTRIBUTES), initial: "might"
+      }),
+      meta: new fields.StringField({ initial: "" }),
+      flareTrigger: new fields.StringField({ initial: "" }),
+      /** Identity Constellations are granted by a character-creation choice, never bought. */
+      identity: new fields.BooleanField({ initial: false })
+    });
+  }
+
+  prepareDerivedData() {
+    if (!this.slug) this.slug = SW.slugify(this.parent.name);
+    this.categoryLabel = SW.CATEGORIES[this.category]?.label ?? "";
+    this.attributeGlyph = SW.ATTRIBUTES[this.attribute]?.glyph ?? "";
+  }
+}
+
+/* -------------------------------------------- */
+/*  Talent                                      */
+/* -------------------------------------------- */
+
+/** One Talent. Every Talent costs exactly 1 Talent Point, from the humblest to the most legendary. */
+export class SwTalentData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), {
+      constellation: new fields.StringField({ initial: "" }),
+      constellationName: new fields.StringField({ initial: "" }),
+      tier: new fields.StringField({ required: true, choices: Object.keys(SW.TIERS), initial: "T" }),
+      /** Buying the Root is what makes you Trained. Nothing else can be bought before it. */
+      root: new fields.BooleanField({ initial: false }),
+      /** A Bloodline root: granted by the chargen choice, never listed among buyable Talents. */
+      bloodlineRoot: new fields.BooleanField({ initial: false }),
+      capstone: new fields.BooleanField({ initial: false }),
+      requires: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+      prerequisites: new fields.StringField({ initial: "" }),
+      /** A Talent may feed an Attribute other than its Constellation's Key Attribute. */
+      attribute: new fields.StringField({ required: false, blank: true, initial: "" }),
+      effect: new fields.HTMLField({ initial: "" }),
+      /** Action cost, if this Talent is something you do rather than something you are. */
+      ...costFields("0"),
+      /** A restricted Talent Point this Talent hands out. */
+      grant: new fields.SchemaField({
+        n: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+        mode: new fields.StringField({ initial: "" }),
+        scope: new fields.StringField({ initial: "" })
+      }),
+      /**
+       * A build-time pick the Talent's effect demands, and what the player picked. Weapon
+       * Familiarity is the case this exists for: without the answer recorded, the Talent has no
+       * mechanical effect at all, because nothing knows which Weapon Group you are Familiar with.
+       */
+      choice: new fields.SchemaField({
+        prompt: new fields.StringField({ initial: "" }),
+        value: new fields.StringField({ initial: "" })
+      }),
+      /** Another Talent this one hands over outright, with no Talent Point spent. */
+      freeTalent: new fields.StringField({ initial: "" })
+    });
+  }
+
+  prepareDerivedData() {
+    this.tierLabel = SW.TIERS[this.tier]?.label ?? "";
+    this.requiredRank = SW.TIERS[this.tier]?.rank ?? "trained";
+    this.glyph = costGlyph(this);
+    /** A Talent that wants an answer and has not been given one is not doing anything yet. */
+    this.needsChoice = !!this.choice.prompt && !this.choice.value;
+    if (!this.constellation && this.constellationName) {
+      this.constellation = SW.slugify(this.constellationName);
+    }
+  }
+
+  get chatDescription() {
+    return this.effect || this.description;
+  }
+}
+
+/* -------------------------------------------- */
+/*  Chassis                                     */
+/* -------------------------------------------- */
+
+/**
+ * Ancestry, Bloodline, Culture, Background and Calling. These are the character-creation choices
+ * that hand out roots and set the body: Hit Points per level, Size, Speed, Senses.
+ */
+export class SwChassisData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), {
+      kind: new fields.StringField({
+        required: true,
+        choices: ["ancestry", "bloodline", "culture", "background", "calling"],
+        initial: "ancestry"
+      }),
+      constellation: new fields.StringField({ initial: "" }),
+      attribute: new fields.StringField({
+        required: true, choices: Object.keys(SW.ATTRIBUTES), initial: "might"
+      }),
+      hp: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+      size: new fields.StringField({ required: true, choices: Object.keys(SW.SIZES), initial: "medium" }),
+      speed: new fields.NumberField({ required: true, integer: true, min: 0, initial: 25 }),
+      senses: new fields.StringField({ initial: "" }),
+      languages: new fields.StringField({ initial: "" }),
+      /** The Skills or Constellations this choice grants Training in. */
+      grants: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+      specialAbility: new fields.HTMLField({ initial: "" })
+    });
+  }
+
+  prepareDerivedData() {
+    this.kindLabel = `STARWROUGHT.Chassis.${this.kind}`;
+  }
+
+  get chatDescription() {
+    return this.specialAbility || this.description;
+  }
+}
+
+/* -------------------------------------------- */
+/*  Weapon                                      */
+/* -------------------------------------------- */
+
+/**
+ * "A weapon gives you a damage die and a handful of Traits. It never touches your attack roll."
+ */
+export class SwWeaponData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), physicalFields("worn"), {
+      handling: new fields.StringField({
+        required: true, choices: Object.keys(SW.HANDLING), initial: "intuitive"
+      }),
+      group: new fields.StringField({ initial: "" }),
+      damage: new fields.SchemaField({
+        die: new fields.NumberField({ required: true, integer: true, min: 2, initial: 6 }),
+        type: new fields.StringField({
+          required: true, choices: Object.keys(SW.DAMAGE_TYPES), initial: "bludgeoning"
+        })
+      }),
+      /** Weapon Reach in feet. Total Reach is your Natural Reach plus this. */
+      reach: new fields.NumberField({ required: true, integer: true, min: 0, initial: 2 }),
+      /** Which Combat Style you are wielding it in. Sets nothing but flavour and Flares. */
+      style: new fields.StringField({ initial: "" }),
+      /** Held in two hands right now, which matters for the Two-Hand dX trait. */
+      twoHands: new fields.BooleanField({ initial: false }),
+      /** Using the Versatile trait's alternate damage type right now. */
+      versatileActive: new fields.BooleanField({ initial: false })
+    });
+  }
+
+  /** @inheritdoc */
+  static migrateData(source) {
+    return super.migrateData(migrateCarryState(source, "weapon"));
+  }
+
+  prepareDerivedData() {
+    prepareCarry(this, "weapon");
+    this.flags = parseWeaponTraits(this.traits);
+    this.handlingLabel = SW.HANDLING[this.handling].label;
+    this.isRanged = this.flags.ranged !== null;
+    this.range = this.flags.ranged ?? this.flags.thrown ?? null;
+
+    // Two-Hand dX: wielded in two hands, its damage die becomes dX.
+    this.effectiveDie = (this.twoHands && this.flags.twoHandDie) ? this.flags.twoHandDie : this.damage.die;
+    this.effectiveType = (this.versatileActive && this.flags.versatile) ? this.flags.versatile : this.damage.type;
+    this.map = this.flags.agile ? SW.MAP.agile : SW.MAP.standard;
+
+    // Ranged Strikes use Agility. So does a Finesse weapon, at your option. Thrown uses Might.
+    this.attackAttribute = this.isRanged ? "agility" : (this.flags.finesse ? "agility" : "might");
+    this.addsMight = !this.flags.mechanical;
+    this.totalTraits = this.traits.join(", ");
+  }
+
+  /** The damage formula for one degree of success. */
+  damageFormula({ dice = 1, might = 0, specialization = 0, bonus = 0, graze = false } = {}) {
+    const die = `d${this.effectiveDie}`;
+    if (graze) return die; // A Graze is one weapon die and nothing else.
+    const parts = [`${dice}${die}`];
+    const flat = (this.addsMight ? might : 0) + specialization + bonus;
+    if (flat) parts.push(String(flat));
+    return parts.join(" + ");
+  }
+}
+
+/* -------------------------------------------- */
+/*  Armor                                       */
+/* -------------------------------------------- */
+
+/**
+ * "Armor is worn in four places. Each zone holds one piece, and each piece is bought, worn, and
+ * lost separately."
+ */
+export class SwArmorData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), physicalFields("carried"), {
+      zone: new fields.StringField({ required: true, choices: Object.keys(SW.ZONES), initial: "torso" }),
+      protection: new fields.NumberField({ required: true, integer: true, min: 0, initial: 1 }),
+      material: new fields.StringField({
+        required: true, choices: Object.keys(SW.MATERIALS), initial: "padded"
+      })
+    });
+  }
+
+  /** @inheritdoc */
+  static migrateData(source) {
+    return super.migrateData(migrateCarryState(source, "armor"));
+  }
+
+  prepareDerivedData() {
+    prepareCarry(this, "armor");
+    this.zoneLabel = SW.ZONES[this.zone].label;
+    this.materialLabel = SW.MATERIALS[this.material].label;
+    this.weakTo = SW.MATERIALS[this.material].weakTo;
+    this.comfort = this.traits.some(t => /comfort/i.test(t));
+    this.noisy = this.traits.some(t => /noisy/i.test(t));
+    this.quiet = this.traits.some(t => /quiet/i.test(t));
+    /** Putting it on takes 1 minute per point of Protection. */
+    this.donTime = this.protection;
+  }
+}
+
+/* -------------------------------------------- */
+/*  Shield                                      */
+/* -------------------------------------------- */
+
+/** "A shield is not armor. It grants no Protection, because it does not cover a zone." */
+export class SwShieldData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), physicalFields("worn"), {
+      bonus: new fields.NumberField({ required: true, integer: true, min: 0, initial: 1 }),
+      hardness: new fields.NumberField({ required: true, integer: true, min: 0, initial: 3 }),
+      /** A tower shield gives Cover rather than a Guard bonus. */
+      cover: new fields.BooleanField({ initial: false }),
+      raised: new fields.BooleanField({ initial: false })
+    });
+  }
+
+  /** @inheritdoc */
+  static migrateData(source) {
+    return super.migrateData(migrateCarryState(source, "shield"));
+  }
+
+  prepareDerivedData() {
+    prepareCarry(this, "shield");
+  }
+}
+
+/* -------------------------------------------- */
+/*  Gear                                        */
+/* -------------------------------------------- */
+
+/** Everything else you own. */
+export class SwGearData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), physicalFields("carried"), {
+      consumable: new fields.BooleanField({ initial: false }),
+      uses: new fields.SchemaField({
+        value: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+        max: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 })
+      })
+    });
+  }
+
+  /** @inheritdoc */
+  static migrateData(source) {
+    return super.migrateData(migrateCarryState(source, "gear"));
+  }
+
+  prepareDerivedData() {
+    prepareCarry(this, "gear");
+  }
+}
+
+/* -------------------------------------------- */
+/*  Action                                      */
+/* -------------------------------------------- */
+
+/**
+ * An Action or Activity: Stride, Recenter, Seek, or an adversary's claw. When `attack.enabled`
+ * is set this is something a creature does to a player character, so it carries an Attack
+ * Threshold rather than an attack bonus, and the player rolls a Defense against it.
+ */
+export class SwActionData extends SwItemData {
+  static defineSchema() {
+    return Object.assign(describedFields(), costFields("1"), {
+      category: new fields.StringField({ initial: "" }),
+      requirements: new fields.StringField({ initial: "" }),
+      trigger: new fields.StringField({ initial: "" }),
+      /** Rolled as a check: which Constellation, and which Defense it is measured against. */
+      check: new fields.SchemaField({
+        enabled: new fields.BooleanField({ initial: false }),
+        constellation: new fields.StringField({ initial: "" }),
+        defense: new fields.StringField({ initial: "" })
+      }),
+      /** An adversary's attack, expressed the way the players meet it. */
+      attack: new fields.SchemaField({
+        enabled: new fields.BooleanField({ initial: false }),
+        threshold: new fields.NumberField({ required: true, integer: true, initial: 10 }),
+        damage: new fields.StringField({ initial: "1d6" }),
+        damageType: new fields.StringField({
+          required: true, choices: Object.keys(SW.DAMAGE_TYPES), initial: "bludgeoning"
+        }),
+        reach: new fields.NumberField({ required: true, integer: true, min: 0, initial: 2 }),
+        armorPiercing: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 })
+      }),
+      /** Degrees of success text, printed on the card. */
+      outcomes: new fields.SchemaField({
+        critSuccess: new fields.StringField({ initial: "" }),
+        success: new fields.StringField({ initial: "" }),
+        fail: new fields.StringField({ initial: "" }),
+        critFail: new fields.StringField({ initial: "" })
+      })
+    });
+  }
+
+  prepareDerivedData() {
+    this.glyph = costGlyph(this);
+    this.costLabel = this.costMax
+      ? `${game.i18n.localize(SW.ACTION_COSTS[this.cost]?.label ?? "")} ${game.i18n.localize(
+          this.costMode === "or" ? "STARWROUGHT.Action.joinOr" : "STARWROUGHT.Action.joinTo"
+        )} ${game.i18n.localize(SW.ACTION_COSTS[this.costMax]?.label ?? "")}`
+      : game.i18n.localize(SW.ACTION_COSTS[this.cost]?.label ?? "");
+  }
+}

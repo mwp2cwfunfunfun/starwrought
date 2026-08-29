@@ -1,0 +1,35 @@
+{{!-- An Item put on the table without a roll. --}}
+<div class="starwrought item-card">
+  <header class="sw-card-header">
+    <img src="{{item.img}}" alt="{{item.name}}">
+    <div class="sw-card-titles">
+      <h3>{{item.name}}</h3>
+      {{#if subtitle}}<span class="sw-card-subtitle">{{subtitle}}</span>{{/if}}
+    </div>
+  </header>
+
+  {{#if traits.length}}
+  <div class="sw-trait-list">
+    {{#each traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+  </div>
+  {{/if}}
+
+  {{#if item.system.requirements}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.requirements"}}</strong> {{item.system.requirements}}</p>
+  {{/if}}
+  {{#if item.system.trigger}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.trigger"}}</strong> {{item.system.trigger}}</p>
+  {{/if}}
+
+  {{#if description}}
+  <div class="sw-card-description">{{{description}}}</div>
+  {{/if}}
+
+  {{#if outcomes}}
+  <ul class="sw-card-outcomes">
+    {{#each outcomes as |row|}}
+    <li><strong>{{localize row.label}}</strong> {{row.text}}</li>
+    {{/each}}
+  </ul>
+  {{/if}}
+</div>

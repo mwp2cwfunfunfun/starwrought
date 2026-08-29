@@ -1,0 +1,57 @@
+{{!-- Damage, and where to spend it. --}}
+<div class="starwrought damage-card sw-outcome-{{outcome}}">
+
+  <header class="sw-card-header">
+    <img src="{{weapon.img}}" alt="{{weapon.name}}">
+    <div class="sw-card-titles">
+      <h3>{{weapon.name}}</h3>
+      <span class="sw-card-subtitle">{{outcomeLabel}} · {{damageTypeLabel}}</span>
+    </div>
+  </header>
+
+  <div class="sw-card-roll">
+    <span class="sw-card-total">{{total}}{{#if deadly}} + {{deadly.total}}{{/if}}</span>
+    <span class="sw-card-formula">{{formula}}{{#if deadly}} + {{deadly.formula}}{{/if}}</span>
+  </div>
+
+  <ul class="sw-card-modifiers">
+    {{#each parts as |part|}}
+    <li><span>{{part.label}}</span><strong>{{part.formula}}</strong></li>
+    {{/each}}
+    {{#if deadly}}
+    <li><span>{{localize "STARWROUGHT.Damage.deadly"}}</span><strong>{{deadly.formula}}</strong></li>
+    {{/if}}
+  </ul>
+
+  {{#if graze}}
+  <p class="sw-card-note">{{localize "STARWROUGHT.Hint.grazeCost"}}</p>
+  {{/if}}
+  {{#if armorPiercing}}
+  <p class="sw-card-note">{{localize "STARWROUGHT.Field.armorPiercing"}} {{armorPiercing}}</p>
+  {{/if}}
+
+  <div class="sw-card-apply">
+    <label class="sw-zone-select">
+      <span>{{localize "STARWROUGHT.Field.zone"}}</span>
+      <select name="zone">
+        {{#each zones as |zone|}}
+        <option value="{{zone.key}}" {{#if (eq zone.key @root.defaultZone)}}selected{{/if}}>{{localize zone.label}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <div class="sw-card-buttons">
+      <button type="button" data-sw-action="applyDamage" data-multiplier="1"
+              data-tooltip="STARWROUGHT.Sheet.applyHint">
+        <i class="fa-solid fa-heart-crack"></i> {{localize "STARWROUGHT.Sheet.apply"}}
+      </button>
+      <button type="button" data-sw-action="applyDamage" data-multiplier="0.5">
+        ½
+      </button>
+      <button type="button" data-sw-action="applyDamage" data-multiplier="-1"
+              data-tooltip="STARWROUGHT.Sheet.healHint">
+        <i class="fa-solid fa-heart"></i>
+      </button>
+    </div>
+  </div>
+
+</div>

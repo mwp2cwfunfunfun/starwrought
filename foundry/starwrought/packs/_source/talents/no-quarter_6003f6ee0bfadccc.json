@@ -1,0 +1,47 @@
+{
+  "_id": "6003f6ee0bfadccc",
+  "name": "No Quarter",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Intimidation Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you drop a creature, you may Demoralize one enemy who saw it fall as a free action.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "122698d6a8541059",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!6003f6ee0bfadccc"
+}

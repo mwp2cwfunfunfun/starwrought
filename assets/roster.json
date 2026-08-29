@@ -1,0 +1,1497 @@
+{
+ "ancestries": [
+  {
+   "name": "Human",
+   "hp": 8,
+   "size": "Medium",
+   "speed": "25 ft",
+   "senses": "—",
+   "tree": "Human",
+   "blurb": "Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.",
+   "bloodlines": [
+    [
+     "Versatile Human",
+     "You gain 1 Opening Talent Point."
+    ],
+    [
+     "Torchbearer Human",
+     "Allies within 15 feet gain a +1 circumstance bonus to their first Defense roll each round while they can see or hear you."
+    ]
+   ]
+  }
+ ],
+ "cultures": [
+  [
+   "Serrovane",
+   "Serrovine • Common",
+   "Presence",
+   "A lowland order-state where nothing is real until it is written and witnessed. Serrovane settles its disputes by formal challenge, keeps its ledgers in triplicate, and considers a broken oath a more serious crime than the violence that follows it."
+  ],
+  [
+   "Kestrel Reach",
+   "Reachspeak • Common",
+   "Wits",
+   "The trade-towns of a wide river delta, where six languages meet at every dock and a good broker is worth more than a good sword. Reach folk talk first, and are very good at it."
+  ]
+ ],
+ "backgrounds": [
+  [
+   "Acrobat",
+   "Athletics & Acrobatics, plus Lore (Circus)",
+   "In a circus or on the streets, you earned your pay by performing as an acrobat."
+  ],
+  [
+   "Soldier",
+   "Athletics & Intimidation, plus Lore (Warfare)",
+   "You served in somebody's army, and learned what a line looks like just before it breaks."
+  ],
+  [
+   "Criminal",
+   "Guile & Stealth, plus Lore (Underworld)",
+   "You made your living outside the law, and still know who to ask."
+  ]
+ ],
+ "callings": [
+  [
+   "Ambusher",
+   "Stealth",
+   2,
+   "Agility",
+   "Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +4d6 at Legendary."
+  ],
+  [
+   "Berserker",
+   "Athletics",
+   4,
+   "Might",
+   "Rage: Temp HP = level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts."
+  ],
+  [
+   "Bravo",
+   "Acrobatics",
+   3,
+   "Presence",
+   "Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Evade and +5 ft Speed while you hold it."
+  ],
+  [
+   "Hunter",
+   "Awareness",
+   3,
+   "Wits",
+   "Mark Prey: +1d8 precision damage the first time each round you Hit your prey, and you always know roughly where it is."
+  ],
+  [
+   "Weaponmaster",
+   "Athletics",
+   3,
+   "Might",
+   "Drilled: Weapon Familiarity free, +2 to your Weapons Proficiency Bonus with that group, and Reactive Strike without its requirements."
+  ]
+ ],
+ "defenses": [
+  [
+   "Awareness",
+   "Wits",
+   "Don't be surprised.",
+   "Sneak, Hidden foes, ambushes, Initiative",
+   "Feint, Lie, Illusions"
+  ],
+  [
+   "Evade",
+   "Agility",
+   "Don't be there.",
+   "Weapon attacks, physical traps",
+   "—"
+  ],
+  [
+   "Guard",
+   "Presence",
+   "Don't let it through.",
+   "Weapon attacks, physical traps",
+   "Mental traps, fear, charm, confusion"
+  ],
+  [
+   "Endure",
+   "Might",
+   "Survive what does come through.",
+   "Poison, disease, Wounded, Dying",
+   "—"
+  ]
+ ],
+ "postures": [
+  [
+   "Give Ground ↺",
+   "Evade",
+   "+2 circumstance bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
+  ],
+  [
+   "Set Your Feet ↺",
+   "Guard",
+   "+2 circumstance bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
+  ]
+ ],
+ "talentPointTypes": [
+  [
+   "Origin Talent Point",
+   "Your Origin Constellation only (Ancestry, Bloodline, Culture)",
+   "If obtained after character creation, unless otherwise stated"
+  ],
+  [
+   "Calling Talent Point",
+   "Calling Constellations only",
+   "If obtained after character creation, unless otherwise stated"
+  ],
+  [
+   "Defense Talent Point",
+   "The four Defense Constellations only: Awareness, Evade, Guard, or Endure",
+   "If obtained after character creation, unless otherwise stated"
+  ],
+  [
+   "Skill Talent Point",
+   "Skill Constellations only (includes Lore)",
+   "If obtained after character creation, unless otherwise stated"
+  ],
+  [
+   "Lore Talent Point",
+   "Lore Constellations only",
+   "If obtained after character creation, unless otherwise stated"
+  ],
+  [
+   "Opening Talent Point",
+   "Opening a new Constellation only, whatever kind. It buys a Root Talent and nothing else",
+   "If obtained after character creation, unless otherwise stated"
+  ],
+  [
+   "Comet",
+   "Anything you qualify for",
+   "No"
+  ],
+  [
+   "Milestone Talent Point",
+   "Anything you qualify for",
+   "Yes. If no Constellation is Flared, it becomes a Deferred Talent Point"
+  ],
+  [
+   "Deferred Talent Point",
+   "Anything you qualify for",
+   "Yes; must be spent the instant a Constellation is Flared"
+  ]
+ ],
+ "skillRoster": [
+  [
+   "Acrobatics",
+   "Agility",
+   "Balance, tumbling, Tumble Through a foe's space, escapes"
+  ],
+  [
+   "Athletics",
+   "Might",
+   "Climb, Swim, Leap, and every Grapple / Shove / Trip / Disarm / Reposition"
+  ],
+  [
+   "Diplomacy",
+   "Presence",
+   "Rally, Talk Them Down, Aid, and making an impression"
+  ],
+  [
+   "Guile",
+   "Wits",
+   "Feint, Lie, Look Harmless, and reading a mark"
+  ],
+  [
+   "Intimidation",
+   "Presence",
+   "Demoralize, Coerce, and No Quarter"
+  ],
+  [
+   "Lore",
+   "Wits",
+   "Deep knowledge of a chosen field (take it once per field)"
+  ],
+  [
+   "Stealth",
+   "Agility",
+   "Hide, Sneak, and staying off the bottom rung of the ladder"
+  ]
+ ],
+ "weaponStyles": [
+  [
+   "Archery",
+   "Agility",
+   "Bows and careful ranged attacks"
+  ],
+  [
+   "Armored Fighting",
+   "Presence",
+   "Using matched harnesses for additional benefits"
+  ],
+  [
+   "Brawling",
+   "Might",
+   "Fists, feet, tusks, headbutts"
+  ],
+  [
+   "Crossbow Fighting",
+   "Wits",
+   "Prepared mechanical ranged weapons"
+  ],
+  [
+   "Dueling",
+   "Agility",
+   "One one-handed weapon, other hand free"
+  ],
+  [
+   "Great Weapon Fighting",
+   "Might",
+   "Two-handed, non-hafted weapons"
+  ],
+  [
+   "Missile Skirmishing",
+   "Agility",
+   "Slings, thrown weapons, bolas"
+  ],
+  [
+   "Shield Fighting",
+   "Presence",
+   "Weapon and shield as one machine"
+  ],
+  [
+   "Spear & Polearm Fighting",
+   "Wits",
+   "Hafted weapons: polearms and spears"
+  ],
+  [
+   "Two-Weapon Fighting",
+   "Agility",
+   "A weapon in each hand"
+  ]
+ ],
+ "weaponsMelee": [
+  [
+   "Unarmed Strike",
+   "Intuitive",
+   "Natural Weapons",
+   "1d4 B",
+   "Adjacent",
+   "Agile, Close, Finesse, Nonlethal",
+   "—"
+  ],
+  [
+   "Dagger",
+   "Intuitive",
+   "Knives",
+   "1d4 P",
+   "Adjacent",
+   "Agile, Close, Finesse, Thrown 10 ft",
+   "1 gp"
+  ],
+  [
+   "Club",
+   "Intuitive",
+   "Clubs",
+   "1d6 B",
+   "3 ft",
+   "Thrown 10 ft",
+   "1 gp"
+  ],
+  [
+   "Shortsword",
+   "Practiced",
+   "Swords",
+   "1d6 P",
+   "2 ft",
+   "Agile, Finesse",
+   "1 gp"
+  ],
+  [
+   "Mace",
+   "Practiced",
+   "Clubs",
+   "1d6 B",
+   "3 ft",
+   "Shove",
+   "1 gp"
+  ],
+  [
+   "Spear",
+   "Intuitive",
+   "Spears",
+   "1d6 P",
+   "7 ft",
+   "Thrown 20 ft, Two-Hand d8, Unwieldy 3",
+   "1 gp"
+  ],
+  [
+   "Quarterstaff",
+   "Intuitive",
+   "Clubs",
+   "1d6 B",
+   "4 ft",
+   "Parry, Two-Hand d8",
+   "1 gp"
+  ],
+  [
+   "Rapier",
+   "Practiced",
+   "Swords",
+   "1d8 P",
+   "4 ft",
+   "Finesse, Deadly d8, Parry",
+   "5 gp"
+  ],
+  [
+   "Longsword",
+   "Practiced",
+   "Swords",
+   "1d8 S",
+   "4 ft",
+   "Versatile P, Parry",
+   "5 gp"
+  ],
+  [
+   "Battleaxe",
+   "Practiced",
+   "Axes",
+   "1d8 S",
+   "2 ft",
+   "Sweep, Trip",
+   "5 gp"
+  ],
+  [
+   "Warhammer",
+   "Practiced",
+   "Hammers",
+   "1d8 B",
+   "2 ft",
+   "Shove",
+   "5 gp"
+  ],
+  [
+   "Greatsword",
+   "Practiced",
+   "Swords",
+   "1d12 S",
+   "5 ft",
+   "Versatile P, Two-Handed",
+   "5 gp"
+  ],
+  [
+   "Greataxe",
+   "Practiced",
+   "Axes",
+   "1d12 S",
+   "5 ft",
+   "Sweep, Two-Handed",
+   "5 gp"
+  ],
+  [
+   "Halberd",
+   "Practiced",
+   "Polearms",
+   "1d10 S",
+   "8 ft",
+   "Sweep, Trip, Two-Handed, Unwieldy 4",
+   "5 gp"
+  ],
+  [
+   "Maul",
+   "Technical",
+   "Hammers",
+   "1d12 B",
+   "5 ft",
+   "Two-Handed",
+   "5 gp"
+  ],
+  [
+   "Longspear",
+   "Practiced",
+   "Spears",
+   "1d8 P",
+   "14 ft",
+   "Two-Handed, Unwieldy 7",
+   "7 gp"
+  ],
+  [
+   "Flail",
+   "Technical",
+   "Flails",
+   "1d8 B",
+   "4 ft",
+   "Disarm, Trip",
+   "5 gp"
+  ],
+  [
+   "Whip",
+   "Technical",
+   "Whips",
+   "1d6 S",
+   "8 ft",
+   "Finesse, Disarm, Trip, Unwieldy 2",
+   "1 gp"
+  ],
+  [
+   "Estoc",
+   "Technical",
+   "Swords",
+   "1d8 P",
+   "5 ft",
+   "Armor-Piercing 1, Deadly d8, Parry",
+   "3 gp"
+  ],
+  [
+   "Chain Flail",
+   "Technical",
+   "Flails",
+   "1d10 B",
+   "6 ft",
+   "Disarm, Sweep, Two-Handed, Unwieldy 2",
+   "5 gp"
+  ],
+  [
+   "War Pick",
+   "Technical",
+   "Picks",
+   "1d8 P",
+   "3 ft",
+   "Armor-Piercing 1, Deadly d10",
+   "3 gp"
+  ]
+ ],
+ "weaponsRanged": [
+  [
+   "Sling",
+   "Intuitive",
+   "Slings",
+   "1d6 B",
+   "60 ft",
+   "Ranged 60, Reload 1"
+  ],
+  [
+   "Light Crossbow",
+   "Intuitive",
+   "Crossbows",
+   "1d8 P",
+   "100 ft",
+   "Ranged 100, Mechanical, Reload 1, Two-Handed"
+  ],
+  [
+   "Shortbow",
+   "Practiced",
+   "Bows",
+   "1d6 P",
+   "120 ft",
+   "Ranged 120, Two-Handed, Unwieldy 10"
+  ],
+  [
+   "Longbow",
+   "Practiced",
+   "Bows",
+   "1d8 P",
+   "180 ft",
+   "Ranged 180, Two-Handed, Unwieldy 20"
+  ],
+  [
+   "Heavy Crossbow",
+   "Practiced",
+   "Crossbows",
+   "1d10 P",
+   "140 ft",
+   "Ranged 140, Mechanical, Reload 2, Armor-Piercing 1, Two-Handed"
+  ],
+  [
+   "Hand Crossbow",
+   "Technical",
+   "Crossbows",
+   "1d6 P",
+   "60 ft",
+   "Ranged 60, Mechanical, Reload 1, Close"
+  ],
+  [
+   "Repeating Crossbow",
+   "Technical",
+   "Crossbows",
+   "1d6 P",
+   "80 ft",
+   "Ranged 80, Mechanical, Capacity 5, Reload 2, Two-Handed"
+  ],
+  [
+   "Bolas",
+   "Technical",
+   "Slings",
+   "1d4 B",
+   "30 ft",
+   "Ranged 30, Nonlethal, Trip"
+  ]
+ ],
+ "handling": [
+  [
+   "Intuitive",
+   "General weapon training transfers easily",
+   "Use your full Weapons Proficiency Bonus"
+  ],
+  [
+   "Practiced",
+   "Requires familiarity with that weapon family",
+   "Use your Weapons Proficiency Bonus one rank lower"
+  ],
+  [
+   "Technical",
+   "Requires specialized instruction",
+   "You are Untrained"
+  ]
+ ],
+ "armorPieces": [
+  [
+   "Padded coif",
+   "Head",
+   1,
+   0,
+   "1 gp",
+   "Padded, Comfort",
+   "Padded"
+  ],
+  [
+   "Leather cap",
+   "Head",
+   2,
+   0,
+   "2 gp",
+   "Leather, Quiet",
+   "Leather"
+  ],
+  [
+   "Open helm",
+   "Head",
+   3,
+   1,
+   "5 gp",
+   "Plate",
+   "Plate"
+  ],
+  [
+   "Scale coif",
+   "Head",
+   3,
+   2,
+   "5 gp",
+   "Scale, Noisy",
+   "Scale"
+  ],
+  [
+   "Closed helm",
+   "Head",
+   4,
+   2,
+   "10 gp",
+   "Plate",
+   "Plate"
+  ],
+  [
+   "Gambeson",
+   "Torso",
+   1,
+   0,
+   "1 gp",
+   "Padded, Comfort, Quiet",
+   "Padded"
+  ],
+  [
+   "Leather cuirass",
+   "Torso",
+   2,
+   0,
+   "5 gp",
+   "Leather, Quiet",
+   "Leather"
+  ],
+  [
+   "Mail shirt",
+   "Torso",
+   3,
+   1,
+   "10 gp",
+   "Mail, Noisy",
+   "Mail"
+  ],
+  [
+   "Scale hauberk",
+   "Torso",
+   3,
+   2,
+   "10 gp",
+   "Scale, Noisy",
+   "Scale"
+  ],
+  [
+   "Breastplate",
+   "Torso",
+   4,
+   2,
+   "15 gp",
+   "Plate, Noisy",
+   "Plate"
+  ],
+  [
+   "Padded sleeves",
+   "Arms",
+   1,
+   0,
+   "1 gp",
+   "Padded, Comfort",
+   "Padded"
+  ],
+  [
+   "Leather bracers",
+   "Arms",
+   2,
+   0,
+   "1 gp",
+   "Leather, Quiet",
+   "Leather"
+  ],
+  [
+   "Mail sleeves",
+   "Arms",
+   3,
+   1,
+   "5 gp",
+   "Mail, Noisy",
+   "Mail"
+  ],
+  [
+   "Scale sleeves",
+   "Arms",
+   3,
+   2,
+   "6 gp",
+   "Scale, Noisy",
+   "Scale"
+  ],
+  [
+   "Vambraces w/ gauntlets",
+   "Arms",
+   4,
+   2,
+   "10 gp",
+   "Plate, Noisy",
+   "Plate"
+  ],
+  [
+   "Padded leggings",
+   "Legs",
+   1,
+   0,
+   "1 gp",
+   "Padded, Comfort",
+   "Padded"
+  ],
+  [
+   "Leather leggings",
+   "Legs",
+   2,
+   0,
+   "1 gp",
+   "Leather, Quiet",
+   "Leather"
+  ],
+  [
+   "Mail chausses",
+   "Legs",
+   3,
+   1,
+   "5 gp",
+   "Mail, Noisy",
+   "Mail"
+  ],
+  [
+   "Scale skirt",
+   "Legs",
+   3,
+   2,
+   "6 gp",
+   "Scale, Noisy",
+   "Scale"
+  ],
+  [
+   "Greaves",
+   "Legs",
+   4,
+   2,
+   "10 gp",
+   "Plate, Noisy",
+   "Plate"
+  ]
+ ],
+ "shields": [
+  [
+   "Buckler",
+   1,
+   3,
+   0,
+   "1 gp",
+   ""
+  ],
+  [
+   "Shield",
+   2,
+   5,
+   1,
+   "5 gp",
+   ""
+  ],
+  [
+   "Tower Shield",
+   0,
+   5,
+   2,
+   "10 gp",
+   "Gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised."
+  ]
+ ],
+ "materials": [
+  [
+   "Padded",
+   "slashing"
+  ],
+  [
+   "Leather",
+   "slashing"
+  ],
+  [
+   "Mail",
+   "piercing"
+  ],
+  [
+   "Scale",
+   "nothing"
+  ],
+  [
+   "Plate",
+   "bludgeoning"
+  ]
+ ],
+ "sizes": [
+  [
+   "Tiny",
+   "1 ft x 1 ft",
+   "Adjacent",
+   "+2 Evade, −2 Guard"
+  ],
+  [
+   "Small",
+   "2 ft x 2 ft",
+   "1 ft",
+   "+1 Evade, −1 Guard"
+  ],
+  [
+   "Medium",
+   "3 ft x 3 ft",
+   "2 ft",
+   "No effect"
+  ],
+  [
+   "Large",
+   "5 ft x 5 ft",
+   "4 ft",
+   "−1 Evade, +1 Guard"
+  ],
+  [
+   "Huge",
+   "Varies",
+   "Varies",
+   "−2 Evade, +2 Guard"
+  ],
+  [
+   "Gargantuan",
+   "Varies",
+   "Varies",
+   "−2 Evade, +2 Guard"
+  ]
+ ],
+ "weaponTraits": [
+  [
+   "Agile",
+   "Your multiple attack penalty with it is −4 and −8 rather than −5 and −10."
+  ],
+  [
+   "Armor-Piercing [N]",
+   "Ignore N Protection when dealing piercing damage with this weapon."
+  ],
+  [
+   "Capacity [N]",
+   "The weapon can fire N times before it must be reloaded. Reloading its full capacity takes the listed Reload actions."
+  ],
+  [
+   "Close",
+   "You may attack with it while you are Grabbed, while Squeezing, and against a creature you have Grabbed, with no penalty."
+  ],
+  [
+   "Deadly dX",
+   "On a critical hit, add one die of the listed size to the damage."
+  ],
+  [
+   "Finesse",
+   "You may use Agility instead of Might on attack rolls with this weapon. Damage still uses Might."
+  ],
+  [
+   "Grapple, Trip, Disarm, Shove",
+   "You may attempt that maneuver with this weapon in hand rather than a free hand."
+  ],
+  [
+   "Mechanical",
+   "You do not add Might to damage with this weapon."
+  ],
+  [
+   "Nonlethal",
+   "It knocks out rather than kills."
+  ],
+  [
+   "Parry",
+   "Spend ◆ to gain a +1 circumstance bonus to Guard for physical Attacks until the start of your next turn."
+  ],
+  [
+   "Ranged [N]",
+   "You may Strike a target up to N feet away. Use Agility instead of Might for the Attack roll."
+  ],
+  [
+   "Reload [N]",
+   "It takes N actions to reload before it can be fired again."
+  ],
+  [
+   "Sweep",
+   "+1 circumstance bonus to attack a target you have not yet attacked this turn."
+  ],
+  [
+   "Thrown X",
+   "You may throw it up to X feet, using Might for the attack roll."
+  ],
+  [
+   "Two-Hand dX",
+   "Wielded in two hands, its damage die becomes dX."
+  ],
+  [
+   "Two-Handed",
+   "It requires both hands."
+  ],
+  [
+   "Unwieldy [N]",
+   "You take a −2 circumstance penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed."
+  ],
+  [
+   "Versatile X",
+   "You may deal X damage instead of its usual type."
+  ]
+ ],
+ "armorTraits": [
+  [
+   "Comfort",
+   "You can sleep in it without waking fatigued."
+  ],
+  [
+   "Noisy",
+   "−1 circumstance penalty to Stealth, on top of your Load Strain."
+  ],
+  [
+   "Quiet",
+   "Your Load Strain never applies to Stealth while this is your only armor."
+  ]
+ ],
+ "actionTraits": [
+  [
+   "Attack",
+   "Counts toward your multiple attack penalty, and suffers it. Your first attack in a turn is unpenalized, your second takes −5, and your third and beyond take −10."
+  ],
+  [
+   "Move",
+   "You change position under your own power. Moving out of a foe's reach may provoke a reaction from anyone who has a Talent that allows it."
+  ],
+  [
+   "Manipulate",
+   "You use your hands. You need at least one free, and fine work near an enemy can provoke a reaction from them."
+  ],
+  [
+   "Concentrate",
+   "Actions and Activities with this Trait take an extra action to complete if you are Heedless."
+  ],
+  [
+   "Stance",
+   "A way of standing and holding yourself. You can be in only one stance at a time, and it lasts until you leave it, fall unconscious, or enter another."
+  ],
+  [
+   "Press",
+   "You may use it only while you are already suffering a multiple attack penalty, and never on someone else's turn. Some press actions add an effect on a failure; that effect never applies on a critical failure."
+  ],
+  [
+   "Auditory",
+   "It works through sound. It fails on the deafened, and on anyone who cannot hear you."
+  ],
+  [
+   "Visual",
+   "It works through sight. It fails on the blinded, and on anyone who cannot see you."
+  ],
+  [
+   "Mental",
+   "It works on the mind. It fails on anything mindless."
+  ],
+  [
+   "Emotion",
+   "A mental effect that works on feeling. Anything immune to emotion ignores it."
+  ],
+  [
+   "Reaction",
+   "Not a Trait so much as a cost: it happens on someone else's turn, and you have one per round."
+  ]
+ ],
+ "actions": {
+  "Moving": [
+   [
+    "Stride ◆",
+    "Move",
+    "Move up to your Speed."
+   ],
+   [
+    "Step ◆",
+    "—",
+    "Move 3 feet. Step has no Traits at all, which is the point: it never provokes reactions. You cannot Step into difficult terrain."
+   ],
+   [
+    "Leap ◆",
+    "Move",
+    "Jump 10 feet horizontally or 3 feet vertically, without a check. Longer or higher jumps are an Athletics check, and count as part of the Leap."
+   ],
+   [
+    "Crawl ◆",
+    "Move",
+    "While prone, move 3 feet."
+   ],
+   [
+    "Stand ◆",
+    "Move",
+    "Get up from prone."
+   ],
+   [
+    "Climb ◆",
+    "Move",
+    "An Athletics check against a Threshold the GM sets. On a success you move a quarter of your Speed (half on a critical success). On a critical failure you fall."
+   ],
+   [
+    "Swim ◆",
+    "Move",
+    "An Athletics check against a Threshold the GM sets. On a success you move a quarter of your Speed (half on a critical success). On a critical failure you sink."
+   ],
+   [
+    "Tumble Through ◆",
+    "Move",
+    "Acrobatics against the target's Awareness Threshold, to move through a foe's space. On a success you pass through, though their space is difficult terrain for this move. On a failure your movement stops in front of them."
+   ],
+   [
+    "Squeeze ◆",
+    "Move",
+    "Requirements You are entering a space narrower than your token size, but at least half as wide.<br>Move up to 5 feet, regardless of your Speed. While any part of you is in that space you are Off-Guard, Evade is unavailable, and you can attack only with Close weapons. A space narrower than half your own stops you entirely: for a Medium creature, a gap of 1½ feet or less."
+   ]
+  ],
+  "Attacking": [
+   [
+    "Strike ◆ to ◆◆◆",
+    "Attack",
+    "Attack with a weapon or an unarmed blow. Roll Weapons against Evade or Guard, and deal damage and effects as normal.<br><b>◆◆</b> A deliberate attack. On a critical hit, you may Expose a plausible zone. <b>◆◆◆</b> A committed attack. On a hit or a critical hit, you may Expose a plausible zone."
+   ],
+   [
+    "Grapple ◆ to ◆◆",
+    "Attack",
+    "Athletics against Evade or Guard. Needs a free hand or a Grapple weapon; target within reach and at most one Size larger.<br><b>Critical Success</b> Restrained until the end of your next turn. <b>Success</b> Grabbed until the end of your next turn. <b>Graze</b> No effect, but the defender still pays the Graze cost. <b>Miss</b> You overcommit and are Off-Guard.<br><b>◆◆ Tackle.</b> Stride, then Grapple; success also knocks them Prone and you fall Prone adjacent."
+   ],
+   [
+    "Shove ◆ to ◆◆",
+    "Attack",
+    "Athletics against Evade or Guard. Needs a free hand or a Shove weapon.<br><b>Critical Success</b> Pushed 6 feet; you may Stride with it. <b>Success</b> Pushed 3 feet. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>◆◆ Heave.</b> 12 feet on a critical success, 6 on a success."
+   ],
+   [
+    "Trip ◆ to ◆◆",
+    "Attack",
+    "Athletics against Evade or Guard. Needs a free hand or a Trip weapon.<br><b>Critical Success</b> Prone, plus damage equal to your Might. <b>Success</b> Prone. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>Special</b> If the target's Legs are Exposed, increase the degree of success by one.<br><b>◆◆ Leg Sweep.</b> Also leaves them Exposed [Legs]."
+   ],
+   [
+    "Disarm ◆ or ◆◆◆",
+    "Attack",
+    "Athletics against Evade or Guard. Needs a free hand or a Disarm weapon.<br><b>Critical Success</b> The item drops in one of their squares. <b>Success</b> Grip loosened: −2 to attacks with it, and the next Disarm ignores your multiple attack penalty, until they Interact to resettle it. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>Special</b> If the target's Arms are Exposed, increase the degree of success by one.<br><b>◆◆◆ Wrench.</b> A critical success throws it 1d10 squares."
+   ],
+   [
+    "Reposition ◆ to ◆◆",
+    "Attack",
+    "Athletics against Evade or Guard. Needs a free hand, or you are already Grabbing them.<br><b>Critical Success</b> Move them 6 feet, staying within your reach. <b>Success</b> 3 feet. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> They may move you 3 feet instead.<br><b>◆◆ Haul.</b> Stride at full Speed on a critical success, half on a success, bringing them with you."
+   ]
+  ],
+  "Defending & recovering": [
+   [
+    "Raise a Shield ◆",
+    "—",
+    "Gain your shield's item bonus to Guard until the start of your next turn. You must be wielding it."
+   ],
+   [
+    "Recenter ◆",
+    "Concentrate",
+    "Gather yourself: clear every Exposed zone on you."
+   ],
+   [
+    "Take Cover ◆",
+    "—",
+    "Requirements You have Cover, or Greater Cover, or are wielding a tower shield.<br>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step, or Attack."
+   ],
+   [
+    "Ready ◆◆ to ◆◆◆",
+    "Concentrate",
+    "Readying costs one action more than the action you are readying. Name a single action and a trigger. Until the start of your next turn, if the trigger occurs you may take that action as a reaction. Readying consumes your reaction whether or not it fires."
+   ],
+   [
+    "Escape ◆",
+    "—",
+    "Requirements You are Grabbed or Restrained.<br>Roll your best of Athletics or Acrobatics against the grabber's Endure.<br><b>Critical Success</b> Free, and you may Step as a free action. <b>Success</b> Free. <b>Failure</b> The condition persists. <b>Critical Failure</b> Their hold improves: Grabbed becomes Restrained."
+   ],
+   [
+    "Delay ◇",
+    "—",
+    "Taken at the start of your turn, before anything else. Give up the rest of your turn, and your reaction until you act. At the end of any other creature's turn this round you may take your turn; your new place in the order stays there for the encounter. Delaying ends anything that would have ended on your turn."
+   ]
+  ],
+  "Watching, deceiving & helping": [
+   [
+    "Seek ◆",
+    "Concentrate",
+    "One Awareness roll against the Stealth of anything Hiding, or a Threshold the GM sets. Covers everything within 30 feet.<br><b>Critical Success</b> The creature moves two states toward Observed. <b>Success</b> One state: Undetected to Hidden, Hidden to Concealed, Concealed to Observed. <b>Failure</b> You learn nothing. <b>Critical Failure</b> You commit to the wrong place and are Wrong-Footed to it until the start of your next turn."
+   ],
+   [
+    "Hide ◆",
+    "—",
+    "Requirements You have at least Lesser Cover, or Concealment.<br>One Stealth roll against the Awareness of every creature around you, allies included.<br><b>Critical Success</b> Hidden, and they are Wrong-Footed to you until the end of your next turn. <b>Success</b> Hidden. <b>Failure</b> They still see you. <b>Critical Failure</b> You have drawn the eye: Wrong-Footed to them."
+   ],
+   [
+    "Sneak ◆ to ◆◆",
+    "Move",
+    "Requirements You are, or believe you are, at least Hidden from one creature.<br>Move up to half your Speed while staying Hidden. You must end with Concealment or at least Lesser Cover from each creature you wish to stay Hidden from.<br><b>◆◆ Creep.</b> On a failure you realize you would be seen, and may choose not to move after all."
+   ],
+   [
+    "Point Out ◆",
+    "Auditory, Visual",
+    "Indicate a creature you have located. It becomes Hidden rather than Undetected, or Concealed rather than Hidden, to any ally who can hear or see you."
+   ],
+   [
+    "Demoralize ◆ to ◆◆",
+    "Auditory, Concentrate, Emotion, Mental",
+    "Intimidation against the target's Guard.<br><b>Critical Success</b> Frightened 2. <b>Success</b> Frightened 1. <b>Failure</b> Nothing. <b>Critical Failure</b> It is emboldened: +1 to its Attacks against you until the end of its next turn.<br><b>◆◆ Break Them.</b> Frightened 3 and Heedless on a critical success; Frightened 1 even on a failure."
+   ],
+   [
+    "Feint ◆",
+    "Mental",
+    "Guile against the target's Awareness.<br><b>Critical Success</b> Wrong-Footed to you until the end of your next turn. <b>Success</b> Wrong-Footed to you until the end of your turn. <b>Failure</b> Nothing. <b>Critical Failure</b> You overcommit and are Wrong-Footed to it."
+   ],
+   [
+    "Aid ↺",
+    "—",
+    "Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 circumstance bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it."
+   ],
+   [
+    "Recall Knowledge ◆ to ◆◆",
+    "Concentrate",
+    "A Lore or relevant Skill check against your target's level-based Threshold. Topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Hit Points.<br><b>Critical Success</b> All facts about two topics. <b>Success</b> One topic. <b>Failure</b> Nothing. <b>Critical Failure</b> All the wrong facts about one topic.<br><b>Special</b> Once per target per Skill, so several Lores give several angles."
+   ]
+  ],
+  "Handling things": [
+   [
+    "Interact ◆",
+    "Manipulate",
+    "Draw or stow a weapon, open a door, pull a potion from your pack, pick something up, work a lever."
+   ],
+   [
+    "Release ◇",
+    "—",
+    "Drop or let go of something you are holding."
+   ],
+   [
+    "Drop Prone ◇",
+    "—",
+    "Fall prone."
+   ]
+  ],
+  "Special": [
+   [
+    "Avert Gaze ◆",
+    "—",
+    "Name one creature or object you Observe. Until the start of your next turn you gain a +2 circumstance bonus to your Defenses against its Visual effects, and it is Concealed to you."
+   ],
+   [
+    "Grab an Edge ↺",
+    "—",
+    "Trigger You fall past an edge, ledge, or handhold within your reach. Requirements A hand free; you may Release ◇ to free one.<br>Athletics or Acrobatics against Threshold 15.<br><b>Critical Success</b> You catch it and pull up. <b>Success</b> You hang there, Off-Guard. <b>Failure</b> You fall, reduced by 10 feet. <b>Critical Failure</b> You fall the full distance."
+   ]
+  ]
+ },
+ "explorationActions": [
+  [
+   "Travel",
+   "Full",
+   "When an encounter begins, you can roll Awareness."
+  ],
+  [
+   "Hustle",
+   "Double",
+   "When an encounter begins, you can roll Athletics."
+  ],
+  [
+   "Search",
+   "Half",
+   "Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures."
+  ],
+  [
+   "Scout",
+   "Half",
+   "Every ally gains a +1 circumstance bonus to initiative, and you may Step as a free action when you roll initiative."
+  ],
+  [
+   "Defend",
+   "Half",
+   "Your shield begins Raised and a weapon is already in hand."
+  ],
+  [
+   "Investigate",
+   "Half",
+   "Roll a relevant Lore or Skill check to recall information about your surroundings, and roll it again for initiative if the encounter is related."
+  ],
+  [
+   "Look Harmless",
+   "Half",
+   "Requirements No weapon with Reach greater than Adjacent, and worn armor totalling Load 1 or less.<br>Roll Guile for Initiative against each enemy's Awareness. On a success they are Wrong-Footed to your first attack; on a critical success, until the end of your first turn."
+  ]
+ ],
+ "downtimeActions": [
+  [
+   "Retrain",
+   "1 month",
+   "Move 1 already spent Talent Point to another Talent you qualify for. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or a Talent that would reduce your Proficiency Rank."
+  ],
+  [
+   "Train",
+   "7 days",
+   "You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. Only once between Milestones."
+  ],
+  [
+   "Provision",
+   "1 day",
+   "Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets. You sell at half price."
+  ]
+ ],
+ "conditions": [
+  [
+   "Off-Guard",
+   "−2 circumstance to Evade and Guard against all foes."
+  ],
+  [
+   "Wrong-Footed [X]",
+   "Off-Guard against that creature only."
+  ],
+  [
+   "Frightened N",
+   "−N to all checks and Thresholds; reduce by 1 at end of each of your turns."
+  ],
+  [
+   "Prone",
+   "Off-Guard, −2 to Attacks; +2 circumstance to Evade vs. ranged Attacks. Stand ◆ to clear."
+  ],
+  [
+   "Grabbed",
+   "Off-Guard and can't Move or Step; Escape ◆ to break free."
+  ],
+  [
+   "Heedless",
+   "Commitment so complete that you have stopped thinking. Actions and Activities with Concentrate take 1 extra action."
+  ],
+  [
+   "Restrained",
+   "As Grabbed but can't take any action other than Escape ◆."
+  ],
+  [
+   "Stunned N",
+   "Lose the next N actions; may carry over across turns."
+  ],
+  [
+   "Slowed N",
+   "Lose N actions at the start of each of your turns. Reduce by 1 at end of each of your turns."
+  ],
+  [
+   "Fatigued",
+   "−1 to Evade and Guard; can't use Exploration Mode Activities."
+  ],
+  [
+   "Persistent Damage",
+   "Take it at end of each turn; Endure check (10 + the level of the effect + the amount you just took) to end."
+  ],
+  [
+   "Dying / Wounded",
+   "You're Dying and unconscious. Recovery checks at the start of each of your turns."
+  ],
+  [
+   "Exposed [Zone]",
+   "That Zone's Protection counts as 0 and ordinary Hits can land there instead of your Torso. Recenter ◆ to clear."
+  ],
+  [
+   "Blinded",
+   "Cannot see. Cannot Observe any creature. Is Off-Guard."
+  ],
+  [
+   "Deafened",
+   "Cannot hear. Immune to any Auditory Action or Activity."
+  ],
+  [
+   "Unconscious",
+   "You have 0 Hit Points, you drop everything you are holding, and you are also Prone."
+  ]
+ ],
+ "zones": [
+  [
+   "Head",
+   "The target cannot use reactions until it Recenters.",
+   "As left, and the target's Wounded value increases by 3."
+  ],
+  [
+   "Torso",
+   "The target is Off-Guard until it Recenters.",
+   "As left, and the target's Wounded value increases by 2."
+  ],
+  [
+   "Arms",
+   "The target takes a −2 circumstance penalty to attack rolls until it Recenters.",
+   "As left, and the target's Wounded value increases by 1."
+  ],
+  [
+   "Legs",
+   "The target's Speed is halved until it Recenters.",
+   "As left, and the target's Wounded value increases by 1."
+  ]
+ ],
+ "detection": [
+  [
+   "Observed",
+   "Exactly what squares you are in, and precisely where you are positioned.",
+   "—",
+   "Your foe can plainly see all of you."
+  ],
+  [
+   "Concealed",
+   "Exactly what squares you are in, but something prevents them seeing all of you.",
+   "+2 circumstance bonus to Evade and Guard for physical Attacks.",
+   "Mist, dim light, foliage."
+  ],
+  [
+   "Hidden",
+   "That you are present, but not what squares you occupy.",
+   "They must guess one of your squares to attack you, and you gain +4 to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.",
+   "Your foe is blind, or you succeeded on a Sneak."
+  ],
+  [
+   "Undetected",
+   "No idea you are even present.",
+   "You cannot be targeted at all. Your foe is Wrong-Footed to you.",
+   "Your foe cannot see, hear, smell, or feel you."
+  ]
+ ],
+ "light": [
+  [
+   "Bright light",
+   "Nothing. You see them normally."
+  ],
+  [
+   "Dim light",
+   "They are Concealed to you."
+  ],
+  [
+   "Darkness",
+   "They are Hidden to you, or Undetected if you did not already know something was there."
+  ]
+ ],
+ "cover": [
+  [
+   "1",
+   "Lesser Cover",
+   "+1 circumstance bonus to your Evade and Guard for physical Attacks."
+  ],
+  [
+   "2",
+   "Cover",
+   "+2 circumstance bonus to your Evade and Guard for physical Attacks."
+  ],
+  [
+   "3",
+   "Greater Cover",
+   "+4 circumstance bonus to your Evade and Guard for physical Attacks."
+  ],
+  [
+   "4",
+   "Total Cover",
+   "You cannot be targeted at all for physical Attacks."
+  ]
+ ],
+ "damageOrder": [
+  [
+   "1",
+   "Apply Immunity."
+  ],
+  [
+   "2",
+   "Add up all remaining dice, damage bonuses, and damage modifiers."
+  ],
+  [
+   "3",
+   "Add Weakness of the applicable damage type(s)."
+  ],
+  [
+   "4",
+   "Subtract Resistance from the dice rolls of the applicable damage type(s)."
+  ],
+  [
+   "5",
+   "Double the total if it was a Critical Hit."
+  ],
+  [
+   "6",
+   "Subtract Protection from the total (if applicable)."
+  ],
+  [
+   "7",
+   "Deal damage to Temporary Hit Points (if applicable)."
+  ],
+  [
+   "8",
+   "Deal damage to Hit Points."
+  ]
+ ],
+ "protectionSteps": [
+  [
+   "1",
+   "If the Zone is Exposed, its Protection is 0; you can stop here."
+  ],
+  [
+   "2",
+   "Start with the Protection of the piece worn there. No piece worn means 0."
+  ],
+  [
+   "3",
+   "Add any bonus that applies to that Zone (a matched harness adds 1 to your Torso; some Talents add to every Zone)."
+  ],
+  [
+   "4",
+   "Subtract 1 if the incoming damage type is the one that piece's material turns poorly. A Zone with no armor has no material, and so has no such weakness."
+  ],
+  [
+   "5",
+   "Subtract any Protection the attacker ignores."
+  ]
+ ],
+ "recovery": [
+  [
+   "Critical success",
+   "Your Dying ends. You are conscious, on your feet if you spend an action to stand, with 1 Hit Point."
+  ],
+  [
+   "Success",
+   "Your Dying value drops by 1. If it reaches 0, your Dying ends and you are stable: still unconscious, but no longer sliding."
+  ],
+  [
+   "Failure",
+   "Your Dying value rises by 1."
+  ],
+  [
+   "Critical failure",
+   "Your Dying value rises by 2."
+  ]
+ ],
+ "thresholdTable": [
+  [
+   "0–1",
+   "14–15"
+  ],
+  [
+   "2–3",
+   "16–18"
+  ],
+  [
+   "4–5",
+   "19–20"
+  ],
+  [
+   "6–7",
+   "22–23"
+  ],
+  [
+   "8–9",
+   "24–26"
+  ],
+  [
+   "10–11",
+   "27–28"
+  ],
+  [
+   "12–13",
+   "30–31"
+  ],
+  [
+   "14–15",
+   "32–34"
+  ],
+  [
+   "16–17",
+   "35–36"
+  ],
+  [
+   "18–19",
+   "38–39"
+  ],
+  [
+   "20",
+   "40"
+  ]
+ ],
+ "chargenSteps": [
+  [
+   "1. Ancestry",
+   "Your body and blood. This forms the core of your Origin Constellation and gives you starting Hit Points, Speed, and unique characteristics.",
+   "Hit Points per level, Size, Speed, and 1 Special Ability.",
+   "1 Origin (your Ancestry's root Talent)"
+  ],
+  [
+   "2. Bloodline",
+   "Your lineage. This adds a branch to your Origin Constellation and gives you additional unique characteristics.",
+   "1 Special Ability.",
+   "1 Origin (your Bloodline's root Talent)"
+  ],
+  [
+   "3. Culture",
+   "Where you were raised. This adds a branch to your Origin Constellation.",
+   "Starting language(s), and a bonus to Diplomacy checks with those who share your Culture.",
+   "1 Origin (your Culture's Root Talent)"
+  ],
+  [
+   "4. Background",
+   "Your trade. This grants 1 Lore Talent Point and 2 Skill Talent Points.",
+   "—",
+   "1 Lore / 2 Skill"
+  ],
+  [
+   "5. Calling",
+   "Your adventuring identity. This adds special techniques such as entering a rage or sneak attacking.",
+   "Training in one Skill or other Constellation.",
+   "1 Calling"
+  ],
+  [
+   "6. Defenses",
+   "Your defensive posture (Awareness, Evade, Guard, and Endure).",
+   "—",
+   "1 Defense"
+  ],
+  [
+   "7. Comets",
+   "Comets, which are Talent Points that can be used for any purpose (as long as you still meet the prerequisite).",
+   "—",
+   "3 Comets"
+  ]
+ ]
+}

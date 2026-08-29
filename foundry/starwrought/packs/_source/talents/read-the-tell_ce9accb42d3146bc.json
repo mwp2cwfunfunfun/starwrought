@@ -1,0 +1,47 @@
+{
+  "_id": "ce9accb42d3146bc",
+  "name": "Read the Tell",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "awareness",
+    "constellationName": "Awareness",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Awareness Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When a creature critically fails to Feint against you, Lie to you, or Sneak past you, it becomes Exposed (Head) until it Recenters.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "13ade0bba9c4a91f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ce9accb42d3146bc"
+}

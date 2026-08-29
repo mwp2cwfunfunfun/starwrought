@@ -1,0 +1,11 @@
+{{!-- The trail. You can walk back down it, and walking back unwinds what you did. --}}
+<nav class="sw-chargen-trail">
+  {{#each steps as |s|}}
+  <a class="sw-trail-step {{#if s.active}}active{{/if}} {{#if s.done}}done{{/if}}"
+     {{#if s.done}}data-action="goto" data-index="{{s.index}}"
+     data-tooltip="{{localize 'STARWROUGHT.Chargen.gotoHint'}}"{{/if}}>
+    <i class="{{s.icon}}"></i>
+    <span>{{s.label}}</span>
+  </a>
+  {{/each}}
+</nav>

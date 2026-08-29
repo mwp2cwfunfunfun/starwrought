@@ -1,0 +1,30 @@
+{
+  "_id": "48d4576d412475ff",
+  "name": "Ambusher",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/ambusher.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "ambusher",
+    "attribute": "agility",
+    "hp": 2,
+    "grants": [
+      "Stealth"
+    ],
+    "specialAbility": "<p>Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +4d6 at Legendary.</p>",
+    "description": "<p>Grants Training in Stealth, and 2 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!48d4576d412475ff"
+}

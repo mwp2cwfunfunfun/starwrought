@@ -1,0 +1,37 @@
+{
+  "_id": "e27319f730a45961",
+  "name": "Shortbow",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "practiced",
+    "group": "Bows",
+    "damage": {
+      "die": 6,
+      "type": "piercing"
+    },
+    "reach": 0,
+    "traits": [
+      "Ranged 120",
+      "Two-Handed",
+      "Unwieldy 10"
+    ],
+    "price": "",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "54594ae7cc598009",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e27319f730a45961"
+}

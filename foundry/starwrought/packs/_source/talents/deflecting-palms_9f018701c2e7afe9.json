@@ -1,0 +1,47 @@
+{
+  "_id": "9f018701c2e7afe9",
+  "name": "Deflecting Palms ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "guard",
+    "constellationName": "Guard",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Guard Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger You are hit and have a hand free.<br>Effect Reduce that attack's damage by 2 plus your Presence.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "de321617406058a3",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9f018701c2e7afe9"
+}

@@ -1,0 +1,28 @@
+{
+  "_id": "0e12096794954cee",
+  "name": "Feint",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Watching, deceiving & helping",
+    "traits": [
+      "Mental"
+    ],
+    "description": "<p>Guile against the target's Awareness.<br><b>Critical Success</b> Wrong-Footed to you until the end of your next turn. <b>Success</b> Wrong-Footed to you until the end of your turn. <b>Failure</b> Nothing. <b>Critical Failure</b> You overcommit and are Wrong-Footed to it.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9c4c1eb78a540a57",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0e12096794954cee"
+}

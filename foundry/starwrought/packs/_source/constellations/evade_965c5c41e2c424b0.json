@@ -1,0 +1,28 @@
+{
+  "_id": "965c5c41e2c424b0",
+  "name": "Evade",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/evade.png",
+  "system": {
+    "slug": "evade",
+    "category": "defense",
+    "attribute": "agility",
+    "meta": "Defense constellation • Agility (don't be there • Give Ground posture)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Defense constellation • Agility (don't be there • Give Ground posture)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!965c5c41e2c424b0"
+}

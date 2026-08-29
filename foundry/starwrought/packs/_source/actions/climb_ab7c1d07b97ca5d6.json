@@ -1,0 +1,28 @@
+{
+  "_id": "ab7c1d07b97ca5d6",
+  "name": "Climb",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Moving",
+    "traits": [
+      "Move"
+    ],
+    "description": "<p>An Athletics check against a Threshold the GM sets. On a success you move a quarter of your Speed (half on a critical success). On a critical failure you fall.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57b789ecf25288d5",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ab7c1d07b97ca5d6"
+}

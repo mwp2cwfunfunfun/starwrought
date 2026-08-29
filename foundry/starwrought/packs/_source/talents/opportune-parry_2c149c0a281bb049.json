@@ -1,0 +1,47 @@
+{
+  "_id": "2c149c0a281bb049",
+  "name": "Opportune Parry ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "bravo",
+    "constellationName": "Bravo",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Panache"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger A creature Grazes or Misses you while you have Panache.<br>Effect You do not pay the Graze cost.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ddc479129bd4bd5d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2c149c0a281bb049"
+}

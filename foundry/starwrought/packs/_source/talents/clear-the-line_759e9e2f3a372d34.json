@@ -1,0 +1,47 @@
+{
+  "_id": "759e9e2f3a372d34",
+  "name": "Clear the Line",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "archery",
+    "constellationName": "Archery",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Archery Training"
+    ],
+    "prerequisites": "",
+    "attribute": "wits",
+    "effect": "Your ranged attacks treat Lesser Cover as no Cover.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "cdfba94f08c33d6c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!759e9e2f3a372d34"
+}

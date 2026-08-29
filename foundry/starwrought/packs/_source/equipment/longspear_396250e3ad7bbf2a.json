@@ -1,0 +1,36 @@
+{
+  "_id": "396250e3ad7bbf2a",
+  "name": "Longspear",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "practiced",
+    "group": "Spears",
+    "damage": {
+      "die": 8,
+      "type": "piercing"
+    },
+    "reach": 14,
+    "traits": [
+      "Two-Handed",
+      "Unwieldy 7"
+    ],
+    "price": "7 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!396250e3ad7bbf2a"
+}

@@ -1,0 +1,45 @@
+{
+  "_id": "98742a579f7e4a64",
+  "name": "Reacher",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kestrel-reach",
+    "constellationName": "Kestrel Reach",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "Raised in the Kestrel Reach",
+    "attribute": "",
+    "effect": "You know Reachspeak and Common.<br>You gain a +1 status bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "d11b952536b11224",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!98742a579f7e4a64"
+}

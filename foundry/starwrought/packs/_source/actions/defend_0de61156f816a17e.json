@@ -1,0 +1,25 @@
+{
+  "_id": "0de61156f816a17e",
+  "name": "Defend",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Exploration Mode",
+    "requirements": "Travel Speed: Half",
+    "traits": [],
+    "description": "<p>Your shield begins Raised and a weapon is already in hand.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0de61156f816a17e"
+}

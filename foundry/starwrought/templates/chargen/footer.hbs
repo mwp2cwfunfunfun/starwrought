@@ -1,0 +1,40 @@
+{{!-- Forward only when the step is finished; back always, and back takes its choices with it. --}}
+<footer class="sw-chargen-footer">
+  <button type="button" data-action="cancel" class="sw-cancel">
+    <i class="fa-solid fa-trash"></i> {{localize "STARWROUGHT.Chargen.cancel"}}
+  </button>
+
+  {{#unless complete}}
+  {{#if outstanding.length}}
+  {{!-- Name what is blocking, since it is often below the fold. --}}
+  <div class="sw-outstanding">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    {{#each outstanding as |o|}}
+    {{#if o.id}}
+    <a data-action="revealSlot" data-slot="{{o.id}}"
+       data-tooltip="{{localize 'STARWROUGHT.Chargen.revealSlot'}}">{{o.label}}</a>
+    {{else}}
+    <span>{{o.label}}</span>
+    {{/if}}
+    {{/each}}
+  </div>
+  {{/if}}
+  {{/unless}}
+
+  <div class="sw-chargen-nav">
+    <button type="button" data-action="back" {{#if isFirst}}disabled{{/if}}>
+      <i class="fa-solid fa-arrow-left"></i> {{localize "STARWROUGHT.Chargen.back"}}
+    </button>
+
+    {{#if isLast}}
+    <button type="button" data-action="finish" class="sw-primary">
+      <i class="fa-solid fa-check"></i> {{localize "STARWROUGHT.Chargen.finish"}}
+    </button>
+    {{else}}
+    <button type="button" data-action="next" class="sw-primary" {{#unless complete}}disabled
+            data-tooltip="{{localize 'STARWROUGHT.Chargen.incomplete'}}"{{/unless}}>
+      {{localize "STARWROUGHT.Chargen.next"}} <i class="fa-solid fa-arrow-right"></i>
+    </button>
+    {{/if}}
+  </div>
+</footer>

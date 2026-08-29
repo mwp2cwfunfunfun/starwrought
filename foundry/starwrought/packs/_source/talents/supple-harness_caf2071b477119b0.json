@@ -1,0 +1,47 @@
+{
+  "_id": "caf2071b477119b0",
+  "name": "Supple Harness",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "armored-fighting",
+    "constellationName": "Armored Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Armored Fighting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your first Step each turn ignores 1 point of Load Strain's effect on movement-related checks.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "44d6df065b4c25a0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!caf2071b477119b0"
+}

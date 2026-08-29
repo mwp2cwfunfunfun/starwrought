@@ -1,0 +1,28 @@
+{
+  "_id": "b0b950a8baf0d0b6",
+  "name": "Ready",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "3",
+    "costMode": "to",
+    "category": "Defending & recovering",
+    "traits": [
+      "Concentrate"
+    ],
+    "description": "<p>Readying costs one action more than the action you are readying. Name a single action and a trigger. Until the start of your next turn, if the trigger occurs you may take that action as a reaction. Readying consumes your reaction whether or not it fires.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4068fcccad329588",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b0b950a8baf0d0b6"
+}

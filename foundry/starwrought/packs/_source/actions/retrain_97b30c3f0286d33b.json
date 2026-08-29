@@ -1,0 +1,25 @@
+{
+  "_id": "97b30c3f0286d33b",
+  "name": "Retrain",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Downtime Mode",
+    "requirements": "1 month",
+    "traits": [],
+    "description": "<p>Move 1 already spent Talent Point to another Talent you qualify for. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or a Talent that would reduce your Proficiency Rank.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "b938ff7019fcd374",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!97b30c3f0286d33b"
+}

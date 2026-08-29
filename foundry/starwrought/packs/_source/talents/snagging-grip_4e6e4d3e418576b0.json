@@ -1,0 +1,47 @@
+{
+  "_id": "4e6e4d3e418576b0",
+  "name": "Snagging Grip ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "brawling",
+    "constellationName": "Brawling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Brawling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Strike with a free hand; on a hit, the target is Off-Guard until your next turn.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0e60f938940988c1",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4e6e4d3e418576b0"
+}

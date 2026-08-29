@@ -1,0 +1,275 @@
+{{!-- The mechanical fields, branching on the Item type. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{#if isConstellation}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.constellation"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.slug"}}</span>
+        <input type="text" name="system.slug" value="{{system.slug}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.category"}}</span>
+        <select name="system.category">{{selectOptions choices.categories selected=system.category}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.keyAttribute"}}</span>
+        <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.identity"}}</span>
+        <input type="checkbox" name="system.identity" {{checked system.identity}}></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.meta"}}</span>
+        <input type="text" name="system.meta" value="{{system.meta}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.flareTrigger"}}</span>
+        <input type="text" name="system.flareTrigger" value="{{system.flareTrigger}}"></label>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isTalent}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.talent"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.constellation"}}</span>
+        <select name="system.constellation">{{selectOptions choices.constellations selected=system.constellation blank=""}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.tier"}}</span>
+        <select name="system.tier">{{selectOptions choices.tiers selected=system.tier}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.cost"}}</span>
+        <select name="system.cost">{{selectOptions choices.costs selected=system.cost}}</select></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.costMaxHint">
+        <span>{{localize "STARWROUGHT.Field.costMax"}}</span>
+        <select name="system.costMax">{{selectOptions choices.costs selected=system.costMax blank=(localize "STARWROUGHT.Field.costFixed")}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.feeds"}}</span>
+        <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute blank=(localize "STARWROUGHT.Field.constellationDefault")}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.root"}}</span>
+        <input type="checkbox" name="system.root" {{checked system.root}}></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.bloodlineRoot"}}</span>
+        <input type="checkbox" name="system.bloodlineRoot" {{checked system.bloodlineRoot}}></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.capstone"}}</span>
+        <input type="checkbox" name="system.capstone" {{checked system.capstone}}></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.prerequisites"}}</span>
+        <input type="text" name="system.prerequisites" value="{{system.prerequisites}}"></label>
+    </div>
+  </div>
+
+  <div class="sw-panel requirement-editor">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.requires"}}</h3>
+    <div class="sw-trait-list">
+      {{#each system.requires as |req index|}}
+      <span class="sw-trait">{{req}}
+        {{#if @root.editable}}<a data-action="removeRequirement" data-index="{{index}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+      </span>
+      {{else}}
+      <em class="sw-empty">{{localize "STARWROUGHT.Sheet.rootOnly"}}</em>
+      {{/each}}
+    </div>
+    {{#if editable}}
+    <div class="sw-add-row">
+      <input type="text" name="newRequirement" placeholder="{{localize 'STARWROUGHT.Field.addRequirement'}}">
+      <button type="button" data-action="addRequirement"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="sw-panel {{#if system.needsChoice}}sw-slot-stuck{{/if}}">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Field.choice"}}
+      {{#if system.needsChoice}}<span class="sw-points sw-warn">{{localize "STARWROUGHT.Field.choiceUnanswered"}}</span>{{/if}}
+    </h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Field.choiceHint"}}</p>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.choicePrompt"}}</span>
+        <input type="text" name="system.choice.prompt" value="{{system.choice.prompt}}"
+               placeholder="{{localize 'STARWROUGHT.Field.choicePromptPlaceholder'}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.choiceValue"}}</span>
+        {{#if choiceOptions}}
+        <select name="system.choice.value">{{selectOptions choiceOptions selected=system.choice.value blank=""}}</select>
+        {{else}}
+        <input type="text" name="system.choice.value" value="{{system.choice.value}}">
+        {{/if}}</label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.freeTalent"}}</span>
+        <input type="text" name="system.freeTalent" value="{{system.freeTalent}}"
+               placeholder="{{localize 'STARWROUGHT.Field.freeTalentPlaceholder'}}"></label>
+    </div>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.grant"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.grantN"}}</span>
+        <input type="number" name="system.grant.n" value="{{system.grant.n}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.grantMode"}}</span>
+        <input type="text" name="system.grant.mode" value="{{system.grant.mode}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.grantScope"}}</span>
+        <input type="text" name="system.grant.scope" value="{{system.grant.scope}}"></label>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isChassis}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.chassis"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.kind"}}</span>
+        <select name="system.kind">{{selectOptions choices.kinds selected=system.kind}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.keyAttribute"}}</span>
+        <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.hpPerLevel"}}</span>
+        <input type="number" name="system.hp" value="{{system.hp}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.size"}}</span>
+        <select name="system.size">{{selectOptions choices.sizes selected=system.size}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.speed"}}</span>
+        <input type="number" name="system.speed" value="{{system.speed}}" min="0"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.senses"}}</span>
+        <input type="text" name="system.senses" value="{{system.senses}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.languages"}}</span>
+        <input type="text" name="system.languages" value="{{system.languages}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.constellation"}}</span>
+        <select name="system.constellation">{{selectOptions choices.constellations selected=system.constellation blank=""}}</select></label>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isWeapon}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.weapon"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.handling"}}</span>
+        <select name="system.handling">{{selectOptions choices.handling selected=system.handling}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.group"}}</span>
+        <input type="text" name="system.group" value="{{system.group}}" list="sw-weapon-groups">
+        <datalist id="sw-weapon-groups">
+          {{#each choices.groups as |g|}}<option value="{{g}}"></option>{{/each}}
+        </datalist></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.damageDie"}}</span>
+        <input type="number" name="system.damage.die" value="{{system.damage.die}}" min="2" step="2"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.damageType"}}</span>
+        <select name="system.damage.type">{{selectOptions choices.damageTypes selected=system.damage.type}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.reach"}}</span>
+        <input type="number" name="system.reach" value="{{system.reach}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.twoHands"}}</span>
+        <input type="checkbox" name="system.twoHands" {{checked system.twoHands}}></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.versatileActive"}}</span>
+        <input type="checkbox" name="system.versatileActive" {{checked system.versatileActive}}></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.style"}}</span>
+        <input type="text" name="system.style" value="{{system.style}}"></label>
+    </div>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.weaponTraits"}}</p>
+  </div>
+  {{/if}}
+
+  {{#if isArmor}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.armorPiece"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.zone"}}</span>
+        <select name="system.zone">{{selectOptions choices.zones selected=system.zone}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.protection"}}</span>
+        <input type="number" name="system.protection" value="{{system.protection}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.material"}}</span>
+        <select name="system.material">{{selectOptions choices.materials selected=system.material}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
+        <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
+    </div>
+    {{#if system.weakTo}}
+    <p class="sw-note sw-warn">{{localize "STARWROUGHT.Hint.materialWeakness"}}</p>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#if isShield}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.shield"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.guardBonus"}}</span>
+        <input type="number" name="system.bonus" value="{{system.bonus}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.hardness"}}</span>
+        <input type="number" name="system.hardness" value="{{system.hardness}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
+        <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.givesCover"}}</span>
+        <input type="checkbox" name="system.cover" {{checked system.cover}}></label>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isAction}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.action"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.cost"}}</span>
+        <select name="system.cost">{{selectOptions choices.costs selected=system.cost}}</select></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.costMaxHint">
+        <span>{{localize "STARWROUGHT.Field.costMax"}}</span>
+        <select name="system.costMax">{{selectOptions choices.costs selected=system.costMax blank=(localize "STARWROUGHT.Field.costFixed")}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.costMode"}}</span>
+        <select name="system.costMode">{{selectOptions choices.costModes selected=system.costMode}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.category"}}</span>
+        <input type="text" name="system.category" value="{{system.category}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.requirements"}}</span>
+        <input type="text" name="system.requirements" value="{{system.requirements}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.trigger"}}</span>
+        <input type="text" name="system.trigger" value="{{system.trigger}}"></label>
+    </div>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.actionCheck"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.rollsCheck"}}</span>
+        <input type="checkbox" name="system.check.enabled" {{checked system.check.enabled}}></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.constellation"}}</span>
+        <select name="system.check.constellation">{{selectOptions choices.constellations selected=system.check.constellation blank=""}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.againstDefense"}}</span>
+        <select name="system.check.defense">{{selectOptions choices.defenses selected=system.check.defense blank=""}}</select></label>
+    </div>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.attack"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.attackThreshold"}}</p>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.isAttack"}}</span>
+        <input type="checkbox" name="system.attack.enabled" {{checked system.attack.enabled}}></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.attackThreshold"}}</span>
+        <input type="number" name="system.attack.threshold" value="{{system.attack.threshold}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.damage"}}</span>
+        <input type="text" name="system.attack.damage" value="{{system.attack.damage}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.damageType"}}</span>
+        <select name="system.attack.damageType">{{selectOptions choices.damageTypes selected=system.attack.damageType}}</select></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.reach"}}</span>
+        <input type="number" name="system.attack.reach" value="{{system.attack.reach}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.armorPiercing"}}</span>
+        <input type="number" name="system.attack.armorPiercing" value="{{system.attack.armorPiercing}}" min="0"></label>
+    </div>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.outcomes"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Degree.critSuccess"}}</span>
+        <input type="text" name="system.outcomes.critSuccess" value="{{system.outcomes.critSuccess}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Degree.success"}}</span>
+        <input type="text" name="system.outcomes.success" value="{{system.outcomes.success}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Degree.fail"}}</span>
+        <input type="text" name="system.outcomes.fail" value="{{system.outcomes.fail}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Degree.critFail"}}</span>
+        <input type="text" name="system.outcomes.critFail" value="{{system.outcomes.critFail}}"></label>
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isPhysical}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.physical"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.quantity"}}</span>
+        <input type="number" name="system.quantity" value="{{system.quantity}}" min="0"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.price"}}</span>
+        <input type="text" name="system.price" value="{{system.price}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.equipped"}}</span>
+        <input type="checkbox" name="system.equipped" {{checked system.equipped}}></label>
+      {{#if (or isWeapon isGear)}}
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
+        <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
+      {{/if}}
+    </div>
+  </div>
+  {{/if}}
+
+</section>

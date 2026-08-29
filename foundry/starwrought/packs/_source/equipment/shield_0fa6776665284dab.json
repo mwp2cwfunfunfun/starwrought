@@ -1,0 +1,29 @@
+{
+  "_id": "0fa6776665284dab",
+  "name": "Shield",
+  "type": "shield",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "bonus": 2,
+    "hardness": 5,
+    "load": 1,
+    "cover": false,
+    "price": "5 gp",
+    "quantity": 1,
+    "state": "carried",
+    "traits": [],
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "d39fe6c898bb12d2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0fa6776665284dab"
+}

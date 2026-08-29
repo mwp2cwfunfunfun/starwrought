@@ -1,0 +1,47 @@
+{{!-- Everything the adversary can do that is not an Attack. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.abilities"}}
+      <button type="button" class="sw-inline-button" data-action="itemCreate" data-type="action">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </h3>
+    <ol class="sw-item-list">
+      {{#each abilities as |ability|}}
+      <li class="sw-item-row sw-action-row" data-item-id="{{ability.id}}">
+        <img src="{{ability.img}}" alt="{{ability.name}}">
+        <span class="sw-action-glyph">{{ability.system.glyph}}</span>
+        <a class="sw-item-name" data-action="itemChat">{{ability.name}}</a>
+        {{#each ability.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+        <div class="sw-item-controls">
+          <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+        </div>
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noAbilities"}}</li>
+      {{/each}}
+    </ol>
+  </div>
+
+  {{#if otherItems.length}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.carried"}}</h3>
+    <ol class="sw-item-list">
+      {{#each otherItems as |thing|}}
+      <li class="sw-item-row" data-item-id="{{thing.id}}">
+        <img src="{{thing.img}}" alt="{{thing.name}}">
+        <a class="sw-item-name" data-action="itemChat">{{thing.name}}</a>
+        <div class="sw-item-controls">
+          <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+  {{/if}}
+
+</section>

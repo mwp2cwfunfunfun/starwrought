@@ -1,0 +1,25 @@
+{
+  "_id": "ade892c054239b13",
+  "name": "Travel",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Exploration Mode",
+    "requirements": "Travel Speed: Full",
+    "traits": [],
+    "description": "<p>When an encounter begins, you can roll Awareness.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ade892c054239b13"
+}

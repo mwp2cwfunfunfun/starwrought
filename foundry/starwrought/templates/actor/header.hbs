@@ -1,0 +1,111 @@
+{{!-- Character header: who you are, and what is left in you. --}}
+<header class="sw-header">
+
+  <img class="sw-portrait" src="{{actor.img}}" alt="{{actor.name}}" data-action="editImage"
+       data-tooltip="STARWROUGHT.Sheet.editImage">
+
+  <div class="sw-header-body">
+
+    <div class="sw-name-row">
+      <input class="sw-charname" type="text" name="name" value="{{actor.name}}"
+             placeholder="{{localize 'STARWROUGHT.Sheet.namePlaceholder'}}">
+      <div class="sw-level">
+        <label>{{localize "STARWROUGHT.Field.level"}}</label>
+        <input type="number" name="system.level" value="{{system.level}}" min="1" max="20" step="1">
+      </div>
+      <div class="sw-milestone" data-tooltip="STARWROUGHT.Field.milestoneHint">
+        <label>{{localize "STARWROUGHT.Field.milestone"}}</label>
+        <input type="number" name="system.milestone" value="{{system.milestone}}" min="0" max="3" step="1">
+      </div>
+    </div>
+
+    <div class="sw-identity">
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Chassis.ancestry"}}</span>
+        <input type="text" name="system.details.ancestry.name" value="{{system.details.ancestry.name}}">
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Chassis.bloodline"}}</span>
+        <input type="text" name="system.details.bloodline.name" value="{{system.details.bloodline.name}}">
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Chassis.culture"}}</span>
+        <input type="text" name="system.details.culture.name" value="{{system.details.culture.name}}">
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Chassis.background"}}</span>
+        <input type="text" name="system.details.background.name" value="{{system.details.background.name}}">
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Chassis.calling"}}</span>
+        <input type="text" name="system.details.calling.name" value="{{system.details.calling.name}}">
+      </label>
+    </div>
+
+    <div class="sw-vitals">
+
+      <div class="sw-hp">
+        <div class="sw-hp-track">
+          <div class="sw-hp-fill" style="width: {{swPercent system.hp.value system.hp.max}}%"></div>
+          <span class="sw-hp-text">
+            <input type="number" name="system.hp.value" value="{{system.hp.value}}" min="0">
+            <em>/ {{system.hp.max}}</em>
+          </span>
+        </div>
+        <div class="sw-hp-meta">
+          <label data-tooltip="STARWROUGHT.Field.tempHint">
+            {{localize "STARWROUGHT.Field.temp"}}
+            <input type="number" name="system.hp.temp" value="{{system.hp.temp}}" min="0">
+          </label>
+          <span class="sw-hint">{{localize "STARWROUGHT.Field.hpPerLevel"}} {{system.hp.perLevel}}</span>
+        </div>
+      </div>
+
+      {{#if actions.show}}
+      {{!-- Three actions and a reaction, gained at the start of your turn. --}}
+      <div class="sw-actions {{#if actions.isTurn}}sw-actions-turn{{/if}}"
+           data-tooltip="{{actions.tooltip}}">
+        <span class="sw-actions-label">{{localize "STARWROUGHT.Actions.label"}}</span>
+        <div class="sw-pips">
+          {{#each actions.pips as |pip|}}
+          <a class="sw-pip {{#if pip.spent}}spent{{/if}}" data-action="setActions" data-value="{{pip.value}}"
+             data-tooltip="{{pip.tooltip}}">◆</a>
+          {{/each}}
+          <a class="sw-pip sw-pip-reaction {{#unless actions.reaction}}spent{{/unless}}"
+             data-action="toggleReaction" data-tooltip="{{localize 'STARWROUGHT.Actions.reaction'}}">↺</a>
+        </div>
+        <a class="sw-actions-reset" data-action="resetActions"
+           data-tooltip="{{localize 'STARWROUGHT.Actions.resetHint'}}"><i class="fa-solid fa-rotate-left"></i></a>
+      </div>
+      {{/if}}
+
+      <div class="sw-counters">
+        <div class="sw-counter" data-tooltip="STARWROUGHT.Field.heroPointsHint">
+          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.heroPoints"}}</span>
+          <div class="sw-stepper">
+            <a data-action="adjust" data-path="system.heroPoints.value" data-delta="-1">−</a>
+            <strong>{{system.heroPoints.value}}</strong>
+            <a data-action="adjust" data-path="system.heroPoints.value" data-delta="1">+</a>
+          </div>
+        </div>
+        <div class="sw-counter {{#if system.wounded}}sw-alert{{/if}}" data-tooltip="STARWROUGHT.Field.woundedHint">
+          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounded"}}</span>
+          <div class="sw-stepper">
+            <a data-action="adjust" data-path="system.wounded" data-delta="-1">−</a>
+            <strong>{{system.wounded}}</strong>
+            <a data-action="adjust" data-path="system.wounded" data-delta="1">+</a>
+          </div>
+        </div>
+        <div class="sw-counter {{#if system.dying}}sw-danger{{/if}}" data-tooltip="STARWROUGHT.Field.dyingHint">
+          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.dying"}}</span>
+          <div class="sw-stepper">
+            <a data-action="adjust" data-path="system.dying" data-delta="-1">−</a>
+            <strong>{{system.dying}}<em>/{{dyingMax}}</em></strong>
+            <a data-action="adjust" data-path="system.dying" data-delta="1">+</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</header>

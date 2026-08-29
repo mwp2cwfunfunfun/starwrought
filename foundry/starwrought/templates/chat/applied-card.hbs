@@ -1,0 +1,39 @@
+{{!-- What the body actually felt, step by step. --}}
+<div class="starwrought applied-card">
+  <header class="sw-card-header">
+    <img src="{{actor.img}}" alt="{{actor.name}}">
+    <div class="sw-card-titles">
+      <h3>{{actor.name}}</h3>
+      <span class="sw-card-subtitle">
+        {{#if healing}}
+        {{localize "STARWROUGHT.Damage.healed"}}
+        {{else}}
+        {{zoneLabel}} · {{localize "STARWROUGHT.Field.protection"}} {{result.protection}}
+        {{/if}}
+      </span>
+    </div>
+  </header>
+
+  <div class="sw-card-roll">
+    <span class="sw-card-total">{{#if healing}}+{{/if}}{{result.applied}}</span>
+    <span class="sw-card-formula">{{result.hpBefore}} → {{result.hpAfter}}</span>
+  </div>
+
+  {{#if result.steps.length}}
+  <ul class="sw-card-modifiers">
+    {{#each result.steps as |step|}}
+    <li><span>{{step.label}}</span><strong>{{step.total}}</strong></li>
+    {{/each}}
+  </ul>
+  {{/if}}
+
+  {{#if exposed}}
+  <p class="sw-card-note sw-warn">{{localize "STARWROUGHT.Condition.exposed"}}: {{exposed}}</p>
+  {{/if}}
+  {{#if result.droppedTo0}}
+  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Notify.droppedToZero"}}</p>
+  {{/if}}
+  {{#if result.endedDying}}
+  <p class="sw-card-note sw-good">{{localize "STARWROUGHT.Notify.dyingEnded"}}</p>
+  {{/if}}
+</div>

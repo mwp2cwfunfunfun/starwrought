@@ -1,0 +1,55 @@
+# Publish the Foundry system so a server can install it by manifest URL.
+#
+# Push a tag that matches the version in foundry/starwrought/system.json:
+#
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# The job packages the system, rewrites the manifest and download URLs to point at this
+# repository's latest release, and attaches both files to a GitHub Release. Foundry then installs
+# from, and checks for updates against:
+#
+#   https://github.com/<owner>/<repo>/releases/latest/download/system.json
+#
+# Those URLs are fetched with no authentication, so the repository has to be public for this to
+# work at all.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Package the system
+        run: node assets/package_system.mjs
+
+      - name: Check the tag matches the manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(node -p "require('./foundry/starwrought/system.json').version")
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "Tag $tag does not match system.json version $version." >&2
+            echo "Foundry compares these to decide whether an update exists." >&2
+            exit 1
+          fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/starwrought.zip
+            dist/system.json
+          generate_release_notes: true

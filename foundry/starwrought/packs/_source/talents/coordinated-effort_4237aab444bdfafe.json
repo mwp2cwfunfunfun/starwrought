@@ -1,0 +1,47 @@
+{
+  "_id": "4237aab444bdfafe",
+  "name": "Coordinated Effort",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Diplomacy Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Aid an ally, the bonus is +2 instead of +1, and +3 on a critical success.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "eb638d2c93ae2065",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4237aab444bdfafe"
+}

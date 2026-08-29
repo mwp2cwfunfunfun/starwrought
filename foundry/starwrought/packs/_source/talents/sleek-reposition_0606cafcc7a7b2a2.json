@@ -1,0 +1,47 @@
+{
+  "_id": "0606cafcc7a7b2a2",
+  "name": "Sleek Reposition ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spear-and-polearm-fighting",
+    "constellationName": "Spear & Polearm Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spear & Polearm Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Press<br>While your opponent is still recovering from your prior attack, you snag its armor, clothing, or flesh to move it as you please. Make a melee Strike with a spear or polearm. If you hit a target that is your size or smaller, you can automatically Reposition it, with the same benefits as the Reposition action (including the Critical Success effect, if your Strike was a Critical Hit). Use your Total Reach for this Reposition.<br>Failure The target becomes Off-Guard until the end of your current turn.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e6deec17c276985e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0606cafcc7a7b2a2"
+}

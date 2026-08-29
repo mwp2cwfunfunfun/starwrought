@@ -1,0 +1,32 @@
+{
+  "_id": "249a07a5cb09bd2d",
+  "name": "Breastplate",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 4,
+    "load": 2,
+    "material": "plate",
+    "traits": [
+      "Plate",
+      "Noisy"
+    ],
+    "price": "15 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!249a07a5cb09bd2d"
+}

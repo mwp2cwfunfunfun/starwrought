@@ -1,0 +1,29 @@
+{
+  "_id": "a66d7b3de28c26a4",
+  "name": "Tower Shield",
+  "type": "shield",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "bonus": 0,
+    "hardness": 5,
+    "load": 2,
+    "cover": true,
+    "price": "10 gp",
+    "quantity": 1,
+    "state": "carried",
+    "traits": [],
+    "description": "<p>Gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "d39fe6c898bb12d2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a66d7b3de28c26a4"
+}

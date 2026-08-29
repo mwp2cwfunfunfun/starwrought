@@ -1,0 +1,32 @@
+{
+  "_id": "1ea32b38d2df162b",
+  "name": "Padded coif",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 1,
+    "load": 0,
+    "material": "padded",
+    "traits": [
+      "Padded",
+      "Comfort"
+    ],
+    "price": "1 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1ea32b38d2df162b"
+}

@@ -1,0 +1,47 @@
+{
+  "_id": "33bb44b987959756",
+  "name": "Trip Line",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "missile-skirmishing",
+    "constellationName": "Missile Skirmishing",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Missile Skirmishing Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You get a +2 status bonus to your Trip checks when using a Ranged weapon with the Trip trait.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "1217b0942014335f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!33bb44b987959756"
+}

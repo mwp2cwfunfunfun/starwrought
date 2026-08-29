@@ -1,0 +1,45 @@
+{
+  "_id": "bdd886ee7bc3176e",
+  "name": "Missile Skirmishing Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "missile-skirmishing",
+    "constellationName": "Missile Skirmishing",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Keep Moving ◆ action.<br>Keep Moving ◆ (stance)<br>Requirements You wield a sling or a weapon with the Thrown trait.<br>While in this stance: if you make a ranged Strike, you may Step 3 feet immediately before or after it; you may use this benefit only once per turn. Every talent here requires this.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "1217b0942014335f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!bdd886ee7bc3176e"
+}

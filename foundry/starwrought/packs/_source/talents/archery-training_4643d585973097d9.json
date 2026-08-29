@@ -1,0 +1,45 @@
+{
+  "_id": "4643d585973097d9",
+  "name": "Archery Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "archery",
+    "constellationName": "Archery",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Draw a Bead ◆ action.<br>Draw a Bead ◆ (concentrate)<br>Choose one creature you can Observe and can reach with your bow.<br>Until the end of your turn: your next bow Strike against that creature gains a +1 circumstance bonus to the attack; ignore the weapon's Unwieldy penalty for that Strike; if that Strike Grazes, you choose the Zone that becomes Exposed instead of the defender. Every talent here requires this.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "cdfba94f08c33d6c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4643d585973097d9"
+}

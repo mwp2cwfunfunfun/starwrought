@@ -1,0 +1,47 @@
+{
+  "_id": "23146acc94e2824c",
+  "name": "Practical Application",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Deep Knowledge"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "+2 circumstance to any check where you can explain how this field directly applies. The GM is the judge; the story is the proof.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "f59506a3bbc6d7ef",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!23146acc94e2824c"
+}

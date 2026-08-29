@@ -1,0 +1,47 @@
+{
+  "_id": "bd3c804404b6a780",
+  "name": "Dueling Parry ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dueling",
+    "constellationName": "Dueling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Dueling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "Requirements You are wielding a single one-handed melee weapon and hold nothing else in your hands.<br>You can parry attacks against you with your one-handed weapon. You gain a +2 circumstance bonus to Guard until the start of your next turn as long as you continue to meet the requirements.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4e363b3d724f4315",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!bd3c804404b6a780"
+}

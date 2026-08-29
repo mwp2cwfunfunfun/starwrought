@@ -1,0 +1,36 @@
+{
+  "_id": "8ab94f6142f45a9b",
+  "name": "Quarterstaff",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "intuitive",
+    "group": "Clubs",
+    "damage": {
+      "die": 6,
+      "type": "bludgeoning"
+    },
+    "reach": 4,
+    "traits": [
+      "Parry",
+      "Two-Hand d8"
+    ],
+    "price": "1 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8ab94f6142f45a9b"
+}

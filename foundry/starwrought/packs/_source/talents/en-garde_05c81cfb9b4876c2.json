@@ -1,0 +1,47 @@
+{
+  "_id": "05c81cfb9b4876c2",
+  "name": "En Garde",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dueling",
+    "constellationName": "Dueling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Dueling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "+1 circumstance Guard vs. melee while wielding a one-handed weapon with your other hand free.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4e363b3d724f4315",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!05c81cfb9b4876c2"
+}

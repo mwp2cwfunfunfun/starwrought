@@ -1,0 +1,28 @@
+{
+  "_id": "dda84c8ed45673d3",
+  "name": "Two-Weapon Fighting",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/two-weapon-fighting.png",
+  "system": {
+    "slug": "two-weapon-fighting",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "meta": "Combat Style • Agility (a weapon in each hand)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Combat Style • Agility (a weapon in each hand)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!dda84c8ed45673d3"
+}

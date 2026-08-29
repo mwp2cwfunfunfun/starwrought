@@ -1,0 +1,17 @@
+[
+ {
+  "name": "Common",
+  "rarity": "Common",
+  "desc": "The trade tongue of the roads, ports, and mercenary camps: everyone's second language and nobody's first."
+ },
+ {
+  "name": "Serrovine",
+  "rarity": "Uncommon",
+  "desc": "The tongue of Serrovane: precise, clause-ridden, and built for oaths that will be read back to you later."
+ },
+ {
+  "name": "Reachspeak",
+  "rarity": "Uncommon",
+  "desc": "The dock-cant of the Kestrel Reach: fast, borrowed from six directions, and rich in words for a bad deal."
+ }
+]

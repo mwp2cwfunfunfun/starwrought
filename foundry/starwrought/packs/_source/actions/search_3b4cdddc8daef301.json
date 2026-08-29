@@ -1,0 +1,25 @@
+{
+  "_id": "3b4cdddc8daef301",
+  "name": "Search",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Exploration Mode",
+    "requirements": "Travel Speed: Half",
+    "traits": [],
+    "description": "<p>Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3b4cdddc8daef301"
+}

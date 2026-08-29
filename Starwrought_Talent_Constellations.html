@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STARWROUGHT · Talent Constellations</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; background:#F4EFE6; color:#1D2A32; height:100vh; display:flex; flex-direction:column; }
+  header { padding:10px 16px; display:flex; align-items:baseline; gap:12px; border-bottom:1px solid #E0D9CC; background:#F4EFE6; }
+  header h1 { font-family: Georgia, serif; font-size:18px; color:#0E5F6B; letter-spacing:1px; }
+  header .sub { font-size:11px; color:#8AA0A8; }
+  header .gates { margin-left:auto; font-size:10.5px; color:#8AA0A8; }
+  #app { flex:1; display:flex; min-height:0; }
+  /* sidebar */
+  #side { width:196px; overflow-y:auto; border-right:1px solid #E0D9CC; padding:8px 0; background:#F8F4EC; }
+  .cat { font-size:9.5px; letter-spacing:1.5px; color:#B8860B; font-weight:700; padding:10px 14px 4px; text-transform:uppercase; }
+  .tree-btn { display:block; width:100%; text-align:left; border:0; background:none; padding:5px 14px; font-size:12.5px; color:#1D2A32; cursor:pointer; border-left:3px solid transparent; }
+  .tree-btn:hover { background:#EFE8DA; }
+  .tree-btn.active { border-left-color:var(--hue,#0E5F6B); background:#EDE5D4; font-weight:600; color:#0E5F6B; }
+  /* sky */
+  #skywrap { flex:1; min-width:0; padding:12px; display:flex; }
+  #sky { flex:1; user-select:none; -webkit-user-select:none; border-radius:14px; background:radial-gradient(ellipse at 50% 38%, #14202C 0%, #0B131B 70%, #070D13 100%); box-shadow:inset 0 0 40px rgba(0,0,0,.55), 0 1px 4px rgba(29,42,50,.25); }
+  svg { width:100%; height:100%; display:block; }
+  text.nlabel { user-select:none; -webkit-user-select:none; font-family:"Segoe UI",sans-serif; fill:#EAF0F4; font-size:11.5px; letter-spacing:.4px; paint-order:stroke; stroke:#0B131B; stroke-width:3.6px; stroke-linejoin:round; cursor:pointer; }
+  text.tierlab { font-size:9px; letter-spacing:2.4px; fill:#7A93A3; font-weight:600; }
+  .nodeg { cursor:pointer; }
+  .nodeg:hover .core { filter:brightness(1.5); }
+  /* panel */
+  #panel { width:270px; border-left:1px solid #E0D9CC; background:#F8F4EC; overflow-y:auto; padding:14px; }
+  #panel h2 { font-family:Georgia,serif; font-size:16px; color:#0E5F6B; margin-bottom:2px; }
+  #panel .meta { font-size:11px; color:#8AA0A8; font-style:italic; margin-bottom:10px; }
+  .chip { display:inline-block; font-size:10px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:9px; color:#fff; margin-right:6px; }
+  #ndesc { font-size:12.5px; line-height:1.5; margin-top:10px; }
+  .sect { font-size:9.5px; letter-spacing:1.5px; color:#B8860B; font-weight:700; margin:14px 0 4px; text-transform:uppercase; }
+  .sparks { font-size:11.5px; line-height:1.45; color:#4a5c66; font-style:italic; }
+  .hint { font-size:10.5px; color:#8AA0A8; margin-top:14px; line-height:1.4; }
+  .talentlist { margin-top:6px; }
+  .talentlist div { font-size:11px; padding:2.5px 0; color:#39505c; cursor:pointer; }
+  .talentlist div:hover { color:#0E5F6B; }
+  .tdot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>STARWROUGHT &#10022; TALENT CONSTELLATIONS</h1>
+  <span class="sub">every constellation a sky; every talent a star</span>
+  <span class="gates" id="gates"></span>
+</header>
+<div id="app">
+  <nav id="side"></nav>
+  <div id="skywrap"><div id="sky"><svg id="svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg></div></div>
+  <aside id="panel"></aside>
+</div>
+<script>
+let TREES = {
+ "Human": {
+  "category": "Ancestry",
+  "feeds": "Presence",
+  "meta": "Ancestry constellation • Presence (Medium • 8 HP • 25 ft • bonus to Aid)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Humanity",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain a +1 status bonus on checks to Aid. If you are Expert in Human, this becomes a +2 status bonus. If you are Master, +3. If you are Legendary, +4.",
+    "desc": "Short lives teach humans to close ranks and pull together.",
+    "root": true
+   },
+   {
+    "name": "Driven",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain a Calling Talent Point.",
+    "grant": {
+     "n": 1,
+     "mode": "any",
+     "scope": "Calling"
+    },
+    "requires": [
+     "Humanity"
+    ],
+    "desc": "You were raised to reach, and you have not stopped reaching since."
+   },
+   {
+    "name": "Quick Study",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain a Skill Talent Point.",
+    "grant": {
+     "n": 1,
+     "mode": "any",
+     "scope": "Skill"
+    },
+    "requires": [
+     "Humanity"
+    ],
+    "desc": "Your adaptability shows in how fast you pick up useful skills."
+   },
+   {
+    "name": "Stubborn Footing",
+    "tier": "T",
+    "cost": 1,
+    "effect": "The first time each encounter you would be knocked prone, you are not.",
+    "requires": [
+     "Humanity"
+    ]
+   },
+   {
+    "name": "Close Ranks",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While an ally is adjacent to you, both of you gain a +1 circumstance bonus to Guard for physical Attacks.",
+    "requires": [
+     "Humanity"
+    ]
+   },
+   {
+    "name": "Versatile Human",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain 1 Opening Talent Point.",
+    "grant": {
+     "n": 1,
+     "mode": "open",
+     "scope": "anywhere"
+    },
+    "desc": "Some humans refuse to be one thing; you are a whole toolbox wearing boots.",
+    "feeds": "Wits",
+    "hroot": true
+   },
+   {
+    "name": "Jack of Trades",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain a +1 circumstance bonus to your Untrained checks.",
+    "requires": [
+     "Versatile Human"
+    ],
+    "desc": "You have done a little of everything, and it shows.",
+    "feeds": "Wits"
+   },
+   {
+    "name": "Torchbearer Human",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Allies within 15 feet gain a +1 circumstance bonus to their first Defense roll each round while they can see or hear you.",
+    "desc": "Some humans carry the light everyone else steers by.",
+    "hroot": true
+   },
+   {
+    "name": "Steady the Line ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger An adjacent ally is Grazed.<br>Effect No zone of theirs becomes Exposed. Once per round.",
+    "requires": [
+     "Torchbearer Human"
+    ],
+    "desc": "Your voice finds the one who is faltering."
+   }
+  ]
+ },
+ "Ambusher": {
+  "category": "Calling",
+  "feeds": "Agility",
+  "skills": [
+   "Stealth"
+  ],
+  "meta": "Calling • Agility (2 HP/level • Sneak Attack)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Sneak Attack",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You become Trained in Stealth.<br>You gain Sneak Attack: +1d6 precision damage vs. Off-Guard foes.<br>Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.",
+    "root": true
+   },
+   {
+    "name": "Surprise Attacker",
+    "tier": "T",
+    "cost": 1,
+    "effect": "In the first round, foes that haven't acted yet are Wrong-Footed to you.",
+    "requires": [
+     "Sneak Attack"
+    ]
+   },
+   {
+    "name": "Opportunist ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger An ally Hits a creature within your reach.<br>Effect Strike that creature. It is Off-Guard to this Strike. Once per round.",
+    "requires": [
+     "Sneak Attack"
+    ]
+   },
+   {
+    "name": "Twist the Blade",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Once per turn, when your Sneak Attack damage applies to a Hit, the Zone it landed on becomes Exposed.",
+    "requires": [
+     "Sneak Attack"
+    ]
+   },
+   {
+    "name": "Bleeding Wound",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
+    "requires": [
+     "Sneak Attack"
+    ]
+   },
+   {
+    "name": "Unbalancing Blow",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Whenever your Strike is a critical hit and deals damage, the target is Wrong-Footed against your attacks until the end of your next turn.",
+    "requires": [
+     "Sneak Attack"
+    ]
+   }
+  ]
+ },
+ "Berserker": {
+  "category": "Calling",
+  "feeds": "Might",
+  "skills": [
+   "Athletics"
+  ],
+  "meta": "Calling • Might (4 HP/level • Rage)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Rage ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br>Rage ◆  Duration 10 rounds<br>You gain Temp HP = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, you're fatigued until you spend three actions to catch your breath.<br>You may end your Rage as a free action, becoming fatigued as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
+    "root": true
+   },
+   {
+    "name": "Sudden Charge ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain Sudden Charge:<br>Sudden Charge ◆◆<br>Stride twice, then Strike.",
+    "requires": [
+     "Rage"
+    ]
+   },
+   {
+    "name": "Thick Hide",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While you are Raging, every Zone on you has +1 Protection, including Zones with no armor at all. An Exposed Zone still counts as 0.",
+    "requires": [
+     "Rage"
+    ]
+   },
+   {
+    "name": "Blood in the Water",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When your Strike drops a creature while you are Raging, your Rage's remaining duration resets to 10 rounds.",
+    "requires": [
+     "Rage"
+    ]
+   },
+   {
+    "name": "Deaf to Pain",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You ignore the Fatigued condition while Raging, and when your Rage ends you need to spend only 1 action to catch your breath rather than 3.",
+    "requires": [
+     "Rage"
+    ]
+   },
+   {
+    "name": "Moment of Clarity ◇",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Frequency once per encounter<br>You push back your rage for a moment in order to think clearly. Until the end of this turn, you lose your Heedless condition.",
+    "requires": [
+     "Rage"
+    ],
+    "feeds": "Presence"
+   }
+  ]
+ },
+ "Bravo": {
+  "category": "Calling",
+  "feeds": "Presence",
+  "skills": [
+   "Acrobatics"
+  ],
+  "meta": "Calling • Presence (3 HP/level • Panache)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Panache",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You become Trained in Acrobatics.<br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br>While you have Panache you gain a +1 circumstance bonus to Evade and a +5-foot circumstance bonus to your Speeds. At Expert rank, the Speed bonus increases to 10 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 15 feet.<br>Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Finisher ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Spend your Panache and Strike, with the following effects:<br>Hit add 2d6 precision damage.<br>Graze add 1d6 precision damage.<br>You lose the Panache either way.",
+    "requires": [
+     "Panache"
+    ]
+   },
+   {
+    "name": "Opportune Parry ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger A creature Grazes or Misses you while you have Panache.<br>Effect You do not pay the Graze cost.",
+    "requires": [
+     "Panache"
+    ]
+   },
+   {
+    "name": "Nimble Recovery",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While you have Panache, you may Recenter as a free action once per turn.",
+    "requires": [
+     "Panache"
+    ]
+   },
+   {
+    "name": "Bravo's Entrance",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You begin every encounter with Panache if you are not surprised.",
+    "requires": [
+     "Panache"
+    ]
+   },
+   {
+    "name": "Elegant Buckler",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Raise a Shield ◆ to gain a circumstance bonus to Guard from a buckler, increase the bonus from +1 to +2.<br>While you have a buckler raised, if a creature critically misses you with a Strike, you gain Panache.",
+    "requires": [
+     "Panache"
+    ]
+   },
+   {
+    "name": "Extravagant Parry ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Requirements You're wielding one or more one-handed weapons.<br>You gain a +1 circumstance bonus to Guard until the start of your next turn, or a +2 circumstance bonus if you have a free hand or are wielding a weapon with the Parry trait. You lose this circumstance bonus if you no longer meet this talent's requirement. If a creature misses you with a Strike while you have this bonus, you gain Panache.",
+    "requires": [
+     "Panache"
+    ]
+   }
+  ]
+ },
+ "Hunter": {
+  "category": "Calling",
+  "feeds": "Wits",
+  "skills": [
+   "Awareness"
+  ],
+  "meta": "Calling • Wits (3 HP/level • Mark Prey)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Mark Prey ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You become Trained in Awareness.<br>(Concentrate) Choose one creature you can see. It is your prey until you Mark another or the encounter ends.<br>The first time each round that you Hit your prey, add 1d8 precision damage. You also always know roughly where your prey is while it is within 60 feet, even while it is Hidden or Undetected. The extra precision damage rises to 2d8 at Expert rank, 3d8 at Master, and 4d8 at Legendary.<br>Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Running Mark",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You may Mark Prey as part of a Stride rather than spending an action.",
+    "requires": [
+     "Mark Prey"
+    ]
+   },
+   {
+    "name": "Read the Quarry",
+    "tier": "T",
+    "cost": 1,
+    "effect": "The first time each encounter your prey attacks you, you learn if its Evade or Guard is higher.",
+    "requires": [
+     "Mark Prey"
+    ]
+   },
+   {
+    "name": "Hobbling Strike",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Hit your prey with the first Strike of your turn, its Speed is reduced by 10 feet until the end of its next turn.",
+    "requires": [
+     "Mark Prey"
+    ]
+   },
+   {
+    "name": "No Escape ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger Your prey Strides away from you.<br>Effect Stride up to your Speed toward it. This does not provoke reactions from your prey.",
+    "requires": [
+     "Mark Prey"
+    ]
+   },
+   {
+    "name": "Hunter's Aim ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Make a weapon Strike against your Marked Prey. On this Strike, you gain a +2 circumstance bonus to the attack roll and ignore your prey's concealed condition and any lesser cover.",
+    "requires": [
+     "Mark Prey"
+    ]
+   }
+  ]
+ },
+ "Weaponmaster": {
+  "category": "Calling",
+  "feeds": "Might",
+  "skills": [
+   "Athletics"
+  ],
+  "meta": "Calling • Might (3 HP/level • Drilled)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Drilled",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You become Trained in Athletics.<br>You gain the Weapon Familiarity Talent for free.<br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br>You may take the Reactive Strike Talent, ignoring its requirements. However, you may still only use Reactive Strike ↺ with weapons in which you are at least Expert Proficiency Rank.<br>Every Talent in this Constellation requires this.",
+    "choice": "Weapon Group",
+    "freeTalent": "Weapon Familiarity",
+    "root": true
+   },
+   {
+    "name": "Hold the Line",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your Reactive Strike ↺ also triggers when a creature within your reach uses a Move action.",
+    "requires": [
+     "Drilled"
+    ]
+   },
+   {
+    "name": "Punishing Blow",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your Reactive Strike disrupts the triggering action on a Hit, if the Zone struck was Exposed.",
+    "requires": [
+     "Drilled"
+    ]
+   },
+   {
+    "name": "Second Nature",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your weapon specialization damage arrives one rank early with your Drilled group: +2 while Trained, +3 at Expert, +4 at Master, +5 at Legendary.",
+    "requires": [
+     "Drilled"
+    ]
+   },
+   {
+    "name": "Hold Fast",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When a Graze would Expose one of your Zones, you may take 1 damage per level and Expose nothing instead.",
+    "requires": [
+     "Drilled"
+    ]
+   }
+  ]
+ },
+ "Archery": {
+  "category": "Combat Style",
+  "feeds": "Agility",
+  "meta": "Combat Style • Agility (bows and careful ranged attacks)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Archery Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Draw a Bead ◆ action.<br>Draw a Bead ◆ (concentrate)<br>Choose one creature you can Observe and can reach with your bow.<br>Until the end of your turn: your next bow Strike against that creature gains a +1 circumstance bonus to the attack; ignore the weapon's Unwieldy penalty for that Strike; if that Strike Grazes, you choose the Zone that becomes Exposed instead of the defender. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Clear the Line",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your ranged attacks treat Lesser Cover as no Cover.",
+    "requires": [
+     "Archery Training"
+    ],
+    "feeds": "Wits"
+   },
+   {
+    "name": "Loose and Move",
+    "tier": "T",
+    "cost": 1,
+    "effect": "After making a Strike with a bow, you may Step 3 feet as a free action once per turn.",
+    "requires": [
+     "Archery Training"
+    ]
+   },
+   {
+    "name": "Close Shot",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Reduce the Unwieldy distance of your bow by 5 feet. If that would reduce it to 0, the weapon no longer has Unwieldy for you.",
+    "requires": [
+     "Archery Training"
+    ]
+   }
+  ]
+ },
+ "Armored Fighting": {
+  "category": "Combat Style",
+  "feeds": "Presence",
+  "meta": "Combat Style • Presence (the harness as a weapon)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Armored Fighting Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>When determining whether your armor forms a complete harness for an Armored Fighting Talent, all four Zones must be armored in the required material. If you are Master, only three Zones must be armored in the required material. Every talent here requires this.",
+    "desc": "Knowing how to exploit armor as part of your fighting method.",
+    "feeds": "Might",
+    "root": true
+   },
+   {
+    "name": "Ironclad",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While wearing Full Plate, gain a +1 status bonus to Guard for physical Attacks against Shove, Trip, and Reposition.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "desc": "You're not harder to hit generally. You're harder to move.",
+    "feeds": "Might"
+   },
+   {
+    "name": "Trust the Harness",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While wearing Full Plate, when you would choose an armored Zone for a Graze, you may choose the Torso even if another rule would normally require another Zone.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Might"
+   },
+   {
+    "name": "Lock Down ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You settle your weight into your Full Plate harness.<br>While in this Stance: +1 status bonus to Guard for physical Attacks; you cannot be forcibly moved more than 3 feet by a single effect unless it critically succeeds; your Speed is reduced by 5 feet.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Might"
+   },
+   {
+    "name": "Punishing Shove",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you successfully Shove a creature, that creature takes an amount of bludgeoning damage equal to your Might modifier (or double that amount on a Critical Success). This damage increases by 2 when you become Expert in Armored Fighting, 6 when you become Master, and 12 when you become Legendary.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "desc": "When you push a foe away, you put the entire force of your Full Plate harness into it.",
+    "feeds": "Might"
+   },
+   {
+    "name": "Shoulder Check ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You hit a foe with your armor to throw them off balance. Make a fist Strike even if you don't have a hand free; if you're wielding a gauntlet or spiked gauntlet, you can make a Strike with one of those weapons instead. The Strike gains the following additional results:<br>Critical Success The target is Wrong-Footed for you until the end of your next turn.<br>Success The target is Wrong-Footed for you against the next Attack you attempt against it before the end of your current turn.<br>Critical Failure You are Wrong-Footed against melee attacks the target attempts against you until the end of your next turn.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Might"
+   },
+   {
+    "name": "Flowing Defense ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Flowing Defense ◆ (stance)<br>While wearing Full Mail: when you Recenter, you may also Step 3 feet; −1 status penalty to Guard for physical Attacks versus Shove; retains mail's normal vulnerability to piercing.",
+    "requires": [
+     "Armored Fighting Training"
+    ]
+   },
+   {
+    "name": "Supple Harness",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your first Step each turn ignores 1 point of Load Strain's effect on movement-related checks.",
+    "requires": [
+     "Armored Fighting Training"
+    ]
+   },
+   {
+    "name": "Roll With It ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you are Grazed while wearing Full Mail, you may Step 3 feet after resolving the attack and damage.",
+    "requires": [
+     "Armored Fighting Training"
+    ]
+   },
+   {
+    "name": "Turn the Scales ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Once per round when you would be Hit, shift the blow to another armored, non-Exposed Zone.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Wits"
+   },
+   {
+    "name": "Layered Guard ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Layered Guard ◆ (stance)<br>While wearing Full Scale: the first time each round a Zone becomes Exposed, another Zone of your choice gains +1 Protection until the start of your next turn.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Wits"
+   },
+   {
+    "name": "Loose Guard",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While all four Zones are Padded or Leather and your Load Strain is 0, Recenter lets you Step 3 feet as part of the action.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Agility"
+   },
+   {
+    "name": "Light on Your Feet ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Light on Your Feet ◆ (stance)<br>While in light armor: +1 status bonus to Evade for physical Attacks; after a creature Misses you, Step 3 feet once per round. Cannot be used if your Load Strain exceeds 0.",
+    "requires": [
+     "Armored Fighting Training"
+    ],
+    "feeds": "Agility"
+   }
+  ]
+ },
+ "Brawling": {
+  "category": "Combat Style",
+  "feeds": "Might",
+  "meta": "Combat Style • Might (fists, feet, tusks, headbutts)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Brawling Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Clinch action.<br>Clinch ◆ (stance) While you are in this stance, when you Graze an enemy with a Strike, you choose which of its Zones is Exposed, rather than the enemy. At Master rank, a creature you have Grabbed cannot Recenter.",
+    "root": true
+   },
+   {
+    "name": "Iron Fists",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your unarmed strikes deal 1d6 and count as weapons (lethal by default, your choice).",
+    "requires": [
+     "Brawling Training"
+    ]
+   },
+   {
+    "name": "Snagging Grip ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Strike with a free hand; on a hit, the target is Off-Guard until your next turn.",
+    "requires": [
+     "Brawling Training"
+    ]
+   },
+   {
+    "name": "Crushing Grab",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you successfully Grapple a creature, you can deal bludgeoning damage to that creature equal to your Might bonus. You can make this attack nonlethal with no penalty.",
+    "requires": [
+     "Brawling Training"
+    ]
+   }
+  ]
+ },
+ "Crossbow Fighting": {
+  "category": "Combat Style",
+  "feeds": "Wits",
+  "meta": "Combat Style • Wits (prepared mechanical ranged weapons)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Crossbow Fighting Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Brace the Stock ◆ action.<br>Brace the Stock ◆ (stance)<br>You settle into a firing position. Until you Move: gain a +1 circumstance bonus to all crossbow Strikes; increase any Armor-Piercing [N] value of those attacks by 1; if the attack Grazes, you choose the Zone that becomes Exposed. The effect ends after you make a Move. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Practiced Loader",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Once per turn, reduce the Reload value of a crossbow by 1, to a minimum of 1.",
+    "requires": [
+     "Crossbow Fighting Training"
+    ],
+    "feeds": "Agility"
+   },
+   {
+    "name": "Crank and Move",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you spend an action Reloading, you may Step 3 feet as part of that action.",
+    "requires": [
+     "Crossbow Fighting Training"
+    ]
+   },
+   {
+    "name": "Find the Seam",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your Crossbow Strikes do an additional 2 damage against Exposed Zones.",
+    "requires": [
+     "Crossbow Fighting Training"
+    ]
+   },
+   {
+    "name": "Snap Shot",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You may use a loaded crossbow with the Close trait to make Reactive Strikes if you have an ability that grants them.",
+    "requires": [
+     "Crossbow Fighting Training"
+    ]
+   },
+   {
+    "name": "Covered Reload ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Take Cover, then Interact to reload. As normal, you must meet the requirements to Take Cover.",
+    "requires": [
+     "Crossbow Fighting Training"
+    ]
+   }
+  ]
+ },
+ "Dueling": {
+  "category": "Combat Style",
+  "feeds": "Agility",
+  "meta": "Combat Style • Agility (one one-handed weapon, other hand free)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Dueling Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Measure action.<br>The Measure ◆ (stance) You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the same Defense it used against your previous Strike, until you leave the stance or name another. At Master rank you may name a new creature as a free action.",
+    "root": true
+   },
+   {
+    "name": "En Garde",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+1 circumstance Guard vs. melee while wielding a one-handed weapon with your other hand free.",
+    "requires": [
+     "Dueling Training"
+    ],
+    "feeds": "Presence"
+   },
+   {
+    "name": "Feinting Lunge ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Feint, Strike, then Step.",
+    "requires": [
+     "Dueling Training"
+    ]
+   },
+   {
+    "name": "Snagging Strike ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You combine an attack with quick grappling moves to throw an enemy off balance as long as it stays in your reach. Make a Strike while keeping one hand free. If this Strike hits, the target is Off-Guard until the start of your next turn or until it's no longer within the reach of your hand, whichever comes first.",
+    "requires": [
+     "Dueling Training"
+    ]
+   },
+   {
+    "name": "Combat Grab ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Press<br>Requirements You have one hand free, and your target is within reach of that hand.<br>Using your prior attack to shift your opponent's guard, you take another swing and grab them. Make a melee Strike while keeping one hand free. If the Strike hits, you grab the target using your free hand. The creature remains grabbed until the end of your next turn or until it Escapes, whichever comes first.",
+    "requires": [
+     "Dueling Training"
+    ],
+    "feeds": "Might"
+   },
+   {
+    "name": "Dueling Parry ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Requirements You are wielding a single one-handed melee weapon and hold nothing else in your hands.<br>You can parry attacks against you with your one-handed weapon. You gain a +2 circumstance bonus to Guard until the start of your next turn as long as you continue to meet the requirements.",
+    "requires": [
+     "Dueling Training"
+    ],
+    "feeds": "Presence"
+   }
+  ]
+ },
+ "Great Weapon Fighting": {
+  "category": "Combat Style",
+  "feeds": "Might",
+  "meta": "Combat Style • Might (two hands, full commitment)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Great Weapon Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Overreach action.<br>Overreach ◆ (stance)<br>You must be wielding a two-handed melee weapon.<br>While you are in this stance your Hits and Critical Hits deal +2 damage and your Evade drops by 2, rising to +3 damage at Expert rank, +4 at Master, and +5 at Legendary. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Sweeping Blow ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "One attack roll against two creatures within your reach, resolved separately against each one's chosen Defense. Both count as a single attack for your multiple attack penalty.",
+    "requires": [
+     "Great Weapon Training"
+    ]
+   },
+   {
+    "name": "Follow Through",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When your Strike drops a creature, your next Strike this turn ignores your multiple attack penalty.",
+    "requires": [
+     "Great Weapon Training"
+    ]
+   },
+   {
+    "name": "Brutish Shove ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Requirements You are wielding a two-handed melee weapon.<br>Using the momentum of your last attack to throw your weight into another, you make your opponent stumble back. Make a Strike with a two-handed melee weapon. If you hit a target that is your size or smaller, that creature is Off-Guard until the end of your current turn, and you can automatically Shove it, with the same benefits as the Shove action (including the Critical Success effect, if your Strike was a Critical Hit). If you move to follow the target, your movement doesn't trigger reactions.<br>Failure The target becomes Off-Guard until the end of your current turn.",
+    "requires": [
+     "Great Weapon Training"
+    ]
+   },
+   {
+    "name": "Crushing Commitment",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you make a Strike ◆◆◆ with a two-handed weapon, deal one extra weapon die of damage.",
+    "requires": [
+     "Great Weapon Training"
+    ]
+   },
+   {
+    "name": "Devastating Graze",
+    "tier": "T",
+    "cost": 1,
+    "effect": "If you Strike and it results in a Graze, you add your Might bonus to the damage.",
+    "requires": [
+     "Great Weapon Training"
+    ]
+   }
+  ]
+ },
+ "Missile Skirmishing": {
+  "category": "Combat Style",
+  "feeds": "Agility",
+  "meta": "Combat Style • Agility (slings, thrown weapons, bolas)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Missile Skirmishing Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Keep Moving ◆ action.<br>Keep Moving ◆ (stance)<br>Requirements You wield a sling or a weapon with the Thrown trait.<br>While in this stance: if you make a ranged Strike, you may Step 3 feet immediately before or after it; you may use this benefit only once per turn. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Quick Hand",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Draw a thrown weapon as part of the Strike made with it.",
+    "requires": [
+     "Missile Skirmishing Training"
+    ]
+   },
+   {
+    "name": "Running Cast",
+    "tier": "T",
+    "cost": 1,
+    "effect": "If you Strided at least 5 feet immediately before making a ranged Strike with a sling or thrown weapon, increase its Range by 10 feet for that Strike.",
+    "requires": [
+     "Missile Skirmishing Training"
+    ]
+   },
+   {
+    "name": "Harrying Shot",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Graze with a sling or thrown weapon, the target takes a −1 circumstance penalty to its next Attack before the end of its next turn.",
+    "requires": [
+     "Missile Skirmishing Training"
+    ]
+   },
+   {
+    "name": "Trip Line",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You get a +2 status bonus to your Trip checks when using a Ranged weapon with the Trip trait.",
+    "requires": [
+     "Missile Skirmishing Training"
+    ]
+   },
+   {
+    "name": "Rebounding Toss ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Requirements You are wielding a thrown weapon.<br>You bounce your weapon off one foe to strike another. Make a ranged Strike with a thrown weapon. If this Strike hits, the weapon rebounds toward an enemy within 10 feet of the original target. Make an additional Strike against this second target. Both attacks count toward your multiple attack penalty, but the penalty doesn't increase until after you've made both attacks.",
+    "requires": [
+     "Missile Skirmishing Training"
+    ],
+    "feeds": "Wits"
+   }
+  ]
+ },
+ "Shield Fighting": {
+  "category": "Combat Style",
+  "feeds": "Presence",
+  "meta": "Combat Style • Presence (weapon and shield as one machine)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Shield Fighting Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Shield Wall action.<br>Shield Wall ◆ (stance) You must be wielding a shield. While you are in this stance your shield counts as Raised at all times, without spending an action for it, but you cannot Stride; you may only Step. At Master rank you may Stride up to half your Speed while the stance holds.",
+    "root": true
+   },
+   {
+    "name": "Reactive Shield ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When attacked, Raise your Shield.",
+    "requires": [
+     "Shield Fighting Training"
+    ],
+    "feeds": "Agility"
+   },
+   {
+    "name": "Shield Block ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Reduce an attack's damage to you by your shield's hardness.",
+    "requires": [
+     "Shield Fighting Training"
+    ]
+   },
+   {
+    "name": "Aggressive Block ◇",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger You use Shield Block ↺, and the opponent that triggered Shield Block is adjacent to you and is your size or smaller.<br>You push back as you block, knocking your foe away or off balance. You use your shield to push the triggering creature, either automatically Shoving it 5 feet or causing it to become Off-Guard until the start of your next turn. The triggering creature chooses whether to be moved or become Off-Guard. If it chooses to be moved, you choose the direction. If the Shove would cause it to hit a solid object or enter another creature's space, it must become Off-Guard instead of being moved.",
+    "requires": [
+     "Shield Block"
+    ],
+    "feeds": "Might"
+   },
+   {
+    "name": "Devoted Guardian ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Requirements Your last action was to Raise a Shield.<br>You adopt a wide stance, ready to defend both yourself and your chosen ward. Select one adjacent creature. As long as your shield is raised and the creature remains adjacent to you, the creature gains a +1 circumstance bonus to their Guard, or a +2 circumstance bonus if the shield you raised was a tower shield.",
+    "requires": [
+     "Shield Fighting Training"
+    ]
+   },
+   {
+    "name": "Defensive Advance ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Flourish<br>With the protection of your shield, you dive into battle. You Raise your Shield and Stride. If you end your movement within melee reach of at least one enemy, you can make a melee Strike against that enemy. You can use Defensive Advance while Burrowing, Climbing, Flying, or Swimming instead of Striding if you have the corresponding movement type.",
+    "requires": [
+     "Shield Fighting Training"
+    ]
+   },
+   {
+    "name": "Shield Warfare",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You know how to use shields offensively far better than most. Increase the weapon damage die of any shield bash, shield boss, or shield spikes you wield by one step.",
+    "requires": [
+     "Shield Fighting Training"
+    ]
+   }
+  ]
+ },
+ "Spear & Polearm Fighting": {
+  "category": "Combat Style",
+  "feeds": "Wits",
+  "meta": "Combat Style • Wits (polearms and spears)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Spear & Polearm Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Keep Measure ◆ action.<br>Keep Measure ◆ (stance)<br>Requirements You are wielding a hafted weapon.<br>While in this stance: the first time each round an enemy moves from outside your Reach into it, you may Step 3 feet directly away as a free action after that movement finishes; if that movement keeps the enemy within your Reach, it does not trigger reactions from that enemy. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Set Against the Charge ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger A creature moves into your reach.<br>Effect Strike it. If it entered from outside your reach, your weapon deals +2 damage per weapon die.",
+    "requires": [
+     "Spear & Polearm Training"
+    ]
+   },
+   {
+    "name": "Short Grip Strike ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Flourish<br>Requirements You are wielding a hafted weapon.<br>Reduce your weapon's Unwieldy value by 2 ft.",
+    "requires": [
+     "Spear & Polearm Training"
+    ],
+    "feeds": "Agility"
+   },
+   {
+    "name": "Long Haft",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Increase hafted weapon Reach by 2 ft while using two hands.",
+    "requires": [
+     "Spear & Polearm Training"
+    ]
+   },
+   {
+    "name": "Keep Away",
+    "tier": "T",
+    "cost": 1,
+    "effect": "If you Attack a foe and it results in a Graze, you may Step instead of Exposing a Zone.",
+    "requires": [
+     "Spear & Polearm Training"
+    ]
+   },
+   {
+    "name": "Sleek Reposition ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Press<br>While your opponent is still recovering from your prior attack, you snag its armor, clothing, or flesh to move it as you please. Make a melee Strike with a spear or polearm. If you hit a target that is your size or smaller, you can automatically Reposition it, with the same benefits as the Reposition action (including the Critical Success effect, if your Strike was a Critical Hit). Use your Total Reach for this Reposition.<br>Failure The target becomes Off-Guard until the end of your current turn.",
+    "requires": [
+     "Spear & Polearm Training"
+    ]
+   }
+  ]
+ },
+ "Two-Weapon Fighting": {
+  "category": "Combat Style",
+  "feeds": "Agility",
+  "meta": "Combat Style • Agility (a weapon in each hand)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Two-Weapon Fighting Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Twin Openings action.<br>Twin Openings ◆ (stance) You must have a weapon in each hand. While you are in this stance, the first time each turn that you hit the same creature with both of your weapons, you may make one of its zones Exposed after resolving the attack and damage.",
+    "root": true
+   },
+   {
+    "name": "Double Slice ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Strike with each weapon at your current multiple attack penalty; combine the damage for purposes of bypassing Protection.",
+    "requires": [
+     "Two-Weapon Fighting Training"
+    ]
+   },
+   {
+    "name": "Off-Hand Guard",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+1 circumstance to Guard while wielding two weapons and not raising a shield.",
+    "requires": [
+     "Two-Weapon Fighting Training"
+    ],
+    "feeds": "Presence"
+   }
+  ]
+ },
+ "Serrovane": {
+  "category": "Culture",
+  "feeds": "Presence",
+  "meta": "Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Serrovanian",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You know Serrovine and Common.<br>You gain a +1 status bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
+    "prereqs": "Raised in Serrovane",
+    "root": true
+   },
+   {
+    "name": "Oathbound",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Name one creature that has broken a bargain, a truce, or a formal challenge with you. You gain a +1 circumstance bonus to Attack rolls and Defense rolls against that creature until the encounter ends. You may have only one Oathbound creature at a time.",
+    "requires": [
+     "Serrovanian"
+    ]
+   },
+   {
+    "name": "Contract Literate",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+2 circumstance to notice hidden clauses, traps, and altered terms in any agreement.",
+    "requires": [
+     "Serrovanian"
+    ],
+    "desc": "Read legal, and infernal, contracts at a glance."
+   },
+   {
+    "name": "Iron Etiquette",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+1 circumstance to checks against Intimidation and social manipulation.",
+    "requires": [
+     "Serrovanian"
+    ],
+    "desc": "Court manners are armor."
+   }
+  ]
+ },
+ "Kestrel Reach": {
+  "category": "Culture",
+  "feeds": "Wits",
+  "meta": "Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Reacher",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You know Reachspeak and Common.<br>You gain a +1 status bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
+    "prereqs": "Raised in the Kestrel Reach",
+    "root": true
+   },
+   {
+    "name": "Quick Tongue ◇",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain the Quick Tongue action:<br>Quick Tongue ◇<br>Trigger You critically fail a Diplomacy check.<br>Requirements You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
+    "requires": [
+     "Reacher"
+    ]
+   },
+   {
+    "name": "Riverfoot",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Stride each encounter is 5 feet longer.",
+    "requires": [
+     "Reacher"
+    ]
+   },
+   {
+    "name": "Broker's Eye",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You always know an item's fair price, and gain +2 circumstance to Diplomacy and Guile checks when trading.",
+    "requires": [
+     "Reacher"
+    ]
+   }
+  ]
+ },
+ "Awareness": {
+  "category": "Defense",
+  "feeds": "Wits",
+  "meta": "Defense constellation • Wits (don't be surprised)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Awareness Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in Awareness: add this Constellation's Proficiency Bonus to your Awareness checks, and to your Awareness Threshold (the number Sneak, Feint, and Lie attempts are measured against). Initiative is usually an Awareness check.",
+    "root": true
+   },
+   {
+    "name": "Forewarned",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Once per encounter, after you roll a Defense but before the outcome is announced, you may add your Wits to that roll.",
+    "requires": [
+     "Awareness Training"
+    ]
+   },
+   {
+    "name": "Read the Tell",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When a creature critically fails to Feint against you, Lie to you, or Sneak past you, it becomes Exposed (Head) until it Recenters.",
+    "requires": [
+     "Awareness Training"
+    ]
+   },
+   {
+    "name": "First Word",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you roll initiative and are not surprised, you may swap your place in the order with one willing ally.",
+    "requires": [
+     "Awareness Training"
+    ]
+   },
+   {
+    "name": "Second Sense",
+    "tier": "T",
+    "cost": 1,
+    "effect": "The first time each encounter that a hidden or unnoticed creature attacks you, you may use Guard against that attack even though you were unaware of it.",
+    "requires": [
+     "Awareness Training"
+    ]
+   }
+  ]
+ },
+ "Evade": {
+  "category": "Defense",
+  "feeds": "Agility",
+  "meta": "Defense constellation • Agility (don't be there • Give Ground posture)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Evade Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in Evade: add this Constellation's Proficiency Bonus to your Evade checks. It is the number attack rolls are measured against when you try to slip a blow, and the check you roll against area effects, traps, and hazards.<br>You gain the Give Ground ↺ posture:<br>You gain a +2 circumstance bonus to Evade for the triggering attack.<br>A Zone of your choice becomes Exposed immediately, win or lose.",
+    "root": true
+   },
+   {
+    "name": "Fluid Motion",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your Speed increases by 5 feet while your Load Strain is 1 or less.",
+    "requires": [
+     "Evade Training"
+    ]
+   },
+   {
+    "name": "Skirmisher's Step",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Your Steps ignore difficult terrain.",
+    "requires": [
+     "Evade Training"
+    ]
+   },
+   {
+    "name": "Slip the Line ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "(posture) +2 to your Evade against one attack. If the blow does not Hit, you end in any square adjacent to the attacker, your choice.",
+    "requires": [
+     "Evade Training"
+    ]
+   },
+   {
+    "name": "Drop Flat ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "(posture) +4 to your Evade against every attack until the start of your next turn. You end prone.",
+    "requires": [
+     "Evade Training"
+    ]
+   }
+  ]
+ },
+ "Guard": {
+  "category": "Defense",
+  "feeds": "Presence",
+  "meta": "Defense constellation • Presence (don't let it through • Set Your Feet posture)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Guard Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in Guard: add this Constellation's Proficiency Bonus to your Guard checks. It is the number attack rolls are measured against when you meet a blow with weapon, shield, or braced arm, and the check you roll against fear, charm, confusion, and other assaults on your composure.<br>You gain the Set Your Feet ↺ posture:<br>You gain a +2 circumstance bonus to Guard for the triggering attack.<br>A Zone of your choice becomes Exposed immediately, win or lose.",
+    "root": true
+   },
+   {
+    "name": "Kneel Behind the Shield ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "(posture) You must have a shield Raised.<br>+4 to your Guard against every attack until the start of your next turn. Your Arms become Exposed, and your Speed is 0 until you spend an action to rise.",
+    "requires": [
+     "Guard Training"
+    ]
+   },
+   {
+    "name": "Unshaken",
+    "tier": "T",
+    "cost": 1,
+    "effect": "The first time each encounter that a Graze would Expose a zone on you, it does not.",
+    "requires": [
+     "Guard Training"
+    ]
+   },
+   {
+    "name": "Deflecting Palms ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger You are hit and have a hand free.<br>Effect Reduce that attack's damage by 2 plus your Presence.",
+    "requires": [
+     "Guard Training"
+    ]
+   },
+   {
+    "name": "Cover the Angle ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger An adjacent ally is attacked.<br>Effect The attack is measured against your Guard instead of their chosen Defense, and any Graze cost falls on you.",
+    "requires": [
+     "Guard Training"
+    ]
+   },
+   {
+    "name": "Larger than Life",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Requirements You are wearing Plate in all Zones.<br>Though you don't get any larger, you're treated as one size larger for the purposes of affecting other creatures with actions like Disarm, Grapple, Reposition, Shove, and Trip while wearing heavy armor. Similarly, you're treated as one size larger for the purposes of creatures affecting you with those same actions, as well as with Swallow Whole and similar actions, while wearing heavy armor.",
+    "requires": [
+     "Guard Training"
+    ],
+    "feeds": "Might"
+   }
+  ]
+ },
+ "Endure": {
+  "category": "Defense",
+  "feeds": "Might",
+  "meta": "Defense constellation • Might (survive what does come through)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Endure Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
+    "root": true
+   },
+   {
+    "name": "Shrug It Off",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Reduce each instance of persistent damage you take by your Might. This can never reduce it below 1.",
+    "requires": [
+     "Endure Training"
+    ]
+   },
+   {
+    "name": "Second Wind ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Once per day, dig deep: regain Hit Points equal to half your level plus your Might.",
+    "requires": [
+     "Endure Training"
+    ]
+   },
+   {
+    "name": "Braced Frame",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+2 circumstance bonus to your Guard against Shove, Trip, and Reposition.",
+    "requires": [
+     "Endure Training"
+    ]
+   },
+   {
+    "name": "Blade Brake ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger You would be moved by a forced movement effect.<br>Requirements You are wielding a melee weapon and are within reach of a hard surface.<br>You plow your weapon into a floor, wall, or another sturdy surface, anchoring yourself in place. If you would be moved 20 feet or more, you are moved only 5 feet. Otherwise, you don't move at all.",
+    "requires": [
+     "Endure Training"
+    ]
+   }
+  ]
+ },
+ "Lore": {
+  "category": "Skill",
+  "feeds": "Wits",
+  "meta": "Skill constellation • Wits (the template every Lore (X) Constellation copies)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Deep Knowledge",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this Lore: add the Constellation's rank to its checks. Recall and research within its field; you know its people, texts, and secrets. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Practical Application",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+2 circumstance to any check where you can explain how this field directly applies. The GM is the judge; the story is the proof.",
+    "requires": [
+     "Deep Knowledge"
+    ]
+   },
+   {
+    "name": "Well Read ◇",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Once per scene, Recall Knowledge about your field as a free action.",
+    "requires": [
+     "Deep Knowledge"
+    ]
+   }
+  ]
+ },
+ "Acrobatics": {
+  "category": "Skill",
+  "feeds": "Agility",
+  "meta": "Skill constellation • Agility",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Acrobatics Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Tumbling Retreat ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Step 6 feet instead of 3. You still cannot Step in Difficult Terrain or Greater Difficult Terrain.",
+    "requires": [
+     "Acrobatics Training"
+    ]
+   },
+   {
+    "name": "Slip the Grasp",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+2 circumstance bonus to Escape.",
+    "requires": [
+     "Acrobatics Training"
+    ]
+   },
+   {
+    "name": "Kip Up ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Stand up. This movement doesn't trigger reactions.",
+    "requires": [
+     "Acrobatics Training"
+    ]
+   },
+   {
+    "name": "Kip Away",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Stand, you may Step as part of the same action.",
+    "requires": [
+     "Kip Up"
+    ]
+   },
+   {
+    "name": "Tumble Behind",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you successfully Tumble Through, the foe whose space you passed through is Wrong-Footed against the next attack you make before the end of your current turn.",
+    "requires": [
+     "Acrobatics Training"
+    ]
+   },
+   {
+    "name": "Mobility",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Stride and move half your Speed or less, that movement does not trigger reactions. You can use Mobility when Climbing, Flying, or Swimming instead of Striding if you have the corresponding movement type.",
+    "requires": [
+     "Acrobatics Training"
+    ]
+   }
+  ]
+ },
+ "Athletics": {
+  "category": "Skill",
+  "feeds": "Might",
+  "meta": "Skill constellation • Might",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Athletics Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Bull Rush ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Stride, then Shove.<br>Add 3 feet to the push for every 10 feet you moved first.",
+    "requires": [
+     "Athletics Training"
+    ]
+   },
+   {
+    "name": "Wrestler's Grip",
+    "tier": "T",
+    "cost": 1,
+    "effect": "A creature you have Grabbed takes a −2 circumstance penalty to Escape.",
+    "requires": [
+     "Athletics Training"
+    ]
+   },
+   {
+    "name": "Titan Wrestler",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Grapple, Shove, and Trip creatures up to two sizes larger than you.",
+    "requires": [
+     "Athletics Training"
+    ]
+   }
+  ]
+ },
+ "Diplomacy": {
+  "category": "Skill",
+  "feeds": "Presence",
+  "meta": "Skill constellation • Presence",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Diplomacy Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Rally ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain the Rally ◆ action:<br>Rally ◆  Auditory, Emotion, Mental<br>Roll Diplomacy against a Threshold of 14 + your level. On a success, one ally within 30 feet who can hear you gains a +1 circumstance bonus to their next Defense roll before the start of your next turn. On a critical success, +2, and they can Recenter ◆ as a free action.",
+    "requires": [
+     "Diplomacy Training"
+    ]
+   },
+   {
+    "name": "Talk Them Down ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain the Talk Them Down ◆ action:<br>Talk Them Down ◆  Auditory, Concentrate, Emotion, Mental<br>Roll Diplomacy against the target's Guard. On a success, it takes a −2 circumstance penalty to Attacks against you until the end of your next turn; on a critical success, until the end of the encounter. On a critical failure it gains a +1 circumstance bonus to Attacks against you.",
+    "requires": [
+     "Diplomacy Training"
+    ]
+   },
+   {
+    "name": "Coordinated Effort",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Aid an ally, the bonus is +2 instead of +1, and +3 on a critical success.",
+    "requires": [
+     "Diplomacy Training"
+    ]
+   },
+   {
+    "name": "Command the Field ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You gain the Command the Field ◆◆ action:<br>Command the Field ◆◆  Auditory, Concentrate, Emotion, Mental<br>Roll Diplomacy against a Threshold of 14 + your level. On a success, two allies who can hear you may each Step as a free action. On a critical success, they may each Stride half their Speed instead.",
+    "requires": [
+     "Diplomacy Training"
+    ]
+   }
+  ]
+ },
+ "Guile": {
+  "category": "Skill",
+  "feeds": "Wits",
+  "meta": "Skill constellation • Wits",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Guile Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Feinting Step ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Feint, then Step.",
+    "requires": [
+     "Guile Training"
+    ]
+   },
+   {
+    "name": "Sell the Feint",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you critically succeed at a Feint, the target is Off-Guard to everyone, not just you, until the end of your next turn.",
+    "requires": [
+     "Guile Training"
+    ]
+   },
+   {
+    "name": "Overextending Feint",
+    "tier": "T",
+    "cost": 1,
+    "effect": "On a successful Feint, you can use the following success and critical success effects instead of any other effects that would occur when you Feint.<br>Critical Success The target takes a −2 circumstance penalty to all attack rolls against you before the end of its next turn.<br>Success The target takes a −2 circumstance penalty to its next attack roll against you before the end of its next turn.",
+    "requires": [
+     "Guile Training"
+    ]
+   },
+   {
+    "name": "Distracting Feint",
+    "tier": "T",
+    "cost": 1,
+    "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a −2 circumstance penalty to Awareness and Agility checks and Thresholds.",
+    "requires": [
+     "Guile Training"
+    ]
+   }
+  ]
+ },
+ "Intimidation": {
+  "category": "Skill",
+  "feeds": "Presence",
+  "meta": "Skill constellation • Presence",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Intimidation Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Battle Cry ◇",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger You are about to roll Initiative.<br>Demoralize every enemy within 15 feet with a single roll, compared separately against each one's Guard.",
+    "requires": [
+     "Intimidation Training"
+    ]
+   },
+   {
+    "name": "No Quarter",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you drop a creature, you may Demoralize one enemy who saw it fall as a free action.",
+    "requires": [
+     "Intimidation Training"
+    ]
+   },
+   {
+    "name": "Unnerving",
+    "tier": "T",
+    "cost": 1,
+    "effect": "A creature you have Demoralized this encounter takes a −1 circumstance penalty to attacks against you for the rest of it.",
+    "requires": [
+     "Intimidation Training"
+    ]
+   },
+   {
+    "name": "Brutal Beating",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Whenever your Strike is a critical hit and deals damage, the target is Frightened 1.",
+    "requires": [
+     "Intimidation Training"
+    ]
+   }
+  ]
+ },
+ "Stealth": {
+  "category": "Skill",
+  "feeds": "Agility",
+  "meta": "Skill constellation • Agility",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Stealth Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "root": true
+   },
+   {
+    "name": "Knife in the Dark",
+    "tier": "T",
+    "cost": 1,
+    "effect": "When you Hit a creature that is Off-Guard or Wrong-Footed to you, you choose which Zone the blow lands on.",
+    "requires": [
+     "Stealth Training"
+    ]
+   },
+   {
+    "name": "Lost in the Noise ↺",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Trigger An attack against you Misses.<br>Effect If you have cover or concealment, Hide as part of this reaction.",
+    "requires": [
+     "Stealth Training"
+    ]
+   },
+   {
+    "name": "Killing Stillness",
+    "tier": "T",
+    "cost": 1,
+    "effect": "The first time each encounter that you Strike a creature that is unaware of you, a Graze becomes a Hit.",
+    "requires": [
+     "Stealth Training"
+    ]
+   },
+   {
+    "name": "Underhanded Assault ◆◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You Sneak up to a foe adjacent to one of your allies. You can roll against the foe you're Sneaking up on, even if it's currently observing you, as though you were hidden. You take a −2 penalty on your Stealth check. If your Stealth check against the chosen foe succeeds, you can make a melee Strike against that foe at the end of your Sneak, and they are Wrong-Footed against that Strike.",
+    "requires": [
+     "Stealth Training"
+    ]
+   }
+  ]
+ },
+ "Weapons": {
+  "category": "Weapon",
+  "feeds": "Might",
+  "meta": "Weapon • Might (transferable fundamentals: measure, timing, footwork, guard)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Weapons Training",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You are Trained in weapons: add this Constellation's Proficiency Bonus to your attack rolls with any weapon.<br>Special Intuitive weapons use your full Weapons Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Handling.",
+    "root": true
+   },
+   {
+    "name": "Weapon Familiarity",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Choose a Weapon Group or a Technical weapon. You are Familiar with weapons in that group or that Technical weapon.",
+    "choice": "Weapon Group or Technical Weapon",
+    "requires": [
+     "Weapons Training"
+    ]
+   },
+   {
+    "name": "Quick Draw",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Use a reaction to draw or stow an item, weapon, or shield in each hand (or in both hands, if it requires two hands).",
+    "requires": [
+     "Weapons Training"
+    ]
+   },
+   {
+    "name": "Turn the Weapon",
+    "tier": "T",
+    "cost": 1,
+    "effect": "You may deal bludgeoning damage with any Familiar melee weapon you wield, striking with the pommel, the haft, or the flat. Its damage die drops one step when you do (d12 to d10 to d8 to d6 to d4).",
+    "requires": [
+     "Weapon Familiarity"
+    ]
+   },
+   {
+    "name": "Sure Grip",
+    "tier": "T",
+    "cost": 1,
+    "effect": "+2 circumstance bonus to your Guard against Disarm regarding a Familiar weapon. When a Disarm against you would succeed, you keep hold of the weapon and suffer only the loosened grip.",
+    "requires": [
+     "Weapon Familiarity"
+    ]
+   },
+   {
+    "name": "Read the Steel ◆",
+    "tier": "T",
+    "cost": 1,
+    "effect": "Study one creature you can see. Until the end of the encounter you know the Protection and the material of each of its Zones, and your Strikes against it ignore 1 Protection.",
+    "requires": [
+     "Weapons Training"
+    ]
+   },
+   {
+    "name": "Reactive Strike ↺",
+    "tier": "E",
+    "cost": 1,
+    "effect": "You gain the Reactive Strike ↺ reaction.<br>Reactive Strike ↺<br>Requirements You are wielding a weapon in which you are at least Expert.<br>Trigger An Observed creature within your reach begins to use a Manipulate action or Stride.<br>Effect Make a melee Strike against the triggering creature. The Multiple Attack Penalty does not apply; nor does it accrue as a result of this Strike. On a Critical Hit, the triggering action is disrupted: it fails, and any actions still to come in that activity are lost.",
+    "requires": [
+     "Weapon Familiarity"
+    ]
+   }
+  ]
+ }
+};
+async function hotload(){ try{ const t=await fetch("assets/trees.json",{cache:"no-store"}); if(t.ok) TREES=await t.json(); }catch(e){} }
+const HUES = {"Awareness":"#E8CC5A","Evade":"#8FC978","Guard":"#8FB0DC","Endure":"#D6975A",
+"Acrobatics":"#7AC4DC","Athletics":"#E89A4E","Diplomacy":"#7ABCC9","Guile":"#AE8FDC","Intimidation":"#DC7A7A","Stealth":"#8FB4E8","Lore":"#C9B47A",
+"Ambusher":"#D68FA8","Berserker":"#F0685A","Bravo":"#D6A8D6","Hunter":"#93C97A","Weaponmaster":"#C98F78",
+"Human":"#DCCB9E","Serrovane":"#B49AE8","Kestrel Reach":"#C9A87A",
+"Weapons":"#C98F78","Two-Weapon Fighting":"#E87A62","Shield Fighting":"#86B4E8","Brawling":"#D68A62","Dueling":"#D6A8D6",
+"Great Weapon Fighting":"#B87A5A","Archery":"#5CC9BC","Crossbow Fighting":"#7FA8C0","Missile Skirmishing":"#93BCB4",
+"Spear & Polearm Fighting":"#A8C97A","Armored Fighting":"#9AA8B4"};
+const stripT=s=>(s||"").replace(/<[^>]+>/g,"");
+const nrmG=s=>(s||"").replace(/[◆↺★\s]+$/,"").trim();
+const mixW=(hex,f)=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const m=v=>Math.round(v+(255-v)*f); return `rgb(${m(r)},${m(g)},${m(b)})`;};
+function prereqEdges(pts){
+  const E=[];
+  for(const p of pts){
+    let tg=p.requires;
+    if(!tg){ const m=stripT(p.effect).match(/Requires ([^.]+)\./); tg=m?m[1].split(" or ").map(s=>s.trim()):null; }
+    if(tg) for(const t2 of tg){ const par=pts.find(q=>q!==p&&nrmG(q.name)===nrmG(t2)); if(par) E.push([par,p]); }
+  }
+  return E;
+}
+const ATTRC={Might:"#F0685A",Agility:"#5CC9BC",Wits:"#E8CC5A",Presence:"#B49AE8"};
+const TIERC = {T:"#4A7C59",E:"#0E5F6B",M:"#C05621",L:"#B8860B"};
+const TIERN = {T:"Trained",E:"Expert",M:"Master",L:"Legendary"};
+const UNIFLARE = "A Constellation Flares on a Critical Success or Critical Failure on a roll with consequences, directly related to a talent in that Constellation. Any roll at the table counts, yours or an enemy's against you, trained or not. No stakes, no Flare. Max one new Flare per Constellation per session, and it stays Flared until you spend into it. The Constellation needn't be open: deeds ignite stars you haven't bought yet, and the milestone point that follows can buy its root.";
+const SIL = {
+"Athletics":'<path d="M8,88 L38,26 L52,54 L66,32 L92,88 Z"/>',
+"Stealth":'<path d="M62,10 A40,40 0 1,0 62,90 A32,32 0 1,1 62,10 Z"/>',
+"Thievery":'<circle cx="32" cy="32" r="14" fill="none" stroke-width="7"/><path d="M40,42 L74,76 L82,68 M62,64 L70,56 M52,54 L60,46" fill="none" stroke-width="7" stroke-linecap="round"/>',
+"Survival":'<path d="M50,8 L70,40 L58,40 L76,68 L24,68 L42,40 L30,40 Z"/><rect x="45" y="68" width="10" height="18"/>',
+"Awareness":'<path d="M12,50 Q50,14 88,50 Q50,86 12,50 Z" fill="none" stroke-width="6"/><circle cx="50" cy="50" r="13"/>',
+"Two-Weapon Fighting":'<path d="M22,84 L66,18 L74,24 L30,90 Z"/><path d="M78,84 L34,18 L26,24 L70,90 Z"/>',
+"Archery":'<path d="M30,14 Q80,50 30,86" fill="none" stroke-width="6"/><path d="M30,14 L30,86" stroke-width="3" fill="none"/><path d="M26,50 L84,50 M84,50 L72,42 M84,50 L72,58" fill="none" stroke-width="5" stroke-linecap="round"/>',
+"Shield Fighting":'<path d="M50,10 L82,26 L76,62 Q50,92 24,62 L18,26 Z"/>',
+"Brawling":'<path d="M50,8 L58,36 L86,28 L66,50 L86,72 L58,64 L50,92 L42,64 L14,72 L34,50 L14,28 L42,36 Z"/>',
+"Dueling":'<path d="M50,8 L55,66 L45,66 Z"/><path d="M32,68 Q50,80 68,68" fill="none" stroke-width="5"/><rect x="46" y="72" width="8" height="16"/>',
+"Acrobatics":'<path d="M50,10 Q84,34 66,58 Q50,76 34,58 Q16,34 50,10 Z" fill="none" stroke-width="6"/><circle cx="50" cy="82" r="9"/>',
+"Lore":'<path d="M12,24 Q34,14 50,24 L50,80 Q34,70 12,80 Z"/><path d="M88,24 Q66,14 50,24 L50,80 Q66,70 88,80 Z" fill="none" stroke-width="6"/>',
+"Diplomacy":'<path d="M50,12 L62,40 L92,44 L70,64 L76,92 L50,78 L24,92 L30,64 L8,44 L38,40 Z" fill="none" stroke-width="6"/>',
+"Guile":'<path d="M10,50 Q50,18 90,50 Q50,82 10,50 Z" fill="none" stroke-width="6"/><path d="M28,50 Q50,34 72,50" fill="none" stroke-width="5"/>',
+"Intimidation":'<path d="M50,90 L18,30 L36,30 L28,10 L72,10 L64,30 L82,30 Z"/>',
+"Evade":'<path d="M20,80 Q40,20 56,54 Q70,80 86,26" fill="none" stroke-width="7" stroke-linecap="round"/>',
+"Guard":'<path d="M50,10 L82,26 L76,62 Q50,92 24,62 L18,26 Z" fill="none" stroke-width="7"/>',
+"Endure":'<path d="M26,18 L74,18 L74,58 Q50,88 26,58 Z"/><path d="M38,40 L62,40 M50,30 L50,58" stroke="#0B131B" stroke-width="6" fill="none"/>',
+"Weapons":'<path d="M50,6 L58,58 L42,58 Z"/><rect x="26" y="58" width="48" height="8"/><rect x="45" y="66" width="10" height="26"/>',
+"Great Weapon Fighting":'<path d="M50,4 L60,64 L40,64 Z"/><rect x="20" y="64" width="60" height="9"/><rect x="44" y="73" width="12" height="22"/>',
+"Crossbow Fighting":'<path d="M12,38 L88,38" stroke-width="8" fill="none" stroke-linecap="round"/><rect x="45" y="20" width="10" height="62"/><path d="M22,38 Q50,58 78,38" fill="none" stroke-width="5"/>',
+"Missile Skirmishing":'<circle cx="50" cy="24" r="13"/><path d="M50,37 Q28,60 40,86 M50,37 Q72,60 60,86" fill="none" stroke-width="6"/>',
+"Spear & Polearm Fighting":'<path d="M50,4 L59,34 L41,34 Z"/><rect x="46" y="34" width="8" height="60"/><path d="M34,42 L66,42" stroke-width="6" fill="none"/>',
+"Armored Fighting":'<path d="M30,16 L70,16 L70,80 Q50,94 30,80 Z"/><rect x="36" y="38" width="28" height="7" fill="#0B131B"/>',
+"Berserker":'<path d="M50,6 Q72,30 60,48 Q80,52 66,76 Q58,88 50,92 Q28,74 40,54 Q26,44 38,26 Q44,16 50,6 Z"/>',
+"Ambusher":'<path d="M50,90 L42,40 L58,40 Z"/><rect x="32" y="34" width="36" height="7"/><rect x="45" y="14" width="10" height="20"/><circle cx="50" cy="10" r="6"/>',
+"Bravo":'<path d="M14,86 L74,20 L82,28 L22,94 Z"/><circle cx="78" cy="24" r="10" fill="none" stroke-width="5"/>',
+"Hunter":'<circle cx="50" cy="50" r="34" fill="none" stroke-width="5"/><circle cx="50" cy="50" r="12"/><path d="M50,6 L50,22 M50,78 L50,94 M6,50 L22,50 M78,50 L94,50" stroke-width="5" fill="none"/>',
+"Weaponmaster":'<path d="M22,84 L66,18 L74,24 L30,90 Z"/><path d="M78,84 L34,18 L26,24 L70,90 Z"/><circle cx="50" cy="52" r="9" fill="none" stroke-width="5"/>',
+"Human":'<path d="M50,6 L58,42 L94,50 L58,58 L50,94 L42,58 L6,50 L42,42 Z"/>',
+"Serrovane":'<rect x="20" y="14" width="60" height="72" rx="4" fill="none" stroke-width="6"/><path d="M32,36 L68,36 M32,50 L68,50 M32,64 L56,64" stroke-width="5" fill="none"/>',
+"Kestrel Reach":'<path d="M8,64 Q30,44 50,64 Q70,84 92,64" fill="none" stroke-width="6"/><path d="M50,10 L62,38 L38,38 Z"/><path d="M50,38 L50,60" stroke-width="5" fill="none"/>'};
+// deterministic layout (mirrored in the doc renderer)
+function djb2(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const SKYVIEW={}; // per-sky zoom/pan memory, keyed by picker|constellation
+function skyNav(sv, key){ // mousewheel zooms at the cursor, drag pans, double-click resets
+  if(!sv) return;
+  if(sv._nav){ // element reused (Observatory): restore or reset for the new key
+    if(sv._navKey!==key){ sv._navKey=key; const b=sv._navBase, v=key&&SKYVIEW[key];
+      sv.setAttribute("viewBox", v?`${v.x} ${v.y} ${v.w} ${v.h}`:`0 0 ${b.w} ${b.h}`);
+      sv.style.cursor=v&&v.w<b.w-1?"grab":""; }
+    return; }
+  const vb=(sv.getAttribute("viewBox")||"0 0 1000 620").split(/\s+/).map(Number);
+  const base={w:vb[2]||1000, h:vb[3]||620};
+  sv._nav=1; sv._navBase=base; sv._navKey=key;
+  const cur=()=>{ const v=(sv.getAttribute("viewBox")||`0 0 ${base.w} ${base.h}`).split(/\s+/).map(Number);
+    return {x:v[0],y:v[1],w:v[2],h:v[3]}; };
+  const apply=v=>{ v.w=Math.max(base.w/6, Math.min(base.w, v.w)); v.h=v.w*base.h/base.w;
+    v.x=Math.max(0, Math.min(base.w-v.w, v.x)); v.y=Math.max(0, Math.min(base.h-v.h, v.y));
+    sv.setAttribute("viewBox", `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${v.w.toFixed(1)} ${v.h.toFixed(1)}`);
+    if(sv._navKey) SKYVIEW[sv._navKey]={x:v.x,y:v.y,w:v.w,h:v.h};
+    sv.style.cursor=v.w<base.w-1?"grab":""; };
+  sv.addEventListener("wheel",e=>{ if(!sv._navKey) return;
+    const v=cur(), out=e.deltaY>0;
+    if(out&&v.w>=base.w-0.5) return; // fully zoomed out: the page may scroll
+    e.preventDefault();
+    const r=sv.getBoundingClientRect(); if(!r.width||!r.height) return;
+    const px=v.x+(e.clientX-r.left)/r.width*v.w, py=v.y+(e.clientY-r.top)/r.height*v.h;
+    const f=out?1.18:1/1.18;
+    apply({x:px-(px-v.x)*f, y:py-(py-v.y)*f, w:v.w*f, h:v.h*f});
+  },{passive:false});
+  let drag=null;
+  sv.addEventListener("pointerdown",e=>{ if(!sv._navKey) return; const v=cur(); if(v.w>=base.w-0.5) return;
+    e.preventDefault();
+    drag={id:e.pointerId, sx:e.clientX, sy:e.clientY, v, moved:false};
+    try{ sv.setPointerCapture(e.pointerId); }catch(_){} });
+  sv.addEventListener("pointermove",e=>{ if(!drag||e.pointerId!==drag.id) return;
+    const r=sv.getBoundingClientRect(); if(!r.width) return;
+    if(!drag.moved&&Math.abs(e.clientX-drag.sx)+Math.abs(e.clientY-drag.sy)>5){ drag.moved=true; sv._dragged=true; sv.style.cursor="grabbing"; }
+    if(drag.moved) apply({x:drag.v.x-(e.clientX-drag.sx)/r.width*drag.v.w, y:drag.v.y-(e.clientY-drag.sy)/r.height*drag.v.h, w:drag.v.w, h:drag.v.h}); });
+  const end=e=>{ if(drag&&e.pointerId===drag.id){ drag=null; const v=cur(); sv.style.cursor=v.w<base.w-1?"grab":""; } };
+  sv.addEventListener("pointerup",end); sv.addEventListener("pointercancel",end);
+  sv.addEventListener("click",e=>{ if(sv._dragged){ e.stopPropagation(); e.preventDefault(); sv._dragged=false; } },true);
+  sv.addEventListener("dblclick",e=>{ e.preventDefault(); apply({x:0,y:0,w:base.w,h:base.h}); });
+  const v0=key&&SKYVIEW[key]; if(v0) apply({x:v0.x,y:v0.y,w:v0.w,h:v0.h});
+}
+const W=1000, Hh=620, EW=1000, EH=620, NR={T:6,E:8,M:10,L:13}, ORDER=["T","E","M","L"];
+const treeOf=n=>TREES[n];
+const gatesFor=c=>({T:1,E:5,M:13,L:19});
+let wiz=null; // no wizard here; the engine's guards expect the symbol
+const RINGF={T:.34,E:.56,M:.78,L:1.0}, TAU=Math.PI*2, RLANG=Math.PI*1.28; // ring labels live up-left
+const normA=a=>{a%=TAU; return a<0?a+TAU:a;};
+function circMean(l){ let sx=0,sy=0; for(const a of l){sx+=Math.cos(a);sy+=Math.sin(a);} return (sx||sy)?Math.atan2(sy,sx):null; }
+function ringGeo(W,H,opts={}){
+  const cx=opts.cx!=null?opts.cx:W/2, cy=opts.cy!=null?opts.cy:H/2-4;
+  const Rm=(H/2-48)*(opts.scale||1);
+  const halfW=opts.halfW!=null?opts.halfW:(W/2-100);
+  const XR=Math.min(2.05, Math.max(1, halfW/Rm));
+  return {cx,cy,Rm,XR, rx:t=>RINGF[t]*Rm*XR, ry:t=>RINGF[t]*Rm};
+}
+function placeLabels(pts,W,NRmap){ // greedy deterministic label solver; radial-outward first, then below, above, right, left
+  const boxes=[], out=new Map();
+  const discs=pts.map(q=>{ const qr=(q.root?18:NRmap[q.tier])+4; return {q,x0:q.x-qr,x1:q.x+qr,y0:q.y-qr,y1:q.y+qr}; });
+  const hit=(b,skip)=>{ for(const d of discs){ if(d.q===skip) continue;
+      if(b.x0<d.x1&&d.x0<b.x1&&b.y0<d.y1&&d.y0<b.y1) return true; }
+    for(const d of boxes){ if(b.x0<d.x1-2&&d.x0<b.x1-2&&b.y0<d.y1-2&&d.y0<b.y1-2) return true; } return false; };
+  for(const p of pts){ const r=p.root?12:NRmap[p.tier], hw=(p.name.replace(" ★","").length+(p.root||p.hroot?2:0))*3.2+4;
+    let cands;
+    if(p.root) cands=[{la:"middle",lx:p.x,ly:p.y+r+18}];
+    else{
+      cands=[{la:"middle",lx:p.x,ly:p.y+r+16},{la:"middle",lx:p.x,ly:p.y-r-10},
+             {la:"start",lx:p.x+r+9,ly:p.y+4},{la:"end",lx:p.x-r-9,ly:p.y+4}];
+      if(p._ang!=null){ const c=Math.cos(p._ang), s2=Math.sin(p._ang);
+        const outw=c>.38?{la:"start",lx:p.x+r+9,ly:p.y+4}
+          :c<-.38?{la:"end",lx:p.x-r-9,ly:p.y+4}
+          :s2>0?{la:"middle",lx:p.x,ly:p.y+r+16}:{la:"middle",lx:p.x,ly:p.y-r-10};
+        const inw=c>.38?{la:"end",lx:p.x-r-9,ly:p.y+4}
+          :c<-.38?{la:"start",lx:p.x+r+9,ly:p.y+4}
+          :s2>0?{la:"middle",lx:p.x,ly:p.y-r-10}:{la:"middle",lx:p.x,ly:p.y+r+16};
+        // free stars prefer the outward side; pinned roots prefer inward (their family owns the outward lane)
+        cands.unshift(p._pin?inw:outw); cands.push(p._pin?outw:inw); }
+    }
+    let placed=null, best=null, bestN=1e9;
+    const hitN=b=>{ let n2=0; for(const d of discs){ if(d.q===p) continue;
+        if(b.x0<d.x1&&d.x0<b.x1&&b.y0<d.y1&&d.y0<b.y1) n2++; }
+      for(const d of boxes){ if(b.x0<d.x1-2&&d.x0<b.x1-2&&b.y0<d.y1-2&&d.y0<b.y1-2) n2++; } return n2; };
+    for(const c of cands){ const x0=c.la==="middle"?c.lx-hw:(c.la==="start"?c.lx:c.lx-2*hw);
+      const b={x0,x1:x0+2*hw,y0:c.ly-11,y1:c.ly+3,la:c.la,lx:c.lx,ly:c.ly};
+      const n2=hitN(b);
+      if(n2===0){ placed=b; break; }
+      if(n2<bestN){ bestN=n2; best=b; } }
+    placed=placed||best; boxes.push(placed); out.set(p,placed);
+  }
+  return out;
+}
+function radialClear(pts,E){ // straight edges only: a grazed star slides along its own orbit, drift-capped, deterministic
+  for(const p of pts) p._a0=p._ang;
+  const diffA=(a,b)=>{ let d=normA(a-b); return d>Math.PI?d-TAU:d; };
+  for(let ps=0;ps<5;ps++){ let moved=0;
+  for(const e of E){ if(e[2]!=="req") continue; const a=e[0],b=e[1];
+    for(const p of pts){ if(p===a||p===b||p.root||p._pin||!p._geo) continue;
+      const dx=b.x-a.x, dy=b.y-a.y, L2=dx*dx+dy*dy; if(!L2) continue;
+      const t2=((p.x-a.x)*dx+(p.y-a.y)*dy)/L2; if(t2<.06||t2>.94) continue;
+      const qx=a.x+t2*dx, qy=a.y+t2*dy, d=Math.hypot(p.x-qx,p.y-qy);
+      if(d>=24) continue;
+      const g=p._geo, rx=p._rx||g.rx(p.tier), ry=p._ry||g.ry(p.tier);
+      const curA=Math.atan2((p.y-g.cy)/ry,(p.x-g.cx)/rx);
+      const side=(dx*(p.y-a.y)-dy*(p.x-a.x))>=0?1:-1; // keep to the side it already leans
+      let A2=curA+side*(30/Math.max(60,ry));
+      if(p._a0!=null&&Math.abs(diffA(A2,p._a0))>0.42) A2=p._a0+0.42*Math.sign(diffA(A2,p._a0)); // never wander from your post
+      let nx2=g.cx+rx*Math.cos(A2), ny2=g.cy+ry*Math.sin(A2);
+      const crowded=(xx,yy)=>pts.some(q=>q!==p&&Math.hypot(q.x-xx,q.y-yy)<32);
+      if(crowded(nx2,ny2)){ const A3=curA-side*(30/Math.max(60,ry));
+        nx2=g.cx+rx*Math.cos(A3); ny2=g.cy+ry*Math.sin(A3);
+        if(crowded(nx2,ny2)) continue; A2=A3; }
+      p.x=nx2; p.y=ny2; p._ang=normA(A2); moved++;
+    } }
+  if(!moved) break; }
+}
+function elayout(tname, W=EW, H=EH, ownedNames=null, opts={}){
+  const t=treeOf(tname), by={T:[],E:[],M:[],L:[]};
+  const reqOf=n=>{ let tg=n.requires;
+    if(!tg){ const m=stripT(n.effect||"").match(/Requires ([^.]+)\./); tg=m?m[1].split(" or ").map(s=>s.trim()):null; }
+    return tg||[]; };
+  // v0.24: heritage branches stay invisible until that heritage is owned
+  const ownedSet=ownedNames||new Set();
+  const hidden=new Set();
+  for(const n of t.nodes) if(n.hroot&&!ownedSet.has(nrmG(n.name))) hidden.add(nrmG(n.name));
+  let grew=true;
+  while(grew){ grew=false;
+    for(const n of t.nodes){ const k=nrmG(n.name);
+      if(hidden.has(k)||n.root||n.hroot) continue;
+      const rq=reqOf(n); if(!rq.length) continue;
+      if(rq.every(q=>hidden.has(nrmG(q)))){ hidden.add(k); grew=true; } } }
+  t.nodes.forEach(n=>{ if(!hidden.has(nrmG(n.name))) by[n.tier].push(n); });
+  const G=ringGeo(W,H,opts);
+  const pts=[], angOf={};
+  const rn=t.nodes.find(n=>n.root);
+  const MIDF={T:(RINGF.T+RINGF.E)/2, E:(RINGF.E+RINGF.M)/2, M:(RINGF.M+RINGF.L)/2, L:RINGF.L*1.06};
+  const sameTierDepth=n=>{ let d=0, cur=n; const seen=new Set();
+    while(d<3){ const rq=reqOf(cur).map(nrmG);
+      const par=t.nodes.find(x=>x!==cur&&!x.root&&x.tier===cur.tier&&rq.includes(nrmG(x.name)));
+      if(!par||seen.has(nrmG(par.name))) break; seen.add(nrmG(par.name)); d++; cur=par; }
+    return d; };
+  const NEXTF={T:RINGF.E,E:RINGF.M,M:RINGF.L,L:RINGF.L*1.12};
+  const subMul=(tier,A,d)=>{ // enough true distance off the ring, wherever on the ellipse you sit
+    const stretch=Math.hypot(G.XR*Math.cos(A), Math.sin(A))*G.Rm;
+    const df=Math.min((NEXTF[tier]-RINGF[tier])*0.68, Math.max(0.10*RINGF[tier], 36/Math.max(1,stretch)))
+      + 0.07*(d-1);
+    return 1+df/RINGF[tier]; };
+  const put=(n,tier,A,rmul)=>{ const rr=mulberry32(djb2(tname+"|rj|"+n.name)), rj=(1+(rr()-.5)*.05)*rmul;
+    const rx=G.rx(tier)*rj, ry=G.ry(tier)*rj;
+    pts.push({...n, x:G.cx+rx*Math.cos(A), y:G.cy+ry*Math.sin(A), _ang:A, _rx:rx, _ry:ry, _pin:n.hroot?1:0, _geo:G}); };
+  // THE WHEEL IS PARTITIONED (v0.36): each pinned heritage family owns a wedge on every ring;
+  // strangers live in the arcs between wedges. Cross-partition crossings are impossible by construction.
+  const visHr=t.nodes.filter(n=>n.hroot&&!hidden.has(nrmG(n.name)));
+  visHr.forEach((n,i)=>{ angOf[nrmG(n.name)]=normA((opts.hrootA!=null?opts.hrootA:0)+(i%2?1:-1)*Math.ceil(i/2)*1.1); });
+  const famGuard=0.55;
+  const famOf={}; // node name -> its pinned family root, or null
+  const famWalk=n=>{ const k=nrmG(n.name);
+    if(k in famOf) return famOf[k];
+    if(n.hroot) return famOf[k]=k;
+    famOf[k]=null; // cycle guard
+    for(const q of reqOf(n)){ const par=t.nodes.find(x=>nrmG(x.name)===nrmG(q)&&!x.root);
+      if(par){ const f=famWalk(par); if(f){ famOf[k]=f; break; } } }
+    return famOf[k]; };
+  const zones=[];
+  if(opts.ringLabels!==false) zones.push({ang:normA(RLANG), guard:0.30});
+  if(opts.reserveA!=null) zones.push({ang:normA(opts.reserveA), guard:0.20});
+  for(const n of visHr) zones.push({ang:angOf[nrmG(n.name)], guard:famGuard});
+  const SL=720, occSl=new Uint8Array(SL);
+  for(const z of zones){ const st=Math.floor(normA(z.ang-z.guard)/TAU*SL), ln=Math.ceil(z.guard*2/TAU*SL);
+    for(let k2=0;k2<=ln;k2++) occSl[(st+k2)%SL]=1; }
+  const freeSl=[]; for(let k2=0;k2<SL;k2++) if(!occSl[k2]) freeSl.push(k2);
+  const hashSpot=r=>freeSl.length?normA((freeSl[Math.floor(r()*freeSl.length)%freeSl.length]+0.5)/SL*TAU):normA(r()*TAU);
+  for(const tier of ORDER){
+    const arr=by[tier].filter(n=>!n.root); if(!arr.length) continue;
+    const famN=arr.filter(n=>famWalk(n)), strayN=arr.filter(n=>!famWalk(n));
+    // family members: pinned roots at their post; kin fan off the family bearing, same-tier kin on the sub-orbit
+    const fIdx={};
+    for(const n of famN){
+      if(n.hroot){ put(n, tier, angOf[nrmG(n.name)], 1); continue; }
+      const ps=reqOf(n).map(q=>angOf[nrmG(q)]).filter(a=>a!=null);
+      const base=ps.length?circMean(ps):angOf[famWalk(n)];
+      const key=tier+"|"+reqOf(n).map(nrmG).sort().join(","); const k=fIdx[key]=(fIdx[key]||0)+1;
+      const off=(k%2?1:-1)*(0.14+0.20*Math.floor(k/2));
+      let A=normA(base+off);
+      const fa=angOf[famWalk(n)]; const dev=normA(A-fa); // stay inside the family wedge
+      if(dev>famGuard&&dev<TAU-famGuard) A=normA(fa+(dev<Math.PI?famGuard*0.92:-famGuard*0.92));
+      angOf[nrmG(n.name)]=A;
+      const d=sameTierDepth(n);
+      put(n, tier, A, d>0?subMul(tier,A,d):1);
+    }
+    if(!strayN.length) continue;
+    // strangers: seeded or inherited bearings, swept apart inside the free arcs
+    const sibIdx={};
+    const init=strayN.map(n=>{ const ps=reqOf(n).map(q=>angOf[nrmG(q)]).filter(a=>a!=null);
+      const cm=ps.length?circMean(ps):null;
+      const r=mulberry32(djb2(tname+"|"+n.name));
+      if(cm==null) return {n, a:hashSpot(r)};
+      const key=reqOf(n).map(nrmG).sort().join(","); const k=sibIdx[key]=(sibIdx[key]||0)+1;
+      const off=k===1?0:(k%2?1:-1)*(0.11+0.13*Math.floor((k-1)/2)); // siblings fan symmetrically around the parent
+      return {n, a:normA(cm+off)}; });
+    // free arcs read straight off the slot map: immune to overlapping zones and the 0° seam
+    let arcs=[]; { let a0=-1; for(let k2=0;k2<SL;k2++) if(occSl[k2]){a0=k2;break;}
+      if(a0<0) arcs=[{s:0,e:TAU}];
+      else { let run=null;
+        for(let c2=0;c2<SL;c2++){ const idx=(a0+1+c2)%SL;
+          if(!occSl[idx]){ if(!run){run={st:idx,len:0};} run.len++; }
+          else if(run){ arcs.push(run); run=null; } }
+        if(run) arcs.push(run);
+        arcs=arcs.filter(r2=>r2.len>=8).map(r2=>({s:r2.st/SL*TAU, e:(r2.st+r2.len)/SL*TAU})); } }
+    const buckets=arcs.map(()=>[]);
+    for(const o of init){ let bi=-1;
+      arcs.forEach((x,i)=>{ const a2=o.a>=x.s?o.a:o.a+TAU; if(bi<0&&a2>=x.s&&a2<=x.e) bi=i; });
+      if(bi<0){ let bd=1e9; arcs.forEach((x,i)=>{ const mid=(x.s+x.e)/2;
+        const d=Math.abs(normA(o.a-mid+Math.PI)-Math.PI); if(d<bd){bd=d;bi=i;} }); }
+      buckets[bi].push(o); }
+    arcs.forEach((x,i)=>{ if(!buckets[i].length) return;
+      const span=x.e-x.s, ry=G.ry(tier);
+      const bs=buckets[i].map(o=>({o, v:(o.a<x.s?o.a+TAU:o.a)}))
+        .sort((p2,q2)=>p2.v-q2.v || (p2.o.n.name<q2.o.n.name?-1:1));
+      const m=bs.length;
+      const D=Math.min(2*Math.asin(Math.min(.9, 39/Math.max(44,ry))), span/m);
+      const a=bs.map(e=>Math.min(x.e, Math.max(x.s, e.v)));
+      for(let k=1;k<m;k++) a[k]=Math.max(a[k], a[k-1]+D);
+      a[m-1]=Math.min(a[m-1], x.e-D*0.4);
+      for(let k=m-2;k>=0;k--) a[k]=Math.min(a[k], a[k+1]-D);
+      for(let k=0;k<m;k++) a[k]=Math.max(x.s+D*0.4, a[k]);
+      bs.forEach((e,j)=>{ const rr=mulberry32(djb2(tname+"|jit|"+e.o.n.name));
+        angOf[nrmG(e.o.n.name)]=normA(a[j]+(rr()-.5)*Math.min(.05, D*.25)); }); });
+    for(const n of strayN){ const d=sameTierDepth(n);
+      put(n, tier, angOf[nrmG(n.name)], d>0?subMul(tier,angOf[nrmG(n.name)],d):1); }
+  }
+  if(rn) pts.push({...rn, x:G.cx, y:G.cy, _geo:G});
+  // edges are TRUE requirements only. root->deeper "requires" lines stay undrawn:
+  // root-first is the law even unwritten, so a star with no line in needs only the root.
+  const E=[]; const of=t2=>pts.filter(p=>p.tier===t2&&!p.root).sort((a,b)=>a.x-b.x);
+  const root=pts.find(p=>p.root);
+  const hard=prereqEdges(pts); hard.forEach(([a,b])=>{ if(a.root&&b.tier!=="T"&&!b.hroot) return; E.push([a,b,"req"]); });
+  const hasReq=new Set(hard.map(([a,b])=>b.name));
+  if(root) for(const p of of("T")) if(!hasReq.has(p.name)) E.push([root,p,"req"]);
+  const ms=of("M");
+  if(ms.length) for(const p of pts){ if(!p.root&&p.name.includes("★")) ms.forEach(q=>E.push([q,p,"cap"])); }
+  radialClear(pts,E);
+  return {pts,edges:E,root,G};
+}
+function ringsSVG(cat, lvl, hue, myPts, G, withLabels=true){
+  const g=gatesFor(cat);
+  const rows=[["T","TRAINED",1],["E","EXPERT",4],["M","MASTER",9],["L","LEGENDARY",16]];
+  const F=[RINGF.T,RINGF.E,RINGF.M,RINGF.L];
+  const ell=(f)=>{ const rx=G.Rm*G.XR*f, ry=G.Rm*f;
+    return `M${(G.cx-rx).toFixed(1)},${G.cy.toFixed(1)} a${rx.toFixed(1)},${ry.toFixed(1)} 0 1,0 ${(2*rx).toFixed(1)},0 a${rx.toFixed(1)},${ry.toFixed(1)} 0 1,0 ${(-2*rx).toFixed(1)},0`; };
+  let s="";
+  rows.forEach(([tier,name,need],i)=>{
+    const gate=tier==="T"?1:g[tier], lvlOK=lvl>=gate, ptsOK=myPts==null?true:myPts>=need, open=lvlOK&&ptsOK;
+    const lo=i===0?F[0]*0.42:(F[i-1]+F[i])/2, hi=i===3?F[3]*1.09:(F[i]+F[i+1])/2;
+    if(!open) s+=`<path d="${ell(hi)} ${ell(lo)}" fill="#000814" opacity=".30" fill-rule="evenodd"/>`;
+    s+=`<ellipse cx="${G.cx}" cy="${G.cy}" rx="${G.rx(tier).toFixed(1)}" ry="${G.ry(tier).toFixed(1)}" fill="none" stroke="${open?mixW(hue,.22):"#31424E"}" stroke-width="1" stroke-dasharray="3 8" opacity=".85"/>`;
+    if(withLabels){ const lx=G.cx+(G.rx(tier)+12)*Math.cos(RLANG), ly2=G.cy+(G.ry(tier)+12)*Math.sin(RLANG);
+      s+=`<text class="tierlab" x="${lx.toFixed(1)}" y="${ly2.toFixed(1)}" text-anchor="end" style="fill:${open?"#A6BDCB":"#46606E"}">${name} · ${need} pt${need>1?"s":""} · L${gate}+${open?"":"  🔒"}</text>`; }
+  });
+  return s;
+}
+function gateChipsSVG(cat, lvl, W, myPts){ // the two-gate verdicts, pinned top-right off the sky
+  if(myPts==null) return "";
+  const g=gatesFor(cat), OK="#7FD8C8", NO="#C97A6A";
+  const rows=[["LEGENDARY",16,g.L],["MASTER",9,g.M],["EXPERT",4,g.E]];
+  let s="", y=22;
+  for(const [name,need,gate] of rows){ const ptsOK=myPts>=need, lvlOK=lvl>=gate;
+    s+=`<text class="tierlab" x="${W-14}" y="${y}" text-anchor="end"><tspan style="fill:#5E7686">${name}</tspan><tspan dx="10" style="fill:${ptsOK?OK:NO}">${ptsOK?"✓":"✗"} ${need} pts (you: ${myPts})</tspan><tspan dx="10" style="fill:${lvlOK?OK:NO}">${lvlOK?"✓":"✗"} L${gate}+ (you: L${lvl})</tspan></text>`; y+=18; }
+  return s;
+}
+const CATLABEL2={Save:"Defense",Heritage:"Bloodline"}; // retired spellings, current word on screen
+const catHue=c=>({Skill:"#8FB4E8",Defense:"#7FD8C8",Save:"#7FD8C8",Weapon:"#C98F78","Combat Style":"#E87A62",Armor:"#8FB0DC",Calling:"#F0685A",Ancestry:"#DCCB9E",Culture:"#B49AE8",Bloodline:"#DCCB9E",Heritage:"#DCCB9E",Background:"#C9B47A"}[c]||"#8FA8C8");function layout(tname){ // the viewer shows every branch: all heritages count as owned
+  const owned=new Set(TREES[tname].nodes.map(n=>nrmG(n.name)));
+  return elayout(tname, W, Hh, owned, {});
+}
+const R={T:6,E:8,M:10,L:13};
+let current=localStorage.getItem("sparks-tree")||"Two-Weapon Fighting";
+if(!TREES[current]) current=Object.keys(TREES)[0];
+let selNode=null;
+function starfield(seed){
+  const r=mulberry32(seed);let s="";
+  for(let i=0;i<150;i++){const x=r()*W,y=r()*Hh,rad=r()*1.1+.2,o=(r()*.5+.12).toFixed(2);
+    s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad.toFixed(2)}" fill="#AFC4CF" opacity="${o}"/>`;}
+  return s;
+}
+function render(){
+  const t=TREES[current], hue=HUES[current]||"#8FA8C8", L=layout(current);
+  const {pts,edges}=L;
+  const skill=!(t.category==="Combat Style"||t.category==="Armor"||t.category==="Calling");
+  const gates={E:5,M:13,L:19};
+  document.getElementById("gates").textContent=`${CATLABEL2[t.category]||t.category} constellation gates: Expert L${gates.E} • Master L${gates.M} • Legendary L${gates.L}`;
+  let s=starfield(djb2(current));
+  s+=`<g fill="${hue}" stroke="${hue}" opacity="0.09" transform="translate(500,300) scale(4.4) translate(-50,-50)">${SIL[current]||""}</g>`;
+  s+=ringsSVG(t.category, 20, hue, null, L.G, true); // orbits: Trained at the heart, Legendary at the rim
+  s+=`<defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${mixW(hue,.45)}"/></marker></defs>`;
+  for(const [e1,e2,kind] of edges){
+    if(kind==="cap") s+=`<line x1="${e1.x}" y1="${e1.y}" x2="${e2.x}" y2="${e2.y}" stroke="#E8C25A" stroke-width="1.2" opacity=".45" stroke-dasharray="1 5"/>`;
+    else s+=`<line x1="${e1.x}" y1="${e1.y}" x2="${e2.x}" y2="${e2.y}" stroke="${mixW(hue,.42)}" stroke-width="1.6" opacity=".8" stroke-dasharray="4 6" marker-end="url(#arr)"/>`;
+  }
+  const LBL=placeLabels(pts,W,R);
+  for(const p of pts){
+    const r=p.root?12:R[p.tier], sel=selNode===p.name;
+    const LB=LBL.get(p), la=LB.la, ly=LB.ly, lxx=la==="middle"?Math.max(64,Math.min(W-64,LB.lx)):LB.lx;
+    s+=`<g class="nodeg" data-n="${encodeURIComponent(p.name)}">`;
+    if(p.name.includes("★")&&!p.root){for(let i=0;i<8;i++){const ang=Math.PI/4*i, len=r+11;
+      s+=`<line x1="${p.x+Math.cos(ang)*(r+2)}" y1="${p.y+Math.sin(ang)*(r+2)}" x2="${p.x+Math.cos(ang)*len}" y2="${p.y+Math.sin(ang)*len}" stroke="${mixW(hue,.5)}" stroke-width="1.8" opacity="1"/>`;}}
+    s+=`<circle cx="${p.x}" cy="${p.y}" r="${r*2.6}" fill="${hue}" opacity=".18"/>`
+      +`<circle cx="${p.x}" cy="${p.y}" r="${r*1.55}" fill="${hue}" opacity=".38"/>`
+      +`<circle class="core" cx="${p.x}" cy="${p.y}" r="${r}" fill="${mixW(hue,.45)}" stroke="#FFFFFF" stroke-width="${sel?2.6:1.2}"/>`
+      +`<circle cx="${p.x}" cy="${p.y}" r="${r*.36}" fill="#FFFFFF" opacity="1"/>`
+      +(p.root?`<rect x="${p.x-r-6}" y="${p.y-r-6}" width="${2*(r+6)}" height="${2*(r+6)}" fill="none" stroke="#F0C24E" stroke-width="2" transform="rotate(45 ${p.x} ${p.y})"/>`:"")
+      +(sel?`<circle cx="${p.x}" cy="${p.y}" r="${r+6.5}" fill="none" stroke="#F6EFE2" stroke-width="1" stroke-dasharray="2 3"/>`:"")+(p.feeds&&p.feeds!==t.feeds?`<circle cx="${p.x}" cy="${p.y}" r="${r*1.9}" fill="none" stroke="${ATTRC[p.feeds]}" stroke-width="1.2" stroke-dasharray="3 4" opacity=".85"/>`:"")
+      +`<text class="nlabel" x="${lxx}" y="${ly}" text-anchor="${la}" ${p.root?'style="fill:#F2D9A0;font-weight:700;letter-spacing:1px"':""}>${p.root?"◈ "+p.name.replace(" ★",""):p.name.replace(" ★","")}</text></g>`;
+  }
+  s+=`<g font-size="10.5" fill="#A8BAC4" font-family="Segoe UI,sans-serif">
+    <line x1="20" y1="${Hh-12}" x2="52" y2="${Hh-12}" stroke="${mixW(hue,.42)}" stroke-width="1.6" stroke-dasharray="4 6" marker-end="url(#arr)"/><text x="58" y="${Hh-8}">requires · wheel zooms, drag pans, double-click resets</text>
+    <line x1="150" y1="${Hh-12}" x2="182" y2="${Hh-12}" stroke="${hue}" stroke-width="1.1" opacity=".5" stroke-dasharray="2 6"/><text x="188" y="${Hh-8}">⇢ requires (in the app the line fills solid once you own both)</text>
+    <text x="330" y="${Hh-8}" fill="#F2D9A0">◈ root: every constellation starts here · no line in = needs only the root</text>
+    <text x="520" y="${Hh-8}" fill="#D9A441">☀ rays = capstone (needs any Master talent here)</text></g>`;
+  document.getElementById("svg").innerHTML=s;
+  skyNav(document.getElementById("svg"), "v|"+current);
+  document.querySelectorAll(".nodeg").forEach(g=>g.addEventListener("click",()=>{selNode=decodeURIComponent(g.dataset.n);render();}));
+  renderPanel(t,hue,gates); renderSide();
+}
+function renderPanel(t,hue,gates){
+  const P=document.getElementById("panel");
+  const node=t.nodes.find(n=>n.name===selNode);
+  let h=`<h2>${current}</h2><div class="meta">${t.meta}</div>`;
+  if(node){
+    h+=`<span class="chip" style="background:${TIERC[node.tier]}">${TIERN[node.tier].toUpperCase()}</span>`
+      +(node.name.includes("★")?`<span class="chip" style="background:#B8860B">CAPSTONE</span>`:"")
+      +`<div class="sect">${node.name}</div>${node.desc?`<div class="muted" style="font-style:italic;font-size:11px;margin-top:8px">${node.desc}</div>`:""}<div id="ndesc">${node.effect}</div>${node.prereqs?`<div class="hint">Prerequisites: ${node.prereqs}</div>`:""}${node.requires?`<div class="hint">Requires: ${node.requires.join(" or ")}</div>`:""}${node.feeds?`<div class="hint">Feeds <b style="color:${ATTRC[node.feeds]}">${node.feeds}</b>${t.feeds&&t.feeds!==node.feeds?` (constellation default: ${t.feeds})`:""}</div>`:""}`
+      +(node.name.includes("★")?`<div class="hint">Capstones require at least one Master talent from this constellation.</div>`:"");
+  } else {
+    h+=`<div class="sect">Constellation</div><div class="talentlist">`
+      +t.nodes.map(n=>`<div data-n="${encodeURIComponent(n.name)}"><span class="tdot" style="background:${TIERC[n.tier]}"></span>${n.name}</div>`).join("")
+      +`</div>`;
+  }
+  h+=`<div class="sect">&#9889; Flares</div><div class="sparks" style="font-style:normal">${UNIFLARE}</div>${t.sparks?`<div class="sparks" style="margin-top:3px">Examples: ${t.sparks}</div>`:""}`
+    +`<div class="hint">Rank by points here: 1 Trained &bull; 4 Expert (L${gates.E}) &bull; 9 Master (L${gates.M}) &bull; 16 Legendary (L${gates.L}).<br>Click a star for its talent; click the sky to clear.</div>`;
+  P.innerHTML=h;
+  P.querySelectorAll(".talentlist div").forEach(d=>d.addEventListener("click",()=>{selNode=decodeURIComponent(d.dataset.n);render();}));
+}
+function renderSide(){
+  // Retired spellings fold into the current word, so a stale trees.json still groups correctly.
+  const CATLABEL={Save:"Defense",Heritage:"Bloodline"};
+  const cats={};
+  for(const [n,t] of Object.entries(TREES)){ const c=CATLABEL[t.category]||t.category;
+    (cats[c]=cats[c]||[]).push(n); }
+  // Preferred order first, then ANY category the data has that this list forgot. A whitelist alone
+  // silently hid the Defenses and Weapons for two releases; leftovers now fall through instead.
+  const pref=["Ancestry","Culture","Bloodline","Background","Calling",
+              "Defense","Weapon","Combat Style","Skill","Armor"];
+  const order=[...pref.filter(c=>cats[c]), ...Object.keys(cats).filter(c=>!pref.includes(c)).sort()];
+  let h="";
+  for(const c of order){ if(!cats[c]) continue;
+    h+=`<div class="cat">${c}</div>`;
+    for(const n of cats[c]) h+=`<button class="tree-btn ${n===current?"active":""}" style="--hue:${HUES[n]}" data-t="${encodeURIComponent(n)}">${n}</button>`;
+  }
+  const S=document.getElementById("side"); S.innerHTML=h;
+  S.querySelectorAll(".tree-btn").forEach(b=>b.addEventListener("click",()=>{current=decodeURIComponent(b.dataset.t);selNode=null;localStorage.setItem("sparks-tree",current);render();}));
+}
+document.getElementById("sky").addEventListener("click",e=>{if(e.target.id==="svg"){selNode=null;render();}});
+document.addEventListener("keydown",e=>{
+  const keys=Object.keys(TREES), i=keys.indexOf(current);
+  if(e.key==="ArrowRight"){current=keys[(i+1)%keys.length];selNode=null;localStorage.setItem("sparks-tree",current);render();}
+  if(e.key==="ArrowLeft"){current=keys[(i-1+keys.length)%keys.length];selNode=null;localStorage.setItem("sparks-tree",current);render();}
+});
+hotload().then(render);
+</script>
+</body>
+</html>

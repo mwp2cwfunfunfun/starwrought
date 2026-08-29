@@ -1,0 +1,29 @@
+{
+  "_id": "db9283c6ae0c2c05",
+  "name": "Human",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/human.png",
+  "system": {
+    "kind": "ancestry",
+    "constellation": "human",
+    "attribute": "presence",
+    "hp": 8,
+    "size": "medium",
+    "speed": 25,
+    "senses": "",
+    "description": "<p>Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e179582241ca8c65",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!db9283c6ae0c2c05"
+}

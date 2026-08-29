@@ -1,0 +1,30 @@
+{
+  "_id": "c1f3e2a9e3fe8922",
+  "name": "Berserker",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/berserker.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "berserker",
+    "attribute": "might",
+    "hp": 4,
+    "grants": [
+      "Athletics"
+    ],
+    "specialAbility": "<p>Rage: Temp HP = level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts.</p>",
+    "description": "<p>Grants Training in Athletics, and 4 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c1f3e2a9e3fe8922"
+}

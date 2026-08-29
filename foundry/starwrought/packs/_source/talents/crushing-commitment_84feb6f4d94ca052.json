@@ -1,0 +1,47 @@
+{
+  "_id": "84feb6f4d94ca052",
+  "name": "Crushing Commitment",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "great-weapon-fighting",
+    "constellationName": "Great Weapon Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Great Weapon Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you make a Strike ◆◆◆ with a two-handed weapon, deal one extra weapon die of damage.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "018dc0d2e8a4ecff",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!84feb6f4d94ca052"
+}

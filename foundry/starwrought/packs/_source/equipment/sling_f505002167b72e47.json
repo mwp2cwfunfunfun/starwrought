@@ -1,0 +1,36 @@
+{
+  "_id": "f505002167b72e47",
+  "name": "Sling",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "intuitive",
+    "group": "Slings",
+    "damage": {
+      "die": 6,
+      "type": "bludgeoning"
+    },
+    "reach": 0,
+    "traits": [
+      "Ranged 60",
+      "Reload 1"
+    ],
+    "price": "",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "54594ae7cc598009",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f505002167b72e47"
+}

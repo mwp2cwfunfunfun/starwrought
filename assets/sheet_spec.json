@@ -1,0 +1,177 @@
+{
+ "meta": {
+  "title": "STARWROUGHT",
+  "subtitle": "CHARACTER  SHEET",
+  "version": "Playtest v3.0",
+  "tagline": "You are what you do."
+ },
+ "identity": [
+  {
+   "label": "NAME",
+   "key": "name"
+  },
+  {
+   "label": "ANCESTRY / BLOODLINE",
+   "key": "ancestry"
+  },
+  {
+   "label": "CULTURE",
+   "key": "culture"
+  },
+  {
+   "label": "BACKGROUND / CALLING",
+   "key": "background"
+  }
+ ],
+ "level_label": "LEVEL",
+ "milestones": {
+  "label": "MILESTONES THIS LEVEL",
+  "slots": [
+   "pt",
+   "pt",
+   "pt",
+   "LVL UP!"
+  ],
+  "micro": "milestone point -> spend NOW in a FLARED constellation  |  level-up COMET -> spend NOW, anywhere, Flared or not"
+ },
+ "attributes": {
+  "label": "ATTRIBUTES",
+  "micro": "bonus = points in its constellations / 3, rounded down (max +5) - adds to EVERY check, trained or not",
+  "rows": [
+   "MIGHT",
+   "AGILITY",
+   "WITS",
+   "PRESENCE"
+  ],
+  "cols": [
+   "bonus",
+   "points"
+  ]
+ },
+ "defense": {
+  "label": "DEFENSES",
+  "ac_label": "GUARD",
+  "ac_micro": "Threshold = 10 + level + attribute + proficiency; the check is the same, with a d20",
+  "armor_label": "ARMOR BY ZONE: PROTECTION / LOAD",
+  "ladder_micro": "one ladder: T+4 E+7 M+10 L+13  |  Load Strain = total armor Load - Endure reduction (min 0), off Evade and off Might/Agility skill checks",
+  "defenses": [
+   [
+    "AWARENESS",
+    "level + Wits + prof",
+    "don't be surprised"
+   ],
+   [
+    "EVADE",
+    "level + Agility + prof - Load Strain",
+    "don't be there"
+   ],
+   [
+    "GUARD",
+    "level + Presence + prof (+ shield if Raised)",
+    "don't let it through"
+   ],
+   [
+    "ENDURE",
+    "level + Might + prof",
+    "survive what comes through"
+   ]
+  ],
+  "saves": [
+   [
+    "AWARENESS",
+    "level + Wits + prof (if any)"
+   ],
+   [
+    "EVADE",
+    "level + Agility + prof - Load Strain"
+   ],
+   [
+    "GUARD",
+    "level + Presence + prof (+ shield)"
+   ],
+   [
+    "ENDURE",
+    "level + Might + prof (if any)"
+   ]
+  ],
+  "zone_label": "ZONE PROTECTION",
+  "zones": [
+   "HEAD",
+   "TORSO",
+   "ARMS",
+   "LEGS"
+  ],
+  "zone_micro": "Protection subtracts from every instance of damage landing on that zone, a Graze included. Ordinary Hits go to the torso unless a zone is Exposed."
+ },
+ "hp": {
+  "label": "HIT POINTS",
+  "micro": "10 + (ancestry HP + calling HP) x level",
+  "boxes": [
+   "MAX",
+   "CURRENT",
+   "TEMP"
+  ]
+ },
+ "speed_init": {
+  "speed_label": "SPEED",
+  "init_label": "INIT",
+  "init_micro": "initiative is usually an Awareness check: level + Wits + Awareness proficiency"
+ },
+ "trees": {
+  "label": "TALENT CONSTELLATIONS",
+  "micro": "pts in constellation: 1 Trained +4 | 4 Expert +7 | 9 Master +10 | 16 Legendary +13; attribute adds on top",
+  "cols": [
+   "FLR",
+   "CONSTELLATION",
+   "FEEDS",
+   "PTS",
+   "RANK",
+   "BONUS"
+  ],
+  "rows": 12,
+  "foot1": "FLR = Flared: crit success OR crit failure on a roll WITH CONSEQUENCES related to a talent in the constellation, opened or not (enemy rolls against you count) - or a GM award, or a week's training. Max 1 new Flare per constellation per session.",
+  "foot2": "Defenses are Constellations: Awareness, Evade, Guard, Endure, all Trained free at creation, along with Weapons Training. Armor never touches a Defense; it subtracts Protection from damage, and an Exposed Zone's Protection counts as 0. All tiers unlock at L1/5/13/19."
+ },
+ "attacks": {
+  "label": "ATTACKS",
+  "micro": "atk = level + style's attribute + Weapons proficiency  |  dmg = weapon dice + spec (E+2 M+3 L+4) + Might, minus Protection  |  MAP -5/-10  |  Graze = one weapon die, nothing else",
+  "cols": [
+   "WEAPON",
+   "STYLE (how wielded)",
+   "ATK",
+   "DAMAGE",
+   "NOTES"
+  ],
+  "rows": 3
+ },
+ "talents": {
+  "label": "TALENTS",
+  "micro": "name - effect in your own words (full text: page 2 / handbook)",
+  "rows": 11
+ },
+ "banked": {
+  "label": "HERO POINTS",
+  "micro1": "1 at session start, max 3; reroll a check you're Trained or better in;",
+  "micro2": "spend all (min 1) to refuse death. Talent points are NEVER banked: spend on receipt."
+ },
+ "footer": [
+  "DEGREES: beat the Threshold by 10 = crit success | nat 20/1 steps one degree | a crit either direction on a consequential roll related to a constellation's talents -> that constellation Flares",
+  "ANSWERING AN ATTACK: you roll. Beat their Threshold by 10 = Miss. Meet or beat = Graze: some damage, and a Zone of your choice becomes Exposed. Miss = Hit, to the Torso unless a Zone is Exposed. Miss by 10 = Critical Hit, and the attacker picks the Zone. A Posture buys +2 before you know the result, and costs an Exposed Zone win or lose.",
+  "HERO POINTS: 1 at session start, max 3 - spend 1 to reroll any check, or spend all of them to refuse death. Refusing death is not a roll and cannot fail."
+ ],
+ "page2": {
+  "header": "TALENT DETAILS,  GEAR  &  FLARE LOG",
+  "details_label": "TALENT DETAILS",
+  "gear_label": "GEAR (no math - stories, traits and properties)",
+  "notes_label": "LANGUAGES & NOTES",
+  "log_label": "FLARE LOG",
+  "log_micro": "what ignited each constellation - the story of your build, one crit at a time",
+  "log_cols": [
+   "SESSION",
+   "CONSTELLATION",
+   "WHAT IGNITED IT",
+   "SPENT?"
+  ],
+  "footer": "RETRAINING: a month of Downtime moves 1 already spent Talent Point. TRAIN: 7 days with a teacher, rival, or manual Flares that Constellation, once between Milestones."
+ }
+}

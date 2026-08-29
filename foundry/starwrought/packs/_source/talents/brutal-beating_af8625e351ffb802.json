@@ -1,0 +1,47 @@
+{
+  "_id": "af8625e351ffb802",
+  "name": "Brutal Beating",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Intimidation Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Whenever your Strike is a critical hit and deals damage, the target is Frightened 1.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "122698d6a8541059",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!af8625e351ffb802"
+}

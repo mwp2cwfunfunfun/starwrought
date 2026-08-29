@@ -1,0 +1,29 @@
+{
+  "_id": "8c56a5b7911e7ce5",
+  "name": "Buckler",
+  "type": "shield",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "bonus": 1,
+    "hardness": 3,
+    "load": 0,
+    "cover": false,
+    "price": "1 gp",
+    "quantity": 1,
+    "state": "carried",
+    "traits": [],
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "d39fe6c898bb12d2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8c56a5b7911e7ce5"
+}

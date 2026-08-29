@@ -1,0 +1,47 @@
+{
+  "_id": "1f4d3549bb4616cc",
+  "name": "Slip the Line ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "evade",
+    "constellationName": "Evade",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Evade Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "(posture) +2 to your Evade against one attack. If the blow does not Hit, you end in any square adjacent to the attacker, your choice.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57c800027a3ec530",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1f4d3549bb4616cc"
+}

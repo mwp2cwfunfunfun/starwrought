@@ -1,0 +1,47 @@
+{
+  "_id": "9bd383af88d7fcd7",
+  "name": "Contract Literate",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "serrovane",
+    "constellationName": "Serrovane",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Serrovanian"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "+2 circumstance to notice hidden clauses, traps, and altered terms in any agreement.",
+    "description": "<p>Read legal, and infernal, contracts at a glance.</p>",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "09d1d52e7c8e761e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9bd383af88d7fcd7"
+}

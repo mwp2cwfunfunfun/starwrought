@@ -1,0 +1,28 @@
+{
+  "_id": "20c00eea46e851b2",
+  "name": "Diplomacy",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/diplomacy.png",
+  "system": {
+    "slug": "diplomacy",
+    "category": "skill",
+    "attribute": "presence",
+    "meta": "Skill constellation • Presence",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Skill constellation • Presence</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!20c00eea46e851b2"
+}

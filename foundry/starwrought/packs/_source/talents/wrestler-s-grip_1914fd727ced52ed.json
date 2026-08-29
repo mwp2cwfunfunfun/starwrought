@@ -1,0 +1,47 @@
+{
+  "_id": "1914fd727ced52ed",
+  "name": "Wrestler's Grip",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Athletics Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "A creature you have Grabbed takes a −2 circumstance penalty to Escape.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "235dc76ee1e2834b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1914fd727ced52ed"
+}

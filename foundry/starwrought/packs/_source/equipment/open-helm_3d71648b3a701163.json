@@ -1,0 +1,31 @@
+{
+  "_id": "3d71648b3a701163",
+  "name": "Open helm",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 3,
+    "load": 1,
+    "material": "plate",
+    "traits": [
+      "Plate"
+    ],
+    "price": "5 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3d71648b3a701163"
+}

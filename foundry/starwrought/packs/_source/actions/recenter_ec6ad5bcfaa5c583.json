@@ -1,0 +1,28 @@
+{
+  "_id": "ec6ad5bcfaa5c583",
+  "name": "Recenter",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Defending & recovering",
+    "traits": [
+      "Concentrate"
+    ],
+    "description": "<p>Gather yourself: clear every Exposed zone on you.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4068fcccad329588",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ec6ad5bcfaa5c583"
+}

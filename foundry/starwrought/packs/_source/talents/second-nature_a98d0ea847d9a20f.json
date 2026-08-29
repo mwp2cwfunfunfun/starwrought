@@ -1,0 +1,47 @@
+{
+  "_id": "a98d0ea847d9a20f",
+  "name": "Second Nature",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weaponmaster",
+    "constellationName": "Weaponmaster",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Drilled"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your weapon specialization damage arrives one rank early with your Drilled group: +2 while Trained, +3 at Expert, +4 at Master, +5 at Legendary.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "c24b24d1fba469af",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a98d0ea847d9a20f"
+}

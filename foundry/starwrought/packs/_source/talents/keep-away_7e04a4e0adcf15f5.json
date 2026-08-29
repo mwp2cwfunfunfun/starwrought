@@ -1,0 +1,47 @@
+{
+  "_id": "7e04a4e0adcf15f5",
+  "name": "Keep Away",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spear-and-polearm-fighting",
+    "constellationName": "Spear & Polearm Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spear & Polearm Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "If you Attack a foe and it results in a Graze, you may Step instead of Exposing a Zone.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e6deec17c276985e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7e04a4e0adcf15f5"
+}

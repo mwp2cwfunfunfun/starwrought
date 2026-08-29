@@ -1,0 +1,26 @@
+{
+  "_id": "ac39add7b91cd168",
+  "name": "Step",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Moving",
+    "traits": [],
+    "description": "<p>Move 3 feet. Step has no Traits at all, which is the point: it never provokes reactions. You cannot Step into difficult terrain.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "57b789ecf25288d5",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ac39add7b91cd168"
+}

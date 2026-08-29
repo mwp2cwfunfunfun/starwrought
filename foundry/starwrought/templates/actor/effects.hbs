@@ -1,0 +1,30 @@
+{{!-- Active Effects and conditions. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.effects"}}
+      <button type="button" class="sw-inline-button" data-action="effectCreate">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </h3>
+    <ol class="sw-item-list">
+      {{#each effects as |effect|}}
+      <li class="sw-item-row {{#if effect.disabled}}sw-disabled{{/if}}" data-effect-id="{{effect.id}}">
+        <img src="{{effect.img}}" alt="{{effect.name}}">
+        <a class="sw-item-name" data-action="effectEdit">{{effect.name}}</a>
+        <div class="sw-item-controls">
+          <a data-action="effectToggle" data-tooltip="STARWROUGHT.Sheet.toggle">
+            <i class="fa-solid {{#if effect.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"></i>
+          </a>
+          <a data-action="effectEdit"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="effectDelete"><i class="fa-solid fa-trash"></i></a>
+        </div>
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noEffects"}}</li>
+      {{/each}}
+    </ol>
+  </div>
+
+</section>

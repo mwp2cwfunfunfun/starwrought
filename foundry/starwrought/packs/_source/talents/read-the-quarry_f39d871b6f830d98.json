@@ -1,0 +1,47 @@
+{
+  "_id": "f39d871b6f830d98",
+  "name": "Read the Quarry",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "hunter",
+    "constellationName": "Hunter",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Mark Prey"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "The first time each encounter your prey attacks you, you learn if its Evade or Guard is higher.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ae92852dbc6da00d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f39d871b6f830d98"
+}

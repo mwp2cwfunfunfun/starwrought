@@ -1,0 +1,28 @@
+{
+  "_id": "c5eb7ff5a2a25410",
+  "name": "Awareness",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/awareness.png",
+  "system": {
+    "slug": "awareness",
+    "category": "defense",
+    "attribute": "wits",
+    "meta": "Defense constellation • Wits (don't be surprised)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Defense constellation • Wits (don't be surprised)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c5eb7ff5a2a25410"
+}

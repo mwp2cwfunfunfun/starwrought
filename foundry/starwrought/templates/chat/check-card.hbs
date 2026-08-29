@@ -1,0 +1,73 @@
+{{!-- A check, an attack, or a Defense. The degrees run the same way; only the names change. --}}
+<div class="starwrought check-card {{#if degree}}sw-degree-{{degree}}{{/if}}">
+
+  <header class="sw-card-header">
+    {{#if item}}<img src="{{item.img}}" alt="{{item.name}}">{{/if}}
+    <div class="sw-card-titles">
+      <h3>{{label}}</h3>
+      {{#if subtitle}}<span class="sw-card-subtitle">{{subtitle}}</span>{{/if}}
+    </div>
+  </header>
+
+  <div class="sw-card-roll">
+    <span class="sw-card-total {{#if natural}}{{#if (eq natural 20)}}sw-nat20{{/if}}{{#if (eq natural 1)}}sw-nat1{{/if}}{{/if}}">{{total}}</span>
+    <span class="sw-card-formula">{{formula}}</span>
+  </div>
+
+  <ul class="sw-card-modifiers">
+    {{#each modifiers as |mod|}}
+    <li><span>{{mod.label}}</span><strong>{{swSigned mod.value}}</strong></li>
+    {{/each}}
+  </ul>
+
+  {{#if threshold}}
+  <div class="sw-card-threshold">
+    <span>{{#if thresholdLabel}}{{thresholdLabel}}{{else}}{{localize "STARWROUGHT.Field.threshold"}}{{/if}}</span>
+    <strong>{{threshold}}</strong>
+  </div>
+  {{/if}}
+
+  {{#if degree}}
+  <div class="sw-card-outcome sw-outcome-{{outcomeKey}}">
+    {{#if isAttack}}{{outcome}}{{else}}{{degreeLabel}}{{/if}}
+  </div>
+  {{/if}}
+
+  {{#if outcomes}}
+  <ul class="sw-card-outcomes">
+    {{#each outcomes as |row|}}
+    <li class="{{#if (eq row.key @root.degree)}}sw-active{{/if}}">
+      <strong>{{localize row.label}}</strong> {{row.text}}
+    </li>
+    {{/each}}
+  </ul>
+  {{/if}}
+
+  {{#if canFlare}}
+  <div class="sw-card-flare">
+    <button type="button" data-sw-action="flare" data-slug="{{flareSlug}}"
+            data-tooltip="STARWROUGHT.Flare.hint">
+      <i class="fa-solid fa-certificate"></i> {{localize "STARWROUGHT.Flare.button"}}
+    </button>
+  </div>
+  {{/if}}
+
+  {{#if canDamage}}
+  <div class="sw-card-buttons">
+    <button type="button" data-sw-action="damage" data-outcome="critical">
+      {{localize "STARWROUGHT.Outcome.critical"}}
+    </button>
+    <button type="button" data-sw-action="damage" data-outcome="hit">
+      {{localize "STARWROUGHT.Outcome.hit"}}
+    </button>
+    <button type="button" data-sw-action="damage" data-outcome="graze">
+      {{localize "STARWROUGHT.Outcome.graze"}}
+    </button>
+  </div>
+  {{/if}}
+
+  {{#if itemDescription}}
+  <div class="sw-card-description">{{{itemDescription}}}</div>
+  {{/if}}
+
+</div>

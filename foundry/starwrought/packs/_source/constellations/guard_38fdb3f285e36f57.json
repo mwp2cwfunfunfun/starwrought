@@ -1,0 +1,28 @@
+{
+  "_id": "38fdb3f285e36f57",
+  "name": "Guard",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/guard.png",
+  "system": {
+    "slug": "guard",
+    "category": "defense",
+    "attribute": "presence",
+    "meta": "Defense constellation • Presence (don't let it through • Set Your Feet posture)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Defense constellation • Presence (don't let it through • Set Your Feet posture)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!38fdb3f285e36f57"
+}

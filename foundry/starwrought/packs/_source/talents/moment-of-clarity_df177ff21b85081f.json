@@ -1,0 +1,47 @@
+{
+  "_id": "df177ff21b85081f",
+  "name": "Moment of Clarity ◇",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "berserker",
+    "constellationName": "Berserker",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Rage"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "Frequency once per encounter<br>You push back your rage for a moment in order to think clearly. Until the end of this turn, you lose your Heedless condition.",
+    "description": "",
+    "cost": "free",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "71886e4f2559caea",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!df177ff21b85081f"
+}

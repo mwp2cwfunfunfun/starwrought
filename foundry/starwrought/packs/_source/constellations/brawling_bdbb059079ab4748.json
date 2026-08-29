@@ -1,0 +1,28 @@
+{
+  "_id": "bdbb059079ab4748",
+  "name": "Brawling",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/brawling.png",
+  "system": {
+    "slug": "brawling",
+    "category": "combatStyle",
+    "attribute": "might",
+    "meta": "Combat Style • Might (fists, feet, tusks, headbutts)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Combat Style • Might (fists, feet, tusks, headbutts)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!bdbb059079ab4748"
+}

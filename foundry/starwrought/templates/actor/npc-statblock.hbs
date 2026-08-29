@@ -1,0 +1,98 @@
+{{!-- The adversary stat block: Thresholds, Zones, and Attack Thresholds by MAP step. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.thresholds"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.npcThresholds"}}</p>
+    <div class="sw-defense-grid">
+      {{#each defenses as |def|}}
+      <div class="sw-defense sw-npc-defense">
+        <span class="sw-defense-name" data-tooltip="{{def.hint}}">{{def.label}}</span>
+        <input type="number" name="system.thresholds.{{def.key}}" value="{{def.threshold}}">
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.attacks"}}
+      <button type="button" class="sw-inline-button" data-action="itemCreate" data-type="action" data-attack="true">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </h3>
+    <table class="sw-attack-table">
+      <thead>
+        <tr>
+          <th>{{localize "STARWROUGHT.Field.attack"}}</th>
+          <th data-tooltip="STARWROUGHT.Hint.mapFirst">1st</th>
+          <th data-tooltip="STARWROUGHT.Hint.mapSecond">2nd</th>
+          <th data-tooltip="STARWROUGHT.Hint.mapThird">3rd</th>
+          <th>{{localize "STARWROUGHT.Field.damage"}}</th>
+          <th>{{localize "STARWROUGHT.Field.reach"}}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each attacks as |atk|}}
+        <tr data-item-id="{{atk.id}}">
+          <td><a data-action="itemChat">{{atk.name}}</a></td>
+          {{#each atk.thresholds as |t|}}<td class="sw-num sw-threshold-cell">{{t}}</td>{{/each}}
+          <td>{{atk.damage}} {{atk.damageType}}</td>
+          <td class="sw-num">{{atk.reach}} ft</td>
+          <td class="sw-item-controls">
+            <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+            <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+          </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="7" class="sw-empty">{{localize "STARWROUGHT.Sheet.noAttacks"}}</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.zones"}}
+      <button type="button" class="sw-inline-button" data-action="recenter">◆ {{localize "STARWROUGHT.Action.recenter"}}</button>
+    </h3>
+    <table class="sw-armor-table">
+      <thead>
+        <tr>
+          <th>{{localize "STARWROUGHT.Field.zone"}}</th>
+          <th>{{localize "STARWROUGHT.Field.protection"}}</th>
+          <th>{{localize "STARWROUGHT.Field.material"}}</th>
+          <th>{{localize "STARWROUGHT.Condition.exposed"}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each zones as |zone|}}
+        <tr class="{{#if zone.exposed}}sw-row-exposed{{/if}}">
+          <td class="sw-zone-cell">{{zone.label}}</td>
+          <td><input type="number" name="system.zones.{{zone.key}}.protection" value="{{zone.protection}}" min="0"></td>
+          <td><select name="system.zones.{{zone.key}}.material">{{selectOptions @root.materialChoices selected=zone.material}}</select></td>
+          <td>
+            <a data-action="toggleZone" data-zone="{{zone.key}}">
+              {{#if zone.exposed}}<i class="fa-solid fa-heart-crack"></i>{{else}}<i class="fa-solid fa-shield"></i>{{/if}}
+            </a>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.traits"}}</h3>
+    <div class="sw-body-grid">
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.senses"}}</span>
+        <input type="text" name="system.details.senses" value="{{system.details.senses}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.languages"}}</span>
+        <input type="text" name="system.details.languages" value="{{system.details.languages}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.source"}}</span>
+        <input type="text" name="system.details.source" value="{{system.details.source}}"></label>
+    </div>
+  </div>
+
+</section>

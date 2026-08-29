@@ -1,0 +1,47 @@
+{
+  "_id": "cbe81b17eb7bd802",
+  "name": "Reactive Strike ↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weapons",
+    "constellationName": "Weapons",
+    "tier": "E",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Weapon Familiarity"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the Reactive Strike ↺ reaction.<br>Reactive Strike ↺<br>Requirements You are wielding a weapon in which you are at least Expert.<br>Trigger An Observed creature within your reach begins to use a Manipulate action or Stride.<br>Effect Make a melee Strike against the triggering creature. The Multiple Attack Penalty does not apply; nor does it accrue as a result of this Strike. On a Critical Hit, the triggering action is disrupted: it fails, and any actions still to come in that activity are lost.",
+    "description": "",
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "307927e092735135",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!cbe81b17eb7bd802"
+}

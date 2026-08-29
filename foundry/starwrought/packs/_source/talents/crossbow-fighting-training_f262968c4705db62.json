@@ -1,0 +1,45 @@
+{
+  "_id": "f262968c4705db62",
+  "name": "Crossbow Fighting Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "crossbow-fighting",
+    "constellationName": "Crossbow Fighting",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Brace the Stock ◆ action.<br>Brace the Stock ◆ (stance)<br>You settle into a firing position. Until you Move: gain a +1 circumstance bonus to all crossbow Strikes; increase any Armor-Piercing [N] value of those attacks by 1; if the attack Grazes, you choose the Zone that becomes Exposed. The effect ends after you make a Move. Every talent here requires this.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "8c23a5e18c02daf0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f262968c4705db62"
+}

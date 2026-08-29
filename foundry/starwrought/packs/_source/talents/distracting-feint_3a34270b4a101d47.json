@@ -1,0 +1,47 @@
+{
+  "_id": "3a34270b4a101d47",
+  "name": "Distracting Feint",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Guile Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a −2 circumstance penalty to Awareness and Agility checks and Thresholds.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9b627d432ecf1771",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3a34270b4a101d47"
+}

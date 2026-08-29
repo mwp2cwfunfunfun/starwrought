@@ -1,0 +1,19 @@
+{
+  "_id": "16f41fa183b0485d",
+  "name": "A Night's Rest",
+  "type": "script",
+  "author": null,
+  "img": "icons/svg/regen.svg",
+  "scope": "global",
+  "command": "// Restore level x Presence Hit Points, and clear Wounded.\nconst actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);\nconst targets = actors.length ? actors : (game.user.character ? [game.user.character] : []);\nif ( !targets.length ) ui.notifications.warn(\"Select a token first.\");\nfor ( const actor of targets ) await actor.restForTheNight();",
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!macros!16f41fa183b0485d"
+}

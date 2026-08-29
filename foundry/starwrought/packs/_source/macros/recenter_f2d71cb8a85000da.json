@@ -1,0 +1,19 @@
+{
+  "_id": "f2d71cb8a85000da",
+  "name": "Recenter",
+  "type": "script",
+  "author": null,
+  "img": "icons/svg/shield.svg",
+  "scope": "global",
+  "command": "// Recenter: clear every Exposed Zone on the selected tokens.\nconst actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);\nif ( !actors.length ) ui.notifications.warn(\"Select a token first.\");\nfor ( const actor of actors ) await actor.recenter();",
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!macros!f2d71cb8a85000da"
+}

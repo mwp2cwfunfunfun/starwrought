@@ -1,0 +1,26 @@
+{
+  "_id": "1ba930ef8d4f900c",
+  "name": "Take Cover",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Defending & recovering",
+    "traits": [],
+    "description": "<p>Requirements You have Cover, or Greater Cover, or are wielding a tower shield.<br>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step, or Attack.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "4068fcccad329588",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1ba930ef8d4f900c"
+}

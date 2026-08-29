@@ -1,0 +1,27 @@
+{
+  "_id": "74f827e856cc5dbe",
+  "name": "Kestrel Reach",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
+  "system": {
+    "kind": "culture",
+    "constellation": "kestrel-reach",
+    "attribute": "wits",
+    "languages": "Reachspeak, Common",
+    "description": "<p>The trade-towns of a wide river delta, where six languages meet at every dock and a good broker is worth more than a good sword. Reach folk talk first, and are very good at it.</p>",
+    "specialAbility": "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ae2a6da93bc423e9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!74f827e856cc5dbe"
+}

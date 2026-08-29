@@ -1,0 +1,28 @@
+{
+  "_id": "54e788469e06aec9",
+  "name": "Great Weapon Fighting",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/great-weapon-fighting.png",
+  "system": {
+    "slug": "great-weapon-fighting",
+    "category": "combatStyle",
+    "attribute": "might",
+    "meta": "Combat Style • Might (two hands, full commitment)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Combat Style • Might (two hands, full commitment)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!54e788469e06aec9"
+}

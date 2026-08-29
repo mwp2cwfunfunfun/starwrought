@@ -1,0 +1,28 @@
+{
+  "_id": "a277e4b45bc2c4f2",
+  "name": "Seek",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Watching, deceiving & helping",
+    "traits": [
+      "Concentrate"
+    ],
+    "description": "<p>One Awareness roll against the Stealth of anything Hiding, or a Threshold the GM sets. Covers everything within 30 feet.<br><b>Critical Success</b> The creature moves two states toward Observed. <b>Success</b> One state: Undetected to Hidden, Hidden to Concealed, Concealed to Observed. <b>Failure</b> You learn nothing. <b>Critical Failure</b> You commit to the wrong place and are Wrong-Footed to it until the start of your next turn.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9c4c1eb78a540a57",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a277e4b45bc2c4f2"
+}

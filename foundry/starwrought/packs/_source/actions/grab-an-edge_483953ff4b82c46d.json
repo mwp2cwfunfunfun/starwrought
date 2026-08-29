@@ -1,0 +1,26 @@
+{
+  "_id": "483953ff4b82c46d",
+  "name": "Grab an Edge",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "reaction",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Special",
+    "traits": [],
+    "description": "<p>Trigger You fall past an edge, ledge, or handhold within your reach. Requirements A hand free; you may Release ◇ to free one.<br>Athletics or Acrobatics against Threshold 15.<br><b>Critical Success</b> You catch it and pull up. <b>Success</b> You hang there, Off-Guard. <b>Failure</b> You fall, reduced by 10 feet. <b>Critical Failure</b> You fall the full distance.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "08855204e460ca76",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!483953ff4b82c46d"
+}

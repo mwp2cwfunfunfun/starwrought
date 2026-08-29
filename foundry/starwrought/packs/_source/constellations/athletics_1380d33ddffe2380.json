@@ -1,0 +1,28 @@
+{
+  "_id": "1380d33ddffe2380",
+  "name": "Athletics",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/athletics.png",
+  "system": {
+    "slug": "athletics",
+    "category": "skill",
+    "attribute": "might",
+    "meta": "Skill constellation • Might",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Skill constellation • Might</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1380d33ddffe2380"
+}

@@ -1,0 +1,47 @@
+{
+  "_id": "39f7e09b9e60bcbf",
+  "name": "Sudden Charge ◆◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "berserker",
+    "constellationName": "Berserker",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Rage"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain Sudden Charge:<br>Sudden Charge ◆◆<br>Stride twice, then Strike.",
+    "description": "",
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "71886e4f2559caea",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!39f7e09b9e60bcbf"
+}

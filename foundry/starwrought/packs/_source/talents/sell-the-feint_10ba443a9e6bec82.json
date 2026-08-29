@@ -1,0 +1,47 @@
+{
+  "_id": "10ba443a9e6bec82",
+  "name": "Sell the Feint",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Guile Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you critically succeed at a Feint, the target is Off-Guard to everyone, not just you, until the end of your next turn.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9b627d432ecf1771",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!10ba443a9e6bec82"
+}

@@ -1,0 +1,45 @@
+{
+  "_id": "6c282747b0b69af1",
+  "name": "Spear & Polearm Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spear-and-polearm-fighting",
+    "constellationName": "Spear & Polearm Fighting",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Keep Measure ◆ action.<br>Keep Measure ◆ (stance)<br>Requirements You are wielding a hafted weapon.<br>While in this stance: the first time each round an enemy moves from outside your Reach into it, you may Step 3 feet directly away as a free action after that movement finishes; if that movement keeps the enemy within your Reach, it does not trigger reactions from that enemy. Every talent here requires this.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "e6deec17c276985e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!6c282747b0b69af1"
+}

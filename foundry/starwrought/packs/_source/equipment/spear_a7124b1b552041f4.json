@@ -1,0 +1,37 @@
+{
+  "_id": "a7124b1b552041f4",
+  "name": "Spear",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "intuitive",
+    "group": "Spears",
+    "damage": {
+      "die": 6,
+      "type": "piercing"
+    },
+    "reach": 7,
+    "traits": [
+      "Thrown 20 ft",
+      "Two-Hand d8",
+      "Unwieldy 3"
+    ],
+    "price": "1 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a7124b1b552041f4"
+}

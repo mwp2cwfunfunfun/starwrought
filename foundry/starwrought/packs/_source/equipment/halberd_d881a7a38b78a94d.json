@@ -1,0 +1,38 @@
+{
+  "_id": "d881a7a38b78a94d",
+  "name": "Halberd",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "practiced",
+    "group": "Polearms",
+    "damage": {
+      "die": 10,
+      "type": "slashing"
+    },
+    "reach": 8,
+    "traits": [
+      "Sweep",
+      "Trip",
+      "Two-Handed",
+      "Unwieldy 4"
+    ],
+    "price": "5 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d881a7a38b78a94d"
+}

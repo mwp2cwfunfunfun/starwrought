@@ -1,0 +1,32 @@
+{
+  "_id": "5ae249734086c589",
+  "name": "Mail sleeves",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "arms",
+    "protection": 3,
+    "load": 1,
+    "material": "mail",
+    "traits": [
+      "Mail",
+      "Noisy"
+    ],
+    "price": "5 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5ae249734086c589"
+}

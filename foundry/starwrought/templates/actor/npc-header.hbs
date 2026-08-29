@@ -1,0 +1,56 @@
+{{!-- Adversary header. Every number here is a number a player has to beat. --}}
+<header class="sw-header sw-npc-header">
+
+  <img class="sw-portrait" src="{{actor.img}}" alt="{{actor.name}}" data-action="editImage"
+       data-tooltip="STARWROUGHT.Sheet.editImage">
+
+  <div class="sw-header-body">
+    <div class="sw-name-row">
+      <input class="sw-charname" type="text" name="name" value="{{actor.name}}">
+      <div class="sw-level">
+        <label>{{localize "STARWROUGHT.Field.level"}}</label>
+        <input type="number" name="system.level" value="{{system.level}}" min="0" step="1">
+      </div>
+    </div>
+
+    <div class="sw-identity">
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Field.creatureType"}}</span>
+        <input type="text" name="system.details.creatureType" value="{{system.details.creatureType}}">
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Field.size"}}</span>
+        <select name="system.size">{{selectOptions sizeChoices selected=system.size}}</select>
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Field.speed"}}</span>
+        <input type="number" name="system.speed" value="{{system.speed}}" min="0">
+      </label>
+      <label class="sw-field">
+        <span>{{localize "STARWROUGHT.Field.initiativeThreshold"}}</span>
+        <input type="number" name="system.thresholds.initiative" value="{{system.thresholds.initiative}}">
+      </label>
+    </div>
+
+    <div class="sw-vitals">
+      <div class="sw-hp">
+        <div class="sw-hp-track">
+          <div class="sw-hp-fill" style="width: {{swPercent system.hp.value system.hp.max}}%"></div>
+          <span class="sw-hp-text">
+            <input type="number" name="system.hp.value" value="{{system.hp.value}}" min="0">
+            <em>/</em>
+            <input type="number" name="system.hp.max" value="{{system.hp.max}}" min="0">
+          </span>
+        </div>
+      </div>
+      <div class="sw-counters">
+        <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.temp"}}</span>
+          <input type="number" name="system.hp.temp" value="{{system.hp.temp}}" min="0"></div>
+        <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounded"}}</span>
+          <input type="number" name="system.wounded" value="{{system.wounded}}" min="0"></div>
+        <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.dying"}}</span>
+          <input type="number" name="system.dying" value="{{system.dying}}" min="0" max="5"></div>
+      </div>
+    </div>
+  </div>
+</header>

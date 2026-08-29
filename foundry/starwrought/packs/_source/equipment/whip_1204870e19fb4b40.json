@@ -1,0 +1,38 @@
+{
+  "_id": "1204870e19fb4b40",
+  "name": "Whip",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "technical",
+    "group": "Whips",
+    "damage": {
+      "die": 6,
+      "type": "slashing"
+    },
+    "reach": 8,
+    "traits": [
+      "Finesse",
+      "Disarm",
+      "Trip",
+      "Unwieldy 2"
+    ],
+    "price": "1 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1204870e19fb4b40"
+}

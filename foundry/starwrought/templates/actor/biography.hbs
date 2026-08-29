@@ -1,0 +1,20 @@
+{{!-- Who they were before the road, and whatever else the table needs written down. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.biography"}}</h3>
+    <prose-mirror name="system.details.biography" value="{{system.details.biography}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>
+      {{{enrichedBiography}}}
+    </prose-mirror>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.notes"}}</h3>
+    <prose-mirror name="system.details.notes" value="{{system.details.notes}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>
+      {{{enrichedNotes}}}
+    </prose-mirror>
+  </div>
+
+</section>

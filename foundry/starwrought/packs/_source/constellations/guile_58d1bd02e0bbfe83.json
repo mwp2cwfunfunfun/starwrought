@@ -1,0 +1,28 @@
+{
+  "_id": "58d1bd02e0bbfe83",
+  "name": "Guile",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/guile.png",
+  "system": {
+    "slug": "guile",
+    "category": "skill",
+    "attribute": "wits",
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!58d1bd02e0bbfe83"
+}

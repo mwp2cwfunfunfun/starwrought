@@ -1,0 +1,32 @@
+{
+  "_id": "40a70191a69fda0c",
+  "name": "Give Ground",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "reaction",
+    "category": "Posture",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "evade",
+      "defense": "evade"
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>+2 circumstance bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0ea0d2d57ca220cc",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!40a70191a69fda0c"
+}

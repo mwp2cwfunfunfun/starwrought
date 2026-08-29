@@ -1,0 +1,47 @@
+{
+  "_id": "3513479de38b6a2d",
+  "name": "Bull Rush ◆◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Athletics Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Stride, then Shove.<br>Add 3 feet to the push for every 10 feet you moved first.",
+    "description": "",
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "235dc76ee1e2834b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3513479de38b6a2d"
+}

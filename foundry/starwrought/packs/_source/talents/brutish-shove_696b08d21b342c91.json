@@ -1,0 +1,47 @@
+{
+  "_id": "696b08d21b342c91",
+  "name": "Brutish Shove ◆",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "great-weapon-fighting",
+    "constellationName": "Great Weapon Fighting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Great Weapon Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Requirements You are wielding a two-handed melee weapon.<br>Using the momentum of your last attack to throw your weight into another, you make your opponent stumble back. Make a Strike with a two-handed melee weapon. If you hit a target that is your size or smaller, that creature is Off-Guard until the end of your current turn, and you can automatically Shove it, with the same benefits as the Shove action (including the Critical Success effect, if your Strike was a Critical Hit). If you move to follow the target, your movement doesn't trigger reactions.<br>Failure The target becomes Off-Guard until the end of your current turn.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "018dc0d2e8a4ecff",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!696b08d21b342c91"
+}

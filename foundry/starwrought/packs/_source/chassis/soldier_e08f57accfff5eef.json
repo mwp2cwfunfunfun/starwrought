@@ -1,0 +1,32 @@
+{
+  "_id": "e08f57accfff5eef",
+  "name": "Soldier",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Athletics",
+      "Intimidation",
+      "Lore (Warfare)"
+    ],
+    "specialAbility": "<p>You become Trained in Athletics and in Intimidation, and you become Trained in Lore (Warfare).</p>",
+    "description": "<p>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e08f57accfff5eef"
+}

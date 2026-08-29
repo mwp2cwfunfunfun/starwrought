@@ -1,0 +1,28 @@
+{
+  "_id": "c92699f56b9cf581",
+  "name": "Serrovane",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/serrovane.png",
+  "system": {
+    "slug": "serrovane",
+    "category": "origin",
+    "attribute": "presence",
+    "meta": "Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": true,
+    "description": "<p>Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c92699f56b9cf581"
+}

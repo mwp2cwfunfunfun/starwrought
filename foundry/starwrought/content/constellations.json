@@ -1,0 +1,212 @@
+[
+  {
+    "slug": "acrobatics",
+    "name": "Acrobatics",
+    "category": "skill",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/acrobatics.png"
+  },
+  {
+    "slug": "ambusher",
+    "name": "Ambusher",
+    "category": "calling",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/ambusher.png"
+  },
+  {
+    "slug": "archery",
+    "name": "Archery",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/archery.png"
+  },
+  {
+    "slug": "armored-fighting",
+    "name": "Armored Fighting",
+    "category": "combatStyle",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/armored-fighting.png"
+  },
+  {
+    "slug": "athletics",
+    "name": "Athletics",
+    "category": "skill",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/athletics.png"
+  },
+  {
+    "slug": "awareness",
+    "name": "Awareness",
+    "category": "defense",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/constellations/awareness.png"
+  },
+  {
+    "slug": "berserker",
+    "name": "Berserker",
+    "category": "calling",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/berserker.png"
+  },
+  {
+    "slug": "bravo",
+    "name": "Bravo",
+    "category": "calling",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/bravo.png"
+  },
+  {
+    "slug": "brawling",
+    "name": "Brawling",
+    "category": "combatStyle",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/brawling.png"
+  },
+  {
+    "slug": "crossbow-fighting",
+    "name": "Crossbow Fighting",
+    "category": "combatStyle",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/constellations/crossbow-fighting.png"
+  },
+  {
+    "slug": "diplomacy",
+    "name": "Diplomacy",
+    "category": "skill",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/diplomacy.png"
+  },
+  {
+    "slug": "dueling",
+    "name": "Dueling",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/dueling.png"
+  },
+  {
+    "slug": "endure",
+    "name": "Endure",
+    "category": "defense",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/endure.png"
+  },
+  {
+    "slug": "evade",
+    "name": "Evade",
+    "category": "defense",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/evade.png"
+  },
+  {
+    "slug": "great-weapon-fighting",
+    "name": "Great Weapon Fighting",
+    "category": "combatStyle",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/great-weapon-fighting.png"
+  },
+  {
+    "slug": "guard",
+    "name": "Guard",
+    "category": "defense",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/guard.png"
+  },
+  {
+    "slug": "guile",
+    "name": "Guile",
+    "category": "skill",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/constellations/guile.png"
+  },
+  {
+    "slug": "human",
+    "name": "Human",
+    "category": "origin",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/human.png"
+  },
+  {
+    "slug": "hunter",
+    "name": "Hunter",
+    "category": "calling",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/constellations/hunter.png"
+  },
+  {
+    "slug": "intimidation",
+    "name": "Intimidation",
+    "category": "skill",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/intimidation.png"
+  },
+  {
+    "slug": "kestrel-reach",
+    "name": "Kestrel Reach",
+    "category": "origin",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/constellations/kestrel-reach.png"
+  },
+  {
+    "slug": "lore",
+    "name": "Lore",
+    "category": "skill",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/constellations/lore.png"
+  },
+  {
+    "slug": "missile-skirmishing",
+    "name": "Missile Skirmishing",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/missile-skirmishing.png"
+  },
+  {
+    "slug": "serrovane",
+    "name": "Serrovane",
+    "category": "origin",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/serrovane.png"
+  },
+  {
+    "slug": "shield-fighting",
+    "name": "Shield Fighting",
+    "category": "combatStyle",
+    "attribute": "presence",
+    "img": "systems/starwrought/assets/constellations/shield-fighting.png"
+  },
+  {
+    "slug": "spear-and-polearm-fighting",
+    "name": "Spear & Polearm Fighting",
+    "category": "combatStyle",
+    "attribute": "wits",
+    "img": "systems/starwrought/assets/icons/constellation.svg"
+  },
+  {
+    "slug": "stealth",
+    "name": "Stealth",
+    "category": "skill",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/stealth.png"
+  },
+  {
+    "slug": "two-weapon-fighting",
+    "name": "Two-Weapon Fighting",
+    "category": "combatStyle",
+    "attribute": "agility",
+    "img": "systems/starwrought/assets/constellations/two-weapon-fighting.png"
+  },
+  {
+    "slug": "weaponmaster",
+    "name": "Weaponmaster",
+    "category": "calling",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/weaponmaster.png"
+  },
+  {
+    "slug": "weapons",
+    "name": "Weapons",
+    "category": "weapon",
+    "attribute": "might",
+    "img": "systems/starwrought/assets/constellations/weapons.png"
+  }
+]

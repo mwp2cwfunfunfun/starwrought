@@ -1,0 +1,25 @@
+{
+  "_id": "ce171767c12727b1",
+  "name": "Provision",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "category": "Downtime Mode",
+    "requirements": "1 day",
+    "traits": [],
+    "description": "<p>Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets. You sell at half price.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "b938ff7019fcd374",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ce171767c12727b1"
+}

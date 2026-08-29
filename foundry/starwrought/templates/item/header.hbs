@@ -1,0 +1,23 @@
+{{!-- Item header. --}}
+<header class="sw-header sw-item-header">
+  <img class="sw-portrait sw-item-portrait" src="{{item.img}}" alt="{{item.name}}"
+       data-action="editImage" data-tooltip="STARWROUGHT.Sheet.editImage">
+  <div class="sw-header-body">
+    <input class="sw-charname" type="text" name="name" value="{{item.name}}">
+    <div class="sw-item-type">{{typeLabel}}</div>
+    {{#if isTalent}}
+    <div class="sw-item-subline">
+      <span class="sw-tier sw-tier-{{system.tier}}">{{localize system.tierLabel}}</span>
+      {{#if system.root}}<span class="sw-root-mark">✧ {{localize "STARWROUGHT.Field.root"}}</span>{{/if}}
+      {{#if system.capstone}}<span class="sw-capstone">★ {{localize "STARWROUGHT.Field.capstone"}}</span>{{/if}}
+      {{#if system.glyph}}<span class="sw-action-glyph">{{system.glyph}}</span>{{/if}}
+    </div>
+    {{/if}}
+    {{#if isConstellation}}
+    <div class="sw-item-subline">
+      <span class="sw-glyph sw-glyph-{{system.attribute}}">{{swGlyph system.attribute}}</span>
+      <span>{{localize system.categoryLabel}}</span>
+    </div>
+    {{/if}}
+  </div>
+</header>

@@ -1,0 +1,86 @@
+{{!-- The sky: every Constellation this character has actually invested in. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{#if constellations.length}}
+  {{#each constellations as |group|}}
+  <div class="sw-panel sw-constellation-group">
+    <h3 class="sw-panel-title">
+      {{group.label}}
+      {{#if group.pooled}}
+      <span class="sw-points" data-tooltip="{{group.pooledHint}}">
+        {{group.pooled}} {{localize "STARWROUGHT.Field.pointsShort"}} {{localize "STARWROUGHT.Field.pooled"}}
+      </span>
+      {{/if}}
+    </h3>
+
+    {{#each group.constellations as |con|}}
+    <div class="sw-constellation {{#if con.flared}}sw-flared{{/if}}" data-slug="{{con.slug}}">
+
+      <div class="sw-constellation-head">
+        <a class="sw-collapse" data-action="toggleCollapse" data-slug="{{con.slug}}">
+          <i class="fa-solid {{#if con.collapsed}}fa-caret-right{{else}}fa-caret-down{{/if}}"></i>
+        </a>
+
+        <a class="sw-constellation-name" data-action="rollConstellation" data-slug="{{con.slug}}"
+           data-tooltip="STARWROUGHT.Roll.rollHint">
+          <span class="sw-glyph sw-glyph-{{con.attribute}}">{{con.attributeGlyph}}</span>
+          {{con.name}}
+        </a>
+
+        <span class="sw-rank sw-rank-{{con.rank}}" data-tooltip="{{con.attributeLabel}}">
+          {{con.rankLabel}} {{swSigned con.bonus}}
+        </span>
+
+        <span class="sw-points" data-tooltip="STARWROUGHT.Field.pointsHint">
+          {{con.points}} {{swPlural con.points (localize "STARWROUGHT.Field.pointShort") (localize "STARWROUGHT.Field.pointsShort")}}
+        </span>
+
+        {{#if con.next}}
+        <span class="sw-next" data-tooltip="STARWROUGHT.Field.nextRankHint">
+          {{localize con.next.label}}:
+          {{#if con.next.points}}{{con.next.points}} {{swPlural con.next.points (localize "STARWROUGHT.Field.pointShort") (localize "STARWROUGHT.Field.pointsShort")}}{{/if}}
+          {{#if con.next.level}}<em>L{{swAdd @root.system.level con.next.level}}</em>{{/if}}
+          {{#unless con.next.points}}{{#unless con.next.level}}<em>{{localize "STARWROUGHT.Field.ready"}}</em>{{/unless}}{{/unless}}
+        </span>
+        {{/if}}
+
+        <a class="sw-flare" data-action="toggleFlare" data-slug="{{con.slug}}"
+           data-tooltip="STARWROUGHT.Field.flareHint">
+          <i class="fa-solid fa-certificate"></i>
+        </a>
+      </div>
+
+      {{#unless con.collapsed}}
+      <ol class="sw-talent-list">
+        {{#each con.talents as |talent|}}
+        <li class="sw-talent" data-item-id="{{talent.id}}">
+          <img class="sw-talent-img" src="{{talent.img}}" alt="{{talent.name}}"
+               data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat">
+          <span class="sw-tier sw-tier-{{talent.tier}}">{{talent.tier}}</span>
+          <span class="sw-talent-name">
+            {{talent.name}}
+            {{#if talent.root}}<em class="sw-root-mark" data-tooltip="STARWROUGHT.Field.rootHint">✧</em>{{/if}}
+          </span>
+          <div class="sw-talent-controls">
+            <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
+            <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.edit"><i class="fa-solid fa-pen"></i></a>
+            <a data-action="itemDelete" data-tooltip="STARWROUGHT.Sheet.delete"><i class="fa-solid fa-trash"></i></a>
+          </div>
+        </li>
+        {{else}}
+        <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noTalents"}}</li>
+        {{/each}}
+      </ol>
+      {{/unless}}
+
+    </div>
+    {{/each}}
+  </div>
+  {{/each}}
+  {{else}}
+  <div class="sw-panel sw-empty-panel">
+    <p>{{localize "STARWROUGHT.Sheet.noConstellations"}}</p>
+  </div>
+  {{/if}}
+
+</section>

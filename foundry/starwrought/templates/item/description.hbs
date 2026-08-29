@@ -1,0 +1,53 @@
+{{!-- Effect first, because that is the rule; description second, because that is the flavour. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{#if isTalent}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.effect"}}</h3>
+    <prose-mirror name="system.effect" value="{{system.effect}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedEffect}}}</prose-mirror>
+  </div>
+  {{/if}}
+
+  {{#if isChassis}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.specialAbility"}}</h3>
+    <prose-mirror name="system.specialAbility" value="{{system.specialAbility}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedSpecial}}}</prose-mirror>
+  </div>
+  {{/if}}
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.description"}}</h3>
+    <prose-mirror name="system.description" value="{{system.description}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedDescription}}}</prose-mirror>
+  </div>
+
+  <div class="sw-panel trait-editor">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.traits"}}</h3>
+    <div class="sw-trait-list">
+      {{#each system.traits as |trait index|}}
+      <span class="sw-trait">
+        {{trait}}
+        {{#if @root.editable}}<a data-action="removeTrait" data-index="{{index}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+      </span>
+      {{else}}
+      <em class="sw-empty">{{localize "STARWROUGHT.Sheet.noTraits"}}</em>
+      {{/each}}
+    </div>
+    {{#if editable}}
+    <div class="sw-add-row">
+      <input type="text" name="newTrait" placeholder="{{localize 'STARWROUGHT.Field.addTrait'}}">
+      <button type="button" data-action="addTrait"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="sw-panel">
+    <label class="sw-field sw-wide">
+      <span>{{localize "STARWROUGHT.Field.source"}}</span>
+      <input type="text" name="system.source" value="{{system.source}}">
+    </label>
+  </div>
+
+</section>

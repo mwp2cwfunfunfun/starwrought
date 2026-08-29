@@ -1,0 +1,38 @@
+{
+  "_id": "02a2702884c42efe",
+  "name": "Unarmed Strike",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "intuitive",
+    "group": "Natural Weapons",
+    "damage": {
+      "die": 4,
+      "type": "bludgeoning"
+    },
+    "reach": 0,
+    "traits": [
+      "Agile",
+      "Close",
+      "Finesse",
+      "Nonlethal"
+    ],
+    "price": "",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!02a2702884c42efe"
+}

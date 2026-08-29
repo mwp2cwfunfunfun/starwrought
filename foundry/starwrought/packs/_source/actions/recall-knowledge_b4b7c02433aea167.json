@@ -1,0 +1,28 @@
+{
+  "_id": "b4b7c02433aea167",
+  "name": "Recall Knowledge",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "category": "Watching, deceiving & helping",
+    "traits": [
+      "Concentrate"
+    ],
+    "description": "<p>A Lore or relevant Skill check against your target's level-based Threshold. Topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Hit Points.<br><b>Critical Success</b> All facts about two topics. <b>Success</b> One topic. <b>Failure</b> Nothing. <b>Critical Failure</b> All the wrong facts about one topic.<br><b>Special</b> Once per target per Skill, so several Lores give several angles.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "9c4c1eb78a540a57",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b4b7c02433aea167"
+}

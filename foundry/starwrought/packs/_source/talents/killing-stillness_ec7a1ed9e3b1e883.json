@@ -1,0 +1,47 @@
+{
+  "_id": "ec7a1ed9e3b1e883",
+  "name": "Killing Stillness",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Stealth Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "The first time each encounter that you Strike a creature that is unaware of you, a Graze becomes a Hit.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "dc41914280a0d356",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ec7a1ed9e3b1e883"
+}

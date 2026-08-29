@@ -1,0 +1,26 @@
+{
+  "_id": "d832ff0bbaf7116e",
+  "name": "Release",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "free",
+    "costMax": "",
+    "costMode": "to",
+    "category": "Handling things",
+    "traits": [],
+    "description": "<p>Drop or let go of something you are holding.</p>",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "0a5854411327b700",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d832ff0bbaf7116e"
+}

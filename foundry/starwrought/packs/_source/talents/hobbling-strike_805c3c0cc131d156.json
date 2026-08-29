@@ -1,0 +1,47 @@
+{
+  "_id": "805c3c0cc131d156",
+  "name": "Hobbling Strike",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "hunter",
+    "constellationName": "Hunter",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Mark Prey"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Hit your prey with the first Strike of your turn, its Speed is reduced by 10 feet until the end of its next turn.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "ae92852dbc6da00d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!805c3c0cc131d156"
+}

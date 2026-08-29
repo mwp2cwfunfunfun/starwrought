@@ -1,0 +1,36 @@
+{
+  "_id": "0ca7d5edb89e3f6a",
+  "name": "Battleaxe",
+  "type": "weapon",
+  "img": "icons/svg/sword.svg",
+  "system": {
+    "handling": "practiced",
+    "group": "Axes",
+    "damage": {
+      "die": 8,
+      "type": "slashing"
+    },
+    "reach": 2,
+    "traits": [
+      "Sweep",
+      "Trip"
+    ],
+    "price": "5 gp",
+    "quantity": 1,
+    "load": 0,
+    "state": "carried",
+    "description": "",
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": "74c9731f26c4ec6b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0ca7d5edb89e3f6a"
+}

@@ -1,0 +1,28 @@
+{
+  "_id": "b41644eba8117845",
+  "name": "Weaponmaster",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/weaponmaster.png",
+  "system": {
+    "slug": "weaponmaster",
+    "category": "calling",
+    "attribute": "might",
+    "meta": "Calling • Might (3 HP/level • Drilled)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Calling • Might (3 HP/level • Drilled)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v3.1"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b41644eba8117845"
+}
