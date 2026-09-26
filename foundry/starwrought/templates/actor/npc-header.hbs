@@ -43,6 +43,20 @@
           </span>
         </div>
       </div>
+
+      {{!-- An adversary answers a blow the same way a character does: the GM picks Evade or Guard. --}}
+      <div class="sw-stance" data-tooltip="{{localize 'STARWROUGHT.Stance.hint'}}">
+        <span class="sw-stance-label">{{localize "STARWROUGHT.Stance.label"}}</span>
+        <div class="sw-stance-chips">
+          {{#each stance.options as |opt|}}
+          <a class="sw-stance-chip {{#if opt.active}}active{{/if}} {{#if opt.unavailable}}unavailable{{/if}}"
+             data-action="setStance" data-stance="{{opt.key}}" data-tooltip="{{opt.tooltip}}">
+            <i class="{{opt.icon}}"></i> {{opt.label}} <em>{{opt.threshold}}</em>
+            {{#if opt.unavailable}}<i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}
+          </a>
+          {{/each}}
+        </div>
+      </div>
       <div class="sw-counters">
         <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.temp"}}</span>
           <input type="number" name="system.hp.temp" value="{{system.hp.temp}}" min="0"></div>

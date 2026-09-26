@@ -32,6 +32,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # The compiled compendium packs are not committed (they are LevelDB, and a running Foundry
+      # rewrites them), so build them here from the committed packs/_source JSON.
+      - name: Compile the compendium packs
+        run: node assets/build_foundry.mjs
 
       - name: Package the system
         run: node assets/package_system.mjs

@@ -72,6 +72,12 @@ rebuild, which matters because an id becomes a compendium UUID the moment a Tale
 character sheet. `check_style.py` scans the system's `lang/en.json`, its templates, and
 `packs/_source/`, so the Foundry content is held to the same two rules as everything else.
 
+**The compiled packs are not in git.** `foundry/install.mjs` links the repo folder into Foundry's
+data directory, so a running Foundry rewrites the LevelDB log and manifest files under `packs/<pack>/`
+every time a world opens; committed, they dirtied the tree on every session. `packs/_source/*.json`
+is committed and is the source of truth; `build_foundry.mjs` compiles it locally, and
+`.github/workflows/release.yml` compiles it again on a fresh checkout before packaging.
+
 ### What is expected of a change, not asked permission for
 
 - **Back up before a destructive pass.** `backup/pre-<version>/` is the convention; two exist.

@@ -7,6 +7,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { stanceContext } from "../helpers/stance.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -20,6 +21,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     form: { submitOnChange: true, closeOnSubmit: false },
     actions: {
       editImage: SwNpcSheet.#onEditImage,
+      setStance: SwNpcSheet.#onSetStance,
       itemUse: SwNpcSheet.#onItemUse,
       itemEdit: SwNpcSheet.#onItemEdit,
       itemDelete: SwNpcSheet.#onItemDelete,
@@ -79,6 +81,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       label: game.i18n.localize(def.label),
       hint: game.i18n.localize(def.hint)
     }));
+    context.stance = stanceContext(actor);
 
     context.zones = Object.keys(SW.ZONES).map(key => ({
       ...sys.zones[key],
@@ -114,6 +117,10 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /* -------------------------------------------- */
+
+  static async #onSetStance(event, target) {
+    return this.document.setStance(target.dataset.stance);
+  }
 
   static async #onEditImage() {
     if (!this.isEditable) return;

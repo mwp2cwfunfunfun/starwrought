@@ -37,7 +37,8 @@
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.defenses"}}</h3>
     <div class="sw-defense-grid">
       {{#each defenses as |def|}}
-      <div class="sw-defense">
+      <div class="sw-defense {{#if def.isStance}}sw-stance-active{{/if}}">
+        {{#if def.isStance}}<span class="sw-stance-tag">{{localize "STARWROUGHT.Stance.tag"}}</span>{{/if}}
         <a class="sw-defense-roll" data-action="rollDefense" data-defense="{{def.key}}"
            data-tooltip="{{def.hint}}">
           <span class="sw-defense-name">{{def.label}}</span>

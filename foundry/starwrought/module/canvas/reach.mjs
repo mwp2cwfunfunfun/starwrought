@@ -21,6 +21,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { cellGap } from "./geometry.mjs";
 
 /**
  * The bands, innermost first. A cell is *filled* in the first band it belongs to, so the colours do
@@ -227,8 +228,12 @@ function draw(token, { total, natural, unwieldy }) {
   if (((w + (span * 2)) * (h + (span * 2))) > MAX_CELLS) return null;
 
   // How far each band reaches, in feet. They nest, so a band never draws past the total.
+  // "Within N feet" is read as a gap of N or less, the same way reach itself is read: a target at
+  // exactly your reach is in reach, so a target at exactly N feet is within N. Note that on a
+  // one-foot grid with exact diagonals a small N comes out square rather than round, because the
+  // corner cell two across and two up sits at 2.83 feet, which is within 3.
   const edges = {
-    unwieldy: unwieldy ? Math.min(unwieldy - 0.001, total) : 0,
+    unwieldy: unwieldy ? Math.min(unwieldy, total) : 0,
     natural: Math.min(natural, total),
     total
   };
@@ -237,11 +242,10 @@ function draw(token, { total, natural, unwieldy }) {
    * The gap between this cell and the token's space, in feet: the squares that lie between them,
    * which is zero when they are touching. Null for the token's own space.
    */
+  const self = { c0: 0, c1: w - 1, r0: 0, r1: h - 1 };
   const gapAt = (c, r) => {
     if ((c >= 0) && (c < w) && (r >= 0) && (r < h)) return null;
-    const dc = Math.max(0, c - w, -1 - c);
-    const dr = Math.max(0, r - h, -1 - r);
-    return Math.hypot(dc, dr) * grid.distance;
+    return cellGap(self, { c0: c, c1: c, r0: r, r1: r }) * grid.distance;
   };
 
   // Work the whole block out once: the outlines need to know their neighbours.

@@ -5,12 +5,14 @@ node_modules/
 # Pre-version snapshots. Large, and git already keeps the history.
 backup/
 
-# LevelDB's per-process files. The compiled packs themselves are committed, so the release
-# workflow can archive them without running the whole pipeline in CI, but these are made fresh
-# by whatever Foundry opens them and must never be shared between machines.
-foundry/starwrought/packs/*/LOCK
-foundry/starwrought/packs/*/LOG
-foundry/starwrought/packs/*/LOG.old
+# The compiled compendium packs. They are LevelDB databases, and Foundry runs against this very
+# folder through the junction that foundry/install.mjs makes, so it rewrites their log and
+# manifest files every time a world opens. Committed, they would dirty the tree on every session
+# and invite committing a half-written database. The JSON they are compiled from lives in
+# packs/_source and is committed; `node assets/build_foundry.mjs` rebuilds them from it, locally
+# and in the release workflow.
+foundry/starwrought/packs/*
+!foundry/starwrought/packs/_source/
 
 # Python and Word leavings.
 __pycache__/

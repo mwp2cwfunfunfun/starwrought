@@ -1,12 +1,7 @@
 * text=auto
 
-# The compiled compendium packs are LevelDB: binary files with no extension to go on, some of them
-# named MANIFEST-000002 or 000004.log. Line-ending normalisation would silently corrupt them, and a
-# corrupted pack is not obvious until a Talent fails to load in play, so say so explicitly rather
-# than trusting git to guess.
-foundry/starwrought/packs/** binary
-
-# Authored and generated binaries.
+# Authored and generated binaries. The compiled compendium packs are not committed at all (see
+# .gitignore); their JSON sources under packs/_source are ordinary text.
 *.docx binary
 *.xlsx binary
 *.pdf binary

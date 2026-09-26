@@ -8,6 +8,7 @@
 import * as SW from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
+import { stanceContext } from "../helpers/stance.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -50,6 +51,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       setActions: SwCharacterSheet.#onSetActions,
       toggleReaction: SwCharacterSheet.#onToggleReaction,
       resetActions: SwCharacterSheet.#onResetActions,
+      setStance: SwCharacterSheet.#onSetStance,
       toggleCollapse: SwCharacterSheet.#onToggleCollapse,
       adjust: SwCharacterSheet.#onAdjust,
       effectCreate: SwCharacterSheet.#onEffectCreate,
@@ -120,6 +122,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       hint: game.i18n.localize(def.hint),
       rankLabel: game.i18n.localize(def.rankLabel)
     }));
+    context.stance = stanceContext(actor);
 
     context.zones = Object.keys(SW.ZONES).map(key => {
       const z = sys.zones[key];
@@ -543,6 +546,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onToggleReaction() {
     return this.document.update({ "system.actions.reaction": !this.document.system.actions.reaction });
+  }
+
+  static async #onSetStance(event, target) {
+    return this.document.setStance(target.dataset.stance);
   }
 
   static async #onResetActions() {

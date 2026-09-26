@@ -72,8 +72,10 @@ export class SwCheck {
       cfg.mapIndex = Math.clamp(attacksThisTurn.get(actor.uuid) ?? 0, 0, 2);
     }
 
-    // Assemble the standard modifiers from the character sheet.
+    // Assemble the standard modifiers from the character sheet, then whatever the caller worked
+    // out that the sheet cannot see: Unwieldy against a close target, a Talent's own bonus.
     const parts = this.#baseModifiers(actor, cfg);
+    parts.push(...(cfg.modifiers ?? []));
 
     // Ask the player what they want to add, and against what.
     if (cfg.dialog) {
@@ -212,6 +214,7 @@ export class SwCheck {
       isAttack: cfg.kind === "attack",
       targetName: cfg.targetName ?? "",
       targetDefenses: cfg.targetDefenses ?? null,
+      targetStance: cfg.targetStance ?? null,
       threshold: Number.isNumeric(cfg.threshold) ? cfg.threshold : "",
       mapLadder: (cfg.map ?? SW.MAP.standard).map((value, index) => ({
         index, value, label: game.i18n.format(`STARWROUGHT.Roll.map${index}`, { value })
@@ -240,7 +243,23 @@ export class SwCheck {
     if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "circumstance" });
 
     const config = { rollMode: answer.rollMode ?? cfg.rollMode };
-    if (answer.threshold !== undefined && answer.threshold !== "") {
+    // Against a target the dialog offers Defenses by name, so the card can say which one answered.
+    const chosen = answer.defenseKey ? cfg.targetDefenses?.find(d => d.key === answer.defenseKey) : null;
+    if (chosen) {
+      // The defender may have changed their mind while this dialog was open, which is the whole
+      // point of letting them. If the attacker accepted the stance as it was offered, honour the
+      // stance as it is now; and read the Threshold live either way, since conditions move it too.
+      const defender = cfg.targetUuid ? fromUuidSync(cfg.targetUuid)?.actor : null;
+      let key = chosen.key;
+      const now = defender?.system.stance;
+      if (now && (key === cfg.targetStance) && (now !== key)) key = now;
+      const def = cfg.targetDefenses.find(d => d.key === key) ?? chosen;
+      const live = defender?.system.defenses?.[key]?.threshold;
+      config.threshold = Number.isNumeric(live) ? live : def.threshold;
+      config.thresholdLabel = `${cfg.targetName} ${def.label}`;
+      config.defense = key;
+    } else if (Number.isNumeric(answer.threshold)) {
+      // A blank box means no Threshold is known, not a Threshold of zero, which every roll beats.
       config.threshold = Number(answer.threshold);
     }
     if (answer.mapIndex !== undefined) config.mapIndex = Number(answer.mapIndex);
@@ -324,22 +343,38 @@ export class SwCheck {
   /* -------------------------------------------- */
 
   /**
-   * Read a Threshold off the user's current target, if there is exactly one.
+   * The user's current target, if there is exactly one with an Actor behind it.
+   * @returns {Token|null}
+   */
+  static currentTarget() {
+    const targets = Array.from(game.user.targets);
+    if (targets.length !== 1) return null;
+    return targets[0].actor ? targets[0] : null;
+  }
+
+  /**
+   * One of a token's Defense Thresholds, labelled for the card.
+   * @param {Token} token
    * @param {string} defense  A key of SW.DEFENSES.
    * @returns {{threshold: number, label: string, uuid: string}|null}
    */
-  static targetThreshold(defense) {
-    const targets = Array.from(game.user.targets);
-    if (targets.length !== 1) return null;
-    const token = targets[0];
-    const actor = token.actor;
-    if (!actor) return null;
-    const value = actor.system.defenses?.[defense]?.threshold;
+  static thresholdOf(token, defense) {
+    const value = token.actor?.system.defenses?.[defense]?.threshold;
     if (!Number.isNumeric(value)) return null;
     return {
       threshold: value,
       label: `${token.name} ${game.i18n.localize(SW.DEFENSES[defense].label)}`,
       uuid: token.document.uuid
     };
+  }
+
+  /**
+   * Read a Threshold off the user's current target, if there is exactly one.
+   * @param {string} defense  A key of SW.DEFENSES.
+   * @returns {{threshold: number, label: string, uuid: string}|null}
+   */
+  static targetThreshold(defense) {
+    const token = this.currentTarget();
+    return token ? this.thresholdOf(token, defense) : null;
   }
 }

@@ -20,6 +20,8 @@ import { onRenderChatMessage } from "./module/documents/chat.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
 import { registerStrideRuler } from "./module/canvas/ruler.mjs";
+import { registerTargeting, refresh as refreshTargets } from "./module/canvas/targeting.mjs";
+import { registerStanceHud } from "./module/apps/token-hud.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
 import { SwItemSheet } from "./module/apps/item-sheet.mjs";
@@ -126,6 +128,8 @@ Hooks.once("init", async () => {
   registerActionTracking();
   registerReachRings();
   registerStrideRuler();
+  registerTargeting();
+  registerStanceHud();
   registerHandlebarsHelpers();
   await loadConstellationIndex();
   await preloadTemplates();
@@ -218,6 +222,16 @@ function registerSettings() {
     type: Boolean,
     default: true,
     onChange: () => refreshReach()
+  });
+
+  game.settings.register(SW.SYSTEM_ID, "showTargetArrows", {
+    name: "STARWROUGHT.Settings.showTargetArrows",
+    hint: "STARWROUGHT.Settings.showTargetArrowsHint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => refreshTargets()
   });
 
   game.settings.register(SW.SYSTEM_ID, "showStrideBands", {

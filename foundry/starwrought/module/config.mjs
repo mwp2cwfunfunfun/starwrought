@@ -488,6 +488,9 @@ export const CONDITIONS = Object.freeze({
 /** Conditions that impose a flat penalty on Evade and Guard. */
 export const OFF_GUARD_PENALTY = -2;
 
+/** Unwieldy N: the circumstance penalty to attack rolls against a target within N feet. */
+export const UNWIELDY_PENALTY = -2;
+
 /* -------------------------------------------- */
 /*  Bonus types                                 */
 /* -------------------------------------------- */

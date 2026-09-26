@@ -9,6 +9,7 @@
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { SwDamage } from "../dice/damage.mjs";
+import { gapBetween } from "../canvas/geometry.mjs";
 
 export class SwActor extends Actor {
   /* -------------------------------------------- */
@@ -144,17 +145,62 @@ export class SwActor extends Actor {
     });
 
     const rank = this.weaponRank(weapon);
-    const target = SwCheck.targetThreshold(options.defense ?? "evade");
-    const targetActor = target ? (await fromUuid(target.uuid))?.actor : null;
 
-    // Offer the target's four Thresholds, since the defender is the one who chooses.
+    // Your Foundry target first; failing that, the one target this token is remembered as having,
+    // so a reload does not cost you the Threshold along with the arrow.
+    let targetToken = SwCheck.currentTarget();
+    if (!targetToken) {
+      const remembered = this.tokenOnScene()?.getFlag(SW.SYSTEM_ID, "targets")?.ids ?? [];
+      const only = (remembered.length === 1) ? canvas.tokens?.get(remembered[0]) : null;
+      if (only?.actor) targetToken = only;
+    }
+    const targetActor = targetToken?.actor ?? null;
+
+    // The defender decides whether to Evade or Guard. Their stance is that decision, made in
+    // advance and changeable until the die leaves the hand, so the roll reads it rather than asking
+    // the attacker to guess. A stance the defender cannot use right now (Evade while Grabbed) is
+    // offered as the other one, and said so. The dialog still lists all four for the table that
+    // rules otherwise.
+    const stance = targetActor?.system.stance ?? "evade";
+    const blocked = targetActor?.system.defenses?.[stance]?.unavailable ?? null;
+    const offered = blocked ? (stance === "evade" ? "guard" : "evade") : stance;
+    const defense = options.defense ?? offered;
+    const target = targetToken ? SwCheck.thresholdOf(targetToken, defense) : null;
     let targetDefenses = null;
     if (targetActor) {
-      targetDefenses = Object.entries(SW.DEFENSES).map(([key, def]) => ({
-        key,
-        label: game.i18n.localize(def.label),
-        threshold: targetActor.system.defenses?.[key]?.threshold ?? 10
-      }));
+      targetDefenses = Object.entries(SW.DEFENSES).map(([key, def]) => {
+        const own = targetActor.system.defenses?.[key];
+        return {
+          key,
+          label: game.i18n.localize(def.label),
+          threshold: own?.threshold ?? 10,
+          isStance: key === stance,
+          selected: key === defense,
+          unavailable: own?.unavailable
+            ? game.i18n.localize(SW.CONDITIONS[own.unavailable]?.name ?? own.unavailable)
+            : null
+        };
+      });
+    }
+
+    // Unwieldy N: a −2 circumstance penalty against a target within N feet, measured edge to edge
+    // like everything else on the grid, and no attack at all while Grabbed. The penalty is applied;
+    // the Grabbed clause is announced, since nothing in this system prevents a roll.
+    const modifiers = [...(options.modifiers ?? [])];
+    const unwieldy = weapon.system.flags?.unwieldy ?? 0;
+    if (unwieldy) {
+      const attackerToken = this.tokenOnScene();
+      if (attackerToken && targetToken) {
+        const gap = gapBetween(attackerToken, targetToken.document);
+        if (gap <= unwieldy) {
+          modifiers.push({
+            label: game.i18n.format("STARWROUGHT.Roll.unwieldy", { n: unwieldy }),
+            value: SW.UNWIELDY_PENALTY,
+            type: "circumstance"
+          });
+        }
+      }
+      if (this.statuses?.has("grabbed")) await this.#announceGrabbed(weapon);
     }
 
     return SwCheck.roll(foundry.utils.mergeObject({
@@ -168,12 +214,76 @@ export class SwActor extends Actor {
       label: weapon.name,
       subtitle: game.i18n.localize("STARWROUGHT.Roll.strike"),
       map: weapon.system.map,
+      modifiers,
       threshold: target?.threshold ?? null,
       thresholdLabel: target?.label ?? "",
       targetUuid: target?.uuid ?? "",
       targetDefenses,
-      targetName: targetActor?.name ?? ""
-    }, options, { inplace: false }));
+      targetStance: targetActor ? stance : null,
+      // The token's name, not the actor's: the token name is the one the GM chose to show.
+      targetName: targetToken?.name ?? ""
+    }, { ...options, modifiers }, { inplace: false }));
+  }
+
+  /**
+   * "You cannot attack with it at all while you are Grabbed." Said to the table the way an
+   * overspent action is, and never enforced: the roll posts, and the table decides.
+   */
+  async #announceGrabbed(weapon) {
+    const body = game.i18n.format("STARWROUGHT.Roll.unwieldyGrabbed", { name: this.name, weapon: weapon.name });
+    ui.notifications.warn(body);
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-overspend">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> ${
+          game.i18n.localize("STARWROUGHT.Roll.unwieldyGrabbedTitle")}</h3>
+        <p>${body}</p></div>`,
+      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+    });
+  }
+
+  /**
+   * This actor's token on the current scene: the one you have selected if it is one of yours,
+   * otherwise the first. Null when the actor is not on the map, in which case nothing that needs a
+   * distance applies.
+   * @returns {TokenDocument|null}
+   */
+  tokenOnScene() {
+    if (this.isToken) return this.token;
+    const docs = this.getActiveTokens(false, true);
+    return docs.find(d => d.object?.controlled) ?? docs[0] ?? null;
+  }
+
+  /**
+   * Choose which Defense answers the next physical Attack. The defender's call, so it lives here,
+   * and the attacker's roll reads it. Announced in chat during an encounter, because the attacker
+   * needs to know and the table should not have to ask.
+   * @param {"evade"|"guard"} key
+   * @param {object} [options]
+   * @param {boolean} [options.announce=true]
+   */
+  async setStance(key, { announce = true } = {}) {
+    if (!["evade", "guard"].includes(key)) return;
+    if (this.system.stance === key) return;
+    await this.update({ "system.stance": key });
+    const defense = this.system.defenses?.[key];
+    // A Defense the rules say you cannot use right now is still yours to choose; the system says
+    // so and leaves the ruling to the table.
+    const note = defense?.unavailable
+      ? " " + game.i18n.format("STARWROUGHT.Stance.unavailableNote", {
+          reason: game.i18n.localize(SW.CONDITIONS[defense.unavailable]?.name ?? defense.unavailable)
+        })
+      : "";
+    if (note) ui.notifications.warn(note.trim());
+    if (!announce || !this.inEncounter) return;
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought sw-stance-card">${game.i18n.format("STARWROUGHT.Stance.set", {
+        name: this.name,
+        defense: game.i18n.localize(SW.DEFENSES[key].label),
+        threshold: defense?.threshold ?? 10
+      })}${note}</div>`
+    });
   }
 
   /**

@@ -40,6 +40,11 @@ function commonActorFields() {
     wounded: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
     dying: new fields.NumberField({ required: true, integer: true, min: 0, max: SW.DYING_MAX, initial: 0 }),
     size: new fields.StringField({ required: true, choices: Object.keys(SW.SIZES), initial: "medium" }),
+    /**
+     * Which Defense answers the next physical Attack. "The defender decides whether to Evade or
+     * Guard", so the decision is stored on the defender and read by the attacker's roll.
+     */
+    stance: new fields.StringField({ required: true, choices: ["evade", "guard"], initial: "evade" }),
     traits: new fields.SchemaField({
       resistances: damageModifierField("STARWROUGHT.Field.resistances"),
       weaknesses: damageModifierField("STARWROUGHT.Field.weaknesses"),
@@ -497,9 +502,16 @@ export class SwCharacterData extends SwActorData {
         mod: total,
         sizeMod,
         threshold: 10 + total + sizeMod,
-        modifiers: applied
+        modifiers: applied,
+        isStance: key === this.stance,
+        unavailable: null
       };
     }
+    // "Evade is unavailable while you are Grabbed or Restrained. You cannot slip what is already
+    // holding you." Guard's own exceptions (unaware of the attack, or nothing in hand and no hand
+    // free) are not things the sheet can see, so they stay with the table. Recorded, not enforced.
+    this.defenses.evade.unavailable = unavailableEvade(statuses);
+    this.stanceThreshold = this.defenses[this.stance]?.threshold ?? 10;
   }
 
   /* -------------------------------------------- */
@@ -684,8 +696,19 @@ export class SwNpcData extends SwActorData {
         hint: def.hint,
         attribute: def.attribute,
         threshold: this.thresholds[key],
-        mod: this.thresholds[key] - 10
+        mod: this.thresholds[key] - 10,
+        isStance: key === this.stance,
+        unavailable: null
       };
     }
+    this.defenses.evade.unavailable = unavailableEvade(this.parent.statuses ?? new Set());
+    this.stanceThreshold = this.defenses[this.stance]?.threshold ?? 10;
   }
+}
+
+/** Why Evade cannot be used right now, as a condition id, or null when it can. */
+function unavailableEvade(statuses) {
+  if (statuses.has("grabbed")) return "grabbed";
+  if (statuses.has("restrained")) return "restrained";
+  return null;
 }

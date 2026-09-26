@@ -24,7 +24,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -56,6 +56,15 @@ if (repo) {
 
 const zipPath = join(DIST, ASSET);
 console.log(`STARWROUGHT | packaging ${manifest.id} v${manifest.version}${repo ? ` for ${repo}` : ""}`);
+
+// The compiled packs are not committed, so a fresh checkout has none. Say so rather than shipping
+// a system whose compendia are empty directories.
+const missing = (manifest.packs ?? []).filter(p => !existsSync(join(SYSTEM, p.path, "CURRENT")));
+if (missing.length) {
+  console.error(`\nNo compiled pack at: ${missing.map(p => p.path).join(", ")}`);
+  console.error("Run `node assets/build_foundry.mjs` first; it compiles packs/_source into LevelDB.");
+  process.exit(1);
+}
 
 rmSync(STAGE, { recursive: true, force: true });
 rmSync(zipPath, { force: true });

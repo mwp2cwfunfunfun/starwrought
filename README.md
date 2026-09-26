@@ -57,6 +57,11 @@ That writes `dist/starwrought.zip`, which can be unpacked straight into a Foundr
 `Data/systems/starwrought/`. Pushing a `v*` tag builds the same archive in CI and publishes it as a
 release.
 
+The compiled compendium packs under `foundry/starwrought/packs/` are not committed: they are
+LevelDB databases that a running Foundry rewrites. Their JSON sources in `packs/_source` are, and
+`node assets/build_foundry.mjs` compiles them, which is also what the release workflow does on a
+fresh checkout.
+
 ## Licence
 
 The system code is MIT. The game content is copyright and all rights are reserved. See

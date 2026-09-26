@@ -6,7 +6,8 @@
     <p class="sw-note">{{localize "STARWROUGHT.Hint.npcThresholds"}}</p>
     <div class="sw-defense-grid">
       {{#each defenses as |def|}}
-      <div class="sw-defense sw-npc-defense">
+      <div class="sw-defense sw-npc-defense {{#if def.isStance}}sw-stance-active{{/if}}">
+        {{#if def.isStance}}<span class="sw-stance-tag">{{localize "STARWROUGHT.Stance.tag"}}</span>{{/if}}
         <span class="sw-defense-name" data-tooltip="{{def.hint}}">{{def.label}}</span>
         <input type="number" name="system.thresholds.{{def.key}}" value="{{def.threshold}}">
       </div>

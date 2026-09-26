@@ -568,6 +568,23 @@
   "STARWROUGHT.Settings.showReachHint": "Draw a ring at your Total Reach around the token you control or hover over. Natural Reach plus the longest melee weapon in hand.",
   "STARWROUGHT.Settings.showStrideBands": "Colour the drag ruler by Strides",
   "STARWROUGHT.Settings.showStrideBandsHint": "While dragging a token, colour the highlighted squares by which action pays for them: green for the first Stride, gold for the second, orange for the third, red for anything past what you have left to spend. Nothing is prevented; the red squares are a warning.",
+  "STARWROUGHT.Settings.showTargetArrows": "Draw targeting arrows on the map",
+  "STARWROUGHT.Settings.showTargetArrowsHint": "An arrow from each token to whatever it is targeting, in the targeting player's colour, visible to everyone who can see both tokens. Targets are remembered on the token, so they survive a reload and are listed in the Combat Tracker.",
+
+  "STARWROUGHT.Stance.label": "Answering with",
+  "STARWROUGHT.Stance.hint": "Which Defense meets the next physical Attack. The defender chooses: Evade (don't be there) or Guard (don't let it through). Switch it any time before the attacker rolls; the attack dialog reads it.",
+  "STARWROUGHT.Stance.tag": "stance",
+  "STARWROUGHT.Stance.set": "{name} answers with {defense} (Threshold {threshold}).",
+  "STARWROUGHT.Stance.switchTo": "Answer with {defense}",
+  "STARWROUGHT.Stance.hudTooltip": "Answering with {current} ({threshold}). Click to answer with {next}.",
+  "STARWROUGHT.Stance.dialogHint": "The marked Defense is the one the defender has chosen, read again when you roll in case they change it. One marked unavailable cannot normally be used right now (Evade while Grabbed or Restrained). Change the choice only if the table rules otherwise.",
+  "STARWROUGHT.Stance.switchToUnavailable": "Answer with {defense}. Unavailable while {reason}; the table decides.",
+  "STARWROUGHT.Stance.unavailableTag": "unavailable",
+  "STARWROUGHT.Stance.unavailableNote": "That Defense is unavailable while {reason}. Nothing is prevented; the table decides.",
+  "STARWROUGHT.Roll.unwieldy": "Unwieldy {n}, target within {n} ft",
+  "STARWROUGHT.Roll.unwieldyGrabbed": "{name} is Grabbed and cannot attack with {weapon} at all: it is Unwieldy. The roll is posted anyway; the table decides.",
+  "STARWROUGHT.Roll.unwieldyGrabbedTitle": "Unwieldy while Grabbed",
+  "STARWROUGHT.Targeting.targets": "Targeting",
 
   "STARWROUGHT.Effect.new": "New Effect",
 

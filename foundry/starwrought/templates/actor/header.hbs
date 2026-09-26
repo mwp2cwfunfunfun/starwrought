@@ -61,6 +61,20 @@
         </div>
       </div>
 
+      {{!-- Which Defense meets the next blow. The defender's call, so it is one click, always visible. --}}
+      <div class="sw-stance" data-tooltip="{{localize 'STARWROUGHT.Stance.hint'}}">
+        <span class="sw-stance-label">{{localize "STARWROUGHT.Stance.label"}}</span>
+        <div class="sw-stance-chips">
+          {{#each stance.options as |opt|}}
+          <a class="sw-stance-chip {{#if opt.active}}active{{/if}} {{#if opt.unavailable}}unavailable{{/if}}"
+             data-action="setStance" data-stance="{{opt.key}}" data-tooltip="{{opt.tooltip}}">
+            <i class="{{opt.icon}}"></i> {{opt.label}} <em>{{opt.threshold}}</em>
+            {{#if opt.unavailable}}<i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}
+          </a>
+          {{/each}}
+        </div>
+      </div>
+
       {{#if actions.show}}
       {{!-- Three actions and a reaction, gained at the start of your turn. --}}
       <div class="sw-actions {{#if actions.isTurn}}sw-actions-turn{{/if}}"

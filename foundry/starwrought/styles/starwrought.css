@@ -11,33 +11,28 @@
    properties and ignores the ::-webkit rules whenever both are present, so the
    standard pair carries the design and the webkit block is only a fallback for
    older engines.
+
+   Foundry sets `scrollbar-width: thin` and its own dim colour on `*`, inside a
+   cascade layer. A list of tag names cannot beat that: any element the list
+   missed (a form, a list item, a table) kept the thin dim bar, which is exactly
+   what showed up on the character sheet. So this is `*` too. Unlayered styles
+   win over layered ones whatever the specificity, so this takes every element.
    -------------------------------------------------------------------------- */
 
-:root,
-.window-app,
-.application,
-.app {
+:root {
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
 }
 
-html,
-body,
-.application,
-.window-app,
-.app,
-[data-application-part],
-.scrollable,
-.window-content,
-#sidebar,
-#chat-log,
-.directory-list,
-.tab,
-ol, ul, section, div, aside, nav, textarea, pre {
+* {
   scrollbar-width: auto;
   scrollbar-color: var(--sw-scroll-thumb, #a8842c) var(--sw-scroll-track, rgba(0, 0, 0, 0.5));
 }
+
+/* The one scrollbar core hides on purpose, and the rule above would have brought back: the
+   recent-chat overlay drawn over the canvas when the sidebar is collapsed. */
+#chat-notifications .overflow { scrollbar-width: none; }
 
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track {
@@ -871,6 +866,94 @@ ol, ul, section, div, aside, nav, textarea, pre {
 }
 .starwrought .sw-outstanding a:hover { color: var(--sw-flare); }
 
+/* --------------------------------------------------------------------------
+   Stance: which Defense answers the next blow. The defender's call, so it sits
+   in the header where it is always one click away, and marks its Defense in
+   the grid below.
+   -------------------------------------------------------------------------- */
+.starwrought .sw-stance { display: flex; flex-direction: column; gap: 0.25rem; }
+.starwrought .sw-stance-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-stance-chips { display: flex; gap: 0.3rem; }
+.starwrought .sw-stance-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.78rem;
+  color: var(--sw-ink-dim);
+  cursor: pointer;
+}
+.starwrought .sw-stance-chip:hover { border-color: var(--sw-gold-dim); color: var(--sw-ink); }
+.starwrought .sw-stance-chip.active {
+  border-color: var(--sw-gold);
+  color: var(--sw-flare);
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.22), rgba(255, 216, 103, 0.06));
+  box-shadow: 0 0 8px rgba(227, 178, 60, 0.3);
+}
+.starwrought .sw-stance-chip em {
+  font-style: normal;
+  font-size: 0.7rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.starwrought .sw-stance-chip.active em { color: var(--sw-flare); }
+/* A Defense the rules say you cannot use right now. Still a choice; the table decides. */
+.starwrought .sw-stance-chip.unavailable { border-style: dashed; opacity: 0.8; }
+.starwrought .sw-stance-warn { color: #d9534f; font-size: 0.7rem; }
+
+.starwrought .sw-defense { position: relative; }
+.starwrought .sw-defense.sw-stance-active {
+  border-color: var(--sw-gold);
+  box-shadow: inset 0 0 0 1px rgba(227, 178, 60, 0.35), 0 0 10px rgba(227, 178, 60, 0.18);
+}
+.starwrought .sw-stance-tag {
+  position: absolute;
+  top: -0.55rem;
+  right: 0.5rem;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--sw-gold);
+  color: var(--sw-night);
+}
+
+/* The stance card takes the night background with the other cards below; this is only its
+   own accent, so it reads on the light chat theme as well as the dark one. */
+.starwrought.sw-stance-card {
+  border-left: 3px solid var(--sw-gold);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   Targeting. The sidebar and the HUD are core's, so these are not scoped.
+   -------------------------------------------------------------------------- */
+.combatant .sw-tracker-targets {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  color: #e3b23c;
+}
+li.combatant.sw-in-crosshairs {
+  box-shadow: inset 3px 0 0 #b4453f;
+  background: linear-gradient(90deg, rgba(180, 69, 63, 0.22), transparent 65%);
+}
+#token-hud .sw-hud-stance[data-stance="evade"] { color: #7fb3c8; }
+#token-hud .sw-hud-stance[data-stance="guard"] { color: #e3b23c; }
+#token-hud .sw-hud-stance.unavailable { box-shadow: inset 0 0 0 2px #d9534f; border-radius: 4px; }
+
 @keyframes sw-slot-flash {
   0%, 100% { box-shadow: none; }
   25%, 75% { box-shadow: 0 0 0 2px var(--sw-flare), 0 0 14px rgba(255, 216, 103, 0.5); }
@@ -918,7 +1001,8 @@ ol, ul, section, div, aside, nav, textarea, pre {
 .starwrought.applied-card,
 .starwrought.item-card,
 .starwrought.action-card,
-.starwrought.refuse-death {
+.starwrought.refuse-death,
+.starwrought.sw-stance-card {
   --sw-ink: #e8e4f5;
   border: 1px solid var(--sw-edge);
   border-radius: var(--sw-radius);

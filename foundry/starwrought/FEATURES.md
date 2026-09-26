@@ -219,7 +219,7 @@ Three bands, from the inside out:
 
 | Band | Colour | What it is |
 |---|---|---|
-| Unwieldy | red | The inner dead zone of a long weapon. Unwieldy N is a −2 circumstance penalty against anything within N feet, so it is drawn as a warning rather than as reach. Absent unless the weapon in hand has the trait |
+| Unwieldy | red | The inner dead zone of a long weapon. Unwieldy N is a −2 circumstance penalty against a target within N feet, so it is drawn as a warning rather than as reach. Absent unless the weapon in hand has the trait |
 | Natural Reach | faint blue | What your body reaches, set by your Size |
 | Total Reach | gold | Natural Reach plus the longest melee weapon in hand. The one that matters |
 
@@ -231,6 +231,86 @@ the moment the map is busiest.
 A Medium character with a battleaxe shows 4 feet; the same character with a longspear shows 16,
 with the red band at 7. Stow the weapon and it falls back to Natural Reach. A ranged weapon
 contributes nothing, since its reach is not a melee one. Client setting `showReach`.
+
+**"Within N feet" is read as a gap of N or less**, the same way reach itself is read: a target at
+exactly your reach is in reach, so a target at exactly N feet is within N. The handbook does not
+define the word, so this is a ruling, recorded in the changelog. It has a visible consequence on a
+one-foot grid with exact diagonals: for a small N the band comes out square rather than round. A
+Spear is Unwieldy 3, and the corner cell two squares across and two up sits at 2.83 feet, which is
+within 3; only the cells at three across and one up (3.16 feet) fall outside. Larger values cut
+their corners the way you would expect: a Halberd's 4 and a Longspear's 7 both read as stepped
+octagons. The shape is the arithmetic, not a drawing choice.
+
+**The Unwieldy penalty is applied, not just drawn.** A Strike with an Unwieldy N weapon against a
+target within N feet takes the −2 circumstance penalty automatically, measured edge to edge with
+the same arithmetic as the band, and the modifier line on the card says why. The penalty applies
+to whichever weapon you actually Strike with, bows included (a Longbow is Unwieldy 20); the red
+band on the map is drawn only for the melee weapon that sets your Total Reach, since a bow has no
+reach to draw. The Grabbed clause, which forbids the attack outright, is announced rather than
+enforced, in keeping with the rest of the system: a warning to the attacker and a card in chat
+(public for a player's character, to the GM for an adversary), and the roll posts. The table
+decides.
+
+### Targeting, made visible
+
+Foundry's own targeting indicator is four small corner brackets that only the targeting player can
+see, and a pip for everyone else. At a table where the players roll everything, "who is that thing
+going for" comes up every round, and a pip does not answer it.
+
+- **Arrows on the map.** From the token doing the targeting to whatever it targets, in the targeting
+  player's colour, drawn for everyone who can see both tokens. They start at the edge of one space
+  and end at the edge of the other with an arrowhead, over a dark underlay so they read on a light
+  map as well as a dark one. Client setting `showTargetArrows`.
+- **In the Combat Tracker.** A line under each combatant names its targets, and the rows of whoever
+  the active combatant has in its sights are tinted red down the left edge.
+- **Remembered on the token.** Foundry targets belong to a *user* and vanish on reload. Here, as a
+  user acquires targets, they are written onto the token they are acting through, as
+  `flags.starwrought.targets`. That is the token they have selected; failing that, a player's own
+  character on the scene (or the one token they own there, if there is exactly one), and for a GM
+  with nothing selected, the combatant whose turn it is, provided no player owns it. So targets
+  belong to the creature, the way they do at a physical table, survive a refresh, and are readable
+  by every client.
+- **What clears them.** Clearing your Foundry targets clears the record on any token you have
+  selected, or that you wrote yourself. A player who retargets with no token to carry it drops
+  their old record. A GM's records are not swept that way, because a GM with nothing selected is
+  usually inspecting a Threshold, and the monsters they set up one by one must keep theirs. Ending
+  the combat clears every remembered target on the scene. Nothing else does: a target set mid-fight
+  stays until one of those happens, which is what you want of a monster that has picked its prey.
+- **What reads them.** The arrows and the tracker. A Strike uses your live Foundry target first,
+  and falls back to the one remembered target on your token when you have none, so a reload costs
+  you neither the arrow nor the Threshold.
+- A hidden token's arrows and tracker line are the GM's alone.
+
+### Stance: the defender answers
+
+"The defender decides whether to Evade or Guard." Before this, the attacker's dialog asked the
+*attacker* to pick the defender's Defense, which is the wrong person. Now each actor, character or
+adversary, carries a **stance**: which of Evade or Guard meets the next physical Attack. Awareness
+and Endure are not stances; the handbook says they are almost never chosen against an Attack.
+
+- **On the sheet**, two chips in the header showing each Threshold, one click to flip, and the
+  chosen Defense marked in the grid. Adversaries have the same chips.
+- **On the Token HUD**, one button showing the current answer, flipping to the other: the fastest
+  way to change your mind when an arrow has just been pointed at you.
+- **In the attack dialog**, the defender's stance is preselected and marked "stance". The list of
+  all four stays, for the table that rules otherwise, and the card names whichever was used. The
+  stance is **read again when the die is rolled**, not only when the dialog opened: if the attacker
+  accepted the stance as offered and the defender flipped it while the dialog was up, the roll
+  honours the flip. The Threshold is read live at the same moment, since conditions move it too.
+- **Announced** in chat during an encounter when it changes, since the attacker needs to know and
+  the table should not have to ask.
+- **Unavailable Defenses are shown, not enforced.** "Evade is unavailable while you are Grabbed or
+  Restrained." A Grabbed defender's Evade chip goes dashed with a warning mark, the HUD button
+  gets a red ring, the dialog lists it as unavailable and preselects Guard instead, and choosing it
+  anyway posts a note saying so. Guard's own exceptions (unaware of the attack, or nothing in hand
+  and no hand free) are not things the sheet can see, so they stay with the table.
+
+Why not stop the attack and prompt the defender? Because the prompt would land on a player who may
+be away from the keyboard, block the attacker until they answer, and do nothing for adversaries,
+who are all the GM's. A stance set in advance and changeable in one click covers the same ground
+without a round trip, and it matches how the handbook phrases the choice: something the defender
+*has decided*, not something they are asked. Postures, the handbook's next layer on this choice,
+are in the data and are the natural next step.
 
 ### The drag ruler, coloured by Strides
 
@@ -323,6 +403,7 @@ token.
 | Track the three-action turn | on | Spend actions automatically for Strikes, Raise a Shield, Recenter, drawing or stowing a weapon, and moving |
 | Show Total Reach on the map | on | Draw the reach bands around the token you control or hover over. Per client |
 | Colour the drag ruler by Strides | on | Colour the squares a drag crosses by which action pays for them. Per client |
+| Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour. Per client |
 
 ---
 

@@ -16,17 +16,21 @@
   </div>
 
   {{#if targetDefenses}}
+  {{!-- The defender's stance is preselected; the list stays for the table that rules otherwise. --}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.targetDefense"}}{{#if targetName}} · {{targetName}}{{/if}}</label>
     <div class="form-fields">
-      <select name="threshold">
+      <select name="defenseKey">
         {{#each targetDefenses as |def|}}
-        <option value="{{def.threshold}}" {{#if (eq def.threshold @root.threshold)}}selected{{/if}}>
-          {{def.label}} ({{def.threshold}})
+        <option value="{{def.key}}" {{#if def.selected}}selected{{/if}}>
+          {{def.label}} ({{def.threshold}}){{#if def.isStance}} · {{localize "STARWROUGHT.Stance.tag"}}{{/if}}{{#if def.unavailable}} · {{localize "STARWROUGHT.Stance.unavailableTag"}} ({{def.unavailable}}){{/if}}
         </option>
         {{/each}}
       </select>
     </div>
+    {{#if targetStance}}
+    <p class="hint">{{localize "STARWROUGHT.Stance.dialogHint"}}</p>
+    {{/if}}
   </div>
   {{else}}
   <div class="form-group">
