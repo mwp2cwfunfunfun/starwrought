@@ -213,8 +213,7 @@ export class SwCheck {
       total: preview.total,
       isAttack: cfg.kind === "attack",
       targetName: cfg.targetName ?? "",
-      targetDefenses: cfg.targetDefenses ?? null,
-      targetStance: cfg.targetStance ?? null,
+      targetDefense: cfg.targetDefense ?? null,
       threshold: Number.isNumeric(cfg.threshold) ? cfg.threshold : "",
       mapLadder: (cfg.map ?? SW.MAP.standard).map((value, index) => ({
         index, value, label: game.i18n.format(`STARWROUGHT.Roll.map${index}`, { value })
@@ -243,22 +242,16 @@ export class SwCheck {
     if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "circumstance" });
 
     const config = { rollMode: answer.rollMode ?? cfg.rollMode };
-    // Against a target the dialog offers Defenses by name, so the card can say which one answered.
-    const chosen = answer.defenseKey ? cfg.targetDefenses?.find(d => d.key === answer.defenseKey) : null;
-    if (chosen) {
-      // The defender may have changed their mind while this dialog was open, which is the whole
-      // point of letting them. If the attacker accepted the stance as it was offered, honour the
-      // stance as it is now; and read the Threshold live either way, since conditions move it too.
+    if (cfg.targetDefense && !cfg.defenseForced) {
+      // The defender's choice, read at the moment of the roll rather than when the dialog opened:
+      // the whole point of a stance is that they may change it while you are deciding, and a
+      // condition landing meanwhile moves the Threshold too. The attacker is not offered a choice.
       const defender = cfg.targetUuid ? fromUuidSync(cfg.targetUuid)?.actor : null;
-      let key = chosen.key;
-      const now = defender?.system.stance;
-      if (now && (key === cfg.targetStance) && (now !== key)) key = now;
-      const def = cfg.targetDefenses.find(d => d.key === key) ?? chosen;
-      const live = defender?.system.defenses?.[key]?.threshold;
-      config.threshold = Number.isNumeric(live) ? live : def.threshold;
-      config.thresholdLabel = `${cfg.targetName} ${def.label}`;
-      config.defense = key;
-    } else if (Number.isNumeric(answer.threshold)) {
+      const now = defender?.answeringDefense?.() ?? cfg.targetDefense;
+      config.threshold = now.threshold;
+      config.thresholdLabel = `${cfg.targetName} ${now.label}`;
+      config.defense = now.key;
+    } else if (!cfg.targetDefense && Number.isNumeric(answer.threshold)) {
       // A blank box means no Threshold is known, not a Threshold of zero, which every roll beats.
       config.threshold = Number(answer.threshold);
     }

@@ -292,17 +292,19 @@ and Endure are not stances; the handbook says they are almost never chosen again
   chosen Defense marked in the grid. Adversaries have the same chips.
 - **On the Token HUD**, one button showing the current answer, flipping to the other: the fastest
   way to change your mind when an arrow has just been pointed at you.
-- **In the attack dialog**, the defender's stance is preselected and marked "stance". The list of
-  all four stays, for the table that rules otherwise, and the card names whichever was used. The
-  stance is **read again when the die is rolled**, not only when the dialog opened: if the attacker
-  accepted the stance as offered and the defender flipped it while the dialog was up, the roll
-  honours the flip. The Threshold is read live at the same moment, since conditions move it too.
+- **In the attack dialog**, the defender's answer is stated, not offered: "Evade (10) · stance".
+  The attacker has no dropdown, because the choice is not theirs; to be answered with a different
+  Defense, the defender changes their stance. The answer is **read again when the die is rolled**,
+  not only when the dialog opened, so a defender who flips while the dialog is up is answered with
+  the Defense they flipped to, and the Threshold is read live at the same moment since conditions
+  move it too. Code can still force a Defense (`rollAttack(id, { defense: "awareness" })`) for a
+  Talent that calls for one specifically; the dialog then shows the forced one.
 - **Announced** in chat during an encounter when it changes, since the attacker needs to know and
   the table should not have to ask.
 - **Unavailable Defenses are shown, not enforced.** "Evade is unavailable while you are Grabbed or
   Restrained." A Grabbed defender's Evade chip goes dashed with a warning mark, the HUD button
-  gets a red ring, the dialog lists it as unavailable and preselects Guard instead, and choosing it
-  anyway posts a note saying so. Guard's own exceptions (unaware of the attack, or nothing in hand
+  gets a red ring, the attack dialog says "Evade is unavailable while Grabbed; answered with Guard"
+  and uses Guard, and choosing Evade anyway on the sheet posts a note saying so. Guard's own exceptions (unaware of the attack, or nothing in hand
   and no hand free) are not things the sheet can see, so they stay with the table.
 
 Why not stop the attack and prompt the defender? Because the prompt would land on a player who may

@@ -7,6 +7,36 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.1 (2026-09-26): Player's Handbook v3.3
+
+What the second look at 0.3.0 found.
+
+### Changed
+
+- **The attack dialog no longer offers the attacker a choice of the defender's Defense.** It states
+  the defender's answer, "Evade (10) · stance", and that is that: the defender decides, and to be
+  answered differently the defender changes their stance on their sheet or Token HUD. The answer is
+  still read again at the moment of the roll. A caller can still force a Defense in code, for a
+  Talent that targets Awareness or Endure specifically; the dialog then shows the forced one.
+
+### Fixed
+
+- **The character sheet's tabs could not be scrolled.** Not a scrollbar problem: Foundry keeps a
+  window's content at `overflow: hidden` on purpose and expects the tab to claim the remaining
+  height and scroll it, and ours never did, so everything below the fold was simply clipped with
+  no bar at all. The active tab now flexes to fill the window and scrolls, on every sheet.
+- **The roll dialog's labels and hint were unreadable on the light UI theme.** Two causes. DialogV2
+  wraps its content in its own `<form>`, so the template's nested `<form class="check-dialog-form">`
+  was dropped by the parser and every rule on that class, the label colour included, had been dead
+  since the dialog was written; the wrapper is a `<div>` now. And Foundry colours form labels and
+  hints from theme variables that, under the light UI theme, are dark ink meant for parchment, on
+  our night background. The dialog now sets those variables to its own ink.
+- **Dropdown lists in the system's windows washed out.** The browser draws a select's list from the
+  element's colour scheme rather than its CSS, so it painted our light ink on its own white list.
+  The system's selects now declare a dark colour scheme.
+
+---
+
 ## 0.3.0 (2026-09-26): Player's Handbook v3.3
 
 The first playtest's findings.

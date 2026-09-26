@@ -1,5 +1,6 @@
 {{!-- Everything you have to decide before the die leaves your hand. --}}
-<form class="starwrought check-dialog-form">
+{{!-- A div, not a form: DialogV2 supplies the form, and a nested one is dropped by the parser. --}}
+<div class="check-dialog-form">
 
   <ul class="sw-card-modifiers">
     {{#each parts as |mod|}}
@@ -15,23 +16,20 @@
     </div>
   </div>
 
-  {{#if targetDefenses}}
-  {{!-- The defender's stance is preselected; the list stays for the table that rules otherwise. --}}
+  {{#if targetDefense}}
+  {{!-- The defender's choice, shown and not offered: the attacker does not pick the Defense. --}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.targetDefense"}}{{#if targetName}} · {{targetName}}{{/if}}</label>
-    <div class="form-fields">
-      <select name="defenseKey">
-        {{#each targetDefenses as |def|}}
-        <option value="{{def.key}}" {{#if def.selected}}selected{{/if}}>
-          {{def.label}} ({{def.threshold}}){{#if def.isStance}} · {{localize "STARWROUGHT.Stance.tag"}}{{/if}}{{#if def.unavailable}} · {{localize "STARWROUGHT.Stance.unavailableTag"}} ({{def.unavailable}}){{/if}}
-        </option>
-        {{/each}}
-      </select>
+    <div class="form-fields sw-answering">
+      <strong>{{targetDefense.label}} ({{targetDefense.threshold}})</strong>
+      {{#if targetDefense.unavailable}}
+      <span class="sw-answering-note"><i class="fa-solid fa-triangle-exclamation"></i> {{targetDefense.unavailable}}</span>
+      {{else}}
+      <span class="sw-answering-note">{{localize "STARWROUGHT.Stance.tag"}}</span>
+      {{/if}}
     </div>
-    {{#if targetStance}}
-    <p class="hint">{{localize "STARWROUGHT.Stance.dialogHint"}}</p>
-    {{/if}}
   </div>
+  <p class="hint">{{localize "STARWROUGHT.Stance.dialogHint"}}</p>
   {{else}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Field.threshold"}}</label>
@@ -62,4 +60,4 @@
     </div>
   </div>
 
-</form>
+</div>

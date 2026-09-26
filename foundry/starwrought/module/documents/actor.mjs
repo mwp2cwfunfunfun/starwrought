@@ -158,30 +158,16 @@ export class SwActor extends Actor {
 
     // The defender decides whether to Evade or Guard. Their stance is that decision, made in
     // advance and changeable until the die leaves the hand, so the roll reads it rather than asking
-    // the attacker to guess. A stance the defender cannot use right now (Evade while Grabbed) is
-    // offered as the other one, and said so. The dialog still lists all four for the table that
-    // rules otherwise.
-    const stance = targetActor?.system.stance ?? "evade";
-    const blocked = targetActor?.system.defenses?.[stance]?.unavailable ?? null;
-    const offered = blocked ? (stance === "evade" ? "guard" : "evade") : stance;
-    const defense = options.defense ?? offered;
+    // the attacker: the dialog shows it and offers no choice. A caller may still force a Defense
+    // (a Talent that targets Awareness, say); otherwise the defender's answer is read again at the
+    // moment of the roll.
+    const forced = options.defense !== undefined;
+    const answering = targetActor?.answeringDefense() ?? null;
+    const defense = options.defense ?? answering?.key ?? "evade";
     const target = targetToken ? SwCheck.thresholdOf(targetToken, defense) : null;
-    let targetDefenses = null;
-    if (targetActor) {
-      targetDefenses = Object.entries(SW.DEFENSES).map(([key, def]) => {
-        const own = targetActor.system.defenses?.[key];
-        return {
-          key,
-          label: game.i18n.localize(def.label),
-          threshold: own?.threshold ?? 10,
-          isStance: key === stance,
-          selected: key === defense,
-          unavailable: own?.unavailable
-            ? game.i18n.localize(SW.CONDITIONS[own.unavailable]?.name ?? own.unavailable)
-            : null
-        };
-      });
-    }
+    const targetDefense = !targetActor ? null : forced
+      ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null }
+      : answering;
 
     // Unwieldy N: a −2 circumstance penalty against a target within N feet, measured edge to edge
     // like everything else on the grid, and no attack at all while Grabbed. The penalty is applied;
@@ -218,11 +204,36 @@ export class SwActor extends Actor {
       threshold: target?.threshold ?? null,
       thresholdLabel: target?.label ?? "",
       targetUuid: target?.uuid ?? "",
-      targetDefenses,
-      targetStance: targetActor ? stance : null,
+      targetDefense,
+      defenseForced: forced,
       // The token's name, not the actor's: the token name is the one the GM chose to show.
       targetName: targetToken?.name ?? ""
     }, { ...options, modifiers }, { inplace: false }));
+  }
+
+  /**
+   * The Defense that answers a physical Attack on this actor right now: the stance, unless the
+   * rules make it unavailable (Evade while Grabbed or Restrained), in which case the other one.
+   * Read live, so a stance changed a moment ago is what the attacker's roll meets.
+   * @returns {{key: string, stance: string, label: string, threshold: number, unavailable: string|null}}
+   */
+  answeringDefense() {
+    const stance = ["evade", "guard"].includes(this.system.stance) ? this.system.stance : "evade";
+    const blocked = this.system.defenses?.[stance]?.unavailable ?? null;
+    const key = blocked ? (stance === "evade" ? "guard" : "evade") : stance;
+    return {
+      key,
+      stance,
+      label: game.i18n.localize(SW.DEFENSES[key].label),
+      threshold: this.system.defenses?.[key]?.threshold ?? 10,
+      unavailable: blocked
+        ? game.i18n.format("STARWROUGHT.Stance.answeringInstead", {
+            stance: game.i18n.localize(SW.DEFENSES[stance].label),
+            reason: game.i18n.localize(SW.CONDITIONS[blocked]?.name ?? blocked),
+            defense: game.i18n.localize(SW.DEFENSES[key].label)
+          })
+        : null
+    };
   }
 
   /**

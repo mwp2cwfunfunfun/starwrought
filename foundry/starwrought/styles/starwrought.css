@@ -91,6 +91,10 @@
   color: var(--sw-ink);
   font-family: inherit;
 }
+/* A select's dropdown is drawn by the browser from the element's colour scheme, not its CSS.
+   Without this it paints our light ink on its own white list, and every option washes out. */
+.starwrought select { color-scheme: dark; }
+.starwrought select option { background: var(--sw-night-2); color: var(--sw-ink); }
 
 .starwrought input::placeholder,
 .starwrought textarea::placeholder {
@@ -302,6 +306,15 @@
 
 .starwrought .sw-tab { display: none; flex-direction: column; gap: 0.6rem; padding: 0.6rem 0; }
 .starwrought .sw-tab.active { display: flex; }
+/* The tab is the thing that scrolls. Foundry keeps the window content at overflow hidden on
+   purpose and expects the part to claim the remaining height and scroll it; a part that does not
+   is not "unscrollable", it is silently clipped, which is what the first playtest saw. */
+.starwrought.sheet .sw-tab.active {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden auto;
+  scrollbar-gutter: stable;
+}
 
 /* --------------------------------------------------------------------------
    Panels
@@ -1112,6 +1125,18 @@ li.combatant.sw-in-crosshairs {
 
 /* Roll dialog */
 
+/* The dialog paints our night sky, so its text has to be ours too. Foundry colours form labels
+   and hints from theme variables, and under the light UI theme those are dark ink meant for
+   parchment: dark on dark. Set the variables the dialog will read, whatever theme the client is on. */
+.starwrought.dialog,
+.starwrought.check-dialog {
+  --color-form-label: var(--sw-ink);
+  --color-form-label-hover: var(--sw-flare);
+  --color-form-hint: var(--sw-ink-dim);
+  --color-text-primary: var(--sw-ink);
+  --color-text-secondary: var(--sw-ink-dim);
+  color-scheme: dark;
+}
 .starwrought.dialog .window-content,
 .starwrought.check-dialog .window-content {
   background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
@@ -1120,5 +1145,11 @@ li.combatant.sw-in-crosshairs {
 .starwrought.dialog select { width: 100%; }
 .starwrought .check-dialog-form { display: flex; flex-direction: column; gap: 0.5rem; }
 .starwrought .check-dialog-form .form-group { display: flex; align-items: center; gap: 0.5rem; }
-.starwrought .check-dialog-form label { flex: 0 0 10rem; font-size: 0.8rem; color: var(--sw-ink-dim); }
+.starwrought .check-dialog-form .form-group > label { flex: 0 0 10rem; font-size: 0.8rem; font-weight: normal; color: var(--sw-ink); }
 .starwrought .check-dialog-form .form-fields { flex: 1; }
+.starwrought .check-dialog-form p.hint { margin: 0; font-size: 0.75rem; line-height: 1.35; color: var(--sw-ink-dim); }
+/* The defender's answer: stated, not offered. */
+.starwrought .sw-answering { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
+.starwrought .sw-answering strong { color: var(--sw-flare); font-size: 1rem; }
+.starwrought .sw-answering-note { font-size: 0.72rem; color: var(--sw-ink-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.starwrought .sw-answering-note .fa-triangle-exclamation { color: #d9534f; }
