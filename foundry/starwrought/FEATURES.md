@@ -260,7 +260,10 @@ going for" comes up every round, and a pip does not answer it.
 - **Arrows on the map.** From the token doing the targeting to whatever it targets, in the targeting
   player's colour, drawn for everyone who can see both tokens. They start at the edge of one space
   and end at the edge of the other with an arrowhead, over a dark underlay so they read on a light
-  map as well as a dark one. Client setting `showTargetArrows`.
+  map as well as a dark one. **Each carries the distance**, measured the way the handbook measures
+  everything: edge to edge, in whole squares, diagonals exact, so adjacent reads 0 ft and a square
+  two across and one up reads 2.2 ft. The number is gold when the target is within the source's
+  Total Reach and plain when it is not. Client setting `showTargetArrows`.
 - **In the Combat Tracker.** A line under each combatant names its targets, and the rows of whoever
   the active combatant has in its sights are tinted red down the left edge.
 - **Remembered on the token.** Foundry targets belong to a *user* and vanish on reload. Here, as a

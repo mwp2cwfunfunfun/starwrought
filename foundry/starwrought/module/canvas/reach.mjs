@@ -154,10 +154,11 @@ function place(g, token) {
 /* -------------------------------------------- */
 
 /**
- * The reaches a token wants drawn, in feet.
+ * The reaches a token wants drawn, in feet. Exported for the targeting arrows, which colour their
+ * distance label by whether the target is within it.
  * @returns {{total: number, natural: number, unwieldy: number}}
  */
-function reachesOf(actor) {
+export function reachesOf(actor) {
   if (actor.type === "character") {
     return {
       total: actor.system.totalReach ?? actor.system.reach ?? 0,

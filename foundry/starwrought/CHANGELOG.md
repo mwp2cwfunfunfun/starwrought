@@ -7,6 +7,16 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.3 (2026-09-26): Player's Handbook v3.3
+
+### Added
+
+- **Targeting arrows carry the distance.** Each arrow is labelled with the gap to its target,
+  measured edge to edge in whole squares with exact diagonals, the same arithmetic as reach and
+  the Unwieldy penalty. Gold when the target is within the source's Total Reach, plain otherwise.
+
+---
+
 ## 0.3.2 (2026-09-26): Player's Handbook v3.3
 
 ### Changed

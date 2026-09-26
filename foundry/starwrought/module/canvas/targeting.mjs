@@ -19,6 +19,8 @@
  */
 
 import * as SW from "../config.mjs";
+import { gapBetween } from "./geometry.mjs";
+import { reachesOf } from "./reach.mjs";
 
 const FLAG = "targets";
 
@@ -232,7 +234,42 @@ function arrow(source, target, color) {
   g.lineStyle(0);
   g.beginFill(color, 0.95).drawPolygon([tip.x, tip.y, left.x, left.y, right.x, right.y]).endFill();
   g.beginFill(color, 0.95).drawCircle(from.x, from.y, width * 1.1).endFill();
-  return g;
+
+  const whole = new PIXI.Container();
+  whole.addChild(g);
+  whole.addChild(distanceLabel(source, target, { x: (from.x + tip.x) / 2, y: (from.y + tip.y) / 2 }, cell));
+  return whole;
+}
+
+/**
+ * How far it is to the target, on the arrow, measured the way the handbook measures everything:
+ * edge to edge, in whole squares, diagonals exact. Gold when the target is within the source's
+ * Total Reach, since that is the question the number is usually answering.
+ */
+function distanceLabel(source, target, at, cell) {
+  const feet = gapBetween(source.document, target.document);
+  const text = `${Number.isInteger(feet) ? feet : feet.toFixed(1)} ${canvas.scene.grid.units || "ft"}`;
+  const inReach = source.actor ? (feet <= (reachesOf(source.actor).total ?? 0)) : false;
+
+  const style = CONFIG.canvasTextStyle.clone();
+  style.fontSize = Math.clamp(cell * 0.9, 12, 22);
+  style.fill = inReach ? 0xE3B23C : 0xF2EFFA;
+  style.stroke = 0x000000;
+  style.strokeThickness = Math.max(2, style.fontSize / 6);
+  const label = new foundry.canvas.containers.PreciseText(text, style);
+  label.anchor.set(0.5, 0.5);
+  label.position.set(at.x, at.y);
+
+  // A pill behind it, so the number reads over the line it sits on and whatever map is beneath.
+  const pad = style.fontSize * 0.35;
+  const pill = new PIXI.Graphics();
+  pill.beginFill(0x000000, 0.6)
+    .drawRoundedRect(at.x - (label.width / 2) - pad, at.y - (label.height / 2) - (pad / 2), label.width + (pad * 2), label.height + pad, style.fontSize / 2)
+    .endFill();
+
+  const c = new PIXI.Container();
+  c.addChild(pill, label);
+  return c;
 }
 
 function distance(a, b) {
