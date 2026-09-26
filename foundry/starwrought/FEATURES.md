@@ -292,19 +292,24 @@ and Endure are not stances; the handbook says they are almost never chosen again
   chosen Defense marked in the grid. Adversaries have the same chips.
 - **On the Token HUD**, one button showing the current answer, flipping to the other: the fastest
   way to change your mind when an arrow has just been pointed at you.
-- **In the attack dialog**, the defender's answer is stated, not offered: "Evade (10) · stance".
-  The attacker has no dropdown, because the choice is not theirs; to be answered with a different
-  Defense, the defender changes their stance. The answer is **read again when the die is rolled**,
-  not only when the dialog opened, so a defender who flips while the dialog is up is answered with
-  the Defense they flipped to, and the Threshold is read live at the same moment since conditions
-  move it too. Code can still force a Defense (`rollAttack(id, { defense: "awareness" })`) for a
-  Talent that calls for one specifically; the dialog then shows the forced one.
-- **Announced** in chat during an encounter when it changes, since the attacker needs to know and
-  the table should not have to ask.
+- **In the attack dialog, the answer is hidden.** The attacker sees only "Answered with ·
+  Weaponsmaster" and a note that the defender's stance is revealed on the card: no dropdown,
+  because the choice is not theirs, and no Defense or Threshold, because knowing which would be
+  playing the character sheet rather than the character. The answer is **read when the die is
+  rolled**, not when the dialog opened, so a defender who flips while the dialog is up is answered
+  with the Defense they flipped to, and the Threshold is read live at the same moment since
+  conditions move it too. The card then names the Defense and its Threshold, and says why if the
+  defender was answered with something other than their stance. Code can still force a Defense
+  (`rollAttack(id, { defense: "awareness" })`) for a Talent that calls for one specifically; the
+  dialog then shows the forced Defense by name, since the attacker chose it.
+- **Not announced to the table.** A player's change of stance mid-encounter is whispered to the
+  GM, who is running the thing about to swing; a GM's change goes nowhere. Everyone else learns
+  what a defender answered with when the roll's card posts, and not before.
 - **Unavailable Defenses are shown, not enforced.** "Evade is unavailable while you are Grabbed or
-  Restrained." A Grabbed defender's Evade chip goes dashed with a warning mark, the HUD button
-  gets a red ring, the attack dialog says "Evade is unavailable while Grabbed; answered with Guard"
-  and uses Guard, and choosing Evade anyway on the sheet posts a note saying so. Guard's own exceptions (unaware of the attack, or nothing in hand
+  Restrained." A Grabbed defender's Evade chip goes dashed with a warning mark and the HUD button
+  gets a red ring; an Attack on them is answered with Guard, and the card says "Evade is
+  unavailable while Grabbed; answered with Guard". Choosing Evade anyway on the sheet posts a note
+  saying so, to the owner. Guard's own exceptions (unaware of the attack, or nothing in hand
   and no hand free) are not things the sheet can see, so they stay with the table.
 
 Why not stop the attack and prompt the defender? Because the prompt would land on a player who may

@@ -7,6 +7,34 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.2 (2026-09-26): Player's Handbook v3.3
+
+### Changed
+
+- **The attack dialog no longer reveals the defender's answer.** It showed "Evade (10) · stance",
+  which told the attacker both the Defense and the number to beat before the die was thrown.
+  Now it says only that the defender's stance meets the roll, and the card reveals which Defense
+  and what Threshold once the roll is made. A Defense forced from code is still named, since the
+  attacker chose it. If the defender was answered with something other than their stance (Evade
+  while Grabbed), the card says why, in place of the dialog.
+- **A change of stance is no longer announced to the table.** It told everyone, the GM's monsters
+  included, which Defense a character had just switched to, and told the players the same about a
+  monster. A player's change is now whispered to the GM only; a GM's change goes nowhere. The
+  roll's card is where an answer is revealed.
+
+### Fixed
+
+- **Scrollbars that some browsers would not draw.** The bright bar was applied through the
+  standard `scrollbar-color` property, which in Chromium means "use the native scrollbar, in these
+  colours". Browsers that draw native scrollbars as overlays, Edge among them, then hide the bar
+  until the pane is actually scrolling, so a clipped tab looked like one that did not scroll at
+  all. Chromium only honours `::-webkit-scrollbar` styling when the standard properties are left at
+  `auto`, and that styling forces a classic bar that is always drawn; the system now sets the
+  standard properties back to `auto` and carries the design in the `::-webkit-scrollbar` rules,
+  keeping `scrollbar-color` only for engines without them.
+
+---
+
 ## 0.3.1 (2026-09-26): Player's Handbook v3.3
 
 What the second look at 0.3.0 found.

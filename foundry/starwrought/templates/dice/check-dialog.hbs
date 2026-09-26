@@ -17,15 +17,14 @@
   </div>
 
   {{#if targetDefense}}
-  {{!-- The defender's choice, shown and not offered: the attacker does not pick the Defense. --}}
+  {{!-- The defender's choice meets this roll, but it is theirs to reveal: the card shows it. --}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.targetDefense"}}{{#if targetName}} · {{targetName}}{{/if}}</label>
     <div class="form-fields sw-answering">
-      <strong>{{targetDefense.label}} ({{targetDefense.threshold}})</strong>
-      {{#if targetDefense.unavailable}}
-      <span class="sw-answering-note"><i class="fa-solid fa-triangle-exclamation"></i> {{targetDefense.unavailable}}</span>
+      {{#if defenseForced}}
+      <strong>{{targetDefense.label}}</strong>
       {{else}}
-      <span class="sw-answering-note">{{localize "STARWROUGHT.Stance.tag"}}</span>
+      <span class="sw-answering-note"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Stance.hidden"}}</span>
       {{/if}}
     </div>
   </div>

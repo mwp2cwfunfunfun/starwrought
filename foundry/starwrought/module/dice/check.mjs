@@ -214,6 +214,7 @@ export class SwCheck {
       isAttack: cfg.kind === "attack",
       targetName: cfg.targetName ?? "",
       targetDefense: cfg.targetDefense ?? null,
+      defenseForced: !!cfg.defenseForced,
       threshold: Number.isNumeric(cfg.threshold) ? cfg.threshold : "",
       mapLadder: (cfg.map ?? SW.MAP.standard).map((value, index) => ({
         index, value, label: game.i18n.format(`STARWROUGHT.Roll.map${index}`, { value })
@@ -251,6 +252,7 @@ export class SwCheck {
       config.threshold = now.threshold;
       config.thresholdLabel = `${cfg.targetName} ${now.label}`;
       config.defense = now.key;
+      config.defenseNote = now.unavailable ?? null;
     } else if (!cfg.targetDefense && Number.isNumeric(answer.threshold)) {
       // A blank box means no Threshold is known, not a Threshold of zero, which every roll beats.
       config.threshold = Number(answer.threshold);
@@ -289,6 +291,9 @@ export class SwCheck {
       canDamage: !!result.outcome?.damage && !!cfg.weaponId,
       weaponId: cfg.weaponId ?? "",
       targetUuid: cfg.targetUuid ?? "",
+      // Why the defender answered with a Defense other than their stance, if they did. The card is
+      // where the answer is revealed, so this is where the reason belongs.
+      defenseNote: cfg.defenseNote ?? "",
       outcomes: cfg.outcomes ?? null,
       // A Constellation Flares on a Critical Success or Critical Failure on a roll with
       // consequences, directly related to a Talent in it. The die can tell us the first half;

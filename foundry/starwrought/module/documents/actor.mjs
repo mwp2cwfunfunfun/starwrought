@@ -206,6 +206,7 @@ export class SwActor extends Actor {
       targetUuid: target?.uuid ?? "",
       targetDefense,
       defenseForced: forced,
+      defenseNote: forced ? null : (answering?.unavailable ?? null),
       // The token's name, not the actor's: the token name is the one the GM chose to show.
       targetName: targetToken?.name ?? ""
     }, { ...options, modifiers }, { inplace: false }));
@@ -286,9 +287,16 @@ export class SwActor extends Actor {
         })
       : "";
     if (note) ui.notifications.warn(note.trim());
-    if (!announce || !this.inEncounter) return;
+
+    // Which Defense meets an Attack is the defender's to reveal, and the roll's card reveals it.
+    // So nothing goes to the table here. A player's change is whispered to the GM, who is running
+    // the thing about to swing and would otherwise have to ask; a GM's own change goes nowhere.
+    if (!announce || !this.inEncounter || !this.hasPlayerOwner) return;
+    const gms = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
+    if (!gms.length) return;
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
+      whisper: gms,
       content: `<div class="starwrought sw-stance-card">${game.i18n.format("STARWROUGHT.Stance.set", {
         name: this.name,
         defense: game.i18n.localize(SW.DEFENSES[key].label),

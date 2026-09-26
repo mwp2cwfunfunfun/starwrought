@@ -7,16 +7,22 @@
 
 /* --------------------------------------------------------------------------
    Scrollbars, everywhere in the game.
-   A pane that scrolls has to look like one. Chromium honours the standard
-   properties and ignores the ::-webkit rules whenever both are present, so the
-   standard pair carries the design and the webkit block is only a fallback for
-   older engines.
+   A pane that scrolls has to look like one, and look like one all the time.
 
-   Foundry sets `scrollbar-width: thin` and its own dim colour on `*`, inside a
-   cascade layer. A list of tag names cannot beat that: any element the list
-   missed (a form, a list item, a table) kept the thin dim bar, which is exactly
-   what showed up on the character sheet. So this is `*` too. Unlayered styles
-   win over layered ones whatever the specificity, so this takes every element.
+   There are two ways to style a scrollbar and in Chromium they exclude each
+   other. The standard `scrollbar-color` means "the native bar, in these
+   colours", and in browsers that draw the native bar as an overlay (Edge does,
+   by default) the result hides itself until the pane is actually scrolling: a
+   clipped tab then looks exactly like one that does not scroll at all. The
+   `::-webkit-scrollbar` rules force a classic bar that is always drawn, but
+   Chromium ignores them on any element whose `scrollbar-width` or
+   `scrollbar-color` is anything other than `auto`.
+
+   Foundry sets `scrollbar-width: thin` and a dim colour on `*` inside a cascade
+   layer. So the first job is to put both back to `auto` on `*` (unlayered beats
+   layered whatever the specificity), which hands control to the webkit rules
+   below. Engines without those rules (Firefox) take the standard colours from
+   the @supports block instead.
    -------------------------------------------------------------------------- */
 
 :root {
@@ -27,12 +33,13 @@
 
 * {
   scrollbar-width: auto;
-  scrollbar-color: var(--sw-scroll-thumb, #a8842c) var(--sw-scroll-track, rgba(0, 0, 0, 0.5));
+  scrollbar-color: auto;
 }
 
-/* The one scrollbar core hides on purpose, and the rule above would have brought back: the
-   recent-chat overlay drawn over the canvas when the sidebar is collapsed. */
-#chat-notifications .overflow { scrollbar-width: none; }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-color: var(--sw-scroll-thumb, #a8842c) var(--sw-scroll-track, rgba(0, 0, 0, 0.5)); }
+  #chat-notifications .overflow { scrollbar-width: none; }
+}
 
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track {
@@ -46,6 +53,10 @@
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--sw-scroll-thumb-hover, #e3b23c); }
 ::-webkit-scrollbar-corner { background: transparent; }
+
+/* The one scrollbar core hides on purpose: the recent-chat overlay drawn over the canvas when
+   the sidebar is collapsed. */
+#chat-notifications .overflow::-webkit-scrollbar { display: none; }
 
 .starwrought {
   --sw-ink: #e8e4f5;
