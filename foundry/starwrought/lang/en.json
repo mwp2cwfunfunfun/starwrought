@@ -586,6 +586,9 @@
   "STARWROUGHT.Roll.unwieldyGrabbed": "{name} is Grabbed and cannot attack with {weapon} at all: it is Unwieldy. The roll is posted anyway; the table decides.",
   "STARWROUGHT.Roll.unwieldyGrabbedTitle": "Unwieldy while Grabbed",
   "STARWROUGHT.Targeting.targets": "Targeting",
+  "STARWROUGHT.Notify.staleAssets": "Your browser is running a copy of STARWROUGHT ({stale}) that does not match the server's ({server}). Press Ctrl+F5 (Cmd+Shift+R on a Mac) to reload it. If this keeps happening, something between you and the server is caching Foundry's files; see the README.",
+  "STARWROUGHT.Notify.staleCode": "code",
+  "STARWROUGHT.Notify.staleStyles": "styles",
 
   "STARWROUGHT.Effect.new": "New Effect",
 

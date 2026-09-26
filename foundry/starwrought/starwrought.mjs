@@ -144,8 +144,31 @@ Hooks.once("ready", async () => {
   await checkContent();
   Hooks.on('canvasReady', checkSceneGrid);
   checkSceneGrid();
+  checkForStaleAssets();
   Hooks.on("createItem", onCreateItem);
 });
+
+/**
+ * Is this browser running the release the server has?
+ *
+ * A server behind a caching proxy can hand a browser this week's templates with last week's
+ * stylesheet or script: Cloudflare, for one, rewrites Foundry's `no-cache` into a four-hour browser
+ * cache. The result looks exactly like a bug in the new release. Foundry reads system.json on the
+ * server, so `game.system.version` is always current; the code and the stylesheet each carry their
+ * own stamp, and a mismatch means a stale copy, which a hard reload cures.
+ */
+function checkForStaleAssets() {
+  const server = game.system.version;
+  const css = getComputedStyle(document.documentElement).getPropertyValue("--sw-css-version")
+    .trim().replace(/^["']|["']$/g, "");
+  const stale = [];
+  if (SW.SYSTEM_VERSION !== server) stale.push(`${game.i18n.localize("STARWROUGHT.Notify.staleCode")} ${SW.SYSTEM_VERSION}`);
+  if (css !== server) stale.push(`${game.i18n.localize("STARWROUGHT.Notify.staleStyles")} ${css || "?"}`);
+  if (!stale.length) return;
+  const message = game.i18n.format("STARWROUGHT.Notify.staleAssets", { server, stale: stale.join(", ") });
+  console.warn(`STARWROUGHT | ${message}`);
+  ui.notifications.warn(message, { permanent: true });
+}
 
 /* -------------------------------------------- */
 /*  Hooks                                       */

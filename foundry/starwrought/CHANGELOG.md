@@ -7,6 +7,24 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.4 (2026-09-26): Player's Handbook v3.3
+
+### Added
+
+- **A stale-copy warning.** The "missing scrollbar in Edge" of the last three releases was never
+  Edge and never the stylesheet: the server sits behind Cloudflare, which rewrites Foundry's
+  `Cache-Control: no-cache` into a four-hour browser cache and caches the files at its own edge, so
+  a browser that had visited recently kept the old stylesheet while a fresh one got the new. Every
+  file is affected on every update, scripts and templates as much as styles, and the result is
+  indistinguishable from a broken release. Foundry reads `system.json` on the server, so
+  `game.system.version` is always current; the code and the stylesheet now each carry their own
+  version stamp, and at load the system compares all three. A mismatch posts a persistent warning
+  naming what is stale and telling the player to hard-reload. `assets/package_system.mjs` refuses
+  to package unless the three stamps agree, so a release cannot ship warning about itself. The
+  README says how to turn the caching off at Cloudflare, which is the actual fix.
+
+---
+
 ## 0.3.3 (2026-09-26): Player's Handbook v3.3
 
 ### Added

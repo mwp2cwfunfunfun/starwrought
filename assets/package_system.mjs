@@ -47,6 +47,22 @@ const args = process.argv.slice(2);
 const repo = valueOf("--repo") ?? process.env.GITHUB_REPOSITORY ?? null;
 
 const manifest = JSON.parse(readFileSync(join(SYSTEM, "system.json"), "utf8"));
+
+// Three places carry the version, and the game compares them at load to catch a browser holding a
+// stale copy (starwrought.mjs, checkForStaleAssets). They have to agree, or every client warns.
+const stamps = {
+  "module/config.mjs": /export const SYSTEM_VERSION = "([^"]+)"/,
+  "styles/starwrought.css": /--sw-css-version:\s*"([^"]+)"/
+};
+for (const [rel, pattern] of Object.entries(stamps)) {
+  const found = readFileSync(join(SYSTEM, rel), "utf8").match(pattern)?.[1];
+  if (found !== manifest.version) {
+    console.error(`\n${rel} is stamped ${found ?? "with nothing"}; system.json says ${manifest.version}.`);
+    console.error("Stamp all three the same before packaging.");
+    process.exit(1);
+  }
+}
+
 if (repo) {
   const base = `https://github.com/${repo}/releases/latest/download`;
   manifest.url = `https://github.com/${repo}`;

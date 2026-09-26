@@ -17,6 +17,15 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
 exactly, which needs a restart to take effect after installing.
 
+**If the server sits behind Cloudflare** (or any caching proxy), turn its caching off for the
+Foundry hostname. Foundry serves every file with `Cache-Control: no-cache` so browsers always
+revalidate; Cloudflare's defaults replace that with a four-hour browser cache and cache the files
+at its own edge, so after an update some players' browsers show new templates with an old
+stylesheet or script, which looks exactly like a broken release. In the Cloudflare dashboard set
+**Caching → Configuration → Browser Cache TTL** to *Respect Existing Headers*, and add a **Cache
+Rule** for the Foundry hostname with *Bypass cache*. The system checks for this at load and warns
+the affected player to hard-reload (Ctrl+F5) when it finds a stale copy.
+
 See [the system's FEATURES.md](foundry/starwrought/FEATURES.md) for what it actually does, and
 [its CHANGELOG.md](foundry/starwrought/CHANGELOG.md) for what changed when.
 

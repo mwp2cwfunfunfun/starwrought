@@ -415,6 +415,12 @@ token.
 | Colour the drag ruler by Strides | on | Colour the squares a drag crosses by which action pays for them. Per client |
 | Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour. Per client |
 
+**A stale-copy warning.** At load the system compares the server's version with a stamp carried in
+its own code and another in its stylesheet. If either disagrees, the browser is running a cached
+copy of an older release (a caching proxy such as Cloudflare in its default configuration will do
+this after every update), and a persistent warning names what is stale and says to hard-reload.
+Without it, a stale stylesheet looks exactly like a bug in the new one.
+
 ---
 
 ## 7. What it deliberately does not do

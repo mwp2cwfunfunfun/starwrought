@@ -164,6 +164,14 @@ export const DEFENSES = Object.freeze({
 });
 
 /** The Constellation slug every attack roll uses. */
+/**
+ * The version this code was shipped as. Foundry reads system.json on the server, so
+ * `game.system.version` is always the server's; if this disagrees with it, the browser is running
+ * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
+ * `--sw-css-version` in styles/starwrought.css and system.json all agree.
+ */
+export const SYSTEM_VERSION = "0.3.4";
+
 export const WEAPONS_SLUG = "weapons";
 
 /* -------------------------------------------- */
