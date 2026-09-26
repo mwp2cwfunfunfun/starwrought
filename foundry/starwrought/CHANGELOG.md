@@ -7,7 +7,76 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
-## 0.2.0 (2026-08-27) — Player's Handbook v3.3
+## 0.3.0 (2026-09-26): Player's Handbook v3.3
+
+The first playtest's findings.
+
+### Added
+
+- **Targeting, made visible.** An arrow on the map from each token to whatever it is targeting, in
+  the targeting player's colour, for everyone who can see both tokens; a line under each combatant
+  in the Combat Tracker naming its targets; and a red tint on the rows of whoever the active
+  combatant has in its sights. Foundry's own indicator is four small brackets only the targeting
+  player sees. Targets are written onto the token as they are acquired (`flags.starwrought.targets`),
+  so they belong to the creature rather than the user, survive a reload, and are readable by every
+  client. A Strike falls back to the one remembered target when you have no live one. Ending the
+  combat clears every remembered target on the scene. Client setting `showTargetArrows`.
+- **Stance: the defender chooses.** "The defender decides whether to Evade or Guard", and the attack
+  dialog had been asking the attacker. Every actor now carries a stance, Evade or Guard, shown as
+  two chips in the sheet header and as a button on the Token HUD, one click to flip. The attacker's
+  roll reads it: the dialog preselects the defender's stance and marks it, keeps all four Defenses
+  for the table that rules otherwise, and the card names whichever was used. The stance and the
+  Threshold are read again at the moment of the roll, so a defender who flips while the attacker's
+  dialog is open is answered with the Defense they flipped to. A change of stance during an
+  encounter is announced in chat. "Evade is unavailable while you are Grabbed or Restrained": a
+  Grabbed defender's Evade is marked unavailable on the chips, the HUD and in the dialog, which
+  preselects Guard instead; choosing it anyway is allowed and says so.
+- **The Unwieldy penalty is applied.** A Strike with an Unwieldy N weapon against a target within N
+  feet takes its −2 circumstance penalty automatically, measured edge to edge on the grid with the
+  same arithmetic as the reach band, and the card's modifier line says so. Ranged weapons with the
+  trait are handled the same way. The Grabbed clause is announced rather than enforced: a warning
+  to the attacker and a card in chat, and the roll posts.
+
+### Changed
+
+- **The compiled packs leave git.** They are LevelDB, and a Foundry running against the linked repo
+  folder rewrites their log and manifest files every time a world opens, which dirtied the tree on
+  every session and invited committing a half-written database. `packs/_source` is committed
+  instead, and the release workflow runs `build_foundry.mjs` to compile it before packaging.
+
+### Rulings
+
+Readings the handbook does not settle, taken so the code could be written, and flagged here so
+they can be overruled in the text.
+
+- **"Within N feet" is a gap of N or less.** The handbook measures reach edge to edge and treats a
+  target at exactly your reach as in reach, so the same inclusive reading is applied to Unwieldy's
+  "within N feet". The alternative, strictly less than N, made a Spear's Unwieldy 3 band a square
+  ring three cells deep on every side (9-by-9 around a Medium token), which is what the playtest
+  saw and read as a bug. It was not a bug under either reading: on a one-foot grid with exact
+  diagonals the corner cell two across and two up sits at 2.83 feet, inside 3 either way. The
+  inclusive reading adds the cells at exactly 3 feet along each axis, which at least makes the shape
+  read as the arithmetic it is.
+
+### Fixed
+
+- **A blank Threshold in the roll dialog was read as zero.** Foundry hands a blank number box back
+  as null, the guard let null through, and `Number(null)` is 0, so every untargeted roll of 10 or
+  more was a Critical Success with no Threshold line on the card to explain it. A blank box now
+  means no Threshold is known. Pre-existing, found while the dialog was being reworked.
+- **A check's caller-supplied modifiers were silently dropped.** `SwCheckConfig.modifiers` was
+  documented and defaulted and never read: `SwCheck.roll` built its parts from the sheet and the
+  dialog alone. Anything a caller worked out for itself, which is now how the Unwieldy penalty
+  arrives, went nowhere. Fixed; the parts now include them.
+- **Scrollbars on the character sheet were still thin and dim on some elements.** The bright bar
+  was applied by a list of tag names, and Foundry sets its own thin dim bar on every element from
+  inside a cascade layer, so any element the list missed kept Foundry's. The rule is now `*` as
+  well; unlayered styles win over layered ones regardless of specificity, so it takes everything.
+  The one bar core hides on purpose, on the collapsed-sidebar chat overlay, stays hidden.
+
+---
+
+## 0.2.0 (2026-08-27): Player's Handbook v3.3
 
 ### Added
 
@@ -42,29 +111,6 @@ handbook on the shelf is newer than `data/SYNC.json`.
     container: 0.037 ms per frame at the longest reach in the book, against 4.16 ms to rebuild, or
     about a fifth of one percent of a 60fps frame. The shape is regenerated only when the reach
     numbers, the token's footprint or the scene grid change.
-- **Targeting, made visible.** An arrow on the map from each token to whatever it is targeting, in
-  the targeting player's colour, for everyone who can see both tokens; a line under each combatant
-  in the Combat Tracker naming its targets; and a red tint on the rows of whoever the active
-  combatant has in its sights. Foundry's own indicator is four small brackets only the targeting
-  player sees. Targets are written onto the token as they are acquired (`flags.starwrought.targets`),
-  so they belong to the creature rather than the user, survive a reload, and are readable by every
-  client. A Strike falls back to the one remembered target when you have no live one. Ending the
-  combat clears every remembered target on the scene. Client setting `showTargetArrows`.
-- **Stance: the defender chooses.** "The defender decides whether to Evade or Guard", and the attack
-  dialog had been asking the attacker. Every actor now carries a stance, Evade or Guard, shown as
-  two chips in the sheet header and as a button on the Token HUD, one click to flip. The attacker's
-  roll reads it: the dialog preselects the defender's stance and marks it, keeps all four Defenses
-  for the table that rules otherwise, and the card names whichever was used. The stance and the
-  Threshold are read again at the moment of the roll, so a defender who flips while the attacker's
-  dialog is open is answered with the Defense they flipped to. A change of stance during an
-  encounter is announced in chat. "Evade is unavailable while you are Grabbed or Restrained": a
-  Grabbed defender's Evade is marked unavailable on the chips, the HUD and in the dialog, which
-  preselects Guard instead; choosing it anyway is allowed and says so.
-- **The Unwieldy penalty is applied.** A Strike with an Unwieldy N weapon against a target within N
-  feet takes its −2 circumstance penalty automatically, measured edge to edge on the grid with the
-  same arithmetic as the reach band, and the card's modifier line says so. Ranged weapons with the
-  trait are handled the same way. The Grabbed clause is announced rather than enforced: a warning
-  to the attacker and a card in chat, and the roll posts.
 - **The drag ruler, coloured by Strides.** A Stride carries you up to your Speed for one action, so
   a drag across the map is up to three decisions. The squares Foundry highlights are now coloured by
   which action pays for them: green for the first Stride, gold for the second, orange for the third,
@@ -85,10 +131,6 @@ handbook on the shelf is newer than `data/SYNC.json`.
   runs it on a `v*` tag and attaches both files to a GitHub Release, refusing to publish if the tag
   and the manifest version disagree. The archive name carries no version on purpose: a
   `releases/latest/download/<asset>` URL only resolves if every release names the asset the same.
-  The compiled packs are not committed: they are LevelDB, and a Foundry running against the linked
-  repo folder rewrites their log and manifest files every time a world opens, which dirtied the
-  tree on every session and invited committing a half-written database. `packs/_source` is
-  committed instead, and the workflow runs `build_foundry.mjs` to compile it before packaging.
 - **A character-creation wizard.** Nine steps in the handbook's order, forced forward: you cannot
   pass a step with a choice unmade or a Talent Point unspent. Choices are written to the character
   as you make them, and **Back unwinds them**: the Talents that step added are deleted, the fields
@@ -121,34 +163,8 @@ handbook on the shelf is newer than `data/SYNC.json`.
 - `slugify` and the action-cost parser live once, in `module/config.mjs`, and the content build
   imports them rather than keeping a second copy that could disagree.
 
-### Rulings
-
-Readings the handbook does not settle, taken so the code could be written, and flagged here so
-they can be overruled in the text.
-
-- **"Within N feet" is a gap of N or less.** The handbook measures reach edge to edge and treats a
-  target at exactly your reach as in reach, so the same inclusive reading is applied to Unwieldy's
-  "within N feet". The alternative, strictly less than N, made a Spear's Unwieldy 3 band a square
-  ring three cells deep on every side (9-by-9 around a Medium token), which is what the playtest
-  saw and read as a bug. It was not a bug under either
-  reading: on a one-foot grid with exact diagonals the corner cell two across and two up sits at
-  2.83 feet, inside 3 either way. The inclusive reading adds the cells at exactly 3 feet along each
-  axis, which at least makes the shape read as the arithmetic it is.
-
 ### Fixed
 
-- **A blank Threshold in the roll dialog was read as zero.** Foundry hands a blank number box back
-  as null, the guard let null through, and `Number(null)` is 0, so every untargeted roll of 10 or
-  more was a Critical Success with no Threshold line on the card to explain it. A blank box now
-  means no Threshold is known. Pre-existing, found while the dialog was being reworked.
-- **A check's caller-supplied modifiers were silently dropped.** `SwCheckConfig.modifiers` was
-  documented and defaulted and never read: `SwCheck.roll` built its parts from the sheet and the
-  dialog alone. Anything a caller worked out for itself, which is now how the Unwieldy penalty
-  arrives, went nowhere. Fixed; the parts now include them.
-- **Scrollbars on the character sheet were still thin and dim on some elements.** The bright bar
-  was applied by a list of tag names, and Foundry sets its own thin dim bar on every element from
-  inside a cascade layer, so any element the list missed kept Foundry's. The rule is now `*` as
-  well; unlayered styles win over layered ones regardless of specificity, so it takes everything.
 - **Diagonals were not being measured exactly.** The handbook is explicit that they are, and the
   manifest was leaving Foundry on its default of equidistant, so a diagonal step cost the same as
   a straight one and every diagonal distance read short. The grid block now declares exact
@@ -229,7 +245,7 @@ Written into `Starwrought_Players_Handbook_v3.3.docx` from Mike's v3.2, by `asse
 
 ---
 
-## 0.1.0 (2026-08-27) — Player's Handbook v3.1
+## 0.1.0 (2026-08-27): Player's Handbook v3.1
 
 First release. A complete system rather than a module on another one.
 
