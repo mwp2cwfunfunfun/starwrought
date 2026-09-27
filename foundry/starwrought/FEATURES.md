@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v3.3**. System version **0.2.0**. Verified on
+Rules content built from **Player's Handbook v3.4**. System version **0.3.6**. Verified on
 **Foundry VTT v14.367**.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -138,6 +138,14 @@ penalty of the same type add together first.
   comes round again. It is a default, not a rule: a reaction neither suffers the penalty nor accrues
   it, so you can always move it. World setting `trackMap` turns the counting off.
 - **The Graze band** is a first-class outcome, not a miss.
+- **Relevant Check.** The handbook's term for a roll whose Constellation is the actor's to choose,
+  subject to their justification and the GM's approval; Aid is written with it. The Constellations
+  tab has a button for it (and the Macros pack a macro): a picker lists every Constellation at
+  this character's rank in it, Trained ones first by modifier and Untrained ones after (Untrained is
+  a real answer, at +0 Proficiency), with a line for why it applies and an optional Threshold. The
+  roll is then an ordinary check in that Constellation, so it can Flare, and the card is labelled
+  "Relevant Check" with the Constellation and the reason as its subtitle: that is the GM's approval
+  surface. Adversaries do not roll them; they carry Thresholds.
 
 ### Damage
 
@@ -227,7 +235,7 @@ Three bands, from the inside out:
 
 | Band | Colour | What it is |
 |---|---|---|
-| Unwieldy | red | The inner dead zone of a long weapon. Unwieldy N is a −2 circumstance penalty against a target within N feet, so it is drawn as a warning rather than as reach. Absent unless the weapon in hand has the trait |
+| Unwieldy | red | The inner dead zone of a long weapon. Unwieldy N is a −2 Situation penalty against a target within N feet, so it is drawn as a warning rather than as reach. Absent unless the weapon in hand has the trait |
 | Natural Reach | faint blue | What your body reaches, set by your Size |
 | Total Reach | gold | Natural Reach plus the longest melee weapon in hand. The one that matters |
 
@@ -250,7 +258,7 @@ their corners the way you would expect: a Halberd's 4 and a Longspear's 7 both r
 octagons. The shape is the arithmetic, not a drawing choice.
 
 **The Unwieldy penalty is applied, not just drawn.** A Strike with an Unwieldy N weapon against a
-target within N feet takes the −2 circumstance penalty automatically, measured edge to edge with
+target within N feet takes the −2 Situation penalty automatically, measured edge to edge with
 the same arithmetic as the band, and the modifier line on the card says why. The penalty applies
 to whichever weapon you actually Strike with, bows included (a Longbow is Unwieldy 20); the red
 band on the map is drawn only for the melee weapon that sets your Total Reach, since a bow has no

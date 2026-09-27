@@ -122,12 +122,12 @@
   [
    "Give Ground ↺",
    "Evade",
-   "+2 circumstance bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
+   "+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
   ],
   [
    "Set Your Feet ↺",
    "Guard",
-   "+2 circumstance bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
+   "+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
   ]
  ],
  "talentPointTypes": [
@@ -847,7 +847,7 @@
   ],
   [
    "Parry",
-   "Spend ◆ to gain a +1 circumstance bonus to Guard for physical Attacks until the start of your next turn."
+   "Spend ◆ to gain a +1 Situation bonus to Guard for physical Attacks until the start of your next turn."
   ],
   [
    "Ranged [N]",
@@ -859,7 +859,7 @@
   ],
   [
    "Sweep",
-   "+1 circumstance bonus to attack a target you have not yet attacked this turn."
+   "+1 Situation bonus to attack a target you have not yet attacked this turn."
   ],
   [
    "Thrown X",
@@ -875,7 +875,7 @@
   ],
   [
    "Unwieldy [N]",
-   "You take a −2 circumstance penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed."
+   "You take a −2 Situation penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed."
   ],
   [
    "Versatile X",
@@ -889,7 +889,7 @@
   ],
   [
    "Noisy",
-   "−1 circumstance penalty to Stealth, on top of your Load Strain."
+   "−1 Situation penalty to Stealth, on top of your Load Strain."
   ],
   [
    "Quiet",
@@ -1026,7 +1026,7 @@
    [
     "Raise a Shield ◆",
     "—",
-    "Gain your shield's item bonus to Guard until the start of your next turn. You must be wielding it."
+    "Gain your shield's Gear bonus to Guard until the start of your next turn. You must be wielding it."
    ],
    [
     "Recenter ◆",
@@ -1088,7 +1088,7 @@
    [
     "Aid ↺",
     "—",
-    "Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 circumstance bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it."
+    "Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 Situation bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it."
    ],
    [
     "Recall Knowledge ◆ to ◆◆",
@@ -1117,7 +1117,7 @@
    [
     "Avert Gaze ◆",
     "—",
-    "Name one creature or object you Observe. Until the start of your next turn you gain a +2 circumstance bonus to your Defenses against its Visual effects, and it is Concealed to you."
+    "Name one creature or object you Observe. Until the start of your next turn you gain a +2 Situation bonus to your Defenses against its Visual effects, and it is Concealed to you."
    ],
    [
     "Grab an Edge ↺",
@@ -1145,7 +1145,7 @@
   [
    "Scout",
    "Half",
-   "Every ally gains a +1 circumstance bonus to initiative, and you may Step as a free action when you roll initiative."
+   "Every ally gains a +1 Situation bonus to initiative, and you may Step as a free action when you roll initiative."
   ],
   [
    "Defend",
@@ -1183,7 +1183,7 @@
  "conditions": [
   [
    "Off-Guard",
-   "−2 circumstance to Evade and Guard against all foes."
+   "−2 Situation to Evade and Guard against all foes."
   ],
   [
    "Wrong-Footed [X]",
@@ -1195,7 +1195,7 @@
   ],
   [
    "Prone",
-   "Off-Guard, −2 to Attacks; +2 circumstance to Evade vs. ranged Attacks. Stand ◆ to clear."
+   "Off-Guard, −2 to Attacks; +2 Situation to Evade vs. ranged Attacks. Stand ◆ to clear."
   ],
   [
    "Grabbed",
@@ -1259,7 +1259,7 @@
   ],
   [
    "Arms",
-   "The target takes a −2 circumstance penalty to attack rolls until it Recenters.",
+   "The target takes a −2 Situation penalty to attack rolls until it Recenters.",
    "As left, and the target's Wounded value increases by 1."
   ],
   [
@@ -1278,7 +1278,7 @@
   [
    "Concealed",
    "Exactly what squares you are in, but something prevents them seeing all of you.",
-   "+2 circumstance bonus to Evade and Guard for physical Attacks.",
+   "+2 Situation bonus to Evade and Guard for physical Attacks.",
    "Mist, dim light, foliage."
   ],
   [
@@ -1312,17 +1312,17 @@
   [
    "1",
    "Lesser Cover",
-   "+1 circumstance bonus to your Evade and Guard for physical Attacks."
+   "+1 Situation bonus to your Evade and Guard for physical Attacks."
   ],
   [
    "2",
    "Cover",
-   "+2 circumstance bonus to your Evade and Guard for physical Attacks."
+   "+2 Situation bonus to your Evade and Guard for physical Attacks."
   ],
   [
    "3",
    "Greater Cover",
-   "+4 circumstance bonus to your Evade and Guard for physical Attacks."
+   "+4 Situation bonus to your Evade and Guard for physical Attacks."
   ],
   [
    "4",

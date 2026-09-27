@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.3.5";
+  --sw-css-version: "0.3.6";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -1205,6 +1205,10 @@ li.combatant.sw-in-crosshairs {
 .starwrought .check-dialog-form .form-group > label { flex: 0 0 10rem; font-size: 0.8rem; font-weight: normal; color: var(--sw-ink); }
 .starwrought .check-dialog-form .form-fields { flex: 1; }
 .starwrought .check-dialog-form p.hint { margin: 0; font-size: 0.75rem; line-height: 1.35; color: var(--sw-ink-dim); }
+/* A Relevant Check: the picker's own intro line, and the toolbar that opens it. */
+.starwrought .sw-relevant-intro { margin: 0 0 0.2rem; font-size: 0.8rem; color: var(--sw-ink); line-height: 1.35; }
+.starwrought .sw-tab-toolbar { display: flex; justify-content: flex-end; gap: 0.4rem; }
+
 /* The defender's answer: stated, not offered. */
 .starwrought .sw-answering { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
 .starwrought .sw-answering strong { color: var(--sw-flare); font-size: 1rem; }

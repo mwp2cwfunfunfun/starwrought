@@ -9,7 +9,7 @@
     "costMode": "to",
     "category": "Watching, deceiving & helping",
     "traits": [],
-    "description": "<p>Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 circumstance bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it.</p>",
+    "description": "<p>Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 Situation bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it.</p>",
     "source": "STARWROUGHT Playtest v3.1"
   },
   "folder": "9c4c1eb78a540a57",

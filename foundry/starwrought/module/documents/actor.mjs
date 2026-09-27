@@ -11,6 +11,9 @@ import { SwCheck } from "../dice/check.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 
+const { DialogV2 } = foundry.applications.api;
+const { renderTemplate } = foundry.applications.handlebars;
+
 export class SwActor extends Actor {
   /* -------------------------------------------- */
   /*  Conditions                                  */
@@ -102,6 +105,82 @@ export class SwActor extends Actor {
     }, options, { inplace: false }));
   }
 
+  /**
+   * Roll a Relevant Check.
+   *
+   * The handbook's term (Mike, 2026-09-26) for a roll whose Constellation is the actor's to
+   * choose, subject to their justification and the GM's approval: Aid is written with it, and
+   * initiative-by-activity has always worked this way. The system's part is to make the choice
+   * visible rather than to police it: the actor picks from every Constellation, Untrained ones
+   * included (Untrained is a real answer, at +0 Proficiency), says why, and the card names both.
+   * The roll itself is an ordinary check in that Constellation, so a critical can Flare it.
+   * @param {object} [options]  Passed through to the roll. `threshold` prefills the picker.
+   */
+  async rollRelevantCheck(options = {}) {
+    if (this.type !== "character") {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Roll.relevantNpc"));
+      return null;
+    }
+    const sys = this.system;
+    // The number beside each Constellation is the one the roll dialog will open with, computed
+    // by the check engine itself, so Load Strain on a Might check or a Frightened value shows
+    // here and ranks the list the way the dice will see it.
+    const row = (slug, name, rank, attribute) => ({
+      slug,
+      name,
+      rank,
+      rankLabel: game.i18n.localize(SW.RANKS[rank].label),
+      glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "",
+      mod: SwCheck.previewTotal(this, { kind: "check", slug }),
+      trained: rank !== "untrained"
+    });
+
+    // Every Constellation the game knows, at this character's rank in it. The Lore template is
+    // not itself rollable; the Lores this character has opened are on the character.
+    const rows = Object.values(SW.constellations)
+      .filter(c => c.slug && (c.slug !== "lore"))
+      .map(c => {
+        const p = sys.proficiency(c.slug);
+        return row(c.slug, p.name ?? c.name, p.rank, p.attribute);
+      });
+    for (const [slug, con] of Object.entries(sys.constellations ?? {})) {
+      if (rows.some(r => r.slug === slug)) continue;
+      rows.push(row(slug, con.name, con.rank, con.attribute));
+    }
+    rows.sort((a, b) => (Number(b.trained) - Number(a.trained)) || (b.mod - a.mod) || a.name.localeCompare(b.name));
+
+    const content = await renderTemplate("systems/starwrought/templates/dice/relevant-check.hbs", {
+      trained: rows.filter(r => r.trained),
+      untrained: rows.filter(r => !r.trained),
+      threshold: Number.isNumeric(options.threshold) ? options.threshold : ""
+    });
+    const answer = await DialogV2.wait({
+      window: { title: game.i18n.localize("STARWROUGHT.Roll.relevantCheck"), icon: "fa-solid fa-scale-balanced" },
+      classes: ["starwrought", "check-dialog"],
+      position: { width: 460 },
+      content,
+      buttons: [
+        { action: "roll", label: "STARWROUGHT.Roll.roll", icon: "fa-solid fa-dice-d20", default: true,
+          callback: (event, button) => new foundry.applications.ux.FormDataExtended(button.form).object },
+        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    if (!answer || (answer === "cancel") || !answer.slug) return null;
+
+    const chosen = rows.find(r => r.slug === answer.slug);
+    if (!chosen) return null;
+    const why = String(answer.why ?? "").trim();
+    const opts = {
+      ...options,
+      label: game.i18n.localize("STARWROUGHT.Roll.relevantCheck"),
+      // The card's subtitle is the approval surface: which Constellation, and the reason given.
+      subtitle: why ? `${chosen.name}: ${why}` : chosen.name
+    };
+    if (Number.isNumeric(answer.threshold)) opts.threshold = Number(answer.threshold);
+    return this.rollCheck(chosen.slug, opts);
+  }
+
   /* -------------------------------------------- */
 
   /**
@@ -169,7 +248,7 @@ export class SwActor extends Actor {
       ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null }
       : answering;
 
-    // Unwieldy N: a −2 circumstance penalty against a target within N feet, measured edge to edge
+    // Unwieldy N: a −2 Situation penalty against a target within N feet, measured edge to edge
     // like everything else on the grid, and no attack at all while Grabbed. The penalty is applied;
     // the Grabbed clause is announced, since nothing in this system prevents a roll.
     const modifiers = [...(options.modifiers ?? [])];
@@ -182,7 +261,7 @@ export class SwActor extends Actor {
           modifiers.push({
             label: game.i18n.format("STARWROUGHT.Roll.unwieldy", { n: unwieldy }),
             value: SW.UNWIELDY_PENALTY,
-            type: "circumstance"
+            type: "situation"
           });
         }
       }

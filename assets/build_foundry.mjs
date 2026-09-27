@@ -645,6 +645,14 @@ if ( !targets.length ) ui.notifications.warn("Select a token first.");
 for ( const actor of targets ) await actor.restForTheNight();`
   },
   {
+    name: "Relevant Check",
+    img: "icons/svg/book.svg",
+    command: `// A Relevant Check: you choose the Constellation, say why, and the GM approves.
+const actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;
+if ( !actor ) return ui.notifications.warn("Select a token, or set a player character.");
+await actor.rollRelevantCheck();`
+  },
+  {
     name: "Roll Initiative by Activity",
     img: "icons/svg/eye.svg",
     command: `// Initiative is whatever you were already doing.

@@ -304,7 +304,7 @@ kids.push(h2("Armor of proof"));
 kids.push(para("Against the damage type its material turns poorly, a piece's Protection is reduced by 1. A Zone with no armor has no material, and so has no such weakness."));
 kids.push(stripedTable(["Material", "Turns poorly"], (R.materials || []).map(r => [{ text: r[0], bold: true }, r[1]]), [2000, 2400]));
 kids.push(h2("Shields"));
-kids.push(stripedTable(["Shield", "Item bonus to Guard when Raised", "Hardness", "Load", "Price", "Note"],
+kids.push(stripedTable(["Shield", "Gear bonus to Guard when Raised", "Hardness", "Load", "Price", "Note"],
   (R.shields || []).map(r => [{ text: r[0], bold: true }, r[1] ? "+" + r[1] : "—", String(r[2]), String(r[3]), r[4], r[5] || ""]),
   [1300, 2200, 1000, 800, 900, 3160]));
 kids.push(h2("Weapon Handling"));

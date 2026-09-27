@@ -33,6 +33,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       chargen: SwCharacterSheet.#onChargen,
       editImage: SwCharacterSheet.#onEditImage,
       rollConstellation: SwCharacterSheet.#onRollConstellation,
+      relevantCheck: SwCharacterSheet.#onRelevantCheck,
       rollDefense: SwCharacterSheet.#onRollDefense,
       rollInitiative: SwCharacterSheet.#onRollInitiative,
       toggleFlare: SwCharacterSheet.#onToggleFlare,
@@ -454,6 +455,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onRollDefense(event, target) {
     const key = target.dataset.defense;
     return this.document.rollDefense(key, { dialog: !event.shiftKey });
+  }
+
+  static async #onRelevantCheck(event) {
+    return this.document.rollRelevantCheck({ dialog: !event.shiftKey });
   }
 
   static async #onRollInitiative(event, target) {

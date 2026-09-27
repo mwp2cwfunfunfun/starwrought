@@ -133,6 +133,25 @@ export class SwCheck {
   /* -------------------------------------------- */
 
   /**
+   * The modifier a check would open its dialog with, before the player adds anything: the three
+   * base terms, whatever the sheet can see for itself (Frightened, Load Strain, the adjustment
+   * fields), and whatever the caller passes in `config.modifiers`. The Relevant Check picker
+   * prints this beside each Constellation so that a strained Athletics ranks where the roll will
+   * actually land, not where the training alone would put it.
+   * @param {Actor} actor
+   * @param {object} [config]  The same shape `roll()` takes; `kind` defaults to "check".
+   * @returns {number}
+   */
+  static previewTotal(actor, config = {}) {
+    const cfg = foundry.utils.mergeObject({ kind: "check" }, config, { inplace: false });
+    const parts = this.#baseModifiers(actor, cfg);
+    parts.push(...(cfg.modifiers ?? []));
+    return SW.resolveModifiers(parts).total;
+  }
+
+  /* -------------------------------------------- */
+
+  /**
    * Level, Attribute Bonus, and Proficiency Bonus: the three terms every check in the game has.
    * @returns {Array}
    */
@@ -185,7 +204,7 @@ export class SwCheck {
       parts.push({
         label: game.i18n.localize("STARWROUGHT.Condition.frightened"),
         value: -frightened,
-        type: "status"
+        type: "condition"
       });
     }
 
@@ -240,7 +259,7 @@ export class SwCheck {
 
     const extra = [];
     const bonus = Number(answer.bonus) || 0;
-    if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "circumstance" });
+    if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "situation" });
 
     const config = { rollMode: answer.rollMode ?? cfg.rollMode };
     if (cfg.targetDefense && !cfg.defenseForced) {

@@ -1,6 +1,7 @@
 # STARWROUGHT for Foundry Virtual Tabletop
 
-A game system implementing the STARWROUGHT Playtest rules (v3.1). Classless, Constellation-built,
+A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v3.4; see
+`FEATURES.md` for what it does and `CHANGELOG.md` for what changed). Classless, Constellation-built,
 and written for a virtual tabletop from the ground up: the arithmetic is the software's job so the
 table can spend its attention on decisions.
 
@@ -21,10 +22,12 @@ Bloodline, Culture) pool into one rank, as the handbook says they do.
 is `level + Attribute + Proficiency`, with a Threshold of ten plus that. Size, Off-Guard,
 Frightened and Load Strain are folded in automatically, and bonuses of the same type do not stack.
 
-**Player-facing rolls.** Attack rolls read the target's four Defense Thresholds straight off the
-targeted token and let the defender's choice pick which one applies. Defense rolls run the same
-comparison from the other side, so beating an Attack Threshold by 10 is a Miss and missing it by
-10 is a Critical Hit. The Multiple Attack Penalty knows about Agile.
+**Player-facing rolls.** Attack rolls are answered by the defender's stance, Evade or Guard, set on
+the defender's sheet or Token HUD and read at the moment of the roll; the card reveals which, and
+the Threshold, only once the die is thrown. Defense rolls run the same comparison from the other
+side, so beating an Attack Threshold by 10 is a Miss and missing it by 10 is a Critical Hit. The
+Multiple Attack Penalty knows about Agile. A Relevant Check lets the actor choose the Constellation,
+says why on the card, and leaves the approval to the GM.
 
 **Zones, Protection and the Graze.** Each Zone carries its own armor. Damage follows the printed
 order of operations: Immunity, total, Weakness, Resistance, the critical doubling, Protection,
@@ -55,7 +58,7 @@ on the sheet.
 | Equipment | 29 weapons, 20 armor pieces, 3 shields |
 | Actions & Activities | 46 Actions, Postures, and Exploration and Downtime activities |
 | Rules Reference | 20 pages of reference tables |
-| Macros | Recenter, Recovery, a night's rest, Initiative by activity |
+| Macros | Recenter, Recovery, a night's rest, Relevant Check, Initiative by activity |
 
 Every one of these is generated from `data/*.xlsx` by way of `assets/trees.json` and
 `assets/roster.json`. Nothing in `packs/` is authored by hand.
@@ -107,10 +110,11 @@ packs/_source/           compendium sources (generated)
 
 ## Known gaps
 
-- Talent prerequisites are recorded and displayed but not enforced; nothing stops a player buying
-  a Talent out of order. Talent Point *types* (Origin, Calling, Comet and the rest) are documented
-  in the Rules compendium but not tracked as a budget.
-- There is no character-creation wizard. The app in the project root has one; here you drag
-  Talents onto a sheet.
+The full list is section 7 of `FEATURES.md`. The short version:
+
+- Talent prerequisites and point budgets are enforced by the character-creation wizard and nowhere
+  else. Drag a Talent onto a sheet by hand and nothing stops you.
+- Talent effects are prose the sheet displays, not rules the system acts on. That is the next
+  piece of work, and it will be authored in the spreadsheets rather than in code.
 - Cover, Concealment and detection states are reference material, not automation.
 - Magic is not in the playtest, so it is not here.

@@ -7,6 +7,47 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.6 (2026-09-26): Player's Handbook v3.4
+
+### Added
+
+- **Relevant Check** (Mike, 2026-09-26): a roll whose Constellation the actor chooses, subject to
+  their justification and the GM's approval, which is how Aid is being written. A button on the
+  Constellations tab and a macro open a picker of every Constellation at the character's rank,
+  Trained first by modifier, Untrained after, with a line for the reason and an optional Threshold.
+  The modifier beside each name is the check engine's own, so a Might Skill under Load Strain
+  ranks where the roll will land rather than where the training alone would put it. The roll is
+  an ordinary check in the chosen Constellation, so a critical can Flare it, and the card's
+  subtitle names the Constellation and the reason, which is what the GM approves. Adversaries
+  get a warning instead: they carry Thresholds.
+
+### Changed
+
+- **The bonus types are Situation, Condition and Gear** (Mike, 2026-09-26). They were circumstance,
+  status and item, which echoed another game's words for the same three ideas. The stacking rule
+  is unchanged: highest bonus and worst penalty of each type, added across types. Situation is
+  where you stand and what is happening around you (cover, high ground, an ally's help, a foe
+  Off-Guard); Condition is something on you (Frightened, a stance); Gear is what you hold or wear
+  (a raised shield). The engine still understands the old names, so a macro that passes typed
+  modifiers under them lands in the right bucket; Active Effects never carried a type, since they
+  can only move the sheet's untyped adjustment fields. One thing the rename deliberately did not
+  decide: every weapon trait the book prints (Parry, Sweep, Unwieldy) grants a Situation bonus or
+  penalty, which under a source-based scheme reads as Gear. They stay Situation until Mike rules.
+- **Player's Handbook v3.4**, written from Mike's v3.3 by `assets/phb_edit.py`, which gained a
+  rename mode: it swaps a type word only where it qualifies a bonus or penalty, so "an item, a
+  spell" is untouched while "the item bonus to Guard" becomes "the Gear bonus to Guard", and it
+  refuses if Word has split the word itself across runs. It also catches the handbook's elided
+  form, "+2 circumstance to Evade", which the condition table uses throughout. Nine paragraphs and
+  sixty table cells change (82 words), the stacking paragraph gains a sentence naming the three
+  types before its examples, and the edition line on the cover moves. Nothing else in the file is
+  touched, and no old type word survives in either form.
+- **The spreadsheets are being brought across by hand** during the automation pass, so
+  `check_style.py` now reports, as an advisory count per file, how many old type words remain in
+  shipping content. `data/SYNC.json` stays at v3.3 until that pass is done, so the drift check
+  keeps saying so.
+
+---
+
 ## 0.3.5 (2026-09-26): Player's Handbook v3.3
 
 Two things the wizard made harder than they needed to be.

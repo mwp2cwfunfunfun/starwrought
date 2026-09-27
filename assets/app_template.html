@@ -1749,7 +1749,7 @@ function vWiki(){
     +P("Putting on or taking off a single piece takes 1 minute per point of Protection it has. You cannot sleep in armor without waking fatigued <i>unless your torso piece has Comfort</i>. A complete harness of plate with a closed helm is four pieces, Load 7, and about 45 gp.")
     +`<h3>Shields</h3>`
     +P("A shield is not armor. It grants no Protection, because it does not cover a zone; it is a tool you actively interpose, which is why it improves <b>Guard</b> and only while you Raise it. Hardness matters only if you have the Shield Block talent: it is how much damage the shield swallows before the rest reaches you. A tower shield gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised.")
-    +tbl(["Shield","Item bonus to Guard when Raised","Hardness","Load","Price","Note"],
+    +tbl(["Shield","Gear bonus to Guard when Raised","Hardness","Load","Price","Note"],
       (R.shields||[]).map(s=>[s[0],s[1]?"+"+s[1]:"—",s[2],s[3],s[4],s[5]]))
     +`<h3>Weapons</h3>`
     +P("A weapon gives you a damage die and a handful of Traits. It never touches your attack roll. <b>Damage on a Hit is your weapon's dice, plus your Might, plus your weapon specialization</b> (+2 at Expert, +3 at Master, +4 at Legendary). You roll more dice as you level: two at 4th, three at 12th, four at 19th. <b>Damage on a Graze is a single weapon die and nothing else.</b>")
@@ -1851,7 +1851,7 @@ function vWiki(){
     <h4>Recovery checks</h4>
     ${P("At the start of each of your turns while Dying, make an Endure check against a Threshold of <b>10 + your level + your Dying value</b>. It costs no action.")}
     ${tbl(["Result","Effect"],(R.recovery||[]))}
-    ${P("<b>Helping.</b> An adjacent ally may spend &#9670; to give you a +2 circumstance bonus to your next Recovery check. <b>Healing.</b> Any effect that restores even 1 Hit Point to a Dying character ends their Dying at once: they are conscious, with those Hit Points, and Wounded.")}
+    ${P("<b>Helping.</b> An adjacent ally may spend &#9670; to give you a +2 Situation bonus to your next Recovery check. <b>Healing.</b> Any effect that restores even 1 Hit Point to a Dying character ends their Dying at once: they are conscious, with those Hit Points, and Wounded.")}
     <h3>Wounded</h3>
     ${P("Whenever your Dying ends, for any reason, you become <b>Wounded 1</b>; if you were already Wounded, it rises by 1. Wounded clears when you rest for the night, or when an ally spends ten minutes treating you and you succeed at an Endure check against 10 + your level + your Wounded value.")}
     <h3>Refusing death</h3>

@@ -170,7 +170,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.3.5";
+export const SYSTEM_VERSION = "0.3.6";
 
 export const WEAPONS_SLUG = "weapons";
 
@@ -496,7 +496,7 @@ export const CONDITIONS = Object.freeze({
 /** Conditions that impose a flat penalty on Evade and Guard. */
 export const OFF_GUARD_PENALTY = -2;
 
-/** Unwieldy N: the circumstance penalty to attack rolls against a target within N feet. */
+/** Unwieldy N: the Situation penalty to attack rolls against a target within N feet. */
 export const UNWIELDY_PENALTY = -2;
 
 /* -------------------------------------------- */
@@ -505,9 +505,32 @@ export const UNWIELDY_PENALTY = -2;
 
 /**
  * Bonuses of the same type do not stack: take the highest bonus and the worst penalty of each
- * type, then add those two together.
+ * type, then add those two together. Three types, named for where the number comes from
+ * (Mike, 2026-09-26): Situation is where you stand and what is happening around you (cover, high
+ * ground, an ally's help, a foe Off-Guard); Condition is something on you (Frightened, a stance);
+ * Gear is what you hold or wear (a raised shield; in the playtest data that is the only Gear bonus
+ * there is, since every weapon trait the book prints grants a Situation bonus). Untyped is for the
+ * base terms of a check and the system's own flat adjustments (Load Strain, the Multiple Attack
+ * Penalty, the sheet's adjustment fields); no Talent bonus is untyped.
  */
-export const BONUS_TYPES = Object.freeze(["circumstance", "status", "item", "untyped"]);
+export const BONUS_TYPES = Object.freeze(["situation", "condition", "gear", "untyped"]);
+
+/**
+ * The names these types had until v3.3, which echoed another game's. A macro that still passes
+ * typed modifiers under them resolves to the same bucket. (Active Effects never carry a type: they
+ * can only move the sheet's adjustment fields, which are untyped.)
+ */
+export const LEGACY_BONUS_TYPES = Object.freeze({
+  circumstance: "situation",
+  status: "condition",
+  item: "gear"
+});
+
+/** A modifier type as the engine knows it, whatever name it arrived under. */
+export function bonusType(type) {
+  const t = String(type ?? "untyped").toLowerCase();
+  return LEGACY_BONUS_TYPES[t] ?? t;
+}
 
 /**
  * Collapse a list of typed modifiers per the Math Conventions: highest bonus and worst penalty
@@ -521,7 +544,7 @@ export function resolveModifiers(modifiers = []) {
   const applied = [];
   let total = 0;
   for (const mod of active) {
-    const type = mod.type ?? "untyped";
+    const type = bonusType(mod.type);
     if (type === "untyped") {
       total += mod.value;
       applied.push(mod);

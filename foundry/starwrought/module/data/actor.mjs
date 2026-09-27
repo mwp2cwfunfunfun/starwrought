@@ -471,13 +471,13 @@ export class SwCharacterData extends SwActorData {
       if (offGuard && (key === "evade" || key === "guard")) {
         modifiers.push({
           label: game.i18n.localize("STARWROUGHT.Condition.offGuard"),
-          value: offGuard, type: "circumstance"
+          value: offGuard, type: "situation"
         });
       }
       if (frightened) {
         modifiers.push({
           label: game.i18n.localize("STARWROUGHT.Condition.frightened"),
-          value: frightened, type: "status"
+          value: frightened, type: "condition"
         });
       }
       if (key === "evade" && this.loadStrain) {
@@ -567,7 +567,7 @@ export class SwCharacterData extends SwActorData {
       .filter(w => !w.system.isRanged)
       .sort((a, b) => (b.system.reach ?? 0) - (a.system.reach ?? 0))[0] ?? null;
 
-    // Unwieldy N: a −2 circumstance penalty against anything within N feet, and no attack at all
+    // Unwieldy N: a −2 Situation penalty against anything within N feet, and no attack at all
     // while Grabbed. It is the inner edge of what a long weapon is good for.
     this.unwieldy = this.reachWeapon?.system.flags?.unwieldy ?? 0;
   }

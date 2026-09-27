@@ -1,6 +1,14 @@
 {{!-- The sky: every Constellation this character has actually invested in. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
+  {{!-- A check whose Constellation is yours to choose and the GM's to approve. --}}
+  <div class="sw-tab-toolbar">
+    <button type="button" class="sw-inline-button" data-action="relevantCheck"
+            data-tooltip="{{localize 'STARWROUGHT.Sheet.relevantCheckHint'}}">
+      <i class="fa-solid fa-scale-balanced"></i> {{localize "STARWROUGHT.Roll.relevantCheck"}}
+    </button>
+  </div>
+
   {{#if constellations.length}}
   {{#each constellations as |group|}}
   <div class="sw-panel sw-constellation-group">

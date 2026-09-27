@@ -14,7 +14,8 @@ backup/
 foundry/starwrought/packs/*
 !foundry/starwrought/packs/_source/
 
-# Python and Word leavings.
+# Python, Word and Excel leavings. The ~$ files are Office's open-document locks.
 __pycache__/
 *.pyc
 ~$*.docx
+~$*.xlsx

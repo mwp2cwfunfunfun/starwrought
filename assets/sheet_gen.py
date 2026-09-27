@@ -333,7 +333,7 @@ TORVA = dict(
     talents=[
         "GRANTED FREE: Weapons Training + Awareness, Evade, Guard and Endure Training (5 points)",
         "ORIGIN ROOTS (free with the choices): Humanity, Versatile Human, Reacher",
-        "Humanity - +1 status bonus on checks to Aid, rising with your rank in Human",
+        "Humanity - +1 Condition bonus on checks to Aid, rising with your rank in Human",
         "Versatile Human - 1 Opening Talent Point (spent on Dueling Training)",
         "Driven (Comet) - granted a Calling point, which bought Surprise Attacker",
         "Sneak Attack (Calling point) - +1d6 precision vs Off-Guard foes; brought Stealth Training",
@@ -346,9 +346,9 @@ TORVA = dict(
     banked="1 / 3",
     details=[
         "Chargen v3.0: 5 roots granted free, 3 Origin roots granted by the choices, then 12 points: 3 Origin, 3 Skill, 1 Lore, 1 Calling, 1 Defense, 3 Comets.",
-        "Humanity (Human T): +1 status bonus on checks to Aid. +2 at Expert, +3 at Master, +4 at Legendary.",
+        "Humanity (Human T): +1 Condition bonus on checks to Aid. +2 at Expert, +3 at Master, +4 at Legendary.",
         "Versatile Human (Bloodline): 1 Opening Talent Point, which opened Dueling.",
-        "Reacher (Kestrel Reach T): Reachspeak and Common, and +1 status to Diplomacy toward Reach folk, scaling with the Origin Constellation.",
+        "Reacher (Kestrel Reach T): Reachspeak and Common, and +1 Condition to Diplomacy toward Reach folk, scaling with the Origin Constellation.",
         "Sneak Attack (Ambusher T): +1d6 precision damage against Off-Guard foes, and Training in Stealth.",
         "Surprise Attacker (Ambusher T): in the first round, foes that have not acted yet are Wrong-Footed to you.",
         "MATCHED HARNESS: four leather pieces, same material and same Protection, so the Torso gets +1 Protection and Load Strain drops to 0.",

@@ -8,7 +8,7 @@
     "category": "Exploration Mode",
     "requirements": "Travel Speed: Half",
     "traits": [],
-    "description": "<p>Every ally gains a +1 circumstance bonus to initiative, and you may Step as a free action when you roll initiative.</p>",
+    "description": "<p>Every ally gains a +1 Situation bonus to initiative, and you may Step as a free action when you roll initiative.</p>",
     "source": "STARWROUGHT Playtest v3.1"
   },
   "folder": "e80cf8f5d20bb8b2",

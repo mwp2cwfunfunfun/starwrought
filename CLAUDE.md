@@ -142,6 +142,20 @@ critical failure on any roll with consequences, directly related to a talent in 
 Per-tree trigger lists are flavor illustrations, never rules, and should all read as the universal
 wording.
 
+**Bonus types (Mike, 2026-09-26).** Three, named for where the number comes from: **Situation**
+(where you stand and what is happening around you: cover, high ground, an ally's help, a foe
+Off-Guard), **Condition** (something on you: Frightened, a stance), **Gear** (what you hold or wear:
+a raised shield). Same type does not stack: highest bonus and worst penalty of each type, added
+across types. They were circumstance, status and item until PHB v3.3; the engine still maps the old
+names (`LEGACY_BONUS_TYPES` in `config.mjs`) for macros that pass typed modifiers, and
+`check_style.py` counts the old words left in shipping content as an advisory note (both the
+"+2 circumstance bonus" and the elided "+2 circumstance to Evade" forms), because the spreadsheets
+are being brought across by hand during the automation pass. Untyped is for the base terms of a
+check and the system's own flat adjustments (Load Strain, the Multiple Attack Penalty, the sheet's
+adjustment fields); no Talent bonus is untyped. **Open:** every weapon trait the book prints (Parry,
+Sweep, Unwieldy) grants a Situation bonus or penalty, which under a source-based scheme reads as
+Gear; the rename was mechanical and kept them as Situation, and whether they move is Mike's call.
+
 **Rank math.** Trained 1 pt, Expert 4, Master 9, Legendary 16, gated at L1/L5/L13/L19. Every talent
 costs 1. Capstones (★) are tier L and need a Master talent in the same constellation. Attribute
 bonus = points ÷ 3, rounded down, max +5. **There is no min +1**: the PHB's own table has read
@@ -151,12 +165,16 @@ proficiency, not an attribute bonus.
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
-  It is hand-authored in Word. `assets/phb_edit.py` exists for the one case where Claude is asked to
-  change it: it appends a sentence to a named paragraph, matching that paragraph's own run
-  formatting, and copies every other byte of the package through untouched. It writes a NEW
-  numbered file rather than editing one in place, so the version Mike authored stays the version
-  Mike authored. Verify with a diff of the two documents: entry count, paragraph count, and the
-  exact list of changed lines. Check for a newer one before starting a sync; v3.1 landed while the
+  It is hand-authored in Word. `assets/phb_edit.py` exists for the cases where Claude is asked to
+  change it: it appends a sentence to a named paragraph in that paragraph's own run formatting,
+  substitutes a literal inside one paragraph, or renames a word wherever it qualifies a bonus or
+  penalty (the v3.4 type rename), and copies every other byte of the package through untouched.
+  Its edits are the `EDITIONS` table, one entry per version it has produced, run as
+  `python assets/phb_edit.py <in> <out> --to <version>`. It writes a NEW numbered file rather than
+  editing one in place, so the version Mike authored stays the version Mike authored. Verify with a
+  diff of the two documents: entry count, paragraph count, and the exact list of changed lines,
+  each explained by the intended edit. The edition line is the first cell of the cover table, so
+  `doc.paragraphs` never shows it; read it as `doc.tables[0].rows[0].cells[0]`. Check for a newer one before starting a sync; v3.1 landed while the
   v3.0 sync was still being written. `data/*.xlsx` derives from it and is authoritative for the app;
   when the two disagree, the handbook wins and the sheets need a pass.
 - **`assets/build_phb.js` deliberately does not regenerate the handbook.** That would put rules prose

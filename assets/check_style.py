@@ -56,6 +56,19 @@ GOL_RE = re.compile(r"\b(" + "|".join(re.escape(w) for w in GOLARION) + r")\b", 
 TRADEMARKS = ["Pathfinder", "Paizo", "Dungeons & Dragons", "Forgotten Realms", "Wizards of the Coast"]
 TM_RE = re.compile(r"\b(" + "|".join(re.escape(w) for w in TRADEMARKS) + r")\b", re.I)
 
+# ── the bonus types, renamed (Mike, 2026-09-26) ─────────────────────────────────────────────────
+# circumstance, status and item became Situation, Condition and Gear. The handbook and the system
+# have moved; the spreadsheets are being brought across by hand during the automation pass. Until
+# that is done this is a count, not a failure: it is the to-do list, one file at a time.
+# Both shapes the book uses: "a +2 circumstance bonus to Evade" and the elided "+2 circumstance to
+# Evade", where the signed number in front is what marks the word as a type.
+RETIRED_TYPE_RE = re.compile(
+    r"\b(?:circumstance|status|item)\s+(?:bonus|bonuses|penalty|penalties)\b"
+    r"|[+\-−]\d{1,2}\s+(?:circumstance|status|item)\b",
+    re.I,
+)
+retired = {}
+
 
 def check(where, text, sink=None):
     sink = errors if sink is None else sink
@@ -66,6 +79,10 @@ def check(where, text, sink=None):
         sink.append(("golarion:" + m, where, s.strip()[:150]))
     for m in set(TM_RE.findall(s)):
         notes.append(("trademark:" + m, where, s.strip()[:150]))
+    hits = len(RETIRED_TYPE_RE.findall(s))
+    if hits:
+        f = where.split("!")[0].split(" line ")[0].split(" ")[0]
+        retired[f] = retired.get(f, 0) + hits
 
 
 def walk_json(path):
@@ -138,13 +155,23 @@ if books:
     book = books[-1]
     try:
         xml = zipfile.ZipFile(book).read("word/document.xml").decode("utf-8", "replace")
-        text = re.sub(r"<[^>]+>", " ", xml)
+        # Word splits runs mid-word ("status b" + "onus"), so join each paragraph's text runs with
+        # nothing between them and paragraphs with a space. Turning every tag into a space would
+        # read that as two words and miss it.
+        paras = re.findall(r"<w:p\b[^>]*>.*?</w:p>", xml, re.S)
+        text = " ".join("".join(re.findall(r"<w:t\b[^>]*>(.*?)</w:t>", p, re.S)) for p in paras)
         for m in sorted(set(GOL_RE.findall(text))):
             notes.append(("golarion:" + m, rel(book), "still present in the handbook"))
         for m in sorted(set(TM_RE.findall(text))):
             notes.append(("trademark:" + m, rel(book), "named in the handbook; fine if comparative, check the ORC notice"))
+        hits = len(RETIRED_TYPE_RE.findall(text))
+        if hits:
+            retired[rel(book)] = hits
     except Exception as e:
         notes.append(("unreadable", rel(book), str(e)))
+
+for f, n in sorted(retired.items()):
+    notes.append(("retired-type", f, "%d bonus/penalty type word(s) still circumstance/status/item; now Situation/Condition/Gear" % n))
 
 # ── report ──────────────────────────────────────────────────────────────────────────────────────
 if notes and not QUIET:

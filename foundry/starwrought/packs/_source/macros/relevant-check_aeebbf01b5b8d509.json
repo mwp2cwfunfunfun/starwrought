@@ -1,0 +1,19 @@
+{
+  "_id": "aeebbf01b5b8d509",
+  "name": "Relevant Check",
+  "type": "script",
+  "author": null,
+  "img": "icons/svg/book.svg",
+  "scope": "global",
+  "command": "// A Relevant Check: you choose the Constellation, say why, and the GM approves.\nconst actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;\nif ( !actor ) return ui.notifications.warn(\"Select a token, or set a player character.\");\nawait actor.rollRelevantCheck();",
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!macros!aeebbf01b5b8d509"
+}
