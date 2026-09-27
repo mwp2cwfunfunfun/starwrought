@@ -8,6 +8,7 @@
     "costMax": "",
     "costMode": "to",
     "category": "Handling things",
+    "basic": true,
     "traits": [],
     "description": "<p>Drop or let go of something you are holding.</p>",
     "source": "STARWROUGHT Playtest v3.1"

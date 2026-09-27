@@ -6,6 +6,10 @@
 #   Ancestry rows may also carry: HP | Size | Speed | Senses | Summary
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
 # Rich text in Description/Effect cells (b/i/u/strike/color) becomes HTML and mirrors everywhere.
+#
+# An ACTIONS workbook (data/actions.xlsx, Mike, 2026-09-26) is recognised by its _Tree Index
+# carrying Name | Type | Meta note instead of Tree | Category. Its other sheets hold one action per
+# row and write assets/actions.json; see parse_actions_workbook below for the columns.
 import json, os, re, sys, glob
 from openpyxl import load_workbook
 
@@ -15,6 +19,7 @@ DATA = os.path.join(ROOT, "data")
 OUT = os.path.join(HERE, "trees.json")
 BGOUT = os.path.join(HERE, "backgrounds.json")
 ROSTER = os.path.join(HERE, "roster.json")
+AOUT = os.path.join(HERE, "actions.json")
 
 def parse_bg_sheet(bws, bgs, warnings, fname):
     bm = header_map(bws, {"name": "background", "rarity": "rarity", "desc": "desc", "effect": "effect", "skills": "skills", "lore": "lore"})
@@ -131,6 +136,124 @@ def header_map(ws, wanted):
 
 norm = lambda s: re.sub(r"[◆↺★\s]+$", "", s or "").strip()
 
+# ---- Actions ---------------------------------------------------------------------------------
+# Recognised action-sheet columns (first word wins, order free):
+#   Action | Cost | Traits | Type | Prerequisites | Requirements | Trigger | Description | Effect |
+#   Automation
+# Cost accepts the handbook's glyphs or words: "◆", "◆◆", "◆ to ◆◆◆", "◆ or ◆◆◆", "↺", "◇",
+# "1", "1 to 3", "reaction", "free". With no Cost column the glyphs in the Action name are read,
+# the way talent names are; with neither, the action costs one action and the converter says so.
+# A cell reading "None" is blank: the sheet's own way of saying an action has no prerequisite.
+COST_WORDS = {"reaction": "reaction", "free": "free", "passive": "0", "0": "0",
+              "1": "1", "2": "2", "3": "3", "one": "1", "two": "2", "three": "3"}
+ACTION_GLYPHS = re.compile(r"[◆◇↺★]")
+
+def action_bare(s):
+    """Glyphs out, the trailing cost joiner (to/or) out, any run of whitespace to one space. The
+    same normalisation build_foundry.mjs applies (actionName), so the two agree on every name."""
+    s = re.sub(r"\s+(to|or)\s*$", "", ACTION_GLYPHS.sub("", s or ""))
+    return re.sub(r"\s+", " ", s).strip()
+
+action_key = lambda s: action_bare(s).lower()
+
+def blank_none(s):
+    """'None', a dash, or nothing at all is an empty cell. Anything else is kept as written."""
+    s = (s or "").strip()
+    return "" if s.lower() in ("", "none", "n/a", "-", "—") else s
+
+def parse_cost(text):
+    """'◆ to ◆◆◆', '1 or 3', '↺', 'reaction' -> {cost, costMax, costMode}; None when it does not parse."""
+    t = (text or "").strip()
+    if not t: return None
+    if "↺" in t: return {"cost": "reaction", "costMax": "", "costMode": "to"}
+    if "◇" in t: return {"cost": "free", "costMax": "", "costMode": "to"}
+    runs = re.findall(r"◆+", t)
+    if runs:
+        lo, hi = str(min(3, len(runs[0]))), str(min(3, len(runs[-1])))
+        # Only an "or" between two glyph runs is a cost joiner; one in the name ("Hold or Release
+        # ◆ to ◆◆◆") is not.
+        mode = "or" if re.search(r"◆\s*or\s*◆", t, re.I) else "to"
+        return {"cost": lo, "costMax": hi if (len(runs) > 1 and hi != lo) else "", "costMode": mode}
+    words = re.sub(r"\s*\bactions?\b", "", t.lower()).strip()
+    parts = re.split(r"\s+(to|or)\s+", words)
+    if len(parts) == 1:
+        c = COST_WORDS.get(parts[0])
+        return {"cost": c, "costMax": "", "costMode": "to"} if c else None
+    if len(parts) == 3:
+        lo, join, hi = COST_WORDS.get(parts[0]), parts[1], COST_WORDS.get(parts[2])
+        if lo is None or hi is None: return None
+        return {"cost": lo, "costMax": hi if hi != lo else "", "costMode": join}
+    return None
+
+def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
+    """One action per row, typed by the row's own Type cell, else its _Tree Index row
+    (Name | Type | Meta note), else the sheet the row sits on. Appends to `actions`; errors block
+    the write like any other. `defined` is shared across workbooks (bare lower-case name -> file),
+    so the same action in two files is an error, as the same tree in two files is."""
+    idx = wb["_Tree Index"]
+    im = header_map(idx, {"name": "name", "type": "type", "meta": "meta"})
+    typed = {}
+    for row in idx.iter_rows(min_row=2):
+        g = lambda k: blank_none(plain(row[im[k]])) if k in im and len(row) > im[k] else ""
+        if g("name"): typed[action_key(g("name"))] = {"type": g("type"), "meta": g("meta")}
+    seen, no_cost = {}, []
+    for ws in wb.worksheets:
+        if ws.title == "_Tree Index": continue
+        cm = header_map(ws, {"name": "action", "cost": "cost", "traits": "trait", "type": "type",
+                             "prereq": "prereq", "req": "requirement", "trigger": "trigger",
+                             "desc": "desc", "effect": "effect", "automation": "automation"})
+        if "name" not in cm:
+            warnings.append(f"{fname} / {ws.title}: no Action column, sheet ignored"); continue
+        if "effect" not in cm:
+            errors.append(f"{fname} / {ws.title}: an action sheet needs Action and Effect columns"); continue
+        if "cost" not in cm: no_cost.append(ws.title)
+        for r in ws.iter_rows(min_row=2):
+            cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
+            # Every plain read blanks "None", so the rule holds in every column, not just four.
+            pv = lambda k: blank_none(plain(cellv(k)))
+            raw = plain(cellv("name"))
+            if not raw: continue
+            # Glyphs may ride in the name, as they do in talent names; the name itself is bare.
+            name = action_bare(raw)
+            key = name.lower()
+            if key in seen:
+                errors.append(f"{fname} / {ws.title} / {name}: also defined on sheet '{seen[key]}'"); continue
+            if key in defined:
+                errors.append(f"{fname} / {ws.title} / {name}: also defined in {defined[key]}"); continue
+            seen[key] = ws.title; defined[key] = fname
+            cost_text = pv("cost") if "cost" in cm else ""
+            if cost_text:
+                cost = parse_cost(cost_text)
+                if cost is None:
+                    errors.append(f"{fname} / {ws.title} / {name}: Cost '{cost_text}' not understood "
+                                  f"(◆, ◆◆, ◆◆◆, ◇, ↺, '◆ to ◆◆◆', '1 or 3', reaction, free)"); continue
+            else:
+                cost = parse_cost(raw) if ACTION_GLYPHS.search(raw) else None
+            defaulted = cost is None
+            if defaulted: cost = {"cost": "1", "costMax": "", "costMode": "to"}
+            # The rich-text cells are read through their plain text first, so an Effect of "None"
+            # is an empty Effect and a Description of "None" ships blank.
+            effect = cell_html(cellv("effect")) if pv("effect") else ""
+            if not effect:
+                errors.append(f"{fname} / {ws.title} / {name}: empty Effect"); continue
+            meta = typed.get(key)
+            atype = pv("type") or (meta or {}).get("type") or ws.title
+            if meta is None:
+                warnings.append(f"{fname} / {ws.title} / {name}: not in _Tree Index, typed by "
+                                f"{'its Type cell' if pv('type') else 'its sheet name'}")
+            traits = [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", pv("traits"))) if t]
+            actions.append({"name": name, "type": atype, **cost,
+                            "traits": traits,
+                            "prerequisites": pv("prereq"), "requirements": pv("req"),
+                            "trigger": pv("trigger"), "description": cell_html(cellv("desc")) if pv("desc") else "",
+                            "effect": effect, "automation": pv("automation"),
+                            "meta": (meta or {}).get("meta", ""), "costDefaulted": defaulted, "sheet": ws.title})
+    for k in typed:
+        if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
+    if no_cost:
+        warnings.append(f"{fname}: no Cost column on {', '.join(no_cost)}; an action with no glyph in its "
+                        f"name costs one action ◆ until the column exists")
+
 # ---- Mike's root rule (v0.38) ----------------------------------------------------------------
 # Every root (constellation root and heritage root alike) must (1) hang on something that gets
 # ROLLED, so the constellation can Flare from the one talent every member owns, and (2) IMPROVE at
@@ -155,14 +278,34 @@ def root_rule_gripes(tree, nname, effect):
     return out
 
 def main():
+    # The diagnostics carry the action glyphs, and a piped stdout on Windows is cp1252, which cannot
+    # encode them: the run would die on its first warning. Reconfigure the streams before printing.
+    for s in (sys.stdout, sys.stderr):
+        if hasattr(s, "reconfigure"): s.reconfigure(encoding="utf-8", errors="replace")
     files = [f for f in sorted(glob.glob(os.path.join(DATA, "*.xlsx"))) if not os.path.basename(f).startswith("~$")]
     if not files: sys.exit(f"no .xlsx files found in {DATA}")
     out, errors, warnings, sources, bgs, langs, chassis = {}, [], [], {}, [], [], []
+    actions, action_files, defined_actions = [], [], {}
     for path in files:
         fname = os.path.basename(path)
+        # A workbook open in Excel used to be skipped, which silently wrote a trees.json without
+        # its trees. Excel saves atomically, so the file on disk is always the last saved version:
+        # read it, and say so.
         if os.path.exists(os.path.join(DATA, "~$" + fname)):
-            warnings.append(f"{fname}: open in Excel (lock file present) — skipped this sync"); continue
+            warnings.append(f"{fname}: open in Excel; converting the last saved version")
         wb = load_workbook(path, rich_text=True)
+        if "_Tree Index" in wb.sheetnames:
+            probe = header_map(wb["_Tree Index"], {"tree": "tree", "name": "name", "type": "type"})
+            if "tree" not in probe and "name" in probe:
+                # A Tree-less index with a Name column is an actions workbook. Without a Type column
+                # it is an error rather than a fall-through, so a stale actions.json can never ship.
+                if "type" not in probe:
+                    errors.append(f"{fname}: an actions _Tree Index needs Name and Type columns (Name | Type | Meta note)"); continue
+                n_before = len(actions)
+                parse_actions_workbook(wb, fname, actions, warnings, errors, defined_actions)
+                action_files.append(fname)
+                print(f"  {fname}: {len(actions) - n_before} actions")
+                continue
         if "_Tree Index" not in wb.sheetnames:
             if "Backgrounds" in wb.sheetnames:
                 parse_bg_sheet(wb["Backgrounds"], bgs, warnings, fname)
@@ -318,9 +461,16 @@ def main():
     if langs:
         json.dump(langs, open(os.path.join(HERE, "languages.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
         print(f"wrote languages.json: {len(langs)} languages")
+    # Written only when an actions workbook was read, so a checkout without one keeps the file it has.
+    if action_files:
+        json.dump({"source": action_files, "actions": actions}, open(AOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        defaulted = [a["name"] for a in actions if a["costDefaulted"]]
+        print(f"wrote {AOUT}: {len(actions)} actions from {', '.join(action_files)}"
+              + (f" ({len(defaulted)} with no Cost given, costed at one action: {', '.join(defaulted)})" if defaulted else ""))
     # Patch ONLY the ancestries block of roster.json; cultures/weapons/conditions/etc. stay hand-kept.
-    # Guarded: an empty parse (workbook locked by Excel, chassis columns removed) leaves the file alone
-    # rather than blanking chargen.
+    # Guarded: an empty parse (chassis columns removed from ancestries.xlsx, or no ancestries workbook
+    # in data/ at all) leaves the file alone rather than blanking chargen. A workbook open in Excel is
+    # no longer a case here: it is read from its last saved copy above.
     if chassis and os.path.exists(ROSTER):
         roster = json.load(open(ROSTER, encoding="utf-8"))
         before = len(roster.get("ancestries", []))

@@ -201,11 +201,21 @@
         <select name="system.costMode">{{selectOptions choices.costModes selected=system.costMode}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.category"}}</span>
         <input type="text" name="system.category" value="{{system.category}}"></label>
+      <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.prerequisites"}}</span>
+        <input type="text" name="system.prerequisites" value="{{system.prerequisites}}"></label>
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.requirements"}}</span>
         <input type="text" name="system.requirements" value="{{system.requirements}}"></label>
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.trigger"}}</span>
         <input type="text" name="system.trigger" value="{{system.trigger}}"></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.basicHint"><span>{{localize "STARWROUGHT.Field.basic"}}</span>
+        <input type="checkbox" name="system.basic" {{checked system.basic}}></label>
     </div>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.automation"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.automation"}}</p>
+    <textarea name="system.automation" rows="3" {{#unless editable}}disabled{{/unless}}>{{system.automation}}</textarea>
   </div>
 
   <div class="sw-panel">

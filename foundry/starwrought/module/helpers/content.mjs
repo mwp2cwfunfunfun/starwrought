@@ -69,6 +69,42 @@ export async function refreshConstellationRegistry() {
 
 /* -------------------------------------------- */
 
+let basicActions = null;
+
+/**
+ * The Basic Actions: everything in the Actions compendium flagged `system.basic`, which is what
+ * every character can do without owning a copy. They are authored in data/actions.xlsx (and, until
+ * that sheet has them all, the roster's Encounter Mode rows), so the compendium is the one source
+ * and the character sheet reads it rather than copying it. Loaded once per session; a world Item
+ * of the same name flagged basic replaces the printed one, so a GM's rewrite wins.
+ * @returns {Promise<Item[]>}  Unowned Items, sorted by category then name.
+ */
+export async function loadBasicActions() {
+  if (basicActions) return basicActions;
+  const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
+  const printed = pack ? (await pack.getDocuments()).filter(i => (i.type === "action") && i.system.basic) : [];
+  // Book order lives in the compendium folders. Remember each printed action's place, so a world
+  // Item that replaces one keeps that place, and a world-only addition goes after the book.
+  const place = new Map(printed.map(i => [i.name.toLowerCase(), i.folder?.sort ?? 0]));
+  const byName = new Map(printed.map(i => [i.name.toLowerCase(), i]));
+  for (const item of game.items ?? []) {
+    if ((item.type === "action") && item.system.basic) byName.set(item.name.toLowerCase(), item);
+  }
+  const order = item => place.get(item.name.toLowerCase()) ?? 1000;
+  basicActions = [...byName.values()].sort((a, b) =>
+    (order(a) - order(b))
+    || a.system.category.localeCompare(b.system.category)
+    || a.name.localeCompare(b.name));
+  return basicActions;
+}
+
+/** Forget the cached list, so the next sheet render reads the world again. */
+export function invalidateBasicActions() {
+  basicActions = null;
+}
+
+/* -------------------------------------------- */
+
 /**
  * Are the shipped compendium packs actually populated? A fresh clone of the repository ships the
  * pack sources as JSON and needs a build step, so say so plainly rather than failing quietly.

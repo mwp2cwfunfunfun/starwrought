@@ -4,15 +4,21 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Watching, deceiving & helping",
+    "category": "Basic Action",
+    "basic": true,
     "traits": [],
-    "description": "<p>Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 Situation bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "prerequisites": "",
+    "requirements": "The ally is willing to accept your aid.",
+    "trigger": "",
+    "description": "<p>You use an action to help an ally.</p>",
+    "effect": "<p>You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.</p><p>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.</p><p><b>Critical Success</b> If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.</p>",
+    "automation": "",
+    "source": "data/actions.xlsx"
   },
-  "folder": "9c4c1eb78a540a57",
+  "folder": "a681df74e36af424",
   "sort": 0,
   "ownership": {
     "default": 0

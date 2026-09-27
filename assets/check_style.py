@@ -114,7 +114,7 @@ except ImportError:
     notes.append(("skipped", "data/*.xlsx", "openpyxl not installed"))
 
 # ── the injected JSON ───────────────────────────────────────────────────────────────────────────
-for name in ("roster.json", "trees.json", "backgrounds.json", "languages.json", "sheet_spec.json"):
+for name in ("roster.json", "trees.json", "backgrounds.json", "languages.json", "sheet_spec.json", "actions.json"):
     p = os.path.join(HERE, name)
     if os.path.exists(p):
         walk_json(p)

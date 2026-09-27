@@ -9,6 +9,7 @@ import * as SW from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
+import { loadBasicActions } from "../helpers/content.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -47,6 +48,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       itemDelete: SwCharacterSheet.#onItemDelete,
       itemChat: SwCharacterSheet.#onItemChat,
       itemCreate: SwCharacterSheet.#onItemCreate,
+      basicUse: SwCharacterSheet.#onBasicUse,
+      basicChat: SwCharacterSheet.#onBasicChat,
+      basicView: SwCharacterSheet.#onBasicView,
+      basicAdopt: SwCharacterSheet.#onBasicAdopt,
       setCarry: SwCharacterSheet.#onSetCarry,
       wearArmor: SwCharacterSheet.#onWearArmor,
       setActions: SwCharacterSheet.#onSetActions,
@@ -144,6 +149,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.inventory = this.#prepareInventory();
     context.actionItems = actor.items.filter(i => i.type === "action")
       .sort((a, b) => a.name.localeCompare(b.name));
+    context.basicActions = await this.#prepareBasicActions();
     context.effects = actor.effects.map(e => ({
       id: e.id, name: e.name, img: e.img, disabled: e.disabled,
       description: e.description, isSuppressed: e.isSuppressed
@@ -427,6 +433,32 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return (rows ?? []).map(r => `${r.type} ${r.value}`).join(", ");
   }
 
+  /**
+   * The Basic Actions, grouped by category for the Actions tab. They come from the compendium and
+   * are never copied onto the character, so what the sheet shows is what the book says today.
+   */
+  async #prepareBasicActions() {
+    const groups = new Map();
+    for (const item of await loadBasicActions()) {
+      const key = item.system.category || game.i18n.localize("STARWROUGHT.Section.basicActions");
+      if (!groups.has(key)) {
+        groups.set(key, { key, label: key, collapsed: this.#collapsed.has(`basic:${key}`), actions: [] });
+      }
+      const flavour = String(item.system.description ?? "").replace(/<[^>]+>/g, "").trim();
+      groups.get(key).actions.push({
+        uuid: item.uuid,
+        name: item.name,
+        img: item.img,
+        glyph: item.system.glyph,
+        costLabel: item.system.costLabel,
+        traits: item.system.traits ?? [],
+        requirements: item.system.requirements,
+        hint: flavour || game.i18n.localize("STARWROUGHT.Sheet.basicUseHint")
+      });
+    }
+    return [...groups.values()];
+  }
+
   /* -------------------------------------------- */
   /*  Actions                                     */
   /* -------------------------------------------- */
@@ -529,6 +561,44 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.createEmbeddedDocuments("Item", [foundry.utils.expandObject(data)]);
   }
 
+  /* -------------------------------------------- */
+  /*  Basic Actions: used from the compendium     */
+  /* -------------------------------------------- */
+
+  /** The compendium Item behind a Basic Action row. */
+  async #basicItem(target) {
+    const uuid = target.closest("[data-uuid]")?.dataset.uuid;
+    return uuid ? fromUuid(uuid) : null;
+  }
+
+  /** Use it as this character: roll the check it calls for, or put the card on the table. */
+  static async #onBasicUse(event, target) {
+    const item = await this.#basicItem(target);
+    return item?.use({ actor: this.document, dialog: !event.shiftKey });
+  }
+
+  static async #onBasicChat(event, target) {
+    const item = await this.#basicItem(target);
+    return item?.toMessage({ actor: this.document });
+  }
+
+  static async #onBasicView(event, target) {
+    const item = await this.#basicItem(target);
+    return item?.sheet.render({ force: true });
+  }
+
+  /** Copy it onto the sheet, where it becomes this character's own to edit. */
+  static async #onBasicAdopt(event, target) {
+    const item = await this.#basicItem(target);
+    if (!item) return;
+    const data = item.toObject();
+    delete data._id;
+    data.system.basic = false;
+    return this.document.createEmbeddedDocuments("Item", [data]);
+  }
+
+  /* -------------------------------------------- */
+
   /** Draw it, put it away, take it off: one control for every kind of equipment. */
   static async #onSetCarry(event, target) {
     const item = this.#getItem(target);
@@ -565,7 +635,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const slug = target.dataset.slug;
     if (this.#collapsed.has(slug)) this.#collapsed.delete(slug);
     else this.#collapsed.add(slug);
-    return this.render({ parts: ["constellations"] });
+    // The Constellations tab folds Constellations; the Actions tab folds Basic Action groups.
+    return this.render({ parts: [target.dataset.part || "constellations"] });
   }
 
   /** Plus and minus buttons on Hero Points, Wounded, Dying, and Temporary Hit Points. */

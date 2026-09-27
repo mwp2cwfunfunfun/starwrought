@@ -31,7 +31,8 @@ import { SwCheck, resetAttackCount } from "./module/dice/check.mjs";
 import { SwDamage } from "./module/dice/damage.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
-  loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion
+  loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
+  invalidateBasicActions
 } from "./module/helpers/content.mjs";
 
 /* -------------------------------------------- */
@@ -146,6 +147,16 @@ Hooks.once("ready", async () => {
   checkSceneGrid();
   checkForStaleAssets();
   Hooks.on("createItem", onCreateItem);
+
+  // The Basic Actions list is memoised. Forget it whenever an unowned action changes, so a GM's
+  // new, edited, re-flagged or deleted Basic Action reaches the sheets without a reload. Owned
+  // copies are a character's own and never in the list, so they do not count.
+  for (const hook of ["createItem", "updateItem", "deleteItem"]) {
+    Hooks.on(hook, item => {
+      if ((item.type !== "action") || item.parent) return;
+      invalidateBasicActions();
+    });
+  }
 });
 
 /**

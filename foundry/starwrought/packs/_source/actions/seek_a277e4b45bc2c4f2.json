@@ -8,6 +8,7 @@
     "costMax": "",
     "costMode": "to",
     "category": "Watching, deceiving & helping",
+    "basic": true,
     "traits": [
       "Concentrate"
     ],

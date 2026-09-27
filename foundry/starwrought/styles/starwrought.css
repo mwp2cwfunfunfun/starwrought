@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.3.6";
+  --sw-css-version: "0.3.7";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -1208,6 +1208,22 @@ li.combatant.sw-in-crosshairs {
 /* A Relevant Check: the picker's own intro line, and the toolbar that opens it. */
 .starwrought .sw-relevant-intro { margin: 0 0 0.2rem; font-size: 0.8rem; color: var(--sw-ink); line-height: 1.35; }
 .starwrought .sw-tab-toolbar { display: flex; justify-content: flex-end; gap: 0.4rem; }
+
+/* The Actions tab: the Basic Actions everyone has, grouped and foldable, then the character's own. */
+.starwrought .sw-action-group { margin-top: 0.4rem; }
+.starwrought .sw-action-group-head {
+  display: flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.starwrought .sw-action-group-name {
+  flex: 1 1 auto; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-action-row .sw-item-name { cursor: pointer; }
+.starwrought .sw-action-row .sw-item-name:hover { color: var(--sw-gold); }
+.starwrought .sw-card-flavor { font-size: 0.78rem; font-style: italic; color: var(--sw-ink-dim); margin-top: 0.35rem; }
+.starwrought .sw-card-flavor p { margin: 0; }
+.starwrought textarea[name="system.automation"] { width: 100%; min-height: 3.5rem; font-size: 0.78rem; resize: vertical; }
 
 /* The defender's answer: stated, not offered. */
 .starwrought .sw-answering { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }

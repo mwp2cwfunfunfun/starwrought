@@ -14,6 +14,6 @@ def build(template, out, slots):
 build("app_template.html", "Starwrought_App.html", {
     "__TREES_JSON__": "trees.json", "__ROSTER_JSON__": "roster.json",
     "__SHEET_SPEC__": "sheet_spec.json", "__BACKGROUNDS_JSON__": "backgrounds.json",
-    "__LANGUAGES_JSON__": "languages.json"})
+    "__LANGUAGES_JSON__": "languages.json", "__ACTIONS_JSON__": "actions.json"})
 build("constellation_template.html", "Starwrought_Talent_Constellations.html", {
     "__TREES_JSON__": "trees.json"})

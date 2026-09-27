@@ -16,11 +16,15 @@
  * are written onto the *token* as it acquires them, so they belong to the creature the way they do
  * at a physical table, survive a refresh, and can be read by any client without asking the user
  * who set them. The token flag is `flags.starwrought.targets = {user, ids}`.
+ *
+ * While a token is being dragged the arrows and their distances follow the drag clone rather than
+ * the token left behind (Mike, 2026-09-26), so a player can see the range change as they move and
+ * stop where it suits them, instead of finding out after the move has been paid for.
  */
 
 import * as SW from "../config.mjs";
 import { gapBetween } from "./geometry.mjs";
-import { reachesOf } from "./reach.mjs";
+import { reachesOf, previewOf } from "./reach.mjs";
 
 const FLAG = "targets";
 
@@ -41,6 +45,13 @@ export function registerTargeting() {
   });
   Hooks.on("renderCombatTracker", onRenderTracker);
   Hooks.on("deleteCombat", onCombatEnds);
+
+  // Foundry clears the drag preview itself: at once on a cancel, and on a drop only after the token
+  // update has come back from the server; either way it flags the original for a refresh, so the
+  // refreshToken hook above is what normally settles the arrows. This timer is a fallback for a
+  // client whose ticker is not running (a hidden tab), where render flags never flush. On a drop it
+  // may fire while the clone is still in flight, which draws one more in-flight frame and no worse.
+  document.addEventListener("pointerup", () => setTimeout(refresh, 0));
 }
 
 /* -------------------------------------------- */
@@ -174,7 +185,8 @@ function draw() {
     for (const id of flag.ids) {
       const target = canvas.tokens.get(id);
       if (!target || (target === source) || !canSee(target)) continue;
-      container.addChild(arrow(source, target, color));
+      // Either end may be mid-drag; the clone is where the player is thinking, so draw to that.
+      container.addChild(arrow(previewOf(source) ?? source, previewOf(target) ?? target, color));
     }
   }
 }
@@ -244,12 +256,14 @@ function arrow(source, target, color) {
 /**
  * How far it is to the target, on the arrow, measured the way the handbook measures everything:
  * edge to edge, in whole squares, diagonals exact. Gold when the target is within the source's
- * Total Reach, since that is the question the number is usually answering.
+ * Total Reach, since that is the question the number is usually answering. A drag clone's
+ * document carries the in-flight position, so the number moves with the drag.
  */
 function distanceLabel(source, target, at, cell) {
   const feet = gapBetween(source.document, target.document);
   const text = `${Number.isInteger(feet) ? feet : feet.toFixed(1)} ${canvas.scene.grid.units || "ft"}`;
-  const inReach = source.actor ? (feet <= (reachesOf(source.actor).total ?? 0)) : false;
+  const actor = source.actor ?? source._original?.actor ?? null;
+  const inReach = actor ? (feet <= (reachesOf(actor).total ?? 0)) : false;
 
   const style = CONFIG.canvasTextStyle.clone();
   style.fontSize = Math.clamp(cell * 0.9, 12, 22);

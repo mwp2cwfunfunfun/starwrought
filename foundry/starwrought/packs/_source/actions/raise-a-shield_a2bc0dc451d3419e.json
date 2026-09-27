@@ -8,6 +8,7 @@
     "costMax": "",
     "costMode": "to",
     "category": "Defending & recovering",
+    "basic": true,
     "traits": [],
     "description": "<p>Gain your shield's Gear bonus to Guard until the start of your next turn. You must be wielding it.</p>",
     "source": "STARWROUGHT Playtest v3.1"

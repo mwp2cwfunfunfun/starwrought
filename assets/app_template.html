@@ -200,6 +200,7 @@
 <script>
 let TREES = __TREES_JSON__;
 let R = __ROSTER_JSON__;
+let A = __ACTIONS_JSON__; // data/actions.xlsx by way of actions.json: authoritative for any action it names
 let SHEET = __SHEET_SPEC__;
 let BG = __BACKGROUNDS_JSON__;
 let LANGS = __LANGUAGES_JSON__;
@@ -1639,9 +1640,22 @@ function vWiki(){
   const tbl=(head,rows)=>`<table class="t"><tr>${head.map(x=>`<th>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</table>`;
   const link=t=>(allTreeNames().includes(t)||/^Lore \(/.test(t||""))?`<a class="tl" data-tree="${t}">${t}</a>`:(t||"");
   const P=s=>`<p style="font-size:12.5px">${s}</p>`;
+  // data/actions.xlsx is authoritative for any action it names: its rows print under their Type, in the mode
+  // the Type names (Exploration, Downtime, else Encounter), and the roster row of that name is left out wherever
+  // it lived (encounter groups, exploration, downtime, postures).
+  const acts=(typeof A!=="undefined"&&A&&A.actions)||[];
+  const bareAct=n=>String(n).replace(/[◆◇↺★]/g,"").replace(/\s+(to|or)\s*$/i,"").trim().toLowerCase();
+  const fromSheet=new Set(acts.map(a=>a.name.toLowerCase()));
+  const notSheet=rows=>(rows||[]).filter(r=>!fromSheet.has(bareAct(r[0])));
+  const modeOf=t=>/exploration/i.test(t)?"Exploration":/downtime/i.test(t)?"Downtime":"Encounter";
+  const CG={0:"",1:"&#9670;",2:"&#9670;&#9670;",3:"&#9670;&#9670;&#9670;",free:"&#9671;",reaction:"&#8634;"};
+  const costOf=a=>a.costMax?`${CG[a.cost]||""} ${a.costMode==="or"?"or":"to"} ${CG[a.costMax]||""}`:(CG[a.cost]||"");
+  const sheetTables=mode=>[...new Set(acts.filter(a=>modeOf(a.type)===mode).map(a=>a.type))].map(t=>`<h4>${t}</h4>`
+    +tbl(["Action","Cost","Traits","Effect"],acts.filter(a=>a.type===t).map(a=>[`<b>${a.name}</b>`,costOf(a),(a.traits||[]).join(", "),
+      (a.requirements?`<b>Requirements</b> ${a.requirements}<br>`:"")+(a.description?`<i>${a.description}</i><br>`:"")+a.effect]))).join("");
 
   if(wikiSec==="How to Play") h+=`
-    <div class="callout"><b>Check = d20 + level + attribute + proficiency (if any) + bonuses & penalties</b> (status, item, circumstance). One formula for everything. The attribute is whatever the constellation feeds; proficiency is your rank bonus in the most closely-related constellation, and Untrained simply means +0. Same-type bonuses never stack; take the best.</div>
+    <div class="callout"><b>Check = d20 + level + attribute + proficiency (if any) + bonuses & penalties</b> (Situation, Condition, Gear). One formula for everything. The attribute is whatever the constellation feeds; proficiency is your rank bonus in the most closely-related constellation, and Untrained simply means +0. Same-type bonuses never stack; take the best.</div>
     <div class="callout" style="border-color:#B8860B"><b>You roll. Always.</b> The GM sets numbers; the players roll dice. Whether you are swinging an axe or answering one, whether the danger is a bandit or a burning rafter, the die is in your hand. A <b>Threshold</b> is that same sum with a flat 10 in place of the die: it is the number your enemies are measured against.</div>
     ${P("Three modes of play: <b>Encounter</b> mode when seconds matter, <b>Exploration</b> mode in minutes and hours, and <b>Downtime</b> mode over days, weeks, and months (where income, retraining, and deliberate training live).")}
     <h3>Degrees of success</h3>
@@ -1720,7 +1734,7 @@ function vWiki(){
     +`<div class="callout" style="border-color:#B8860B"><b>When a Defense is unavailable.</b> These limits apply to Attacks only. <b>Evade</b> is unavailable while you are Grabbed or Restrained: you cannot slip what is already holding you. <b>Guard</b> is unavailable while you are unaware of the attack, or while you have nothing in hand and no hand free: you cannot meet what you did not see or cannot reach. Against everything else, including blasts, traps, collapsing floors, poison, and fear, all four are available whenever the GM judges them relevant.</div>`
     +`<h3>Postures</h3>`
     +P("When your character receives a blow, they may spend a <b>reaction</b> to take a Posture: a way of throwing themselves into it that buys a better result, but costs something whether or not it works. Postures may only be used <i>before</i> you know whether the attack succeeded. Every character knows one Evade and one Guard posture from the start, because Training in those Constellations grants them.")
-    +tbl(["Posture","Defense","Effect"],(R.postures||[]))
+    +tbl(["Posture","Defense","Effect"],notSheet(R.postures))
     +`<h3>Size</h3>`
     +P("Creatures gain an innate Evade and Guard difference against physical Attacks based on size. A small fighter is a harder target and a worse wall; a large one is the reverse, and hard to move at all.")
     +tbl(["Size","Space / token","Natural Reach","Effect on Evade & Guard"],(R.sizes||[]));
@@ -1769,13 +1783,17 @@ function vWiki(){
 
   if(wikiSec==="Actions") h+=`<div class="callout">An action takes one of the three you get each turn, marked &#9670;. An activity takes two or three, marked &#9670;&#9670; or &#9670;&#9670;&#9670;, and is a single indivisible thing: interrupt it and you lose all of it. A free action &#9671; costs nothing but can only be taken when its rule allows. A reaction &#8634; happens on someone else's turn, and you get one per round.</div>`
     +`<h3>Encounter Mode</h3>`
-    +Object.entries(R.actions||{}).map(([grp,rows])=>`<h4>${grp}</h4>`+tbl(["Action / Activity","Traits","Effect"],rows)).join("")
+    +sheetTables("Encounter")
+    +Object.entries(R.actions||{}).map(([grp,rows])=>{ const kept=notSheet(rows);
+      return kept.length?`<h4>${grp}</h4>`+tbl(["Action / Activity","Traits","Effect"],kept):""; }).join("")
     +`<h3>Exploration Mode</h3>`
     +P("Your Travel Speed is Speed × 10 feet per minute, Speed ÷ 10 miles per hour, or Speed miles per day. Exploration activities halve it, except Hustle, which doubles it. Difficult Terrain halves it; Greater Difficult Terrain cuts it to a third.")
-    +tbl(["Activity","Speed","Effect"],(R.explorationActions||[]))
+    +sheetTables("Exploration")
+    +tbl(["Activity","Speed","Effect"],notSheet(R.explorationActions))
     +`<h3>Downtime Mode</h3>`
     +P("One activity per day. An activity that takes a week is the same choice made on seven consecutive days, and interrupting it loses the days already spent unless the GM says otherwise. Ordinary rest is not a Downtime Activity: a night's sleep already restores Hit Points and may clear Wounded.")
-    +tbl(["Activity","Duration","Effect"],(R.downtimeActions||[]));
+    +sheetTables("Downtime")
+    +tbl(["Activity","Duration","Effect"],notSheet(R.downtimeActions));
 
   if(wikiSec==="Combat") h+=`
     <h3>Striking with a weapon</h3>

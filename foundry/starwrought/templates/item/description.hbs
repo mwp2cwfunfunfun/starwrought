@@ -9,6 +9,14 @@
   </div>
   {{/if}}
 
+  {{#if isAction}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.effect"}}</h3>
+    <prose-mirror name="system.effect" value="{{system.effect}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedEffect}}}</prose-mirror>
+  </div>
+  {{/if}}
+
   {{#if isChassis}}
   <div class="sw-panel">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.specialAbility"}}</h3>

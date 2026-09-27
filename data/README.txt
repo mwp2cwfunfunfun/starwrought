@@ -3,7 +3,8 @@ STARWROUGHT talent authoring
 Any number of .xlsx files in this folder — split them however you like (e.g. one per
 category). RULE: each spreadsheet needs its own "_Tree Index" sheet listing the trees
 inside THAT file. The converter merges every file; the same tree in two files is an error;
-sheets missing from their file's index are ignored with a warning; Excel ~$lock files are skipped.
+sheets missing from their file's index are ignored with a warning. A workbook open in Excel
+(~$lock file present) is converted from its last saved version, with a warning saying so.
 
 Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Triggers | Meta note
   Category must be one of: Skill, Save, Weapon, Combat Style, Armor, Calling, Ancestry,
@@ -40,6 +41,24 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
   "Well Read ◇", "Double Slice ◆◆". Requires-matching strips trailing glyphs, so
   Requires "Kip Up" matches the talent "Kip Up ◆".
 
+ACTIONS WORKBOOK (actions.xlsx)
+  Recognised by its _Tree Index carrying  Name | Type | Meta note  instead of Tree | Category.
+  Every other sheet holds one action per row. Columns (first word wins, order free):
+    Action | Cost | Traits | Type | Prerequisites | Requirements | Trigger | Description | Effect |
+    Automation
+  Type comes from the row's own Type cell if there is one, else the _Tree Index row of that name,
+    else the sheet's name (with a warning that the action is not in the index).
+  Cost takes glyphs or words: ◆, ◆◆, ◆◆◆, ◇ (free), ↺ (reaction), "◆ to ◆◆◆", "1 or 3",
+    "reaction", "free". Without a Cost column the glyphs in the Action name are read, as for
+    talents; with neither, the action costs one action ◆ and the converter names the ones it
+    defaulted. Effect is required; a cell reading "None" counts as blank.
+  Description is the flavour line; Effect is the rules, rich text welcome. Automation is prose for
+    now: it travels onto the Foundry Item and its sheet, and nothing acts on it yet.
+  Writes assets/actions.json. THE SHEET WINS: any action it names retires the roster.json row of
+    the same name from the compendium, the app and the compendium docx, under the same document
+    id. Roster rows the sheet does not carry yet stay. Actions typed "Basic Action" appear on
+    every character's Actions tab in Foundry, read from the compendium rather than copied.
+
 RICH TEXT: bold / italic / underline / strikethrough / font color applied INSIDE the
 Effect or Description cell mirrors into the app, the tree explorer, and the Player's Handbook.
 Newlines in a cell become <br>.
@@ -54,7 +73,7 @@ scales); the two Human bloodline roots still break it on purpose. See v3.0-sync-
 
 To sync after editing, from the project root:
   python assets/xlsx_to_trees.py             -> assets/trees.json + backgrounds.json + languages.json
-                                                and the ancestries block of roster.json
+                                                + actions.json, and the ancestries block of roster.json
   python assets/inject.py                    -> Starwrought_App.html + the constellation viewer
   python assets/render_constellations.py     -> assets/constellations/*.png
   python assets/sheet_gen.py                 -> the fillable and Mira character sheets

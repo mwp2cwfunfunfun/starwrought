@@ -287,15 +287,21 @@ export class SwCheck {
     const cfg = result.config;
     const item = cfg.item;
 
+    const enrich = html => foundry.applications.ux.TextEditor.implementation.enrichHTML(
+      html ?? "", { rollData: cfg.actor.getRollData(), relativeTo: item }
+    );
     const content = await renderTemplate("systems/starwrought/templates/chat/check-card.hbs", {
       label: cfg.label,
       subtitle: cfg.subtitle ?? "",
       kind: cfg.kind,
       actor: cfg.actor,
       item,
-      itemDescription: item ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        item.system.chatDescription ?? "", { rollData: cfg.actor.getRollData(), relativeTo: item }
-      ) : "",
+      itemDescription: item ? await enrich(item.system.chatDescription) : "",
+      // An action authored with separate flavour and rules prints both, flavour first, as the
+      // item card does.
+      itemFlavor: (item?.type === "action" && item.system.effect && item.system.description)
+        ? await enrich(item.system.description)
+        : "",
       total: result.total,
       formula: result.roll.formula,
       natural: result.natural,

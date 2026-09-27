@@ -16,15 +16,15 @@ are sources and which are output, and leave the repo building.**
 
 | Edit this | Never hand-edit this |
 |---|---|
-| `data/*.xlsx` | `assets/trees.json`, `backgrounds.json`, `languages.json` |
+| `data/*.xlsx` | `assets/trees.json`, `backgrounds.json`, `languages.json`, `actions.json` |
 | `assets/roster.json` (hand-kept blocks) and `sheet_spec.json` | the `ancestries` block of `roster.json` (the converter overwrites it from `ancestries.xlsx`) |
 | `assets/app_template.html`, `constellation_template.html` | `Starwrought_App.html`, `Starwrought_Talent_Constellations.html` |
 | `assets/*.py`, `assets/build_phb.js` | `assets/constellations/*.png`, the PDFs, the compendium |
 | `foundry/starwrought/` **except** `packs/`, `content/`, `assets/constellations/` | those three, which `assets/build_foundry.mjs` regenerates |
 | `data/SYNC.json` (via `build_all.mjs --accept-phb`) | `foundry/starwrought/content/sync.json` |
 
-**The web app and the Foundry system are siblings, not a chain.** Both read `assets/trees.json` and
-`assets/roster.json`; neither reads the other. Asked whether the app should read the Foundry
+**The web app and the Foundry system are siblings, not a chain.** Both read `assets/trees.json`,
+`assets/actions.json` and `assets/roster.json`; neither reads the other. Asked whether the app should read the Foundry
 compendia instead (Mike, 2026-08-27): no. It would make one consumer depend on another consumer's
 output, swap two JSON files for 364, and give the app a shape built for Foundry rather than the
 tree structure it actually wants. The thing that keeps them in step is `build_all.mjs` and the
@@ -55,7 +55,7 @@ The individual steps, from the project root, in this order. They need `openpyxl`
 `reportlab`, `python-docx`, and the `docx` npm package; all are installed.
 
 ```
-python assets/xlsx_to_trees.py        # data/*.xlsx -> trees/backgrounds/languages JSON. Refuses to write on errors.
+python assets/xlsx_to_trees.py        # data/*.xlsx -> trees/backgrounds/languages/actions JSON. Refuses to write on errors.
 python assets/inject.py               # templates + JSON -> the two root HTML files
 python assets/render_constellations.py # -> assets/constellations/*.png
 python assets/sheet_gen.py            # -> the fillable and Mira character sheets
@@ -64,8 +64,8 @@ node   assets/build_foundry.mjs       # -> foundry/starwrought/{packs,content,as
 python assets/check_style.py          # the two absolute rules below, enforced. Exit 1 on a violation.
 ```
 
-`build_foundry.mjs` sits next to `build_phb.js` for the same reason: both read `trees.json` and
-`roster.json`, so both must re-run whenever those change. It writes `packs/_source/*.json` and then
+`build_foundry.mjs` sits next to `build_phb.js` for the same reason: both read `trees.json`,
+`actions.json` and `roster.json`, so both must re-run whenever any of those change. It writes `packs/_source/*.json` and then
 compiles the LevelDB compendia with `@foundryvtt/foundryvtt-cli` (a devDependency); `--no-compile`
 stops after the sources. Document ids hash the pack plus the document name, so they survive a
 rebuild, which matters because an id becomes a compendium UUID the moment a Talent lands on a
@@ -152,9 +152,10 @@ names (`LEGACY_BONUS_TYPES` in `config.mjs`) for macros that pass typed modifier
 "+2 circumstance bonus" and the elided "+2 circumstance to Evade" forms), because the spreadsheets
 are being brought across by hand during the automation pass. Untyped is for the base terms of a
 check and the system's own flat adjustments (Load Strain, the Multiple Attack Penalty, the sheet's
-adjustment fields); no Talent bonus is untyped. **Open:** every weapon trait the book prints (Parry,
-Sweep, Unwieldy) grants a Situation bonus or penalty, which under a source-based scheme reads as
-Gear; the rename was mechanical and kept them as Situation, and whether they move is Mike's call.
+adjustment fields); no Talent bonus is untyped. **Weapon traits are Situation** (Mike's ruling,
+2026-09-26): Parry, Sweep and Unwieldy describe what the weapon lets you do or stops you doing in
+the moment, not what the weapon is. Gear is reserved for something intrinsic to the piece itself,
+such as its quality or, later, a magical property. A raised shield's bonus to Guard is Gear.
 
 **Rank math.** Trained 1 pt, Expert 4, Master 9, Legendary 16, gated at L1/L5/L13/L19. Every talent
 costs 1. Capstones (★) are tier L and need a Master talent in the same constellation. Attribute
@@ -199,6 +200,23 @@ proficiency, not an attribute bonus.
   **once, at build time**, it needs a Choice cell. Per-use picks (a Zone, a target, a Defense) do
   not; only two talents in the book qualify.
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
+- **`data/actions.xlsx` is the actions workbook** (Mike, 2026-09-26). The converter recognises it by
+  its `_Tree Index` carrying `Name | Type | Meta note` instead of `Tree | Category`; every other
+  sheet in it holds one action per row. Columns (first word wins): Action, Cost, Traits, Type,
+  Prerequisites, Requirements, Trigger, Description, Effect, Automation. Cost takes glyphs or
+  words (`◆`, `◆ to ◆◆◆`, `↺`, `◇`, `1 or 3`, `reaction`); without a Cost column the glyphs in the
+  name are read, and with neither the action costs one action and the converter says which ones.
+  It writes `assets/actions.json`, which `build_foundry.mjs`, `inject.py` and `build_phb.js` all
+  read. **The sheet is authoritative for any action it names:** a `roster.json` row of the same
+  name is retired from the compendium, the app and the compendium docx, under the same document
+  id, so an action already on a character sheet keeps working. Roster rows the sheet does not
+  carry yet stay until it does. Actions typed `Basic Action`, and the roster's Encounter Mode
+  rows, are flagged `basic` and appear on every character's Actions tab straight from the
+  compendium, never copied. The Automation column is stored on the Item (`system.automation`) and
+  shown on its sheet; nothing acts on it yet. That column is where the talent-automation grammar
+  will land, once it has one.
+- A workbook open in Excel is converted from its last saved version (Excel saves atomically). It
+  used to be skipped, which silently wrote a `trees.json` without its trees.
 
 ## Known outstanding work
 

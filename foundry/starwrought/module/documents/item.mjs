@@ -30,30 +30,37 @@ export class SwItem extends Item {
   /**
    * The default thing to do when a player clicks the Item: Strike with a weapon, roll the check
    * an action calls for, or simply post the card.
+   *
+   * A Basic Action lives in the compendium and is used straight from a character's Actions tab
+   * without ever being copied onto the character, so it has no `actor` of its own. The sheet
+   * passes the character in `options.actor`, and that character is who rolls and who speaks.
    * @param {object} [options]
+   * @param {Actor} [options.actor]  Who is using an unowned Item.
    */
   async use(options = {}) {
+    const { actor: given, ...rest } = options;
+    const actor = this.actor ?? given ?? null;
     switch (this.type) {
       case "weapon":
-        if (!this.actor) return this.toMessage();
-        return this.actor.rollAttack(this.id, options);
+        if (!this.actor) return this.toMessage({ actor });
+        return this.actor.rollAttack(this.id, rest);
       case "action":
-        if (this.system.check.enabled && this.actor) {
+        if (this.system.check.enabled && actor) {
           return SwCheck.roll(foundry.utils.mergeObject({
-            actor: this.actor,
+            actor,
             item: this,
             kind: "check",
             slug: this.system.check.constellation,
             label: this.name,
             subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
             outcomes: this.#outcomeList()
-          }, options, { inplace: false }));
+          }, rest, { inplace: false }));
         }
-        return this.toMessage();
+        return this.toMessage({ actor });
       case "shield":
         return this.raise();
       default:
-        return this.toMessage();
+        return this.toMessage({ actor });
     }
   }
 
@@ -87,23 +94,31 @@ export class SwItem extends Item {
 
   /* -------------------------------------------- */
 
-  /** Put the Item on the table as a card, with no roll. */
-  async toMessage() {
+  /**
+   * Put the Item on the table as a card, with no roll.
+   * @param {object} [options]
+   * @param {Actor} [options.actor]  Who speaks, when the Item is not owned (a Basic Action).
+   */
+  async toMessage({ actor = null } = {}) {
+    const speaker = this.actor ?? actor;
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
-    const description = await TextEditor.enrichHTML(this.system.chatDescription ?? "", {
-      rollData: this.getRollData(),
-      relativeTo: this
-    });
+    const enrich = html => TextEditor.enrichHTML(html ?? "", { rollData: this.getRollData(), relativeTo: this });
+    const description = await enrich(this.system.chatDescription);
+    // An action authored with separate flavour and rules prints both, flavour first.
+    const flavor = (this.type === "action" && this.system.effect && this.system.description)
+      ? await enrich(this.system.description)
+      : "";
     const { renderTemplate } = foundry.applications.handlebars;
     const content = await renderTemplate("systems/starwrought/templates/chat/item-card.hbs", {
       item: this,
       description,
+      flavor,
       subtitle: this.#subtitle(),
       traits: this.system.traits ?? [],
       outcomes: this.#outcomeList()
     });
     return ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      speaker: ChatMessage.getSpeaker({ actor: speaker }),
       content,
       flags: { [SW.SYSTEM_ID]: { kind: "item", itemUuid: this.uuid } }
     });

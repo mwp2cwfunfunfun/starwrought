@@ -113,12 +113,16 @@ const trees = {}; // canonical source: data/talent_trees.xlsx -> assets/trees.js
   }
 }
 
-// minimal rich-HTML (<b><i><u><s>, color spans) -> docx runs
+// minimal rich-HTML (<b><i><u><s>, color spans, <br>, <p>) -> docx runs
 function fmtPara(html, size) {
   const kids = []; const st = { b: 0, i: 0, u: 0, s: 0, color: [] };
-  const tokens = String(html).split(/(<\/?(?:b|i|u|s)>|<span style="color:#[0-9A-Fa-f]{6}">|<\/span>)/);
+  // A paragraph break in a cell is a blank line here; a <br> is a line break. Without this the
+  // compendium printed the tag itself, 145 times.
+  const src = String(html).replace(/<\/p>\s*<p>/g, "<br><br>").replace(/<\/?p>/g, "");
+  const tokens = src.split(/(<\/?(?:b|i|u|s)>|<br\s*\/?>|<span style="color:#[0-9A-Fa-f]{6}">|<\/span>)/);
   for (const tk of tokens) {
     if (!tk) continue;
+    if (/^<br/.test(tk)) { kids.push(new TextRun({ break: 1 })); continue; }
     if (tk === "<b>") st.b++; else if (tk === "</b>") st.b--;
     else if (tk === "<i>") st.i++; else if (tk === "</i>") st.i--;
     else if (tk === "<u>") st.u++; else if (tk === "</u>") st.u--;
@@ -139,6 +143,33 @@ try { bgTable = JSON.parse(fs.readFileSync("assets/backgrounds.json", "utf8")); 
 const R = JSON.parse(fs.readFileSync("assets/roster.json", "utf8"));
 let LANGS = [];
 try { LANGS = JSON.parse(fs.readFileSync("assets/languages.json", "utf8")); } catch (e) {}
+// data/actions.xlsx, by way of actions.json: authoritative for any action it names, so a roster
+// row of the same name is left out of the appendix rather than printed twice.
+let ACTS = { actions: [] };
+try { ACTS = JSON.parse(fs.readFileSync("assets/actions.json", "utf8")); } catch (e) {}
+const actionsFromSheet = new Set((ACTS.actions || []).map(a => a.name.toLowerCase()));
+const bareAction = n => String(n).replace(/[◆◇↺★]/g, "").replace(/\s+(to|or)\s*$/i, "").trim().toLowerCase();
+const COST_GLYPH = { 0: "", 1: "◆", 2: "◆◆", 3: "◆◆◆", free: "◇", reaction: "↺" };
+const costText = a => a.costMax
+  ? `${COST_GLYPH[a.cost] ?? ""} ${a.costMode === "or" ? "or" : "to"} ${COST_GLYPH[a.costMax] ?? ""}`
+  : (COST_GLYPH[a.cost] ?? "");
+const notSheet = rows => (rows || []).filter(r => !actionsFromSheet.has(bareAction(r[0])));
+// A sheet Type prints in the mode its name says (Exploration, Downtime), else with the encounter actions.
+const modeOf = t => /exploration/i.test(t) ? "Exploration" : /downtime/i.test(t) ? "Downtime" : "Encounter";
+function sheetActionTables(kids, mode) {
+  for (const type of [...new Set((ACTS.actions || []).filter(a => modeOf(a.type) === mode).map(a => a.type))]) {
+    kids.push(h2(type));
+    kids.push(stripedTable(["Action", "Cost", "Traits", "Effect"],
+      ACTS.actions.filter(a => a.type === type).map(a => [
+        { text: a.name, bold: true }, costText(a), (a.traits || []).join(", "),
+        fmtPara([
+          a.requirements ? `<b>Requirements</b> ${a.requirements}<br>` : "",
+          a.description ? `<i>${a.description}</i><br>` : "",
+          a.effect
+        ].join(""), 19)
+      ]), [1500, 900, 1200, 5760]));
+  }
+}
 
 const stripT = (x) => String(x == null ? "" : x).replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "");
 const kids = [];
@@ -217,7 +248,7 @@ if (R.postures) {
   kids.push(h2("Postures"));
   kids.push(para("When your character receives a blow, they may spend a reaction to take a Posture: a way of throwing themselves into it that buys a better result, but costs something whether or not it works. Postures may only be used before you know whether the attack succeeded. Training in Evade and Guard grants one each."));
   kids.push(stripedTable(["Posture", "Defense", "Effect"],
-    R.postures.map(p => [{ text: p[0], bold: true }, p[1], p[2]]), [1900, 1200, 6260]));
+    notSheet(R.postures).map(p => [{ text: p[0], bold: true }, p[1], p[2]]), [1900, 1200, 6260]));
 }
 kids.push(h2("Size"));
 kids.push(stripedTable(["Size", "Space / token", "Natural Reach", "Effect on Evade & Guard"],
@@ -278,20 +309,27 @@ kids.push(stripedTable(["Trait", "Effect"], (R.armorTraits || []).map(r => [{ te
 
 kids.push(h1("Appendix C. Actions & Activities"));
 kids.push(para("An action takes one of the three you get each turn, marked ◆. An activity takes two or three and is a single indivisible thing. A free action ◇ costs nothing but can only be taken when its rule allows. A reaction ↺ happens on someone else's turn, and you get one per round."));
+sheetActionTables(kids, "Encounter");
 for (const [grp, rows] of Object.entries(R.actions || {})) {
+  const kept = notSheet(rows);
+  if (!kept.length) continue;
   kids.push(h2(grp));
   kids.push(stripedTable(["Action / Activity", "Traits", "Effect"],
-    rows.map(r => [{ text: r[0], bold: true }, r[1], fmtPara(r[2], 19)]), [1700, 1500, 6160]));
+    kept.map(r => [{ text: r[0], bold: true }, r[1], fmtPara(r[2], 19)]), [1700, 1500, 6160]));
 }
 if (R.explorationActions) {
   kids.push(h2("Exploration Mode"));
-  kids.push(stripedTable(["Activity", "Speed", "Effect"],
-    R.explorationActions.map(r => [{ text: r[0], bold: true }, r[1], fmtPara(r[2], 19)]), [1600, 1100, 6660]));
+  sheetActionTables(kids, "Exploration");
+  const kept = notSheet(R.explorationActions);
+  if (kept.length) kids.push(stripedTable(["Activity", "Speed", "Effect"],
+    kept.map(r => [{ text: r[0], bold: true }, r[1], fmtPara(r[2], 19)]), [1600, 1100, 6660]));
 }
 if (R.downtimeActions) {
   kids.push(h2("Downtime Mode"));
-  kids.push(stripedTable(["Activity", "Duration", "Effect"],
-    R.downtimeActions.map(r => [{ text: r[0], bold: true }, r[1], r[2]]), [1600, 1300, 6460]));
+  sheetActionTables(kids, "Downtime");
+  const kept = notSheet(R.downtimeActions);
+  if (kept.length) kids.push(stripedTable(["Activity", "Duration", "Effect"],
+    kept.map(r => [{ text: r[0], bold: true }, r[1], r[2]]), [1600, 1300, 6460]));
 }
 
 kids.push(h1("Appendix D. Equipment"));

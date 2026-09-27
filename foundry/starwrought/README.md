@@ -56,12 +56,14 @@ on the sheet.
 | Talents | 170 Talents, foldered by Constellation |
 | Ancestries, Bloodlines, Cultures, Backgrounds & Callings | 13 chassis Items |
 | Equipment | 29 weapons, 20 armor pieces, 3 shields |
-| Actions & Activities | 46 Actions, Postures, and Exploration and Downtime activities |
+| Actions & Activities | 46 Actions, Postures, and Exploration and Downtime activities. Those authored in `data/actions.xlsx` replace the roster's row of the same name |
 | Rules Reference | 20 pages of reference tables |
 | Macros | Recenter, Recovery, a night's rest, Relevant Check, Initiative by activity |
 
-Every one of these is generated from `data/*.xlsx` by way of `assets/trees.json` and
-`assets/roster.json`. Nothing in `packs/` is authored by hand.
+Every one of these is generated from `data/*.xlsx` by way of `assets/trees.json`,
+`assets/actions.json` and `assets/roster.json`. Nothing in `packs/` is authored by hand. The Basic
+Actions in the Actions pack are what every character's Actions tab shows, read from the pack
+rather than copied.
 
 ## Building the content
 

@@ -170,7 +170,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.3.6";
+export const SYSTEM_VERSION = "0.3.7";
 
 export const WEAPONS_SLUG = "weapons";
 
@@ -415,7 +415,8 @@ export function parseActionCost(name) {
   return {
     cost: min,
     costMax: max === min ? "" : max,
-    costMode: /\bor\b/i.test(text) ? "or" : "to"
+    // Only an "or" between two glyph runs is a cost joiner; one in the name is not.
+    costMode: /◆\s*or\s*◆/i.test(text) ? "or" : "to"
   };
 }
 
@@ -508,10 +509,12 @@ export const UNWIELDY_PENALTY = -2;
  * type, then add those two together. Three types, named for where the number comes from
  * (Mike, 2026-09-26): Situation is where you stand and what is happening around you (cover, high
  * ground, an ally's help, a foe Off-Guard); Condition is something on you (Frightened, a stance);
- * Gear is what you hold or wear (a raised shield; in the playtest data that is the only Gear bonus
- * there is, since every weapon trait the book prints grants a Situation bonus). Untyped is for the
- * base terms of a check and the system's own flat adjustments (Load Strain, the Multiple Attack
- * Penalty, the sheet's adjustment fields); no Talent bonus is untyped.
+ * Gear is something intrinsic to what you hold or wear: a raised shield's bonus, a weapon's
+ * quality, later a magical property. Weapon traits are Situation by ruling (Mike, 2026-09-26):
+ * Parry, Sweep and Unwieldy describe what the weapon lets you do or stops you doing in the moment,
+ * not what the weapon is. Untyped is for the base terms of a check and the system's own flat
+ * adjustments (Load Strain, the Multiple Attack Penalty, the sheet's adjustment fields); no
+ * Talent bonus is untyped.
  */
 export const BONUS_TYPES = Object.freeze(["situation", "condition", "gear", "untyped"]);
 

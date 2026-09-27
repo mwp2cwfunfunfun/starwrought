@@ -8,6 +8,7 @@
     "costMax": "3",
     "costMode": "to",
     "category": "Defending & recovering",
+    "basic": true,
     "traits": [
       "Concentrate"
     ],

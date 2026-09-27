@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v3.4**. System version **0.3.6**. Verified on
+Rules content built from **Player's Handbook v3.4**. System version **0.3.7**. Verified on
 **Foundry VTT v14.367**.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -300,6 +300,13 @@ going for" comes up every round, and a pip does not answer it.
   you neither the arrow nor the Threshold.
 - A hidden token's arrows and tracker line are the GM's alone.
 
+While a token is being dragged, its arrows and their distances follow the drag rather than the
+token left behind, whichever end of the arrow is moving, on the screen of the user doing the
+dragging. The number is the one the move would produce, so a player can stop exactly where a
+target comes into reach, or exactly where they leave it, before the move is paid for. Everyone
+else's arrows stay on the token's last committed square and catch up when the drop lands, because
+the drag clone exists only on the dragging client; they see Foundry's own drag ruler meanwhile.
+
 ### Stance: the defender answers
 
 "The defender decides whether to Evade or Guard." Before this, the attacker's dialog asked the
@@ -391,6 +398,21 @@ Recovery check, Refuse Death, a night's rest. Constellations groups your skies b
 rank, Proficiency, points and what the next rank is waiting on, and folds open to the Talents you
 own with a Flare toggle on each Constellation. Equipment lays armor out by Zone. Also Actions,
 Effects and Biography.
+
+**The Actions tab.** It opens with the **Basic Actions**: what every character can do, grouped by
+category and foldable, read straight from the Actions compendium rather than copied onto the
+sheet, so a rewrite in `data/actions.xlsx` reaches every character on the next build. Clicking a
+name uses it as that character: the card goes to chat with the character speaking, or, for an
+action that rolls a check, the roll dialog opens. Shift-click skips the dialog. Each row can also
+be sent to chat, opened, or copied down onto the sheet to become the character's own to edit.
+Below that is the list the character has picked up: dragged from the compendium, made on the tab,
+or copied down. Using a Basic Action spends nothing by itself; the pips are the table's to click, as for any action the system
+cannot see being spent.
+
+An action Item carries a **Description** (the flavour line), an **Effect** (the rules), Prerequisites,
+Requirements, a Trigger, its cost range, and **Automation** notes, which are the author's
+instructions from the spreadsheet's Automation column. Nothing acts on those notes yet. They are
+shown on the Item sheet so the intent travels with the action until it is implemented.
 
 **Adversary sheet.** Written Threshold-first, because the players roll everything. Attack rows show
 all three Multiple Attack Penalty steps, so a monster's second swing is visibly a worse swing.

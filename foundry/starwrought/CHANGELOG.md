@@ -7,6 +7,56 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.7 (2026-09-26): Player's Handbook v3.4
+
+### Added
+
+- **Actions are authored in a spreadsheet** (Mike, 2026-09-26). `data/actions.xlsx` is the first
+  workbook that is not a Constellation: its index lists actions by Name and Type, its sheets hold
+  one action per row (Action, Cost, Traits, Prerequisites, Requirements, Trigger, Description,
+  Effect, Automation), and the converter writes `assets/actions.json` from it. The sheet is
+  authoritative for any action it names: the roster's row of the same name retires from the
+  compendium, the web app and the Constellation Compendium, under the same document id, so an Aid
+  already sitting on a character keeps its link. Roster rows the sheet has not reached stay put.
+  Aid is the first, and its text now differs from Player's Handbook v3.4 (a single action with a
+  Relevant Check, rather than a prepared reaction): the sheet ships as written, and the handbook
+  is Mike's to bring across.
+- **Basic Actions on the Actions tab.** Every character's Actions tab opens with the Basic Actions,
+  grouped and foldable, read straight from the compendium rather than copied onto the sheet, so a
+  rewrite in the spreadsheet reaches every character on the next build. Click a name to use it as
+  that character (the card goes to chat, or the check it calls for is rolled), or copy it down to
+  make it the character's own. The sheet's `Basic Action` type and the roster's Encounter Mode
+  rows carry the flag; Exploration, Downtime and Postures do not.
+- **Actions carry an Effect, Prerequisites and Automation notes.** Effect is the rules text,
+  Description the flavour line above it, and the card prints both. The Automation column travels
+  with the action onto its Item sheet as notes; nothing acts on it yet, and that column is where
+  the talent-automation grammar will land once it has one.
+- **Targeting arrows follow a drag** (Mike, 2026-09-26). While a token is being dragged, its
+  arrows and their distances are drawn from the drag clone on the dragging user's own screen,
+  whichever end of the arrow is moving, so the number shown is the one the move would produce and
+  a player can stop where a target comes into reach, or leaves it, before the move is paid for.
+  Everyone else's arrows stay on the committed square and catch up on the drop, because the drag
+  clone exists only on the client doing the dragging. The reach bands already did this; the
+  arrows now do the same.
+
+### Changed
+
+- **Weapon traits are Situation** (Mike's ruling, 2026-09-26). Gear is reserved for something
+  intrinsic to the piece itself: a raised shield's bonus, a weapon's quality, later a magical
+  property. Parry, Sweep and Unwieldy describe the moment, not the weapon. This closes the question
+  the 0.3.6 rename left open.
+- **The converter reads a workbook that is open in Excel** from its last saved version instead of
+  skipping it. Skipping wrote a `trees.json` without the open workbook's trees, and nothing said so
+  loudly enough.
+
+### Fixed
+
+- **The Constellation Compendium printed `<br>` as text**, 145 times, wherever a cell had a line
+  break. The rich-text formatter now breaks the line.
+- The web app's How to Play callout still named the retired bonus types.
+
+---
+
 ## 0.3.6 (2026-09-26): Player's Handbook v3.4
 
 ### Added

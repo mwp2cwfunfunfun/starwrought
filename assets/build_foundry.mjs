@@ -462,11 +462,105 @@ for (const [name, bonus, hardness, load, price, note] of roster.shields ?? []) {
 /*  Actions                                     */
 /* -------------------------------------------- */
 
+// data/actions.xlsx is authoritative for any action it names (Mike, 2026-09-26). A roster row of
+// the same name is retired, so Aid written in the sheet replaces Aid printed in the roster under
+// the same document id, and a character who already has Aid keeps a working link. Rows the sheet
+// does not carry yet stay, so nothing vanishes until the sheet has it. The sheet's Basic Actions
+// and the roster's Encounter Mode rows are flagged `basic`, which is what puts them on every
+// character's Actions tab without a copy being made.
+const actionsPath = path.join(ROOT, "assets", "actions.json");
+const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
+const fromSheet = new Set(sheetActions.map(a => a.name.toLowerCase()));
+const retired = [];
+function supersededBySheet(name) {
+  const bare = actionName(name);
+  if (!fromSheet.has(bare.toLowerCase())) return false;
+  retired.push(bare);
+  return true;
+}
+
+/**
+ * Blank-line separated prose in a cell becomes paragraphs; single line breaks stay breaks. An
+ * inline tag the converter wrapped around a run that spans a blank line is closed at the end of
+ * each paragraph and reopened at the start of the next, so the HTML stays well formed, and a
+ * segment with no text (a leading or trailing blank line) produces no paragraph.
+ */
+function paragraphs(html) {
+  const text = String(html ?? "").trim();
+  if (!text) return "";
+  const out = [];
+  let open = [];
+  for (const segment of text.split(/(?:\s*<br\s*\/?>\s*){2,}/)) {
+    const body = segment.trim();
+    const after = openTags(open, body);
+    if (body.replace(/<[^>]+>/g, "").trim()) {
+      const closers = [...after].reverse().map(tag => `</${tag.match(/^<(\w+)/)[1]}>`).join("");
+      out.push(`<p>${open.join("")}${body}${closers}</p>`);
+    }
+    open = after;
+  }
+  return out.join("");
+}
+
+/** The inline tags still open after a fragment, given those open before it. */
+function openTags(before, fragment) {
+  const stack = [...before];
+  for (const m of fragment.matchAll(/<(\/?)(b|i|u|s|span)\b[^>]*>/g)) {
+    if (!m[1]) { stack.push(m[0]); continue; }
+    const i = stack.map(t => t.match(/^<(\w+)/)[1]).lastIndexOf(m[2]);
+    if (i >= 0) stack.splice(i, 1);
+  }
+  return stack;
+}
+
+// A roster row is keyed on its printed name and its mode ("Strike ◆ to ◆◆◆" slugs to strike-to,
+// Search lives under exploration:), and that key is the compendium UUID already sitting in macros,
+// chat cards and journal links. A sheet action that takes a roster row over inherits the row's key
+// rather than deriving one from its bare name, so the document id really is unchanged.
+const rosterKey = new Map();
+function inherit(name, key) {
+  const bare = actionName(name).toLowerCase();
+  if (rosterKey.has(bare)) console.warn(`  two roster actions are named "${bare}"; the sheet inherits ${rosterKey.get(bare)}`);
+  else rosterKey.set(bare, key);
+}
+for (const rows of Object.values(roster.actions ?? {})) for (const [name] of rows) inherit(name, `action:${slugify(name)}`);
+for (const [name] of roster.explorationActions ?? []) inherit(name, `exploration:${slugify(name)}`);
+for (const [name] of roster.downtimeActions ?? []) inherit(name, `downtime:${slugify(name)}`);
+for (const [name] of roster.postures ?? []) inherit(name, `posture:${slugify(name)}`);
+
 const actionFolders = {};
 let actionSort = 0;
+for (const type of [...new Set(sheetActions.map(a => a.type))]) {
+  actionFolders[type] = folder("actions", type, { sort: actionSort++, color: "#5a4a1e" });
+}
+for (const a of sheetActions) {
+  item("actions", {
+    key: rosterKey.get(a.name.toLowerCase()) ?? `action:${slugify(a.name)}`,
+    name: a.name,
+    type: "action",
+    folder: actionFolders[a.type],
+    system: {
+      cost: a.cost,
+      costMax: a.costMax ?? "",
+      costMode: a.costMode ?? "to",
+      category: a.type,
+      basic: /^basic\b/i.test(a.type),
+      traits: a.traits ?? [],
+      prerequisites: a.prerequisites ?? "",
+      requirements: a.requirements ?? "",
+      trigger: a.trigger ?? "",
+      description: a.description ? `<p>${a.description}</p>` : "",
+      effect: paragraphs(a.effect),
+      automation: a.automation ?? "",
+      source: "data/actions.xlsx"
+    }
+  });
+}
+
 for (const [category, rows] of Object.entries(roster.actions ?? {})) {
   const folderId = (actionFolders[category] ??= folder("actions", category, { sort: actionSort++, color: "#3b2f63" }));
   for (const [name, traitLine, description] of rows) {
+    if (supersededBySheet(name)) continue;
     item("actions", {
       key: `action:${slugify(name)}`,
       name: actionName(name),
@@ -475,6 +569,7 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
       system: {
         ...parseActionCost(name),
         category,
+        basic: true,
         traits: splitTraits(traitLine),
         description: `<p>${description}</p>`,
         source: "STARWROUGHT Playtest v3.1"
@@ -485,6 +580,7 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
 
 const explorationFolder = folder("actions", "Exploration Mode", { sort: 90, color: "#2f5a3f" });
 for (const [name, speed, description] of roster.explorationActions ?? []) {
+  if (supersededBySheet(name)) continue;
   item("actions", {
     key: `exploration:${slugify(name)}`,
     name,
@@ -503,6 +599,7 @@ for (const [name, speed, description] of roster.explorationActions ?? []) {
 
 const downtimeFolder = folder("actions", "Downtime Mode", { sort: 91, color: "#2f5a3f" });
 for (const [name, time, description] of roster.downtimeActions ?? []) {
+  if (supersededBySheet(name)) continue;
   item("actions", {
     key: `downtime:${slugify(name)}`,
     name,
@@ -521,6 +618,7 @@ for (const [name, time, description] of roster.downtimeActions ?? []) {
 
 const postureFolder = folder("actions", "Postures", { sort: 92, color: "#5a2f4a" });
 for (const [name, defense, description] of roster.postures ?? []) {
+  if (supersededBySheet(name)) continue;
   item("actions", {
     key: `posture:${slugify(name)}`,
     name: stripGlyphs(name),
@@ -536,6 +634,11 @@ for (const [name, defense, description] of roster.postures ?? []) {
       source: "STARWROUGHT Playtest v3.1"
     }
   });
+}
+
+if (sheetActions.length) {
+  console.log(`  ${sheetActions.length} action(s) from data/actions.xlsx`
+    + (retired.length ? `; roster rows retired in their favour: ${retired.join(", ")}` : ""));
 }
 
 /* -------------------------------------------- */

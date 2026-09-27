@@ -478,8 +478,19 @@ export class SwActionData extends SwItemData {
   static defineSchema() {
     return Object.assign(describedFields(), costFields("1"), {
       category: new fields.StringField({ initial: "" }),
+      /** On every character's Actions tab, whether or not the character owns a copy. */
+      basic: new fields.BooleanField({ initial: false }),
+      prerequisites: new fields.StringField({ initial: "" }),
       requirements: new fields.StringField({ initial: "" }),
       trigger: new fields.StringField({ initial: "" }),
+      /** The rules text. `description` is the flavour line above it. */
+      effect: new fields.HTMLField({ initial: "" }),
+      /**
+       * What the system should do when this action is used, as the author wrote it in the
+       * Automation column of data/actions.xlsx. Prose for now: nothing reads it yet, and it is
+       * shown on the Item sheet so the intent travels with the action until it is implemented.
+       */
+      automation: new fields.StringField({ initial: "" }),
       /** Rolled as a check: which Constellation, and which Defense it is measured against. */
       check: new fields.SchemaField({
         enabled: new fields.BooleanField({ initial: false }),
@@ -514,5 +525,10 @@ export class SwActionData extends SwItemData {
           this.costMode === "or" ? "STARWROUGHT.Action.joinOr" : "STARWROUGHT.Action.joinTo"
         )} ${game.i18n.localize(SW.ACTION_COSTS[this.costMax]?.label ?? "")}`
       : game.i18n.localize(SW.ACTION_COSTS[this.cost]?.label ?? "");
+  }
+
+  /** The rules, when the action has them written separately from its flavour. */
+  get chatDescription() {
+    return this.effect || this.description;
   }
 }

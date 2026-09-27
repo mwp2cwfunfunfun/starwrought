@@ -8,6 +8,7 @@
     "costMax": "",
     "costMode": "to",
     "category": "Watching, deceiving & helping",
+    "basic": true,
     "traits": [],
     "description": "<p>Requirements You have at least Lesser Cover, or Concealment.<br>One Stealth roll against the Awareness of every creature around you, allies included.<br><b>Critical Success</b> Hidden, and they are Wrong-Footed to you until the end of your next turn. <b>Success</b> Hidden. <b>Failure</b> They still see you. <b>Critical Failure</b> You have drawn the eye: Wrong-Footed to them.</p>",
     "source": "STARWROUGHT Playtest v3.1"

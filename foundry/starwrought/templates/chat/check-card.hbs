@@ -67,6 +67,18 @@
   </div>
   {{/if}}
 
+  {{#if item.system.prerequisites}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.prerequisites"}}</strong> {{item.system.prerequisites}}</p>
+  {{/if}}
+  {{#if item.system.requirements}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.requirements"}}</strong> {{item.system.requirements}}</p>
+  {{/if}}
+  {{#if item.system.trigger}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.trigger"}}</strong> {{item.system.trigger}}</p>
+  {{/if}}
+  {{#if itemFlavor}}
+  <div class="sw-card-flavor">{{{itemFlavor}}}</div>
+  {{/if}}
   {{#if itemDescription}}
   <div class="sw-card-description">{{{itemDescription}}}</div>
   {{/if}}

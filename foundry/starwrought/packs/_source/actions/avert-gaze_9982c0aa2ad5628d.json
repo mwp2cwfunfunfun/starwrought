@@ -8,6 +8,7 @@
     "costMax": "",
     "costMode": "to",
     "category": "Special",
+    "basic": true,
     "traits": [],
     "description": "<p>Name one creature or object you Observe. Until the start of your next turn you gain a +2 Situation bonus to your Defenses against its Visual effects, and it is Concealed to you.</p>",
     "source": "STARWROUGHT Playtest v3.1"

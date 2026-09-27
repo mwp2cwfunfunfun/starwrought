@@ -1,5 +1,47 @@
-{{!-- Actions and Activities the character has picked up. --}}
+{{!-- Actions: what every character can do, then what this one has picked up. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{!-- The Basic Actions are read from the compendium, never copied onto the character, so a
+        rewrite in data/actions.xlsx reaches every sheet on the next build. --}}
+  <div class="sw-panel sw-basic-actions">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.basicActions"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.basicActions"}}</p>
+    {{#each basicActions as |group|}}
+    <div class="sw-action-group">
+      <div class="sw-action-group-head">
+        <a class="sw-collapse" data-action="toggleCollapse" data-slug="basic:{{group.key}}" data-part="actions">
+          <i class="fa-solid {{#if group.collapsed}}fa-caret-right{{else}}fa-caret-down{{/if}}"></i>
+        </a>
+        <span class="sw-action-group-name">{{group.label}}</span>
+        <span class="sw-points">{{group.actions.length}}</span>
+      </div>
+      {{#unless group.collapsed}}
+      <ol class="sw-item-list">
+        {{#each group.actions as |action|}}
+        <li class="sw-item-row sw-action-row" data-uuid="{{action.uuid}}">
+          <img src="{{action.img}}" alt="{{action.name}}">
+          <span class="sw-action-glyph" data-tooltip="{{action.costLabel}}">{{action.glyph}}</span>
+          <a class="sw-item-name" data-action="basicUse" data-tooltip="{{action.hint}}">{{action.name}}</a>
+          {{#each action.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+          {{#if action.requirements}}
+          <span class="sw-item-tag" data-tooltip="{{action.requirements}}">{{localize "STARWROUGHT.Field.requirements"}}</span>
+          {{/if}}
+          <div class="sw-item-controls">
+            <a data-action="basicChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
+            <a data-action="basicView" data-tooltip="STARWROUGHT.Sheet.view"><i class="fa-solid fa-eye"></i></a>
+            {{#if @root.editable}}
+            <a data-action="basicAdopt" data-tooltip="STARWROUGHT.Sheet.basicAdopt"><i class="fa-solid fa-copy"></i></a>
+            {{/if}}
+          </div>
+        </li>
+        {{/each}}
+      </ol>
+      {{/unless}}
+    </div>
+    {{else}}
+    <p class="sw-empty">{{localize "STARWROUGHT.Sheet.noBasicActions"}}</p>
+    {{/each}}
+  </div>
 
   <div class="sw-panel">
     <h3 class="sw-panel-title">

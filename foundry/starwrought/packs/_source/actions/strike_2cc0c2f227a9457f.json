@@ -8,6 +8,7 @@
     "costMax": "3",
     "costMode": "to",
     "category": "Attacking",
+    "basic": true,
     "traits": [
       "Attack"
     ],

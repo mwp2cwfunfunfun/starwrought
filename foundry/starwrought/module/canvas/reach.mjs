@@ -133,8 +133,12 @@ function shouldShow(token) {
   return token.controlled || token.hover;
 }
 
-/** The drag clone standing in for this token, if one is in flight. */
-function previewOf(token) {
+/**
+ * The drag clone standing in for this token, if one is in flight. Anything drawn about a token
+ * while the player is still deciding where it goes should be drawn about the clone: the reach
+ * bands here, and the targeting arrows and their distances.
+ */
+export function previewOf(token) {
   for (const clone of canvas.tokens?.preview?.children ?? []) {
     if (clone.destroyed) continue;
     if ((clone._original === token) || (clone.document?.id === token.id)) return clone;

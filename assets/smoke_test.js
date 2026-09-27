@@ -39,6 +39,16 @@ const driver=`
     const withSel=treeOf(tn).nodes[0]; if(withSel){ esel=withSel.name; drawSky(); } } });
   step("characters + sheet + wiki tabs", ()=>{ for(const tb of ["chars","characters","sheet","vsheet","wiki"]){
     try{ tab=tb; render(); }catch(e){ if(!/Unknown tab/.test(e.message)) throw new Error(tb+": "+e.message); } } });
+  // Every wiki section, not just the bookmarked one: each is its own template string, and a
+  // broken one (a bad reference inside the Actions tables, say) only throws when it renders.
+  step("wiki: every section", ()=>{ tab="wiki"; render();
+    const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    if(secs.length<5) throw new Error("wiki nav lists only "+secs.length+" sections");
+    for(const s of secs){ wikiSec=s; try{ render(); }catch(e){ throw new Error("wiki '"+s+"': "+e.message); } }
+    const actions=document.getElementById("main").innerHTML; wikiSec=secs[0];
+    if(typeof A!=="undefined"&&A&&A.actions&&A.actions.length){ wikiSec="Actions"; render();
+      const h=document.getElementById("main").innerHTML; wikiSec=secs[0];
+      for(const a of A.actions){ if(!h.includes("<b>"+a.name+"</b>")) throw new Error("Actions wiki lacks sheet action "+a.name); } } });
   step("with Mira loaded: every view again", ()=>{
     if(typeof TORVA!=="undefined"&&typeof chars!=="undefined"){ if(!chars.some(c=>c.id===TORVA.id)) chars.push(JSON.parse(JSON.stringify(TORVA)));
       if(typeof cur!=="undefined") cur=chars.length-1; }
