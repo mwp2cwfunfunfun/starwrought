@@ -7,6 +7,23 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.3.5 (2026-09-26): Player's Handbook v3.3
+
+Two things the wizard made harder than they needed to be.
+
+### Changed
+
+- **The whole Talent card is the button.** Buying a Talent in the wizard meant clicking its name,
+  and only its name: a target one line high, with nothing to say so. The card is now the button,
+  lights up gold on hover the way the Constellation chips do, and works from the keyboard.
+- **The wizard says when the thing blocking Next is below the fold.** A greyed Next and a small
+  footer link were the only cues, and a step with its unspent point out of sight read as "Next is
+  broken". Now a bobbing "A point is still to spend below" badge sticks to the bottom edge of the
+  pane while that is true (click it to jump), the footer line reads "Next needs: Trained in
+  Acrobatics" with an arrow that appears when it is below, and Next's own tooltip names it.
+
+---
+
 ## 0.3.4 (2026-09-26): Player's Handbook v3.3
 
 ### Added

@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.3.4";
+  --sw-css-version: "0.3.5";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -802,25 +802,34 @@
   gap: 0.35rem;
 }
 .starwrought .sw-talent-options.active { display: grid; }
+/* The whole card is the button. A target one line high, the name alone, was missed at the table,
+   so anywhere on the card buys and the whole card lights on hover, the way the chips do. */
 .starwrought .sw-talent-option {
   border: 1px solid var(--sw-edge);
   border-radius: var(--sw-radius);
   padding: 0.3rem 0.4rem;
   background: rgba(0, 0, 0, 0.2);
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
 }
-.starwrought .sw-talent-option.locked { opacity: 0.45; }
-.starwrought .sw-talent-option button {
-  width: 100%;
+.starwrought .sw-talent-option[data-action] { cursor: pointer; }
+.starwrought .sw-talent-option[data-action]:hover,
+.starwrought .sw-talent-option[data-action]:focus-visible {
+  border-color: var(--sw-gold);
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.18), rgba(255, 216, 103, 0.05));
+  box-shadow: 0 0 8px rgba(227, 178, 60, 0.3);
+  outline: none;
+}
+.starwrought .sw-talent-option[data-action]:hover .sw-talent-name,
+.starwrought .sw-talent-option[data-action]:focus-visible .sw-talent-name { color: var(--sw-flare); }
+.starwrought .sw-talent-option.locked { opacity: 0.45; cursor: not-allowed; }
+.starwrought .sw-talent-head {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: none;
-  border: none;
-  padding: 0;
   text-align: left;
   font-size: 0.82rem;
+  color: var(--sw-ink);
 }
-.starwrought .sw-talent-option button:hover:not(:disabled) { color: var(--sw-flare); }
 .starwrought .sw-talent-effect {
   font-size: 0.68rem;
   color: var(--sw-ink-dim);
@@ -892,6 +901,40 @@
   text-overflow: ellipsis;
 }
 .starwrought .sw-outstanding a:hover { color: var(--sw-flare); }
+.starwrought .sw-outstanding-lead { color: var(--sw-ink); white-space: nowrap; }
+.starwrought .sw-outstanding .sw-fold-arrow { display: none; color: var(--sw-flare); }
+.starwrought .sw-outstanding.sw-below-fold .sw-fold-arrow {
+  display: inline-block;
+  animation: sw-cue-bob 1.2s ease-in-out infinite;
+}
+
+/* The cue that the thing blocking Next is below the fold. Sticky to the bottom edge of the
+   scrolling pane while an unspent point is out of sight; the wizard hides it otherwise. */
+.starwrought .sw-scroll-cue {
+  position: sticky;
+  bottom: 0.4rem;
+  align-self: center;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--sw-gold);
+  border-radius: 999px;
+  background: linear-gradient(160deg, #3a2f1a, var(--sw-night-2));
+  color: var(--sw-flare);
+  font-size: 0.8rem;
+  box-shadow: 0 0 12px rgba(227, 178, 60, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  animation: sw-cue-bob 1.2s ease-in-out infinite;
+}
+.starwrought .sw-scroll-cue[hidden] { display: none; }
+.starwrought .sw-scroll-cue:hover { background: linear-gradient(160deg, #4a3c20, var(--sw-night-3)); }
+@keyframes sw-cue-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
 
 /* --------------------------------------------------------------------------
    Stance: which Defense answers the next blow. The defender's call, so it sits

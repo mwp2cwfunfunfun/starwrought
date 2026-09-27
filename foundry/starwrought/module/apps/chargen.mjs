@@ -792,6 +792,43 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     panel.querySelector(".sw-picker-hint")?.classList.add("sw-hidden");
   }
 
+  /** @inheritdoc */
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+    const body = this.element.querySelector(".sw-chargen-body");
+    if (!body) return;
+
+    // The talent cards are list items acting as buttons, so give them a keyboard.
+    body.addEventListener("keydown", event => {
+      if (!["Enter", " "].includes(event.key)) return;
+      const card = event.target.closest?.(".sw-talent-option[data-action]");
+      if (!card) return;
+      event.preventDefault();
+      card.click();
+    });
+
+    // The parts are rebuilt on every render, so the scroll listener is too.
+    body.addEventListener("scroll", () => this.#updateScrollCue(), { passive: true });
+    this.#updateScrollCue();
+  }
+
+  /**
+   * Show the "more below" cue while the first unspent point is out of sight beneath the fold, and
+   * hide it otherwise. A greyed Next and a small footer link were not cue enough on their own: the
+   * playtest read a step with an unspent point below the fold as "Next is broken".
+   */
+  #updateScrollCue() {
+    const body = this.element?.querySelector(".sw-chargen-body");
+    const cue = this.element?.querySelector(".sw-scroll-cue");
+    if (!body || !cue) return;
+    const pending = body.querySelector(".sw-slot:not(.sw-slot-done):not(.sw-slot-stuck)");
+    const below = !!pending
+      && (pending.getBoundingClientRect().top > (body.getBoundingClientRect().bottom - 48));
+    cue.hidden = !below;
+    if (below) cue.dataset.slot = pending.dataset.slotId;
+    this.element.querySelector(".sw-outstanding")?.classList.toggle("sw-below-fold", below);
+  }
+
   static async #onBuyTalent(event, target) {
     const slotId = target.dataset.slot;
     let slug = target.dataset.slug;

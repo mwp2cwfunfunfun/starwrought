@@ -84,6 +84,14 @@ step in the trail unwinds every step between. Changing a choice inside a step do
 applying the new one, so the character never keeps the residue of a decision you walked away from.
 State lives on the Actor, so closing the wizard or reloading Foundry does not lose your place.
 
+Two things the first playtest taught the wizard. **The whole Talent card is the button**: anywhere
+on it buys, it lights gold on hover like the Constellation chips, and Enter or Space buys from the
+keyboard; a target one line high was being missed. And **it says when the thing blocking Next is
+below the fold**: a bobbing "A point is still to spend below" badge sticks to the bottom edge of the
+pane while an unspent point is out of sight (click it to jump there), the footer reads "Next needs:
+Trained in Acrobatics" with an arrow that appears when that is below, and Next's own tooltip names
+it. A greyed button on its own was being read as a broken one.
+
 A finished 1st-level character comes out at the handbook's stated **17 Talents**: 5 granted free,
 and 12 from creation.
 

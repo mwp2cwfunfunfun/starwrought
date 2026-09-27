@@ -112,12 +112,14 @@
         {{#each slot.groups as |g|}}
         <ul class="sw-talent-options {{#if g.active}}active{{/if}}" data-group="{{g.slug}}">
           {{#each g.talents as |t|}}
-          <li class="sw-talent-option {{#unless t.ok}}locked{{/unless}}">
-            <button type="button" {{#unless t.ok}}disabled data-tooltip="{{t.why}}"{{/unless}}
-                    data-action="buyTalent" data-slot="{{slot.id}}" data-slug="{{t.slug}}" data-talent="{{t.id}}">
+          {{!-- The whole card is the button. A target the size of the name alone was missed. --}}
+          <li class="sw-talent-option {{#unless t.ok}}locked{{/unless}}"
+              {{#if t.ok}}data-action="buyTalent" role="button" tabindex="0"{{else}}aria-disabled="true" data-tooltip="{{t.why}}"{{/if}}
+              data-slot="{{slot.id}}" data-slug="{{t.slug}}" data-talent="{{t.id}}">
+            <div class="sw-talent-head">
               <span class="sw-tier sw-tier-{{t.tier}}">{{t.tier}}</span>
               <span class="sw-talent-name">{{t.name}}{{#if t.root}} <em class="sw-root-mark">✧</em>{{/if}}</span>
-            </button>
+            </div>
             <div class="sw-talent-effect">{{{t.effect}}}</div>
           </li>
           {{/each}}
@@ -128,6 +130,14 @@
       {{/unless}}
     </div>
     {{/each}}
+
+    {{!-- Shown by the wizard only while an unspent point sits below the fold; it sticks to the
+          bottom edge of the pane, which is where the eye goes when Next will not light. --}}
+    <a class="sw-scroll-cue" data-action="revealSlot" data-slot="" hidden>
+      <i class="fa-solid fa-angles-down"></i>
+      {{localize "STARWROUGHT.Chargen.moreBelow"}}
+      <i class="fa-solid fa-angles-down"></i>
+    </a>
 
     {{#if (eq stepId "review")}}
     <div class="sw-panel">

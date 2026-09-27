@@ -6,9 +6,10 @@
 
   {{#unless complete}}
   {{#if outstanding.length}}
-  {{!-- Name what is blocking, since it is often below the fold. --}}
+  {{!-- Name what is blocking, since it is often below the fold; the arrow appears when it is. --}}
   <div class="sw-outstanding">
     <i class="fa-solid fa-circle-exclamation"></i>
+    <span class="sw-outstanding-lead">{{localize "STARWROUGHT.Chargen.nextNeeds"}}</span>
     {{#each outstanding as |o|}}
     {{#if o.id}}
     <a data-action="revealSlot" data-slot="{{o.id}}"
@@ -17,6 +18,7 @@
     <span>{{o.label}}</span>
     {{/if}}
     {{/each}}
+    <i class="fa-solid fa-arrow-down sw-fold-arrow" data-tooltip="{{localize 'STARWROUGHT.Chargen.moreBelow'}}"></i>
   </div>
   {{/if}}
   {{/unless}}
@@ -32,7 +34,7 @@
     </button>
     {{else}}
     <button type="button" data-action="next" class="sw-primary" {{#unless complete}}disabled
-            data-tooltip="{{localize 'STARWROUGHT.Chargen.incomplete'}}"{{/unless}}>
+            data-tooltip="{{#if outstanding.length}}{{localize 'STARWROUGHT.Chargen.nextNeeds'}} {{#each outstanding as |o|}}{{o.label}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}{{localize 'STARWROUGHT.Chargen.incomplete'}}{{/if}}"{{/unless}}>
       {{localize "STARWROUGHT.Chargen.next"}} <i class="fa-solid fa-arrow-right"></i>
     </button>
     {{/if}}

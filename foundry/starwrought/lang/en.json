@@ -453,6 +453,8 @@
   "STARWROUGHT.Chargen.cancelBody": "Every choice this wizard made comes back off the character: the Talents it added are deleted and the fields it set are cleared. The character itself is kept.",
   "STARWROUGHT.Chargen.gotoHint": "Go back to this step. Everything after it is unwound.",
   "STARWROUGHT.Chargen.incomplete": "This step still has a choice to make or a Talent Point to spend.",
+  "STARWROUGHT.Chargen.nextNeeds": "Next needs:",
+  "STARWROUGHT.Chargen.moreBelow": "A point is still to spend below. Scroll down, or click here.",
   "STARWROUGHT.Chargen.needChoice": "Choose your {step}",
   "STARWROUGHT.Chargen.revealSlot": "Scroll to it.",
   "STARWROUGHT.Chargen.blocked": "Still unfinished: {steps}.",
