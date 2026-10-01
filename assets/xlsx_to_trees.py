@@ -12,6 +12,12 @@
 # An ACTIONS workbook (data/actions.xlsx, Mike, 2026-09-26) is recognised by its _Tree Index
 # carrying Name | Type | Meta note instead of Tree | Category. Its other sheets hold one action per
 # row and write assets/actions.json; see parse_actions_workbook below for the columns.
+#
+# An EQUIPMENT workbook (data/equipment.xlsx, Mike, 2026-10-01, ruling 64) has no _Tree Index and
+# is recognised by its Weapons, Armor and Shields sheets, one piece per row. It writes
+# assets/equipment.json and regenerates the roster's weaponsMelee, weaponsRanged, armorPieces and
+# shields blocks from every row, the way the ancestries block is regenerated; see
+# parse_equipment_workbook below for the columns.
 import json, os, re, sys, glob
 from openpyxl import load_workbook
 
@@ -22,6 +28,7 @@ OUT = os.path.join(HERE, "trees.json")
 BGOUT = os.path.join(HERE, "backgrounds.json")
 ROSTER = os.path.join(HERE, "roster.json")
 AOUT = os.path.join(HERE, "actions.json")
+EOUT = os.path.join(HERE, "equipment.json")
 
 def parse_bg_sheet(bws, bgs, warnings, fname):
     bm = header_map(bws, {"name": "background", "rarity": "rarity", "desc": "desc", "effect": "effect", "skills": "skills", "lore": "lore",
@@ -297,6 +304,145 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
         warnings.append(f"{fname}: no Cost column on {', '.join(no_cost)}; an action with no glyph in its "
                         f"name costs one action ❶ until the column exists")
 
+# ---- Equipment (Mike, 2026-10-01; ruling 64) -------------------------------------------------
+# data/equipment.xlsx is authoritative for weapons, armor and shields. It has no _Tree Index, so it
+# is recognised the way the backgrounds and languages workbooks are, by its sheet names; any other
+# sheet in it (About) is ignored. Columns (first word wins, order free):
+#   Weapons: Weapon | Kind | Handling | Group | Damage | Reach | Range | Traits | Price | Notes | Enabled?
+#   Armor:   Piece | Zone | Protection | Load | Price | Traits | Material | Enabled?
+#   Shields: Shield | Bonus | Hardness | Load | Price | Note | Enabled?
+# Reach is the melee column ("Adjacent" or "N ft") and Range the ranged one ("N ft"): a Melee row
+# needs the first and a Ranged row the second, and a thrown melee weapon's range is a trait
+# ("Thrown 10 ft"), as the book prints it. Material is one of the five the roster's materials table
+# names; blank, it is the first Trait, which is how the book prints a piece ("Padded, Comfort" is
+# Padded). Every row is written with its Enabled? flag (ruling 60) and every row goes into the
+# roster blocks, because the web app and the compendium docx are the authoring views (ruling 61);
+# build_foundry.mjs does the filtering from equipment.json.
+EQUIPMENT_SHEETS = ("Weapons", "Armor", "Shields")
+KINDS = ("Melee", "Ranged")
+HANDLING = ("Intuitive", "Practiced", "Technical")
+ZONES = ("Head", "Torso", "Arms", "Legs")
+MATERIALS = ("Padded", "Leather", "Mail", "Scale", "Plate")
+DAMAGE = re.compile(r"\d+d\d+ [BPS]")      # "1d8 S": dice, a space, B, P or S
+DISTANCE = re.compile(r"\d+ ft")           # the grid is 1 foot (v0.40), so a distance is feet
+
+def whole(cell):
+    """A whole number (0 or more) from a cell Excel may hold as an int, a float or text; None
+    otherwise. Protection, Load, Bonus and Hardness are all read through this."""
+    v = None if cell is None else cell.value
+    if isinstance(v, bool): return None
+    if isinstance(v, int): return v if v >= 0 else None
+    if isinstance(v, float): return int(v) if v.is_integer() and v >= 0 else None
+    s = blank_none(plain(cell))
+    return int(s) if re.fullmatch(r"\d+", s) else None
+
+def split_traits(text):
+    """'Agile, Close, Thrown 10 ft' -> ['Agile', 'Close', 'Thrown 10 ft']. A comma inside brackets
+    does not split, as in the actions parser; a blank cell, or 'None', is no traits at all."""
+    return [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", text or "")) if t]
+
+# The sheets, the columns each is read by, and the columns a sheet cannot do without. The rest
+# (Reach, Range, Traits, Price, Notes, Material, Enabled?) are optional at the header level; a row
+# that needs one of them says so.
+EQUIPMENT_COLUMNS = {
+    "weapons": ({"name": "weapon", "kind": "kind", "handling": "handling", "group": "group", "damage": "damage",
+                 "reach": "reach", "range": "range", "traits": "trait", "price": "price", "notes": "note",
+                 "enabled": "enabled"},
+                ("name", "kind", "handling", "group", "damage"), "Weapon, Kind, Handling, Group and Damage"),
+    "armor":   ({"name": "piece", "zone": "zone", "protection": "protection", "load": "load", "price": "price",
+                 "traits": "trait", "material": "material", "enabled": "enabled"},
+                ("name", "zone", "protection", "load"), "Piece, Zone, Protection and Load"),
+    "shields": ({"name": "shield", "bonus": "bonus", "hardness": "hardness", "load": "load", "price": "price",
+                 "note": "note", "enabled": "enabled"},
+                ("name", "bonus", "hardness", "load"), "Shield, Bonus, Hardness and Load"),
+}
+
+def parse_equipment_workbook(wb, fname, equipment, warnings, errors, defined):
+    """One piece per row on the Weapons, Armor and Shields sheets, appended to equipment["weapons"],
+    ["armor"] and ["shields"] with the sheet's fields in camelCase and the Enabled? flag. Errors
+    block the write like any other. `defined` is shared across workbooks ((sheet, bare lower-case
+    name) -> file), so the same piece in two files is an error, as the same tree in two files is.
+    Returns this workbook's counts per sheet, for the per-file line."""
+    counts = {"weapons": 0, "armor": 0, "shields": 0}
+    for title, kind in zip(EQUIPMENT_SHEETS, ("weapons", "armor", "shields")):
+        if title not in wb.sheetnames: continue
+        ws = wb[title]
+        wanted, required, label = EQUIPMENT_COLUMNS[kind]
+        cm = header_map(ws, wanted)
+        if any(k not in cm for k in required):
+            errors.append(f"{fname} / {title}: sheet needs {label} columns"); continue
+        for r in ws.iter_rows(min_row=2):
+            cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
+            # Every plain read blanks "None" and the dash, as in the actions parser.
+            pv = lambda k: blank_none(plain(cellv(k)))
+            name = plain(cellv("name"))
+            if not name: continue
+            where = f"{fname} / {title} / {name}"
+            key = (kind, name.lower())
+            if key in defined:
+                errors.append(f"{where}: also defined {'on this sheet' if defined[key] == fname else 'in ' + defined[key]}"); continue
+            defined[key] = fname
+            row = {"name": name}
+            if kind == "weapons":
+                wkind, handling, damage = pv("kind"), pv("handling"), pv("damage")
+                reach, rng = pv("reach"), pv("range")
+                if wkind not in KINDS:
+                    errors.append(f"{where}: Kind must be Melee or Ranged (got '{wkind}')"); continue
+                if handling not in HANDLING:
+                    errors.append(f"{where}: Handling must be {', '.join(HANDLING[:-1])} or {HANDLING[-1]} (got '{handling}')"); continue
+                if not DAMAGE.fullmatch(damage):
+                    errors.append(f"{where}: Damage '{damage}' is not of the form '1d8 S' (dice, a space, B, P or S)"); continue
+                if wkind == "Melee" and not reach:
+                    errors.append(f"{where}: a Melee weapon needs a Reach ('Adjacent' or 'N ft')"); continue
+                if wkind == "Ranged" and not rng:
+                    errors.append(f"{where}: a Ranged weapon needs a Range ('N ft')"); continue
+                # The roster's melee table has no Range and its ranged table no Reach, so a value in
+                # the wrong column reaches equipment.json and nothing else. Said, not dropped silently.
+                if wkind == "Melee" and rng:
+                    warnings.append(f"{where}: a Melee weapon with a Range '{rng}'; a thrown weapon's range is a trait ('Thrown 10 ft')")
+                if wkind == "Ranged" and reach:
+                    warnings.append(f"{where}: a Ranged weapon with a Reach '{reach}'; the ranged table has no Reach column")
+                if reach and reach != "Adjacent" and not DISTANCE.fullmatch(reach):
+                    warnings.append(f"{where}: Reach '{reach}' is neither 'Adjacent' nor 'N ft'")
+                if rng and not DISTANCE.fullmatch(rng):
+                    warnings.append(f"{where}: Range '{rng}' is not 'N ft'")
+                row.update({"kind": wkind, "handling": handling, "group": pv("group"), "damage": damage,
+                            "reach": reach, "range": rng, "traits": split_traits(pv("traits")),
+                            "price": pv("price"), "notes": pv("notes")})
+            elif kind == "armor":
+                zone, traits, material = pv("zone"), split_traits(pv("traits")), pv("material")
+                protection, load = whole(cellv("protection")), whole(cellv("load"))
+                if zone not in ZONES:
+                    errors.append(f"{where}: Zone must be {', '.join(ZONES[:-1])} or {ZONES[-1]} (got '{zone}')"); continue
+                if protection is None:
+                    errors.append(f"{where}: Protection must be a whole number (got '{pv('protection')}')"); continue
+                if load is None:
+                    errors.append(f"{where}: Load must be a whole number (got '{pv('load')}')"); continue
+                # Material: the cell when it has one, else the first Trait (how the book prints a piece).
+                if not material:
+                    material = traits[0] if traits else ""
+                    if material not in MATERIALS:
+                        errors.append(f"{where}: no Material, and the first Trait '{material}' is not one "
+                                      f"({', '.join(MATERIALS)})"); continue
+                elif material not in MATERIALS:
+                    errors.append(f"{where}: Material must be one of {', '.join(MATERIALS)} (got '{material}')"); continue
+                elif traits and traits[0] in MATERIALS and traits[0] != material:
+                    warnings.append(f"{where}: Material '{material}' but the first Trait is '{traits[0]}'; the book prints the material first")
+                row.update({"zone": zone, "protection": protection, "load": load, "price": pv("price"),
+                            "traits": traits, "material": material})
+            else:
+                bonus, hardness, load = whole(cellv("bonus")), whole(cellv("hardness")), whole(cellv("load"))
+                if bonus is None:
+                    errors.append(f"{where}: Bonus must be a whole number, 0 for no Gear bonus (got '{pv('bonus')}')"); continue
+                if hardness is None:
+                    errors.append(f"{where}: Hardness must be a whole number (got '{pv('hardness')}')"); continue
+                if load is None:
+                    errors.append(f"{where}: Load must be a whole number (got '{pv('load')}')"); continue
+                row.update({"bonus": bonus, "hardness": hardness, "load": load, "price": pv("price"), "note": pv("note")})
+            row["enabled"] = enabled_flag(cellv("enabled"), "enabled" in cm)
+            equipment[kind].append(row); counts[kind] += 1
+    return counts
+
 # ---- Mike's root rule (v0.38) ----------------------------------------------------------------
 # Every root (constellation root and heritage root alike) must (1) hang on something that gets
 # ROLLED, so the constellation can Flare from the one talent every member owns, and (2) IMPROVE at
@@ -333,6 +479,7 @@ def main():
     if not files: sys.exit(f"no .xlsx files found in {DATA}")
     out, errors, warnings, sources, bgs, langs, chassis = {}, [], [], {}, [], [], []
     actions, action_files, defined_actions = [], [], {}
+    equipment, equipment_files, defined_equipment = {"weapons": [], "armor": [], "shields": []}, [], {}
     for path in files:
         fname = os.path.basename(path)
         # A workbook open in Excel used to be skipped, which silently wrote a trees.json without
@@ -358,7 +505,13 @@ def main():
                 parse_bg_sheet(wb["Backgrounds"], bgs, warnings, fname)
             if "Languages" in wb.sheetnames:
                 parse_lang_sheet(wb["Languages"], langs, warnings, fname)
-            if "Backgrounds" not in wb.sheetnames and "Languages" not in wb.sheetnames:
+            # An index-less workbook with a Weapons, Armor or Shields sheet is the equipment
+            # workbook (ruling 64). Its per-file line counts what this file defined.
+            if any(s in wb.sheetnames for s in EQUIPMENT_SHEETS):
+                counts = parse_equipment_workbook(wb, fname, equipment, warnings, errors, defined_equipment)
+                equipment_files.append(fname)
+                print(f"  {fname}: {counts['weapons']} weapons, {counts['armor']} armor, {counts['shields']} shields")
+            if not any(s in wb.sheetnames for s in ("Backgrounds", "Languages") + EQUIPMENT_SHEETS):
                 warnings.append(f"{fname}: no '_Tree Index' sheet; file skipped")
             continue
         idx = wb["_Tree Index"]
@@ -548,7 +701,8 @@ def main():
           f"{sum(1 for t in out.values() if t['enabled'])} of {len(out)} constellations, "
           f"{sum(1 for t in out.values() for n in t['nodes'] if n['enabled'])} of {sum(len(t['nodes']) for t in out.values())} talents, "
           f"{sum(1 for b in bgs if b['enabled'])} of {len(bgs)} backgrounds, "
-          f"{sum(1 for a in actions if a['enabled'])} of {len(actions)} actions")
+          f"{sum(1 for a in actions if a['enabled'])} of {len(actions)} actions, "
+          + ", ".join(f"{sum(1 for e in equipment[k] if e['enabled'])} of {len(equipment[k])} {k}" for k in equipment))
     for w in warnings: print("WARNING:", w)
     if errors:
         print("VALIDATION ERRORS:"); [print("  -", e) for e in errors]; sys.exit(1)
@@ -572,7 +726,17 @@ def main():
     elif os.path.exists(AOUT):
         # Printed directly: the warnings list was flushed above, so appending to it here would say nothing.
         print(f"WARNING: no actions workbook in data/; {AOUT} left as found. It is generated from data/actions.xlsx, not hand-kept.")
-    # Patch ONLY the ancestries block of roster.json; cultures/weapons/conditions/etc. stay hand-kept.
+    # Written only when an equipment workbook was read, for the same reason (ruling 64).
+    if equipment_files:
+        json.dump({"source": equipment_files, **equipment}, open(EOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        print(f"wrote {EOUT}: {len(equipment['weapons'])} weapons "
+              f"({sum(1 for w in equipment['weapons'] if w['kind'] == 'Melee')} melee, "
+              f"{sum(1 for w in equipment['weapons'] if w['kind'] == 'Ranged')} ranged), "
+              f"{len(equipment['armor'])} armor, {len(equipment['shields'])} shields from {', '.join(equipment_files)}")
+    elif os.path.exists(EOUT):
+        print(f"WARNING: no equipment workbook in data/; {EOUT} left as found. It is generated from data/equipment.xlsx, not hand-kept.")
+    # Patch ONLY the generated blocks of roster.json: ancestries here, the four equipment blocks
+    # below. Cultures, conditions, materials, handling and the trait tables stay hand-kept.
     # Guarded: an empty parse (chassis columns removed from ancestries.xlsx, or no ancestries workbook
     # in data/ at all) leaves the file alone rather than blanking chargen. A workbook open in Excel is
     # no longer a case here: it is read from its last saved copy above.
@@ -585,6 +749,36 @@ def main():
         roster["ancestries"] = chassis   # key keeps its original position in the file
         json.dump(roster, open(ROSTER, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
         print(f"wrote {ROSTER}: {len(chassis)} ancestry chassis from the sheet")
+    # The roster's weaponsMelee, weaponsRanged, armorPieces and shields blocks are generated from the
+    # equipment workbook (ruling 64), as the ancestries block is from ancestries.xlsx: EVERY row,
+    # enabled or not, in the positional shapes the web app, the compendium docx and build_foundry.mjs
+    # already read, so those consumers are unchanged and Foundry does its Enabled? filtering from
+    # equipment.json (ruling 61). Hand edits to these blocks are pointless: the next run overwrites
+    # them. Same guard as the ancestries block: only when an equipment workbook was read, so a
+    # checkout without one keeps the roster it has.
+    if equipment_files and os.path.exists(ROSTER):
+        melee = [w for w in equipment["weapons"] if w["kind"] == "Melee"]
+        ranged = [w for w in equipment["weapons"] if w["kind"] == "Ranged"]
+        # Shapes: melee [name, handling, group, damage, reach, traits, price] with the table's null
+        # marker for a blank price (Unarmed Strike); ranged [name, handling, group, damage, range,
+        # traits]; armor [name, zone, protection, load, price, traits, material]; shields [name,
+        # bonus, hardness, load, price, note].
+        blocks = {
+            "weaponsMelee": [[w["name"], w["handling"], w["group"], w["damage"], w["reach"], ", ".join(w["traits"]), w["price"] or "—"] for w in melee],
+            "weaponsRanged": [[w["name"], w["handling"], w["group"], w["damage"], w["range"], ", ".join(w["traits"])] for w in ranged],
+            "armorPieces": [[a["name"], a["zone"], a["protection"], a["load"], a["price"], ", ".join(a["traits"]), a["material"]] for a in equipment["armor"]],
+            "shields": [[s["name"], s["bonus"], s["hardness"], s["load"], s["price"], s["note"]] for s in equipment["shields"]],
+        }
+        roster = json.load(open(ROSTER, encoding="utf-8"))
+        for key, rows in blocks.items():
+            before = len(roster.get(key, []))
+            if len(rows) < before:
+                print(f"WARNING: roster.json had {before} {key} rows, the sheet defines {len(rows)}; "
+                      f"the sheet wins, so confirm nothing was dropped by accident")
+            roster[key] = rows   # an existing key keeps its position in the file
+        json.dump(roster, open(ROSTER, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        print(f"wrote {ROSTER}: " + ", ".join(f"{k} ({len(v)})" for k, v in blocks.items())
+              + f" regenerated from {', '.join(equipment_files)}; those blocks are generated, so hand edits to them are overwritten")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,788 @@
+{
+ "source": [
+  "equipment.xlsx"
+ ],
+ "weapons": [
+  {
+   "name": "Unarmed Strike",
+   "kind": "Melee",
+   "handling": "Intuitive",
+   "group": "Natural Weapons",
+   "damage": "1d4 B",
+   "reach": "Adjacent",
+   "range": "",
+   "traits": [
+    "Agile",
+    "Close",
+    "Finesse",
+    "Nonlethal"
+   ],
+   "price": "",
+   "notes": "The book prints damage and traits as 'Varies; typically ...'; these are the typical values.",
+   "enabled": true
+  },
+  {
+   "name": "Dagger",
+   "kind": "Melee",
+   "handling": "Intuitive",
+   "group": "Knives",
+   "damage": "1d4 P",
+   "reach": "Adjacent",
+   "range": "",
+   "traits": [
+    "Agile",
+    "Close",
+    "Finesse",
+    "Thrown 10 ft"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": true
+  },
+  {
+   "name": "Club",
+   "kind": "Melee",
+   "handling": "Intuitive",
+   "group": "Clubs",
+   "damage": "1d6 B",
+   "reach": "3 ft",
+   "range": "",
+   "traits": [
+    "Thrown 10 ft"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Shortsword",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Swords",
+   "damage": "1d6 P",
+   "reach": "2 ft",
+   "range": "",
+   "traits": [
+    "Agile",
+    "Finesse"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": true
+  },
+  {
+   "name": "Mace",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Clubs",
+   "damage": "1d6 B",
+   "reach": "3 ft",
+   "range": "",
+   "traits": [
+    "Shove"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Spear",
+   "kind": "Melee",
+   "handling": "Intuitive",
+   "group": "Spears",
+   "damage": "1d6 P",
+   "reach": "7 ft",
+   "range": "",
+   "traits": [
+    "Thrown 20 ft",
+    "Two-Hand d8",
+    "Unwieldy 3"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": true
+  },
+  {
+   "name": "Quarterstaff",
+   "kind": "Melee",
+   "handling": "Intuitive",
+   "group": "Clubs",
+   "damage": "1d6 B",
+   "reach": "4 ft",
+   "range": "",
+   "traits": [
+    "Parry",
+    "Two-Hand d8"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Rapier",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Swords",
+   "damage": "1d8 P",
+   "reach": "4 ft",
+   "range": "",
+   "traits": [
+    "Finesse",
+    "Deadly d8",
+    "Parry"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Longsword",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Swords",
+   "damage": "1d8 S",
+   "reach": "4 ft",
+   "range": "",
+   "traits": [
+    "Versatile P",
+    "Parry"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Battleaxe",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Axes",
+   "damage": "1d8 S",
+   "reach": "2 ft",
+   "range": "",
+   "traits": [
+    "Sweep",
+    "Trip"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Warhammer",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Hammers",
+   "damage": "1d8 B",
+   "reach": "2 ft",
+   "range": "",
+   "traits": [
+    "Shove"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Greatsword",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Swords",
+   "damage": "1d12 S",
+   "reach": "5 ft",
+   "range": "",
+   "traits": [
+    "Versatile P",
+    "Two-Handed"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Greataxe",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Axes",
+   "damage": "1d12 S",
+   "reach": "5 ft",
+   "range": "",
+   "traits": [
+    "Sweep",
+    "Two-Handed"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Halberd",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Polearms",
+   "damage": "1d10 S",
+   "reach": "8 ft",
+   "range": "",
+   "traits": [
+    "Sweep",
+    "Trip",
+    "Two-Handed",
+    "Unwieldy 4"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Maul",
+   "kind": "Melee",
+   "handling": "Technical",
+   "group": "Hammers",
+   "damage": "1d12 B",
+   "reach": "5 ft",
+   "range": "",
+   "traits": [
+    "Two-Handed"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Longspear",
+   "kind": "Melee",
+   "handling": "Practiced",
+   "group": "Spears",
+   "damage": "1d8 P",
+   "reach": "14 ft",
+   "range": "",
+   "traits": [
+    "Two-Handed",
+    "Unwieldy 7"
+   ],
+   "price": "7 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Flail",
+   "kind": "Melee",
+   "handling": "Technical",
+   "group": "Flails",
+   "damage": "1d8 B",
+   "reach": "4 ft",
+   "range": "",
+   "traits": [
+    "Disarm",
+    "Trip",
+    "Flexible"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Whip",
+   "kind": "Melee",
+   "handling": "Technical",
+   "group": "Whips",
+   "damage": "1d6 S",
+   "reach": "8 ft",
+   "range": "",
+   "traits": [
+    "Finesse",
+    "Disarm",
+    "Trip",
+    "Unwieldy 2",
+    "Flexible"
+   ],
+   "price": "1 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Estoc",
+   "kind": "Melee",
+   "handling": "Technical",
+   "group": "Swords",
+   "damage": "1d8 P",
+   "reach": "5 ft",
+   "range": "",
+   "traits": [
+    "Armor-Piercing 1",
+    "Deadly d8",
+    "Parry"
+   ],
+   "price": "3 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Chain Flail",
+   "kind": "Melee",
+   "handling": "Technical",
+   "group": "Flails",
+   "damage": "1d10 B",
+   "reach": "6 ft",
+   "range": "",
+   "traits": [
+    "Disarm",
+    "Sweep",
+    "Two-Handed",
+    "Unwieldy 2",
+    "Flexible"
+   ],
+   "price": "5 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "War Pick",
+   "kind": "Melee",
+   "handling": "Technical",
+   "group": "Picks",
+   "damage": "1d8 P",
+   "reach": "3 ft",
+   "range": "",
+   "traits": [
+    "Armor-Piercing 1",
+    "Deadly d10"
+   ],
+   "price": "3 gp",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Sling",
+   "kind": "Ranged",
+   "handling": "Intuitive",
+   "group": "Slings",
+   "damage": "1d6 B",
+   "reach": "",
+   "range": "60 ft",
+   "traits": [
+    "Ranged 60",
+    "Reload 1"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Light Crossbow",
+   "kind": "Ranged",
+   "handling": "Intuitive",
+   "group": "Crossbows",
+   "damage": "1d8 P",
+   "reach": "",
+   "range": "100 ft",
+   "traits": [
+    "Ranged 100",
+    "Mechanical",
+    "Reload 2",
+    "Two-Handed"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Shortbow",
+   "kind": "Ranged",
+   "handling": "Practiced",
+   "group": "Bows",
+   "damage": "1d6 P",
+   "reach": "",
+   "range": "120 ft",
+   "traits": [
+    "Ranged 120",
+    "Reload 1",
+    "Two-Handed",
+    "Unwieldy 10"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Longbow",
+   "kind": "Ranged",
+   "handling": "Practiced",
+   "group": "Bows",
+   "damage": "1d8 P",
+   "reach": "",
+   "range": "180 ft",
+   "traits": [
+    "Ranged 180",
+    "Reload 1",
+    "Two-Handed",
+    "Unwieldy 20"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Heavy Crossbow",
+   "kind": "Ranged",
+   "handling": "Practiced",
+   "group": "Crossbows",
+   "damage": "1d10 P",
+   "reach": "",
+   "range": "140 ft",
+   "traits": [
+    "Ranged 140",
+    "Mechanical",
+    "Reload 3",
+    "Armor-Piercing 1",
+    "Two-Handed"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Hand Crossbow",
+   "kind": "Ranged",
+   "handling": "Technical",
+   "group": "Crossbows",
+   "damage": "1d6 P",
+   "reach": "",
+   "range": "60 ft",
+   "traits": [
+    "Ranged 60",
+    "Mechanical",
+    "Reload 2",
+    "Close"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Repeating Crossbow",
+   "kind": "Ranged",
+   "handling": "Technical",
+   "group": "Crossbows",
+   "damage": "1d6 P",
+   "reach": "",
+   "range": "80 ft",
+   "traits": [
+    "Ranged 80",
+    "Mechanical",
+    "Capacity 5",
+    "Reload 3",
+    "Two-Handed"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  },
+  {
+   "name": "Bolas",
+   "kind": "Ranged",
+   "handling": "Technical",
+   "group": "Slings",
+   "damage": "1d4 B",
+   "reach": "",
+   "range": "30 ft",
+   "traits": [
+    "Ranged 30",
+    "Nonlethal",
+    "Trip"
+   ],
+   "price": "",
+   "notes": "",
+   "enabled": false
+  }
+ ],
+ "armor": [
+  {
+   "name": "Padded coif",
+   "zone": "Head",
+   "protection": 1,
+   "load": 0,
+   "price": "1 gp",
+   "traits": [
+    "Padded",
+    "Comfort"
+   ],
+   "material": "Padded",
+   "enabled": true
+  },
+  {
+   "name": "Leather cap",
+   "zone": "Head",
+   "protection": 2,
+   "load": 0,
+   "price": "2 gp",
+   "traits": [
+    "Leather",
+    "Quiet"
+   ],
+   "material": "Leather",
+   "enabled": false
+  },
+  {
+   "name": "Open helm",
+   "zone": "Head",
+   "protection": 3,
+   "load": 1,
+   "price": "5 gp",
+   "traits": [
+    "Plate"
+   ],
+   "material": "Plate",
+   "enabled": true
+  },
+  {
+   "name": "Scale coif",
+   "zone": "Head",
+   "protection": 3,
+   "load": 2,
+   "price": "5 gp",
+   "traits": [
+    "Scale",
+    "Noisy"
+   ],
+   "material": "Scale",
+   "enabled": false
+  },
+  {
+   "name": "Closed helm",
+   "zone": "Head",
+   "protection": 4,
+   "load": 2,
+   "price": "10 gp",
+   "traits": [
+    "Plate"
+   ],
+   "material": "Plate",
+   "enabled": true
+  },
+  {
+   "name": "Gambeson",
+   "zone": "Torso",
+   "protection": 1,
+   "load": 0,
+   "price": "1 gp",
+   "traits": [
+    "Padded",
+    "Comfort",
+    "Quiet"
+   ],
+   "material": "Padded",
+   "enabled": true
+  },
+  {
+   "name": "Leather cuirass",
+   "zone": "Torso",
+   "protection": 2,
+   "load": 0,
+   "price": "5 gp",
+   "traits": [
+    "Leather",
+    "Quiet"
+   ],
+   "material": "Leather",
+   "enabled": false
+  },
+  {
+   "name": "Mail shirt",
+   "zone": "Torso",
+   "protection": 3,
+   "load": 1,
+   "price": "10 gp",
+   "traits": [
+    "Mail",
+    "Noisy"
+   ],
+   "material": "Mail",
+   "enabled": false
+  },
+  {
+   "name": "Scale hauberk",
+   "zone": "Torso",
+   "protection": 3,
+   "load": 2,
+   "price": "10 gp",
+   "traits": [
+    "Scale",
+    "Noisy"
+   ],
+   "material": "Scale",
+   "enabled": false
+  },
+  {
+   "name": "Breastplate",
+   "zone": "Torso",
+   "protection": 4,
+   "load": 2,
+   "price": "15 gp",
+   "traits": [
+    "Plate",
+    "Noisy"
+   ],
+   "material": "Plate",
+   "enabled": true
+  },
+  {
+   "name": "Padded sleeves",
+   "zone": "Arms",
+   "protection": 1,
+   "load": 0,
+   "price": "1 gp",
+   "traits": [
+    "Padded",
+    "Comfort"
+   ],
+   "material": "Padded",
+   "enabled": true
+  },
+  {
+   "name": "Leather bracers",
+   "zone": "Arms",
+   "protection": 2,
+   "load": 0,
+   "price": "1 gp",
+   "traits": [
+    "Leather",
+    "Quiet"
+   ],
+   "material": "Leather",
+   "enabled": false
+  },
+  {
+   "name": "Mail sleeves",
+   "zone": "Arms",
+   "protection": 3,
+   "load": 1,
+   "price": "5 gp",
+   "traits": [
+    "Mail",
+    "Noisy"
+   ],
+   "material": "Mail",
+   "enabled": false
+  },
+  {
+   "name": "Scale sleeves",
+   "zone": "Arms",
+   "protection": 3,
+   "load": 2,
+   "price": "6 gp",
+   "traits": [
+    "Scale",
+    "Noisy"
+   ],
+   "material": "Scale",
+   "enabled": false
+  },
+  {
+   "name": "Vambraces w/ gauntlets",
+   "zone": "Arms",
+   "protection": 4,
+   "load": 2,
+   "price": "10 gp",
+   "traits": [
+    "Plate",
+    "Noisy"
+   ],
+   "material": "Plate",
+   "enabled": true
+  },
+  {
+   "name": "Padded leggings",
+   "zone": "Legs",
+   "protection": 1,
+   "load": 0,
+   "price": "1 gp",
+   "traits": [
+    "Padded",
+    "Comfort"
+   ],
+   "material": "Padded",
+   "enabled": true
+  },
+  {
+   "name": "Leather leggings",
+   "zone": "Legs",
+   "protection": 2,
+   "load": 0,
+   "price": "1 gp",
+   "traits": [
+    "Leather",
+    "Quiet"
+   ],
+   "material": "Leather",
+   "enabled": false
+  },
+  {
+   "name": "Mail chausses",
+   "zone": "Legs",
+   "protection": 3,
+   "load": 1,
+   "price": "5 gp",
+   "traits": [
+    "Mail",
+    "Noisy"
+   ],
+   "material": "Mail",
+   "enabled": false
+  },
+  {
+   "name": "Scale skirt",
+   "zone": "Legs",
+   "protection": 3,
+   "load": 2,
+   "price": "6 gp",
+   "traits": [
+    "Scale",
+    "Noisy"
+   ],
+   "material": "Scale",
+   "enabled": false
+  },
+  {
+   "name": "Greaves",
+   "zone": "Legs",
+   "protection": 4,
+   "load": 2,
+   "price": "10 gp",
+   "traits": [
+    "Plate",
+    "Noisy"
+   ],
+   "material": "Plate",
+   "enabled": true
+  }
+ ],
+ "shields": [
+  {
+   "name": "Buckler",
+   "bonus": 1,
+   "hardness": 3,
+   "load": 0,
+   "price": "1 gp",
+   "note": "",
+   "enabled": false
+  },
+  {
+   "name": "Shield",
+   "bonus": 2,
+   "hardness": 5,
+   "load": 1,
+   "price": "5 gp",
+   "note": "",
+   "enabled": false
+  },
+  {
+   "name": "Tower Shield",
+   "bonus": 0,
+   "hardness": 5,
+   "load": 2,
+   "price": "10 gp",
+   "note": "No Gear bonus to Guard. Gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised.",
+   "enabled": false
+  }
+ ]
+}

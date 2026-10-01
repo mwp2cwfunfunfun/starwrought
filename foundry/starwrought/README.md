@@ -71,13 +71,13 @@ recorded plus a list on the sheet.
 | Constellations | The Constellations whose Root is enabled in the spreadsheets (11 of the 31 authored today), with their Key Attribute, category, parent and plate art |
 | Talents | The enabled Talents (37 of the 177 authored today), foldered by Constellation. `Enabled? = Yes` in `data/*.xlsx` is what ships a row; the content index still names every Constellation so owned Talents of a disabled one resolve |
 | Ancestries, Bloodlines, Cultures, Backgrounds & Callings | The enabled chassis Items (5 of the 13 authored today: the Human Ancestry, the Torchbearer Human Bloodline, the Serrovane Culture, the Acrobat Background and the Weaponmaster Calling). The five folders always ship |
-| Equipment | 29 weapons, 20 armor pieces, 3 shields |
+| Equipment | The enabled rows of `data/equipment.xlsx` (today 4 of the 29 weapons, 9 of the 20 armor pieces and none of the 3 shields authored), under the same document ids the roster gave them. The four folders always ship |
 | Maneuvers & Activities | 52 Maneuvers, Activities and Reactions today, foldered as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special; Exploration Mode; Downtime Mode; Reactions). Those authored in `data/actions.xlsx` replace the roster's row of the same name, and only an enabled sheet row ships, so an action authored there but not enabled (Aid today) appears nowhere until its row reads Yes |
 | Rules Reference | 20 pages of reference tables |
 | Macros | Recenter, Recovery Check, A Night's Rest, Relevant Check, Roll Initiative by Activity |
 
 Every one of these is generated from `data/*.xlsx` by way of `assets/trees.json`,
-`assets/actions.json` and `assets/roster.json`. Nothing in `packs/` is authored by hand. The Basic
+`assets/actions.json`, `assets/equipment.json` and `assets/roster.json`. Nothing in `packs/` is authored by hand. The Basic
 Maneuvers in the Maneuvers pack are what every character's Maneuvers tab shows, read from the pack
 rather than copied.
 

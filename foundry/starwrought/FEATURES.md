@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.4.1**. Developed against
+Rules content built from **Player's Handbook v4.10**. System version **0.4.2**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -126,7 +126,10 @@ Constellation keeps it: `content/constellations.json` carries every Constellatio
 names, categories, attributes and parents still resolve. `game.starwrought.rules` reports the
 enabled counts beside the authored ones. Aid, the one row of `data/actions.xlsx`, is not enabled,
 and because the sheet is authoritative for any action it names, the roster's Aid row stays retired
-as well; nothing ships for Aid until the row is enabled.
+as well; nothing ships for Aid until the row is enabled. Weapons, armor and shields follow the same
+rule from `data/equipment.xlsx` (Weapons, Armor and Shields tabs, built from the handbook's Chapter 5
+tables): the Equipment compendium holds the enabled rows under the same document ids as before, and
+the web app and the Constellation Compendium keep the whole tables.
 
 ## 2. What the system works out for you
 

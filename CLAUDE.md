@@ -17,14 +17,16 @@ are sources and which are output, and leave the repo building.**
 | Edit this | Never hand-edit this |
 |---|---|
 | `data/*.xlsx` | `assets/trees.json`, `backgrounds.json`, `languages.json`, `actions.json` |
-| `assets/roster.json` (hand-kept blocks) and `sheet_spec.json` | the `ancestries` block of `roster.json` (the converter overwrites it from `ancestries.xlsx`) |
+| `assets/roster.json` (hand-kept blocks) and `sheet_spec.json` | the `ancestries` block of `roster.json` (the converter overwrites it from `ancestries.xlsx`), and its `weaponsMelee`, `weaponsRanged`, `armorPieces` and `shields` blocks (overwritten from `equipment.xlsx`); `assets/equipment.json` |
 | `assets/app_template.html`, `constellation_template.html` | `Starwrought_App.html`, `Starwrought_Talent_Constellations.html` |
 | `assets/*.py`, `assets/build_phb.js` | `assets/constellations/*.png`, the PDFs, the compendium |
 | `foundry/starwrought/` **except** `packs/`, `content/`, `assets/constellations/` | those three, which `assets/build_foundry.mjs` regenerates |
 | `data/SYNC.json` (via `build_all.mjs --accept-phb`) | `foundry/starwrought/content/sync.json` |
 
 **The web app and the Foundry system are siblings, not a chain.** Both read `assets/trees.json`,
-`assets/actions.json` and `assets/roster.json`; neither reads the other. Asked whether the app should read the Foundry
+`assets/actions.json` and `assets/roster.json` (the Foundry build also reads `assets/equipment.json`,
+whose rows the converter mirrors into the roster's equipment blocks for the app); neither reads the
+other. Asked whether the app should read the Foundry
 compendia instead (Mike, 2026-08-27): no. It would make one consumer depend on another consumer's
 output, swap two JSON files for 364, and give the app a shape built for Foundry rather than the
 tree structure it actually wants. The thing that keeps them in step is `build_all.mjs` and the
@@ -55,7 +57,7 @@ The individual steps, from the project root, in this order. They need `openpyxl`
 `reportlab`, `python-docx`, and the `docx` npm package; all are installed.
 
 ```
-python assets/xlsx_to_trees.py        # data/*.xlsx -> trees/backgrounds/languages/actions JSON. Refuses to write on errors.
+python assets/xlsx_to_trees.py        # data/*.xlsx -> trees/backgrounds/languages/actions/equipment JSON and the roster's generated blocks. Refuses to write on errors.
 python assets/inject.py               # templates + JSON -> the two root HTML files
 python assets/render_constellations.py # -> assets/constellations/*.png
 python assets/sheet_gen.py            # -> the fillable and Mira character sheets
@@ -65,7 +67,8 @@ python assets/check_style.py          # the two absolute rules below, enforced. 
 ```
 
 `build_foundry.mjs` sits next to `build_phb.js` for the same reason: both read `trees.json`,
-`actions.json` and `roster.json`, so both must re-run whenever any of those change. It writes `packs/_source/*.json` and then
+`actions.json` and `roster.json` (and `build_foundry.mjs` reads `equipment.json`), so both must
+re-run whenever any of those change. It writes `packs/_source/*.json` and then
 compiles the LevelDB compendia with `@foundryvtt/foundryvtt-cli` (a devDependency); `--no-compile`
 stops after the sources. Document ids hash the pack plus the document name, so they survive a
 rebuild, which matters because an id becomes a compendium UUID the moment a Talent lands on a
@@ -225,6 +228,15 @@ final Wound is Dying.
   documents, keeps every Constellation in the content index with its flag, and stamps the enabled
   counts into `content/sync.json`. The web app and the compendium docx show the whole book. A
   disabled sheet action still retires the roster row of its name (Aid ships nowhere until enabled).
+- **`data/equipment.xlsx` is the equipment workbook** (Mike, 2026-10-01; ruling 64). Index-less,
+  recognised by its Weapons, Armor and Shields sheets (an About sheet is ignored). Weapons: Weapon,
+  Kind (Melee or Ranged), Handling, Group, Damage, Reach (melee) or Range (ranged), Traits, Price,
+  Notes, Enabled?. Armor: Piece, Zone, Protection, Load, Price, Traits, Material, Enabled?.
+  Shields: Shield, Bonus, Hardness, Load, Price, Note, Enabled?. The converter writes
+  `assets/equipment.json` and regenerates the roster's four equipment blocks from it (every row),
+  so the app and the compendium docx keep reading the roster unchanged; `build_foundry.mjs` reads
+  `equipment.json` and ships only the enabled rows under the same document ids. Built from the
+  handbook's Chapter 5 tables; the handbook wins when they disagree, and the sheet needs a pass.
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
 - **`data/actions.xlsx` is the actions workbook** (Mike, 2026-09-26). The converter recognises it by
   its `_Tree Index` carrying `Name | Type | Meta note` instead of `Tree | Category`; every other

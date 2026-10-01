@@ -21,8 +21,8 @@
     "quantity": 1,
     "load": 0,
     "state": "carried",
-    "description": "",
-    "source": "STARWROUGHT Playtest v4.10"
+    "description": "<p>The book prints damage and traits as 'Varies; typically ...'; these are the typical values.</p>",
+    "source": "data/equipment.xlsx"
   },
   "folder": "74c9731f26c4ec6b",
   "sort": 0,

@@ -3,8 +3,10 @@
   "syncedOn": "2026-10-01",
   "constellations": 31,
   "talents": 177,
+  "equipment": 52,
   "enabled": {
     "constellations": 11,
-    "talents": 37
+    "talents": 37,
+    "equipment": 13
   }
 }

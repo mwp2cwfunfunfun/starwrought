@@ -88,6 +88,49 @@ ACTIONS WORKBOOK (actions.xlsx)
     (the sheet is authoritative for any action it names), so until Aid reads Yes it ships nowhere
     in Foundry.
 
+EQUIPMENT WORKBOOK (equipment.xlsx)
+  Authoritative for weapons, armor and shields (Mike, 2026-10-01; v4.10 sync report ruling 64),
+  built from the handbook's Chapter 5 tables. It has NO _Tree Index: the converter recognises it
+  by its Weapons, Armor and Shields sheets, and ignores any other sheet in it (About). Shields are
+  their own sheet because the book keeps them apart from armor and their columns differ. One
+  piece per row. Columns (first word wins, order free):
+    Weapons: Weapon | Kind | Handling | Group | Damage | Reach | Range | Traits | Price | Notes | Enabled?
+    Armor:   Piece | Zone | Protection | Load | Price | Traits | Material | Enabled?
+    Shields: Shield | Bonus | Hardness | Load | Price | Note | Enabled?
+  Kind is Melee or Ranged, and decides which roster table the weapon lands in. Handling is
+    Intuitive, Practiced or Technical. Damage is dice, a space and a type letter ("1d8 S"; B, P
+    or S). Group is the weapon group the Combat Styles name ("Swords", "Crossbows").
+  Reach is the MELEE column ("Adjacent" or "N ft") and Range the RANGED one ("N ft"). A Melee row
+    needs a Reach and a Ranged row needs a Range (ERRORS); the other column stays blank. A thrown
+    melee weapon's range is a trait ("Thrown 10 ft"), as the book prints it. The converter WARNS
+    on a distance it cannot read as feet and on a value in the wrong column (the roster's melee
+    table has no Range and its ranged table no Reach, so such a value reaches equipment.json only).
+  Traits are comma-separated as the book prints them. equipment.json carries them as a list; the
+    roster blocks get them joined back with ", ".
+  Material (Armor) is Padded, Leather, Mail, Scale or Plate: the roster's materials table, which
+    stays hand-kept. Blank, it is derived from the first Trait, which is how the book prints a
+    piece ("Padded, Comfort" is Padded); a first Trait that is no material is then an ERROR, and a
+    Material that disagrees with the first Trait is a WARNING. Zone is Head, Torso, Arms or Legs.
+  Protection, Load, Bonus and Hardness must be whole numbers (ERRORS). Bonus is the shield's Gear
+    bonus to Guard when Raised, 0 for the Tower Shield, whose footnote is its Note. Notes
+    (Weapons) is free prose: Unarmed Strike carries the book's "Varies; typically" remark there,
+    with the typical values in the data columns. Price is "5 gp" or blank.
+  Duplicate names on a sheet, and the same piece in two workbooks, are ERRORS.
+  Writes assets/equipment.json (weapons, armor, shields; every row with its enabled flag) AND
+    regenerates the roster.json blocks weaponsMelee, weaponsRanged, armorPieces and shields from
+    EVERY row, enabled or not, in the positional shapes the web app, the Constellation Compendium
+    docx and the Foundry build already read. Those four blocks are generated the way the
+    ancestries block is: hand edits to them are pointless, the next run overwrites them, and the
+    run says so. Materials, handling and the weapon and armor trait tables stay hand-kept in
+    roster.json; nothing asked for them. A checkout without the workbook keeps equipment.json and
+    the roster as found, with a warning saying so.
+  Enabled? works as on a tree sheet: "Yes" ships the row to Foundry, anything else keeps it out,
+    and a sheet without the column ships every row. Every row is still written to equipment.json
+    with its flag, and every row still goes into the roster blocks, because the web app and the
+    compendium docx are the authoring views of the whole book. Foundry (build_foundry.mjs) reads
+    equipment.json and ships only the enabled rows, under the same document ids as before, so an
+    Item already on a character sheet keeps its UUID when its row is disabled and re-enabled.
+
 RICH TEXT: bold / italic / underline / strikethrough / font color applied INSIDE the
 Effect or Description cell mirrors into the app, the tree explorer, and the Player's Handbook.
 Newlines in a cell become <br>.
@@ -106,7 +149,9 @@ Skill whose root is disabled. The run ends its counts with one line of what Foun
 
 To sync after editing, from the project root:
   python assets/xlsx_to_trees.py             -> assets/trees.json + backgrounds.json + languages.json
-                                                + actions.json, and the ancestries block of roster.json
+                                                + actions.json + equipment.json, and the ancestries,
+                                                weaponsMelee, weaponsRanged, armorPieces and shields
+                                                blocks of roster.json
   python assets/inject.py                    -> Starwrought_App.html + the constellation viewer
   python assets/render_constellations.py     -> assets/constellations/*.png
   python assets/sheet_gen.py                 -> the fillable and Mira character sheets

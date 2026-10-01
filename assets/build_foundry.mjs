@@ -3,6 +3,7 @@
  * build_foundry.js
  *
  * assets/trees.json + assets/roster.json + assets/backgrounds.json + assets/languages.json
+ *   + assets/actions.json and assets/equipment.json when the converter has written them
  *   -> foundry/starwrought/packs/_source/<pack>/*.json     (compendium pack sources)
  *   -> foundry/starwrought/content/constellations.json     (the runtime Constellation index)
  *   -> foundry/starwrought/assets/constellations/*.png     (plate art, copied)
@@ -61,8 +62,8 @@ const read = name => JSON.parse(fs.readFileSync(path.join(ROOT, "assets", name),
 
 /**
  * The `Enabled?` gate (ruling 61). The converter writes `enabled: true|false` on every node, tree,
- * background and action; only an explicit `false` turns a row off here, so JSON from before the
- * column existed, or a sheet that has not been curated yet, still ships everything.
+ * background, action and equipment row; only an explicit `false` turns a row off here, so JSON from
+ * before the column existed, or a sheet that has not been curated yet, still ships everything.
  */
 const isEnabled = row => row?.enabled !== false;
 
@@ -71,7 +72,8 @@ const tally = {
   constellations: { enabled: 0, total: 0 },
   talents: { enabled: 0, total: 0 },
   chassis: { enabled: 0, total: 0 },
-  sheetActions: { enabled: 0, total: 0 }
+  sheetActions: { enabled: 0, total: 0 },
+  equipment: { enabled: 0, total: 0 }
 };
 function count(kind, enabled) {
   tally[kind].total += 1;
@@ -428,6 +430,49 @@ for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
 /*  Equipment                                   */
 /* -------------------------------------------- */
 
+// data/equipment.xlsx is authoritative for weapons, armor and shields (Mike, 2026-10-01; ruling 64).
+// The converter writes assets/equipment.json from it, every row carrying `enabled`, and regenerates
+// the roster's weaponsMelee, weaponsRanged, armorPieces and shields blocks from the same rows for the
+// authoring views (the ancestries precedent). This build reads the JSON when it is there and writes
+// a document for each enabled row alone (ruling 61). A checkout without the workbook has no JSON,
+// and then the roster blocks build the pack as they did before the sheet existed, every row
+// shipping, because hand-kept roster JSON carries no flag (the actions precedent: roster rows
+// always ship).
+//
+// Whichever source is read, a document is keyed `weapon:<slug>`, `armor:<slug>` or `shield:<slug>`
+// of its name, exactly as the roster loops keyed it, so the sheet moves no id and orphans no owned
+// Item's UUID, and a row disabled today restores the same document when it is enabled again.
+const equipmentPath = path.join(ROOT, "assets", "equipment.json");
+const equipment = fs.existsSync(equipmentPath) ? read("equipment.json") : null;
+const equipmentSource = equipment ? "data/equipment.xlsx" : "STARWROUGHT Playtest v4.10";
+
+// The roster blocks read into the sheet's row shape, so one builder per type serves both sources.
+// The ranged block has no price column, and neither does the book's Ranged Weapons table, so a
+// ranged weapon's price is blank from either source; the sheet's Price column is filled only for
+// melee weapons (Unarmed Strike excepted), and priceOf turns the blank into "".
+const rosterEquipment = {
+  weapons: [
+    ...(roster.weaponsMelee ?? []).map(([name, handling, group, damage, reach, traits, price]) =>
+      ({ name, kind: "Melee", handling, group, damage, reach, traits, price, enabled: true })),
+    ...(roster.weaponsRanged ?? []).map(([name, handling, group, damage, range, traits]) =>
+      ({ name, kind: "Ranged", handling, group, damage, range, traits, enabled: true }))
+  ],
+  armor: (roster.armorPieces ?? []).map(([name, zone, protection, load, price, traits, material]) =>
+    ({ name, zone, protection, load, price, traits, material, enabled: true })),
+  shields: (roster.shields ?? []).map(([name, bonus, hardness, load, price, note]) =>
+    ({ name, bonus, hardness, load, price, note, enabled: true }))
+};
+// The JSON, once present, is the whole truth: a block it lacks is an empty block, not a reason to
+// read the roster for that type, so a sheet that drops every shield ships no shield.
+const equipmentRows = type => (equipment ? equipment[type] : rosterEquipment[type]) ?? [];
+
+/** A printed price, or blank: the tables mark a free or priceless row with a dash. */
+const priceOf = price => (price == null || price === "—" || price === "-") ? "" : String(price);
+
+/** A whole number from either source; a blank cell reads as 0. */
+const whole = value => Number(value ?? 0) || 0;
+
+// The four folders always ship, so the sidebar has a place to say nothing is enabled under them.
 const equipFolders = {
   melee: folder("equipment", "Melee Weapons", { sort: 0, color: "#5a2f2f" }),
   ranged: folder("equipment", "Ranged Weapons", { sort: 1, color: "#5a2f2f" }),
@@ -435,90 +480,78 @@ const equipFolders = {
   shields: folder("equipment", "Shields", { sort: 3, color: "#2f4a5a" })
 };
 
-for (const [name, handling, group, damage, reach, traitLine, price] of roster.weaponsMelee ?? []) {
-  const dmg = parseDamage(damage);
+for (const row of equipmentRows("weapons")) {
+  if (!count("equipment", isEnabled(row))) continue;
+  const ranged = /^ranged$/i.test(String(row.kind ?? "").trim());
   item("equipment", {
-    key: `weapon:${slugify(name)}`,
-    name,
+    key: `weapon:${slugify(row.name)}`,
+    name: row.name,
     type: "weapon",
-    folder: equipFolders.melee,
+    folder: ranged ? equipFolders.ranged : equipFolders.melee,
     system: {
-      handling: String(handling).toLowerCase(),
-      group,
-      damage: dmg,
-      reach: parseReach(reach),
-      traits: splitTraits(traitLine),
-      price: price === "—" ? "" : (price ?? ""),
+      handling: String(row.handling ?? "").toLowerCase(),
+      group: row.group ?? "",
+      damage: parseDamage(row.damage),
+      // A ranged weapon's Range lives in its Ranged N trait, which is where the system reads it; its
+      // reach is 0 whatever the sheet's Range or Reach cell says.
+      reach: ranged ? 0 : parseReach(row.reach),
+      traits: splitTraits(row.traits),
+      price: priceOf(row.price),
       quantity: 1,
       load: 0,
       state: "carried",
-      description: "",
-      source: "STARWROUGHT Playtest v4.10"
+      // The sheet's Notes column (Unarmed Strike's "Varies; typically" remark) is the only prose a
+      // weapon row has; the roster never carried any.
+      description: row.notes ? `<p>${row.notes}</p>` : "",
+      source: equipmentSource
     }
   });
 }
 
-for (const [name, handling, group, damage, , traitLine] of roster.weaponsRanged ?? []) {
-  const dmg = parseDamage(damage);
+for (const row of equipmentRows("armor")) {
+  if (!count("equipment", isEnabled(row))) continue;
   item("equipment", {
-    key: `weapon:${slugify(name)}`,
-    name,
-    type: "weapon",
-    folder: equipFolders.ranged,
-    system: {
-      handling: String(handling).toLowerCase(),
-      group,
-      damage: dmg,
-      reach: 0,
-      traits: splitTraits(traitLine),
-      price: "",
-      quantity: 1,
-      load: 0,
-      state: "carried",
-      description: "",
-      source: "STARWROUGHT Playtest v4.10"
-    }
-  });
-}
-
-for (const [name, zone, protection, load, price, traitLine, material] of roster.armorPieces ?? []) {
-  item("equipment", {
-    key: `armor:${slugify(name)}`,
-    name,
+    key: `armor:${slugify(row.name)}`,
+    name: row.name,
     type: "armor",
     folder: equipFolders.armor,
     system: {
-      zone: String(zone).toLowerCase(),
-      protection,
-      load,
-      material: String(material ?? "none").toLowerCase(),
-      traits: splitTraits(traitLine),
-      price,
+      zone: String(row.zone ?? "").toLowerCase(),
+      protection: whole(row.protection),
+      load: whole(row.load),
+      // The converter fills a blank Material from the first trait, so the sheet always names one;
+      // "none" is only for a roster row that never had the column.
+      material: String(row.material ?? "none").toLowerCase(),
+      traits: splitTraits(row.traits),
+      price: priceOf(row.price),
       quantity: 1,
       state: "carried",
       description: "",
-      source: "STARWROUGHT Playtest v4.10"
+      source: equipmentSource
     }
   });
 }
 
-for (const [name, bonus, hardness, load, price, note] of roster.shields ?? []) {
+for (const row of equipmentRows("shields")) {
+  if (!count("equipment", isEnabled(row))) continue;
+  // The Tower Shield's Note is the book's footnote, and it is what makes the shield grant Cover.
+  const note = String(row.note ?? "").trim();
   item("equipment", {
-    key: `shield:${slugify(name)}`,
-    name,
+    key: `shield:${slugify(row.name)}`,
+    name: row.name,
     type: "shield",
     folder: equipFolders.shields,
     system: {
-      bonus,
-      hardness,
-      load,
-      cover: /cover/i.test(note ?? ""),
-      price,
+      bonus: whole(row.bonus),
+      hardness: whole(row.hardness),
+      load: whole(row.load),
+      cover: /cover/i.test(note),
+      price: priceOf(row.price),
       quantity: 1,
       state: "carried",
       traits: [],
       description: note ? `<p>${note}</p>` : "",
-      source: "STARWROUGHT Playtest v4.10"
+      source: equipmentSource
     }
   });
 }
@@ -928,9 +961,11 @@ function writeContentIndex() {
   );
 
   // Carry the handbook version into the system, so the rules it implements can be read in game
-  // rather than inferred from the system's own version number. `constellations` and `talents` are
-  // the authored totals; `enabled` is what the packs actually hold, so the init log in
-  // helpers/content.mjs can say how many of the authored Talents ship (ruling 61).
+  // rather than inferred from the system's own version number. `constellations`, `talents` and
+  // `equipment` are the authored totals; `enabled` is what the packs actually hold, so the init log
+  // in helpers/content.mjs can say how many of the authored Talents ship (ruling 61). Equipment
+  // counts weapons, armor and shields together, from the sheet or from the roster fallback
+  // (ruling 64).
   const syncPath = path.join(ROOT, "data", "SYNC.json");
   if (fs.existsSync(syncPath)) {
     const sync = JSON.parse(fs.readFileSync(syncPath, "utf8"));
@@ -939,9 +974,11 @@ function writeContentIndex() {
       syncedOn: sync.syncedOn,
       constellations: tally.constellations.total,
       talents: tally.talents.total,
+      equipment: tally.equipment.total,
       enabled: {
         constellations: tally.constellations.enabled,
-        talents: tally.talents.enabled
+        talents: tally.talents.enabled,
+        equipment: tally.equipment.enabled
       }
     }, null, 2)}\n`, "utf8");
   }
@@ -1018,6 +1055,10 @@ console.log(`  ${total} documents written, ${constellationIndex.length} Constell
 const ratio = kind => `${tally[kind].enabled} of ${tally[kind].total}`;
 console.log(`  enabled for Foundry: ${ratio("constellations")} constellations, ${ratio("talents")} talents, `
   + `${ratio("chassis")} chassis, ${ratio("sheetActions")} sheet actions.`);
+// Weapons, armor and shields together (ruling 64), and which source built them: the roster fallback
+// is always N of N, since hand-kept rows carry no flag.
+console.log(`  equipment: ${ratio("equipment")} enabled`
+  + (equipment ? " (data/equipment.xlsx)" : " (roster fallback: assets/equipment.json is absent)"));
 
 let compiled = null;
 if (!process.argv.includes("--no-compile")) compiled = await compile();

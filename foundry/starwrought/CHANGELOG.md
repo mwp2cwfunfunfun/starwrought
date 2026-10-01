@@ -7,6 +7,29 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.4.2 (2026-10-01): Player's Handbook v4.10, equipment authored in a spreadsheet
+
+### Added
+
+- **Weapons, armor and shields are authored in `data/equipment.xlsx`** (Mike, 2026-10-01), built
+  from the handbook's Chapter 5 tables and authoritative for them from now on (ruling 64 in
+  `v4.10-sync-report.md`). Three tabs: Weapons (Kind Melee or Ranged, Handling, Group, Damage,
+  Reach or Range, Traits, Price, Notes), Armor (Zone, Protection, Load, Price, Traits, Material)
+  and Shields (Bonus, Hardness, Load, Price, Note), each with the `Enabled?` column; shields have
+  a tab of their own because the book keeps them apart from armor and their columns differ. The
+  converter writes `assets/equipment.json` with an `enabled` flag on every row and regenerates the
+  roster's four equipment blocks from the sheet (every row, since the web app and the Constellation
+  Compendium are the authoring views), so hand edits to those blocks are now pointless, as they
+  are for the ancestries block. The Foundry build reads `equipment.json`, ships only the enabled
+  rows under the same document ids as before (an owned sword keeps its UUID), stamps them with the
+  source `data/equipment.xlsx` as it does the sheet's actions, carries a weapon's Notes column into
+  its description, falls back to the roster when the file is absent, and stamps the equipment
+  counts into `content/sync.json`. The workbook was written with every row enabled; Mike curated it the same day, so Foundry ships 4
+  of 29 weapons (Unarmed Strike, Dagger, Shortsword, Spear), 9 of 20 armor pieces (the padded and
+  plate pieces) and no shield. Items already on a character sheet are untouched.
+
+---
+
 ## 0.4.1 (2026-10-01): Player's Handbook v4.10, the Enabled? gate and Counter at Expert
 
 Two rulings from the author after 0.4.0 shipped, recorded as rulings 60 to 63 in
