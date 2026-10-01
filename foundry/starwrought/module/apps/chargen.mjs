@@ -17,6 +17,12 @@
  * Background, one from the Calling's free Training), 1 Lore, 1 Calling, 2 Defense (two different
  * Defenses, the player's choice) and 3 Comets. Fourteen Talent Points is the floor; Talents that
  * grant points push it higher.
+ *
+ * The wizard shops only from what the spreadsheets enable (ruling 61 and 62). A card step with
+ * nothing enabled says so and lets Next through without a pick; a point slot aimed at a
+ * Constellation with no enabled Root says so instead of showing an empty picker; and the review
+ * measures "short" against the floor that is reachable with what is enabled, not the book's 14,
+ * while still printing the book's number beside it.
  */
 
 import * as SW from "../config.mjs";
@@ -27,12 +33,14 @@ import {
 import {
   canBuy, ownsTalent, pointsIn, slotChoices, constellationLabel
 } from "../helpers/chargen-rules.mjs";
+import { constellationEnabled, enabledConstellations } from "../helpers/content.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 /**
  * The steps, in the order the handbook prints them. A step marked `pick` is an identity choice
- * (one card chosen) and blocks Next until it is made; the others are point slots.
+ * (one card chosen) and blocks Next until it is made, unless nothing is enabled for it, in which
+ * case there is nothing to pick and Next goes through (ruling 62); the others are point slots.
  */
 const STEPS = [
   { id: "training", icon: "fa-solid fa-hand-fist", pick: true },
@@ -488,13 +496,66 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         }))
       })),
       // A slot with nowhere legal left to go must not be able to block the wizard forever.
-      stuck: remaining > 0 && choices.length === 0
+      stuck: remaining > 0 && choices.length === 0,
+      // The particular case of stuck where the slot names its Constellation and that Constellation
+      // has no enabled Root (a Background that grants a Skill the spreadsheets have switched off):
+      // the note says the content is not enabled, rather than that the point is spent out.
+      nothingEnabled: remaining > 0 && choices.length === 0
+        && slot.scope === "constellation"
+        && (slot.slugs ?? []).every(s => !hasEnabledRoot(s)),
+      // The neighbouring case (ruling 62): the Root is enabled and already owned (a Calling's free
+      // Training in a Skill the Background Trained), and nothing else enabled is left there to
+      // buy. The note names the Constellation and says the spreadsheets are what it waits on.
+      nothingLeft: remaining > 0 && choices.length === 0
+        && slot.scope === "constellation"
+        && (slot.slugs ?? []).some(s => hasEnabledRoot(s))
+        && (slot.slugs ?? []).every(s => !hasEnabledRoot(s) || nothingLeftIn(this.actor, s))
+        ? game.i18n.format("STARWROUGHT.Chargen.nothingLeft", {
+          name: (slot.slugs ?? []).filter(hasEnabledRoot).map(s => SW.getConstellation(s).name).join(", ")
+        })
+        : ""
     };
   }
 
   /** Every slot on a step, viewed. */
   #stepSlots(step) {
     return this.#slotsFor(step).map(s => this.#slotView(s));
+  }
+
+  /**
+   * What a card step has to offer, as the keys its cards would carry, or null for a step that is
+   * not a card step. Read from the compendia, which hold only what the spreadsheets enable
+   * (ruling 61), so an empty list means nothing is enabled for the step.
+   * @param {number} step
+   * @returns {string[]|null}
+   */
+  #cardOptions(step) {
+    switch (STEPS[step]?.id) {
+      case "training":
+        // A Training exists for the wizard when its Root is in the compendium (Melee today).
+        return TRAINING_CHOICES.filter(slug => rootOf(slug));
+      case "ancestry": return SwContent.chassis.ancestry.map(a => a.name);
+      case "bloodline": {
+        const ancestry = SwContent.chassis.ancestry.find(a => a.name === this.picks.ancestry);
+        return ancestry ? bloodlinesIn(ancestry.constellation).map(t => t.name) : [];
+      }
+      case "culture": return SwContent.chassis.culture.map(c => c.name);
+      case "background": return SwContent.chassis.background.map(b => b.name);
+      case "calling": return SwContent.chassis.calling.map(c => c.name);
+      default: return null;
+    }
+  }
+
+  /**
+   * Does this step still owe a card pick? A card step with nothing enabled owes none (ruling 62):
+   * there is no card to choose, so Next, Finish and the outstanding list all let it through.
+   * @param {number} step
+   * @returns {boolean}
+   */
+  #needsPick(step) {
+    if (!STEPS[step]?.pick) return false;
+    const options = this.#cardOptions(step) ?? [];
+    return options.length > 0 && !this.picks[STEPS[step].id];
   }
 
   /**
@@ -565,8 +626,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
    * is no help when the thing blocking it is below the fold.
    */
   #outstanding(step) {
-    const needs = STEPS[step]?.pick ? STEPS[step].id : null;
-    if (needs && !this.picks[needs]) {
+    if (this.#needsPick(step)) {
       return [{ id: "", label: game.i18n.format("STARWROUGHT.Chargen.needChoice", {
         step: game.i18n.localize(`STARWROUGHT.Chargen.step.${STEPS[step].id}`)
       }) }];
@@ -576,10 +636,13 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       .map(s => ({ id: s.id, label: s.label, remaining: s.remaining }));
   }
 
-  /** A step is complete when its choice is made and its points are spent. */
+  /**
+   * A step is complete when its choice is made and its points are spent. A card step with nothing
+   * enabled has no choice to make, and a slot with nowhere to go is set aside, so neither holds
+   * the wizard.
+   */
   #stepComplete(step) {
-    const needs = STEPS[step]?.pick ? STEPS[step].id : null;
-    if (needs && !this.picks[needs]) return false;
+    if (this.#needsPick(step)) return false;
     return this.#stepSlots(step).every(s => s.done || s.stuck);
   }
 
@@ -611,6 +674,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       slots: this.#stepSlots(step),
       // The six card steps share one card grid, so the template needs the action's name.
       chooseAction: `choose${STEPS[step].id.charAt(0).toUpperCase()}${STEPS[step].id.slice(1)}`,
+      isCardStep: !!STEPS[step].pick,
       complete: this.#stepComplete(step),
       outstanding: this.#outstanding(step),
       isFirst: step === 0,
@@ -619,6 +683,12 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     };
 
     await this[`_context_${STEPS[step].id}`]?.(context);
+    // A card step the spreadsheets have left empty (Bloodline today) shows a note in place of the
+    // grid; the Training step has its own wording, since it is the one Talent the book grants.
+    context.stepEmpty = context.isCardStep && !(context.cards?.length);
+    context.emptyNote = context.stepEmpty
+      ? game.i18n.localize(STEPS[step].id === "training" ? "STARWROUGHT.Chargen.trainingNone" : "STARWROUGHT.Chargen.nothingEnabled")
+      : "";
     context.summary = this.#summary();
     return context;
   }
@@ -632,13 +702,17 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
   /**
    * Melee or Ranged, as two cards. Each shows its Key Attribute, the Root it grants, and the
    * Combat Styles that are its children, since a point in any of those will count toward this
-   * rank too (PHB v4.10, Parent Constellations).
+   * rank too (PHB v4.10, Parent Constellations). Only a Training whose Root is in the compendium
+   * is offered (ruling 62): with one card the step still asks, with none it says so.
    */
   async _context_training(context) {
-    context.cards = TRAINING_CHOICES.map(slug => {
+    const offered = this.#cardOptions(STEP.training);
+    context.cards = offered.map(slug => {
       const constellation = SW.getConstellation(slug);
       const root = rootOf(slug);
-      const children = childrenOf(slug).map(c => c.name);
+      // Children that are themselves enabled; a Combat Style the spreadsheets have switched off
+      // is not something the card should promise.
+      const children = childrenOf(slug).filter(c => constellationEnabled(c.slug)).map(c => c.name);
       const attribute = SW.ATTRIBUTES[constellation.attribute];
       const childrenNote = children.length
         ? `<p class="sw-note">${game.i18n.format("STARWROUGHT.Chargen.trainingChildren", {
@@ -753,10 +827,15 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     });
     const sys = this.actor.system;
     const talents = this.actor.items.filter(i => i.type === "talent").length;
+    const reachable = this.#reachableFloor();
     context.review = {
       talents,
       minimum: MINIMUM_TALENTS,
-      short: Math.max(0, MINIMUM_TALENTS - talents),
+      reachable,
+      // "Short" is measured against what is enabled can place, not the book's 14 (ruling 62): a
+      // Bloodline nobody can choose is not a point the player forgot.
+      short: Math.max(0, reachable - talents),
+      reachableNote: this.#reachableNote(reachable),
       vigor: this.#vigorLine(),
       attributeRule: game.i18n.format("STARWROUGHT.Chargen.attributeRule", { divisor: SW.ATTRIBUTE_DIVISOR }),
       rankRule: game.i18n.format("STARWROUGHT.Chargen.rankRule", {
@@ -769,6 +848,88 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       })),
       speed: sys.speed ?? sys.details?.ancestry?.speed ?? SW.DEFAULT_SPEED
     };
+  }
+
+  /**
+   * The floor a 1st-level character can actually reach with what the spreadsheets enable
+   * (ruling 62). The book's 14 is one granted Training, three Origin Roots, three Background
+   * points, the Calling's point and its free Training, two Defense points and three Comets; each
+   * is taken off when nothing enabled can receive it:
+   *   - Training, Ancestry, Bloodline, Culture: 1 each, when the step offers no card. Bloodline is
+   *     read against the chosen Ancestry once there is one.
+   *   - Background: 3 when none is enabled. Calling: 2 when none is enabled (the point and the
+   *     free Training). Otherwise the chosen Background's grants and the chosen Calling's two
+   *     homes are directed points, and each Constellation they name can take as many of them as
+   *     it has enabled Talents a 1st-level character may buy (tier T, the Root included): a Skill
+   *     with no enabled Root takes none, and a Skill the Background and the Calling both Train,
+   *     with only its Root enabled, takes one of the two. Every directed point over that capacity
+   *     is a point lost.
+   *   - Defenses: the two points want two different Defenses, so each enabled Defense Root short
+   *     of two is a point lost.
+   *   - Comets: all three when no Constellation outside the Origin has an enabled Root. Which
+   *     Talents a particular build then qualifies for is the Comets step's business, not this
+   *     estimate's.
+   * Talents that grant points push the real total above either floor; they are not counted here.
+   * @returns {number}
+   */
+  #reachableFloor() {
+    let available = MINIMUM_TALENTS;
+    const picks = this.picks;
+
+    if (!this.#cardOptions(STEP.training).length) available -= 1;
+    if (!this.#cardOptions(STEP.ancestry).length) available -= 1;
+    if (!this.#bloodlineReachable()) available -= 1;
+    if (!this.#cardOptions(STEP.culture).length) available -= 1;
+
+    // Points the Background and the Calling direct at named Constellations, counted per slug, so
+    // that two points aimed at one Skill with a lone enabled Talent register as one lost.
+    const directed = {};
+    const direct = slug => { directed[slug] = (directed[slug] ?? 0) + 1; };
+
+    const backgrounds = SwContent.chassis.background;
+    const background = backgrounds.find(b => b.name === picks.background);
+    if (!backgrounds.length) available -= 3;
+    else if (background) {
+      for (const granted of background.grants ?? []) {
+        direct(/^Lore\b/i.test(granted) ? loreSlug(fieldOf(granted)) : SW.slugify(granted));
+      }
+    }
+
+    const callings = SwContent.chassis.calling;
+    const calling = callings.find(c => c.name === picks.calling);
+    if (!callings.length) available -= 2;
+    else if (calling) {
+      direct(calling.constellation || SW.slugify(calling.name));
+      const granted = calling.grants?.[0];
+      if (granted) direct(SW.slugify(granted));
+    }
+
+    for (const [slug, points] of Object.entries(directed)) {
+      available -= Math.max(0, points - firstLevelCapacity(slug));
+    }
+
+    const defenseHomes = Object.values(SW.DEFENSES).filter(d => hasEnabledRoot(d.slug)).length;
+    available -= Math.max(0, DEFENSE_POINTS - defenseHomes);
+
+    const cometHomes = enabledConstellations().filter(c => (c.category !== "origin") && hasEnabledRoot(c.slug));
+    if (!cometHomes.length) available -= COMET_POINTS;
+
+    return Math.max(0, available);
+  }
+
+  /**
+   * Can a Bloodline be chosen at all: the chosen Ancestry's, once one is chosen, or any Ancestry's
+   * before that, so the number does not swing when the Ancestry step is still ahead.
+   */
+  #bloodlineReachable() {
+    if (this.picks.ancestry) return this.#cardOptions(STEP.bloodline).length > 0;
+    return SwContent.chassis.ancestry.some(a => bloodlinesIn(a.constellation).length > 0);
+  }
+
+  /** The sentence that says the reachable floor differs from the book's, or "" when it does not. */
+  #reachableNote(reachable) {
+    if (reachable === MINIMUM_TALENTS) return "";
+    return game.i18n.format("STARWROUGHT.Chargen.reachableFloor", { available: reachable, minimum: MINIMUM_TALENTS });
   }
 
   /** "10 + 8 + 3 = 21": the Vigor formula with this character's numbers in it. */
@@ -802,9 +963,13 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
           glyph: SW.ATTRIBUTES[c.attribute]?.glyph ?? ""
         };
       });
+    const reachable = this.#reachableFloor();
     return {
       talents: this.actor.items.filter(i => i.type === "talent").length,
       minimum: MINIMUM_TALENTS,
+      // The rail counts against what is enabled can place, and says so when that is under 14.
+      reachable,
+      reachableNote: this.#reachableNote(reachable),
       constellations,
       attributes: Object.entries(sys.attributes ?? {}).map(([key, a]) => ({
         key, glyph: a.glyph, mod: a.mod, points: a.points,
@@ -1102,6 +1267,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     // Full Vigor to start: 10 + Ancestry Vigor + Calling Vigor, as the actor derives it.
     const updates = { "system.vigor.value": this.actor.system.vigor?.max ?? this.#vigorLine().total };
     if (name) updates.name = name;
+    // The reachable floor is read before the wizard's flag goes, since it reads the picks.
+    const reachableNote = this.#reachableNote(this.#reachableFloor());
     await this.actor.update(updates);
     await this.actor.unsetFlag(SW.SYSTEM_ID, "chargen");
     await ChatMessage.create({
@@ -1114,7 +1281,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
           ancestry: this.actor.system.details.ancestry.name,
           calling: this.actor.system.details.calling.name,
           vigor: this.#vigorLine().total
-        })}</p></div>`
+        })}</p>${reachableNote ? `<p class="sw-note">${reachableNote}</p>` : ""}</div>`
     });
     await this.close();
     this.actor.sheet.render({ force: true });
@@ -1149,6 +1316,40 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 function signed(value) {
   const n = Number(value) || 0;
   return `${n < 0 ? "−" : "+"}${Math.abs(n)}`;
+}
+
+/**
+ * Can a point land in this Constellation at all: the spreadsheets enable it (ruling 61) and its
+ * Root is in the compendium. A Lore (X) instance reads through to the Lore template, as `rootOf`
+ * does. This is the test behind "nothing enabled" on a slot and behind the reachable floor.
+ * @param {string} slug
+ * @returns {boolean}
+ */
+function hasEnabledRoot(slug) {
+  return !!slug && constellationEnabled(slug) && !!rootOf(slug);
+}
+
+/**
+ * How many directed points a Constellation can take at 1st level with what is enabled: its
+ * enabled tier-T Talents, the Root among them (a Lore (X) shops from the Lore template). Zero
+ * when its Root is not enabled, since nothing there can be bought before the Root.
+ * @param {string} slug
+ * @returns {number}
+ */
+function firstLevelCapacity(slug) {
+  if (!hasEnabledRoot(slug)) return 0;
+  return talentsIn(slug).filter(t => (t.tier ?? "T") === "T").length;
+}
+
+/**
+ * Is every enabled Talent of a Constellation already on the character, so a point directed there
+ * has nothing left to buy? The test behind the "nothing left" note on a stuck slot (ruling 62).
+ * @param {Actor} actor
+ * @param {string} slug
+ * @returns {boolean}
+ */
+function nothingLeftIn(actor, slug) {
+  return talentsIn(slug).every(t => ownsTalent(actor, slug, t.name));
 }
 
 /** The Defense key (awareness, evade, guard, endure) whose Constellation slug this is, or null. */

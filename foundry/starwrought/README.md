@@ -68,11 +68,11 @@ recorded plus a list on the sheet.
 
 | Pack | Contents |
 |---|---|
-| Constellations | 31 Constellations with their Key Attribute, category, parent and plate art |
-| Talents | 177 Talents, foldered by Constellation |
-| Ancestries, Bloodlines, Cultures, Backgrounds & Callings | 13 chassis Items |
+| Constellations | The Constellations whose Root is enabled in the spreadsheets (11 of the 31 authored today), with their Key Attribute, category, parent and plate art |
+| Talents | The enabled Talents (37 of the 177 authored today), foldered by Constellation. `Enabled? = Yes` in `data/*.xlsx` is what ships a row; the content index still names every Constellation so owned Talents of a disabled one resolve |
+| Ancestries, Bloodlines, Cultures, Backgrounds & Callings | The enabled chassis Items (5 of the 13 authored today: the Human Ancestry, the Torchbearer Human Bloodline, the Serrovane Culture, the Acrobat Background and the Weaponmaster Calling). The five folders always ship |
 | Equipment | 29 weapons, 20 armor pieces, 3 shields |
-| Maneuvers & Activities | 53 Maneuvers, Activities and Reactions, foldered as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special; Exploration Mode; Downtime Mode; Reactions). Those authored in `data/actions.xlsx` replace the roster's row of the same name |
+| Maneuvers & Activities | 52 Maneuvers, Activities and Reactions today, foldered as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special; Exploration Mode; Downtime Mode; Reactions). Those authored in `data/actions.xlsx` replace the roster's row of the same name, and only an enabled sheet row ships, so an action authored there but not enabled (Aid today) appears nowhere until its row reads Yes |
 | Rules Reference | 20 pages of reference tables |
 | Macros | Recenter, Recovery Check, A Night's Rest, Relevant Check, Roll Initiative by Activity |
 

@@ -5,8 +5,8 @@
  * action on a Reaction." The sheet has the chips, but the sheet is a window away; the HUD is a
  * right-click on the token that just had an arrow pointed at it. One button, showing the current
  * answer, cycling to the next one this actor can actually take: Evade, Guard, then Void, Parry and
- * Counter when the Talents behind them are owned. A Reaction stance the actor has not earned is
- * skipped, not offered.
+ * Counter when the Talent behind them is owned (and, for Counter, Expert rank in Melee reached;
+ * ruling 63). A Reaction stance the actor has not earned is skipped, not offered.
  */
 
 import { stanceContext } from "../helpers/stance.mjs";

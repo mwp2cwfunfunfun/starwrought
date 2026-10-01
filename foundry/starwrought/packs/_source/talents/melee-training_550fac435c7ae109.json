@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Counter ❶↺</b> and <b>Intercept ❶↺</b> Reactions.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
+    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Intercept ❶↺</b> Reaction. At Expert rank in Melee you also gain the <b>Counter ❶↺</b> Reaction.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
     "description": "",
     "cost": "passive",
     "costMax": "",

@@ -57,6 +57,7 @@
 let TREES = {
  "Human": {
   "category": "Ancestry",
+  "enabled": true,
   "feeds": "Presence",
   "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -65,6 +66,7 @@ let TREES = {
     "name": "Humanity",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You gain a +1 Condition bonus on checks to Aid. If you are Expert in Human, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.",
     "desc": "Short lives teach humans to close ranks and pull together.",
     "root": true
@@ -73,6 +75,7 @@ let TREES = {
     "name": "Driven",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You gain a Calling Talent Point.",
     "grant": {
      "n": 1,
@@ -88,6 +91,7 @@ let TREES = {
     "name": "Quick Study",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You gain a Skill Talent Point.",
     "grant": {
      "n": 1,
@@ -103,6 +107,7 @@ let TREES = {
     "name": "Stubborn Footing",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "The first time each encounter you would be knocked prone, you are not.",
     "requires": [
      "Humanity"
@@ -112,6 +117,7 @@ let TREES = {
     "name": "Close Ranks",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard for physical Attacks.",
     "requires": [
      "Humanity"
@@ -121,6 +127,7 @@ let TREES = {
     "name": "Versatile Human",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You gain 1 Opening Talent Point.",
     "grant": {
      "n": 1,
@@ -135,6 +142,7 @@ let TREES = {
     "name": "Jack of Trades",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You gain a +1 Situation bonus to your Untrained checks.",
     "requires": [
      "Versatile Human"
@@ -146,6 +154,7 @@ let TREES = {
     "name": "Torchbearer Human",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
     "desc": "Some humans carry the light everyone else steers by.",
     "hroot": true
@@ -154,6 +163,7 @@ let TREES = {
     "name": "Steady the Line ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
     "requires": [
      "Torchbearer Human"
@@ -164,6 +174,7 @@ let TREES = {
  },
  "Ambusher": {
   "category": "Calling",
+  "enabled": false,
   "feeds": "Agility",
   "skills": [
    "Stealth"
@@ -175,6 +186,7 @@ let TREES = {
     "name": "Sneak Attack",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You become Trained in Stealth.<br>You gain Sneak Attack:<br>+1d6 precision damage vs. Off-Guard foes.<br>Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.",
     "root": true
    },
@@ -182,6 +194,7 @@ let TREES = {
     "name": "Surprise Attacker",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "In the first round, foes that haven't acted yet are Wrong-Footed to you.",
     "requires": [
      "Sneak Attack"
@@ -191,6 +204,7 @@ let TREES = {
     "name": "Opportunist ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> An ally Hits a creature within your reach.<br><b>Effect</b> Strike that creature. It is Off-Guard to this Strike.",
     "requires": [
      "Sneak Attack"
@@ -200,6 +214,7 @@ let TREES = {
     "name": "Twist the Blade",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Once per round, when your Sneak Attack damage applies to a Hit, the Zone it landed on becomes Exposed.",
     "requires": [
      "Sneak Attack"
@@ -209,6 +224,7 @@ let TREES = {
     "name": "Bleeding Wound",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
     "requires": [
      "Sneak Attack"
@@ -218,6 +234,7 @@ let TREES = {
     "name": "Unbalancing Blow",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Whenever your Strike is a critical hit and deals damage, the target is Wrong-Footed against your attacks until the end of the next round.",
     "requires": [
      "Sneak Attack"
@@ -227,6 +244,7 @@ let TREES = {
  },
  "Berserker": {
   "category": "Calling",
+  "enabled": false,
   "feeds": "Might",
   "skills": [
    "Athletics"
@@ -238,13 +256,15 @@ let TREES = {
     "name": "Rage ❶",
     "tier": "T",
     "cost": 1,
-    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br><b>Rage ❶</b><br><b>Duration</b> 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, you're fatigued until you spend three actions to catch your breath.<br>You may end your Rage as a free action, becoming fatigued as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
+    "enabled": false,
+    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br><b>Rage ❶<br>Duration</b> 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, you're fatigued until you spend three actions to catch your breath.<br>You may end your Rage as a free action, becoming fatigued as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
     "root": true
    },
    {
     "name": "Sudden Charge ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You gain Sudden Charge:<br><b>Sudden Charge ❷</b><br>Move twice, then Quick Strike. Your Moves may provoke Intercepts as normal.",
     "requires": [
      "Rage"
@@ -254,6 +274,7 @@ let TREES = {
     "name": "Thick Hide",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While you are Raging, every Zone on you has +1 Protection, including Zones with no armor at all. An Exposed Zone still counts as 0.",
     "requires": [
      "Rage"
@@ -263,6 +284,7 @@ let TREES = {
     "name": "Blood in the Water",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When your Strike drops a creature while you are Raging, your Rage's remaining duration resets to 10 rounds.",
     "requires": [
      "Rage"
@@ -272,6 +294,7 @@ let TREES = {
     "name": "Deaf to Pain",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You ignore the Fatigued condition while Raging, and when your Rage ends you need to spend only 1 action to catch your breath rather than 3.",
     "requires": [
      "Rage"
@@ -281,6 +304,7 @@ let TREES = {
     "name": "Moment of Clarity ⓿",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Frequency</b> once per encounter<br>You push back your rage for a moment in order to think clearly. Until the end of this round, you lose your Heedless condition.",
     "requires": [
      "Rage"
@@ -291,6 +315,7 @@ let TREES = {
  },
  "Bravo": {
   "category": "Calling",
+  "enabled": false,
   "feeds": "Presence",
   "skills": [
    "Acrobatics"
@@ -302,6 +327,7 @@ let TREES = {
     "name": "Panache",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You become Trained in Acrobatics.<br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br>While you have Panache you gain a +1 Situation bonus to Evade and a +1-foot Situation bonus to your Speeds. At Expert rank, Speed bonus increases to 2 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 3 feet.<br>Every talent here requires this.",
     "root": true
    },
@@ -309,6 +335,7 @@ let TREES = {
     "name": "Finisher ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Spend your Panache and Strike, with the following effects:<br><b>Hit</b> add 2d6 precision damage.<br><b>Graze</b> add 1d6 precision damage.<br>You lose the Panache either way.",
     "requires": [
      "Panache"
@@ -318,6 +345,7 @@ let TREES = {
     "name": "Opportune Parry ⓿↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> A creature's Strike against you is Stopped (a Graze or a Miss) while you have Panache.<br><b>Effect</b> You take Control of the attacking weapon as though you had Parried, without spending an action.",
     "requires": [
      "Panache"
@@ -327,6 +355,7 @@ let TREES = {
     "name": "Nimble Recovery",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While you have Panache, you may Recenter ⓿ once per round.",
     "requires": [
      "Panache"
@@ -336,6 +365,7 @@ let TREES = {
     "name": "Bravo's Entrance",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You begin every encounter with Panache if you are not surprised.",
     "requires": [
      "Panache"
@@ -345,6 +375,7 @@ let TREES = {
     "name": "Elegant Buckler",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Raise a Shield ❶ to gain a Situation bonus to Guard from a buckler, increase the bonus from +1 to +2.<br>While you have a buckler raised, if a creature critically misses you with a Strike, you gain panache.",
     "requires": [
      "Panache"
@@ -354,6 +385,7 @@ let TREES = {
     "name": "Extravagant Parry ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Requirements</b> You're wielding one or more one-handed weapons<br>You gain a +1 Situation bonus to Guard until your next Opportunity, or a +2 Situation bonus if you have a free hand or are wielding a weapon with the parry trait. You lose this Situation bonus if you no longer meet this feat's requirement. If a creature misses you with a Strike while you have this bonus, you gain panache.",
     "requires": [
      "Panache"
@@ -363,6 +395,7 @@ let TREES = {
  },
  "Hunter": {
   "category": "Calling",
+  "enabled": false,
   "feeds": "Wits",
   "skills": [
    "Awareness"
@@ -374,6 +407,7 @@ let TREES = {
     "name": "Mark Prey ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You become Trained in Awareness.<br>(Concentrate) Choose one creature you can see. It is your prey until you Mark another or the encounter ends.<br>The first time each round that you Hit your prey, add 1d8 precision damage. You also always know roughly where your prey is while it is within 60 feet, even while it is Hidden or Undetected. The extra precision damage rises to 2d8 at Expert rank, 3d8 at Master, and 4d8 at Legendary.<br>Every talent here requires this.",
     "root": true
    },
@@ -381,6 +415,7 @@ let TREES = {
     "name": "Running Mark",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You may Mark Prey as part of a Move rather than spending an action.",
     "requires": [
      "Mark Prey"
@@ -390,6 +425,7 @@ let TREES = {
     "name": "Read the Quarry",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "The first time each encounter your prey attacks you, you learn if its Evade or Guard is higher.",
     "requires": [
      "Mark Prey"
@@ -399,6 +435,7 @@ let TREES = {
     "name": "Hobbling Strike",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Hit your prey with the first Strike of the round, its Speed is reduced by 2 feet until the end of the next round.",
     "requires": [
      "Mark Prey"
@@ -408,6 +445,7 @@ let TREES = {
     "name": "No Escape ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> Your prey Moves away from you.<br><b>Effect</b> Move up to your Speed toward it. This does not provoke Reactions from your prey.",
     "requires": [
      "Mark Prey"
@@ -417,6 +455,7 @@ let TREES = {
     "name": "Hunter's Aim ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Make a Deliberate weapon Strike ❷ against your Marked Prey. On this Strike, you gain a +2 Situation bonus to the attack roll and ignore your prey's concealed condition and any lesser cover.",
     "requires": [
      "Mark Prey"
@@ -426,6 +465,7 @@ let TREES = {
  },
  "Weaponmaster": {
   "category": "Calling",
+  "enabled": true,
   "feeds": "Might",
   "skills": [
    "Athletics"
@@ -437,6 +477,7 @@ let TREES = {
     "name": "Drilled",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You become Trained in Athletics.<br>You gain the Weapon Familiarity Talent for free.<br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br>You may take the Reactive Strike Talent, even if you are not Expert in Melee. However, you may still only use Reactive Strike with weapons in which you are at least Expert Proficiency Rank.<br>Every Talent in this Constellation requires this.",
     "choice": "Weapon Group",
     "freeTalent": "Weapon Familiarity",
@@ -446,6 +487,7 @@ let TREES = {
     "name": "Hold the Line",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Your Intercept also triggers when a creature within your Reach uses any Motion Maneuver, whether or not it leaves your Reach.",
     "requires": [
      "Drilled"
@@ -455,6 +497,7 @@ let TREES = {
     "name": "Punishing Blow",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Your Intercept disrupts the triggering Maneuver on a Hit, not only a Critical Hit, if the Zone struck was Exposed.",
     "requires": [
      "Drilled"
@@ -464,6 +507,7 @@ let TREES = {
     "name": "Second Nature",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Your weapon specialization damage arrives one rank early with your Drilled group: +2 while Trained, +3 at Expert, +4 at Master, +5 at Legendary.",
     "requires": [
      "Drilled"
@@ -473,6 +517,7 @@ let TREES = {
     "name": "Hold Fast",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "When one of your Strikes is Stopped and would Expose you, you may take 1 Vigor damage per level and Expose nothing instead.",
     "requires": [
      "Drilled"
@@ -482,6 +527,7 @@ let TREES = {
  },
  "Archery": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Agility",
   "parent": "Ranged",
   "meta": "Combat Style • Agility (bows and careful ranged attacks)",
@@ -491,6 +537,7 @@ let TREES = {
     "name": "Archery Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its Talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Draw a Bead ❶ action.<br><b>Draw a Bead ❶ Concentrate</b><br>Choose one creature you can Observe and can reach with your bow.<br>Until the end of your next Opportunity:<br>your next bow Strike against that creature gains a +1 Situation bonus to the attack;<br>ignore the weapon's Unwieldy penalty for that Strike;<br>if that Strike Grazes, you choose the Zone it lands on instead of the defender.",
     "root": true
    },
@@ -498,6 +545,7 @@ let TREES = {
     "name": "Clear the Line",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your ranged attacks treat Lesser Cover as no Cover.",
     "requires": [
      "Archery Training"
@@ -508,6 +556,7 @@ let TREES = {
     "name": "Close Shot",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Reduce the minimum distance of Unwieldy by 5 feet. If that would reduce it to 0, the weapon no longer has Unwieldy for you.",
     "requires": [
      "Archery Training"
@@ -517,6 +566,7 @@ let TREES = {
  },
  "Armored Fighting": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Presence",
   "parent": "Melee",
   "meta": "Combat Style • Presence (the harness as a weapon)",
@@ -526,6 +576,7 @@ let TREES = {
     "name": "Armored Fighting Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank.<br>When determining whether your armor forms a complete harness for an Armored Fighting Talent, all four Zones must be armored in the required material. If you are Master, only three Zones must be armored in the required material.",
     "desc": "Knowing how to exploit armor as part of your fighting method.",
     "feeds": "Might",
@@ -535,6 +586,7 @@ let TREES = {
     "name": "Ironclad",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While wearing Full Plate, gain +1 Condition bonus Physical Guard against Shove, Trip, and Reposition.",
     "requires": [
      "Armored Fighting Training"
@@ -546,6 +598,7 @@ let TREES = {
     "name": "Trust the Harness",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While wearing Full Plate, when you would choose an armored Zone for a Graze, you may choose the Torso even if another rule would normally require another Zone.",
     "requires": [
      "Armored Fighting Training"
@@ -556,6 +609,7 @@ let TREES = {
     "name": "Lock Down ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You settle your weight into your Full Plate harness.<br>While in this <b>Stance</b>:<br>+1 Condition bonus to Physical Guard.<br>You cannot be forcibly moved more than 3 feet by a single effect unless it critically succeeds.<br>Your Speed is reduced by 1 foot.",
     "requires": [
      "Armored Fighting Training"
@@ -566,6 +620,7 @@ let TREES = {
     "name": "Punishing Shove",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you successfully Shove a creature, that creature takes an amount of bludgeoning damage equal to your Might modifier (or double that amount on a Critical Success). This damage increases by 2 when you become an expert in Armored Fighting, 6 when you become a master, and 12 when you become legendary.",
     "requires": [
      "Armored Fighting Training"
@@ -577,6 +632,7 @@ let TREES = {
     "name": "Shoulder Check ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You hit a foe with your armor to throw them off balance. Make a fist Strike even if you don't have a hand free; if you're wielding a gauntlet or spiked gauntlet, you can make a Strike with one of those weapons instead. The Strike gains the following additional results:<br><b>Critical Success</b> The target is Wrong-Footed for you until the end of the next round.<br><b>Success</b> The target is Wrong-Footed for you against the next Attack you attempt against it before the end of your next Opportunity.<br><b>Critical Failure</b> You are Wrong-Footed against melee attacks the target attempts against you until the end of the next round.",
     "requires": [
      "Armored Fighting Training"
@@ -587,6 +643,7 @@ let TREES = {
     "name": "Flowing Defense ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Flowing Defense ❶ Stance</b><br>While wearing Full Mail:<br>when you Recenter, you may also Step;<br>-1 Condition Physical Guard versus Shove<br>retains mail's normal vulnerability to piercing",
     "requires": [
      "Armored Fighting Training"
@@ -596,6 +653,7 @@ let TREES = {
     "name": "Supple Harness",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your first Step each round ignores 1 point of Load Strain's effect on movement-related checks.",
     "requires": [
      "Armored Fighting Training"
@@ -605,6 +663,7 @@ let TREES = {
     "name": "Roll With It ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you are Grazed while wearing Full Mail, you may Step after resolving the attack and damage.",
     "requires": [
      "Armored Fighting Training"
@@ -614,6 +673,7 @@ let TREES = {
     "name": "Turn the Scales ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you would be Hit, shift the blow to another armored, non-Exposed Zone.",
     "requires": [
      "Armored Fighting Training"
@@ -624,6 +684,7 @@ let TREES = {
     "name": "Layered Guard ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Layered Guard ❶ Stance</b><br>While wearing Full Scale:<br>the first time each round a Zone becomes Exposed, another Zone of your choice gains +1 Protection until your next Opportunity.",
     "requires": [
      "Armored Fighting Training"
@@ -634,6 +695,7 @@ let TREES = {
     "name": "Loose Guard",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While all four Zones are Padded or Leather and your Load Strain is 0, Recenter lets you Step as part of the action.",
     "requires": [
      "Armored Fighting Training"
@@ -644,6 +706,7 @@ let TREES = {
     "name": "Light on Your Feet ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Light on Your Feet ❶ Stance</b><br>While in light armor:<br>+1 Condition Physical Evade;<br>After a creature Misses you, Step once per round;<br>Cannot be used if Load Strain exceeds 0.",
     "requires": [
      "Armored Fighting Training"
@@ -654,6 +717,7 @@ let TREES = {
  },
  "Brawling": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Might",
   "parent": "Melee",
   "meta": "Combat Style • Might (fists, feet, tusks, headbutts)",
@@ -663,6 +727,7 @@ let TREES = {
     "name": "Brawling Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Clinch action.<br><b>Clinch ❶ Stance</b> While you are in this stance, a bare hand counts as a rigid implement: you may Parry, Bind, and Gain Control with it, and a creature whose weapon or limb you Control with a bare hand is also Grabbed. At Master rank, a creature you have Grabbed cannot Recenter.",
     "root": true
    },
@@ -670,6 +735,7 @@ let TREES = {
     "name": "Iron Fists",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your unarmed strikes deal 1d6 and count as weapons (lethal by default, your choice).",
     "requires": [
      "Brawling Training"
@@ -679,6 +745,7 @@ let TREES = {
     "name": "Snagging Grip ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Strike with a free hand; on a hit, the target is Off-Guard until your next Opportunity.",
     "requires": [
      "Brawling Training"
@@ -688,6 +755,7 @@ let TREES = {
     "name": "Crushing Grab",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you successfully Grapple a creature, you can deal bludgeoning damage to that creature equal to your Might bonus. You can make this attack nonlethal with no penalty.",
     "requires": [
      "Brawling Training"
@@ -697,6 +765,7 @@ let TREES = {
  },
  "Crossbow Fighting": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Wits",
   "parent": "Ranged",
   "meta": "Combat Style • Wits (prepared mechanical ranged weapons)",
@@ -706,6 +775,7 @@ let TREES = {
     "name": "Crossbow Fighting Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Brace the Stock ❶ action.<br><b>Brace the Stock ❶ Stance</b><br>You settle into a firing position.<br>Until you Move:<br>gain a +1 Situation bonus to all crossbow Strikes;<br>increase any Armor-Piercing [N] value of those attacks by 1;<br>if the attack Grazes, you choose the Zone it lands on.<br>The effect ends after you make a <b>Move</b>.",
     "root": true
    },
@@ -713,6 +783,7 @@ let TREES = {
     "name": "Practiced Loader",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Once per round, reduce the Reload value of a crossbow by 1, to a minimum of 1.",
     "requires": [
      "Crossbow Fighting Training"
@@ -723,6 +794,7 @@ let TREES = {
     "name": "Crank and Move",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you spend an action Reloading, you may Step as part of that action.",
     "requires": [
      "Crossbow Fighting Training"
@@ -732,6 +804,7 @@ let TREES = {
     "name": "Find the Seam",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your Crossbow Strikes do an additional 2 damage against Exposed Zones.",
     "requires": [
      "Crossbow Fighting Training"
@@ -741,6 +814,7 @@ let TREES = {
     "name": "Snap Shot",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You may Intercept ❶↺ with a loaded crossbow that has the Close trait, if you have the Intercept Reaction.",
     "requires": [
      "Crossbow Fighting Training"
@@ -750,6 +824,7 @@ let TREES = {
     "name": "Covered Reload ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Take Cover, then Interact to reload. As normal, you must meet the requirements to Take Cover.",
     "requires": [
      "Crossbow Fighting Training"
@@ -759,6 +834,7 @@ let TREES = {
  },
  "Dueling": {
   "category": "Combat Style",
+  "enabled": true,
   "feeds": "Agility",
   "parent": "Melee",
   "meta": "Combat Style • Agility (one one-handed weapon, other hand free)",
@@ -768,6 +844,7 @@ let TREES = {
     "name": "Dueling Training",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Hold the Cadence action.<br><b>Hold the Cadence ❶ Stance</b> You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the <b>same Defense it used against your previous Strike</b>, until you leave the stance or name another. At Master rank you may name a new creature ⓿.",
     "root": true
    },
@@ -775,6 +852,7 @@ let TREES = {
     "name": "En Garde",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "+1 Situation Guard vs. melee while wielding a one-handed weapon with your other hand free.",
     "requires": [
      "Dueling Training"
@@ -785,6 +863,7 @@ let TREES = {
     "name": "Feinting Lunge ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Feint, Strike, then Step.",
     "requires": [
      "Dueling Training"
@@ -794,6 +873,7 @@ let TREES = {
     "name": "Snagging Strike ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You combine an attack with quick grappling moves to throw an enemy off balance as long as it stays in your reach. Make a Strike while keeping one hand free. If this Strike hits, the target is Off-Guard until your next Opportunity or until it's no longer within the reach of your hand, whichever comes first.",
     "requires": [
      "Dueling Training"
@@ -803,7 +883,8 @@ let TREES = {
     "name": "Combat Grab ❶",
     "tier": "T",
     "cost": 1,
-    "effect": "<b>Press</b><br><b>Requirements</b> You have one hand free, and your target is within reach of that hand<br>Using your prior attack to shift your opponent's guard, you take another swing and grab them. Make a melee Strike while keeping one hand free. If the Strike hits, you grab the target using your free hand. The creature remains grabbed until the end of the next round or until it Escapes, whichever comes first.",
+    "enabled": true,
+    "effect": "<b>Press<br>Requirements</b> You have one hand free, and your target is within reach of that hand<br>Using your prior attack to shift your opponent's guard, you take another swing and grab them. Make a melee Strike while keeping one hand free. If the Strike hits, you grab the target using your free hand. The creature remains grabbed until the end of the next round or until it Escapes, whichever comes first.",
     "requires": [
      "Dueling Training"
     ],
@@ -813,6 +894,7 @@ let TREES = {
     "name": "Dueling Parry ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "<b>Requirements</b> You are wielding a single one-handed melee weapon and hold nothing else in your hands<br>You can parry attacks against you with your one-handed weapon. You gain a +2 Situation bonus to <i>Guard</i> until your next Opportunity as long as you continue to meet the requirements.",
     "requires": [
      "Dueling Training"
@@ -823,6 +905,7 @@ let TREES = {
  },
  "Great Weapon Fighting": {
   "category": "Combat Style",
+  "enabled": true,
   "feeds": "Might",
   "parent": "Melee",
   "meta": "Combat Style • Might (two hands, full commitment)",
@@ -832,6 +915,7 @@ let TREES = {
     "name": "Great Weapon Training",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. You gain the Overreach action.<br><b>Overreach ❶ Stance</b><br>You must be wielding a two-handed melee weapon.<br>While you are in this stance your Hits and Critical Hits deal +2 damage and your Evade drops by 2, rising to +3 damage at Expert rank, +4 at Master, and +5 at Legendary. Every talent here requires this.",
     "root": true
    },
@@ -839,6 +923,7 @@ let TREES = {
     "name": "Sweeping Blow ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "One attack roll against two creatures within your reach, resolved separately against each one's chosen Defense. This Strike is <b>Weighted</b>.",
     "requires": [
      "Great Weapon Training"
@@ -848,6 +933,7 @@ let TREES = {
     "name": "Follow Through",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "When your Strike drops a creature, your next Strike this round against another creature is not <b>Weighted</b>.",
     "requires": [
      "Great Weapon Training"
@@ -857,6 +943,7 @@ let TREES = {
     "name": "Brutish Shove ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "<b>Requirements</b> You are wielding a two-handed melee weapon<br>Using the momentum of your last attack to throw your weight into another, you make your opponent stumble back. Make a Strike with a two-handed melee weapon. If you hit a target that is your size or smaller, that creature is Off-Guard until your next Opportunity, and you can automatically Shove it, with the same benefits as the Shove action (including the Critical Success effect, if your Strike was a Critical Hit). If you move to follow the target, your movement doesn't trigger Reactions. This Strike has the following failure effect:<br><b>Failure</b> The target becomes Off-Guard until your next Opportunity.",
     "requires": [
      "Great Weapon Training"
@@ -866,6 +953,7 @@ let TREES = {
     "name": "Crushing Commitment",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "When you make a Strike ❸ with a two-handed weapon, deal one extra weapon die of damage.",
     "requires": [
      "Great Weapon Training"
@@ -875,6 +963,7 @@ let TREES = {
     "name": "Devastating Graze",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "If you Strike and it results in a Graze, you add your Might bonus to the damage.",
     "requires": [
      "Great Weapon Training"
@@ -884,6 +973,7 @@ let TREES = {
  },
  "Missile Skirmishing": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Agility",
   "parent": "Ranged",
   "meta": "Combat Style • Agility (slings, thrown weapons, bolas)",
@@ -893,13 +983,15 @@ let TREES = {
     "name": "Missile Skirmishing Training",
     "tier": "T",
     "cost": 1,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Keep Moving ❶ action.<br><b>Keep Moving ❶ Stance</b><br><b>Requirements</b> You wield a sling or a weapon with the Thrown trait.<br>While in this stance:<br>if you make a ranged Strike, you may Step immediately before or after it;<br>you may use this benefit only once per round.",
+    "enabled": false,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Keep Moving ❶ action.<br><b>Keep Moving ❶ Stance<br>Requirements</b> You wield a sling or a weapon with the Thrown trait.<br>While in this stance:<br>if you make a ranged Strike, you may Step immediately before or after it;<br>you may use this benefit only once per round.",
     "root": true
    },
    {
     "name": "Quick Hand",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Draw a thrown weapon as part of the Strike made with it.",
     "requires": [
      "Missile Skirmishing Training"
@@ -909,6 +1001,7 @@ let TREES = {
     "name": "Running Cast",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "If you Moved at least 3 feet immediately before making a ranged Strike with a sling or thrown weapon, increase its Range by 10 feet for that Strike.",
     "requires": [
      "Missile Skirmishing Training"
@@ -918,6 +1011,7 @@ let TREES = {
     "name": "Harrying Shot",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Graze with a sling or thrown weapon, the target takes a −1 Situation penalty to its next Attack before the end of the next round.",
     "requires": [
      "Missile Skirmishing Training"
@@ -927,6 +1021,7 @@ let TREES = {
     "name": "Trip Line",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You get a +2 Condition bonus to your Trip checks when using a Ranged weapon with the <b>Trip</b> Trait.",
     "requires": [
      "Missile Skirmishing Training"
@@ -936,6 +1031,7 @@ let TREES = {
     "name": "Rebounding Toss ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Requirements</b> You are wielding a thrown weapon<br>You bounce your weapon off one foe to strike another. Make a ranged Strike with a thrown weapon. If this Strike hits, the weapon rebounds toward an enemy within 10 feet of the original target. Make an additional Strike against this second target. Both are Quick Strikes.",
     "requires": [
      "Missile Skirmishing Training"
@@ -946,6 +1042,7 @@ let TREES = {
  },
  "Shield Fighting": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Presence",
   "parent": "Melee",
   "meta": "Combat Style • Presence (weapon and shield as one machine)",
@@ -955,6 +1052,7 @@ let TREES = {
     "name": "Shield Fighting Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Shield Wall action.<br><b>Shield Wall ❶ Stance</b> You must be wielding a shield. While you are in this stance your shield counts as <b>Raised at all times</b>, without spending an action for it, but you cannot Move; you may only Step. At Master rank you may Move up to half your Speed while the stance holds.",
     "root": true
    },
@@ -962,6 +1060,7 @@ let TREES = {
     "name": "Reactive Shield ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When attacked, Raise your Shield.",
     "requires": [
      "Shield Fighting Training"
@@ -972,6 +1071,7 @@ let TREES = {
     "name": "Shield Block ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Reduce an attack's damage to you by your shield's hardness.",
     "requires": [
      "Shield Fighting Training"
@@ -981,6 +1081,7 @@ let TREES = {
     "name": "Aggressive Block ⓿",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> You use Shield Block, and the opponent that triggered Shield Block is adjacent to you and is your Size or smaller<br>You push back as you block, knocking your foe away or off balance. You use your shield to push the triggering creature, either automatically Shoving it 3 feet or causing it to become Off-Guard until your next Opportunity. The triggering creature chooses whether to be moved or become Off-Guard. If it chooses to be moved, you choose the direction. If the Shove would cause it to hit a solid object or enter another creature's space, it must become Off-Guard instead of being moved.",
     "requires": [
      "Shield Block"
@@ -991,6 +1092,7 @@ let TREES = {
     "name": "Devoted Guardian ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Requirements</b> Your last action was to Raise a Shield.<br>You adopt a wide stance, ready to defend both yourself and your chosen ward. Select one adjacent creature. As long as your shield is raised and the creature remains adjacent to you, the creature gains a +1 Situation bonus to their <i>Guard</i>, or a +2 Situation bonus if the shield you raised was a tower shield.",
     "requires": [
      "Shield Fighting Training"
@@ -1000,6 +1102,7 @@ let TREES = {
     "name": "Defensive Advance ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Flourish</b><br>With the protection of your shield, you dive into battle! You Raise your Shield and Move. If you end your movement within melee reach of at least one enemy, you can make a melee Strike against that enemy. You can use Defensive Advance while Burrowing, Climbing, Flying, or Swimming instead of Moving if you have the corresponding movement type.",
     "requires": [
      "Shield Fighting Training"
@@ -1009,6 +1112,7 @@ let TREES = {
     "name": "Shield Warfare",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You know how to use shields offensively far better than most. Increase the weapon damage die of any shield bash, shield boss, or shield spikes you wield by one step.",
     "requires": [
      "Shield Fighting Training"
@@ -1018,6 +1122,7 @@ let TREES = {
  },
  "Spear & Polearm Fighting": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Wits",
   "parent": "Melee",
   "meta": "Combat Style • Wits (polearms and spears)",
@@ -1027,13 +1132,15 @@ let TREES = {
     "name": "Spear & Polearm Training",
     "tier": "T",
     "cost": 1,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. You gain the Keep Measure ❶ action.<br><b>Keep Measure ❶ Stance</b><br><b>Requirements</b> You are wielding a Hafted weapon.<br>While in this stance:<br>The first time each round an enemy moves from outside your Reach into it, you may Step ⓿ directly away after that movement finishes.<br>If that movement keeps the enemy within your Reach, it does not trigger Reactions from that enemy.",
+    "enabled": false,
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. You gain the Keep Measure ❶ action.<br><b>Keep Measure ❶ Stance<br>Requirements</b> You are wielding a Hafted weapon.<br>While in this stance:<br>The first time each round an enemy moves from outside your Reach into it, you may Step ⓿ directly away after that movement finishes.<br>If that movement keeps the enemy within your Reach, it does not trigger Reactions from that enemy.",
     "root": true
    },
    {
     "name": "Set Against the Charge",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Intercept with a Spear &amp; Polearm weapon, it deals +2 damage per weapon die. Set, the spear is at its most dangerous the moment the enemy arrives.",
     "requires": [
      "Spear & Polearm Training"
@@ -1043,7 +1150,8 @@ let TREES = {
     "name": "Short Grip Strike ❶",
     "tier": "T",
     "cost": 1,
-    "effect": "<b>Flourish</b><br><b>Requirements</b> You are wielding a Hafted weapon.<br>Reduce your weapon's Unwieldy value by 2 ft.",
+    "enabled": false,
+    "effect": "<b>Flourish<br>Requirements</b> You are wielding a Hafted weapon.<br>Reduce your weapon's Unwieldy value by 2 ft.",
     "requires": [
      "Spear & Polearm Training"
     ],
@@ -1053,6 +1161,7 @@ let TREES = {
     "name": "Long Haft",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Increase Hafted Weapon Reach by 2 ft while using two hands.",
     "requires": [
      "Spear & Polearm Training"
@@ -1062,6 +1171,7 @@ let TREES = {
     "name": "Keep Away",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When one of your Strikes is Stopped and would Expose you, you may Step directly away from the target instead.",
     "requires": [
      "Spear & Polearm Training"
@@ -1071,6 +1181,7 @@ let TREES = {
     "name": "Sleek Reposition ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Press</b><br>While your opponent is still recovering from your prior attack, you snag its armor, clothing, or flesh to move it as you please. Make a melee Strike with a spear or polearm. If you hit a target that is your size or smaller, you can automatically Reposition it, with the same benefits as the Reposition action (including the Critical Success effect, if your Strike was a Critical Hit). Use your Total Reach for this Reposition.<br>This Strike has the following failure effect:<br><b>Failure</b> The target becomes Off-Guard until your next Opportunity.",
     "requires": [
      "Spear & Polearm Training"
@@ -1080,6 +1191,7 @@ let TREES = {
  },
  "Two-Weapon Fighting": {
   "category": "Combat Style",
+  "enabled": false,
   "feeds": "Agility",
   "parent": "Melee",
   "meta": "Combat Style • Agility (a weapon in each hand)",
@@ -1089,6 +1201,7 @@ let TREES = {
     "name": "Two-Weapon Fighting Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Twin Openings action.<br><b>Twin Openings ❶ Stance</b> You must have a weapon in each hand. While you are in this stance, the first time each round that you hit the same creature with <b>both</b> of your weapons, you may make one of its zones <b>Exposed</b> after resolving the attack and damage.",
     "root": true
    },
@@ -1096,6 +1209,7 @@ let TREES = {
     "name": "Double Slice ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Quick Strike with each weapon against the same target, one roll for each. Combine the damage of both blows before subtracting Protection.",
     "requires": [
      "Two-Weapon Fighting Training"
@@ -1105,6 +1219,7 @@ let TREES = {
     "name": "Off-Hand Guard",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "+1 Situation to Guard while wielding two weapons and not raising a shield.",
     "requires": [
      "Two-Weapon Fighting Training"
@@ -1115,6 +1230,7 @@ let TREES = {
  },
  "Serrovane": {
   "category": "Culture",
+  "enabled": true,
   "feeds": "Presence",
   "meta": "Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1123,6 +1239,7 @@ let TREES = {
     "name": "Serrovanian",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You know Serrovine and Common.<br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
     "prereqs": "Raised in Serrovane",
     "root": true
@@ -1131,6 +1248,7 @@ let TREES = {
     "name": "Oathbound",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Name one creature that has broken a bargain, a truce, or a formal challenge with you. You gain a +1 Situation bonus to Attack rolls and Defense rolls against that creature until the encounter ends. You may have only one Oathbound creature at a time.",
     "requires": [
      "Serrovanian"
@@ -1140,6 +1258,7 @@ let TREES = {
     "name": "Contract Literate",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "+2 Situation to notice hidden clauses, traps, and altered terms in any agreement.",
     "requires": [
      "Serrovanian"
@@ -1150,6 +1269,7 @@ let TREES = {
     "name": "Iron Etiquette",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "+1 Situation to checks against Intimidation and social manipulation.",
     "requires": [
      "Serrovanian"
@@ -1160,6 +1280,7 @@ let TREES = {
  },
  "Kestrel Reach": {
   "category": "Culture",
+  "enabled": false,
   "feeds": "Wits",
   "meta": "Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1168,6 +1289,7 @@ let TREES = {
     "name": "Reacher",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You know Reachspeak and Common.<br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
     "prereqs": "Raised in the Kestrel Reach",
     "root": true
@@ -1176,7 +1298,8 @@ let TREES = {
     "name": "Quick Tongue ⓿",
     "tier": "T",
     "cost": 1,
-    "effect": "You gain the Quick Tongue action:<br><b>Quick Tongue ⓿</b><br><b>Trigger</b> You critically fail a Diplomacy check.<br><b>Requirements</b> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
+    "enabled": false,
+    "effect": "You gain the Quick Tongue action:<br><b>Quick Tongue ⓿<br>Trigger</b> You critically fail a Diplomacy check.<br><b>Requirements</b> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
     "requires": [
      "Reacher"
     ]
@@ -1185,6 +1308,7 @@ let TREES = {
     "name": "Riverfoot",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
     "requires": [
      "Reacher"
@@ -1194,6 +1318,7 @@ let TREES = {
     "name": "Broker's Eye",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You always know an item's fair price, and gain +2 Situation to Diplomacy and Guile checks when trading.",
     "requires": [
      "Reacher"
@@ -1203,6 +1328,7 @@ let TREES = {
  },
  "Awareness": {
   "category": "Defense",
+  "enabled": false,
   "feeds": "Wits",
   "meta": "Defense constellation • Wits (don't be surprised)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1211,6 +1337,7 @@ let TREES = {
     "name": "Awareness Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in Awareness: add this Constellation's Proficiency Bonus to your Awareness checks, and to your Awareness Threshold (the number Sneak, Feint, and Lie attempts are measured against). Initiative is usually an Awareness check. Awareness answers Blights and Beguilement (see Chapter 2: The Four Threats).",
     "root": true
    },
@@ -1218,6 +1345,7 @@ let TREES = {
     "name": "Forewarned",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Once per encounter, after you roll a Defense but before the outcome is announced, you may add your Wits to that roll.",
     "requires": [
      "Awareness Training"
@@ -1227,6 +1355,7 @@ let TREES = {
     "name": "Read the Tell",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When a creature critically fails to Feint against you, Lie to you, or Sneak past you, it becomes Exposed (Head) until it Recenters.",
     "requires": [
      "Awareness Training"
@@ -1236,6 +1365,7 @@ let TREES = {
     "name": "First Word",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you roll initiative and are not surprised, you may swap your place in the order with one willing ally.",
     "requires": [
      "Awareness Training"
@@ -1245,6 +1375,7 @@ let TREES = {
     "name": "Second Sense",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "The first time each encounter that a hidden or unnoticed creature attacks you, you may use Guard against that attack even though you were unaware of it.",
     "requires": [
      "Awareness Training"
@@ -1254,6 +1385,7 @@ let TREES = {
  },
  "Evade": {
   "category": "Defense",
+  "enabled": true,
   "feeds": "Agility",
   "meta": "Defense constellation • Agility (don't be there • Void Reaction and Give Ground Posture)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1262,6 +1394,7 @@ let TREES = {
     "name": "Evade Training",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in Evade: add this Constellation's Proficiency Bonus to your Evade checks. It is the number attack rolls are measured against when you try to slip a blow, and the check you roll against area effects, traps, and hazards. Evade answers Blows and Blasts.<br>You gain the <b>Void ❶↺</b> Reaction, and the Give Ground ⓿↺ Posture:<br>You gain a +2 Situation bonus to Evade for the triggering attack.<br>A Zone of your choice becomes Exposed until the end of the round, win or lose.",
     "root": true
    },
@@ -1269,6 +1402,7 @@ let TREES = {
     "name": "Fluid Motion",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your Speed increases by 1 foot while your Load Strain is 1 or less.",
     "requires": [
      "Evade Training"
@@ -1278,6 +1412,7 @@ let TREES = {
     "name": "Skirmisher's Step",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your Steps ignore difficult terrain.",
     "requires": [
      "Evade Training"
@@ -1287,6 +1422,7 @@ let TREES = {
     "name": "Slip the Line ⓿↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Posture +2 to your Evade against one attack. If the blow does not Hit, you end in any square adjacent to the attacker, your choice.",
     "requires": [
      "Evade Training"
@@ -1296,6 +1432,7 @@ let TREES = {
     "name": "Drop Flat ⓿↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Posture +4 to your Evade against every attack until your next Opportunity. You end prone.",
     "requires": [
      "Evade Training"
@@ -1305,6 +1442,7 @@ let TREES = {
  },
  "Guard": {
   "category": "Defense",
+  "enabled": true,
   "feeds": "Presence",
   "meta": "Defense constellation • Presence (don't let it through • Parry Reaction and Set Your Feet Posture)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1313,6 +1451,7 @@ let TREES = {
     "name": "Guard Training",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in Guard: add this Constellation's Proficiency Bonus to your Guard checks. It is the number attack rolls are measured against when you meet a blow with weapon, shield, or braced arm, and the check you roll against fear, charm, confusion, and other assaults on your composure. Guard answers Blows and Beguilement, and answers a ranged Blow only with a shield Raised.<br>You gain the <b>Parry ❶↺</b> Reaction, and the Set Your Feet ⓿↺ Posture:<br>You gain a +2 Situation bonus to Guard for the triggering attack.<br>A Zone of your choice becomes Exposed until the end of the round, win or lose.",
     "root": true
    },
@@ -1320,6 +1459,7 @@ let TREES = {
     "name": "Catch the Blade ⓿↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Posture +2 to your Guard against one melee attack made with a weapon or natural weapon you could Bind. If the blow does not Hit, you take Control of the attacking weapon as though you had Parried. A Zone of your choice becomes Exposed until the end of the round, win or lose.",
     "requires": [
      "Guard Training"
@@ -1329,6 +1469,7 @@ let TREES = {
     "name": "Kneel Behind the Shield ⓿↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Posture You must have a shield Raised.<br>+4 to your Guard against every attack until your next Opportunity. Your Arms become Exposed, and your Speed is 0 until you spend an action to rise.",
     "requires": [
      "Guard Training"
@@ -1338,6 +1479,7 @@ let TREES = {
     "name": "Unshaken",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "The first time each encounter that you take a Posture, it Exposes nothing.",
     "requires": [
      "Guard Training"
@@ -1347,6 +1489,7 @@ let TREES = {
     "name": "Deflecting Palms ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> You are hit and have a hand free.<br><b>Effect</b> Reduce that attack's damage by 2 plus your Presence.",
     "requires": [
      "Guard Training"
@@ -1356,6 +1499,7 @@ let TREES = {
     "name": "Cover the Angle ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> An adjacent ally is attacked.<br><b>Effect</b> The attack is measured against your Guard instead of their chosen Defense, and any Bind that forms is with your weapon or shield.",
     "requires": [
      "Guard Training"
@@ -1365,6 +1509,7 @@ let TREES = {
     "name": "Larger than Life",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Requirements</b> You are wearing Plate in all Zones.<br>Though you don't get any larger, you're treated as one size larger for the purposes of affecting other creatures with actions like Disarm, Grapple, Reposition, Shove, and Trip while wearing heavy armor. Similarly, you're treated as one size larger for the purposes of creatures affecting you with those same actions, as well as with Swallow Whole and similar actions, while wearing heavy armor.",
     "requires": [
      "Guard Training"
@@ -1375,6 +1520,7 @@ let TREES = {
  },
  "Endure": {
   "category": "Defense",
+  "enabled": false,
   "feeds": "Might",
   "meta": "Defense constellation • Might (survive what does come through)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1383,6 +1529,7 @@ let TREES = {
     "name": "Endure Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
     "root": true
    },
@@ -1390,6 +1537,7 @@ let TREES = {
     "name": "Shrug It Off",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Reduce each instance of persistent damage you take by your Might. This can never reduce it below 1.",
     "requires": [
      "Endure Training"
@@ -1399,6 +1547,7 @@ let TREES = {
     "name": "Second Wind ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Once per day, dig deep: regain Vigor equal to half your level plus your Might.",
     "requires": [
      "Endure Training"
@@ -1408,6 +1557,7 @@ let TREES = {
     "name": "Braced Frame",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "+2 Situation bonus to your Guard against Shove, Trip, and Reposition.",
     "requires": [
      "Endure Training"
@@ -1417,6 +1567,7 @@ let TREES = {
     "name": "Blade Brake ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> You would be moved by a forced movement effect<br><b>Requirements</b> You are wielding a melee weapon and are within reach of a hard surface<br>You plow your weapon into a floor, wall, or another sturdy surface, anchoring yourself in place. If you would be moved 6 feet or more, you are moved only 1 foot. Otherwise, you don't move at all.",
     "requires": [
      "Endure Training"
@@ -1426,6 +1577,7 @@ let TREES = {
  },
  "Lore": {
   "category": "Skill",
+  "enabled": true,
   "feeds": "Wits",
   "meta": "Skill constellation • Wits (the template every Lore (X) Constellation copies)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1434,6 +1586,7 @@ let TREES = {
     "name": "Deep Knowledge",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in this Lore: add the Constellation's rank to its checks. Recall and research within its field; you know its people, texts, and secrets. Every talent here requires this.",
     "root": true
    },
@@ -1441,6 +1594,7 @@ let TREES = {
     "name": "Practical Application",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "+2 Situation to any check where you can explain how this field directly applies. The GM is the judge; the story is the proof.",
     "requires": [
      "Deep Knowledge"
@@ -1450,6 +1604,7 @@ let TREES = {
     "name": "Well Read ⓿",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Once per scene, Recall Knowledge ⓿ about your field.",
     "requires": [
      "Deep Knowledge"
@@ -1459,6 +1614,7 @@ let TREES = {
  },
  "Acrobatics": {
   "category": "Skill",
+  "enabled": true,
   "feeds": "Agility",
   "meta": "Skill constellation • Agility",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1467,6 +1623,7 @@ let TREES = {
     "name": "Acrobatics Training",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -1474,6 +1631,7 @@ let TREES = {
     "name": "Tumbling Retreat ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Step your full Speed away from your foes. You still cannot Step in Difficult Terrain or Greater Difficult Terrain.",
     "requires": [
      "Acrobatics Training"
@@ -1483,6 +1641,7 @@ let TREES = {
     "name": "Slip the Grasp",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "+2 Situation bonus to Escape.",
     "requires": [
      "Acrobatics Training"
@@ -1492,6 +1651,7 @@ let TREES = {
     "name": "Kip Up ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Stand up. This movement doesn't trigger Reactions.",
     "requires": [
      "Acrobatics Training"
@@ -1501,6 +1661,7 @@ let TREES = {
     "name": "Kip Away",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "When you Stand, you may Step as part of the same action.",
     "requires": [
      "Kip Up"
@@ -1510,6 +1671,7 @@ let TREES = {
     "name": "Tumble Behind",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "When you successfully Tumble Through, the foe whose space you passed through is Wrong-Footed against the next attack you make before the end of your next Opportunity.",
     "requires": [
      "Acrobatics Training"
@@ -1519,6 +1681,7 @@ let TREES = {
     "name": "Mobility",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "When you Move half your Speed or less, that movement does not trigger Intercepts or other Reactions. You can use Mobility when Climbing, Flying, or Swimming instead of Moving if you have the corresponding movement type.",
     "requires": [
      "Acrobatics Training"
@@ -1528,6 +1691,7 @@ let TREES = {
  },
  "Athletics": {
   "category": "Skill",
+  "enabled": true,
   "feeds": "Might",
   "meta": "Skill constellation • Might",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1536,6 +1700,7 @@ let TREES = {
     "name": "Athletics Training",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -1543,6 +1708,7 @@ let TREES = {
     "name": "Bull Rush ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Move, then Shove.<br>Add 1 foot to the push for every 2 feet you moved first.",
     "requires": [
      "Athletics Training"
@@ -1552,6 +1718,7 @@ let TREES = {
     "name": "Wrestler's Grip",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "A creature you have Grabbed takes a −2 Situation penalty to Escape.",
     "requires": [
      "Athletics Training"
@@ -1561,6 +1728,7 @@ let TREES = {
     "name": "Titan Wrestler",
     "tier": "T",
     "cost": 1,
+    "enabled": true,
     "effect": "Grapple, Shove, and Trip creatures up to two sizes larger than you.",
     "requires": [
      "Athletics Training"
@@ -1570,6 +1738,7 @@ let TREES = {
  },
  "Diplomacy": {
   "category": "Skill",
+  "enabled": false,
   "feeds": "Presence",
   "meta": "Skill constellation • Presence",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1578,6 +1747,7 @@ let TREES = {
     "name": "Diplomacy Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -1585,7 +1755,8 @@ let TREES = {
     "name": "Rally ❶",
     "tier": "T",
     "cost": 1,
-    "effect": "You gain the Rally ❶ action:<br><b>Rally ❶</b><br><b>Auditory, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a success, one ally within 30 feet who can hear you gains a +1 Situation bonus to their next Defense roll before your next Opportunity. On a critical success, +2, and they can Recenter ❶ as a free action.",
+    "enabled": false,
+    "effect": "You gain the Rally ❶ action:<br><b>Rally ❶<br>Auditory, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a success, one ally within 30 feet who can hear you gains a +1 Situation bonus to their next Defense roll before your next Opportunity. On a critical success, +2, and they can Recenter ❶ as a free action.",
     "requires": [
      "Diplomacy Training"
     ]
@@ -1594,7 +1765,8 @@ let TREES = {
     "name": "Talk Them Down ❶",
     "tier": "T",
     "cost": 1,
-    "effect": "You gain the Talk Them Down ❶ action:<br><b>Talk Them Down ❶</b><br><b>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against the target's Guard. On a success, it takes a -2 Situation penalty to Attacks against you until the end of the next round; on a critical success, until the end of the encounter. On a critical failure it gains a +1 Situation bonus to Attacks against you.",
+    "enabled": false,
+    "effect": "You gain the Talk Them Down ❶ action:<br><b>Talk Them Down ❶<br>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against the target's Guard. On a success, it takes a -2 Situation penalty to Attacks against you until the end of the next round; on a critical success, until the end of the encounter. On a critical failure it gains a +1 Situation bonus to Attacks against you.",
     "requires": [
      "Diplomacy Training"
     ]
@@ -1603,6 +1775,7 @@ let TREES = {
     "name": "Coordinated Effort",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Aid an ally, the bonus is +2 instead of +1, and +3 on a critical success.",
     "requires": [
      "Diplomacy Training"
@@ -1612,7 +1785,8 @@ let TREES = {
     "name": "Command the Field ❷",
     "tier": "T",
     "cost": 1,
-    "effect": "You gain the Command the Field ❷ action:<br><b>Command the Field ❷</b><br><b>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a Success, two allies who can hear you may each Step ⓿. On a critical success, they may each Move half their Speed instead.",
+    "enabled": false,
+    "effect": "You gain the Command the Field ❷ action:<br><b>Command the Field ❷<br>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a Success, two allies who can hear you may each Step ⓿. On a critical success, they may each Move half their Speed instead.",
     "requires": [
      "Diplomacy Training"
     ]
@@ -1621,6 +1795,7 @@ let TREES = {
  },
  "Guile": {
   "category": "Skill",
+  "enabled": false,
   "feeds": "Wits",
   "meta": "Skill constellation • Wits",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1629,6 +1804,7 @@ let TREES = {
     "name": "Guile Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -1636,6 +1812,7 @@ let TREES = {
     "name": "Feinting Step ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Feint, then Step.",
     "requires": [
      "Guile Training"
@@ -1645,6 +1822,7 @@ let TREES = {
     "name": "Sell the Feint",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you critically succeed at a Feint, the target is off-guard to everyone, not just you, until the end of the next round.",
     "requires": [
      "Guile Training"
@@ -1654,6 +1832,7 @@ let TREES = {
     "name": "Overextending Feint",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "On a successful Feint, you can use the following success and critical success effects instead of any other effects that would occur when you Feint.<br><b>Critical Success</b> The target takes a -2 Situation penalty to all attack rolls against you before the end of the next round.<br><b>Success</b> The target takes a -2 Situation penalty to its next attack roll against you before the end of the next round.",
     "requires": [
      "Guile Training"
@@ -1663,6 +1842,7 @@ let TREES = {
     "name": "Distracting Feint",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a -2 Situation penalty to Awareness and Agility checks and Thresholds.",
     "requires": [
      "Guile Training"
@@ -1672,6 +1852,7 @@ let TREES = {
  },
  "Intimidation": {
   "category": "Skill",
+  "enabled": false,
   "feeds": "Presence",
   "meta": "Skill constellation • Presence",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1680,6 +1861,7 @@ let TREES = {
     "name": "Intimidation Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -1687,6 +1869,7 @@ let TREES = {
     "name": "Battle Cry ⓿↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> You are about to roll Initiative.<br>Demoralize every enemy within 15 feet with a single roll, compared separately against each one's Guard.",
     "requires": [
      "Intimidation Training"
@@ -1696,6 +1879,7 @@ let TREES = {
     "name": "No Quarter",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you drop a creature, you may Demoralize ⓿ one enemy who saw it fall.",
     "requires": [
      "Intimidation Training"
@@ -1705,6 +1889,7 @@ let TREES = {
     "name": "Unnerving",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "A creature you have Demoralized this encounter takes a −1 Situation penalty to attacks against you for the rest of it.",
     "requires": [
      "Intimidation Training"
@@ -1714,6 +1899,7 @@ let TREES = {
     "name": "Brutal Beating",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Whenever your Strike is a critical hit and deals damage, the target is Frightened 1.",
     "requires": [
      "Intimidation Training"
@@ -1723,6 +1909,7 @@ let TREES = {
  },
  "Stealth": {
   "category": "Skill",
+  "enabled": false,
   "feeds": "Agility",
   "meta": "Skill constellation • Agility",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1731,6 +1918,7 @@ let TREES = {
     "name": "Stealth Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -1738,6 +1926,7 @@ let TREES = {
     "name": "Knife in the Dark",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Hit a creature that is Off-Guard or Wrong-Footed to you, you choose which Zone the blow lands on.",
     "requires": [
      "Stealth Training"
@@ -1747,6 +1936,7 @@ let TREES = {
     "name": "Lost in the Noise ❶↺",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Trigger</b> An attack against you Misses.<br><b>Effect</b> If you have cover or concealment, Hide as part of this Reaction.",
     "requires": [
      "Stealth Training"
@@ -1756,6 +1946,7 @@ let TREES = {
     "name": "Killing Stillness",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "The first time each encounter that you Strike a creature that is unaware of you, a Graze becomes a Hit.",
     "requires": [
      "Stealth Training"
@@ -1765,6 +1956,7 @@ let TREES = {
     "name": "Underhanded Assault ❷",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You Sneak up to a foe adjacent to one of your allies. You can roll against the foe you're Sneaking up on, even if it's currently observing you, as though you were hidden. You take a -2 penalty on your Stealth check. If your Stealth check against the chosen foe succeeds, you can make a melee Strike against that foe at the end of your Sneak, and they are Wrong-Footed against that Strike.",
     "requires": [
      "Stealth Training"
@@ -1774,6 +1966,7 @@ let TREES = {
  },
  "Melee": {
   "category": "Weapon",
+  "enabled": true,
   "feeds": "Might",
   "meta": "Weapon • Might (Represents transferable fundamentals: measure, timing, reading an opponent, footwork, maintaining guard, committing to a strike, etc. Melee is a parent Constellation: every Talent you buy in Two-Weapon Fighting, Shield Fighting, Brawling, Dueling, Great Weapon Fighting, Spear & Polearm Fighting, or Armored Fighting counts toward your Melee rank.)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1782,13 +1975,15 @@ let TREES = {
     "name": "Melee Training",
     "tier": "T",
     "cost": 1,
-    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Counter ❶↺</b> and <b>Intercept ❶↺</b> Reactions.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
+    "enabled": true,
+    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Intercept ❶↺</b> Reaction. At Expert rank in Melee you also gain the <b>Counter ❶↺</b> Reaction.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
     "root": true
    },
    {
     "name": "Weapon Familiarity",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Choose a Weapon Group or a Technical weapon. You are Familiar with weapons in that group or that Technical weapon.",
     "choice": "Weapon Group or Technical Weapon",
     "requires": [
@@ -1799,6 +1994,7 @@ let TREES = {
     "name": "Quick Draw",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Use a Reaction ⓿↺ to draw or stow an item, weapon, or shield in each hand (or in both hands, if it requires two hands).",
     "requires": [
      "Melee Training"
@@ -1808,6 +2004,7 @@ let TREES = {
     "name": "Turn the Weapon",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You may deal bludgeoning damage with any Familiar melee weapon you wield, striking with the pommel, the haft, or the flat. Its damage die drops one step when you do (d12 to d10 to d8 to d6 to d4).",
     "requires": [
      "Weapon Familiarity"
@@ -1817,6 +2014,7 @@ let TREES = {
     "name": "Sure Grip",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "+2 Situation bonus to your Guard against Disarm regarding a Familiar weapon. When a Disarm against you would succeed, you keep hold of the weapon and suffer only the loosened grip.",
     "requires": [
      "Weapon Familiarity"
@@ -1826,6 +2024,7 @@ let TREES = {
     "name": "Read the Steel ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Study one creature you can see. Until the end of the encounter you know the Protection and the material of each of its Zones, and your Strikes against it ignore 1 Protection.",
     "requires": [
      "Melee Training"
@@ -1835,6 +2034,7 @@ let TREES = {
     "name": "Reactive Strike",
     "tier": "E",
     "cost": 1,
+    "enabled": false,
     "effect": "Your Intercept ❶↺ also triggers when an Observed creature within your Reach begins a Manipulate Maneuver, or a Motion Maneuver that would carry it out of your Reach. You may only use this with weapons in which you are at least Expert. On a Critical Hit, the triggering Maneuver is disrupted: it fails, and any actions still to come in it are lost.",
     "requires": [
      "Weapon Familiarity"
@@ -1844,6 +2044,7 @@ let TREES = {
     "name": "Feeling",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You read the pressure in the bind before you commit to it. When your Gain Control Misses, the target does not take Control of your weapon; the Bind is simply neutral.",
     "requires": [
      "Melee Training"
@@ -1853,6 +2054,7 @@ let TREES = {
     "name": "Winding",
     "tier": "E",
     "cost": 1,
+    "enabled": false,
     "effect": "While you Control a foe's weapon, your Committed Strike ❸ against that foe is not Weighted, and your Strikes against that foe do not end the Bind. You cut from the bind without leaving it.",
     "requires": [
      "Weapon Familiarity"
@@ -1862,6 +2064,7 @@ let TREES = {
     "name": "Master Cut",
     "tier": "E",
     "cost": 1,
+    "enabled": false,
     "effect": "When you Counter, you gain a +2 Situation bonus to the Defense you roll against the triggering attack. Your parry and your cut are one motion.",
     "requires": [
      "Weapon Familiarity"
@@ -1871,6 +2074,7 @@ let TREES = {
  },
  "Ranged": {
   "category": "Weapon",
+  "enabled": false,
   "feeds": "Agility",
   "meta": "Weapon • Agility (Represents what transfers between every weapon that leaves the hand: judging distance, timing a release, leading a moving target, and shooting past friends. Ranged is a parent Constellation: every Talent you buy in Archery, Crossbow Fighting, or Missile Skirmishing counts toward your Ranged rank.)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1879,6 +2083,7 @@ let TREES = {
     "name": "Ranged Training",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "You are Trained in Ranged: add this Constellation's Proficiency Bonus to your attack rolls with any weapon that leaves your hand: bows, crossbows, slings, and thrown weapons (a dagger uses Melee in your hand and Ranged in the air).<br><b>Special</b> Intuitive weapons use your full Ranged Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment.",
     "root": true
    },
@@ -1886,6 +2091,7 @@ let TREES = {
     "name": "Aim ❶",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "<b>Concentrate</b> Choose one creature you can Observe within your weapon's range. Your next ranged Strike against it before the end of your next Opportunity gains a +1 Situation bonus, and on a Hit you may choose the Zone it strikes.",
     "requires": [
      "Ranged Training"
@@ -1895,6 +2101,7 @@ let TREES = {
     "name": "Loose and Move",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "After making a ranged Strike, you may Step ⓿ once per round.",
     "requires": [
      "Ranged Training"
@@ -1904,6 +2111,7 @@ let TREES = {
     "name": "Steady Release",
     "tier": "T",
     "cost": 1,
+    "enabled": false,
     "effect": "Your ranged Strikes ignore a target's Lesser Cover (the +1 it grants, and the Zone rule) if you have not Moved this round. Patience finds the gap.",
     "requires": [
      "Ranged Training"

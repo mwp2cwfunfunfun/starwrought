@@ -100,7 +100,8 @@ function commonActorFields() {
      * How the next Blow is answered. "The defender decides", so the decision is stored on the
      * defender and read by the attacker's roll at the moment the die is cast. Evade and Guard are
      * the basic Defenses; Void, Parry and Counter are Reactions that cost an action when an attack
-     * lands and are only offered when the Talent that grants them is owned (see `reactions`).
+     * lands and are only offered when the Talent that grants them is owned (and, for Counter, the
+     * rank it needs is reached; see `reactions`).
      */
     stance: new fields.StringField({ required: true, choices: STANCES, initial: "evade" }),
     actions: actionFields(),
@@ -952,11 +953,15 @@ export class SwCharacterData extends SwActorData {
 
   /**
    * Which Reactions this character can take (PHB v4.10, Answering an Attack). Each is granted by
-   * the Training root of a Constellation: Parry by Guard Training, Void by Evade Training, Counter
-   * and Intercept by Melee Training. Owning the root is what counts, not an inherited rank, since
-   * only rank is inherited and the parent's own Talents must be bought for their effects. Parry
-   * also needs a rigid implement in hand: a weapon without the Flexible trait, or a shield. A Head
-   * Wound's first effect is no Reactions at all.
+   * the Training root of a Constellation: Parry by Guard Training, Void by Evade Training,
+   * Intercept by Melee Training. Owning the root is what counts, not an inherited rank, since
+   * only rank is inherited and the parent's own Talents must be bought for their effects. Counter
+   * asks for both (ruling 63, Mike 2026-10-01: Melee Training gives one Reaction at Trained, and
+   * Counter arrives at Expert): Melee Training owned and the derived Melee rank at Expert or
+   * better. That rank is `this.melee.rank`, which already counts a Combat Style's points once the
+   * Root is owned (ruling 13); `#prepareOffense` derives it before calling here, and that order
+   * matters. Parry also needs a rigid implement in hand: a weapon without the Flexible trait, or a
+   * shield. A Head Wound's first effect is no Reactions at all.
    * @param {Item[]} held  The weapons in hand.
    */
   #prepareReactions(held) {
@@ -967,7 +972,8 @@ export class SwCharacterData extends SwActorData {
     return {
       parry: !blocked && owns(SW.REACTIONS.parry.talent) && rigid,
       void: !blocked && owns(SW.REACTIONS.void.talent),
-      counter: !blocked && owns(SW.REACTIONS.counter.talent),
+      counter: !blocked && owns(SW.REACTIONS.counter.talent)
+        && SW.rankAtLeast(this.melee.rank, SW.REACTIONS.counter.rank),
       intercept: !blocked && owns(SW.REACTIONS.intercept.talent),
       rigid,
       blocked

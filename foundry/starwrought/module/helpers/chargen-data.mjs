@@ -7,6 +7,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { enabledConstellations } from "./content.mjs";
 
 const TALENT_FIELDS = [
   "system.constellation", "system.constellationName", "system.tier", "system.root",
@@ -218,7 +219,9 @@ export function choiceOptions(prompt) {
     return groups;
   }
   if (text.includes("skill")) {
-    return Object.values(SW.constellations)
+    // Only the Skills the spreadsheets enable (ruling 61): a Talent that asks you to name a Skill
+    // must not be answered with one that cannot be bought.
+    return enabledConstellations()
       .filter(c => c.category === "skill")
       .map(c => c.name)
       .sort();

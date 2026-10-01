@@ -7,6 +7,14 @@
  * wins over the printed one of the same slug. Since PHB v4.10 an entry also carries `parent`: the
  * slug of the Constellation whose rank its Talents count toward (Melee or Ranged for a Combat
  * Style, blank for everything else).
+ *
+ * Every entry also carries `enabled` (ruling 61). The spreadsheets' `Enabled?` column decides
+ * what ships to Foundry; the index keeps every authored Constellation, flagged, so a character who
+ * already owns a Talent of a Constellation that has since been switched off still resolves its
+ * name, category, attribute and parent. Anything read from a compendium or the world is enabled by
+ * definition: it is there. `getConstellation` keeps resolving disabled slugs; only the lists that
+ * are offered to a player (chargen, the Item sheet's selects) filter on the flag, through
+ * `enabledConstellations()` below.
  */
 
 import * as SW from "../config.mjs";
@@ -14,17 +22,26 @@ import * as SW from "../config.mjs";
 const INDEX_PATH = "systems/starwrought/content/constellations.json";
 const SYNC_PATH = "systems/starwrought/content/sync.json";
 
-/** Which Player's Handbook this system's content was built from. */
-export const rulesVersion = { phb: null, syncedOn: null, constellations: 0, talents: 0 };
+/**
+ * Which Player's Handbook this system's content was built from. `constellations` and `talents`
+ * are the authored totals; `enabled` is what the packs actually hold (ruling 61).
+ */
+export const rulesVersion = {
+  phb: null, syncedOn: null, constellations: 0, talents: 0,
+  enabled: { constellations: 0, talents: 0 }
+};
 
 /** Load the shipped Constellation index. Safe to call before compendia are ready. */
 export async function loadConstellationIndex() {
   try {
     const response = await foundry.utils.fetchJsonWithTimeout(INDEX_PATH);
     for (const entry of response ?? []) {
-      SW.registerConstellation({ ...entry, parent: entry.parent ?? "" });
+      // An index written before the Enabled? gate has no flag; absent means enabled, the same
+      // reading the converter gives a sheet without the column (ruling 60).
+      SW.registerConstellation({ ...entry, parent: entry.parent ?? "", enabled: entry.enabled !== false });
     }
-    console.log(`STARWROUGHT | Registered ${Object.keys(SW.constellations).length} Constellations.`);
+    const total = Object.keys(SW.constellations).length;
+    console.log(`STARWROUGHT | Registered ${total} Constellations (${enabledConstellations().length} enabled for play).`);
   } catch (error) {
     console.warn("STARWROUGHT | Could not read the shipped Constellation index.", error);
   }
@@ -32,6 +49,10 @@ export async function loadConstellationIndex() {
   try {
     Object.assign(rulesVersion, await foundry.utils.fetchJsonWithTimeout(SYNC_PATH));
     console.log(`STARWROUGHT | Rules content built from Player's Handbook v${rulesVersion.phb}.`);
+    // A stamp written before ruling 61 has no `enabled` block; the default above stands in.
+    if (rulesVersion.enabled?.constellations || rulesVersion.enabled?.talents) {
+      console.log(`STARWROUGHT | Enabled for play: ${rulesVersion.enabled.constellations} of ${rulesVersion.constellations} Constellations, ${rulesVersion.enabled.talents} of ${rulesVersion.talents} Talents.`);
+    }
   } catch {
     // A system built before the sync stamp existed. Not worth a warning.
   }
@@ -59,7 +80,10 @@ export async function refreshConstellationRegistry() {
         attribute: entry.system?.attribute ?? "might",
         parent: entry.system?.parentSlug || entry.system?.parent || "",
         img: entry.img,
-        uuid: entry.uuid
+        uuid: entry.uuid,
+        // The build writes a Constellation document only when its Root is enabled (ruling 61),
+        // so being in the pack is what enabled means.
+        enabled: true
       });
     }
   }
@@ -75,7 +99,9 @@ export async function refreshConstellationRegistry() {
       // parent", so it falls back to what the index or the pack already registered.
       parent: item.system.parentSlug || SW.constellations[slug]?.parent || "",
       img: item.img,
-      uuid: item.uuid
+      uuid: item.uuid,
+      // A GM authored it into the world, so it is theirs to offer.
+      enabled: true
     });
   }
 }
@@ -88,6 +114,27 @@ export async function refreshConstellationRegistry() {
 export function childrenOf(slug) {
   if (!slug) return [];
   return Object.values(SW.constellations).filter(c => c.parent === slug).map(c => c.slug);
+}
+
+/**
+ * The Constellations a player may be offered: every registry entry not flagged off by the
+ * spreadsheets' `Enabled?` column (ruling 61). This is the list for chargen pickers and the Item
+ * sheet's selects; arithmetic and display of what a character already owns go through
+ * `SW.getConstellation`, which resolves disabled slugs too.
+ * @returns {object[]}  Registry entries, in registration order.
+ */
+export function enabledConstellations() {
+  return Object.values(SW.constellations).filter(c => c.enabled !== false);
+}
+
+/**
+ * Is this slug enabled for play? A slug the registry does not know (a Lore instance lives only
+ * on the character that opened it) is not disabled, so it reads as enabled.
+ * @param {string} slug
+ * @returns {boolean}
+ */
+export function constellationEnabled(slug) {
+  return SW.constellations[slug]?.enabled !== false;
 }
 
 /* -------------------------------------------- */

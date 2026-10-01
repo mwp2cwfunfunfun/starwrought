@@ -5,7 +5,8 @@
     "category": "skill",
     "attribute": "agility",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/acrobatics.png"
+    "img": "systems/starwrought/assets/constellations/acrobatics.png",
+    "enabled": true
   },
   {
     "slug": "ambusher",
@@ -13,7 +14,8 @@
     "category": "calling",
     "attribute": "agility",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/ambusher.png"
+    "img": "systems/starwrought/assets/constellations/ambusher.png",
+    "enabled": false
   },
   {
     "slug": "archery",
@@ -21,7 +23,8 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "ranged",
-    "img": "systems/starwrought/assets/constellations/archery.png"
+    "img": "systems/starwrought/assets/constellations/archery.png",
+    "enabled": false
   },
   {
     "slug": "armored-fighting",
@@ -29,7 +32,8 @@
     "category": "combatStyle",
     "attribute": "presence",
     "parent": "melee",
-    "img": "systems/starwrought/assets/constellations/armored-fighting.png"
+    "img": "systems/starwrought/assets/constellations/armored-fighting.png",
+    "enabled": false
   },
   {
     "slug": "athletics",
@@ -37,7 +41,8 @@
     "category": "skill",
     "attribute": "might",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/athletics.png"
+    "img": "systems/starwrought/assets/constellations/athletics.png",
+    "enabled": true
   },
   {
     "slug": "awareness",
@@ -45,7 +50,8 @@
     "category": "defense",
     "attribute": "wits",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/awareness.png"
+    "img": "systems/starwrought/assets/constellations/awareness.png",
+    "enabled": false
   },
   {
     "slug": "berserker",
@@ -53,7 +59,8 @@
     "category": "calling",
     "attribute": "might",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/berserker.png"
+    "img": "systems/starwrought/assets/constellations/berserker.png",
+    "enabled": false
   },
   {
     "slug": "bravo",
@@ -61,7 +68,8 @@
     "category": "calling",
     "attribute": "presence",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/bravo.png"
+    "img": "systems/starwrought/assets/constellations/bravo.png",
+    "enabled": false
   },
   {
     "slug": "brawling",
@@ -69,7 +77,8 @@
     "category": "combatStyle",
     "attribute": "might",
     "parent": "melee",
-    "img": "systems/starwrought/assets/constellations/brawling.png"
+    "img": "systems/starwrought/assets/constellations/brawling.png",
+    "enabled": false
   },
   {
     "slug": "crossbow-fighting",
@@ -77,7 +86,8 @@
     "category": "combatStyle",
     "attribute": "wits",
     "parent": "ranged",
-    "img": "systems/starwrought/assets/constellations/crossbow-fighting.png"
+    "img": "systems/starwrought/assets/constellations/crossbow-fighting.png",
+    "enabled": false
   },
   {
     "slug": "diplomacy",
@@ -85,7 +95,8 @@
     "category": "skill",
     "attribute": "presence",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/diplomacy.png"
+    "img": "systems/starwrought/assets/constellations/diplomacy.png",
+    "enabled": false
   },
   {
     "slug": "dueling",
@@ -93,7 +104,8 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "melee",
-    "img": "systems/starwrought/assets/constellations/dueling.png"
+    "img": "systems/starwrought/assets/constellations/dueling.png",
+    "enabled": true
   },
   {
     "slug": "endure",
@@ -101,7 +113,8 @@
     "category": "defense",
     "attribute": "might",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/endure.png"
+    "img": "systems/starwrought/assets/constellations/endure.png",
+    "enabled": false
   },
   {
     "slug": "evade",
@@ -109,7 +122,8 @@
     "category": "defense",
     "attribute": "agility",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/evade.png"
+    "img": "systems/starwrought/assets/constellations/evade.png",
+    "enabled": true
   },
   {
     "slug": "great-weapon-fighting",
@@ -117,7 +131,8 @@
     "category": "combatStyle",
     "attribute": "might",
     "parent": "melee",
-    "img": "systems/starwrought/assets/constellations/great-weapon-fighting.png"
+    "img": "systems/starwrought/assets/constellations/great-weapon-fighting.png",
+    "enabled": true
   },
   {
     "slug": "guard",
@@ -125,7 +140,8 @@
     "category": "defense",
     "attribute": "presence",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/guard.png"
+    "img": "systems/starwrought/assets/constellations/guard.png",
+    "enabled": true
   },
   {
     "slug": "guile",
@@ -133,7 +149,8 @@
     "category": "skill",
     "attribute": "wits",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/guile.png"
+    "img": "systems/starwrought/assets/constellations/guile.png",
+    "enabled": false
   },
   {
     "slug": "human",
@@ -141,7 +158,8 @@
     "category": "origin",
     "attribute": "presence",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/human.png"
+    "img": "systems/starwrought/assets/constellations/human.png",
+    "enabled": true
   },
   {
     "slug": "hunter",
@@ -149,7 +167,8 @@
     "category": "calling",
     "attribute": "wits",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/hunter.png"
+    "img": "systems/starwrought/assets/constellations/hunter.png",
+    "enabled": false
   },
   {
     "slug": "intimidation",
@@ -157,7 +176,8 @@
     "category": "skill",
     "attribute": "presence",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/intimidation.png"
+    "img": "systems/starwrought/assets/constellations/intimidation.png",
+    "enabled": false
   },
   {
     "slug": "kestrel-reach",
@@ -165,7 +185,8 @@
     "category": "origin",
     "attribute": "wits",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/kestrel-reach.png"
+    "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
+    "enabled": false
   },
   {
     "slug": "lore",
@@ -173,7 +194,8 @@
     "category": "skill",
     "attribute": "wits",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/lore.png"
+    "img": "systems/starwrought/assets/constellations/lore.png",
+    "enabled": true
   },
   {
     "slug": "melee",
@@ -181,7 +203,8 @@
     "category": "weapon",
     "attribute": "might",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/melee.png"
+    "img": "systems/starwrought/assets/constellations/melee.png",
+    "enabled": true
   },
   {
     "slug": "missile-skirmishing",
@@ -189,7 +212,8 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "ranged",
-    "img": "systems/starwrought/assets/constellations/missile-skirmishing.png"
+    "img": "systems/starwrought/assets/constellations/missile-skirmishing.png",
+    "enabled": false
   },
   {
     "slug": "ranged",
@@ -197,7 +221,8 @@
     "category": "weapon",
     "attribute": "agility",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/ranged.png"
+    "img": "systems/starwrought/assets/constellations/ranged.png",
+    "enabled": false
   },
   {
     "slug": "serrovane",
@@ -205,7 +230,8 @@
     "category": "origin",
     "attribute": "presence",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/serrovane.png"
+    "img": "systems/starwrought/assets/constellations/serrovane.png",
+    "enabled": true
   },
   {
     "slug": "shield-fighting",
@@ -213,7 +239,8 @@
     "category": "combatStyle",
     "attribute": "presence",
     "parent": "melee",
-    "img": "systems/starwrought/assets/constellations/shield-fighting.png"
+    "img": "systems/starwrought/assets/constellations/shield-fighting.png",
+    "enabled": false
   },
   {
     "slug": "spear-and-polearm-fighting",
@@ -221,7 +248,8 @@
     "category": "combatStyle",
     "attribute": "wits",
     "parent": "melee",
-    "img": "systems/starwrought/assets/icons/constellation.svg"
+    "img": "systems/starwrought/assets/icons/constellation.svg",
+    "enabled": false
   },
   {
     "slug": "stealth",
@@ -229,7 +257,8 @@
     "category": "skill",
     "attribute": "agility",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/stealth.png"
+    "img": "systems/starwrought/assets/constellations/stealth.png",
+    "enabled": false
   },
   {
     "slug": "two-weapon-fighting",
@@ -237,7 +266,8 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "melee",
-    "img": "systems/starwrought/assets/constellations/two-weapon-fighting.png"
+    "img": "systems/starwrought/assets/constellations/two-weapon-fighting.png",
+    "enabled": false
   },
   {
     "slug": "weaponmaster",
@@ -245,6 +275,7 @@
     "category": "calling",
     "attribute": "might",
     "parent": "",
-    "img": "systems/starwrought/assets/constellations/weaponmaster.png"
+    "img": "systems/starwrought/assets/constellations/weaponmaster.png",
+    "enabled": true
   }
 ]

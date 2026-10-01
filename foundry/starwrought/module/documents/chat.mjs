@@ -13,6 +13,7 @@
 import * as SW from "../config.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { SwCheck } from "../dice/check.mjs";
+import { enabledConstellations } from "../helpers/content.mjs";
 
 /** Wire up a rendered chat card. */
 export function onRenderChatMessage(message, html) {
@@ -212,9 +213,11 @@ async function flareFromCard(message, flags, button) {
   if (!actor?.isOwner) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
 
   const suggested = button.dataset.slug || "";
+  // The character's own Constellations first (an owned one that has since been disabled stays
+  // listed), then every Constellation that ships (Enabled? = Yes, ruling 61).
   const owned = Object.values(actor.system.constellations ?? {});
   const choices = new Map(owned.map(c => [c.slug, c.name]));
-  for (const meta of Object.values(SW.constellations)) {
+  for (const meta of enabledConstellations()) {
     if (!choices.has(meta.slug)) choices.set(meta.slug, meta.name);
   }
   const options = [...choices.entries()]

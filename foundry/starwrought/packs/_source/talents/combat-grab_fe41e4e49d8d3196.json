@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "<b>Press</b><br><b>Requirements</b> You have one hand free, and your target is within reach of that hand<br>Using your prior attack to shift your opponent's guard, you take another swing and grab them. Make a melee Strike while keeping one hand free. If the Strike hits, you grab the target using your free hand. The creature remains grabbed until the end of the next round or until it Escapes, whichever comes first.",
+    "effect": "<b>Press<br>Requirements</b> You have one hand free, and your target is within reach of that hand<br>Using your prior attack to shift your opponent's guard, you take another swing and grab them. Make a melee Strike while keeping one hand free. If the Strike hits, you grab the target using your free hand. The creature remains grabbed until the end of the next round or until it Escapes, whichever comes first.",
     "description": "",
     "cost": "1",
     "costMax": "",

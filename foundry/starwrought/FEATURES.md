@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.4.0**. Developed against
+Rules content built from **Player's Handbook v4.10**. System version **0.4.1**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -23,15 +23,15 @@ will not let you past a step that still has a choice unmade or a point unspent.
 
 | Step | What it does |
 |---|---|
-| Weapon Training | Melee Training or Ranged Training, your choice, granted free. Each card names its Key Attribute, its Root, and the Combat Styles whose points will count toward it |
+| Weapon Training | Melee Training or Ranged Training, your choice, granted free. Each card names its Key Attribute, its Root, and the Combat Styles whose points will count toward it. Only a Training whose Root is enabled in the spreadsheets is offered |
 | Ancestry | Sets Vigor per level, Size, Speed (feet per Move) and Senses; grants the Ancestry Root |
-| Bloodline | Offers only the Bloodlines inside your Ancestry's Constellation; grants that Root |
+| Bloodline | Offers only the Bloodlines inside your Ancestry's Constellation; grants that Root. A step with nothing enabled says so and lets you continue |
 | Culture | Grants the Culture Root and adds its languages |
 | Background | Three directed points: Trained in two named Skills, and in a Lore of its own |
 | Calling | Sets Vigor per level; one Calling point buys the signature technique, one free Training goes to the Calling's Skill |
 | Defenses | Two points, on two different Defenses, with the threat-coverage panel open beside them |
 | Comets | Three points, anywhere you qualify for |
-| Review | Name it and finish. The review prints the Vigor formula with your numbers in it, the Attribute rule (points ÷ 4), the rank rule (Trained +3), and your Talent count against the 14-point floor |
+| Review | Name it and finish. The review prints the Vigor formula with your numbers in it, the Attribute rule (points ÷ 4), the rank rule (Trained +3), and your Talent count against the 14-point floor, or against the floor reachable with what is enabled when that is lower |
 
 What the wizard enforces, all of it read from the compendium rather than hard-coded:
 
@@ -112,6 +112,21 @@ higher; the review step counts what you have against the floor and says if you a
 **Not included:** equipment. Buy that on the sheet.
 
 ---
+
+### What ships, and what waits
+
+The spreadsheets decide what is visible in Foundry. Every talent sheet but Lore's, the Backgrounds
+sheet and the action sheets carry an **`Enabled?`** column; a row reading Yes ships, anything else
+is authored but not visible, and a sheet without the column is wholly enabled because its absence
+means the sheet has not been curated yet (Lore, Languages today). A Constellation ships when its Root does. Disabled rows get no
+compendium document, no chargen card, no picker entry and no Basic Action, while the web app and
+the Constellation Compendium keep showing the whole book. Document ids never change, so enabling a
+row later restores the same UUID, and a character who already owns a Talent of a now-disabled
+Constellation keeps it: `content/constellations.json` carries every Constellation with its flag so
+names, categories, attributes and parents still resolve. `game.starwrought.rules` reports the
+enabled counts beside the authored ones. Aid, the one row of `data/actions.xlsx`, is not enabled,
+and because the sheet is authoritative for any action it names, the roster's Aid row stays retired
+as well; nothing ships for Aid until the row is enabled.
 
 ## 2. What the system works out for you
 
@@ -241,7 +256,8 @@ sheet can see, so they stay with the table.
   - **Void ❶↺** (Evade Training): Evade at +2 Situation. Stopped, you may Step.
   - **Parry ❶↺** (Guard Training and a rigid implement in hand): Guard at +2 Situation. Stopping a
     Deliberate or Committed Strike takes Control and offers the riposte.
-  - **Counter ❶↺** (Melee Training): the better of your two usable basic Defenses, no bonus, and a
+  - **Counter ❶↺** (Expert rank in Melee; Melee Training alone grants Intercept, not Counter): the
+    better of your two usable basic Defenses, no bonus, and a
     Quick Strike back whatever the Result. It answers only a melee Blow from a foe within your
     Reach: an arrow, or a spear from beyond your Reach, meets the basic Defense, charges nothing,
     leaves the stance standing, and the card says so.
@@ -262,7 +278,8 @@ sheet can see, so they stay with the table.
     offers the Reactions the roller owns in the dialog (an adversary is offered all three), adds
     the +2, swaps the Defense where the Reaction says so (Void is an Evade, Parry is a Guard) and
     charges the ❶.
-- **Intercept ❶↺** (Melee Training) is offered by a card when a foe Moves into your Total Reach.
+- **Intercept ❶↺** (Melee Training, the one Reaction the Root grants) is offered by a card when a
+  foe Moves into your Total Reach.
   See the six-action round.
 - **Support.** +1 Situation to a melee attack for each other conscious ally whose Total Reach
   includes the target, to a maximum of +2. Allies are tokens of the attacker's disposition on the
@@ -398,7 +415,8 @@ never reaches its Opportunity expires with the round, with a card.
 **Reactions are paid from the same six.** There is no reaction slot. Void, Parry and Counter are
 charged when the attack they answer resolves; Intercept is charged when its Quick Strike is made;
 the riposte after a Parry is ⓿. Using a Maneuver Item that carries the Reaction trait from the
-sheet spends its cost (its own Reaction cost when it has one, as Aid ❶ (⓿↺) does).
+sheet spends its cost (its own Reaction cost when the sheet gives the Reaction half one, otherwise
+the cost printed; no shipped Maneuver carries a separate Reaction cost yet).
 
 **What is spent automatically**: a Strike by its kind, a Reaction, Raise a Shield, Recenter, drawing
 or stowing a weapon, movement, and the first action of a preparation. Using a Basic Maneuver from
@@ -583,8 +601,9 @@ the drag clone exists only on the dragging client; they see Foundry's own drag r
 action on a Reaction." Each actor, character or adversary, carries a **stance**: how the next
 physical Attack is met. There are five: **Evade** and **Guard**, the two basic Defenses, which cost
 nothing; and **Void**, **Parry** and **Counter**, the Reactions built on them, which cost ❶ from the
-six when an attack lands on you and are only yours to hold when the Talent that grants them is
-owned (Evade Training, Guard Training with a rigid implement in hand, Melee Training). Awareness
+six when an attack lands on you and are only yours to hold when the Talent or rank that grants them
+is there (Evade Training, Guard Training with a rigid implement in hand, Expert rank in Melee for
+Counter). Awareness
 and Endure are not stances; the handbook calls for them by name.
 
 - **On the sheet**, five chips in the header, each showing the Threshold an attacker would meet
@@ -736,7 +755,8 @@ the stance chips and the Intercept card rather than in the profile.
 **Item sheet.** One sheet for all eight Item types, branching on type. Talents and Maneuvers carry a
 cost from passive and ⓿ to ❻, an optional upper end with "to" or "or" between, so Strike reads
 "❶ to ❸" and Disarm "❶ or ❸", a **Reaction ↺** checkbox, and the Reaction's own cost when it
-differs, so Aid reads "❶ (⓿↺)". A Constellation names its parent (Melee or Ranged; anything but
+differs, printed as "❶ (⓿↺)" for a ❶ Maneuver whose Reaction half is free; no shipped Maneuver
+carries one yet. A Constellation names its parent (Melee or Ranged; anything but
 itself is allowed, so a third parent needs no code change). A chassis carries Vigor per level, Size
 and Speed in feet per Move. A weapon carries its Style, which is load-bearing for the Strike
 Attribute, and the sheet calls out the traits that decide what it can do in a Bind.

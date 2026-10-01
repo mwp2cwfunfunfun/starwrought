@@ -185,39 +185,63 @@ Hooks.once("ready", async () => {
 async function migrateWorld() {
   if (!game.user.isGM) return;
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
-  if (!foundry.utils.isNewerVersion("0.4.0", done)) return;
+  // Each step runs once, for a world last opened under a version older than the one it names.
+  const needs = version => foundry.utils.isNewerVersion(version, done);
+  if (!needs("0.4.0") && !needs("0.4.1")) return;
 
   let count = 0;
-  const quarter = value => {
-    if ((typeof value !== "number") || (value < LEGACY_SPEED_FLOOR)) return null;
-    return migrateSpeed(value);
-  };
+  if (needs("0.4.0")) {
+    const quarter = value => {
+      if ((typeof value !== "number") || (value < LEGACY_SPEED_FLOOR)) return null;
+      return migrateSpeed(value);
+    };
 
-  // An adversary stores its own Speed at the top; a character's is its Ancestry's.
-  for (const actor of game.actors) {
-    const path = actor.type === "npc" ? "system.speed" : "system.details.ancestry.speed";
-    const next = quarter(foundry.utils.getProperty(actor._source, path));
-    if (next === null) continue;
-    await actor.update({ [path]: next });
-    count++;
+    // An adversary stores its own Speed at the top; a character's is its Ancestry's.
+    for (const actor of game.actors) {
+      const path = actor.type === "npc" ? "system.speed" : "system.details.ancestry.speed";
+      const next = quarter(foundry.utils.getProperty(actor._source, path));
+      if (next === null) continue;
+      await actor.update({ [path]: next });
+      count++;
+    }
+
+    // Chassis Items in the world, and in any Item pack a GM has unlocked (the shipped packs are
+    // locked and built on the one-foot grid already).
+    const chassis = game.items.filter(i => i.type === "chassis");
+    for (const pack of game.packs.filter(p => (p.metadata.type === "Item") && !p.locked)) {
+      chassis.push(...(await pack.getDocuments({ type: "chassis" })));
+    }
+    for (const item of chassis) {
+      const next = quarter(item._source.system?.speed);
+      if (next === null) continue;
+      await item.update({ "system.speed": next });
+      count++;
+    }
   }
 
-  // Chassis Items in the world, and in any Item pack a GM has unlocked (the shipped packs are
-  // locked and built on the one-foot grid already).
-  const chassis = game.items.filter(i => i.type === "chassis");
-  for (const pack of game.packs.filter(p => (p.metadata.type === "Item") && !p.locked)) {
-    chassis.push(...(await pack.getDocuments({ type: "chassis" })));
-  }
-  for (const item of chassis) {
-    const next = quarter(item._source.system?.speed);
-    if (next === null) continue;
-    await item.update({ "system.speed": next });
-    count++;
+  // 0.4.1: Counter needs Expert rank in Melee (ruling 63). A character saved holding a Reaction
+  // stance it no longer qualifies for falls back to the basic Defense that stance was built on, so
+  // the sheet and the HUD stop showing a stance the roll would set aside anyway.
+  let stances = 0;
+  if (needs("0.4.1")) {
+    for (const actor of game.actors) {
+      if (actor.type !== "character") continue;
+      const stance = actor.system.stance;
+      if (!(stance in SW.REACTIONS) || (actor.system.reactions?.[stance] !== false)) continue;
+      const fallback = SW.REACTIONS[stance].defense ?? actor.answeringDefense?.().key ?? "evade";
+      await actor.update({ "system.stance": fallback });
+      stances++;
+    }
   }
 
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
   if (count > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.speed", { version: game.system.version, count });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
+  if (stances > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.stance", { version: game.system.version, count: stances });
     console.log(`STARWROUGHT | ${message}`);
     ui.notifications.info(message);
   }

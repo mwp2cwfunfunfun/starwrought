@@ -1,11 +1,13 @@
 # STARWROUGHT data pipeline: data/*.xlsx -> assets/trees.json
 # Header-driven: column ORDER doesn't matter; column NAMES do (first word wins).
 # Recognized tree-sheet columns: Talent | Tier | Root | Requires | Prerequisites | Description | Effect | Feeds
-#                                Grants | Choice | Free Talent
+#                                Grants | Choice | Free Talent | Enabled?
 # Recognized index columns:      Tree | Category | Feeds | Flare (triggers) | Meta | Skills
 #   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
 # Rich text in Description/Effect cells (b/i/u/strike/color) becomes HTML and mirrors everywhere.
+# Enabled? (Mike, 2026-10-01, ruling 60): "Yes" ships the row to Foundry; see enabled_flag below.
+# The converter keeps every row and only flags it; build_foundry.mjs does the filtering.
 #
 # An ACTIONS workbook (data/actions.xlsx, Mike, 2026-09-26) is recognised by its _Tree Index
 # carrying Name | Type | Meta note instead of Tree | Category. Its other sheets hold one action per
@@ -22,7 +24,8 @@ ROSTER = os.path.join(HERE, "roster.json")
 AOUT = os.path.join(HERE, "actions.json")
 
 def parse_bg_sheet(bws, bgs, warnings, fname):
-    bm = header_map(bws, {"name": "background", "rarity": "rarity", "desc": "desc", "effect": "effect", "skills": "skills", "lore": "lore"})
+    bm = header_map(bws, {"name": "background", "rarity": "rarity", "desc": "desc", "effect": "effect", "skills": "skills", "lore": "lore",
+                          "enabled": "enabled"})
     if "name" not in bm or "effect" not in bm:
         warnings.append(f"{fname}: Backgrounds sheet needs Background and Effect columns"); return
     for r in bws.iter_rows(min_row=2):
@@ -32,6 +35,7 @@ def parse_bg_sheet(bws, bgs, warnings, fname):
         eff = cell_html(gv("effect"))
         skills = [x.strip() for x in re.split(r",|•", plain(gv("skills"))) if x.strip()]
         entry = {"name": bname, "rarity": plain(gv("rarity")) or "Common",
+                 "enabled": enabled_flag(gv("enabled"), "enabled" in bm),
                  "desc": cell_html(gv("desc")), "effect": eff}
         if skills: entry["skills"] = skills
         lore = plain(gv("lore"))
@@ -134,6 +138,17 @@ def header_map(ws, wanted):
                 m[key] = j - 1
     return m
 
+# ---- The Enabled? column (Mike, 2026-10-01; ruling 60) ---------------------------------------
+# Recognised by its first word like every other header. A cell reading "Yes" (any case, trimmed)
+# enables the row; anything else (blank, "No", "TBD") disables it. A sheet WITHOUT the column is
+# wholly enabled: its absence means the sheet has not been curated yet, not that it is all off
+# (Lore and Languages today). The converter DROPS NOTHING: every talent, background and action
+# is written with `enabled`, and a tree carries its Root's flag, because a constellation exists in
+# play when its Root does. Foundry is the play surface and ships only the enabled rows (ruling 61);
+# the web app, the compendium docx and the plates are the authoring views of the whole book.
+def enabled_flag(cell, has_column):
+    return plain(cell).lower() == "yes" if has_column else True
+
 # Requires-matching strips the cost glyphs off a name: the v4.10 ⓿❶❷❸❹❺❻ and ↺ (with a bracketed
 # Reaction cost such as "Aid ❶ (⓿↺)"), the v3 ◆ and ◇, and the capstone star.
 GLYPH_CLASS = "◆◇↺★⓿❶❷❸❹❺❻"
@@ -227,7 +242,8 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
         if ws.title == "_Tree Index": continue
         cm = header_map(ws, {"name": "action", "cost": "cost", "traits": "trait", "type": "type",
                              "prereq": "prereq", "req": "requirement", "trigger": "trigger",
-                             "desc": "desc", "effect": "effect", "automation": "automation"})
+                             "desc": "desc", "effect": "effect", "automation": "automation",
+                             "enabled": "enabled"})
         if "name" not in cm:
             warnings.append(f"{fname} / {ws.title}: no Action column, sheet ignored"); continue
         if "effect" not in cm:
@@ -269,6 +285,7 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
                                 f"{'its Type cell' if pv('type') else 'its sheet name'}")
             traits = [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", pv("traits"))) if t]
             actions.append({"name": name, "type": atype, **cost,
+                            "enabled": enabled_flag(cellv("enabled"), "enabled" in cm),
                             "traits": traits,
                             "prerequisites": pv("prereq"), "requirements": pv("req"),
                             "trigger": pv("trigger"), "description": cell_html(cellv("desc")) if pv("desc") else "",
@@ -290,6 +307,10 @@ ROLLY = re.compile(r"\b(checks?|saves?|attack rolls?|Strikes?|damage|criticals?|
 # something is the implicit way, and it scales T->E->M->L by definition. Both count.
 SCALES = re.compile(r"\b(Expert|Master|Legendary)\b|"
                     r"(constellation'?s?|this)\s+(proficiency|rank)|(proficiency|rank)\s+to\b", re.I)
+
+# A heading welded to the label that should follow it on its own line: a lowercase letter, a cost
+# glyph or a closing bracket running straight into a capitalised rules label.
+WELD = re.compile(r"[a-z⓿❶❷❸❹❺❻↺)](Requirements|Trigger|Duration|Frequency|Auditory|Stance)\b")
 
 def root_rule_gripes(tree, nname, effect):
     """Both halves of the root rule, checked against the Effect prose."""
@@ -374,7 +395,7 @@ def main():
             ws = wb[name]
             cm = header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "req": "requires",
                                  "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": "feeds", "grants": "grants",
-                                 "choice": "choice", "freetalent": "free"})
+                                 "choice": "choice", "freetalent": "free", "enabled": "enabled"})
             if "name" not in cm or "tier" not in cm or "effect" not in cm:
                 errors.append(f"{fname} / {name}: sheet needs Talent, Tier and Effect columns"); continue
             nodes, root_count, root_name = [], 0, None
@@ -396,7 +417,18 @@ def main():
                 feeds_o = pv("feeds")
                 if not effect:
                     errors.append(f"{name} / {nname}: empty Effect"); continue
-                node = {"name": nname, "tier": tier, "cost": 1, "effect": effect}
+                # Excel drops a rich-text run whose whole text is a line break when the file that
+                # wrote it did not mark the run xml:space="preserve", and the bold heading before it
+                # is welded to the label after it ("PressRequirements"). Caught here so the sheet is
+                # mended rather than the weld shipped (review 0.4.1).
+                weld = WELD.search(re.sub(r"<[^>]+>", "", re.sub(r"<br\s*/?>", "\n", effect)))
+                if weld:
+                    warnings.append(f"{name} / {nname}: Effect reads '{weld.group(0)}'; the line break before "
+                                    f"'{weld.group(1)}' was lost when the workbook was saved. Mend the cell.")
+                # Enabled? (ruling 60): the row's own flag, always written; a sheet without the
+                # column is wholly enabled. The tree's flag is its Root's, set once the rows are read.
+                node = {"name": nname, "tier": tier, "cost": 1,
+                        "enabled": enabled_flag(cellv("enabled"), "enabled" in cm), "effect": effect}
                 gr = pv("grants")
                 if gr:
                     m2 = re.match(r"^(\d+) in (one|any|different) (Skill|Calling|Combat Style|Armor|Save|Weapon|opened|anywhere)$", gr)
@@ -436,10 +468,20 @@ def main():
             if root_count != 1:
                 errors.append(f"{name}: needs exactly 1 root (has {root_count})"
                               + (" (identity-tree roots are granted by the chargen choice, but still mark one)" if category in IDENTITY else ""))
-            names = {norm(n["name"]) for n in nodes}
+            # A constellation exists in play when its Root does (ruling 60), so the tree's flag is
+            # the root's. An enabled talent under a disabled root is still written, and warned
+            # about: Foundry would ship a Talent with no Root to reach it from.
+            tree_enabled = any(n["enabled"] for n in nodes if n.get("root"))
+            if not tree_enabled:
+                warnings.extend(f"{name} / {n['name']}: enabled, but the constellation's root is not; "
+                                f"Foundry has no Root to reach it from" for n in nodes if n["enabled"])
+            by_norm = {norm(n["name"]): n for n in nodes}
             for n in nodes:
                 for rq in n.get("requires", []):
-                    if norm(rq) not in names: errors.append(f"{name} / {n['name']}: requires unknown '{rq}'")
+                    if norm(rq) not in by_norm: errors.append(f"{name} / {n['name']}: requires unknown '{rq}'")
+                    # An enabled talent that Requires a disabled one can never be bought in Foundry (ruling 60).
+                    elif n["enabled"] and not by_norm[norm(rq)]["enabled"]:
+                        warnings.append(f"{name} / {n['name']}: enabled, but Requires '{rq}', which is not")
             label = category + (" constellation" if category in ("Skill", "Defense", "Armor", "Ancestry", "Culture", "Bloodline", "Background") else "")
             meta_extra = g("meta")
             cskills = [x.strip() for x in re.split(r",|•", g("skills")) if x.strip()]
@@ -452,7 +494,8 @@ def main():
                     errors.append(f"{fname} / {name}: Ancestry has chassis columns but no bloodline roots ('h')")
                 else:
                     # `vigor` is the v4.10 key; `hp` is kept one release for readers not yet moved.
-                    chassis.append({"name": name, "vigor": int(hp), "hp": int(hp), "size": g("size") or "Medium",
+                    # `enabled` is the tree's (ruling 60), so chargen can offer only the shipped ancestries.
+                    chassis.append({"name": name, "enabled": tree_enabled, "vigor": int(hp), "hp": int(hp), "size": g("size") or "Medium",
                                     "speed": g("speed") or "6 ft", "senses": g("senses") or "—",
                                     "tree": name, "blurb": g("summary"), "bloodlines": hers})
                     if not meta_extra:  # derive the display line when the sheet leaves it blank
@@ -461,7 +504,7 @@ def main():
             # A parent Constellation (v4.10): every Talent bought here also counts toward the
             # parent's rank. Melee and Ranged are the parents; the Combat Styles name one of them.
             parent = g("parent")
-            out[name] = {"category": category, "feeds": feeds, **({"skills": cskills} if cskills else {}),
+            out[name] = {"category": category, "enabled": tree_enabled, "feeds": feeds, **({"skills": cskills} if cskills else {}),
                          **({"parent": parent} if parent else {}),
                          "meta": f"{label} • {feeds or '—'}" + (f" ({meta_extra})" if meta_extra else ""),
                          "sparks": g("sparks"), "nodes": nodes}
@@ -474,12 +517,15 @@ def main():
         print(f"  {fname}: {len(out) - n_before} trees")
     # A Free Talent may live in another constellation (Drilled hands over Weapon Familiarity, which
     # is authored in Weapons), so it can only be checked once every sheet has been read.
-    everywhere = {norm(n["name"]): t for t, tr in out.items() for n in tr["nodes"]}
+    everywhere = {norm(n["name"]): n for tr in out.values() for n in tr["nodes"]}
     for tname, tree in out.items():
         for n in tree["nodes"]:
             ft = n.get("freeTalent")
             if ft and norm(ft) not in everywhere:
                 errors.append(f"{tname} / {n['name']}: Free Talent names no talent in the book: '{ft}'")
+            # A disabled Free Talent is one Foundry cannot hand over (ruling 60).
+            elif ft and n["enabled"] and not everywhere[norm(ft)]["enabled"]:
+                warnings.append(f"{tname} / {n['name']}: enabled, but its Free Talent '{ft}' is not; Foundry cannot hand it over")
         # A Parent must be a tree in the book, and a parent has no parent of its own.
         par = tree.get("parent")
         if par:
@@ -489,6 +535,20 @@ def main():
                 errors.append(f"{tname}: Parent '{par}' has a parent of its own; only one level of inheritance")
             elif par == tname:
                 errors.append(f"{tname}: a Constellation cannot be its own Parent")
+    # An enabled Background whose Skills name a constellation with no enabled Root hands out a
+    # Training point with nowhere to land in Foundry (ruling 60). A Skill that is not a
+    # constellation in the book (a Lore) is not checked, as before.
+    for bg in bgs:
+        for s in (bg.get("skills", []) if bg["enabled"] else []):
+            if s in out and not out[s]["enabled"]:
+                warnings.append(f"Backgrounds / {bg['name']}: enabled, but its Skill '{s}' is a constellation whose root is not")
+    # What Foundry will ship (ruling 61), on one line beside the per-file counts. Every row is
+    # still written; this counts the rows flagged Yes.
+    print("enabled for Foundry: "
+          f"{sum(1 for t in out.values() if t['enabled'])} of {len(out)} constellations, "
+          f"{sum(1 for t in out.values() for n in t['nodes'] if n['enabled'])} of {sum(len(t['nodes']) for t in out.values())} talents, "
+          f"{sum(1 for b in bgs if b['enabled'])} of {len(bgs)} backgrounds, "
+          f"{sum(1 for a in actions if a['enabled'])} of {len(actions)} actions")
     for w in warnings: print("WARNING:", w)
     if errors:
         print("VALIDATION ERRORS:"); [print("  -", e) for e in errors]; sys.exit(1)

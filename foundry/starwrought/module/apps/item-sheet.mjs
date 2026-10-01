@@ -4,6 +4,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { enabledConstellations } from "../helpers/content.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
@@ -79,6 +80,11 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     // Choice lists, localized once here so the templates stay declarative.
     const costs = Object.fromEntries(Object.keys(SW.ACTION_COSTS).map(k => [k, costLabel(k)]));
     const ownSlug = item.type === "constellation" ? (item.system.slug || SW.slugify(item.name)) : null;
+    // The selects offer what the spreadsheets enable (ruling 61), plus whatever this Item already
+    // says: an owned Talent of a Constellation that has since been switched off still shows its
+    // own Constellation rather than a blank, and saving the sheet does not silently move it.
+    const enabled = enabledConstellations();
+    const current = [item.system.constellation, item.system.check?.constellation];
     context.choices = {
       attributes: this.#choices(SW.ATTRIBUTES),
       categories: this.#choices(SW.CATEGORIES),
@@ -99,14 +105,14 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       defenses: this.#choices(SW.DEFENSES),
       groups: Object.fromEntries(SW.WEAPON_GROUPS.map(g => [g, g])),
       constellations: Object.fromEntries(
-        Object.values(SW.constellations)
+        withCurrent(enabled, current)
           .sort((a, b) => a.name.localeCompare(b.name))
           .map(c => [c.slug, c.name])
       ),
       // A parent Constellation: Melee or Ranged today, listed first; anything but itself is allowed
       // so a third parent (the book promises Magic) needs no code change.
       parents: Object.fromEntries(
-        Object.values(SW.constellations)
+        withCurrent(enabled, [item.system.parentSlug])
           .filter(c => c.slug !== ownSlug)
           .sort((a, b) => (isParentSlug(b.slug) - isParentSlug(a.slug)) || a.name.localeCompare(b.name))
           .map(c => [c.slug, c.name])
@@ -125,6 +131,12 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       const { loadChargenContent, choiceOptions } = await import("../helpers/chargen-data.mjs");
       await loadChargenContent();
       const options = choiceOptions(item.system.choice.prompt);
+      // Keep the Item's own answer even when the list no longer offers it (a Skill switched off
+      // after it was chosen), as withCurrent does for the Constellation selects: the sheet submits
+      // the whole form on every change, so a select showing blank would write "" and reopen the
+      // question.
+      const value = item.system.choice.value;
+      if (options && value && !options.includes(value)) options.push(value);
       context.choiceOptions = options ? Object.fromEntries(options.map(o => [o, o])) : null;
     }
 
@@ -248,4 +260,22 @@ function costLabel(key) {
 /** 1 for Melee or Ranged, 0 for anything else: the sort key that puts the real parents first. */
 function isParentSlug(slug) {
   return [SW.MELEE_SLUG, SW.RANGED_SLUG].includes(slug) ? 1 : 0;
+}
+
+/**
+ * The enabled Constellations, plus any slug the Item currently holds that the list leaves out.
+ * A disabled slug resolves through `getConstellation`, which keeps answering for it (ruling 61);
+ * a slug nobody knows gets the synthetic entry, so the select never shows a bare blank for a
+ * value that is actually set.
+ * @param {object[]} enabled  Registry entries from `enabledConstellations()`.
+ * @param {string[]} slugs    The Item's current values; blanks are skipped.
+ * @returns {object[]}
+ */
+function withCurrent(enabled, slugs) {
+  const list = [...enabled];
+  for (const slug of slugs) {
+    if (!slug || list.some(c => c.slug === slug)) continue;
+    list.push(SW.getConstellation(slug));
+  }
+  return list;
 }

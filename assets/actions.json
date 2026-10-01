@@ -11,6 +11,7 @@
    "costMode": "to",
    "reaction": false,
    "reactionCost": "",
+   "enabled": false,
    "traits": [],
    "prerequisites": "",
    "requirements": "The ally is willing to accept your aid.",

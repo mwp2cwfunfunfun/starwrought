@@ -7,6 +7,62 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.4.1 (2026-10-01): Player's Handbook v4.10, the Enabled? gate and Counter at Expert
+
+Two rulings from the author after 0.4.0 shipped, recorded as rulings 60 to 63 in
+`v4.10-sync-report.md`. The handbook did not move.
+
+### Added
+
+- **The spreadsheets decide what ships.** Every talent sheet but Lore's, the Backgrounds sheet and
+  the action sheets now carry an `Enabled?` column. A row reading Yes ships to Foundry; anything else (blank,
+  No) is authored but not visible: no compendium document, no chargen card, no picker entry, no
+  Basic Action. A sheet without the column is wholly enabled, since its absence means the sheet has
+  not been curated yet (Lore, Languages). A Constellation ships when its Root does. The converter
+  keeps every row in `trees.json`, `backgrounds.json` and `actions.json` with an `enabled` flag, so
+  the web app and the Constellation Compendium still show the whole book; it warns when an enabled
+  Talent sits under a disabled Root, requires a disabled Talent or hands over a disabled Talent
+  free, and when an enabled Background grants a disabled Skill. `build_foundry.mjs` writes only the enabled
+  documents (document ids are unchanged, so enabling a row later restores the same UUIDs), keeps
+  every Constellation in `content/constellations.json` with its flag so a character who already
+  owns a Talent of a now-disabled Constellation still resolves it, and stamps the enabled counts
+  into `content/sync.json`. Today that is 11 of 31 Constellations and 37 of 177 Talents (Human,
+  Serrovane, Evade, Guard, Acrobatics, Athletics, Melee, Lore, Weaponmaster, Dueling and Great
+  Weapon Fighting; Lore ships whole because its sheet has no column yet), one Background (Acrobat),
+  one Calling (Weaponmaster), one Bloodline (Torchbearer Human) and no Basic Action. The converter also warns that
+  Drilled is enabled while the Weapon Familiarity it hands over is not.
+- **Chargen with gaps.** Step 0 offers only the Weapon Training whose Root ships (Melee today). A
+  card step with nothing enabled says so and lets you continue without a pick; a point slot whose
+  named Constellation has no enabled Root, or nothing enabled left to buy (a Calling's free
+  Training in a Skill the Background already Trained, with only its Root enabled), says so instead
+  of opening an empty picker. The review keeps the book's floor of 14 Talents and also names the
+  floor reachable with what is enabled, counting each directed point against the enabled Talents
+  that could take it, and measures "short" against that.
+
+### Changed
+
+- **Melee Training grants one Reaction, not two.** Intercept ❶↺ comes with the Root as before.
+  Counter ❶↺ now arrives at Expert rank in Melee (the derived rank, which counts a Combat Style's
+  points once the Root is owned). The stance chip, its tooltip, the Reaction's hint, the roster's
+  Reaction table, the Constellation Compendium, the character sheets, the web app's Reactions
+  checklist and the Melee Training Talent's own Effect (reworded in `data/weapons.xlsx`) all say
+  so, and a refused Counter stance names the Expert gate. A character saved holding a Counter
+  stance at a Melee rank below Expert answers with the basic Defense: the roll sets the stance
+  aside with a note, and a one-time world migration (stamped 0.4.1) moves the stored stance back
+  to its basic Defense. Adversaries are unchanged: their Reactions are the GM's to declare. The
+  handbook still prints Counter under Melee Training; the book is the author's to bring across.
+- **Nine Effect cells mended.** Excel's re-save when the `Enabled?` column was added dropped the
+  line-break runs that openpyxl had written without `xml:space="preserve"`, welding bold headings
+  to the label after them ("PressRequirements"). The cells (Rage, Combat Grab, Missile
+  Skirmishing Training, Spear & Polearm Training, Short Grip Strike, Quick Tongue, Rally, Talk
+  Them Down, Command the Field) are restored with the line break folded into the heading's run,
+  and the converter now warns on any Effect that reads that way.
+- **Aid ships nowhere for now.** It is the one row of `data/actions.xlsx`, it is not enabled, and
+  the sheet is authoritative for any action it names, so the roster's Aid row stays retired. Enable
+  the row and it returns under the same document id.
+
+---
+
 ## 0.4.0 (2026-09-28): Player's Handbook v4.10
 
 Not a point release of the rules. Player's Handbook v4.10 rewrites the combat engine, and every

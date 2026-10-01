@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.4.0";
+  --sw-css-version: "0.4.1";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);

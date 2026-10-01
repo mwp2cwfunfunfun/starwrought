@@ -8,8 +8,9 @@
  * Five answers (PHB v4.10, Answering an Attack). Two are the basic Defenses: Evade and Guard, which
  * cost nothing. Three are Reactions, paid ❶ from the same six actions when an attack lands on you:
  * Void (Evade +2, Evade Training), Parry (Guard +2, Guard Training and a rigid implement in hand),
- * and Counter (your basic Defense and a Quick Strike back, Melee Training). A Reaction the actor
- * has not earned is drawn, disabled, so the sheet still teaches what the Talent would buy.
+ * and Counter (your basic Defense and a Quick Strike back, Expert rank in Melee with Melee Training
+ * owned; ruling 63). A Reaction the actor has not earned is drawn, disabled, so the sheet still
+ * teaches what the Talent, or the rank, would buy.
  * Awareness and Endure are not stances; the handbook calls for them by name.
  */
 

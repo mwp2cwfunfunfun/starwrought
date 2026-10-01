@@ -609,7 +609,28 @@ function attackRows(c){
 function shSec(label,micro){ return `<div class="shsec"><span>${label}</span><span class="m">${micro||""}</span></div>`; }
 // which Training grants each Reaction on the sheet's checklist (PHB v4.10 ch.2, Answering an Attack).
 // Owning the Root grants it, never an inherited rank (sync report, ruling 46); a Head Wound blocks them all.
-const REACT_SRC={Parry:"Guard",Void:"Evade",Counter:"Melee",Intercept:"Melee"};
+// Counter is the one Reaction with a rank floor (ruling 63): Melee Training owned AND Melee at Expert or
+// better. `rank` is the floor; absent, the Root alone grants it. The rank read is the derived one, so a
+// Combat Style's points count toward it once Melee Training is owned (ruling 13), and the level gate
+// (Expert from L5) applies as it does to every rank.
+const REACT_SRC={Parry:{tree:"Guard"},Void:{tree:"Evade"},Counter:{tree:"Melee",rank:"E"},Intercept:{tree:"Melee"}};
+// One Reaction's standing for one character: `granted` is the Training (and rank floor) being there,
+// `has` is granted and no Head Wound, `title` is what the sheet's box says when hovered.
+function reactionGrant(c,d,nm){
+  const src=REACT_SRC[nrmG(nm)];
+  if(!src) return {granted:false, has:false, title:"needs a Training"};
+  const t=src.tree, root=rootNameOf(t);
+  const owned=DEFS.includes(t)?!!d.DR[t]:rootOwned(c,t);
+  const r=t==="Melee"?d.melee.rank:t==="Ranged"?d.ranged.rank:d.DR[t];
+  const rankOk=!src.rank||(!!r&&ORDER.indexOf(r)>=ORDER.indexOf(src.rank));
+  const granted=owned&&rankOk, has=granted&&!d.noReactions;
+  const floor=src.rank?TIERN[src.rank]+" rank in "+t:root;
+  const title=!owned?"needs "+root+(src.rank?", then "+floor:"")
+    :!rankOk?"needs "+floor+" ("+RANKPTS[src.rank]+" points"+(PARENTS.includes(t)?", Combat Styles count":"")+", from level "+gatesFor(t)[src.rank]+"); "+(r?TIERN[r]:"Untrained")+" now"
+    :d.noReactions?"blocked by your Head Wound"
+    :"granted by your "+floor;
+  return {granted, has, title};
+}
 function vSheet(c){
   // sheet_spec.json (v4.10) carries the labels; `hp` is still its key for the Vigor block, `vigor` is accepted too
   const d=derive(c), S=SHEET, SV=S.vigor||S.hp, SW=S.wounds||{}, anames=["Might","Agility","Wits","Presence"];
@@ -735,8 +756,8 @@ function vSheet(c){
       ${shSec(S.attacks.label,S.attacks.micro)}
       <table class="sht"><tr>${S.attacks.cols.map(x=>`<th>${x}</th>`).join("")}</tr>${atkRows}</table>
       ${S.reactions?shSec(S.reactions.label,S.reactions.micro):""}
-      ${S.reactions?(S.reactions.items||[]).map(([nm,fx])=>{const src=REACT_SRC[nrmG(nm)], granted=src?(DEFS.includes(src)?!!d.DR[src]:ownsTalent(c,"Melee","Melee Training")):false, has=granted&&!d.noReactions;
-        return `<div class="shattr" style="align-items:flex-start;margin:3px 0"><span class="shms" title="${granted&&d.noReactions?"blocked by your Head Wound":has?"granted by your "+src+" Training":"needs "+(src||"a")+" Training"}">${has?"✕":""}</span><span class="shmicro" style="flex:1;line-height:1.3"><b>${nm}</b> ${fx}</span></div>`;}).join(""):""}
+      ${S.reactions?(S.reactions.items||[]).map(([nm,fx])=>{const rg=reactionGrant(c,d,nm);
+        return `<div class="shattr" style="align-items:flex-start;margin:3px 0"><span class="shms" title="${rg.title}">${rg.has?"✕":""}</span><span class="shmicro" style="flex:1;line-height:1.3"><b>${nm}</b> ${fx}</span></div>`;}).join(""):""}
       ${shSec(S.talents.label,S.talents.micro)}
       <div style="font-size:10.5px;line-height:1.75">${tl.map(x=>`<div style="border-bottom:1px solid #EDE5D4">${x}</div>`).join("")}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
@@ -1995,11 +2016,11 @@ function vWiki(){
     ${threatTbl()}
     ${P("<b>When a Defense is unavailable.</b> Evade is unavailable while you are Grabbed or Restrained. Guard is unavailable while you are unaware of the attack, or while you have nothing equipped to ward away the blow, and it answers a ranged Blow only with a shield Raised. Endure and Awareness are never unavailable. The GM may determine that others apply.")}
     <h4>Answering an Attack</h4>
-    ${P("You may always roll one of the two Defenses that answer the threat, regardless of how many actions you have remaining. That roll is your <b>basic defense</b>: ordinary footwork, guard position, constitution, alertness. For the potential to do better, you use a <b>Reaction ↺</b>: a Maneuver performed the moment the attack is declared, paid for from the same pool of six actions you attack with. Each Reaction below is granted by a Talent; without the Talent, the basic roll is all you have.")}
+    ${P("You may always roll one of the two Defenses that answer the threat, regardless of how many actions you have remaining. That roll is your <b>basic defense</b>: ordinary footwork, guard position, constitution, alertness. For the potential to do better, you use a <b>Reaction ↺</b>: a Maneuver performed the moment the attack is declared, paid for from the same pool of six actions you attack with. Each Reaction below is granted by a Talent, or, for Counter, by Expert rank in Melee; without it, the basic roll is all you have.")}
     ${tbl(["Reaction ↺","Cost","Effect"],[
       ["<b>Parry ❶↺</b>","1 action","(Guard Training) You Guard with a +2 Situation bonus. You need a rigid weapon, a shield, or a permitted natural weapon in hand. If you Stop a Deliberate or Committed Strike, you take Control of the attacking weapon rather than a neutral Bind, and you may at once make a Quick Strike ⓿ against its owner: the riposte. A Stopped Quick Strike gives only a neutral Bind."],
       ["<b>Void ❶↺</b>","1 action","(Evade Training) You Evade with a +2 Situation bonus. If the attack is Stopped, you may Step in any direction."],
-      ["<b>Counter ❶↺</b>","1 action","(Melee Training) Answer a melee Blow from a foe within your Reach with a Quick Strike of your own. No bonus to your Defense. Roll both; resolve both. Both can land."],
+      ["<b>Counter ❶↺</b>","1 action","(Melee Expert) Answer a melee Blow from a foe within your Reach with a Quick Strike of your own. No bonus to your Defense. Roll both; resolve both. Both can land."],
       ["<b>Intercept ❶↺</b>","1 action","(Melee Training) When a foe Moves from outside your Total Reach to inside it, or Strikes you with an Unwieldy weapon from inside its Unwieldy distance, make a Quick Strike at the moment they enter. Once per foe per Move. A Wound stops their movement; anything less and it continues."],
       ["<b>Posture ⓿↺</b>","A Zone","(Gained from specific Talents) A Situation bonus to the named Defense. Always results in a Zone of your choice becoming Exposed until the end of the round; Recenter does not clear it."]])}
     ${P("Reactions are paid from the same six actions you attack with. A fighter who spends five actions attacking has one left to defend with; a fighter who holds three has answers. You may React before your first Opportunity of the round, and as often in a round as you can afford. At 0 actions you still roll your basic Defense, and you may still take a Posture. <b>A Reaction never triggers another Reaction</b>: you cannot Counter a Counter or an Intercept, and a fighter who is Countered rolls only their basic Defense against it.")}

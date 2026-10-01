@@ -96,6 +96,23 @@ export function rankBonus(rank) {
   return RANKS[rank]?.bonus ?? 0;
 }
 
+/**
+ * Has a rank reached a minimum? Compares `RANKS[...].order`, so Legendary satisfies an Expert
+ * gate. An absent minimum (null or undefined) is no gate at all and is always met: that is how a
+ * Reaction granted by a Root alone reads (see REACTIONS). An unrecognised actor rank reads as
+ * Untrained; an unrecognised minimum is a gate nobody can name, so it is never met rather than
+ * silently open (ruling 63, Counter at Melee Expert).
+ * @param {string} rank      The rank held, a key of RANKS.
+ * @param {string} [minimum] The rank required, a key of RANKS, or nothing for no requirement.
+ * @returns {boolean}
+ */
+export function rankAtLeast(rank, minimum) {
+  if (minimum === undefined || minimum === null) return true;
+  const need = RANKS[minimum]?.order;
+  if (need === undefined) return false;
+  return (RANKS[rank]?.order ?? 0) >= need;
+}
+
 /** Step a rank down by N steps, floored at untrained. Used by Practiced weapon Handling. */
 export function stepRank(rank, steps = -1) {
   const i = RANK_ORDER.indexOf(rank);
@@ -176,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.4.0";
+export const SYSTEM_VERSION = "0.4.1";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -244,12 +261,18 @@ export const DEFAULT_STRIKE = "deliberate";
 
 /**
  * The Reactions the Exchange names (PHB v4.10, Answering an Attack). Each is granted by a Talent
- * (the Training root of the named Constellation) and paid from the same six actions.
+ * (`talent`: the slug of the Constellation whose Training root grants it) and paid from the same
+ * six actions. `rank`, when present, is the minimum rank in that Constellation as well: the Root
+ * must be owned and the derived rank must have reached it (a Combat Style's points count toward
+ * Melee once Melee Training is owned, ruling 13). Absent, the Root alone grants the Reaction.
+ * Counter is Melee Expert (Mike, 2026-10-01, ruling 63: Melee Training gives one Reaction at
+ * Trained, Intercept; Counter arrives at Expert). The handbook still prints Counter under Melee
+ * Training; the book is Mike's to bring across.
  */
 export const REACTIONS = Object.freeze({
   parry: { label: "STARWROUGHT.Reaction.parry", cost: 1, defense: "guard", bonus: 2, talent: "guard", rigid: true },
   void: { label: "STARWROUGHT.Reaction.void", cost: 1, defense: "evade", bonus: 2, talent: "evade", rigid: false },
-  counter: { label: "STARWROUGHT.Reaction.counter", cost: 1, defense: null, bonus: 0, talent: MELEE_SLUG, rigid: false },
+  counter: { label: "STARWROUGHT.Reaction.counter", cost: 1, defense: null, bonus: 0, talent: MELEE_SLUG, rank: "expert", rigid: false },
   intercept: { label: "STARWROUGHT.Reaction.intercept", cost: 1, defense: null, bonus: 0, talent: MELEE_SLUG, rigid: false },
   posture: { label: "STARWROUGHT.Reaction.posture", cost: 0, defense: null, bonus: 0, talent: null, rigid: false }
 });

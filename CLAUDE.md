@@ -203,8 +203,8 @@ final Wound is Dying.
 - `* Lore` sheets in `ancestries.xlsx` are authoring notes for player-facing text. The converter
   ignores them by design.
 - Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect, Feeds,
-  Grants, **Choice**, **Free Talent**. Column order does not matter; the first word of the header
-  does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
+  Grants, **Choice**, **Free Talent**, **Enabled?**. Column order does not matter; the first word of
+  the header does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
   a **Parent** column (v4.10): a Combat Style names Melee or Ranged, and the converter errors on a
   Parent that names no tree or has a parent of its own. Action glyphs ride in the Talent name in the
   v4.10 symbols (❶ ❷ ❸, ⓿, ↺ beside a cost); the v3 ◆ and ◇ still convert.
@@ -216,6 +216,15 @@ final Wound is Dying.
   Familiarity had no mechanical effect anywhere. If an effect asks the player to pick something
   **once, at build time**, it needs a Choice cell. Per-use picks (a Zone, a target, a Defense) do
   not; only two talents in the book qualify.
+- **`Enabled?` decides what ships to Foundry** (Mike, 2026-10-01; sync report rulings 60 to 62).
+  On every talent sheet but Lore's, the Backgrounds sheet and the action sheets: Yes ships,
+  anything else is authored but not visible in Foundry, and a sheet without the column is wholly
+  enabled (it has not been curated yet; Lore and Languages today). A Constellation ships when its Root does. The
+  converter keeps every row, with `enabled` on each talent, tree, background and action, and warns
+  on an enabled row that leans on a disabled one; `build_foundry.mjs` writes only the enabled
+  documents, keeps every Constellation in the content index with its flag, and stamps the enabled
+  counts into `content/sync.json`. The web app and the compendium docx show the whole book. A
+  disabled sheet action still retires the roster row of its name (Aid ships nowhere until enabled).
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
 - **`data/actions.xlsx` is the actions workbook** (Mike, 2026-09-26). The converter recognises it by
   its `_Tree Index` carrying `Name | Type | Meta note` instead of `Tree | Category`; every other
@@ -255,8 +264,10 @@ final Wound is Dying.
   Presence, two Wits, two Agility. Resolving the heading-vs-table question must not flatten them.
 - **Aid differs between the sheet and the book.** `data/actions.xlsx` has Aid as a single action
   with a Relevant Check; PHB v4.10 has Prepare ❶ plus a ⓿↺ Reaction against Threshold 15. The sheet
-  wins by the standing rule (2026-09-26) and ships as written; the book is Mike's to bring across,
-  or the sheet is (v4.10 sync report, ruling 10).
+  wins by the standing rule (2026-09-26): its Aid is what the web app and the compendium docx
+  show, and it is what Foundry will carry once the row reads Enabled? = Yes; today the row is
+  blank, so Aid ships nowhere in Foundry (ruling 61). The book is Mike's to bring across, or the
+  sheet is (v4.10 sync report, ruling 10).
 - **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
   Constellation in v4.10; the data reads it as Melee. One sentence in the handbook.
 - **Key Terms carries v3.4 sentences.** It still says Attribute Bonus is points divided by 3, that
@@ -272,7 +283,13 @@ final Wound is Dying.
 - **`data/actions.xlsx` has never been committed.** It is the authoritative source of
   `assets/actions.json`, which is tracked and marked never-hand-edit, so a fresh clone cannot
   regenerate the actions. It is Mike's working file and adding it to git is his call; the
-  converter now says so when the workbook is absent.
+  converter now says so when the workbook is absent. Its one row, Aid, is not enabled, so Aid
+  ships nowhere (ruling 61).
+- **Two `Enabled?` loose ends for Mike:** Drilled is enabled while the Weapon Familiarity it hands
+  over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
+- **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**
+  (Mike's ruling 63, 2026-10-01: Melee Training gives one Reaction, Intercept). Two sentences in the
+  book (Answering an Attack, the Reaction table).
 
 Cleared 2026-09-28 (the v4.10 sync): the check formula's level term, the ÷ 3 divisor and the
 1/5/13/19 rank gates everywhere downstream; the Multiple Attack Penalty and its `trackMap` setting;

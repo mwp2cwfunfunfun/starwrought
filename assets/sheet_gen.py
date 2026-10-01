@@ -590,7 +590,8 @@ MIRA = dict(
     actions_spent=0, reserved="",
     melee_rank="Trained", melee_prof="+3", melee_spec="-",
     ranged_rank="Untrained", ranged_prof="+0", ranged_spec="-",
-    reactions={"parry": False, "void": True, "counter": True, "intercept": True},
+    # Counter ❶↺ is granted at Expert rank in Melee (ruling 63); Mira is Trained, so only Intercept.
+    reactions={"parry": False, "void": True, "counter": False, "intercept": True},
     bind="", bind_mine="", bind_theirs="",
     trees=[
         (False, "Origin (Human, Versatile, Reacher)", "-", "4", "Trained", "+3 prof"),
@@ -612,7 +613,7 @@ MIRA = dict(
         ("Unarmed", "no style", "Agility +2", "+5", "1d4 B", "Agile, Close, Finesse, Nonlethal; Adjacent"),
     ],
     talents=[
-        "GRANTED FREE: Melee Training (brings the Counter ❶↺ and Intercept ❶↺ Reactions)",
+        "GRANTED FREE: Melee Training (brings the Intercept ❶↺ Reaction; Counter ❶↺ arrives at Expert)",
         "ORIGIN (3 Origin points, one per choice): Humanity, Versatile Human, Reacher",
         "Versatile Human - 1 Opening Talent Point (spent on Dueling Training)",
         "Driven (Comet) - a Calling Talent Point, which bought Surprise Attacker",
@@ -634,7 +635,7 @@ MIRA = dict(
         "Sneak Attack (Ambusher T): +1d6 precision damage against Off-Guard foes, and Training in Stealth. Precision rides on a Quick Strike ❶ too, and never on a Graze.",
         "Surprise Attacker (Ambusher T): in the first round, foes that have not acted yet are Wrong-Footed to you.",
         "DEFENSES: Evade and Awareness Trained; between them they answer Blows, Blasts, Blights and Beguilement. Guard and Endure Untrained: Attribute only (+0), Threshold 10. With the rapier in hand, Guard is +1 / Threshold 11 against melee Attacks: the Parry trait is a +1 Gear bonus.",
-        "REACTIONS: Void ❶↺ (Evade +2; Stopped: Step), Counter ❶↺ and Intercept ❶↺ from Melee Training. No Parry Reaction without Guard Training; the rapier's Parry trait still adds its +1 Gear to Guard. Posture: Give Ground ⓿↺ (Evade +2, a Zone Exposed until the end of the round).",
+        "REACTIONS: Void ❶↺ (Evade +2; Stopped: Step) and Intercept ❶↺ from Melee Training; Counter ❶↺ waits for Expert in Melee. No Parry Reaction without Guard Training; the rapier's Parry trait still adds its +1 Gear to Guard. Posture: Give Ground ⓿↺ (Evade +2, a Zone Exposed until the end of the round).",
         "STRIKE ATTRIBUTE: rapier and dagger are Finesse and Dueling's Key Attribute is Agility, so Agility +2 either way. A thrown dagger rolls Ranged (Untrained, +0) with Might (+0).",
         "STRIKES: ❶ Quick 1d8 (+1d6 Sneak Attack if the foe is Off-Guard), Torso, no crit. ❷ Deliberate 1d8 + 0 Might, may take an Exposed Zone; a Miss Exposes her. ❸ Committed: Prepared and Weighted.",
         "MATCHED HARNESS: four leather pieces, same material and Protection, so the Torso gets +1 Protection and Load Strain drops to 0. Leather turns slashing poorly: -1 Protection against it.",

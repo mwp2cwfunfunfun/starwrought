@@ -2,6 +2,7 @@
  "ancestries": [
   {
    "name": "Human",
+   "enabled": true,
    "vigor": 8,
    "hp": 8,
    "size": "Medium",
@@ -132,7 +133,7 @@
   ],
   [
    "Counter ❶↺",
-   "Melee Training • Guard or Evade, no bonus",
+   "Melee Expert • Guard or Evade, no bonus",
    "Answer a melee Blow from a foe within your Reach with a Quick Strike of your own. No bonus to your Defense. Roll both; resolve both. Both can land. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it."
   ],
   [
@@ -1121,7 +1122,7 @@
    [
     "Counter ❶↺",
     "Reaction, Attack",
-    "Requirements You have Melee Training; the attacker is within your Reach and the attack is a melee attack.<br>Answer the attack with a Quick Strike of your own. You gain no bonus to your Defense. Roll both; resolve both. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it."
+    "Requirements You are Expert in Melee; the attacker is within your Reach and the attack is a melee attack.<br>Answer the attack with a Quick Strike of your own. You gain no bonus to your Defense. Roll both; resolve both. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it."
    ],
    [
     "Intercept ❶↺",

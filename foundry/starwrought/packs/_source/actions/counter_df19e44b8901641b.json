@@ -15,7 +15,7 @@
       "Reaction",
       "Attack"
     ],
-    "description": "<p>Requirements You have Melee Training; the attacker is within your Reach and the attack is a melee attack.<br>Answer the attack with a Quick Strike of your own. You gain no bonus to your Defense. Roll both; resolve both. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it.</p>",
+    "description": "<p>Requirements You are Expert in Melee; the attacker is within your Reach and the attack is a melee attack.<br>Answer the attack with a Quick Strike of your own. You gain no bonus to your Defense. Roll both; resolve both. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it.</p>",
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "d49adf8cbe5c4fad",

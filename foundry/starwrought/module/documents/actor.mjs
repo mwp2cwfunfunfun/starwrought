@@ -15,6 +15,7 @@ import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
+import { enabledConstellations } from "../helpers/content.mjs";
 
 const { DialogV2 } = foundry.applications.api;
 const { renderTemplate } = foundry.applications.handlebars;
@@ -210,9 +211,11 @@ export class SwActor extends Actor {
       trained: rank !== "untrained"
     });
 
-    // Every Constellation the game knows, at this character's rank in it. The Lore template is
-    // not itself rollable; the Lores this character has opened are on the character.
-    const rows = Object.values(SW.constellations)
+    // Every Constellation that ships (Enabled? = Yes, ruling 61), at this character's rank in it;
+    // the character's own Constellations are added below, so an owned one that has since been
+    // disabled still appears. The Lore template is not itself rollable; the Lores this character
+    // has opened are on the character.
+    const rows = enabledConstellations()
       .filter(c => c.slug && (c.slug !== "lore"))
       .map(c => {
         const p = sys.proficiency(c.slug);
@@ -627,6 +630,18 @@ export class SwActor extends Actor {
         ? game.i18n.localize(noReactions)
         : game.i18n.format("STARWROUGHT.Reaction.blocked", { name: this.name });
     }
+    // A Reaction stance the character no longer qualifies for falls back to the basic Defense:
+    // a Counter held from before ruling 63 at a Melee rank below Expert, or a Training Root since
+    // removed. setStance only guards the way in; the roll has to read what is true now. Parry's
+    // rigid implement is noted below rather than enforced, so for Parry only the Root is tested.
+    if (reaction && (this.type === "character") && (sys.reactions?.[reaction] === false)) {
+      const stale = (reaction !== "parry") || !sys.constellations?.[SW.REACTIONS.parry.talent]?.rootOwned;
+      if (stale) {
+        const needs = { void: "STARWROUGHT.Stance.needsVoid", parry: "STARWROUGHT.Stance.needsParry", counter: "STARWROUGHT.Stance.needsCounter" };
+        note = game.i18n.localize(needs[reaction]);
+        reaction = null;
+      }
+    }
     // Counter answers only a melee Blow from a foe within your Reach (PHB v4.10, Answering an
     // Attack). Anything else meets the basic Defense, nothing is charged, and the stance stands.
     if (reaction === "counter") {
@@ -726,10 +741,13 @@ export class SwActor extends Actor {
   async setStance(key, { announce = true } = {}) {
     if (!STANCES.includes(key)) return;
     if (REACTION_STANCES.includes(key) && (this.type === "character") && !this.system.reactions?.[key]) {
-      const talent = SW.REACTIONS[key].talent;
+      // The gate the Reaction needs: its constellation at REACTIONS[key].rank when one is set
+      // (Counter at Melee Expert, ruling 63), otherwise the Root alone, which reads as Trained.
+      const { talent, rank } = SW.REACTIONS[key];
+      const rankLabel = SW.RANKS[rank ?? "trained"]?.label ?? "STARWROUGHT.Rank.trained";
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Stance.reactionUnavailable", {
         stance: game.i18n.localize(SW.REACTIONS[key].label),
-        talent: talent ? `${SW.getConstellation(talent).name} ${game.i18n.localize("STARWROUGHT.Rank.trained")}` : ""
+        talent: talent ? `${SW.getConstellation(talent).name} ${game.i18n.localize(rankLabel)}` : ""
       }));
       return;
     }

@@ -117,6 +117,42 @@ const driver=`
     must(dwl.speed===3&&dwl.step===1&&dwl.travel.mph===1, "one Legs Wound halves Speed 6 to 3; 3 ÷ 2 mph rounds down to 1");
     const dwl2=derive({...JSON.parse(JSON.stringify(m)), wounds:{Head:0,Torso:0,Arms:0,Legs:2}});
     must(dwl2.speed===0&&dwl2.rush===0&&dwl2.atkPen===2&&dwl2.sitPen.Evade===2, "the final Legs Wound is Prone: Speed 0, −2 to attacks, Off-Guard"); });
+  // Ruling 63: Melee Training grants Intercept alone; Counter needs Expert rank in Melee, which counts a
+  // Combat Style's points once the Root is owned (ruling 13) and is gated at level 5 like every Expert rank.
+  step("Reactions checklist: Counter at Melee Expert (ruling 63)", ()=>{
+    const m=chars.find(c=>c.id===TORVA.id); must(m, "Mira loaded");
+    const g=(c,nm)=>reactionGrant(c,derive(c),nm);
+    must(g(m,"Intercept ❶↺").granted&&g(m,"Intercept ❶↺").has, "Mira (Trained in Melee) ticks Intercept");
+    must(!g(m,"Counter ❶↺").granted, "Mira does not tick Counter at Trained");
+    must(g(m,"Counter ❶↺").title.includes("needs Expert rank in Melee")&&g(m,"Counter ❶↺").title.includes("Trained now"), "the Counter box says what it needs: "+g(m,"Counter ❶↺").title);
+    must(g(m,"Parry ❶↺").granted&&g(m,"Void ❶↺").granted, "Guard Training and Evade Training still grant Parry and Void");
+    must(vSheet(m).includes('title="needs Expert rank in Melee'), "the rendered sheet carries the Counter hint");
+    const mh=derive({...JSON.parse(JSON.stringify(m)), wounds:{Head:1,Torso:0,Arms:0,Legs:0}});
+    const ih=reactionGrant(m,mh,"Intercept ❶↺"); must(ih.granted&&!ih.has&&ih.title==="blocked by your Head Wound", "a Head Wound blocks a granted Reaction and says so");
+    const mk=(level,melee)=>migrate({name:"x",level,milestones:0,ancestry:"Human",calling:"Bravo",sparks:{},armor:null,shield:null,languages:[],
+      talents:{...(melee?{Melee:["Melee Training"]}:{}),Dueling:["Dueling Training","En Garde","Feinting Lunge ❷"]}});
+    const e5=mk(5,true), d5=derive(e5);
+    must(poolPts(e5,"Melee")===4&&d5.melee.rank==="E", "Melee Training plus three Dueling talents is 4 Melee points, Expert at L5; found "+d5.melee.rank);
+    must(g(e5,"Counter ❶↺").has&&g(e5,"Intercept ❶↺").has, "the L5 Expert ticks both Counter and Intercept");
+    must(g(e5,"Counter ❶↺").title==="granted by your Expert rank in Melee", "and the box says so: "+g(e5,"Counter ❶↺").title);
+    must(vSheet(e5).includes('title="granted by your Expert rank in Melee"'), "the rendered sheet ticks Counter for the Expert");
+    const e1=mk(1,true), d1=derive(e1);
+    must(poolPts(e1,"Melee")===4&&d1.melee.rank==="T", "the same talents at L1 are Trained: the Expert gate is level 5");
+    must(g(e1,"Intercept ❶↺").has&&!g(e1,"Counter ❶↺").granted, "so the L1 twin ticks Intercept and not Counter");
+    must(g(e1,"Counter ❶↺").title.includes("from level 5"), "and the box names the level gate: "+g(e1,"Counter ❶↺").title);
+    const n5=mk(5,false);
+    must(!g(n5,"Intercept ❶↺").granted&&!g(n5,"Counter ❶↺").granted, "Dueling alone grants neither: the Root is the grant");
+    must(g(n5,"Counter ❶↺").title==="needs Melee Training, then Expert rank in Melee", "the box asks for the Root first: "+g(n5,"Counter ❶↺").title); });
+  // Ruling 61: Enabled? is Foundry's gate. The app is the authoring view of the whole book, so a tree or
+  // talent the converter marks "enabled: false" is still listed and still drawn here.
+  step("the Enabled? flag is carried, not acted on (ruling 61)", ()=>{
+    const offTrees=Object.keys(TREES).filter(t=>TREES[t].enabled===false);
+    const offNodes=Object.keys(TREES).flatMap(t=>(TREES[t].nodes||[]).filter(n=>n.enabled===false).map(n=>[t,n.name]));
+    tab="explorer";
+    for(const t of offTrees){ must(allTreeNames().includes(t), t+" is off for Foundry but must still be a tree here");
+      etree=t; eview={mode:2,cat:treeOf(t).category}; esel=null; render(); drawSky(); }
+    for(const [t,n] of offNodes.slice(0,5)){ must(treeOf(t).nodes.some(x=>x.name===n), n+" is off for Foundry but must still be in "+t);
+      etree=t; eview={mode:2,cat:treeOf(t).category}; esel=n; render(); drawSky(); } });
   step("migration: v3 save keys", ()=>{ const old={id:"old",name:"Old",level:1,milestones:0,ancestry:"Human",bloodline:"Versatile Human",culture:"Kestrel Reach",
       background:"Acrobat",calling:"Ambusher",talents:{"Weapons":["Weapons Training","Read the Steel ◆"],"Berserker":["Rage ◆"],"Guard":["Guard Training"],
       "Archery":["Archery Training","Loose and Move"],"Chainmail":["Chain Discipline"]},sparks:{},

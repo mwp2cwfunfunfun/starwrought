@@ -2,6 +2,7 @@
  {
   "name": "Acrobat",
   "rarity": "Common",
+  "enabled": true,
   "desc": "In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.",
   "effect": "You become Trained in Athletics and in Acrobatics, and you become Trained in Lore (Circus).",
   "skills": [
@@ -13,6 +14,7 @@
  {
   "name": "Soldier",
   "rarity": "Common",
+  "enabled": false,
   "desc": "You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.",
   "effect": "You become Trained in Athletics and in Intimidation, and you become Trained in Lore (Warfare).",
   "skills": [
@@ -24,6 +26,7 @@
  {
   "name": "Criminal",
   "rarity": "Common",
+  "enabled": false,
   "desc": "You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to.",
   "effect": "You become Trained in Guile and in Stealth, and you become Trained in Lore (Underworld).",
   "skills": [

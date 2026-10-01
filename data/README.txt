@@ -22,8 +22,16 @@ Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Tr
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |
-                Feeds (blank = tree default) | Grants | Choice | Free Talent
+                Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled?
   Column ORDER does not matter; the first word of the header does.
+  Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
+        anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
+        column means the sheet has not been curated yet, not that it is all off. A constellation
+        is enabled when its root (the "x" row) is, since a constellation exists in play when its
+        Root does. The converter keeps EVERY row and writes enabled: true|false on each; Foundry
+        (the play surface) ships only the enabled rows, while the web app, the compendium docx and
+        the plates still show the whole book. It WARNS on an enabled talent under a disabled root,
+        and on an enabled talent whose Requires or Free Talent names a disabled talent.
   Choice: a build-time pick the talent demands, written as WHAT is chosen ("Weapon Group",
         "Weapon Group or Technical Weapon"). The Foundry system turns it into a picker when the
         talent is taken and remembers the answer, which is what gives the talent its effect.
@@ -46,11 +54,20 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
   ◆ (one action per diamond) and ◇ (free) still convert. Requires-matching strips trailing
   glyphs, so Requires "Kip Up" matches the talent "Kip Up ❶".
 
+BACKGROUNDS (backgrounds.xlsx)
+  The "Backgrounds" sheet holds one Background per row. Columns (first word wins, order free):
+    Background | Rarity | Description | Effect | Skills | Lore | Enabled?
+  Skills names the constellations the Background grants Training in, comma-separated; Lore names
+  its Lore. Enabled? works as on a tree sheet: "Yes" ships the Background to Foundry, anything
+  else keeps it out, and a sheet without the column ships every row. Every row is still written
+  to assets/backgrounds.json with its flag. The converter WARNS when an enabled Background grants
+  a Skill whose constellation root is disabled, since that Training point has nowhere to land.
+
 ACTIONS WORKBOOK (actions.xlsx)
   Recognised by its _Tree Index carrying  Name | Type | Meta note  instead of Tree | Category.
   Every other sheet holds one action per row. Columns (first word wins, order free):
     Action | Cost | Traits | Type | Prerequisites | Requirements | Trigger | Description | Effect |
-    Automation
+    Automation | Enabled?
   Type comes from the row's own Type cell if there is one, else the _Tree Index row of that name,
     else the sheet's name (with a warning that the action is not in the index).
   Cost takes glyphs or words: ❶, ❷, ❸ (up to ❻), ⓿ (free), ↺ beside a cost for a Reaction
@@ -65,6 +82,11 @@ ACTIONS WORKBOOK (actions.xlsx)
     the same name from the compendium, the app and the compendium docx, under the same document
     id. Roster rows the sheet does not carry yet stay. Actions typed "Basic Action" appear on
     every character's Actions tab in Foundry, read from the compendium rather than copied.
+  Enabled? works as on a tree sheet: "Yes" ships the action to Foundry, anything else keeps it
+    out, and a sheet without the column ships every row. Every action is still written to
+    actions.json with its flag. A disabled action STILL retires the roster row of the same name
+    (the sheet is authoritative for any action it names), so until Aid reads Yes it ships nowhere
+    in Foundry.
 
 RICH TEXT: bold / italic / underline / strikethrough / font color applied INSIDE the
 Effect or Description cell mirrors into the app, the tree explorer, and the Player's Handbook.
@@ -77,6 +99,10 @@ Ancestry Vigor (or HP) must be a whole number. Every talent costs 1.
 It WARNS (does not block) on the Root Rule: every root should hang on something that gets ROLLED
 and should IMPROVE at Expert/Master/Legendary. The culture roots pass (their Diplomacy bonus
 scales); the two Human bloodline roots still break it on purpose. See v3.0-sync-report.md section 4.
+It also WARNS on Enabled? gaps: an enabled talent whose constellation root is disabled, an enabled
+talent whose Requires or Free Talent names a disabled talent, and an enabled Background granting a
+Skill whose root is disabled. The run ends its counts with one line of what Foundry will ship
+("enabled for Foundry: N of 31 constellations, N of 177 talents, ...").
 
 To sync after editing, from the project root:
   python assets/xlsx_to_trees.py             -> assets/trees.json + backgrounds.json + languages.json

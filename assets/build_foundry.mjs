@@ -14,6 +14,13 @@
  * Document ids are a hash of pack plus name, so they are stable across rebuilds. That matters:
  * an id becomes a compendium UUID the moment somebody drags a Talent onto a character sheet.
  *
+ * Foundry is the play surface and ships only what the spreadsheets mark `Enabled? = Yes` (Mike,
+ * 2026-10-01; ruling 61). The converter drops nothing: every talent, tree, background and action in
+ * the JSON carries `enabled: true|false`, and this build writes a compendium document only for the
+ * enabled ones. The web app, the compendium docx and the plates are authoring views of the whole
+ * book and do not read the flag. Because the ids are hashes, enabling a row later restores the
+ * same UUID, so nothing already on a character sheet is orphaned by a round trip through disabled.
+ *
  * Usage:  node assets/build_foundry.js [--no-compile]
  */
 
@@ -51,6 +58,26 @@ const ICON = {
 /* -------------------------------------------- */
 
 const read = name => JSON.parse(fs.readFileSync(path.join(ROOT, "assets", name), "utf8"));
+
+/**
+ * The `Enabled?` gate (ruling 61). The converter writes `enabled: true|false` on every node, tree,
+ * background and action; only an explicit `false` turns a row off here, so JSON from before the
+ * column existed, or a sheet that has not been curated yet, still ships everything.
+ */
+const isEnabled = row => row?.enabled !== false;
+
+/** Enabled-versus-authored tallies for the build summary and content/sync.json. */
+const tally = {
+  constellations: { enabled: 0, total: 0 },
+  talents: { enabled: 0, total: 0 },
+  chassis: { enabled: 0, total: 0 },
+  sheetActions: { enabled: 0, total: 0 }
+};
+function count(kind, enabled) {
+  tally[kind].total += 1;
+  if (enabled) tally[kind].enabled += 1;
+  return enabled;
+}
 
 /** A stable 16-character document id. */
 function docId(pack, key) {
@@ -190,8 +217,11 @@ for (const [name, tree] of Object.entries(trees)) {
   const plate = plates.has(`${slug}.png`) ? `systems/starwrought/assets/constellations/${slug}.png` : null;
   // A child of Melee or Ranged (v4.10): its Talents count toward the parent's rank as well.
   const parent = tree.parent ? slugify(tree.parent) : "";
+  // A Constellation exists in play when its Root does: the converter sets the tree's flag from
+  // its root talent (ruling 60), and the Constellation document ships only when that is on.
+  const treeEnabled = count("constellations", isEnabled(tree));
 
-  item("constellations", {
+  if (treeEnabled) item("constellations", {
     key: `constellation:${slug}`,
     name,
     type: "constellation",
@@ -212,12 +242,17 @@ for (const [name, tree] of Object.entries(trees)) {
     }
   });
 
-  constellationIndex.push({ slug, name, category, attribute, parent, img: plate ?? ICON.constellation });
+  // The runtime index keeps EVERY Constellation, disabled ones included, so a character who already
+  // owns a Talent of a Constellation that has since been turned off still resolves its name,
+  // category, attribute and parent. `enabled` is what the runtime filters its pickers on.
+  constellationIndex.push({ slug, name, category, attribute, parent, img: plate ?? ICON.constellation, enabled: treeEnabled });
 
-  // One folder per Constellation keeps 170 Talents navigable in the sidebar.
-  const folderId = folder("talents", name, { color: "#3b2f63" });
+  // One folder per Constellation keeps 170 Talents navigable in the sidebar. A Constellation that
+  // ships no Talent gets no folder, so the sidebar shows nothing it cannot open.
+  const shipped = tree.nodes.filter(node => count("talents", isEnabled(node)));
+  const folderId = shipped.length ? folder("talents", name, { color: "#3b2f63" }) : null;
 
-  for (const node of tree.nodes) {
+  for (const node of shipped) {
     const bare = stripGlyphs(node.name);
     item("talents", {
       key: `talent:${slug}:${slugify(bare)}`,
@@ -265,9 +300,23 @@ const chassisFolders = {
   calling: folder("chassis", "Callings", { sort: 4 })
 };
 
+// Which chassis ship (ruling 61): an Ancestry, Culture or Calling when the Constellation of that
+// name is enabled (the converter also copies the ancestry tree's flag onto the roster block, so
+// both are checked); a Bloodline on its own root talent's flag, since the two Human bloodlines are
+// curated separately from Humanity; a Background on its own flag. The folders always ship, so an
+// empty step in chargen still has somewhere to say that nothing is enabled.
+const ancestryTree = ancestry => trees[ancestry.tree ?? ancestry.name];
+function bloodlineEnabled(ancestry, bloodName) {
+  const want = stripGlyphs(bloodName).toLowerCase();
+  const root = (ancestryTree(ancestry)?.nodes ?? []).find(n => n.hroot && stripGlyphs(n.name).toLowerCase() === want);
+  // A bloodline row with no hroot talent of that name is a roster-versus-sheet mismatch the
+  // converter does not police here; it follows its ancestry rather than vanishing on a typo.
+  return root ? isEnabled(root) : isEnabled(ancestryTree(ancestry));
+}
+
 for (const ancestry of roster.ancestries ?? []) {
   const treeSlug = slugify(ancestry.tree ?? ancestry.name);
-  item("chassis", {
+  if (count("chassis", isEnabled(ancestry) && isEnabled(ancestryTree(ancestry)))) item("chassis", {
     key: `chassis:ancestry:${slugify(ancestry.name)}`,
     name: ancestry.name,
     type: "chassis",
@@ -290,6 +339,7 @@ for (const ancestry of roster.ancestries ?? []) {
   });
 
   for (const [bloodName, effect] of ancestry.bloodlines ?? []) {
+    if (!count("chassis", bloodlineEnabled(ancestry, bloodName))) continue;
     item("chassis", {
       key: `chassis:bloodline:${slugify(bloodName)}`,
       name: bloodName,
@@ -309,6 +359,7 @@ for (const ancestry of roster.ancestries ?? []) {
 }
 
 for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
+  if (!count("chassis", isEnabled(trees[name]))) continue;
   item("chassis", {
     key: `chassis:culture:${slugify(name)}`,
     name,
@@ -331,6 +382,7 @@ for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
 }
 
 for (const background of backgrounds) {
+  if (!count("chassis", isEnabled(background))) continue;
   item("chassis", {
     key: `chassis:background:${slugify(background.name)}`,
     name: background.name,
@@ -349,6 +401,7 @@ for (const background of backgrounds) {
 }
 
 for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
+  if (!count("chassis", isEnabled(trees[name]))) continue;
   item("chassis", {
     key: `chassis:calling:${slugify(name)}`,
     name,
@@ -480,14 +533,23 @@ for (const [name, bonus, hardness, load, price, note] of roster.shields ?? []) {
 // does not carry yet stay, so nothing vanishes until the sheet has it. The sheet's Basic Actions
 // and the roster's Encounter Mode rows are flagged `basic`, which is what puts them on every
 // character's Actions tab without a copy being made.
+//
+// The sheet stays authoritative when its row is disabled (ruling 61): a sheet action marked anything
+// but `Enabled? = Yes` is not written, AND it still retires the roster row of the same name, so the
+// action ships nowhere until Mike enables it. The build names those rows so the gap is deliberate
+// rather than a surprise; the roster rows themselves (Encounter, Exploration, Downtime, Reactions)
+// are hand-kept JSON and always ship.
 const actionsPath = path.join(ROOT, "assets", "actions.json");
 const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
 const fromSheet = new Set(sheetActions.map(a => a.name.toLowerCase()));
+const disabledOnSheet = new Set(sheetActions.filter(a => !isEnabled(a)).map(a => a.name.toLowerCase()));
 const retired = [];
+const retiredByDisabled = [];
 function supersededBySheet(name) {
   const bare = actionName(name);
   if (!fromSheet.has(bare.toLowerCase())) return false;
   retired.push(bare);
+  if (disabledOnSheet.has(bare.toLowerCase())) retiredByDisabled.push(bare);
   return true;
 }
 
@@ -549,12 +611,15 @@ for (const [name] of roster.postures ?? []) {
   inherit(name, `posture:${slugify(name)}`);
 }
 
+// Only enabled sheet actions are written, and a sheet type folder only when one of its actions
+// ships; a roster category of the same name still claims the folder below with `??=`.
+const shippedSheetActions = sheetActions.filter(a => count("sheetActions", isEnabled(a)));
 const actionFolders = {};
 let actionSort = 0;
-for (const type of [...new Set(sheetActions.map(a => a.type))]) {
+for (const type of [...new Set(shippedSheetActions.map(a => a.type))]) {
   actionFolders[type] = folder("actions", type, { sort: actionSort++, color: "#5a4a1e" });
 }
-for (const a of sheetActions) {
+for (const a of shippedSheetActions) {
   item("actions", {
     key: rosterKey.get(a.name.toLowerCase()) ?? `action:${slugify(a.name)}`,
     name: a.name,
@@ -671,8 +736,11 @@ for (const [name, grantedBy, description] of roster.postures ?? []) {
 }
 
 if (sheetActions.length) {
-  console.log(`  ${sheetActions.length} action(s) from data/actions.xlsx`
+  console.log(`  ${shippedSheetActions.length} of ${sheetActions.length} action(s) from data/actions.xlsx enabled`
     + (retired.length ? `; roster rows retired in their favour: ${retired.join(", ")}` : ""));
+  // An action in this list is in neither the sheet's output nor the roster's: it is off the table
+  // entirely until its sheet row reads Enabled? = Yes, and the sync report flags it for Mike.
+  if (retiredByDisabled.length) console.log(`  retired by a disabled sheet row: ${retiredByDisabled.join(", ")}`);
 }
 
 /* -------------------------------------------- */
@@ -860,15 +928,21 @@ function writeContentIndex() {
   );
 
   // Carry the handbook version into the system, so the rules it implements can be read in game
-  // rather than inferred from the system's own version number.
+  // rather than inferred from the system's own version number. `constellations` and `talents` are
+  // the authored totals; `enabled` is what the packs actually hold, so the init log in
+  // helpers/content.mjs can say how many of the authored Talents ship (ruling 61).
   const syncPath = path.join(ROOT, "data", "SYNC.json");
   if (fs.existsSync(syncPath)) {
     const sync = JSON.parse(fs.readFileSync(syncPath, "utf8"));
     fs.writeFileSync(path.join(CONTENT, "sync.json"), `${JSON.stringify({
       phb: sync.phb,
       syncedOn: sync.syncedOn,
-      constellations: constellationIndex.length,
-      talents: (packs.talents ?? []).filter(d => d._key.startsWith("!items")).length
+      constellations: tally.constellations.total,
+      talents: tally.talents.total,
+      enabled: {
+        constellations: tally.constellations.enabled,
+        talents: tally.talents.enabled
+      }
     }, null, 2)}\n`, "utf8");
   }
 }
@@ -940,6 +1014,10 @@ const total = writeSources();
 writeContentIndex();
 const art = copyArt();
 console.log(`  ${total} documents written, ${constellationIndex.length} Constellations indexed, ${art} plates copied.`);
+// What the Enabled? column let through, per pack, against what the sheets author (ruling 61).
+const ratio = kind => `${tally[kind].enabled} of ${tally[kind].total}`;
+console.log(`  enabled for Foundry: ${ratio("constellations")} constellations, ${ratio("talents")} talents, `
+  + `${ratio("chassis")} chassis, ${ratio("sheetActions")} sheet actions.`);
 
 let compiled = null;
 if (!process.argv.includes("--no-compile")) compiled = await compile();

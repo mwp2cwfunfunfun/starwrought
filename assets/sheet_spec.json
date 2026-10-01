@@ -186,7 +186,7 @@
  },
  "reactions": {
   "label": "REACTIONS",
-  "micro": "tick the ones your Training grants; each costs ❶ of the six, on anyone's Opportunity. Stance: Evade | Guard | Void | Parry | Counter.",
+  "micro": "tick the ones your Training (or rank) grants; each costs ❶ of the six, on anyone's Opportunity. Stance: Evade | Guard | Void | Parry | Counter.",
   "items": [
    [
     "Parry ❶↺",
@@ -198,7 +198,7 @@
    ],
    [
     "Counter ❶↺",
-    "Melee Training. Answer a melee Blow within your Reach with a Quick Strike; no Defense bonus; both resolve."
+    "Melee Expert. Answer a melee Blow within your Reach with a Quick Strike; no Defense bonus; both resolve."
    ],
    [
     "Intercept ❶↺",
