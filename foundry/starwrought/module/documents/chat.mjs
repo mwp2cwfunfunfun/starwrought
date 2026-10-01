@@ -8,12 +8,21 @@
  * weapon" and "the defender's choice" are the table's to confirm. Each button is shown only to
  * a user who owns the actor it acts for (`data-owner-uuid`), so the attacker sees the damage
  * buttons and the defender sees the Position buttons; the GM sees everything.
+ *
+ * The attack card (0.5.0, templates/chat/attack-workflow-card.hbs) follows the same rule and adds
+ * two markers of its own: `data-gm-only` on the GM's recovery controls, and `data-sw-threshold-for`
+ * on a character's Threshold, which the brief's visibility policy decides per viewer. Its buttons
+ * never decide anything here: they open the Combat Prompt, hand the roll to the coordinator's
+ * `rollFor`, or send a GM control through `AttackCoordinator.request`.
  */
 
 import * as SW from "../config.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
+import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
+import { CARD_KIND as ATTACK_CARD_KIND, thresholdVisibleTo, mayControl } from "../combat/attack-card.mjs";
+import { SwCombatPrompt } from "../apps/combat-prompt.mjs";
 
 /** Wire up a rendered chat card. */
 export function onRenderChatMessage(message, html) {
@@ -30,6 +39,18 @@ export function onRenderChatMessage(message, html) {
   if (flags.reactionCharged) {
     for (const el of html.querySelectorAll("[data-sw-action='chargeReaction']")) el.remove();
   }
+
+  // The GM controls (the attack card's Cancel, Reset defenses, Resend prompts and Answer with
+  // standing stances) are the GM's, or the coordinator's at a table with no GM connected. The
+  // content is the same on every client; the row is not.
+  if (!mayControl(game.user, flags.attackWorkflow)) {
+    for (const el of html.querySelectorAll("[data-gm-only]")) el.remove();
+  }
+
+  // The attack card prints "vs {threshold}" for a character defender; whether this viewer may see
+  // it is the brief's visibility policy, read from the setting and actor ownership, never from a
+  // flag (an adversary's Threshold is never in the flags at all).
+  if (flags.kind === ATTACK_CARD_KIND) pruneAttackThresholds(html, flags.attackWorkflow);
 
   for (const button of html.querySelectorAll("[data-sw-action]")) {
     button.addEventListener("click", event => onCardButton(event, message, flags));
@@ -66,6 +87,13 @@ async function onCardButton(event, message, flags) {
       case "abandonPrepared": return await ownedActor(button)?.abandonPrepared();
       case "recovery": return await ownedActor(button)?.rollRecovery();
       case "recenter": return await recenterFromCard(button);
+      // The attack card (0.5.0): recovery, never decision.
+      case "attackOpenPrompt": return await openAttackPrompt(button);
+      case "attackRoll": return await rollFromAttackCard(button);
+      case "attackCancel": return await gmAttackRequest(flags, button, "cancel");
+      case "attackReset": return await gmAttackRequest(flags, button, "resetDefenses");
+      case "attackResend": return await gmAttackRequest(flags, button, "resendPrompts");
+      case "attackUseStances": return await gmAttackRequest(flags, button, "useStances");
       default: return;
     }
   } finally {
@@ -76,7 +104,7 @@ async function onCardButton(event, message, flags) {
 /* -------------------------------------------- */
 
 /** The Actor behind a uuid, whether the uuid names an Actor or a Token. */
-function resolveActor(uuid) {
+export function resolveActor(uuid) {
   if (!uuid) return null;
   const doc = fromUuidSync(uuid);
   if (!doc) return null;
@@ -85,7 +113,7 @@ function resolveActor(uuid) {
 }
 
 /** The TokenDocument behind a uuid that names a Token, or an Actor's first token on the scene. */
-function resolveTokenDoc(uuid) {
+export function resolveTokenDoc(uuid) {
   if (!uuid) return null;
   const doc = fromUuidSync(uuid);
   if (!doc) return null;
@@ -95,7 +123,7 @@ function resolveTokenDoc(uuid) {
 }
 
 /** The owned Actor a button acts for, or a warning and null. */
-function ownedActor(button, key = "actorUuid") {
+export function ownedActor(button, key = "actorUuid") {
   const actor = resolveActor(button.dataset[key]);
   if (!actor) {
     ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noActor"));
@@ -374,4 +402,75 @@ async function recenterFromCard(button) {
   const named = resolveActor(button.dataset.actorUuid);
   const targets = named?.isOwner ? [named] : resolveTargets(button.dataset.targetUuid);
   for (const actor of targets) await actor.recenter();
+}
+
+/* -------------------------------------------- */
+/*  The attack card (0.5.0)                      */
+/* -------------------------------------------- */
+
+/**
+ * The attack card's "vs {threshold}" spans: kept only where the brief's policy lets this viewer
+ * see the number (the defender's owner and the GM always; the attacker's owner under the
+ * attackShowPcThresholds setting; never a player for an adversary). The policy itself lives in
+ * attack-card.mjs so a user-specific render and this prune can never disagree.
+ */
+function pruneAttackThresholds(html, state) {
+  for (const el of html.querySelectorAll("[data-sw-threshold-for]")) {
+    const targetId = el.closest("[data-target-id]")?.dataset.targetId;
+    const target = state?.targets?.find(t => (t.id === targetId) || (!targetId && (t.actorUuid === el.dataset.swThresholdFor)));
+    if (!target || !thresholdVisibleTo(game.user, state, target)) el.remove();
+  }
+}
+
+/**
+ * The per-user button's second gate. The render hook already removed it for anyone who cannot act
+ * for its actor; a click that reaches here from a stale card is checked again, and the message is
+ * the attack flow's own ("That decision belongs to another player.").
+ */
+function actsForAttackButton(button) {
+  const uuid = button.dataset.ownerUuid;
+  if (!uuid) return true;
+  const actor = resolveActor(uuid);
+  if (!actor) return game.user.isGM;
+  if (actor.isOwner) return true;
+  ui.notifications.warn(game.i18n.localize("STARWROUGHT.Attack.notYours"));
+  return false;
+}
+
+/** Choose Defense, or reopen the Combat Prompt on this attack: the prompt lists what is yours to do. */
+async function openAttackPrompt(button) {
+  const workflowId = button.dataset.workflowId;
+  if (!workflowId) return;
+  if (!actsForAttackButton(button)) return;
+  return SwCombatPrompt.open({ workflowId });
+}
+
+/**
+ * Roll Attack or Roll Defense. The roller's own client throws the die blind (no Threshold) and
+ * hands the result to the coordinator, which reads it against every pairing (brief, "The roll and
+ * the resolution"); `AttackCoordinator.rollFor` is that whole step.
+ */
+async function rollFromAttackCard(button) {
+  const { workflowId, targetId } = button.dataset;
+  if (!workflowId) return;
+  if (!actsForAttackButton(button)) return;
+  return AttackCoordinator.rollFor(workflowId, targetId || null);
+}
+
+/**
+ * A GM control: cancel, resetDefenses, resendPrompts or useStances, sent through the coordinator
+ * like every other mutation. The expected revision is the live one when this client knows it
+ * (the card's flags can lag a step behind the coordinator's memory), else the card's; a stale
+ * request is refused visibly by the coordinator, never silently.
+ */
+async function gmAttackRequest(flags, button, action) {
+  const state = flags?.attackWorkflow ?? null;
+  const workflowId = button.dataset.workflowId || state?.id;
+  if (!workflowId) return;
+  const live = AttackCoordinator.get(workflowId);
+  // The GM's, or the coordinator's with no GM connected: the same test the card and the
+  // coordinator apply, read from the live state since the card's flags can lag a step.
+  if (!mayControl(game.user, live ?? state)) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Attack.gmOnly"));
+  const expectedRevision = live?.revision ?? state?.revision ?? 0;
+  return AttackCoordinator.request(action, { workflowId, expectedRevision, payload: {} });
 }

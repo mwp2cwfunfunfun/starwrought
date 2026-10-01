@@ -74,6 +74,9 @@
     </div>
   </div>
   <p class="hint">{{localize "STARWROUGHT.Stance.dialogHint"}}</p>
+  {{else if thresholdWithheld}}
+  {{!-- The attack flow's Defense roll: the Attack Threshold is the coordinator's, read on the card. --}}
+  <p class="hint"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Roll.thresholdWithheld"}}</p>
   {{else}}
   <div class="form-group">
     <label>{{#if isDefense}}{{localize "STARWROUGHT.Roll.attackThreshold"}}{{else}}{{localize "STARWROUGHT.Field.threshold"}}{{/if}}</label>

@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.4.2**. Developed against
+Rules content built from **Player's Handbook v4.10**. System version **0.5.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -199,10 +199,13 @@ sheet can see, so they stay with the table.
 
 ### Attacks and Defense rolls: the Exchange
 
-- **Player-facing.** An attack reads the target's stance off the targeted token at the moment of
-  the roll and is measured against that Defense's Threshold. A Defense roll runs the same
-  comparison from the other side, so beating an Attack Threshold by 10 is a Miss and missing it by
-  10 is a Critical Hit.
+- **Player-facing.** A Strike at a target is played as declare, commit, reveal, roll and resolve
+  (see **The attack flow** below): the defender commits how the Blow is met before the die is
+  thrown, and a player always rolls. With the world setting `attackFlow` off, or with no target,
+  an attack instead reads the target's stance off the targeted token at the moment of the roll, as
+  0.4.2 did. Either way the roll is measured against that Defense's Threshold, and a Defense roll
+  runs the same comparison from the other side, so beating an Attack Threshold by 10 is a Miss and
+  missing it by 10 is a Critical Hit.
 - **Melee or Ranged.** A weapon in hand rolls your Melee Proficiency; a weapon that leaves it rolls
   Ranged. A Thrown weapon is thrown when its target is beyond your Total Reach with it (or when the
   caller says so), and then rolls Ranged. **Weapon Handling** still applies on top: Intuitive uses
@@ -652,13 +655,92 @@ and Endure are not stances; the handbook calls for them by name.
   Evade anyway on the sheet posts a note saying so, to the owner. Guard's own exceptions are not
   things the sheet can see, so they stay with the table.
 
-Why not stop the attack and prompt the defender? Because the prompt would land on a player who may
-be away from the keyboard, block the attacker until they answer, and do nothing for adversaries,
-who are all the GM's. A stance set in advance and changeable in one click covers the same ground
-without a round trip, and it matches how the handbook phrases the choice: something the defender
-*has decided*, not something they are asked. Postures, the Talent-granted ⓿↺ Reactions that Expose
-a Zone until the end of the round, are in the compendium as Maneuvers; the Exposed toggle on the
-sheet marks a Posture's Zone so Recenter leaves it alone and the round's end clears it.
+The stance is what you *have decided*; since 0.5.0 the attack flow below asks you to confirm it,
+blow by blow, in a prompt that arrives with the attack. The stance is the prompt's pre-selection,
+so a present player commits with one click, and the GM can answer for an absent player with their
+standing stance in one click too, which is what kept the 0.4.0 design from prompting at all. With
+the attack flow switched off the stance is read at the die exactly as before. Postures, the
+Talent-granted ⓿↺ Reactions that Expose a Zone until the end of the round, are an answer the prompt
+offers when you own one in the Defense's Constellation; the Exposed toggle on the sheet marks a
+Posture's Zone so Recenter leaves it alone and the round's end clears it.
+
+### The attack flow
+
+**Declare → commit → reveal → roll → resolve.** A Strike at one or more targeted tokens, from the
+weapon row's ❶ ❷ ❸ or from an adversary's attack row, does not roll at once. It declares: the
+Maneuver (weapon or attack, Strike kind) and the targets lock, and one **attack card** appears in
+chat. A Committed Strike in an encounter still Prepares first and declares when it is Finished.
+Counter, Intercept and the riposte are already answers to a declared Blow and roll at once, as
+before. With no target the Strike rolls at once too.
+
+**Commit.** Every defender's controller gets the **Combat Prompt**: a small window, bottom-right,
+that never blocks Foundry. For a defender it offers the Defense (Evade or Guard) with the standing
+stance pre-selected, then the answers legal for that Defense right now (nothing; Void on Evade,
+Parry on Guard with a rigid implement, Counter on either at Melee Expert; any ⓿↺ Posture Talent
+owned in that Defense's Constellation, with the Zone it will Expose, though none ships enabled in
+the current data, so that choice waits on one), a preview of the resulting Threshold for a
+character, and Commit. Changing the Defense re-lists the answers, and an answer the new Defense
+does not allow falls back to nothing. The choice is
+sent as choices, never as a number, and the coordinator revalidates it against the rules. An
+adversary's answer is the GM's to declare: the GM gets one prompt row per adversary target. Until
+every defender has committed, the card shows only "Committed" or "Waiting" per target; no one,
+the attacker included, sees a choice. The commitments live only with the coordinator.
+
+**Reveal.** When the last defender commits, every choice reveals at once on the card, a Posture's
+Zone is Exposed, and the roll step begins.
+
+**Roll.** The player rolls. A player-controlled attacker (a character, or anyone a player owns)
+rolls Attack once, in the usual roll dialog with the Strike locked, and that one roll is read
+against each defender's Threshold. A player-controlled defender of an adversary's Blow rolls
+Defense against the adversary's Attack Threshold, which the player never sees. Player against
+player is not an opposed roll: the attacking player rolls, the defending player's committed
+Threshold answers. Adversary against adversary is the GM rolling the attacker flat against the
+defender's Threshold. The prompt carries the Roll button; the card carries it too, for recovery.
+
+**Resolve.** Each pairing gets the same resolution card an attack produces today: the Defense and
+answer, the outcome, Position offers (Expose, Bind, give ground, Step, Counter, riposte), the
+damage buttons for the attacker, and the Reaction's ❶ charged or offered. The attack card records
+every outcome and completes. Follow-up choices stay on the resolution cards; the prompt framework
+can carry such choices later. One resolution card serves every viewer, so it prints a character's
+Threshold only when `attackShowPcThresholds` is on; the attack card is where that player and the
+GM read it.
+
+**Who may do what.** The coordinator is the GM's client when a GM is connected, otherwise the
+attacker's. Every request (declare, commit, roll, GM controls) goes to it over the system's socket
+with the workflow's revision. A request made against a revision older than the start of the
+current phase, or than a reset, is refused and the prompt says the attack has moved on; a sibling
+defender's commit or roll in the meantime does not make yours stale, since your choice still
+applies. Only an actor's owner may commit for it or roll for it, and the prompt and the card each
+show a viewer only their own buttons (the GM sees them all); only the GM (or, with no GM
+connected, the coordinating attacker) may Cancel, Reset defenses (everyone chooses again, nothing
+is revealed), Resend prompts or Answer with standing stances. Reset is offered only while the
+defenders are choosing: once a die has been paid for (a Strike's actions, a Reaction's ❶ charged
+before a Defense roll) only Cancel remains, and a reset closes again any Zone a revealed Posture
+had Exposed. Cancel keeps the attacker's spent actions: the declaration is the Maneuver. A closed
+prompt loses nothing: the card's button reopens it, and a reload rebuilds live attacks from the
+cards, the coordinator's private commitments from its own browser. Requests and replies travel the
+system's socket addressed to one user, so the server delivers them to that client alone, and the
+coordinator reads who is asking from the server's own stamp on the message, never from the
+payload; a state broadcast is only a wake-up, and every client takes the state itself from the
+card's flags, which only their author or a GM can write. With no GM connected the attacker's
+client coordinates and holds the GM controls, and an adversary target answers with its standing
+stance at once, since nobody can declare for it, as it does if the last GM leaves mid-defense. At
+such a table the attacker's own client is the one holding the defenders' commitments until the
+reveal, which asks the players to trust one another; the GM is the arbiter the design assumes. A
+card the GM authored cannot be written by a player, so such an attack waits, refusing requests,
+until a GM returns and adopts it; an adoption before the reveal resets the defense phase, because
+the private commitments went with the lost coordinator.
+
+**What players see.** Inside the flow an adversary's Thresholds are never printed for players, on
+the card or in its data; the card shows the outcome. A character's Threshold is shown to that
+player and the GM, and to the attacker only when the world setting `attackShowPcThresholds` is on.
+The card prints "vs 14" only beside a defender the attacker rolls against; where the defender
+rolls, the number their die meets is the adversary's Attack Threshold, withheld, and the Defense
+dialog says so in place of its Threshold box. Two Strikes still roll at once and print the
+Threshold on their card as 0.4.2 did: a Reaction Strike (Counter, Intercept, the riposte), which
+answers a Blow already declared, and every character's Strike while the world setting
+`attackFlow` is off. That setting governs characters' Strikes; an adversary's attack row always
+declares, since adversaries do not roll.
 
 ### The drag ruler, coloured by Moves
 
@@ -851,6 +933,8 @@ Damage is an end-of-round card rather than a status. The rest are markers for th
 | Show Total Reach on the map | on | Draw the reach bands around the token you control or hover over. Per client |
 | Colour the drag ruler by Moves | on | Colour the squares a drag crosses by which action pays for them: a Step, each Move, a Rush, or past what you have left. Per client |
 | Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour. Per client |
+| The attack flow | on | A character's Strike at a target declares first; defenders commit a Defense and an answer in private, all reveal at once, then the player rolls. Off, a character's Strike rolls at once against the standing stance, as 0.4.2 did; an adversary's attack row always declares |
+| Show a character's Threshold to the attacker | off | After the reveal, print the defending character's Threshold on the attack card and the resolution card for the attacking player. Inside the flow an adversary's Thresholds are never printed for players |
 
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
 for it is ignored.

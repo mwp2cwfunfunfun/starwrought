@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.4.2";
+  --sw-css-version: "0.5.0";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -1467,3 +1467,278 @@ li.combatant.sw-in-crosshairs {
 .starwrought .sw-answering strong { color: var(--sw-flare); font-size: 1rem; }
 .starwrought .sw-answering-note { font-size: 0.72rem; color: var(--sw-ink-dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .starwrought .sw-answering-note .fa-triangle-exclamation { color: #d9534f; }
+
+/* --------------------------------------------------------------------------
+   The attack flow (0.5.0): the Combat Prompt window and the attack card.
+   Declare, commit, reveal, roll, resolve. The prompt is where decisions are
+   made; the card is the shared record. Both paint the same night.
+   -------------------------------------------------------------------------- */
+
+/* The prompt is a window, so it sets the form variables the way the roll dialog does: under the
+   light UI theme Foundry's labels are dark ink meant for parchment, which on our ground is dark on
+   dark. */
+.starwrought.sw-combat-prompt {
+  --color-form-label: var(--sw-ink);
+  --color-form-label-hover: var(--sw-flare);
+  --color-form-hint: var(--sw-ink-dim);
+  --color-text-primary: var(--sw-ink);
+  --color-text-secondary: var(--sw-ink-dim);
+  color-scheme: dark;
+  min-width: 300px;
+}
+.starwrought.sw-combat-prompt .window-content {
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+  padding: 0;
+  gap: 0;
+}
+/* The body is the scroll container (the part's own root, so scroll position survives a render). */
+.starwrought .sw-combat-prompt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem 0.6rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+
+/* One task, one section. */
+.starwrought .sw-prompt-task {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem 0.55rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-prompt-task.sw-prompt-focus { border-color: var(--sw-gold); box-shadow: 0 0 10px rgba(227, 178, 60, 0.25); }
+.starwrought .sw-prompt-task-gm { border-left: 3px solid var(--sw-presence); }
+.starwrought .sw-prompt-task-locked { border-style: dashed; }
+.starwrought .sw-prompt-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--sw-gold);
+  border: none;
+  font-family: var(--font-h3, inherit);
+}
+.starwrought .sw-prompt-text { margin: 0.15rem 0 0; font-size: 0.78rem; line-height: 1.35; color: var(--sw-ink-dim); }
+.starwrought .sw-prompt-text strong, .starwrought .sw-prompt-line strong { color: var(--sw-ink); }
+/* The action glyphs, in the class the spend cards use, at a size for a 360px window. */
+.starwrought.sw-combat-prompt .sw-spend-glyph { font-size: 1.05rem; line-height: 1; vertical-align: -0.1em; color: var(--sw-gold); }
+.starwrought .sw-prompt-label {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+
+/* Defense and answer radios: the dialog's chips, flowing in two rows. */
+.starwrought .sw-prompt-defenses,
+.starwrought .sw-prompt-answers { display: flex; flex-direction: column; gap: 0.2rem; }
+.starwrought .sw-prompt-options { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.starwrought .sw-prompt-option {
+  flex: 1 1 7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sw-ink);
+  font-size: 0.78rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.starwrought .sw-prompt-option input { flex: 0 0 auto; margin: 0; }
+.starwrought .sw-prompt-option > span { flex: 1 1 auto; }
+.starwrought .sw-prompt-option:hover { border-color: var(--sw-gold-dim); }
+.starwrought .sw-prompt-option.sw-active { border-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
+/* A Reaction: paid ❶ when the Blow resolves, coloured as the stance chips colour it. */
+.starwrought .sw-prompt-option.sw-prompt-reaction { border-color: #3a6b62; }
+.starwrought .sw-prompt-option.sw-prompt-reaction.sw-active { border-color: var(--sw-agility); box-shadow: 0 0 8px rgba(111, 194, 176, 0.3); }
+/* A Posture ⓿↺: free, and a Zone Exposed for it. */
+.starwrought .sw-prompt-option.sw-prompt-posture { border-color: rgba(192, 122, 216, 0.45); }
+.starwrought .sw-prompt-option.sw-prompt-posture.sw-active { border-color: var(--sw-presence); box-shadow: 0 0 8px rgba(192, 122, 216, 0.3); }
+/* A Defense the rules say you cannot use right now: shown, never enforced. */
+.starwrought .sw-prompt-option.sw-unavailable { border-style: dashed; opacity: 0.85; }
+/* The basic Threshold beside a player's Defense. */
+.starwrought .sw-prompt-option em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 0.7rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.starwrought .sw-prompt-option.sw-active em { color: var(--sw-flare); }
+
+/* The Zone a Posture Exposes. */
+.starwrought .sw-prompt-zones label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-prompt-zones label > span { flex: 0 0 auto; }
+.starwrought .sw-prompt-zones select { flex: 1; font-size: 0.78rem; padding: 0.15rem 0.3rem; text-transform: none; letter-spacing: 0; }
+
+/* The Threshold preview: the one number the player wants to see before committing. */
+.starwrought .sw-prompt-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.35);
+}
+.starwrought .sw-prompt-preview strong { font-size: 1rem; color: var(--sw-flare); }
+.starwrought .sw-prompt-preview .sw-note { margin: 0; }
+.starwrought .sw-prompt-stance-hint { margin: 0; font-size: 0.68rem; }
+
+/* Locked: committed and waiting on the rest. */
+.starwrought .sw-prompt-waiting { display: flex; flex-direction: column; gap: 0.2rem; }
+.starwrought .sw-prompt-waiting p { margin: 0; }
+.starwrought .sw-prompt-waiting .sw-prompt-choice { color: var(--sw-ink); font-size: 0.8rem; }
+.starwrought .sw-prompt-waiting .sw-prompt-choice .fa-lock { color: var(--sw-gold); }
+.starwrought .sw-prompt-waiting .sw-prompt-ready { font-size: 0.95rem; color: var(--sw-gold); }
+.starwrought .sw-prompt-waiting .fa-hourglass-half { color: #d8a25a; }
+
+/* Roll Attack / Roll Defense: what was revealed, then the one button. */
+.starwrought .sw-prompt-roll { display: flex; flex-direction: column; gap: 0.3rem; }
+.starwrought .sw-prompt-line { margin: 0; font-size: 0.78rem; line-height: 1.35; color: var(--sw-ink-dim); }
+
+.starwrought .sw-prompt-buttons { display: flex; gap: 0.3rem; }
+.starwrought .sw-prompt-buttons button,
+.starwrought .sw-prompt-roll button { flex: 1; font-size: 0.8rem; white-space: nowrap; }
+.starwrought .sw-prompt-roll button .fa-dice-d20 { color: var(--sw-flare); }
+
+/* A submit the coordinator rejected as stale: the attack moved on under this choice. */
+.starwrought .sw-prompt-stale {
+  margin: 0;
+  padding: 0.25rem 0.45rem;
+  border-left: 3px solid #d8a25a;
+  border-radius: 0 4px 4px 0;
+  background: rgba(216, 162, 90, 0.12);
+  color: #d8a25a;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+/* Nothing left to do: the window says so and closes itself. */
+.starwrought .sw-prompt-empty { text-align: center; }
+.starwrought .sw-prompt-empty .sw-note { margin: 0; }
+.starwrought .sw-prompt-nothing { margin: 0; font-size: 0.9rem; color: var(--sw-gold); }
+.starwrought .sw-prompt-nothing .fa-circle-check { color: var(--sw-green); }
+
+/* --------------------------------------------------------------------------
+   The attack card: the shared record of one attack, updated in place by the
+   coordinator (attacker, Maneuver, each target's status, the roll, the log).
+   -------------------------------------------------------------------------- */
+
+.starwrought.sw-attack-card {
+  --sw-ink: #e8e4f5;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+  padding: 0.5rem 0.6rem;
+}
+.starwrought.sw-attack-card h3 { margin: 0 0 0.25rem; color: var(--sw-gold); border: none; font-size: 0.95rem; }
+.starwrought.sw-attack-card p { margin: 0; font-size: 0.8rem; }
+.starwrought.sw-attack-card .sw-spend-glyph { font-size: 1.3rem; line-height: 1; vertical-align: -0.12em; margin-right: 0.1rem; color: var(--sw-gold); }
+/* The Maneuver, locked at declaration: glyph, kind, weapon. */
+.starwrought .sw-attack-maneuver { display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--sw-ink); }
+.starwrought .sw-attack-maneuver strong { color: var(--sw-gold); }
+.starwrought .sw-attack-weapon { color: var(--sw-ink-dim); }
+.starwrought .sw-attack-declared { margin-top: 0.15rem; }
+
+/* Where the Exchange stands: one pill for the card, one per target. The card's is a paragraph, so
+   it is inline-block rather than a full-width band; in a target line it is a flex item. */
+.starwrought .sw-attack-status {
+  display: inline-block;
+  width: fit-content;
+  margin: 0.35rem 0 0;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-attack-target .sw-attack-status { margin: 0; }
+/* The phases: waiting is dashed, revealed takes the Reaction tint, rolling and resolving are gold,
+   complete is green, cancelled is dim. */
+.starwrought .sw-attack-status-declared,
+.starwrought .sw-attack-status-defending { border-style: dashed; }
+.starwrought .sw-attack-status-revealed { border-color: var(--sw-agility); color: var(--sw-agility); }
+.starwrought .sw-attack-status-rolling,
+.starwrought .sw-attack-status-resolving { border-color: var(--sw-gold-dim); color: var(--sw-gold); }
+.starwrought .sw-attack-status-complete { border-color: #3d6b4f; color: #8fc7a4; }
+.starwrought .sw-attack-status-cancelled { border-color: var(--sw-blood); color: #e08a84; }
+
+/* One row per target: the name line (name, status, a visible Threshold), then the revealed
+   answer, the defender's own roll, the outcome band, and the one button that is the viewer's. */
+.starwrought .sw-attack-targets { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.starwrought .sw-attack-target {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.25rem 0.4rem 0.35rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.78rem;
+}
+.starwrought .sw-attack-target-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.starwrought .sw-attack-target-name { flex: 1 1 auto; font-weight: 600; color: var(--sw-ink); }
+.starwrought .sw-attack-vs { margin-left: auto; font-size: 0.72rem; color: var(--sw-ink-dim); }
+.starwrought .sw-attack-target .sw-attack-answer { margin: 0; font-size: 0.72rem; color: var(--sw-ink-dim); }
+.starwrought .sw-attack-target .sw-attack-answer strong { color: var(--sw-ink); }
+.starwrought .sw-attack-target .sw-card-outcome { margin-top: 0.2rem; padding: 0.15rem; font-size: 0.72rem; }
+.starwrought .sw-attack-target .sw-card-buttons { margin-top: 0.25rem; }
+/* The outcome tints the row's frame; the band inside keeps the check card's own colours. */
+.starwrought .sw-attack-target.sw-attack-outcome-critical { border-color: var(--sw-gold-dim); background: rgba(255, 216, 103, 0.08); }
+.starwrought .sw-attack-target.sw-attack-outcome-hit { border-color: #3d6b4f; background: rgba(95, 158, 106, 0.1); }
+.starwrought .sw-attack-target.sw-attack-outcome-graze { border-color: rgba(216, 162, 90, 0.5); background: rgba(216, 162, 90, 0.08); }
+.starwrought .sw-attack-target.sw-attack-outcome-miss { border-color: var(--sw-edge); background: rgba(122, 122, 140, 0.1); }
+
+/* The roll once made: the attacker's one roll on the card, a defender's own in its row. */
+.starwrought .sw-attack-roll {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
+  color: var(--sw-ink);
+}
+.starwrought .sw-attack-roll .fa-dice-d20 { color: var(--sw-gold); }
+.starwrought .sw-attack-target .sw-attack-roll { margin-top: 0.15rem; padding: 0.15rem 0.4rem; font-size: 0.72rem; color: var(--sw-ink-dim); }
+
+/* GM overrides and resets, as lines. */
+.starwrought .sw-attack-log { list-style: none; margin: 0.4rem 0 0; padding: 0; font-size: 0.7rem; color: var(--sw-ink-dim); }
+.starwrought .sw-attack-log li { padding: 0.1rem 0.3rem; margin-bottom: 0.1rem; border-left: 2px solid var(--sw-edge); }
+
+/* The viewer's one action reads as the primary button; the GM's recovery controls sit quieter. */
+.starwrought.sw-attack-card .sw-card-buttons:not(.sw-attack-gm) button { border-color: var(--sw-gold-dim); color: var(--sw-flare); font-weight: 600; }
+.starwrought.sw-attack-card .sw-attack-gm { flex-wrap: wrap; }
+.starwrought.sw-attack-card .sw-attack-gm button { flex: 1 1 45%; color: var(--sw-ink-dim); border-color: var(--sw-edge); font-weight: normal; }
+.starwrought.sw-attack-card .sw-attack-gm button:hover { color: var(--sw-ink); border-color: var(--sw-gold-dim); }
+.starwrought.sw-attack-card .sw-attack-gm button.sw-cancel { color: #c88; }
+.starwrought.sw-attack-card.sw-attack-phase-cancelled { opacity: 0.75; }
+.starwrought.sw-attack-card.sw-attack-phase-cancelled h3 { color: var(--sw-ink-dim); }
+.starwrought.sw-attack-card.sw-attack-phase-complete { border-color: #3d6b4f; }

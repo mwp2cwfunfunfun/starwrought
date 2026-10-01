@@ -36,6 +36,16 @@ const { renderTemplate } = foundry.applications.handlebars;
  * @property {Function} [afterRoll]           async (result) => void. Runs before the card posts.
  * @property {boolean} [dialog]               Show the roll dialog first.
  * @property {string} [rollMode]
+ * @property {boolean} [postCard]             Post the card (default true). False evaluates the die
+ *                                            and returns the result without a message: the attack
+ *                                            flow's roller rolls once, blind, and the coordinator
+ *                                            resolves it against each defender with
+ *                                            {@link SwCheck.resolveAgainst} (0.5.0 brief).
+ * @property {Actor} [speakerActor]           Whose name the card speaks under, when not the roller's.
+ * @property {{talentId: string, name?: string, zone?: string}|null} [posture]  A Posture ⓿↺ behind
+ *                                            the Defense (brief): +2 Situation folded into the
+ *                                            Threshold or the roll, and a Zone Exposed. Shown on
+ *                                            the card where a Reaction would be.
  */
 
 /**
@@ -61,6 +71,7 @@ export class SwCheck {
       strike: null,
       reaction: null,
       lockStrike: false,
+      postCard: true,
       rollMode: game.settings.get("core", "rollMode")
     }, config, { inplace: false });
 
@@ -152,9 +163,187 @@ export class SwCheck {
 
     if (cfg.afterRoll) await cfg.afterRoll(result);
 
+    // A blind roll (the attack flow's roller) stops here: no card, and the `starwrought.check`
+    // hook keeps its meaning of "a card was posted". The coordinator posts one card per defender
+    // from this result through resolveAgainst.
+    if (cfg.postCard === false) return result;
+
     await this.#toMessage(result);
     Hooks.callAll("starwrought.check", result);
     return result;
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Resolve a roll already made against one defender and post the Exchange card for the pairing
+   * (0.5.0 brief, "The roll and the resolution"). The attack flow rolls once, blind, and the
+   * coordinator calls this once per defender when the commitments have revealed, so a player
+   * attacker with three targets gets three of today's cards from one die.
+   *
+   * The comparison is `roll()`'s exactly: degree from SW.degreeOf, inverted for a Defense roll,
+   * a Quick Strike's critical demoted to a Hit unless the weapon is Agile (PHB v4.10, Strikes).
+   * Position is built with the committed Defense and Reaction and the defender's rigid implement.
+   * The Reaction's ❶ is charged here on an attack when this client owns the defender (a Defense
+   * roll charged before the die, as `roll()` does); otherwise the card offers the Charge button.
+   * The Threshold is printed and written to the flags only when `showThreshold` is true: the
+   * number of an adversary's Defense is the GM's, and the policy that hides it is applied by the
+   * caller, never guessed here.
+   *
+   * @param {object} opts
+   * @param {Actor} [opts.attacker]            Who struck. The roller when `kind` is "attack".
+   * @param {Actor} [opts.defender]            Who answered. The roller when `kind` is "defense".
+   * @param {Token|TokenDocument} [opts.attackerToken]
+   * @param {Token|TokenDocument} [opts.defenderToken]
+   * @param {Item} [opts.weapon]               The attacker's weapon Item (a character's Strike).
+   * @param {string} [opts.attackId]           An adversary's attack row (an action Item id on the attacker).
+   * @param {string} [opts.strike]             quick | deliberate | committed.
+   * @param {object} opts.rollData             `roll.toJSON()` of the blind roll, or the whole
+   *                                           `{ roll, total, natural, modifiers }` the roller sent.
+   * @param {Array} [opts.modifiers]           The blind roll's applied modifiers, for the card's list.
+   * @param {"attack"|"defense"} [opts.kind]   Which side rolled.
+   * @param {string} [opts.defense]            evade | guard: the Defense that met the Blow.
+   * @param {string|null} [opts.reaction]      parry | void | counter | null.
+   * @param {object|null} [opts.posture]       { talentId, name?, zone } or null. Never beside a Reaction.
+   * @param {number|null} [opts.threshold]     The authoritative Threshold (the coordinator's number).
+   * @param {boolean} [opts.showThreshold]     Print it and write it to the flags.
+   * @param {Actor} [opts.speakerActor]        Whose name the card speaks under (default the roller).
+   * @param {string} [opts.slug]               melee | ranged for an attack (the Proficiency rolled).
+   * @param {boolean} [opts.thrown]
+   * @param {string} [opts.rollMode]           Default public: the resolution is the table's record.
+   * @returns {Promise<{message: ChatMessage, outcome: string|null, degree: string|null, critDenied: boolean, threshold: number|null}>}
+   */
+  static async resolveAgainst({
+    attacker = null, defender = null, attackerToken = null, defenderToken = null,
+    weapon = null, attackId = null, strike = SW.DEFAULT_STRIKE, rollData, modifiers = null,
+    kind = "attack", defense = null, reaction = null, posture = null,
+    threshold = null, showThreshold = true, speakerActor = null, slug = null, thrown = false,
+    // The legacy key, which #toMessage maps to the configured mode: CONST.DICE_ROLL_MODES is a
+    // deprecation shim in v14 and gone in v16 (review, 2026-10-01).
+    rollMode = "publicroll"
+  } = {}) {
+    if (!rollData) throw new Error("STARWROUGHT | resolveAgainst needs the roll's data.");
+    // The roller may have sent its whole submission rather than the bare Roll data.
+    if (rollData.roll && !rollData.terms) {
+      modifiers ??= rollData.modifiers ?? null;
+      rollData = rollData.roll;
+    }
+    const isAttack = kind !== "defense";
+    kind = isAttack ? "attack" : "defense";
+    const roller = isAttack ? attacker : defender;
+    if (!roller) throw new Error("STARWROUGHT | resolveAgainst needs the roller: the attacker on an Attack roll, the defender on a Defense roll.");
+    if (!SW.STRIKE_KINDS[strike]) strike = SW.DEFAULT_STRIKE;
+    reaction = ["parry", "void", "counter"].includes(reaction) ? reaction : null;
+    posture = posture?.talentId ? posture : null;
+    // A commitment is a Reaction or a Posture, never both (brief; roster.json forbids the stack).
+    if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
+    // Void is an Evade and Parry is a Guard, whatever Defense was named; Counter keeps the one given.
+    if (SW.REACTIONS[reaction]?.defense) defense = SW.REACTIONS[reaction].defense;
+    if (!SW.DEFENSES[defense]) defense = "evade";
+
+    const roll = Roll.fromData(rollData);
+    const natural = roll.dice[0]?.results?.[0]?.result ?? null;
+    const total = roll.total;
+
+    let degree = null;
+    let outcome = null;
+    let critDenied = false;
+    if (Number.isNumeric(threshold)) {
+      degree = SW.degreeOf(total, threshold, natural);
+      // A Defense roll is the same comparison read from the other side.
+      if (!isAttack) degree = SW.invertDegree(degree);
+      // PHB v4.10, Strikes: a Quick Strike cannot Critically Hit unless the weapon is Agile.
+      if (isAttack && (degree === "critSuccess") && !this.strikeCanCrit(strike, weapon)) {
+        degree = "success";
+        critDenied = true;
+      }
+      outcome = SW.ATTACK_OUTCOMES[degree];
+    }
+
+    const attackerDoc = attackerToken?.document ?? attackerToken ?? null;
+    const defenderDoc = defenderToken?.document ?? defenderToken ?? null;
+    const attackerName = attackerDoc?.name ?? attacker?.name ?? "";
+    const defenderName = defenderDoc?.name ?? defender?.name ?? "";
+
+    const strikeKind = SW.STRIKE_KINDS[strike];
+    const strikeText = `${game.i18n.localize(strikeKind.label)} ${SW.ACTION_GLYPHS[strikeKind.cost]}`;
+    const attackItem = attackId ? (attacker?.items?.get(attackId) ?? null) : null;
+    const attackName = weapon?.name ?? attackItem?.name ?? "";
+    slug ??= isAttack
+      ? (thrown ? SW.RANGED_SLUG : (weapon?.system?.strikeSlug ?? SW.MELEE_SLUG))
+      : SW.DEFENSES[defense].slug;
+    const ranged = slug === SW.RANGED_SLUG;
+
+    // The answer behind the Defense, named as answeringDefense names it: "Guard (Parry)", or
+    // the Posture's own name.
+    const postureName = posture
+      ? (posture.name ?? defender?.items?.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      : "";
+    const answerText = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
+    const defenseLabel = game.i18n.localize(SW.DEFENSES[defense].label);
+    const answeredLabel = answerText ? `${defenseLabel} (${answerText})` : defenseLabel;
+
+    // PHB v4.10, Answering an Attack: the Reaction is paid when the Blow resolves. On an attack
+    // this client charges the defender when it owns them; a Defense roll charged before the die.
+    let reactionCharged = false;
+    if (reaction) reactionCharged = isAttack ? await this.chargeReaction(defender, reaction) : true;
+
+    const cfg = {
+      actor: roller,
+      item: isAttack ? weapon : null,
+      weaponId: isAttack ? (weapon?.id ?? "") : "",
+      kind,
+      slug,
+      label: isAttack ? (attackName || roller.name) : defenseLabel,
+      subtitle: isAttack
+        ? `${strikeText} · ${game.i18n.localize(ranged ? "STARWROUGHT.Roll.rangedStrike" : "STARWROUGHT.Roll.meleeStrike")}`
+        : (attackName ? `${strikeText} · ${attackName}` : game.i18n.localize(SW.DEFENSES[defense].hint)),
+      strike,
+      reaction,
+      posture: posture ? { talentId: posture.talentId, name: postureName, zone: posture.zone ?? null } : null,
+      defense,
+      threshold: showThreshold ? threshold : null,
+      thresholdLabel: !showThreshold ? ""
+        : isAttack ? `${defenderName} ${answeredLabel}`.trim()
+        : game.i18n.localize("STARWROUGHT.Roll.attackThreshold"),
+      // Token uuids where the card's handlers expect them: the target of an attack is the
+      // defender's token; the "target" of a Defense roll is the attacker's.
+      targetUuid: isAttack ? (defenderDoc?.uuid ?? "") : (attackerDoc?.uuid ?? ""),
+      targetName: isAttack ? defenderName : attackerName,
+      attackerTokenUuid: isAttack ? (attackerDoc?.uuid ?? "") : "",
+      defenderTokenUuid: isAttack ? "" : (defenderDoc?.uuid ?? ""),
+      defender: isAttack ? defender : null,
+      attacker: isAttack ? null : attacker,
+      defenderRigid: defender?.rigidImplement ?? null,
+      reactionCharged,
+      reactionNote: (reaction && SW.REACTIONS[reaction].rigid && !defender?.rigidImplement)
+        ? game.i18n.localize("STARWROUGHT.Reaction.needsRigid") : null,
+      defenseNote: null,
+      rangeNote: null,
+      thrown: !!thrown,
+      rollMode,
+      speakerActor,
+      outcomes: null
+    };
+
+    const applied = Array.isArray(modifiers) ? modifiers : [];
+    const result = {
+      roll,
+      natural,
+      total,
+      threshold: cfg.threshold,
+      thresholdLabel: cfg.thresholdLabel,
+      degree,
+      outcome,
+      critDenied,
+      modifiers: applied,
+      modTotal: applied.length ? applied.reduce((n, m) => n + (Number(m.value) || 0), 0) : (total - (natural ?? 0)),
+      config: cfg
+    };
+
+    await this.#toMessage(result);
+    Hooks.callAll("starwrought.check", result);
+    return { message: result.message, outcome: outcome?.key ?? null, degree, critDenied, threshold };
   }
 
   /* -------------------------------------------- */
@@ -396,6 +585,9 @@ export class SwCheck {
       targetName: cfg.targetName ?? "",
       targetDefense: cfg.targetDefense ?? null,
       defenseForced: !!cfg.defenseForced,
+      // A Defense rolled inside the attack flow meets the coordinator's Threshold, an adversary's
+      // withheld from players, so the dialog offers no box for one (live test, 2026-10-01).
+      thresholdWithheld: !!cfg.workflow,
       threshold: Number.isNumeric(cfg.threshold) ? cfg.threshold : "",
       rollModes: CONFIG.Dice.rollModes,
       rollMode: cfg.rollMode
@@ -449,8 +641,41 @@ export class SwCheck {
 
   /* -------------------------------------------- */
 
-  /** Post the card. */
+  /**
+   * Post the card. One renderer for every check card: `roll()` and `resolveAgainst` both come
+   * through here, so an attack resolved by the coordinator is the very card an immediate attack
+   * posts, with the same content, flags and buttons (0.5.0 brief).
+   */
   static async #toMessage(result) {
+    const cfg = result.config;
+    const isExchange = ["attack", "defense"].includes(cfg.kind);
+    const position = isExchange ? this.#position(cfg, result) : null;
+
+    const content = await renderTemplate(
+      "systems/starwrought/templates/chat/check-card.hbs",
+      await this.#cardContext(result, position)
+    );
+
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor: cfg.speakerActor ?? cfg.actor }),
+      content,
+      rolls: [result.roll],
+      flags: { starwrought: this.#cardFlags(result, position) }
+    };
+    // v14 renamed applyRollMode to applyMode and the modes to "public", "gm", "blind", "self";
+    // the dialog still speaks the legacy keys, which core's own mapper translates. The old call
+    // remains for a v13 world (review, 2026-10-01).
+    if (typeof ChatMessage.applyMode === "function") {
+      const mode = foundry.dice.Roll._mapLegacyRollMode?.(cfg.rollMode) ?? cfg.rollMode;
+      ChatMessage.applyMode(messageData, mode);
+    } else {
+      ChatMessage.applyRollMode(messageData, cfg.rollMode);
+    }
+    result.message = await ChatMessage.create(messageData);
+  }
+
+  /** The render context of templates/chat/check-card.hbs for a result. */
+  static async #cardContext(result, position) {
     const cfg = result.config;
     const item = cfg.item;
     const isExchange = ["attack", "defense"].includes(cfg.kind);
@@ -459,9 +684,17 @@ export class SwCheck {
       html ?? "", { rollData: cfg.actor.getRollData(), relativeTo: item }
     );
 
-    const position = isExchange ? this.#position(cfg, result) : null;
     const strikeKind = isExchange ? SW.STRIKE_KINDS[cfg.strike] : null;
     const reaction = cfg.reaction ? SW.REACTIONS[cfg.reaction] : null;
+    // A Posture stands where a Reaction would on the card: "{name} ⓿↺ (Expose {zone})". The two
+    // never answer the same Blow together, so the slot is one or the other.
+    let postureLabel = "";
+    if (!reaction && cfg.posture?.talentId) {
+      const name = cfg.posture.name ?? game.i18n.localize(SW.REACTIONS.posture.label);
+      postureLabel = SW.ZONES[cfg.posture.zone]
+        ? game.i18n.format("STARWROUGHT.Attack.answerPosture", { name, zone: game.i18n.localize(SW.ZONES[cfg.posture.zone].label) })
+        : `${name} ${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}`;
+    }
 
     // Which damage buttons the attacker gets: a Quick Strike that cannot crit has no Critical.
     const canDamage = !!result.outcome?.damage && !!cfg.weaponId;
@@ -470,7 +703,7 @@ export class SwCheck {
       .map(key => ({ key, label: `STARWROUGHT.Outcome.${key}`, primary: key === result.outcome.key }))
       : [];
 
-    const content = await renderTemplate("systems/starwrought/templates/chat/check-card.hbs", {
+    return {
       label: cfg.label,
       subtitle: cfg.subtitle ?? "",
       kind: cfg.kind,
@@ -511,7 +744,7 @@ export class SwCheck {
       reaction: cfg.reaction ?? "",
       reactionLabel: reaction
         ? `${game.i18n.localize(reaction.label)} ${SW.ACTION_GLYPHS[reaction.cost]}${SW.REACTION_GLYPH}`
-        : "",
+        : postureLabel,
       reactionNote: cfg.reactionNote ?? "",
       reactionDue: !!reaction && !cfg.reactionCharged && (cfg.kind === "attack") && !!position?.defenderUuid,
       position,
@@ -522,36 +755,40 @@ export class SwCheck {
       canFlare: this.#canFlare(result, cfg),
       flareSlug: cfg.slug ?? "",
       flareName: cfg.slug ? SW.getConstellation(cfg.slug).name : ""
-    });
-
-    const messageData = {
-      speaker: ChatMessage.getSpeaker({ actor: cfg.actor }),
-      content,
-      rolls: [result.roll],
-      flags: {
-        starwrought: {
-          kind: cfg.kind,
-          degree: result.degree,
-          outcome: result.outcome?.key ?? null,
-          actorUuid: cfg.actor.uuid,
-          itemUuid: item?.uuid ?? null,
-          weaponId: cfg.weaponId ?? null,
-          targetUuid: cfg.targetUuid ?? null,
-          threshold: result.threshold,
-          strike: isExchange ? cfg.strike : null,
-          // The Proficiency rolled (melee or ranged), so the damage card adds the right specialization.
-          slug: cfg.slug ?? null,
-          thrown: !!cfg.thrown,
-          defense: cfg.defense ?? null,
-          reaction: cfg.reaction ?? null,
-          reactionCharged: !!cfg.reactionCharged,
-          attackerUuid: position?.attackerUuid ?? null,
-          defenderUuid: position?.defenderUuid ?? null
-        }
-      }
     };
-    ChatMessage.applyRollMode(messageData, cfg.rollMode);
-    result.message = await ChatMessage.create(messageData);
+  }
+
+  /**
+   * The `flags.starwrought` a check card carries. Every card button rebuilds its state from these
+   * after a reload (chat.mjs), so the sixteen keys are a contract: none is renamed or dropped. A
+   * Posture, when one answered, is a seventeenth key the attack flow's card reads.
+   */
+  static #cardFlags(result, position) {
+    const cfg = result.config;
+    const isExchange = ["attack", "defense"].includes(cfg.kind);
+    const flags = {
+      kind: cfg.kind,
+      degree: result.degree,
+      outcome: result.outcome?.key ?? null,
+      actorUuid: cfg.actor.uuid,
+      itemUuid: cfg.item?.uuid ?? null,
+      weaponId: cfg.weaponId ?? null,
+      targetUuid: cfg.targetUuid ?? null,
+      threshold: result.threshold,
+      strike: isExchange ? cfg.strike : null,
+      // The Proficiency rolled (melee or ranged), so the damage card adds the right specialization.
+      slug: cfg.slug ?? null,
+      thrown: !!cfg.thrown,
+      defense: cfg.defense ?? null,
+      reaction: cfg.reaction ?? null,
+      reactionCharged: !!cfg.reactionCharged,
+      attackerUuid: position?.attackerUuid ?? null,
+      defenderUuid: position?.defenderUuid ?? null
+    };
+    if (cfg.posture?.talentId) {
+      flags.posture = { talentId: cfg.posture.talentId, name: cfg.posture.name ?? "", zone: cfg.posture.zone ?? null };
+    }
+    return flags;
   }
 
   /* -------------------------------------------- */

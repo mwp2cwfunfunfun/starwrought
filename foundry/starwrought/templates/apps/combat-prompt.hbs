@@ -1,0 +1,136 @@
+{{!-- The Combat Prompt (0.5.0 attack flow): every outstanding decision of this user, one section per
+      task. Context from SwCombatPrompt#_prepareContext: tasks[], empty, keysHint. Texts marked with
+      triple braces were escaped in code and carry the action glyphs in .sw-spend-glyph spans. --}}
+<div class="sw-combat-prompt-body">
+
+  {{#if empty}}
+  <div class="sw-prompt-task sw-prompt-empty">
+    <p class="sw-prompt-nothing"><i class="fa-solid fa-circle-check"></i> {{localize "STARWROUGHT.Prompt.nothing"}}</p>
+    <p class="sw-note">{{localize "STARWROUGHT.Prompt.closing"}}. {{localize "STARWROUGHT.Prompt.reopen"}}.</p>
+  </div>
+  {{else}}
+
+  {{#each tasks as |task|}}
+  <section class="sw-prompt-task sw-prompt-task-{{task.kind}} {{#if task.focus}}sw-prompt-focus{{/if}}"
+           data-task="{{task.key}}" data-workflow-id="{{task.workflowId}}" data-target-id="{{task.targetId}}">
+
+    <header class="sw-prompt-head">
+      <h3>{{task.title}}</h3>
+      {{#if task.text}}<p class="sw-prompt-text">{{{task.text}}}</p>{{/if}}
+    </header>
+
+    {{#if task.error}}<p class="sw-note sw-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{task.error}}</p>{{/if}}
+    {{#if task.stale}}<p class="sw-prompt-stale"><i class="fa-solid fa-clock-rotate-left"></i> {{task.stale}}</p>{{/if}}
+
+    {{#if task.isDefend}}
+    {{!-- Evade or Guard: the two Defenses that answer a Blow (PHB v4.10, The Four Threats). An
+          unavailable Defense (Evade while Grabbed) is shown and never enforced; the table decides. --}}
+    <div class="sw-prompt-defenses" role="radiogroup" aria-label="{{localize 'STARWROUGHT.Prompt.defense'}}">
+      <span class="sw-prompt-label">{{localize "STARWROUGHT.Prompt.defense"}}</span>
+      <div class="sw-prompt-options">
+        {{#each task.defenses as |d|}}
+        <label class="sw-prompt-option {{#if d.active}}sw-active{{/if}} {{#if d.unavailable}}sw-unavailable{{/if}}" data-tooltip="{{d.hint}}">
+          <input type="radio" name="defense-{{task.index}}" data-field="defense" value="{{d.key}}" {{#if d.active}}checked{{/if}}>
+          <span>{{d.label}}{{#if d.unavailable}} <i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}</span>
+          {{#if d.threshold}}<em>{{d.threshold}}</em>{{/if}}
+        </label>
+        {{/each}}
+      </div>
+    </div>
+
+    {{!-- The answer built on the Defense (PHB v4.10, Answering an Attack): nothing, a Reaction the
+          defender owns, or a Posture ⓿↺ from the Defense's Constellation. One or the other, never both. --}}
+    <div class="sw-prompt-answers" role="radiogroup" aria-label="{{localize 'STARWROUGHT.Prompt.answer'}}">
+      <span class="sw-prompt-label">{{localize "STARWROUGHT.Prompt.answer"}}</span>
+      <div class="sw-prompt-options">
+        {{#each task.answers as |a|}}
+        <label class="sw-prompt-option {{#if a.active}}sw-active{{/if}} {{#if a.reaction}}sw-prompt-reaction{{/if}} {{#if a.posture}}sw-prompt-posture{{/if}}"
+               {{#if a.hint}}data-tooltip="{{a.hint}}"{{/if}}>
+          <input type="radio" name="answer-{{task.index}}" data-field="answer" value="{{a.value}}" {{#if a.active}}checked{{/if}}>
+          <span>{{{a.label}}}</span>
+        </label>
+        {{/each}}
+      </div>
+      {{#if task.headWound}}<p class="sw-note sw-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{task.headWound}}</p>{{/if}}
+      {{#if task.counterHint}}<p class="sw-note">{{task.counterHint}}</p>{{/if}}
+    </div>
+
+    {{#if task.zones}}
+    {{!-- A Posture Exposes a Zone of the defender's choice until the end of the round, whether or
+          not it works (PHB v4.10). Nothing is pre-picked: the choice is the defender's. --}}
+    <div class="sw-prompt-zones">
+      <label>
+        <span>{{localize "STARWROUGHT.Prompt.zone"}}</span>
+        <select name="zone-{{task.index}}" data-field="zone">
+          <option value="" {{#unless task.zone}}selected{{/unless}} disabled>{{localize "STARWROUGHT.Prompt.zone"}}</option>
+          {{#each task.zones as |z|}}
+          <option value="{{z.key}}" {{#if z.selected}}selected{{/if}}>{{z.label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <p class="sw-note">{{localize "STARWROUGHT.Prompt.postureHint"}}</p>
+    </div>
+    {{/if}}
+
+    {{#if task.preview}}
+    {{!-- The Threshold with the answer folded in, from actor.defenseThresholdFor; the coordinator
+          computes the real one at resolution and never trusts this number. --}}
+    <div class="sw-prompt-preview">
+      <strong>{{task.preview.text}}</strong>
+      {{#each task.preview.notes as |note|}}<p class="sw-note sw-warn">{{note}}</p>{{/each}}
+    </div>
+    {{/if}}
+
+    <p class="sw-note sw-prompt-stance-hint">{{localize "STARWROUGHT.Prompt.stanceHint"}}</p>
+
+    <div class="sw-prompt-buttons">
+      <button type="button" class="sw-primary" data-action="commit" data-tooltip="{{@root.keysHint}}" {{#if task.disabled}}disabled{{/if}}>
+        <i class="fa-solid fa-lock"></i> {{localize "STARWROUGHT.Prompt.commit"}}
+      </button>
+    </div>
+    {{/if}}
+
+    {{#if task.isLocked}}
+    {{!-- Committed. The commitment stays private until every defender has one; then all reveal at once. --}}
+    <div class="sw-prompt-waiting">
+      {{#if task.yourChoice}}<p class="sw-prompt-choice"><i class="fa-solid fa-lock"></i> {{{task.yourChoice}}}</p>{{/if}}
+      <p class="sw-prompt-ready">{{task.ready}}</p>
+      {{#if task.waitingFor}}<p class="sw-note"><i class="fa-solid fa-hourglass-half"></i> {{task.waitingFor}}</p>{{/if}}
+    </div>
+    {{/if}}
+
+    {{#if task.isRoll}}
+    {{!-- The players roll: the attacker once for every defender, or a defender against an adversary's
+          Attack Threshold (brief, "Who rolls"). The Strike is already locked. --}}
+    <div class="sw-prompt-roll">
+      {{#each task.lines as |line|}}<p class="sw-prompt-line">{{{line}}}</p>{{/each}}
+      <button type="button" class="sw-primary" data-action="roll" data-tooltip="{{localize 'STARWROUGHT.Prompt.rollNow'}}" {{#if task.disabled}}disabled{{/if}}>
+        <i class="fa-solid fa-dice-d20"></i> {{task.button}}
+      </button>
+    </div>
+    {{/if}}
+
+    {{#if task.isChoose}}
+    {{!-- A generic choice for later follow-ups. Built here, wired to nothing yet. --}}
+    <div class="sw-prompt-answers" role="radiogroup" aria-label="{{task.title}}">
+      <div class="sw-prompt-options">
+        {{#each task.options as |o|}}
+        <label class="sw-prompt-option {{#if o.active}}sw-active{{/if}}" {{#if o.hint}}data-tooltip="{{o.hint}}"{{/if}}>
+          <input type="radio" name="choice-{{task.index}}" data-field="choice" value="{{o.value}}" {{#if o.active}}checked{{/if}}>
+          <span>{{{o.label}}}</span>
+        </label>
+        {{/each}}
+      </div>
+    </div>
+    <div class="sw-prompt-buttons">
+      <button type="button" class="sw-primary" data-action="choose" {{#if task.disabled}}disabled{{/if}}>
+        <i class="fa-solid fa-hand-pointer"></i> {{task.button}}
+      </button>
+    </div>
+    {{/if}}
+
+  </section>
+  {{/each}}
+  {{/if}}
+
+</div>

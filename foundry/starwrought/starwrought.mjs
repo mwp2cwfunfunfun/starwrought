@@ -29,6 +29,8 @@ import { SwChargen, promptForChoice } from "./module/apps/chargen.mjs";
 import { loadChargenContent } from "./module/helpers/chargen-data.mjs";
 import { SwCheck } from "./module/dice/check.mjs";
 import { SwDamage } from "./module/dice/damage.mjs";
+import { AttackCoordinator } from "./module/combat/attack-coordinator.mjs";
+import { SwCombatPrompt } from "./module/apps/combat-prompt.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
@@ -52,6 +54,13 @@ Hooks.once("init", async () => {
     applications: { SwCharacterSheet, SwNpcSheet, SwItemSheet, SwChargen },
     /** Open the creation wizard on an Actor: `game.starwrought.chargen(actor)`. */
     chargen: actor => new SwChargen(actor).render({ force: true }),
+    /**
+     * The attack flow (0.5.0): declare, commit, reveal, roll, resolve. `game.starwrought.attacks.live()`
+     * lists the Blows in play; `.declare(...)`, `.request(...)` and `.rollFor(...)` are the verbs the
+     * sheets, the prompt and the cards use; `.Workflow` is the state model.
+     */
+    attacks: AttackCoordinator,
+    combatPrompt: SwCombatPrompt,
     /** Which Player's Handbook the shipped content was built from. */
     rules: rulesVersion
   };
@@ -154,6 +163,22 @@ Hooks.once("ready", async () => {
   checkSceneGrid();
   checkForStaleAssets();
   Hooks.on("createItem", onCreateItem);
+
+  // The attack flow's channel (system.json declares `"socket": true`). Every mutation of a
+  // declared Blow is a request to its coordinator (the active GM, else the attacker's user) and
+  // every change comes back as a state broadcast; the handler sorts the three message types.
+  // Then the live Blows are rebuilt from the chat log: every card whose
+  // `flags.starwrought.attackWorkflow.phase` is neither complete nor cancelled, with this client's
+  // private commitments restored from its own `attackPrivate` setting.
+  game.socket.on(`system.${SW.SYSTEM_ID}`, AttackCoordinator.onSocket);
+  AttackCoordinator.register();
+  // The Combat Prompt listens for the attack flow's state events and opens for whoever must act.
+  SwCombatPrompt.register();
+  try {
+    await AttackCoordinator.rebuild();
+  } catch (err) {
+    console.error("STARWROUGHT | the live attacks could not be rebuilt", err);
+  }
 
   // The Basic Actions list is memoised. Forget it whenever an unowned action changes, so a GM's
   // new, edited, re-flagged or deleted Basic Action reaches the sheets without a reload. Owned
@@ -405,6 +430,42 @@ function registerSettings() {
   // COMBAT SETTINGS (0.4.0): any world or client setting the six-action round needs (Wind
   // reminders, the end-of-round Persistent Damage card, Intercept offers) is registered here, so
   // that every setting the system owns is in this one function. Add them below this line.
+
+  // THE ATTACK FLOW (0.5.0; PHB v4.10, The Exchange). On, a Strike at a target declares first:
+  // every defender commits a Defense and an answer in private, all reveal at once, then the
+  // players roll and each pairing resolves. Off, a Strike rolls at once against the defender's
+  // standing stance, exactly as 0.4.2 did; with no target it does so whatever this says.
+  game.settings.register(SW.SYSTEM_ID, "attackFlow", {
+    name: "STARWROUGHT.Settings.attackFlow",
+    hint: "STARWROUGHT.Settings.attackFlowHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  // A presentation policy, not a rule (brief, "Visibility"): a character's Defense Threshold is
+  // the defender's and the GM's to see always; this lets the attacking player see it on the card
+  // after the defenses reveal. An adversary's Thresholds are never shown to players.
+  game.settings.register(SW.SYSTEM_ID, "attackShowPcThresholds", {
+    name: "STARWROUGHT.Settings.attackShowPcThresholds",
+    hint: "STARWROUGHT.Settings.attackShowPcThresholdsHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
+  // The coordinator's private half of the defense phase: each defender's commitment before the
+  // reveal, keyed by workflow then target, mirrored to the coordinating client's own browser so a
+  // reload restores it. Client scope on purpose: it must never reach a world setting, a flag or
+  // a message, which every client receives. Nothing but the coordinator reads or writes it.
+  game.settings.register(SW.SYSTEM_ID, "attackPrivate", {
+    scope: "client",
+    config: false,
+    type: Object,
+    default: {}
+  });
 
   game.settings.register(SW.SYSTEM_ID, "systemVersion", {
     scope: "world",

@@ -7,10 +7,76 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
-## Unreleased: Player's Handbook v4.10
+## 0.5.0 (2026-10-01): Player's Handbook v4.10, the attack flow
 
 ### Added
 
+- **The Exchange is played as declare, commit, reveal, roll, resolve** (Mike, 2026-10-01; ruling
+  65 in `v4.10-sync-report.md`). A Strike at one or more targets no longer rolls at once: the
+  attacker declares the Maneuver and it locks; every defender commits, in private, a Defense
+  (Evade or Guard) and an answer (nothing, a Reaction they own, or a ⓿↺ Posture Talent with the
+  Zone it Exposes); when all have committed the choices reveal together; then the players roll. A
+  player-controlled attacker rolls Attack once and that roll is read against every defender's
+  Threshold; a player-controlled defender of an adversary's Blow rolls Defense against the
+  adversary's Attack Threshold; player against player is not an opposed roll. Each pairing then
+  gets today's full resolution card (Position, damage, the Reaction's charge).
+- **The Combat Prompt**, a small non-modal window that opens for whoever has to act: the defend
+  prompt (Defense, the answers legal for it, a Zone for a Posture, your Threshold if you are a
+  character, Commit; your standing stance pre-selected), the locked state ("2 of 3 defenders
+  ready"), Roll Attack and Roll Defense, and a GM row per adversary target. It closes itself when
+  you have nothing left to do and reopens from the attack card.
+- **One evolving attack card** per attack in chat: attacker, Maneuver, each target's status
+  (Waiting, Committed, the revealed answer, the outcome), the roll, who is awaited, and one button
+  for the viewer's own next step. GM controls on the card: Cancel, Reset defenses (everyone chooses
+  again), Resend prompts, and Answer with standing stances, which commits every defender who has
+  not answered with their current stance so an absent player never holds the table.
+- **Adversary attacks start from the adversary sheet**: each attack row has the three Strike
+  buttons, declaring against the GM's targets; player-controlled targets get the defend prompt and
+  then Roll Defense against the attack's Threshold, which players never see. Adversary against
+  adversary is the GM rolling the attacker flat against the defender's Threshold.
+- **Privacy and authority.** Commitments live only with the coordinator (the GM's client when one is
+  connected, else the attacker's) until the reveal; nothing about them is written to a message,
+  flag or document before then. Every change goes through the coordinator over the system's new
+  socket channel, with a revision number so a stale prompt cannot alter a newer state, and with
+  ownership checked on the coordinator, never from a button being visible. Thresholds are computed
+  from actor data on the coordinator; a client sends only choices. An adversary's Thresholds are
+  never shown to players; a character's Threshold is shown to the attacker only with the new
+  world setting `attackShowPcThresholds`. The world setting `attackFlow` switches the whole flow
+  off, restoring the 0.4.2 behaviour (the stance read at the die).
+- **What the two-client tests settled** (2026-10-01). A request is stale only against a revision
+  older than the start of the current phase or than a reset, so one defender's commit never
+  refuses another's. Cancel keeps the attacker's spent actions, since the declaration is the
+  Maneuver. With no GM connected the attacker's client coordinates, holds the GM controls, and
+  answers adversary targets with their standing stances at once; a GM-authored card then waits
+  for a GM to return and adopt it, and an adoption before the reveal resets the defense phase. A
+  player's reload reopens the prompt from the card; the coordinator's reload restores its private
+  commitments from its own browser. The card prints "vs N" only beside a defender the attacker
+  rolls against: where the defender rolls, their die meets the adversary's withheld Attack
+  Threshold, and the Defense dialog now says so in place of its Threshold box. No enabled ⓿↺
+  Posture Talent ships in the current data, so the prompt offers none yet.
+- **What the adversarial review settled** (2026-10-01, ten agents over the change set). The
+  coordinator reads who is asking from the server's own stamp on each socket message, never from
+  the payload, so a forged `userId` cannot act as the GM or another player; requests and replies
+  are addressed to one user and the server delivers them to that client alone, so a commitment
+  never crosses another player's browser; a state broadcast is a wake-up only, and every client
+  takes the state from the card's flags (authored by the coordinator or a GM, which the server
+  guarantees), so a forged broadcast cannot replace a record, Expose a Zone or plant a roll; a
+  reload believes only cards their coordinator could have authored. Two rolls landing within one
+  card write no longer resolve every pairing twice. A roll carries the revision it was built
+  against from before its dialog opened, so a Reset and re-reveal while the dialog was up refuses
+  the late die instead of reading it against the new answer. A Blow persisted at the reveal
+  itself (the coordinator lost between the reveal's two writes) now moves on to the dice when a
+  coordinator picks it up. Reset defenses is offered only while defenders are choosing, since a
+  die already paid for cannot be unpaid, and a reset closes any Zone a revealed Posture Exposed.
+  When the last GM leaves mid-defense the coordinating client answers adversary targets with their
+  standing stances rather than stalling. At a table with no GM the coordinating attacker now sees
+  and may use the GM controls, as the docs said. The "no coordinator" message no longer tells a
+  player to cancel what they cannot, and a slow coordinator is reported as a timeout, not as
+  gone. The resolution cards use Foundry 14's `applyMode` and no deprecated roll-mode constant.
+  Four unused language keys are gone. The docs now say plainly that the "never shown" rule for
+  adversary Thresholds holds inside the flow: a Reaction Strike and the flow-off path print the
+  number on their card as 0.4.2 did, and `attackFlow` governs characters' Strikes while an
+  adversary's attack row always declares.
 - **Every spend is said in public chat** (Mike, 2026-10-01). When a player-controlled actor spends
   actions in an encounter, a card names what it was (in the book's glyph), how many actions it
   took, and how many are left this round, with the reserved count while Preparing. Moves, Raise a
@@ -27,6 +93,8 @@ handbook on the shelf is newer than `data/SYNC.json`.
   beside each Maneuver and Basic Action went from small text to a 1.45rem gold glyph with a dark
   halo, since the count is what a player reads off that list in a fight. The spend cards use the
   same size.
+- **The pre-roll dialog counts actions in figures**: "3 of 6 actions left this round", matching the
+  spend cards, where it read "3 of six".
 - **The Pronouns row is gone from the User Configuration window** (Mike, 2026-10-01). A
   `renderUserConfig` hook removes the field from Foundry's own sheet on render; the stored value is
   untouched and the row returns if the hook is removed.

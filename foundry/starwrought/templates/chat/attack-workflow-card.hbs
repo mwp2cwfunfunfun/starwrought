@@ -1,0 +1,106 @@
+{{!-- The attack card: one evolving ChatMessage per declared Blow (0.5.0 brief, "The three surfaces").
+     It is the table's shared record and status board: the attacker and Maneuver, each target with
+     its status, the rolls once made, who is awaited, the GM's recovery controls, and the one action
+     that is the viewer's. Decisions are made in the Combat Prompt; recovery is made here.
+
+     Per-user pruning happens in onRenderChatMessage (module/documents/chat.mjs): every button
+     carries data-owner-uuid for the actor it acts for, the GM controls carry data-gm-only, and a
+     Threshold carries data-sw-threshold-for so the visibility policy can remove it. The stored
+     content is therefore the same for every client; what each viewer sees is not. --}}
+<div class="starwrought sw-attack-card sw-attack-phase-{{phase}}" data-workflow-id="{{workflowId}}" data-revision="{{revision}}">
+
+  <header class="sw-card-header">
+    {{#if img}}<img src="{{img}}" alt="{{attackerName}}">{{/if}}
+    <div class="sw-card-titles">
+      <h3>{{title}}</h3>
+      <span class="sw-card-subtitle">{{attackerName}}</span>
+    </div>
+  </header>
+
+  {{!-- The Maneuver, locked at declaration (PHB v4.10, The Exchange, step 1). --}}
+  <p class="sw-attack-maneuver">
+    {{#if maneuver.glyph}}<span class="sw-spend-glyph">{{maneuver.glyph}}</span>{{/if}}
+    <strong>{{maneuver.kind}}</strong>{{#if maneuver.weapon}} <span class="sw-attack-weapon">{{maneuver.weapon}}</span>{{/if}}
+  </p>
+  <p class="sw-card-note sw-attack-declared">{{declared}}</p>
+
+  {{!-- Where the Exchange stands, in one line. --}}
+  <p class="sw-attack-status sw-attack-status-{{phase}}">{{status}}</p>
+
+  {{!-- A player attacker rolls Attack once and that one roll is read against every defender's
+       Threshold (brief, "Who rolls"), so the total is printed once, here, not per target. --}}
+  {{#if attackRoll}}<p class="sw-attack-roll"><i class="fa-solid fa-dice-d20"></i> {{attackRoll}}</p>{{/if}}
+
+  {{#if attackerButton}}
+  <div class="sw-card-buttons">
+    <button type="button" data-sw-action="{{attackerButton.action}}" data-workflow-id="{{workflowId}}"
+            data-target-id="{{attackerButton.targetId}}" data-owner-uuid="{{attackerUuid}}">
+      <i class="{{attackerButton.icon}}"></i> {{attackerButton.label}}
+    </button>
+  </div>
+  {{/if}}
+
+  <ul class="sw-attack-targets">
+    {{#each targets as |t|}}
+    <li class="sw-attack-target{{#if t.outcome}} sw-attack-outcome-{{t.outcome.key}}{{/if}}" data-target-id="{{t.id}}">
+      <div class="sw-attack-target-line">
+        <strong class="sw-attack-target-name">{{t.name}}</strong>
+        <span class="sw-attack-status">{{t.status}}</span>
+        {{!-- A character's Threshold, shown to its owner and the GM, and to the attacker only under
+             the attackShowPcThresholds setting. An adversary's Threshold is never in the state at
+             all, so there is nothing here to prune for one. --}}
+        {{#if t.threshold}}<span class="sw-attack-vs" data-sw-threshold-for="{{t.actorUuid}}">{{t.threshold}}</span>{{/if}}
+      </div>
+      {{#if t.answer}}<p class="sw-card-note sw-attack-answer">{{t.answer}}</p>{{/if}}
+      {{!-- A player-controlled defender of an adversary's Blow rolls Defense; that roll is theirs. --}}
+      {{#if t.roll}}<p class="sw-card-note sw-attack-roll"><i class="fa-solid fa-dice-d20"></i> {{t.roll}}</p>{{/if}}
+      {{#if t.outcome}}
+      <div class="sw-card-outcome sw-outcome-{{t.outcome.key}} sw-attack-outcome-{{t.outcome.key}}">{{t.outcome.label}}</div>
+      {{/if}}
+      {{#if t.button}}
+      <div class="sw-card-buttons">
+        <button type="button" data-sw-action="{{t.button.action}}" data-workflow-id="{{@root.workflowId}}"
+                data-target-id="{{t.id}}" data-owner-uuid="{{t.actorUuid}}">
+          <i class="{{t.button.icon}}"></i> {{t.button.label}}
+        </button>
+      </div>
+      {{/if}}
+    </li>
+    {{/each}}
+  </ul>
+
+  {{!-- GM overrides and resets, as text lines, so the table can see how the record was changed. --}}
+  {{#if log.length}}
+  <ul class="sw-attack-log">
+    {{#each log as |line|}}<li>{{line}}</li>{{/each}}
+  </ul>
+  {{/if}}
+
+  {{!-- The GM's recovery controls (brief, "Coordination": cancel, resetDefenses, resendPrompts;
+       "The absent player": useStances). --}}
+  {{#if gm}}
+  <div class="sw-card-buttons sw-attack-gm" data-gm-only>
+    {{#if gm.useStances}}
+    <button type="button" data-sw-action="attackUseStances" data-workflow-id="{{workflowId}}">
+      <i class="fa-solid fa-shield-halved"></i> {{gm.useStancesLabel}}
+    </button>
+    {{/if}}
+    {{#if gm.reset}}
+    <button type="button" data-sw-action="attackReset" data-workflow-id="{{workflowId}}">
+      <i class="fa-solid fa-rotate-left"></i> {{gm.resetLabel}}
+    </button>
+    {{/if}}
+    {{#if gm.resend}}
+    <button type="button" data-sw-action="attackResend" data-workflow-id="{{workflowId}}">
+      <i class="fa-solid fa-bell"></i> {{gm.resendLabel}}
+    </button>
+    {{/if}}
+    {{#if gm.cancel}}
+    <button type="button" data-sw-action="attackCancel" data-workflow-id="{{workflowId}}" class="sw-cancel">
+      <i class="fa-solid fa-xmark"></i> {{gm.cancelLabel}}
+    </button>
+    {{/if}}
+  </div>
+  {{/if}}
+
+</div>

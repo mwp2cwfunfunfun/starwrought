@@ -31,6 +31,7 @@
           <th>{{localize "STARWROUGHT.Field.damage"}}</th>
           <th>{{localize "STARWROUGHT.Field.reach"}}</th>
           <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -40,13 +41,25 @@
           <td class="sw-num sw-threshold-cell">{{atk.threshold}}</td>
           <td>{{atk.damage}} {{atk.damageType}}</td>
           <td class="sw-num">{{atk.reach}} ft</td>
+          <td class="sw-strike-cell">
+            {{!-- Three Strikes, as on a weapon row: the adversary's Maneuver, declared against the
+                 GM's current targets (0.5.0 brief, Entry points). The players roll Defense. --}}
+            <span class="sw-strike-buttons">
+              <a class="sw-strike-button sw-strike-quick" data-action="attackWith" data-strike="quick"
+                 data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}">{{swStrikeGlyph "quick"}} <span>{{localize "STARWROUGHT.Strike.quick"}}</span></a>
+              <a class="sw-strike-button sw-strike-deliberate" data-action="attackWith" data-strike="deliberate"
+                 data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}">{{swStrikeGlyph "deliberate"}} <span>{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
+              <a class="sw-strike-button sw-strike-committed" data-action="attackWith" data-strike="committed"
+                 data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}">{{swStrikeGlyph "committed"}} <span>{{localize "STARWROUGHT.Strike.committed"}}</span></a>
+            </span>
+          </td>
           <td class="sw-item-controls">
             <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
             <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
           </td>
         </tr>
         {{else}}
-        <tr><td colspan="5" class="sw-empty">{{localize "STARWROUGHT.Sheet.noAttacks"}}</td></tr>
+        <tr><td colspan="6" class="sw-empty">{{localize "STARWROUGHT.Sheet.noAttacks"}}</td></tr>
         {{/each}}
       </tbody>
     </table>

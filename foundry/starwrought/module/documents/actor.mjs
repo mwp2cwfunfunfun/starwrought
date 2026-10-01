@@ -16,6 +16,7 @@ import { SwCheck } from "../dice/check.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
+import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 
 const { DialogV2 } = foundry.applications.api;
 const { renderTemplate } = foundry.applications.handlebars;
@@ -23,6 +24,29 @@ const { renderTemplate } = foundry.applications.handlebars;
 /** The five stances: the two basic Defenses, and the three Reactions a defender can stand ready with. */
 const STANCES = Object.freeze(["evade", "guard", "void", "parry", "counter"]);
 const REACTION_STANCES = Object.freeze(["void", "parry", "counter"]);
+/** The two basic Defenses that answer a Blow (PHB v4.10, The Four Threats). */
+const BLOW_DEFENSES = Object.freeze(["evade", "guard"]);
+
+/**
+ * A Posture ⓿↺ (0.5.0 brief, after PHB v4.10's Slip the Line and Catch the Blade): an owned
+ * Talent with a ⓿↺ cost in the Defense's Constellation, +2 Situation to that Defense and a Zone
+ * of the defender's choice Exposed until the end of the round, whether or not it works. The
+ * bonus is the same Situation stack a Reaction's +2 lives in, so the two never add.
+ */
+const POSTURE_BONUS = 2;
+
+/**
+ * Is the attack flow on? The world setting is registered by starwrought.mjs (default on); read
+ * defensively so a build without it, or a read before init, Strikes at once exactly as 0.4.2 did.
+ * @returns {boolean}
+ */
+function attackFlowOn() {
+  try {
+    return !!game.settings.get(SW.SYSTEM_ID, "attackFlow");
+  } catch {
+    return false;
+  }
+}
 
 /** Names compared the way a player types them: case and stray spaces do not count. */
 const sameName = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
@@ -276,9 +300,17 @@ export class SwActor extends Actor {
    * @param {string|null} [options.reaction]  parry | void | counter | null.
    * @param {string} [options.strike]      The attacker's commitment, if known (quick | deliberate | committed).
    * @param {Actor|Token} [options.attacker]  Who is attacking; defaults to the current target.
+   * @param {{id: string, targetId: string}} [options.workflow]  The attack flow's Defense roll
+   *                                       (0.5.0 brief): kind "defense" with no Threshold, since
+   *                                       the coordinator holds the adversary's number and reads
+   *                                       this die against it; the answer was committed in the
+   *                                       prompt, so no Reaction is offered here; nothing posts.
+   * @param {{talentId: string, name?: string, zone: string}} [options.posture]  A Posture ⓿↺
+   *                                       committed in the prompt: +2 Situation to the Defense,
+   *                                       its Zone Exposed before the die. Never beside a Reaction.
    */
   async rollDefense(key, options = {}) {
-    const { reaction: askedReaction, attacker: givenAttacker, ...rest } = options;
+    const { reaction: askedReaction, attacker: givenAttacker, workflow = null, posture: askedPosture = null, ...rest } = options;
     const reaction = SW.REACTIONS[askedReaction] && ["parry", "void", "counter"].includes(askedReaction)
       ? askedReaction : null;
     // Void is an Evade and Parry is a Guard, whichever button was pressed.
@@ -286,25 +318,66 @@ export class SwActor extends Actor {
     const def = SW.DEFENSES[key];
     if (!def) return null;
 
+    // A Posture is an answer in its own right (brief): it never stands beside a Reaction, and the
+    // Zone is the player's choice at the prompt, so one without a Zone is not a Posture yet.
+    const posture = (askedPosture?.talentId && (askedPosture.zone in SW.ZONES)) ? askedPosture : null;
+    if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
+    const postureName = posture
+      ? (posture.name ?? this.items.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      : "";
+
     const attackerToken = givenAttacker?.document ? givenAttacker
       : (givenAttacker?.getActiveTokens?.(false, false)?.[0] ?? SwCheck.currentTarget());
     const attacker = givenAttacker?.actor ?? (givenAttacker?.documentName === "Actor" ? givenAttacker : null)
       ?? attackerToken?.actor ?? null;
 
-    return SwCheck.roll(foundry.utils.mergeObject({
+    // The Posture's +2 Situation goes into the same stack as the Defense's own modifiers and a
+    // Reaction's +2 (the engine adds a Reaction's in roll()), so it cannot add to either.
+    const { modifiers: givenModifiers, beforeRoll: callerBeforeRoll, ...passthrough } = rest;
+    const modifiers = [...(givenModifiers ?? [])];
+    if (posture) {
+      modifiers.push({
+        label: `${postureName} ${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}`,
+        value: POSTURE_BONUS,
+        type: "situation"
+      });
+    }
+
+    const config = {
       actor: this,
-      kind: options.threshold !== undefined ? "defense" : "check",
+      kind: (workflow || (options.threshold !== undefined)) ? "defense" : "check",
       slug: def.slug,
       label: game.i18n.localize(def.label),
       subtitle: game.i18n.localize(def.hint),
       thresholdLabel: game.i18n.localize("STARWROUGHT.Roll.attackThreshold"),
       defense: key,
       reaction,
+      posture: posture ? { talentId: posture.talentId, name: postureName, zone: posture.zone } : null,
       attacker,
       targetUuid: attackerToken?.document?.uuid ?? "",
       targetName: attackerToken?.name ?? attacker?.name ?? "",
-      defenderTokenUuid: this.tokenOnScene()?.uuid ?? ""
-    }, rest, { inplace: false }));
+      defenderTokenUuid: this.tokenOnScene()?.uuid ?? "",
+      modifiers,
+      // A Posture Exposes its Zone whether or not it works (brief), so the Zone opens before the
+      // die, marked as a Posture's so Recenter leaves it and the end of the round clears it.
+      beforeRoll: async cfg => {
+        if (posture) await this.setExposed(posture.zone, true, { posture: true });
+        return callerBeforeRoll ? callerBeforeRoll(cfg) : true;
+      }
+    };
+    if (workflow) {
+      Object.assign(config, {
+        workflow,
+        // The coordinator's Threshold is authoritative and an adversary's is hidden from players,
+        // so the die is read there: a null Threshold here, and no card.
+        threshold: null,
+        // The answer was committed in the prompt: the dialog offers no Reaction radios, as it
+        // offers none when a Reaction answers a Reaction.
+        basicOnly: true,
+        postCard: false
+      });
+    }
+    return SwCheck.roll(foundry.utils.mergeObject(config, passthrough, { inplace: false }));
   }
 
   /* -------------------------------------------- */
@@ -332,6 +405,17 @@ export class SwActor extends Actor {
    *                                       were paid by the Reaction that granted them. All three
    *                                       are Quick Strikes.
    * @param {string} [options.defense]     Force the Defense answering (a Talent that targets Awareness).
+   * @param {boolean} [options.blind]      The attack flow's roll (0.5.0 brief): everything is
+   *                                       assembled as usual (Handling, Support, Unwieldy, the
+   *                                       range note, the spend) but the defender is not read at
+   *                                       all, no Threshold is known, the Strike is locked, and
+   *                                       nothing posts; the result comes back for the coordinator
+   *                                       to resolve against each defender.
+   *
+   * With the world setting `attackFlow` on and at least one target with an actor, a Strike that
+   * is not itself a Reaction and not about to Prepare does not roll: it is DECLARED through the
+   * AttackCoordinator, and the die is thrown at the roll step once every defender has committed
+   * (brief, Entry points). With the setting off, or no target, the Strike rolls at once as 0.4.2.
    */
   async rollAttack(weaponId, options = {}) {
     const weapon = this.items.get(weaponId);
@@ -339,7 +423,7 @@ export class SwActor extends Actor {
     const {
       strike: askedStrike, prepared = false, free: askedFree = false, thrown: askedThrown,
       targetUuid: askedTarget, targetTokenId, reaction: asReaction = null,
-      modifiers: givenModifiers, ...rest
+      modifiers: givenModifiers, blind = false, ...rest
     } = options;
 
     // Striking with something you are not holding is worth saying out loud, and nothing more.
@@ -365,6 +449,16 @@ export class SwActor extends Actor {
       const only = (remembered.length === 1) ? canvas.tokens?.get(remembered[0]) : null;
       if (only?.actor) targetToken = only;
     }
+
+    // Declaring (brief, Entry points): the flow is on, this Strike is a Maneuver of the attacker's
+    // own (not a Counter, an Intercept or the riposte, which answer a Blow already declared), and
+    // it is not the flow's own blind roll. The targets are snapshotted now: every token the user
+    // has targeted, or the one the caller named. With several, the first stands in as the
+    // reference for reach and the thrown inference below.
+    const declaring = attackFlowOn() && !blind && !reactionStrike;
+    const targets = declaring ? this.#declaredTargets({ targetTokenId, targetUuid: askedTarget }) : [];
+    if (declaring && targets.length && !targetToken) targetToken = targets[0];
+
     const targetActor = targetToken?.actor ?? null;
     const attackerToken = this.tokenOnScene();
     const gap = (attackerToken && targetToken && canvas?.ready) ? gapBetween(attackerToken, targetToken.document) : null;
@@ -377,6 +471,16 @@ export class SwActor extends Actor {
     const ranged = !!weapon.system.isRanged || thrown;
     const slug = thrown ? SW.RANGED_SLUG : (weapon.system.strikeSlug ?? (ranged ? SW.RANGED_SLUG : SW.MELEE_SLUG));
     const rank = this.weaponRank(weapon, slug);
+
+    // DECLARE rather than roll. A Committed Strike ❸ in an encounter still Prepares as today
+    // (PHB v4.10: one action now, the rest reserved) and declares when finishPrepared re-enters
+    // here with `prepared: true`; the dialog it opens may still change the Strike, and beforeRoll
+    // below declares the changed one. Everything else declares now, with no dialog: the Strike
+    // kind is the button pressed, and the dialog opens at the roll step with it locked.
+    const preparesNow = SW.STRIKE_KINDS[strike].prepared && this.inEncounter && !paid;
+    if (declaring && targets.length && !preparesNow) {
+      return AttackCoordinator.declare({ attacker: this, weaponId, strike, targets, prepared, free, thrown });
+    }
 
     // A Strike at a target the weapon cannot reach is said on the card, never refused, so the GM
     // can adjudicate (Mike, 2026-10-01). Melee: the gap is more than Natural Reach plus the
@@ -413,17 +517,23 @@ export class SwActor extends Actor {
     // (Parry -> Guard, Void -> Evade, Counter -> the better of the two, Grabbed swap applied);
     // SwCheck.thresholdOf reads it without the Reaction's +2, and treating it as forced keeps
     // the roll-time re-read, the charge and the Counter offer all out of it.
+    //
+    // The flow's blind roll reads nothing of the defender (brief): the commitments are the
+    // coordinator's, revealed and read there. The dialog still names the target and says the
+    // answer is theirs to reveal, which is exactly true.
     const forced = options.defense !== undefined || !!reactionStrike;
-    const answering = targetActor?.answeringDefense?.({ ranged, gap }) ?? null;
+    const answering = (blind ? null : targetActor?.answeringDefense?.({ ranged, gap })) ?? null;
     const defense = options.defense ?? answering?.key ?? "evade";
-    const target = targetToken ? SwCheck.thresholdOf(targetToken, defense) : null;
-    const targetDefense = !targetActor ? null : forced
-      ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null }
-      : answering;
+    const target = (!blind && targetToken) ? SwCheck.thresholdOf(targetToken, defense) : null;
+    const targetDefense = !targetActor ? null
+      : blind ? { key: null, label: "", threshold: null, unavailable: null, hidden: true }
+      : forced
+        ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null }
+        : answering;
     // Why the Defense met is not the stance: swapped by a condition (Evade while Grabbed), or a
     // Reaction set aside because this Strike is itself a Reaction. A caller who forced the
     // Defense has its own reason and gets no note.
-    const defenseNote = (options.defense !== undefined) ? null
+    const defenseNote = ((options.defense !== undefined) || blind) ? null
       : (answering?.unavailable
         ?? ((reactionStrike && answering?.reaction) ? game.i18n.localize("STARWROUGHT.Reaction.basicOnly") : null));
 
@@ -476,7 +586,7 @@ export class SwActor extends Actor {
     const subtitleFor = key => `${kindLabel(key)}${reactionLabel} · ${
       game.i18n.localize(ranged ? "STARWROUGHT.Roll.rangedStrike" : "STARWROUGHT.Roll.meleeStrike")}`;
 
-    return SwCheck.roll(foundry.utils.mergeObject({
+    const config = foundry.utils.mergeObject({
       actor: this,
       item: weapon,
       weaponId,
@@ -488,13 +598,15 @@ export class SwActor extends Actor {
       label: weapon.name,
       subtitle: subtitleFor(strike),
       strike,
-      lockStrike: paid || !!reactionStrike,
+      // The declared Strike is locked at the roll step, as a paid one always was.
+      lockStrike: paid || !!reactionStrike || blind,
       prepared,
       asReaction: reactionStrike,
       modifiers,
       threshold: target?.threshold ?? null,
       thresholdLabel: target?.label ?? "",
-      targetUuid: target?.uuid ?? "",
+      // The blind roll passes no target to the engine: #readDefender has nothing to read.
+      targetUuid: blind ? "" : (target?.uuid ?? ""),
       targetDefense,
       defenseForced: forced,
       defenseNote,
@@ -503,8 +615,8 @@ export class SwActor extends Actor {
       rangeNote,
       reaction: forced ? null : (answering?.reaction ?? null),
       reactionNote: forced ? null : (answering?.note ?? null),
-      defender: targetActor,
-      defenderRigid: targetActor?.rigidImplement ?? null,
+      defender: blind ? null : targetActor,
+      defenderRigid: blind ? null : (targetActor?.rigidImplement ?? null),
       attackerTokenUuid: attackerToken?.uuid ?? "",
       // The token's name, not the actor's: the token name is the one the GM chose to show.
       targetName: targetToken?.name ?? "",
@@ -515,6 +627,12 @@ export class SwActor extends Actor {
       beforeRoll: async cfg => {
         const kind = SW.STRIKE_KINDS[cfg.strike];
         cfg.subtitle = subtitleFor(cfg.strike);
+        // The dialog opened for a Committed Strike, which Prepares, and the player chose a Quick
+        // or Deliberate one instead: with the flow on and a target, that Strike declares.
+        if (declaring && targets.length && !paid && !(kind.prepared && this.inEncounter)) {
+          await AttackCoordinator.declare({ attacker: this, weaponId, strike: cfg.strike, targets, prepared, free, thrown });
+          return false;
+        }
         if (reactionStrike === "intercept") {
           // Intercept ❶↺: the Reaction's own cost, in place of the Strike's.
           const r = SW.REACTIONS.intercept;
@@ -558,7 +676,65 @@ export class SwActor extends Actor {
           await targetActor.endBind();
         }
       }
-    }, rest, { inplace: false }));
+    }, rest, { inplace: false });
+    // The blind roll never posts, whatever a caller's passthrough says: the coordinator's
+    // resolution cards are the record.
+    if (blind) config.postCard = false;
+    return SwCheck.roll(config);
+  }
+
+  /**
+   * An adversary's Maneuver (0.5.0 brief, Entry points): declare one of its attack rows, Quick ❶,
+   * Deliberate ❷ or Committed ❸, against the GM's current targets. Adversaries do not roll in
+   * STARWROUGHT, so there is no roll-at-once form of this and the `attackFlow` setting does not
+   * apply: player-controlled targets get the defend prompt and then roll Defense against the
+   * attack's Threshold; an adversary target falls to the adversary-against-adversary rule. The
+   * Strike's actions are paid once the declaration stands, since the declaration is the Maneuver.
+   * @param {string} itemId   An action Item on this actor with `system.attack.enabled`.
+   * @param {object} [options]
+   * @param {string} [options.strike]  quick | deliberate | committed. Default SW.DEFAULT_STRIKE.
+   * @returns {Promise<object|null>} the workflow, or null when nothing was declared
+   */
+  async attackWith(itemId, { strike = SW.DEFAULT_STRIKE } = {}) {
+    const item = this.items.get(itemId);
+    if (!item || (item.type !== "action") || !item.system.attack?.enabled) return null;
+    if (!SW.STRIKE_KINDS[strike]) strike = SW.DEFAULT_STRIKE;
+    // Every target must be an actor: a bare token has no Defense to answer with.
+    const targets = Array.from(game.user?.targets ?? []).filter(t => t?.actor);
+    if (!targets.length) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
+      return null;
+    }
+    const workflow = await AttackCoordinator.declare({ attacker: this, attackId: itemId, strike, targets });
+    if (!workflow) return null;
+    // A Committed ❸ by an adversary is paid in full here: the Prepared machinery is a weapon's
+    // (finishPrepared re-enters rollAttack), and nothing of an adversary's reaches a die.
+    const kind = SW.STRIKE_KINDS[strike];
+    await this.spendActions(kind.cost, {
+      label: `${game.i18n.localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost]}: ${item.name}`
+    });
+    return workflow;
+  }
+
+  /**
+   * The targets a declaration snapshots (brief): the token the caller named, else every token this
+   * user has targeted that has an actor behind it, else the one target this actor's token is
+   * remembered as having. Changing Foundry targets afterwards changes nothing.
+   * @param {object} [options]
+   * @param {string} [options.targetTokenId]
+   * @param {string} [options.targetUuid]
+   * @returns {Token[]}
+   */
+  #declaredTargets({ targetTokenId = "", targetUuid = "" } = {}) {
+    const named = targetTokenId ? (canvas.tokens?.get(targetTokenId) ?? null) : null;
+    if (named?.actor) return [named];
+    const asked = targetUuid ? this.#tokenFor(targetUuid) : null;
+    if (asked?.actor) return [asked];
+    const targeted = Array.from(game.user?.targets ?? []).filter(t => t?.actor);
+    if (targeted.length) return targeted;
+    const remembered = this.tokenOnScene()?.getFlag(SW.SYSTEM_ID, "targets")?.ids ?? [];
+    const only = (remembered.length === 1) ? canvas.tokens?.get(remembered[0]) : null;
+    return only?.actor ? [only] : [];
   }
 
   /**
@@ -623,32 +799,100 @@ export class SwActor extends Actor {
     const stance = STANCES.includes(sys.stance) ? sys.stance : "evade";
     // The data model reads the stance apart into its Defense and its Reaction; fall back to the
     // same reading here when it has not.
-    let reaction = (sys.stanceReaction !== undefined)
+    const stanceReaction = (sys.stanceReaction !== undefined)
       ? (REACTION_STANCES.includes(sys.stanceReaction) ? sys.stanceReaction : null)
       : (REACTION_STANCES.includes(stance) ? stance : null);
-    // Counter adds nothing to the Defense, so it stands on the better of the two basic Defenses.
-    let key = (reaction === "counter") ? this.#bestBasicDefense()
-      : reaction ? SW.REACTIONS[reaction].defense
-      : (["evade", "guard"].includes(sys.stanceDefense) ? sys.stanceDefense : (["evade", "guard"].includes(stance) ? stance : "evade"));
+    const stanceDefense = BLOW_DEFENSES.includes(sys.stanceDefense) ? sys.stanceDefense
+      : (BLOW_DEFENSES.includes(stance) ? stance : "evade");
 
-    const blocked = sys.defenses?.[key]?.unavailable ?? null;
+    // One reading for a stance and for a committed answer, so the two can never disagree: the
+    // Defense, the swap when it is unavailable, the Head Wound, a stale Reaction, Parry's rigid
+    // implement, and the +2 folded once into the Situation stack all live in defenseThresholdFor.
+    const read = this.defenseThresholdFor({ defense: stanceDefense, reaction: stanceReaction });
+    let { key, reaction, label, note } = read;
+
+    // Counter answers only a melee Blow from a foe within your Reach (PHB v4.10, Answering an
+    // Attack). Anything else meets the basic Defense, nothing is charged, and the stance stands.
+    // Counter adds nothing to the Threshold, so only the answer's name changes here.
+    if (reaction === "counter") {
+      const reach = sys.totalReach ?? sys.reach ?? 0;
+      if (ranged || ((gap !== null) && (gap > reach))) {
+        reaction = null;
+        note = game.i18n.localize("STARWROUGHT.Reaction.counterNeedsMelee");
+        label = game.i18n.localize(SW.DEFENSES[key].label);
+      }
+    }
+
+    return {
+      key,
+      stance,
+      reaction,
+      bonus: read.bonus,
+      label,
+      threshold: read.threshold,
+      unavailable: read.unavailable,
+      note
+    };
+  }
+
+  /**
+   * The Threshold a Defense presents with an answer folded in (0.5.0 brief, Thresholds): the one
+   * rules function behind both the standing stance (`answeringDefense`) and a commitment made in
+   * the attack flow's prompt, so the sheet, the prompt's preview and the coordinator's
+   * resolution all read the same number. Pure: nothing is written.
+   *
+   * PHB v4.10, Answering an Attack. Void is Evade +2 Situation and Parry is Guard +2 Situation,
+   * whatever Defense was named; Counter adds nothing and stands on the better of the two basic
+   * Defenses. A Posture ⓿↺ (brief) is +2 Situation to its own Defense. The bonus goes into the
+   * same Situation stack as the Defense's own modifiers through SW.resolveModifiers, so it never
+   * adds to another Situation bonus already there (highest of the type counts), and a commitment
+   * is a Reaction or a Posture, never both. An adversary's Defenses carry no modifier stack, so
+   * its bonus is added arithmetically to the GM's Threshold. When the Defense is unavailable
+   * (Evade while Grabbed or Restrained) the other basic Defense answers and anything built on the
+   * lost one falls away; a Head Wound removes every Reaction and Posture; a Reaction stance the
+   * character no longer qualifies for falls back; a Parry without a rigid implement is noted,
+   * not enforced.
+   *
+   * @param {object} answer
+   * @param {string} answer.defense               A key of SW.DEFENSES (evade or guard for a Blow).
+   * @param {string|null} [answer.reaction]       parry | void | counter | null.
+   * @param {{talentId: string, name?: string, zone?: string}|null} [answer.posture]
+   * @returns {{key: string, threshold: number, bonus: number, label: string, reaction: string|null,
+   *            posture: object|null, note: string|null, unavailable: string|null}}
+   * @throws {Error} when both a Reaction and a Posture are given.
+   */
+  defenseThresholdFor({ defense, reaction = null, posture = null } = {}) {
+    const sys = this.system;
+    reaction = (REACTION_STANCES.includes(reaction) && SW.REACTIONS[reaction]) ? reaction : null;
+    posture = (posture && (typeof posture === "object") && posture.talentId) ? posture : null;
+    if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
+
+    // Which Defense: the Reaction's own, Counter's better basic one, else the one named.
+    let key = (reaction === "counter") ? this.#bestBasicDefense()
+      : (SW.REACTIONS[reaction]?.defense ?? (SW.DEFENSES[defense] ? defense : "evade"));
+    const named = key;
+
+    const blocked = BLOW_DEFENSES.includes(key) ? (sys.defenses?.[key]?.unavailable ?? null) : null;
     if (blocked) {
       key = (key === "evade") ? "guard" : "evade";
-      // A Void is an Evade; when Evade cannot be used, neither can the Void built on it.
+      // A Void is an Evade, and a Posture is a Talent of its Defense's Constellation: when the
+      // Defense cannot be used, neither can what was built on it.
       if (reaction === "void") reaction = null;
+      posture = null;
     }
 
     let note = null;
     // No Reactions at all: a Head Wound, a Head critical, a Rush. The basic Defense still rolls.
     const noReactions = sys.reactions?.blocked;
-    if (reaction && noReactions) {
+    if ((reaction || posture) && noReactions) {
       reaction = null;
+      posture = null;
       note = (typeof noReactions === "string")
         ? game.i18n.localize(noReactions)
         : game.i18n.format("STARWROUGHT.Reaction.blocked", { name: this.name });
     }
-    // A Reaction stance the character no longer qualifies for falls back to the basic Defense:
-    // a Counter held from before ruling 63 at a Melee rank below Expert, or a Training Root since
+    // A Reaction the character no longer qualifies for falls back to the basic Defense: a
+    // Counter held from before ruling 63 at a Melee rank below Expert, or a Training Root since
     // removed. setStance only guards the way in; the roll has to read what is true now. Parry's
     // rigid implement is noted below rather than enforced, so for Parry only the Root is tested.
     if (reaction && (this.type === "character") && (sys.reactions?.[reaction] === false)) {
@@ -659,30 +903,26 @@ export class SwActor extends Actor {
         reaction = null;
       }
     }
-    // Counter answers only a melee Blow from a foe within your Reach (PHB v4.10, Answering an
-    // Attack). Anything else meets the basic Defense, nothing is charged, and the stance stands.
-    if (reaction === "counter") {
-      const reach = sys.totalReach ?? sys.reach ?? 0;
-      if (ranged || ((gap !== null) && (gap > reach))) {
-        reaction = null;
-        note = game.i18n.localize("STARWROUGHT.Reaction.counterNeedsMelee");
-      }
-    }
     if ((reaction === "parry") && !this.rigidImplement) {
       note = game.i18n.localize("STARWROUGHT.Reaction.needsRigid");
     }
 
-    // The Threshold with the Reaction's +2 Situation folded into the same stack, so it does not
-    // add to another Situation bonus the Defense already carries. The data model leaves this
-    // bonus out of its own Threshold on purpose; it is added here, once, when a Reaction answers.
+    // The answer's name: a Reaction's label, or the Posture Talent's own name.
+    const postureName = posture
+      ? (posture.name ?? this.items.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      : "";
+    const answerLabel = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
+
+    // The fold. The data model leaves a Reaction's bonus out of its own Threshold on purpose; it
+    // is added here, once, through the same stack the Defense already resolved.
     const def = sys.defenses?.[key];
     let threshold = def?.threshold ?? 10;
-    const bonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : 0;
+    const bonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : (posture ? POSTURE_BONUS : 0);
     if (bonus) {
       if (Array.isArray(def?.modifiers)) {
         const { total } = SW.resolveModifiers([
           ...def.modifiers,
-          { label: game.i18n.localize(SW.REACTIONS[reaction].label), value: bonus, type: "situation" }
+          { label: answerLabel, value: bonus, type: "situation" }
         ]);
         threshold = 10 + total + (def.sizeMod ?? 0);
       } else {
@@ -693,19 +933,19 @@ export class SwActor extends Actor {
     const defenseLabel = game.i18n.localize(SW.DEFENSES[key].label);
     return {
       key,
-      stance,
-      reaction,
-      bonus,
-      label: reaction ? `${defenseLabel} (${game.i18n.localize(SW.REACTIONS[reaction].label)})` : defenseLabel,
       threshold,
+      bonus,
+      label: answerLabel ? `${defenseLabel} (${answerLabel})` : defenseLabel,
+      reaction,
+      posture: posture ? { talentId: posture.talentId, name: postureName, zone: posture.zone ?? null } : null,
+      note,
       unavailable: blocked
         ? game.i18n.format("STARWROUGHT.Stance.answeringInstead", {
-            stance: game.i18n.localize(SW.DEFENSES[stance === "void" ? "evade" : stance === "parry" ? "guard" : stance]?.label ?? SW.DEFENSES.evade.label),
+            stance: game.i18n.localize(SW.DEFENSES[named].label),
             reason: game.i18n.localize(SW.CONDITIONS[blocked]?.name ?? blocked),
             defense: defenseLabel
           })
-        : null,
-      note
+        : null
     };
   }
 

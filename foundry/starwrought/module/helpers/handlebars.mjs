@@ -105,6 +105,8 @@ export function preloadTemplates() {
     "systems/starwrought/templates/chat/applied-card.hbs",
     "systems/starwrought/templates/chat/item-card.hbs",
     "systems/starwrought/templates/dice/check-dialog.hbs",
+    "systems/starwrought/templates/apps/combat-prompt.hbs",
+    "systems/starwrought/templates/chat/attack-workflow-card.hbs",
     "systems/starwrought/templates/chargen/steps.hbs",
     "systems/starwrought/templates/chargen/body.hbs",
     "systems/starwrought/templates/chargen/footer.hbs"

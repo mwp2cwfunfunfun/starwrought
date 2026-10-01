@@ -171,6 +171,21 @@ Constellations**: a Combat Style's `Parent` column names one, and every Talent b
 counts toward the parent's rank once the parent's Root is owned (rank only; Attribute Points are
 never counted twice). Weapon dice: 2 at L4, 3 at L8, 4 at L12, 5 at L16.
 
+**The attack flow (Mike, 2026-10-01; system 0.5.0, sync report ruling 65).** A Strike at a target
+declares first and locks; every defender commits a Defense (Evade or Guard) and an answer (nothing,
+an owned Reaction, or a ⓿↺ Posture Talent with the Zone it Exposes) in private; all reveal at once;
+then the players roll: a player-controlled attacker rolls Attack once against every defender's
+Threshold, a player-controlled defender of an adversary's Blow rolls Defense against the Attack
+Threshold, and player against player is never an opposed roll. The coordinator (the GM's client
+when one is connected, else the attacker's) is the only writer of the attack card and the only
+holder of commitments before the reveal; every change is a socket request with a revision number
+and an ownership check, with the asking user read from the server's stamp on the socket message
+and the state taken from the card's flags, never from a broadcast. Decisions are made in the Combat
+Prompt window, chat is the record and the recovery, the sheet is the reference. Inside the flow
+adversary Thresholds are never shown to players (a Reaction Strike still rolls at once and prints
+the number, as 0.4.2 did). The world setting `attackFlow` off restores the 0.4.2 behaviour for
+characters' Strikes; an adversary's attack row always declares.
+
 **Six actions a round (PHB v4.10).** Every combatant gets six actions at the start of each round,
 spent across Opportunities (one Maneuver per Opportunity, or Pass; a full circuit of Passes ends the
 round). Reactions ↺ are paid from the same six. Costs are printed ⓿ ❶ ❷ ❸ (up to ❻); a Maneuver of

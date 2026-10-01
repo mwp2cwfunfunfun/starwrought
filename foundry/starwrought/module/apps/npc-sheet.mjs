@@ -23,6 +23,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     actions: {
       editImage: SwNpcSheet.#onEditImage,
       setStance: SwNpcSheet.#onSetStance,
+      attackWith: SwNpcSheet.#onAttackWith,
       itemUse: SwNpcSheet.#onItemUse,
       itemChat: SwNpcSheet.#onItemChat,
       itemEdit: SwNpcSheet.#onItemEdit,
@@ -168,6 +169,18 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       callback: path => this.document.update({ img: path })
     });
     return fp.browse();
+  }
+
+  /**
+   * An attack row's Strike buttons (0.5.0 brief, Entry points): declare this adversary's Maneuver,
+   * Quick ❶, Deliberate ❷ or Committed ❸, against the GM's current targets. The Strike kind is the
+   * button pressed; the defenders commit and reveal, and the players roll Defense.
+   */
+  static async #onAttackWith(event, target) {
+    const item = this.#getItem(target);
+    if (!item) return;
+    const strike = SW.STRIKE_KINDS[target.dataset.strike] ? target.dataset.strike : SW.DEFAULT_STRIKE;
+    return this.document.attackWith(item.id, { strike });
   }
 
   static async #onItemUse(event, target) {
