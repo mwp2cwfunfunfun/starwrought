@@ -378,6 +378,22 @@ export class SwActor extends Actor {
     const slug = thrown ? SW.RANGED_SLUG : (weapon.system.strikeSlug ?? (ranged ? SW.RANGED_SLUG : SW.MELEE_SLUG));
     const rank = this.weaponRank(weapon, slug);
 
+    // A Strike at a target the weapon cannot reach is said on the card, never refused, so the GM
+    // can adjudicate (Mike, 2026-10-01). Melee: the gap is more than Natural Reach plus the
+    // weapon's. Ranged or thrown: the gap is more than the weapon's range. No target, no note.
+    let rangeNote = null;
+    if (gap !== null) {
+      const feet = Math.round(gap);
+      if (!ranged && (gap > reachWith)) {
+        rangeNote = game.i18n.format("STARWROUGHT.Strike.outOfReach", { gap: feet, reach: reachWith });
+      } else if (ranged) {
+        const range = thrown ? weapon.system.flags?.thrown : weapon.system.flags?.ranged;
+        if (Number.isFinite(range) && (range > 0) && (gap > range)) {
+          rangeNote = game.i18n.format("STARWROUGHT.Strike.outOfRange", { gap: feet, range });
+        }
+      }
+    }
+
     // The Strike Attribute: the higher of the weapon's natural Attribute and the Key Attribute of
     // a Combat Style whose root you own and whose weapon this is (PHB v4.10, The Attack).
     const strikeAttribute = this.system.strikeAttributeFor?.(weapon)
@@ -484,6 +500,7 @@ export class SwActor extends Actor {
       defenseNote,
       // What the defender is answering, for the roll-time re-read of their stance.
       threat: { ranged, gap },
+      rangeNote,
       reaction: forced ? null : (answering?.reaction ?? null),
       reactionNote: forced ? null : (answering?.note ?? null),
       defender: targetActor,
@@ -1102,12 +1119,17 @@ export class SwActor extends Actor {
    * refuses a Strike because its own arithmetic disagrees is worse than one that says so and gets
    * out of the way. So an overspend goes to chat, where both the player and the GM can see it, and
    * the action still resolves. Outside an encounter nothing is counted at all.
+   * Every spend by a player-controlled actor is said in public chat (Mike, 2026-10-01): what it
+   * was, how many actions it took, and how many are left this round. A caller whose own card
+   * already carries that line (a Move, Raise a Shield, Recenter) passes `announce: false` so the
+   * table reads it once. An adversary the GM runs stays quiet unless it overspends.
    * @param {number|string} cost   A number, or a key of SW.ACTION_COSTS (legacy "free"/"reaction" map).
    * @param {object} [options]
-   * @param {string} [options.label]  What is being paid for.
+   * @param {string} [options.label]      What is being paid for.
+   * @param {boolean} [options.announce]  Post the spend card (default true).
    * @returns {Promise<boolean>} always true; the return value is kept for callers that read it
    */
-  async spendActions(cost, { label = "" } = {}) {
+  async spendActions(cost, { label = "", announce = true } = {}) {
     if (!this.inEncounter) return true;
     if (!this.system.actions) return true;
 
@@ -1125,6 +1147,7 @@ export class SwActor extends Actor {
     const left = this.system.actions.value ?? 0;
     await this.update({ "system.actions.value": Math.max(0, left - n) });
     if (n > left) await this.#announceOverspend({ label, need: n, left });
+    else if (announce && this.announcesSpends) await this.#announceSpend({ label, spent: n });
 
     // A Maneuver paid for at your own Opportunity keeps the round going: the Combat's pass streak
     // starts over.
@@ -1133,8 +1156,57 @@ export class SwActor extends Actor {
   }
 
   /**
-   * Say plainly, in chat, that something happened without the actions to pay for it. Whispered to
-   * the GM for an adversary, public for a player character, because the table needs to see it.
+   * Does this actor's spending go to public chat? A player's character, or any actor a player
+   * owns. The GM's adversaries keep their pips to themselves.
+   * @type {boolean}
+   */
+  get announcesSpends() {
+    return (this.type === "character") || this.hasPlayerOwner;
+  }
+
+  /** The actions a round starts with: six for a character, an adversary's own number. */
+  get actionsPerRound() {
+    return (this.type === "npc") ? (this.system.actionsPerRound ?? SW.ACTIONS_PER_ROUND) : SW.ACTIONS_PER_ROUND;
+  }
+
+  /**
+   * "4 of 6 actions left this round" (and the reserved count while Preparing), for the cards that
+   * announce a spend. Empty outside an encounter, where nothing is counted.
+   * @returns {string}
+   */
+  actionsLeftLine() {
+    if (!this.inEncounter || !this.system.actions) return "";
+    const left = this.system.actions.value ?? 0;
+    const reserved = this.system.actions.reserved ?? 0;
+    const per = this.actionsPerRound;
+    return reserved > 0
+      ? game.i18n.format("STARWROUGHT.Actions.leftReserved", { left, per, reserved })
+      : game.i18n.format("STARWROUGHT.Actions.leftLine", { left, per });
+  }
+
+  /**
+   * The spend card: what was done, in the glyph the book prints, how many actions it took, and
+   * how many are left. Always public, so the whole table keeps the same count.
+   */
+  async #announceSpend({ label, spent }) {
+    const glyph = SW.ACTION_GLYPHS[spent] ?? `${spent}`;
+    // Labels such as "Deliberate ❷: Battleaxe" or "Parry ❶↺" already carry their glyph.
+    const title = label.includes(glyph)
+      ? foundry.utils.escapeHTML(label)
+      : `<span class="sw-spend-glyph">${glyph}</span> ${foundry.utils.escapeHTML(label)}`;
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-spend-card" data-actor-uuid="${this.uuid}">
+        <h3>${title}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Actions.spent", { name: foundry.utils.escapeHTML(this.name), spent })}
+        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p></div>`
+    });
+  }
+
+  /**
+   * Say plainly, in chat, that something happened without the actions to pay for it, and how many
+   * are left (none). Whispered to the GM for an adversary, public for a player's actor, because
+   * the table needs to see it.
    */
   async #announceOverspend({ label, need = 0, left = 0 }) {
     const body = game.i18n.format("STARWROUGHT.Actions.overActions", {
@@ -1146,9 +1218,9 @@ export class SwActor extends Actor {
       content: `<div class="starwrought action-card sw-overspend">
         <h3><i class="fa-solid fa-triangle-exclamation"></i> ${
           game.i18n.localize("STARWROUGHT.Actions.overTitle")}</h3>
-        <p>${body}</p>
+        <p>${body} <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>
         <p class="sw-card-note">${game.i18n.localize("STARWROUGHT.Actions.overNote")}</p></div>`,
-      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+      whisper: this.announcesSpends ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
     });
   }
 
@@ -1222,7 +1294,8 @@ export class SwActor extends Actor {
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought action-card sw-prepared-card" data-actor-uuid="${this.uuid}">
         <h3><i class="fa-solid fa-hourglass-half"></i> ${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, reserved: reserve })}</p>
+        <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, reserved: reserve })}
+        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>
         <div class="sw-card-buttons">
           <button type="button" data-sw-action="finishPrepared" data-actor-uuid="${this.uuid}" data-owner-uuid="${this.uuid}">
             <i class="fa-solid fa-check"></i> ${game.i18n.localize("STARWROUGHT.Prepared.finish")}
@@ -1289,8 +1362,9 @@ export class SwActor extends Actor {
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
-        <p>${game.i18n.format(key, { name: this.name, what: prep.label ?? "", returned: actions.reserved ?? 0 })}</p></div>`,
-      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+        <p>${game.i18n.format(key, { name: this.name, what: prep.label ?? "", returned: actions.reserved ?? 0 })}
+        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p></div>`,
+      whisper: this.announcesSpends ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
     });
     return prep;
   }
@@ -1380,7 +1454,7 @@ export class SwActor extends Actor {
       }
     } else if (state === "held" || item.system.state === "held") {
       // Drawing it or putting it away: one Interact.
-      await this.spendActions(1, { label: item.name });
+      await this.spendActions(1, { label: game.i18n.format("STARWROUGHT.Actions.interactLabel", { name: item.name }) });
     }
 
     if ((item.system.state === "held") && this.system.bind?.state && sameName(this.system.bind.mine, item.name)) {
@@ -1398,7 +1472,8 @@ export class SwActor extends Actor {
    * by a Posture, which lasts to the end of the round) and end any Bind you are in.
    */
   async recenter() {
-    await this.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.recenter") });
+    // The card below carries the actions-left line, so the spend itself posts nothing.
+    await this.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.recenter"), announce: false });
     const updates = {};
     let kept = 0;
     for (const zone of Object.keys(SW.ZONES)) {
@@ -1410,9 +1485,10 @@ export class SwActor extends Actor {
     if (hadBind) await this.endBind({ announce: false });
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
-      content: `<div class="starwrought action-card"><h3>❶ ${game.i18n.localize("STARWROUGHT.Action.recenter")}</h3>
+      content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">❶</span> ${game.i18n.localize("STARWROUGHT.Action.recenter")}</h3>
         <p>${game.i18n.format("STARWROUGHT.Action.recenterText", { name: this.name })}${
-          kept ? " " + game.i18n.localize("STARWROUGHT.Action.recenterPosture") : ""}</p></div>`
+          kept ? " " + game.i18n.localize("STARWROUGHT.Action.recenterPosture") : ""}
+        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p></div>`
     });
   }
 

@@ -731,7 +731,18 @@
   padding-left: 1.8rem;
 }
 .starwrought .sw-item-row .sw-item-controls { order: 5; margin-left: auto; }
-.starwrought .sw-action-glyph { color: var(--sw-gold); font-size: 0.85rem; letter-spacing: -0.1em; }
+/* The cost of a Maneuver, in the book's glyph. Large and bright on purpose (Mike, 2026-10-01): the
+   count is the one thing a player reads off this list in a fight. */
+.starwrought .sw-action-glyph {
+  color: var(--sw-gold);
+  font-size: 1.45rem;
+  line-height: 1;
+  min-width: 1.6rem;
+  text-align: center;
+  letter-spacing: -0.08em;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+}
 
 .starwrought .sw-trait {
   display: inline-flex;
@@ -1399,6 +1410,10 @@ li.combatant.sw-in-crosshairs {
 .starwrought.refuse-death h3 { margin: 0 0 0.25rem; color: var(--sw-gold); border: none; font-size: 0.95rem; }
 .starwrought.sw-overspend { border-color: var(--sw-blood); background: linear-gradient(160deg, rgba(180, 69, 63, 0.25), var(--sw-night)); }
 .starwrought.sw-overspend h3 { color: #e08a84; }
+/* The spend card and the actions-left line: the count is what the table reads, so it is large. */
+.starwrought.action-card .sw-spend-glyph { font-size: 1.5rem; line-height: 1; vertical-align: -0.15em; margin-right: 0.15rem; }
+.starwrought.action-card .sw-actions-left { display: block; margin-top: 0.3rem; font-size: 1rem; color: var(--sw-gold); }
+.starwrought.sw-overspend .sw-actions-left { color: #e08a84; }
 .starwrought.action-card p,
 .starwrought.refuse-death p { margin: 0; font-size: 0.8rem; }
 

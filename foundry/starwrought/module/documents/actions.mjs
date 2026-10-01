@@ -109,14 +109,12 @@ export function classifyMove(feet, { speed, step, rush }, { terrain = false, str
  * by the time the token stops. It may return false to block a move; this never does.
  */
 function onTokenMoves(token, movement, options) {
-  try {
-    chargeMovement(token, movement, options);
-  } catch (err) {
+  chargeMovement(token, movement, options).catch(err => {
     console.error("STARWROUGHT | could not charge a move", err);
-  }
+  });
 }
 
-function chargeMovement(token, movement, options) {
+async function chargeMovement(token, movement, options) {
   if (options?.swNoCost) return;
   if (["undo", "paste"].includes(movement.method)) return;
 
@@ -149,9 +147,11 @@ function chargeMovement(token, movement, options) {
   // the token is where the player put it, and the arithmetic reports rather than rules. The
   // `trackActions` world setting switches off the spending and its card, nothing else.
   if (setting("trackActions", true)) {
-    actor.spendActions?.(move.actions, { label: moveLabel(move, feet.cost) });
+    // The move's own card carries the actions-left line, so the spend posts no card of its own;
+    // it is awaited so the card reads the count after the spend.
+    await actor.spendActions?.(move.actions, { label: moveLabel(move, feet.cost), announce: false });
     combat.registerAction?.(combatant);
-    announceMove(actor, move, feet.cost, numbers);
+    await announceMove(actor, move, feet.cost, numbers);
   }
 
   // A Step never provokes an Intercept, and neither does a Crawl. A Move may; a Rush always does.
@@ -238,12 +238,14 @@ function announceMove(actor, move, feet, numbers) {
       if (move.rushInstead) notes.push(format("STARWROUGHT.Actions.rushInsteadNote", { rush: numbers.rush }));
       break;
   }
+  // What the move cost and what is left this round, on the same card (Mike, 2026-10-01).
+  const left = actor.actionsLeftLine?.() ?? "";
   return postCard(actor, cardHtml({
     root: "sw-move-card",
     actorUuid: actor.uuid,
     glyph,
     title,
-    lines: [text],
+    lines: left ? [text, `<strong class="sw-actions-left">${left}</strong>`] : [text],
     notes
   }), { whisper: tableFor(actor) });
 }

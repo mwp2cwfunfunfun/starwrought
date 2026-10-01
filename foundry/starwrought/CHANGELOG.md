@@ -9,8 +9,24 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ## Unreleased: Player's Handbook v4.10
 
+### Added
+
+- **Every spend is said in public chat** (Mike, 2026-10-01). When a player-controlled actor spends
+  actions in an encounter, a card names what it was (in the book's glyph), how many actions it
+  took, and how many are left this round, with the reserved count while Preparing. Moves, Raise a
+  Shield, Recenter, Prepared and Abandon carry the same line on the card they already post, so
+  nothing is said twice; the overspend card now ends with the count too. The GM's adversaries stay
+  quiet unless they overspend. Drawing or stowing a weapon is labelled "Interact: <weapon>".
+- **Out of reach is said on the attack card** (Mike, 2026-10-01). A melee Strike at a target
+  farther than Natural Reach plus the weapon's reach, or a ranged or thrown Strike beyond the
+  weapon's range, still rolls; the card notes the distance and the reach for the GM to rule on.
+
 ### Changed
 
+- **The cost glyphs on the Maneuvers tab are large and bright** (Mike, 2026-10-01): the ❶ ❷ ❸
+  beside each Maneuver and Basic Action went from small text to a 1.45rem gold glyph with a dark
+  halo, since the count is what a player reads off that list in a fight. The spend cards use the
+  same size.
 - **The Pronouns row is gone from the User Configuration window** (Mike, 2026-10-01). A
   `renderUserConfig` hook removes the field from Foundry's own sheet on render; the stored value is
   untouched and the row returns if the hook is removed.

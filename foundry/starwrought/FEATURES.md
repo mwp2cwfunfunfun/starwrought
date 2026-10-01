@@ -232,6 +232,10 @@ sheet can see, so they stay with the table.
   Hit, Graze (miss it by less than 10), Miss (by 10 or more). A natural 20 steps the result up one
   band and a natural 1 steps it down. **Stopped** means Graze or Miss. The card offers Critical /
   Hit / Graze damage buttons, minus Critical for a Quick Strike that cannot crit.
+- **Out of reach is said, not refused.** A melee Strike at a target farther away than Natural Reach
+  plus the weapon's reach, or a ranged or thrown Strike beyond the weapon's range, still rolls, and
+  the card carries a note with the distance and the reach so the GM can adjudicate (Mike,
+  2026-10-01). No target, no note.
 - **Position, on the card.** Once the Result is read, the attack card grows a Position block. Every
   button is an offer to the side the rule favours, shown only to that actor's owner (the GM sees
   them all), never an automatic write, because "a plausible Zone" and "if they Guarded with a
@@ -426,8 +430,15 @@ or stowing a weapon, movement, and the first action of a preparation. Using a Ba
 the Maneuvers tab spends nothing by itself; the pips are the table's to click for anything the
 system cannot see being spent.
 
+**Every spend is said in public chat.** When a player-controlled actor (a character, or any actor a
+player owns) spends actions in an encounter, a card names what it was in the book's glyph, how many
+actions it took, and how many are left this round (and how many are reserved while Preparing):
+"❷ Deliberate Strike: Battleaxe. Hrolda spends 2 actions. 4 of 6 actions left this round." A Move,
+Raise a Shield, Recenter, a Prepared Maneuver and an Abandon carry the same line on the card they
+already post, so nothing is said twice. The GM's adversaries stay quiet unless they overspend.
+
 **Nothing is ever prevented.** If a Strike happens with no actions left it still happens, and a card
-goes to chat saying it went over the budget and by how much. Putting armor on mid-fight, which the
+goes to chat saying it went over the budget, by how much, and that none are left. Putting armor on mid-fight, which the
 handbook prices in minutes, gets the same treatment: the system says how long it would take and gets
 out of the way. World setting `trackActions` turns the automatic spending off entirely; the
 Intercept offer below is a rules prompt, not a spend, and does not depend on it.

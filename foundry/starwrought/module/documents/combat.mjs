@@ -589,9 +589,13 @@ export function ownersOf(actor) {
   return game.users.filter(u => u.isGM || actor.testUserPermission(u, "OWNER")).map(u => u.id);
 }
 
-/** Public for a player's character, the GM's business for an adversary: the system's usual split. */
+/**
+ * Public for a player-controlled actor (a character, or anything a player owns), the GM's business
+ * for an adversary: the system's usual split, and the one spendActions uses (Mike, 2026-10-01).
+ */
 export function tableFor(actor) {
-  return actor.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id);
+  const theirs = actor.announcesSpends ?? actor.hasPlayerOwner;
+  return theirs ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id);
 }
 
 /** Post a card spoken by an actor. */

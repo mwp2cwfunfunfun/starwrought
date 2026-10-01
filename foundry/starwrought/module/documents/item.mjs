@@ -95,15 +95,17 @@ export class SwItem extends Item {
     }
     const raised = !this.system.raised;
     if (raised) {
-      await this.actor.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.raiseShield") });
+      // The card below carries the actions-left line, so the spend itself posts nothing.
+      await this.actor.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.raiseShield"), announce: false });
     }
     await this.update({ "system.raised": raised });
+    const left = raised ? (this.actor.actionsLeftLine?.() ?? "") : "";
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-      content: `<div class="starwrought action-card"><h3>❶ ${game.i18n.localize("STARWROUGHT.Action.raiseShield")}</h3>
+      content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">❶</span> ${game.i18n.localize("STARWROUGHT.Action.raiseShield")}</h3>
         <p>${game.i18n.format(raised ? "STARWROUGHT.Action.raiseShieldOn" : "STARWROUGHT.Action.raiseShieldOff", {
           name: this.actor.name, shield: this.name, bonus: this.system.bonus
-        })}</p></div>`
+        })}${left ? ` <strong class="sw-actions-left">${left}</strong>` : ""}</p></div>`
     });
   }
 

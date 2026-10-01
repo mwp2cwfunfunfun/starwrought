@@ -504,6 +504,7 @@ export class SwCheck {
       // Why the defender answered with a Defense other than their stance, if they did. The card is
       // where the answer is revealed, so this is where the reason belongs.
       defenseNote: cfg.defenseNote ?? "",
+      rangeNote: cfg.rangeNote ?? "",
       // The Reaction behind the Defense: the roller's own on a Defense card, the defender's stance
       // on an attack card. The ❶ is charged to the defender when the attack resolves; when the
       // rolling client does not own them, the card offers the button to whoever does.

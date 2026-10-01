@@ -20,6 +20,9 @@
     {{/each}}
   </ul>
 
+  {{!-- A Strike at a target the weapon cannot reach: said, never refused, for the GM to rule on. --}}
+  {{#if rangeNote}}<p class="sw-card-note sw-warn sw-range-note"><i class="fa-solid fa-ruler-horizontal"></i> {{rangeNote}}</p>{{/if}}
+
   {{#if threshold}}
   <div class="sw-card-threshold">
     <span>{{#if thresholdLabel}}{{thresholdLabel}}{{else}}{{localize "STARWROUGHT.Field.threshold"}}{{/if}}</span>
