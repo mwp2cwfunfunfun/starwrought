@@ -1,6 +1,6 @@
 {
   "_id": "39f7e09b9e60bcbf",
-  "name": "Sudden Charge ◆◆",
+  "name": "Sudden Charge ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain Sudden Charge:<br>Sudden Charge ◆◆<br>Stride twice, then Strike.",
+    "effect": "You gain Sudden Charge:<br><b>Sudden Charge ❷</b><br>Move twice, then Quick Strike. Your Moves may provoke Intercepts as normal.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "71886e4f2559caea",
   "sort": 0,

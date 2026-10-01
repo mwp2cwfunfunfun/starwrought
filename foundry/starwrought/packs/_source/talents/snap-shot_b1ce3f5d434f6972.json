@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You may use a loaded crossbow with the Close trait to make Reactive Strikes if you have an ability that grants them.",
+    "effect": "You may Intercept ❶↺ with a loaded crossbow that has the Close trait, if you have the Intercept Reaction.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "8c23a5e18c02daf0",
   "sort": 0,

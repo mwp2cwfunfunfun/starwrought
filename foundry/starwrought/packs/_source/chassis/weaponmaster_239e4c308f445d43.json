@@ -7,14 +7,14 @@
     "kind": "calling",
     "constellation": "weaponmaster",
     "attribute": "might",
-    "hp": 3,
+    "vigor": 3,
     "grants": [
       "Athletics"
     ],
-    "specialAbility": "<p>Drilled: Weapon Familiarity free, +2 to your Weapons Proficiency Bonus with that group, and Reactive Strike without its requirements.</p>",
-    "description": "<p>Grants Training in Athletics, and 3 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "specialAbility": "<p>Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee.</p>",
+    "description": "<p>Grants Training in Athletics, and 3 Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "646e56ad26c2456d",
   "sort": 0,

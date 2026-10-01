@@ -1,6 +1,6 @@
 {
   "_id": "b4168c6adb11d957",
-  "name": "Sweeping Blow ◆◆",
+  "name": "Sweeping Blow ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "One attack roll against two creatures within your reach, resolved separately against each one's chosen Defense. Both count as a single attack for your multiple attack penalty.",
+    "effect": "One attack roll against two creatures within your reach, resolved separately against each one's chosen Defense. This Strike is <b>Weighted</b>.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "018dc0d2e8a4ecff",
   "sort": 0,

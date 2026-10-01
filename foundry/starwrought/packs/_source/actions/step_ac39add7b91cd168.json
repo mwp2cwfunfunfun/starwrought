@@ -7,13 +7,15 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Moving",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Defense & Recovery",
     "basic": true,
     "traits": [],
-    "description": "<p>Move 3 feet. Step has no Traits at all, which is the point: it never provokes reactions. You cannot Step into difficult terrain.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Move up to half your Speed. Step has no Traits at all, which is the point: it never provokes Intercepts or other Reactions. Stepping ends any Bind you are in (Close excepted). You cannot Step into difficult terrain.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "57b789ecf25288d5",
+  "folder": "d49adf8cbe5c4fad",
   "sort": 0,
   "ownership": {
     "default": 0

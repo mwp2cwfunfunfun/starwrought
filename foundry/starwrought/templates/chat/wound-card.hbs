@@ -1,0 +1,22 @@
+{{!-- A Wound landed: which Zone, how full it is, and what that does to the body. --}}
+<div class="starwrought action-card sw-wound-card">
+  <h3><i class="fa-solid fa-droplet"></i> {{localize "STARWROUGHT.Wound.title"}} · {{actor.name}}</h3>
+  {{#if reasons.length}}
+  <p class="sw-card-note">{{#each reasons as |r|}}{{r}}{{#unless @last}}; {{/unless}}{{/each}}</p>
+  {{/if}}
+  <ul class="sw-card-modifiers">
+    {{#each landed as |w|}}
+    <li>
+      <span>{{localize "STARWROUGHT.Wound.landed" zone=w.zoneLabel count=w.count capacity=w.capacity}}{{#if w.redirected}} · {{localize "STARWROUGHT.Wound.redirected" zone=w.fromLabel}}{{/if}}</span>
+      <strong>{{w.effect}}</strong>
+    </li>
+    {{#if w.bleed}}
+    <li><span>{{localize "STARWROUGHT.Wound.bleed"}}</span><strong>{{w.bleed}}</strong></li>
+    {{/if}}
+    {{/each}}
+  </ul>
+  <p class="sw-card-note">{{localize "STARWROUGHT.Wound.count" n=total}}</p>
+  {{#if dyingFrom}}
+  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Wound.dyingFrom" zone=dyingFrom value=dying}}</p>
+  {{/if}}
+</div>

@@ -5,7 +5,7 @@
   "author": null,
   "img": "icons/svg/heal.svg",
   "scope": "global",
-  "command": "// A Recovery check: Endure against 10 + your level + your Dying value.\nconst actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;\nif ( !actor ) ui.notifications.warn(\"Select a token, or set a player character.\");\nelse await actor.rollRecovery();",
+  "command": "// A Recovery check: Endure against 10 + your Dying value + the Wounds you carry.\nconst actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;\nif ( !actor ) ui.notifications.warn(\"Select a token, or set a player character.\");\nelse await actor.rollRecovery();",
   "folder": null,
   "sort": 0,
   "ownership": {

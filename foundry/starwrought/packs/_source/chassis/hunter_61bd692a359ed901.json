@@ -7,14 +7,14 @@
     "kind": "calling",
     "constellation": "hunter",
     "attribute": "wits",
-    "hp": 3,
+    "vigor": 3,
     "grants": [
       "Awareness"
     ],
-    "specialAbility": "<p>Mark Prey: +1d8 precision damage the first time each round you Hit your prey, and you always know roughly where it is.</p>",
-    "description": "<p>Grants Training in Awareness, and 3 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "specialAbility": "<p>Mark Prey ❶: +1d8 precision damage the first time each round you Hit your prey (2d8 at Expert, 3d8 at Master, 4d8 at Legendary), and you always know roughly where it is within 60 feet.</p>",
+    "description": "<p>Grants Training in Awareness, and 3 Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "646e56ad26c2456d",
   "sort": 0,

@@ -3,7 +3,7 @@
 # Recognized tree-sheet columns: Talent | Tier | Root | Requires | Prerequisites | Description | Effect | Feeds
 #                                Grants | Choice | Free Talent
 # Recognized index columns:      Tree | Category | Feeds | Flare (triggers) | Meta | Skills
-#   Ancestry rows may also carry: HP | Size | Speed | Senses | Summary
+#   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
 # Rich text in Description/Effect cells (b/i/u/strike/color) becomes HTML and mirrors everywhere.
 #
@@ -134,7 +134,12 @@ def header_map(ws, wanted):
                 m[key] = j - 1
     return m
 
-norm = lambda s: re.sub(r"[◆↺★\s]+$", "", s or "").strip()
+# Requires-matching strips the cost glyphs off a name: the v4.10 ⓿❶❷❸❹❺❻ and ↺ (with a bracketed
+# Reaction cost such as "Aid ❶ (⓿↺)"), the v3 ◆ and ◇, and the capstone star.
+GLYPH_CLASS = "◆◇↺★⓿❶❷❸❹❺❻"
+def norm(s):
+    s = re.sub(r"\(\s*[" + GLYPH_CLASS + r"\s]*\)", "", s or "")
+    return re.sub(r"(?:[" + GLYPH_CLASS + r"]|\s+(?:to|or)\s*(?=[" + GLYPH_CLASS + r"])|\s)+$", "", s).strip()
 
 # ---- Actions ---------------------------------------------------------------------------------
 # Recognised action-sheet columns (first word wins, order free):
@@ -144,14 +149,17 @@ norm = lambda s: re.sub(r"[◆↺★\s]+$", "", s or "").strip()
 # "1", "1 to 3", "reaction", "free". With no Cost column the glyphs in the Action name are read,
 # the way talent names are; with neither, the action costs one action and the converter says so.
 # A cell reading "None" is blank: the sheet's own way of saying an action has no prerequisite.
-COST_WORDS = {"reaction": "reaction", "free": "free", "passive": "0", "0": "0",
-              "1": "1", "2": "2", "3": "3", "one": "1", "two": "2", "three": "3"}
-ACTION_GLYPHS = re.compile(r"[◆◇↺★]")
+COST_WORDS = {"reaction": "reaction", "free": "0", "passive": "passive", "0": "0",
+              "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6",
+              "one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6"}
+ACTION_GLYPHS = re.compile(r"[◆◇↺★⓿❶❷❸❹❺❻]")
 
 def action_bare(s):
-    """Glyphs out, the trailing cost joiner (to/or) out, any run of whitespace to one space. The
-    same normalisation build_foundry.mjs applies (actionName), so the two agree on every name."""
-    s = re.sub(r"\s+(to|or)\s*$", "", ACTION_GLYPHS.sub("", s or ""))
+    """Glyphs out (a bracketed Reaction cost such as "(⓿↺)" with them), the trailing cost joiner
+    (to/or) out, any run of whitespace to one space. The same normalisation build_foundry.mjs
+    applies (actionName), so the two agree on every name."""
+    s = re.sub(r"\(\s*[◆◇↺★⓿❶❷❸❹❺❻\s]*\)", "", s or "")
+    s = re.sub(r"\s+(to|or)\s*$", "", ACTION_GLYPHS.sub("", s))
     return re.sub(r"\s+", " ", s).strip()
 
 action_key = lambda s: action_bare(s).lower()
@@ -161,28 +169,46 @@ def blank_none(s):
     s = (s or "").strip()
     return "" if s.lower() in ("", "none", "n/a", "-", "—") else s
 
+COST_TOKEN = re.compile(r"[⓿❶❷❸❹❺❻]|◆+|◇")
+def _token_value(tok):
+    if tok in ("⓿", "◇"): return 0
+    if tok[0] == "◆": return min(6, len(tok))
+    return "❶❷❸❹❺❻".index(tok) + 1
+
 def parse_cost(text):
-    """'◆ to ◆◆◆', '1 or 3', '↺', 'reaction' -> {cost, costMax, costMode}; None when it does not parse."""
+    """'❶ to ❸', '❶ or ❸', '⓿↺', '❶ (⓿↺)', '1 or 3', 'reaction' -> {cost, costMax, costMode,
+    reaction, reactionCost}; None when it does not parse. Costs are 0..6 as strings, "passive" for
+    a Talent with no cost at all; ↺ is the Reaction trait riding beside a cost (a bare ↺, the v3
+    form, is a free Reaction). The v3 ◆ (one action per diamond) and ◇ (free) still read."""
     t = (text or "").strip()
     if not t: return None
-    if "↺" in t: return {"cost": "reaction", "costMax": "", "costMode": "to"}
-    if "◇" in t: return {"cost": "free", "costMax": "", "costMode": "to"}
-    runs = re.findall(r"◆+", t)
-    if runs:
-        lo, hi = str(min(3, len(runs[0]))), str(min(3, len(runs[-1])))
-        # Only an "or" between two glyph runs is a cost joiner; one in the name ("Hold or Release
-        # ◆ to ◆◆◆") is not.
-        mode = "or" if re.search(r"◆\s*or\s*◆", t, re.I) else "to"
-        return {"cost": lo, "costMax": hi if (len(runs) > 1 and hi != lo) else "", "costMode": mode}
-    words = re.sub(r"\s*\bactions?\b", "", t.lower()).strip()
+    reaction = "↺" in t
+    reaction_cost = ""
+    m = re.search(r"\(([^)]*)\)", t)
+    if m and COST_TOKEN.search(m.group(1)):
+        inner = COST_TOKEN.findall(m.group(1))
+        if inner: reaction_cost = str(_token_value(inner[0]))
+        t = t.replace(m.group(0), " ")
+    tokens = COST_TOKEN.findall(t)
+    if tokens:
+        lo, hi = str(_token_value(tokens[0])), str(_token_value(tokens[-1]))
+        # Only an "or" between two glyphs is a cost joiner; one in the name ("Hold or Release
+        # ❶ to ❸") is not.
+        mode = "or" if re.search(r"(?:[⓿❶❷❸❹❺❻◇]|◆+)\s*or\s*(?:[⓿❶❷❸❹❺❻◇]|◆+)", t, re.I) else "to"
+        return {"cost": lo, "costMax": hi if (len(tokens) > 1 and hi != lo) else "", "costMode": mode,
+                "reaction": reaction, "reactionCost": reaction_cost}
+    words = re.sub(r"\s*\bactions?\b", "", t.lower()).replace("↺", "").strip()
+    if not words and reaction:
+        return {"cost": "0", "costMax": "", "costMode": "to", "reaction": True, "reactionCost": ""}
     parts = re.split(r"\s+(to|or)\s+", words)
     if len(parts) == 1:
         c = COST_WORDS.get(parts[0])
-        return {"cost": c, "costMax": "", "costMode": "to"} if c else None
+        if c == "reaction": return {"cost": "0", "costMax": "", "costMode": "to", "reaction": True, "reactionCost": ""}
+        return {"cost": c, "costMax": "", "costMode": "to", "reaction": reaction, "reactionCost": ""} if c else None
     if len(parts) == 3:
         lo, join, hi = COST_WORDS.get(parts[0]), parts[1], COST_WORDS.get(parts[2])
-        if lo is None or hi is None: return None
-        return {"cost": lo, "costMax": hi if hi != lo else "", "costMode": join}
+        if lo is None or hi is None or "reaction" in (lo, hi): return None
+        return {"cost": lo, "costMax": hi if hi != lo else "", "costMode": join, "reaction": reaction, "reactionCost": ""}
     return None
 
 def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
@@ -226,11 +252,11 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
                 cost = parse_cost(cost_text)
                 if cost is None:
                     errors.append(f"{fname} / {ws.title} / {name}: Cost '{cost_text}' not understood "
-                                  f"(◆, ◆◆, ◆◆◆, ◇, ↺, '◆ to ◆◆◆', '1 or 3', reaction, free)"); continue
+                                  f"(❶, ❷, ❸, ⓿, ↺, '❶ to ❸', '1 or 3', reaction, free; the v3 ◆ and ◇ also read)"); continue
             else:
                 cost = parse_cost(raw) if ACTION_GLYPHS.search(raw) else None
             defaulted = cost is None
-            if defaulted: cost = {"cost": "1", "costMax": "", "costMode": "to"}
+            if defaulted: cost = {"cost": "1", "costMax": "", "costMode": "to", "reaction": False, "reactionCost": ""}
             # The rich-text cells are read through their plain text first, so an Effect of "None"
             # is an empty Effect and a Description of "None" ships blank.
             effect = cell_html(cellv("effect")) if pv("effect") else ""
@@ -252,7 +278,7 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
         if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
     if no_cost:
         warnings.append(f"{fname}: no Cost column on {', '.join(no_cost)}; an action with no glyph in its "
-                        f"name costs one action ◆ until the column exists")
+                        f"name costs one action ❶ until the column exists")
 
 # ---- Mike's root rule (v0.38) ----------------------------------------------------------------
 # Every root (constellation root and heritage root alike) must (1) hang on something that gets
@@ -312,14 +338,16 @@ def main():
             if "Languages" in wb.sheetnames:
                 parse_lang_sheet(wb["Languages"], langs, warnings, fname)
             if "Backgrounds" not in wb.sheetnames and "Languages" not in wb.sheetnames:
-                warnings.append(f"{fname}: no '_Tree Index' sheet — file skipped")
+                warnings.append(f"{fname}: no '_Tree Index' sheet; file skipped")
             continue
         idx = wb["_Tree Index"]
+        # "Vigor" is the v4.10 name for the per-level chassis number; "HP" still reads.
         im = header_map(idx, {"tree": "tree", "cat": "categ", "feeds": "feeds", "sparks": "flare",
-                              "meta": "meta", "skills": "skills", "hp": "hp", "size": "size",
-                              "speed": "speed", "senses": "senses", "summary": "summary"})
+                              "meta": "meta", "skills": "skills", "hp": "hp", "vigor": "vigor", "size": "size",
+                              "speed": "speed", "senses": "senses", "summary": "summary", "parent": "parent"})
+        if "vigor" in im and "hp" not in im: im["hp"] = im["vigor"]
         if "tree" not in im or "cat" not in im:
-            warnings.append(f"{fname}: _Tree Index needs at least 'Tree' and 'Category' columns — file skipped"); continue
+            warnings.append(f"{fname}: _Tree Index needs at least 'Tree' and 'Category' columns; file skipped"); continue
         indexed, n_before = set(), len(out)
         for row in idx.iter_rows(min_row=2):
             g = lambda k: plain(row[im[k]]) if k in im and len(row) > im[k] else ""
@@ -340,7 +368,7 @@ def main():
                 if category == "Background" and "Backgrounds" in wb.sheetnames:
                     indexed.add(name)  # lives in the Backgrounds table, handled below
                 else:
-                    warnings.append(f"{fname} / {name}: in _Tree Index but no worksheet yet — skipped")
+                    warnings.append(f"{fname} / {name}: in _Tree Index but no worksheet yet; skipped")
                 continue
             indexed.add(name); sources[name] = fname
             ws = wb[name]
@@ -391,7 +419,7 @@ def main():
                     if feeds_o not in ATTRS: errors.append(f"{name} / {nname}: bad Feeds '{feeds_o}'")
                     elif feeds_o != feeds: node["feeds"] = feeds_o
                 elif feeds_o.upper() == "TBD":
-                    warnings.append(f"{name} / {nname}: Feeds 'TBD' — point feeds no attribute until set")
+                    warnings.append(f"{name} / {nname}: Feeds 'TBD'; the point feeds no attribute until set")
                 if is_root:
                     node["root"] = True; root_count += 1; root_name = nname
                 elif is_hroot:
@@ -407,7 +435,7 @@ def main():
             # the engine enforces root-first regardless of whether a talent lists it.
             if root_count != 1:
                 errors.append(f"{name}: needs exactly 1 root (has {root_count})"
-                              + (" — identity-tree roots are granted by the chargen choice, but still mark one" if category in IDENTITY else ""))
+                              + (" (identity-tree roots are granted by the chargen choice, but still mark one)" if category in IDENTITY else ""))
             names = {norm(n["name"]) for n in nodes}
             for n in nodes:
                 for rq in n.get("requires", []):
@@ -419,17 +447,22 @@ def main():
                 hp = g("hp")
                 hers = [[n["name"], n["effect"]] for n in nodes if n.get("hroot")]
                 if not hp.isdigit():
-                    errors.append(f"{fname} / {name}: Ancestry HP must be a whole number (got '{hp}')")
+                    errors.append(f"{fname} / {name}: Ancestry Vigor must be a whole number (got '{hp}')")
                 elif not hers:
                     errors.append(f"{fname} / {name}: Ancestry has chassis columns but no bloodline roots ('h')")
                 else:
-                    chassis.append({"name": name, "hp": int(hp), "size": g("size") or "Medium",
-                                    "speed": g("speed") or "25 ft", "senses": g("senses") or "—",
+                    # `vigor` is the v4.10 key; `hp` is kept one release for readers not yet moved.
+                    chassis.append({"name": name, "vigor": int(hp), "hp": int(hp), "size": g("size") or "Medium",
+                                    "speed": g("speed") or "6 ft", "senses": g("senses") or "—",
                                     "tree": name, "blurb": g("summary"), "bloodlines": hers})
                     if not meta_extra:  # derive the display line when the sheet leaves it blank
-                        bits = [g("size"), f"{hp} HP", g("speed")] + ([g("senses").lower()] if g("senses") not in ("", "—") else [])
+                        bits = [g("size"), f"Vigor {hp}", g("speed")] + ([g("senses").lower()] if g("senses") not in ("", "—") else [])
                         meta_extra = " • ".join(b for b in bits if b)
+            # A parent Constellation (v4.10): every Talent bought here also counts toward the
+            # parent's rank. Melee and Ranged are the parents; the Combat Styles name one of them.
+            parent = g("parent")
             out[name] = {"category": category, "feeds": feeds, **({"skills": cskills} if cskills else {}),
+                         **({"parent": parent} if parent else {}),
                          "meta": f"{label} • {feeds or '—'}" + (f" ({meta_extra})" if meta_extra else ""),
                          "sparks": g("sparks"), "nodes": nodes}
         if "Backgrounds" in wb.sheetnames:
@@ -447,6 +480,15 @@ def main():
             ft = n.get("freeTalent")
             if ft and norm(ft) not in everywhere:
                 errors.append(f"{tname} / {n['name']}: Free Talent names no talent in the book: '{ft}'")
+        # A Parent must be a tree in the book, and a parent has no parent of its own.
+        par = tree.get("parent")
+        if par:
+            if par not in out:
+                errors.append(f"{tname}: Parent names no Constellation in the book: '{par}'")
+            elif out[par].get("parent"):
+                errors.append(f"{tname}: Parent '{par}' has a parent of its own; only one level of inheritance")
+            elif par == tname:
+                errors.append(f"{tname}: a Constellation cannot be its own Parent")
     for w in warnings: print("WARNING:", w)
     if errors:
         print("VALIDATION ERRORS:"); [print("  -", e) for e in errors]; sys.exit(1)
@@ -467,6 +509,9 @@ def main():
         defaulted = [a["name"] for a in actions if a["costDefaulted"]]
         print(f"wrote {AOUT}: {len(actions)} actions from {', '.join(action_files)}"
               + (f" ({len(defaulted)} with no Cost given, costed at one action: {', '.join(defaulted)})" if defaulted else ""))
+    elif os.path.exists(AOUT):
+        # Printed directly: the warnings list was flushed above, so appending to it here would say nothing.
+        print(f"WARNING: no actions workbook in data/; {AOUT} left as found. It is generated from data/actions.xlsx, not hand-kept.")
     # Patch ONLY the ancestries block of roster.json; cultures/weapons/conditions/etc. stay hand-kept.
     # Guarded: an empty parse (chassis columns removed from ancestries.xlsx, or no ancestries workbook
     # in data/ at all) leaves the file alone rather than blanking chargen. A workbook open in Excel is

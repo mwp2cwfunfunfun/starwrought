@@ -1,6 +1,6 @@
 {
   "_id": "ee0b1f0009cf4a74",
-  "name": "Shoulder Check ◆",
+  "name": "Shoulder Check ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "You hit a foe with your armor to throw them off balance. Make a fist Strike even if you don't have a hand free; if you're wielding a gauntlet or spiked gauntlet, you can make a Strike with one of those weapons instead. The Strike gains the following additional results:<br>Critical Success The target is Wrong-Footed for you until the end of your next turn.<br>Success The target is Wrong-Footed for you against the next Attack you attempt against it before the end of your current turn.<br>Critical Failure You are Wrong-Footed against melee attacks the target attempts against you until the end of your next turn.",
+    "effect": "You hit a foe with your armor to throw them off balance. Make a fist Strike even if you don't have a hand free; if you're wielding a gauntlet or spiked gauntlet, you can make a Strike with one of those weapons instead. The Strike gains the following additional results:<br><b>Critical Success</b> The target is Wrong-Footed for you until the end of the next round.<br><b>Success</b> The target is Wrong-Footed for you against the next Attack you attempt against it before the end of your next Opportunity.<br><b>Critical Failure</b> You are Wrong-Footed against melee attacks the target attempts against you until the end of the next round.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "44d6df065b4c25a0",
   "sort": 0,

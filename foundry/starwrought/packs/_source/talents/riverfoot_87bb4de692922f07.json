@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Stride each encounter is 5 feet longer.",
+    "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "d11b952536b11224",
   "sort": 0,

@@ -15,9 +15,11 @@
     "attribute": "",
     "effect": "You are Trained in this Lore: add the Constellation's rank to its checks. Recall and research within its field; you know its people, texts, and secrets. Every talent here requires this.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "f59506a3bbc6d7ef",
   "sort": 0,

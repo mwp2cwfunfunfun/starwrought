@@ -1,6 +1,6 @@
 {
   "_id": "6528d85d31664a90",
-  "name": "Set Against the Charge ↺",
+  "name": "Set Against the Charge",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger A creature moves into your reach.<br>Effect Strike it. If it entered from outside your reach, your weapon deals +2 damage per weapon die.",
+    "effect": "When you Intercept with a Spear &amp; Polearm weapon, it deals +2 damage per weapon die. Set, the spear is at its most dangerous the moment the enemy arrives.",
     "description": "",
-    "cost": "reaction",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e6deec17c276985e",
   "sort": 0,

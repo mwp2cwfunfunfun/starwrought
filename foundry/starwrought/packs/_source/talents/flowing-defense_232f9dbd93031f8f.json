@@ -1,6 +1,6 @@
 {
   "_id": "232f9dbd93031f8f",
-  "name": "Flowing Defense ◆",
+  "name": "Flowing Defense ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Flowing Defense ◆ (stance)<br>While wearing Full Mail: when you Recenter, you may also Step 3 feet; −1 status penalty to Guard for physical Attacks versus Shove; retains mail's normal vulnerability to piercing.",
+    "effect": "<b>Flowing Defense ❶ Stance</b><br>While wearing Full Mail:<br>when you Recenter, you may also Step;<br>-1 Condition Physical Guard versus Shove<br>retains mail's normal vulnerability to piercing",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "44d6df065b4c25a0",
   "sort": 0,

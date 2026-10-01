@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You may Mark Prey as part of a Stride rather than spending an action.",
+    "effect": "You may Mark Prey as part of a Move rather than spending an action.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ae92852dbc6da00d",
   "sort": 0,

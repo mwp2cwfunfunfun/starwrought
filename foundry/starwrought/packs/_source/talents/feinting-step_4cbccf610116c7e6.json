@@ -1,6 +1,6 @@
 {
   "_id": "4cbccf610116c7e6",
-  "name": "Feinting Step ◆",
+  "name": "Feinting Step ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -20,6 +20,8 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9b627d432ecf1771",
   "sort": 0,

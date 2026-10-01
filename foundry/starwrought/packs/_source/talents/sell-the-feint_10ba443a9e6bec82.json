@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you critically succeed at a Feint, the target is Off-Guard to everyone, not just you, until the end of your next turn.",
+    "effect": "When you critically succeed at a Feint, the target is off-guard to everyone, not just you, until the end of the next round.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9b627d432ecf1771",
   "sort": 0,

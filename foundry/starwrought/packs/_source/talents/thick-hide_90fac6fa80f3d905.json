@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "While you are Raging, every Zone on you has +1 Protection, including Zones with no armor at all. An Exposed Zone still counts as 0.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "71886e4f2559caea",
   "sort": 0,

@@ -7,13 +7,15 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Defending & recovering",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Defense & Recovery",
     "basic": true,
     "traits": [],
-    "description": "<p>Requirements You have Cover, or Greater Cover, or are wielding a tower shield.<br>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step, or Attack.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Requirements You have Cover, or Greater Cover, or are wielding a tower shield.<br>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step or Attack.<br><b>Special</b> A raised tower shield gives you Cover with nothing to get behind, so Taking Cover behind one gives you Greater Cover.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "4068fcccad329588",
+  "folder": "d49adf8cbe5c4fad",
   "sort": 0,
   "ownership": {
     "default": 0

@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "Once per encounter, after you roll a Defense but before the outcome is announced, you may add your Wits to that roll.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "13ade0bba9c4a91f",
   "sort": 0,

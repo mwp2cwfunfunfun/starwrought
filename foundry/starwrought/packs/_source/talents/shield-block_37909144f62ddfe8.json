@@ -1,6 +1,6 @@
 {
   "_id": "37909144f62ddfe8",
-  "name": "Shield Block ↺",
+  "name": "Shield Block ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "Reduce an attack's damage to you by your shield's hardness.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1da194ae4f8cc3d7",
   "sort": 0,

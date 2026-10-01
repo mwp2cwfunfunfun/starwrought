@@ -4,7 +4,9 @@
  * Talents reference their Constellation by slug, and a slug has to resolve to a Key Attribute
  * before any arithmetic can happen. The shipped index gives us that at init, before compendia are
  * readable; the compendium and the world then override it, so a GM's homebrew Constellation Item
- * wins over the printed one of the same slug.
+ * wins over the printed one of the same slug. Since PHB v4.10 an entry also carries `parent`: the
+ * slug of the Constellation whose rank its Talents count toward (Melee or Ranged for a Combat
+ * Style, blank for everything else).
  */
 
 import * as SW from "../config.mjs";
@@ -19,7 +21,9 @@ export const rulesVersion = { phb: null, syncedOn: null, constellations: 0, tale
 export async function loadConstellationIndex() {
   try {
     const response = await foundry.utils.fetchJsonWithTimeout(INDEX_PATH);
-    for (const entry of response ?? []) SW.registerConstellation(entry);
+    for (const entry of response ?? []) {
+      SW.registerConstellation({ ...entry, parent: entry.parent ?? "" });
+    }
     console.log(`STARWROUGHT | Registered ${Object.keys(SW.constellations).length} Constellations.`);
   } catch (error) {
     console.warn("STARWROUGHT | Could not read the shipped Constellation index.", error);
@@ -42,13 +46,18 @@ export async function loadConstellationIndex() {
 export async function refreshConstellationRegistry() {
   const pack = game.packs.get(`${SW.SYSTEM_ID}.constellations`);
   if (pack) {
-    const index = await pack.getIndex({ fields: ["system.slug", "system.category", "system.attribute"] });
+    // The index is raw stored data, so a pack built as `system.parent` (before the field was
+    // renamed for the data model, whose own `parent` is the Item) is read under either name.
+    const index = await pack.getIndex({
+      fields: ["system.slug", "system.category", "system.attribute", "system.parentSlug", "system.parent"]
+    });
     for (const entry of index) {
       SW.registerConstellation({
         slug: entry.system?.slug || SW.slugify(entry.name),
         name: entry.name,
         category: entry.system?.category ?? "general",
         attribute: entry.system?.attribute ?? "might",
+        parent: entry.system?.parentSlug || entry.system?.parent || "",
         img: entry.img,
         uuid: entry.uuid
       });
@@ -56,15 +65,29 @@ export async function refreshConstellationRegistry() {
   }
   for (const item of game.items ?? []) {
     if (item.type !== "constellation") continue;
+    const slug = item.system.slug || SW.slugify(item.name);
     SW.registerConstellation({
-      slug: item.system.slug || SW.slugify(item.name),
+      slug,
       name: item.name,
       category: item.system.category,
       attribute: item.system.attribute,
+      // A world copy that predates the field (0.3.7) stores "" here; blank is silent, not "no
+      // parent", so it falls back to what the index or the pack already registered.
+      parent: item.system.parentSlug || SW.constellations[slug]?.parent || "",
       img: item.img,
       uuid: item.uuid
     });
   }
+}
+
+/**
+ * The registered Constellations whose Talents count toward the named parent's rank.
+ * @param {string} slug  A parent's slug (SW.MELEE_SLUG, SW.RANGED_SLUG).
+ * @returns {string[]}   Child slugs.
+ */
+export function childrenOf(slug) {
+  if (!slug) return [];
+  return Object.values(SW.constellations).filter(c => c.parent === slug).map(c => c.slug);
 }
 
 /* -------------------------------------------- */
@@ -106,10 +129,6 @@ export function invalidateBasicActions() {
 /* -------------------------------------------- */
 
 /**
- * Are the shipped compendium packs actually populated? A fresh clone of the repository ships the
- * pack sources as JSON and needs a build step, so say so plainly rather than failing quietly.
- */
-/**
  * STARWROUGHT measures diagonals exactly, and that is a property of the system rather than of any
  * one scene: the Scene document has no diagonals field, so the rule comes from the manifest and
  * applies to every grid Foundry builds. This only fires if the manifest has been edited by hand.
@@ -120,6 +139,10 @@ export function checkSceneGrid() {
   ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.diagonals"));
 }
 
+/**
+ * Are the shipped compendium packs actually populated? A fresh clone of the repository ships the
+ * pack sources as JSON and needs a build step, so say so plainly rather than failing quietly.
+ */
 export async function checkContent() {
   if (!game.user.isGM) return;
   const pack = game.packs.get(`${SW.SYSTEM_ID}.talents`);

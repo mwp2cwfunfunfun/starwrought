@@ -1,0 +1,12 @@
+{{!-- The Bind this actor is in: neutral, Controlling, or Controlled. Context: bindContext(). --}}
+<div class="sw-bind sw-bind-{{state}}">
+  <img class="sw-bind-icon" src="{{img}}" alt="{{conditionLabel}}">
+  <span class="sw-bind-state">{{conditionLabel}}</span>
+  <span class="sw-bind-text">{{text}}</span>
+  {{#if @root.editable}}
+  <button type="button" class="sw-inline-button" data-action="endBind"
+          data-tooltip="{{localize 'STARWROUGHT.Bind.endHint'}}">
+    <i class="fa-solid fa-link-slash"></i> {{localize "STARWROUGHT.Bind.end"}}
+  </button>
+  {{/if}}
+</div>

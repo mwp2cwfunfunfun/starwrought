@@ -15,9 +15,11 @@
     "attribute": "wits",
     "effect": "You gain 1 Opening Talent Point.",
     "description": "<p>Some humans refuse to be one thing; you are a whole toolbox wearing boots.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 1,
       "mode": "open",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,

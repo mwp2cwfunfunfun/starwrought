@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "3",
     "costMode": "to",
-    "category": "Attacking",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack",
     "basic": true,
     "traits": [
       "Attack"
     ],
-    "description": "<p>Attack with a weapon or an unarmed blow. Roll Weapons against Evade or Guard, and deal damage and effects as normal.<br><b>◆◆</b> A deliberate attack. On a critical hit, you may Expose a plausible zone. <b>◆◆◆</b> A committed attack. On a hit or a critical hit, you may Expose a plausible zone.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Attack with a weapon or an unarmed blow. Roll Melee (or Ranged, for a weapon that leaves your hand) against Evade or Guard, and deal damage and effects as normal. The actions you spend say how much of yourself is behind the blow (see Chapter 2: The Exchange).<br><b>❶ Quick.</b> A probe: one weapon die plus precision damage, nothing else, on the Torso. It cannot Critically Hit (Agile weapons excepted) and Protection applies in full even to an Exposed Zone. Stopped, it costs you nothing and can only be bound, never Controlled.<br><b>❷ Deliberate.</b> All dice, specialization, and your Might. It may be placed on an Exposed Zone, and on a Critical Hit you may Expose a plausible Zone. A Graze costs only the tempo; on a Miss you are Exposed. A Parry that Stops it takes Control.<br><b>❸ Committed.</b> Prepared. All dice, specialization, and your Might. On a Hit or Critical Hit, you may Expose a plausible Zone. Weighted: Stopped, Graze or Miss, you are Exposed. A Parry that Stops it takes Control.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "31a74ef61055ca21",
+  "folder": "606d6a9c20d0b726",
   "sort": 0,
   "ownership": {
     "default": 0

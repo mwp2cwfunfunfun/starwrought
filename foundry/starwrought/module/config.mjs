@@ -28,7 +28,12 @@ export const ATTRIBUTES = Object.freeze({
   presence: { label: "STARWROUGHT.Attribute.presence", abbr: "STARWROUGHT.Attribute.presenceAbbr", glyph: "✦" }
 });
 
-export const ATTRIBUTE_DIVISOR = 3;
+/**
+ * Attribute Bonus = Attribute Points ÷ 4, rounded down (PHB v4.10: 0-3 is +0, 4-7 is +1, 8-11 is +2,
+ * every 4 more is +1 more). The +5 cap is the Key Terms sentence, kept until the book repeals it
+ * (v4.10 sync report, ruling 1).
+ */
+export const ATTRIBUTE_DIVISOR = 4;
 export const ATTRIBUTE_MAX = 5;
 
 /**
@@ -48,12 +53,14 @@ export function attributeBonus(points) {
  * Proficiency Ranks. `points` is the minimum spend in the Constellation, `level` the minimum
  * character level. Both gates must be met.
  */
+// PHB v4.10: the Proficiency Bonus is the whole of a check's training term; level never touches
+// the die. Trained +3, Expert +6, Master +9, Legendary +12, gated at levels 1 / 5 / 10 / 15.
 export const RANKS = Object.freeze({
   untrained: { label: "STARWROUGHT.Rank.untrained", abbr: "U", bonus: 0, points: 0, level: 0, order: 0 },
-  trained: { label: "STARWROUGHT.Rank.trained", abbr: "T", bonus: 4, points: 1, level: 1, order: 1 },
-  expert: { label: "STARWROUGHT.Rank.expert", abbr: "E", bonus: 7, points: 4, level: 5, order: 2 },
-  master: { label: "STARWROUGHT.Rank.master", abbr: "M", bonus: 10, points: 9, level: 13, order: 3 },
-  legendary: { label: "STARWROUGHT.Rank.legendary", abbr: "L", bonus: 13, points: 16, level: 19, order: 4 }
+  trained: { label: "STARWROUGHT.Rank.trained", abbr: "T", bonus: 3, points: 1, level: 1, order: 1 },
+  expert: { label: "STARWROUGHT.Rank.expert", abbr: "E", bonus: 6, points: 4, level: 5, order: 2 },
+  master: { label: "STARWROUGHT.Rank.master", abbr: "M", bonus: 9, points: 9, level: 10, order: 3 },
+  legendary: { label: "STARWROUGHT.Rank.legendary", abbr: "L", bonus: 12, points: 16, level: 15, order: 4 }
 });
 
 /** Rank keys in ascending order. */
@@ -163,16 +170,98 @@ export const DEFENSES = Object.freeze({
   }
 });
 
-/** The Constellation slug every attack roll uses. */
 /**
  * The version this code was shipped as. Foundry reads system.json on the server, so
  * `game.system.version` is always the server's; if this disagrees with it, the browser is running
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.3.7";
+export const SYSTEM_VERSION = "0.4.0";
 
+/**
+ * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
+ * Ranged for anything that leaves it, a thrown dagger included. Every Combat Style is a child of
+ * one of them, and a child's Talents count toward the parent's rank (rank only: the parent's own
+ * Talents must still be bought, and Attribute Points are never counted twice).
+ */
+export const MELEE_SLUG = "melee";
+export const RANGED_SLUG = "ranged";
+/** @deprecated v3.4 had one Weapons Constellation. Kept for the migration of old Talents. */
 export const WEAPONS_SLUG = "weapons";
+
+/**
+ * Talents the book moved between Constellations, keyed by the slug of their bare name. An owned
+ * copy keeps its document id and is filed where the book now prints it (PHB v4.10: Loose and Move
+ * left Archery for Ranged).
+ */
+export const MOVED_TALENTS = Object.freeze({
+  "loose-and-move": { from: "archery", to: RANGED_SLUG }
+});
+
+/**
+ * The four kinds of threat and the two Defenses that answer each (PHB v4.10, The Four Threats).
+ * Guard answers a ranged Blow only with a shield Raised.
+ */
+export const THREATS = Object.freeze({
+  blow: { label: "STARWROUGHT.Threat.blow", defenses: ["evade", "guard"] },
+  blast: { label: "STARWROUGHT.Threat.blast", defenses: ["evade", "endure"] },
+  blight: { label: "STARWROUGHT.Threat.blight", defenses: ["endure", "awareness"] },
+  beguilement: { label: "STARWROUGHT.Threat.beguilement", defenses: ["awareness", "guard"] }
+});
+
+/**
+ * The three Strikes (PHB v4.10, The Exchange). The count of actions is a statement about how much
+ * of yourself is behind the blow.
+ *  - Quick ❶: one weapon die plus precision, nothing else; cannot Critically Hit unless the weapon
+ *    is Agile (a natural 20 is a Hit); lands on the Torso; full Protection even on an Exposed Zone;
+ *    Stopped, it forms at most a neutral Bind and is never Controlled; a Miss Exposes you whatever
+ *    the Strike (The Result).
+ *  - Deliberate ❷: all dice, specialization and Might; may be placed on an Exposed Zone; a Critical
+ *    Hit lets the attacker Expose a plausible Zone; a Miss Exposes the attacker (defender's choice
+ *    of Zone); a Parry that Stops it takes Control.
+ *  - Committed ❸: Prepared (one action now, two reserved, resolves at the next Opportunity); all
+ *    dice; on any Hit may Expose a plausible Zone; Weighted: Stopped at all (Graze or Miss) Exposes
+ *    the attacker; a Parry that Stops it takes Control.
+ */
+export const STRIKE_KINDS = Object.freeze({
+  quick: {
+    label: "STARWROUGHT.Strike.quick", cost: 1, full: false, canCrit: false, agileCanCrit: true,
+    placeOnExposed: false, ignoresExposedProtection: false, exposeOnMiss: true, weighted: false,
+    prepared: false, controllable: false
+  },
+  deliberate: {
+    label: "STARWROUGHT.Strike.deliberate", cost: 2, full: true, canCrit: true, agileCanCrit: true,
+    placeOnExposed: true, ignoresExposedProtection: true, exposeOnMiss: true, weighted: false,
+    prepared: false, controllable: true
+  },
+  committed: {
+    label: "STARWROUGHT.Strike.committed", cost: 3, full: true, canCrit: true, agileCanCrit: true,
+    placeOnExposed: true, ignoresExposedProtection: true, exposeOnMiss: true, weighted: true,
+    prepared: true, controllable: true
+  }
+});
+export const DEFAULT_STRIKE = "deliberate";
+
+/**
+ * The Reactions the Exchange names (PHB v4.10, Answering an Attack). Each is granted by a Talent
+ * (the Training root of the named Constellation) and paid from the same six actions.
+ */
+export const REACTIONS = Object.freeze({
+  parry: { label: "STARWROUGHT.Reaction.parry", cost: 1, defense: "guard", bonus: 2, talent: "guard", rigid: true },
+  void: { label: "STARWROUGHT.Reaction.void", cost: 1, defense: "evade", bonus: 2, talent: "evade", rigid: false },
+  counter: { label: "STARWROUGHT.Reaction.counter", cost: 1, defense: null, bonus: 0, talent: MELEE_SLUG, rigid: false },
+  intercept: { label: "STARWROUGHT.Reaction.intercept", cost: 1, defense: null, bonus: 0, talent: MELEE_SLUG, rigid: false },
+  posture: { label: "STARWROUGHT.Reaction.posture", cost: 0, defense: null, bonus: 0, talent: null, rigid: false }
+});
+
+/** Support: +1 Situation to melee attacks per other conscious ally whose Total Reach includes the target, to this maximum. */
+export const SUPPORT_MAX = 2;
+/** Evading a Graze gives this much ground, directly away from the attacker. */
+export const GIVE_GROUND_FEET = 3;
+/** The Parry weapon trait: a Gear bonus to Guard against melee Attacks while wielded (PHB v4.10). */
+export const PARRY_GUARD_BONUS = 1;
+/** The Situation penalty to attacks with a weapon someone else Controls, and to attacks by a Controlled Arm's owner. */
+export const CONTROLLED_PENALTY = -2;
 
 /* -------------------------------------------- */
 /*  Zones, Protection, and materials             */
@@ -188,13 +277,28 @@ export const ZONES = Object.freeze({
 
 export const DEFAULT_ZONE = "torso";
 
-/** The Critical Hit effect of each Zone, and the extra Wounded it deals when Exposed. */
+/**
+ * The Critical Hit effect of each Zone (until the target Recenters), and the Wound the Zone
+ * carries: its critical effect made lasting (PHB v4.10, Wounds). `first` is every Wound short of
+ * the last; `final` is what fills the Zone's capacity. Torso and Head final Wounds are Dying.
+ */
 export const ZONE_CRITICALS = Object.freeze({
-  head: { effect: "STARWROUGHT.ZoneCrit.head", wounded: 3 },
-  torso: { effect: "STARWROUGHT.ZoneCrit.torso", wounded: 2 },
-  arms: { effect: "STARWROUGHT.ZoneCrit.arms", wounded: 1 },
-  legs: { effect: "STARWROUGHT.ZoneCrit.legs", wounded: 1 }
+  head: { effect: "STARWROUGHT.ZoneCrit.head", first: "STARWROUGHT.Wound.headFirst", final: "STARWROUGHT.Wound.headFinal", finalDying: true },
+  torso: { effect: "STARWROUGHT.ZoneCrit.torso", first: "STARWROUGHT.Wound.torsoFirst", final: "STARWROUGHT.Wound.torsoFinal", finalDying: true },
+  arms: { effect: "STARWROUGHT.ZoneCrit.arms", first: "STARWROUGHT.Wound.armsFirst", final: "STARWROUGHT.Wound.armsFinal", finalDying: false },
+  legs: { effect: "STARWROUGHT.ZoneCrit.legs", first: "STARWROUGHT.Wound.legsFirst", final: "STARWROUGHT.Wound.legsFinal", finalDying: false }
 });
+
+/**
+ * How many Wounds a Zone carries before its final effect (PHB v4.10, Wound capacity): Medium or
+ * smaller 2, Large 3, Huge 4, Gargantuan 5. A creature template may add to it (`system.woundBonus`).
+ */
+export const WOUND_CAPACITY = Object.freeze({
+  tiny: 2, small: 2, medium: 2, large: 3, huge: 4, gargantuan: 5
+});
+
+/** The first Torso Wound bleeds. */
+export const TORSO_WOUND_BLEED = "1d4";
 
 /** Physical damage types. */
 export const PHYSICAL_DAMAGE = Object.freeze(["bludgeoning", "piercing", "slashing"]);
@@ -285,28 +389,27 @@ export const WEAPON_GROUPS = Object.freeze([
 ]);
 
 /**
- * Weapon damage dice by character level: two dice at 4th, three at 12th, four at 19th.
+ * Weapon damage dice by character level (PHB v4.10): two dice at 4th, three at 8th, four at 12th,
+ * five at 16th. A Quick Strike and a Graze roll one die whatever the level.
  * @param {number} level
  * @returns {number}
  */
 export function weaponDice(level) {
   level = Number(level) || 1;
-  if (level >= 19) return 4;
-  if (level >= 12) return 3;
+  if (level >= 16) return 5;
+  if (level >= 12) return 4;
+  if (level >= 8) return 3;
   if (level >= 4) return 2;
   return 1;
 }
 
-/** Weapon specialization damage by Weapons rank: +2 Expert, +3 Master, +4 Legendary. */
+/** Weapon specialization damage by Melee or Ranged rank: +2 Expert, +3 Master, +4 Legendary. */
 export const SPECIALIZATION = Object.freeze({
   untrained: 0, trained: 0, expert: 2, master: 3, legendary: 4
 });
 
-/** Multiple Attack Penalty. Agile weapons use the second column. */
-export const MAP = Object.freeze({
-  standard: [0, -5, -10],
-  agile: [0, -4, -8]
-});
+// There is no Multiple Attack Penalty in v4.10. Tempo is paid in actions: six a round, spread
+// across Opportunities, and a Reaction costs the same actions an attack does.
 
 /**
  * Load Strain reduction from your Endure rank, once you own Endure Training. Trained buys none of
@@ -377,48 +480,145 @@ export function invertDegree(degree) {
 
 export const DYING_MAX = 5;
 export const HERO_POINTS_MAX = 3;
+/** The Recovery check while Dying: Endure against 10 + Dying value + Wounds carried. */
+export const RECOVERY_BASE = 10;
+/** Treating a Wound: ten minutes and an Endure check against 10 + the Wounds the patient carries. */
+export const TREAT_WOUND_BASE = 10;
 
 /* -------------------------------------------- */
-/*  Actions                                     */
+/*  Actions: six a round                        */
 /* -------------------------------------------- */
 
-/** Action costs and the glyphs the handbook prints for them. */
+/**
+ * PHB v4.10: every combatant receives six actions at the start of each round; they expire at the
+ * end of it. Play cycles through the initiative order and each visit is an Opportunity: one
+ * Maneuver you can afford, or Pass. A full circuit of Passes ends the round. Reactions are paid
+ * from the same six. A Maneuver of three or more actions is Prepared: one action now, the rest
+ * reserved, resolved at your next Opportunity.
+ */
+export const ACTIONS_PER_ROUND = 6;
+/** A Maneuver costing this many actions or more is Prepared. */
+export const PREPARED_THRESHOLD = 3;
+
+/** The action glyphs the handbook prints (PHB v4.10, Symbols). ⓿ is free; ↺ marks the Reaction trait. */
+export const ACTION_GLYPHS = Object.freeze({
+  0: "⓿", 1: "❶", 2: "❷", 3: "❸", 4: "❹", 5: "❺", 6: "❻"
+});
+export const REACTION_GLYPH = "↺";
+
+/**
+ * Action costs. `passive` is a Talent that is not something you do (no glyph at all); `0` is a
+ * free Maneuver ⓿, which never uses up your Opportunity. The Reaction trait is a separate flag on
+ * the Item (`system.reaction`), since a Reaction has a cost of its own: Parry is ❶↺, a Posture ⓿↺.
+ */
 export const ACTION_COSTS = Object.freeze({
-  0: { label: "STARWROUGHT.Action.passive", glyph: "" },
-  1: { label: "STARWROUGHT.Action.one", glyph: "◆" },
-  2: { label: "STARWROUGHT.Action.two", glyph: "◆◆" },
-  3: { label: "STARWROUGHT.Action.three", glyph: "◆◆◆" },
-  free: { label: "STARWROUGHT.Action.free", glyph: "◇" },
-  reaction: { label: "STARWROUGHT.Action.reaction", glyph: "↺" }
+  passive: { label: "STARWROUGHT.Action.passive", glyph: "", value: 0 },
+  0: { label: "STARWROUGHT.Action.free", glyph: "⓿", value: 0 },
+  1: { label: "STARWROUGHT.Action.one", glyph: "❶", value: 1 },
+  2: { label: "STARWROUGHT.Action.two", glyph: "❷", value: 2 },
+  3: { label: "STARWROUGHT.Action.three", glyph: "❸", value: 3 },
+  4: { label: "STARWROUGHT.Action.four", glyph: "❹", value: 4 },
+  5: { label: "STARWROUGHT.Action.five", glyph: "❺", value: 5 },
+  6: { label: "STARWROUGHT.Action.six", glyph: "❻", value: 6 }
 });
 
 /**
- * Read an action's cost out of the glyphs the handbook prints in its name.
+ * The v3.x cost keys, mapped onto v4.10's. "free" is ⓿; "reaction" was a free reaction slot, so it
+ * is ⓿ with the Reaction trait; "0" on a Talent meant passive.
+ */
+export const LEGACY_ACTION_COSTS = Object.freeze({
+  free: { cost: "0", reaction: false },
+  reaction: { cost: "0", reaction: true }
+});
+
+/** The number of actions a cost key stands for. */
+export function actionCostValue(key) {
+  return ACTION_COSTS[key]?.value ?? 0;
+}
+
+const COST_TOKEN = /[⓿❶❷❸❹❺❻]|◆+|◇/g;
+const tokenValue = token => {
+  if (token === "⓿" || token === "◇") return 0;
+  if (token[0] === "◆") return Math.min(6, token.length);
+  return "❶❷❸❹❺❻".indexOf(token) + 1;
+};
+
+/**
+ * Read a Maneuver's cost out of the glyphs the handbook prints in its name.
  *
- * Several actions cost a range rather than a number, and the handbook writes both ends into the
- * name: "Strike ◆ to ◆◆◆" is one action or three, and "Disarm ◆ or ◆◆◆" is one or three with
- * nothing in between. Counting every diamond in the string makes Strike a three-action activity,
- * which is how this was wrong the first time.
+ * Several Maneuvers cost a range rather than a number, and the handbook writes both ends into the
+ * name: "Strike ❶ to ❸" is one action to three, and "Disarm ❶ or ❸" is one or three with nothing
+ * in between. ↺ is the Reaction trait and rides beside a cost ("Parry ❶↺", "Battle Cry ⓿↺"). The
+ * v3.x glyphs ◆ (one action per diamond) and ◇ (free) still parse, so older data converts.
  *
  * @param {string} name
- * @returns {{cost: string, costMax: string, costMode: "to"|"or"}}
+ * @returns {{cost: string, costMax: string, costMode: "to"|"or", reaction: boolean}}
  */
 export function parseActionCost(name) {
-  const text = String(name ?? "");
-  if (/↺/.test(text)) return { cost: "reaction", costMax: "", costMode: "to" };
-  if (/◇/.test(text)) return { cost: "free", costMax: "", costMode: "to" };
-  const runs = text.match(/◆+/g);
-  if (!runs?.length) return { cost: "0", costMax: "", costMode: "to" };
-  const min = String(Math.min(3, runs[0].length));
-  if (runs.length === 1) return { cost: min, costMax: "", costMode: "to" };
-  const max = String(Math.min(3, runs[runs.length - 1].length));
+  let text = String(name ?? "");
+  // "Aid ❶ (⓿↺)": the Maneuver costs ❶ and its Reaction half costs ⓿. The bracketed part is the
+  // Reaction's own cost, not the far end of a range.
+  let reactionCost = "";
+  const bracketed = text.match(/\(([^)]*)\)/);
+  if (bracketed && COST_TOKEN.test(bracketed[1])) {
+    COST_TOKEN.lastIndex = 0;
+    const inner = bracketed[1].match(COST_TOKEN) ?? [];
+    if (inner.length) reactionCost = String(tokenValue(inner[0]));
+    text = text.replace(bracketed[0], " ");
+  }
+  COST_TOKEN.lastIndex = 0;
+  const reaction = String(name ?? "").includes(REACTION_GLYPH);
+  const tokens = text.match(COST_TOKEN) ?? [];
+  if (!tokens.length) {
+    // A bare ↺ (v3.x "Aid ↺") was a free reaction; no glyph at all is a passive Talent.
+    return { cost: reaction ? "0" : "passive", costMax: "", costMode: "to", reaction, reactionCost };
+  }
+  const min = String(tokenValue(tokens[0]));
+  if (tokens.length === 1) return { cost: min, costMax: "", costMode: "to", reaction, reactionCost };
+  const max = String(tokenValue(tokens[tokens.length - 1]));
   return {
     cost: min,
     costMax: max === min ? "" : max,
-    // Only an "or" between two glyph runs is a cost joiner; one in the name is not.
-    costMode: /◆\s*or\s*◆/i.test(text) ? "or" : "to"
+    // Only an "or" between two glyphs is a cost joiner; one in the name is not.
+    costMode: /(?:[⓿❶❷❸❹❺❻◇]|◆+)\s*or\s*(?:[⓿❶❷❸❹❺❻◇]|◆+)/i.test(text) ? "or" : "to",
+    reaction,
+    reactionCost
   };
 }
+
+/** Render a cost the way the handbook prints it: "❶", "❶ to ❸", "❶ or ❸", "❶↺", "⓿↺", "❶ (⓿↺)". */
+export function costGlyphs({ cost, costMax = "", costMode = "to", reaction = false, reactionCost = "" } = {}) {
+  const min = ACTION_COSTS[cost]?.glyph ?? "";
+  const max = costMax && costMax !== cost ? (ACTION_COSTS[costMax]?.glyph ?? "") : "";
+  const range = max ? `${min} ${costMode === "or" ? "or" : "to"} ${max}` : min;
+  if (!reaction) return range.trim();
+  // A Maneuver whose Reaction half has a cost of its own prints both, as Aid does.
+  if (reactionCost !== "" && reactionCost !== cost) {
+    return `${range} (${ACTION_COSTS[reactionCost]?.glyph ?? ""}${REACTION_GLYPH})`.trim();
+  }
+  return `${range}${REACTION_GLYPH}`.trim();
+}
+
+/* -------------------------------------------- */
+/*  Movement                                    */
+/* -------------------------------------------- */
+
+/**
+ * PHB v4.10: Speed is how far a single Move ❶ carries you, in feet; a Human's is 6. A Step ❶ is
+ * half your Speed and never provokes; a Rush ❸ is five times your Speed in a straight line, less
+ * your Load Strain in feet. Leap ❶ is 10 feet (less Load Strain) or 3 up; Crawl ❶ is 3 feet.
+ */
+export const DEFAULT_SPEED = 6;
+export const STEP_DIVISOR = 2;
+export const RUSH_MULTIPLIER = 5;
+export const LEAP_FEET = 10;
+export const CRAWL_FEET = 3;
+/** Exploration Mode: feet per minute, miles per hour, miles per day, as multiples of Speed. */
+export const TRAVEL = Object.freeze({ feetPerMinute: 40, milesPerHour: 0.5, milesPerDay: 4 });
+/** At the end of this round and every round after, Load Strain 1+ rolls Endure vs 10 + Load Strain or is Fatigued. */
+export const WIND_ROUND = 3;
+/** Helm penalties to Awareness checks, the Awareness Threshold and Initiative, by the Head piece's name. */
+export const HELM_PENALTIES = Object.freeze({ "Closed helm": -2, "Open helm": -1 });
 
 /** The icon a freshly created Item of each type gets, rather than the generic bag. */
 export const TYPE_ICONS = Object.freeze({
@@ -490,7 +690,16 @@ export const CONDITIONS = Object.freeze({
   undetected: { id: "undetected", name: "STARWROUGHT.Condition.undetected", img: "icons/svg/invisible.svg" },
   unconscious: { id: "unconscious", name: "STARWROUGHT.Condition.unconscious", img: "icons/svg/unconscious.svg" },
   dying: { id: "dying", name: "STARWROUGHT.Condition.dying", img: "icons/svg/skull.svg", numeric: true },
-  wounded: { id: "wounded", name: "STARWROUGHT.Condition.wounded", img: "icons/svg/blood.svg", numeric: true },
+  /** Any Zone carries a Wound. The Wounds themselves are per Zone on the actor (PHB v4.10). */
+  wounded: { id: "wounded", name: "STARWROUGHT.Condition.wounded", img: "icons/svg/blood.svg" },
+  /** At 0 Vigor: every Hit Wounds the Zone it strikes, a Critical Hit twice; Grazes never Wound. */
+  spent: { id: "spent", name: "STARWROUGHT.Condition.spent", img: "icons/svg/degen.svg" },
+  /** The Bind: a neutral Bind, or one someone Controls. */
+  bound: { id: "bound", name: "STARWROUGHT.Condition.bound", img: "icons/svg/combat.svg" },
+  controlled: { id: "controlled", name: "STARWROUGHT.Condition.controlled", img: "icons/svg/downgrade.svg" },
+  controlling: { id: "controlling", name: "STARWROUGHT.Condition.controlling", img: "icons/svg/upgrade.svg" },
+  /** A Maneuver of three or more actions begun: one spent, the rest reserved. */
+  preparing: { id: "preparing", name: "STARWROUGHT.Condition.preparing", img: "icons/svg/hazard.svg" },
   dead: { id: "dead", name: "STARWROUGHT.Condition.dead", img: "icons/svg/skull.svg" }
 });
 
@@ -511,9 +720,10 @@ export const UNWIELDY_PENALTY = -2;
  * ground, an ally's help, a foe Off-Guard); Condition is something on you (Frightened, a stance);
  * Gear is something intrinsic to what you hold or wear: a raised shield's bonus, a weapon's
  * quality, later a magical property. Weapon traits are Situation by ruling (Mike, 2026-09-26):
- * Parry, Sweep and Unwieldy describe what the weapon lets you do or stops you doing in the moment,
- * not what the weapon is. Untyped is for the base terms of a check and the system's own flat
- * adjustments (Load Strain, the Multiple Attack Penalty, the sheet's adjustment fields); no
+ * Sweep and Unwieldy describe what the weapon lets you do or stops you doing in the moment, not
+ * what the weapon is. PHB v4.10 then prints Parry as "+1 Gear bonus to Guard against melee
+ * Attacks while you wield it", and the book wins: Parry is Gear. Untyped is for the base terms of
+ * a check and the system's own flat adjustments (Load Strain, the sheet's adjustment fields); no
  * Talent bonus is untyped.
  */
 export const BONUS_TYPES = Object.freeze(["situation", "condition", "gear", "untyped"]);
@@ -618,7 +828,10 @@ export function slugify(name) {
   return String(name ?? "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[◆◇↺★✦✧]/g, "")
+    // Cost glyphs never reach a slug: the v4.10 ⓿❶❷❸❹❺❻, a bracketed Reaction cost such as
+    // "(⓿↺)", the v3 ◆ and ◇, the Reaction arrow, the capstone star and the Attribute glyphs.
+    .replace(/\(\s*[◆◇↺★⓿❶❷❸❹❺❻\s]*\)/g, "")
+    .replace(/[◆◇↺★✦✧⓿❶❷❸❹❺❻]/g, "")
     .trim()
     .toLowerCase()
     .replace(/&/g, " and ")

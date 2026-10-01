@@ -1,6 +1,6 @@
 {
   "_id": "6e28b99057df461f",
-  "name": "Blade Brake ↺",
+  "name": "Blade Brake ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger You would be moved by a forced movement effect.<br>Requirements You are wielding a melee weapon and are within reach of a hard surface.<br>You plow your weapon into a floor, wall, or another sturdy surface, anchoring yourself in place. If you would be moved 20 feet or more, you are moved only 5 feet. Otherwise, you don't move at all.",
+    "effect": "<b>Trigger</b> You would be moved by a forced movement effect<br><b>Requirements</b> You are wielding a melee weapon and are within reach of a hard surface<br>You plow your weapon into a floor, wall, or another sturdy surface, anchoring yourself in place. If you would be moved 6 feet or more, you are moved only 1 foot. Otherwise, you don't move at all.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "0faabe9a5cfa92a4",
   "sort": 0,

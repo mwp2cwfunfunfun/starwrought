@@ -1,0 +1,22 @@
+{{!-- One Zone's Wounds against its capacity. Context: zoneWounds(). The tooltip names the effect in
+      force; Treat rolls the Endure check; the plus and minus are the GM's bookkeeping. --}}
+<div class="sw-wounds {{#if wounded}}sw-wounded{{/if}} {{#if final}}sw-wounds-final{{/if}}" data-zone="{{key}}"
+     data-tooltip="{{tooltip}}">
+  <span class="sw-wound-pips" aria-label="{{localize 'STARWROUGHT.Field.wounds'}} {{wounds}}/{{capacity}}">
+    {{#each pips as |pip|}}<i class="sw-wound-pip {{#if pip.filled}}filled{{/if}} {{#if pip.final}}final{{/if}}"></i>{{/each}}
+  </span>
+  <span class="sw-wound-count">{{wounds}}<em>/{{capacity}}</em></span>
+  {{#if @root.editable}}
+  <span class="sw-wound-controls">
+    {{#if wounded}}
+    <a class="sw-wound-treat" data-action="treatWound" data-tooltip="{{localize 'STARWROUGHT.Wound.treatHint'}}">
+      <i class="fa-solid fa-kit-medical"></i> {{localize "STARWROUGHT.Wound.treat"}}
+    </a>
+    {{/if}}
+    {{#if @root.isGM}}
+    <a class="sw-wound-adjust" data-action="adjustWound" data-delta="-1" data-tooltip="{{localize 'STARWROUGHT.Wound.remove'}}">−</a>
+    <a class="sw-wound-adjust" data-action="adjustWound" data-delta="1" data-tooltip="{{localize 'STARWROUGHT.Wound.add'}}">+</a>
+    {{/if}}
+  </span>
+  {{/if}}
+</div>

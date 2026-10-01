@@ -27,35 +27,112 @@ let fails=0;
 const step=(name,fn)=>{ try{ fn(); console.log("PASS —",name); }catch(e){ fails++; console.log("FAIL —",name,"::",e.message); } };
 const driver=`
 ;globalThis.__drive=function(step){
+  const must=(cond,msg)=>{ if(!cond) throw new Error(msg); };
   step("boot render", ()=>render());
   step("wizard: all 9 steps", ()=>{ tab="wizard"; render();
     if(!wiz) throw new Error("wiz not initialized");
     for(let i=0;i<=8;i++){ wiz.step=i; render(); } wiz.step=0; });
+  // PHB v4.10 chargen: one granted root (Melee or Ranged), three Origin roots, ten placed points.
+  step("wizard: v4.10 pools", ()=>{ tab="wizard"; render();
+    must(stepGate(0), "step 0 must gate on the Melee/Ranged choice");
+    wiz.picks.weapon="Melee"; must(!stepGate(0), "Melee chosen should clear the gate");
+    const P=pools(), def=P.find(x=>x.step===6), com=P.find(x=>x.step===7);
+    must(def&&def.need===2, "two Defense Talent Points, found "+(def&&def.need));
+    must(com&&com.need===3, "three Comets");
+    const total=P.filter(x=>!x.label.includes("grant")).reduce((a,x)=>a+x.need,0);
+    must(total===10, "ten placed points at creation (3 Skill, 1 Lore, 1 Calling, 2 Defense, 3 Comets), found "+total);
+    const c=wizCh(null); must(ownsTalent(c,"Melee","Melee Training"), "Melee Training granted by step 0");
+    must(!ownsTalent(c,"Guard","Guard Training"), "Defenses are no longer granted free");
+    wiz.picks.weapon="Ranged"; const c2=wizCh(null);
+    must(ownsTalent(c2,"Ranged","Ranged Training")&&!ownsTalent(c2,"Melee","Melee Training"), "Ranged Training granted instead when chosen");
+    wiz.picks.weapon=null; });
   step("observatory: Firmament", ()=>{ tab="explorer"; eview={mode:0,cat:null}; render(); drawSky(); });
   step("observatory: every category sky", ()=>{ const cats=[...new Set(allTreeNames().map(t=>treeOf(t).category))];
     for(const c of cats){ eview={mode:1,cat:c}; render(); drawSky(); } });
   step("observatory: EVERY constellation", ()=>{ for(const tn of allTreeNames()){
     etree=tn; eview={mode:2,cat:treeOf(tn).category}; esel=null; render(); drawSky();
     const withSel=treeOf(tn).nodes[0]; if(withSel){ esel=withSel.name; drawSky(); } } });
+  step("observatory: Melee and Ranged are parents", ()=>{
+    must(allTreeNames().includes("Melee")&&allTreeNames().includes("Ranged"), "Melee and Ranged must be trees");
+    must(parentOf("Dueling")==="Melee", "Dueling is a child of Melee, found "+parentOf("Dueling"));
+    must(parentOf("Archery")==="Ranged", "Archery is a child of Ranged, found "+parentOf("Archery"));
+    must(parentOf("Melee")===null&&parentOf("Stealth")===null, "parents and skills have no parent"); });
+  // v4.10 sync report, ruling 13: a Combat Style's points reach the parent's rank only once the parent's Root is owned.
+  step("parent rank waits on the Root (ruling 13)", ()=>{
+    const c=migrate({name:"p",level:5,milestones:0,ancestry:"Human",calling:"Bravo",talents:{Ranged:["Ranged Training"],Dueling:["Dueling Training"]},sparks:{},armor:null,shield:null,languages:[]});
+    must(rankOf(c,"Melee")===null&&derive(c).melee.prof===0, "Dueling alone must not make Melee Trained");
+    must(/Untrained \\+0/.test(attackRows(c)[0][1]), "the weapon-in-hand row reads Untrained +0");
+    must(inheritedPts(c,"Melee")===1, "the sheet still shows the Dueling point as waiting");
+    buy(c,"Melee","Melee Training");
+    must(poolPts(c,"Melee")===2&&rankOf(c,"Melee")==="T", "with Melee Training the Dueling point counts"); });
   step("characters + sheet + wiki tabs", ()=>{ for(const tb of ["chars","characters","sheet","vsheet","wiki"]){
     try{ tab=tb; render(); }catch(e){ if(!/Unknown tab/.test(e.message)) throw new Error(tb+": "+e.message); } } });
   // Every wiki section, not just the bookmarked one: each is its own template string, and a
-  // broken one (a bad reference inside the Actions tables, say) only throws when it renders.
+  // broken one (a bad reference inside the Maneuver tables, say) only throws when it renders.
   step("wiki: every section", ()=>{ tab="wiki"; render();
     const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
     if(secs.length<5) throw new Error("wiki nav lists only "+secs.length+" sections");
     for(const s of secs){ wikiSec=s; try{ render(); }catch(e){ throw new Error("wiki '"+s+"': "+e.message); } }
-    const actions=document.getElementById("main").innerHTML; wikiSec=secs[0];
-    if(typeof A!=="undefined"&&A&&A.actions&&A.actions.length){ wikiSec="Actions"; render();
+    wikiSec=secs[0];
+    if(typeof A!=="undefined"&&A&&A.actions&&A.actions.length){ wikiSec="Maneuvers"; render();
       const h=document.getElementById("main").innerHTML; wikiSec=secs[0];
-      for(const a of A.actions){ if(!h.includes("<b>"+a.name+"</b>")) throw new Error("Actions wiki lacks sheet action "+a.name); } } });
+      for(const a of A.actions){ if(!h.includes("<b>"+a.name+"</b>")) throw new Error("Maneuvers wiki lacks sheet action "+a.name); } } });
+  step("wiki: an old 'Actions' bookmark lands on Maneuvers", ()=>{ tab="wiki"; wikiSec="Actions"; render();
+    must(wikiSec==="Maneuvers", "bookmark should follow the rename, found "+wikiSec); });
+  step("wiki: no v3 vocabulary survives", ()=>{ tab="wiki";
+    const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    // the check-formula level term in its v3 shapes ("10 + level", "level + Wits + prof"); Rage's "level + Might" Temporary Vigor is a book formula
+    const bad=/Hit Points|\\bHP\\b|Stride|multiple attack penalty|\\bMAP\\b|Weapons Proficiency|10 \\+ level|level \\+ (attribute|Wits|Agility|Presence|Might) \\+|\\+ level \\+|&#9670;|&#9671;|◆|◇/;
+    for(const s of secs){ wikiSec=s; render(); const m=document.getElementById("main").innerHTML.match(bad);
+      if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'"); } wikiSec=secs[0]; });
   step("with Mira loaded: every view again", ()=>{
-    if(typeof TORVA!=="undefined"&&typeof chars!=="undefined"){ if(!chars.some(c=>c.id===TORVA.id)) chars.push(JSON.parse(JSON.stringify(TORVA)));
-      if(typeof cur!=="undefined") cur=chars.length-1; }
+    if(typeof TORVA!=="undefined"&&typeof chars!=="undefined"){ if(!chars.some(c=>c.id===TORVA.id)) chars.push(migrate(JSON.parse(JSON.stringify(TORVA))));
+      if(typeof cur!=="undefined") cur=chars.length-1; activeId=TORVA.id; }
     for(const tb of ["chars","sheet","wiki"]){ try{ tab=tb; render(); }catch(e){ throw new Error(tb+": "+e.message); } }
     tab="explorer";
     for(const tn of allTreeNames()){ etree=tn; eview={mode:2,cat:treeOf(tn).category}; esel=null; render(); drawSky(); }
     tab="wizard"; for(let i=0;i<=8;i++){ wiz.step=i; render(); } });
+  // The v4.10 math on the sample: ÷4 attributes, +3 Trained, no level term, Vigor 10 + 8 + 2.
+  step("rules math on Mira", ()=>{ const m=chars.find(c=>c.id===TORVA.id); must(m, "Mira loaded");
+    const d=derive(m);
+    must(attrBonus(3)===0&&attrBonus(4)===1&&attrBonus(8)===2&&attrBonus(40)===5, "attrBonus is points ÷ 4, capped at +5");
+    must(RB.T===3&&RB.E===6&&RB.M===9&&RB.L===12, "ranks +3/+6/+9/+12");
+    must(gatesFor("Skill").E===5&&gatesFor("Skill").M===10&&gatesFor("Skill").L===15, "gates L5/L10/L15");
+    must(d.vigorMax===20, "Vigor 10 + Human 8 + Ambusher 2 = 20, found "+d.vigorMax);
+    must(d.DT.Evade===10+d.A.Agility+3-d.strain, "Evade Threshold has no level term: "+d.DT.Evade);
+    must(d.DR.Endure===null&&d.DT.Endure===10+d.A.Might, "Untrained Endure is 10 + Might: "+d.DT.Endure);
+    must(poolPts(m,"Melee")===2&&pointsIn(m,"Melee")===1, "Dueling's point counts toward Melee's rank pool");
+    must(attrPoints(m,"Might")===Object.keys(m.talents).reduce((a,t)=>a+m.talents[t].filter(n=>((treeOf(t).nodes.find(x=>x.name===n)||{}).feeds||treeOf(t).feeds)==="Might").length,0), "Attribute Points are not double counted through a parent");
+    must(d.recoveryTh===10+(m.dying||0)+d.woundCount, "Recovery Threshold is 10 + Dying + Wounds");
+    must(d.dice===1&&d.speed===6&&d.step===3&&d.rush===30-d.strain, "one die at L1; Speed 6, Step 3, Rush 30 less Load Strain");
+    const w={...JSON.parse(JSON.stringify(m)), wounds:{Head:0,Torso:2,Arms:0,Legs:0}}; const dw=derive(w);
+    must(dw.dyingNow&&dw.DT.Guard===d.DT.Guard-2, "a final Torso Wound is Dying, and a Torso Wound is Off-Guard (−2 Guard)");
+    // ruling 35: tracked Wounds reach the derived numbers. Arms: Guard and attacks; Head: no Reactions; Legs: Speed, then Prone.
+    const wa={...JSON.parse(JSON.stringify(m)), wounds:{Head:0,Torso:0,Arms:1,Legs:0}}; const dwa=derive(wa);
+    must(dwa.atkPen===2&&dwa.DT.Guard===d.DT.Guard-2&&!dwa.noReactions, "an Arms Wound is −2 to Guard and to attacks");
+    must(/−2 Wound/.test(attackRows(wa)[0][2])&&!/−2 Wound/.test(attackRows(m)[0][2]), "the Strikes table subtracts the Arms Wound and says so");
+    const dwh=derive({...JSON.parse(JSON.stringify(m)), wounds:{Head:1,Torso:0,Arms:0,Legs:0}});
+    must(dwh.noReactions&&dwh.atkPen===0, "a Head Wound blocks Reactions");
+    const dwl=derive({...JSON.parse(JSON.stringify(m)), wounds:{Head:0,Torso:0,Arms:0,Legs:1}});
+    must(dwl.speed===3&&dwl.step===1&&dwl.travel.mph===1, "one Legs Wound halves Speed 6 to 3; 3 ÷ 2 mph rounds down to 1");
+    const dwl2=derive({...JSON.parse(JSON.stringify(m)), wounds:{Head:0,Torso:0,Arms:0,Legs:2}});
+    must(dwl2.speed===0&&dwl2.rush===0&&dwl2.atkPen===2&&dwl2.sitPen.Evade===2, "the final Legs Wound is Prone: Speed 0, −2 to attacks, Off-Guard"); });
+  step("migration: v3 save keys", ()=>{ const old={id:"old",name:"Old",level:1,milestones:0,ancestry:"Human",bloodline:"Versatile Human",culture:"Kestrel Reach",
+      background:"Acrobat",calling:"Ambusher",talents:{"Weapons":["Weapons Training","Read the Steel ◆"],"Berserker":["Rage ◆"],"Guard":["Guard Training"],
+      "Archery":["Archery Training","Loose and Move"],"Chainmail":["Chain Discipline"]},sparks:{},
+      hpCur:7,hpTmp:2,wounded:2,dying:0}; // no log array: a hand-edited or v1 file may lack one
+    const c=migrate(old);
+    must(Array.isArray(c.log), "migrate() gives a save its log array");
+    must(derive(c).vigorCur===7, "an imported v3 save shows its carried Vigor, not full Vigor");
+    must((c.talents["Ranged"]||[]).includes("Loose and Move")&&!(c.talents["Archery"]||[]).includes("Loose and Move"), "Loose and Move moves from Archery to Ranged");
+    must(c.log.some(l=>/Loose and Move moved from Archery to Ranged/.test(l)), "the move is logged");
+    must(!c.talents["Chainmail"]&&c.log.some(l=>/Chainmail constellation is retired/.test(l)), "a retired constellation's talents are dropped and logged");
+    must(c.vigorCur===7&&c.vigorTmp===2&&c.hpCur===undefined&&c.hpTmp===undefined, "hpCur/hpTmp become vigorCur/vigorTmp");
+    must(c.wounded===undefined&&c.wounds&&c.wounds.Torso===0, "the numeric Wounded is dropped; Wounds are per Zone");
+    must(!c.talents["Weapons"]&&(c.talents["Melee"]||[]).includes("Melee Training"), "Weapons becomes Melee, Weapons Training becomes Melee Training");
+    must((c.talents["Melee"]||[]).some(n=>nrmG(n)==="Read the Steel"), "an old-glyph talent name lands on the authored name");
+    must((c.talents["Berserker"]||[]).some(n=>nrmG(n)==="Rage"), "Rage ◆ lands on the authored Rage");
+    must(c.log.some(l=>/Wounded 2/.test(l)), "a carried Wounded value is logged, not silently lost"); });
 };`;
 try{ (0,eval)(src+driver); }catch(e){ console.log("FAIL — script boot ::", e.message); process.exit(1); }
 (0,eval)("__drive")(step);

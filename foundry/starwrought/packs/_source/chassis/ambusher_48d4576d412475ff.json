@@ -7,14 +7,14 @@
     "kind": "calling",
     "constellation": "ambusher",
     "attribute": "agility",
-    "hp": 2,
+    "vigor": 2,
     "grants": [
       "Stealth"
     ],
-    "specialAbility": "<p>Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +4d6 at Legendary.</p>",
-    "description": "<p>Grants Training in Stealth, and 2 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "specialAbility": "<p>Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +2d6 at Expert, +3d6 at Master, and +4d6 at Legendary.</p>",
+    "description": "<p>Grants Training in Stealth, and 2 Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "646e56ad26c2456d",
   "sort": 0,

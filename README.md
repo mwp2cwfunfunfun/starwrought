@@ -15,7 +15,9 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 ```
 
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
-exactly, which needs a restart to take effect after installing.
+exactly, which needs a restart to take effect after installing. The current release is system
+0.4.0, built from Player's Handbook v4.10: six actions a round, the Exchange, Vigor and Wounds per
+Zone, and Melee and Ranged in place of the old Weapons Constellation.
 
 **If the server sits behind Cloudflare** (or any caching proxy), turn its caching off for the
 Foundry hostname. Foundry serves every file with `Cache-Control: no-cache` so browsers always

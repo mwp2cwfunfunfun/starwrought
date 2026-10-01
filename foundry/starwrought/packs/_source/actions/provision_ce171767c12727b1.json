@@ -4,12 +4,16 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "0",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "category": "Downtime Mode",
     "requirements": "1 day",
     "traits": [],
-    "description": "<p>Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets. You sell at half price.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets to find someone who has one. You sell at half price.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b938ff7019fcd374",
   "sort": 0,

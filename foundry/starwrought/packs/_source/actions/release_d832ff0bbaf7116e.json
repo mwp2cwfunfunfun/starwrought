@@ -4,16 +4,18 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "free",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
-    "category": "Handling things",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Handling Things",
     "basic": true,
     "traits": [],
     "description": "<p>Drop or let go of something you are holding.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "0a5854411327b700",
+  "folder": "0cc851032662e5fa",
   "sort": 0,
   "ownership": {
     "default": 0

@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Shield Wall action.<br>Shield Wall ◆ (stance) You must be wielding a shield. While you are in this stance your shield counts as Raised at all times, without spending an action for it, but you cannot Stride; you may only Step. At Master rank you may Stride up to half your Speed while the stance holds.",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Shield Wall action.<br><b>Shield Wall ❶ Stance</b> You must be wielding a shield. While you are in this stance your shield counts as <b>Raised at all times</b>, without spending an action for it, but you cannot Move; you may only Step. At Master rank you may Move up to half your Speed while the stance holds.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1da194ae4f8cc3d7",
   "sort": 0,

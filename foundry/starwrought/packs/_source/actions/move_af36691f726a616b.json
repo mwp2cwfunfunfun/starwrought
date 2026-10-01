@@ -1,0 +1,31 @@
+{
+  "_id": "af36691f726a616b",
+  "name": "Move",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Motion",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "description": "<p>Move up to your Speed. Crossing into a foe's Total Reach may provoke an Intercept.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "02edc6422285a159",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!af36691f726a616b"
+}

@@ -1,0 +1,49 @@
+{
+  "_id": "a4682b2feb1878c0",
+  "name": "Catch the Blade ⓿↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "guard",
+    "constellationName": "Guard",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Guard Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Posture +2 to your Guard against one melee attack made with a weapon or natural weapon you could Bind. If the blow does not Hit, you take Control of the attacking weapon as though you had Parried. A Zone of your choice becomes Exposed until the end of the round, win or lose.",
+    "description": "",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "de321617406058a3",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a4682b2feb1878c0"
+}

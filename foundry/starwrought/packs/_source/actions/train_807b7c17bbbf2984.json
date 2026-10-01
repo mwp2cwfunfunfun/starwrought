@@ -4,12 +4,16 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "0",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "category": "Downtime Mode",
     "requirements": "7 days",
     "traits": [],
-    "description": "<p>You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. Only once between Milestones.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. You may benefit from Train only once between Milestones.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b938ff7019fcd374",
   "sort": 0,

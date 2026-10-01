@@ -77,6 +77,8 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     });
 
     // Choice lists, localized once here so the templates stay declarative.
+    const costs = Object.fromEntries(Object.keys(SW.ACTION_COSTS).map(k => [k, costLabel(k)]));
+    const ownSlug = item.type === "constellation" ? (item.system.slug || SW.slugify(item.name)) : null;
     context.choices = {
       attributes: this.#choices(SW.ATTRIBUTES),
       categories: this.#choices(SW.CATEGORIES),
@@ -85,8 +87,10 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       materials: this.#choices(SW.MATERIALS),
       damageTypes: this.#choices(SW.DAMAGE_TYPES),
       handling: this.#choices(SW.HANDLING),
-      costs: Object.fromEntries(Object.entries(SW.ACTION_COSTS).map(([k, v]) =>
-        [k, `${v.glyph} ${game.i18n.localize(v.label)}`.trim()])),
+      // passive, then ⓿ through ❻, each labelled with its glyph (PHB v4.10, Symbols).
+      costs,
+      // A Reaction's own cost: the same keys, minus passive, since a Reaction is something you do.
+      reactionCosts: Object.fromEntries(Object.entries(costs).filter(([k]) => k !== "passive")),
       costModes: {
         to: game.i18n.localize("STARWROUGHT.Field.costModeTo"),
         or: game.i18n.localize("STARWROUGHT.Field.costModeOr")
@@ -97,6 +101,14 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       constellations: Object.fromEntries(
         Object.values(SW.constellations)
           .sort((a, b) => a.name.localeCompare(b.name))
+          .map(c => [c.slug, c.name])
+      ),
+      // A parent Constellation: Melee or Ranged today, listed first; anything but itself is allowed
+      // so a third parent (the book promises Magic) needs no code change.
+      parents: Object.fromEntries(
+        Object.values(SW.constellations)
+          .filter(c => c.slug !== ownSlug)
+          .sort((a, b) => (isParentSlug(b.slug) - isParentSlug(a.slug)) || a.name.localeCompare(b.name))
           .map(c => [c.slug, c.name])
       ),
       kinds: {
@@ -126,6 +138,20 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     context.enrichedSpecial = await TextEditor.enrichHTML(item.system.specialAbility ?? "", {
       relativeTo: item, rollData: item.getRollData()
     });
+
+    // The parent's name, for the Constellation subline and the "counts toward" note. The field is
+    // `parentSlug` (`parent` on a data model is the owning Item); the model derives `parentName`.
+    if (item.type === "constellation" && item.system.parentSlug) {
+      context.parentName = item.system.parentName || SW.getConstellation(item.system.parentSlug).name;
+    }
+    // Weapon trait flags the sheet calls out, since three of them decide what the weapon can do in
+    // a Bind: a Flexible weapon cannot Parry or Bind, Massive Wounds on any crit, Unparryable
+    // cannot be Parried. The data model parses the Traits string into `system.flags`.
+    if (item.type === "weapon") {
+      context.bindTraits = ["flexible", "massive", "unparryable", "parry"]
+        .filter(flag => item.system.flags?.[flag])
+        .map(flag => game.i18n.localize(`STARWROUGHT.Trait.${flag}`));
+    }
 
     context.effects = item.effects.map(e => ({ id: e.id, name: e.name, img: e.img, disabled: e.disabled }));
     return context;
@@ -200,4 +226,26 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     const id = target.closest("[data-effect-id]")?.dataset.effectId;
     return this.document.effects.get(id)?.delete();
   }
+}
+
+/* -------------------------------------------- */
+
+/**
+ * The label a cost key gets in a select: the localized text with its glyph shown exactly once.
+ * The Action.* strings are written with the glyph on the end ("One action ❶"); if a lang file
+ * leaves it off, it is appended here rather than doubled. A key with no text at all falls back to
+ * the glyph, so nothing renders blank.
+ */
+function costLabel(key) {
+  const entry = SW.ACTION_COSTS[key];
+  if (!entry) return key;
+  const text = game.i18n.localize(entry.label);
+  if (!text || text === entry.label) return entry.glyph || key;
+  if (!entry.glyph || text.includes(entry.glyph)) return text;
+  return `${text} ${entry.glyph}`;
+}
+
+/** 1 for Melee or Ranged, 0 for anything else: the sort key that puts the real parents first. */
+function isParentSlug(slug) {
+  return [SW.MELEE_SLUG, SW.RANGED_SLUG].includes(slug) ? 1 : 0;
 }

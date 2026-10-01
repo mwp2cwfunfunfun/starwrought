@@ -1,6 +1,6 @@
 {
   "_id": "3f87dde0d24ffe83",
-  "name": "Talk Them Down ◆",
+  "name": "Talk Them Down ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Talk Them Down ◆ action:<br>Talk Them Down ◆  Auditory, Concentrate, Emotion, Mental<br>Roll Diplomacy against the target's Guard. On a success, it takes a −2 circumstance penalty to Attacks against you until the end of your next turn; on a critical success, until the end of the encounter. On a critical failure it gains a +1 circumstance bonus to Attacks against you.",
+    "effect": "You gain the Talk Them Down ❶ action:<br><b>Talk Them Down ❶</b><br><b>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against the target's Guard. On a success, it takes a -2 Situation penalty to Attacks against you until the end of the next round; on a critical success, until the end of the encounter. On a critical failure it gains a +1 Situation bonus to Attacks against you.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "eb638d2c93ae2065",
   "sort": 0,

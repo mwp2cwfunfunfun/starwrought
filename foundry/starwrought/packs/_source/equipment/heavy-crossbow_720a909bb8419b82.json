@@ -14,7 +14,7 @@
     "traits": [
       "Ranged 140",
       "Mechanical",
-      "Reload 2",
+      "Reload 3",
       "Armor-Piercing 1",
       "Two-Handed"
     ],
@@ -23,7 +23,7 @@
     "load": 0,
     "state": "carried",
     "description": "",
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "54594ae7cc598009",
   "sort": 0,

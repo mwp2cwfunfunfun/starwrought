@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You become Trained in Stealth.<br>You gain Sneak Attack: +1d6 precision damage vs. Off-Guard foes.<br>Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.",
+    "effect": "You become Trained in Stealth.<br>You gain Sneak Attack:<br>+1d6 precision damage vs. Off-Guard foes.<br>Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9309f573d0dc8d61",
   "sort": 0,

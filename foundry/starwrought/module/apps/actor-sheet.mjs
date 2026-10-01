@@ -14,6 +14,157 @@ import { loadBasicActions } from "../helpers/content.mjs";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 
+/* -------------------------------------------- */
+/*  Shared context: the header's live state      */
+/* -------------------------------------------- */
+
+/**
+ * The action economy as the header shows it: six pips a round (more for a creature with more),
+ * lit while free, marked while reserved for a Prepared Maneuver, dim once spent. Only meaningful
+ * in an encounter, so `show` is false outside one. Shared by the character and adversary sheets.
+ * @param {Actor} actor
+ * @returns {object}
+ */
+export function actionsContext(actor) {
+  const sys = actor.system;
+  const actions = sys.actions;
+  if (!actions || !actor.inEncounter) return { show: false };
+
+  const perRound = Math.max(1, Number(sys.actionsPerRound) || SW.ACTIONS_PER_ROUND);
+  const value = Math.max(0, Number(actions.value) || 0);
+  const reserved = Math.max(0, Number(actions.reserved) || 0);
+  const slots = Math.max(perRound, value + reserved);
+  const isTurn = actor.isTurn;
+
+  const pips = Array.fromRange(slots, 1).map(n => {
+    const state = n <= value ? "free" : n <= value + reserved ? "reserved" : "spent";
+    return {
+      value: n,
+      state,
+      glyph: SW.ACTION_GLYPHS[Math.min(6, n)] ?? "●",
+      tooltip: state === "reserved"
+        ? game.i18n.format("STARWROUGHT.Actions.reserved", { n: reserved })
+        : game.i18n.format("STARWROUGHT.Actions.setTo", { n })
+    };
+  });
+
+  const preparing = actions.preparing ?? null;
+  let preparingLabel = null;
+  if (preparing) {
+    preparingLabel = preparing.label
+      || (preparing.strike ? game.i18n.localize(SW.STRIKE_KINDS[preparing.strike]?.label ?? "") : "")
+      || game.i18n.localize(SW.CONDITIONS.preparing.name);
+    const cost = SW.ACTION_GLYPHS[Number(preparing.cost)] ?? "";
+    if (cost) preparingLabel = `${preparingLabel} ${cost}`;
+  }
+
+  return {
+    show: true,
+    isTurn,
+    value,
+    reserved,
+    perRound,
+    pips,
+    preparing,
+    preparingLabel,
+    passGlyph: SW.ACTION_GLYPHS[0],
+    tooltip: isTurn
+      ? game.i18n.format("STARWROUGHT.Actions.yourTurn", { left: value, total: perRound })
+      : game.i18n.localize("STARWROUGHT.Actions.notYourTurn")
+  };
+}
+
+/**
+ * The Bind this actor is in, as one line: neutral, Controlling, or Controlled, with the partner's
+ * name and both implements. Null when there is none. Shared by both sheets.
+ * @param {Actor} actor
+ * @returns {object|null}
+ */
+export function bindContext(actor) {
+  const bind = actor.system.bind;
+  const state = bind?.state;
+  if (!state || !(state in BIND_KEYS)) return null;
+
+  let partner = null;
+  try { partner = bind.partnerUuid ? fromUuidSync(bind.partnerUuid) : null; } catch { partner = null; }
+  const args = {
+    partner: partner?.name ?? game.i18n.localize("STARWROUGHT.Bind.unknownPartner"),
+    mine: bind.mine || game.i18n.localize("STARWROUGHT.Bind.unnamedImplement"),
+    theirs: bind.theirs || game.i18n.localize("STARWROUGHT.Bind.unnamedImplement")
+  };
+  const condition = SW.CONDITIONS[BIND_KEYS[state]];
+  return {
+    state,
+    text: game.i18n.format(`STARWROUGHT.Bind.${state}`, args),
+    conditionLabel: game.i18n.localize(condition.name),
+    img: condition.img
+  };
+}
+
+/** Bind states, mapped onto the condition each shows on the token. */
+const BIND_KEYS = Object.freeze({ neutral: "bound", controlling: "controlling", controlled: "controlled" });
+
+/**
+ * Vigor as the bar draws it: the value's share of the track, and Temporary Vigor laid on top as
+ * its own segment, capped so the two together never overflow. Shared by both sheets.
+ * @param {Actor} actor
+ * @returns {object}
+ */
+export function vigorContext(actor) {
+  const vigor = actor.system.vigor ?? {};
+  const max = Math.max(0, Number(vigor.max) || 0);
+  const value = Math.max(0, Number(vigor.value) || 0);
+  const temp = Math.max(0, Number(vigor.temp) || 0);
+  const pct = max ? Math.clamp(Math.round((value / max) * 100), 0, 100) : 0;
+  const tempPct = max ? Math.clamp(Math.round((temp / max) * 100), 0, 100 - pct) : 0;
+  return {
+    value, temp, max, pct, tempPct,
+    perLevel: vigor.perLevel ?? 0,
+    rest: vigor.rest ?? 0
+  };
+}
+
+/**
+ * The Wounds one Zone carries, as pips against its capacity, with the effect in force. Reads the
+ * derived fields when the data model provides them and falls back to the rules constants when it
+ * does not, so the sheet never shows a blank where a number belongs. Shared by both sheets.
+ * @param {Actor} actor
+ * @param {string} key  A key of SW.ZONES.
+ * @returns {object}
+ */
+export function zoneWounds(actor, key) {
+  const sys = actor.system;
+  const z = sys.zones?.[key] ?? {};
+  const wounds = Math.max(0, Number(z.wounds) || 0);
+  const capacity = Math.max(1,
+    Number(z.capacity)
+    || Number(sys.woundCapacity?.(key))
+    || ((SW.WOUND_CAPACITY[sys.size] ?? SW.WOUND_CAPACITY.medium) + (Number(sys.woundBonus) || 0)));
+  const final = z.final ?? (wounds >= capacity);
+  const crit = SW.ZONE_CRITICALS[key];
+  const effectKey = z.woundEffect ?? (wounds <= 0 ? null : final ? crit.final : crit.first);
+  const effect = effectKey ? game.i18n.localize(effectKey) : null;
+  const zoneLabel = game.i18n.localize(SW.ZONES[key].label);
+
+  return {
+    key,
+    wounds,
+    capacity,
+    final,
+    wounded: wounds > 0,
+    effect,
+    pips: Array.fromRange(capacity, 1).map(n => ({
+      filled: n <= wounds,
+      final: n === capacity
+    })),
+    tooltip: wounds > 0
+      ? game.i18n.format("STARWROUGHT.Wound.inForce", { zone: zoneLabel, effect })
+      : game.i18n.format("STARWROUGHT.Field.woundsHint", { capacity })
+  };
+}
+
+/* -------------------------------------------- */
+
 export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** @inheritdoc */
   static DEFAULT_OPTIONS = {
@@ -43,6 +194,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rest: SwCharacterSheet.#onRest,
       recovery: SwCharacterSheet.#onRecovery,
       refuseDeath: SwCharacterSheet.#onRefuseDeath,
+      treatWound: SwCharacterSheet.#onTreatWound,
+      adjustWound: SwCharacterSheet.#onAdjustWound,
+      endBind: SwCharacterSheet.#onEndBind,
+      strike: SwCharacterSheet.#onStrike,
       itemUse: SwCharacterSheet.#onItemUse,
       itemEdit: SwCharacterSheet.#onItemEdit,
       itemDelete: SwCharacterSheet.#onItemDelete,
@@ -55,8 +210,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       setCarry: SwCharacterSheet.#onSetCarry,
       wearArmor: SwCharacterSheet.#onWearArmor,
       setActions: SwCharacterSheet.#onSetActions,
-      toggleReaction: SwCharacterSheet.#onToggleReaction,
       resetActions: SwCharacterSheet.#onResetActions,
+      pass: SwCharacterSheet.#onPass,
+      endOpportunity: SwCharacterSheet.#onEndOpportunity,
+      finishPrepared: SwCharacterSheet.#onFinishPrepared,
+      abandonPrepared: SwCharacterSheet.#onAbandonPrepared,
       setStance: SwCharacterSheet.#onSetStance,
       toggleCollapse: SwCharacterSheet.#onToggleCollapse,
       adjust: SwCharacterSheet.#onAdjust,
@@ -79,7 +237,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     biography: { template: "systems/starwrought/templates/actor/biography.hbs", scrollable: [""] }
   };
 
-  /** @inheritdoc */
+  /** @inheritdoc. The `actions` tab keeps its id; the handbook now calls them Maneuvers, and the label says so. */
   static TABS = {
     primary: {
       initial: "overview",
@@ -114,6 +272,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       editable: this.isEditable,
       owner: actor.isOwner,
       limited: actor.limited,
+      isGM: game.user.isGM,
       config: SW,
       SW
     });
@@ -129,6 +288,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rankLabel: game.i18n.localize(def.rankLabel)
     }));
     context.stance = stanceContext(actor);
+    context.bind = bindContext(actor);
 
     context.zones = Object.keys(SW.ZONES).map(key => {
       const z = sys.zones[key];
@@ -137,16 +297,24 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         label: game.i18n.localize(SW.ZONES[key].label),
         protection: z.protection,
         exposed: z.exposed,
+        postureExposed: !!z.postureExposed,
         piece: z.piece,
         material: z.material,
         materialLabel: game.i18n.localize(z.materialLabel ?? SW.MATERIALS.none.label),
         weakTo: z.weakTo ? game.i18n.localize(SW.DAMAGE_TYPES[z.weakTo].label) : null,
-        crit: game.i18n.localize(SW.ZONE_CRITICALS[key].effect)
+        crit: game.i18n.localize(SW.ZONE_CRITICALS[key].effect),
+        wounds: zoneWounds(actor, key)
       };
     });
 
+    // Spent: at 0 Vigor. Derived by the data model; read defensively so an older document that has
+    // not been through prepareDerivedData yet still renders.
+    context.spent = sys.spent ?? ((sys.vigor?.value ?? 1) === 0);
+    context.vigor = vigorContext(actor);
+
     context.constellations = this.#prepareConstellations();
     context.inventory = this.#prepareInventory();
+    context.strikes = this.#prepareStrikes();
     context.actionItems = actor.items.filter(i => i.type === "action")
       .sort((a, b) => a.name.localeCompare(b.name));
     context.basicActions = await this.#prepareBasicActions();
@@ -164,20 +332,14 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     };
 
     // The action economy, shown only when it means something: in an encounter.
-    const left = sys.actions?.value ?? 3;
-    context.actions = {
-      show: actor.inEncounter,
-      isTurn: actor.isTurn,
-      value: left,
-      reaction: sys.actions?.reaction ?? true,
-      pips: [1, 2, 3].map(value => ({
-        value,
-        spent: value > left,
-        tooltip: game.i18n.format("STARWROUGHT.Actions.setTo", { n: value })
-      })),
-      tooltip: actor.isTurn
-        ? game.i18n.format("STARWROUGHT.Actions.yourTurn", { left })
-        : game.i18n.localize("STARWROUGHT.Actions.notYourTurn")
+    context.actions = actionsContext(actor);
+
+    // Movement, in feet: a Move, a Step, a Rush, a Leap.
+    context.movement = {
+      speed: sys.speed ?? 0,
+      step: sys.step ?? Math.floor((sys.speed ?? 0) / SW.STEP_DIVISOR),
+      rush: sys.rush ?? Math.max(0, (sys.speed ?? 0) * SW.RUSH_MULTIPLIER - (sys.loadStrain ?? 0)),
+      leap: sys.leap ?? Math.max(0, SW.LEAP_FEET - (sys.loadStrain ?? 0))
     };
 
     context.totalReachHint = sys.reachWeapon
@@ -190,6 +352,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
     context.dyingMax = SW.DYING_MAX;
     context.heroMax = SW.HERO_POINTS_MAX;
+    context.woundCount = sys.woundCount ?? Object.keys(SW.ZONES).reduce((n, z) => n + (sys.zones[z]?.wounds ?? 0), 0);
     context.resistancesText = SwCharacterSheet.formatDamageMods(sys.traits.resistances);
     context.weaknessesText = SwCharacterSheet.formatDamageMods(sys.traits.weaknesses);
     context.immunitiesText = Array.from(sys.traits.immunities ?? []).join(", ");
@@ -217,10 +380,50 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   /* -------------------------------------------- */
 
+  /**
+   * Melee and Ranged as the overview shows them: rank and Proficiency for each, the specialization
+   * damage the better of the two earns, and the number of weapon dice your level rolls.
+   */
+  #prepareStrikes() {
+    const sys = this.document.system;
+    // Melee is a Might sky and Ranged an Agility one (PHB v4.10); the registry can refine that
+    // once the content index is loaded, but the glyph must not depend on it.
+    const row = (slug, key, fallbackAttribute) => {
+      const entry = sys[key] ?? {};
+      const rank = entry.rank ?? "untrained";
+      return {
+        slug,
+        key,
+        label: game.i18n.localize(`STARWROUGHT.Field.${key}`),
+        rank,
+        rankLabel: game.i18n.localize(SW.RANKS[rank]?.label ?? SW.RANKS.untrained.label),
+        proficiency: entry.proficiency ?? 0,
+        specialization: entry.specialization ?? 0,
+        attribute: sys.constellations?.[slug]?.attribute ?? SW.constellations[slug]?.attribute ?? fallbackAttribute
+      };
+    };
+    const melee = row(SW.MELEE_SLUG, "melee", "might");
+    const ranged = row(SW.RANGED_SLUG, "ranged", "agility");
+    return {
+      melee,
+      ranged,
+      weaponDice: sys.weaponDice ?? SW.weaponDice(sys.level),
+      kinds: Object.entries(SW.STRIKE_KINDS).map(([key, kind]) => ({
+        key,
+        label: game.i18n.localize(kind.label),
+        glyph: SW.ACTION_GLYPHS[kind.cost] ?? "",
+        hint: game.i18n.localize(`STARWROUGHT.Strike.${key}Hint`)
+      }))
+    };
+  }
+
+  /* -------------------------------------------- */
+
   /** Group the character's Constellations by category, in handbook order. */
   #prepareConstellations() {
     const groups = {};
-    for (const entry of Object.values(this.document.system.constellations)) {
+    const all = this.document.system.constellations;
+    for (const entry of Object.values(all)) {
       const category = entry.category ?? "general";
       const group = (groups[category] ??= {
         key: category,
@@ -228,8 +431,15 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         order: SW.CATEGORIES[category]?.order ?? 9,
         constellations: []
       });
+      // A parent (Melee, Ranged) counts its Combat Styles' points toward its rank; a child says
+      // which parent it feeds. Neither changes what the Talents themselves cost.
+      const inherited = Number(entry.inherited) || 0;
+      const parent = entry.parent ? (all[entry.parent]?.name ?? SW.getConstellation(entry.parent)?.name ?? entry.parent) : null;
       group.constellations.push({
         ...entry,
+        pool: entry.pool ?? entry.points,
+        inherited,
+        parentName: parent,
         rankLabel: game.i18n.localize(entry.rankLabel),
         attributeGlyph: SW.ATTRIBUTES[entry.attribute]?.glyph ?? "",
         attributeLabel: game.i18n.localize(SW.ATTRIBUTES[entry.attribute]?.label ?? ""),
@@ -292,7 +502,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       label: game.i18n.localize(SW.ZONES[zone].label),
       item: wornArmor[zone],
       protection: actor.system.zones[zone].protection,
-      exposed: actor.system.zones[zone].exposed
+      exposed: actor.system.zones[zone].exposed,
+      wounds: zoneWounds(actor, zone)
     }));
 
     // A piece can only be worn on an empty Zone, so the picker offers what is actually stowed.
@@ -335,24 +546,53 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
-   * A weapon row, with the attack modifier already worked out: Weapons Proficiency after
-   * Handling and Familiarity, plus the Attribute the weapon actually uses.
+   * A weapon row, with the attack modifier already worked out: Melee or Ranged Proficiency after
+   * Handling and Familiarity, plus the Strike Attribute (the weapon's own, or a Combat Style's Key
+   * Attribute when you own that Style's root and are wielding its weapon). No level term: PHB
+   * v4.10 checks are Attribute + Proficiency + bonuses. The standing attack modifiers the data
+   * model derives (the first Arms Wound's −2 Situation) are folded in, so the row agrees with the
+   * roll dialog's preview.
    */
   #weaponRow(item) {
     const actor = this.document;
     const sys = actor.system;
-    const rank = actor.weaponRank(item);
-    const attribute = item.system.attackAttribute;
-    const attackMod = sys.level + sys.attributes[attribute].mod + SW.rankBonus(rank) + sys.bonuses.attack;
-    const dice = item.system.flags.mechanical || !sys.attributes.might.mod
-      ? `${sys.weapons.dice}d${item.system.effectiveDie}`
-      : `${sys.weapons.dice}d${item.system.effectiveDie}+${sys.attributes.might.mod + sys.weapons.specialization}`;
+    const slugKey = item.system.isRanged ? "ranged" : "melee";
+    const training = sys[slugKey] ?? { rank: "untrained", proficiency: 0, specialization: 0 };
+    // Handling still applies: Practiced drops a rank without Familiarity, Technical drops to Untrained.
+    const rank = actor.weaponRank?.(item) ?? training.rank ?? "untrained";
+
+    const strike = sys.strikeAttributeFor?.(item) ?? { attribute: item.system.attackAttribute, source: "weapon" };
+    const attribute = strike.attribute in SW.ATTRIBUTES ? strike.attribute : "might";
+    const attributeLabel = game.i18n.localize(SW.ATTRIBUTES[attribute].label);
+    const standing = SW.resolveModifiers(sys.attackModifiers ?? []).total;
+    const attackMod = sys.attributes[attribute].mod + SW.rankBonus(rank) + sys.bonuses.attack + standing;
+
+    const dice = sys.weaponDice ?? SW.weaponDice(sys.level);
+    const might = item.system.flags.mechanical ? 0 : sys.attributes.might.mod;
+    const flat = might + (training.specialization ?? 0);
+    const die = item.system.effectiveDie;
+    const full = flat ? `${dice}d${die}+${flat}` : `${dice}d${die}`;
+    // The Combat Style whose Key Attribute won, named for the tooltip. `system.style` is the
+    // Style's name or slug as authored on the weapon; slugify so either spelling finds it.
+    const styleSlug = SW.slugify(item.system.style ?? "");
+    const styleName = strike.source === "style"
+      ? (sys.constellations?.[styleSlug]?.name ?? SW.getConstellation(styleSlug)?.name ?? item.system.style)
+      : "";
+
     return {
       ...this.#carryRow(item),
       attackMod,
       rank,
       rankLabel: game.i18n.localize(SW.RANKS[rank].label),
-      damage: `${dice} ${game.i18n.localize(SW.DAMAGE_TYPES[item.system.effectiveType].label)}`,
+      trainingLabel: game.i18n.localize(`STARWROUGHT.Field.${slugKey}`),
+      strikeAttribute: attribute,
+      strikeAttributeGlyph: SW.ATTRIBUTES[attribute].glyph,
+      strikeAttributeAbbr: game.i18n.localize(SW.ATTRIBUTES[attribute].abbr),
+      strikeAttributeHint: strike.source === "style"
+        ? game.i18n.format("STARWROUGHT.Strike.attributeFromStyle", { attribute: attributeLabel, style: styleName })
+        : game.i18n.format("STARWROUGHT.Strike.attributeFromWeapon", { attribute: attributeLabel }),
+      damage: `${full} ${game.i18n.localize(SW.DAMAGE_TYPES[item.system.effectiveType].label)}`,
+      quickDamage: `1d${die}`,
       // Total Reach is your Natural Reach plus the weapon's. A ranged weapon shows its range.
       reach: item.system.isRanged
         ? `${item.system.range} ft`
@@ -362,7 +602,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         : game.i18n.format("STARWROUGHT.Field.totalReachHint", {
             natural: sys.reach, weapon: item.system.reach, total: item.system.reach + sys.reach
           }),
-      traits: item.system.totalTraits
+      traits: item.system.totalTraits,
+      defaultStrike: SW.DEFAULT_STRIKE
     };
   }
 
@@ -434,8 +675,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
-   * The Basic Actions, grouped by category for the Actions tab. They come from the compendium and
-   * are never copied onto the character, so what the sheet shows is what the book says today.
+   * The Basic Maneuvers, grouped by category for the Maneuvers tab. They come from the compendium
+   * and are never copied onto the character, so what the sheet shows is what the book says today.
    */
   async #prepareBasicActions() {
     const groups = new Map();
@@ -528,6 +769,47 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.refuseDeath();
   }
 
+  /** Ten minutes and an Endure check against 10 + the Wounds carried. The actor rolls it. */
+  static async #onTreatWound(event, target) {
+    const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
+    if (!(zone in SW.ZONES)) return;
+    return this.document.treatWound(zone);
+  }
+
+  /**
+   * The GM's bookkeeping on a Zone's Wounds. Adding one goes through `applyWound` so everything a
+   * Wound does (abandoning a Prepared Maneuver, Torso bleed, Dying on a final Torso or Head Wound)
+   * fires; taking one off is a correction with no rules attached, so it is a plain update.
+   */
+  static async #onAdjustWound(event, target) {
+    const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
+    if (!(zone in SW.ZONES)) return;
+    const delta = Number(target.dataset.delta) || 0;
+    if (delta > 0) return this.document.applyWound(zone, delta);
+    const current = this.document.system.zones[zone]?.wounds ?? 0;
+    const next = Math.max(0, current + delta);
+    if (next === current) return;
+    await this.document.update({ [`system.zones.${zone}.wounds`]: next });
+    // Wounded is also a token condition: on while any Zone carries a Wound.
+    const any = Object.keys(SW.ZONES).some(z => (this.document.system.zones[z]?.wounds ?? 0) > 0);
+    return this.document.setCondition("wounded", any);
+  }
+
+  static async #onEndBind() {
+    return this.document.endBind();
+  }
+
+  /**
+   * Strike: Quick ❶, Deliberate ❷ or Committed ❸, from the buttons on a weapon row. The kind is
+   * a default the roll dialog can still change; shift-click skips the dialog.
+   */
+  static async #onStrike(event, target) {
+    const weaponId = target.closest("[data-item-id]")?.dataset.itemId;
+    if (!weaponId) return;
+    const strike = target.dataset.strike in SW.STRIKE_KINDS ? target.dataset.strike : SW.DEFAULT_STRIKE;
+    return this.document.rollAttack(weaponId, { strike, dialog: !event.shiftKey });
+  }
+
   static async #onItemUse(event, target) {
     const item = this.#getItem(target);
     return item?.use({ dialog: !event.shiftKey });
@@ -562,10 +844,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /* -------------------------------------------- */
-  /*  Basic Actions: used from the compendium     */
+  /*  Basic Maneuvers: used from the compendium   */
   /* -------------------------------------------- */
 
-  /** The compendium Item behind a Basic Action row. */
+  /** The compendium Item behind a Basic Maneuver row. */
   async #basicItem(target) {
     const uuid = target.closest("[data-uuid]")?.dataset.uuid;
     return uuid ? fromUuid(uuid) : null;
@@ -611,16 +893,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.setCarryState(target.dataset.itemId, "worn");
   }
 
-  /** Click a pip to set how many actions are left. */
+  /** Click a pip to set how many actions are left. A reserved pip is spoken for; it does nothing. */
   static async #onSetActions(event, target) {
+    if (target.dataset.state === "reserved") return;
     const value = Number(target.dataset.value);
     const current = this.document.system.actions.value;
     // Clicking the pip you are already on spends it, which is the common case.
     return this.document.update({ "system.actions.value": value === current ? value - 1 : value });
-  }
-
-  static async #onToggleReaction() {
-    return this.document.update({ "system.actions.reaction": !this.document.system.actions.reaction });
   }
 
   static async #onSetStance(event, target) {
@@ -631,15 +910,34 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.resetActions();
   }
 
+  /** Pass: decline this Opportunity. Not a Maneuver; a full circuit of Passes ends the round. */
+  static async #onPass() {
+    return this.document.pass();
+  }
+
+  /** End the Opportunity: play moves to the next combatant. Only from the combatant whose turn it is. */
+  static async #onEndOpportunity() {
+    if (!this.document.isTurn) return;
+    return game.combat?.nextTurn();
+  }
+
+  static async #onFinishPrepared() {
+    return this.document.finishPrepared();
+  }
+
+  static async #onAbandonPrepared() {
+    return this.document.abandonPrepared();
+  }
+
   static #onToggleCollapse(event, target) {
     const slug = target.dataset.slug;
     if (this.#collapsed.has(slug)) this.#collapsed.delete(slug);
     else this.#collapsed.add(slug);
-    // The Constellations tab folds Constellations; the Actions tab folds Basic Action groups.
+    // The Constellations tab folds Constellations; the Maneuvers tab folds Basic Maneuver groups.
     return this.render({ parts: [target.dataset.part || "constellations"] });
   }
 
-  /** Plus and minus buttons on Hero Points, Wounded, Dying, and Temporary Hit Points. */
+  /** Plus and minus buttons on Hero Points and Dying. */
   static async #onAdjust(event, target) {
     const path = target.dataset.path;
     const delta = Number(target.dataset.delta) || 0;
@@ -648,7 +946,6 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.document.update({ [path]: next });
     // Dying is also a token condition, so keep the two in step.
     if (path === "system.dying") await this.document.setCondition("dying", next);
-    if (path === "system.wounded") await this.document.setCondition("wounded", next);
   }
 
   static async #onEffectCreate() {

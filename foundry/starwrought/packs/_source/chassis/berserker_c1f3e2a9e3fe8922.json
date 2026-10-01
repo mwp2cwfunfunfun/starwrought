@@ -7,14 +7,14 @@
     "kind": "calling",
     "constellation": "berserker",
     "attribute": "might",
-    "hp": 4,
+    "vigor": 4,
     "grants": [
       "Athletics"
     ],
-    "specialAbility": "<p>Rage: Temp HP = level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts.</p>",
-    "description": "<p>Grants Training in Athletics, and 4 Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>",
+    "specialAbility": "<p>Rage ❶: Temporary Vigor equal to your level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts. The damage rises to +4 at Expert, +6 at Master, +8 at Legendary.</p>",
+    "description": "<p>Grants Training in Athletics, and 4 Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "646e56ad26c2456d",
   "sort": 0,

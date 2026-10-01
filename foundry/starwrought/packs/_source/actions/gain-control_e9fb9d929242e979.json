@@ -1,0 +1,31 @@
+{
+  "_id": "e9fb9d929242e979",
+  "name": "Gain Control",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "description": "<p>Requirements A rigid weapon, shield, or permitted natural weapon in hand; the target's weapon or natural attack is within the longer of your two Total Reaches; the target is no more than one Size larger than you.<br>Roll Melee against the target's Guard.<br><b>Critical Success</b> You Control the weapon, and the target is Off-Guard until its next Opportunity. <b>Success</b> You Control the weapon. <b>Graze</b> A neutral Bind forms. <b>Miss</b> You pressed badly. The target Controls your weapon instead.<br><b>Special</b> Evade cannot answer this attack. While you Control a weapon, the target has an Exposed Zone of your choice and takes −2 Situation to attacks with it (see Chapter 2: The Exchange).</p>",
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "606d6a9c20d0b726",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e9fb9d929242e979"
+}

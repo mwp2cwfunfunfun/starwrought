@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "While an ally is adjacent to you, both of you gain a +1 circumstance bonus to Guard for physical Attacks.",
+    "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard for physical Attacks.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,

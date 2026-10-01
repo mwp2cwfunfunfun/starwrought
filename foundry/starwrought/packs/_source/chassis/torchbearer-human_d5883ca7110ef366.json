@@ -7,10 +7,10 @@
     "kind": "bloodline",
     "constellation": "human",
     "attribute": "presence",
-    "specialAbility": "<p>Allies within 15 feet gain a +1 circumstance bonus to their first Defense roll each round while they can see or hear you.</p>",
+    "specialAbility": "<p>Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.</p>",
     "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "581566cb83a944ca",
   "sort": 0,

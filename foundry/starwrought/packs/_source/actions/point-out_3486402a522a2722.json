@@ -7,16 +7,18 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Watching, deceiving & helping",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Watching, Deceiving & Helping",
     "basic": true,
     "traits": [
       "Auditory",
       "Visual"
     ],
-    "description": "<p>Indicate a creature you have located. It becomes Hidden rather than Undetected, or Concealed rather than Hidden, to any ally who can hear or see you.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Indicate a creature you have located, whether you can see it or it is merely Hidden to you. It becomes Hidden rather than Undetected, or Concealed rather than Hidden, to any ally who can hear or see you.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "9c4c1eb78a540a57",
+  "folder": "fdaa17210c6d23e8",
   "sort": 0,
   "ownership": {
     "default": 0

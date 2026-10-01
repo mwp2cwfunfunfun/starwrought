@@ -3,24 +3,6 @@
 
   <section class="sw-chargen-main">
 
-    {{#if (eq stepId "start")}}
-    <div class="sw-panel">
-      <h3 class="sw-panel-title">{{localize "STARWROUGHT.Chargen.step.start"}}</h3>
-      <p class="sw-note">{{localize "STARWROUGHT.Chargen.startBlurb"}}</p>
-      <ul class="sw-item-list">
-        {{#each freeTrainings as |t|}}
-        <li class="sw-item-row">
-          <i class="fa-solid fa-star sw-free-mark"></i>
-          <span class="sw-item-name">{{t.name}}</span>
-          <span class="sw-item-tag">{{t.root}}</span>
-          {{#if t.owned}}<span class="sw-item-tag sw-good-tag">{{localize "STARWROUGHT.Chargen.granted"}}</span>{{/if}}
-        </li>
-        {{/each}}
-      </ul>
-      <p class="sw-note">{{localize "STARWROUGHT.Chargen.startFooter"}}</p>
-    </div>
-    {{/if}}
-
     {{#if cards}}
     <div class="sw-panel">
       <h3 class="sw-panel-title">
@@ -44,6 +26,33 @@
           {{/if}}
           <div class="sw-choice-text">{{{card.description}}}</div>
         </a>
+        {{/each}}
+      </div>
+      {{#if (eq stepId "training")}}
+      <p class="sw-note">{{localize "STARWROUGHT.Chargen.trainingFooter"}}</p>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{#if (eq stepId "defenses")}}
+    {{!-- The decision at this step is which threat goes unanswered, so show the four threats and
+          which of their two Defenses is Trained. Two Trained Defenses cover three. --}}
+    <div class="sw-panel">
+      <h3 class="sw-panel-title">
+        {{localize "STARWROUGHT.Chargen.coverageTitle"}}
+        <span class="sw-points">
+          {{#if uncovered.length}}{{localize "STARWROUGHT.Chargen.coverageGap"}} {{swJoin uncovered ", "}}
+          {{else}}{{localize "STARWROUGHT.Chargen.coverageFull"}}{{/if}}
+        </span>
+      </h3>
+      <p class="sw-note">{{localize "STARWROUGHT.Chargen.coverageHint"}}</p>
+      <div class="sw-trait-list">
+        {{#each coverage as |t|}}
+        <span class="sw-trait {{#if t.covered}}sw-good-tag{{/if}}">
+          <strong>{{t.label}}</strong>:
+          {{#each t.defenses as |d|}}{{#if d.trained}}<b>{{d.label}}</b>{{else}}<em>{{d.label}}</em>{{/if}}{{#unless @last}} / {{/unless}}{{/each}}
+          {{#if t.covered}}<i class="fa-solid fa-circle-check"></i>{{else}}<i class="fa-solid fa-circle-exclamation"></i>{{/if}}
+        </span>
         {{/each}}
       </div>
     </div>
@@ -97,7 +106,8 @@
           <div class="sw-chip-row">
             {{#each grp.constellations as |c|}}
             <a class="sw-con-chip {{#if c.active}}active{{/if}}" data-action="pickConstellation"
-               data-slot="{{slot.id}}" data-slug="{{c.slug}}">
+               data-slot="{{slot.id}}" data-slug="{{c.slug}}"
+               {{#if c.tooltip}}data-tooltip="{{c.tooltip}}"{{/if}}>
               <span class="sw-glyph sw-glyph-{{c.attribute}}">{{c.glyph}}</span>
               <span class="sw-con-chip-name">{{c.name}}</span>
               <em>{{c.available}}</em>
@@ -111,6 +121,13 @@
         {{!-- Every list is rendered; the chips show one of them. Toggling beats re-rendering. --}}
         {{#each slot.groups as |g|}}
         <ul class="sw-talent-options {{#if g.active}}active{{/if}}" data-group="{{g.slug}}">
+          {{#if g.parentNote}}
+          {{!-- A Combat Style is a child of Melee or Ranged: its points count toward that rank too. --}}
+          <li class="sw-note">
+            <i class="fa-solid fa-arrow-turn-up"></i>
+            {{g.parentNote}}
+          </li>
+          {{/if}}
           {{#each g.talents as |t|}}
           {{!-- The whole card is the button. A target the size of the name alone was missed. --}}
           <li class="sw-talent-option {{#unless t.ok}}locked{{/unless}}"
@@ -154,6 +171,37 @@
         <div><span>{{localize "STARWROUGHT.Chassis.background"}}</span><strong>{{system.details.background.name}}</strong></div>
         <div><span>{{localize "STARWROUGHT.Chassis.calling"}}</span><strong>{{system.details.calling.name}}</strong></div>
         <div><span>{{localize "STARWROUGHT.Field.languages"}}</span><strong>{{system.details.languages}}</strong></div>
+        <div>
+          <span>{{localize "STARWROUGHT.Chargen.weaponTraining"}}</span>
+          <strong>{{#each review.training as |t|}}{{#if t.trained}}{{t.name}} {{/if}}{{/each}}</strong>
+        </div>
+        <div><span>{{localize "STARWROUGHT.Field.speed"}}</span><strong>{{review.speed}} ft</strong></div>
+      </div>
+    </div>
+
+    {{!-- Finishing Up, with this character's numbers in the formulas. --}}
+    <div class="sw-panel">
+      <h3 class="sw-panel-title">{{localize "STARWROUGHT.Chargen.finishingUp"}}</h3>
+      <div class="sw-review-grid">
+        <div>
+          <span>{{localize "STARWROUGHT.Field.vigor"}}</span>
+          <strong>{{review.vigor.formula}}</strong>
+        </div>
+        <div>
+          <span>{{localize "STARWROUGHT.Section.attributes"}}</span>
+          <strong>{{review.attributeRule}}</strong>
+        </div>
+        <div>
+          <span>{{localize "STARWROUGHT.Field.rank"}}</span>
+          <strong>{{review.rankRule}}</strong>
+        </div>
+        <div>
+          <span>{{localize "STARWROUGHT.Chargen.talentsSoFar"}}</span>
+          <strong>
+            {{localize "STARWROUGHT.Chargen.talentCount" talents=review.talents minimum=review.minimum}}
+            {{#if review.short}}<i class="fa-solid fa-circle-exclamation sw-warn" data-tooltip="{{localize 'STARWROUGHT.Chargen.talentsShort' n=review.short}}"></i>{{/if}}
+          </strong>
+        </div>
       </div>
     </div>
     {{/if}}
@@ -172,8 +220,8 @@
       {{/each}}
     </div>
 
-    <div class="sw-rail-line">
-      <span>{{localize "STARWROUGHT.Field.hpShort"}}</span><strong>{{summary.hp}}</strong>
+    <div class="sw-rail-line" data-tooltip="{{summary.vigor.formula}}">
+      <span>{{localize "STARWROUGHT.Field.vigor"}}</span><strong>{{summary.vigor.total}}</strong>
     </div>
     {{#each summary.defenses as |d|}}
     <div class="sw-rail-line">
@@ -181,13 +229,13 @@
     </div>
     {{/each}}
 
-    <h4>{{localize "STARWROUGHT.Chargen.talentsSoFar"}} <span class="sw-points">{{summary.talents}}</span></h4>
+    <h4>{{localize "STARWROUGHT.Chargen.talentsSoFar"}} <span class="sw-points">{{summary.talents}} / {{summary.minimum}}</span></h4>
     <ul class="sw-rail-constellations">
       {{#each summary.constellations as |c|}}
-      <li>
+      <li data-tooltip="{{c.rank}} {{c.bonus}}">
         <span class="sw-glyph">{{c.glyph}}</span>
         <span class="sw-rail-name">{{c.name}}</span>
-        <span class="sw-points">{{c.points}}</span>
+        <span class="sw-points">{{c.points}}{{#if c.inherited}} <em>(+{{c.inherited}})</em>{{/if}}</span>
       </li>
       {{else}}
       <li class="sw-empty">{{localize "STARWROUGHT.Chargen.nothingYet"}}</li>

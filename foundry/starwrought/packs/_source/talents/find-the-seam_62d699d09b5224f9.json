@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "Your Crossbow Strikes do an additional 2 damage against Exposed Zones.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "8c23a5e18c02daf0",
   "sort": 0,

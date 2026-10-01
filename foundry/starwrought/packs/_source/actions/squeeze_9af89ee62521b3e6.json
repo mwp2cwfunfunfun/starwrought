@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Moving",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Motion",
     "basic": true,
     "traits": [
-      "Move"
+      "Motion"
     ],
-    "description": "<p>Requirements You are entering a space narrower than your token size, but at least half as wide.<br>Move up to 5 feet, regardless of your Speed. While any part of you is in that space you are Off-Guard, Evade is unavailable, and you can attack only with Close weapons. A space narrower than half your own stops you entirely: for a Medium creature, a gap of 1½ feet or less.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Requirements You are entering a space narrower than your token size, but at least half as wide.<br>Move up to 3 feet, regardless of your Speed. While any part of you is in that space you are Off-Guard, Evade is unavailable to you, and you can attack only with weapons that have the Close trait. A space narrower than half your own stops you entirely: for a Medium creature, a gap of 1½ feet or less.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "57b789ecf25288d5",
+  "folder": "02edc6422285a159",
   "sort": 0,
   "ownership": {
     "default": 0

@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Moving",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Motion",
     "basic": true,
     "traits": [
-      "Move"
+      "Motion"
     ],
-    "description": "<p>An Athletics check against a Threshold the GM sets. On a success you move a quarter of your Speed (half on a critical success). On a critical failure you sink.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>An Athletics check against a Threshold the GM sets. On a success you move half your Speed (your full Speed on a critical success). On a critical failure you sink.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "57b789ecf25288d5",
+  "folder": "02edc6422285a159",
   "sort": 0,
   "ownership": {
     "default": 0

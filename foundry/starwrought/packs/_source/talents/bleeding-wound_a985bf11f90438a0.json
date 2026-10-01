@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9309f573d0dc8d61",
   "sort": 0,

@@ -1,6 +1,6 @@
 {
   "_id": "9b8e72df496c615a",
-  "name": "Steady the Line ↺",
+  "name": "Steady the Line ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger An adjacent ally is Grazed.<br>Effect No zone of theirs becomes Exposed. Once per round.",
+    "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
     "description": "<p>Your voice finds the one who is faltering.</p>",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,

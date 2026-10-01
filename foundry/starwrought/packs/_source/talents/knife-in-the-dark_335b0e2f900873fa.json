@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "When you Hit a creature that is Off-Guard or Wrong-Footed to you, you choose which Zone the blow lands on.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "dc41914280a0d356",
   "sort": 0,

@@ -1,6 +1,6 @@
 {
   "_id": "646c98e2f92fa76c",
-  "name": "Feinting Lunge ◆◆",
+  "name": "Feinting Lunge ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -20,6 +20,8 @@
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "4e363b3d724f4315",
   "sort": 0,

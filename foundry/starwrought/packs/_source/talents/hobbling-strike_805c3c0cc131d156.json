@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you Hit your prey with the first Strike of your turn, its Speed is reduced by 10 feet until the end of its next turn.",
+    "effect": "When you Hit your prey with the first Strike of the round, its Speed is reduced by 2 feet until the end of the next round.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ae92852dbc6da00d",
   "sort": 0,

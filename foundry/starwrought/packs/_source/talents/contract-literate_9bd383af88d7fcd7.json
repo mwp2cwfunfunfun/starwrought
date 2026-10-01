@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "+2 circumstance to notice hidden clauses, traps, and altered terms in any agreement.",
+    "effect": "+2 Situation to notice hidden clauses, traps, and altered terms in any agreement.",
     "description": "<p>Read legal, and infernal, contracts at a glance.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "09d1d52e7c8e761e",
   "sort": 0,

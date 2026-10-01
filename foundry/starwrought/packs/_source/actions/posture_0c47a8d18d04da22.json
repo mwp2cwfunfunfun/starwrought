@@ -1,0 +1,37 @@
+{
+  "_id": "0c47a8d18d04da22",
+  "name": "Posture",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Specific Talents • the named Defense",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "",
+      "defense": ""
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>A Situation bonus to the named Defense, taken before you know whether the attack succeeded. It costs no actions, but a Zone of your choice becomes Exposed until the end of the round, whether or not the Posture works, and Recenter does not clear it. Its bonus is Situation, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "b93d96fd63573850",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0c47a8d18d04da22"
+}

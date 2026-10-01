@@ -17,6 +17,13 @@
     <div class="sw-item-subline">
       <span class="sw-glyph sw-glyph-{{system.attribute}}">{{swGlyph system.attribute}}</span>
       <span>{{localize system.categoryLabel}}</span>
+      {{#if parentName}}<span class="sw-item-tag">{{localize "STARWROUGHT.Field.childOf" name=parentName parent=parentName}}</span>{{/if}}
+    </div>
+    {{/if}}
+    {{#if isAction}}
+    <div class="sw-item-subline">
+      {{#if system.glyph}}<span class="sw-action-glyph">{{system.glyph}}</span>{{/if}}
+      {{#if system.reaction}}<span class="sw-item-tag">{{localize "STARWROUGHT.Action.reaction"}}</span>{{/if}}
     </div>
     {{/if}}
   </div>

@@ -1,6 +1,6 @@
 {
   "_id": "ec6bdb0d5809f470",
-  "name": "Cover the Angle ↺",
+  "name": "Cover the Angle ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger An adjacent ally is attacked.<br>Effect The attack is measured against your Guard instead of their chosen Defense, and any Graze cost falls on you.",
+    "effect": "<b>Trigger</b> An adjacent ally is attacked.<br><b>Effect</b> The attack is measured against your Guard instead of their chosen Defense, and any Bind that forms is with your weapon or shield.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "de321617406058a3",
   "sort": 0,

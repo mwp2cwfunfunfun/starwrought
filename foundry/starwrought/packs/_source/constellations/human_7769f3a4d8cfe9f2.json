@@ -7,12 +7,13 @@
     "slug": "human",
     "category": "origin",
     "attribute": "presence",
-    "meta": "Ancestry constellation • Presence (Medium • 8 HP • 25 ft • bonus to Aid)",
+    "parentSlug": "",
+    "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": true,
-    "description": "<p>Ancestry constellation • Presence (Medium • 8 HP • 25 ft • bonus to Aid)</p>",
+    "description": "<p>Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

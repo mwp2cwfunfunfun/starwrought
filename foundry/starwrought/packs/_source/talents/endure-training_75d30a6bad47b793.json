@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
+    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "0faabe9a5cfa92a4",
   "sort": 0,

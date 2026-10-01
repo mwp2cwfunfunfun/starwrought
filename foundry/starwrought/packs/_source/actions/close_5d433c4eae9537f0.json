@@ -1,0 +1,31 @@
+{
+  "_id": "5d433c4eae9537f0",
+  "name": "Close",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "description": "<p>Requirements You Control a foe's weapon.<br>Step toward that foe. The Bind holds, and the Controlled weapon cannot Intercept you. This is the only movement that does not end a Bind.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "606d6a9c20d0b726",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5d433c4eae9537f0"
+}

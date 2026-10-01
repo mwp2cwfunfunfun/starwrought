@@ -7,12 +7,13 @@
     "slug": "ambusher",
     "category": "calling",
     "attribute": "agility",
-    "meta": "Calling • Agility (2 HP/level • Sneak Attack)",
+    "parentSlug": "",
+    "meta": "Calling • Agility (2 Vigor/level • Sneak Attack)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
-    "description": "<p>Calling • Agility (2 HP/level • Sneak Attack)</p>",
+    "description": "<p>Calling • Agility (2 Vigor/level • Sneak Attack)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

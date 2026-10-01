@@ -22,9 +22,13 @@
         <span>{{localize "STARWROUGHT.Field.size"}}</span>
         <select name="system.size">{{selectOptions sizeChoices selected=system.size}}</select>
       </label>
-      <label class="sw-field">
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.speedHint">
         <span>{{localize "STARWROUGHT.Field.speed"}}</span>
         <input type="number" name="system.speed" value="{{system.speed}}" min="0">
+      </label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Actions.perRoundHint">
+        <span>{{localize "STARWROUGHT.Actions.perRound"}}</span>
+        <input type="number" name="system.actionsPerRound" value="{{actionsPerRound}}" min="1" max="12" step="1">
       </label>
       <label class="sw-field">
         <span>{{localize "STARWROUGHT.Field.initiativeThreshold"}}</span>
@@ -33,38 +37,49 @@
     </div>
 
     <div class="sw-vitals">
-      <div class="sw-hp">
-        <div class="sw-hp-track">
-          <div class="sw-hp-fill" style="width: {{swPercent system.hp.value system.hp.max}}%"></div>
-          <span class="sw-hp-text">
-            <input type="number" name="system.hp.value" value="{{system.hp.value}}" min="0">
+      <div class="sw-vigor {{#if spent}}sw-spent{{/if}}">
+        <div class="sw-vigor-track">
+          <div class="sw-vigor-fill" style="width: {{vigor.pct}}%"></div>
+          {{#if vigor.tempPct}}<div class="sw-vigor-temp" style="left: {{vigor.pct}}%; width: {{vigor.tempPct}}%"></div>{{/if}}
+          <span class="sw-vigor-text">
+            <span class="sw-vigor-name">{{localize "STARWROUGHT.Field.vigor"}}</span>
+            <input type="number" name="system.vigor.value" value="{{vigor.value}}" min="0">
             <em>/</em>
-            <input type="number" name="system.hp.max" value="{{system.hp.max}}" min="0">
+            <input type="number" name="system.vigor.max" value="{{system.vigor.max}}" min="0">
+            {{#if spent}}
+            <span class="sw-spent-badge" data-tooltip="{{localize 'STARWROUGHT.Field.spentHint'}}">{{localize "STARWROUGHT.Condition.spent"}}</span>
+            {{/if}}
           </span>
+        </div>
+        <div class="sw-vigor-meta">
+          <label data-tooltip="STARWROUGHT.Field.tempHint">
+            {{localize "STARWROUGHT.Field.temp"}}
+            <input type="number" name="system.vigor.temp" value="{{vigor.temp}}" min="0">
+          </label>
         </div>
       </div>
 
-      {{!-- An adversary answers a blow the same way a character does: the GM picks Evade or Guard. --}}
-      <div class="sw-stance" data-tooltip="{{localize 'STARWROUGHT.Stance.hint'}}">
-        <span class="sw-stance-label">{{localize "STARWROUGHT.Stance.label"}}</span>
-        <div class="sw-stance-chips">
-          {{#each stance.options as |opt|}}
-          <a class="sw-stance-chip {{#if opt.active}}active{{/if}} {{#if opt.unavailable}}unavailable{{/if}}"
-             data-action="setStance" data-stance="{{opt.key}}" data-tooltip="{{opt.tooltip}}">
-            <i class="{{opt.icon}}"></i> {{opt.label}} <em>{{opt.threshold}}</em>
-            {{#if opt.unavailable}}<i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}
-          </a>
-          {{/each}}
+      {{!-- An adversary answers a blow the same way a character does: the GM picks its stance. --}}
+      {{> "systems/starwrought/templates/actor/stance-chips.hbs" stance}}
+
+      {{#if actions.show}}
+      {{> "systems/starwrought/templates/actor/action-pips.hbs" actions}}
+      {{/if}}
+
+      <div class="sw-counters">
+        <div class="sw-counter {{#if woundCount}}sw-alert{{/if}}" data-tooltip="STARWROUGHT.Field.woundCountHint">
+          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounds"}}</span>
+          <div class="sw-stepper"><strong>{{woundCount}}</strong></div>
+        </div>
+        <div class="sw-counter {{#if system.dying}}sw-danger{{/if}}" data-tooltip="STARWROUGHT.Field.dyingHint">
+          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.dying"}}</span>
+          <input type="number" name="system.dying" value="{{system.dying}}" min="0" max="{{dyingMax}}">
         </div>
       </div>
-      <div class="sw-counters">
-        <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.temp"}}</span>
-          <input type="number" name="system.hp.temp" value="{{system.hp.temp}}" min="0"></div>
-        <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounded"}}</span>
-          <input type="number" name="system.wounded" value="{{system.wounded}}" min="0"></div>
-        <div class="sw-counter"><span class="sw-counter-label">{{localize "STARWROUGHT.Field.dying"}}</span>
-          <input type="number" name="system.dying" value="{{system.dying}}" min="0" max="5"></div>
-      </div>
     </div>
+
+    {{#if bind}}
+    {{> "systems/starwrought/templates/actor/bind-line.hbs" bind}}
+    {{/if}}
   </div>
 </header>

@@ -11,34 +11,60 @@
  * that step added are deleted, and the fields it set go back to what they were. Changing a choice
  * inside a step does the same thing before applying the new one, so the Actor never accumulates
  * the residue of a decision you walked away from.
+ *
+ * The budget (PHB v4.10, Finishing Up): one Talent granted outright, Melee Training or Ranged
+ * Training at the player's choice; then 3 Origin (the three identity Roots), 3 Skill (two from the
+ * Background, one from the Calling's free Training), 1 Lore, 1 Calling, 2 Defense (two different
+ * Defenses, the player's choice) and 3 Comets. Fourteen Talent Points is the floor; Talents that
+ * grant points push it higher.
  */
 
 import * as SW from "../config.mjs";
 import {
   SwContent, loadChargenContent, talentsIn, rootOf, bloodlinesIn,
-  talentDocument, loreSlug, loreName, normalize, choiceOptions
+  talentDocument, loreSlug, loreName, normalize, choiceOptions, childrenOf, parentOf
 } from "../helpers/chargen-data.mjs";
 import {
-  canBuy, ownsTalent, pointsIn, slotChoices, constellationLabel, categoryOf
+  canBuy, ownsTalent, pointsIn, slotChoices, constellationLabel
 } from "../helpers/chargen-rules.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
-/** The steps, in the order the handbook prints them. */
+/**
+ * The steps, in the order the handbook prints them. A step marked `pick` is an identity choice
+ * (one card chosen) and blocks Next until it is made; the others are point slots.
+ */
 const STEPS = [
-  { id: "start", icon: "fa-solid fa-star" },
-  { id: "ancestry", icon: "fa-solid fa-person" },
-  { id: "bloodline", icon: "fa-solid fa-droplet" },
-  { id: "culture", icon: "fa-solid fa-landmark" },
-  { id: "background", icon: "fa-solid fa-scroll" },
-  { id: "calling", icon: "fa-solid fa-fire" },
+  { id: "training", icon: "fa-solid fa-hand-fist", pick: true },
+  { id: "ancestry", icon: "fa-solid fa-person", pick: true },
+  { id: "bloodline", icon: "fa-solid fa-droplet", pick: true },
+  { id: "culture", icon: "fa-solid fa-landmark", pick: true },
+  { id: "background", icon: "fa-solid fa-scroll", pick: true },
+  { id: "calling", icon: "fa-solid fa-fire", pick: true },
   { id: "defenses", icon: "fa-solid fa-shield-halved" },
   { id: "comets", icon: "fa-solid fa-meteor" },
   { id: "review", icon: "fa-solid fa-check" }
 ];
 
-/** The Constellations every character is Trained in for free, before a single point is spent. */
-const FREE_TRAININGS = [SW.WEAPONS_SLUG, ...Object.values(SW.DEFENSES).map(d => d.slug)];
+/** Step indices the code needs by name, so a reordering of STEPS breaks loudly here and nowhere else. */
+const STEP = Object.fromEntries(STEPS.map((s, i) => [s.id, i]));
+
+/**
+ * The one Talent every character is handed before a point is spent: Melee Training or Ranged
+ * Training, their choice (PHB v4.10: "1 is automatically granted: Melee Training or Ranged
+ * Training, your choice"). Nothing else is free any more; the four Defenses are bought with the
+ * two Defense Talent Points below.
+ */
+const TRAINING_CHOICES = [SW.MELEE_SLUG, SW.RANGED_SLUG];
+
+/** Defense Talent Points at creation (PHB v4.10, Defenses: "At 1st level, you gain 2 Defense Talent Points"). */
+const DEFENSE_POINTS = 2;
+/** Comets at creation (PHB v4.10, Comets: "Spend 3 Comets"). */
+const COMET_POINTS = 3;
+/** The book's floor for a finished 1st-level character: 1 granted plus 13 from the steps. */
+const MINIMUM_TALENTS = 14;
+/** Vigor at 1st level is this, plus Ancestry Vigor, plus Calling Vigor (PHB v4.10, Your Vigor). */
+const VIGOR_BASE = 10;
 
 /** The grant DSL in the spreadsheets, mapped onto the slot scopes the rules module understands. */
 const GRANT_SCOPES = {
@@ -69,6 +95,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     position: { width: 900, height: 780 },
     window: { title: "STARWROUGHT.Chargen.title", icon: "fa-solid fa-wand-magic-sparkles", resizable: true },
     actions: {
+      chooseTraining: SwChargen.#onChoose("training"),
       chooseAncestry: SwChargen.#onChoose("ancestry"),
       chooseBloodline: SwChargen.#onChoose("bloodline"),
       chooseCulture: SwChargen.#onChoose("culture"),
@@ -309,7 +336,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     const slots = [];
     const picks = this.picks;
 
-    if (step === 4 && picks.background) {
+    if (step === STEP.background && picks.background) {
       const bg = SwContent.chassis.background.find(b => b.name === picks.background);
       const grants = bg?.grants ?? [];
       grants.forEach((granted, i) => {
@@ -327,7 +354,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       });
     }
 
-    if (step === 5 && picks.calling) {
+    if (step === STEP.calling && picks.calling) {
       const calling = SwContent.chassis.calling.find(c => c.name === picks.calling);
       const slug = calling?.constellation || SW.slugify(picks.calling);
       slots.push({
@@ -351,20 +378,25 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
 
-    if (step === 6) {
+    if (step === STEP.defenses) {
+      // Two points, two different Defenses. The book says every character "begins Trained in two
+      // of the four Defenses" and tells you to choose the pair whose gap you can live with, so the
+      // two points may not both go to one Defense (mode "different"). A Defense your Calling
+      // already Trained is still a legal home for one of them: it buys something deeper there.
       slots.push({
         id: "defense",
-        n: 1,
+        n: DEFENSE_POINTS,
+        mode: "different",
         label: game.i18n.localize("STARWROUGHT.Chargen.defensePoint"),
         hint: "STARWROUGHT.Chargen.defenseHint",
         scope: "defense"
       });
     }
 
-    if (step === 7) {
+    if (step === STEP.comets) {
       slots.push({
         id: "comets",
-        n: 3,
+        n: COMET_POINTS,
         label: game.i18n.localize("STARWROUGHT.Chargen.cometPoints"),
         hint: "STARWROUGHT.Chargen.cometHint",
         scope: "anywhere"
@@ -404,6 +436,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     const selected = single ? single.slug : (choices.some(c => c.slug === wanted) ? wanted : null);
 
     // The chips, grouped the way the sheet groups Constellations, so a long list stays scannable.
+    // A Defense chip says which threats it answers, since that is the whole decision at the
+    // Defenses step; a Combat Style chip says which parent its points also count toward.
     const byCategory = {};
     for (const choice of choices) {
       const group = (byCategory[choice.category] ??= {
@@ -418,7 +452,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         attribute: choice.attribute,
         glyph: SW.ATTRIBUTES[choice.attribute]?.glyph ?? "",
         available: choice.available,
-        active: choice.slug === selected
+        active: choice.slug === selected,
+        tooltip: chipTooltip(this.actor, choice.slug)
       });
     }
 
@@ -438,6 +473,9 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         name: choice.name,
         available: choice.available,
         active: choice.slug === selected,
+        // A child of Melee or Ranged: a point here counts toward the parent's rank as well, once
+        // the parent's own Root is owned (buying the Root is what makes you Trained).
+        parentNote: parentNote(this.actor, choice.slug),
         talents: choice.options.map(o => ({
           name: o.talent.name,
           id: o.talent.id,
@@ -527,7 +565,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
    * is no help when the thing blocking it is below the fold.
    */
   #outstanding(step) {
-    const needs = { 1: "ancestry", 2: "bloodline", 3: "culture", 4: "background", 5: "calling" }[step];
+    const needs = STEPS[step]?.pick ? STEPS[step].id : null;
     if (needs && !this.picks[needs]) {
       return [{ id: "", label: game.i18n.format("STARWROUGHT.Chargen.needChoice", {
         step: game.i18n.localize(`STARWROUGHT.Chargen.step.${STEPS[step].id}`)
@@ -540,11 +578,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** A step is complete when its choice is made and its points are spent. */
   #stepComplete(step) {
-    const picks = this.picks;
-    const needs = {
-      1: "ancestry", 2: "bloodline", 3: "culture", 4: "background", 5: "calling"
-    }[step];
-    if (needs && !picks[needs]) return false;
+    const needs = STEPS[step]?.pick ? STEPS[step].id : null;
+    if (needs && !this.picks[needs]) return false;
     return this.#stepSlots(step).every(s => s.done || s.stuck);
   }
 
@@ -574,7 +609,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         reachable: i <= step
       })),
       slots: this.#stepSlots(step),
-      // The five identity steps share one card grid, so the template needs the action's name.
+      // The six card steps share one card grid, so the template needs the action's name.
       chooseAction: `choose${STEPS[step].id.charAt(0).toUpperCase()}${STEPS[step].id.slice(1)}`,
       complete: this.#stepComplete(step),
       outstanding: this.#outstanding(step),
@@ -594,13 +629,34 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
-  async _context_start(context) {
-    context.freeTrainings = FREE_TRAININGS.map(slug => ({
-      slug,
-      name: SW.getConstellation(slug).name,
-      root: rootOf(slug)?.name ?? "",
-      owned: pointsIn(this.actor, slug) > 0
-    }));
+  /**
+   * Melee or Ranged, as two cards. Each shows its Key Attribute, the Root it grants, and the
+   * Combat Styles that are its children, since a point in any of those will count toward this
+   * rank too (PHB v4.10, Parent Constellations).
+   */
+  async _context_training(context) {
+    context.cards = TRAINING_CHOICES.map(slug => {
+      const constellation = SW.getConstellation(slug);
+      const root = rootOf(slug);
+      const children = childrenOf(slug).map(c => c.name);
+      const attribute = SW.ATTRIBUTES[constellation.attribute];
+      const childrenNote = children.length
+        ? `<p class="sw-note">${game.i18n.format("STARWROUGHT.Chargen.trainingChildren", {
+          name: constellation.name, list: children.join(", ")
+        })}</p>`
+        : "";
+      return {
+        key: slug,
+        name: constellation.name,
+        img: constellation.img ?? root?.img ?? "",
+        chosen: this.picks.training === slug,
+        lines: [
+          attribute ? `${attribute.glyph} ${game.i18n.localize(attribute.label)}` : "",
+          root?.name ?? game.i18n.localize("STARWROUGHT.Chargen.trainingNoRoot")
+        ].filter(Boolean),
+        description: `${root?.effect ?? ""}${childrenNote}`
+      };
+    });
   }
 
   async _context_ancestry(context) {
@@ -610,9 +666,9 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       img: a.img,
       chosen: this.picks.ancestry === a.name,
       lines: [
-        `${a.hp} ${game.i18n.localize("STARWROUGHT.Field.hpPerLevel")}`,
+        `${a.vigor} ${game.i18n.localize("STARWROUGHT.Field.vigorPerLevel")}`,
         game.i18n.localize(SW.SIZES[a.size]?.label ?? ""),
-        `${a.speed} ft`
+        `${game.i18n.localize("STARWROUGHT.Field.speed")} ${a.speed} ft`
       ].filter(Boolean),
       description: a.description
     }));
@@ -661,11 +717,33 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       img: c.img,
       chosen: this.picks.calling === c.name,
       lines: [
-        `${c.hp} ${game.i18n.localize("STARWROUGHT.Field.hpPerLevel")}`,
+        `${c.vigor} ${game.i18n.localize("STARWROUGHT.Field.vigorPerLevel")}`,
         ...(c.grants ?? [])
       ],
       description: `${c.specialAbility ?? ""}${c.description ?? ""}`
     }));
+  }
+
+  /**
+   * The four threats and which of the two Defenses answering each one is Trained so far. Two
+   * Trained Defenses cover three threats; the panel shows which one is the gap, so "choose the
+   * pair whose gap you can live with" is a decision made with the gap in view.
+   */
+  async _context_defenses(context) {
+    context.coverage = Object.entries(SW.THREATS).map(([key, threat]) => {
+      const defenses = threat.defenses.map(d => ({
+        key: d,
+        label: game.i18n.localize(SW.DEFENSES[d].label),
+        trained: pointsIn(this.actor, SW.DEFENSES[d].slug) > 0
+      }));
+      return {
+        key,
+        label: game.i18n.localize(threat.label),
+        defenses,
+        covered: defenses.some(d => d.trained)
+      };
+    });
+    context.uncovered = context.coverage.filter(t => !t.covered).map(t => t.label);
   }
 
   async _context_review(context) {
@@ -673,29 +751,69 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     context.enrichedNotes = await TextEditor.enrichHTML(this.actor.system.details.biography ?? "", {
       relativeTo: this.actor
     });
+    const sys = this.actor.system;
+    const talents = this.actor.items.filter(i => i.type === "talent").length;
+    context.review = {
+      talents,
+      minimum: MINIMUM_TALENTS,
+      short: Math.max(0, MINIMUM_TALENTS - talents),
+      vigor: this.#vigorLine(),
+      attributeRule: game.i18n.format("STARWROUGHT.Chargen.attributeRule", { divisor: SW.ATTRIBUTE_DIVISOR }),
+      rankRule: game.i18n.format("STARWROUGHT.Chargen.rankRule", {
+        rank: game.i18n.localize(SW.RANKS.trained.label),
+        bonus: signed(SW.RANKS.trained.bonus)
+      }),
+      training: TRAINING_CHOICES.map(slug => ({
+        name: SW.getConstellation(slug).name,
+        trained: pointsIn(this.actor, slug) > 0
+      })),
+      speed: sys.speed ?? sys.details?.ancestry?.speed ?? SW.DEFAULT_SPEED
+    };
+  }
+
+  /** "10 + 8 + 3 = 21": the Vigor formula with this character's numbers in it. */
+  #vigorLine() {
+    const sys = this.actor.system;
+    const ancestry = Number(sys.details?.ancestry?.vigor) || 0;
+    const calling = Number(sys.details?.calling?.vigor) || 0;
+    const total = sys.vigor?.max ?? (VIGOR_BASE + ancestry + calling);
+    return {
+      base: VIGOR_BASE, ancestry, calling, total,
+      formula: game.i18n.format("STARWROUGHT.Chargen.vigorFormula", { base: VIGOR_BASE, ancestry, calling, total })
+    };
   }
 
   /** The build so far, shown on every step. */
   #summary() {
     const sys = this.actor.system;
+    const level = sys.level ?? 1;
     const constellations = Object.values(sys.constellations ?? {})
       .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
-      .map(c => ({
-        name: c.name,
-        points: c.points,
-        rank: game.i18n.localize(c.rankLabel ?? ""),
-        glyph: SW.ATTRIBUTES[c.attribute]?.glyph ?? ""
-      }));
+      .map(c => {
+        // The rank comes from the derived data when it is there, and from the same rule when not.
+        const rank = c.rank ?? SW.rankFor(c.pool ?? c.points, level);
+        return {
+          name: c.name,
+          points: c.points,
+          // Points a child Constellation contributes toward this one's rank (Melee and Ranged).
+          inherited: c.inherited ?? 0,
+          rank: game.i18n.localize(c.rankLabel ?? SW.RANKS[rank]?.label ?? ""),
+          bonus: signed(SW.rankBonus(rank)),
+          glyph: SW.ATTRIBUTES[c.attribute]?.glyph ?? ""
+        };
+      });
     return {
       talents: this.actor.items.filter(i => i.type === "talent").length,
+      minimum: MINIMUM_TALENTS,
       constellations,
       attributes: Object.entries(sys.attributes ?? {}).map(([key, a]) => ({
         key, glyph: a.glyph, mod: a.mod, points: a.points,
         label: game.i18n.localize(a.label ?? "")
       })),
-      hp: sys.hp?.max ?? 0,
+      vigor: this.#vigorLine(),
       defenses: Object.values(sys.defenses ?? {}).map(d => ({
-        label: game.i18n.localize(d.label), mod: d.mod, threshold: d.threshold
+        label: game.i18n.localize(d.label), mod: d.mod, threshold: d.threshold,
+        trained: d.trained ?? (d.rank ? d.rank !== "untrained" : undefined)
       }))
     };
   }
@@ -704,7 +822,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Identity choices                            */
   /* -------------------------------------------- */
 
-  /** One handler shape for all five identity steps. */
+  /** One handler shape for all six card steps. */
   static #onChoose(kind) {
     return async function (event, target) {
       const key = target.dataset.key;
@@ -720,13 +838,33 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     };
   }
 
+  /**
+   * Melee Training or Ranged Training, granted outright. The Root is the whole of the choice:
+   * nothing is spent, and Back (or picking the other card) takes it off again like any other
+   * step's Talents.
+   */
+  async _choose_training(slug) {
+    if (!TRAINING_CHOICES.includes(slug)) return;
+    const root = rootOf(slug);
+    if (!root) {
+      // The compendium has no Root for it: the pick is still recorded, so the wizard can go on,
+      // but the player is told the Talent did not arrive.
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Chargen.trainingMissing", {
+        name: SW.getConstellation(slug).name
+      }));
+      return;
+    }
+    if (ownsTalent(this.actor, slug, root.name)) return;
+    await this.#addTalent(root);
+  }
+
   async _choose_ancestry(name) {
     const ancestry = SwContent.chassis.ancestry.find(a => a.name === name);
     if (!ancestry) return;
     await this.#update({
       "system.details.ancestry.name": ancestry.name,
-      "system.details.ancestry.hp": ancestry.hp ?? 0,
-      "system.details.ancestry.speed": ancestry.speed ?? 25,
+      "system.details.ancestry.vigor": ancestry.vigor ?? 0,
+      "system.details.ancestry.speed": ancestry.speed ?? SW.DEFAULT_SPEED,
       "system.details.ancestry.senses": ancestry.senses ?? "",
       "system.size": ancestry.size ?? "medium"
     });
@@ -764,7 +902,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!calling) return;
     await this.#update({
       "system.details.calling.name": name,
-      "system.details.calling.hp": calling.hp ?? 0
+      "system.details.calling.vigor": calling.vigor ?? 0
     });
   }
 
@@ -925,7 +1063,6 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Chargen.incomplete"));
       return;
     }
-    if (this.step === 0) await this.#grantFreeTrainings();
     await this.#setState({ step: Math.min(STEPS.length - 1, this.step + 1) });
     this.#openPicker = {};
     await this.#refresh();
@@ -950,15 +1087,6 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     await this.#refresh();
   }
 
-  /** Weapons Training and all four Defense Trainings, free, before anything is spent. */
-  async #grantFreeTrainings() {
-    for (const slug of FREE_TRAININGS) {
-      const root = rootOf(slug);
-      if (!root || ownsTalent(this.actor, slug, root.name)) continue;
-      await this.#addTalent(root);
-    }
-  }
-
   static async #onFinish() {
     const blockers = [];
     for (let s = 0; s < STEPS.length - 1; s++) {
@@ -971,7 +1099,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
     const name = this.element.querySelector("input[name='charname']")?.value?.trim();
-    const updates = { "system.hp.value": this.actor.system.hp.max };
+    // Full Vigor to start: 10 + Ancestry Vigor + Calling Vigor, as the actor derives it.
+    const updates = { "system.vigor.value": this.actor.system.vigor?.max ?? this.#vigorLine().total };
     if (name) updates.name = name;
     await this.actor.update(updates);
     await this.actor.unsetFlag(SW.SYSTEM_ID, "chargen");
@@ -981,8 +1110,10 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         <p>${game.i18n.format("STARWROUGHT.Chargen.doneText", {
           name: this.actor.name,
           talents: this.actor.items.filter(i => i.type === "talent").length,
+          minimum: MINIMUM_TALENTS,
           ancestry: this.actor.system.details.ancestry.name,
-          calling: this.actor.system.details.calling.name
+          calling: this.actor.system.details.calling.name,
+          vigor: this.#vigorLine().total
         })}</p></div>`
     });
     await this.close();
@@ -1013,6 +1144,59 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 /* -------------------------------------------- */
 /*  Helpers                                     */
 /* -------------------------------------------- */
+
+/** "+3", "−2", "+0": a bonus always carries its sign. */
+function signed(value) {
+  const n = Number(value) || 0;
+  return `${n < 0 ? "−" : "+"}${Math.abs(n)}`;
+}
+
+/** The Defense key (awareness, evade, guard, endure) whose Constellation slug this is, or null. */
+function defenseKeyOf(slug) {
+  return Object.entries(SW.DEFENSES).find(([, d]) => d.slug === slug)?.[0] ?? null;
+}
+
+/** The threats a Defense answers, localized (PHB v4.10, The Four Threats). */
+function threatsAnsweredBy(defenseKey) {
+  return Object.values(SW.THREATS)
+    .filter(t => t.defenses.includes(defenseKey))
+    .map(t => game.i18n.localize(t.label));
+}
+
+/**
+ * The "counts toward" line for a child of Melee or Ranged, or "" for anything else. Inherited
+ * points raise the parent's rank only once the parent's own Root is owned, so a child bought
+ * before the Root says so rather than promising a rank that has not arrived.
+ * @param {Actor} actor
+ * @param {string} slug
+ * @returns {string}
+ */
+function parentNote(actor, slug) {
+  const parent = parentOf(slug);
+  if (!parent) return "";
+  const rootOwned = pointsIn(actor, parent.slug) > 0;
+  return game.i18n.format(rootOwned ? "STARWROUGHT.Chargen.countsToward" : "STARWROUGHT.Chargen.countsTowardLocked", {
+    name: parent.name
+  });
+}
+
+/**
+ * What a Constellation chip should say on hover: for a Defense, the threats it answers; for a
+ * child of Melee or Ranged, the parent whose rank its points also feed. Nothing for the rest.
+ * @param {Actor} actor
+ * @param {string} slug
+ * @returns {string}
+ */
+function chipTooltip(actor, slug) {
+  const defense = defenseKeyOf(slug);
+  if (defense) {
+    const threats = threatsAnsweredBy(defense);
+    return threats.length
+      ? game.i18n.format("STARWROUGHT.Chargen.answersThreats", { list: threats.join(", ") })
+      : "";
+  }
+  return parentNote(actor, slug);
+}
 
 /**
  * Would this Talent's own build-time question be answered by the same pick? Used to say so on the

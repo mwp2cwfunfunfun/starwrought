@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.3.7";
+  --sw-css-version: "0.4.0";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -209,9 +209,11 @@
 /* Vitals */
 
 .starwrought .sw-vitals { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
-.starwrought .sw-hp { flex: 1 1 220px; }
 
-.starwrought .sw-hp-track {
+/* Vigor: what you have left in you. The bar is the value; Temporary Vigor is laid on top as its
+   own paler segment, and at 0 the whole thing turns to ash and says Spent. */
+.starwrought .sw-vigor { flex: 1 1 220px; }
+.starwrought .sw-vigor-track {
   position: relative;
   height: 26px;
   border: 1px solid var(--sw-edge);
@@ -219,13 +221,19 @@
   background: rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
-.starwrought .sw-hp-fill {
+.starwrought .sw-vigor-fill {
   position: absolute;
   inset: 0 auto 0 0;
   background: linear-gradient(90deg, #6d2320, var(--sw-blood));
   transition: width 200ms ease;
 }
-.starwrought .sw-hp-text {
+.starwrought .sw-vigor-temp {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: repeating-linear-gradient(135deg, rgba(111, 194, 176, 0.55) 0 4px, rgba(111, 194, 176, 0.25) 4px 8px);
+  transition: width 200ms ease, left 200ms ease;
+}
+.starwrought .sw-vigor-text {
   position: relative;
   display: flex;
   align-items: center;
@@ -235,18 +243,48 @@
   font-weight: 600;
   text-shadow: 0 1px 2px #000;
 }
-.starwrought .sw-hp-text input {
+.starwrought .sw-vigor-name {
+  position: absolute;
+  left: 0.5rem;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+  text-shadow: none;
+}
+.starwrought .sw-vigor-text input {
   width: 3.5rem;
   text-align: right;
   background: transparent;
   border: none;
   font-weight: 600;
 }
-.starwrought .sw-hp-meta { display: flex; gap: 0.75rem; align-items: center; font-size: 0.7rem; margin-top: 0.2rem; }
-.starwrought .sw-hp-meta input { width: 3rem; }
+.starwrought .sw-vigor-meta { display: flex; gap: 0.75rem; align-items: center; font-size: 0.7rem; margin-top: 0.2rem; }
+.starwrought .sw-vigor-meta input { width: 3rem; }
 .starwrought .sw-hint { color: var(--sw-ink-dim); }
 
-/* The three-action turn. */
+.starwrought .sw-vigor.sw-spent .sw-vigor-track { border-color: var(--sw-blood); box-shadow: 0 0 8px rgba(180, 69, 63, 0.4); }
+.starwrought .sw-spent-badge {
+  position: absolute;
+  right: 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--sw-blood);
+  color: #fff;
+  text-shadow: none;
+  animation: sw-spent-pulse 1.6s ease-in-out infinite;
+}
+@keyframes sw-spent-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(180, 69, 63, 0.6); }
+  50% { box-shadow: 0 0 0 4px rgba(180, 69, 63, 0); }
+}
+
+/* Six actions a round, spread across Opportunities. A pip is free, reserved (spoken for by a
+   Prepared Maneuver) or spent; the last lit pip's numeral is the count you have left. */
 .starwrought .sw-actions {
   display: flex;
   align-items: center;
@@ -255,6 +293,7 @@
   border: 1px solid var(--sw-edge);
   border-radius: var(--sw-radius);
   background: rgba(0, 0, 0, 0.25);
+  flex-wrap: wrap;
 }
 .starwrought .sw-actions-turn {
   border-color: var(--sw-gold);
@@ -267,17 +306,70 @@
   letter-spacing: 0.08em;
   color: var(--sw-ink-dim);
 }
-.starwrought .sw-pips { display: flex; gap: 0.2rem; align-items: center; }
+.starwrought .sw-pips { display: flex; gap: 0.15rem; align-items: center; }
 .starwrought .sw-pip {
   font-size: 1.15rem;
   line-height: 1;
   color: var(--sw-gold);
   text-shadow: 0 0 6px rgba(227, 178, 60, 0.45);
 }
-.starwrought .sw-pip.spent { color: var(--sw-edge); text-shadow: none; }
-.starwrought .sw-pip-reaction { font-size: 1rem; color: var(--sw-agility); }
-.starwrought .sw-pip-reaction.spent { color: var(--sw-edge); }
+.starwrought .sw-pip-spent { color: var(--sw-edge); text-shadow: none; }
+.starwrought .sw-pip-reserved { color: var(--sw-agility); text-shadow: 0 0 6px rgba(111, 194, 176, 0.45); cursor: default; }
+.starwrought .sw-reserved { font-size: 0.65rem; color: var(--sw-agility); white-space: nowrap; }
+.starwrought .sw-actions-buttons { display: flex; align-items: center; gap: 0.3rem; margin-left: auto; }
 .starwrought .sw-actions-reset { font-size: 0.7rem; color: var(--sw-ink-dim); }
+.starwrought .sw-pass { font-weight: 600; }
+.starwrought .sw-actions-turn .sw-pass:not(:disabled) { border-color: var(--sw-gold-dim); color: var(--sw-flare); }
+
+/* Chat cards of the Exchange (PHB v4.10): the Reaction line, the Settle Position block, the
+   strike and reaction choices in the roll dialog, and the round cards. */
+.starwrought .sw-card-reaction { margin-top: 0.3rem; }
+.starwrought .sw-card-position {
+  margin-top: 0.4rem; padding: 0.35rem 0.5rem; border: 1px solid rgba(227, 178, 60, 0.25); border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+}
+.starwrought .sw-card-position .sw-card-apply { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0.25rem 0; }
+.starwrought .sw-card-position .sw-zone-select { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; }
+.starwrought .sw-card-position .sw-zone-select select { width: auto; min-width: 6rem; }
+.starwrought .sw-card-buttons button.sw-primary { border-color: var(--sw-gold-dim); color: var(--sw-flare); font-weight: 600; }
+.starwrought .sw-strike-choice, .starwrought .sw-reaction-choice { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.3rem 0; }
+.starwrought .sw-choice {
+  flex: 1 1 8rem; text-align: left; padding: 0.35rem 0.5rem; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04); cursor: pointer; font-size: 0.78rem; line-height: 1.3;
+}
+.starwrought .sw-choice:hover { border-color: var(--sw-gold-dim); }
+.starwrought .sw-choice.sw-active { border-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
+.starwrought .sw-choice small { display: block; color: var(--sw-ink-dim); font-size: 0.7rem; }
+.starwrought.sw-wound-card h3, .starwrought.sw-bind-card h3, .starwrought.sw-pass-card h3, .starwrought.sw-prepared-card h3 { margin-bottom: 0.25rem; }
+.starwrought .sw-wound-card, .starwrought.sw-wound-card { border-left: 3px solid var(--sw-blood); }
+.starwrought .sw-bind-card, .starwrought.sw-bind-card { border-left: 3px solid var(--sw-gold-dim); }
+
+/* The combat tracker: actions left per combatant, the pass streak, and the Pass control. */
+#combat .sw-tracker-actions {
+  display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--sw-ink-dim, #b8b2c9);
+  margin-top: 0.1rem;
+}
+#combat .sw-tracker-actions-left { color: var(--sw-gold, #e3b23c); letter-spacing: -0.05em; }
+#combat .sw-tracker-actions-reserved { opacity: 0.7; }
+#combat .sw-tracker-actions i.sw-tracker-preparing { color: #d8a25a; }
+#combat .sw-pass-streak { font-size: 0.7rem; margin-left: 0.4rem; color: var(--sw-ink-dim, #b8b2c9); font-weight: normal; }
+#combat button.sw-pass { font-size: 0.7rem; line-height: 1; padding: 0 0.3rem; }
+#combat button.sw-pass:disabled { opacity: 0.4; cursor: default; }
+
+/* Preparing: one action down, the rest reserved, resolved or abandoned at the next Opportunity. */
+.starwrought .sw-preparing {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px dashed var(--sw-agility);
+  border-radius: var(--sw-radius);
+  background: rgba(111, 194, 176, 0.08);
+  font-size: 0.78rem;
+}
+.starwrought .sw-preparing > i { color: var(--sw-agility); }
+.starwrought .sw-preparing-label { flex: 1; color: var(--sw-ink); }
 
 .starwrought .sw-counters { display: flex; gap: 0.5rem; }
 .starwrought .sw-counter {
@@ -474,14 +566,45 @@
   border-color: var(--sw-blood);
   background: linear-gradient(160deg, rgba(180, 69, 63, 0.22), transparent);
 }
+.starwrought .sw-zone-wounded { border-color: #7a3a3a; }
 .starwrought .sw-zone-head { display: flex; align-items: center; justify-content: space-between; }
 .starwrought .sw-zone-name { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.starwrought .sw-zone-numbers { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.4rem; flex-wrap: wrap; }
 .starwrought .sw-zone-protection { display: flex; align-items: baseline; gap: 0.3rem; }
 .starwrought .sw-protection-value { font-size: 1.4rem; font-weight: 600; color: var(--sw-gold); line-height: 1; }
 .starwrought .sw-protection-label { font-size: 0.6rem; color: var(--sw-ink-dim); text-transform: uppercase; }
 .starwrought .sw-zone-piece { font-size: 0.7rem; color: var(--sw-ink-dim); }
 .starwrought .sw-zone-weak { font-size: 0.62rem; color: #d8a25a; }
+.starwrought .sw-zone-wound-effect { font-size: 0.62rem; color: #e08a84; line-height: 1.3; }
 .starwrought .sw-zone-flag { font-size: 0.62rem; color: var(--sw-blood); text-transform: uppercase; letter-spacing: 0.08em; }
+.starwrought .sw-zone-flag small { text-transform: none; letter-spacing: 0; color: var(--sw-ink-dim); }
+
+/* Wounds, per Zone: pips against the Zone's capacity. The last pip is the final Wound, drawn as
+   a diamond because it is the one that changes everything. Treat rolls the Endure check; the
+   plus and minus are the GM's bookkeeping. */
+.starwrought .sw-wounds { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; }
+.starwrought .sw-wound-pips { display: inline-flex; gap: 0.15rem; align-items: center; }
+.starwrought .sw-wound-pip {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  border: 1px solid var(--sw-ink-dim);
+  background: transparent;
+}
+.starwrought .sw-wound-pip.final { border-radius: 1px; transform: rotate(45deg); width: 0.5rem; height: 0.5rem; }
+.starwrought .sw-wound-pip.filled { background: var(--sw-blood); border-color: var(--sw-blood); box-shadow: 0 0 5px rgba(180, 69, 63, 0.7); }
+.starwrought .sw-wounds-final .sw-wound-pip.final.filled { background: #ff6b63; border-color: #ff6b63; }
+.starwrought .sw-wound-count { color: var(--sw-ink-dim); font-weight: 600; }
+.starwrought .sw-wounded .sw-wound-count { color: #e08a84; }
+.starwrought .sw-wound-count em { font-style: normal; font-weight: 400; font-size: 0.6rem; }
+.starwrought .sw-wound-controls { display: inline-flex; align-items: center; gap: 0.3rem; opacity: 0.45; }
+.starwrought .sw-wounds:hover .sw-wound-controls,
+.starwrought tr:hover .sw-wound-controls { opacity: 1; }
+.starwrought .sw-wound-treat { font-size: 0.65rem; color: #8fc7a4; white-space: nowrap; }
+.starwrought .sw-wound-adjust { font-size: 0.8rem; line-height: 1; padding: 0 0.15rem; color: var(--sw-ink-dim); }
+.starwrought .sw-row-wounded .sw-zone-cell { color: #e08a84; }
+.starwrought td.sw-wounds-cell em { font-size: 0.65rem; color: var(--sw-ink-dim); font-style: normal; }
 
 /* --------------------------------------------------------------------------
    Constellations
@@ -511,6 +634,9 @@
 .starwrought .sw-points { font-size: 0.68rem; color: var(--sw-ink-dim); }
 .starwrought .sw-next { font-size: 0.64rem; color: var(--sw-ink-dim); }
 .starwrought .sw-next em { color: var(--sw-gold-dim); font-style: normal; }
+/* A Combat Style names the parent its points count toward. */
+.starwrought .sw-parent { font-size: 0.64rem; color: var(--sw-agility); white-space: nowrap; }
+.starwrought .sw-parent i { font-size: 0.55rem; transform: rotate(90deg); }
 
 .starwrought .sw-flare { color: var(--sw-edge); font-size: 0.9rem; }
 .starwrought .sw-flared .sw-flare { color: var(--sw-flare); text-shadow: 0 0 8px rgba(255, 216, 103, 0.6); }
@@ -576,6 +702,26 @@
   white-space: nowrap;
 }
 .starwrought .sw-item-tag.sw-attack { color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+.starwrought .sw-item-tag.sw-attack .sw-glyph { font-size: 0.8rem; }
+
+/* Three Strikes on a weapon row: Quick ❶, Deliberate ❷, Committed ❸. The numeral is the cost;
+   the word appears when there is room for it. */
+.starwrought .sw-strike-buttons { display: inline-flex; gap: 0.2rem; }
+.starwrought .sw-strike-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-gold);
+  white-space: nowrap;
+}
+.starwrought .sw-strike-button:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); }
+.starwrought .sw-strike-button span { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.starwrought .sw-strike-committed { border-style: dashed; }
+.starwrought .sw-item-row .sw-item-controls .sw-strike-buttons { opacity: 1; }
 /* Traits wrap onto their own line, but the controls stay up on the name row. */
 .starwrought .sw-item-traits {
   order: 10;
@@ -643,6 +789,68 @@
 
 .starwrought .sw-button-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .starwrought .sw-button-row button em { color: var(--sw-ink-dim); font-size: 0.7rem; }
+
+/* Strikes: Melee for what is in your hand, Ranged for what leaves it, and what a Strike rolls. */
+.starwrought .sw-strike-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.4rem 0.6rem;
+  align-items: center;
+}
+.starwrought .sw-strike-training {
+  display: grid;
+  grid-template-areas: "glyph name mod" "glyph rank mod";
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+}
+.starwrought .sw-strike-training .sw-glyph { grid-area: glyph; font-size: 1.3rem; }
+.starwrought .sw-strike-name { grid-area: name; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.starwrought .sw-strike-mod { grid-area: mod; font-size: 1.25rem; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-strike-training .sw-rank { grid-area: rank; justify-self: start; }
+.starwrought .sw-strike-kinds { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; margin-top: 0.45rem; font-size: 0.7rem; color: var(--sw-ink-dim); }
+.starwrought .sw-strike-kind b { color: var(--sw-gold); font-weight: 600; }
+
+/* Movement, in feet: Move, Step, Rush, Leap. */
+.starwrought .sw-movement {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.starwrought .sw-move {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.2);
+}
+.starwrought .sw-move-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sw-ink-dim); }
+.starwrought .sw-move strong { font-size: 1rem; color: var(--sw-gold); }
+
+/* The Bind: one line under the vitals, coloured by who holds the line. */
+.starwrought .sw-bind {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.8rem;
+}
+.starwrought .sw-bind-icon { width: 20px; height: 20px; border: none; filter: invert(0.85); }
+.starwrought .sw-bind-state { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sw-ink-dim); white-space: nowrap; }
+.starwrought .sw-bind-text { flex: 1; }
+.starwrought .sw-bind-controlling { border-color: var(--sw-gold-dim); background: linear-gradient(90deg, rgba(255, 216, 103, 0.12), transparent 70%); }
+.starwrought .sw-bind-controlled { border-color: var(--sw-blood); background: linear-gradient(90deg, rgba(180, 69, 63, 0.18), transparent 70%); }
+.starwrought .sw-reaction-chip { color: var(--sw-agility); border-color: #3a6b62; }
 
 .starwrought prose-mirror { min-height: 8rem; display: block; }
 
@@ -976,9 +1184,18 @@
   background: rgba(0, 0, 0, 0.35);
 }
 .starwrought .sw-stance-chip.active em { color: var(--sw-flare); }
+.starwrought .sw-stance-chip small { font-size: 0.65rem; color: var(--sw-agility); }
+/* A Reaction stance: paid ❶ when the attack lands. */
+.starwrought .sw-stance-chip.sw-stance-reaction { border-color: #3a6b62; }
+.starwrought .sw-stance-chip.sw-stance-reaction.active { border-color: var(--sw-agility); box-shadow: 0 0 8px rgba(111, 194, 176, 0.3); }
 /* A Defense the rules say you cannot use right now. Still a choice; the table decides. */
 .starwrought .sw-stance-chip.unavailable { border-style: dashed; opacity: 0.8; }
+/* A Reaction the actor has no Talent for. Not a choice at all; the chip says what would buy it. */
+.starwrought .sw-stance-chip.disabled { opacity: 0.4; cursor: not-allowed; border-style: dotted; }
+.starwrought .sw-stance-chip.disabled:hover { border-color: var(--sw-edge); color: var(--sw-ink-dim); }
 .starwrought .sw-stance-warn { color: #d9534f; font-size: 0.7rem; }
+/* A Defense still Untrained: its Attribute alone answers. */
+.starwrought .sw-defense.sw-untrained .sw-defense-mod { color: var(--sw-ink-dim); }
 
 .starwrought .sw-defense { position: relative; }
 .starwrought .sw-defense.sw-stance-active {
@@ -1022,7 +1239,12 @@ li.combatant.sw-in-crosshairs {
 }
 #token-hud .sw-hud-stance[data-stance="evade"] { color: #7fb3c8; }
 #token-hud .sw-hud-stance[data-stance="guard"] { color: #e3b23c; }
+#token-hud .sw-hud-stance[data-stance="void"] { color: #6fc2b0; }
+#token-hud .sw-hud-stance[data-stance="parry"] { color: #ffd867; }
+#token-hud .sw-hud-stance[data-stance="counter"] { color: #d8734a; }
+#token-hud .sw-hud-stance.reaction { box-shadow: inset 0 0 0 1px rgba(111, 194, 176, 0.7); border-radius: 4px; }
 #token-hud .sw-hud-stance.unavailable { box-shadow: inset 0 0 0 2px #d9534f; border-radius: 4px; }
+#token-hud .sw-hud-stance:disabled { opacity: 0.6; cursor: default; }
 
 @keyframes sw-slot-flash {
   0%, 100% { box-shadow: none; }

@@ -1,6 +1,6 @@
 {
   "_id": "25e28fbd5502f4a3",
-  "name": "Defensive Advance ◆◆",
+  "name": "Defensive Advance ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Flourish<br>With the protection of your shield, you dive into battle. You Raise your Shield and Stride. If you end your movement within melee reach of at least one enemy, you can make a melee Strike against that enemy. You can use Defensive Advance while Burrowing, Climbing, Flying, or Swimming instead of Striding if you have the corresponding movement type.",
+    "effect": "<b>Flourish</b><br>With the protection of your shield, you dive into battle! You Raise your Shield and Move. If you end your movement within melee reach of at least one enemy, you can make a melee Strike against that enemy. You can use Defensive Advance while Burrowing, Climbing, Flying, or Swimming instead of Moving if you have the corresponding movement type.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1da194ae4f8cc3d7",
   "sort": 0,

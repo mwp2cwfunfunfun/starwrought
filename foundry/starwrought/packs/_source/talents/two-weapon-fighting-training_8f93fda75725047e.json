@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Twin Openings action.<br>Twin Openings ◆ (stance) You must have a weapon in each hand. While you are in this stance, the first time each turn that you hit the same creature with both of your weapons, you may make one of its zones Exposed after resolving the attack and damage.",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Twin Openings action.<br><b>Twin Openings ❶ Stance</b> You must have a weapon in each hand. While you are in this stance, the first time each round that you hit the same creature with <b>both</b> of your weapons, you may make one of its zones <b>Exposed</b> after resolving the attack and damage.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b2ad479977fa3e79",
   "sort": 0,

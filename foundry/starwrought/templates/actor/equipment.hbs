@@ -12,9 +12,14 @@
         <img src="{{thing.img}}" alt="{{thing.name}}">
 
         {{#if thing.isWeapon}}
-        <a class="sw-item-name" data-action="itemUse" data-tooltip="STARWROUGHT.Roll.strikeHint">{{thing.name}}</a>
-        <span class="sw-item-tag sw-attack">{{swSigned thing.attackMod}}</span>
-        <span class="sw-item-tag">{{thing.damage}}</span>
+        <a class="sw-item-name" data-action="strike" data-strike="{{thing.defaultStrike}}"
+           data-tooltip="STARWROUGHT.Roll.strikeHint">{{thing.name}}</a>
+        <span class="sw-item-tag sw-attack" data-tooltip="{{thing.strikeAttributeHint}}">
+          <span class="sw-glyph sw-glyph-{{thing.strikeAttribute}}">{{thing.strikeAttributeGlyph}}</span>
+          {{swSigned thing.attackMod}}
+        </span>
+        <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Field.trainingHint'}}">{{thing.trainingLabel}} · {{thing.rankLabel}}</span>
+        <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Field.damageHint' quick=thing.quickDamage}}">{{thing.damage}}</span>
         <span class="sw-item-tag" data-tooltip="{{thing.reachHint}}">{{localize "STARWROUGHT.Field.reach"}} {{thing.reach}}</span>
         {{else if thing.isShield}}
         <a class="sw-item-name" data-action="itemUse" data-tooltip="STARWROUGHT.Action.raiseShieldHint">{{thing.name}}</a>
@@ -27,7 +32,15 @@
 
         <div class="sw-item-controls">
           {{#if thing.isWeapon}}
-          <a data-action="itemUse" data-tooltip="STARWROUGHT.Roll.strike"><i class="fa-solid fa-dice-d20"></i></a>
+          {{!-- Three Strikes: the count of actions is how much of yourself is behind the blow. --}}
+          <span class="sw-strike-buttons">
+            <a class="sw-strike-button sw-strike-quick" data-action="strike" data-strike="quick"
+               data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}">{{swStrikeGlyph "quick"}} <span>{{localize "STARWROUGHT.Strike.quick"}}</span></a>
+            <a class="sw-strike-button sw-strike-deliberate" data-action="strike" data-strike="deliberate"
+               data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}">{{swStrikeGlyph "deliberate"}} <span>{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
+            <a class="sw-strike-button sw-strike-committed" data-action="strike" data-strike="committed"
+               data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}">{{swStrikeGlyph "committed"}} <span>{{localize "STARWROUGHT.Strike.committed"}}</span></a>
+          </span>
           {{/if}}
           <a data-action="setCarry" data-state="worn" data-tooltip="STARWROUGHT.Carry.stowHint">
             <i class="fa-solid fa-arrow-down"></i>
@@ -56,6 +69,7 @@
           <th>{{localize "STARWROUGHT.Field.zone"}}</th>
           <th>{{localize "STARWROUGHT.Field.piece"}}</th>
           <th>{{localize "STARWROUGHT.Field.protection"}}</th>
+          <th>{{localize "STARWROUGHT.Field.wounds"}}</th>
           <th>{{localize "STARWROUGHT.Field.load"}}</th>
           <th>{{localize "STARWROUGHT.Field.material"}}</th>
           <th></th>
@@ -63,7 +77,7 @@
       </thead>
       <tbody>
         {{#each inventory.armorRows as |row|}}
-        <tr class="{{#if row.exposed}}sw-row-exposed{{/if}}" {{#if row.item}}data-item-id="{{row.item.id}}"{{/if}}>
+        <tr class="{{#if row.exposed}}sw-row-exposed{{/if}} {{#if row.wounds.wounded}}sw-row-wounded{{/if}}" {{#if row.item}}data-item-id="{{row.item.id}}"{{/if}}>
           <td class="sw-zone-cell">{{row.label}}</td>
           <td>
             {{#if row.item}}
@@ -84,6 +98,7 @@
             {{/if}}
           </td>
           <td class="sw-num">{{row.protection}}</td>
+          <td class="sw-num sw-wounds-cell" data-tooltip="{{row.wounds.tooltip}}">{{row.wounds.wounds}}<em>/{{row.wounds.capacity}}</em></td>
           <td class="sw-num">{{#if row.item}}{{row.item.system.load}}{{else}}0{{/if}}</td>
           <td>{{#if row.item}}{{localize row.item.system.materialLabel}}{{/if}}</td>
           <td class="sw-item-controls">

@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Your Reactive Strike disrupts the triggering action on a Hit, if the Zone struck was Exposed.",
+    "effect": "Your Intercept disrupts the triggering Maneuver on a Hit, not only a Critical Hit, if the Zone struck was Exposed.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "c24b24d1fba469af",
   "sort": 0,

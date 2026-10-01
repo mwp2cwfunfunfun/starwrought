@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Whenever your Strike is a critical hit and deals damage, the target is Wrong-Footed against your attacks until the end of your next turn.",
+    "effect": "Whenever your Strike is a critical hit and deals damage, the target is Wrong-Footed against your attacks until the end of the next round.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9309f573d0dc8d61",
   "sort": 0,

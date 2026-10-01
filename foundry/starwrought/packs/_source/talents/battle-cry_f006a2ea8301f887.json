@@ -1,6 +1,6 @@
 {
   "_id": "f006a2ea8301f887",
-  "name": "Battle Cry ◇",
+  "name": "Battle Cry ⓿↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger You are about to roll Initiative.<br>Demoralize every enemy within 15 feet with a single roll, compared separately against each one's Guard.",
+    "effect": "<b>Trigger</b> You are about to roll Initiative.<br>Demoralize every enemy within 15 feet with a single roll, compared separately against each one's Guard.",
     "description": "",
-    "cost": "free",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "122698d6a8541059",
   "sort": 0,

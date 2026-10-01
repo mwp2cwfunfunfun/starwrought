@@ -4,12 +4,16 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "0",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "category": "Exploration Mode",
     "requirements": "Travel Speed: Half",
     "traits": [],
-    "description": "<p>Your shield begins Raised and a weapon is already in hand.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Your shield begins Raised and a weapon is already in hand. When an encounter begins, you can roll Awareness.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,

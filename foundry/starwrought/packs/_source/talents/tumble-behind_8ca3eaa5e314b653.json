@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you successfully Tumble Through, the foe whose space you passed through is Wrong-Footed against the next attack you make before the end of your current turn.",
+    "effect": "When you successfully Tumble Through, the foe whose space you passed through is Wrong-Footed against the next attack you make before the end of your next Opportunity.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,

@@ -1,0 +1,29 @@
+{
+  "_id": "76f140186984dcb9",
+  "name": "Ranged",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/ranged.png",
+  "system": {
+    "slug": "ranged",
+    "category": "weapon",
+    "attribute": "agility",
+    "parentSlug": "",
+    "meta": "Weapon • Agility (Represents what transfers between every weapon that leaves the hand: judging distance, timing a release, leading a moving target, and shooting past friends. Ranged is a parent Constellation: every Talent you buy in Archery, Crossbow Fighting, or Missile Skirmishing counts toward your Ranged rank.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Weapon • Agility (Represents what transfers between every weapon that leaves the hand: judging distance, timing a release, leading a moving target, and shooting past friends. Ranged is a parent Constellation: every Talent you buy in Archery, Crossbow Fighting, or Missile Skirmishing counts toward your Ranged rank.)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!76f140186984dcb9"
+}

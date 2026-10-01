@@ -1,23 +1,27 @@
 {
-  "_id": "a61d9f9b72795364",
-  "name": "Weapons Training",
+  "_id": "71ba8bfc420f084d",
+  "name": "Feeling",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "weapons",
-    "constellationName": "Weapons",
+    "constellation": "melee",
+    "constellationName": "Melee",
     "tier": "T",
-    "root": true,
+    "root": false,
     "bloodlineRoot": false,
     "capstone": false,
-    "requires": [],
+    "requires": [
+      "Melee Training"
+    ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in weapons: add this Constellation's Proficiency Bonus to your attack rolls with any weapon.<br>Special Intuitive weapons use your full Weapons Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Handling.",
+    "effect": "You read the pressure in the bind before you commit to it. When your Gain Control Misses, the target does not take Control of your weapon; the Bind is simply neutral.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,9 +33,9 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "307927e092735135",
+  "folder": "2a19b71d960a8b80",
   "sort": 0,
   "ownership": {
     "default": 0
@@ -41,5 +45,5 @@
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!a61d9f9b72795364"
+  "_key": "!items!71ba8bfc420f084d"
 }

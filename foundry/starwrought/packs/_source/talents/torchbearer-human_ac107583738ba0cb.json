@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Allies within 15 feet gain a +1 circumstance bonus to their first Defense roll each round while they can see or hear you.",
+    "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
     "description": "<p>Some humans carry the light everyone else steers by.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,

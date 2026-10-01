@@ -25,6 +25,17 @@ export function registerHandlebarsHelpers() {
       return SW.ACTION_COSTS[cost]?.glyph ?? "";
     },
 
+    /** The glyph for a number of actions: ⓿ ❶ ❷ ❸ ❹ ❺ ❻. */
+    swActionGlyph(n) {
+      return SW.ACTION_GLYPHS[Number(n)] ?? "";
+    },
+
+    /** The glyph a Strike kind costs: Quick ❶, Deliberate ❷, Committed ❸. */
+    swStrikeGlyph(kind) {
+      const cost = SW.STRIKE_KINDS[kind]?.cost;
+      return cost === undefined ? "" : (SW.ACTION_GLYPHS[cost] ?? "");
+    },
+
     /** The rank abbreviation letter. */
     swRankAbbr(rank) {
       return SW.RANKS[rank]?.abbr ?? "U";
@@ -64,7 +75,11 @@ export function registerHandlebarsHelpers() {
 
 /* -------------------------------------------- */
 
-/** Preload the partials so a sheet's first render is not a waterfall of fetches. */
+/**
+ * Preload the partials so a sheet's first render is not a waterfall of fetches. Every path here
+ * is also registered as a partial under that path, which is how the two actor headers share the
+ * stance chips, the action pips, the Bind line and the Wound pips.
+ */
 export function preloadTemplates() {
   return loadTemplates([
     "systems/starwrought/templates/actor/header.hbs",
@@ -77,6 +92,10 @@ export function preloadTemplates() {
     "systems/starwrought/templates/actor/npc-header.hbs",
     "systems/starwrought/templates/actor/npc-statblock.hbs",
     "systems/starwrought/templates/actor/npc-abilities.hbs",
+    "systems/starwrought/templates/actor/stance-chips.hbs",
+    "systems/starwrought/templates/actor/action-pips.hbs",
+    "systems/starwrought/templates/actor/bind-line.hbs",
+    "systems/starwrought/templates/actor/wounds.hbs",
     "systems/starwrought/templates/item/header.hbs",
     "systems/starwrought/templates/item/description.hbs",
     "systems/starwrought/templates/item/details.hbs",

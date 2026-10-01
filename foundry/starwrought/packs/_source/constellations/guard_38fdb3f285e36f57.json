@@ -7,12 +7,13 @@
     "slug": "guard",
     "category": "defense",
     "attribute": "presence",
-    "meta": "Defense constellation • Presence (don't let it through • Set Your Feet posture)",
+    "parentSlug": "",
+    "meta": "Defense constellation • Presence (don't let it through • Parry Reaction and Set Your Feet Posture)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
-    "description": "<p>Defense constellation • Presence (don't let it through • Set Your Feet posture)</p>",
+    "description": "<p>Defense constellation • Presence (don't let it through • Parry Reaction and Set Your Feet Posture)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

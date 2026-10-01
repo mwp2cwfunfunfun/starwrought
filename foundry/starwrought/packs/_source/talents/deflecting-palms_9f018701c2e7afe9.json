@@ -1,6 +1,6 @@
 {
   "_id": "9f018701c2e7afe9",
-  "name": "Deflecting Palms ↺",
+  "name": "Deflecting Palms ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger You are hit and have a hand free.<br>Effect Reduce that attack's damage by 2 plus your Presence.",
+    "effect": "<b>Trigger</b> You are hit and have a hand free.<br><b>Effect</b> Reduce that attack's damage by 2 plus your Presence.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "de321617406058a3",
   "sort": 0,

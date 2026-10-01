@@ -1,6 +1,6 @@
 {
   "_id": "574bb0d5b4b95ef0",
-  "name": "No Escape ↺",
+  "name": "No Escape ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger Your prey Strides away from you.<br>Effect Stride up to your Speed toward it. This does not provoke reactions from your prey.",
+    "effect": "<b>Trigger</b> Your prey Moves away from you.<br><b>Effect</b> Move up to your Speed toward it. This does not provoke Reactions from your prey.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ae92852dbc6da00d",
   "sort": 0,

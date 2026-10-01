@@ -1,6 +1,6 @@
 {
   "_id": "9553fbf85ab43e2d",
-  "name": "Opportunist ↺",
+  "name": "Opportunist ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger An ally Hits a creature within your reach.<br>Effect Strike that creature. It is Off-Guard to this Strike. Once per round.",
+    "effect": "<b>Trigger</b> An ally Hits a creature within your reach.<br><b>Effect</b> Strike that creature. It is Off-Guard to this Strike.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9309f573d0dc8d61",
   "sort": 0,

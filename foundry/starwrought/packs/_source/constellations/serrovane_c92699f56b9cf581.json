@@ -7,12 +7,13 @@
     "slug": "serrovane",
     "category": "origin",
     "attribute": "presence",
+    "parentSlug": "",
     "meta": "Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": true,
     "description": "<p>Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

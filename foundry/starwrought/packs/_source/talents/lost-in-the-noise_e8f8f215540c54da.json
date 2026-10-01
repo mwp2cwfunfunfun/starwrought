@@ -1,6 +1,6 @@
 {
   "_id": "e8f8f215540c54da",
-  "name": "Lost in the Noise ↺",
+  "name": "Lost in the Noise ❶↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger An attack against you Misses.<br>Effect If you have cover or concealment, Hide as part of this reaction.",
+    "effect": "<b>Trigger</b> An attack against you Misses.<br><b>Effect</b> If you have cover or concealment, Hide as part of this Reaction.",
     "description": "",
-    "cost": "reaction",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "dc41914280a0d356",
   "sort": 0,

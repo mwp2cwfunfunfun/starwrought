@@ -1,4 +1,5 @@
-{{!-- The adversary stat block: Thresholds, Zones, and Attack Thresholds by MAP step. --}}
+{{!-- The adversary stat block: Defense Thresholds, one Attack Threshold per attack, Zones with their
+      Protection and Wounds, and the Reactions it has. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
   <div class="sw-panel">
@@ -26,9 +27,7 @@
       <thead>
         <tr>
           <th>{{localize "STARWROUGHT.Field.attack"}}</th>
-          <th data-tooltip="STARWROUGHT.Hint.mapFirst">1st</th>
-          <th data-tooltip="STARWROUGHT.Hint.mapSecond">2nd</th>
-          <th data-tooltip="STARWROUGHT.Hint.mapThird">3rd</th>
+          <th data-tooltip="STARWROUGHT.Hint.attackThreshold">{{localize "STARWROUGHT.Field.threshold"}}</th>
           <th>{{localize "STARWROUGHT.Field.damage"}}</th>
           <th>{{localize "STARWROUGHT.Field.reach"}}</th>
           <th></th>
@@ -38,7 +37,7 @@
         {{#each attacks as |atk|}}
         <tr data-item-id="{{atk.id}}">
           <td><a data-action="itemChat">{{atk.name}}</a></td>
-          {{#each atk.thresholds as |t|}}<td class="sw-num sw-threshold-cell">{{t}}</td>{{/each}}
+          <td class="sw-num sw-threshold-cell">{{atk.threshold}}</td>
           <td>{{atk.damage}} {{atk.damageType}}</td>
           <td class="sw-num">{{atk.reach}} ft</td>
           <td class="sw-item-controls">
@@ -47,7 +46,7 @@
           </td>
         </tr>
         {{else}}
-        <tr><td colspan="7" class="sw-empty">{{localize "STARWROUGHT.Sheet.noAttacks"}}</td></tr>
+        <tr><td colspan="5" class="sw-empty">{{localize "STARWROUGHT.Sheet.noAttacks"}}</td></tr>
         {{/each}}
       </tbody>
     </table>
@@ -56,7 +55,13 @@
   <div class="sw-panel">
     <h3 class="sw-panel-title">
       {{localize "STARWROUGHT.Section.zones"}}
-      <button type="button" class="sw-inline-button" data-action="recenter">◆ {{localize "STARWROUGHT.Action.recenter"}}</button>
+      <span class="sw-panel-buttons">
+        <span class="sw-points" data-tooltip="STARWROUGHT.Field.woundCountHint">
+          {{localize "STARWROUGHT.Field.wounds"}} {{woundCount}}
+        </span>
+        <button type="button" class="sw-inline-button" data-action="recenter"
+                data-tooltip="STARWROUGHT.Action.recenterHint">{{swActionGlyph 1}} {{localize "STARWROUGHT.Action.recenter"}}</button>
+      </span>
     </h3>
     <table class="sw-armor-table">
       <thead>
@@ -64,15 +69,19 @@
           <th>{{localize "STARWROUGHT.Field.zone"}}</th>
           <th>{{localize "STARWROUGHT.Field.protection"}}</th>
           <th>{{localize "STARWROUGHT.Field.material"}}</th>
+          <th>{{localize "STARWROUGHT.Field.wounds"}}</th>
           <th>{{localize "STARWROUGHT.Condition.exposed"}}</th>
         </tr>
       </thead>
       <tbody>
         {{#each zones as |zone|}}
-        <tr class="{{#if zone.exposed}}sw-row-exposed{{/if}}">
+        <tr class="{{#if zone.exposed}}sw-row-exposed{{/if}} {{#if zone.wounds.wounded}}sw-row-wounded{{/if}}">
           <td class="sw-zone-cell">{{zone.label}}</td>
           <td><input type="number" name="system.zones.{{zone.key}}.protection" value="{{zone.protection}}" min="0"></td>
           <td><select name="system.zones.{{zone.key}}.material">{{selectOptions @root.materialChoices selected=zone.material}}</select></td>
+          <td class="sw-wounds-cell">
+            {{> "systems/starwrought/templates/actor/wounds.hbs" zone.wounds}}
+          </td>
           <td>
             <a data-action="toggleZone" data-zone="{{zone.key}}">
               {{#if zone.exposed}}<i class="fa-solid fa-heart-crack"></i>{{else}}<i class="fa-solid fa-shield"></i>{{/if}}
@@ -83,6 +92,32 @@
       </tbody>
     </table>
   </div>
+
+  {{#if reactions.any}}
+  {{!-- "A creature's profile lists the Reactions it has." Skipped entirely when it has none. --}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.reactions"}}</h3>
+    <div class="sw-chip-row">
+      {{#each reactions.granted as |reaction|}}
+      <span class="sw-trait sw-reaction-chip">{{reaction.glyph}} {{reaction.label}}</span>
+      {{/each}}
+    </div>
+    {{#if reactions.abilities.length}}
+    <ol class="sw-item-list">
+      {{#each reactions.abilities as |ability|}}
+      <li class="sw-item-row sw-action-row" data-item-id="{{ability.id}}">
+        <img src="{{ability.img}}" alt="{{ability.name}}">
+        <span class="sw-action-glyph">{{ability.glyph}}</span>
+        <a class="sw-item-name" data-action="itemChat">{{ability.name}}</a>
+        <div class="sw-item-controls">
+          <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+    {{/if}}
+  </div>
+  {{/if}}
 
   <div class="sw-panel">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.traits"}}</h3>

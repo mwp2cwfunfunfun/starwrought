@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "A creature you have Demoralized this encounter takes a −1 circumstance penalty to attacks against you for the rest of it.",
+    "effect": "A creature you have Demoralized this encounter takes a −1 Situation penalty to attacks against you for the rest of it.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "122698d6a8541059",
   "sort": 0,

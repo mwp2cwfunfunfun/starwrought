@@ -2,7 +2,7 @@
  "meta": {
   "title": "STARWROUGHT",
   "subtitle": "CHARACTER  SHEET",
-  "version": "Playtest v3.0",
+  "version": "Playtest v4.10",
   "tagline": "You are what you do."
  },
  "identity": [
@@ -36,7 +36,7 @@
  },
  "attributes": {
   "label": "ATTRIBUTES",
-  "micro": "bonus = points in its constellations / 3, rounded down (max +5) - adds to EVERY check, trained or not",
+  "micro": "pts / 4, round down, max +5; adds to EVERY check",
   "rows": [
    "MIGHT",
    "AGILITY",
@@ -51,47 +51,47 @@
  "defense": {
   "label": "DEFENSES",
   "ac_label": "GUARD",
-  "ac_micro": "Threshold = 10 + level + attribute + proficiency; the check is the same, with a d20",
-  "armor_label": "ARMOR BY ZONE: PROTECTION / LOAD",
-  "ladder_micro": "one ladder: T+4 E+7 M+10 L+13  |  Load Strain = total armor Load - Endure reduction (min 0), off Evade and off Might/Agility skill checks",
+  "ac_micro": "check = d20 + Attribute + Proficiency; Threshold = 10 + Attribute + Proficiency. Level never touches the die",
+  "armor_label": "ARMOR & WOUNDS BY ZONE",
+  "ladder_micro": "Load Strain = armor Load - Endure reduction (min 0): off Evade, Might/Agility skill checks, and Rush and Leap in feet. Wind: from round 3, Endure vs 10 + Strain each round or be Fatigued.",
   "defenses": [
    [
     "AWARENESS",
-    "level + Wits + prof",
-    "don't be surprised"
+    "Wits + prof",
+    "Blights, Beguilement; Initiative"
    ],
    [
     "EVADE",
-    "level + Agility + prof - Load Strain",
-    "don't be there"
+    "Agility + prof - Load Strain",
+    "Blows, Blasts"
    ],
    [
     "GUARD",
-    "level + Presence + prof (+ shield if Raised)",
-    "don't let it through"
+    "Presence + prof + Gear (Raised shield / Parry wpn)",
+    "Blows, Beguilement"
    ],
    [
     "ENDURE",
-    "level + Might + prof",
-    "survive what comes through"
+    "Might + prof",
+    "Blasts, Blights"
    ]
   ],
   "saves": [
    [
     "AWARENESS",
-    "level + Wits + prof (if any)"
+    "Wits + prof (if any)"
    ],
    [
     "EVADE",
-    "level + Agility + prof - Load Strain"
+    "Agility + prof - Load Strain"
    ],
    [
     "GUARD",
-    "level + Presence + prof (+ shield)"
+    "Presence + prof (+ shield)"
    ],
    [
     "ENDURE",
-    "level + Might + prof (if any)"
+    "Might + prof (if any)"
    ]
   ],
   "zone_label": "ZONE PROTECTION",
@@ -101,25 +101,54 @@
    "ARMS",
    "LEGS"
   ],
-  "zone_micro": "Protection subtracts from every instance of damage landing on that zone, a Graze included. Ordinary Hits go to the torso unless a zone is Exposed."
+  "zone_micro": "Protection comes off every instance of damage on that Zone, Grazes included (never below 1). Hits go to the Torso unless a Zone is Exposed: then a ❷/❸ Strike may land there at Protection 0, and a crit there Wounds it. Recenter ❶ clears Exposed and ends any Bind."
+ },
+ "wounds": {
+  "cols": [
+   "W1",
+   "W2"
+  ],
+  "hints": {
+   "HEAD": "1st Wound: no Reactions  |  final: Dying, unconscious",
+   "TORSO": "1st Wound: Off-Guard, 1d4 persistent bleed  |  final: Dying",
+   "ARMS": "1st Wound: -2 Situation to attacks and Guard  |  final: arm useless, drop it",
+   "LEGS": "1st Wound: Speed halved  |  final: Prone, cannot Stand"
+  },
+  "micro": "Wounds are per Zone (capacity 2 for Medium): a crit on an Exposed Zone with a ❷/❸ Strike, or any Hit while Spent. Recenter and rest never clear them: treating one is 10 minutes and Endure vs 10 + Wounds carried; a week of Downtime heals it. A Wound to a useless Arm or Leg goes to the Torso."
+ },
+ "dying": {
+  "label": "DYING (1 to 5)",
+  "micro": "Torso or Head final Wound = Dying 1 (2 from a crit). Recovery each round: Endure vs 10 + Dying + Wounds carried. Damage while Dying +1 (+2 crit); Dying 5 is death."
  },
  "hp": {
-  "label": "HIT POINTS",
-  "micro": "10 + (ancestry HP + calling HP) x level",
+  "label": "VIGOR",
+  "micro": "L1: 10 + Ancestry + Calling Vigor; + both again per level",
   "boxes": [
    "MAX",
    "CURRENT",
    "TEMP"
-  ]
+  ],
+  "spent_label": "SPENT",
+  "spent_micro": "0 Vigor: still standing, but every Hit Wounds the Zone struck, a crit twice; Grazes never Wound. Temp Vigor: one pool, larger replaces, spent first."
  },
  "speed_init": {
   "speed_label": "SPEED",
   "init_label": "INIT",
-  "init_micro": "initiative is usually an Awareness check: level + Wits + Awareness proficiency"
+  "init_micro": "initiative is usually an Awareness check: Wits + Awareness proficiency (helm penalty applies)",
+  "step_label": "STEP",
+  "rush_label": "RUSH",
+  "leap_label": "LEAP",
+  "move_micro": "Speed = feet per Move ❶ (Human 6). Step ❶ = half Speed, never provokes. Rush ❸ = 5 x Speed in a straight line, minus Load Strain. Leap ❶ = 10 ft minus Load Strain, or 3 ft up. Total Reach = natural (Medium 2 ft) + weapon."
+ },
+ "actions": {
+  "label": "ACTIONS",
+  "micro": "six at the start of each round; unspent ones expire",
+  "reserved_label": "RESERVED",
+  "pass_micro": "One Maneuver per Opportunity, or Pass. ⓿ is free and keeps your Opportunity. Reactions ↺ spend from the same six, on anyone's Opportunity. A full circuit of Passes ends the round. Preparing ❸: 1 now, the rest reserved; finish or abandon at your next Opportunity."
  },
  "trees": {
   "label": "TALENT CONSTELLATIONS",
-  "micro": "pts in constellation: 1 Trained +4 | 4 Expert +7 | 9 Master +10 | 16 Legendary +13; attribute adds on top",
+  "micro": "pts: 1 Trained +3 | 4 Expert +6 | 9 Master +9 | 16 Legendary +12 (L1/5/10/15); attribute adds on top",
   "cols": [
    "FLR",
    "CONSTELLATION",
@@ -130,34 +159,80 @@
   ],
   "rows": 12,
   "foot1": "FLR = Flared: crit success OR crit failure on a roll WITH CONSEQUENCES related to a talent in the constellation, opened or not (enemy rolls against you count) - or a GM award, or a week's training. Max 1 new Flare per constellation per session.",
-  "foot2": "Defenses are Constellations: Awareness, Evade, Guard, Endure, all Trained free at creation, along with Weapons Training. Armor never touches a Defense; it subtracts Protection from damage, and an Exposed Zone's Protection counts as 0. All tiers unlock at L1/5/13/19."
+  "foot2": "Defenses are Constellations: two Trained at creation, your choice; an Untrained Defense still adds its Attribute. Melee and Ranged are parents: points in a Combat Style count toward the parent's rank. Armor never touches a Defense; it subtracts Protection from damage."
+ },
+ "melee_ranged": {
+  "melee_label": "MELEE",
+  "ranged_label": "RANGED",
+  "cols": [
+   "RANK",
+   "PROF",
+   "SPEC"
+  ],
+  "micro": "Melee: any weapon in your hand. Ranged: anything that leaves it, a thrown dagger included. Weapon dice: 1, then 2 at L4, 3 at L8, 4 at L12, 5 at L16. Specialization +2 Expert, +3 Master, +4 Legendary."
  },
  "attacks": {
-  "label": "ATTACKS",
-  "micro": "atk = level + style's attribute + Weapons proficiency  |  dmg = weapon dice + spec (E+2 M+3 L+4) + Might, minus Protection  |  MAP -5/-10  |  Graze = one weapon die, nothing else",
+  "label": "STRIKES",
+  "micro": "atk = d20 + Strike Attribute + Melee or Ranged proficiency  |  Strike Attribute = the higher of the weapon's (Might; Agility if Finesse or Ranged) and your Combat Style's Key Attribute  |  no multiple attack penalty",
   "cols": [
    "WEAPON",
-   "STYLE (how wielded)",
+   "STYLE",
    "ATK",
    "DAMAGE",
-   "NOTES"
+   "TRAITS / REACH"
   ],
+  "strike_attr_label": "STRIKE ATTR",
   "rows": 3
+ },
+ "reactions": {
+  "label": "REACTIONS",
+  "micro": "tick the ones your Training grants; each costs ❶ of the six, on anyone's Opportunity. Stance: Evade | Guard | Void | Parry | Counter.",
+  "items": [
+   [
+    "Parry ❶↺",
+    "Guard Training; rigid weapon or shield in hand. Guard +2 Situation. Stops a ❷/❸ Strike: take Control and riposte with a Quick Strike ⓿."
+   ],
+   [
+    "Void ❶↺",
+    "Evade Training. Evade +2 Situation. If the attack is Stopped, Step in any direction."
+   ],
+   [
+    "Counter ❶↺",
+    "Melee Training. Answer a melee Blow within your Reach with a Quick Strike; no Defense bonus; both resolve."
+   ],
+   [
+    "Intercept ❶↺",
+    "Melee Training. A foe Moves into your Total Reach (or Strikes with an Unwieldy weapon inside its distance): Quick Strike as they enter. Once per foe per Move."
+   ]
+  ]
+ },
+ "bind": {
+  "label": "BIND",
+  "states": [
+   "neutral",
+   "controlling",
+   "controlled"
+  ],
+  "mine_label": "my implement",
+  "theirs_label": "theirs",
+  "micro": "Guard with a rigid implement Stops a blow: neutral Bind. Parry Stops ❷/❸, or Guard answers a Miss: Control. Controlling: your partner has an Exposed Zone of your choice and -2 with that weapon; you may Close ❶. Ends when a Strike between you resolves, either Moves, Steps (Close excepted) or Recenters, a third party attacks the Controller, or the implement drops."
  },
  "talents": {
   "label": "TALENTS",
   "micro": "name - effect in your own words (full text: page 2 / handbook)",
-  "rows": 11
+  "rows": 10
  },
  "banked": {
   "label": "HERO POINTS",
-  "micro1": "1 at session start, max 3; reroll a check you're Trained or better in;",
+  "micro1": "1 at session start, max 3; spend 1 to reroll any check, taking the new result;",
   "micro2": "spend all (min 1) to refuse death. Talent points are NEVER banked: spend on receipt."
  },
  "footer": [
-  "DEGREES: beat the Threshold by 10 = crit success | nat 20/1 steps one degree | a crit either direction on a consequential roll related to a constellation's talents -> that constellation Flares",
-  "ANSWERING AN ATTACK: you roll. Beat their Threshold by 10 = Miss. Meet or beat = Graze: some damage, and a Zone of your choice becomes Exposed. Miss = Hit, to the Torso unless a Zone is Exposed. Miss by 10 = Critical Hit, and the attacker picks the Zone. A Posture buys +2 before you know the result, and costs an Exposed Zone win or lose.",
-  "HERO POINTS: 1 at session start, max 3 - spend 1 to reroll any check, or spend all of them to refuse death. Refusing death is not a roll and cannot fail."
+  "RESULT (you roll; the same bands read from either side): beat the Threshold by 10+ = Critical Hit: double damage, attacker picks the Zone  |  meet or beat = Hit: full damage to the Torso, or to an Exposed Zone for ❷/❸  |  miss by less than 10 = Graze: one weapon die to a Zone the defender picks (min 1), position shifts the defender's way  |  miss by 10+ = Miss: nothing lands, attacker Exposed (defender's choice)  |  natural 20/1 steps one degree  |  either crit on a consequential roll Flares the Constellation.",
+  "STRIKES: ❶ Quick: a probe. One die + precision, on the Torso; no crit unless Agile; full Protection; Stopped, it costs nothing.  ❷ Deliberate: all dice + specialization + Might; may land on an Exposed Zone (Protection 0); a Miss Exposes you.  ❸ Committed: Prepared (1 now, 2 reserved, resolves at your next Opportunity) and Weighted: as Deliberate, any Hit may Expose a plausible Zone, and a Graze or Miss Exposes you. A Parry that Stops ❷/❸ takes Control of your weapon.",
+  "ANSWERING: Blow: Evade or Guard  |  Blast: Evade or Endure  |  Blight: Endure or Awareness  |  Beguilement: Awareness or Guard. Guard answers a ranged Blow only with a shield Raised; no Evade while Grabbed. The basic Defense is free; a Reaction ↺ costs ❶ of the same six; a Posture ⓿↺ buys +2 Situation and Exposes a Zone until the end of the round. Support: +1 Situation to melee attacks per ally with the target in Reach, max +2. Evading a Graze gives 3 ft; a Guard with a rigid implement binds.",
+  "DAMAGE: ❷/❸ Hit = weapon dice + specialization + Might + bonuses - Protection  |  ❶ Hit = one die + precision - Protection  |  Graze = one die - Protection (min 1). A crit doubles dice and modifiers before Protection; a Deadly die lands after. Order: Immunity, total, Weakness, Resistance, double, Protection, Temporary Vigor, Vigor. Persistent damage lands at the end of the round; Endure vs 10 + the amount ends it.",
+  "GOING DOWN: 0 Vigor = Spent: every Hit Wounds the Zone struck, a crit twice; Grazes never Wound. A Torso or Head final Wound = Dying 1 (2 from a crit): unconscious; damage while Dying +1 (+2 crit); Dying 5 = dead. Recovery at the start of each round: Endure vs 10 + Dying + Wounds carried; crit success = up with 1 Vigor; success -1 (0 = stable); failure +1; crit failure +2. Refuse death: spend all Hero Points, Dying 0, stable at 0 Vigor, Wounds remain."
  ],
  "page2": {
   "header": "TALENT DETAILS,  GEAR  &  FLARE LOG",

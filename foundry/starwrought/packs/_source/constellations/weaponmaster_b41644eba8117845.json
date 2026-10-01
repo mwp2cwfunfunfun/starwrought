@@ -7,12 +7,13 @@
     "slug": "weaponmaster",
     "category": "calling",
     "attribute": "might",
-    "meta": "Calling • Might (3 HP/level • Drilled)",
+    "parentSlug": "",
+    "meta": "Calling • Might (3 Vigor/level • Drilled)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
-    "description": "<p>Calling • Might (3 HP/level • Drilled)</p>",
+    "description": "<p>Calling • Might (3 Vigor/level • Drilled)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

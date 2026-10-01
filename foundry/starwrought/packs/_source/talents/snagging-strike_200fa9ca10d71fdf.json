@@ -1,6 +1,6 @@
 {
   "_id": "200fa9ca10d71fdf",
-  "name": "Snagging Strike ◆",
+  "name": "Snagging Strike ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You combine an attack with quick grappling moves to throw an enemy off balance as long as it stays in your reach. Make a Strike while keeping one hand free. If this Strike hits, the target is Off-Guard until the start of your next turn or until it's no longer within the reach of your hand, whichever comes first.",
+    "effect": "You combine an attack with quick grappling moves to throw an enemy off balance as long as it stays in your reach. Make a Strike while keeping one hand free. If this Strike hits, the target is Off-Guard until your next Opportunity or until it's no longer within the reach of your hand, whichever comes first.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "4e363b3d724f4315",
   "sort": 0,

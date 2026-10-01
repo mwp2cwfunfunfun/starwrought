@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in Awareness: add this Constellation's Proficiency Bonus to your Awareness checks, and to your Awareness Threshold (the number Sneak, Feint, and Lie attempts are measured against). Initiative is usually an Awareness check.",
+    "effect": "You are Trained in Awareness: add this Constellation's Proficiency Bonus to your Awareness checks, and to your Awareness Threshold (the number Sneak, Feint, and Lie attempts are measured against). Initiative is usually an Awareness check. Awareness answers Blights and Beguilement (see Chapter 2: The Four Threats).",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "13ade0bba9c4a91f",
   "sort": 0,

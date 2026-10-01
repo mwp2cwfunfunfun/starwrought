@@ -1,6 +1,6 @@
 {
   "_id": "4e6e4d3e418576b0",
-  "name": "Snagging Grip ◆",
+  "name": "Snagging Grip ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Strike with a free hand; on a hit, the target is Off-Guard until your next turn.",
+    "effect": "Strike with a free hand; on a hit, the target is Off-Guard until your next Opportunity.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "0e60f938940988c1",
   "sort": 0,

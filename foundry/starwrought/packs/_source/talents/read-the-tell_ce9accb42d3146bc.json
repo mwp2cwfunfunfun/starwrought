@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "When a creature critically fails to Feint against you, Lie to you, or Sneak past you, it becomes Exposed (Head) until it Recenters.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "13ade0bba9c4a91f",
   "sort": 0,

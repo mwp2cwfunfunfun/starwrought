@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in Evade: add this Constellation's Proficiency Bonus to your Evade checks. It is the number attack rolls are measured against when you try to slip a blow, and the check you roll against area effects, traps, and hazards.<br>You gain the Give Ground ↺ posture:<br>You gain a +2 circumstance bonus to Evade for the triggering attack.<br>A Zone of your choice becomes Exposed immediately, win or lose.",
+    "effect": "You are Trained in Evade: add this Constellation's Proficiency Bonus to your Evade checks. It is the number attack rolls are measured against when you try to slip a blow, and the check you roll against area effects, traps, and hazards. Evade answers Blows and Blasts.<br>You gain the <b>Void ❶↺</b> Reaction, and the Give Ground ⓿↺ Posture:<br>You gain a +2 Situation bonus to Evade for the triggering attack.<br>A Zone of your choice becomes Exposed until the end of the round, win or lose.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "57c800027a3ec530",
   "sort": 0,

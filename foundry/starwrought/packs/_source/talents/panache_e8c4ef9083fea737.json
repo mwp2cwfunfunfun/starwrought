@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You become Trained in Acrobatics.<br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br>While you have Panache you gain a +1 circumstance bonus to Evade and a +5-foot circumstance bonus to your Speeds. At Expert rank, the Speed bonus increases to 10 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 15 feet.<br>Every talent here requires this.",
+    "effect": "You become Trained in Acrobatics.<br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br>While you have Panache you gain a +1 Situation bonus to Evade and a +1-foot Situation bonus to your Speeds. At Expert rank, Speed bonus increases to 2 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 3 feet.<br>Every talent here requires this.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ddc479129bd4bd5d",
   "sort": 0,

@@ -1,0 +1,20 @@
+{{!-- The five answers to a Blow. Context: the stance object from stanceContext(). A Reaction stance
+      the actor has no Talent for is drawn disabled, so the chip still says what the Talent buys. --}}
+<div class="sw-stance" data-tooltip="{{localize 'STARWROUGHT.Stance.hint'}}">
+  <span class="sw-stance-label">{{localize "STARWROUGHT.Stance.label"}}</span>
+  <div class="sw-stance-chips">
+    {{#each options as |opt|}}
+    {{#if opt.disabled}}
+    <span class="sw-stance-chip disabled {{#if opt.reaction}}sw-stance-reaction{{/if}}" data-tooltip="{{opt.tooltip}}" aria-disabled="true">
+      <i class="{{opt.icon}}"></i> {{opt.label}}{{#if opt.cost}} <small>{{opt.cost}}</small>{{/if}}
+    </span>
+    {{else}}
+    <a class="sw-stance-chip {{#if opt.active}}active{{/if}} {{#if opt.unavailable}}unavailable{{/if}} {{#if opt.reaction}}sw-stance-reaction{{/if}}"
+       data-action="setStance" data-stance="{{opt.key}}" data-tooltip="{{opt.tooltip}}">
+      <i class="{{opt.icon}}"></i> {{opt.label}}{{#if opt.cost}} <small>{{opt.cost}}</small>{{/if}} <em>{{opt.threshold}}</em>
+      {{#if opt.unavailable}}<i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}
+    </a>
+    {{/if}}
+    {{/each}}
+  </div>
+</div>

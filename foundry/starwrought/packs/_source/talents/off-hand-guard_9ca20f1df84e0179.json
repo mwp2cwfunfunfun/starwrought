@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "presence",
-    "effect": "+1 circumstance to Guard while wielding two weapons and not raising a shield.",
+    "effect": "+1 Situation to Guard while wielding two weapons and not raising a shield.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b2ad479977fa3e79",
   "sort": 0,

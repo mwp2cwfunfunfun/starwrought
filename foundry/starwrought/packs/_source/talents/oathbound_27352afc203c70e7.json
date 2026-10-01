@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Name one creature that has broken a bargain, a truce, or a formal challenge with you. You gain a +1 circumstance bonus to Attack rolls and Defense rolls against that creature until the encounter ends. You may have only one Oathbound creature at a time.",
+    "effect": "Name one creature that has broken a bargain, a truce, or a formal challenge with you. You gain a +1 Situation bonus to Attack rolls and Defense rolls against that creature until the encounter ends. You may have only one Oathbound creature at a time.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "09d1d52e7c8e761e",
   "sort": 0,

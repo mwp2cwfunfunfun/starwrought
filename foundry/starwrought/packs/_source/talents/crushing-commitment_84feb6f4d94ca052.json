@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you make a Strike ◆◆◆ with a two-handed weapon, deal one extra weapon die of damage.",
+    "effect": "When you make a Strike ❸ with a two-handed weapon, deal one extra weapon die of damage.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "018dc0d2e8a4ecff",
   "sort": 0,

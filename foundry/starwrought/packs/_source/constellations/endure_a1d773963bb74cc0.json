@@ -7,12 +7,13 @@
     "slug": "endure",
     "category": "defense",
     "attribute": "might",
+    "parentSlug": "",
     "meta": "Defense constellation • Might (survive what does come through)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
     "description": "<p>Defense constellation • Might (survive what does come through)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

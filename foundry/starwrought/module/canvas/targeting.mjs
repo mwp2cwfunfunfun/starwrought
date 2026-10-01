@@ -109,7 +109,7 @@ function onTargetToken(user, token) {
 /**
  * Whose targets are these? The tokens the user has selected, since that is who they are acting as.
  * Failing that, a player means their own character on this scene, or the one token they own here
- * if there is exactly one; a GM with nothing selected means the combatant whose turn it is, so
+ * if there is exactly one; a GM with nothing selected means the combatant whose Opportunity it is, so
  * long as no player owns it. Those stand-ins are not "explicit": the user speaks for them, but does
  * not overwrite what another user recorded on them.
  * @returns {Array<{token: Token, explicit: boolean}>}

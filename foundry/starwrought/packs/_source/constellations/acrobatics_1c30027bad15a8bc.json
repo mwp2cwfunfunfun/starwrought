@@ -7,12 +7,13 @@
     "slug": "acrobatics",
     "category": "skill",
     "attribute": "agility",
+    "parentSlug": "",
     "meta": "Skill constellation • Agility",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
     "description": "<p>Skill constellation • Agility</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

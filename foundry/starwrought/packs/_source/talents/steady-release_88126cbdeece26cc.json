@@ -1,0 +1,49 @@
+{
+  "_id": "88126cbdeece26cc",
+  "name": "Steady Release",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "ranged",
+    "constellationName": "Ranged",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Ranged Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your ranged Strikes ignore a target's Lesser Cover (the +1 it grants, and the Zone rule) if you have not Moved this round. Patience finds the gap.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "05f172d6ee21ee08",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!88126cbdeece26cc"
+}

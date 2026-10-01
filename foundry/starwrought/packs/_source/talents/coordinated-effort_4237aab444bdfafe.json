@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "When you Aid an ally, the bonus is +2 instead of +1, and +3 on a critical success.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "eb638d2c93ae2065",
   "sort": 0,

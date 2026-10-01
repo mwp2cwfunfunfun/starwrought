@@ -1,6 +1,6 @@
 {
   "_id": "587d08b17f4af651",
-  "name": "Layered Guard ◆",
+  "name": "Layered Guard ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "wits",
-    "effect": "Layered Guard ◆ (stance)<br>While wearing Full Scale: the first time each round a Zone becomes Exposed, another Zone of your choice gains +1 Protection until the start of your next turn.",
+    "effect": "<b>Layered Guard ❶ Stance</b><br>While wearing Full Scale:<br>the first time each round a Zone becomes Exposed, another Zone of your choice gains +1 Protection until your next Opportunity.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "44d6df065b4c25a0",
   "sort": 0,

@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency. Every talent here requires this.<br>You gain the Measure action.<br>The Measure ◆ (stance) You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the same Defense it used against your previous Strike, until you leave the stance or name another. At Master rank you may name a new creature as a free action.",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Hold the Cadence action.<br><b>Hold the Cadence ❶ Stance</b> You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the <b>same Defense it used against your previous Strike</b>, until you leave the stance or name another. At Master rank you may name a new creature ⓿.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "4e363b3d724f4315",
   "sort": 0,

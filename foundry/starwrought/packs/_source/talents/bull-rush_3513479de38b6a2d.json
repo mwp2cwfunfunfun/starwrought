@@ -1,6 +1,6 @@
 {
   "_id": "3513479de38b6a2d",
-  "name": "Bull Rush ◆◆",
+  "name": "Bull Rush ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Stride, then Shove.<br>Add 3 feet to the push for every 10 feet you moved first.",
+    "effect": "Move, then Shove.<br>Add 1 foot to the push for every 2 feet you moved first.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "235dc76ee1e2834b",
   "sort": 0,

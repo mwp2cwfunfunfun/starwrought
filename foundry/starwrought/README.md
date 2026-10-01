@@ -1,68 +1,84 @@
 # STARWROUGHT for Foundry Virtual Tabletop
 
-A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v3.4; see
+A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.10; see
 `FEATURES.md` for what it does and `CHANGELOG.md` for what changed). Classless, Constellation-built,
 and written for a virtual tabletop from the ground up: the arithmetic is the software's job so the
-table can spend its attention on decisions.
+table can spend its attention on decisions. Six actions a round spent across Opportunities, the
+Exchange with its three Strikes and its Reactions, the Bind, Vigor and Wounds per Zone: all of it is
+tracked, announced, and never enforced against the table.
 
 - **System id:** `starwrought`
-- **Foundry:** developed and verified against **v14.367**; the manifest declares a v13 minimum,
-  which is untested.
-- **Grid:** 1 foot per square, exact diagonals. A Medium creature is a 3x3 token.
+- **Foundry:** developed against **v14**; the manifest declares a v13 minimum, which is untested.
+- **Grid:** 1 foot per square, exact diagonals. A Medium creature is a 3x3 token. Speed is feet per
+  Move; a Human's is 6.
 
 ## What it does for you
 
-**Character mechanics.** Attributes are derived from the Talents you own (points ÷ 3, rounded
+**Character mechanics.** Attributes are derived from the Talents you own (points ÷ 4, rounded
 down, max +5, with no minimum +1). Proficiency Rank is derived from your spend in a Constellation
-and your level, gated at 1/4/9/16 points and levels 1/5/13/19. Hit Points are
-`10 + (Ancestry HP + Calling HP) x level`. The Origin Constellation's three Roots (Ancestry,
-Bloodline, Culture) pool into one rank, as the handbook says they do.
+and your level: Trained +3, Expert +6, Master +9, Legendary +12, gated at 1/4/9/16 points and
+levels 1/5/10/15. There is no level term in any check: d20 + Attribute + Proficiency, against a
+Threshold of 10 + the same. Vigor is `10 + (Ancestry Vigor + Calling Vigor) x level`. The Origin
+Constellation's three Roots (Ancestry, Bloodline, Culture) pool into one rank, and Melee and Ranged
+are parents whose Combat Styles' points count toward their rank once their Root is owned.
 
 **The four Defenses.** Awareness, Evade, Guard, Endure are Constellations like any other, so each
-is `level + Attribute + Proficiency`, with a Threshold of ten plus that. Size, Off-Guard,
-Frightened and Load Strain are folded in automatically, and bonuses of the same type do not stack.
+is `Attribute + Proficiency`, with a Threshold of ten plus that. Size, Off-Guard, Frightened,
+Fatigued, Load Strain, Wounds, a Parry weapon, a raised shield and a helm are folded in
+automatically, and bonuses of the same type do not stack. A character begins Trained in two.
 
-**Player-facing rolls.** Attack rolls are answered by the defender's stance, Evade or Guard, set on
-the defender's sheet or Token HUD and read at the moment of the roll; the card reveals which, and
-the Threshold, only once the die is thrown. Defense rolls run the same comparison from the other
-side, so beating an Attack Threshold by 10 is a Miss and missing it by 10 is a Critical Hit. The
-Multiple Attack Penalty knows about Agile. A Relevant Check lets the actor choose the Constellation,
-says why on the card, and leaves the approval to the GM.
+**The six-action round.** Six actions at the start of each round, one Maneuver per Opportunity or
+Pass, a full circuit of Passes ending the round, Reactions paid from the same six, and Prepared
+Maneuvers holding a reserve until your next Opportunity. The system spends what it can see (Strikes,
+Reactions, Raise a Shield, Recenter, drawing and stowing, movement in Steps, Moves and Rushes) and
+announces an overspend rather than refusing it.
 
-**Zones, Protection and the Graze.** Each Zone carries its own armor. Damage follows the printed
-order of operations: Immunity, total, Weakness, Resistance, the critical doubling, Protection,
-Temporary Hit Points, Hit Points. Protection can never take a blow below 1; Resistance can. The
-material step is automatic, so mail turns piercing poorly without anyone remembering it. A Graze
-rolls one weapon die and nothing else, and opens the Zone it landed on.
+**The Exchange.** Three Strikes on every weapon: Quick ❶, Deliberate ❷ and Committed ❸ (Prepared).
+The defender's stance answers, read at the moment of the roll: Evade or Guard, or a Reaction built
+on one of them (Void, Parry, Counter) that costs an action when the blow lands. The card then
+settles Position: Expose a Zone, form a Bind or take Control, give ground or Step, riposte or
+Counter. Intercept is offered when a foe Moves into your reach. Support and the Controlled penalty
+are computed. There is no Multiple Attack Penalty. A Relevant Check lets the actor choose the
+Constellation, says why on the card, and leaves the approval to the GM.
 
-**Going down.** Dropping to 0 sets Dying from the blow that did it plus your Wounded value. Damage
-while Dying raises it, healing ends it and makes you Wounded, Recovery checks resolve themselves,
-and Refusing Death is a button that cannot fail.
+**Zones, Protection and damage.** Each Zone carries its own armor. Damage follows the printed order
+of operations: Immunity, total, Weakness, Resistance, the critical doubling, a Deadly die,
+Protection, Temporary Vigor, Vigor. Protection can never take a blow below 1; Resistance can. The
+material step is automatic, so mail turns piercing poorly without anyone remembering it. A Quick
+Strike and a Graze roll one die; an Exposed Zone's Protection is 0 only against a Deliberate or
+Committed Strike.
+
+**Vigor, Spent, Wounds and Dying.** At 0 Vigor you are Spent, not down: every Hit then Wounds the
+Zone it strikes. Wounds are counted per Zone against a capacity set by Size, with the book's first
+and final effects applied to the numbers where they are numbers. Dying begins when the Torso or the
+Head takes its final Wound, Recovery is checked at the start of each round from a card, Wounds are
+treated from the Zone, and Refusing Death is a button that cannot fail.
 
 **Flares.** Any critical offers a Flare button on the chat card. It asks which Constellation the
 roll belonged to, because the die knows it was a critical and only the table knows what it was
 related to. A Constellation you have never opened can be Flared, and it shows on your sheet at 0
 points so the Milestone point has somewhere to go.
 
-**Weapon Handling.** Intuitive weapons use your full Weapons Proficiency, Practiced drops a rank
-without Familiarity, and Technical drops you to Untrained. Familiarity is a list of Weapon Groups
-on the sheet.
+**Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that
+leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a rank without
+Familiarity, and Technical drops you to Untrained. Familiarity is derived from what your Talents
+recorded plus a list on the sheet.
 
 ## Compendia
 
 | Pack | Contents |
 |---|---|
-| Constellations | 30 Constellations with their Key Attribute, category, and plate art |
-| Talents | 170 Talents, foldered by Constellation |
+| Constellations | 31 Constellations with their Key Attribute, category, parent and plate art |
+| Talents | 177 Talents, foldered by Constellation |
 | Ancestries, Bloodlines, Cultures, Backgrounds & Callings | 13 chassis Items |
 | Equipment | 29 weapons, 20 armor pieces, 3 shields |
-| Actions & Activities | 46 Actions, Postures, and Exploration and Downtime activities. Those authored in `data/actions.xlsx` replace the roster's row of the same name |
+| Maneuvers & Activities | 53 Maneuvers, Activities and Reactions, foldered as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special; Exploration Mode; Downtime Mode; Reactions). Those authored in `data/actions.xlsx` replace the roster's row of the same name |
 | Rules Reference | 20 pages of reference tables |
-| Macros | Recenter, Recovery, a night's rest, Relevant Check, Initiative by activity |
+| Macros | Recenter, Recovery Check, A Night's Rest, Relevant Check, Roll Initiative by Activity |
 
 Every one of these is generated from `data/*.xlsx` by way of `assets/trees.json`,
 `assets/actions.json` and `assets/roster.json`. Nothing in `packs/` is authored by hand. The Basic
-Actions in the Actions pack are what every character's Actions tab shows, read from the pack
+Maneuvers in the Maneuvers pack are what every character's Maneuvers tab shows, read from the pack
 rather than copied.
 
 ## Building the content
@@ -101,9 +117,11 @@ system.json              the manifest
 starwrought.mjs          entry point: CONFIG wiring, hooks, settings
 module/config.mjs        every rule constant, in one place
 module/data/             Actor and Item data models, and all the derived arithmetic
-module/documents/        Actor, Item, Combat, and the chat card behaviour
+module/documents/        Actor, Item, Combat (the round and the Opportunities), action tracking, and the chat card behaviour
 module/dice/             the check engine and the damage pipeline
-module/apps/             the three sheets
+module/canvas/           reach bands, the drag ruler, targeting arrows, and the grid geometry
+module/apps/             the three sheets, the creation wizard and the Token HUD stance button
+module/helpers/          the content registry, chargen data and rules, the stance model, Handlebars helpers
 templates/               Handlebars for sheets, chat cards, and the roll dialog
 content/                 the Constellation index, read at init before compendia exist
 packs/                   compiled compendia (generated)
@@ -118,5 +136,11 @@ The full list is section 7 of `FEATURES.md`. The short version:
   else. Drag a Talent onto a sheet by hand and nothing stops you.
 - Talent effects are prose the sheet displays, not rules the system acts on. That is the next
   piece of work, and it will be authored in the spreadsheets rather than in code.
+- "Expose a plausible Zone" is a picker the attacker may use, never a rule the engine resolves.
+- Bind writes on a partner you do not own, and Reaction charges on a defender you do not own, need
+  that owner's click on the card.
+- A Rush-length drag is charged its three actions at once; the telegraphing is the table's.
+- Persistent Damage is an end-of-round reminder card; the amount is applied on the sheet by hand.
+- A treated Wound is removed from the Zone rather than kept as a bound Wound for a week.
 - Cover, Concealment and detection states are reference material, not automation.
 - Magic is not in the playtest, so it is not here.

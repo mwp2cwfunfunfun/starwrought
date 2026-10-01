@@ -1,6 +1,6 @@
 {
   "_id": "6ced60eaafdc33a0",
-  "name": "Second Wind ◆◆",
+  "name": "Second Wind ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Once per day, dig deep: regain Hit Points equal to half your level plus your Might.",
+    "effect": "Once per day, dig deep: regain Vigor equal to half your level plus your Might.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "0faabe9a5cfa92a4",
   "sort": 0,

@@ -157,11 +157,24 @@ adjustment fields); no Talent bonus is untyped. **Weapon traits are Situation** 
 the moment, not what the weapon is. Gear is reserved for something intrinsic to the piece itself,
 such as its quality or, later, a magical property. A raised shield's bonus to Guard is Gear.
 
-**Rank math.** Trained 1 pt, Expert 4, Master 9, Legendary 16, gated at L1/L5/L13/L19. Every talent
-costs 1. Capstones (★) are tier L and need a Master talent in the same constellation. Attribute
-bonus = points ÷ 3, rounded down, max +5. **There is no min +1**: the PHB's own table has read
-0–2 points = +0 since v1.8, and the app implements the table. A single point in a constellation buys
-proficiency, not an attribute bonus.
+**Rank math (PHB v4.10).** Trained 1 pt, Expert 4, Master 9, Legendary 16, gated at L1/L5/L10/L15.
+The Proficiency Bonus is +3 / +6 / +9 / +12 (Untrained +0), and **level never touches the die**: a
+check is d20 + Attribute Bonus + Proficiency Bonus + bonuses and penalties, and a Threshold is 10 +
+the same. Every talent costs 1. Capstones (★) are tier L and need a Master talent in the same
+constellation. Attribute bonus = points ÷ 4, rounded down (0-3 = +0, 4-7 = +1), max +5 (the cap is
+the Key Terms sentence; v4.10 sync report ruling 1). **There is no min +1.** A single point in a
+constellation buys proficiency, not an attribute bonus. **Melee and Ranged are parent
+Constellations**: a Combat Style's `Parent` column names one, and every Talent bought in the child
+counts toward the parent's rank once the parent's Root is owned (rank only; Attribute Points are
+never counted twice). Weapon dice: 2 at L4, 3 at L8, 4 at L12, 5 at L16.
+
+**Six actions a round (PHB v4.10).** Every combatant gets six actions at the start of each round,
+spent across Opportunities (one Maneuver per Opportunity, or Pass; a full circuit of Passes ends the
+round). Reactions ↺ are paid from the same six. Costs are printed ⓿ ❶ ❷ ❸ (up to ❻); a Maneuver of
+three or more actions is Prepared (one now, the rest reserved, resolved at the next Opportunity).
+There is no Multiple Attack Penalty. Vigor replaces Hit Points; at 0 Vigor you are Spent and every
+Hit Wounds a Zone; Wounds are per Zone (capacity 2 for Medium or smaller) and the Torso's or Head's
+final Wound is Dying.
 
 ## Where the source of truth lives
 
@@ -183,14 +196,18 @@ proficiency, not an attribute bonus.
   creation menus, all 30 constellations, and the reference appendices, every table read from
   `trees.json` and `roster.json`. That is content that must track the data exactly.
 - `data/*.xlsx` holds all game content. One `_Tree Index` sheet per workbook.
-- Ancestry rows in `data/ancestries.xlsx` `_Tree Index` also carry HP, Size, Speed, Senses, Summary.
-  The pipeline reads those and generates the `ancestries` block of `roster.json`, so ancestry chassis
-  is authored once, in the sheet.
+- Ancestry rows in `data/ancestries.xlsx` `_Tree Index` also carry Vigor (the header may still read
+  HP), Size, Speed (feet per Move; a Human's is 6), Senses, Summary. The pipeline reads those and
+  generates the `ancestries` block of `roster.json` (keys `vigor`, and `hp` for one release), so
+  ancestry chassis is authored once, in the sheet.
 - `* Lore` sheets in `ancestries.xlsx` are authoring notes for player-facing text. The converter
   ignores them by design.
 - Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect, Feeds,
   Grants, **Choice**, **Free Talent**. Column order does not matter; the first word of the header
-  does. `Root` = `x` for a constellation root, `h` for a bloodline root.
+  does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
+  a **Parent** column (v4.10): a Combat Style names Melee or Ranged, and the converter errors on a
+  Parent that names no tree or has a parent of its own. Action glyphs ride in the Talent name in the
+  v4.10 symbols (❶ ❷ ❸, ⓿, ↺ beside a cost); the v3 ◆ and ◇ still convert.
 - **`Choice`** is a build-time pick the talent's effect demands, written as what is being chosen
   ("Weapon Group", "Weapon Group or Technical Weapon"). **`Free Talent`** names a talent handed
   over outright with no point spent, and may live in another constellation; the converter checks it
@@ -227,14 +244,53 @@ proficiency, not an attribute bonus.
   Opening Talent Point") and **Torchbearer Human** (allies' first Defense roll). Neither rolls, and
   neither scales. The pipeline warns on both every sync. Either they get a scaling clause or the
   Root Rule gets an exemption for bloodlines.
-- The PHB prints one non-Trained talent in the whole book (*Reactive Strike*, tier E). The Expert,
-  Master, and Legendary tiers are otherwise unwritten across all 30 constellations.
-- **Armored Fighting's Key Attribute is contradictory and still open in v3.1.** Its section heading
+- The PHB prints three non-Trained talents in the whole book, all tier E and all in Melee
+  (*Reactive Strike*, *Winding*, *Master Cut*); 174 of the 177 talents are Trained. The Expert,
+  Master, and Legendary tiers are otherwise unwritten across all 31 constellations.
+- **Armored Fighting's Key Attribute is contradictory and still open in v4.10.** Its section heading
   says *Combat Style • Presence*; the Combat Styles summary table says **Might**. The data uses
   Presence, following the heading, as Shield Fighting was resolved. One cell in `combat_styles.xlsx`
   either way. **This is the tree-level `Feeds` only.** Armored Fighting's per-talent `Feeds`
   overrides are deliberate and mixed (Mike, 2026-08-27): six Might including the root, three
   Presence, two Wits, two Agility. Resolving the heading-vs-table question must not flatten them.
+- **Aid differs between the sheet and the book.** `data/actions.xlsx` has Aid as a single action
+  with a Relevant Check; PHB v4.10 has Prepare ❶ plus a ⓿↺ Reaction against Threshold 15. The sheet
+  wins by the standing rule (2026-09-26) and ships as written; the book is Mike's to bring across,
+  or the sheet is (v4.10 sync report, ruling 10).
+- **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
+  Constellation in v4.10; the data reads it as Melee. One sentence in the handbook.
+- **Key Terms carries v3.4 sentences.** It still says Attribute Bonus is points divided by 3, that
+  every character begins Trained in all four Defenses, and that only a Committed Strike is
+  Weighted; the Cultures introduction still names Varisians. Character Mechanics, Chapter 3 and the
+  data all say ÷ 4, two Defenses, and Serrovane and Kestrel Reach.
+- **The Example of Play does its sums at Trained +4** ("2 + 4, so d20+6") against the book's +3
+  ladder, and has Recenter clear a Zone Exposed by a Posture, which the rules forbid. The rules
+  text governs; the example needs a pass.
+- **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** The
+  system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
+  (`STRIKE_KINDS.exposeOnMiss`). One cell in the handbook either way.
+- **`data/actions.xlsx` has never been committed.** It is the authoritative source of
+  `assets/actions.json`, which is tracked and marked never-hand-edit, so a fresh clone cannot
+  regenerate the actions. It is Mike's working file and adding it to git is his call; the
+  converter now says so when the workbook is absent.
+
+Cleared 2026-09-28 (the v4.10 sync): the check formula's level term, the ÷ 3 divisor and the
+1/5/13/19 rank gates everywhere downstream; the Multiple Attack Penalty and its `trackMap` setting;
+Hit Points, Stride, the three-action turn and the reaction slot; the Weapons Constellation, now
+Melee and Ranged with the Combat Styles as their children; the four-Defenses grant at creation; the
+numeric Wounded value; the web app's Endure relief table (wrong since v3.2); the converter's glyph
+normaliser and the plate renderer's missing ⓿; the Task-level Threshold table; and the roster's
+Postures table, now the Reaction table. Loose and Move moved from Archery to Ranged.
+
+Cleared 2026-10-01 (the v4.10 review, 40 findings): a Reaction Strike reading the target's stance;
+Counter answering ranged attacks; the Bind offered for unbindable attacks and keyed on the wrong
+weapon; the Speed ÷ 4 heuristic running on every load; the Zone-bonus double count in
+`zoneProtection`; movement reading the stored Speed instead of `moveSpeed` and Speed 0 as 6 (now
+Crawl); the lone combatant's round reset; Intercept offers coupled to `trackActions`; the app's
+ungated parent pool and its silent drop of Loose and Move; the sheets' clipped and dropped text;
+the plates' glyph-blind Requires matching, bare "0" and stale Weapons plate; the Activities printed
+as ⓿; and the `data/README.txt` categories and Golarion example. The sync report records the
+rulings (51 to 59).
 
 Cleared 2026-08-27: the de-Paizo pass (cultures are now Serrovane and Kestrel Reach); the stale
 `build_phb.js`, now a data-driven compendium builder; the missing and orphaned constellation plates;

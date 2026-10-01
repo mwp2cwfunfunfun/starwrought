@@ -2,8 +2,13 @@
  * The Actor document.
  *
  * Everything a character does at the table is a method here: rolling a check, answering a blow,
- * Recentering, going down, and coming back. The rules arithmetic lives in the data model; this
- * class is the verbs.
+ * settling Position, Recentering, taking a Wound, going down, and coming back. The rules
+ * arithmetic lives in the data model; this class is the verbs.
+ *
+ * PHB v4.10 vocabulary, as the code uses it: six actions a round, spent across Opportunities;
+ * a Strike is Quick ❶, Deliberate ❷ or Committed ❸ (Prepared); a Reaction is paid from the same
+ * six; Vigor is what stands between a blow and the body, Spent is 0 Vigor, Wounds are per Zone,
+ * and Dying begins when the Torso or the Head carries its final Wound.
  */
 
 import * as SW from "../config.mjs";
@@ -14,18 +19,43 @@ import { gapBetween } from "../canvas/geometry.mjs";
 const { DialogV2 } = foundry.applications.api;
 const { renderTemplate } = foundry.applications.handlebars;
 
+/** The five stances: the two basic Defenses, and the three Reactions a defender can stand ready with. */
+const STANCES = Object.freeze(["evade", "guard", "void", "parry", "counter"]);
+const REACTION_STANCES = Object.freeze(["void", "parry", "counter"]);
+
+/** Names compared the way a player types them: case and stray spaces do not count. */
+const sameName = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+
 export class SwActor extends Actor {
+  /* -------------------------------------------- */
+  /*  Lookups                                     */
+  /* -------------------------------------------- */
+
+  /**
+   * The Actor behind a uuid, whether the uuid names an Actor or a Token.
+   * @param {string} uuid
+   * @returns {Actor|null}
+   */
+  static resolveActor(uuid) {
+    if (!uuid) return null;
+    const doc = fromUuidSync(uuid);
+    if (!doc) return null;
+    if (doc.documentName === "Actor") return doc;
+    return doc.actor ?? null;
+  }
+
   /* -------------------------------------------- */
   /*  Conditions                                  */
   /* -------------------------------------------- */
 
   /**
-   * The value of a numeric condition (Frightened 2, Slowed 1), or 0 if it is not on you.
+   * The value of a numeric condition (Frightened 2, Slowed 1), or 0 if it is not on you. Wounded
+   * reads the Wounds carried across every Zone (PHB v4.10: Wounds are per Zone, not a number).
    * @param {string} id  A key of SW.CONDITIONS.
    * @returns {number}
    */
   conditionValue(id) {
-    if (id === "wounded") return this.system.wounded ?? 0;
+    if (id === "wounded") return this.woundCount;
     if (id === "dying") return this.system.dying ?? 0;
     if (!this.statuses?.has(id)) return 0;
     for (const effect of this.effects) {
@@ -65,6 +95,49 @@ export class SwActor extends Actor {
   }
 
   /* -------------------------------------------- */
+  /*  Body                                        */
+  /* -------------------------------------------- */
+
+  /** Wounds carried across every Zone. Recovery and Treat Wound Thresholds count them all. */
+  get woundCount() {
+    if (Number.isNumeric(this.system.woundCount)) return this.system.woundCount;
+    return Object.values(this.system.zones ?? {}).reduce((n, z) => n + (z?.wounds ?? 0), 0);
+  }
+
+  /**
+   * How many Wounds a Zone carries before its final effect: Medium or smaller 2, Large 3, Huge 4,
+   * Gargantuan 5, plus whatever a creature template adds (PHB v4.10, Wound capacity).
+   * @param {string} zone
+   * @returns {number}
+   */
+  woundCapacity(zone) {
+    const derived = this.system.woundCapacity?.(zone);
+    if (Number.isNumeric(derived)) return derived;
+    return (SW.WOUND_CAPACITY[this.system.size] ?? 2) + (this.system.woundBonus ?? 0);
+  }
+
+  /**
+   * The rigid implement in hand, if any: what a Guard forms a Bind with and what a Parry needs.
+   * A shield counts, raised or not; a weapon counts unless it is Flexible or a bare hand
+   * (PHB v4.10, The Bind: "a bare hand or a Flexible weapon can Guard, but cannot Bind"). An
+   * adversary's profile decides for it, so an adversary is assumed to have one: the card offers
+   * the Bind and the GM confirms.
+   * @returns {{name: string, shield?: boolean, raised?: boolean, assumed?: boolean}|null}
+   */
+  get rigidImplement() {
+    if (this.type !== "character") return { name: "", assumed: true };
+    // The data model's own answer, when it has one, wins over the item scan below.
+    if (this.system.reactions?.rigid === false) return null;
+    const shield = this.items.find(i => (i.type === "shield") && i.system.held);
+    if (shield) return { name: shield.name, shield: true, raised: !!shield.system.raised };
+    const isRigid = i => (typeof i.system.rigid === "boolean") ? i.system.rigid : !i.system.flags?.flexible;
+    const weapon = this.items.find(i => (i.type === "weapon") && i.system.held
+      && isRigid(i)
+      && !/natural/i.test(i.system.group ?? ""));
+    return weapon ? { name: weapon.name } : null;
+  }
+
+  /* -------------------------------------------- */
   /*  Rolling                                     */
   /* -------------------------------------------- */
 
@@ -81,9 +154,11 @@ export class SwActor extends Actor {
     data.level = sys.level ?? 1;
     if (this.type !== "character") return data;
     for (const [key, attr] of Object.entries(sys.attributes ?? {})) data[key] = attr.mod ?? 0;
-    data.spec = sys.weapons?.specialization ?? 0;
-    data.dice = sys.weapons?.dice ?? 1;
+    data.spec = sys.melee?.specialization ?? 0;
+    data.rangedSpec = sys.ranged?.specialization ?? 0;
+    data.dice = sys.weaponDice ?? 1;
     data.loadStrain = sys.loadStrain ?? 0;
+    data.wounds = this.woundCount;
     return data;
   }
 
@@ -186,134 +261,428 @@ export class SwActor extends Actor {
   /**
    * Roll one of the four Defenses. When it answers an Attack, pass the attacker's Attack
    * Threshold; the degrees are then read from the attacker's side, so beating it by 10 is a Miss.
+   *
+   * PHB v4.10, Answering an Attack: the basic Defense always rolls, whatever you have left. A
+   * Reaction does better and is paid from the same six actions: Parry ❶↺ is Guard at +2
+   * Situation and needs a rigid implement; Void ❶↺ is Evade at +2 Situation; Counter ❶↺ adds
+   * nothing to the Defense and answers with a Quick Strike of your own. The dialog offers the
+   * Reactions this actor owns; the engine charges the action.
    * @param {string} key  A key of SW.DEFENSES.
    * @param {object} [options]
+   * @param {number} [options.threshold]   The Attack Threshold being answered.
+   * @param {string|null} [options.reaction]  parry | void | counter | null.
+   * @param {string} [options.strike]      The attacker's commitment, if known (quick | deliberate | committed).
+   * @param {Actor|Token} [options.attacker]  Who is attacking; defaults to the current target.
    */
   async rollDefense(key, options = {}) {
+    const { reaction: askedReaction, attacker: givenAttacker, ...rest } = options;
+    const reaction = SW.REACTIONS[askedReaction] && ["parry", "void", "counter"].includes(askedReaction)
+      ? askedReaction : null;
+    // Void is an Evade and Parry is a Guard, whichever button was pressed.
+    if (reaction && SW.REACTIONS[reaction].defense) key = SW.REACTIONS[reaction].defense;
     const def = SW.DEFENSES[key];
     if (!def) return null;
+
+    const attackerToken = givenAttacker?.document ? givenAttacker
+      : (givenAttacker?.getActiveTokens?.(false, false)?.[0] ?? SwCheck.currentTarget());
+    const attacker = givenAttacker?.actor ?? (givenAttacker?.documentName === "Actor" ? givenAttacker : null)
+      ?? attackerToken?.actor ?? null;
+
     return SwCheck.roll(foundry.utils.mergeObject({
       actor: this,
       kind: options.threshold !== undefined ? "defense" : "check",
       slug: def.slug,
       label: game.i18n.localize(def.label),
       subtitle: game.i18n.localize(def.hint),
-      thresholdLabel: game.i18n.localize("STARWROUGHT.Roll.attackThreshold")
-    }, options, { inplace: false }));
+      thresholdLabel: game.i18n.localize("STARWROUGHT.Roll.attackThreshold"),
+      defense: key,
+      reaction,
+      attacker,
+      targetUuid: attackerToken?.document?.uuid ?? "",
+      targetName: attackerToken?.name ?? attacker?.name ?? "",
+      defenderTokenUuid: this.tokenOnScene()?.uuid ?? ""
+    }, rest, { inplace: false }));
   }
 
   /* -------------------------------------------- */
 
   /**
-   * Strike with a weapon. The attack roll is Weapons Proficiency, adjusted for the weapon's
-   * Handling, plus the Attribute the weapon uses, against the target's chosen Defense Threshold.
+   * Strike with a weapon (PHB v4.10, Strikes). The attack is Melee Proficiency for a weapon in
+   * hand or Ranged for one that leaves it (a thrown dagger included), adjusted for Handling,
+   * plus the Strike Attribute, against the Defense the defender answers with.
+   *
+   * The count of actions is the commitment: Quick ❶ (one die, cannot crit unless Agile, Torso),
+   * Deliberate ❷ (full damage, may land on an Exposed Zone), Committed ❸ (Prepared: one action
+   * now, two reserved, resolves at the next Opportunity). There is no Multiple Attack Penalty.
    * @param {string} weaponId
    * @param {object} [options]
+   * @param {string} [options.strike]      quick | deliberate | committed. Default SW.DEFAULT_STRIKE.
+   * @param {boolean} [options.prepared]   Finishing a Prepared Committed Strike: already paid.
+   * @param {boolean} [options.free]       A Quick Strike granted by a Reaction (riposte, Counter,
+   *                                       Intercept): the Reaction paid for it.
+   * @param {boolean} [options.thrown]     Throw it (Ranged Proficiency). Inferred from distance
+   *                                       for a Thrown weapon when not given.
+   * @param {string} [options.targetUuid]  A Token or Actor uuid to strike, instead of the user's target.
+   * @param {string} [options.targetTokenId]  A canvas Token id to strike (the Intercept card passes one).
+   * @param {string} [options.reaction]    The Reaction this Strike is: "intercept" pays Intercept's
+   *                                       ❶↺ instead of the Strike's cost; "counter" and "riposte"
+   *                                       were paid by the Reaction that granted them. All three
+   *                                       are Quick Strikes.
+   * @param {string} [options.defense]     Force the Defense answering (a Talent that targets Awareness).
    */
   async rollAttack(weaponId, options = {}) {
     const weapon = this.items.get(weaponId);
     if (!weapon || weapon.type !== "weapon") return null;
+    const {
+      strike: askedStrike, prepared = false, free: askedFree = false, thrown: askedThrown,
+      targetUuid: askedTarget, targetTokenId, reaction: asReaction = null,
+      modifiers: givenModifiers, ...rest
+    } = options;
 
     // Striking with something you are not holding is worth saying out loud, and nothing more.
     if (!weapon.system.held) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.notHeld", { name: weapon.name }));
     }
-    // A Strike is one action; the two and three action versions buy control over where it lands.
-    await this.spendActions(options.actionCost ?? 1, {
-      label: game.i18n.localize("STARWROUGHT.Roll.strike")
-    });
 
-    const rank = this.weaponRank(weapon);
+    // A Strike made as a Reaction (Intercept, Counter, the riposte) is always a Quick Strike. Only
+    // Intercept pays here; Counter's ❶↺ is charged when the attack it answers resolves, and the
+    // riposte is ⓿.
+    const reactionStrike = ["intercept", "counter", "riposte"].includes(asReaction) ? asReaction : null;
+    const strike = reactionStrike ? "quick" : (SW.STRIKE_KINDS[askedStrike] ? askedStrike : SW.DEFAULT_STRIKE);
+    const free = askedFree || ["counter", "riposte"].includes(reactionStrike);
+    const paid = !!(prepared || free);
 
-    // Your Foundry target first; failing that, the one target this token is remembered as having,
-    // so a reload does not cost you the Threshold along with the arrow.
-    let targetToken = SwCheck.currentTarget();
+    // Your named target first, then your Foundry target, then the one target this token is
+    // remembered as having, so a reload does not cost you the Threshold along with the arrow.
+    let targetToken = targetTokenId ? (canvas.tokens?.get(targetTokenId) ?? null) : null;
+    if (!targetToken && askedTarget) targetToken = this.#tokenFor(askedTarget);
+    if (!targetToken) targetToken = SwCheck.currentTarget();
     if (!targetToken) {
       const remembered = this.tokenOnScene()?.getFlag(SW.SYSTEM_ID, "targets")?.ids ?? [];
       const only = (remembered.length === 1) ? canvas.tokens?.get(remembered[0]) : null;
       if (only?.actor) targetToken = only;
     }
     const targetActor = targetToken?.actor ?? null;
+    const attackerToken = this.tokenOnScene();
+    const gap = (attackerToken && targetToken && canvas?.ready) ? gapBetween(attackerToken, targetToken.document) : null;
 
-    // The defender decides whether to Evade or Guard. Their stance is that decision, made in
-    // advance and changeable until the die leaves the hand, so the roll reads it rather than asking
-    // the attacker: the dialog shows it and offers no choice. A caller may still force a Defense
-    // (a Talent that targets Awareness, say); otherwise the defender's answer is read again at the
-    // moment of the roll.
-    const forced = options.defense !== undefined;
-    const answering = targetActor?.answeringDefense() ?? null;
+    // Melee for a weapon in hand, Ranged for one that leaves it. A Thrown weapon leaves the hand
+    // when its target is beyond your Total Reach with it, unless the caller says otherwise.
+    const reachWith = (this.system.reach ?? 0) + (weapon.system.reach ?? 0);
+    const thrown = askedThrown ?? (!!weapon.system.flags?.thrown && !weapon.system.isRanged
+      && (gap !== null) && (gap > reachWith));
+    const ranged = !!weapon.system.isRanged || thrown;
+    const slug = thrown ? SW.RANGED_SLUG : (weapon.system.strikeSlug ?? (ranged ? SW.RANGED_SLUG : SW.MELEE_SLUG));
+    const rank = this.weaponRank(weapon, slug);
+
+    // The Strike Attribute: the higher of the weapon's natural Attribute and the Key Attribute of
+    // a Combat Style whose root you own and whose weapon this is (PHB v4.10, The Attack).
+    const strikeAttribute = this.system.strikeAttributeFor?.(weapon)
+      ?? { attribute: weapon.system.attackAttribute, source: "weapon" };
+
+    // The defender decides how to answer. Their stance is that decision, made in advance and
+    // changeable until the die leaves the hand, so the roll reads it rather than asking the
+    // attacker: the dialog shows it and offers no choice. A caller may still force a Defense (a
+    // Talent that targets Awareness, say); otherwise the defender's answer is read again at the
+    // moment of the roll, Reaction included. The answer is read against this threat: a Counter
+    // stance answers only a melee Blow from within Reach, so it is told whether the Blow is
+    // ranged and how far it came.
+    //
+    // A Reaction never triggers another Reaction (PHB v4.10, Answering an Attack): a Counter,
+    // an Intercept or the riposte meets the target's basic Defense only, with nothing behind
+    // it and nothing charged to them. answeringDefense() already names that basic Defense
+    // (Parry -> Guard, Void -> Evade, Counter -> the better of the two, Grabbed swap applied);
+    // SwCheck.thresholdOf reads it without the Reaction's +2, and treating it as forced keeps
+    // the roll-time re-read, the charge and the Counter offer all out of it.
+    const forced = options.defense !== undefined || !!reactionStrike;
+    const answering = targetActor?.answeringDefense?.({ ranged, gap }) ?? null;
     const defense = options.defense ?? answering?.key ?? "evade";
     const target = targetToken ? SwCheck.thresholdOf(targetToken, defense) : null;
     const targetDefense = !targetActor ? null : forced
       ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null }
       : answering;
+    // Why the Defense met is not the stance: swapped by a condition (Evade while Grabbed), or a
+    // Reaction set aside because this Strike is itself a Reaction. A caller who forced the
+    // Defense has its own reason and gets no note.
+    const defenseNote = (options.defense !== undefined) ? null
+      : (answering?.unavailable
+        ?? ((reactionStrike && answering?.reaction) ? game.i18n.localize("STARWROUGHT.Reaction.basicOnly") : null));
+
+    const modifiers = [...(givenModifiers ?? [])];
 
     // Unwieldy N: a −2 Situation penalty against a target within N feet, measured edge to edge
     // like everything else on the grid, and no attack at all while Grabbed. The penalty is applied;
     // the Grabbed clause is announced, since nothing in this system prevents a roll.
-    const modifiers = [...(options.modifiers ?? [])];
     const unwieldy = weapon.system.flags?.unwieldy ?? 0;
     if (unwieldy) {
-      const attackerToken = this.tokenOnScene();
-      if (attackerToken && targetToken) {
-        const gap = gapBetween(attackerToken, targetToken.document);
-        if (gap <= unwieldy) {
-          modifiers.push({
-            label: game.i18n.format("STARWROUGHT.Roll.unwieldy", { n: unwieldy }),
-            value: SW.UNWIELDY_PENALTY,
-            type: "situation"
-          });
-        }
+      if ((gap !== null) && (gap <= unwieldy)) {
+        modifiers.push({
+          label: game.i18n.format("STARWROUGHT.Roll.unwieldy", { n: unwieldy }),
+          value: SW.UNWIELDY_PENALTY,
+          type: "situation"
+        });
       }
       if (this.statuses?.has("grabbed")) await this.#announceGrabbed(weapon);
     }
+
+    // Support (PHB v4.10, Allies in the Exchange): +1 Situation to a melee attack per other
+    // conscious ally whose Total Reach includes the target, to a maximum of +2. Same type as
+    // Control's penalty, so the two are resolved against each other rather than added.
+    if (!ranged && targetToken && attackerToken) {
+      const support = this.supportFor(targetToken, attackerToken);
+      if (support.count) {
+        modifiers.push({
+          label: game.i18n.format("STARWROUGHT.Roll.support", { n: support.count, names: support.names.join(", ") }),
+          value: support.count,
+          type: "situation"
+        });
+      }
+    }
+
+    // Your partner's attacks with the Controlled weapon take a −2 Situation penalty (The Bind).
+    const bind = this.system.bind;
+    const controlledWeapon = (bind?.state === "controlled") && sameName(bind.mine, weapon.name);
+    if (controlledWeapon) {
+      modifiers.push({
+        label: game.i18n.format("STARWROUGHT.Roll.controlledWeapon", { weapon: weapon.name }),
+        value: SW.CONTROLLED_PENALTY,
+        type: "situation"
+      });
+    }
+
+    const kindLabel = key => `${game.i18n.localize(SW.STRIKE_KINDS[key].label)} ${SW.ACTION_GLYPHS[SW.STRIKE_KINDS[key].cost]}`;
+    const reactionLabel = reactionStrike
+      ? ` · ${game.i18n.localize(reactionStrike === "riposte" ? "STARWROUGHT.Reaction.riposte" : SW.REACTIONS[reactionStrike].label)}`
+      : "";
+    const subtitleFor = key => `${kindLabel(key)}${reactionLabel} · ${
+      game.i18n.localize(ranged ? "STARWROUGHT.Roll.rangedStrike" : "STARWROUGHT.Roll.meleeStrike")}`;
 
     return SwCheck.roll(foundry.utils.mergeObject({
       actor: this,
       item: weapon,
       weaponId,
       kind: "attack",
-      slug: SW.WEAPONS_SLUG,
+      slug,
       rankOverride: rank,
-      attribute: weapon.system.attackAttribute,
+      attribute: strikeAttribute.attribute,
+      attributeSource: strikeAttribute.source,
       label: weapon.name,
-      subtitle: game.i18n.localize("STARWROUGHT.Roll.strike"),
-      map: weapon.system.map,
+      subtitle: subtitleFor(strike),
+      strike,
+      lockStrike: paid || !!reactionStrike,
+      prepared,
+      asReaction: reactionStrike,
       modifiers,
       threshold: target?.threshold ?? null,
       thresholdLabel: target?.label ?? "",
       targetUuid: target?.uuid ?? "",
       targetDefense,
       defenseForced: forced,
-      defenseNote: forced ? null : (answering?.unavailable ?? null),
+      defenseNote,
+      // What the defender is answering, for the roll-time re-read of their stance.
+      threat: { ranged, gap },
+      reaction: forced ? null : (answering?.reaction ?? null),
+      reactionNote: forced ? null : (answering?.note ?? null),
+      defender: targetActor,
+      defenderRigid: targetActor?.rigidImplement ?? null,
+      attackerTokenUuid: attackerToken?.uuid ?? "",
       // The token's name, not the actor's: the token name is the one the GM chose to show.
-      targetName: targetToken?.name ?? ""
-    }, { ...options, modifiers }, { inplace: false }));
+      targetName: targetToken?.name ?? "",
+
+      // Once the dialog has settled which Strike this is: pay for it, or turn a Committed Strike
+      // into a Prepared Maneuver that resolves at the next Opportunity and never reaches the die
+      // now. A Strike already paid for (a finished preparation, a riposte) spends nothing.
+      beforeRoll: async cfg => {
+        const kind = SW.STRIKE_KINDS[cfg.strike];
+        cfg.subtitle = subtitleFor(cfg.strike);
+        if (reactionStrike === "intercept") {
+          // Intercept ❶↺: the Reaction's own cost, in place of the Strike's.
+          const r = SW.REACTIONS.intercept;
+          await this.spendActions(r.cost, {
+            label: `${game.i18n.localize(r.label)} ${SW.ACTION_GLYPHS[r.cost]}${SW.REACTION_GLYPH}: ${weapon.name}`
+          });
+        } else if (!paid) {
+          if (kind.prepared && this.inEncounter) {
+            await this.prepare({
+              kind: "strike",
+              label: `${weapon.name}: ${kindLabel(cfg.strike)}`,
+              cost: kind.cost,
+              weaponId,
+              targetTokenId: targetToken?.id ?? "",
+              targetUuid: targetToken?.document?.uuid ?? "",
+              strike: cfg.strike
+            });
+            return false;
+          }
+          await this.spendActions(kind.cost, { label: `${kindLabel(cfg.strike)}: ${weapon.name}` });
+        }
+        // "Attacking with an uncontrolled weapon or limb ends the Bind before the roll."
+        if (bind?.state && bind.mine && !sameName(bind.mine, weapon.name)) await this.endBind();
+        return true;
+      },
+
+      // The blow has resolved. The defender's Reaction is paid now (their stance falls back to
+      // its basic Defense), a Bind between the two ends, and a Controller struck by a third party
+      // loses the line. Writes land only where this client owns the actor; the card offers the
+      // rest to whoever does.
+      afterRoll: async result => {
+        const cfg = result.config;
+        if (cfg.reaction && cfg.defender) {
+          cfg.reactionCharged = await SwCheck.chargeReaction(cfg.defender, cfg.reaction);
+        }
+        if (!targetActor) return;
+        const mine = this.system.bind;
+        if (mine?.state && (mine.partnerUuid === targetActor.uuid)) await this.endBind();
+        const theirs = targetActor.system.bind;
+        if ((theirs?.state === "controlling") && (theirs.partnerUuid !== this.uuid) && targetActor.isOwner) {
+          await targetActor.endBind();
+        }
+      }
+    }, rest, { inplace: false }));
   }
 
   /**
-   * The Defense that answers a physical Attack on this actor right now: the stance, unless the
-   * rules make it unavailable (Evade while Grabbed or Restrained), in which case the other one.
-   * Read live, so a stance changed a moment ago is what the attacker's roll meets.
-   * @returns {{key: string, stance: string, label: string, threshold: number, unavailable: string|null}}
+   * A Token on the canvas for a uuid that names a Token or an Actor.
+   * @param {string} uuid
+   * @returns {Token|null}
    */
-  answeringDefense() {
-    const stance = ["evade", "guard"].includes(this.system.stance) ? this.system.stance : "evade";
-    const blocked = this.system.defenses?.[stance]?.unavailable ?? null;
-    const key = blocked ? (stance === "evade" ? "guard" : "evade") : stance;
+  #tokenFor(uuid) {
+    const doc = fromUuidSync(uuid);
+    if (!doc) return null;
+    if (doc.documentName === "Token") return doc.object ?? null;
+    if (doc.documentName === "Actor") return doc.getActiveTokens(false, false)[0] ?? null;
+    return null;
+  }
+
+  /**
+   * Support for a melee attack on a target: the other conscious allies whose Total Reach includes
+   * it, capped at SW.SUPPORT_MAX. Allies are tokens of the same disposition; a Dying, unconscious
+   * or dead body grants nothing, and neither does anyone who could not actually reach.
+   * @param {Token} targetToken
+   * @param {TokenDocument} [attackerToken]
+   * @returns {{count: number, names: string[]}}
+   */
+  supportFor(targetToken, attackerToken = this.tokenOnScene()) {
+    const names = [];
+    if (!canvas?.ready || !targetToken || !attackerToken) return { count: 0, names };
+    for (const token of canvas.tokens.placeables) {
+      const actor = token.actor;
+      if (!actor || (token.document.id === attackerToken.id) || (token.document.id === targetToken.document.id)) continue;
+      if (token.document.disposition !== attackerToken.disposition) continue;
+      if (token.document.hidden) continue;
+      const statuses = actor.statuses ?? new Set();
+      if ((actor.system.dying ?? 0) > 0) continue;
+      if (actor.system.conscious === false) continue;
+      if (["unconscious", "dying", "dead"].some(s => statuses.has(s))) continue;
+      const reach = actor.system.totalReach ?? actor.system.reach ?? 0;
+      if (gapBetween(token.document, targetToken.document) > reach) continue;
+      names.push(token.name);
+      if (names.length >= SW.SUPPORT_MAX) break;
+    }
+    return { count: names.length, names };
+  }
+
+  /**
+   * The Defense that answers a physical Attack on this actor right now, with the Reaction behind
+   * it: the stance, unless the rules make its Defense unavailable (Evade while Grabbed or
+   * Restrained), in which case the other basic Defense and no Reaction. Read live, so a stance
+   * changed a moment ago is what the attacker's roll meets.
+   *
+   * Void is Evade +2 Situation; Parry is Guard +2 Situation (a rigid implement is needed, and its
+   * absence is noted, not enforced); Counter is the better of the two basic Defenses with no bonus
+   * and a Quick Strike back, and answers only a melee Blow from within Reach. The Reaction's ❶ is
+   * charged when the attack resolves.
+   * @param {object} [threat]            What is being answered. Omitted, nothing is ruled out.
+   * @param {boolean} [threat.ranged]    The Blow is ranged (a ranged weapon, or a throw).
+   * @param {number|null} [threat.gap]   The gap to the attacker in feet, edge to edge; null if unknown.
+   * @returns {{key: string, stance: string, reaction: string|null, bonus: number, label: string,
+   *            threshold: number, unavailable: string|null, note: string|null}}
+   */
+  answeringDefense({ ranged = false, gap = null } = {}) {
+    const sys = this.system;
+    const stance = STANCES.includes(sys.stance) ? sys.stance : "evade";
+    // The data model reads the stance apart into its Defense and its Reaction; fall back to the
+    // same reading here when it has not.
+    let reaction = (sys.stanceReaction !== undefined)
+      ? (REACTION_STANCES.includes(sys.stanceReaction) ? sys.stanceReaction : null)
+      : (REACTION_STANCES.includes(stance) ? stance : null);
+    // Counter adds nothing to the Defense, so it stands on the better of the two basic Defenses.
+    let key = (reaction === "counter") ? this.#bestBasicDefense()
+      : reaction ? SW.REACTIONS[reaction].defense
+      : (["evade", "guard"].includes(sys.stanceDefense) ? sys.stanceDefense : (["evade", "guard"].includes(stance) ? stance : "evade"));
+
+    const blocked = sys.defenses?.[key]?.unavailable ?? null;
+    if (blocked) {
+      key = (key === "evade") ? "guard" : "evade";
+      // A Void is an Evade; when Evade cannot be used, neither can the Void built on it.
+      if (reaction === "void") reaction = null;
+    }
+
+    let note = null;
+    // No Reactions at all: a Head Wound, a Head critical, a Rush. The basic Defense still rolls.
+    const noReactions = sys.reactions?.blocked;
+    if (reaction && noReactions) {
+      reaction = null;
+      note = (typeof noReactions === "string")
+        ? game.i18n.localize(noReactions)
+        : game.i18n.format("STARWROUGHT.Reaction.blocked", { name: this.name });
+    }
+    // Counter answers only a melee Blow from a foe within your Reach (PHB v4.10, Answering an
+    // Attack). Anything else meets the basic Defense, nothing is charged, and the stance stands.
+    if (reaction === "counter") {
+      const reach = sys.totalReach ?? sys.reach ?? 0;
+      if (ranged || ((gap !== null) && (gap > reach))) {
+        reaction = null;
+        note = game.i18n.localize("STARWROUGHT.Reaction.counterNeedsMelee");
+      }
+    }
+    if ((reaction === "parry") && !this.rigidImplement) {
+      note = game.i18n.localize("STARWROUGHT.Reaction.needsRigid");
+    }
+
+    // The Threshold with the Reaction's +2 Situation folded into the same stack, so it does not
+    // add to another Situation bonus the Defense already carries. The data model leaves this
+    // bonus out of its own Threshold on purpose; it is added here, once, when a Reaction answers.
+    const def = sys.defenses?.[key];
+    let threshold = def?.threshold ?? 10;
+    const bonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : 0;
+    if (bonus) {
+      if (Array.isArray(def?.modifiers)) {
+        const { total } = SW.resolveModifiers([
+          ...def.modifiers,
+          { label: game.i18n.localize(SW.REACTIONS[reaction].label), value: bonus, type: "situation" }
+        ]);
+        threshold = 10 + total + (def.sizeMod ?? 0);
+      } else {
+        threshold += bonus;
+      }
+    }
+
+    const defenseLabel = game.i18n.localize(SW.DEFENSES[key].label);
     return {
       key,
       stance,
-      label: game.i18n.localize(SW.DEFENSES[key].label),
-      threshold: this.system.defenses?.[key]?.threshold ?? 10,
+      reaction,
+      bonus,
+      label: reaction ? `${defenseLabel} (${game.i18n.localize(SW.REACTIONS[reaction].label)})` : defenseLabel,
+      threshold,
       unavailable: blocked
         ? game.i18n.format("STARWROUGHT.Stance.answeringInstead", {
-            stance: game.i18n.localize(SW.DEFENSES[stance].label),
+            stance: game.i18n.localize(SW.DEFENSES[stance === "void" ? "evade" : stance === "parry" ? "guard" : stance]?.label ?? SW.DEFENSES.evade.label),
             reason: game.i18n.localize(SW.CONDITIONS[blocked]?.name ?? blocked),
-            defense: game.i18n.localize(SW.DEFENSES[key].label)
+            defense: defenseLabel
           })
-        : null
+        : null,
+      note
     };
+  }
+
+  /** Of Evade and Guard, the one with the higher Threshold that the rules allow right now. */
+  #bestBasicDefense() {
+    const defs = this.system.defenses ?? {};
+    const open = ["evade", "guard"].filter(k => !defs[k]?.unavailable);
+    const pool = open.length ? open : ["evade", "guard"];
+    return pool.sort((a, b) => (defs[b]?.threshold ?? 10) - (defs[a]?.threshold ?? 10))[0];
   }
 
   /**
@@ -346,26 +715,31 @@ export class SwActor extends Actor {
   }
 
   /**
-   * Choose which Defense answers the next physical Attack. The defender's call, so it lives here,
-   * and the attacker's roll reads it. Announced in chat during an encounter, because the attacker
-   * needs to know and the table should not have to ask.
-   * @param {"evade"|"guard"} key
+   * Choose how the next physical Attack is answered: Evade or Guard as the basic Defense, or
+   * stand ready with a Reaction (Void, Parry, Counter) that the attack pays for when it lands.
+   * The defender's call, so it lives here, and the attacker's roll reads it. A Reaction stance is
+   * only a character's to take when the Talent grants it; an adversary's profile is the GM's.
+   * @param {"evade"|"guard"|"void"|"parry"|"counter"} key
    * @param {object} [options]
    * @param {boolean} [options.announce=true]
    */
   async setStance(key, { announce = true } = {}) {
-    if (!["evade", "guard"].includes(key)) return;
+    if (!STANCES.includes(key)) return;
+    if (REACTION_STANCES.includes(key) && (this.type === "character") && !this.system.reactions?.[key]) {
+      const talent = SW.REACTIONS[key].talent;
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Stance.reactionUnavailable", {
+        stance: game.i18n.localize(SW.REACTIONS[key].label),
+        talent: talent ? `${SW.getConstellation(talent).name} ${game.i18n.localize("STARWROUGHT.Rank.trained")}` : ""
+      }));
+      return;
+    }
     if (this.system.stance === key) return;
     await this.update({ "system.stance": key });
-    const defense = this.system.defenses?.[key];
+    const answer = this.answeringDefense();
     // A Defense the rules say you cannot use right now is still yours to choose; the system says
-    // so and leaves the ruling to the table.
-    const note = defense?.unavailable
-      ? " " + game.i18n.format("STARWROUGHT.Stance.unavailableNote", {
-          reason: game.i18n.localize(SW.CONDITIONS[defense.unavailable]?.name ?? defense.unavailable)
-        })
-      : "";
-    if (note) ui.notifications.warn(note.trim());
+    // so and leaves the ruling to the table. So is a Parry with nothing rigid in hand.
+    const notes = [answer.unavailable, answer.note].filter(Boolean);
+    for (const note of notes) ui.notifications.warn(note);
 
     // Which Defense meets an Attack is the defender's to reveal, and the roll's card reveals it.
     // So nothing goes to the table here. A player's change is whispered to the GM, who is running
@@ -378,20 +752,23 @@ export class SwActor extends Actor {
       whisper: gms,
       content: `<div class="starwrought sw-stance-card">${game.i18n.format("STARWROUGHT.Stance.set", {
         name: this.name,
-        defense: game.i18n.localize(SW.DEFENSES[key].label),
-        threshold: defense?.threshold ?? 10
-      })}${note}</div>`
+        defense: answer.label,
+        threshold: answer.threshold
+      })}${notes.length ? " " + notes.join(" ") : ""}</div>`
     });
   }
 
   /**
-   * The Proficiency Rank that actually applies to a weapon, after Handling and Familiarity.
-   * Intuitive costs nothing; Practiced drops a rank; Technical drops you to Untrained.
+   * The Proficiency Rank that actually applies to a weapon, after Handling and Familiarity, in
+   * Melee or Ranged. Intuitive costs nothing; Practiced drops a rank; Technical drops you to
+   * Untrained.
    * @param {Item} weapon
+   * @param {string} [slug]  SW.MELEE_SLUG or SW.RANGED_SLUG; read off the weapon when omitted.
    * @returns {string}
    */
-  weaponRank(weapon) {
-    const base = this.system.proficiency?.(SW.WEAPONS_SLUG)?.rank ?? "untrained";
+  weaponRank(weapon, slug = null) {
+    slug ??= weapon.system.isRanged ? SW.RANGED_SLUG : SW.MELEE_SLUG;
+    const base = this.system.proficiency?.(slug)?.rank ?? "untrained";
     const handling = weapon.system.handling ?? "intuitive";
     // `familiar` is the derived set: what your Talents recorded, plus the sheet's own list.
     const familiar = this.system.familiar?.has(weapon.system.group)
@@ -403,7 +780,12 @@ export class SwActor extends Actor {
 
   /* -------------------------------------------- */
 
-  /** Roll damage for an outcome of a Strike. */
+  /**
+   * Roll damage for a Result of a Strike.
+   * @param {string} weaponId
+   * @param {"hit"|"graze"|"critical"} outcome
+   * @param {object} [options]  `strike`, `targetUuid`, `bonus`, `precision`.
+   */
   async rollDamage(weaponId, outcome, options = {}) {
     const weapon = this.items.get(weaponId);
     if (!weapon) return null;
@@ -411,27 +793,112 @@ export class SwActor extends Actor {
   }
 
   /* -------------------------------------------- */
-  /*  Going down and coming back                  */
+  /*  Wounds, and going down                      */
   /* -------------------------------------------- */
 
   /**
-   * Reduced to 0 Hit Points. Nonlethal simply knocks you out; otherwise you are Dying, starting
-   * at 1, or 2 from a Critical Hit, plus your Wounded value.
+   * Take Wounds on a Zone (PHB v4.10, Wounds). Each fills the Zone toward its capacity; a further
+   * Wound to a useless Arm or Leg goes to the Torso instead. The first Wound has the Zone's first
+   * effect, every one short of the last repeats it, and the last has the final effect: a useless
+   * arm, a fall you cannot Stand from, or, for the Torso and the Head, Dying. Taking a Wound
+   * abandons a Prepared Maneuver.
+   * @param {string} zone
+   * @param {number} [n=1]
+   * @param {object} [options]
+   * @param {boolean} [options.critical]  The blow was a Critical Hit (Dying starts at 2).
+   * @param {string[]} [options.reasons]  i18n keys saying why, for the card.
+   * @returns {Promise<object|null>}
+   */
+  async applyWound(zone, n = 1, { critical = false, reasons = [] } = {}) {
+    if (!(zone in SW.ZONES)) zone = SW.DEFAULT_ZONE;
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    if (!n) return null;
+
+    const current = {};
+    for (const z of Object.keys(SW.ZONES)) current[z] = this.system.zones?.[z]?.wounds ?? 0;
+    const updates = {};
+    const landed = [];
+    let dyingFrom = null;
+
+    let overflow = false;
+    for (let i = 0; i < n; i++) {
+      let z = zone;
+      // A further Wound to a useless Arm or Leg goes to the Torso instead.
+      if (["arms", "legs"].includes(z) && (current[z] >= this.woundCapacity(z))) z = "torso";
+      const capacity = this.woundCapacity(z);
+      // A Torso or Head already at capacity has nothing left to mark: the body is Dying, or Dying
+      // again (1, or 2 on a Critical Hit) if it had been brought back.
+      if (current[z] >= capacity) {
+        overflow = true;
+        dyingFrom = z;
+        continue;
+      }
+      current[z] += 1;
+      updates[`system.zones.${z}.wounds`] = current[z];
+      const final = current[z] >= capacity;
+      const rules = SW.ZONE_CRITICALS[z];
+      landed.push({
+        zone: z,
+        zoneLabel: game.i18n.localize(SW.ZONES[z].label),
+        fromLabel: game.i18n.localize(SW.ZONES[zone].label),
+        count: current[z],
+        capacity,
+        final,
+        effect: game.i18n.localize(final ? rules.final : rules.first),
+        bleed: (z === "torso") && !final ? SW.TORSO_WOUND_BLEED : null,
+        redirected: z !== zone
+      });
+      if (final && rules.finalDying) dyingFrom = z;
+    }
+    if (!landed.length && !overflow) return null;
+
+    if (landed.length) {
+      await this.update(updates);
+      await this.setCondition("wounded", true);
+    }
+
+    // Taking a Wound abandons preparation automatically; Vigor damage does not.
+    if (this.system.actions?.preparing) await this.abandonPrepared({ reason: "wound" });
+
+    // Legs, final: you fall Prone and cannot Stand.
+    if (landed.some(w => (w.zone === "legs") && w.final)) await this.setCondition("prone", true);
+
+    // Torso or Head, final: Dying (Head: and unconscious, which Dying already is).
+    if (dyingFrom) await this.beginDying({ critical });
+
+    const content = await renderTemplate("systems/starwrought/templates/chat/wound-card.hbs", {
+      actor: this,
+      landed,
+      reasons: reasons.map(r => game.i18n.localize(r)),
+      total: this.woundCount,
+      dying: this.system.dying ?? 0,
+      dyingFrom: dyingFrom ? game.i18n.localize(SW.ZONES[dyingFrom].label) : null,
+      abandoned: false
+    });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content,
+      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+    });
+
+    return { zone, landed, total: this.woundCount, dying: this.system.dying ?? 0, dyingFrom };
+  }
+
+  /**
+   * Dying begins when the Torso or the Head takes its final Wound: Dying 1, or 2 if the blow was
+   * a Critical Hit. Unconscious and helpless while it lasts (PHB v4.10, Dying).
    * @param {object} [options]
    * @param {boolean} [options.critical]
-   * @param {boolean} [options.nonlethal]
    */
-  async dropToZero({ critical = false, nonlethal = false } = {}) {
-    await this.setCondition("unconscious", true);
-    if (nonlethal) return;
-    const start = (critical ? 2 : 1) + (this.system.wounded ?? 0);
-    const dying = Math.min(SW.DYING_MAX, start);
+  async beginDying({ critical = false } = {}) {
+    const start = critical ? 2 : 1;
+    const dying = Math.min(SW.DYING_MAX, Math.max(this.system.dying ?? 0, start));
     await this.update({ "system.dying": dying });
     await this.setCondition("dying", dying);
+    await this.setCondition("unconscious", true);
+    if (this.system.actions?.preparing) await this.abandonPrepared({ reason: "wound" });
     if (dying >= SW.DYING_MAX) await this.#die();
-    else {
-      ui.notifications.warn(game.i18n.format("STARWROUGHT.Notify.dying", { name: this.name, value: dying }));
-    }
+    else ui.notifications.warn(game.i18n.format("STARWROUGHT.Notify.dying", { name: this.name, value: dying }));
   }
 
   /** Taking damage while Dying increases the value by 1, or by 2 from a Critical Hit. */
@@ -442,16 +909,23 @@ export class SwActor extends Actor {
     if (dying >= SW.DYING_MAX) await this.#die();
   }
 
-  /** Whenever your Dying ends, for any reason, you become Wounded 1, or one worse. */
-  async endDying({ conscious = false, hp = 0 } = {}) {
-    const updates = {
-      "system.dying": 0,
-      "system.wounded": (this.system.wounded ?? 0) + 1
-    };
-    if (conscious) updates["system.hp.value"] = Math.max(1, hp);
+  /**
+   * Dying ends. Conscious with the Vigor given (at least 1) when healed or on a critical Recovery;
+   * stable and still unconscious when the value simply reaches 0. Wounds remain: v4.10 has no
+   * Wounded increment on the way back up.
+   * @param {object} [options]
+   * @param {boolean} [options.conscious]
+   * @param {number} [options.vigor]
+   */
+  async endDying({ conscious = false, vigor = 0, hp = 0 } = {}) {
+    const updates = { "system.dying": 0 };
+    if (conscious) updates["system.vigor.value"] = Math.max(1, Number(vigor) || Number(hp) || 0);
     await this.update(updates);
     await this.setCondition("dying", 0);
-    if (conscious) await this.setCondition("unconscious", false);
+    if (conscious) {
+      await this.setCondition("unconscious", false);
+      await this.setCondition("spent", false);
+    }
   }
 
   async #die() {
@@ -462,21 +936,24 @@ export class SwActor extends Actor {
   /* -------------------------------------------- */
 
   /**
-   * A Recovery check: an Endure check against 10 + your level + your Dying value. It costs no
-   * action, and it is made at the start of each of your turns while Dying.
+   * A Recovery check (PHB v4.10): at the start of each round while Dying, Endure against 10 + your
+   * Dying value + the Wounds you carry. It costs no action. Critical success ends Dying, conscious
+   * with 1 Vigor; success drops Dying by 1 (0 is stable, still unconscious); failure raises it by
+   * 1; critical failure by 2. An adjacent ally's ❶ of help is the dialog's +2 Situation.
    */
   async rollRecovery() {
     if (!this.system.dying) {
       ui.notifications.info(game.i18n.localize("STARWROUGHT.Notify.notDying"));
       return null;
     }
-    const threshold = 10 + this.system.level + this.system.dying;
+    const wounds = this.woundCount;
+    const threshold = SW.RECOVERY_BASE + this.system.dying + wounds;
     const result = await SwCheck.roll({
       actor: this,
       kind: "check",
       slug: SW.DEFENSES.endure.slug,
       label: game.i18n.localize("STARWROUGHT.Roll.recovery"),
-      subtitle: game.i18n.format("STARWROUGHT.Roll.recoveryHint", { value: this.system.dying }),
+      subtitle: game.i18n.format("STARWROUGHT.Roll.recoveryHint", { value: this.system.dying, wounds }),
       threshold,
       thresholdLabel: game.i18n.localize("STARWROUGHT.Roll.recoveryThreshold")
     });
@@ -484,11 +961,11 @@ export class SwActor extends Actor {
 
     switch (result.degree) {
       case "critSuccess":
-        await this.endDying({ conscious: true, hp: 1 });
+        await this.endDying({ conscious: true, vigor: 1 });
         break;
       case "success": {
         const dying = this.system.dying - 1;
-        if (dying <= 0) await this.update({ "system.dying": 0 }).then(() => this.setCondition("dying", 0));
+        if (dying <= 0) await this.endDying({ conscious: false });
         else await this.update({ "system.dying": dying }).then(() => this.setCondition("dying", dying));
         break;
       }
@@ -503,7 +980,8 @@ export class SwActor extends Actor {
   }
 
   /**
-   * Refusing Death. Not a roll: it cannot fail, and nothing in the game can stop it.
+   * Refusing Death. Not a roll: it cannot fail, and nothing in the game can stop it. Dying drops
+   * to 0; unconscious and stable at 0 Vigor (Spent); the Wounds remain; every Hero Point is spent.
    */
   async refuseDeath() {
     if (!this.system.heroPoints?.value) {
@@ -512,12 +990,13 @@ export class SwActor extends Actor {
     }
     await this.update({
       "system.dying": 0,
-      "system.hp.value": 0,
+      "system.vigor.value": 0,
       "system.heroPoints.value": 0
     });
     await this.setCondition("dying", 0);
     await this.setCondition("dead", false);
     await this.setCondition("unconscious", true);
+    await this.setCondition("spent", true);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought refuse-death"><h3>${game.i18n.localize("STARWROUGHT.Roll.refuseDeath")}</h3>
@@ -526,7 +1005,60 @@ export class SwActor extends Actor {
   }
 
   /* -------------------------------------------- */
-  /*  Actions                                     */
+
+  /**
+   * Treat a Wound (PHB v4.10): ten minutes and an Endure check against 10 + the Wounds the patient
+   * carries. On a success the Wound is bound: its effect ends. The book keeps a bound Wound on the
+   * count for a week; the system takes it off the Zone and says so on the card, which is the
+   * simplification the sync brief asked for.
+   * @param {string} zone
+   * @param {object} [options]
+   * @param {Actor} [options.healer]  Who rolls. Defaults to a selected token that is not the
+   *                                  patient, then to the patient.
+   */
+  async treatWound(zone, { healer = null } = {}) {
+    if (!(zone in SW.ZONES)) return null;
+    const wounds = this.system.zones?.[zone]?.wounds ?? 0;
+    if (!wounds) {
+      ui.notifications.info(game.i18n.format("STARWROUGHT.Wound.none", {
+        name: this.name, zone: game.i18n.localize(SW.ZONES[zone].label)
+      }));
+      return null;
+    }
+    const medic = healer
+      ?? canvas?.tokens?.controlled?.map(t => t.actor).find(a => a && (a.id !== this.id) && a.isOwner)
+      ?? this;
+    const threshold = SW.TREAT_WOUND_BASE + this.woundCount;
+    const zoneLabel = game.i18n.localize(SW.ZONES[zone].label);
+    const result = await SwCheck.roll({
+      actor: medic,
+      kind: "check",
+      slug: SW.DEFENSES.endure.slug,
+      label: game.i18n.localize("STARWROUGHT.Wound.treat"),
+      subtitle: `${this.name}: ${zoneLabel} · ${game.i18n.format("STARWROUGHT.Wound.count", { n: this.woundCount })}`,
+      threshold,
+      thresholdLabel: game.i18n.localize("STARWROUGHT.Wound.treatThreshold")
+    });
+    if (!result) return null;
+
+    const success = ["success", "critSuccess"].includes(result.degree);
+    if (success) {
+      await this.update({ [`system.zones.${zone}.wounds`]: wounds - 1 });
+      if (!this.woundCount) await this.setCondition("wounded", false);
+    }
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: medic }),
+      content: `<div class="starwrought action-card"><h3><i class="fa-solid fa-bandage"></i> ${
+        game.i18n.localize("STARWROUGHT.Wound.treat")}</h3>
+        <p>${game.i18n.format(success ? "STARWROUGHT.Wound.treated" : "STARWROUGHT.Wound.notTreated", {
+          healer: medic.name, name: this.name, zone: zoneLabel
+        })}</p></div>`
+    });
+    return result;
+  }
+
+  /* -------------------------------------------- */
+  /*  Actions: six a round                        */
   /* -------------------------------------------- */
 
   /** Is this Actor in a running encounter, where actions and rounds mean anything? */
@@ -534,45 +1066,51 @@ export class SwActor extends Actor {
     return !!game.combat?.started && game.combat.combatants.some(c => c.actor?.id === this.id);
   }
 
-  /** Is it this Actor's turn right now? */
+  /** Is it this Actor's Opportunity right now? (A Foundry turn is an Opportunity.) */
   get isTurn() {
     return this.inEncounter && (game.combat.combatant?.actor?.id === this.id);
   }
 
+  /** This Actor's combatant in the running encounter, if any. */
+  get combatant() {
+    return game.combat?.combatants.find(c => c.actor?.id === this.id) ?? null;
+  }
+
   /**
-   * Spend actions.
+   * Spend actions from the six a round (PHB v4.10). There is no reaction slot: a Reaction is paid
+   * from the same pool.
    *
    * This never stops anything happening. The table is in charge of the fiction, and a system that
    * refuses a Strike because its own arithmetic disagrees is worse than one that says so and gets
    * out of the way. So an overspend goes to chat, where both the player and the GM can see it, and
-   * the action still resolves.
-   *
-   * Outside an encounter nothing is counted at all: the three-action turn is a rule of Encounter
-   * Mode.
-   * @param {number|string} cost   A number, or a key of SW.ACTION_COSTS.
+   * the action still resolves. Outside an encounter nothing is counted at all.
+   * @param {number|string} cost   A number, or a key of SW.ACTION_COSTS (legacy "free"/"reaction" map).
    * @param {object} [options]
    * @param {string} [options.label]  What is being paid for.
    * @returns {Promise<boolean>} always true; the return value is kept for callers that read it
    */
   async spendActions(cost, { label = "" } = {}) {
     if (!this.inEncounter) return true;
-    if (cost === "reaction") return this.#spendReaction(label);
+    if (!this.system.actions) return true;
 
-    const n = Number(cost) || 0;
+    let n;
+    if (typeof cost === "string") {
+      const legacy = SW.LEGACY_ACTION_COSTS[cost];
+      if (legacy) n = SW.actionCostValue(legacy.cost);
+      else if (cost in SW.ACTION_COSTS) n = SW.actionCostValue(cost);
+      else n = Number(cost) || 0;
+    } else {
+      n = Number(cost) || 0;
+    }
     if (n <= 0) return true;
 
-    const left = this.system.actions?.value ?? 0;
+    const left = this.system.actions.value ?? 0;
     await this.update({ "system.actions.value": Math.max(0, left - n) });
     if (n > left) await this.#announceOverspend({ label, need: n, left });
-    return true;
-  }
 
-  async #spendReaction(label) {
-    const had = this.system.actions?.reaction ?? true;
-    await this.update({ "system.actions.reaction": false });
-    if (!had) {
-      await this.#announceOverspend({ label, reaction: true });
-    }
+    // A Maneuver paid for at your own Opportunity keeps the round going: the Combat's pass streak
+    // starts over.
+    if (this.isTurn) game.combat?.registerAction?.(this.combatant);
     return true;
   }
 
@@ -580,12 +1118,10 @@ export class SwActor extends Actor {
    * Say plainly, in chat, that something happened without the actions to pay for it. Whispered to
    * the GM for an adversary, public for a player character, because the table needs to see it.
    */
-  async #announceOverspend({ label, need = 0, left = 0, reaction = false }) {
-    const body = reaction
-      ? game.i18n.format("STARWROUGHT.Actions.overReaction", { name: this.name, what: label })
-      : game.i18n.format("STARWROUGHT.Actions.overActions", {
-          name: this.name, what: label, need, left, over: need - left
-        });
+  async #announceOverspend({ label, need = 0, left = 0 }) {
+    const body = game.i18n.format("STARWROUGHT.Actions.overActions", {
+      name: this.name, what: label, need, left, over: need - left
+    });
     ui.notifications.warn(body);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
@@ -598,9 +1134,197 @@ export class SwActor extends Actor {
     });
   }
 
-  /** A fresh turn: three actions and a reaction. */
+  /**
+   * A fresh round: six actions (an adversary's own number), nothing reserved, nothing Preparing.
+   * Unspent actions expired with the old round; a Prepared Maneuver that never reached its next
+   * Opportunity expires with them. Slowed N loses N actions at the start of the round.
+   */
   async resetActions() {
-    return this.update({ "system.actions.value": 3, "system.actions.reaction": true });
+    const sys = this.system;
+    if (!sys.actions) return;
+    const per = (this.type === "npc") ? (sys.actionsPerRound ?? SW.ACTIONS_PER_ROUND) : SW.ACTIONS_PER_ROUND;
+    const slowed = this.conditionValue("slowed");
+    const hadPreparation = sys.actions.preparing;
+    await this.update({
+      "system.actions.value": Math.max(0, per - slowed),
+      "system.actions.reserved": 0,
+      "system.actions.preparing": null
+    });
+    if (hadPreparation) {
+      await this.setCondition("preparing", false);
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
+          <p>${game.i18n.format("STARWROUGHT.Prepared.expired", { name: this.name, what: hadPreparation.label ?? "" })}</p></div>`,
+        whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+      });
+    }
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Prepare a Maneuver of three or more actions (PHB v4.10): spend one now, set the rest aside as
+   * reserved, mark yourself Preparing. Nothing happens yet. At your next Opportunity you finish
+   * it or abandon it; you cannot Pass while Preparing. Taking a Wound abandons it.
+   * @param {object} config
+   * @param {"strike"|"maneuver"} [config.kind]
+   * @param {string} config.label
+   * @param {number} config.cost           The whole cost; one is spent now.
+   * @param {string} [config.weaponId]     For a Committed Strike.
+   * @param {string} [config.targetTokenId]
+   * @param {string} [config.targetUuid]
+   * @param {string} [config.strike]       "committed" for a Strike.
+   * @returns {Promise<object|null>} what is being prepared
+   */
+  async prepare({ kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "", strike = "" } = {}) {
+    if (!this.inEncounter || !this.system.actions) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.outsideEncounter"));
+      return null;
+    }
+    if (this.system.actions.preparing) {
+      // One preparation at a time: the old one is abandoned, its action lost.
+      await this.abandonPrepared({ reason: "replaced" });
+    }
+    cost = Math.max(1, Math.floor(Number(cost) || SW.PREPARED_THRESHOLD));
+    const reserve = cost - 1;
+    const left = this.system.actions.value ?? 0;
+    const preparing = { kind, label, weaponId, targetTokenId, targetUuid, cost, strike };
+    await this.update({
+      "system.actions.value": Math.max(0, left - cost),
+      "system.actions.reserved": reserve,
+      "system.actions.preparing": preparing
+    });
+    // "You must have enough unspent actions." Announced, not enforced.
+    if (cost > left) await this.#announceOverspend({ label: game.i18n.format("STARWROUGHT.Prepared.paying", { what: label }), need: cost, left });
+    await this.setCondition("preparing", true);
+    if (this.isTurn) game.combat?.registerAction?.(this.combatant);
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-prepared-card" data-actor-uuid="${this.uuid}">
+        <h3><i class="fa-solid fa-hourglass-half"></i> ${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, reserved: reserve })}</p>
+        <div class="sw-card-buttons">
+          <button type="button" data-sw-action="finishPrepared" data-actor-uuid="${this.uuid}" data-owner-uuid="${this.uuid}">
+            <i class="fa-solid fa-check"></i> ${game.i18n.localize("STARWROUGHT.Prepared.finish")}
+          </button>
+          <button type="button" data-sw-action="abandonPrepared" data-actor-uuid="${this.uuid}" data-owner-uuid="${this.uuid}">
+            <i class="fa-solid fa-xmark"></i> ${game.i18n.localize("STARWROUGHT.Prepared.abandon")}
+          </button>
+        </div></div>`,
+      flags: { [SW.SYSTEM_ID]: { kind: "prepared", actorUuid: this.uuid } }
+    });
+    return preparing;
+  }
+
+  /**
+   * Finish a Prepared Maneuver at your Opportunity: the reserved actions are spent (they left the
+   * pool when the preparation began) and the Maneuver resolves. A Committed Strike rolls now,
+   * already paid for. Range, line of effect and requirements are the table's to check again.
+   */
+  async finishPrepared() {
+    const prep = this.system.actions?.preparing;
+    if (!prep) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.nothing"));
+      return null;
+    }
+    await this.update({ "system.actions.reserved": 0, "system.actions.preparing": null });
+    await this.setCondition("preparing", false);
+    if (this.isTurn) game.combat?.registerAction?.(this.combatant);
+
+    if (prep.kind === "strike" && prep.weaponId) {
+      const targetUuid = prep.targetUuid
+        || (prep.targetTokenId ? (canvas.tokens?.get(prep.targetTokenId)?.document.uuid ?? "") : "");
+      return this.rollAttack(prep.weaponId, {
+        strike: SW.STRIKE_KINDS[prep.strike] ? prep.strike : "committed",
+        prepared: true,
+        targetUuid
+      });
+    }
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Prepared.finished", { name: this.name, what: prep.label ?? "" })}</p></div>`
+    });
+    return prep;
+  }
+
+  /**
+   * Abandon a Prepared Maneuver: the action already spent is lost, the reserved actions return.
+   * @param {object} [options]
+   * @param {"choice"|"wound"|"replaced"} [options.reason]
+   */
+  async abandonPrepared({ reason = "choice" } = {}) {
+    const actions = this.system.actions;
+    const prep = actions?.preparing;
+    if (!prep) return null;
+    await this.update({
+      "system.actions.value": (actions.value ?? 0) + (actions.reserved ?? 0),
+      "system.actions.reserved": 0,
+      "system.actions.preparing": null
+    });
+    await this.setCondition("preparing", false);
+    const key = reason === "wound" ? "STARWROUGHT.Wound.abandonsPrepared"
+      : reason === "replaced" ? "STARWROUGHT.Prepared.abandonedReplaced"
+      : "STARWROUGHT.Prepared.abandoned";
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
+        <p>${game.i18n.format(key, { name: this.name, what: prep.label ?? "", returned: actions.reserved ?? 0 })}</p></div>`,
+      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+    });
+    return prep;
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Pass ⓿: decline this Opportunity. You may still use Reactions. When a full circuit passes in
+   * which everyone Passes, the round ends; the Combat keeps that count. You cannot Pass while
+   * Preparing (finish or abandon first), so that one is refused rather than announced: it is a
+   * tracker control, not a thing that happens in the fiction.
+   * @returns {Promise<boolean>} whether the Opportunity was passed
+   */
+  async pass() {
+    if (!this.inEncounter) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noCombatant"));
+      return false;
+    }
+    if (!this.isTurn) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Actions.notYourOpportunity"));
+      return false;
+    }
+    if (this.system.actions?.preparing) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Prepared.cannotPass", { name: this.name }));
+      return false;
+    }
+    const combatant = this.combatant;
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-pass-card"><h3>⓿ ${game.i18n.localize("STARWROUGHT.Actions.pass")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Actions.passText", { name: this.name, left: this.system.actions?.value ?? 0 })}</p></div>`
+    });
+    // The Combat registers the Pass, keeps the streak, and advances the turn only if the round
+    // did not just end on a full circuit of Passes.
+    if (game.combat.pass) return game.combat.pass(combatant);
+    await game.combat.registerPass?.(combatant);
+    await game.combat.nextTurn();
+    return true;
+  }
+
+  /**
+   * End this Opportunity after a Maneuver, without Passing: play moves to the next combatant and
+   * the round keeps going.
+   * @returns {Promise<boolean>}
+   */
+  async endOpportunity() {
+    if (!this.isTurn) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Actions.notYourOpportunity"));
+      return false;
+    }
+    await game.combat.nextTurn();
+    return true;
   }
 
   /* -------------------------------------------- */
@@ -612,7 +1336,8 @@ export class SwActor extends Actor {
    *
    * Drawing or stowing something is an Interact, which costs an action in an encounter. Armor is
    * the exception the handbook is explicit about: putting a piece on or taking it off takes a
-   * minute per point of Protection, so it is not something you do mid-fight at all.
+   * minute per point of Protection, so it is not something you do mid-fight at all. Putting away
+   * an implement that is in a Bind ends the Bind (a dropped implement does).
    * @param {string} itemId
    * @param {string} state  A key of SW.CARRY_STATES.
    */
@@ -640,30 +1365,197 @@ export class SwActor extends Actor {
       await this.spendActions(1, { label: item.name });
     }
 
+    if ((item.system.state === "held") && this.system.bind?.state && sameName(this.system.bind.mine, item.name)) {
+      await this.endBind();
+    }
     return item.update({ "system.state": state });
   }
 
   /* -------------------------------------------- */
-  /*  Zones                                       */
+  /*  Zones and Position                          */
   /* -------------------------------------------- */
 
-  /** Recenter: gather yourself, and clear every Exposed Zone on you. */
+  /**
+   * Recenter ❶ (PHB v4.10): gather yourself, clear every Exposed Zone on you (except one Exposed
+   * by a Posture, which lasts to the end of the round) and end any Bind you are in.
+   */
   async recenter() {
     await this.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.recenter") });
     const updates = {};
-    for (const zone of Object.keys(SW.ZONES)) updates[`system.zones.${zone}.exposed`] = false;
+    let kept = 0;
+    for (const zone of Object.keys(SW.ZONES)) {
+      if (this.system.zones?.[zone]?.postureExposed) { kept++; continue; }
+      updates[`system.zones.${zone}.exposed`] = false;
+    }
     await this.update(updates);
+    const hadBind = !!this.system.bind?.state;
+    if (hadBind) await this.endBind({ announce: false });
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
-      content: `<div class="starwrought action-card"><h3>◆ ${game.i18n.localize("STARWROUGHT.Action.recenter")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Action.recenterText", { name: this.name })}</p></div>`
+      content: `<div class="starwrought action-card"><h3>❶ ${game.i18n.localize("STARWROUGHT.Action.recenter")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Action.recenterText", { name: this.name })}${
+          kept ? " " + game.i18n.localize("STARWROUGHT.Action.recenterPosture") : ""}</p></div>`
     });
   }
 
-  /** Open or close one Zone. */
-  async setExposed(zone, exposed = true) {
+  /**
+   * Open or close one Zone. A Zone Exposed by a Posture is marked so Recenter leaves it alone.
+   * @param {string} zone
+   * @param {boolean} [exposed=true]
+   * @param {object} [options]
+   * @param {boolean} [options.posture=false]
+   */
+  async setExposed(zone, exposed = true, { posture = false } = {}) {
     if (!(zone in SW.ZONES)) return;
-    return this.update({ [`system.zones.${zone}.exposed`]: !!exposed });
+    return this.update({
+      [`system.zones.${zone}.exposed`]: !!exposed,
+      [`system.zones.${zone}.postureExposed`]: !!exposed && !!posture
+    });
+  }
+
+  /** End of round: a Zone Exposed by a Posture closes now, and only now. */
+  async clearPostureExposed() {
+    const updates = {};
+    for (const zone of Object.keys(SW.ZONES)) {
+      if (!this.system.zones?.[zone]?.postureExposed) continue;
+      updates[`system.zones.${zone}.exposed`] = false;
+      updates[`system.zones.${zone}.postureExposed`] = false;
+    }
+    if (Object.keys(updates).length) await this.update(updates);
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Form a Bind with a partner (PHB v4.10, The Bind): neutral when neither has the line, or
+   * Controlled by one of them. One relationship per implement, both named. Written on both
+   * actors when this client owns both; otherwise on this one, and the card says the other side
+   * is for its owner to set.
+   * @param {Actor|Token} partner
+   * @param {object} [options]
+   * @param {"neutral"|"controlling"|"controlled"} [options.state]  This actor's side of it.
+   * @param {string} [options.mine]    This actor's implement. Defaults to the rigid one in hand.
+   * @param {string} [options.theirs]  The partner's implement.
+   * @param {boolean} [options.announce=true]
+   */
+  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true } = {}) {
+    const other = partner?.actor ?? (partner?.documentName === "Actor" ? partner : null);
+    if (!other) return null;
+    const mirror = { neutral: "neutral", controlling: "controlled", controlled: "controlling" };
+    if (!(state in mirror)) state = "neutral";
+    mine = mine || this.rigidImplement?.name || "";
+    theirs = theirs || other.rigidImplement?.name || "";
+
+    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs });
+    const bothSides = other.isOwner;
+    if (bothSides) await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine });
+
+    if (announce) {
+      const controller = state === "controlling" ? this : state === "controlled" ? other : null;
+      const partnerOf = controller === this ? other : this;
+      const text = controller
+        ? game.i18n.format("STARWROUGHT.Bind.controlTaken", {
+            name: controller.name, partner: partnerOf.name,
+            theirs: controller === this ? (theirs || game.i18n.localize("STARWROUGHT.Bind.weapon")) : (mine || game.i18n.localize("STARWROUGHT.Bind.weapon"))
+          })
+        : game.i18n.format("STARWROUGHT.Bind.formed", {
+            name: this.name, partner: other.name,
+            mine: mine || game.i18n.localize("STARWROUGHT.Bind.weapon"),
+            theirs: theirs || game.i18n.localize("STARWROUGHT.Bind.weapon")
+          });
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        content: `<div class="starwrought action-card sw-bind-card"><h3><i class="fa-solid fa-link"></i> ${
+          game.i18n.localize("STARWROUGHT.Bind.label")}</h3><p>${text}</p>${
+          bothSides ? "" : `<p class="sw-card-note sw-warn">${game.i18n.format("STARWROUGHT.Bind.partnerNotOwned", { partner: other.name })}</p>`
+        }</div>`
+      });
+    }
+    return this.system.bind;
+  }
+
+  /**
+   * End the Bind this actor is in: a Strike between the two resolved, someone Moved or Stepped
+   * (Close excepted), someone Recentered, the Controller was attacked by a third party, or an
+   * implement was dropped or Disarmed. The partner's side is cleared too when this client owns it.
+   * @param {object} [options]
+   * @param {boolean} [options.announce=true]
+   */
+  async endBind({ announce = true } = {}) {
+    const bind = this.system.bind;
+    if (!bind?.state) return;
+    const partner = SwActor.resolveActor(bind.partnerUuid);
+    await this.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" });
+    if (partner?.isOwner && (partner.system?.bind?.partnerUuid === this.uuid)) {
+      await partner.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" });
+    }
+    if (announce) {
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        content: `<div class="starwrought action-card sw-bind-card"><h3><i class="fa-solid fa-link-slash"></i> ${
+          game.i18n.localize("STARWROUGHT.Bind.label")}</h3>
+          <p>${game.i18n.format("STARWROUGHT.Bind.ended", { name: this.name, partner: partner?.name ?? "" })}</p></div>`
+      });
+    }
+  }
+
+  /** Write one side of a Bind and keep the three token statuses in step with it. */
+  async #writeBind(bind) {
+    await this.update({ "system.bind": bind });
+    await this.setCondition("bound", bind.state === "neutral");
+    await this.setCondition("controlling", bind.state === "controlling");
+    await this.setCondition("controlled", bind.state === "controlled");
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Give ground: an Evade that Grazes gives 3 feet directly away from the attacker (PHB v4.10,
+   * Graze). The token moves along the line from the attacker, rounded to whole squares, and the
+   * move is not charged as a Move.
+   * @param {Token|TokenDocument} attackerToken
+   * @param {number} [feet]
+   * @returns {Promise<boolean>}
+   */
+  async giveGround(attackerToken, feet = SW.GIVE_GROUND_FEET) {
+    const mine = this.tokenOnScene();
+    const theirs = attackerToken?.document ?? attackerToken ?? null;
+    if (!mine || !theirs || !canvas?.ready) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noToken"));
+      return false;
+    }
+    const size = canvas.scene.grid.size;
+    const distance = canvas.scene.grid.distance || 1;
+    const centre = doc => ({ x: doc.x + (doc.width * size / 2), y: doc.y + (doc.height * size / 2) });
+    const a = centre(theirs);
+    const b = centre(mine);
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    if (!dx && !dy) dy = 1;
+    const length = Math.hypot(dx, dy);
+    const cells = feet / distance;
+    const nx = Math.round((dx / length) * cells);
+    const ny = Math.round((dy / length) * cells);
+    await mine.update({ x: mine.x + (nx * size), y: mine.y + (ny * size) }, { swNoCost: true, animate: true });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Position.giveGround")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Position.gaveGround", { name: this.name, feet })}</p></div>`
+    });
+    return true;
+  }
+
+  /**
+   * A Step granted by the Exchange (an Evade that answered a Miss, or a Void that Stopped the
+   * attack) costs nothing: the card says so, and the player moves the token.
+   */
+  async announceStep() {
+    const step = this.system.step ?? Math.floor((this.system.speed ?? SW.DEFAULT_SPEED) / SW.STEP_DIVISOR);
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card"><h3>⓿ ${game.i18n.localize("STARWROUGHT.Position.step")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Position.stepText", { name: this.name, feet: step })}</p></div>`
+    });
   }
 
   /* -------------------------------------------- */
@@ -695,22 +1587,25 @@ export class SwActor extends Actor {
   /* -------------------------------------------- */
 
   /**
-   * A full night's rest restores Hit Points equal to your level times your Presence (or your
-   * level, if Presence is 1 or less), and clears Wounded.
+   * A full night's rest restores Vigor equal to your level times your Presence (or your level, if
+   * Presence is 1 or less). Wounds do not come back with sleep (PHB v4.10, Treating Wounds).
    */
   async restForTheNight() {
     const sys = this.system;
-    const healed = Math.min(sys.hp.rest, sys.hp.max - sys.hp.value);
-    await this.update({
-      "system.hp.value": sys.hp.value + healed,
-      "system.hp.temp": 0,
-      "system.wounded": 0,
-      "system.heroPoints.value": Math.max(sys.heroPoints.value, 1)
-    });
+    const vigor = sys.vigor ?? { value: 0, temp: 0 };
+    const rest = Number.isNumeric(vigor.rest)
+      ? vigor.rest
+      : (sys.level ?? 1) * Math.max(1, sys.attributes?.presence?.mod ?? 0);
+    const max = Number.isNumeric(vigor.max) ? vigor.max : (vigor.value + rest);
+    const healed = Math.max(0, Math.min(rest, max - vigor.value));
+    const updates = { "system.vigor.value": vigor.value + healed, "system.vigor.temp": 0 };
+    if (sys.heroPoints) updates["system.heroPoints.value"] = Math.max(sys.heroPoints.value ?? 0, 1);
+    await this.update(updates);
+    if ((vigor.value + healed) > 0) await this.setCondition("spent", false);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Rest.title")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Rest.text", { name: this.name, hp: healed })}</p></div>`
+        <p>${game.i18n.format("STARWROUGHT.Rest.text", { name: this.name, hp: healed, wounds: this.woundCount })}</p></div>`
     });
   }
 

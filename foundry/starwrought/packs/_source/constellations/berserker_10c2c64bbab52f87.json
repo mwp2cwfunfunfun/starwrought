@@ -7,12 +7,13 @@
     "slug": "berserker",
     "category": "calling",
     "attribute": "might",
-    "meta": "Calling • Might (4 HP/level • Rage)",
+    "parentSlug": "",
+    "meta": "Calling • Might (4 Vigor/level • Rage)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
-    "description": "<p>Calling • Might (4 HP/level • Rage)</p>",
+    "description": "<p>Calling • Might (4 Vigor/level • Rage)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

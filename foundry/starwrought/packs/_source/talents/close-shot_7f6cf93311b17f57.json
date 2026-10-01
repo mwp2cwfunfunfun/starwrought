@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Reduce the Unwieldy distance of your bow by 5 feet. If that would reduce it to 0, the weapon no longer has Unwieldy for you.",
+    "effect": "Reduce the minimum distance of Unwieldy by 5 feet. If that would reduce it to 0, the weapon no longer has Unwieldy for you.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "cdfba94f08c33d6c",
   "sort": 0,

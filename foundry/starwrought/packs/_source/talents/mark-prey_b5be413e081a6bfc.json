@@ -1,6 +1,6 @@
 {
   "_id": "b5be413e081a6bfc",
-  "name": "Mark Prey ◆",
+  "name": "Mark Prey ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -18,6 +18,8 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ae92852dbc6da00d",
   "sort": 0,

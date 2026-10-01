@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "2",
     "costMode": "to",
-    "category": "Attacking",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack",
     "basic": true,
     "traits": [
       "Attack"
     ],
-    "description": "<p>Athletics against Evade or Guard. Needs a free hand or a Grapple weapon; target within reach and at most one Size larger.<br><b>Critical Success</b> Restrained until the end of your next turn. <b>Success</b> Grabbed until the end of your next turn. <b>Graze</b> No effect, but the defender still pays the Graze cost. <b>Miss</b> You overcommit and are Off-Guard.<br><b>◆◆ Tackle.</b> Stride, then Grapple; success also knocks them Prone and you fall Prone adjacent.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Requirements You have a free hand or a weapon with the Grapple Trait, and the target must be within reach and no more than one Size larger than you.<br>Roll Athletics against Evade or Guard.<br><b>Critical Success</b> The target is Restrained until the end of the next round. <b>Success</b> The target is Grabbed until the end of the next round. <b>Graze</b> No effect. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity.<br><b>❷ Tackle.</b> Move, then Grapple. <b>Critical Success</b> The target is Restrained until the end of the next round and knocked Prone. <b>Success</b> The target is Grabbed until the end of the next round and knocked Prone. You fall Prone adjacent to them. <b>Graze</b> No effect, and you are Exposed in a Zone of the defender's choice. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity, and fall Prone adjacent to them.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "31a74ef61055ca21",
+  "folder": "606d6a9c20d0b726",
   "sort": 0,
   "ownership": {
     "default": 0

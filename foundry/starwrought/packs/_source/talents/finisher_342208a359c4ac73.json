@@ -1,6 +1,6 @@
 {
   "_id": "342208a359c4ac73",
-  "name": "Finisher ◆",
+  "name": "Finisher ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Spend your Panache and Strike, with the following effects:<br>Hit add 2d6 precision damage.<br>Graze add 1d6 precision damage.<br>You lose the Panache either way.",
+    "effect": "Spend your Panache and Strike, with the following effects:<br><b>Hit</b> add 2d6 precision damage.<br><b>Graze</b> add 1d6 precision damage.<br>You lose the Panache either way.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ddc479129bd4bd5d",
   "sort": 0,

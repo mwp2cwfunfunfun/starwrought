@@ -1,6 +1,6 @@
 {
   "_id": "1e0b7fac43135011",
-  "name": "Extravagant Parry ◆",
+  "name": "Extravagant Parry ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Requirements You're wielding one or more one-handed weapons.<br>You gain a +1 circumstance bonus to Guard until the start of your next turn, or a +2 circumstance bonus if you have a free hand or are wielding a weapon with the Parry trait. You lose this circumstance bonus if you no longer meet this talent's requirement. If a creature misses you with a Strike while you have this bonus, you gain Panache.",
+    "effect": "<b>Requirements</b> You're wielding one or more one-handed weapons<br>You gain a +1 Situation bonus to Guard until your next Opportunity, or a +2 Situation bonus if you have a free hand or are wielding a weapon with the parry trait. You lose this Situation bonus if you no longer meet this feat's requirement. If a creature misses you with a Strike while you have this bonus, you gain panache.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ddc479129bd4bd5d",
   "sort": 0,

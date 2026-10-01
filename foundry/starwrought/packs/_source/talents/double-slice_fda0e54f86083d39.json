@@ -1,6 +1,6 @@
 {
   "_id": "fda0e54f86083d39",
-  "name": "Double Slice ◆◆",
+  "name": "Double Slice ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Strike with each weapon at your current multiple attack penalty; combine the damage for purposes of bypassing Protection.",
+    "effect": "Quick Strike with each weapon against the same target, one roll for each. Combine the damage of both blows before subtracting Protection.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b2ad479977fa3e79",
   "sort": 0,

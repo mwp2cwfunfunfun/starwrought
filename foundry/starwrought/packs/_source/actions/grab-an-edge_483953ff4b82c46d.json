@@ -4,14 +4,16 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "reaction",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "category": "Special",
     "basic": true,
     "traits": [],
-    "description": "<p>Trigger You fall past an edge, ledge, or handhold within your reach. Requirements A hand free; you may Release ◇ to free one.<br>Athletics or Acrobatics against Threshold 15.<br><b>Critical Success</b> You catch it and pull up. <b>Success</b> You hang there, Off-Guard. <b>Failure</b> You fall, reduced by 10 feet. <b>Critical Failure</b> You fall the full distance.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Trigger You fall past an edge, ledge, or handhold within your reach. Requirements You have a hand free; you may Release ⓿ an item as part of this Reaction to free a hand.<br>Roll Athletics or Acrobatics against a Threshold of 15.<br><b>Critical Success</b> You catch it and pull yourself up in the same motion. You do not fall. <b>Success</b> You catch it and hang there. You are Off-Guard. <b>Failure</b> You fall, but the damage from the falling distance is reduced by 10 feet. <b>Critical Failure</b> You fall the full distance.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "08855204e460ca76",
   "sort": 0,

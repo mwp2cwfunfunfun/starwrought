@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Moving",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Motion",
     "basic": true,
     "traits": [
-      "Move"
+      "Motion"
     ],
-    "description": "<p>Jump 10 feet horizontally or 3 feet vertically, without a check. Longer or higher jumps are an Athletics check, and count as part of the Leap.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Jump 10 feet horizontally (less your Load Strain in feet) or 3 feet vertically, without a check. Longer or higher jumps are an Athletics check, and count as part of the Leap.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "57b789ecf25288d5",
+  "folder": "02edc6422285a159",
   "sort": 0,
   "ownership": {
     "default": 0

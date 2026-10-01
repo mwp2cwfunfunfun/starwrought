@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You become Trained in Athletics.<br>You gain the Weapon Familiarity Talent for free.<br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br>You may take the Reactive Strike Talent, ignoring its requirements. However, you may still only use Reactive Strike ↺ with weapons in which you are at least Expert Proficiency Rank.<br>Every Talent in this Constellation requires this.",
+    "effect": "You become Trained in Athletics.<br>You gain the Weapon Familiarity Talent for free.<br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br>You may take the Reactive Strike Talent, even if you are not Expert in Melee. However, you may still only use Reactive Strike with weapons in which you are at least Expert Proficiency Rank.<br>Every Talent in this Constellation requires this.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "Weapon Familiarity",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "c24b24d1fba469af",
   "sort": 0,

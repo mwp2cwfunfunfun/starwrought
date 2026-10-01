@@ -7,12 +7,13 @@
     "slug": "kestrel-reach",
     "category": "origin",
     "attribute": "wits",
+    "parentSlug": "",
     "meta": "Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": true,
     "description": "<p>Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

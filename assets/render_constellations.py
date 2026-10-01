@@ -1,4 +1,4 @@
-# SPARKS constellation plates for the PHB — print-light mirror of the app layout
+# SPARKS constellation plates for the PHB: print-light mirror of the app layout
 import json, os, math, io
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ HUES = {"Awareness":"#C4A62E","Evade":"#6FA85E","Guard":"#5E7A9E","Endure":"#BE7
 "Acrobatics":"#4E9EBE","Athletics":"#D98E4A","Diplomacy":"#4E96A8","Guile":"#8A6EBE","Intimidation":"#C05656","Stealth":"#7A9BD0","Lore":"#A8925E",
 "Ambusher":"#B86A8A","Berserker":"#C64836","Bravo":"#B886B8","Hunter":"#6FA85E","Weaponmaster":"#A86E52",
 "Human":"#B0996A","Serrovane":"#8A6EBE","Kestrel Reach":"#9E7E52",
-"Weapons":"#A86E52","Two-Weapon Fighting":"#CE5E46","Shield Fighting":"#7A93B8","Brawling":"#BE7E3E","Dueling":"#B886B8",
+"Melee":"#A86E52","Ranged":"#3EA396","Two-Weapon Fighting":"#CE5E46","Shield Fighting":"#7A93B8","Brawling":"#BE7E3E","Dueling":"#B886B8",
 "Great Weapon Fighting":"#96603E","Archery":"#3EA396","Crossbow Fighting":"#5E86A0","Missile Skirmishing":"#6E9E96",
 "Spear & Polearm Fighting":"#86A85E","Armored Fighting":"#7A8894"}
 INK = "#1D2A32"; GREY = "#8AA0A8"
@@ -43,7 +43,14 @@ def mulberry32(a):
     return rnd
 
 import re
-def _nrmN(s): return re.sub(r"[◆↺★\s]+$", "", s or "").strip()
+# Requires are written glyph-free while talent names carry the v4.10 cost glyphs (⓿ ❶ ❷ ❸ ..., ↺ beside
+# a cost, the v3 ◆ ◇ and the capstone ★), a bracketed cost tail like "(⓿↺)", or a trailing "to"/"or"
+# joiner from a range ("Strike ❶ to ❸"). Strip all of it before comparing, as the converter's norm does.
+_GLYPHS = "◆◇↺★⓿❶❷❸❹❺❻"
+def _nrmN(s):
+    s = re.sub(r"\(\s*[" + _GLYPHS + r"\s]*\)", "", s or "")
+    s = re.sub(r"[" + _GLYPHS + r"]", "", s)
+    return re.sub(r"\s+(?:to|or)$", "", s.strip()).strip()
 def _req_of(n):
     tg = n.get("requires")
     if not tg:
@@ -306,8 +313,28 @@ def place_labels(pts):
         boxes.append(placed); out[id(p2)] = placed
     return out
 
-RINGLAB = [("T","TRAINED · 1 pt · L1+"),("E","EXPERT · 4 pts · L5+"),("M","MASTER · 9 pts · L13+"),("L","LEGENDARY · 16 pts · L19+")]
+# PHB v4.10 rank gates: Expert at level 5, Master at 10, Legendary at 15.
+RINGLAB = [("T","TRAINED · 1 pt · L1+"),("E","EXPERT · 4 pts · L5+"),("M","MASTER · 9 pts · L10+"),("L","LEGENDARY · 16 pts · L15+")]
 
+# The plate font (DejaVu Sans) carries the v4.10 cost glyphs ❶ to ❻ and ↺ but not ⓿ (U+24FF), so a
+# free Maneuver's name would render as a box. Swap any glyph the font lacks for its nearest kin.
+try:
+    from matplotlib import font_manager as _fm
+    from matplotlib.ft2font import FT2Font as _FT2Font
+    _PLATE_CHARMAP = set(_FT2Font(_fm.findfont("DejaVu Sans")).get_charmap().keys())
+except Exception:  # pragma: no cover - a matplotlib without ft2font simply keeps the text as is
+    _PLATE_CHARMAP = None
+_GLYPH_KIN = {"⓿": ("⓪", "(0)")}
+def plate_text(s):
+    if _PLATE_CHARMAP is None: return s
+    out = []
+    for ch in s:
+        if ord(ch) in _PLATE_CHARMAP: out.append(ch); continue
+        kin = _GLYPH_KIN.get(ch, ())
+        out.append(next((k for k in kin if all(ord(c) in _PLATE_CHARMAP for c in k)), ch))
+    return "".join(out)
+
+rendered = set()
 for name, t in TREES.items():
     hue = HUES.get(name, "#8FA8C8"); hued = darken(hue)
     pts, edges, G = layout(name)
@@ -349,7 +376,7 @@ for name, t in TREES.items():
             ax.scatter([x],[y], s=(r*2.1)**2*1.15, marker="D", facecolors="none", edgecolors="#B8860B", linewidths=1.5, zorder=4)
         if p.get("hroot"):
             ax.scatter([x],[y], s=(r*1.9)**2*1.15, marker="D", facecolors="none", edgecolors="#9AA6B2", linewidths=1.2, zorder=4)
-        label = ("◈ " if is_root else ("✧ " if p.get("hroot") else "")) + p["name"].replace(" ★","")
+        label = plate_text(("◈ " if is_root else ("✧ " if p.get("hroot") else "")) + p["name"].replace(" ★",""))
         la, lx, ly = LBL[id(p)][4], LBL[id(p)][5], LBL[id(p)][6]
         ax.annotate(label, (lx, Hh-(ly-4)),
                     ha={"middle":"center","start":"left","end":"right"}[la], va="center",
@@ -365,4 +392,10 @@ for name, t in TREES.items():
     plt.subplots_adjust(left=0,right=1,top=1,bottom=0)
     plt.savefig(os.path.join(OUT, slug+".png"), facecolor="#FBF8F2", bbox_inches="tight", pad_inches=0.04)
     plt.close()
-print("rendered:", len(os.listdir(OUT)), "plates")
+    rendered.add(slug+".png")
+# A plate whose tree is gone (Weapons, after the Melee/Ranged split) is pruned, so the count is honest
+# and build_foundry.mjs does not keep copying a retired Constellation into the system.
+for f in os.listdir(OUT):
+    if f.endswith(".png") and f not in rendered:
+        os.remove(os.path.join(OUT, f))
+print("rendered:", len(rendered), "plates")

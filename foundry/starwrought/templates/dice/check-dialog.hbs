@@ -9,6 +9,51 @@
     <li class="sw-total"><span>{{localize "STARWROUGHT.Roll.beforeTheDie"}}</span><strong>{{swSigned total}}</strong></li>
   </ul>
 
+  {{#if isAttack}}
+  {{!-- The three Strikes (PHB v4.10): how much of yourself is behind the blow. --}}
+  <div class="form-group sw-strike-choice">
+    <label>{{localize "STARWROUGHT.Roll.strikeKind"}}</label>
+    <div class="form-fields">
+      {{#if lockStrike}}
+      <strong>{{strikeGlyph}} {{strikeLabel}}</strong>
+      {{else}}
+      {{#each strikes as |s|}}
+      <label class="sw-choice {{#if s.active}}sw-active{{/if}}" data-tooltip="{{s.hint}}">
+        <input type="radio" name="strike" value="{{s.key}}" {{#if s.active}}checked{{/if}}>
+        <span>{{s.glyph}} {{s.label}}{{#if s.prepared}} · {{localize "STARWROUGHT.Strike.preparedTag"}}{{/if}}</span>
+      </label>
+      {{/each}}
+      {{/if}}
+    </div>
+  </div>
+  {{#unless lockStrike}}
+  <p class="hint">{{localize "STARWROUGHT.Strike.dialogHint"}}</p>
+  {{/unless}}
+  {{/if}}
+
+  {{#if reactions.length}}
+  {{!-- Answering an Attack (PHB v4.10): the basic Defense always rolls; a Reaction is paid from the same six. --}}
+  <div class="form-group sw-reaction-choice">
+    <label>{{localize "STARWROUGHT.Roll.reactionChoice"}}</label>
+    <div class="form-fields">
+      <label class="sw-choice {{#unless cfg.reaction}}sw-active{{/unless}}">
+        <input type="radio" name="reaction" value="" {{#unless cfg.reaction}}checked{{/unless}}>
+        <span>{{localize "STARWROUGHT.Roll.noReaction"}}</span>
+      </label>
+      {{#each reactions as |r|}}
+      <label class="sw-choice {{#if r.active}}sw-active{{/if}}" data-tooltip="{{r.hint}}">
+        <input type="radio" name="reaction" value="{{r.key}}" {{#if r.active}}checked{{/if}}>
+        <span>{{r.glyph}} {{r.label}}{{#if r.defense}} · {{r.defense}}{{/if}}{{#if r.warn}} <i class="fa-solid fa-triangle-exclamation" data-tooltip="{{localize 'STARWROUGHT.Reaction.needsRigid'}}"></i>{{/if}}</span>
+      </label>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if (ne actionsLeft null)}}
+  <p class="hint">{{localize "STARWROUGHT.Roll.actionsLeft" left=actionsLeft}}</p>
+  {{/if}}
+
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.situational"}}</label>
     <div class="form-fields">
@@ -31,23 +76,10 @@
   <p class="hint">{{localize "STARWROUGHT.Stance.dialogHint"}}</p>
   {{else}}
   <div class="form-group">
-    <label>{{localize "STARWROUGHT.Field.threshold"}}</label>
+    <label>{{#if isDefense}}{{localize "STARWROUGHT.Roll.attackThreshold"}}{{else}}{{localize "STARWROUGHT.Field.threshold"}}{{/if}}</label>
     <div class="form-fields">
       <input type="number" name="threshold" value="{{threshold}}"
              placeholder="{{localize 'STARWROUGHT.Roll.thresholdPlaceholder'}}">
-    </div>
-  </div>
-  {{/if}}
-
-  {{#if isAttack}}
-  <div class="form-group">
-    <label>{{localize "STARWROUGHT.Roll.map"}}</label>
-    <div class="form-fields">
-      <select name="mapIndex">
-        {{#each mapLadder as |step|}}
-        <option value="{{step.index}}" {{#if (eq step.index @root.cfg.mapIndex)}}selected{{/if}}>{{step.label}}</option>
-        {{/each}}
-      </select>
     </div>
   </div>
   {{/if}}

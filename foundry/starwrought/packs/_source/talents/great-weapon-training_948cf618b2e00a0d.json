@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>You gain the Overreach action.<br>Overreach ◆ (stance)<br>You must be wielding a two-handed melee weapon.<br>While you are in this stance your Hits and Critical Hits deal +2 damage and your Evade drops by 2, rising to +3 damage at Expert rank, +4 at Master, and +5 at Legendary. Every talent here requires this.",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. You gain the Overreach action.<br><b>Overreach ❶ Stance</b><br>You must be wielding a two-handed melee weapon.<br>While you are in this stance your Hits and Critical Hits deal +2 damage and your Evade drops by 2, rising to +3 damage at Expert rank, +4 at Master, and +5 at Legendary. Every talent here requires this.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "018dc0d2e8a4ecff",
   "sort": 0,

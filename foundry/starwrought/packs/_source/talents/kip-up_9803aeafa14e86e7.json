@@ -1,6 +1,6 @@
 {
   "_id": "9803aeafa14e86e7",
-  "name": "Kip Up ◆",
+  "name": "Kip Up ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Stand up. This movement doesn't trigger reactions.",
+    "effect": "Stand up. This movement doesn't trigger Reactions.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,

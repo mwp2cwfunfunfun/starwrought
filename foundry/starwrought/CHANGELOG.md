@@ -7,6 +7,297 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.4.0 (2026-09-28): Player's Handbook v4.10
+
+Not a point release of the rules. Player's Handbook v4.10 rewrites the combat engine, and every
+consumer moved with it: the spreadsheets, `roster.json`, the web app, the character sheets, the
+Constellation Compendium and this system. The rulings taken where the book is ambiguous are in
+`v4.10-sync-report.md` at the project root, numbered, with the questions left for the author.
+
+### Added
+
+- **Six actions a round, spent across Opportunities.** Every combatant receives six actions at the
+  start of each round (an adversary its own `actionsPerRound`; Slowed N loses N), and unspent ones
+  expire at the end. A Foundry turn is an Opportunity: one Maneuver, or Pass. The turn order wraps
+  within the round; a full circuit of Passes ends it, counted as a pass streak on the Combat and
+  shown in the tracker header. Pass is a button on the sheet's pips and on the tracker row, live
+  only at your own Opportunity; End Opportunity moves play on without Passing. Only an explicit
+  Pass counts, or a combatant who cannot act. A table with no GM keeps the streak in memory on one
+  elected client. Tracker rows show actions left, the reserved count and an hourglass while
+  Preparing.
+- **Prepared Maneuvers.** A Committed Strike in an encounter spends one action, reserves two, marks
+  the actor Preparing and posts a card; a second card with Finish and Abandon posts when the next
+  Opportunity begins. Finish rolls the Strike already paid; Abandon returns the reserve and loses
+  the action. A Wound or going down abandons it, a new preparation replaces it, and one that never
+  reaches its Opportunity expires with the round. Pass is refused while Preparing.
+- **The Exchange.** Three Strikes on every weapon row, ❶ Quick, ❷ Deliberate, ❸ Committed, each
+  with its own damage, placement and critical rules; a Quick Strike cannot Critically Hit unless
+  the weapon is Agile, and a denied 20 is a Hit that still offers a Flare. The attack card grows a
+  Position block once the Result is read: Expose the attacker (any Miss; a Graze against a
+  Committed Strike), Form Bind or Take Control when the defender Guarded with a rigid implement,
+  the riposte after a Parry, Give ground 3 ft or Step when the defender Evaded, Expose the defender
+  on a Committed Hit or a Deliberate Critical Hit, and the Counter's Quick Strike back. Every
+  button is an offer to the side the rule favours and is shown only to that actor's owner.
+- **Reactions from the same six.** The stance grew from two answers to five: Evade, Guard, Void
+  (Evade +2 Situation, Evade Training), Parry (Guard +2 Situation, Guard Training and a rigid
+  implement) and Counter (the better basic Defense and a Quick Strike back, Melee Training). The
+  attack reads the stance at the roll, folds the +2 into the same Situation stack, charges the ❶ to
+  the defender as the roll resolves and drops the stance back to its basic Defense; a Charge button
+  covers the case where the attacker's client does not own the defender. A Defense roll against an
+  Attack Threshold offers the roller's Reactions in the dialog. A Head Wound blocks Reactions. The
+  Token HUD cycles through the stances the actor can actually take.
+- **Intercept.** When a Move or Rush carries a token from outside a hostile token's Total Reach to
+  inside it, sampled along the path, a card goes to that foe's owners: a Quick Strike button for a
+  character (paying ❶↺), or an attack button for an adversary that pays its ❶ and hands the mover a
+  Defense roll against the attack's Threshold. Offered only to a foe with Intercept, once per foe
+  per move, and never blocks the move.
+- **The Bind.** `system.bind` on every actor: neutral, Controlling or Controlled, with the partner
+  and both implements named, mirrored onto the partner when one client owns both and otherwise
+  left for its owner with a note. Three token statuses (Bound, Controlled, Controlling), a Bind line
+  in the sheet header with End Bind, a −2 Situation penalty to attacks with a Controlled weapon, and
+  the endings the book lists: a Strike between the two, Recenter, stowing the implement, a
+  Controller struck by a third party, and attacking with a weapon other than the Bound one.
+- **Support.** +1 Situation to a melee attack per other conscious ally whose Total Reach includes
+  the target, to +2, computed from the tokens on the scene, sharing a type with Control's penalty.
+- **Vigor, Spent, Wounds per Zone, and Dying from a final Wound.** Vigor is the header bar (10 +
+  Ancestry + Calling Vigor at 1st, both again each level; Temporary Vigor drawn on top). At 0 you
+  are Spent, a status, not down: every Hit then Wounds the Zone struck, two on a Critical Hit. A
+  Critical Hit with a Deliberate or Committed Strike on an Exposed Zone Wounds it; Massive Wounds on
+  any Critical Hit; a Graze never Wounds; nonlethal knocks a Spent creature out instead. Each Zone
+  counts Wounds against a capacity by Size (2, Large 3, Huge 4, Gargantuan 5, plus an adversary's
+  `woundBonus`), with the first effect repeated until the final one: Arms −2 Situation to attacks
+  and Guard then useless; Legs Speed halved then Prone; Torso Off-Guard and 1d4 bleed then Dying;
+  Head no Reactions then Dying and unconscious. A Wound to a useless limb goes to the Torso; a full
+  Torso or Head Wounded again while not Dying begins Dying again. Dying starts at 1, or 2 from a
+  Critical Hit, and damage while Dying raises it instead of Wounding. Recovery is Endure against
+  10 + Dying + Wounds carried, at the start of each round, prompted by a card. Treat Wound is a
+  link on the Zone: Endure against 10 + Wounds carried, ten minutes, one Wound off on a success.
+  Refusing Death leaves you Spent and unconscious with your Wounds. A night's rest heals no Wound.
+  Wound cards and the applied card say what the body did.
+- **Movement in Moves, Steps and Rushes.** A drag within half your Speed and clear of difficult
+  terrain is a Step ❶ and never provokes; a straight drag longer than three Moves and within your
+  Rush distance is a Rush ❸, charged at once; anything else is one Move ❶ per Speed's worth,
+  rounded up, with a note that two Moves is two Opportunities' worth. The card says which and why.
+  The drag ruler colours squares pale mint for a Step, one colour per Move (gold first, six in all),
+  orange for a Rush and red past what you have left, and the label prints `❶×2` or `❸ Rush`. The
+  sheet prints Speed, Step, Rush and Leap; Load Strain comes off Rush and Leap.
+- **Round cards.** Recovery at the start of a round while Dying (setting `autoRecovery`, moved from
+  the actor's turn to the round); Wind at the end of the third round and after for anyone with Load
+  Strain 1 or more, Endure against 10 + Load Strain or Fatigued (−1 Evade and Guard), with the
+  status set on a failure; Persistent Damage at the end of every round, rolled fresh from the card,
+  with an Endure button to end it and a note that the Torso bleed closes only with the Wound. A
+  Zone Exposed by a Posture clears at the end of the round, and Recenter leaves it alone.
+- **Melee and Ranged as parents.** Two Weapon Constellations replace Weapons. Every Combat Style
+  names one as its parent (a `Parent` column in `combat_styles.xlsx`, `parent` in `trees.json`,
+  `parentSlug` on the Constellation Item and `parent` in the content index); a child's points count
+  toward the parent's rank once the parent's Root is owned, rank only, Attribute Points counted
+  once. The sheet shows a parent's pool and inherited points and a Combat Style's "child of" line.
+  `strikeAttributeFor(weapon)` picks the higher of the weapon's natural Attribute and a Combat
+  Style's Key Attribute when the weapon's new Style field names a Style whose Root you own.
+- **Helms and the Parry trait.** A Closed helm is −2 Situation, an Open helm −1, to Awareness
+  checks, the Awareness Threshold and Initiative, matched by the Head piece's name. The Parry
+  weapon trait is +1 Gear to Guard while the weapon is held, sharing its type with a raised shield's
+  bonus. Flexible, Massive and Unparryable are parsed from trait lines; `rigid` is derived, and a
+  bare hand (the Natural Weapons group) is not rigid.
+- **Chargen for v4.10.** Step 0 chooses Melee Training or Ranged Training, granted free, each card
+  naming the Combat Styles that count toward it. Two Defense Talent Points on two different Defenses
+  beside a threat-coverage panel that names the gap. The review prints the Vigor formula, points ÷ 4,
+  Trained +3 and the count against the 14-point floor.
+- **The Maneuvers pack and the sheet's Maneuvers tab.** The Actions pack is "Maneuvers & Activities",
+  regrouped as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving &
+  Helping; Handling Things; Special), with Move, Rush, Gain Control, Close, Parry, Void, Counter,
+  Intercept and Pass added and a Reactions folder for the Talent-granted Postures (Give Ground, Set
+  Your Feet, Posture). Maneuvers and Talents carry the Reaction trait as a flag with its own cost, so
+  Aid prints "❶ (⓿↺)". The Item sheet has the cost select over passive and ⓿ to ❻, a Reaction ↺
+  checkbox and a Reaction cost. Using a Reaction Maneuver from the sheet spends its cost.
+- **Adversaries** carry Vigor typed directly, `actionsPerRound`, `woundBonus`, Wounds per Zone with
+  Treat and adjusters, the five stance chips, a Reactions panel, and one Threshold per attack.
+- New templates: the stance chips, action pips, Bind line and Wound pips as shared partials, and the
+  Wound card. New Handlebars helpers `swActionGlyph` and `swStrikeGlyph`. `minGapAlongPath` in the
+  canvas geometry, so the Intercept trigger uses the same edge-to-edge arithmetic as reach.
+
+### Changed
+
+- **No level term in any check.** d20 + Attribute Bonus + Proficiency Bonus + typed bonuses; a
+  Threshold is 10 + the same. Defenses, attacks, Initiative and the derived Thresholds all dropped
+  it. Adversary Thresholds typed on a sheet are unchanged.
+- **Ranks are +3 / +6 / +9 / +12**, gated at levels 1 / 5 / 10 / 15 and 1 / 4 / 9 / 16 points.
+  The plates' ring labels say so.
+- **Attribute Bonus is points ÷ 4**, rounded down, still capped at +5 (the Key Terms cap is kept
+  until the book repeals it; ruling 1).
+- **Weapon dice** step at 4th, 8th, 12th and 16th level (were 4th, 12th and 19th).
+- **Speed is feet per Move on the one-foot grid.** A Human's is 6; Step is half, Rush five times
+  less Load Strain, Leap 10 feet less Load Strain, Crawl 3. Every chassis Speed was re-read from the
+  book.
+- **Two Defenses at creation, not four.** Trained in all four is no longer granted; two Defense
+  Talent Points buy two different Roots.
+- **Raise a Shield lasts until your next Opportunity**, and the bonus is derived from the shield's
+  raised flag rather than written into the Guard adjustment field. The tracker lowers the shield
+  when the Opportunity begins.
+- **Recenter** ends any Bind you are in and leaves a Posture's Exposed Zone alone.
+- **Protection is 0 on an Exposed Zone only against a Deliberate or Committed Strike.** A Quick
+  Strike, and damage that is not a Strike, meets it in full.
+- **Zone placement follows the Strike.** A Quick Strike lands on the Torso; a Deliberate or
+  Committed Hit may take an Exposed Zone; a Graze is the defender's choice; a Critical Hit the
+  attacker's.
+- **A raised shield's and a Parry weapon's Guard bonuses are Gear** and do not stack.
+- **Conditions** now register 24 token statuses: Spent, Bound, Controlled, Controlling and Preparing
+  join the list; Wounded is a single status backed by the per-Zone counts. `conditionValue("wounded")`
+  returns the total carried.
+- **Naming.** Hit Points are Vigor, Stride is Move, the turn is an Opportunity, Actions are
+  Maneuvers (the Actions tab is labelled Maneuvers and keeps its id), "Actions & Activities" is
+  "Maneuvers & Activities", the Weapons Constellation is Melee and Ranged, and the cost glyphs are
+  ⓿ ❶ ❷ ❸ ❹ ❺ ❻ with ↺ for the Reaction trait. The v3 glyphs ◆ and ◇ still parse everywhere.
+- **`showStrideBands` is `showMoveBands`**; the 0.3.x client value stored under the old key seeds
+  the new setting's default once, at registration, so a player who had the bands off keeps them
+  off. The `autoRecovery` hint now says the check is made at the start of each round.
+- **Token resource bars** track `vigor`; `primaryTokenAttribute` is `vigor`; `actions.value` and an
+  adversary's `actionsPerRound` are trackable.
+- **The converter** (`xlsx_to_trees.py`) validates the `Parent` column (must name a tree, one level
+  only, not itself), reads the ancestry index header as Vigor or HP, writes both `vigor` and `hp`
+  into the roster's ancestries block for one release, parses ⓿ ❶ to ❻, ↺ and a bracketed Reaction
+  cost such as "(⓿↺)" as well as the v3 glyphs, strips glyphs and the trailing cost joiner for
+  Requires matching and slugs, and writes `reaction` and `reactionCost` into `actions.json`.
+- **`build_foundry.mjs`** carries the parent onto the Constellation Item and the content index,
+  writes the Reactions folder from the roster's `postures` block (skipping the four that are also
+  Maneuvers so nothing ships twice), keeps a sheet action's document id when it takes a roster row
+  over, and reads Vigor from either key.
+- **The Constellation Compendium** gained "Rank Math, Attributes and Checks", a Reactions table, a
+  "Vigor, Wounds and Dying" appendix, an introduction to the Maneuvers appendix, Shields and Weapons
+  paragraphs, parents in the Combat Style headers, and glyph runs in Segoe UI Symbol so ⓿ prints.
+- **The character sheets** (fillable and Mira) were rebuilt for v4.10: Vigor with Spent, Wounds per
+  Zone with both effects, Speed / Step / Rush / Leap, six action ticks and a Reserved box, Melee and
+  Ranged, a Strikes table with the Strike Attribute, a Reactions block, a Bind line, and a reference
+  strip; Mira is a Melee Training, Evade and Awareness build at Vigor 20 and Speed 6.
+- **The web app** moved with the rules: ÷ 4, no level, ranks +3 to +12 at 5 / 10 / 15, Vigor and
+  Spent, Wounds per Zone applied to the derived numbers, Melee and Ranged as parents with the pool
+  shown, the threat wheel, two different Defenses at creation, Melee or Ranged Training at step 0,
+  Speed in feet, the Recovery Threshold, and a Maneuvers wiki section that an old "Actions" bookmark
+  still lands on. The smoke test checks the new pools and that no v3 vocabulary survives in the wiki.
+- **`data/README.txt`** documents the `Parent` column, the Vigor header and the v4.10 glyphs.
+
+### Removed
+
+- **The Multiple Attack Penalty**, its Agile ladder, the per-turn attack counter, the `trackMap`
+  setting and its hooks, and the adversary sheet's three-step Threshold ladder. `resetAttackCount`
+  is exported as a no-op until its callers are gone.
+- **The reaction slot** (`system.actions.reaction`). Reactions are paid from the six.
+- **The numeric Wounded value.** Wounds are per Zone; an old count had no Zone to go to and is
+  dropped by the migration.
+- **Stride, Delay and Ready** rows from the roster and the pack; Move, Rush and the Pass row take
+  their place.
+- **The Task-level Threshold table.** It dated from a baseline where a check carried a level term;
+  the roster key stays as an empty list so its readers survive.
+- **The Postures table as a table of its own.** The roster's `postures` block is the Reaction table
+  now, and its rows ship as a Reactions folder.
+
+### Migrations
+
+The key renames run on first load, in `migrateData`. The Speed conversion is a one-time world
+migration: the first GM to open the world runs it at `ready`, it is recorded in the `systemVersion`
+world setting, and Speed is stored as typed from then on (a per-load heuristic would have quartered
+any v4.10 Speed of 15 or more for ever).
+
+- Actors: `hp` to `vigor` (value, max, temp); `wounded` dropped; `actions.reaction` dropped;
+  `details.ancestry.hp` and `details.calling.hp` to `vigor`; `bonuses.hp` to `bonuses.vigor`. The
+  world migration brings a stored Speed of 15 or more (a v3 value on the five-foot scale) to
+  Speed ÷ 4, so 25 becomes 6, on world actors, world chassis Items and chassis in unlocked packs,
+  and says how many it changed. A scene token whose own delta overrides Speed is not visited;
+  correct it by hand.
+- Items: cost keys `free` to ⓿ and `reaction` to ⓿ with the Reaction flag; a Talent's cost `0` to
+  `passive`, and so an Exploration Mode or Downtime Mode Activity's; a Talent filed under the
+  retired Weapons slug refiled under Melee (a character whose training was really Ranged moves it
+  by hand); a chassis's `hp` to `vigor`; a Constellation's `parent` to `parentSlug`. A Constellation
+  Item still carrying the Weapons slug on a character is ignored when the skies are drawn.
+- Data: Loose and Move moved from Archery to Ranged, so its compendium id changed with its
+  Constellation. A character holding the Archery copy keeps a working Item under the old id, and
+  the system files it under Ranged when it prepares the Talent (`MOVED_TALENTS`), so its point
+  counts where the book now says.
+
+### Fixed
+
+- **The web app's Endure relief table** read Trained 1 / Expert 2 / Master 3 / Legendary 4 since
+  v3.2. Endure Training has relieved 1 at Expert, 2 at Master and 3 at Legendary since then; the
+  table now agrees with the Talent and with the system.
+- **The converter's name normaliser** dropped only the v3 glyphs, so a Requires cell naming
+  "Kip Up" could not match a talent renamed "Kip Up ❶". It strips every cost glyph, a bracketed
+  Reaction cost, and the trailing "to" or "or" of a range.
+- **The plate renderer** printed a box for ⓿, which DejaVu Sans lacks; it substitutes the nearest
+  glyph the font has.
+- **The rank rings on the plates** still said Master at L13 and Legendary at L19.
+
+The rest of this list is the adversarial review of the sync (2026-10-01; 44 findings, 40 confirmed,
+all applied before the release was stamped; rulings 51 to 59 in `v4.10-sync-report.md`).
+
+- **A Strike made as a Reaction** (Counter, Intercept, the riposte) read and charged the target's
+  own Reaction stance, so a Countered fighter in Parry met the attack at +2, paid ❶ and was offered
+  a Counter back. It meets the basic Defense only: a Reaction never triggers a Reaction. The
+  mover answering an adversary's Intercept likewise rolls the basic Defense, with no Reaction
+  offered in the dialog.
+- **Counter answered arrows.** A Counter stance was honoured against any attack, charging ❶ and
+  offering a Quick Strike back at a bowman thirty feet away. It answers only a melee Blow from a
+  foe within Reach; anything else meets the better basic Defense, charges nothing, and the card
+  says so.
+- **The Bind was offered for whips, Unparryable attacks and arrows**, and never recorded the
+  attacking weapon, so the Controlled −2 keyed on the attacker's first held weapon rather than the
+  one that was Stopped. The offer requires a bindable attack, the card says when there is nothing
+  to bind, and both weapons travel from the card into the Bind.
+- **`STRIKE_KINDS.exposeOnMiss` was never read.** It is now the switch the Position block consults,
+  and a Quick Strike's Miss Exposes the attacker as the Result table says (ruling 51).
+- **Zone Protection double-counted the Zone bonus** on an unarmored Zone of a character, because the
+  derived display number already carried it. The raw armor number and the bonus are now separate.
+- **The Speed ÷ 4 conversion ran on every load and every update**, so a v4.10 Speed of 16 was
+  stored as 4. It is a one-time world migration (see Migrations).
+- **A world Constellation Item from 0.3.7 wiped its parent** out of the registry for the whole
+  world, because its blank `parentSlug` overwrote the index. A blank world parent falls back to the
+  registered one.
+- **Movement read the stored Speed, not what the Legs allow**, so an adversary's Legs Wounds never
+  reached the ruler or the charge, and a Speed of 0 (the final Legs Wound) was read as the default
+  6. Movement reads `moveSpeed`, and a Speed of 0 is charged as **Crawl ❶ per 3 feet**, which never
+  provokes; the ruler and the card say Crawl.
+- **A lone combatant got six fresh actions on every Next Turn**, and lost its Prepared Maneuver
+  with them. Only its Pass ends the round now; any other Next Turn is its next Opportunity.
+- **Turning `trackActions` off also switched Intercept offers off.** The gate wraps only the spend;
+  classification and the offer run regardless.
+- **The Intercept answer card rolled the mover's Defense against whatever they had targeted**
+  instead of the interceptor. The button carries the interceptor, so the Position offers name and
+  act on the right foe.
+- **The old `showStrideBands` value was never read**, although the docs said it was. It seeds the
+  new setting's default at registration.
+- **Exploration and Downtime Activities printed ⓿** ("Free action"), because they were built with
+  the v3 cost key "0". They are passive, in the build and in a 0.3.7 world copy.
+- **The adversary sheet listed Parry, Void, Counter and Intercept as "Reactions it has"** for every
+  creature. The panel lists only the creature's own Reaction abilities; the four stay live on the
+  stance chips for the GM to declare.
+- **The weapon sheet's Bind-trait hint never rendered**: it read the trait flags from the wrong
+  path.
+- **A stance chip disabled by a Head Wound said "needs Evade Training"** to a character who owned
+  it. The chip and the token HUD say "You cannot use Reactions." instead.
+- **The Equipment tab's attack number omitted the Arms Wound's −2** that every roll applied.
+- **The chargen footer called the Background's Lore a free Root.** It is a spent Lore Talent Point,
+  as the book and the wizard's own slots say.
+- **A ranged weapon in hand counted as a rigid implement on the sheet but not at the roll.** The
+  Actor document now trusts the data model: a weapon without the Flexible trait, or a shield.
+- **Travel speed in miles per hour** rounds down (Math Conventions), on the sheet and in the app.
+- **The web app** counted a Combat Style's points toward Melee or Ranged without the parent's Root
+  (ruling 13), dropped a v3.4 Archery "Loose and Move" silently, applied an Arms Wound to Guard but
+  not to attacks, halved Speed once whatever the Legs held, printed "1.5 mph", and imported a JSON
+  character without migrating it. All six are fixed and the smoke test covers them.
+- **The character sheets** clipped Mira's page-2 details at the page edge, dropped the last clause
+  of three reference-strip sentences without a word, painted two section captions past their bars,
+  ignored her rapier's Parry trait (+1 Gear to Guard), and counted the three Origin points twice
+  in the build note. A line that no longer fits fails the build.
+- **The plates** matched Requires against glyph-free names with a v3 stripper, so Kip Away and
+  Aggressive Block ⓿ hung off their roots; printed a bare "0" for ⓿ (DejaVu Sans has neither ⓿
+  nor ⓪); and the retired Weapons plate was never pruned and shipped in the system. The renderer
+  prunes what it did not render and `build_foundry.mjs` mirrors it.
+- **`data/README.txt`** still said Category must be "Save", that "Defense" was not in the
+  converter's vocabulary, and used a Golarion proper noun as its example; `check_style.py` scans it
+  now. **The converter** says so when no actions workbook is present and `actions.json` is left as
+  found.
+
+---
+
 ## 0.3.7 (2026-09-26): Player's Handbook v3.4
 
 ### Added

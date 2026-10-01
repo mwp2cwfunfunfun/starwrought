@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a −2 circumstance penalty to Awareness and Agility checks and Thresholds.",
+    "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a -2 Situation penalty to Awareness and Agility checks and Thresholds.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "9b627d432ecf1771",
   "sort": 0,

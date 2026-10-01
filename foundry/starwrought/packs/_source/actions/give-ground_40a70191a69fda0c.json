@@ -4,8 +4,13 @@
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
-    "cost": "reaction",
-    "category": "Posture",
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Evade Training • Evade +2 Situation",
     "trigger": "You are attacked, before you know whether the attack was successful.",
     "check": {
       "enabled": false,
@@ -15,10 +20,10 @@
     "traits": [
       "Reaction"
     ],
-    "description": "<p>+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "0ea0d2d57ca220cc",
+  "folder": "b93d96fd63573850",
   "sort": 0,
   "ownership": {
     "default": 0

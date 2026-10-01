@@ -39,9 +39,23 @@
           {{con.rankLabel}} {{swSigned con.bonus}}
         </span>
 
+        {{#if con.inherited}}
+        {{!-- A parent Constellation: its Combat Styles' points count toward its rank. --}}
+        <span class="sw-points" data-tooltip="STARWROUGHT.Field.inheritedHint">
+          {{con.pool}} {{swPlural con.pool (localize "STARWROUGHT.Field.pointShort") (localize "STARWROUGHT.Field.pointsShort")}},
+          {{localize "STARWROUGHT.Field.inheritedPoints" n=con.inherited}}
+        </span>
+        {{else}}
         <span class="sw-points" data-tooltip="STARWROUGHT.Field.pointsHint">
           {{con.points}} {{swPlural con.points (localize "STARWROUGHT.Field.pointShort") (localize "STARWROUGHT.Field.pointsShort")}}
         </span>
+        {{/if}}
+
+        {{#if con.parentName}}
+        <span class="sw-parent" data-tooltip="STARWROUGHT.Field.inheritedHint">
+          <i class="fa-solid fa-arrow-turn-up"></i> {{localize "STARWROUGHT.Field.childOf" parent=con.parentName}}
+        </span>
+        {{/if}}
 
         {{#if con.next}}
         <span class="sw-next" data-tooltip="STARWROUGHT.Field.nextRankHint">
@@ -68,6 +82,7 @@
           <span class="sw-talent-name">
             {{talent.name}}
             {{#if talent.root}}<em class="sw-root-mark" data-tooltip="STARWROUGHT.Field.rootHint">✧</em>{{/if}}
+            {{#if talent.glyph}}<span class="sw-action-glyph">{{talent.glyph}}</span>{{/if}}
           </span>
           <div class="sw-talent-controls">
             <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>

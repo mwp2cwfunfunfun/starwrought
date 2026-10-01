@@ -5,7 +5,7 @@
     <img src="{{weapon.img}}" alt="{{weapon.name}}">
     <div class="sw-card-titles">
       <h3>{{weapon.name}}</h3>
-      <span class="sw-card-subtitle">{{outcomeLabel}} · {{damageTypeLabel}}</span>
+      <span class="sw-card-subtitle">{{outcomeLabel}} · {{strikeLabel}} {{strikeGlyph}} · {{damageTypeLabel}}</span>
     </div>
   </header>
 
@@ -23,22 +23,29 @@
     {{/if}}
   </ul>
 
+  {{#if critDenied}}
+  <p class="sw-card-note">{{localize "STARWROUGHT.Strike.quickNoCrit"}}</p>
+  {{/if}}
   {{#if graze}}
-  <p class="sw-card-note">{{localize "STARWROUGHT.Hint.grazeCost"}}</p>
+  <p class="sw-card-note">{{localize "STARWROUGHT.Damage.grazeNote"}}</p>
   {{/if}}
   {{#if armorPiercing}}
   <p class="sw-card-note">{{localize "STARWROUGHT.Field.armorPiercing"}} {{armorPiercing}}</p>
   {{/if}}
+  {{#if massive}}{{#if critical}}
+  <p class="sw-card-note sw-warn">{{localize "STARWROUGHT.Damage.massiveNote"}}</p>
+  {{/if}}{{/if}}
 
   <div class="sw-card-apply">
     <label class="sw-zone-select">
-      <span>{{localize "STARWROUGHT.Field.zone"}}</span>
-      <select name="zone">
+      <span>{{localize "STARWROUGHT.Field.zone"}}{{#if targetName}} · {{targetName}}{{/if}}</span>
+      <select name="zone" {{#if zoneLocked}}disabled{{/if}}>
         {{#each zones as |zone|}}
-        <option value="{{zone.key}}" {{#if (eq zone.key @root.defaultZone)}}selected{{/if}}>{{localize zone.label}}</option>
+        <option value="{{zone.key}}" {{#if (eq zone.key @root.defaultZone)}}selected{{/if}}>{{localize zone.label}}{{#if zone.exposed}} · {{localize "STARWROUGHT.Condition.exposed"}}{{/if}}</option>
         {{/each}}
       </select>
     </label>
+    {{#if zoneNote}}<p class="sw-card-note">{{localize zoneNote}}</p>{{/if}}
     <div class="sw-card-buttons">
       <button type="button" data-sw-action="applyDamage" data-multiplier="1"
               data-tooltip="STARWROUGHT.Sheet.applyHint">

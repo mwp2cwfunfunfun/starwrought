@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "When you successfully Shove a creature, that creature takes an amount of bludgeoning damage equal to your Might modifier (or double that amount on a Critical Success). This damage increases by 2 when you become Expert in Armored Fighting, 6 when you become Master, and 12 when you become Legendary.",
+    "effect": "When you successfully Shove a creature, that creature takes an amount of bludgeoning damage equal to your Might modifier (or double that amount on a Critical Success). This damage increases by 2 when you become an expert in Armored Fighting, 6 when you become a master, and 12 when you become legendary.",
     "description": "<p>When you push a foe away, you put the entire force of your Full Plate harness into it.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "44d6df065b4c25a0",
   "sort": 0,

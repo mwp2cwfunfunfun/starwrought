@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "2",
     "costMode": "to",
-    "category": "Watching, deceiving & helping",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Watching, Deceiving & Helping",
     "basic": true,
     "traits": [
       "Concentrate"
     ],
-    "description": "<p>A Lore or relevant Skill check against your target's level-based Threshold. Topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Hit Points.<br><b>Critical Success</b> All facts about two topics. <b>Success</b> One topic. <b>Failure</b> Nothing. <b>Critical Failure</b> All the wrong facts about one topic.<br><b>Special</b> Once per target per Skill, so several Lores give several angles.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Learn something true about a creature, place, or object. Possible topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Vigor.<br>Roll a Lore or relevant Skill check against the level-based Threshold of your target.<br><b>Critical Success</b> You recall all facts about two topics. <b>Success</b> You recall all facts about one topic. <b>Failure</b> You recall nothing. <b>Critical Failure</b> You recall all (incorrect) facts about one topic.<br><b>Special</b> You may attempt this once per target per Skill, so a character with several Lores or relevant Skills may get several angles on the same problem.<br><b>❷ Study.</b> As above, except: <b>Critical Failure</b> You recall nothing.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "9c4c1eb78a540a57",
+  "folder": "fdaa17210c6d23e8",
   "sort": 0,
   "ownership": {
     "default": 0

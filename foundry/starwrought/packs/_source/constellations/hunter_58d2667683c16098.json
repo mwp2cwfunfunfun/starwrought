@@ -7,12 +7,13 @@
     "slug": "hunter",
     "category": "calling",
     "attribute": "wits",
-    "meta": "Calling • Wits (3 HP/level • Mark Prey)",
+    "parentSlug": "",
+    "meta": "Calling • Wits (3 Vigor/level • Mark Prey)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
-    "description": "<p>Calling • Wits (3 HP/level • Mark Prey)</p>",
+    "description": "<p>Calling • Wits (3 Vigor/level • Mark Prey)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

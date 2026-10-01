@@ -13,11 +13,13 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls themselves use your Weapons Proficiency.<br>When determining whether your armor forms a complete harness for an Armored Fighting Talent, all four Zones must be armored in the required material. If you are Master, only three Zones must be armored in the required material. Every talent here requires this.",
+    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank.<br>When determining whether your armor forms a complete harness for an Armored Fighting Talent, all four Zones must be armored in the required material. If you are Master, only three Zones must be armored in the required material.",
     "description": "<p>Knowing how to exploit armor as part of your fighting method.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -29,7 +31,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "44d6df065b4c25a0",
   "sort": 0,

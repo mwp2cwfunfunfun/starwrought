@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Watching, deceiving & helping",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Watching, Deceiving & Helping",
     "basic": true,
     "traits": [
       "Mental"
     ],
-    "description": "<p>Guile against the target's Awareness.<br><b>Critical Success</b> Wrong-Footed to you until the end of your next turn. <b>Success</b> Wrong-Footed to you until the end of your turn. <b>Failure</b> Nothing. <b>Critical Failure</b> You overcommit and are Wrong-Footed to it.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Roll Guile against the target's Awareness.<br><b>Critical Success</b> The target is Wrong-Footed to you until the end of the next round. <b>Success</b> The target is Wrong-Footed to you until the end of your next Opportunity. <b>Failure</b> No effect. <b>Critical Failure</b> You overcommit. You are Wrong-Footed to that creature until your next Opportunity.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "9c4c1eb78a540a57",
+  "folder": "fdaa17210c6d23e8",
   "sort": 0,
   "ownership": {
     "default": 0

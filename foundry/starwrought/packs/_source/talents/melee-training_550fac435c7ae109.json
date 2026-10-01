@@ -1,0 +1,47 @@
+{
+  "_id": "550fac435c7ae109",
+  "name": "Melee Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "melee",
+    "constellationName": "Melee",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Counter ❶↺</b> and <b>Intercept ❶↺</b> Reactions.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "2a19b71d960a8b80",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!550fac435c7ae109"
+}

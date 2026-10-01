@@ -1,6 +1,6 @@
 {
   "_id": "48122ca75d445f06",
-  "name": "Devoted Guardian ◆",
+  "name": "Devoted Guardian ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Requirements Your last action was to Raise a Shield.<br>You adopt a wide stance, ready to defend both yourself and your chosen ward. Select one adjacent creature. As long as your shield is raised and the creature remains adjacent to you, the creature gains a +1 circumstance bonus to their Guard, or a +2 circumstance bonus if the shield you raised was a tower shield.",
+    "effect": "<b>Requirements</b> Your last action was to Raise a Shield.<br>You adopt a wide stance, ready to defend both yourself and your chosen ward. Select one adjacent creature. As long as your shield is raised and the creature remains adjacent to you, the creature gains a +1 Situation bonus to their <i>Guard</i>, or a +2 Situation bonus if the shield you raised was a tower shield.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1da194ae4f8cc3d7",
   "sort": 0,

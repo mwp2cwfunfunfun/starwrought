@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "While wearing Full Plate, gain a +1 status bonus to Guard for physical Attacks against Shove, Trip, and Reposition.",
+    "effect": "While wearing Full Plate, gain +1 Condition bonus Physical Guard against Shove, Trip, and Reposition.",
     "description": "<p>You're not harder to hit generally. You're harder to move.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "44d6df065b4c25a0",
   "sort": 0,

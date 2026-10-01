@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "2",
     "costMode": "to",
-    "category": "Watching, deceiving & helping",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Watching, Deceiving & Helping",
     "basic": true,
     "traits": [
-      "Move"
+      "Motion"
     ],
-    "description": "<p>Requirements You are, or believe you are, at least Hidden from one creature.<br>Move up to half your Speed while staying Hidden. You must end with Concealment or at least Lesser Cover from each creature you wish to stay Hidden from.<br><b>◆◆ Creep.</b> On a failure you realize you would be seen, and may choose not to move after all.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Requirements You are (or believe you are) currently at least Hidden from at least one creature.<br>Move up to half your Speed while staying Hidden or Undetected. You must end this movement with Concealment or at least Lesser Cover from each creature you wish to remain at least Hidden from. Roll one Stealth against the Awareness of every creature to which you are currently at least Hidden (including your allies).<br><b>Critical Success</b> You move and remain Hidden and/or Undetected, and they are Wrong-Footed to you until the end of the next round. <b>Success</b> You move and remain Hidden and/or Undetected. <b>Failure</b> You are Observed during your movement. <b>Critical Failure</b> You are Observed, and you are Wrong-Footed to them until your next Opportunity.<br><b>❷ Creep.</b> As above, except: <b>Failure</b> You realize you would be Observed if you moved, and may choose not to move after all. <b>Critical Failure</b> You are Observed during your movement.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "9c4c1eb78a540a57",
+  "folder": "fdaa17210c6d23e8",
   "sort": 0,
   "ownership": {
     "default": 0

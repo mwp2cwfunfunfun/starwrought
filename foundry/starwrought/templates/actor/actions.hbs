@@ -1,7 +1,8 @@
-{{!-- Actions: what every character can do, then what this one has picked up. --}}
+{{!-- Maneuvers: what every character can do, then what this one has picked up. The tab keeps the
+      id `actions` in code; the handbook calls them Maneuvers and every label here says so. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
-  {{!-- The Basic Actions are read from the compendium, never copied onto the character, so a
+  {{!-- The Basic Maneuvers are read from the compendium, never copied onto the character, so a
         rewrite in data/actions.xlsx reaches every sheet on the next build. --}}
   <div class="sw-panel sw-basic-actions">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.basicActions"}}</h3>
@@ -55,7 +56,7 @@
       {{#each actionItems as |action|}}
       <li class="sw-item-row sw-action-row" data-item-id="{{action.id}}">
         <img src="{{action.img}}" alt="{{action.name}}">
-        <span class="sw-action-glyph">{{action.system.glyph}}</span>
+        <span class="sw-action-glyph" data-tooltip="{{action.system.costLabel}}">{{action.system.glyph}}</span>
         <a class="sw-item-name" data-action="itemUse">{{action.name}}</a>
         {{#if action.system.category}}<span class="sw-item-tag">{{action.system.category}}</span>{{/if}}
         {{#each action.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}

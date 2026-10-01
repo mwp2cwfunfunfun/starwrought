@@ -7,15 +7,17 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "category": "Moving",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Motion",
     "basic": true,
     "traits": [
-      "Move"
+      "Motion"
     ],
     "description": "<p>Acrobatics against the target's Awareness Threshold, to move through a foe's space. On a success you pass through, though their space is difficult terrain for this move. On a failure your movement stops in front of them.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "57b789ecf25288d5",
+  "folder": "02edc6422285a159",
   "sort": 0,
   "ownership": {
     "default": 0

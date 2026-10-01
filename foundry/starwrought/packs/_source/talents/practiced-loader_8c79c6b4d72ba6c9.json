@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "agility",
-    "effect": "Once per turn, reduce the Reload value of a crossbow by 1, to a minimum of 1.",
+    "effect": "Once per round, reduce the Reload value of a crossbow by 1, to a minimum of 1.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "8c23a5e18c02daf0",
   "sort": 0,

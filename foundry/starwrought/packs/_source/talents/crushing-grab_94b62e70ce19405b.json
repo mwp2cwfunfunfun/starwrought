@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "When you successfully Grapple a creature, you can deal bludgeoning damage to that creature equal to your Might bonus. You can make this attack nonlethal with no penalty.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "0e60f938940988c1",
   "sort": 0,

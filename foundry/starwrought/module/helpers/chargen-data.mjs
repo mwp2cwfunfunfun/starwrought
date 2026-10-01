@@ -12,12 +12,14 @@ const TALENT_FIELDS = [
   "system.constellation", "system.constellationName", "system.tier", "system.root",
   "system.bloodlineRoot", "system.capstone", "system.requires", "system.grant",
   "system.effect", "system.attribute", "system.cost", "system.costMax", "system.costMode",
-  "system.choice", "system.freeTalent"
+  "system.reaction", "system.reactionCost", "system.choice", "system.freeTalent"
 ];
 
+// `system.vigor` is the v4.10 chassis field. `system.hp` is still asked for so a compendium built
+// before the rename reads as zero Vigor rather than as a crash; `vigorOf` below picks whichever is set.
 const CHASSIS_FIELDS = [
-  "system.kind", "system.constellation", "system.attribute", "system.hp", "system.size",
-  "system.speed", "system.senses", "system.languages", "system.grants",
+  "system.kind", "system.constellation", "system.attribute", "system.vigor", "system.hp",
+  "system.size", "system.speed", "system.senses", "system.languages", "system.grants",
   "system.specialAbility", "system.description"
 ];
 
@@ -83,7 +85,8 @@ export async function loadChargenContent({ force = false } = {}) {
         uuid: entry.uuid,
         name: entry.name,
         img: entry.img,
-        ...entry.system
+        ...entry.system,
+        vigor: vigorOf(entry.system)
       });
     }
     for (const list of Object.values(SwContent.chassis)) list.sort((a, b) => a.name.localeCompare(b.name));
@@ -107,11 +110,46 @@ export async function loadChargenContent({ force = false } = {}) {
 /* -------------------------------------------- */
 
 /**
+ * A chassis Item's Vigor per level. The field is `vigor` since PHB v4.10; a chassis compiled under
+ * the old name still says `hp`, and either way the number means the same thing.
+ * @param {object} system
+ * @returns {number}
+ */
+export function vigorOf(system) {
+  const value = system?.vigor ?? system?.hp ?? 0;
+  return Number(value) || 0;
+}
+
+/**
  * Strip the action glyphs before comparing Talent names. The Requires column is authored without
- * them, so "Kip Up" has to match the Talent called "Kip Up ◆".
+ * them, so "Kip Up" has to match the Talent called "Kip Up ❶" (or "Kip Up ◆" in older data).
  */
 export function normalize(name) {
-  return String(name ?? "").replace(/[◆◇↺★]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+  return String(name ?? "").replace(/[⓿❶❷❸❹❺❻◆◇↺★]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/* -------------------------------------------- */
+
+/**
+ * The Constellations whose Talents count toward this one's rank: every registered Constellation
+ * that names it as `parent`. Melee and Ranged are the parents the book has (PHB v4.10, Parent
+ * Constellations); a Combat Style is a child of one of them.
+ * @param {string} slug
+ * @returns {Array<{slug: string, name: string}>}
+ */
+export function childrenOf(slug) {
+  if (!slug) return [];
+  return Object.values(SW.constellations)
+    .filter(c => c.parent === slug)
+    .map(c => ({ slug: c.slug, name: c.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** The parent Constellation of a slug, as {slug, name}, or null when it has none. */
+export function parentOf(slug) {
+  const parent = SW.constellations[slug]?.parent;
+  if (!parent) return null;
+  return { slug: parent, name: SW.getConstellation(parent).name };
 }
 
 /**

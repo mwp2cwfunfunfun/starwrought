@@ -1,6 +1,6 @@
 {
   "_id": "e936e4dcfc31ddae",
-  "name": "Drop Flat ↺",
+  "name": "Drop Flat ⓿↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "(posture) +4 to your Evade against every attack until the start of your next turn. You end prone.",
+    "effect": "Posture +4 to your Evade against every attack until your next Opportunity. You end prone.",
     "description": "",
-    "cost": "reaction",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "57c800027a3ec530",
   "sort": 0,

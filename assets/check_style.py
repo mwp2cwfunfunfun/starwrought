@@ -119,13 +119,15 @@ for name in ("roster.json", "trees.json", "backgrounds.json", "languages.json", 
     if os.path.exists(p):
         walk_json(p)
 
-# ── the templates and the built HTML: skip comment lines ────────────────────────────────────────
+# ── the templates, the built HTML and the authoring guide: skip comment lines ───────────────────
 # A line carrying the marker `style-ok` is exempt. That exists for exactly one honest case: the
 # migration rename maps have to name the retired terms in order to rename them away. Every use
-# should be greppable and should say why on the same line.
+# should be greppable and should say why on the same line. data/README.txt is scanned because its
+# examples get copied into the sheets, and the sheets are scanned.
 for p in [os.path.join(HERE, "app_template.html"), os.path.join(HERE, "constellation_template.html"),
           os.path.join(ROOT, "Starwrought_App.html"),
-          os.path.join(ROOT, "Starwrought_Talent_Constellations.html")]:
+          os.path.join(ROOT, "Starwrought_Talent_Constellations.html"),
+          os.path.join(ROOT, "data", "README.txt")]:
     if not os.path.exists(p):
         continue
     for i, line in enumerate(io.open(p, encoding="utf-8").read().splitlines(), 1):

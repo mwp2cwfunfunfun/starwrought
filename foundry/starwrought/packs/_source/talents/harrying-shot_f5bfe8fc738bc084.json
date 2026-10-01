@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you Graze with a sling or thrown weapon, the target takes a −1 circumstance penalty to its next Attack before the end of its next turn.",
+    "effect": "When you Graze with a sling or thrown weapon, the target takes a −1 Situation penalty to its next Attack before the end of the next round.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1217b0942014335f",
   "sort": 0,

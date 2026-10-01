@@ -28,10 +28,27 @@
   {{#if defenseNote}}<p class="sw-card-note">{{defenseNote}}</p>{{/if}}
   {{/if}}
 
+  {{#if reactionLabel}}
+  {{!-- The Reaction behind the Defense. On an attack card it is the defender's stance, charged
+       when the blow resolved; when the rolling client could not charge it, the button is here for
+       whoever owns the defender. --}}
+  <div class="sw-card-reaction" data-sw-widget="reaction">
+    <p class="sw-card-note">{{localize "STARWROUGHT.Reaction.answeredWith"}} <strong>{{reactionLabel}}</strong>{{#if reactionNote}} · {{reactionNote}}{{/if}}</p>
+    {{#if reactionDue}}
+    <div class="sw-card-buttons" data-owner-uuid="{{position.defenderUuid}}">
+      <button type="button" data-sw-action="chargeReaction" data-actor-uuid="{{position.defenderUuid}}" data-reaction="{{reaction}}">
+        <i class="fa-solid fa-coins"></i> {{localize "STARWROUGHT.Reaction.charge"}}
+      </button>
+    </div>
+    {{/if}}
+  </div>
+  {{/if}}
+
   {{#if degree}}
   <div class="sw-card-outcome sw-outcome-{{outcomeKey}}">
     {{#if isAttack}}{{outcome}}{{else}}{{degreeLabel}}{{/if}}
   </div>
+  {{#if critDenied}}<p class="sw-card-note">{{localize "STARWROUGHT.Strike.quickNoCrit"}}</p>{{/if}}
   {{/if}}
 
   {{#if outcomes}}
@@ -54,18 +71,97 @@
   {{/if}}
 
   {{#if canDamage}}
-  <div class="sw-card-buttons">
-    <button type="button" data-sw-action="damage" data-outcome="critical">
-      {{localize "STARWROUGHT.Outcome.critical"}}
+  <div class="sw-card-buttons" data-owner-uuid="{{actor.uuid}}">
+    {{#each damageButtons as |b|}}
+    <button type="button" data-sw-action="damage" data-outcome="{{b.key}}" class="{{#if b.primary}}sw-primary{{/if}}">
+      {{localize b.label}}
     </button>
-    <button type="button" data-sw-action="damage" data-outcome="hit">
-      {{localize "STARWROUGHT.Outcome.hit"}}
-    </button>
-    <button type="button" data-sw-action="damage" data-outcome="graze">
-      {{localize "STARWROUGHT.Outcome.graze"}}
-    </button>
+    {{/each}}
   </div>
   {{/if}}
+
+  {{#if position}}{{#if position.any}}{{#if position.defenderUuid}}
+  {{!-- Settle Position (PHB v4.10, The Exchange, step 5). Offers, never automatic writes; each is
+       shown only to the side the rule favours. --}}
+  <div class="sw-card-position">
+    <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Position.title"}}</strong></p>
+
+    {{#if position.exposeAttacker}}{{#if position.attackerUuid}}
+    <div class="sw-card-apply" data-sw-widget="expose" data-owner-uuid="{{position.defenderUuid}}">
+      <label class="sw-zone-select">
+        <span>{{localize "STARWROUGHT.Position.exposeAttacker"}} {{position.attackerName}}</span>
+        <select name="zone">
+          {{#each position.zones as |zone|}}
+          <option value="{{zone.key}}" {{#if (eq zone.key "torso")}}selected{{/if}}>{{localize zone.label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <div class="sw-card-buttons">
+        <button type="button" data-sw-action="exposeZone" data-actor-uuid="{{position.attackerUuid}}">
+          <i class="fa-solid fa-bullseye"></i> {{localize "STARWROUGHT.Condition.exposed"}}
+        </button>
+      </div>
+    </div>
+    {{/if}}{{/if}}
+
+    {{#if position.exposeDefender}}{{#if position.attackerUuid}}
+    <div class="sw-card-apply" data-sw-widget="expose" data-owner-uuid="{{position.attackerUuid}}">
+      <label class="sw-zone-select">
+        <span>{{localize "STARWROUGHT.Position.exposeDefender"}} {{position.defenderName}}</span>
+        <select name="zone">
+          {{#each position.zones as |zone|}}
+          <option value="{{zone.key}}" {{#if (eq zone.key "torso")}}selected{{/if}}>{{localize zone.label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <div class="sw-card-buttons">
+        <button type="button" data-sw-action="exposeZone" data-actor-uuid="{{position.defenderUuid}}">
+          <i class="fa-solid fa-bullseye"></i> {{localize "STARWROUGHT.Condition.exposed"}}
+        </button>
+      </div>
+    </div>
+    {{/if}}{{/if}}
+
+    {{#if position.bindNote}}
+    {{!-- A Guard with a rigid implement would have offered a Bind; the attack cannot be bound. --}}
+    <p class="sw-card-note">{{position.bindNote}}</p>
+    {{/if}}
+    <div class="sw-card-buttons" data-owner-uuid="{{position.defenderUuid}}">
+      {{#if position.bind}}{{#if position.attackerUuid}}
+      <button type="button" data-sw-action="formBind" data-mode="{{position.bind.mode}}"
+              data-controller-uuid="{{position.defenderUuid}}" data-partner-uuid="{{position.attackerUuid}}"
+              data-mine="{{position.bind.implement}}" data-theirs="{{position.bind.theirs}}"
+              data-tooltip="{{#if (eq position.bind.mode 'control')}}STARWROUGHT.Bind.takeControlHint{{else}}STARWROUGHT.Bind.formHint{{/if}}">
+        <i class="fa-solid fa-link"></i> {{localize position.bind.label}}
+      </button>
+      {{/if}}{{/if}}
+      {{#if position.riposte}}
+      <button type="button" data-sw-action="riposte" data-actor-uuid="{{position.defenderUuid}}"
+              data-target-uuid="{{position.attackerTokenUuid}}">
+        <i class="fa-solid fa-reply"></i> {{localize "STARWROUGHT.Position.riposte"}}
+      </button>
+      {{/if}}
+      {{#if position.ground}}
+      {{#if (eq position.ground.mode "give")}}
+      <button type="button" data-sw-action="giveGround" data-actor-uuid="{{position.defenderUuid}}"
+              data-attacker-token-uuid="{{position.attackerTokenUuid}}" data-feet="{{position.ground.feet}}">
+        <i class="fa-solid fa-shoe-prints"></i> {{localize position.ground.label}} {{position.ground.feet}} ft
+      </button>
+      {{else}}
+      <button type="button" data-sw-action="step" data-actor-uuid="{{position.defenderUuid}}">
+        <i class="fa-solid fa-shoe-prints"></i> {{localize position.ground.label}}
+      </button>
+      {{/if}}
+      {{/if}}
+      {{#if position.counter}}
+      <button type="button" data-sw-action="counterStrike" data-actor-uuid="{{position.defenderUuid}}"
+              data-target-uuid="{{position.attackerTokenUuid}}">
+        <i class="fa-solid fa-arrows-left-right"></i> {{localize "STARWROUGHT.Position.counter"}}
+      </button>
+      {{/if}}
+    </div>
+  </div>
+  {{/if}}{{/if}}{{/if}}
 
   {{#if item.system.prerequisites}}
   <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.prerequisites"}}</strong> {{item.system.prerequisites}}</p>

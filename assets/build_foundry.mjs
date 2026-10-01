@@ -57,13 +57,20 @@ function docId(pack, key) {
   return crypto.createHash("sha1").update(`starwrought|${pack}|${key}`).digest("hex").slice(0, 16);
 }
 
-/** Strip the action glyphs from a Talent name for matching and slugs. */
-const stripGlyphs = name => String(name).replace(/[◆◇↺★]/g, "").trim();
+/**
+ * Strip the action glyphs from a Talent or Maneuver name for matching and slugs: the v4.10
+ * ⓿ ❶ ❷ ❸ ❹ ❺ ❻ and ↺, a bracketed Reaction cost such as "(⓿↺)", the v3 ◆ and ◇, and the
+ * capstone star. Slugs come from the bare name, so a glyph change never moves a document id.
+ */
+const stripGlyphs = name => String(name)
+  .replace(/\(\s*[◆◇↺★⓿❶❷❸❹❺❻\s]*\)/g, "")
+  .replace(/[◆◇↺★⓿❶❷❸❹❺❻]/g, "")
+  .trim();
 
 /**
- * The plain name of an action, with the cost glyphs and the connective that joined them removed.
- * "Strike ◆ to ◆◆◆" is the action Strike; "Disarm ◆ or ◆◆◆" is the action Disarm. The cost itself
- * is parsed separately by parseActionCost, so nothing is lost here.
+ * The plain name of a Maneuver, with the cost glyphs and the connective that joined them removed.
+ * "Strike ❶ to ❸" is the Maneuver Strike; "Disarm ❶ or ❸" is Disarm; "Aid ❶ (⓿↺)" is Aid. The
+ * cost itself is parsed separately by parseActionCost, so nothing is lost here.
  */
 function actionName(name) {
   const bare = stripGlyphs(name)
@@ -181,6 +188,8 @@ for (const [name, tree] of Object.entries(trees)) {
   const category = CATEGORY_ALIASES[tree.category] ?? "general";
   const attribute = String(tree.feeds ?? "Might").toLowerCase();
   const plate = plates.has(`${slug}.png`) ? `systems/starwrought/assets/constellations/${slug}.png` : null;
+  // A child of Melee or Ranged (v4.10): its Talents count toward the parent's rank as well.
+  const parent = tree.parent ? slugify(tree.parent) : "";
 
   item("constellations", {
     key: `constellation:${slug}`,
@@ -191,16 +200,19 @@ for (const [name, tree] of Object.entries(trees)) {
       slug,
       category,
       attribute,
+      // `parent` is the owning Item on a data model, so the field is parentSlug; the registry
+      // entry in content/constellations.json keeps the plain name.
+      parentSlug: parent,
       meta: tree.meta ?? "",
       flareTrigger: tree.sparks ?? "",
       identity: ["Ancestry", "Culture", "Bloodline", "Heritage"].includes(tree.category),
       description: tree.meta ? `<p>${tree.meta}</p>` : "",
       traits: [],
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 
-  constellationIndex.push({ slug, name, category, attribute, img: plate ?? ICON.constellation });
+  constellationIndex.push({ slug, name, category, attribute, parent, img: plate ?? ICON.constellation });
 
   // One folder per Constellation keeps 170 Talents navigable in the sidebar.
   const folderId = folder("talents", name, { color: "#3b2f63" });
@@ -234,7 +246,7 @@ for (const [name, tree] of Object.entries(trees)) {
         choice: { prompt: node.choice ?? "", value: "" },
         freeTalent: node.freeTalent ?? "",
         traits: [],
-        source: "STARWROUGHT Playtest v3.1"
+        source: "STARWROUGHT Playtest v4.10"
       }
     });
   }
@@ -267,13 +279,13 @@ for (const ancestry of roster.ancestries ?? []) {
       kind: "ancestry",
       constellation: treeSlug,
       attribute: String(trees[ancestry.tree]?.feeds ?? "Presence").toLowerCase(),
-      hp: ancestry.hp ?? 0,
+      vigor: ancestry.vigor ?? ancestry.hp ?? 0,
       size: String(ancestry.size ?? "Medium").toLowerCase(),
       speed: parseReach(ancestry.speed),
       senses: ancestry.senses === "—" ? "" : (ancestry.senses ?? ""),
       description: `<p>${ancestry.blurb ?? ""}</p>`,
       traits: [],
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 
@@ -290,7 +302,7 @@ for (const ancestry of roster.ancestries ?? []) {
         specialAbility: `<p>${effect}</p>`,
         description: `<p>A bloodline of the ${ancestry.name} ancestry. Its Root Talent is granted free by the character-creation choice.</p>`,
         traits: [],
-        source: "STARWROUGHT Playtest v3.1"
+        source: "STARWROUGHT Playtest v4.10"
       }
     });
   }
@@ -313,7 +325,7 @@ for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
       description: `<p>${blurb}</p>`,
       specialAbility: "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
       traits: [],
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -331,7 +343,7 @@ for (const background of backgrounds) {
       specialAbility: `<p>${background.effect ?? ""}</p>`,
       description: `<p>${background.desc ?? ""}</p>`,
       traits: background.rarity ? [background.rarity] : [],
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -349,12 +361,12 @@ for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
       kind: "calling",
       constellation: slugify(name),
       attribute: String(attribute).toLowerCase(),
-      hp,
+      vigor: hp,
       grants: [training],
       specialAbility: `<p>${ability}</p>`,
-      description: `<p>Grants Training in ${training}, and ${hp} Hit Points per level. Only your first Calling counts toward Hit Points, however many you open later.</p>`,
+      description: `<p>Grants Training in ${training}, and ${hp} Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>`,
       traits: [],
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -388,7 +400,7 @@ for (const [name, handling, group, damage, reach, traitLine, price] of roster.we
       load: 0,
       state: "carried",
       description: "",
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -411,7 +423,7 @@ for (const [name, handling, group, damage, , traitLine] of roster.weaponsRanged 
       load: 0,
       state: "carried",
       description: "",
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -432,7 +444,7 @@ for (const [name, zone, protection, load, price, traitLine, material] of roster.
       quantity: 1,
       state: "carried",
       description: "",
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -453,7 +465,7 @@ for (const [name, bonus, hardness, load, price, note] of roster.shields ?? []) {
       state: "carried",
       traits: [],
       description: note ? `<p>${note}</p>` : "",
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -526,7 +538,16 @@ function inherit(name, key) {
 for (const rows of Object.values(roster.actions ?? {})) for (const [name] of rows) inherit(name, `action:${slugify(name)}`);
 for (const [name] of roster.explorationActions ?? []) inherit(name, `exploration:${slugify(name)}`);
 for (const [name] of roster.downtimeActions ?? []) inherit(name, `downtime:${slugify(name)}`);
-for (const [name] of roster.postures ?? []) inherit(name, `posture:${slugify(name)}`);
+// The roster's `postures` block is the Reaction table now (Parry, Void, Counter, Intercept, and the
+// Talent-granted Postures). The four named Reactions are also Defense & Recovery Maneuvers, and
+// the Maneuver row is the one that ships; a Reaction row of the same name is skipped, not doubled.
+const encounterNames = new Set(
+  Object.values(roster.actions ?? {}).flat().map(([name]) => actionName(name).toLowerCase())
+);
+for (const [name] of roster.postures ?? []) {
+  if (encounterNames.has(actionName(name).toLowerCase())) continue;
+  inherit(name, `posture:${slugify(name)}`);
+}
 
 const actionFolders = {};
 let actionSort = 0;
@@ -543,6 +564,8 @@ for (const a of sheetActions) {
       cost: a.cost,
       costMax: a.costMax ?? "",
       costMode: a.costMode ?? "to",
+      reaction: a.reaction ?? false,
+      reactionCost: a.reactionCost ?? "",
       category: a.type,
       basic: /^basic\b/i.test(a.type),
       traits: a.traits ?? [],
@@ -572,7 +595,7 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
         basic: true,
         traits: splitTraits(traitLine),
         description: `<p>${description}</p>`,
-        source: "STARWROUGHT Playtest v3.1"
+        source: "STARWROUGHT Playtest v4.10"
       }
     });
   }
@@ -587,12 +610,12 @@ for (const [name, speed, description] of roster.explorationActions ?? []) {
     type: "action",
     folder: explorationFolder,
     system: {
-      cost: "0",
+      ...parseActionCost(name),
       category: "Exploration Mode",
       requirements: `Travel Speed: ${speed}`,
       traits: [],
       description: `<p>${description}</p>`,
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -606,32 +629,43 @@ for (const [name, time, description] of roster.downtimeActions ?? []) {
     type: "action",
     folder: downtimeFolder,
     system: {
-      cost: "0",
+      ...parseActionCost(name),
       category: "Downtime Mode",
       requirements: time,
       traits: [],
       description: `<p>${description}</p>`,
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
 
-const postureFolder = folder("actions", "Postures", { sort: 92, color: "#5a2f4a" });
-for (const [name, defense, description] of roster.postures ?? []) {
+// Reactions (PHB v4.10, Answering an Attack): the roster row's second column reads
+// "<Granting Talent> • <Defense> +N Situation", or "A Zone" for a Posture. The Defense it names is
+// the one the Reaction answers with; the cost comes from the glyphs in the name (Parry ❶↺, a
+// Posture ⓿↺). The four Reactions that are also Maneuvers were written above and are skipped here.
+const reactionFolder = folder("actions", "Reactions", { sort: 92, color: "#5a2f4a" });
+for (const [name, grantedBy, description] of roster.postures ?? []) {
   if (supersededBySheet(name)) continue;
+  if (encounterNames.has(actionName(name).toLowerCase())) continue;
+  const defenseWord = (String(grantedBy).match(/•\s*(Awareness|Evade|Guard|Endure)\b/i)?.[1]
+    ?? String(grantedBy).match(/^(Awareness|Evade|Guard|Endure)\b/i)?.[1]
+    ?? "").toLowerCase();
+  const cost = parseActionCost(name);
   item("actions", {
     key: `posture:${slugify(name)}`,
-    name: stripGlyphs(name),
+    name: actionName(name),
     type: "action",
-    folder: postureFolder,
+    folder: reactionFolder,
     system: {
-      cost: "reaction",
-      category: "Posture",
+      ...cost,
+      reaction: true,
+      category: "Reaction",
+      requirements: grantedBy,
       trigger: "You are attacked, before you know whether the attack was successful.",
-      check: { enabled: false, constellation: slugify(defense), defense: defense.toLowerCase() },
+      check: { enabled: false, constellation: defenseWord, defense: defenseWord },
       traits: ["Reaction"],
       description: `<p>${description}</p>`,
-      source: "STARWROUGHT Playtest v3.1"
+      source: "STARWROUGHT Playtest v4.10"
     }
   });
 }
@@ -725,7 +759,7 @@ const MACROS = [
   {
     name: "Recenter",
     img: "icons/svg/shield.svg",
-    command: `// Recenter: clear every Exposed Zone on the selected tokens.
+    command: `// Recenter: clear every Exposed Zone on the selected tokens (a Posture's stays) and end any Bind.
 const actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);
 if ( !actors.length ) ui.notifications.warn("Select a token first.");
 for ( const actor of actors ) await actor.recenter();`
@@ -733,7 +767,7 @@ for ( const actor of actors ) await actor.recenter();`
   {
     name: "Recovery Check",
     img: "icons/svg/heal.svg",
-    command: `// A Recovery check: Endure against 10 + your level + your Dying value.
+    command: `// A Recovery check: Endure against 10 + your Dying value + the Wounds you carry.
 const actor = canvas.tokens.controlled[0]?.actor ?? game.user.character;
 if ( !actor ) ui.notifications.warn("Select a token, or set a player character.");
 else await actor.rollRecovery();`
@@ -741,7 +775,7 @@ else await actor.rollRecovery();`
   {
     name: "A Night's Rest",
     img: "icons/svg/regen.svg",
-    command: `// Restore level x Presence Hit Points, and clear Wounded.
+    command: `// Restore level x Presence Vigor (at least level). Wounds do not clear with rest.
 const actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);
 const targets = actors.length ? actors : (game.user.character ? [game.user.character] : []);
 if ( !targets.length ) ui.notifications.warn("Select a token first.");
@@ -842,6 +876,10 @@ function writeContentIndex() {
 function copyArt() {
   const dest = path.join(SYSTEM, "assets", "constellations");
   fs.mkdirSync(dest, { recursive: true });
+  // Mirror the source: a plate the renderer pruned (a retired Constellation) leaves the system too.
+  for (const file of fs.readdirSync(dest)) {
+    if (file.endsWith(".png") && !plates.has(file)) fs.rmSync(path.join(dest, file));
+  }
   let copied = 0;
   for (const file of plates) {
     if (!file.endsWith(".png")) continue;

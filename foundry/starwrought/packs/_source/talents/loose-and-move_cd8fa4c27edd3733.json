@@ -1,25 +1,27 @@
 {
-  "_id": "5fa493a39883e115",
-  "name": "Sure Grip",
+  "_id": "cd8fa4c27edd3733",
+  "name": "Loose and Move",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "weapons",
-    "constellationName": "Weapons",
+    "constellation": "ranged",
+    "constellationName": "Ranged",
     "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Weapon Familiarity"
+      "Ranged Training"
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "+2 circumstance bonus to your Guard against Disarm regarding a Familiar weapon. When a Disarm against you would succeed, you keep hold of the weapon and suffer only the loosened grip.",
+    "effect": "After making a ranged Strike, you may Step ⓿ once per round.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,9 +33,9 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "307927e092735135",
+  "folder": "05f172d6ee21ee08",
   "sort": 0,
   "ownership": {
     "default": 0
@@ -43,5 +45,5 @@
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!5fa493a39883e115"
+  "_key": "!items!cd8fa4c27edd3733"
 }

@@ -1,6 +1,6 @@
 {
   "_id": "2c149c0a281bb049",
-  "name": "Opportune Parry ↺",
+  "name": "Opportune Parry ⓿↺",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Trigger A creature Grazes or Misses you while you have Panache.<br>Effect You do not pay the Graze cost.",
+    "effect": "<b>Trigger</b> A creature's Strike against you is Stopped (a Graze or a Miss) while you have Panache.<br><b>Effect</b> You take Control of the attacking weapon as though you had Parried, without spending an action.",
     "description": "",
-    "cost": "reaction",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "ddc479129bd4bd5d",
   "sort": 0,

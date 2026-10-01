@@ -1,0 +1,29 @@
+{
+  "_id": "8b74720438276216",
+  "name": "Melee",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/melee.png",
+  "system": {
+    "slug": "melee",
+    "category": "weapon",
+    "attribute": "might",
+    "parentSlug": "",
+    "meta": "Weapon • Might (Represents transferable fundamentals: measure, timing, reading an opponent, footwork, maintaining guard, committing to a strike, etc. Melee is a parent Constellation: every Talent you buy in Two-Weapon Fighting, Shield Fighting, Brawling, Dueling, Great Weapon Fighting, Spear & Polearm Fighting, or Armored Fighting counts toward your Melee rank.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Weapon • Might (Represents transferable fundamentals: measure, timing, reading an opponent, footwork, maintaining guard, committing to a strike, etc. Melee is a parent Constellation: every Talent you buy in Two-Weapon Fighting, Shield Fighting, Brawling, Dueling, Great Weapon Fighting, Spear & Polearm Fighting, or Armored Fighting counts toward your Melee rank.)</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8b74720438276216"
+}

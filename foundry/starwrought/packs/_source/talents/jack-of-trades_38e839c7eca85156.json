@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "wits",
-    "effect": "You gain a +1 circumstance bonus to your Untrained checks.",
+    "effect": "You gain a +1 Situation bonus to your Untrained checks.",
     "description": "<p>You have done a little of everything, and it shows.</p>",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,

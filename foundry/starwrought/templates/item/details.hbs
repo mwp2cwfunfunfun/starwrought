@@ -13,11 +13,17 @@
         <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.identity"}}</span>
         <input type="checkbox" name="system.identity" {{checked system.identity}}></label>
+      {{!-- `parentSlug`, not `parent`: on a data model `parent` is the owning Item and read only. --}}
+      <label class="sw-field sw-wide" data-tooltip="STARWROUGHT.Field.parentHint"><span>{{localize "STARWROUGHT.Field.parent"}}</span>
+        <select name="system.parentSlug">{{selectOptions choices.parents selected=system.parentSlug blank=(localize "STARWROUGHT.Field.parentNone")}}</select></label>
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.meta"}}</span>
         <input type="text" name="system.meta" value="{{system.meta}}"></label>
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.flareTrigger"}}</span>
         <input type="text" name="system.flareTrigger" value="{{system.flareTrigger}}"></label>
     </div>
+    {{#if parentName}}
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.parentConstellation" name=parentName}}</p>
+    {{/if}}
   </div>
   {{/if}}
 
@@ -34,6 +40,10 @@
       <label class="sw-field" data-tooltip="STARWROUGHT.Field.costMaxHint">
         <span>{{localize "STARWROUGHT.Field.costMax"}}</span>
         <select name="system.costMax">{{selectOptions choices.costs selected=system.costMax blank=(localize "STARWROUGHT.Field.costFixed")}}</select></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.reactionHint"><span>{{localize "STARWROUGHT.Field.reaction"}} ↺</span>
+        <input type="checkbox" name="system.reaction" {{checked system.reaction}}></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.reactionCostHint"><span>{{localize "STARWROUGHT.Field.reactionCost"}}</span>
+        <select name="system.reactionCost" {{#unless system.reaction}}disabled{{/unless}}>{{selectOptions choices.reactionCosts selected=system.reactionCost blank=(localize "STARWROUGHT.Field.reactionCostSame")}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.feeds"}}</span>
         <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute blank=(localize "STARWROUGHT.Field.constellationDefault")}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.root"}}</span>
@@ -109,11 +119,11 @@
         <select name="system.kind">{{selectOptions choices.kinds selected=system.kind}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.keyAttribute"}}</span>
         <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute}}</select></label>
-      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.hpPerLevel"}}</span>
-        <input type="number" name="system.hp" value="{{system.hp}}" min="0"></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.vigorPerLevelHint"><span>{{localize "STARWROUGHT.Field.vigorPerLevel"}}</span>
+        <input type="number" name="system.vigor" value="{{system.vigor}}" min="0"></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.size"}}</span>
         <select name="system.size">{{selectOptions choices.sizes selected=system.size}}</select></label>
-      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.speed"}}</span>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.speedHint"><span>{{localize "STARWROUGHT.Field.speed"}}</span>
         <input type="number" name="system.speed" value="{{system.speed}}" min="0"></label>
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.senses"}}</span>
         <input type="text" name="system.senses" value="{{system.senses}}"></label>
@@ -146,10 +156,13 @@
         <input type="checkbox" name="system.twoHands" {{checked system.twoHands}}></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.versatileActive"}}</span>
         <input type="checkbox" name="system.versatileActive" {{checked system.versatileActive}}></label>
-      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.style"}}</span>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.styleHint"><span>{{localize "STARWROUGHT.Field.style"}}</span>
         <input type="text" name="system.style" value="{{system.style}}"></label>
     </div>
     <p class="sw-note">{{localize "STARWROUGHT.Hint.weaponTraits"}}</p>
+    {{#if bindTraits.length}}
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.bindTraits"}} <strong>{{swJoin bindTraits ", "}}</strong></p>
+    {{/if}}
   </div>
   {{/if}}
 
@@ -199,6 +212,10 @@
         <select name="system.costMax">{{selectOptions choices.costs selected=system.costMax blank=(localize "STARWROUGHT.Field.costFixed")}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.costMode"}}</span>
         <select name="system.costMode">{{selectOptions choices.costModes selected=system.costMode}}</select></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.reactionHint"><span>{{localize "STARWROUGHT.Field.reaction"}} ↺</span>
+        <input type="checkbox" name="system.reaction" {{checked system.reaction}}></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.reactionCostHint"><span>{{localize "STARWROUGHT.Field.reactionCost"}}</span>
+        <select name="system.reactionCost" {{#unless system.reaction}}disabled{{/unless}}>{{selectOptions choices.reactionCosts selected=system.reactionCost blank=(localize "STARWROUGHT.Field.reactionCostSame")}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.category"}}</span>
         <input type="text" name="system.category" value="{{system.category}}"></label>
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.prerequisites"}}</span>

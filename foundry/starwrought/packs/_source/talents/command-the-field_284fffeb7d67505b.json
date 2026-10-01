@@ -1,6 +1,6 @@
 {
   "_id": "284fffeb7d67505b",
-  "name": "Command the Field ◆◆",
+  "name": "Command the Field ❷",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Command the Field ◆◆ action:<br>Command the Field ◆◆  Auditory, Concentrate, Emotion, Mental<br>Roll Diplomacy against a Threshold of 14 + your level. On a success, two allies who can hear you may each Step as a free action. On a critical success, they may each Stride half their Speed instead.",
+    "effect": "You gain the Command the Field ❷ action:<br><b>Command the Field ❷</b><br><b>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a Success, two allies who can hear you may each Step ⓿. On a critical success, they may each Move half their Speed instead.",
     "description": "",
     "cost": "2",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "eb638d2c93ae2065",
   "sort": 0,

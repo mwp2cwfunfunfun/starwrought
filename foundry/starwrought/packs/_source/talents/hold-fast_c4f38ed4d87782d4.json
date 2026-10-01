@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When a Graze would Expose one of your Zones, you may take 1 damage per level and Expose nothing instead.",
+    "effect": "When one of your Strikes is Stopped and would Expose you, you may take 1 Vigor damage per level and Expose nothing instead.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "c24b24d1fba469af",
   "sort": 0,

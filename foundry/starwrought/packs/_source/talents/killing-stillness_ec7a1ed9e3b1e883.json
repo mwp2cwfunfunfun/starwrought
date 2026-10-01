@@ -17,9 +17,11 @@
     "attribute": "",
     "effect": "The first time each encounter that you Strike a creature that is unaware of you, a Graze becomes a Hit.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "dc41914280a0d356",
   "sort": 0,

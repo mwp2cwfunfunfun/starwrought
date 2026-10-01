@@ -7,13 +7,13 @@
     "kind": "ancestry",
     "constellation": "human",
     "attribute": "presence",
-    "hp": 8,
+    "vigor": 8,
     "size": "medium",
-    "speed": 25,
+    "speed": 6,
     "senses": "",
     "description": "<p>Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e179582241ca8c65",
   "sort": 0,

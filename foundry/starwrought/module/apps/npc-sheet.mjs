@@ -2,12 +2,13 @@
  * The adversary sheet.
  *
  * Written Threshold-first, because the players roll everything. Every number here is a number a
- * player has to beat, which is why the Attack rows show all three Multiple Attack Penalty steps:
- * a monster's second swing is a worse swing, and the table gets to watch it happen.
+ * player has to beat. An Attack has one Threshold: PHB v4.10 has no Multiple Attack Penalty, so a
+ * monster's second swing costs it actions, not accuracy.
  */
 
 import * as SW from "../config.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
+import { actionsContext, bindContext, vigorContext, zoneWounds } from "./actor-sheet.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -16,21 +17,32 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** @inheritdoc */
   static DEFAULT_OPTIONS = {
     classes: ["starwrought", "sheet", "actor", "npc"],
-    position: { width: 720, height: 720 },
+    position: { width: 720, height: 760 },
     window: { resizable: true, icon: "fa-solid fa-dragon" },
     form: { submitOnChange: true, closeOnSubmit: false },
     actions: {
       editImage: SwNpcSheet.#onEditImage,
       setStance: SwNpcSheet.#onSetStance,
       itemUse: SwNpcSheet.#onItemUse,
+      itemChat: SwNpcSheet.#onItemChat,
       itemEdit: SwNpcSheet.#onItemEdit,
       itemDelete: SwNpcSheet.#onItemDelete,
       itemCreate: SwNpcSheet.#onItemCreate,
       toggleZone: SwNpcSheet.#onToggleZone,
       recenter: SwNpcSheet.#onRecenter,
+      treatWound: SwNpcSheet.#onTreatWound,
+      adjustWound: SwNpcSheet.#onAdjustWound,
+      endBind: SwNpcSheet.#onEndBind,
+      setActions: SwNpcSheet.#onSetActions,
+      resetActions: SwNpcSheet.#onResetActions,
+      pass: SwNpcSheet.#onPass,
+      endOpportunity: SwNpcSheet.#onEndOpportunity,
+      finishPrepared: SwNpcSheet.#onFinishPrepared,
+      abandonPrepared: SwNpcSheet.#onAbandonPrepared,
       effectCreate: SwNpcSheet.#onEffectCreate,
       effectEdit: SwNpcSheet.#onEffectEdit,
-      effectDelete: SwNpcSheet.#onEffectDelete
+      effectDelete: SwNpcSheet.#onEffectDelete,
+      effectToggle: SwNpcSheet.#onEffectToggle
     }
   };
 
@@ -72,6 +84,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       fields: sys.schema.fields,
       editable: this.isEditable,
       owner: actor.isOwner,
+      isGM: game.user.isGM,
       config: SW,
       SW
     });
@@ -82,16 +95,41 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       hint: game.i18n.localize(def.hint)
     }));
     context.stance = stanceContext(actor);
+    context.bind = bindContext(actor);
+    context.actions = actionsContext(actor);
+    context.vigor = vigorContext(actor);
+    context.spent = sys.spent ?? ((sys.vigor?.value ?? 1) === 0);
+    context.dyingMax = SW.DYING_MAX;
+    context.actionsPerRound = sys.actionsPerRound ?? SW.ACTIONS_PER_ROUND;
+    context.woundCount = sys.woundCount ?? Object.keys(SW.ZONES).reduce((n, z) => n + (sys.zones[z]?.wounds ?? 0), 0);
 
     context.zones = Object.keys(SW.ZONES).map(key => ({
       ...sys.zones[key],
       key,
       label: game.i18n.localize(SW.ZONES[key].label),
       materialLabel: game.i18n.localize(sys.zones[key].materialLabel),
-      weakTo: sys.zones[key].weakTo ? game.i18n.localize(SW.DAMAGE_TYPES[sys.zones[key].weakTo].label) : null
+      weakTo: sys.zones[key].weakTo ? game.i18n.localize(SW.DAMAGE_TYPES[sys.zones[key].weakTo].label) : null,
+      wounds: zoneWounds(actor, key)
     }));
 
-    context.attacks = sys.attacks;
+    // One Threshold per Attack. The derived row is expected to carry `threshold`; an older shape
+    // that still carried the MAP ladder is read at its first step so nothing goes blank mid-sync.
+    context.attacks = (sys.attacks ?? []).map(atk => ({
+      ...atk,
+      threshold: atk.threshold ?? atk.thresholds?.[0] ?? ""
+    }));
+
+    // The Reactions it has: its own abilities that carry the Reaction trait. The Talent-granted
+    // four (Parry, Void, Counter, Intercept) are the GM's to declare for any adversary, so they
+    // live on the stance chips and the Intercept card rather than in the profile, which the book
+    // says lists the Reactions the creature has. Skipped entirely when there are none.
+    const abilities = actor.items.filter(i => (i.type === "action") && i.system.reaction);
+    context.reactions = {
+      granted: [],
+      abilities: abilities.map(i => ({ id: i.id, name: i.name, img: i.img, glyph: i.system.glyph })),
+      any: abilities.length > 0
+    };
+
     context.abilities = actor.items.filter(i => (i.type === "action") && !i.system.attack.enabled);
     context.otherItems = actor.items.filter(i => !["action"].includes(i.type));
     context.effects = actor.effects.map(e => ({ id: e.id, name: e.name, img: e.img, disabled: e.disabled }));
@@ -133,7 +171,11 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   static async #onItemUse(event, target) {
-    return this.#getItem(target)?.use();
+    return this.#getItem(target)?.use({ dialog: !event.shiftKey });
+  }
+
+  static async #onItemChat(event, target) {
+    return this.#getItem(target)?.toMessage();
   }
 
   static async #onItemEdit(event, target) {
@@ -165,6 +207,58 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.recenter();
   }
 
+  static async #onTreatWound(event, target) {
+    const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
+    if (!(zone in SW.ZONES)) return;
+    return this.document.treatWound(zone);
+  }
+
+  /** Adding a Wound fires its rules through `applyWound`; taking one off is plain bookkeeping. */
+  static async #onAdjustWound(event, target) {
+    const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
+    if (!(zone in SW.ZONES)) return;
+    const delta = Number(target.dataset.delta) || 0;
+    if (delta > 0) return this.document.applyWound(zone, delta);
+    const current = this.document.system.zones[zone]?.wounds ?? 0;
+    const next = Math.max(0, current + delta);
+    if (next === current) return;
+    await this.document.update({ [`system.zones.${zone}.wounds`]: next });
+    const any = Object.keys(SW.ZONES).some(z => (this.document.system.zones[z]?.wounds ?? 0) > 0);
+    return this.document.setCondition("wounded", any);
+  }
+
+  static async #onEndBind() {
+    return this.document.endBind();
+  }
+
+  static async #onSetActions(event, target) {
+    if (target.dataset.state === "reserved") return;
+    const value = Number(target.dataset.value);
+    const current = this.document.system.actions?.value ?? 0;
+    return this.document.update({ "system.actions.value": value === current ? value - 1 : value });
+  }
+
+  static async #onResetActions() {
+    return this.document.resetActions();
+  }
+
+  static async #onPass() {
+    return this.document.pass();
+  }
+
+  static async #onEndOpportunity() {
+    if (!this.document.isTurn) return;
+    return game.combat?.nextTurn();
+  }
+
+  static async #onFinishPrepared() {
+    return this.document.finishPrepared();
+  }
+
+  static async #onAbandonPrepared() {
+    return this.document.abandonPrepared();
+  }
+
   static async #onEffectCreate() {
     return this.document.createEmbeddedDocuments("ActiveEffect", [{
       name: game.i18n.localize("STARWROUGHT.Effect.new"), img: "icons/svg/aura.svg"
@@ -179,6 +273,12 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onEffectDelete(event, target) {
     const id = target.closest("[data-effect-id]")?.dataset.effectId;
     return this.document.effects.get(id)?.delete();
+  }
+
+  static async #onEffectToggle(event, target) {
+    const id = target.closest("[data-effect-id]")?.dataset.effectId;
+    const effect = this.document.effects.get(id);
+    return effect?.update({ disabled: !effect.disabled });
   }
 
   #getItem(target) {

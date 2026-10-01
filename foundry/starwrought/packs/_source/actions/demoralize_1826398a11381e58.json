@@ -7,7 +7,9 @@
     "cost": "1",
     "costMax": "2",
     "costMode": "to",
-    "category": "Watching, deceiving & helping",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Watching, Deceiving & Helping",
     "basic": true,
     "traits": [
       "Auditory",
@@ -15,10 +17,10 @@
       "Emotion",
       "Mental"
     ],
-    "description": "<p>Intimidation against the target's Guard.<br><b>Critical Success</b> Frightened 2. <b>Success</b> Frightened 1. <b>Failure</b> Nothing. <b>Critical Failure</b> It is emboldened: +1 to its Attacks against you until the end of its next turn.<br><b>◆◆ Break Them.</b> Frightened 3 and Heedless on a critical success; Frightened 1 even on a failure.</p>",
-    "source": "STARWROUGHT Playtest v3.1"
+    "description": "<p>Roll Intimidation against the target's Guard.<br><b>Critical Success</b> The target is Frightened 2. <b>Success</b> The target is Frightened 1. <b>Failure</b> No effect. <b>Critical Failure</b> No effect, and it is emboldened: +1 Situation bonus to its Attacks against you until the end of the next round.<br><b>❷ Break Them.</b> <b>Critical Success</b> The target is Frightened 3 and Heedless. <b>Success</b> The target is Frightened 2. <b>Failure</b> The target is Frightened 1. <b>Critical Failure</b> No effect.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "9c4c1eb78a540a57",
+  "folder": "fdaa17210c6d23e8",
   "sort": 0,
   "ownership": {
     "default": 0

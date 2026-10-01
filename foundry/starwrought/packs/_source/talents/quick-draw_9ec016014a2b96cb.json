@@ -1,0 +1,49 @@
+{
+  "_id": "9ec016014a2b96cb",
+  "name": "Quick Draw",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "melee",
+    "constellationName": "Melee",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Melee Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Use a Reaction ⓿↺ to draw or stow an item, weapon, or shield in each hand (or in both hands, if it requires two hands).",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "2a19b71d960a8b80",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9ec016014a2b96cb"
+}

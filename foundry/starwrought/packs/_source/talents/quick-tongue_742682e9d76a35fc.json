@@ -1,6 +1,6 @@
 {
   "_id": "742682e9d76a35fc",
-  "name": "Quick Tongue ◇",
+  "name": "Quick Tongue ⓿",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Quick Tongue action:<br>Quick Tongue ◇<br>Trigger You critically fail a Diplomacy check.<br>Requirements You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
+    "effect": "You gain the Quick Tongue action:<br><b>Quick Tongue ⓿</b><br><b>Trigger</b> You critically fail a Diplomacy check.<br><b>Requirements</b> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
     "description": "",
-    "cost": "free",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "d11b952536b11224",
   "sort": 0,

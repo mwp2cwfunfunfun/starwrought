@@ -1,6 +1,6 @@
 {
   "_id": "b8e8382e9bb5faae",
-  "name": "Tumbling Retreat ◆",
+  "name": "Tumbling Retreat ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Step 6 feet instead of 3. You still cannot Step in Difficult Terrain or Greater Difficult Terrain.",
+    "effect": "Step your full Speed away from your foes. You still cannot Step in Difficult Terrain or Greater Difficult Terrain.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,

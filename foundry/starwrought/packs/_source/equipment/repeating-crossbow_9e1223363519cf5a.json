@@ -15,7 +15,7 @@
       "Ranged 80",
       "Mechanical",
       "Capacity 5",
-      "Reload 2",
+      "Reload 3",
       "Two-Handed"
     ],
     "price": "",
@@ -23,7 +23,7 @@
     "load": 0,
     "state": "carried",
     "description": "",
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "54594ae7cc598009",
   "sort": 0,

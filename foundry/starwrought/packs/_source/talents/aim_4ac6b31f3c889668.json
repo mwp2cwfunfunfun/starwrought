@@ -1,25 +1,27 @@
 {
-  "_id": "3211e5f16540aeda",
-  "name": "Read the Steel ◆",
+  "_id": "4ac6b31f3c889668",
+  "name": "Aim ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "weapons",
-    "constellationName": "Weapons",
+    "constellation": "ranged",
+    "constellationName": "Ranged",
     "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Weapons Training"
+      "Ranged Training"
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Study one creature you can see. Until the end of the encounter you know the Protection and the material of each of its Zones, and your Strikes against it ignore 1 Protection.",
+    "effect": "<b>Concentrate</b> Choose one creature you can Observe within your weapon's range. Your next ranged Strike against it before the end of your next Opportunity gains a +1 Situation bonus, and on a Hit you may choose the Zone it strikes.",
     "description": "",
     "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,9 +33,9 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "307927e092735135",
+  "folder": "05f172d6ee21ee08",
   "sort": 0,
   "ownership": {
     "default": 0
@@ -43,5 +45,5 @@
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!3211e5f16540aeda"
+  "_key": "!items!4ac6b31f3c889668"
 }

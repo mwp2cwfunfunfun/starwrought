@@ -1,0 +1,31 @@
+{
+  "_id": "72033c25d64cbc9a",
+  "name": "Rush",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "3",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Motion",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "description": "<p>Move up to five times your Speed in a straight line, less your Load Strain in feet. You cannot use Reactions until your next Opportunity, and you are Off-Guard against any Intercept made against you during the Rush.</p>",
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "02edc6422285a159",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!72033c25d64cbc9a"
+}

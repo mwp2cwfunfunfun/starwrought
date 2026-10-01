@@ -1,39 +1,41 @@
 {
-  "_id": "f1b5376b6b6a26af",
-  "name": "Weapon Familiarity",
+  "_id": "f5d98b80dbd0afd2",
+  "name": "Sure Grip",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "weapons",
-    "constellationName": "Weapons",
+    "constellation": "melee",
+    "constellationName": "Melee",
     "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Weapons Training"
+      "Weapon Familiarity"
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Choose a Weapon Group or a Technical weapon. You are Familiar with weapons in that group or that Technical weapon.",
+    "effect": "+2 Situation bonus to your Guard against Disarm regarding a Familiar weapon. When a Disarm against you would succeed, you keep hold of the weapon and suffer only the loosened grip.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
       "scope": ""
     },
     "choice": {
-      "prompt": "Weapon Group or Technical Weapon",
+      "prompt": "",
       "value": ""
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "307927e092735135",
+  "folder": "2a19b71d960a8b80",
   "sort": 0,
   "ownership": {
     "default": 0
@@ -43,5 +45,5 @@
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!f1b5376b6b6a26af"
+  "_key": "!items!f5d98b80dbd0afd2"
 }

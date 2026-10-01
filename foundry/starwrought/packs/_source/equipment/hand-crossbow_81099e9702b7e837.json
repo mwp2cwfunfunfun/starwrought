@@ -14,7 +14,7 @@
     "traits": [
       "Ranged 60",
       "Mechanical",
-      "Reload 1",
+      "Reload 2",
       "Close"
     ],
     "price": "",
@@ -22,7 +22,7 @@
     "load": 0,
     "state": "carried",
     "description": "",
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "54594ae7cc598009",
   "sort": 0,

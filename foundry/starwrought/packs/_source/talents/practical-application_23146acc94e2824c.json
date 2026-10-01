@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "+2 circumstance to any check where you can explain how this field directly applies. The GM is the judge; the story is the proof.",
+    "effect": "+2 Situation to any check where you can explain how this field directly applies. The GM is the judge; the story is the proof.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "f59506a3bbc6d7ef",
   "sort": 0,

@@ -1,0 +1,46 @@
+{{!-- The action economy: six a round, spread across Opportunities. Context: actionsContext().
+      Lit pips are free, marked ones are reserved for a Prepared Maneuver, dim ones are spent.
+      Clicking a pip sets the count by hand; nothing here is ever prevented. --}}
+<div class="sw-actions {{#if isTurn}}sw-actions-turn{{/if}}" data-tooltip="{{tooltip}}">
+  <span class="sw-actions-label">{{localize "STARWROUGHT.Actions.label"}}</span>
+  <div class="sw-pips">
+    {{#each pips as |pip|}}
+    <a class="sw-pip sw-pip-{{pip.state}}" data-action="setActions" data-value="{{pip.value}}"
+       data-state="{{pip.state}}" data-tooltip="{{pip.tooltip}}">{{pip.glyph}}</a>
+    {{/each}}
+  </div>
+  {{#if reserved}}
+  <span class="sw-reserved" data-tooltip="{{localize 'STARWROUGHT.Actions.reserved' n=reserved}}">
+    <i class="fa-solid fa-hourglass-half"></i> {{localize "STARWROUGHT.Actions.reservedShort" n=reserved}}
+  </span>
+  {{/if}}
+  <div class="sw-actions-buttons">
+    <button type="button" class="sw-inline-button sw-pass" data-action="pass"
+            data-tooltip="{{localize 'STARWROUGHT.Actions.passHint'}}"
+            {{#unless isTurn}}disabled{{/unless}}{{#if preparing}} disabled{{/if}}>
+      {{passGlyph}} {{localize "STARWROUGHT.Actions.pass"}}
+    </button>
+    <button type="button" class="sw-inline-button sw-end-opportunity" data-action="endOpportunity"
+            data-tooltip="{{localize 'STARWROUGHT.Actions.endOpportunityHint'}}"
+            {{#unless isTurn}}disabled{{/unless}}>
+      <i class="fa-solid fa-forward-step"></i> {{localize "STARWROUGHT.Actions.endOpportunity"}}
+    </button>
+    <a class="sw-actions-reset" data-action="resetActions"
+       data-tooltip="{{localize 'STARWROUGHT.Actions.resetHint'}}"><i class="fa-solid fa-rotate-left"></i></a>
+  </div>
+</div>
+{{#if preparing}}
+{{!-- A Maneuver of three or more actions: one spent, the rest reserved, resolved at the next Opportunity. --}}
+<div class="sw-preparing" data-tooltip="{{localize 'STARWROUGHT.Actions.preparingHint'}}">
+  <i class="fa-solid fa-hourglass-half"></i>
+  <span class="sw-preparing-label">{{localize "STARWROUGHT.Actions.preparing" label=preparingLabel}}</span>
+  <button type="button" class="sw-inline-button sw-primary" data-action="finishPrepared"
+          data-tooltip="{{localize 'STARWROUGHT.Actions.finishHint'}}">
+    <i class="fa-solid fa-check"></i> {{localize "STARWROUGHT.Actions.finish"}}
+  </button>
+  <button type="button" class="sw-inline-button sw-cancel" data-action="abandonPrepared"
+          data-tooltip="{{localize 'STARWROUGHT.Actions.abandonHint'}}">
+    <i class="fa-solid fa-xmark"></i> {{localize "STARWROUGHT.Actions.abandon"}}
+  </button>
+</div>
+{{/if}}

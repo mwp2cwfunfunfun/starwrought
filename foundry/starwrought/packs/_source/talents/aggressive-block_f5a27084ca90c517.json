@@ -1,6 +1,6 @@
 {
   "_id": "f5a27084ca90c517",
-  "name": "Aggressive Block ◇",
+  "name": "Aggressive Block ⓿",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "Trigger You use Shield Block ↺, and the opponent that triggered Shield Block is adjacent to you and is your size or smaller.<br>You push back as you block, knocking your foe away or off balance. You use your shield to push the triggering creature, either automatically Shoving it 5 feet or causing it to become Off-Guard until the start of your next turn. The triggering creature chooses whether to be moved or become Off-Guard. If it chooses to be moved, you choose the direction. If the Shove would cause it to hit a solid object or enter another creature's space, it must become Off-Guard instead of being moved.",
+    "effect": "<b>Trigger</b> You use Shield Block, and the opponent that triggered Shield Block is adjacent to you and is your Size or smaller<br>You push back as you block, knocking your foe away or off balance. You use your shield to push the triggering creature, either automatically Shoving it 3 feet or causing it to become Off-Guard until your next Opportunity. The triggering creature chooses whether to be moved or become Off-Guard. If it chooses to be moved, you choose the direction. If the Shove would cause it to hit a solid object or enter another creature's space, it must become Off-Guard instead of being moved.",
     "description": "",
-    "cost": "free",
+    "cost": "0",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1da194ae4f8cc3d7",
   "sort": 0,

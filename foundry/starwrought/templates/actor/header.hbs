@@ -44,53 +44,35 @@
 
     <div class="sw-vitals">
 
-      <div class="sw-hp">
-        <div class="sw-hp-track">
-          <div class="sw-hp-fill" style="width: {{swPercent system.hp.value system.hp.max}}%"></div>
-          <span class="sw-hp-text">
-            <input type="number" name="system.hp.value" value="{{system.hp.value}}" min="0">
-            <em>/ {{system.hp.max}}</em>
+      {{!-- Vigor is what you have left in you, not meat. At 0 you are Spent: still standing, and
+            every Hit now Wounds. --}}
+      <div class="sw-vigor {{#if spent}}sw-spent{{/if}}">
+        <div class="sw-vigor-track">
+          <div class="sw-vigor-fill" style="width: {{vigor.pct}}%"></div>
+          {{#if vigor.tempPct}}<div class="sw-vigor-temp" style="left: {{vigor.pct}}%; width: {{vigor.tempPct}}%"></div>{{/if}}
+          <span class="sw-vigor-text">
+            <span class="sw-vigor-name">{{localize "STARWROUGHT.Field.vigor"}}</span>
+            <input type="number" name="system.vigor.value" value="{{vigor.value}}" min="0">
+            <em>/ {{vigor.max}}</em>
+            {{#if spent}}
+            <span class="sw-spent-badge" data-tooltip="{{localize 'STARWROUGHT.Field.spentHint'}}">{{localize "STARWROUGHT.Condition.spent"}}</span>
+            {{/if}}
           </span>
         </div>
-        <div class="sw-hp-meta">
+        <div class="sw-vigor-meta">
           <label data-tooltip="STARWROUGHT.Field.tempHint">
             {{localize "STARWROUGHT.Field.temp"}}
-            <input type="number" name="system.hp.temp" value="{{system.hp.temp}}" min="0">
+            <input type="number" name="system.vigor.temp" value="{{vigor.temp}}" min="0">
           </label>
-          <span class="sw-hint">{{localize "STARWROUGHT.Field.hpPerLevel"}} {{system.hp.perLevel}}</span>
+          <span class="sw-hint">{{localize "STARWROUGHT.Field.vigorPerLevel"}} {{vigor.perLevel}}</span>
         </div>
       </div>
 
-      {{!-- Which Defense meets the next blow. The defender's call, so it is one click, always visible. --}}
-      <div class="sw-stance" data-tooltip="{{localize 'STARWROUGHT.Stance.hint'}}">
-        <span class="sw-stance-label">{{localize "STARWROUGHT.Stance.label"}}</span>
-        <div class="sw-stance-chips">
-          {{#each stance.options as |opt|}}
-          <a class="sw-stance-chip {{#if opt.active}}active{{/if}} {{#if opt.unavailable}}unavailable{{/if}}"
-             data-action="setStance" data-stance="{{opt.key}}" data-tooltip="{{opt.tooltip}}">
-            <i class="{{opt.icon}}"></i> {{opt.label}} <em>{{opt.threshold}}</em>
-            {{#if opt.unavailable}}<i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}
-          </a>
-          {{/each}}
-        </div>
-      </div>
+      {{!-- How the next Blow is answered. The defender's call, so it is one click, always visible. --}}
+      {{> "systems/starwrought/templates/actor/stance-chips.hbs" stance}}
 
       {{#if actions.show}}
-      {{!-- Three actions and a reaction, gained at the start of your turn. --}}
-      <div class="sw-actions {{#if actions.isTurn}}sw-actions-turn{{/if}}"
-           data-tooltip="{{actions.tooltip}}">
-        <span class="sw-actions-label">{{localize "STARWROUGHT.Actions.label"}}</span>
-        <div class="sw-pips">
-          {{#each actions.pips as |pip|}}
-          <a class="sw-pip {{#if pip.spent}}spent{{/if}}" data-action="setActions" data-value="{{pip.value}}"
-             data-tooltip="{{pip.tooltip}}">◆</a>
-          {{/each}}
-          <a class="sw-pip sw-pip-reaction {{#unless actions.reaction}}spent{{/unless}}"
-             data-action="toggleReaction" data-tooltip="{{localize 'STARWROUGHT.Actions.reaction'}}">↺</a>
-        </div>
-        <a class="sw-actions-reset" data-action="resetActions"
-           data-tooltip="{{localize 'STARWROUGHT.Actions.resetHint'}}"><i class="fa-solid fa-rotate-left"></i></a>
-      </div>
+      {{> "systems/starwrought/templates/actor/action-pips.hbs" actions}}
       {{/if}}
 
       <div class="sw-counters">
@@ -102,13 +84,9 @@
             <a data-action="adjust" data-path="system.heroPoints.value" data-delta="1">+</a>
           </div>
         </div>
-        <div class="sw-counter {{#if system.wounded}}sw-alert{{/if}}" data-tooltip="STARWROUGHT.Field.woundedHint">
-          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounded"}}</span>
-          <div class="sw-stepper">
-            <a data-action="adjust" data-path="system.wounded" data-delta="-1">−</a>
-            <strong>{{system.wounded}}</strong>
-            <a data-action="adjust" data-path="system.wounded" data-delta="1">+</a>
-          </div>
+        <div class="sw-counter {{#if woundCount}}sw-alert{{/if}}" data-tooltip="STARWROUGHT.Field.woundCountHint">
+          <span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounds"}}</span>
+          <div class="sw-stepper"><strong>{{woundCount}}</strong></div>
         </div>
         <div class="sw-counter {{#if system.dying}}sw-danger{{/if}}" data-tooltip="STARWROUGHT.Field.dyingHint">
           <span class="sw-counter-label">{{localize "STARWROUGHT.Field.dying"}}</span>
@@ -121,5 +99,9 @@
       </div>
 
     </div>
+
+    {{#if bind}}
+    {{> "systems/starwrought/templates/actor/bind-line.hbs" bind}}
+    {{/if}}
   </div>
 </header>

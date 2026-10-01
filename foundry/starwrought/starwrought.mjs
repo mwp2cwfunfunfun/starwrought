@@ -3,15 +3,15 @@
  *
  * "You are what you do." The system's job is to hold the arithmetic so the table can spend its
  * attention on decisions: per-Zone Protection, the material step, the damage order of operations,
- * Exposed, Wounded, Dying, the Multiple Attack Penalty, Load Strain, Attribute derivation and rank
- * thresholds are all things software should do for free.
+ * Exposed, Wounds per Zone, Spent, Dying, the Bind, six actions a round, Load Strain, Attribute
+ * derivation and rank thresholds are all things software should do for free.
  */
 
 import * as SW from "./module/config.mjs";
 import { SwCharacterData, SwNpcData } from "./module/data/actor.mjs";
 import {
   SwActionData, SwArmorData, SwChassisData, SwConstellationData,
-  SwGearData, SwShieldData, SwTalentData, SwWeaponData
+  SwGearData, SwShieldData, SwTalentData, SwWeaponData, LEGACY_SPEED_FLOOR, migrateSpeed
 } from "./module/data/item.mjs";
 import { SwActor } from "./module/documents/actor.mjs";
 import { SwItem } from "./module/documents/item.mjs";
@@ -27,7 +27,7 @@ import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
 import { SwItemSheet } from "./module/apps/item-sheet.mjs";
 import { SwChargen, promptForChoice } from "./module/apps/chargen.mjs";
 import { loadChargenContent } from "./module/helpers/chargen-data.mjs";
-import { SwCheck, resetAttackCount } from "./module/dice/check.mjs";
+import { SwCheck } from "./module/dice/check.mjs";
 import { SwDamage } from "./module/dice/damage.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
@@ -94,10 +94,11 @@ Hooks.once("init", async () => {
     gear: "STARWROUGHT.Type.gear",
     action: "STARWROUGHT.Type.action"
   };
-  /* Token resource bars */
+  /* Token resource bars. Vigor replaced Hit Points in PHB v4.10; Wounds are per Zone now, so the
+     old numeric `wounded` is gone from the list. */
   CONFIG.Actor.trackableAttributes = {
-    character: { bar: ["hp"], value: ["level", "wounded", "dying", "heroPoints.value", "loadStrain"] },
-    npc: { bar: ["hp"], value: ["level", "wounded", "dying", "thresholds.evade", "thresholds.guard"] }
+    character: { bar: ["vigor"], value: ["level", "dying", "heroPoints.value", "loadStrain", "actions.value"] },
+    npc: { bar: ["vigor"], value: ["level", "dying", "actionsPerRound", "thresholds.evade", "thresholds.guard"] }
   };
 
   /* Conditions, as toggleable token statuses */
@@ -142,6 +143,12 @@ Hooks.once("init", async () => {
 
 Hooks.once("ready", async () => {
   await refreshConstellationRegistry();
+  try {
+    await migrateWorld();
+  } catch (err) {
+    // Not stamped, so it runs again next load; the rest of ready still happens.
+    console.error("STARWROUGHT | world migration failed", err);
+  }
   await checkContent();
   Hooks.on('canvasReady', checkSceneGrid);
   checkSceneGrid();
@@ -158,6 +165,63 @@ Hooks.once("ready", async () => {
     });
   }
 });
+
+/* -------------------------------------------- */
+/*  World migration                             */
+/* -------------------------------------------- */
+
+/**
+ * One-time changes to stored data, run by the first GM to open the world on a newer release and
+ * recorded in the `systemVersion` world setting so they never run twice. The setting is stamped
+ * every time the check runs, a brand-new world included, so the next load compares two versions
+ * and touches nothing.
+ *
+ * 0.4.0 (PHB v4.10, sync report ruling 41): Speed moved from the five-foot scale to feet per Move
+ * on the one-foot grid, so a stored Speed of 15 or more is a v3.x value and becomes a quarter of
+ * itself (a Human's 25 is 6). Done once, here, rather than in `migrateData`, which ran on every
+ * load and every write and so made 15 a ceiling no Speed could be typed past. The stored value is
+ * read from `_source`, which `migrateData` no longer touches.
+ */
+async function migrateWorld() {
+  if (!game.user.isGM) return;
+  const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
+  if (!foundry.utils.isNewerVersion("0.4.0", done)) return;
+
+  let count = 0;
+  const quarter = value => {
+    if ((typeof value !== "number") || (value < LEGACY_SPEED_FLOOR)) return null;
+    return migrateSpeed(value);
+  };
+
+  // An adversary stores its own Speed at the top; a character's is its Ancestry's.
+  for (const actor of game.actors) {
+    const path = actor.type === "npc" ? "system.speed" : "system.details.ancestry.speed";
+    const next = quarter(foundry.utils.getProperty(actor._source, path));
+    if (next === null) continue;
+    await actor.update({ [path]: next });
+    count++;
+  }
+
+  // Chassis Items in the world, and in any Item pack a GM has unlocked (the shipped packs are
+  // locked and built on the one-foot grid already).
+  const chassis = game.items.filter(i => i.type === "chassis");
+  for (const pack of game.packs.filter(p => (p.metadata.type === "Item") && !p.locked)) {
+    chassis.push(...(await pack.getDocuments({ type: "chassis" })));
+  }
+  for (const item of chassis) {
+    const next = quarter(item._source.system?.speed);
+    if (next === null) continue;
+    await item.update({ "system.speed": next });
+    count++;
+  }
+
+  await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (count > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.speed", { version: game.system.version, count });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
+}
 
 /**
  * Is this browser running the release the server has?
@@ -268,24 +332,33 @@ function registerSettings() {
     onChange: () => refreshTargets()
   });
 
-  game.settings.register(SW.SYSTEM_ID, "showStrideBands", {
-    name: "STARWROUGHT.Settings.showStrideBands",
-    hint: "STARWROUGHT.Settings.showStrideBandsHint",
+  // A Stride is a Move in PHB v4.10. The 0.3.x client choice lived under `showStrideBands`, which
+  // is no longer registered and so can never be read through game.settings.get; read it once from
+  // the client store here to seed the default, so a player who switched the bands off keeps them
+  // off. Client values are stored in localStorage as JSON under `<namespace>.<key>`.
+  let legacyBands = true;
+  try {
+    const stored = game.settings.storage.get("client")?.getItem(`${SW.SYSTEM_ID}.showStrideBands`);
+    if (stored != null) legacyBands = JSON.parse(stored) !== false;
+  } catch {
+    // No legacy value, or one that will not parse: keep the default.
+  }
+  game.settings.register(SW.SYSTEM_ID, "showMoveBands", {
+    name: "STARWROUGHT.Settings.showMoveBands",
+    hint: "STARWROUGHT.Settings.showMoveBandsHint",
     scope: "client",
     config: true,
     type: Boolean,
-    default: true
+    default: legacyBands
   });
 
-  game.settings.register(SW.SYSTEM_ID, "trackMap", {
-    name: "STARWROUGHT.Settings.trackMap",
-    hint: "STARWROUGHT.Settings.trackMapHint",
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true
-  });
+  // There is no Multiple Attack Penalty in PHB v4.10, so the `trackMap` world setting that
+  // remembered attacks made this turn is gone with it. A world that still carries a stored value
+  // for it is harmless: Foundry ignores settings nobody registers.
 
+  // Recovery checks are made at the start of each ROUND while Dying (PHB v4.10, Recovery
+  // Checks), and SwCombat's round-start handling (module/documents/combat.mjs) is what prompts
+  // for them; this setting is the switch it reads.
   game.settings.register(SW.SYSTEM_ID, "autoRecovery", {
     name: "STARWROUGHT.Settings.autoRecovery",
     hint: "STARWROUGHT.Settings.autoRecoveryHint",
@@ -294,6 +367,10 @@ function registerSettings() {
     type: Boolean,
     default: true
   });
+
+  // COMBAT SETTINGS (0.4.0): any world or client setting the six-action round needs (Wind
+  // reminders, the end-of-round Persistent Damage card, Intercept offers) is registered here, so
+  // that every setting the system owns is in this one function. Add them below this line.
 
   game.settings.register(SW.SYSTEM_ID, "systemVersion", {
     scope: "world",
@@ -304,24 +381,9 @@ function registerSettings() {
 }
 
 /* -------------------------------------------- */
-/*  Combat: Recovery checks at the top of a turn */
+/*  Combat                                       */
 /* -------------------------------------------- */
 
-Hooks.on("combatTurnChange", async (combat, prior, current) => {
-  const combatant = combat.combatants.get(current?.combatantId);
-  const actor = combatant?.actor;
-
-  // Your first attack each turn is unpenalized, so the count starts over when your turn does.
-  if (actor) resetAttackCount(actor.uuid);
-
-  if (!game.settings.get(SW.SYSTEM_ID, "autoRecovery")) return;
-  if (!actor?.system?.dying) return;
-  if (!actor.isOwner) return;
-  const first = game.users.find(u => u.active && actor.testUserPermission(u, "OWNER"));
-  if (first?.id !== game.user.id) return;
-  ui.notifications.info(game.i18n.format("STARWROUGHT.Notify.recoveryDue", { name: actor.name }));
-});
-
-/** A fresh encounter starts everyone at their first attack. */
-Hooks.on("combatStart", () => resetAttackCount());
-Hooks.on("deleteCombat", () => resetAttackCount());
+// Everything that happens at the turn of a round or an Opportunity (six fresh actions, Recovery
+// checks for the Dying, the Wind check from round three, a Prepared Maneuver coming due) lives on
+// SwCombat in module/documents/combat.mjs, which owns the Combat document. Nothing is hooked here.

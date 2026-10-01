@@ -1,5 +1,5 @@
 /**
- * The Item document. Talents, gear, and actions all know how to put themselves on the table.
+ * The Item document. Talents, gear, and Maneuvers all know how to put themselves on the table.
  */
 
 import * as SW from "../config.mjs";
@@ -29,13 +29,18 @@ export class SwItem extends Item {
 
   /**
    * The default thing to do when a player clicks the Item: Strike with a weapon, roll the check
-   * an action calls for, or simply post the card.
+   * a Maneuver calls for, or simply post the card.
    *
-   * A Basic Action lives in the compendium and is used straight from a character's Actions tab
-   * without ever being copied onto the character, so it has no `actor` of its own. The sheet
+   * A Basic Maneuver lives in the compendium and is used straight from a character's Maneuvers
+   * tab without ever being copied onto the character, so it has no `actor` of its own. The sheet
    * passes the character in `options.actor`, and that character is who rolls and who speaks.
+   *
+   * A Maneuver with the Reaction trait (PHB v4.10) is paid from the same six actions the moment
+   * its Trigger occurs, so using one spends its cost; every other Maneuver is the table's to pay,
+   * with the pips, because the system cannot see most of them being used.
    * @param {object} [options]
-   * @param {Actor} [options.actor]  Who is using an unowned Item.
+   * @param {Actor} [options.actor]   Who is using an unowned Item.
+   * @param {string} [options.strike] For a weapon: quick | deliberate | committed.
    */
   async use(options = {}) {
     const { actor: given, ...rest } = options;
@@ -44,7 +49,16 @@ export class SwItem extends Item {
       case "weapon":
         if (!this.actor) return this.toMessage({ actor });
         return this.actor.rollAttack(this.id, rest);
-      case "action":
+      case "action": {
+        if (this.system.reaction && actor) {
+          // A Reaction with a cost of its own (Aid ❶ (⓿↺)) pays that one; otherwise the cost printed.
+          const own = this.system.reactionCost;
+          const key = (own !== undefined && own !== null && own !== "") ? own : this.system.cost;
+          const n = SW.actionCostValue(key);
+          if (n) {
+            await actor.spendActions(n, { label: `${this.name} ${this.system.glyph ?? ""}`.trim() });
+          }
+        }
         if (this.system.check.enabled && actor) {
           return SwCheck.roll(foundry.utils.mergeObject({
             actor,
@@ -57,6 +71,7 @@ export class SwItem extends Item {
           }, rest, { inplace: false }));
         }
         return this.toMessage({ actor });
+      }
       case "shield":
         return this.raise();
       default:
@@ -66,26 +81,26 @@ export class SwItem extends Item {
 
   /* -------------------------------------------- */
 
-  /** Raise a Shield: its item bonus to Guard until the start of your next turn. */
+  /**
+   * Raise a Shield ❶ (PHB v4.10): its Gear bonus to Guard until your next Opportunity. The bonus
+   * itself is derived by the data model from `system.raised`, so all this does is flip the flag
+   * and pay the action; the combat tracker lowers it when the actor's next Opportunity begins.
+   * A raised shield is a rigid implement: it can Parry, Bind and Gain Control. Lowering it is
+   * free: you simply stop.
+   */
   async raise() {
     if (!this.actor) return;
     if (!this.system.held) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.notHeld", { name: this.name }));
     }
     const raised = !this.system.raised;
-    // Raising it costs an action. Lowering it is free: you simply stop.
     if (raised) {
       await this.actor.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.raiseShield") });
     }
     await this.update({ "system.raised": raised });
-    await this.actor.update({
-      "system.bonuses.defenses.guard": raised
-        ? this.actor.system.bonuses.defenses.guard + this.system.bonus
-        : this.actor.system.bonuses.defenses.guard - this.system.bonus
-    });
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-      content: `<div class="starwrought action-card"><h3>◆ ${game.i18n.localize("STARWROUGHT.Action.raiseShield")}</h3>
+      content: `<div class="starwrought action-card"><h3>❶ ${game.i18n.localize("STARWROUGHT.Action.raiseShield")}</h3>
         <p>${game.i18n.format(raised ? "STARWROUGHT.Action.raiseShieldOn" : "STARWROUGHT.Action.raiseShieldOff", {
           name: this.actor.name, shield: this.name, bonus: this.system.bonus
         })}</p></div>`
@@ -97,14 +112,14 @@ export class SwItem extends Item {
   /**
    * Put the Item on the table as a card, with no roll.
    * @param {object} [options]
-   * @param {Actor} [options.actor]  Who speaks, when the Item is not owned (a Basic Action).
+   * @param {Actor} [options.actor]  Who speaks, when the Item is not owned (a Basic Maneuver).
    */
   async toMessage({ actor = null } = {}) {
     const speaker = this.actor ?? actor;
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
     const enrich = html => TextEditor.enrichHTML(html ?? "", { rollData: this.getRollData(), relativeTo: this });
     const description = await enrich(this.system.chatDescription);
-    // An action authored with separate flavour and rules prints both, flavour first.
+    // A Maneuver authored with separate flavour and rules prints both, flavour first.
     const flavor = (this.type === "action" && this.system.effect && this.system.description)
       ? await enrich(this.system.description)
       : "";
@@ -148,7 +163,7 @@ export class SwItem extends Item {
     }
   }
 
-  /** The four degrees, when an action prints them. */
+  /** The four degrees, when a Maneuver prints them. */
   #outcomeList() {
     const out = this.system.outcomes;
     if (!out) return null;
@@ -184,15 +199,15 @@ export class SwItem extends Item {
    */
   static async grantFreeTalent(actor, name, { inherit = "" } = {}) {
     if (!actor || !name) return null;
-    const key = String(name).replace(/[◆◇↺★]/g, "").trim().toLowerCase();
-    const owned = actor.items.some(i => (i.type === "talent")
-      && (i.name.replace(/[◆◇↺★]/g, "").trim().toLowerCase() === key));
+    const key = String(name).replace(/[◆◇↺★⓿❶❷❸❹❺❻]/g, "").trim().toLowerCase();
+    const clean = n => n.replace(/[◆◇↺★⓿❶❷❸❹❺❻]/g, "").trim().toLowerCase();
+    const owned = actor.items.some(i => (i.type === "talent") && (clean(i.name) === key));
     if (owned) return null;
 
     const pack = game.packs.get(`${SW.SYSTEM_ID}.talents`);
     if (!pack) return null;
     const index = await pack.getIndex({ fields: ["system.constellation"] });
-    const entry = index.find(e => e.name.replace(/[◆◇↺★]/g, "").trim().toLowerCase() === key);
+    const entry = index.find(e => clean(e.name) === key);
     if (!entry) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Chargen.freeTalentMissing", { name }));
       return null;

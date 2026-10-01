@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "If you Strided at least 5 feet immediately before making a ranged Strike with a sling or thrown weapon, increase its Range by 10 feet for that Strike.",
+    "effect": "If you Moved at least 3 feet immediately before making a ranged Strike with a sling or thrown weapon, increase its Range by 10 feet for that Strike.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "1217b0942014335f",
   "sort": 0,

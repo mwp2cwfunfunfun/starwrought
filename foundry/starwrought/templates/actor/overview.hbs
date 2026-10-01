@@ -1,4 +1,4 @@
-{{!-- Overview: the four Attributes, the four Defenses, the four Zones. --}}
+{{!-- Overview: the four Attributes, the four Defenses, the four Zones, and the numbers a fight runs on. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
   {{#if (or chargen.unbuilt chargen.inProgress)}}
@@ -37,7 +37,7 @@
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.defenses"}}</h3>
     <div class="sw-defense-grid">
       {{#each defenses as |def|}}
-      <div class="sw-defense {{#if def.isStance}}sw-stance-active{{/if}}">
+      <div class="sw-defense {{#if def.isStance}}sw-stance-active{{/if}} {{#unless def.trained}}sw-untrained{{/unless}}">
         {{#if def.isStance}}<span class="sw-stance-tag">{{localize "STARWROUGHT.Stance.tag"}}</span>{{/if}}
         <a class="sw-defense-roll" data-action="rollDefense" data-defense="{{def.key}}"
            data-tooltip="{{def.hint}}">
@@ -58,12 +58,17 @@
   <div class="sw-panel sw-zones">
     <h3 class="sw-panel-title">
       {{localize "STARWROUGHT.Section.zones"}}
-      <button type="button" class="sw-inline-button" data-action="recenter"
-              data-tooltip="STARWROUGHT.Action.recenterHint">◆ {{localize "STARWROUGHT.Action.recenter"}}</button>
+      <span class="sw-panel-buttons">
+        <span class="sw-points" data-tooltip="STARWROUGHT.Field.woundCountHint">
+          {{localize "STARWROUGHT.Field.wounds"}} {{woundCount}}
+        </span>
+        <button type="button" class="sw-inline-button" data-action="recenter"
+                data-tooltip="STARWROUGHT.Action.recenterHint">{{swActionGlyph 1}} {{localize "STARWROUGHT.Action.recenter"}}</button>
+      </span>
     </h3>
     <div class="sw-zone-grid">
       {{#each zones as |zone|}}
-      <div class="sw-zone {{#if zone.exposed}}sw-zone-exposed{{/if}}">
+      <div class="sw-zone {{#if zone.exposed}}sw-zone-exposed{{/if}} {{#if zone.wounds.wounded}}sw-zone-wounded{{/if}}">
         <div class="sw-zone-head">
           <span class="sw-zone-name">{{zone.label}}</span>
           <a class="sw-zone-toggle" data-action="toggleZone" data-zone="{{zone.key}}"
@@ -71,9 +76,12 @@
             {{#if zone.exposed}}<i class="fa-solid fa-heart-crack"></i>{{else}}<i class="fa-solid fa-shield"></i>{{/if}}
           </a>
         </div>
-        <div class="sw-zone-protection">
-          <span class="sw-protection-value">{{zone.protection}}</span>
-          <span class="sw-protection-label">{{localize "STARWROUGHT.Field.protection"}}</span>
+        <div class="sw-zone-numbers">
+          <div class="sw-zone-protection">
+            <span class="sw-protection-value">{{zone.protection}}</span>
+            <span class="sw-protection-label">{{localize "STARWROUGHT.Field.protection"}}</span>
+          </div>
+          {{> "systems/starwrought/templates/actor/wounds.hbs" zone.wounds}}
         </div>
         <div class="sw-zone-piece">
           {{#if zone.piece}}{{zone.piece.name}}{{else}}<em>{{localize "STARWROUGHT.Protection.unarmored"}}</em>{{/if}}
@@ -83,8 +91,45 @@
           {{zone.materialLabel}} · −1 {{localize "STARWROUGHT.Field.vs"}} {{zone.weakTo}}
         </div>
         {{/if}}
-        {{#if zone.exposed}}<div class="sw-zone-flag">{{localize "STARWROUGHT.Condition.exposed"}}</div>{{/if}}
+        {{#if zone.wounds.effect}}<div class="sw-zone-wound-effect">{{zone.wounds.effect}}</div>{{/if}}
+        {{#if zone.exposed}}
+        <div class="sw-zone-flag">
+          {{localize "STARWROUGHT.Condition.exposed"}}{{#if zone.postureExposed}} <small>({{localize "STARWROUGHT.Reaction.posture"}})</small>{{/if}}
+        </div>
+        {{/if}}
       </div>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- What every Strike rolls: Melee for what is in your hand, Ranged for what leaves it. --}}
+  <div class="sw-panel sw-strikes">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.strikes"}}</h3>
+    <div class="sw-strike-grid">
+      <div class="sw-strike-training" data-tooltip="STARWROUGHT.Field.meleeHint">
+        <span class="sw-glyph sw-glyph-{{strikes.melee.attribute}}">{{swGlyph strikes.melee.attribute}}</span>
+        <span class="sw-strike-name">{{strikes.melee.label}}</span>
+        <span class="sw-strike-mod">{{swSigned strikes.melee.proficiency}}</span>
+        <span class="sw-rank sw-rank-{{strikes.melee.rank}}">{{strikes.melee.rankLabel}}</span>
+      </div>
+      <div class="sw-strike-training" data-tooltip="STARWROUGHT.Field.rangedHint">
+        <span class="sw-glyph sw-glyph-{{strikes.ranged.attribute}}">{{swGlyph strikes.ranged.attribute}}</span>
+        <span class="sw-strike-name">{{strikes.ranged.label}}</span>
+        <span class="sw-strike-mod">{{swSigned strikes.ranged.proficiency}}</span>
+        <span class="sw-rank sw-rank-{{strikes.ranged.rank}}">{{strikes.ranged.rankLabel}}</span>
+      </div>
+      <div class="sw-field sw-readonly" data-tooltip="STARWROUGHT.Field.weaponDiceHint">
+        <span>{{localize "STARWROUGHT.Field.weaponDice"}}</span>
+        <strong>{{strikes.weaponDice}}</strong>
+      </div>
+      <div class="sw-field sw-readonly" data-tooltip="STARWROUGHT.Field.specializationHint">
+        <span>{{localize "STARWROUGHT.Field.specialization"}}</span>
+        <strong>{{swSigned strikes.melee.specialization}} <em>/</em> {{swSigned strikes.ranged.specialization}}</strong>
+      </div>
+    </div>
+    <div class="sw-strike-kinds">
+      {{#each strikes.kinds as |kind|}}
+      <span class="sw-strike-kind" data-tooltip="{{kind.hint}}"><b>{{kind.glyph}}</b> {{kind.label}}</span>
       {{/each}}
     </div>
   </div>
@@ -97,15 +142,15 @@
         <select name="system.size">{{selectOptions sizeChoices selected=system.size}}</select>
       </label>
       <label class="sw-field">
-        <span>{{localize "STARWROUGHT.Field.ancestryHp"}}</span>
-        <input type="number" name="system.details.ancestry.hp" value="{{system.details.ancestry.hp}}" min="0">
+        <span>{{localize "STARWROUGHT.Field.ancestryVigor"}}</span>
+        <input type="number" name="system.details.ancestry.vigor" value="{{system.details.ancestry.vigor}}" min="0">
       </label>
       <label class="sw-field">
-        <span>{{localize "STARWROUGHT.Field.callingHp"}}</span>
-        <input type="number" name="system.details.calling.hp" value="{{system.details.calling.hp}}" min="0">
+        <span>{{localize "STARWROUGHT.Field.callingVigor"}}</span>
+        <input type="number" name="system.details.calling.vigor" value="{{system.details.calling.vigor}}" min="0">
       </label>
-      <label class="sw-field">
-        <span>{{localize "STARWROUGHT.Field.speed"}}</span>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.speedHint">
+        <span>{{localize "STARWROUGHT.Field.ancestrySpeed"}}</span>
         <input type="number" name="system.details.ancestry.speed" value="{{system.details.ancestry.speed}}" min="0">
       </label>
       <div class="sw-field sw-readonly" data-tooltip="{{totalReachHint}}">
@@ -144,6 +189,27 @@
       </label>
     </div>
 
+    {{!-- Movement, in feet. A Move ❶ carries you your Speed; a Step is half and never provokes;
+          a Rush ❸ is five Speeds in a straight line, less Load Strain; a Leap ❶ is ten feet, less Load Strain. --}}
+    <div class="sw-movement">
+      <div class="sw-move" data-tooltip="STARWROUGHT.Field.speedHint">
+        <span class="sw-move-label">{{swActionGlyph 1}} {{localize "STARWROUGHT.Field.speed"}}</span>
+        <strong>{{movement.speed}} ft</strong>
+      </div>
+      <div class="sw-move" data-tooltip="STARWROUGHT.Field.stepHint">
+        <span class="sw-move-label">{{swActionGlyph 1}} {{localize "STARWROUGHT.Field.step"}}</span>
+        <strong>{{movement.step}} ft</strong>
+      </div>
+      <div class="sw-move" data-tooltip="STARWROUGHT.Field.rushHint">
+        <span class="sw-move-label">{{swActionGlyph 3}} {{localize "STARWROUGHT.Field.rush"}}</span>
+        <strong>{{movement.rush}} ft</strong>
+      </div>
+      <div class="sw-move" data-tooltip="STARWROUGHT.Field.leapHint">
+        <span class="sw-move-label">{{swActionGlyph 1}} {{localize "STARWROUGHT.Field.leap"}}</span>
+        <strong>{{movement.leap}} ft</strong>
+      </div>
+    </div>
+
     {{#if system.matchedHarness}}
     <p class="sw-note sw-good">{{localize "STARWROUGHT.Hint.matchedHarness"}}</p>
     {{/if}}
@@ -161,9 +227,9 @@
       <button type="button" data-action="refuseDeath" {{#unless system.heroPoints.value}}disabled{{/unless}}>
         <i class="fa-solid fa-hand"></i> {{localize "STARWROUGHT.Roll.refuseDeath"}}
       </button>
-      <button type="button" data-action="rest">
+      <button type="button" data-action="rest" data-tooltip="{{localize 'STARWROUGHT.Rest.hint'}}">
         <i class="fa-solid fa-bed"></i> {{localize "STARWROUGHT.Rest.title"}}
-        <em>({{system.hp.rest}} {{localize "STARWROUGHT.Field.hpShort"}})</em>
+        <em>({{swSigned vigor.rest}} {{localize "STARWROUGHT.Field.vigor"}})</em>
       </button>
     </div>
   </div>
@@ -181,8 +247,8 @@
         <input type="number" name="system.bonuses.initiative" value="{{system.bonuses.initiative}}"></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.speedBonus"}}</span>
         <input type="number" name="system.bonuses.speed" value="{{system.bonuses.speed}}"></label>
-      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.hpBonus"}}</span>
-        <input type="number" name="system.bonuses.hp" value="{{system.bonuses.hp}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.vigorBonus"}}</span>
+        <input type="number" name="system.bonuses.vigor" value="{{system.bonuses.vigor}}"></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.protectionBonus"}}</span>
         <input type="number" name="system.bonuses.protection" value="{{system.bonuses.protection}}"></label>
       {{#each system.bonuses.defenses as |value key|}}

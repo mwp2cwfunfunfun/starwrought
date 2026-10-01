@@ -5,7 +5,7 @@
   "author": null,
   "img": "icons/svg/regen.svg",
   "scope": "global",
-  "command": "// Restore level x Presence Hit Points, and clear Wounded.\nconst actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);\nconst targets = actors.length ? actors : (game.user.character ? [game.user.character] : []);\nif ( !targets.length ) ui.notifications.warn(\"Select a token first.\");\nfor ( const actor of targets ) await actor.restForTheNight();",
+  "command": "// Restore level x Presence Vigor (at least level). Wounds do not clear with rest.\nconst actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);\nconst targets = actors.length ? actors : (game.user.character ? [game.user.character] : []);\nif ( !targets.length ) ui.notifications.warn(\"Select a token first.\");\nfor ( const actor of targets ) await actor.restForTheNight();",
   "folder": null,
   "sort": 0,
   "ownership": {

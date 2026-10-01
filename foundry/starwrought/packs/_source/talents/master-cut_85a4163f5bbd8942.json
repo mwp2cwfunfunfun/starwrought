@@ -1,0 +1,49 @@
+{
+  "_id": "85a4163f5bbd8942",
+  "name": "Master Cut",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "melee",
+    "constellationName": "Melee",
+    "tier": "E",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Weapon Familiarity"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Counter, you gain a +2 Situation bonus to the Defense you roll against the triggering attack. Your parry and your cut are one motion.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.10"
+  },
+  "folder": "2a19b71d960a8b80",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!85a4163f5bbd8942"
+}

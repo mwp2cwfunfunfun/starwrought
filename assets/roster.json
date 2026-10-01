@@ -2,9 +2,10 @@
  "ancestries": [
   {
    "name": "Human",
+   "vigor": 8,
    "hp": 8,
    "size": "Medium",
-   "speed": "25 ft",
+   "speed": "6 ft",
    "senses": "—",
    "tree": "Human",
    "blurb": "Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.",
@@ -15,7 +16,7 @@
     ],
     [
      "Torchbearer Human",
-     "Allies within 15 feet gain a +1 circumstance bonus to their first Defense roll each round while they can see or hear you."
+     "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you."
     ]
    ]
   }
@@ -38,17 +39,17 @@
   [
    "Acrobat",
    "Athletics & Acrobatics, plus Lore (Circus)",
-   "In a circus or on the streets, you earned your pay by performing as an acrobat."
+   "In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use."
   ],
   [
    "Soldier",
    "Athletics & Intimidation, plus Lore (Warfare)",
-   "You served in somebody's army, and learned what a line looks like just before it breaks."
+   "You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks."
   ],
   [
    "Criminal",
    "Guile & Stealth, plus Lore (Underworld)",
-   "You made your living outside the law, and still know who to ask."
+   "You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to."
   ]
  ],
  "callings": [
@@ -57,35 +58,35 @@
    "Stealth",
    2,
    "Agility",
-   "Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +4d6 at Legendary."
+   "Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +2d6 at Expert, +3d6 at Master, and +4d6 at Legendary."
   ],
   [
    "Berserker",
    "Athletics",
    4,
    "Might",
-   "Rage: Temp HP = level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts."
+   "Rage ❶: Temporary Vigor equal to your level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts. The damage rises to +4 at Expert, +6 at Master, +8 at Legendary."
   ],
   [
    "Bravo",
    "Acrobatics",
    3,
    "Presence",
-   "Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Evade and +5 ft Speed while you hold it."
+   "Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Situation to Evade and +1 ft to your Speeds while you hold it (Speed +2 ft at Expert, Evade +2 at Master, Speed +3 ft at Legendary)."
   ],
   [
    "Hunter",
    "Awareness",
    3,
    "Wits",
-   "Mark Prey: +1d8 precision damage the first time each round you Hit your prey, and you always know roughly where it is."
+   "Mark Prey ❶: +1d8 precision damage the first time each round you Hit your prey (2d8 at Expert, 3d8 at Master, 4d8 at Legendary), and you always know roughly where it is within 60 feet."
   ],
   [
    "Weaponmaster",
    "Athletics",
    3,
    "Might",
-   "Drilled: Weapon Familiarity free, +2 to your Weapons Proficiency Bonus with that group, and Reactive Strike without its requirements."
+   "Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee."
   ]
  ],
  "defenses": [
@@ -93,41 +94,66 @@
    "Awareness",
    "Wits",
    "Don't be surprised.",
-   "Sneak, Hidden foes, ambushes, Initiative",
-   "Feint, Lie, Illusions"
+   "Blights: poison, disease, and anything that must be caught early. Initiative is usually Awareness. Never unavailable.",
+   "Beguilement: Feint, Lie, Sneak, and illusions are measured against your Awareness Threshold."
   ],
   [
    "Evade",
    "Agility",
    "Don't be there.",
-   "Weapon attacks, physical traps",
+   "Blows and Blasts. Unavailable while you are Grabbed or Restrained.",
    "—"
   ],
   [
    "Guard",
    "Presence",
    "Don't let it through.",
-   "Weapon attacks, physical traps",
-   "Mental traps, fear, charm, confusion"
+   "Blows (a ranged Blow only with a shield Raised). Unavailable while you are unaware of the attack, or have nothing equipped to ward it away.",
+   "Beguilement: fear, charm, confusion, and other assaults on your composure."
   ],
   [
    "Endure",
    "Might",
    "Survive what does come through.",
-   "Poison, disease, Wounded, Dying",
+   "Blasts and Blights: poison, disease, exhaustion, Persistent Damage, and Recovery checks while Dying. Never unavailable.",
    "—"
   ]
  ],
  "postures": [
   [
-   "Give Ground ↺",
-   "Evade",
-   "+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
+   "Parry ❶↺",
+   "Guard Training • Guard +2 Situation",
+   "You Guard with a +2 Situation bonus. You need a rigid weapon, a shield, or a permitted natural weapon in hand. If you Stop a Deliberate or Committed Strike, you take Control of the attacking weapon rather than a neutral Bind, and you may at once make a Quick Strike ⓿ against its owner: the riposte. A Stopped Quick Strike gives only a neutral Bind."
   ],
   [
-   "Set Your Feet ↺",
-   "Guard",
-   "+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed immediately, win or lose."
+   "Void ❶↺",
+   "Evade Training • Evade +2 Situation",
+   "You Evade with a +2 Situation bonus. If the attack is Stopped, you may Step in any direction."
+  ],
+  [
+   "Counter ❶↺",
+   "Melee Training • Guard or Evade, no bonus",
+   "Answer a melee Blow from a foe within your Reach with a Quick Strike of your own. No bonus to your Defense. Roll both; resolve both. Both can land. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it."
+  ],
+  [
+   "Intercept ❶↺",
+   "Melee Training • no Defense roll",
+   "When a foe Moves from outside your Total Reach to inside it, or Strikes you with an Unwieldy weapon from inside its Unwieldy distance, make a Quick Strike at the moment they enter. Once per foe per Move. A Wound stops their movement; anything less and it continues."
+  ],
+  [
+   "Posture ⓿↺",
+   "Specific Talents • the named Defense",
+   "A Situation bonus to the named Defense, taken before you know whether the attack succeeded. It costs no actions, but a Zone of your choice becomes Exposed until the end of the round, whether or not the Posture works, and Recenter does not clear it. Its bonus is Situation, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack."
+  ],
+  [
+   "Give Ground ⓿↺",
+   "Evade Training • Evade +2 Situation",
+   "+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it."
+  ],
+  [
+   "Set Your Feet ⓿↺",
+   "Guard Training • Guard +2 Situation",
+   "+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it."
   ]
  ],
  "talentPointTypes": [
@@ -169,12 +195,12 @@
   [
    "Milestone Talent Point",
    "Anything you qualify for",
-   "Yes. If no Constellation is Flared, it becomes a Deferred Talent Point"
+   "Yes. However, if there are no Flared Constellations available, it becomes a Deferred Talent Point."
   ],
   [
    "Deferred Talent Point",
    "Anything you qualify for",
-   "Yes; must be spent the instant a Constellation is Flared"
+   "Yes; must be spent the instant a Constellation is Flared."
   ]
  ],
  "skillRoster": [
@@ -218,52 +244,52 @@
   [
    "Archery",
    "Agility",
-   "Bows and careful ranged attacks"
+   "Bows and careful ranged attacks. Child of Ranged."
   ],
   [
    "Armored Fighting",
    "Presence",
-   "Using matched harnesses for additional benefits"
+   "Using matched harnesses for additional benefits. Child of Melee."
   ],
   [
    "Brawling",
    "Might",
-   "Fists, feet, tusks, headbutts"
+   "Fists, feet, tusks, headbutts. Child of Melee."
   ],
   [
    "Crossbow Fighting",
    "Wits",
-   "Prepared mechanical ranged weapons"
+   "Prepared mechanical ranged weapons. Child of Ranged."
   ],
   [
    "Dueling",
    "Agility",
-   "One one-handed weapon, other hand free"
+   "One one-handed weapon, other hand free. Child of Melee."
   ],
   [
    "Great Weapon Fighting",
    "Might",
-   "Two-handed, non-hafted weapons"
+   "Two-handed, non-hafted weapons. Child of Melee."
   ],
   [
    "Missile Skirmishing",
    "Agility",
-   "Slings, thrown weapons, bolas"
+   "Slings, thrown weapons, bolas. Child of Ranged."
   ],
   [
    "Shield Fighting",
    "Presence",
-   "Weapon and shield as one machine"
+   "Weapon and shield as one machine. Child of Melee."
   ],
   [
    "Spear & Polearm Fighting",
    "Wits",
-   "Hafted weapons: polearms and spears"
+   "Hafted weapons: polearms and spears. Child of Melee."
   ],
   [
    "Two-Weapon Fighting",
    "Agility",
-   "A weapon in each hand"
+   "A weapon in each hand. Child of Melee."
   ]
  ],
  "weaponsMelee": [
@@ -417,7 +443,7 @@
    "Flails",
    "1d8 B",
    "4 ft",
-   "Disarm, Trip",
+   "Disarm, Trip, Flexible",
    "5 gp"
   ],
   [
@@ -426,7 +452,7 @@
    "Whips",
    "1d6 S",
    "8 ft",
-   "Finesse, Disarm, Trip, Unwieldy 2",
+   "Finesse, Disarm, Trip, Unwieldy 2, Flexible",
    "1 gp"
   ],
   [
@@ -444,7 +470,7 @@
    "Flails",
    "1d10 B",
    "6 ft",
-   "Disarm, Sweep, Two-Handed, Unwieldy 2",
+   "Disarm, Sweep, Two-Handed, Unwieldy 2, Flexible",
    "5 gp"
   ],
   [
@@ -472,7 +498,7 @@
    "Crossbows",
    "1d8 P",
    "100 ft",
-   "Ranged 100, Mechanical, Reload 1, Two-Handed"
+   "Ranged 100, Mechanical, Reload 2, Two-Handed"
   ],
   [
    "Shortbow",
@@ -480,7 +506,7 @@
    "Bows",
    "1d6 P",
    "120 ft",
-   "Ranged 120, Two-Handed, Unwieldy 10"
+   "Ranged 120, Reload 1, Two-Handed, Unwieldy 10"
   ],
   [
    "Longbow",
@@ -488,7 +514,7 @@
    "Bows",
    "1d8 P",
    "180 ft",
-   "Ranged 180, Two-Handed, Unwieldy 20"
+   "Ranged 180, Reload 1, Two-Handed, Unwieldy 20"
   ],
   [
    "Heavy Crossbow",
@@ -496,7 +522,7 @@
    "Crossbows",
    "1d10 P",
    "140 ft",
-   "Ranged 140, Mechanical, Reload 2, Armor-Piercing 1, Two-Handed"
+   "Ranged 140, Mechanical, Reload 3, Armor-Piercing 1, Two-Handed"
   ],
   [
    "Hand Crossbow",
@@ -504,7 +530,7 @@
    "Crossbows",
    "1d6 P",
    "60 ft",
-   "Ranged 60, Mechanical, Reload 1, Close"
+   "Ranged 60, Mechanical, Reload 2, Close"
   ],
   [
    "Repeating Crossbow",
@@ -512,7 +538,7 @@
    "Crossbows",
    "1d6 P",
    "80 ft",
-   "Ranged 80, Mechanical, Capacity 5, Reload 2, Two-Handed"
+   "Ranged 80, Mechanical, Capacity 5, Reload 3, Two-Handed"
   ],
   [
    "Bolas",
@@ -527,12 +553,12 @@
   [
    "Intuitive",
    "General weapon training transfers easily",
-   "Use your full Weapons Proficiency Bonus"
+   "Use your full Melee or Ranged Proficiency Bonus"
   ],
   [
    "Practiced",
    "Requires familiarity with that weapon family",
-   "Use your Weapons Proficiency Bonus one rank lower"
+   "Use your Melee or Ranged Proficiency Bonus one rank lower"
   ],
   [
    "Technical",
@@ -811,15 +837,7 @@
  "weaponTraits": [
   [
    "Agile",
-   "Your multiple attack penalty with it is −4 and −8 rather than −5 and −10."
-  ],
-  [
-   "Armor-Piercing [N]",
-   "Ignore N Protection when dealing piercing damage with this weapon."
-  ],
-  [
-   "Capacity [N]",
-   "The weapon can fire N times before it must be reloaded. Reloading its full capacity takes the listed Reload actions."
+   "Light enough to bite on the way in: a Quick Strike ❶ with it may Critically Hit."
   ],
   [
    "Close",
@@ -827,19 +845,11 @@
   ],
   [
    "Deadly dX",
-   "On a critical hit, add one die of the listed size to the damage."
+   "On a critical hit, add one die of the listed size to the damage. It is a critical effect of the weapon rather than one of the dice rolled for damage, so it is added after the damage has been doubled, and is not itself doubled."
   ],
   [
    "Finesse",
    "You may use Agility instead of Might on attack rolls with this weapon. Damage still uses Might."
-  ],
-  [
-   "Grapple, Trip, Disarm, Shove",
-   "You may attempt that maneuver with this weapon in hand rather than a free hand."
-  ],
-  [
-   "Mechanical",
-   "You do not add Might to damage with this weapon."
   ],
   [
    "Nonlethal",
@@ -847,23 +857,19 @@
   ],
   [
    "Parry",
-   "Spend ◆ to gain a +1 Situation bonus to Guard for physical Attacks until the start of your next turn."
-  ],
-  [
-   "Ranged [N]",
-   "You may Strike a target up to N feet away. Use Agility instead of Might for the Attack roll."
-  ],
-  [
-   "Reload [N]",
-   "It takes N actions to reload before it can be fired again."
+   "A guard built for defense. +1 Gear bonus to Guard against melee Attacks while you wield it."
   ],
   [
    "Sweep",
-   "+1 Situation bonus to attack a target you have not yet attacked this turn."
+   "+1 Situation bonus to attack a target you have not yet attacked this round."
   ],
   [
    "Thrown X",
    "You may throw it up to X feet, using Might for the attack roll."
+  ],
+  [
+   "Grapple, Trip, Disarm, Shove",
+   "You may attempt that Maneuver with this weapon in hand rather than a free hand."
   ],
   [
    "Two-Hand dX",
@@ -875,11 +881,35 @@
   ],
   [
    "Unwieldy [N]",
-   "You take a −2 Situation penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed."
+   "You take a −2 Situation penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed. A creature within N feet that you attack with it may Intercept you, as though you had entered its Reach."
+  ],
+  [
+   "Flexible",
+   "It cannot Parry, form a Bind, or be Bound. You can still Guard with it."
   ],
   [
    "Versatile X",
    "You may deal X damage instead of its usual type."
+  ],
+  [
+   "Ranged [N]",
+   "You may Strike a target up to N feet away. Use Agility instead of Might for the Attack roll."
+  ],
+  [
+   "Mechanical",
+   "You do not add Might to damage with this weapon."
+  ],
+  [
+   "Reload [N]",
+   "Reloading takes N actions."
+  ],
+  [
+   "Armor-Piercing [N]",
+   "Ignore N Protection when dealing piercing damage with this weapon."
+  ],
+  [
+   "Capacity [N]",
+   "The weapon can fire N times before it must be reloaded. Reloading its full capacity takes the listed Reload actions."
   ]
  ],
  "armorTraits": [
@@ -899,27 +929,23 @@
  "actionTraits": [
   [
    "Attack",
-   "Counts toward your multiple attack penalty, and suffers it. Your first attack in a turn is unpenalized, your second takes −5, and your third and beyond take −10."
+   "An action a foe answers with a Defense. Attacks are resolved as Exchanges (see Chapter 2: The Exchange). A Committed Strike ❸ is also Weighted."
   ],
   [
-   "Move",
-   "You change position under your own power. Moving out of a foe's reach may provoke a reaction from anyone who has a Talent that allows it."
+   "Motion",
+   "You change position under your own power. Moving into a foe's Total Reach may provoke an Intercept from that foe; moving out of it may provoke a Reaction from anyone with a Talent that allows it. Step does neither."
   ],
   [
    "Manipulate",
-   "You use your hands. You need at least one free, and fine work near an enemy can provoke a reaction from them."
+   "You use your hands. You need at least one free, and fine work near an enemy can provoke a Reaction from them."
   ],
   [
    "Concentrate",
-   "Actions and Activities with this Trait take an extra action to complete if you are Heedless."
+   "Maneuvers with this Trait take an extra action to complete if you are Heedless."
   ],
   [
    "Stance",
    "A way of standing and holding yourself. You can be in only one stance at a time, and it lasts until you leave it, fall unconscious, or enter another."
-  ],
-  [
-   "Press",
-   "You may use it only while you are already suffering a multiple attack penalty, and never on someone else's turn. Some press actions add an effect on a failure; that effect never applies on a critical failure."
   ],
   [
    "Auditory",
@@ -939,190 +965,244 @@
   ],
   [
    "Reaction",
-   "Not a Trait so much as a cost: it happens on someone else's turn, and you have one per round."
+   "A Maneuver you may perform outside your Opportunity, the moment its Trigger occurs. It costs its listed actions from the same six as everything else, and you may use as many Reactions in a round as you can afford. A Reaction never triggers another Reaction. Marked ↺ beside its cost."
+  ],
+  [
+   "Press",
+   "Actions with this trait follow up an earlier attack. You can use a Press action only if your previous action this round was a Strike against the same target, and only at your own Opportunity. Some actions with the Press trait also grant an effect on a failure. The effects that are added on a failure don't apply on a critical failure. If your Press action succeeds, you can choose to apply the failure effect instead (for example, when an attack deals no damage due to resistance)."
+  ],
+  [
+   "Weighted",
+   "A Committed Strike ❸. If it is Stopped (a Graze or a Miss), you are Exposed in a Zone of the defender's choice."
+  ],
+  [
+   "Prepared",
+   "A Maneuver of three or more actions. Spend one action now and reserve the rest; it resolves at your next Opportunity (see Encounter Mode)."
+  ],
+  [
+   "Flexible",
+   "A weapon that cannot Parry, form a Bind, or be Bound."
+  ],
+  [
+   "Massive",
+   "An attack so heavy that any Critical Hit Wounds, whether or not the Zone was Exposed. Reserved for the largest creatures."
+  ],
+  [
+   "Unparryable",
+   "An attack that cannot be answered with Parry and offers nothing to Bind. Guard still applies to it."
   ]
  ],
  "actions": {
-  "Moving": [
+  "Motion": [
    [
-    "Stride ◆",
-    "Move",
-    "Move up to your Speed."
+    "Move ❶",
+    "Motion",
+    "Move up to your Speed. Crossing into a foe's Total Reach may provoke an Intercept."
    ],
    [
-    "Step ◆",
-    "—",
-    "Move 3 feet. Step has no Traits at all, which is the point: it never provokes reactions. You cannot Step into difficult terrain."
+    "Rush ❸",
+    "Motion",
+    "Move up to five times your Speed in a straight line, less your Load Strain in feet. You cannot use Reactions until your next Opportunity, and you are Off-Guard against any Intercept made against you during the Rush."
    ],
    [
-    "Leap ◆",
-    "Move",
-    "Jump 10 feet horizontally or 3 feet vertically, without a check. Longer or higher jumps are an Athletics check, and count as part of the Leap."
+    "Leap ❶",
+    "Motion",
+    "Jump 10 feet horizontally (less your Load Strain in feet) or 3 feet vertically, without a check. Longer or higher jumps are an Athletics check, and count as part of the Leap."
    ],
    [
-    "Crawl ◆",
-    "Move",
+    "Crawl ❶",
+    "Motion",
     "While prone, move 3 feet."
    ],
    [
-    "Stand ◆",
-    "Move",
+    "Stand ❶",
+    "Motion",
     "Get up from prone."
    ],
    [
-    "Climb ◆",
-    "Move",
-    "An Athletics check against a Threshold the GM sets. On a success you move a quarter of your Speed (half on a critical success). On a critical failure you fall."
+    "Climb ❶",
+    "Motion",
+    "An Athletics check against a Threshold the GM sets. On a success you move half your Speed (your full Speed on a critical success). On a critical failure you fall."
    ],
    [
-    "Swim ◆",
-    "Move",
-    "An Athletics check against a Threshold the GM sets. On a success you move a quarter of your Speed (half on a critical success). On a critical failure you sink."
+    "Swim ❶",
+    "Motion",
+    "An Athletics check against a Threshold the GM sets. On a success you move half your Speed (your full Speed on a critical success). On a critical failure you sink."
    ],
    [
-    "Tumble Through ◆",
-    "Move",
+    "Tumble Through ❶",
+    "Motion",
     "Acrobatics against the target's Awareness Threshold, to move through a foe's space. On a success you pass through, though their space is difficult terrain for this move. On a failure your movement stops in front of them."
    ],
    [
-    "Squeeze ◆",
-    "Move",
-    "Requirements You are entering a space narrower than your token size, but at least half as wide.<br>Move up to 5 feet, regardless of your Speed. While any part of you is in that space you are Off-Guard, Evade is unavailable, and you can attack only with Close weapons. A space narrower than half your own stops you entirely: for a Medium creature, a gap of 1½ feet or less."
+    "Squeeze ❶",
+    "Motion",
+    "Requirements You are entering a space narrower than your token size, but at least half as wide.<br>Move up to 3 feet, regardless of your Speed. While any part of you is in that space you are Off-Guard, Evade is unavailable to you, and you can attack only with weapons that have the Close trait. A space narrower than half your own stops you entirely: for a Medium creature, a gap of 1½ feet or less."
    ]
   ],
-  "Attacking": [
+  "Attack": [
    [
-    "Strike ◆ to ◆◆◆",
+    "Strike ❶ to ❸",
     "Attack",
-    "Attack with a weapon or an unarmed blow. Roll Weapons against Evade or Guard, and deal damage and effects as normal.<br><b>◆◆</b> A deliberate attack. On a critical hit, you may Expose a plausible zone. <b>◆◆◆</b> A committed attack. On a hit or a critical hit, you may Expose a plausible zone."
+    "Attack with a weapon or an unarmed blow. Roll Melee (or Ranged, for a weapon that leaves your hand) against Evade or Guard, and deal damage and effects as normal. The actions you spend say how much of yourself is behind the blow (see Chapter 2: The Exchange).<br><b>❶ Quick.</b> A probe: one weapon die plus precision damage, nothing else, on the Torso. It cannot Critically Hit (Agile weapons excepted) and Protection applies in full even to an Exposed Zone. Stopped, it costs you nothing and can only be bound, never Controlled.<br><b>❷ Deliberate.</b> All dice, specialization, and your Might. It may be placed on an Exposed Zone, and on a Critical Hit you may Expose a plausible Zone. A Graze costs only the tempo; on a Miss you are Exposed. A Parry that Stops it takes Control.<br><b>❸ Committed.</b> Prepared. All dice, specialization, and your Might. On a Hit or Critical Hit, you may Expose a plausible Zone. Weighted: Stopped, Graze or Miss, you are Exposed. A Parry that Stops it takes Control."
    ],
    [
-    "Grapple ◆ to ◆◆",
+    "Gain Control ❶",
     "Attack",
-    "Athletics against Evade or Guard. Needs a free hand or a Grapple weapon; target within reach and at most one Size larger.<br><b>Critical Success</b> Restrained until the end of your next turn. <b>Success</b> Grabbed until the end of your next turn. <b>Graze</b> No effect, but the defender still pays the Graze cost. <b>Miss</b> You overcommit and are Off-Guard.<br><b>◆◆ Tackle.</b> Stride, then Grapple; success also knocks them Prone and you fall Prone adjacent."
+    "Requirements A rigid weapon, shield, or permitted natural weapon in hand; the target's weapon or natural attack is within the longer of your two Total Reaches; the target is no more than one Size larger than you.<br>Roll Melee against the target's Guard.<br><b>Critical Success</b> You Control the weapon, and the target is Off-Guard until its next Opportunity. <b>Success</b> You Control the weapon. <b>Graze</b> A neutral Bind forms. <b>Miss</b> You pressed badly. The target Controls your weapon instead.<br><b>Special</b> Evade cannot answer this attack. While you Control a weapon, the target has an Exposed Zone of your choice and takes −2 Situation to attacks with it (see Chapter 2: The Exchange)."
    ],
    [
-    "Shove ◆ to ◆◆",
-    "Attack",
-    "Athletics against Evade or Guard. Needs a free hand or a Shove weapon.<br><b>Critical Success</b> Pushed 6 feet; you may Stride with it. <b>Success</b> Pushed 3 feet. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>◆◆ Heave.</b> 12 feet on a critical success, 6 on a success."
+    "Close ❶",
+    "Motion",
+    "Requirements You Control a foe's weapon.<br>Step toward that foe. The Bind holds, and the Controlled weapon cannot Intercept you. This is the only movement that does not end a Bind."
    ],
    [
-    "Trip ◆ to ◆◆",
+    "Grapple ❶ to ❷",
     "Attack",
-    "Athletics against Evade or Guard. Needs a free hand or a Trip weapon.<br><b>Critical Success</b> Prone, plus damage equal to your Might. <b>Success</b> Prone. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>Special</b> If the target's Legs are Exposed, increase the degree of success by one.<br><b>◆◆ Leg Sweep.</b> Also leaves them Exposed [Legs]."
+    "Requirements You have a free hand or a weapon with the Grapple Trait, and the target must be within reach and no more than one Size larger than you.<br>Roll Athletics against Evade or Guard.<br><b>Critical Success</b> The target is Restrained until the end of the next round. <b>Success</b> The target is Grabbed until the end of the next round. <b>Graze</b> No effect. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity.<br><b>❷ Tackle.</b> Move, then Grapple. <b>Critical Success</b> The target is Restrained until the end of the next round and knocked Prone. <b>Success</b> The target is Grabbed until the end of the next round and knocked Prone. You fall Prone adjacent to them. <b>Graze</b> No effect, and you are Exposed in a Zone of the defender's choice. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity, and fall Prone adjacent to them."
    ],
    [
-    "Disarm ◆ or ◆◆◆",
+    "Shove ❶ to ❷",
     "Attack",
-    "Athletics against Evade or Guard. Needs a free hand or a Disarm weapon.<br><b>Critical Success</b> The item drops in one of their squares. <b>Success</b> Grip loosened: −2 to attacks with it, and the next Disarm ignores your multiple attack penalty, until they Interact to resettle it. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> Off-Guard.<br><b>Special</b> If the target's Arms are Exposed, increase the degree of success by one.<br><b>◆◆◆ Wrench.</b> A critical success throws it 1d10 squares."
+    "Requirements You have a free hand or a weapon with the Shove Trait, and the target must be within reach and no more than one Size larger than you.<br>Roll Athletics against Evade or Guard.<br><b>Critical Success</b> The target is pushed 6 feet. You may Move as part of this action, if it is in the same direction. <b>Success</b> The target is pushed 3 feet. <b>Graze</b> No effect. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity.<br><b>❷ Heave.</b> You set your feet and put your weight behind it. <b>Critical Success</b> The target is pushed 12 feet. <b>Success</b> The target is pushed 6 feet. <b>Graze</b> No effect, and you are Exposed in a Zone of the defender's choice. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity."
    ],
    [
-    "Reposition ◆ to ◆◆",
+    "Trip ❶ to ❷",
     "Attack",
-    "Athletics against Evade or Guard. Needs a free hand, or you are already Grabbing them.<br><b>Critical Success</b> Move them 6 feet, staying within your reach. <b>Success</b> 3 feet. <b>Graze</b> No effect, but the Graze cost still lands. <b>Miss</b> They may move you 3 feet instead.<br><b>◆◆ Haul.</b> Stride at full Speed on a critical success, half on a success, bringing them with you."
+    "Requirements You have a free hand or a weapon with the Trip Trait, and the target must be within reach and no more than one Size larger than you.<br>Roll Athletics against Evade or Guard.<br><b>Critical Success</b> The target is knocked Prone, and takes damage equal to your Might. <b>Success</b> The target is knocked Prone. <b>Graze</b> No effect. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity.<br><b>Special</b> If the target's Legs are Exposed, increase the degree of success by one.<br><b>❷ Leg Sweep.</b> <b>Critical Success</b> The target is knocked Prone, takes damage equal to your Might, and becomes Exposed [Legs]. <b>Success</b> The target is knocked Prone and becomes Exposed [Legs]. <b>Graze</b> No effect, and you are Exposed in a Zone of the defender's choice. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity. The Special above still applies."
+   ],
+   [
+    "Disarm ❶ or ❸",
+    "Attack",
+    "Requirements You have a free hand or a weapon with the Disarm Trait, and the target must be within reach and no more than one Size larger than you.<br>Roll Athletics against Evade or Guard.<br><b>Critical Success</b> The item drops from their grip and lands in one of their squares. <b>Success</b> Their grip is loosened: −2 Situation penalty to attacks with it, and the next Disarm against them gains a +2 Situation bonus, until they spend an Interact to resettle it. <b>Graze</b> No effect. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity.<br><b>Special</b> If the target's Arms are Exposed, increase the degree of success by one.<br><b>❸ Wrench.</b> <b>Critical Success</b> The item flies from their grip and lands 1d10 squares away, in a direction of your choosing. <b>Success</b> The item drops from their grip and lands in one of their squares. <b>Graze</b> No effect, and you are Exposed in a Zone of the defender's choice. <b>Miss</b> You overcommit and are Off-Guard until your next Opportunity. The Special above still applies."
+   ],
+   [
+    "Reposition ❶ to ❷",
+    "Attack",
+    "Requirements You have a free hand or are already Grabbing or Restraining the target, and the target must be within reach and no more than one Size larger than you.<br>Roll Athletics against Evade or Guard.<br><b>Critical Success</b> Move the target up to 6 feet, staying within your reach, not into or through obstacles. <b>Success</b> Move the target up to 3 feet, staying within your reach, not into or through obstacles. <b>Graze</b> No effect. <b>Miss</b> The target can move you up to 3 feet as though it Repositioned you.<br><b>❷ Haul.</b> <b>Critical Success</b> Move up to your full Speed, bringing the target with you. <b>Success</b> Move up to half your Speed, bringing the target with you. <b>Graze</b> No effect, and you are Exposed in a Zone of the defender's choice. <b>Miss</b> The target can move you up to 6 feet the same way."
    ]
   ],
-  "Defending & recovering": [
+  "Defense & Recovery": [
    [
-    "Raise a Shield ◆",
+    "Raise a Shield ❶",
     "—",
-    "Gain your shield's Gear bonus to Guard until the start of your next turn. You must be wielding it."
+    "Gain your shield's Gear bonus to Guard until your next Opportunity. You must be wielding it."
    ],
    [
-    "Recenter ◆",
+    "Recenter ❶",
     "Concentrate",
-    "Gather yourself: clear every Exposed zone on you."
+    "Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in."
    ],
    [
-    "Take Cover ◆",
+    "Take Cover ❶",
     "—",
-    "Requirements You have Cover, or Greater Cover, or are wielding a tower shield.<br>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step, or Attack."
+    "Requirements You have Cover, or Greater Cover, or are wielding a tower shield.<br>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step or Attack.<br><b>Special</b> A raised tower shield gives you Cover with nothing to get behind, so Taking Cover behind one gives you Greater Cover."
    ],
    [
-    "Ready ◆◆ to ◆◆◆",
-    "Concentrate",
-    "Readying costs one action more than the action you are readying. Name a single action and a trigger. Until the start of your next turn, if the trigger occurs you may take that action as a reaction. Readying consumes your reaction whether or not it fires."
-   ],
-   [
-    "Escape ◆",
+    "Escape ❶",
     "—",
-    "Requirements You are Grabbed or Restrained.<br>Roll your best of Athletics or Acrobatics against the grabber's Endure.<br><b>Critical Success</b> Free, and you may Step as a free action. <b>Success</b> Free. <b>Failure</b> The condition persists. <b>Critical Failure</b> Their hold improves: Grabbed becomes Restrained."
+    "Break free of a grab, a restraint, or anything holding you.<br>Requirements You are Grabbed or Restrained.<br>Roll your best of Athletics or Acrobatics against the grabber's Endure.<br><b>Critical Success</b> You are no longer Grabbed or Restrained, and may Step ⓿. <b>Success</b> You are no longer Grabbed or Restrained. <b>Failure</b> The Grabbed or Restrained condition persists. <b>Critical Failure</b> The condition persists and their hold improves: if you were Grabbed, you are now Restrained."
    ],
    [
-    "Delay ◇",
+    "Step ❶",
     "—",
-    "Taken at the start of your turn, before anything else. Give up the rest of your turn, and your reaction until you act. At the end of any other creature's turn this round you may take your turn; your new place in the order stays there for the encounter. Delaying ends anything that would have ended on your turn."
+    "Move up to half your Speed. Step has no Traits at all, which is the point: it never provokes Intercepts or other Reactions. Stepping ends any Bind you are in (Close excepted). You cannot Step into difficult terrain."
+   ],
+   [
+    "Parry ❶↺",
+    "Reaction",
+    "Requirements You have Guard Training, and a rigid weapon, shield, or permitted natural weapon in hand.<br>Answer an attack with Guard at a +2 Situation bonus. If you Stop a Deliberate or Committed Strike, you take Control of the attacking weapon instead of forming a neutral Bind, and you may at once make a Quick Strike ⓿ against its owner (the riposte). A Stopped Quick Strike gives only a neutral Bind."
+   ],
+   [
+    "Void ❶↺",
+    "Reaction",
+    "Requirements You have Evade Training.<br>Answer an attack with Evade at a +2 Situation bonus. If the attack is Stopped, you may Step in any direction."
+   ],
+   [
+    "Counter ❶↺",
+    "Reaction, Attack",
+    "Requirements You have Melee Training; the attacker is within your Reach and the attack is a melee attack.<br>Answer the attack with a Quick Strike of your own. You gain no bonus to your Defense. Roll both; resolve both. You cannot Counter a Counter or an Intercept, and the fighter you Counter rolls only their basic Defense against it."
+   ],
+   [
+    "Intercept ❶↺",
+    "Reaction, Attack",
+    "Requirements You have Melee Training.<br>Trigger A foe Moves from outside your Total Reach to inside it, or Strikes you with an Unwieldy weapon from inside its Unwieldy distance.<br>Make a Quick Strike against them at the moment they enter. Once per foe per Move. A Wound stops their movement; anything less and it continues."
+   ],
+   [
+    "Pass ⓿",
+    "—",
+    "Do nothing at this Opportunity. You may still use Reactions. When a full circuit passes in which everyone Passes, the round ends. You cannot Pass while Preparing."
    ]
   ],
-  "Watching, deceiving & helping": [
+  "Watching, Deceiving & Helping": [
    [
-    "Seek ◆",
+    "Seek ❶",
     "Concentrate",
-    "One Awareness roll against the Stealth of anything Hiding, or a Threshold the GM sets. Covers everything within 30 feet.<br><b>Critical Success</b> The creature moves two states toward Observed. <b>Success</b> One state: Undetected to Hidden, Hidden to Concealed, Concealed to Observed. <b>Failure</b> You learn nothing. <b>Critical Failure</b> You commit to the wrong place and are Wrong-Footed to it until the start of your next turn."
+    "Roll one Awareness against the Stealth of anything Hiding, or against a Threshold the GM sets for a hidden object. Covers everything within 30 feet.<br><b>Critical Success</b> As Success, but the creature moves two states. <b>Success</b> The creature moves one state toward Observed: Undetected becomes Hidden, Hidden becomes Concealed, Concealed becomes Observed. <b>Failure</b> You learn nothing. <b>Critical Failure</b> You commit to the wrong place. You are Wrong-Footed to that creature until your next Opportunity."
    ],
    [
-    "Hide ◆",
+    "Hide ❶",
     "—",
-    "Requirements You have at least Lesser Cover, or Concealment.<br>One Stealth roll against the Awareness of every creature around you, allies included.<br><b>Critical Success</b> Hidden, and they are Wrong-Footed to you until the end of your next turn. <b>Success</b> Hidden. <b>Failure</b> They still see you. <b>Critical Failure</b> You have drawn the eye: Wrong-Footed to them."
+    "Requirements You are currently benefiting from at least Lesser Cover, or from Concealment.<br>Roll one Stealth against the Awareness of every creature around you (including your allies).<br><b>Critical Success</b> You are Hidden to the creature, and they are Wrong-Footed to you until the end of the next round. <b>Success</b> You are Hidden to the creature. <b>Failure</b> They still see you. <b>Critical Failure</b> You have drawn the eye. You are Wrong-Footed to that creature until your next Opportunity."
    ],
    [
-    "Sneak ◆ to ◆◆",
-    "Move",
-    "Requirements You are, or believe you are, at least Hidden from one creature.<br>Move up to half your Speed while staying Hidden. You must end with Concealment or at least Lesser Cover from each creature you wish to stay Hidden from.<br><b>◆◆ Creep.</b> On a failure you realize you would be seen, and may choose not to move after all."
+    "Sneak ❶ to ❷",
+    "Motion",
+    "Requirements You are (or believe you are) currently at least Hidden from at least one creature.<br>Move up to half your Speed while staying Hidden or Undetected. You must end this movement with Concealment or at least Lesser Cover from each creature you wish to remain at least Hidden from. Roll one Stealth against the Awareness of every creature to which you are currently at least Hidden (including your allies).<br><b>Critical Success</b> You move and remain Hidden and/or Undetected, and they are Wrong-Footed to you until the end of the next round. <b>Success</b> You move and remain Hidden and/or Undetected. <b>Failure</b> You are Observed during your movement. <b>Critical Failure</b> You are Observed, and you are Wrong-Footed to them until your next Opportunity.<br><b>❷ Creep.</b> As above, except: <b>Failure</b> You realize you would be Observed if you moved, and may choose not to move after all. <b>Critical Failure</b> You are Observed during your movement."
    ],
    [
-    "Point Out ◆",
+    "Point Out ❶",
     "Auditory, Visual",
-    "Indicate a creature you have located. It becomes Hidden rather than Undetected, or Concealed rather than Hidden, to any ally who can hear or see you."
+    "Indicate a creature you have located, whether you can see it or it is merely Hidden to you. It becomes Hidden rather than Undetected, or Concealed rather than Hidden, to any ally who can hear or see you."
    ],
    [
-    "Demoralize ◆ to ◆◆",
+    "Demoralize ❶ to ❷",
     "Auditory, Concentrate, Emotion, Mental",
-    "Intimidation against the target's Guard.<br><b>Critical Success</b> Frightened 2. <b>Success</b> Frightened 1. <b>Failure</b> Nothing. <b>Critical Failure</b> It is emboldened: +1 to its Attacks against you until the end of its next turn.<br><b>◆◆ Break Them.</b> Frightened 3 and Heedless on a critical success; Frightened 1 even on a failure."
+    "Roll Intimidation against the target's Guard.<br><b>Critical Success</b> The target is Frightened 2. <b>Success</b> The target is Frightened 1. <b>Failure</b> No effect. <b>Critical Failure</b> No effect, and it is emboldened: +1 Situation bonus to its Attacks against you until the end of the next round.<br><b>❷ Break Them.</b> <b>Critical Success</b> The target is Frightened 3 and Heedless. <b>Success</b> The target is Frightened 2. <b>Failure</b> The target is Frightened 1. <b>Critical Failure</b> No effect."
    ],
    [
-    "Feint ◆",
+    "Feint ❶",
     "Mental",
-    "Guile against the target's Awareness.<br><b>Critical Success</b> Wrong-Footed to you until the end of your next turn. <b>Success</b> Wrong-Footed to you until the end of your turn. <b>Failure</b> Nothing. <b>Critical Failure</b> You overcommit and are Wrong-Footed to it."
+    "Roll Guile against the target's Awareness.<br><b>Critical Success</b> The target is Wrong-Footed to you until the end of the next round. <b>Success</b> The target is Wrong-Footed to you until the end of your next Opportunity. <b>Failure</b> No effect. <b>Critical Failure</b> You overcommit. You are Wrong-Footed to that creature until your next Opportunity."
    ],
    [
-    "Aid ↺",
+    "Aid ❶ (⓿↺)",
     "—",
-    "Prepare ◆ on your turn, naming one ally and the task. When they attempt it before your next turn, spend your reaction to roll a relevant check against Threshold 15.<br><b>Critical Success</b> +2 Situation bonus. <b>Success</b> +1. <b>Failure</b> Nothing. <b>Critical Failure</b> They take −1. Your preparation is spent whether or not they attempt it."
+    "Prepare ❶ at one of your Opportunities, naming one ally and the task you intend to help with. When they attempt it before your next Opportunity, use a Reaction ⓿↺ to roll a relevant check against Threshold 15.<br><b>Critical Success</b> They gain a +2 Situation bonus. <b>Success</b> +1 Situation bonus. <b>Failure</b> No effect. <b>Critical Failure</b> They take a −1 Situation penalty.<br>Your preparation is spent whether or not they attempt the task."
    ],
    [
-    "Recall Knowledge ◆ to ◆◆",
+    "Recall Knowledge ❶ to ❷",
     "Concentrate",
-    "A Lore or relevant Skill check against your target's level-based Threshold. Topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Hit Points.<br><b>Critical Success</b> All facts about two topics. <b>Success</b> One topic. <b>Failure</b> Nothing. <b>Critical Failure</b> All the wrong facts about one topic.<br><b>Special</b> Once per target per Skill, so several Lores give several angles."
+    "Learn something true about a creature, place, or object. Possible topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Vigor.<br>Roll a Lore or relevant Skill check against the level-based Threshold of your target.<br><b>Critical Success</b> You recall all facts about two topics. <b>Success</b> You recall all facts about one topic. <b>Failure</b> You recall nothing. <b>Critical Failure</b> You recall all (incorrect) facts about one topic.<br><b>Special</b> You may attempt this once per target per Skill, so a character with several Lores or relevant Skills may get several angles on the same problem.<br><b>❷ Study.</b> As above, except: <b>Critical Failure</b> You recall nothing."
    ]
   ],
-  "Handling things": [
+  "Handling Things": [
    [
-    "Interact ◆",
+    "Interact ❶",
     "Manipulate",
     "Draw or stow a weapon, open a door, pull a potion from your pack, pick something up, work a lever."
    ],
    [
-    "Release ◇",
+    "Release ⓿",
     "—",
     "Drop or let go of something you are holding."
    ],
    [
-    "Drop Prone ◇",
+    "Drop Prone ⓿",
     "—",
     "Fall prone."
    ]
   ],
   "Special": [
    [
-    "Avert Gaze ◆",
+    "Avert Gaze ❶",
     "—",
-    "Name one creature or object you Observe. Until the start of your next turn you gain a +2 Situation bonus to your Defenses against its Visual effects, and it is Concealed to you."
+    "Name one creature or object Observed by you. Watch its feet, its shadow, the floor in front of it. Until your next Opportunity you gain a +2 Situation bonus to your Defenses against its effects with the Visual trait, and it is Concealed to you."
    ],
    [
-    "Grab an Edge ↺",
+    "Grab an Edge ⓿↺",
     "—",
-    "Trigger You fall past an edge, ledge, or handhold within your reach. Requirements A hand free; you may Release ◇ to free one.<br>Athletics or Acrobatics against Threshold 15.<br><b>Critical Success</b> You catch it and pull up. <b>Success</b> You hang there, Off-Guard. <b>Failure</b> You fall, reduced by 10 feet. <b>Critical Failure</b> You fall the full distance."
+    "Trigger You fall past an edge, ledge, or handhold within your reach. Requirements You have a hand free; you may Release ⓿ an item as part of this Reaction to free a hand.<br>Roll Athletics or Acrobatics against a Threshold of 15.<br><b>Critical Success</b> You catch it and pull yourself up in the same motion. You do not fall. <b>Success</b> You catch it and hang there. You are Off-Guard. <b>Failure</b> You fall, but the damage from the falling distance is reduced by 10 feet. <b>Critical Failure</b> You fall the full distance."
    ]
   ]
  },
@@ -1140,44 +1220,44 @@
   [
    "Search",
    "Half",
-   "Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures."
+   "Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures. When an encounter begins, you can roll Awareness."
   ],
   [
    "Scout",
    "Half",
-   "Every ally gains a +1 Situation bonus to initiative, and you may Step as a free action when you roll initiative."
+   "Every ally gains a +1 Situation bonus to initiative, and you may Step ⓿ when you roll initiative. When an encounter begins, you can roll Awareness."
   ],
   [
    "Defend",
    "Half",
-   "Your shield begins Raised and a weapon is already in hand."
+   "Your shield begins Raised and a weapon is already in hand. When an encounter begins, you can roll Awareness."
   ],
   [
    "Investigate",
    "Half",
-   "Roll a relevant Lore or Skill check to recall information about your surroundings, and roll it again for initiative if the encounter is related."
+   "Roll a relevant Lore or Skill check; the GM applies it to the Thresholds to potentially recall relevant information about your surroundings. When an encounter begins, you can roll the same Lore or Skill check, if the encounter is related to what you are Investigating."
   ],
   [
    "Look Harmless",
    "Half",
-   "Requirements No weapon with Reach greater than Adjacent, and worn armor totalling Load 1 or less.<br>Roll Guile for Initiative against each enemy's Awareness. On a success they are Wrong-Footed to your first attack; on a critical success, until the end of your first turn."
+   "Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.<br>Requirements You wield no weapon with a Reach greater than Adjacent, and your worn armor totals Load 1 or less.<br>When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy you are Observed to.<br><b>Critical Success</b> They are Wrong-Footed to you until the end of your first Opportunity. <b>Success</b> They are Wrong-Footed to your first attack. <b>Failure</b> Nothing; they were watching you all along. <b>Critical Failure</b> You overplayed it. You are Wrong-Footed to them until your next Opportunity.<br>Outside an encounter, a successful Guile check lets you approach, pass, or linger without being challenged by anyone who would otherwise have wanted to know your business."
   ]
  ],
  "downtimeActions": [
   [
    "Retrain",
    "1 month",
-   "Move 1 already spent Talent Point to another Talent you qualify for. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or a Talent that would reduce your Proficiency Rank."
+   "Move 1 already spent Talent Point to another Talent you qualify for. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or a Talent that would reduce your Proficiency Rank in a Constellation."
   ],
   [
    "Train",
    "7 days",
-   "You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. Only once between Milestones."
+   "You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. You may benefit from Train only once between Milestones."
   ],
   [
    "Provision",
    "1 day",
-   "Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets. You sell at half price."
+   "Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets to find someone who has one. You sell at half price."
   ]
  ],
  "conditions": [
@@ -1191,31 +1271,31 @@
   ],
   [
    "Frightened N",
-   "−N to all checks and Thresholds; reduce by 1 at end of each of your turns."
+   "−N to all checks and Thresholds; reduce by 1 at the end of each round."
   ],
   [
    "Prone",
-   "Off-Guard, −2 to Attacks; +2 Situation to Evade vs. ranged Attacks. Stand ◆ to clear."
+   "Off-Guard, −2 to Attacks; +2 Situation to Evade vs. ranged Attacks. Stand ❶ to clear."
   ],
   [
    "Grabbed",
-   "Off-Guard and can't Move or Step; Escape ◆ to break free."
+   "Off-Guard and can't Move or Step; Escape ❶ to break free."
   ],
   [
    "Heedless",
-   "Commitment so complete that you have stopped thinking. Actions and Activities with Concentrate take 1 extra action."
+   "Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action."
   ],
   [
    "Restrained",
-   "As Grabbed but can't take any action other than Escape ◆."
+   "As Grabbed but can't take any action other than Escape ❶."
   ],
   [
    "Stunned N",
-   "Lose the next N actions; may carry over across turns."
+   "Lose the next N actions; may carry over across rounds."
   ],
   [
    "Slowed N",
-   "Lose N actions at the start of each of your turns. Reduce by 1 at end of each of your turns."
+   "Lose N actions at the start of each round. Reduce by 1 at the end of each round."
   ],
   [
    "Fatigued",
@@ -1223,15 +1303,39 @@
   ],
   [
    "Persistent Damage",
-   "Take it at end of each turn; Endure check (10 + the level of the effect + the amount you just took) to end."
+   "Take it at the end of each round; Endure check (10 + the amount of persistent damage you just took) to end."
   ],
   [
-   "Dying / Wounded",
-   "You're Dying and unconscious. Recovery checks at the start of each of your turns."
+   "Dying",
+   "You're Dying (see Chapter 2: Core Rules), and you're also unconscious."
+  ],
+  [
+   "Wounded [Zone]",
+   "That Zone carries a Wound: its critical effect made lasting (see Chapter 2: Vigor & Wounds). Fill the Torso's or Head's Wound capacity (two, for anyone Medium or smaller) and you are Dying."
+  ],
+  [
+   "Spent",
+   "You have 0 Vigor. Every Hit that lands on you Wounds the Zone struck; a Critical Hit inflicts two. Grazes never Wound."
+  ],
+  [
+   "Bound [X]",
+   "Your implement is in a neutral Bind with X's. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves."
+  ],
+  [
+   "Controlled [X]",
+   "X Controls your weapon. You have an Exposed Zone of X's choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it."
+  ],
+  [
+   "Controlling [X]",
+   "You Control X's weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you."
+  ],
+  [
+   "Preparing",
+   "You have begun a Maneuver of three or more actions: one action spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it."
   ],
   [
    "Exposed [Zone]",
-   "That Zone's Protection counts as 0 and ordinary Hits can land there instead of your Torso. Recenter ◆ to clear."
+   "That Zone is Exposed: ordinary Hits can land there instead of your Torso. Recenter ❶ to clear, unless a Posture Exposed it: that lasts until the end of the round."
   ],
   [
    "Blinded",
@@ -1239,33 +1343,33 @@
   ],
   [
    "Deafened",
-   "Cannot hear. Immune to any Auditory Action or Activity."
+   "Cannot hear. Immune to any Auditory Maneuver or Activity."
   ],
   [
    "Unconscious",
-   "You have 0 Hit Points, you drop everything you are holding, and you are also Prone."
+   "You are out, Dying or knocked cold: you drop everything you are holding in your squares, and you're also Prone."
   ]
  ],
  "zones": [
   [
-   "Head",
-   "The target cannot use reactions until it Recenters.",
-   "As left, and the target's Wounded value increases by 3."
-  ],
-  [
    "Torso",
    "The target is Off-Guard until it Recenters.",
-   "As left, and the target's Wounded value increases by 2."
+   "As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds)."
   ],
   [
    "Arms",
    "The target takes a −2 Situation penalty to attack rolls until it Recenters.",
-   "As left, and the target's Wounded value increases by 1."
+   "As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds)."
   ],
   [
    "Legs",
    "The target's Speed is halved until it Recenters.",
-   "As left, and the target's Wounded value increases by 1."
+   "As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds)."
+  ],
+  [
+   "Head",
+   "The target cannot use Reactions until it Recenters.",
+   "As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds)."
   ]
  ],
  "detection": [
@@ -1277,19 +1381,19 @@
   ],
   [
    "Concealed",
-   "Exactly what squares you are in, but something prevents them seeing all of you.",
-   "+2 Situation bonus to Evade and Guard for physical Attacks.",
-   "Mist, dim light, foliage."
+   "Exactly what squares you are in, but something is preventing them from seeing or otherwise detecting all of you.",
+   "You gain a +2 Situation bonus to Evade and Guard for physical Attacks.",
+   "You are surrounded in mist, or you are in dim light, or you are hiding in foliage."
   ],
   [
    "Hidden",
    "That you are present, but not what squares you occupy.",
-   "They must guess one of your squares to attack you, and you gain +4 to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.",
-   "Your foe is blind, or you succeeded on a Sneak."
+   "Your foe must successfully guess one of the squares you occupy in order to attack you. Even so, you gain a +4 Situation bonus to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.",
+   "Your foe is blind, or you have succeeded on a Sneak check."
   ],
   [
    "Undetected",
-   "No idea you are even present.",
+   "Has no idea if you are even present.",
    "You cannot be targeted at all. Your foe is Wrong-Footed to you.",
    "Your foe cannot see, hear, smell, or feel you."
   ]
@@ -1305,7 +1409,7 @@
   ],
   [
    "Darkness",
-   "They are Hidden to you, or Undetected if you did not already know something was there."
+   "They are Hidden to you (or possibly Undetected, if you did not already know something was there)."
   ]
  ],
  "cover": [
@@ -1337,7 +1441,7 @@
   ],
   [
    "2",
-   "Add up all remaining dice, damage bonuses, and damage modifiers."
+   "Add up all of the remaining dice, damage bonuses, and damage modifiers."
   ],
   [
    "3",
@@ -1357,17 +1461,17 @@
   ],
   [
    "7",
-   "Deal damage to Temporary Hit Points (if applicable)."
+   "Deal damage to Temporary Vigor (if applicable)."
   ],
   [
    "8",
-   "Deal damage to Hit Points."
+   "Deal damage to Vigor."
   ]
  ],
  "protectionSteps": [
   [
    "1",
-   "If the Zone is Exposed, its Protection is 0; you can stop here."
+   "If the Zone is Exposed and the Strike is Deliberate or Committed, its Protection is 0; you can stop here. (A Quick Strike always meets full Protection.)"
   ],
   [
    "2",
@@ -1389,7 +1493,7 @@
  "recovery": [
   [
    "Critical success",
-   "Your Dying ends. You are conscious, on your feet if you spend an action to stand, with 1 Hit Point."
+   "Your Dying ends. You are conscious, on your feet if you spend an action to stand, with 1 Vigor."
   ],
   [
    "Success",
@@ -1404,57 +1508,12 @@
    "Your Dying value rises by 2."
   ]
  ],
- "thresholdTable": [
-  [
-   "0–1",
-   "14–15"
-  ],
-  [
-   "2–3",
-   "16–18"
-  ],
-  [
-   "4–5",
-   "19–20"
-  ],
-  [
-   "6–7",
-   "22–23"
-  ],
-  [
-   "8–9",
-   "24–26"
-  ],
-  [
-   "10–11",
-   "27–28"
-  ],
-  [
-   "12–13",
-   "30–31"
-  ],
-  [
-   "14–15",
-   "32–34"
-  ],
-  [
-   "16–17",
-   "35–36"
-  ],
-  [
-   "18–19",
-   "38–39"
-  ],
-  [
-   "20",
-   "40"
-  ]
- ],
+ "thresholdTable": [],
  "chargenSteps": [
   [
    "1. Ancestry",
-   "Your body and blood. This forms the core of your Origin Constellation and gives you starting Hit Points, Speed, and unique characteristics.",
-   "Hit Points per level, Size, Speed, and 1 Special Ability.",
+   "Your body and blood. This forms the core of your Origin Constellation and gives you starting Vigor, Speed, and unique characteristics (e.g., keen eyes).",
+   "Vigor per level, Size, Speed, and 1 Special Ability.",
    "1 Origin (your Ancestry's root Talent)"
   ],
   [
@@ -1465,7 +1524,7 @@
   ],
   [
    "3. Culture",
-   "Where you were raised. This adds a branch to your Origin Constellation.",
+   "Where you were raised. This adds a branch to your Origin Constellation and gives you additional customization options.",
    "Starting language(s), and a bonus to Diplomacy checks with those who share your Culture.",
    "1 Origin (your Culture's Root Talent)"
   ],
@@ -1478,20 +1537,26 @@
   [
    "5. Calling",
    "Your adventuring identity. This adds special techniques such as entering a rage or sneak attacking.",
-   "Training in one Skill or other Constellation.",
+   "Training in one Skill or other Constellation, Vigor per level, and a signature ability.",
    "1 Calling"
   ],
   [
    "6. Defenses",
-   "Your defensive posture (Awareness, Evade, Guard, and Endure).",
-   "—",
-   "1 Defense"
+   "Your defensive posture. You begin Trained in two of the four Defenses (Awareness, Evade, Guard, and Endure), your choice. Each answers two of the four kinds of threat (Blows, Blasts, Blights, Beguilement), so two Trained Defenses cover three kinds and leave one gap; choose the pair whose gap you can live with.",
+   "Two Trained Defenses. A Defense you leave Untrained still adds its Attribute, but every Threshold that depends on it is 3 lower.",
+   "2 Defense"
   ],
   [
    "7. Comets",
    "Comets, which are Talent Points that can be used for any purpose (as long as you still meet the prerequisite).",
    "—",
    "3 Comets"
+  ],
+  [
+   "Granted",
+   "Melee Training or Ranged Training, your choice: every character begins Trained in one of them. It is granted automatically, not spent from the steps above.",
+   "Trained in Melee or Ranged: +3 to Strikes with a weapon in your hand, or with one that leaves it. A completed 1st-level character has spent at least 14 Talent Points, 13 from the steps above plus this one.",
+   "1 Melee or Ranged Training"
   ]
  ]
 }

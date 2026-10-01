@@ -1,4 +1,4 @@
-{{!-- What the body actually felt, step by step. --}}
+{{!-- What the body actually felt, step by step: Vigor, then Spent, Wounds and Dying. --}}
 <div class="starwrought applied-card">
   <header class="sw-card-header">
     <img src="{{actor.img}}" alt="{{actor.name}}">
@@ -16,7 +16,7 @@
 
   <div class="sw-card-roll">
     <span class="sw-card-total">{{#if healing}}+{{/if}}{{result.applied}}</span>
-    <span class="sw-card-formula">{{result.hpBefore}} → {{result.hpAfter}}</span>
+    <span class="sw-card-formula">{{localize "STARWROUGHT.Damage.vigor"}} {{result.vigorBefore}} → {{result.vigorAfter}}</span>
   </div>
 
   {{#if result.steps.length}}
@@ -27,11 +27,22 @@
   </ul>
   {{/if}}
 
-  {{#if exposed}}
-  <p class="sw-card-note sw-warn">{{localize "STARWROUGHT.Condition.exposed"}}: {{exposed}}</p>
+  {{#if critEffect}}
+  <p class="sw-card-note sw-warn">{{localize "STARWROUGHT.Damage.critEffect"}} {{critEffect}}</p>
   {{/if}}
   {{#if result.droppedTo0}}
-  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Notify.droppedToZero"}}</p>
+  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Damage.spentNow"}}</p>
+  {{else}}{{#if result.spentBefore}}{{#unless healing}}
+  <p class="sw-card-note sw-warn">{{localize "STARWROUGHT.Damage.spentAlready"}}</p>
+  {{/unless}}{{/if}}{{/if}}
+  {{#if result.knockedOut}}
+  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Damage.knockedOut"}}</p>
+  {{/if}}
+  {{#if wound}}
+  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Wound.title"}}: {{#each wound.landed as |w|}}{{w.zoneLabel}} {{w.count}}/{{w.capacity}}{{#unless @last}}, {{/unless}}{{/each}}</p>
+  {{/if}}
+  {{#if result.dyingIncreased}}
+  <p class="sw-card-note sw-danger">{{localize "STARWROUGHT.Damage.dyingIncreased"}} {{result.dying}}</p>
   {{/if}}
   {{#if result.endedDying}}
   <p class="sw-card-note sw-good">{{localize "STARWROUGHT.Notify.dyingEnded"}}</p>

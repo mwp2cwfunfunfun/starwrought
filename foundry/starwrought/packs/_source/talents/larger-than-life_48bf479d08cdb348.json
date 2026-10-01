@@ -15,11 +15,13 @@
     ],
     "prerequisites": "",
     "attribute": "might",
-    "effect": "Requirements You are wearing Plate in all Zones.<br>Though you don't get any larger, you're treated as one size larger for the purposes of affecting other creatures with actions like Disarm, Grapple, Reposition, Shove, and Trip while wearing heavy armor. Similarly, you're treated as one size larger for the purposes of creatures affecting you with those same actions, as well as with Swallow Whole and similar actions, while wearing heavy armor.",
+    "effect": "<b>Requirements</b> You are wearing Plate in all Zones.<br>Though you don't get any larger, you're treated as one size larger for the purposes of affecting other creatures with actions like Disarm, Grapple, Reposition, Shove, and Trip while wearing heavy armor. Similarly, you're treated as one size larger for the purposes of creatures affecting you with those same actions, as well as with Swallow Whole and similar actions, while wearing heavy armor.",
     "description": "",
-    "cost": "0",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,7 +33,7 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "de321617406058a3",
   "sort": 0,

@@ -9,6 +9,8 @@
    "cost": "1",
    "costMax": "",
    "costMode": "to",
+   "reaction": false,
+   "reactionCost": "",
    "traits": [],
    "prerequisites": "",
    "requirements": "The ally is willing to accept your aid.",

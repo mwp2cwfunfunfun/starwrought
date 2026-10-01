@@ -7,12 +7,13 @@
     "slug": "bravo",
     "category": "calling",
     "attribute": "presence",
-    "meta": "Calling • Presence (3 HP/level • Panache)",
+    "parentSlug": "",
+    "meta": "Calling • Presence (3 Vigor/level • Panache)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
-    "description": "<p>Calling • Presence (3 HP/level • Panache)</p>",
+    "description": "<p>Calling • Presence (3 Vigor/level • Panache)</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
   "sort": 0,

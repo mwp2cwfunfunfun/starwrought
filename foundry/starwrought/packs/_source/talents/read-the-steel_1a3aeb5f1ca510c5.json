@@ -1,25 +1,27 @@
 {
-  "_id": "33d77c2d3a6b4f72",
-  "name": "Loose and Move",
+  "_id": "1a3aeb5f1ca510c5",
+  "name": "Read the Steel ❶",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "archery",
-    "constellationName": "Archery",
+    "constellation": "melee",
+    "constellationName": "Melee",
     "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Archery Training"
+      "Melee Training"
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "After making a Strike with a bow, you may Step 3 feet as a free action once per turn.",
+    "effect": "Study one creature you can see. Until the end of the encounter you know the Protection and the material of each of its Zones, and your Strikes against it ignore 1 Protection.",
     "description": "",
-    "cost": "0",
+    "cost": "1",
     "costMax": "",
     "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
     "grant": {
       "n": 0,
       "mode": "",
@@ -31,9 +33,9 @@
     },
     "freeTalent": "",
     "traits": [],
-    "source": "STARWROUGHT Playtest v3.1"
+    "source": "STARWROUGHT Playtest v4.10"
   },
-  "folder": "cdfba94f08c33d6c",
+  "folder": "2a19b71d960a8b80",
   "sort": 0,
   "ownership": {
     "default": 0
@@ -43,5 +45,5 @@
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!33d77c2d3a6b4f72"
+  "_key": "!items!1a3aeb5f1ca510c5"
 }
