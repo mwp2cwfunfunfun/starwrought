@@ -766,6 +766,10 @@ Attribute, and the sheet calls out the traits that decide what it can do in a Bi
 
 ---
 
+**User Configuration.** Foundry's own window (the player's name, avatar, colour and character) is
+left as core draws it except for one row: the Pronouns field is removed on render, since the table
+does not use it (Mike, 2026-10-01). The stored value is untouched.
+
 ## 4. Chat
 
 **Check cards** show the roll, every modifier by name, the Threshold and where it came from, and

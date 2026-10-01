@@ -7,6 +7,16 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## Unreleased: Player's Handbook v4.10
+
+### Changed
+
+- **The Pronouns row is gone from the User Configuration window** (Mike, 2026-10-01). A
+  `renderUserConfig` hook removes the field from Foundry's own sheet on render; the stored value is
+  untouched and the row returns if the hook is removed.
+
+---
+
 ## 0.4.2 (2026-10-01): Player's Handbook v4.10, equipment authored in a spreadsheet
 
 ### Added

@@ -276,6 +276,16 @@ function checkForStaleAssets() {
 Hooks.on("renderChatMessageHTML", onRenderChatMessage);
 
 /**
+ * The core User Configuration window (Player Name, Avatar, Color, Pronouns, Player Character) is
+ * Foundry's, not ours, but it is an ApplicationV2 and fires this hook with its rendered element.
+ * The table does not use the Pronouns field (Mike, 2026-10-01), so the row is taken out before
+ * anyone sees it. The stored value is untouched, and the row returns the moment this hook goes.
+ */
+Hooks.on("renderUserConfig", (app, element) => {
+  element.querySelector('[name="pronouns"]')?.closest(".form-group")?.remove();
+});
+
+/**
  * Buying a Talent in a Constellation you have not opened is buying its Root, so draw the sky
  * whenever a Talent lands on a character without one.
  */
