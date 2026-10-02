@@ -2193,16 +2193,38 @@ export class SwActor extends Actor {
   /**
    * A Constellation is Flared or it is not: a checkbox, not a count. It stays Flared until you
    * spend into it.
+   *
+   * The card is posted here, so a Flare is said once from every entry point (0.6.3, ruling 86;
+   * Mike: the sheet's Flare button "doesn't send that to chat, like changing other things does").
+   * Lit, it is the Flare card the chat button used to post itself; put out, a one-line card. The
+   * audit stays out of it: Flares are an object, not a watched field, and the card is the
+   * announcement. Putting out a Flare that was never lit writes nothing and says nothing.
    * @param {string} slug
    * @param {boolean} [state]
    */
   async toggleFlare(slug, state) {
-    const next = state ?? !this.system.flares?.[slug];
+    const lit = !!this.system.flares?.[slug];
+    const next = state ?? !lit;
+    if (!next && !lit) return this;
     // An update merges objects, so putting a Flare out takes the deletion key rather than a
     // clone with the property removed.
-    return this.update(next
+    await this.update(next
       ? { [`system.flares.${slug}`]: true }
       : { [`system.flares.-=${slug}`]: null });
+    await this.#announceFlare(slug, next);
+    return this;
+  }
+
+  /** The Flare card: lit (the title and the Milestone line) or put out (one line). */
+  async #announceFlare(slug, lit) {
+    const name = this.system.constellations?.[slug]?.name ?? SW.getConstellation(slug)?.name ?? slug;
+    const content = lit
+      ? `<div class="starwrought action-card sw-flare-card">
+        <h3><i class="fa-solid fa-certificate"></i> ${game.i18n.localize("STARWROUGHT.Flare.title")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Flare.message", { name })}</p></div>`
+      : `<div class="starwrought action-card sw-flare-card sw-flare-out">
+        <p><i class="fa-solid fa-certificate"></i> ${game.i18n.format("STARWROUGHT.Flare.putOut", { name })}</p></div>`;
+    return ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: this }), content });
   }
 
   /** Which Constellations are currently Flared. */

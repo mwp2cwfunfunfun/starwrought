@@ -9,7 +9,7 @@ import * as SW from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
-import { loadBasicActions, chassisByName } from "../helpers/content.mjs";
+import { loadBasicActions, chassisByName, enabledConstellations } from "../helpers/content.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
 import { auraRowsByItem, reachRangeRows, rangeFor } from "../canvas/auras.mjs";
@@ -314,6 +314,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rollDefense: SwCharacterSheet.#onRollDefense,
       rollInitiative: SwCharacterSheet.#onRollInitiative,
       toggleFlare: SwCharacterSheet.#onToggleFlare,
+      toggleUnopened: SwCharacterSheet.#onToggleUnopened,
       toggleZone: SwCharacterSheet.#onToggleZone,
       recenter: SwCharacterSheet.#onRecenter,
       rest: SwCharacterSheet.#onRest,
@@ -446,6 +447,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.vigor = vigorContext(actor);
 
     context.constellations = this.#prepareConstellations();
+    // The Constellations tab's toolbar toggle (0.6.3, ruling 85): what it shows now, and so what
+    // the button offers next.
+    context.showUnopened = SwCharacterSheet.showUnopened();
     context.inventory = this.#prepareInventory();
     context.strikes = this.#prepareStrikes();
     context.actionItems = actor.items.filter(i => i.type === "action")
@@ -625,31 +629,43 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   /* -------------------------------------------- */
 
-  /** Group the character's Constellations by category, in handbook order. */
+  /**
+   * Group the character's Constellations by category, in handbook order.
+   *
+   * The entries are the data model's: every sky the character has opened (its Item or a Talent
+   * held), one Flared without being opened, and a parent whose Combat Styles hold points. With the
+   * client setting `showUnopenedConstellations` on (0.6.3, ruling 85; the toolbar's toggle), every
+   * Constellation that ships (Enabled? = Yes, ruling 61) and is not among them is added as a slim
+   * row in its own category: Untrained, no Talents, the roll link and the Flare control, so an
+   * unopened Constellation can be Flared from the sheet. The Lore template is left out, as the
+   * Relevant Check picker leaves it out: a Lore a character opens is always Lore (X).
+   */
   #prepareConstellations() {
     const groups = {};
     const all = this.document.system.constellations;
+    const groupFor = category => (groups[category] ??= {
+      key: category,
+      label: game.i18n.localize(SW.CATEGORIES[category]?.label ?? SW.CATEGORIES.general.label),
+      order: SW.CATEGORIES[category]?.order ?? 9,
+      constellations: []
+    });
+    const parentNameOf = slug => (slug ? (all[slug]?.name ?? SW.getConstellation(slug)?.name ?? slug) : null);
+
     for (const entry of Object.values(all)) {
-      const category = entry.category ?? "general";
-      const group = (groups[category] ??= {
-        key: category,
-        label: game.i18n.localize(SW.CATEGORIES[category]?.label ?? SW.CATEGORIES.general.label),
-        order: SW.CATEGORIES[category]?.order ?? 9,
-        constellations: []
-      });
+      const group = groupFor(entry.category ?? "general");
       // A parent (Melee, Ranged) counts its Combat Styles' points toward its rank; a child says
       // which parent it feeds. Neither changes what the Talents themselves cost.
       const inherited = Number(entry.inherited) || 0;
-      const parent = entry.parent ? (all[entry.parent]?.name ?? SW.getConstellation(entry.parent)?.name ?? entry.parent) : null;
       group.constellations.push({
         ...entry,
         pool: entry.pool ?? entry.points,
         inherited,
-        parentName: parent,
+        parentName: parentNameOf(entry.parent),
         rankLabel: game.i18n.localize(entry.rankLabel),
         attributeGlyph: SW.ATTRIBUTES[entry.attribute]?.glyph ?? "",
         attributeLabel: game.i18n.localize(SW.ATTRIBUTES[entry.attribute]?.label ?? ""),
         collapsed: this.#collapsed.has(entry.slug),
+        unopened: false,
         talents: entry.talents.map(t => ({
           id: t.id,
           name: t.name,
@@ -661,18 +677,64 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         }))
       });
     }
+
+    if (SwCharacterSheet.showUnopened()) {
+      for (const meta of enabledConstellations()) {
+        if (!meta.slug || all[meta.slug] || SW.isLoreSlug(meta.slug)) continue;
+        const attribute = (meta.attribute in SW.ATTRIBUTES) ? meta.attribute : "might";
+        const category = SW.CATEGORIES[meta.category] ? meta.category : "general";
+        groupFor(category).constellations.push({
+          slug: meta.slug,
+          name: meta.name,
+          category,
+          attribute,
+          attributeGlyph: SW.ATTRIBUTES[attribute].glyph,
+          attributeLabel: game.i18n.localize(SW.ATTRIBUTES[attribute].label),
+          rank: "untrained",
+          rankLabel: game.i18n.localize(SW.RANKS.untrained.label),
+          bonus: 0,
+          points: 0,
+          pool: 0,
+          inherited: 0,
+          parentName: parentNameOf(meta.parent),
+          next: null,
+          talents: [],
+          unopened: true,
+          // A Flared one is always an entry above, so an unopened row is never lit.
+          flared: false,
+          collapsed: true
+        });
+      }
+    }
+
     // The Origin's three Roots share one rank, so say so at the top of the group.
     if (groups.origin) {
       groups.origin.pooled = this.document.system.originPoints;
       groups.origin.pooledHint = "STARWROUGHT.Hint.originPool";
     }
 
+    // Opened skies first, the fuller ones higher; the unopened rows trail each group by name.
     return Object.values(groups)
       .sort((a, b) => a.order - b.order)
       .map(g => {
-        g.constellations.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+        g.constellations.sort((a, b) =>
+          (Number(a.unopened) - Number(b.unopened)) || (b.points - a.points) || a.name.localeCompare(b.name));
         return g;
       });
+  }
+
+  /**
+   * Whether this user's sheets list the Constellations the character has not opened (0.6.3,
+   * ruling 85). A client setting, so it holds across sheets and sessions for that user; read
+   * defensively for a build without it.
+   * @returns {boolean}
+   */
+  static showUnopened() {
+    try {
+      return !!game.settings.get(SW.SYSTEM_ID, "showUnopenedConstellations");
+    } catch {
+      return false;
+    }
   }
 
   /* -------------------------------------------- */
@@ -959,6 +1021,22 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onToggleFlare(event, target) {
     return this.document.toggleFlare(target.dataset.slug);
+  }
+
+  /**
+   * The Constellations tab's toggle (0.6.3, ruling 85): list every Constellation that ships, the
+   * unopened ones dimmed, or the opened ones only. A client setting, so it is this user's across
+   * every sheet; the setting's onChange redraws any other character sheet this client has open,
+   * and this one is redrawn here in case the setting was already what was asked for.
+   */
+  static async #onToggleUnopened() {
+    const next = !SwCharacterSheet.showUnopened();
+    try {
+      await game.settings.set(SW.SYSTEM_ID, "showUnopenedConstellations", next);
+    } catch (err) {
+      console.error("STARWROUGHT | the unopened-Constellations toggle could not be saved", err);
+    }
+    return this.render({ parts: ["constellations"] });
   }
 
   static async #onToggleZone(event, target) {

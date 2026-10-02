@@ -75,6 +75,8 @@ export function parseWeaponTraits(traits = []) {
     massive: false,
     /** An attack that offers nothing to bind. */
     unparryable: false,
+    /** A bow drawn with the arm (PHB v4.14, the composite bow): its natural Attribute is Might, not Agility. */
+    composite: false,
     ranged: null,
     thrown: null,
     reload: 0,
@@ -101,6 +103,7 @@ export function parseWeaponTraits(traits = []) {
     else if (lower === "flexible") flags.flexible = true;
     else if (lower === "massive") flags.massive = true;
     else if (lower === "unparryable") flags.unparryable = true;
+    else if (lower === "composite") flags.composite = true;
     else if ((m = lower.match(/^ranged\s+(\d+)/))) flags.ranged = Number(m[1]);
     else if ((m = lower.match(/^thrown\s+(\d+)/))) flags.thrown = Number(m[1]);
     else if ((m = lower.match(/^reload\s+\[?(\d+)/))) flags.reload = Number(m[1]);
@@ -561,9 +564,11 @@ export class SwWeaponData extends SwItemData {
     this.effectiveDie = (this.twoHands && this.flags.twoHandDie) ? this.flags.twoHandDie : this.damage.die;
     this.effectiveType = (this.versatileActive && this.flags.versatile) ? this.flags.versatile : this.damage.type;
 
-    // The weapon's natural Attribute: Agility for Ranged N and for Finesse, Might otherwise
-    // (Thrown X uses Might). The Strike Attribute may still be a Combat Style's; see the actor.
-    this.attackAttribute = this.isRanged ? "agility" : (this.flags.finesse ? "agility" : "might");
+    // The weapon's natural Attribute (PHB v4.14, The Attack): Might, or Agility for a Finesse
+    // weapon and for a ranged weapon other than a composite bow (the Composite trait, 0.6.3,
+    // ruling 87). A thrown weapon is not `isRanged`, so Thrown X reads as Might. The Strike
+    // Attribute may still be a Combat Style's Key Attribute; see the actor's strikeAttributeFor.
+    this.attackAttribute = (this.flags.finesse || (this.isRanged && !this.flags.composite)) ? "agility" : "might";
     this.addsMight = !this.flags.mechanical;
 
     // A rigid implement can Parry, form a Bind and take Control. A Flexible weapon cannot, and a

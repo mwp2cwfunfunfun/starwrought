@@ -149,6 +149,21 @@ critical failure on any roll with consequences, directly related to a talent in 
 Per-tree trigger lists are flavor illustrations, never rules, and should all read as the universal
 wording.
 
+**Flares (0.6.3; sync report rulings 85 and 86).** A Constellation is *Opened* for a character when
+they hold its Constellation Item or any Talent in it (the entries the data model's
+`#prepareConstellations` builds from Items; one drawn only because it is Flared is listed too). The
+Flare dialog on a critical's card lists Opened Constellations only, the rolled one preselected, with
+a checkbox "Show Constellations you have not opened" that adds every shipping Constellation
+(`enabledConstellations()`, ruling 61) marked "(not opened)"; the sheet's Constellations tab has a
+toolbar toggle "Show every Constellation" ("Opened only" while on) that adds the unopened ones as
+slim, dimmed rows in their own category with a Flare control and the roll link, kept in the client
+setting `showUnopenedConstellations` (scope client, no config entry; the button is the switch). The
+Lore template is left out of both lists, as the Relevant Check picker leaves it out.
+`SwActor#toggleFlare` posts the Flare card itself, lit or put out, spoken by the actor and public,
+and `flareFromCard` posts nothing of its own, so a Flare is said once from either entry point;
+putting out a Flare that was never lit writes and says nothing; the audit does not watch Flares,
+the card is the announcement.
+
 **Bonus types (Mike, 2026-09-26).** Three, named for where the number comes from: **Situation**
 (where you stand and what is happening around you: cover, high ground, an ally's help, a foe
 Off-Guard), **Condition** (something on you: Frightened, a stance), **Gear** (what you hold or wear:
@@ -174,6 +189,21 @@ constellation buys proficiency, not an attribute bonus. **Melee and Ranged are p
 Constellations**: a Combat Style's `Parent` column names one, and every Talent bought in the child
 counts toward the parent's rank once the parent's Root is owned (rank only; Attribute Points are
 never counted twice). Weapon dice: 2 at L4, 3 at L8, 4 at L12, 5 at L16.
+
+**The Strike Attribute (PHB v4.14, The Attack; sync report rulings 87 and 88).** "Your Strike
+Attribute is the higher of two numbers: the weapon's natural Attribute (Might; or Agility for a
+weapon with the Finesse trait, and for any ranged weapon other than a composite bow or a thrown
+weapon), or the Key Attribute of a Combat Style whose root you have and whose weapons you are
+wielding. Work it out once per weapon and write it on your sheet. Damage still adds Might where the
+Strike allows it." Implemented: `attackAttribute` in `module/data/item.mjs` is the natural
+Attribute (Agility for Finesse and for a ranged weapon without the **Composite** trait, which the
+weapon trait parser reads into `flags.composite`; Might otherwise, a thrown weapon included, since a
+Thrown weapon is not `isRanged`); `strikeAttributeFor` in `module/data/actor.mjs` takes the higher
+of that and the Key Attribute of a Combat Style whose Root is owned and whose slug the weapon's
+`system.style` names, and that Combat Style field is where "write it on your sheet" lives; the
+sheet's weapon row shows the winner with a tooltip naming the Style. A composite bow is authored by
+putting "Composite" in a weapon's Traits in `data/equipment.xlsx`; none exists yet (through 0.6.2
+every ranged weapon read Agility, which no shipped weapon contradicted).
 
 **The attack flow (Mike, 2026-10-01; system 0.5.0, sync report ruling 65).** A Strike at a target
 declares first and locks; every defender commits a Defense (Evade or Guard) and an answer (nothing,
@@ -214,7 +244,7 @@ moves a stored per-level Calling number to its Opening Vigor when it still equal
 Endure Training ships since 0.6.1 (ruling 77), so the Endure Bonus and Endure relief are reachable;
 Awareness Training ships since 0.6.2 (ruling 83), so every Defense can be Trained in Foundry.
 
-**Load Strain (PHB v4.13).** Load Strain = the Load of the armor worn and a shield carried, less 1
+**Load Strain (PHB v4.13, unchanged in v4.14).** Load Strain = the Load of the armor worn and a shield carried, less 1
 for a matched harness, less Endure relief (Trained 1, Expert 2, Master 3, Legendary 4;
 `LOAD_RELIEF` in `config.mjs`), to a minimum of 0. It never touches Evade (armor does not make you
 easier to hit) and is no blanket penalty on Might or Agility: it shortens Rush and Leap by its value
@@ -240,9 +270,10 @@ judgement of whether ten minutes passed sits with the table and not in a formula
 (v4.13 sync, ruling 82; Mike's "Yes to all" on the armor-help design) is an armor trait on the
 Breastplate alone, display only: the armor Item derives `attended` and `donTimeAlone` (twice
 `donTime`), the Equipment tab's time tag reads "4 min, 8 alone" and its hint says why, and nothing
-else reads it; the trait is in `data/equipment.xlsx` and the roster's hand-kept `armorTraits` block
-ahead of the book, which has it only as a redline pending Mike's acceptance. Rulings 68 to 71 (R2
-to R5), 74, 75 and 79 to 83.
+else reads it; the trait is in `data/equipment.xlsx`, the roster's hand-kept `armorTraits` block
+and, since Mike accepted the redline into PHB v4.14, the book. The Comfort row beside it reads, in
+v4.14 and the roster alike, "You can sleep in it without increasing your Fatigued value by 1."
+(ruling 84). Rulings 68 to 71 (R2 to R5), 74, 75, 79 to 84.
 
 ## Where the source of truth lives
 
@@ -264,6 +295,10 @@ to R5), 74, 75 and 79 to 83.
   place as well as accepting redlines (v4.13's Wind bullet was rewritten in the v4.12 file on the
   shelf), so `build_all.mjs` records the edition's SHA-256 in `data/SYNC.json` at `--accept-phb`
   and reports drift when the same-numbered file changes, not only when a higher number appears.
+  He also hands over tracked changes of his own in a numbered file (v4.14: the Attended redline
+  accepted and the Roll Playing Conventions paragraph streamlined); the integrator accepts those
+  through Word and writes the edition under the same file name, mending any slip and flagging it
+  in the sync report (ruling 90).
   Check for a newer one before starting a sync; v3.1 landed while the
   v3.0 sync was still being written. `data/*.xlsx` derives from it and is authoritative for the app;
   when the two disagree, the handbook wins and the sheets need a pass.
@@ -360,7 +395,7 @@ to R5), 74, 75 and 79 to 83.
 - The PHB prints three non-Trained talents in the whole book, all tier E and all in Melee
   (*Reactive Strike*, *Winding*, *Master Cut*); 174 of the 177 talents are Trained. The Expert,
   Master, and Legendary tiers are otherwise unwritten across all 31 constellations.
-- **Armored Fighting's Key Attribute is contradictory and still open in v4.13.** Its section heading
+- **Armored Fighting's Key Attribute is contradictory and still open in v4.14.** Its section heading
   says *Combat Style • Presence*; the Combat Styles summary table says **Might**. The data uses
   Presence, following the heading, as Shield Fighting was resolved. One cell in `combat_styles.xlsx`
   either way. **This is the tree-level `Feeds` only.** Armored Fighting's per-talent `Feeds`
@@ -373,18 +408,24 @@ to R5), 74, 75 and 79 to 83.
   blank, so Aid ships nowhere in Foundry (ruling 61). The book is Mike's to bring across, or the
   sheet is (v4.10 sync report, ruling 10).
 - **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
-  Constellation in v4.10 or any book since, and v4.13 still prints the sentence; the data reads it
+  Constellation in v4.10 or any book since, and v4.14 still prints the sentence; the data reads it
   as Melee. One sentence in the handbook.
-- **Key Terms carries v3.4 sentences, in v4.13 as in v4.10.** It still says Attribute Bonus is points divided by 3, that
-  every character begins Trained in all four Defenses, and that only a Committed Strike is
-  Weighted; the Cultures introduction still names Varisians. Character Mechanics, Chapter 3 and the
-  data all say ÷ 4, two Defenses, and Serrovane and Kestrel Reach.
+- **Key Terms carries v3.4 sentences, in v4.14 as in v4.10.** It still says Attribute Bonus is points divided by 3 and that
+  every character begins Trained in all four Defenses; the Cultures introduction still names
+  Varisians. Character Mechanics, Chapter 3 and the data all say ÷ 4, two Defenses, and Serrovane
+  and Kestrel Reach. Its Weighted entry agrees with v4.14's Strikes paragraph that only a Committed
+  Strike is Weighted, but its parenthesis "(a Deliberate Strike is Exposed only on a Miss; a Quick
+  Strike never.)" sides with Table 9's "Nothing" against the Miss rule (next bullet but one).
 - **The Example of Play does its sums at Trained +4** ("2 + 4, so d20+6") against the book's +3
   ladder, and has Recenter clear a Zone Exposed by a Posture, which the rules forbid. The rules
   text governs; the example needs a pass.
 - **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** Still
-  so in v4.13. The system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
-  (`STRIKE_KINDS.exposeOnMiss`). One cell in the handbook either way.
+  so in v4.14, which says it three ways: the Strikes paragraph ("A Miss Exposes you regardless of
+  commitment"), Reading the Result for a Blow ("whatever the Strike was") and the Result table
+  ("For a Blow, the attacker is Exposed in a Zone of the defender's choice"); Key Terms' Weighted
+  entry sides with the table's "Nothing". The system follows the Result rules (v4.10 sync report,
+  ruling 51) and keeps the switch in one place (`STRIKE_KINDS.exposeOnMiss`). One cell in the
+  handbook either way.
 - **`data/actions.xlsx` has never been committed.** Its one row, Aid, is the only action
   `assets/actions.json` cannot regenerate on a fresh clone (the converter carries it over from
   the last `actions.json` with a warning). `data/maneuvers.xlsx`, which authors the other 39
@@ -400,21 +441,49 @@ to R5), 74, 75 and 79 to 83.
   over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
 - **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**
   (Mike's ruling 63, 2026-10-01: Melee Training gives one Reaction, Intercept). Two sentences in the
-  book (Answering an Attack, the Reaction table); v4.13 still prints them.
+  book (Answering an Attack, the Reaction table); v4.14 still prints them.
 - **Sleeping in armor without Comfort ("waking Fatigued 1") is not implemented.** The rest card
   restores Vigor (and, since 0.6.2, clears Fatigued) and nothing else; the v4.11 brief said not to
-  add the armor rule, and neither v4.12 nor v4.13 changed anything there.
-- **Attended is in the data and the system ahead of the book.** The Breastplate's Traits cell in
-  `data/equipment.xlsx` and the roster's hand-kept `armorTraits` block carry the trait (v4.13 sync
-  report ruling 82, on Mike's "Yes to all"), and the Equipment tab prints its donning time alone;
-  the handbook has it only as tracked changes in
-  `Starwrought_Players_Handbook_v4.13_attended_proposal.docx` (the trait row, the Breastplate's
-  cell, a sentence in the donning paragraph). Until Mike accepts the redline into a numbered
-  edition, or amends the wording, the data runs a step ahead of the book on this one item. The
-  report also floats renaming the Breastplate to Cuirass, which would make the trait self-explaining.
-- **The handbook's Comfort row still says "without waking fatigued"**, lowercase, the old boolean's
-  word, while the donning paragraph says "waking Fatigued 1" and the Conditions table defines
-  Fatigued N. One cell in the armor traits table, Mike's to change.
+  add the armor rule, and no book since has changed it. v4.14's Comfort row reads "You can sleep in
+  it without increasing your Fatigued value by 1." and the roster's `armorTraits` row carries the
+  sentence (ruling 84); the donning paragraph still says "waking Fatigued 1 unless your torso piece
+  has comfort", lowercase, which is the formatting pass's to settle.
+- **Attended is in the book, the data and the system alike** (v4.14). Mike accepted the v4.13
+  redline into v4.14 (the trait row, the Breastplate's "Plate, Noisy, Attended" cell, the sentence
+  in the donning paragraph), so the data no longer runs ahead of the book on this item (ruling 82
+  closed). Nothing acts on the trait beyond the Equipment tab's donning time alone; the v4.13
+  report's suggestion to rename the Breastplate to Cuirass, which would make the trait
+  self-explaining, still floats, Mike's call.
+- **No composite bow in the data.** The weapon trait parser reads Composite and the natural
+  Attribute follows PHB v4.14 (0.6.3, ruling 87), but no weapon in `data/equipment.xlsx` carries
+  the trait, so the branch has nothing to act on. Mike authors one when he wants it, with
+  "Composite" in its Traits; the converter needs no change.
+- **A party sheet is planned, not built** (ruling 89; Mike asked whether Foundry has one built in,
+  2026-10-02). Foundry core (v13 and v14) has no party sheet: the party is a core idea only as the
+  players' assigned characters, and the party features Mike names come from systems that build
+  their own (pf2e's Party actor, dnd5e's Group actor). The plan, for a release of its own: a
+  `party` Actor type with (a) a members list of linked character Actors; (b) a Milestone award
+  button writing one Milestone to every member with a chat card; (c) a Skills grid, every member's
+  rank and bonus for each Skill Constellation and Defense, read live; (d) a Loot panel, Items on
+  the party Actor that a member's owner Takes onto their character, with a card announcing it;
+  (e) an Exploration Mode panel where each member picks an Activity from the actions compendium's
+  Exploration group and rolls its check from the party sheet. Go or not is Mike's call; the v4.14
+  sync report asks.
+- **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
+  a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
+  while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
+  holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (the v4.14 sync, system 0.6.3): the Flare dialog listing every shipping
+Constellation at once, now the Opened ones with a checkbox for the rest, and the sheet's
+Constellations tab with no way to Flare an unopened Constellation, now its toolbar toggle (ruling
+85); a Flare from the sheet going unannounced, now said in chat from either entry point (ruling 86);
+every ranged weapon reading Agility, now the Composite trait (ruling 87); the Strike Attribute
+question, verified as implemented (ruling 88); the party sheet question, answered and planned
+(ruling 89); the Attended redline, accepted into v4.14, so the "data ahead of the book" bullet
+closes; the Comfort row's lowercase "fatigued", now "You can sleep in it without increasing your
+Fatigued value by 1." in the book and the roster (ruling 84); two slips mended in the edition
+(ruling 90). The sync report records the rulings (84 to 90).
 
 Cleared 2026-10-02 (the v4.13 sync, system 0.6.2): the third-round delay on the Wind check, now the
 end of every round from round 1 (ruling 79, flagged to Mike in case the delay was meant to stay);

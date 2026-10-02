@@ -7,6 +7,139 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.6.3 (2026-10-02): Player's Handbook v4.14
+
+Built from Player's Handbook v4.14. Mike accepted the Attended redline and streamlined the Roll
+Playing Conventions paragraph and the two Result tables in tracked changes of his own; the
+integrator accepted those through Word and wrote the edition under the same file name, mending two
+slips on the way (see Notes). No rule moved in the book: the player still rolls, a Threshold is
+still ten plus the modifier it stands in for, and the Attack results say what they said in fewer
+words. The release is Mike's patch list after 0.6.2: the Flare lists show the Constellations a
+character has Opened and nothing else until asked, a Flare from the sheet is said in chat as a Flare
+from a card always was, and the composite bow in the Strike Attribute rule is read from a Trait. A
+patch release of the rules, so a patch bump, and no world migration. The rulings are 84 to 90 in
+`v4.14-sync-report.md`, continuing the v4.13 report's numbering.
+
+### Changed
+
+- **Flare lists show Opened Constellations by default** (ruling 85; Mike: "the drop-down list
+  should only show Opened Constellations. There should be a toggle, though, to instead show
+  non-Opened Constellations to Flare"). A Constellation is *Opened* for a character when they hold
+  its Constellation Item or any Talent in it; a Constellation drawn only because it is Flared counts
+  as listed too. The Flare dialog a critical's chat card opens lists those alone, with the rolled
+  Constellation preselected, and carries a checkbox, **Show Constellations you have not opened**,
+  that rebuilds the list with every shipping Constellation (Enabled, ruling 61) added and each
+  unopened one marked "(not opened)"; when the rolled Constellation is itself unopened the checkbox
+  starts ticked, so the preselection is in view. The sheet's Constellations tab lists the Opened and
+  Flared Constellations as it did, and its toolbar gains a toggle, **Show every Constellation**,
+  that adds every shipping Constellation the character has not opened as a slim, dimmed row in its
+  own category, trailing the opened ones (name, Key Attribute glyph, Untrained, a "not opened"
+  mark, the Flare control and the roll link; no Talent list, no caret; the Lore template is left
+  out, since a Lore a character opens is always Lore (X)), so an unopened Constellation can be
+  rolled or Flared from the sheet as well as from a card; the button reads **Opened only** while
+  the rows are shown. The toggle is the client setting `showUnopenedConstellations` (default off,
+  no entry in Configure Settings; the button is the switch), so it holds across sheets and sessions
+  for that user, and every character sheet the client has open redraws when it changes. Through
+  0.6.2 the dialog listed the character's Constellations and every shipping one together, in one
+  list.
+- **A Flare goes to chat from every entry point** (ruling 86; Mike: "Flaring a Constellation by
+  clicking on the Flare button on the charsheet in Foundry doesn't send that to chat, like changing
+  other things does"). `SwActor#toggleFlare` posts the Flare card itself after the update, spoken
+  by the actor and public, on the client that made the change: the existing card ("{name} is
+  Flared. A Milestone Talent Point may be spent there, and it stays Flared until you do.") when a
+  Constellation is lit, and a one-line card ("{name} is no longer Flared") when it is put out.
+  `flareFromCard` calls it and posts nothing of its own, so a Flare from a card is said once;
+  putting out a Flare that was never lit writes nothing and says nothing. The audit of hand edits
+  is left alone: Flares are an object, not a watched field, and the card is the announcement.
+- **The composite bow** (ruling 87). PHB v4.14, The Attack: "Your Strike Attribute is the higher of
+  two numbers: the weapon's natural Attribute (Might; or Agility for a weapon with the Finesse
+  trait, and for any ranged weapon other than a composite bow or a thrown weapon), or the Key
+  Attribute of a Combat Style whose root you have and whose weapons you are wielding." The weapon
+  trait parser reads a **Composite** Trait (`flags.composite`), and the natural Attribute is now
+  Agility for a Finesse weapon and for a ranged weapon that is not Composite, Might otherwise; a
+  thrown weapon already read as Might, since a weapon thrown from the hand is not a ranged weapon
+  in the model's terms. Through 0.6.2 every ranged weapon read Agility. The item sheet's hint
+  states the rule. No composite bow exists in `data/equipment.xlsx` yet, so nothing in the data
+  moves until Mike authors one, with "Composite" in its Traits.
+- **The siblings moved with the book** (ruling 84). The web app's Checks wiki carries the book's
+  results wording, loses its "Meaning for Attacks" column and says where Attacks are read; its
+  Combat section's Attack results take the book's new sentences ("Critical Hit. Double damage, or
+  the effect's critical result, plus critical effects. For a Blow, the attacker chooses the Zone
+  that is struck.", "Graze. Stopped, but partial damage ...", "Miss. Stopped, no damage. For a
+  Blow, the attacker is Exposed in a Zone of the defender's choice."), the "Natural 20 / Natural 1"
+  row and the Weighted paragraph as the book now places it; and the roster's hand-kept `armorTraits`
+  Comfort row takes the book's sentence, "You can sleep in it without increasing your Fatigued value
+  by 1.", which the Rules Reference journal's trait table, the Constellation Compendium and the web
+  app's armor table all print. No system rule moved: `weighted` was already on the Committed Strike
+  alone and `exposeOnMiss` on every Strike. `FEATURES.md`, the READMEs and `CLAUDE.md` name v4.14
+  and 0.6.3.
+
+### Notes
+
+- **Mike's streamlined text, and what it did not change.** The Roll Playing Conventions paragraph
+  (Chapter 2, Game Conventions) is one paragraph now: "The Player always rolls to determine
+  Success. Instead of the GM rolling dice secretly behind a screen, the player always rolls the dice
+  to determine if something succeeded or failed. This means that monsters typically have Thresholds
+  for most of their stats, for example, Initiative Threshold, Claws Strike Threshold, Guard
+  Threshold, Evade Threshold, etc. A Threshold is always ten plus the modifier of the check it
+  stands in for: 10 + Attribute Bonus + Proficiency Bonus, plus any bonuses and penalties that
+  apply. A creature (including a character) whose Guard is +7 therefore has a Guard Threshold of
+  17. If two players are opposed (e.g., one player attacks another player), the player initiating
+  the maneuver rolls." The four short paragraphs that followed it are gone. The Degrees of Success
+  table has lost its "Meaning for Attacks" column and its lead-in reads "(for Attacks, see the next
+  section)"; the Result table's rows are the sentences quoted above and its row heading reads
+  "Natural 20 / Natural 1". The paragraph beginning "Only a Committed Strike has the Weighted
+  trait" now sits under Strikes, in The Attack, and ends "because a committed blade is there to be
+  bound". Nothing the system does moved: the player rolls, the attacker rolls against the
+  defender's Threshold, a Threshold is ten plus the modifier, the Committed Strike alone is Weighted
+  and every Miss Exposes. The sync report asks Mike to confirm that "the player initiating the
+  maneuver rolls" is the attack flow's rule (the attacker rolls, the defender's committed Threshold
+  answers), and notes that the table's Hit sentence, "For a Blow, lands on the Torso", has no
+  subject.
+- **Two slips mended in the edition** (ruling 90). "characyer" to "character", and the Comfort
+  row's "without waking increasing your Fatigued value by 1" to "without increasing your Fatigued
+  value by 1". Flagged to Mike in the report.
+- **The Strike Attribute is implemented as the book says** (ruling 88; Mike: "Do we have this
+  implemented in Foundry?"). `strikeAttributeFor` in `module/data/actor.mjs` takes the higher of
+  the weapon's natural Attribute (`attackAttribute` in `module/data/item.mjs`) and the Key Attribute
+  of a Combat Style whose Root the character owns and in whose Style the weapon is wielded; the
+  weapon's Combat Style field (`system.style`) is where "write it on your sheet" lives, and the
+  sheet's weapon row shows the Attribute that won with a tooltip naming the Style. The one gap was
+  the composite bow, closed above (ruling 87). `FEATURES.md` says so plainly.
+- **A party sheet is planned, not built** (ruling 89; Mike: "Is there a built-in 'party sheet' in
+  Foundry to do things like award Milestones, see various party-wide things like everyone's Skills,
+  add Loot for party members to grab, allow players to choose and roll Exploration Mode activities,
+  etc.?"). Foundry core (v13 and v14) has none: the party is a core idea only as the players'
+  assigned characters (the Players list, each user's `character`), and the party features Mike
+  names come from systems that build their own (pf2e's Party actor, dnd5e's Group actor). The plan,
+  recorded in `CLAUDE.md` under Known outstanding work: a `party` Actor type in this system with a
+  members list of linked character Actors; a Milestone award button that writes one Milestone to
+  every member with a chat card; a Skills grid of every member's rank and bonus for each Skill
+  Constellation and Defense, read live; a Loot panel of Items on the party Actor, where a member's
+  owner clicks Take and the Item moves to their character with a card; and an Exploration Mode
+  panel where each member picks an Activity from the actions compendium's Exploration group and
+  rolls its check from the party sheet. Not in 0.6.3.
+- **Attended is the book's now.** Mike accepted the v4.13 redline into v4.14: the trait row ("It
+  fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as long.
+  Taking it off does not."), the Breastplate's "Plate, Noisy, Attended" cell and the donning
+  sentence are in the handbook, so the data and the system no longer run a step ahead of it on that
+  item, and the documents stop saying they do. Nothing in the system changed.
+- **A formatting pass may follow as v4.15.** Mike asked for one over the handbook (how Traits,
+  Constellations, Talents, Defined Terms, Conditions and cross-references are set, and tables banded
+  by Word rather than by hand). It runs as a separate workflow and changes no rule; the documents
+  name v4.14, and the integrator renames if v4.15 lands first.
+- The version stamps read 0.6.3 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: nothing stored changes
+  shape.
+- The handbook's v4.10 loose ends stand in v4.14: Key Terms still says ÷ 3, four Trained Defenses
+  and Varisians, Drilled still says "Weapons Proficiency Bonus", Table 9's Quick row still says
+  "Nothing" (and Key Terms' Weighted entry still says a Quick Strike is never Exposed, against
+  Chapter 2's "A Miss Exposes you regardless of commitment"), Melee Training still grants Counter,
+  Aid is still "Aid ❶ (⓿↺)" against the sheet's single action, the Example of Play still sums at
+  d20+6, and Armored Fighting's heading and table still disagree. `CLAUDE.md` carries the list.
+
+---
+
 ## 0.6.2 (2026-10-02): Player's Handbook v4.13
 
 Built from Player's Handbook v4.13. Mike rewrote the Wind bullet in the v4.12 file on the shelf and

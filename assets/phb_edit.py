@@ -115,6 +115,29 @@ EDITIONS = {
         "append": [],
         "rename": {},
     },
+    # v4.13 -> v4.14 (Mike, 2026-10-02): Mike accepted the Attended redline and streamlined the
+    # Checks chapter as tracked changes of his own, saved as v4.14 with the cover still reading
+    # v4.13. Word accepted his 24 revisions into a copy (word_accept.ps1, read-only on his file);
+    # this entry writes that copy out as the edition and mends two slips in his new text: the
+    # typo "characyer", and the Comfort row, where "fatigued" became "increasing your Fatigued
+    # value by 1" with "waking" left standing in front of it (v4.14 sync report, ruling 90).
+    "4.14": {
+        "from": "4.13",
+        "replace": [
+            (
+                "including a characyer",
+                "characyer",
+                "character"
+            ),
+            (
+                "You can sleep in it without waking",
+                "without waking ",
+                "without "
+            ),
+        ],
+        "append": [],
+        "rename": {},
+    },
     "3.4": {
         "from": "3.3",
         "replace": [

@@ -1,8 +1,21 @@
-{{!-- The sky: every Constellation this character has actually invested in. --}}
+{{!-- The sky: every Constellation this character has actually invested in, and, with the toggle on
+      (0.6.3, ruling 85), every Constellation that ships and has not been opened, dimmed. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
-  {{!-- A check whose Constellation is yours to choose and the GM's to approve. --}}
   <div class="sw-tab-toolbar">
+    {{!-- Opened only, or every Constellation: a client setting, so it is this user's everywhere. --}}
+    {{#if showUnopened}}
+    <button type="button" class="sw-inline-button sw-active" data-action="toggleUnopened"
+            data-tooltip="{{localize 'STARWROUGHT.Sheet.hideUnopenedHint'}}">
+      <i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Sheet.hideUnopened"}}
+    </button>
+    {{else}}
+    <button type="button" class="sw-inline-button" data-action="toggleUnopened"
+            data-tooltip="{{localize 'STARWROUGHT.Sheet.showUnopenedHint'}}">
+      <i class="fa-solid fa-eye"></i> {{localize "STARWROUGHT.Sheet.showUnopened"}}
+    </button>
+    {{/if}}
+    {{!-- A check whose Constellation is yours to choose and the GM's to approve. --}}
     <button type="button" class="sw-inline-button" data-action="relevantCheck"
             data-tooltip="{{localize 'STARWROUGHT.Sheet.relevantCheckHint'}}">
       <i class="fa-solid fa-scale-balanced"></i> {{localize "STARWROUGHT.Roll.relevantCheck"}}
@@ -22,12 +35,17 @@
     </h3>
 
     {{#each group.constellations as |con|}}
-    <div class="sw-constellation {{#if con.flared}}sw-flared{{/if}}" data-slug="{{con.slug}}">
+    <div class="sw-constellation {{#if con.flared}}sw-flared{{/if}} {{#if con.unopened}}sw-unopened{{/if}}" data-slug="{{con.slug}}">
 
       <div class="sw-constellation-head">
+        {{#if con.unopened}}
+        {{!-- Nothing to fold on an unopened row; the blank keeps the names aligned. --}}
+        <span class="sw-collapse sw-collapse-blank"></span>
+        {{else}}
         <a class="sw-collapse" data-action="toggleCollapse" data-slug="{{con.slug}}">
           <i class="fa-solid {{#if con.collapsed}}fa-caret-right{{else}}fa-caret-down{{/if}}"></i>
         </a>
+        {{/if}}
 
         <a class="sw-constellation-name" data-action="rollConstellation" data-slug="{{con.slug}}"
            data-tooltip="STARWROUGHT.Roll.rollHint">
@@ -39,7 +57,12 @@
           {{con.rankLabel}} {{swSigned con.bonus}}
         </span>
 
-        {{#if con.inherited}}
+        {{#if con.unopened}}
+        {{!-- Not opened: no Item, no Talent. Untrained, and still a sky a critical can Flare. --}}
+        <span class="sw-points sw-unopened-mark" data-tooltip="STARWROUGHT.Field.unopenedHint">
+          {{localize "STARWROUGHT.Sheet.notOpened"}}
+        </span>
+        {{else if con.inherited}}
         {{!-- A parent Constellation: its Combat Styles' points count toward its rank. --}}
         <span class="sw-points" data-tooltip="STARWROUGHT.Field.inheritedHint">
           {{con.pool}} {{swPlural con.pool (localize "STARWROUGHT.Field.pointShort") (localize "STARWROUGHT.Field.pointsShort")}},
@@ -72,6 +95,7 @@
         </a>
       </div>
 
+      {{#unless con.unopened}}
       {{#unless con.collapsed}}
       <ol class="sw-talent-list">
         {{#each con.talents as |talent|}}
@@ -105,6 +129,7 @@
         <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noTalents"}}</li>
         {{/each}}
       </ol>
+      {{/unless}}
       {{/unless}}
 
     </div>

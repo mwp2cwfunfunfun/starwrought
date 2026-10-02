@@ -672,6 +672,25 @@ function registerSettings() {
     onChange: () => { refreshReach(); refreshAuras(); }
   });
 
+  // The Constellations tab's toggle (0.6.3, ruling 85): list the Constellations the character has
+  // not opened, dimmed, so one can be Flared from the sheet. No config entry: the tab's own button
+  // reads and writes it, and it holds across sheets and sessions for this user. A change redraws
+  // the Constellations part of every character sheet this client has open, so two sheets never
+  // disagree about what the toggle shows.
+  game.settings.register(SW.SYSTEM_ID, "showUnopenedConstellations", {
+    name: "STARWROUGHT.Settings.showUnopenedConstellations",
+    hint: "STARWROUGHT.Settings.showUnopenedConstellationsHint",
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+    onChange: () => {
+      for (const app of foundry.applications.instances.values()) {
+        if (app.rendered && app.constructor?.PARTS?.constellations) app.render({ parts: ["constellations"] });
+      }
+    }
+  });
+
   game.settings.register(SW.SYSTEM_ID, "showTargetArrows", {
     name: "STARWROUGHT.Settings.showTargetArrows",
     hint: "STARWROUGHT.Settings.showTargetArrowsHint",

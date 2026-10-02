@@ -347,7 +347,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Attended</td><td>It fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as long. Taking it off does not.</td></tr><tr><td>Comfort</td><td>You can sleep in it without waking fatigued.</td></tr><tr><td>Noisy</td><td>−1 Situation penalty to Stealth, on top of your Load Strain.</td></tr><tr><td>Quiet</td><td>Your Load Strain never applies to Stealth while this is your only armor.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Attended</td><td>It fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as long. Taking it off does not.</td></tr><tr><td>Comfort</td><td>You can sleep in it without increasing your Fatigued value by 1.</td></tr><tr><td>Noisy</td><td>−1 Situation penalty to Stealth, on top of your Load Strain.</td></tr><tr><td>Quiet</td><td>Your Load Strain never applies to Stealth while this is your only armor.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {

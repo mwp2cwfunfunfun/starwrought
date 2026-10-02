@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry Virtual Tabletop
 
-A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.13; see
+A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.14; see
 `FEATURES.md` for what it does and `CHANGELOG.md` for what changed). Classless, Constellation-built,
 and written for a virtual tabletop from the ground up: the arithmetic is the software's job so the
 table can spend its attention on decisions. Six actions a round spent across Opportunities, the
@@ -61,8 +61,11 @@ treated from the Zone, and Refusing Death is a button that cannot fail.
 
 **Flares.** Any critical offers a Flare button on the chat card. It asks which Constellation the
 roll belonged to, because the die knows it was a critical and only the table knows what it was
-related to. A Constellation you have never opened can be Flared, and it shows on your sheet at 0
-points so the Milestone point has somewhere to go.
+related to. The list shows the Constellations you have Opened (an Item or a Talent in them), with
+a checkbox for the rest, and the sheet's Constellations tab has the same toggle, so a Constellation
+you have never opened can be Flared from either; it then shows on your sheet at 0 points so the
+Milestone point has somewhere to go. A Flare is said in chat whether it came from a card or from
+the sheet.
 
 **Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that
 leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a rank without

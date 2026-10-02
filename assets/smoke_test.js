@@ -212,6 +212,31 @@ const driver=`
     const mira=chars.find(c=>c.id===TORVA.id); must(mira, "Mira loaded"); const dm=derive(mira), sm=vSheet(mira);
     must(dm.strain===0&&!/Wind each round: Endure vs|Wind from round|no Wind check \\(|round 3\\b/.test(sm), "Mira's leathers are Load 0: her Strain line says nothing about Wind (the ladder's own text aside)");
     must(sm.includes("Wind, each round: Endure vs 10 + Strain")&&!sm.includes("round 3 on"), "the ladder's static text says each round"); });
+  // PHB v4.14 (ruling 84): the streamlined Checks text. The roster's Comfort row carries the book's sentence; the
+  // How to Play results table has no Attacks column and points at the Combat section, whose Attack results table
+  // prints the book's new rows ("partial damage", "Stopped, no damage"); the deleted cells and paragraphs leave no echo.
+  step("v4.14: the Comfort row, the results table, and the Attack results (ruling 84)", ()=>{
+    const CF="You can sleep in it without increasing your Fatigued value by 1.";
+    const cf=(R.armorTraits||[]).find(r=>r[0]==="Comfort");
+    must(cf&&cf[1]===CF, "the Comfort row carries the v4.14 sentence verbatim, found: "+(cf&&cf[1]));
+    tab="wiki"; render(); const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    must(secs.length>=5, "the wiki nav must be rendered before the sweep, found "+secs.length+" sections");
+    wikiSec="How to Play"; render(); const htp=document.getElementById("main").innerHTML;
+    must(!htp.includes("Meaning for Attacks"), "the Checks table has lost its Attacks column");
+    must(/Degrees of success<\\/h3>[\\s\\S]{0,400}for Attacks, see the [\\s\\S]{0,80}Combat/.test(htp), "the results table's lead-in says where Attacks are read");
+    must(htp.includes("Natural 20 / Natural 1"), "the Checks table's die row reads 'Natural 20 / Natural 1'");
+    must(htp.includes("<b>The player always rolls.</b>")&&htp.includes("the player initiating the Maneuver rolls"), "the How to Play callout follows the book's streamlined paragraph");
+    wikiSec="Combat"; render(); const cb=document.getElementById("main").innerHTML;
+    must(cb.includes("<b>Graze.</b> Stopped, but partial damage: one weapon die, or one round of effect.")&&cb.includes("<b>Miss.</b> Stopped, no damage. For a Blow, the attacker is Exposed in a Zone of the defender's choice."), "the Attack results table prints the book's Graze and Miss");
+    must(cb.includes("For a Blow, the attacker chooses the Zone that is struck.")&&cb.includes("For a Blow, it lands on the Torso, or on an Exposed Zone the attacker chooses."), "and the book's Critical Hit and Hit");
+    must(cb.includes("Natural 20 / Natural 1")&&cb.includes("Natural 1 / Natural 20"), "the Attack results' die row reads Natural with a capital N on both sides");
+    must(cb.includes("because a committed blade is there to be bound."), "the Weighted paragraph ends as the book's does");
+    must(cb.includes("(see 5. Position)")&&cb.includes("<h3>5. Position</h3>"), "the Graze row's cross-reference resolves to the Position heading");
+    must(cb.includes("<b>Miss</b></td><td>Stopped, no damage. The attacker is Exposed"), "the Blow reading's Miss row opens as the book's Miss does");
+    wikiSec="Traits"; render(); must(document.getElementById("main").innerHTML.includes(CF), "the armor traits table prints the new Comfort sentence from the roster block");
+    wikiSec="Equipment"; render(); must(document.getElementById("main").innerHTML.includes("Sleeping in armor increases your Fatigued value by 1 <i>unless your torso piece has Comfort</i>."), "the donning paragraph says what sleeping in armor costs in the book's terms");
+    const gone=/it skates|Nothing lands|the die is in your hand|Meaning for Attacks|waking [Ff]atigued|You roll\\. Always\\.|Natural 20 \\/ 1\\b|natural 20 \\/ natural 1|Natural 1 \\/ natural 20/;
+    for(const s of secs){ wikiSec=s; render(); const m=document.getElementById("main").innerHTML.match(gone); if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'"); } wikiSec=secs[0]; });
   // Ruling 63: Melee Training grants Intercept alone; Counter needs Expert rank in Melee, which counts a
   // Combat Style's points once the Root is owned (ruling 13) and is gated at level 5 like every Expert rank.
   step("Reactions checklist: Counter at Melee Expert (ruling 63)", ()=>{

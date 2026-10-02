@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.6.2";
+  --sw-css-version: "0.6.3";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -746,6 +746,21 @@
 
 .starwrought .sw-flare { color: var(--sw-edge); font-size: 0.9rem; }
 .starwrought .sw-flared .sw-flare { color: var(--sw-flare); text-shadow: 0 0 8px rgba(255, 216, 103, 0.6); }
+
+/* Unopened Constellations (0.6.3, ruling 85): with the tab's toggle on, every sky that ships and
+   has not been opened is listed slim and dimmed, with the roll link and the Flare control and
+   nothing to fold. The toggle itself lights up while it is on. */
+.starwrought .sw-constellation.sw-unopened {
+  opacity: 0.55;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+  margin-bottom: 0.05rem;
+}
+.starwrought .sw-constellation.sw-unopened:hover { opacity: 0.9; }
+.starwrought .sw-constellation.sw-unopened .sw-constellation-name { font-weight: 500; }
+.starwrought .sw-collapse-blank { display: inline-block; }
+.starwrought .sw-unopened-mark { font-style: italic; }
+.starwrought .sw-tab-toolbar .sw-inline-button.sw-active { border-color: var(--sw-gold); color: var(--sw-flare); }
 
 .starwrought .sw-talent-list { list-style: none; margin: 0.25rem 0 0; padding: 0 0 0 1.4rem; }
 .starwrought .sw-talent {
@@ -1676,6 +1691,11 @@ li.combatant.sw-in-crosshairs {
   background: linear-gradient(180deg, rgba(255, 216, 103, 0.18), rgba(255, 216, 103, 0.06));
 }
 .starwrought .sw-flare-card h3 { color: var(--sw-flare); }
+/* A Flare put out (0.6.3, ruling 86): one quiet line. The chat button's dialog lists the opened
+   Constellations and offers the rest under a checkbox (ruling 85). */
+.starwrought .sw-flare-card.sw-flare-out p { margin: 0; color: var(--sw-ink-dim); }
+.starwrought.sw-flare-dialog .sw-flare-unopened { margin-top: 0.5rem; }
+.starwrought.sw-flare-dialog .sw-flare-unopened label.checkbox { font-size: 0.8rem; }
 
 /* Rerolls (0.5.3). The button sits under the outcome, quiet; a superseded card dims, strikes its
    total through and says so, and every control on it is disabled by the render hook. */

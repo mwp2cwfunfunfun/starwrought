@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.13**. System version **0.6.2**. Developed against
+Rules content built from **Player's Handbook v4.14**. System version **0.6.3**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -230,10 +230,20 @@ sheet can see, so they stay with the table.
   caller says so), and then rolls Ranged. **Weapon Handling** still applies on top: Intuitive uses
   the full rank, Practiced drops a rank without Familiarity, Technical drops you to Untrained.
   Familiarity is derived from what your Talents recorded plus the sheet's own list.
-- **The Strike Attribute** is the higher of the weapon's natural Attribute (Might; Agility for
-  Finesse, and for a ranged weapon that is not thrown) and the Key Attribute of a Combat Style
-  whose Root you own and in whose Style you are wielding the weapon (the weapon's Style field). The
-  weapon row shows the glyph of the one that won and says why.
+- **The Strike Attribute** is the higher of the weapon's natural Attribute and the Key Attribute of
+  a Combat Style whose Root you own and in whose Style you are wielding the weapon (PHB v4.14, The
+  Attack: "Your Strike Attribute is the higher of two numbers: the weapon's natural Attribute
+  (Might; or Agility for a weapon with the Finesse trait, and for any ranged weapon other than a
+  composite bow or a thrown weapon), or the Key Attribute of a Combat Style whose root you have and
+  whose weapons you are wielding. Work it out once per weapon and write it on your sheet. Damage
+  still adds Might where the Strike allows it."; sync report rulings 87 and 88). The natural
+  Attribute is Might, or Agility for a Finesse weapon and for a ranged weapon that does not carry
+  the **Composite** trait; a thrown weapon is Might, since a weapon thrown from the hand is not a
+  ranged weapon in its own right (0.6.3; through 0.6.2 every ranged weapon read Agility, and no
+  weapon in the data carries Composite yet). "Write it on your sheet" is the weapon's **Combat
+  Style** field: name the Style you wield it in and the sheet makes the comparison. The weapon row
+  shows the glyph of the Attribute that won and its tooltip says whether it came from the weapon or
+  the Style. Damage still adds Might where the Strike allows it.
 - **The three Strikes.** Every weapon row has three buttons, ❶ Quick, ❷ Deliberate, ❸ Committed,
   and the roll dialog shows the kind and lets it be changed (it is locked when the Strike is already
   paid for: a finished preparation, a riposte, a Counter, an Intercept).
@@ -584,9 +594,12 @@ alone, putting it on takes twice as long. Taking it off does not." The armor Ite
 `attended` from its traits and `donTimeAlone` (twice the donning time when Attended, else the
 same), the Equipment tab's time tag reads "4 min, 8 alone" on the piece and its hint says why, and
 the Rules Reference journal's armor traits table defines it. No Load, Protection, Strain or check
-reads it. The trait is in the data and the system a step ahead of the book, at Mike's word: its
-wording stands in the handbook as tracked changes for him to accept, while the Constellation
-Compendium and the web app already print it.
+reads it. Mike accepted the wording into PHB v4.14 (the trait row, the Breastplate's "Plate,
+Noisy, Attended" cell and the donning sentence), so the book, the data and the system agree, and
+the Constellation Compendium and the web app print the same row. The Comfort row beside it reads,
+since v4.14, "You can sleep in it without increasing your Fatigued value by 1."; the roster's
+hand-kept `armorTraits` block carries that sentence, and nothing in the system acts on it (see
+section 7).
 
 **Shields.** Raise a Shield ❶ flips the shield's raised flag and pays the action; its Gear bonus to
 Guard is derived from the flag, and the tracker lowers it when your next Opportunity begins. A held
@@ -597,8 +610,38 @@ shield, raised or not, is a rigid implement: it satisfies Parry's requirement an
 Any critical, in either direction, puts a Flare button on the chat card. It asks which Constellation
 the roll belonged to, because the die knows it was a critical and only the table knows what it was
 related to. A Quick Strike's natural 20 that was denied its Critical Hit was still a critical on the
-die, so it offers the button too. A Constellation you have never opened can be Flared, and it then
-shows on the sheet at 0 points so the Milestone point has somewhere to go.
+die, so it offers the button too.
+
+**The list shows what you have Opened** (0.6.3; Mike: "the drop-down list should only show Opened
+Constellations. There should be a toggle, though, to instead show non-Opened Constellations to
+Flare"; sync report ruling 85). A Constellation is Opened for a character when they hold its
+Constellation Item or any Talent in it; one drawn only because it is already Flared is listed too.
+The dialog lists those alone, with the Constellation that was rolled preselected, and a checkbox,
+**Show Constellations you have not opened**, rebuilds the list with every shipping Constellation
+added and each unopened one marked "(not opened)"; when the rolled Constellation is one you have not
+opened, the checkbox starts ticked so the preselection is in view. A Constellation you have never
+opened can still be Flared, then, and it shows on the sheet at 0 points so the Milestone point has
+somewhere to go.
+
+**The sheet's Constellations tab** lists your Opened and Flared Constellations as before, and its
+toolbar carries **Show every Constellation**, a toggle that adds every shipping Constellation you
+have not opened as a slim, dimmed row in its own category, trailing the opened ones: name, Key
+Attribute glyph, Untrained, a "not opened" mark, the Flare control and the roll link, with no Talent
+list and no caret (the Lore template is left out, since a Lore you open is always Lore (X)). So an
+unopened Constellation can be rolled or Flared from the sheet as well as from a card; the button
+reads **Opened only** while the rows are shown. The toggle is a client setting
+(`showUnopenedConstellations`, off by default, with no entry in Configure Settings; the button is
+the switch), so it holds across sheets and sessions for that user, and every character sheet the
+client has open redraws when it changes.
+
+**A Flare is said in chat from every entry point** (0.6.3; Mike: "Flaring a Constellation by
+clicking on the Flare button on the charsheet in Foundry doesn't send that to chat, like changing
+other things does"; ruling 86). Lighting a Constellation, from a card or from the sheet, posts the
+Flare card ("{name} is Flared. A Milestone Talent Point may be spent there, and it stays Flared
+until you do."), spoken by the actor and public; putting one out posts a one-line card saying it is
+no longer Flared. `toggleFlare` posts the card itself, so a Flare from a card is said once and no
+entry point is left silent; putting out a Flare that was never lit writes nothing and says nothing.
+The Adjusted card for hand edits has never covered Flares, and the Flare card is the announcement.
 
 ### Initiative
 
@@ -989,12 +1032,15 @@ table buttons: Recovery check, Refuse Death, a night's rest (showing what it wou
 Constellations groups your skies by category,
 shows rank, Proficiency, points and what the next rank is waiting on, and folds open to the Talents
 you own with a Flare toggle on each Constellation; a parent shows its pool and how much is inherited,
-and a Combat Style says which parent it is a child of. Equipment lays armor out by Zone with the
+and a Combat Style says which parent it is a child of. Its toolbar's **Show every Constellation**
+toggle (0.6.3) adds the shipping Constellations you have not opened as dimmed rows with a Flare
+control and nothing else, and remembers the choice per client (see Flares). Equipment lays armor out by Zone with the
 Zone's Wounds beside its Protection. Also Maneuvers, Effects and Biography.
 
 **Weapon rows.** Each held weapon shows the Strike Attribute that won (glyph and attack modifier,
 with the standing attack modifiers such as an Arms Wound's −2 folded in so it agrees with the roll
-dialog, and a tooltip saying whether it came from the weapon or a Combat Style), Melee or Ranged and the
+dialog, and a tooltip saying whether it came from the weapon or a Combat Style; the weapon's Combat
+Style field is where the book's "write it on your sheet" lives), Melee or Ranged and the
 rank that applies after Handling, its damage (the Quick Strike's in the tooltip) and its reach, and
 three Strike buttons: ❶ Quick, ❷ Deliberate, ❸ Committed. Clicking the name uses the default Strike.
 Shift-click skips the dialog.
@@ -1037,7 +1083,8 @@ carries one yet. A Constellation names its parent (Melee or Ranged; anything but
 itself is allowed, so a third parent needs no code change). A chassis carries its Vigor (per level
 for an Ancestry, Opening Vigor for a Calling, and the sheet labels it so), Size and Speed in feet
 per Move. A weapon carries its Style, which is load-bearing for the Strike
-Attribute, and the sheet calls out the traits that decide what it can do in a Bind. A Talent or
+Attribute (the field's hint states the rule, the composite bow included), and the sheet calls out
+the traits that decide what it can do in a Bind. A Talent or
 Maneuver carries its **Aura** (range in feet, who it concerns, Visible by default), editable by the
 GM on the Details tab.
 
@@ -1165,9 +1212,10 @@ a Defense roll button against the attack's Threshold.
 
 Also: Move, Step and Rush cards saying what a drag cost and why; the Pass card; Bind formed, Control
 taken and Bind ended; Exposed; Give ground; Step; Recenter; Treat Wound; a night's rest; Refuse
-Death; a Hero Point spent; the **Adjusted** card for a player's hand edits (0.5.1); and the
-overspend card, whenever something happened without the actions to pay for it. The Bind and
-Exposed card titles open their rules pages.
+Death; a Hero Point spent; the **Flare** card, lit or put out, from a critical's card or from the
+sheet (0.6.3); the **Adjusted** card for a player's hand edits (0.5.1); and the overspend card,
+whenever something happened without the actions to pay for it. The Bind and Exposed card titles
+open their rules pages.
 
 ---
 
@@ -1210,6 +1258,7 @@ are markers for the table.
 | Show a character's Threshold to the attacker | off | After the reveal, print the defending character's Threshold on the attack card and the resolution card for the attacking player. Inside the flow an adversary's Thresholds are never printed for players |
 | Show pinned auras | on | Draw every combatant's Visible ranges on the map while an encounter runs. Off, only the hover preview draws. Per client |
 | Range ring contrast | Normal | How boldly the reach and aura rings are drawn. Every ring has a dark halo under its outline so it reads on a pale floor; Strong thickens the lines and deepens the fills. Per client |
+| Show every Constellation | off | On the sheet's Constellations tab, list every shipping Constellation the character has not opened as a dimmed row with a Flare control, so one can be Flared from the sheet. Per client; the tab's toolbar button is the switch, and the setting has no entry in Configure Settings |
 
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
 for it is ignored.
@@ -1247,8 +1296,9 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   cleared Fatigued when the Combat was deleted), so the Fatigued card offers the owner or the GM a
   Ten minutes' rest button, a night's rest clears it, and whether ten minutes passed between one
   scene and the next is the table's to say.
-- **Sleeping in armor without Comfort does not set Fatigued 1.** The rest card restores Vigor and
-  nothing else; that rule is the table's to apply.
+- **Sleeping in armor without Comfort does not set Fatigued 1.** The book's Comfort row (PHB
+  v4.14): "You can sleep in it without increasing your Fatigued value by 1." The rest card restores
+  Vigor, clears Fatigued and does nothing else; that rule is the table's to apply.
 - **"Climb or Swim" is asked, not detected.** Load Strain lands on an Athletics check only when the
   player ticks the dialog's toggle, because the system cannot tell a Climb from a grapple.
 - **Zone critical effects other than the Torso's are announced, not tracked.** A Critical Hit on the
