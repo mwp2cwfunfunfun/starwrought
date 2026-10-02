@@ -242,6 +242,17 @@
   color: var(--sw-ink);
 }
 .starwrought .sw-locked-value:empty::before { content: "\2013"; color: var(--sw-ink-dim); opacity: 0.5; }
+/* The locked fields' tooltips carry a chassis's description and Root Talent, not one line. */
+#tooltip.sw-tooltip-rich, .locked-tooltip.sw-tooltip-rich {
+  max-width: 24rem;
+  text-align: left;
+  line-height: 1.35;
+}
+#tooltip.sw-tooltip-rich p, .locked-tooltip.sw-tooltip-rich p { margin: 0.25rem 0; }
+#tooltip.sw-tooltip-rich .sw-tip-title { display: block; font-weight: 700; color: var(--sw-gold, #e3b23c); }
+#tooltip.sw-tooltip-rich .sw-tip-kind { opacity: 0.7; font-weight: 400; margin-left: 0.3rem; font-size: 0.85em; }
+#tooltip.sw-tooltip-rich .sw-tip-root { display: block; margin-top: 0.4rem; font-style: italic; opacity: 0.85; }
+#tooltip.sw-tooltip-rich .sw-tip-foot { display: block; margin-top: 0.4rem; font-size: 0.85em; opacity: 0.7; }
 
 .starwrought .sw-hero-spend-row { gap: 0.45rem; }
 .starwrought button.sw-hero-spend {

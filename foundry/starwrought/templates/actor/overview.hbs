@@ -144,17 +144,17 @@
       </label>
       {{!-- Ancestry Vigor, Calling Vigor and Ancestry Speed are set at creation (0.5.1, T8): the
             player reads them, the GM types them. --}}
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.ancestryVigor}}" data-tooltip-class="sw-tooltip-rich"{{/unless}}>
         <span>{{localize "STARWROUGHT.Field.ancestryVigor"}}</span>
         {{#if isGM}}<input type="number" name="system.details.ancestry.vigor" value="{{system.details.ancestry.vigor}}" min="0">
         {{else}}<strong class="sw-locked-value">{{system.details.ancestry.vigor}}</strong>{{/if}}
       </label>
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.callingVigor}}" data-tooltip-class="sw-tooltip-rich"{{/unless}}>
         <span>{{localize "STARWROUGHT.Field.callingVigor"}}</span>
         {{#if isGM}}<input type="number" name="system.details.calling.vigor" value="{{system.details.calling.vigor}}" min="0">
         {{else}}<strong class="sw-locked-value">{{system.details.calling.vigor}}</strong>{{/if}}
       </label>
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" data-tooltip="{{#if isGM}}STARWROUGHT.Field.speedHint{{else}}STARWROUGHT.Sheet.lockedField{{/if}}">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#if isGM}}data-tooltip="STARWROUGHT.Field.speedHint"{{else}}data-tooltip="{{lockedTips.ancestrySpeed}}" data-tooltip-class="sw-tooltip-rich"{{/if}}>
         <span>{{localize "STARWROUGHT.Field.ancestrySpeed"}}</span>
         {{#if isGM}}<input type="number" name="system.details.ancestry.speed" value="{{system.details.ancestry.speed}}" min="0">
         {{else}}<strong class="sw-locked-value">{{system.details.ancestry.speed}} ft</strong>{{/if}}

@@ -7,6 +7,54 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.5.2 (2026-10-01): the Bind under the arrow, and locked fields that explain themselves
+
+Built from Player's Handbook v4.10, unchanged. Two pieces of feedback on 0.5.1, both from Mike.
+
+### Changed
+
+- **The Bind chain is drawn lighter, and beneath the targeting arrows** (Mike, 2026-10-01: "The
+  Bind line is overpowering the Target Distance arrow"). The rails are a fraction of their old
+  width (1.5 to 3.5 pixels at the scene's scale), the underlay, rungs and arrowhead are dimmer, the
+  label is smaller with a more transparent pill, and the binds layer now sits under the targets
+  layer, so the arrow and its distance pill read over the chain rather than vanishing under it.
+  The label stands off the midpoint far enough to clear the distance pill at any zoom, since both
+  used to want the same spot.
+- **A locked field on the character sheet says what it means** (Mike, 2026-10-01: "any uneditable
+  field should have a tooltip with more info"). For a player, Ancestry, Bloodline, Culture,
+  Background and Calling are text (0.5.1); hovering one now shows the chassis's description
+  followed by its effect: Human gives the ancestry's line and then Humanity's description and
+  effect, Soldier gives the story and then what it trains. When the character owns the Root
+  Talent, its description and effect stand in for the chassis's summary of it (they said the same
+  thing twice), and the Root is named only when its name differs from the chassis's (a Bloodline's
+  Root carries the Bloodline's name). Ancestry Vigor, Calling Vigor and Ancestry Speed say where
+  the number comes from and what it feeds. The lock line, "Set at character creation. The GM
+  changes it.", stays as the footer.
+
+### Added
+
+- **`content/chassis.json`**: every authored chassis, enabled or not, written by `build_foundry.mjs`
+  beside the Constellation index. The sheet reads a chassis from the compendium first and from
+  this index behind it, so a Background or Calling the Enabled? column has switched off (Soldier
+  and Berserker today) still explains itself on a character that chose it, and a name the GM typed
+  that matches nothing in the book says so ("Not a chassis the compendium knows"). A world chassis
+  Item of the same name wins over both, as a world Basic Action does.
+
+### Fixed
+
+- The world's `systemVersion` stamp now follows a release that carries no migration step. It stayed
+  at the last release that had one (0.5.1 after this upgrade), although the comment above
+  `migrateWorld` promised it was written on every check.
+
+### Notes
+
+- The text in those tooltips is the spreadsheets' as authored. The three Roots a Human character
+  sees still name the pre-v3.3 bonus types ("+1 status bonus", "+1 circumstance bonus"), which the
+  style check already counts as an advisory, and Rage's effect in `callings.xlsx` still reads
+  "Temp HP", "◆" and "Duration 10 rounds". Mike's cells; the tooltips will follow them.
+
+---
+
 ## 0.5.1 (2026-10-01): auras on the map, and the player-facing sheet
 
 ### Added

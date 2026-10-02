@@ -38,27 +38,29 @@
 
     {{!-- Identity (0.5.1, T8): set at creation, read by the player, typed only by the GM. --}}
     <div class="sw-identity">
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      {{!-- A locked field's tooltip says what the name means: the chassis's description and its
+            Root Talent (lockedTips in actor-sheet.mjs), rendered as HTML by Foundry's tooltip. --}}
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.ancestry}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="DOWN"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.ancestry"}}</span>
         {{#if isGM}}<input type="text" name="system.details.ancestry.name" value="{{system.details.ancestry.name}}">
         {{else}}<strong class="sw-locked-value">{{system.details.ancestry.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.bloodline}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="DOWN"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.bloodline"}}</span>
         {{#if isGM}}<input type="text" name="system.details.bloodline.name" value="{{system.details.bloodline.name}}">
         {{else}}<strong class="sw-locked-value">{{system.details.bloodline.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.culture}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="DOWN"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.culture"}}</span>
         {{#if isGM}}<input type="text" name="system.details.culture.name" value="{{system.details.culture.name}}">
         {{else}}<strong class="sw-locked-value">{{system.details.culture.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.background}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="DOWN"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.background"}}</span>
         {{#if isGM}}<input type="text" name="system.details.background.name" value="{{system.details.background.name}}">
         {{else}}<strong class="sw-locked-value">{{system.details.background.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="{{lockedTips.calling}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="DOWN"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.calling"}}</span>
         {{#if isGM}}<input type="text" name="system.details.calling.name" value="{{system.details.calling.name}}">
         {{else}}<strong class="sw-locked-value">{{system.details.calling.name}}</strong>{{/if}}

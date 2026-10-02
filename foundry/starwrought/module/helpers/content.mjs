@@ -175,6 +175,55 @@ export function invalidateBasicActions() {
 
 /* -------------------------------------------- */
 
+let chassisIndex = null;
+const CHASSIS_PATH = "systems/starwrought/content/chassis.json";
+
+/**
+ * The chassis (Ancestries, Bloodlines, Cultures, Backgrounds, Callings) by name, so a sheet can
+ * say what the name on it means: a character stores the names it chose at creation, not the
+ * Items (Mike, 2026-10-01: the locked fields explain themselves). Three sources, each overriding
+ * the last: the shipped index, which holds every authored chassis whether or not the Enabled?
+ * column let it into the pack (a Soldier stays a Soldier after Backgrounds are switched off); the
+ * compendium; and a world Item of the same name, as the Basic Actions do. An index entry is a
+ * plain record shaped like an Item ({name, img, system}), so a reader needs no second code path.
+ * @returns {Promise<Map<string, Item|object>>}  Lowercased name to the unowned Item or record.
+ */
+export async function loadChassisIndex() {
+  if (chassisIndex) return chassisIndex;
+  const byName = new Map();
+  try {
+    for (const entry of await foundry.utils.fetchJsonWithTimeout(CHASSIS_PATH) ?? []) {
+      byName.set(String(entry.name).toLowerCase(), { ...entry, type: "chassis", shipped: true });
+    }
+  } catch {
+    // A system built before the index existed; the pack alone still answers for what it holds.
+  }
+  const pack = game.packs.get(`${SW.SYSTEM_ID}.chassis`);
+  if (pack) {
+    for (const item of await pack.getDocuments()) {
+      if (item.type === "chassis") byName.set(item.name.toLowerCase(), item);
+    }
+  }
+  for (const item of game.items ?? []) {
+    if (item.type === "chassis") byName.set(item.name.toLowerCase(), item);
+  }
+  chassisIndex = byName;
+  return chassisIndex;
+}
+
+/** The chassis Item behind a name, once the index is loaded; null before that or for a name it lacks. */
+export function chassisByName(name) {
+  if (!name || !chassisIndex) return null;
+  return chassisIndex.get(String(name).trim().toLowerCase()) ?? null;
+}
+
+/** Forget the chassis, so a GM's new world chassis is read on the next sheet render. */
+export function invalidateChassisIndex() {
+  chassisIndex = null;
+}
+
+/* -------------------------------------------- */
+
 /**
  * STARWROUGHT measures diagonals exactly, and that is a property of the system rather than of any
  * one scene: the Scene document has no diagonals field, so the rule comes from the manifest and

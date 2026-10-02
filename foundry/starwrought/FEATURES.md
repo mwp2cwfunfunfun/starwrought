@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.5.1**. Developed against
+Rules content built from **Player's Handbook v4.10**. System version **0.5.2**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -843,7 +843,11 @@ A Bind is drawn between the two bound tokens for everyone who can see both (Mike
 gold rails with rungs for a neutral Bind, labelled at the midpoint with both implements ("Spear /
 Shortsword"); a Controlled Bind runs from the Controller with an arrowhead at the Controlled end and
 a small Control pill. It follows a drag clone, is dashed while either token is hidden (GM only),
-and goes when the Bind ends. The Bound, Controlling and Controlled effects now say what they are
+and goes when the Bind ends. The chain is drawn light and beneath the targeting arrows (0.5.2;
+Mike: the line was overpowering the distance arrow): thin rails, dim rungs, a small label that
+stands off the midpoint far enough to clear the arrow's distance pill at any zoom, so a Bind and a
+target between the same two tokens read as an arrow with a chain under it, not the other way
+round. The Bound, Controlling and Controlled effects now say what they are
 ("Bound: Neutral Bind with Evader"), carry the partner as their origin and the implements in their
 description, and there is exactly one of them per Bind: condition effects are created under the
 static ids the token palette uses, so a rules-set Bound shows lit in the palette and a click there
@@ -934,7 +938,14 @@ GM on the Details tab.
 
 **What a player may change** (Mike, 2026-10-01). The sheet is the character's record, and some of
 it is the GM's to write. For a player, Ancestry, Bloodline, Culture, Background, Calling, Ancestry
-Vigor, Calling Vigor and Ancestry Speed are text, not fields; Level is a badge with three star pips
+Vigor, Calling Vigor and Ancestry Speed are text, not fields, and each explains itself on hover
+(0.5.2): a name shows the chassis's description followed by its effect, with its Root Talent's
+description and effect in place of the summary when the character owns that Talent (Human: the
+ancestry's line, then Humanity; Soldier: the story, then what it trains), and a number says where
+it comes from and what it feeds. The sheet reads the chassis from the compendium, and behind it
+from `content/chassis.json`, which `build_foundry.mjs` writes for every authored chassis whether
+or not Enabled? let it into the pack, so a Background or Calling switched off after a character
+chose it still has its text. Level is a badge with three star pips
 beneath it for the Milestones reached (the fourth is the level); Hero Points show a count and a
 **Spend** button that posts "Hrolda spends a Hero Point (2 left)" to everyone, with no way to add
 one; Refuse Death is disabled unless the character is Dying and holds a Hero Point; and a Talent,

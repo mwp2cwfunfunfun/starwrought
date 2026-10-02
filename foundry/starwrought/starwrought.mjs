@@ -40,6 +40,7 @@ import { SwCombatPrompt } from "./module/apps/combat-prompt.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
+  loadChassisIndex, invalidateChassisIndex,
   invalidateBasicActions
 } from "./module/helpers/content.mjs";
 
@@ -163,6 +164,8 @@ Hooks.once("init", async () => {
 
 Hooks.once("ready", async () => {
   await refreshConstellationRegistry();
+  // The chassis by name, for the sheet's locked fields to explain themselves.
+  await loadChassisIndex();
   try {
     await migrateWorld();
   } catch (err) {
@@ -196,8 +199,10 @@ Hooks.once("ready", async () => {
   // copies are a character's own and never in the list, so they do not count.
   for (const hook of ["createItem", "updateItem", "deleteItem"]) {
     Hooks.on(hook, item => {
-      if ((item.type !== "action") || item.parent) return;
-      invalidateBasicActions();
+      if (item.parent) return;
+      if (item.type === "action") invalidateBasicActions();
+      // A GM's new or edited world chassis is read on the next sheet render.
+      if (item.type === "chassis") { invalidateChassisIndex(); loadChassisIndex(); }
     });
   }
 });
@@ -223,7 +228,11 @@ async function migrateWorld() {
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1")) return;
+  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1")) {
+    // Nothing to change, but the stamp still names the release the world last ran under.
+    if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+    return;
+  }
 
   let count = 0;
   if (needs("0.4.0")) {

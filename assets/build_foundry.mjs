@@ -322,6 +322,17 @@ const chassisFolders = {
 // curated separately from Humanity; a Background on its own flag. The folders always ship, so an
 // empty step in chargen still has somewhere to say that nothing is enabled.
 const ancestryTree = ancestry => trees[ancestry.tree ?? ancestry.name];
+
+// Every chassis, enabled or not, for content/chassis.json: a character stores the names it chose
+// at creation, not the Items, and the sheet explains a locked name from this index when the pack
+// does not carry it (a Background or Calling switched off after the character was made, or never
+// enabled at all). The pack holds only the enabled ones; the index is the whole book.
+const chassisIndex = [];
+function chassis(enabled, doc) {
+  chassisIndex.push({ name: doc.name, img: doc.img ?? ICON.chassis, enabled, system: doc.system });
+  if (count("chassis", enabled)) item("chassis", doc);
+}
+
 function bloodlineEnabled(ancestry, bloodName) {
   const want = stripGlyphs(bloodName).toLowerCase();
   const root = (ancestryTree(ancestry)?.nodes ?? []).find(n => n.hroot && stripGlyphs(n.name).toLowerCase() === want);
@@ -332,7 +343,7 @@ function bloodlineEnabled(ancestry, bloodName) {
 
 for (const ancestry of roster.ancestries ?? []) {
   const treeSlug = slugify(ancestry.tree ?? ancestry.name);
-  if (count("chassis", isEnabled(ancestry) && isEnabled(ancestryTree(ancestry)))) item("chassis", {
+  chassis(isEnabled(ancestry) && isEnabled(ancestryTree(ancestry)), {
     key: `chassis:ancestry:${slugify(ancestry.name)}`,
     name: ancestry.name,
     type: "chassis",
@@ -355,8 +366,7 @@ for (const ancestry of roster.ancestries ?? []) {
   });
 
   for (const [bloodName, effect] of ancestry.bloodlines ?? []) {
-    if (!count("chassis", bloodlineEnabled(ancestry, bloodName))) continue;
-    item("chassis", {
+    chassis(bloodlineEnabled(ancestry, bloodName), {
       key: `chassis:bloodline:${slugify(bloodName)}`,
       name: bloodName,
       type: "chassis",
@@ -375,8 +385,7 @@ for (const ancestry of roster.ancestries ?? []) {
 }
 
 for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
-  if (!count("chassis", isEnabled(trees[name]))) continue;
-  item("chassis", {
+  chassis(isEnabled(trees[name]), {
     key: `chassis:culture:${slugify(name)}`,
     name,
     type: "chassis",
@@ -398,8 +407,7 @@ for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
 }
 
 for (const background of backgrounds) {
-  if (!count("chassis", isEnabled(background))) continue;
-  item("chassis", {
+  chassis(isEnabled(background), {
     key: `chassis:background:${slugify(background.name)}`,
     name: background.name,
     type: "chassis",
@@ -417,8 +425,7 @@ for (const background of backgrounds) {
 }
 
 for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
-  if (!count("chassis", isEnabled(trees[name]))) continue;
-  item("chassis", {
+  chassis(isEnabled(trees[name]), {
     key: `chassis:calling:${slugify(name)}`,
     name,
     type: "chassis",
@@ -1043,6 +1050,13 @@ function writeContentIndex() {
   fs.writeFileSync(
     path.join(CONTENT, "constellations.json"),
     `${JSON.stringify(constellationIndex, null, 2)}\n`,
+    "utf8"
+  );
+
+  // Every chassis, flagged, so the sheet can explain a locked name the pack no longer carries.
+  fs.writeFileSync(
+    path.join(CONTENT, "chassis.json"),
+    `${JSON.stringify(chassisIndex, null, 2)}\n`,
     "utf8"
   );
 

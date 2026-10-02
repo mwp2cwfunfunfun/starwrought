@@ -155,7 +155,11 @@ function resolveActor(uuid) {
 /*  The chains                                  */
 /* -------------------------------------------- */
 
-/** Where the chains are drawn: above the tokens, with the targeting arrows. */
+/**
+ * Where the chains are drawn: above the tokens, beneath the targeting arrows. A Bind is standing
+ * state and the arrow is the live question, so the arrow and its distance stay on top (Mike,
+ * 2026-10-01: the chain was overpowering the arrow).
+ */
 function getLayer() {
   if (layer?.parent) return layer;
   if (!canvas?.ready) return null;
@@ -168,7 +172,9 @@ function getLayer() {
   layer = new PIXI.Container();
   layer.name = "starwrought.binds";
   layer.eventMode = "none";
-  parent.addChild(layer);
+  const arrows = parent.children.find(c => c.name === "starwrought.targets");
+  if (arrows) parent.addChildAt(layer, parent.getChildIndex(arrows));
+  else parent.addChild(layer);
   return layer;
 }
 
@@ -243,10 +249,12 @@ function canSee(token) {
 function chain(from, to, { control, dashed, mine, theirs }) {
   // Sized against the grid cell (`100 * uiScale`), so the chain is the same fraction of a space
   // whether the scene draws a foot at 20 pixels or 100.
+  // Thin and quiet: a Bind is standing state, drawn under the targeting arrow, so it is a fraction
+  // of the arrow's weight and a little translucent (Mike, 2026-10-01).
   const cell = 100 * canvas.dimensions.uiScale;
-  const width = Math.clamp(cell * 0.16, 2.5, 8);
-  const gap = width * 1.3;
-  const head = control ? Math.clamp(cell * 0.9, 12, 40) : 0;
+  const width = Math.clamp(cell * 0.07, 1.5, 3.5);
+  const gap = width * 1.6;
+  const head = control ? Math.clamp(cell * 0.6, 9, 26) : 0;
 
   // Touching spaces share an edge, and a Bind is almost always touching spaces, so the two edge
   // points would coincide. Fall back to the centres, as the targeting arrow does.
@@ -273,15 +281,15 @@ function chain(from, to, { control, dashed, mine, theirs }) {
   const g = new PIXI.Graphics();
 
   // A dark underlay first, so the chain reads on a pale map as well as a dark one.
-  g.lineStyle({ width: width * 2.2, color: 0x000000, alpha: 0.45, cap: PIXI.LINE_CAP.ROUND });
+  g.lineStyle({ width: width * 1.8, color: 0x000000, alpha: 0.3, cap: PIXI.LINE_CAP.ROUND });
   for (const [p, q] of rails) stroke(g, p, q, dashed, cell);
-  g.lineStyle({ width, color: GOLD, alpha: 0.95, cap: PIXI.LINE_CAP.ROUND });
+  g.lineStyle({ width, color: GOLD, alpha: 0.7, cap: PIXI.LINE_CAP.ROUND });
   for (const [p, q] of rails) stroke(g, p, q, dashed, cell);
 
   // The rungs, which are what make two lines read as a chain rather than a road.
   const railLength = distance(a, end);
   const step = Math.max(cell * 0.7, width * 6);
-  g.lineStyle({ width: Math.max(1.5, width * 0.6), color: GOLD, alpha: 0.85, cap: PIXI.LINE_CAP.ROUND });
+  g.lineStyle({ width: Math.max(1, width * 0.6), color: GOLD, alpha: 0.55, cap: PIXI.LINE_CAP.ROUND });
   for (let t = step / 2; t < railLength; t += step) {
     const cx = a.x + (ux * t);
     const cy = a.y + (uy * t);
@@ -294,22 +302,30 @@ function chain(from, to, { control, dashed, mine, theirs }) {
     const base = end;
     const left = { x: base.x - (uy * wing), y: base.y + (ux * wing) };
     const right = { x: base.x + (uy * wing), y: base.y - (ux * wing) };
-    g.lineStyle({ width: width * 0.8, color: 0x000000, alpha: 0.45, join: PIXI.LINE_JOIN.ROUND });
-    g.beginFill(0x000000, 0.45).drawPolygon([b.x, b.y, left.x, left.y, right.x, right.y]).endFill();
+    g.lineStyle({ width: width * 0.8, color: 0x000000, alpha: 0.3, join: PIXI.LINE_JOIN.ROUND });
+    g.beginFill(0x000000, 0.3).drawPolygon([b.x, b.y, left.x, left.y, right.x, right.y]).endFill();
     g.lineStyle(0);
-    g.beginFill(GOLD, 0.95).drawPolygon([b.x, b.y, left.x, left.y, right.x, right.y]).endFill();
+    g.beginFill(GOLD, 0.75).drawPolygon([b.x, b.y, left.x, left.y, right.x, right.y]).endFill();
   }
 
   const whole = new PIXI.Container();
   whole.addChild(g);
 
+  // The label is small and set off the line's midpoint, so the arrow's distance can sit there:
+  // far enough to clear the distance pill (targeting.mjs sizes its font at cell * 0.9, clamped to
+  // 12 to 22, and pads the pill by a third of that) with a little daylight between the two.
   const weapon = game.i18n.localize("STARWROUGHT.Bind.weapon");
   const names = game.i18n.format("STARWROUGHT.Bind.lineLabel", { mine: mine || weapon, theirs: theirs || weapon });
-  whole.addChild(label(names, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, cell, 0.9));
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const tag = label(names, mid, cell, 0.55);
+  const distancePill = Math.clamp(cell * 0.9, 12, 22) * 1.6;
+  const offset = Math.max(cell * 0.55, (distancePill / 2) + (tag.height / 2) + 3);
+  tag.position.set(-(uy * offset), ux * offset);
+  whole.addChild(tag);
   if (control) {
     // "Control" sits beside the head, off the line so it never covers the implements.
-    const at = { x: b.x - (ux * head * 1.6) - (uy * cell * 0.9), y: b.y - (uy * head * 1.6) + (ux * cell * 0.9) };
-    whole.addChild(label(game.i18n.localize("STARWROUGHT.Bind.controlLabel"), at, cell, 0.75, 0xF2EFFA));
+    const at = { x: b.x - (ux * head * 1.6) - (uy * cell * 0.7), y: b.y - (uy * head * 1.6) + (ux * cell * 0.7) };
+    whole.addChild(label(game.i18n.localize("STARWROUGHT.Bind.controlLabel"), at, cell, 0.5, 0xF2EFFA));
   }
   return whole;
 }
@@ -332,10 +348,10 @@ function stroke(g, p, q, dashed, cell) {
   }
 }
 
-/** A label on a dark pill, in the style of the targeting arrows' distance. */
+/** A label on a dark pill, in the style of the targeting arrows' distance, a size smaller. */
 function label(text, at, cell, scale, color = GOLD) {
   const style = CONFIG.canvasTextStyle.clone();
-  style.fontSize = Math.clamp(cell * scale, 11, 22);
+  style.fontSize = Math.clamp(cell * scale, 9, 15);
   style.fill = color;
   style.stroke = 0x000000;
   style.strokeThickness = Math.max(2, style.fontSize / 6);
@@ -345,7 +361,7 @@ function label(text, at, cell, scale, color = GOLD) {
 
   const pad = style.fontSize * 0.35;
   const pill = new PIXI.Graphics();
-  pill.beginFill(0x000000, 0.6)
+  pill.beginFill(0x000000, 0.5)
     .drawRoundedRect(at.x - (t.width / 2) - pad, at.y - (t.height / 2) - (pad / 2), t.width + (pad * 2), t.height + pad, style.fontSize / 2)
     .endFill();
 

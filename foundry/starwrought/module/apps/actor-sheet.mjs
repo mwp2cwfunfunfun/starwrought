@@ -9,7 +9,7 @@ import * as SW from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
-import { loadBasicActions } from "../helpers/content.mjs";
+import { loadBasicActions, chassisByName } from "../helpers/content.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
 import { auraRowsByItem, reachRangeRows, rangeFor } from "../canvas/auras.mjs";
@@ -185,6 +185,76 @@ export function zoneWounds(actor, key) {
 
 /* -------------------------------------------- */
 
+/**
+ * What the locked fields mean (Mike, 2026-10-01): a player reads Ancestry, Bloodline, Culture,
+ * Background and Calling as names, so hovering one shows the chassis's description from the book
+ * and, where the choice brought a Root Talent onto the sheet, that Talent's Description and
+ * Effect, then the line saying the GM changes it. Ancestry Vigor, Calling Vigor and Ancestry
+ * Speed say where their number comes from and what it feeds. HTML, which Foundry's tooltip renders.
+ * @param {Actor} actor
+ * @returns {Record<string, string>}
+ */
+export function lockedTips(actor) {
+  const L = key => game.i18n.localize(key);
+  const F = (key, data) => game.i18n.format(key, data);
+  const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
+  const details = actor.system.details ?? {};
+  const talents = actor.items.filter(i => i.type === "talent");
+  const foot = `<span class="sw-tip-foot">${esc(L("STARWROUGHT.Sheet.lockedField"))}</span>`;
+
+  const rootFor = (chassis, kind, name) => {
+    if (kind === "bloodline") {
+      const plain = SW.plainName(name).toLowerCase();
+      return talents.find(t => t.system.bloodlineRoot && (SW.plainName(t.name).toLowerCase() === plain)) ?? null;
+    }
+    const slug = chassis?.system?.constellation || "";
+    if (!slug) return null;
+    return talents.find(t => t.system.root && !t.system.bloodlineRoot && (t.system.constellation === slug)) ?? null;
+  };
+
+  const chassisTip = kind => {
+    const name = details[kind]?.name ?? "";
+    const chassis = chassisByName(name);
+    const kindLabel = L(`STARWROUGHT.Chassis.${kind}`);
+    if (!name) return `<span class="sw-tip-title">${esc(kindLabel)}</span>${foot}`;
+    const parts = [`<span class="sw-tip-title">${esc(name)}<span class="sw-tip-kind">${esc(kindLabel)}</span></span>`];
+    // The description, then the effect, once. A chassis's special ability is the book's summary
+    // of its Root Talent, so when the character owns that Talent its own description and effect
+    // speak and the summary is left out; without it, the summary stands in.
+    const root = rootFor(chassis, kind, name);
+    if (chassis) {
+      if (chassis.system.description) parts.push(chassis.system.description);
+      if (chassis.system.specialAbility && !root) parts.push(chassis.system.specialAbility);
+    } else {
+      parts.push(`<p>${esc(L("STARWROUGHT.Sheet.lockedUnknown"))}</p>`);
+    }
+    if (root) {
+      // A Bloodline's Root Talent carries the Bloodline's own name; naming it again says nothing.
+      const rootName = SW.plainName(root.name);
+      if (rootName.toLowerCase() !== String(name).trim().toLowerCase()) {
+        parts.push(`<span class="sw-tip-root">${esc(F("STARWROUGHT.Sheet.lockedRoot", { name: rootName }))}</span>`);
+      }
+      if (root.system.description) parts.push(root.system.description);
+      if (root.system.effect) parts.push(root.system.effect);
+    }
+    parts.push(foot);
+    return parts.join("");
+  };
+
+  const ancestry = details.ancestry?.name || L("STARWROUGHT.Chassis.ancestry");
+  const calling = details.calling?.name || L("STARWROUGHT.Chassis.calling");
+  return {
+    ancestry: chassisTip("ancestry"),
+    bloodline: chassisTip("bloodline"),
+    culture: chassisTip("culture"),
+    background: chassisTip("background"),
+    calling: chassisTip("calling"),
+    ancestryVigor: `<p>${esc(F("STARWROUGHT.Sheet.lockedAncestryVigor", { name: ancestry, n: details.ancestry?.vigor ?? 0 }))}</p>${foot}`,
+    callingVigor: `<p>${esc(F("STARWROUGHT.Sheet.lockedCallingVigor", { name: calling, n: details.calling?.vigor ?? 0 }))}</p>${foot}`,
+    ancestrySpeed: `<p>${esc(F("STARWROUGHT.Sheet.lockedSpeed", { name: ancestry, n: details.ancestry?.speed ?? 0 }))}</p>${foot}`
+  };
+}
+
 export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** @inheritdoc */
   static DEFAULT_OPTIONS = {
@@ -313,6 +383,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }));
     context.stance = stanceContext(actor);
     context.bind = bindContext(actor);
+    context.lockedTips = lockedTips(actor);
 
     context.zones = Object.keys(SW.ZONES).map(key => {
       const z = sys.zones[key];
