@@ -10,6 +10,7 @@ import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
 import { loadBasicActions } from "../helpers/content.mjs";
+import { openRulesPage } from "../documents/chat.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -108,6 +109,20 @@ const BIND_KEYS = Object.freeze({ neutral: "bound", controlling: "controlling", 
 const MILESTONES_PER_LEVEL = 3;
 
 /**
+ * The Rules Reference page an effect's row opens: the first of its statuses that names one in
+ * SW.CONDITIONS (the Bind's three and the four Exposed, 0.5.1), else null. Shared by both sheets.
+ * @param {ActiveEffect} effect
+ * @returns {string|null}
+ */
+export function rulesPageOf(effect) {
+  for (const status of effect.statuses ?? []) {
+    const page = SW.CONDITIONS[status]?.rulesPage;
+    if (page) return page;
+  }
+  return null;
+}
+
+/**
  * Vigor as the bar draws it: the value's share of the track, and Temporary Vigor laid on top as
  * its own segment, capped so the two together never overflow. Shared by both sheets.
  * @param {Actor} actor
@@ -201,6 +216,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       treatWound: SwCharacterSheet.#onTreatWound,
       adjustWound: SwCharacterSheet.#onAdjustWound,
       endBind: SwCharacterSheet.#onEndBind,
+      rulesPage: SwCharacterSheet.#onRulesPage,
       strike: SwCharacterSheet.#onStrike,
       itemUse: SwCharacterSheet.#onItemUse,
       itemEdit: SwCharacterSheet.#onItemEdit,
@@ -324,7 +340,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.basicActions = await this.#prepareBasicActions();
     context.effects = actor.effects.map(e => ({
       id: e.id, name: e.name, img: e.img, disabled: e.disabled,
-      description: e.description, isSuppressed: e.isSuppressed
+      description: e.description, isSuppressed: e.isSuppressed,
+      // The rules page a condition's row opens, when its condition has one (0.5.1, T6).
+      rulesPage: rulesPageOf(e)
     }));
 
     // The wizard's own state, so a half-built character says so instead of looking broken.
@@ -853,6 +871,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onEndBind() {
     return this.document.endBind();
+  }
+
+  /** The bind line, the EXPOSED badge and a condition row open their Rules Reference page (0.5.1, T6). */
+  static async #onRulesPage(event, target) {
+    return openRulesPage(target.dataset.page);
   }
 
   /**

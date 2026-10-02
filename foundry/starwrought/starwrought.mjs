@@ -22,6 +22,7 @@ import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
 import { registerStrideRuler } from "./module/canvas/ruler.mjs";
 import { registerTargeting, refresh as refreshTargets } from "./module/canvas/targeting.mjs";
+import { registerBind } from "./module/canvas/bind.mjs";
 import { registerStanceHud } from "./module/apps/token-hud.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
@@ -111,12 +112,13 @@ Hooks.once("init", async () => {
     npc: { bar: ["vigor"], value: ["level", "dying", "actionsPerRound", "thresholds.evade", "thresholds.guard"] }
   };
 
-  /* Conditions, as toggleable token statuses */
+  /* Conditions, as toggleable token statuses. The static id is the one SwActor#setCondition creates
+     under too, so a status set by the rules and one toggled from the palette are one effect (0.5.1). */
   CONFIG.statusEffects = Object.values(SW.CONDITIONS).map(c => ({
     id: c.id,
     name: c.name,
     img: c.img,
-    _id: `starwrought${c.id}`.padEnd(16, "0").slice(0, 16)
+    _id: SW.statusEffectId(c.id)
   }));
   CONFIG.specialStatusEffects.DEFEATED = "dead";
   CONFIG.specialStatusEffects.BLIND = "blinded";
@@ -142,6 +144,8 @@ Hooks.once("init", async () => {
   registerReachRings();
   registerStrideRuler();
   registerTargeting();
+  registerBind();
+  registerExposedStatuses();
   registerStanceHud();
   registerHandlebarsHelpers();
   await loadConstellationIndex();
@@ -214,7 +218,7 @@ async function migrateWorld() {
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.4.1")) return;
+  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1")) return;
 
   let count = 0;
   if (needs("0.4.0")) {
@@ -261,7 +265,38 @@ async function migrateWorld() {
     }
   }
 
+  // 0.5.1: Exposed became four token statuses (Exposed: Head, Torso, Arms, Legs), mirrors of the
+  // Zones, so a Zone already open when the world last closed gets its status now. The same pass
+  // brings every condition effect under the static id the token palette looks for: before 0.5.1
+  // the rules created them under random ids, so the palette showed a Spent or Bound creature as
+  // having neither and a click there laid a twin beside the first. Twins go; the survivor is
+  // recreated under the static id with its data intact. Unlinked tokens carry their own actors,
+  // so every scene is walked.
+  let exposed = 0;
+  let normalised = 0;
+  if (needs("0.5.1")) {
+    const actors = [...game.actors];
+    for (const scene of game.scenes) {
+      for (const token of scene.tokens) if (!token.actorLink && token.actor) actors.push(token.actor);
+    }
+    for (const actor of actors) {
+      if (!actor.system?.zones) continue;
+      for (const [zone, conditionId] of Object.entries(SW.ZONE_CONDITIONS)) {
+        const on = !!actor.system.zones[zone]?.exposed;
+        if (on === !!actor.statuses?.has(conditionId)) continue;
+        await actor.setCondition(conditionId, on);
+        exposed++;
+      }
+      normalised += await normaliseConditionEffects(actor);
+    }
+  }
+
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if ((exposed > 0) || (normalised > 0)) {
+    const message = game.i18n.format("STARWROUGHT.Migration.exposed", { version: game.system.version, exposed, normalised });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (count > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.speed", { version: game.system.version, count });
     console.log(`STARWROUGHT | ${message}`);
@@ -272,6 +307,36 @@ async function migrateWorld() {
     console.log(`STARWROUGHT | ${message}`);
     ui.notifications.info(message);
   }
+}
+
+/**
+ * One effect per condition, under the id the token palette uses (the 0.5.1 migration's second
+ * half). For each condition an actor carries: effects that duplicate it are deleted, and the one
+ * kept is recreated under `SW.statusEffectId` when it sits under another id, data and all. An
+ * effect carrying several statuses is left alone; it is not one of ours.
+ * @param {Actor} actor
+ * @returns {Promise<number>}  Effects deleted or recreated.
+ */
+async function normaliseConditionEffects(actor) {
+  let changed = 0;
+  for (const id of Object.keys(SW.CONDITIONS)) {
+    const staticId = SW.statusEffectId(id);
+    const carrying = actor.effects.filter(e => e.statuses?.has(id));
+    if (!carrying.length) continue;
+    const keep = carrying.find(e => e.id === staticId) ?? carrying[0];
+    const twins = carrying.filter(e => e !== keep);
+    if (twins.length) {
+      await actor.deleteEmbeddedDocuments("ActiveEffect", twins.map(e => e.id));
+      changed += twins.length;
+    }
+    if ((keep.id === staticId) || (keep.statuses.size !== 1)) continue;
+    const data = keep.toObject();
+    data._id = staticId;
+    await keep.delete();
+    await actor.createEmbeddedDocuments("ActiveEffect", [data], { keepId: true });
+    changed++;
+  }
+  return changed;
 }
 
 /**
@@ -311,6 +376,52 @@ Hooks.on("renderChatMessageHTML", onRenderChatMessage);
 Hooks.on("renderUserConfig", (app, element) => {
   element.querySelector('[name="pronouns"]')?.closest(".form-group")?.remove();
 });
+
+/* -------------------------------------------- */
+/*  Exposed on the token (0.5.1, T7)             */
+/* -------------------------------------------- */
+
+/**
+ * The four Exposed statuses are mirrors of `system.zones.<zone>.exposed`, and the mirror runs both
+ * ways. `SwActor#setExposed` writes the Zone and then the status; these hooks cover the other
+ * paths: a status toggled on the token palette (or deleted from the Effects tab) writes the Zone,
+ * and a Zone written directly (Recenter clears them in one update) writes the status. Only the
+ * client that made the change acts, so one toggle is one write, and each side checks the other
+ * before writing, so the two never chase each other.
+ */
+function registerExposedStatuses() {
+  const zoneOf = effect => {
+    for (const status of effect.statuses ?? []) {
+      const zone = SW.CONDITIONS[status]?.zone;
+      if (zone) return zone;
+    }
+    return null;
+  };
+  const carryToZone = (effect, on, userId) => {
+    if (userId !== game.user.id) return;
+    const actor = effect.parent;
+    if (!(actor instanceof Actor)) return;
+    const zone = zoneOf(effect);
+    if (!zone || (!!actor.system?.zones?.[zone]?.exposed === on)) return;
+    actor.setExposed(zone, on)
+      .catch(err => console.error(`STARWROUGHT | ${actor.name}: the Exposed status could not be carried to the Zone`, err));
+  };
+  Hooks.on("createActiveEffect", (effect, options, userId) => carryToZone(effect, true, userId));
+  Hooks.on("deleteActiveEffect", (effect, options, userId) => carryToZone(effect, false, userId));
+
+  Hooks.on("updateActor", (actor, changes, options, userId) => {
+    if (userId !== game.user.id) return;
+    const zones = changes.system?.zones;
+    if (!zones) return;
+    for (const [zone, conditionId] of Object.entries(SW.ZONE_CONDITIONS)) {
+      if (!("exposed" in (zones[zone] ?? {}))) continue;
+      const on = !!actor.system.zones?.[zone]?.exposed;
+      if (!!actor.statuses?.has(conditionId) === on) continue;
+      actor.setCondition(conditionId, on)
+        .catch(err => console.error(`STARWROUGHT | ${actor.name}: the Exposed status could not follow the Zone`, err));
+    }
+  });
+}
 
 /**
  * Buying a Talent in a Constellation you have not opened is buying its Root, so draw the sky

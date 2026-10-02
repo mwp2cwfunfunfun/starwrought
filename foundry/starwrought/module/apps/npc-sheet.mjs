@@ -8,7 +8,8 @@
 
 import * as SW from "../config.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
-import { actionsContext, bindContext, vigorContext, zoneWounds } from "./actor-sheet.mjs";
+import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "./actor-sheet.mjs";
+import { openRulesPage } from "../documents/chat.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -34,6 +35,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       treatWound: SwNpcSheet.#onTreatWound,
       adjustWound: SwNpcSheet.#onAdjustWound,
       endBind: SwNpcSheet.#onEndBind,
+      rulesPage: SwNpcSheet.#onRulesPage,
       setActions: SwNpcSheet.#onSetActions,
       resetActions: SwNpcSheet.#onResetActions,
       pass: SwNpcSheet.#onPass,
@@ -133,7 +135,11 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
     context.abilities = actor.items.filter(i => (i.type === "action") && !i.system.attack.enabled);
     context.otherItems = actor.items.filter(i => !["action"].includes(i.type));
-    context.effects = actor.effects.map(e => ({ id: e.id, name: e.name, img: e.img, disabled: e.disabled }));
+    context.effects = actor.effects.map(e => ({
+      id: e.id, name: e.name, img: e.img, disabled: e.disabled,
+      // The rules page a condition's row opens, when its condition has one (0.5.1, T6).
+      rulesPage: rulesPageOf(e)
+    }));
 
     context.sizeChoices = Object.fromEntries(
       Object.entries(SW.SIZES).map(([k, v]) => [k, game.i18n.localize(v.label)])
@@ -242,6 +248,11 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onEndBind() {
     return this.document.endBind();
+  }
+
+  /** The bind line and a condition row open their Rules Reference page (0.5.1, T6). */
+  static async #onRulesPage(event, target) {
+    return openRulesPage(target.dataset.page);
   }
 
   static async #onSetActions(event, target) {

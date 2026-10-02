@@ -1,7 +1,8 @@
-{{!-- The Bind this actor is in: neutral, Controlling, or Controlled. Context: bindContext(). --}}
+{{!-- The Bind this actor is in: neutral, Controlling, or Controlled. Context: bindContext(). The state label opens the rules page for the Bind (0.5.1, T6). --}}
 <div class="sw-bind sw-bind-{{state}}">
   <img class="sw-bind-icon" src="{{img}}" alt="{{conditionLabel}}">
-  <span class="sw-bind-state">{{conditionLabel}}</span>
+  <a class="sw-bind-state sw-rules-link" data-action="rulesPage" data-page="The Bind"
+     data-tooltip="STARWROUGHT.Rules.openBind">{{conditionLabel}}</a>
   <span class="sw-bind-text">{{text}}</span>
   {{#if @root.editable}}
   <button type="button" class="sw-inline-button" data-action="endBind"

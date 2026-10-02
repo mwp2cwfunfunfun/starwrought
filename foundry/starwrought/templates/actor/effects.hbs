@@ -13,6 +13,11 @@
       <li class="sw-item-row {{#if effect.disabled}}sw-disabled{{/if}}" data-effect-id="{{effect.id}}">
         <img src="{{effect.img}}" alt="{{effect.name}}">
         <a class="sw-item-name" data-action="effectEdit">{{effect.name}}</a>
+        {{!-- A condition with a rules page (the Bind, Exposed) opens it from its row (0.5.1, T6). --}}
+        {{#if effect.rulesPage}}
+        <a class="sw-rules-link sw-effect-rules" data-action="rulesPage" data-page="{{effect.rulesPage}}"
+           data-tooltip="STARWROUGHT.Rules.open"><i class="fa-solid fa-book-open"></i></a>
+        {{/if}}
         <div class="sw-item-controls">
           <a data-action="effectToggle" data-tooltip="STARWROUGHT.Sheet.toggle">
             <i class="fa-solid {{#if effect.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"></i>

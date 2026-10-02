@@ -802,6 +802,68 @@ function table(headers, rows) {
   return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
+/* The two pages the Bind and Exposed cards, the sheet's bind line, the Zones panel's EXPOSED badge
+   and a condition's row open (system 0.5.1, T6). The rules prose is the handbook's, quoted
+   (PHB v4.10, Chapter 2, 5. Position: Exposed; The Bind; Allies in the Exchange), with one change:
+   the book writes a neutral Bind with a dash ("longsword, dash, spear") and the style rule allows
+   no dash in shipping prose, so the notation is the slash the system draws on the map. The
+   condition, Maneuver and Reaction rows are read from the roster so they cannot drift from the
+   Conditions, Maneuvers and Reaction pages. */
+const REFERENCE_ID = docId("rules", "journal:reference");
+const pageLink = title =>
+  `@UUID[Compendium.starwrought.rules.JournalEntry.${REFERENCE_ID}.JournalEntryPage.${docId("rules", `page:${title}`)}]{${title}}`;
+const conditionRows = (...names) => names.map(n => (roster.conditions ?? []).find(r => r[0] === n)).filter(Boolean);
+const actionRows = (...names) => {
+  const all = Object.values(roster.actions ?? {}).flat();
+  return names.map(n => all.find(r => r[0] === n)).filter(Boolean).map(([name, , effect]) => [name, effect]);
+};
+const reactionRows = (...names) => names.map(n => (roster.postures ?? []).find(r => r[0] === n)).filter(Boolean);
+
+const exposedPage = [
+  "<p>When a Zone becomes Exposed, a part of you is open for a focused attack:</p>",
+  "<ul>",
+  "<li>Its Protection counts as 0 against a Deliberate or Committed Strike. A Quick Strike gains nothing from it.</li>",
+  "<li>An ordinary Hit from a Deliberate or Committed Strike may be placed there instead of the Torso.</li>",
+  "<li>It stays Exposed until you Recenter ❶ (see Chapter 7: Rules Elements), except that a Zone Exposed by a Posture stays Exposed until the end of the round, and Recenter does not clear it.</li>",
+  "<li>A Critical Hit on it with a Deliberate or Committed Strike Wounds it.</li>",
+  "</ul>",
+  "<p>When a Zone is Exposed, the following condition is placed on you: Exposed [Zone Name]. Zones become Exposed when your own Committed Strike is Stopped; when any Strike of yours Misses; when you take a Posture; when a foe Controls your weapon in a Bind; and through certain Talents and critical effects.</p>",
+  "<h2>The condition</h2>",
+  table(["Condition", "Effect"], conditionRows("Exposed [Zone]")),
+  "<h2>Opening and closing a Zone</h2>",
+  table(["Maneuver", "Effect"], actionRows("Recenter ❶")),
+  table(["Reaction", "Grants", "Effect"], reactionRows("Posture ⓿↺", "Give Ground ⓿↺", "Set Your Feet ⓿↺")),
+  `<p>What a Critical Hit does to each Zone, Exposed or not, is on ${pageLink("Zones and Critical Hits")}.</p>`,
+  "<h2>In the system</h2>",
+  "<p>Each Exposed Zone shows on the token as its own status (Exposed: Head, Exposed: Torso, Exposed: Arms, Exposed: Legs) and in the Zones panel of the sheet. Toggling the status on the token and toggling the Zone on the sheet are the same change. Recenter closes every Exposed Zone except one a Posture opened, and the statuses close with them.</p>"
+].join("");
+
+const bindPage = [
+  "<p>When a rigid weapon or shield stops a melee weapon or natural attack, the two are in contact: a Bind. Track one relationship per implement, and name the two implements: longsword / spear, or shield > bite. A Bind is neutral (/) when neither fighter has the line, or Controlled (>) when one does. Only Guard can form a Bind, and only with a rigid weapon, a shield, or a natural weapon its profile allows. A bare hand or a Flexible weapon can Guard, but cannot Bind.</p>",
+  "<p>A Bind forms when a Guard Stops an attack, or when a Gain Control action Grazes. Control is taken when a Parry Stops a Deliberate or Committed Strike, when a Guard answers a Miss, or when Gain Control succeeds. A Quick Strike is a probe: Stopped, it can be bound but never Controlled.</p>",
+  "<h2>While you Control a weapon</h2>",
+  "<ul>",
+  "<li>Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts.</li>",
+  "<li>Your partner's attacks with the Controlled weapon take a −2 Situation penalty.</li>",
+  "<li>You may Close ❶: Step toward your partner while keeping the Bind. The Controlled weapon cannot Intercept you.</li>",
+  "<li>A Bind has one Controller at most. A new Control replaces the old.</li>",
+  "</ul>",
+  "<h2>How a Bind ends</h2>",
+  "<p>A Bind ends when a Strike between the two actors resolves, when either partner Moves or Steps (Close excepted), when either actor Recenters, when the Controlling actor is attacked by a third party, or when either implement is dropped or Disarmed. Controlled is not Grappled or Restrained: you are redirecting a weapon, not holding a body. The Controlled actor may still Step, Move, or attack with something else, and attacking with an uncontrolled weapon or limb ends the Bind before the roll.</p>",
+  "<p>Recenter ❶ clears every Exposed Zone on you (except one Exposed by a Posture) and ends any Bind you are in. Being Controlled costs you the same action that being Exposed does. That is the tempo price of a lost line, and it is the reason Gain Control is worth an action.</p>",
+  "<p><strong>Size.</strong> An actor one Size larger or smaller Binds normally. Two or more Sizes apart, the smaller actor gains only momentary Control: it lasts until its first benefit is used or until the end of the Controller's next Opportunity, whichever comes first, and the larger creature Moves without first breaking the Bind. You can redirect a dragon's claw, but you cannot hold it.</p>",
+  "<p><strong>What cannot Bind.</strong> Flexible weapons (whips and flails), bare hands without a Talent, areas, spells, and attacks with the Unparryable trait. Incorporeal and amorphous attackers offer nothing to bind. Measure, footwork, and commitment still apply to all of them.</p>",
+  "<p><strong>Third parties.</strong> A Bind is between two implements. Your ally striking the opponent you Control does not break your Bind; that is the point of holding the line. An enemy striking you does.</p>",
+  "<h2>The conditions</h2>",
+  table(["Condition", "Effect"], conditionRows("Bound [X]", "Controlled [X]", "Controlling [X]")),
+  "<h2>Maneuvers and Reactions in the Bind</h2>",
+  table(["Maneuver", "Effect"], actionRows("Gain Control ❶", "Close ❶", "Recenter ❶")),
+  table(["Reaction", "Grants", "Effect"], reactionRows("Parry ❶↺")),
+  `<p>The Zone a Controller opens follows the rules on ${pageLink("Exposed")}.</p>`,
+  "<h2>In the system</h2>",
+  "<p>A Bind is recorded on both fighters and drawn on the map as a gold chain between their tokens, labelled with the two implements; a Controlled Bind runs from the Controller to the Controlled with an arrowhead and the word Control. The token carries Bound, Controlling or Controlled, and that effect names the partner, both implements and the state. The sheet's bind line and the Recenter Maneuver end it; a Strike between the two ends it when the Strike resolves.</p>"
+].join("");
+
 const journalPages = [
   ["Key Terms: Talent Points", table(
     ["Type", "May be spent on", "Flare required?"], roster.talentPointTypes ?? [])],
@@ -814,6 +876,8 @@ const journalPages = [
   ["Zones and Critical Hits", table(
     ["Zone", "Critical Hit", "Critical Hit on an Exposed Zone"],
     (roster.zones ?? []).map(([z, a, b]) => [z, a, b]))],
+  ["Exposed", exposedPage],
+  ["The Bind", bindPage],
   ["Damage: order of operations", table(["Step", "Do this"], roster.damageOrder ?? [])],
   ["Protection: finding a Zone's number", table(["Step", "Do this"], roster.protectionSteps ?? [])],
   ["Conditions", table(["Condition", "Effect"], roster.conditions ?? [])],
@@ -835,7 +899,7 @@ const journalPages = [
 ];
 
 {
-  const _id = docId("rules", "journal:reference");
+  const _id = REFERENCE_ID;
   push("rules", "journal", {
     _id,
     name: "STARWROUGHT Reference",

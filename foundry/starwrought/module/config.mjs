@@ -729,7 +729,10 @@ export const ACTIVE_STATE = Object.freeze({
 /**
  * Conditions, registered as Foundry status effects so they can be toggled on a token.
  * `numeric` conditions carry a value (Frightened 2, Stunned 1, Wounded 3).
- * `zone` conditions are Exposed, one per Zone.
+ * `zone` conditions are Exposed, one per Zone (0.5.1): the token status mirrors
+ * `system.zones.<zone>.exposed`, and toggling the status from the palette writes the Zone.
+ * `rulesPage` names the Rules Reference journal page the condition's row and card title open.
+ * `statusId` is the static ActiveEffect id when the default (see statusEffectId) would collide.
  */
 export const CONDITIONS = Object.freeze({
   offGuard: { id: "offGuard", name: "STARWROUGHT.Condition.offGuard", img: "icons/svg/downgrade.svg" },
@@ -753,14 +756,45 @@ export const CONDITIONS = Object.freeze({
   wounded: { id: "wounded", name: "STARWROUGHT.Condition.wounded", img: "icons/svg/blood.svg" },
   /** At 0 Vigor: every Hit Wounds the Zone it strikes, a Critical Hit twice; Grazes never Wound. */
   spent: { id: "spent", name: "STARWROUGHT.Condition.spent", img: "icons/svg/degen.svg" },
-  /** The Bind: a neutral Bind, or one someone Controls. */
-  bound: { id: "bound", name: "STARWROUGHT.Condition.bound", img: "icons/svg/combat.svg" },
-  controlled: { id: "controlled", name: "STARWROUGHT.Condition.controlled", img: "icons/svg/downgrade.svg" },
-  controlling: { id: "controlling", name: "STARWROUGHT.Condition.controlling", img: "icons/svg/upgrade.svg" },
+  /** The Bind: a neutral Bind, or one someone Controls. The effect carries the particulars (0.5.1). */
+  bound: { id: "bound", name: "STARWROUGHT.Condition.bound", img: "icons/svg/combat.svg", rulesPage: "The Bind" },
+  // "starwroughtcontrolled" and "starwroughtcontrolling" share their first sixteen characters, so
+  // these two name their ids: a shared id would make the palette treat one as the other.
+  controlled: { id: "controlled", name: "STARWROUGHT.Condition.controlled", img: "icons/svg/downgrade.svg", rulesPage: "The Bind", statusId: "starwroughtctrld" },
+  controlling: { id: "controlling", name: "STARWROUGHT.Condition.controlling", img: "icons/svg/upgrade.svg", rulesPage: "The Bind", statusId: "starwroughtctrlg" },
   /** A Maneuver of three or more actions begun: one spent, the rest reserved. */
   preparing: { id: "preparing", name: "STARWROUGHT.Condition.preparing", img: "icons/svg/hazard.svg" },
-  dead: { id: "dead", name: "STARWROUGHT.Condition.dead", img: "icons/svg/skull.svg" }
+  dead: { id: "dead", name: "STARWROUGHT.Condition.dead", img: "icons/svg/skull.svg" },
+  /**
+   * Exposed, one status per Zone (PHB v4.10: "the following condition is placed on you: Exposed
+   * [Zone Name]"). Mirrors of `system.zones.<zone>.exposed`, never the record of it: the Zone is
+   * the truth and `SwActor#setExposed` keeps the status in step, while the palette hooks in
+   * starwrought.mjs carry a toggle on the token back to the Zone.
+   */
+  exposedHead: { id: "exposedHead", name: "STARWROUGHT.Condition.exposedHead", img: "icons/svg/eye.svg", zone: "head", rulesPage: "Exposed", statusId: "starwroughtxHead" },
+  exposedTorso: { id: "exposedTorso", name: "STARWROUGHT.Condition.exposedTorso", img: "icons/svg/bones.svg", zone: "torso", rulesPage: "Exposed", statusId: "starwroughtxTors" },
+  exposedArms: { id: "exposedArms", name: "STARWROUGHT.Condition.exposedArms", img: "icons/svg/thrust.svg", zone: "arms", rulesPage: "Exposed", statusId: "starwroughtxArms" },
+  exposedLegs: { id: "exposedLegs", name: "STARWROUGHT.Condition.exposedLegs", img: "icons/svg/leg.svg", zone: "legs", rulesPage: "Exposed", statusId: "starwroughtxLegs" }
 });
+
+/** Zone key -> the Exposed condition that mirrors it. */
+export const ZONE_CONDITIONS = Object.freeze(Object.fromEntries(
+  Object.values(CONDITIONS).filter(c => c.zone).map(c => [c.zone, c.id])
+));
+
+/**
+ * The static ActiveEffect id a condition is created under, the one Foundry's token palette looks
+ * for (`Actor#toggleStatusEffect` matches on `_id`, and the HUD lights a status only when the
+ * effect carries it). Sixteen alphanumeric characters: the system id and the condition id, padded,
+ * except where a condition names its own because the padded form would collide. The system's own
+ * `SwActor#setCondition` creates under the same id, so a status set by the rules and one toggled
+ * from the token are the same effect and never a pair (0.5.1, "one Bind, one effect").
+ * @param {string} id  A key of CONDITIONS.
+ * @returns {string}
+ */
+export function statusEffectId(id) {
+  return CONDITIONS[id]?.statusId ?? `${SYSTEM_ID}${id}`.padEnd(16, "0").slice(0, 16);
+}
 
 /** Conditions that impose a flat penalty on Evade and Guard. */
 export const OFF_GUARD_PENALTY = -2;
