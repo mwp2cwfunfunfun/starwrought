@@ -92,6 +92,10 @@
         {{else}}
         <input type="text" name="system.choice.value" value="{{system.choice.value}}">
         {{/if}}</label>
+      {{#if canAnswerChoice}}
+      {{!-- An anchor, not a button: a button is a form element and the read-only pass would disable it. --}}
+      <a class="sw-inline-button" data-action="chooseValue" data-tooltip="STARWROUGHT.Field.choiceHint"><i class="fa-solid fa-hand-pointer"></i> {{localize "STARWROUGHT.Chargen.choiceOk"}}</a>
+      {{/if}}
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.freeTalent"}}</span>
         <input type="text" name="system.freeTalent" value="{{system.freeTalent}}"
                placeholder="{{localize 'STARWROUGHT.Field.freeTalentPlaceholder'}}"></label>

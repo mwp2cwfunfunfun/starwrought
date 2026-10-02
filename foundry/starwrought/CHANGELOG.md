@@ -7,6 +7,104 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.5.1 (2026-10-01): auras on the map, and the player-facing sheet
+
+### Added
+
+- **Auras: every range a creature carries can be drawn on the map** (Mike, 2026-10-01; ruling 66
+  in `v4.10-sync-report.md`). Natural Reach, Total Reach, an Unwieldy dead zone, every Talent or
+  Maneuver with a "within N feet" and any ring drawn by hand are one list on the actor, drawn by
+  one renderer: whole grid cells measured from the edge of the space with exact diagonals, the way
+  the book measures. Each range carries a **Visible** mark, set from the Token HUD's new ring
+  button and its palette (one row per range, a Custom row, right-click to switch all off) or from
+  the ring icon on the sheet's Talent, Maneuver and Ranges rows. While an encounter runs a
+  combatant's Visible ranges are pinned on everyone's map; everything else shows only as the local
+  hover, select or drag preview, which is how Reach always worked. Marks live on the actor; the
+  data sets the defaults through a new **Aura** column in the spreadsheets (Torchbearer Human
+  `15 ft allies visible`, Rally `30 ft allies`, Mark Prey `60 ft`, Battle Cry `15 ft enemies`,
+  Rebounding Toss `none`), and the converter warns when an Effect says "within N feet" and the cell
+  disagrees. Colour by audience: allies green, enemies red, everyone violet. Hidden tokens show
+  nothing to players and a dashed ring to the GM; GM-only custom rings never reach players. Two GM
+  controls on the Token layer, **Suppress auras** and **Clear aura marks**, and a client setting
+  **Show pinned auras**. Foundry 14's token-attached Regions were considered and rejected because
+  their exact-diagonal circle is an octagon that leaves out cells the rules put inside. Owned
+  Talents from before the column receive their compendium copy's aura in the migration.
+- **The Bind on the map.** A chain between the two bound tokens for everyone who can see both,
+  labelled with the implements; a Controlled Bind points from the Controller with a Control pill.
+  The Bound, Controlling and Controlled effects say what they are, carry the partner as origin and
+  the particulars in their description, and there is one per Bind: condition effects now sit under
+  the static ids the token palette uses, so a rules-set status shows lit there and a click toggles
+  it instead of laying a twin beside it. A Bind formed from a card against a partner the player
+  does not own is completed by the partner's owning client.
+- **Exposed on the token**: four statuses (Exposed: Head, Torso, Arms, Legs) mirror the Zones both
+  ways, from the sheet, the cards, the Posture reveal, Recenter, the round's end and the palette.
+- **Rules pages for the Bind and for Exposed** in the STARWROUGHT Reference journal, opened from
+  the Bind and Exposed card titles, the sheet's Bind line and EXPOSED badge, and the Bound row on
+  the Effects tab.
+- **Adjusted cards.** Whatever a player changes by hand on their character is said in everyone's
+  chat, once: actions left, Temporary Vigor, Dying, Hero Points, Size, Senses, Languages,
+  Familiarity, the Adjustments fields, Resistances, Weaknesses, Immunities, coin, a Zone Exposed by
+  hand, and gear added, dropped, drawn or stowed. The system's own spends and cards are not said
+  twice; the GM's edits are silent.
+- **Spend Hero Point.** A player's Hero Points show a count and a Spend button that posts to chat;
+  only the GM adds them.
+- **`data/maneuvers.xlsx`**, the second actions workbook, generated from the roster's 39 Maneuvers
+  (Aid stays in `actions.xlsx`) with `Enabled?` blank on every row, so no Basic Maneuver ships
+  until Mike enables it (Mike, 2026-10-01: "get rid of all of these"). The converter reads every
+  actions workbook in `data/`, errors on a name defined twice, and carries over the actions of a
+  workbook that is absent this run (the untracked `actions.xlsx` on a fresh clone).
+
+### Changed
+
+- **The weapon-row Strike buttons print the cost glyph large and gold**, as the Maneuvers tab does
+  (Mike: "very hard to see the number of actions").
+- **Names print plain beside one gold glyph**: "Bull Rush" and ❷, not "Bull Rush ❷ ❷". The data
+  and the compendium keep the glyph in the name, since document ids hash it.
+- **The sheet for a player**: Ancestry, Bloodline, Culture, Background, Calling, Ancestry Vigor,
+  Calling Vigor and Ancestry Speed are read-only text; Level is a badge with three Milestone star
+  pips; Refuse Death is disabled unless Dying with a Hero Point; a Talent, Constellation or
+  Chassis opens read-only; a Talent's image opens it rather than sending it to chat. The GM keeps
+  every field.
+- **The stance chips are labelled "Standing stance"**, with a hint saying the Combat Prompt
+  pre-selects it; they stay because the prompt, the GM's standing-stances control, Reaction
+  Strikes and the flow-off path all read them.
+- **The Biography and Notes editors lay out and save.** The sheet's stylesheet had collapsed the
+  editor to nothing and hidden its edit button; an open editor now survives a re-render.
+
+### Fixed
+
+- **A night's rest no longer hands out a Hero Point** at 0.
+- **A Defense roll inside a Bind records the adversary attack's name** as the implement rather
+  than "weapon".
+- **From the adversarial review** (2026-10-01, fifteen agents over the change set): a GM-only
+  custom ring is filtered where the range list is read, so it never reaches a player's preview,
+  palette or HUD badge; forming a Bind over a Bind with someone else ends the old one first, on
+  both sides; every Bind carries an id, kept in the emptied record, so the pair-keeper can tell a
+  Bind one side ended while nobody could write the mirror from a mirror never written, and clears
+  it instead of re-forming it on every scene load; the rules' condition writes and the migration
+  touch only an effect under the condition's static id or carrying that one status, so an
+  authored effect with several statuses (a net that is Prone and Restrained) is never deleted as a
+  twin; a player who declined a Talent's build-time question has a Choose control on the
+  read-only Talent sheet that asks again; a Maneuver from `data/maneuvers.xlsx` is stamped with
+  that workbook as its Source, and keeps the book's group (its sheet) as its folder and category
+  rather than collapsing into one "Basic Action" heap; a player-owned adversary's reset arrow is
+  said in chat like its pips; a custom ring of 0 feet (the adjacent squares) is listed, as the
+  renderer always drew it; ring labels print through the same plain-name rule as the sheets;
+  switching the reach or aura client setting redraws both layers; an open Biography editor's
+  draft is written to the character when the sheet redraws under it (the change the editor fires
+  is dropped while a sheet renders), on the adversary sheet too; a canvas layer drawn between the
+  canvas turning ready and its hook is destroyed rather than left as a ghost; the empty Maneuvers
+  panel now says to enable a row rather than to rebuild; FEATURES.md no longer says a rest leaves
+  a Hero Point; `data/README.txt` documents the Aura column.
+
+### Not built
+
+- Mike asked whether each Defense after the first in a round should take a cumulative -1. PHB
+  v4.10 has no such rule, so nothing was built; it is recorded under "Questions for the author" in
+  the sync report.
+
+---
+
 ## 0.5.0 (2026-10-01): Player's Handbook v4.10, the attack flow
 
 ### Added

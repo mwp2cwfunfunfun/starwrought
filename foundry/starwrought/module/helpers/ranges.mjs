@@ -47,8 +47,13 @@ const BAND_LABELS = Object.freeze({
 /** Localize when a world is up; hand the key back when one is not, so the list is never broken by it. */
 const localize = key => globalThis.game?.i18n?.localize?.(key) ?? key;
 
-/** A name with its glyphs removed and the spaces they left closed up. */
+/**
+ * A name with its glyphs removed, as every sheet row, card and prompt prints it: `SW.plainName`
+ * (which also drops the "to" or "or" a cost range leaves behind), with the regex strip as the
+ * fallback for a config built without it.
+ */
 export function plainRangeLabel(name) {
+  if (typeof SW.plainName === "function") return SW.plainName(name);
   return String(name ?? "").replace(GLYPHS, "").replace(/\s{2,}/g, " ").trim();
 }
 
@@ -97,8 +102,9 @@ export function rangesOf(actor) {
   }
 
   // The custom rings drawn on the token HUD.
+  // A ring of 0 feet is the adjacent squares, which the renderer draws and the palette accepts.
   for (const ring of system.auras?.custom ?? []) {
-    if (!ring?.key || !(ring.feet > 0)) continue;
+    if (!ring?.key || !(ring.feet >= 0)) continue;
     const audience = SW.AURA_COLORS[ring.audience] ? ring.audience : "all";
     out.push({
       key: ring.key, label: ring.label || localize("STARWROUGHT.Field.auraCustom"), feet: ring.feet,

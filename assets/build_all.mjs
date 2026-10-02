@@ -40,6 +40,8 @@ const STEPS = [
   { name: "sheet_gen", cmd: PY, args: ["assets/sheet_gen.py"], slow: true },
   { name: "build_phb", cmd: "node", args: ["assets/build_phb.js"], slow: true },
   { name: "build_foundry", cmd: "node", args: ["assets/build_foundry.mjs"] },
+  // FEATURES.md as a Word document, so the printable copy never lags the file the handbook rule moves.
+  { name: "build_features_docx", cmd: PY, args: ["assets/build_features_docx.py"] },
   { name: "check_style", cmd: PY, args: ["assets/check_style.py", "--quiet"] }
 ];
 

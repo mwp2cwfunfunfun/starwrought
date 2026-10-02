@@ -5,6 +5,7 @@
 
 import * as SW from "../config.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
+import { promptForChoice } from "./chargen.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
@@ -24,7 +25,8 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       removeRequirement: SwItemSheet.#onRemoveRequirement,
       effectCreate: SwItemSheet.#onEffectCreate,
       effectEdit: SwItemSheet.#onEffectEdit,
-      effectDelete: SwItemSheet.#onEffectDelete
+      effectDelete: SwItemSheet.#onEffectDelete,
+      chooseValue: SwItemSheet.#onChooseValue
     }
   };
 
@@ -55,8 +57,9 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
   /**
    * Item types that are the book's rather than the player's: a non-GM user opens their sheet to
    * read, never to edit (0.5.1, T15). A Talent's build-time choice is still the owner's to answer,
-   * through the chargen dialog that asks when the Talent arrives, not through this sheet. Gear and
-   * Maneuvers stay the owner's to edit: a player renames their own sword.
+   * through the dialog that asks when the Talent arrives, or the Choose control this sheet keeps
+   * for the owner when that dialog was declined. Gear and Maneuvers stay the owner's to edit: a
+   * player renames their own sword.
    */
   static READ_ONLY_FOR_PLAYERS = Object.freeze(["talent", "constellation", "chassis"]);
 
@@ -76,6 +79,21 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     return !this.lockedForPlayer;
   }
 
+  /**
+   * A player's Talent sheet is read-only, but its build-time choice is still the owner's to
+   * answer: ask the arrival question again and write that one field through the document, not
+   * the form. The control is an anchor, not a form element, so DocumentSheetV2's disabling pass
+   * leaves it clickable (review, 2026-10-01).
+   */
+  static async #onChooseValue() {
+    const item = this.document;
+    if (!item.isOwner || (item.type !== "talent") || !item.system.choice?.prompt) return;
+    const { loadChargenContent } = await import("../helpers/chargen-data.mjs");
+    await loadChargenContent();
+    const value = await promptForChoice(item.system.choice.prompt, item.name);
+    if (value) await item.update({ "system.choice.value": value });
+  }
+
   /** @inheritdoc */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
@@ -87,6 +105,7 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       fields: item.system.schema.fields,
       editable: this.isEditable,
       lockedForPlayer: this.lockedForPlayer,
+      canAnswerChoice: this.lockedForPlayer && item.isOwner && !!item.system.choice?.prompt,
       config: SW,
       SW,
       type: item.type,

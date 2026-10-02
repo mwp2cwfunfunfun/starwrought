@@ -41,7 +41,14 @@ let layer = null;
 /** Register the hooks that keep the chains on the map and the pairs whole. */
 export function registerBind() {
   // A scene change brings this scene's unlinked tokens into the sweep, so it runs again here.
-  Hooks.on("canvasReady", () => { layer = null; refresh(); if (game.ready) keepPaired(); });
+  Hooks.on("canvasReady", () => {
+    // A layer drawn between the canvas turning ready and this hook would otherwise be forgotten
+    // while still attached (see reach.mjs).
+    if (layer && !layer.destroyed) layer.destroy({ children: true });
+    layer = null;
+    refresh();
+    if (game.ready) keepPaired();
+  });
   Hooks.on("refreshToken", () => refresh());
   Hooks.on("createToken", () => refresh());
   Hooks.on("deleteToken", () => refresh());
@@ -81,9 +88,20 @@ function pickUpMirror(actor, { paired = true, previousPartner = "" } = {}) {
   const theirs = partner.system?.bind;
 
   if (bind?.state) {
+    // The partner's empty side still naming this Bind's id is the side that ended it (a Recenter
+    // or a Move while nobody could write the mirror): the record here is the stale half, so it is
+    // cleared rather than the pair re-formed (review, 2026-10-01). A record from before Binds had
+    // ids falls through to the mirror write below, as it always did.
+    if (!theirs?.state && theirs?.id && (theirs.id === bind.id)) {
+      if (actor.isOwner) {
+        actor.endBind({ announce: false, pair: false })
+          .catch(err => console.error(`STARWROUGHT | ${actor.name}: a Bind its partner had ended could not be cleared`, err));
+      }
+      return;
+    }
     const want = MIRROR[bind.state];
     if ((theirs?.state === want) && (theirs.partnerUuid === actor.uuid)) return;
-    partner.formBind(actor, { state: want, mine: bind.theirs, theirs: bind.mine, announce: false, pair: false })
+    partner.formBind(actor, { state: want, mine: bind.theirs, theirs: bind.mine, id: bind.id, announce: false, pair: false })
       .catch(err => console.error(`STARWROUGHT | ${partner.name}: the Bind's other side could not be written`, err));
     return;
   }
@@ -108,8 +126,10 @@ function isMirrorWriter(actor) {
 
 /**
  * Settle half-written pairs: every actor recording a Bind whose partner does not record it back
- * gets its mirror written, by the elected client. Run once at ready, for a Bind formed while the
- * partner's owner was away; a Bind formed while they are connected is picked up as it is written.
+ * gets its mirror written, by the elected client, or is cleared when the partner's emptied record
+ * carries this Bind's id (the partner ended it while nobody could write the mirror). Run once at
+ * ready, for a Bind formed or ended while the partner's owner was away; one changed while they are
+ * connected is picked up as it is written.
  */
 export function keepPaired() {
   const actors = [...game.actors];
@@ -139,10 +159,16 @@ function resolveActor(uuid) {
 function getLayer() {
   if (layer?.parent) return layer;
   if (!canvas?.ready) return null;
+  const parent = canvas.interface ?? canvas.tokens;
+  const existing = parent.children.find(c => (c.name === "starwrought.binds") && !c.destroyed);
+  if (existing) {
+    layer = existing;
+    return layer;
+  }
   layer = new PIXI.Container();
   layer.name = "starwrought.binds";
   layer.eventMode = "none";
-  (canvas.interface ?? canvas.tokens).addChild(layer);
+  parent.addChild(layer);
   return layer;
 }
 

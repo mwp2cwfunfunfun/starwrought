@@ -70,7 +70,11 @@ export function rangesFor(actor) {
     list = null;
   }
   if (!Array.isArray(list)) list = fallbackRanges(actor);
-  return list.filter(usable);
+  // A GM-only custom ring never reaches a player, pinned or previewed: filtered here, once, so the
+  // preview, the palette, the HUD badge and every other reader agree with the pinned layer
+  // (review, 2026-10-01).
+  const gm = !!game.user?.isGM;
+  return list.filter(r => usable(r) && (gm || !r.gmOnly));
 }
 
 /** A range the renderer can do something with: keyed, with a finite range; Unwieldy 0 is no Unwieldy. */
@@ -264,10 +268,20 @@ export function registerAuras() {
 function getLayer() {
   if (layer?.parent) return layer;
   if (!canvas?.ready) return null;
+  const parent = canvas.interface ?? canvas.tokens;
+  // A refresh can run between the canvas turning ready and the canvasReady hook, so a layer may
+  // already hang here from before reset() forgot it: reuse it, emptied, rather than stack a second
+  // one that nothing refreshes (live test, 2026-10-01; see reach.mjs).
+  const existing = parent.children.find(c => (c.name === "starwrought.auras") && !c.destroyed);
+  if (existing) {
+    for (const child of existing.removeChildren()) child.destroy({ children: true });
+    drawn.clear();
+    layer = existing;
+    return layer;
+  }
   layer = new PIXI.Container();
   layer.name = "starwrought.auras";
   layer.eventMode = "none";
-  const parent = canvas.interface ?? canvas.tokens;
   // Beneath the preview layer when it is already there, so a hovered token's labels stay on top.
   const preview = parent.children.find(c => c.name === "starwrought.reach");
   if (preview) parent.addChildAt(layer, parent.getChildIndex(preview));
@@ -278,6 +292,7 @@ function getLayer() {
 /** Forget everything, for a canvas that has been torn down under us. */
 function reset() {
   drawn.clear();
+  if (layer && !layer.destroyed) layer.destroy({ children: true });
   layer = null;
   resetRingCache();
 }

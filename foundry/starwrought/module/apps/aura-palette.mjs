@@ -136,7 +136,9 @@ export class SwAuraPalette extends HandlebarsApplicationMixin(ApplicationV2) {
       isGM,
       owner: !!actor?.isOwner,
       audiences: Object.fromEntries(Object.entries(AUDIENCES).map(([k, v]) => [k, game.i18n.localize(v)])),
-      defaultColor: new foundry.utils.Color(palette.all ?? AURA_COLORS.all).css
+      // Color.from reads a "#rrggbb" string; the constructor takes a number, and a string there
+      // comes out black.
+      defaultColor: foundry.utils.Color.from(palette.all ?? AURA_COLORS.all).css
     });
   }
 

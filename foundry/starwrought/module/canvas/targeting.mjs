@@ -34,7 +34,13 @@ let layer = null;
 /** Register the hooks that keep the arrows and the tracker in step with the targets. */
 export function registerTargeting() {
   Hooks.on("targetToken", onTargetToken);
-  Hooks.on("canvasReady", () => { layer = null; refresh(); });
+  Hooks.on("canvasReady", () => {
+    // A layer drawn between the canvas turning ready and this hook would otherwise be forgotten
+    // while still attached (see reach.mjs).
+    if (layer && !layer.destroyed) layer.destroy({ children: true });
+    layer = null;
+    refresh();
+  });
   Hooks.on("refreshToken", () => refresh());
   Hooks.on("createToken", () => refresh());
   Hooks.on("deleteToken", () => refresh());
@@ -157,10 +163,16 @@ async function onCombatEnds(combat) {
 function getLayer() {
   if (layer?.parent) return layer;
   if (!canvas?.ready) return null;
+  const parent = canvas.interface ?? canvas.tokens;
+  const existing = parent.children.find(c => (c.name === "starwrought.targets") && !c.destroyed);
+  if (existing) {
+    layer = existing;
+    return layer;
+  }
   layer = new PIXI.Container();
   layer.name = "starwrought.targets";
   layer.eventMode = "none";
-  (canvas.interface ?? canvas.tokens).addChild(layer);
+  parent.addChild(layer);
   return layer;
 }
 

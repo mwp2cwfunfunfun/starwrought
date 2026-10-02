@@ -20,6 +20,7 @@ are sources and which are output, and leave the repo building.**
 | `assets/roster.json` (hand-kept blocks) and `sheet_spec.json` | the `ancestries` block of `roster.json` (the converter overwrites it from `ancestries.xlsx`), and its `weaponsMelee`, `weaponsRanged`, `armorPieces` and `shields` blocks (overwritten from `equipment.xlsx`); `assets/equipment.json` |
 | `assets/app_template.html`, `constellation_template.html` | `Starwrought_App.html`, `Starwrought_Talent_Constellations.html` |
 | `assets/*.py`, `assets/build_phb.js` | `assets/constellations/*.png`, the PDFs, the compendium |
+| `foundry/starwrought/FEATURES.md` | `Starwrought_Foundry_Features.docx` (`assets/build_features_docx.py` lays the Markdown out as a Word document for printing or a PDF) |
 | `foundry/starwrought/` **except** `packs/`, `content/`, `assets/constellations/` | those three, which `assets/build_foundry.mjs` regenerates |
 | `data/SYNC.json` (via `build_all.mjs --accept-phb`) | `foundry/starwrought/content/sync.json` |
 
@@ -63,6 +64,7 @@ python assets/render_constellations.py # -> assets/constellations/*.png
 python assets/sheet_gen.py            # -> the fillable and Mira character sheets
 node   assets/build_phb.js            # -> Starwrought_Constellation_Compendium.docx
 node   assets/build_foundry.mjs       # -> foundry/starwrought/{packs,content,assets/constellations}
+python assets/build_features_docx.py  # FEATURES.md -> Starwrought_Foundry_Features.docx (print or PDF)
 python assets/check_style.py          # the two absolute rules below, enforced. Exit 1 on a violation.
 ```
 
@@ -221,7 +223,12 @@ final Wound is Dying.
 - `* Lore` sheets in `ancestries.xlsx` are authoring notes for player-facing text. The converter
   ignores them by design.
 - Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect, Feeds,
-  Grants, **Choice**, **Free Talent**, **Enabled?**. Column order does not matter; the first word of
+  Grants, **Choice**, **Free Talent**, **Enabled?**, **Aura** (0.5.1: the Effect's "within N feet"
+  drawn on the map around the carrier: `N ft`, `N ft allies`, `N ft enemies`, with `visible`
+  appended to pin it by default once an encounter starts, or `none` when the circle is centred
+  elsewhere, as Rebounding Toss's is; the converter errors on anything else and warns when an
+  Effect says "within N feet" and the cell is blank or disagrees; reach and adjacency get no
+  cell). Column order does not matter; the first word of
   the header does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
   a **Parent** column (v4.10): a Combat Style names Melee or Ranged, and the converter errors on a
   Parent that names no tree or has a parent of its own. Action glyphs ride in the Talent name in the
@@ -318,11 +325,17 @@ final Wound is Dying.
 - **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** The
   system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
   (`STRIKE_KINDS.exposeOnMiss`). One cell in the handbook either way.
-- **`data/actions.xlsx` has never been committed.** It is the authoritative source of
-  `assets/actions.json`, which is tracked and marked never-hand-edit, so a fresh clone cannot
-  regenerate the actions. It is Mike's working file and adding it to git is his call; the
-  converter now says so when the workbook is absent. Its one row, Aid, is not enabled, so Aid
-  ships nowhere (ruling 61).
+- **`data/actions.xlsx` has never been committed.** Its one row, Aid, is the only action
+  `assets/actions.json` cannot regenerate on a fresh clone (the converter carries it over from
+  the last `actions.json` with a warning). `data/maneuvers.xlsx`, which authors the other 39
+  Maneuvers since 0.5.1, is tracked. Adding `actions.xlsx` to git is Mike's call. Aid is not
+  enabled, so it ships nowhere (ruling 61).
+- **No Basic Maneuver ships until Mike enables rows in `data/maneuvers.xlsx`** (0.5.1, at his
+  request: "get rid of all of these"). The Maneuvers tab's Basic panel stands empty and says so.
+  The compendium docx and the web app print every Maneuver under one "Basic Action" heading now
+  that the rows carry Type "Basic Action"; in Foundry the six book groups survive, since the
+  builder takes an action's group from the sheet it sits on (its folder and `category`), and the
+  Type only decides the `basic` flag.
 - **Two `Enabled?` loose ends for Mike:** Drilled is enabled while the Weapon Familiarity it hands
   over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
 - **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**

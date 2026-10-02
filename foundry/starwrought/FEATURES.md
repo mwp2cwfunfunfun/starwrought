@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.5.0**. Developed against
+Rules content built from **Player's Handbook v4.10**. System version **0.5.1**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -164,7 +164,7 @@ anything it depends on changes.
   parent's pool and how much of it is inherited, and a Combat Style carries a "child of" line.
 - **Vigor** = 10 + (Ancestry Vigor + Calling Vigor) × level. Only the first Calling counts.
 - **A night's rest** restores level × Presence Vigor, or level if Presence is 1 or less. It clears
-  Temporary Vigor, leaves you with at least one Hero Point, and touches no Wound.
+  Temporary Vigor, gives no Hero Point (the GM awards those), and touches no Wound.
 - **Weapon dice by level**: one, then two at 4th, three at 8th, four at 12th, five at 16th.
   **Specialization** by Melee or Ranged rank: +2 Expert, +3 Master, +4 Legendary.
 
@@ -662,7 +662,9 @@ standing stance in one click too, which is what kept the 0.4.0 design from promp
 the attack flow switched off the stance is read at the die exactly as before. Postures, the
 Talent-granted ⓿↺ Reactions that Expose a Zone until the end of the round, are an answer the prompt
 offers when you own one in the Defense's Constellation; the Exposed toggle on the sheet marks a
-Posture's Zone so Recenter leaves it alone and the round's end clears it.
+Posture's Zone so Recenter leaves it alone and the round's end clears it. Since 0.5.1 the chips are
+labelled **Standing stance**, which is what they are: the default the prompt pre-selects, not the
+answer itself.
 
 ### The attack flow
 
@@ -788,6 +790,75 @@ rebuild the shape, so following the drag is about a fifth of one percent of a 60
 The shape is rebuilt only when something that determines it actually changes: the reach numbers,
 the token's footprint, or the scene grid.
 
+### Auras: every range on the map
+
+**Every range a creature carries is one kind of thing** (Mike, 2026-10-01; sync report ruling 66):
+Natural Reach, Total Reach, an Unwieldy weapon's dead zone, a Torchbearer's fifteen feet of allies,
+a Hunter's sixty feet of prey, and any ring the table draws by hand. They live in one list on the
+actor, and one renderer draws them all: whole grid cells, outlined along grid lines, measured from
+the edge of the token's space with exact diagonals, exactly as the book measures "within N feet".
+Foundry 14's own token-attached Regions were considered and rejected: on an exact-diagonal grid
+Foundry's circle is an eight-point octagon, which leaves out cells the rules put inside (48 of
+them at 15 feet), so a Region would show an ally standing outside a bonus the book gives them.
+
+**Two ways a ring shows.** A *preview* appears on your own screen while you hover, select or drag
+a token: every range the token has, labelled, following the drag clone. Reach always worked this
+way, and still does. A *pinned* ring stands on everyone's map: while an encounter is running, each
+combatant's **Visible** ranges are drawn for the whole table, follow the token and survive a
+reload; a combatant added mid-fight lights its Visible rings as it joins; when the encounter ends
+they go. Out of an encounter nothing is pinned.
+
+**The Visible mark** is the one decision, and it belongs to whoever owns the creature. Toggle it
+from the **Token HUD** (a ring button under the stance button, badged with the count of Visible
+ranges, opening a palette with one row per range and a Custom row for a ring of your own: feet, who
+it concerns, a label, a colour, and for the GM a GM-only switch; right-click the ring button to
+switch every mark off) or from the **sheet** (a ring icon on every Talent and Maneuver row that
+carries a range, and on the Overview's Ranges line for Natural Reach, Total Reach and Unwieldy).
+Marks are stored on the actor, so new tokens inherit them. Defaults come from the data: Torchbearer
+Human is Visible by default, Rally, Mark Prey and Battle Cry are not, and Reach is not, so a fight
+looks as it did until someone marks their reach. Colour follows who the effect concerns: allies
+green, enemies red, everyone violet; a custom ring takes the colour you pick. Fills are faint up to
+30 feet and outline-only beyond; several rings on one token stack as bands, largest first.
+
+**Who sees what.** Everyone sees every pinned ring on a token they can see. A hidden token shows
+nothing to players and a dashed ring to the GM; a GM-only custom ring never reaches a player. The
+GM has two Token-layer controls: **Suppress auras** (a scene flag; players see no pinned ring until
+it is released, the GM's dim, no mark is touched, so an encounter can be set up and revealed on
+round one) and **Clear aura marks** (every combatant back to the data defaults, after a confirm). A
+client setting mutes the pinned drawing locally.
+
+**Where the ranges come from.** A new **Aura** column on the talent and Maneuver sheets
+(`15 ft allies visible`, `30 ft allies`, `60 ft`, `15 ft enemies`, or `none` when the circle is
+centred somewhere other than the carrier, as a thrown weapon's rebound is). The converter errors on
+anything else and warns when an Effect says "within N feet" and the cell is blank or disagrees, so
+the unwritten tiers surface on their sync. "Within reach" and "adjacent" get no cell: the reach
+bands are those. The Item carries the range, who it concerns and the default mark, editable by the
+GM on its Details tab. An owned Talent from before the column received its compendium copy's aura
+in the 0.5.1 migration. The same geometry that draws a ring answers who is inside it
+(`aurasOver`), which is the hook for automating the effects later without Regions.
+
+### The Bind on the map
+
+A Bind is drawn between the two bound tokens for everyone who can see both (Mike, 2026-10-01): two
+gold rails with rungs for a neutral Bind, labelled at the midpoint with both implements ("Spear /
+Shortsword"); a Controlled Bind runs from the Controller with an arrowhead at the Controlled end and
+a small Control pill. It follows a drag clone, is dashed while either token is hidden (GM only),
+and goes when the Bind ends. The Bound, Controlling and Controlled effects now say what they are
+("Bound: Neutral Bind with Evader"), carry the partner as their origin and the implements in their
+description, and there is exactly one of them per Bind: condition effects are created under the
+static ids the token palette uses, so a rules-set Bound shows lit in the palette and a click there
+toggles it rather than laying a twin beside it. A Bind formed from a card by a player whose partner
+they do not own is picked up by the partner's owning client (the GM when connected), so both sides
+are written.
+
+### Exposed on the token
+
+Exposed is a token status per Zone: Exposed: Head, Torso, Arms, Legs, kept in step with the Zones
+by the sheet toggle, the card buttons, the Posture reveal, Recenter and the end of the round, and
+toggleable from the token's palette in the other direction. The Bind and Exposed chat cards, the
+sheet's Bind line and EXPOSED badge, and the Bound row on the Effects tab open the rules page for
+the Bind or for Exposed in the STARWROUGHT Reference journal.
+
 ---
 
 ## 3. Sheets
@@ -823,7 +894,9 @@ Shift-click skips the dialog.
 **The Maneuvers tab** (the tab keeps its id `actions` in code). It opens with the **Basic
 Maneuvers**: what every character can do, grouped by category in the book's order and foldable,
 read straight from the Maneuvers compendium rather than copied onto the sheet, so a rewrite in
-`data/actions.xlsx` reaches every character on the next build. Clicking a name uses it as that
+`data/maneuvers.xlsx` (the workbook that now authors them, with its own `Enabled?` column; nothing
+ships until Mike enables a row, so the panel says so and stands empty today) reaches every
+character on the next build. Clicking a name uses it as that
 character: the card goes to chat with the character speaking, or, for a Maneuver that rolls a check,
 the roll dialog opens. Shift-click skips the dialog. Each row can also be sent to chat, opened, or
 copied down onto the sheet to become the character's own to edit. Below that is the list the
@@ -855,7 +928,33 @@ differs, printed as "❶ (⓿↺)" for a ❶ Maneuver whose Reaction half is fre
 carries one yet. A Constellation names its parent (Melee or Ranged; anything but
 itself is allowed, so a third parent needs no code change). A chassis carries Vigor per level, Size
 and Speed in feet per Move. A weapon carries its Style, which is load-bearing for the Strike
-Attribute, and the sheet calls out the traits that decide what it can do in a Bind.
+Attribute, and the sheet calls out the traits that decide what it can do in a Bind. A Talent or
+Maneuver carries its **Aura** (range in feet, who it concerns, Visible by default), editable by the
+GM on the Details tab.
+
+**What a player may change** (Mike, 2026-10-01). The sheet is the character's record, and some of
+it is the GM's to write. For a player, Ancestry, Bloodline, Culture, Background, Calling, Ancestry
+Vigor, Calling Vigor and Ancestry Speed are text, not fields; Level is a badge with three star pips
+beneath it for the Milestones reached (the fourth is the level); Hero Points show a count and a
+**Spend** button that posts "Hrolda spends a Hero Point (2 left)" to everyone, with no way to add
+one; Refuse Death is disabled unless the character is Dying and holds a Hero Point; and a Talent,
+Constellation or Chassis opens read-only (a lock badge in the header, the plain name, no Effect
+controls), while a weapon or a piece of gear stays theirs to rename. The GM keeps every field. A
+night's rest no longer hands out a Hero Point. Names print plain beside their one gold cost glyph
+(the data keeps "Bull Rush ❷", the sheet shows "Bull Rush" and ❷ once), and a Talent's image opens
+it rather than sending it to chat, which the chat control already does. The header's stance chips
+are the **Standing stance**: the Combat Prompt pre-selects it, the GM's "Answer with standing
+stances" commits it for an absent player, a Reaction Strike reads it, and with the attack flow off
+it is the whole answer. The Biography and Notes editors lay out and save again (their edit button
+was hidden and their box collapsed to nothing).
+
+**Adjustments are said aloud.** Whatever a player changes by hand on their character goes to
+everyone's chat as one "Adjusted" card per edit: actions left, Temporary Vigor, Dying, Hero Points,
+Size, Senses, Languages, Familiarity, every Adjustments field, Resistances, Weaknesses and
+Immunities, coin, a Zone Exposed or closed by hand, and gear added, dropped, drawn or stowed. What
+the system does for them (a Strike's spend, a Reaction charged, Recenter, damage applied, a
+Recovery roll, the round's reset) already posts its own card and is not said twice; the GM's edits
+are silent.
 
 ---
 
@@ -903,22 +1002,28 @@ a Defense roll button against the attack's Threshold.
 
 Also: Move, Step and Rush cards saying what a drag cost and why; the Pass card; Bind formed, Control
 taken and Bind ended; Exposed; Give ground; Step; Recenter; Treat Wound; a night's rest; Refuse
-Death; and the overspend card, whenever something happened without the actions to pay for it.
+Death; a Hero Point spent; the **Adjusted** card for a player's hand edits (0.5.1); and the
+overspend card, whenever something happened without the actions to pay for it. The Bind and
+Exposed card titles open their rules pages.
 
 ---
 
 ## 5. Conditions
 
-All 24 registered as toggleable token statuses: Off-Guard, Wrong-Footed, Frightened N, Prone,
+All 28 registered as toggleable token statuses: Off-Guard, Wrong-Footed, Frightened N, Prone,
 Grabbed, Restrained, Heedless, Stunned N, Slowed N, Fatigued, Blinded, Deafened, Concealed, Hidden,
-Undetected, Unconscious, Dying N, Wounded, Spent, Bound, Controlled, Controlling, Preparing, Dead.
+Undetected, Unconscious, Dying N, Wounded, Spent, Bound, Controlled, Controlling, Preparing, Dead,
+and Exposed: Head, Torso, Arms and Legs.
 
 Off-Guard, Frightened N and Fatigued feed straight into the derived numbers; Grabbed and Restrained
 make Evade unavailable; Slowed N takes its actions at the start of the round. The system keeps
-Dying, Wounded, Spent, Bound, Controlled, Controlling and Preparing in step between the sheet and the
-token, sets Prone from a final Legs Wound, Unconscious from Dying and Dead at Dying 5, and clears
-Spent when Vigor returns. Exposed is per Zone on the sheet rather than a token status; Persistent
-Damage is an end-of-round card rather than a status. The rest are markers for the table.
+Dying, Wounded, Spent, Bound, Controlled, Controlling, Preparing and the four Exposed in step
+between the sheet and the token, sets Prone from a final Legs Wound, Unconscious from Dying and
+Dead at Dying 5, and clears Spent when Vigor returns. Every condition effect sits under a static
+id, the one the token palette looks for, so a status the rules set shows lit there and a click
+toggles it instead of laying a twin beside it (0.5.1, with a migration that brought old worlds'
+effects under those ids). Persistent Damage is an end-of-round card rather than a status. The rest
+are markers for the table.
 
 ---
 
@@ -935,6 +1040,7 @@ Damage is an end-of-round card rather than a status. The rest are markers for th
 | Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour. Per client |
 | The attack flow | on | A character's Strike at a target declares first; defenders commit a Defense and an answer in private, all reveal at once, then the player rolls. Off, a character's Strike rolls at once against the standing stance, as 0.4.2 did; an adversary's attack row always declares |
 | Show a character's Threshold to the attacker | off | After the reveal, print the defending character's Threshold on the attack card and the resolution card for the attacking player. Inside the flow an adversary's Thresholds are never printed for players |
+| Show pinned auras | on | Draw every combatant's Visible ranges on the map while an encounter runs. Off, only the hover preview draws. Per client |
 
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
 for it is ignored.

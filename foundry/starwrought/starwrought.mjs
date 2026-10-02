@@ -279,6 +279,7 @@ async function migrateWorld() {
   // so every scene is walked.
   let exposed = 0;
   let normalised = 0;
+  let auras = 0;
   if (needs("0.5.1")) {
     const actors = [...game.actors];
     for (const scene of game.scenes) {
@@ -294,9 +295,41 @@ async function migrateWorld() {
       }
       normalised += await normaliseConditionEffects(actor);
     }
+
+    // A Talent or Maneuver owned before the Aura field existed carries no range, while its
+    // compendium copy now may (the Aura column, 0.5.1). The compendium's aura is copied onto every
+    // owned copy that has none of its own, matched by plain name within the pack of its type, so
+    // a Torchbearer's 15 feet reach the sheet without the Talent being dragged on again.
+    const auraByName = new Map();
+    for (const packId of [`${SW.SYSTEM_ID}.talents`, `${SW.SYSTEM_ID}.actions`]) {
+      const pack = game.packs.get(packId);
+      if (!pack) continue;
+      for (const doc of await pack.getDocuments()) {
+        const range = doc.system?.aura?.range;
+        if (!Number.isFinite(range) || (range <= 0)) continue;
+        auraByName.set(`${doc.type}|${SW.plainName(doc.name)}`, foundry.utils.deepClone(doc.system.aura));
+      }
+    }
+    for (const actor of actors) {
+      const updates = [];
+      for (const item of actor.items) {
+        if (!["talent", "action"].includes(item.type)) continue;
+        if (Number.isFinite(item._source.system?.aura?.range)) continue;
+        const aura = auraByName.get(`${item.type}|${SW.plainName(item.name)}`);
+        if (aura) updates.push({ _id: item.id, "system.aura": aura });
+      }
+      if (!updates.length) continue;
+      await actor.updateEmbeddedDocuments("Item", updates);
+      auras += updates.length;
+    }
   }
 
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (auras > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.auras", { version: game.system.version, count: auras });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if ((exposed > 0) || (normalised > 0)) {
     const message = game.i18n.format("STARWROUGHT.Migration.exposed", { version: game.system.version, exposed, normalised });
     console.log(`STARWROUGHT | ${message}`);
@@ -326,7 +359,8 @@ async function normaliseConditionEffects(actor) {
   let changed = 0;
   for (const id of Object.keys(SW.CONDITIONS)) {
     const staticId = SW.statusEffectId(id);
-    const carrying = actor.effects.filter(e => e.statuses?.has(id));
+    // The same ownership rule setCondition applies: an authored multi-status effect is not ours.
+    const carrying = actor.effects.filter(e => e.statuses?.has(id) && ((e.id === staticId) || (e.statuses.size === 1)));
     if (!carrying.length) continue;
     const keep = carrying.find(e => e.id === staticId) ?? carrying[0];
     const twins = carrying.filter(e => e !== keep);
@@ -527,7 +561,8 @@ function registerSettings() {
     config: true,
     type: Boolean,
     default: true,
-    onChange: () => refreshReach()
+    // The pinned layer steps aside for a previewed token, so it is redrawn with the preview.
+    onChange: () => { refreshReach(); refreshAuras(); }
   });
 
   // AURAS (0.5.1): the pinned drawing, muted on this client. The preview stays under showReach.
@@ -538,7 +573,7 @@ function registerSettings() {
     config: true,
     type: Boolean,
     default: true,
-    onChange: () => refreshAuras()
+    onChange: () => { refreshAuras(); refreshReach(); }
   });
 
   game.settings.register(SW.SYSTEM_ID, "showTargetArrows", {

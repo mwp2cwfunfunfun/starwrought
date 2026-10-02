@@ -22,8 +22,17 @@ Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Tr
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |
-                Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled?
+                Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled? | Aura
   Column ORDER does not matter; the first word of the header does.
+  Aura (0.5.1): the Effect's "within N feet", drawn on the map around the carrier. Accepted:
+        "N ft" or "N feet" (everyone), "N ft allies", "N ft enemies", "all" spelled out for
+        everyone, "visible" appended to pin the ring by default once an encounter starts
+        ("15 ft allies visible"), "none" when the circle is centred somewhere other than the
+        carrier (Rebounding Toss), blank for no aura. Anything else is a VALIDATION ERROR and
+        nothing is written. The converter WARNS when an Effect says "within N feet" and the cell
+        is blank, the sheet has no Aura column, or the cell names a different N. "Within reach"
+        and "adjacent" get no cell: the reach bands draw those. The action sheets take the same
+        grammar.
   Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
         anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
         column means the sheet has not been curated yet, not that it is all off. A constellation

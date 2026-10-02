@@ -61,10 +61,21 @@ export function registerReachRings() {
 function getLayer() {
   if (layer?.parent) return layer;
   if (!canvas?.ready) return null;
+  const parent = canvas.interface ?? canvas.tokens;
+  // A refresh can run between the canvas turning ready and the canvasReady hook (a token's render
+  // flags flushing mid-draw), so a layer may already hang here from before reset() forgot it.
+  // Reuse it, emptied, rather than stack a second one that nothing refreshes (live test,
+  // 2026-10-01: two reach layers, one holding stale rings at the token's old square).
+  const existing = parent.children.find(c => (c.name === "starwrought.reach") && !c.destroyed);
+  if (existing) {
+    for (const child of existing.removeChildren()) child.destroy({ children: true });
+    drawn.clear();
+    layer = existing;
+    return layer;
+  }
   layer = new PIXI.Container();
   layer.name = "starwrought.reach";
   layer.eventMode = "none";
-  const parent = canvas.interface ?? canvas.tokens;
   parent.addChild(layer);
   return layer;
 }
@@ -72,6 +83,9 @@ function getLayer() {
 /** Forget everything, for a canvas that has been torn down under us. */
 function reset() {
   drawn.clear();
+  // A layer still attached (drawn before canvasReady) goes with the rest; a torn-down canvas has
+  // already destroyed its own.
+  if (layer && !layer.destroyed) layer.destroy({ children: true });
   layer = null;
   resetRingCache();
 }

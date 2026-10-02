@@ -269,7 +269,46 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   static async #onResetActions() {
-    return this.document.resetActions();
+    // By hand, so a player-owned adversary's reset is said in chat like the pips are (audit).
+    return this.document.resetActions({ byHand: true });
+  }
+
+  /**
+   * An open Biography editor across a re-render, as the character sheet keeps it (see
+   * SwCharacterSheet._preSyncPartState for the why): the draft is written to the document here,
+   * since the change the editor fires is dropped while the sheet is rendering, and the reopened
+   * editor is seeded with it.
+   * @inheritdoc
+   */
+  _preSyncPartState(partId, newElement, priorElement, state) {
+    super._preSyncPartState(partId, newElement, priorElement, state);
+    state.swOpenEditors = [];
+    state.swDrafts = {};
+    for (const editor of priorElement.querySelectorAll("prose-mirror[open]")) {
+      if (editor.name) state.swOpenEditors.push(editor.name);
+      let changed = false;
+      const onChange = () => { changed = true; };
+      editor.addEventListener("change", onChange);
+      try { editor.save(); } catch (err) { console.error("STARWROUGHT | an open editor could not be saved before the sheet redrew", err); }
+      editor.removeEventListener("change", onChange);
+      if (changed && editor.name) state.swDrafts[editor.name] = editor.value;
+    }
+    if (this.isEditable && !foundry.utils.isEmpty(state.swDrafts)) {
+      this.document.update(foundry.utils.deepClone(state.swDrafts))
+        .catch(err => console.error("STARWROUGHT | an editor's draft could not be written while the sheet redrew", err));
+    }
+  }
+
+  /** @inheritdoc */
+  _syncPartState(partId, newElement, priorElement, state) {
+    super._syncPartState(partId, newElement, priorElement, state);
+    const drafts = state.swDrafts ?? {};
+    for (const name of state.swOpenEditors ?? []) {
+      const editor = newElement.querySelector(`prose-mirror[name="${CSS.escape(name)}"]`);
+      if (!editor || editor.disabled) continue;
+      if (name in drafts) editor.value = drafts[name];
+      editor.toggleAttribute("open", true);
+    }
   }
 
   static async #onPass() {

@@ -434,25 +434,44 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
    * whenever the actor changes, and a change can arrive from anywhere while a player is typing: a
    * round's reset, a GM's edit, a Wound. Foundry's part sync keeps focus and scroll but not an
    * open <prose-mirror>, whose teardown saves into a detached element and so loses the draft. So
-   * the draft is saved first, while the old part is still in the form (the save fires the change
-   * the sheet submits on), and the editor is reopened on the new part.
+   * the draft is saved first, while the old part is still in the form. The save fires the change
+   * the sheet would submit on, but ApplicationV2 drops every form change while it is rendering,
+   * which it is here, so the draft is written to the document directly when the editor reports
+   * one (its own value-versus-stored test, so an unchanged editor writes nothing back), and the
+   * reopened editor on the new part is seeded with it so the round trip to the server shows the
+   * draft rather than the old text (review, 2026-10-01).
    * @inheritdoc
    */
   _preSyncPartState(partId, newElement, priorElement, state) {
     super._preSyncPartState(partId, newElement, priorElement, state);
     state.swOpenEditors = [];
+    state.swDrafts = {};
     for (const editor of priorElement.querySelectorAll("prose-mirror[open]")) {
       if (editor.name) state.swOpenEditors.push(editor.name);
+      let changed = false;
+      const onChange = () => { changed = true; };
+      editor.addEventListener("change", onChange);
       try { editor.save(); } catch (err) { console.error("STARWROUGHT | an open editor could not be saved before the sheet redrew", err); }
+      editor.removeEventListener("change", onChange);
+      if (changed && editor.name) state.swDrafts[editor.name] = editor.value;
+    }
+    if (this.isEditable && !foundry.utils.isEmpty(state.swDrafts)) {
+      this.document.update(foundry.utils.deepClone(state.swDrafts))
+        .catch(err => console.error("STARWROUGHT | an editor's draft could not be written while the sheet redrew", err));
     }
   }
 
   /** @inheritdoc */
   _syncPartState(partId, newElement, priorElement, state) {
     super._syncPartState(partId, newElement, priorElement, state);
+    const drafts = state.swDrafts ?? {};
     for (const name of state.swOpenEditors ?? []) {
       const editor = newElement.querySelector(`prose-mirror[name="${CSS.escape(name)}"]`);
-      if (editor && !editor.disabled) editor.toggleAttribute("open", true);
+      if (!editor || editor.disabled) continue;
+      // The new part was rendered before the draft reached the document; seed it so the reopened
+      // editor shows the draft and keeps typing done during the round trip, not the old text.
+      if (name in drafts) editor.value = drafts[name];
+      editor.toggleAttribute("open", true);
     }
   }
 

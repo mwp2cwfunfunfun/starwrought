@@ -90,7 +90,13 @@ function bindFields() {
     }),
     partnerUuid: new fields.StringField({ initial: "" }),
     mine: new fields.StringField({ initial: "" }),
-    theirs: new fields.StringField({ initial: "" })
+    theirs: new fields.StringField({ initial: "" }),
+    /**
+     * The Bind's identity, the same on both sides, kept in the emptied record after the Bind
+     * ends: the tombstone the pair-keeper reads to tell "my partner ended this very Bind" from
+     * "my partner's side was never written" (review, 2026-10-01).
+     */
+    id: new fields.StringField({ initial: "" })
   });
 }
 

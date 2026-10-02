@@ -588,6 +588,8 @@ for (const row of equipmentRows("shields")) {
 // are hand-kept JSON and always ship.
 const actionsPath = path.join(ROOT, "assets", "actions.json");
 const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
+/** The workbook that wrote a sheet action, as the Item's Source line; a pre-0.5.1 actions.json carried no stamp and was actions.xlsx alone. */
+const actionSource = a => a.workbook ? `data/${a.workbook}` : "data/actions.xlsx";
 const fromSheet = new Set(sheetActions.map(a => a.name.toLowerCase()));
 const disabledOnSheet = new Set(sheetActions.filter(a => !isEnabled(a)).map(a => a.name.toLowerCase()));
 const retired = [];
@@ -663,22 +665,27 @@ for (const [name] of roster.postures ?? []) {
 const shippedSheetActions = sheetActions.filter(a => count("sheetActions", isEnabled(a)));
 const actionFolders = {};
 let actionSort = 0;
-for (const type of [...new Set(shippedSheetActions.map(a => a.type))]) {
-  actionFolders[type] = folder("actions", type, { sort: actionSort++, color: "#5a4a1e" });
+// A sheet action's group is the sheet it sits on (the book's Motion, Attack, Defense & Recovery
+// and so on in data/maneuvers.xlsx), falling back to its Type for a workbook with no such
+// grouping; the `basic` flag still reads the Type. So the Maneuvers tab and the pack keep the
+// book's groups rather than one "Basic Action" heap (review, 2026-10-01).
+const actionGroup = a => a.sheet || a.type;
+for (const group of [...new Set(shippedSheetActions.map(actionGroup))]) {
+  actionFolders[group] = folder("actions", group, { sort: actionSort++, color: "#5a4a1e" });
 }
 for (const a of shippedSheetActions) {
   item("actions", {
     key: rosterKey.get(a.name.toLowerCase()) ?? `action:${slugify(a.name)}`,
     name: a.name,
     type: "action",
-    folder: actionFolders[a.type],
+    folder: actionFolders[actionGroup(a)],
     system: {
       cost: a.cost,
       costMax: a.costMax ?? "",
       costMode: a.costMode ?? "to",
       reaction: a.reaction ?? false,
       reactionCost: a.reactionCost ?? "",
-      category: a.type,
+      category: actionGroup(a),
       basic: /^basic\b/i.test(a.type),
       traits: a.traits ?? [],
       prerequisites: a.prerequisites ?? "",
@@ -688,7 +695,7 @@ for (const a of shippedSheetActions) {
       effect: paragraphs(a.effect),
       automation: a.automation ?? "",
       ...auraOf(a),
-      source: "data/actions.xlsx"
+      source: actionSource(a)
     }
   });
 }
@@ -784,7 +791,7 @@ for (const [name, grantedBy, description] of roster.postures ?? []) {
 }
 
 if (sheetActions.length) {
-  console.log(`  ${shippedSheetActions.length} of ${sheetActions.length} action(s) from data/actions.xlsx enabled`
+  console.log(`  ${shippedSheetActions.length} of ${sheetActions.length} action(s) from ${[...new Set(sheetActions.map(actionSource))].join(", ")} enabled`
     + (retired.length ? `; roster rows retired in their favour: ${retired.join(", ")}` : ""));
   // An action in this list is in neither the sheet's output nor the roster's: it is off the table
   // entirely until its sheet row reads Enabled? = Yes, and the sync report flags it for Mike.

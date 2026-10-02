@@ -37,7 +37,7 @@ WORKBOOK = os.path.basename(OUT)
 
 # The converter's own name and cost readers, so the two never disagree about what a name is.
 sys.path.insert(0, HERE)
-from xlsx_to_trees import ACTION_GLYPHS, action_bare, parse_cost  # noqa: E402
+from xlsx_to_trees import ACTION_GLYPHS, action_bare, blank_none, parse_cost  # noqa: E402
 
 # The actions-workbook columns, in the order the converter documents them (first word of each header
 # is what it reads). Aura is the 0.5.1 column: "N ft", "N ft allies", "N ft enemies", "visible", "none".
@@ -219,7 +219,7 @@ def build(roster, skip):
             r = n + 1
             values = {
                 "Action": plain, "Cost": cost,
-                "Traits": "" if traits.strip() in ("", "—", "-") else traits,
+                "Traits": blank_none(traits),
                 "Type": TYPE or group, "Prerequisites": "", "Requirements": req, "Trigger": trig,
                 "Description": "", "Effect": cell_value(lines), "Automation": "",
                 "Aura": AURA.get(plain.lower(), ""), "Enabled?": "",

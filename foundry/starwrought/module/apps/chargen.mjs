@@ -243,7 +243,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // A Talent that demands a build-time pick is not doing anything until it has an answer, so
     // ask now rather than leaving a Weapon Familiarity on the sheet that makes you familiar with
-    // nothing. Declining is allowed: the Item sheet can fill it in later.
+    // nothing. Declining is allowed: the Talent sheet keeps a Choose control for the owner (the
+    // rest of the sheet is read-only for a player) that asks again later.
     const free = entry.freeTalent || data.system.freeTalent;
     if (data.system.choice?.prompt && !data.system.choice.value) {
       data.system.choice.value = await promptForChoice(data.system.choice.prompt, entry.name, {

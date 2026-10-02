@@ -175,6 +175,60 @@
       "category": null
     },
     {
+      "_id": "941b13c4400511a4",
+      "_key": "!journal.pages!489b438244686d7b.941b13c4400511a4",
+      "name": "Exposed",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>When a Zone becomes Exposed, a part of you is open for a focused attack:</p><ul><li>Its Protection counts as 0 against a Deliberate or Committed Strike. A Quick Strike gains nothing from it.</li><li>An ordinary Hit from a Deliberate or Committed Strike may be placed there instead of the Torso.</li><li>It stays Exposed until you Recenter ❶ (see Chapter 7: Rules Elements), except that a Zone Exposed by a Posture stays Exposed until the end of the round, and Recenter does not clear it.</li><li>A Critical Hit on it with a Deliberate or Committed Strike Wounds it.</li></ul><p>When a Zone is Exposed, the following condition is placed on you: Exposed [Zone Name]. Zones become Exposed when your own Committed Strike is Stopped; when any Strike of yours Misses; when you take a Posture; when a foe Controls your weapon in a Bind; and through certain Talents and critical effects.</p><h2>The condition</h2><table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Exposed [Zone]</td><td>That Zone is Exposed: ordinary Hits can land there instead of your Torso. Recenter ❶ to clear, unless a Posture Exposed it: that lasts until the end of the round.</td></tr></tbody></table><h2>Opening and closing a Zone</h2><table><thead><tr><th>Maneuver</th><th>Effect</th></tr></thead><tbody><tr><td>Recenter ❶</td><td>Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in.</td></tr></tbody></table><table><thead><tr><th>Reaction</th><th>Grants</th><th>Effect</th></tr></thead><tbody><tr><td>Posture ⓿↺</td><td>Specific Talents • the named Defense</td><td>A Situation bonus to the named Defense, taken before you know whether the attack succeeded. It costs no actions, but a Zone of your choice becomes Exposed until the end of the round, whether or not the Posture works, and Recenter does not clear it. Its bonus is Situation, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack.</td></tr><tr><td>Give Ground ⓿↺</td><td>Evade Training • Evade +2 Situation</td><td>+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</td></tr><tr><td>Set Your Feet ⓿↺</td><td>Guard Training • Guard +2 Situation</td><td>+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</td></tr></tbody></table><p>What a Critical Hit does to each Zone, Exposed or not, is on @UUID[Compendium.starwrought.rules.JournalEntry.489b438244686d7b.JournalEntryPage.35ee7b6b93251cf3]{Zones and Critical Hits}.</p><h2>In the system</h2><p>Each Exposed Zone shows on the token as its own status (Exposed: Head, Exposed: Torso, Exposed: Arms, Exposed: Legs) and in the Zones panel of the sheet. Toggling the status on the token and toggling the Zone on the sheet are the same change. Recenter closes every Exposed Zone except one a Posture opened, and the statuses close with them.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 600,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "1a68f1d5c8c70dec",
+      "_key": "!journal.pages!489b438244686d7b.1a68f1d5c8c70dec",
+      "name": "The Bind",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>When a rigid weapon or shield stops a melee weapon or natural attack, the two are in contact: a Bind. Track one relationship per implement, and name the two implements: longsword / spear, or shield > bite. A Bind is neutral (/) when neither fighter has the line, or Controlled (>) when one does. Only Guard can form a Bind, and only with a rigid weapon, a shield, or a natural weapon its profile allows. A bare hand or a Flexible weapon can Guard, but cannot Bind.</p><p>A Bind forms when a Guard Stops an attack, or when a Gain Control action Grazes. Control is taken when a Parry Stops a Deliberate or Committed Strike, when a Guard answers a Miss, or when Gain Control succeeds. A Quick Strike is a probe: Stopped, it can be bound but never Controlled.</p><h2>While you Control a weapon</h2><ul><li>Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts.</li><li>Your partner's attacks with the Controlled weapon take a −2 Situation penalty.</li><li>You may Close ❶: Step toward your partner while keeping the Bind. The Controlled weapon cannot Intercept you.</li><li>A Bind has one Controller at most. A new Control replaces the old.</li></ul><h2>How a Bind ends</h2><p>A Bind ends when a Strike between the two actors resolves, when either partner Moves or Steps (Close excepted), when either actor Recenters, when the Controlling actor is attacked by a third party, or when either implement is dropped or Disarmed. Controlled is not Grappled or Restrained: you are redirecting a weapon, not holding a body. The Controlled actor may still Step, Move, or attack with something else, and attacking with an uncontrolled weapon or limb ends the Bind before the roll.</p><p>Recenter ❶ clears every Exposed Zone on you (except one Exposed by a Posture) and ends any Bind you are in. Being Controlled costs you the same action that being Exposed does. That is the tempo price of a lost line, and it is the reason Gain Control is worth an action.</p><p><strong>Size.</strong> An actor one Size larger or smaller Binds normally. Two or more Sizes apart, the smaller actor gains only momentary Control: it lasts until its first benefit is used or until the end of the Controller's next Opportunity, whichever comes first, and the larger creature Moves without first breaking the Bind. You can redirect a dragon's claw, but you cannot hold it.</p><p><strong>What cannot Bind.</strong> Flexible weapons (whips and flails), bare hands without a Talent, areas, spells, and attacks with the Unparryable trait. Incorporeal and amorphous attackers offer nothing to bind. Measure, footwork, and commitment still apply to all of them.</p><p><strong>Third parties.</strong> A Bind is between two implements. Your ally striking the opponent you Control does not break your Bind; that is the point of holding the line. An enemy striking you does.</p><h2>The conditions</h2><table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Bound [X]</td><td>Your implement is in a neutral Bind with X's. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves.</td></tr><tr><td>Controlled [X]</td><td>X Controls your weapon. You have an Exposed Zone of X's choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it.</td></tr><tr><td>Controlling [X]</td><td>You Control X's weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.</td></tr></tbody></table><h2>Maneuvers and Reactions in the Bind</h2><table><thead><tr><th>Maneuver</th><th>Effect</th></tr></thead><tbody><tr><td>Gain Control ❶</td><td>Requirements A rigid weapon, shield, or permitted natural weapon in hand; the target's weapon or natural attack is within the longer of your two Total Reaches; the target is no more than one Size larger than you.<br>Roll Melee against the target's Guard.<br><b>Critical Success</b> You Control the weapon, and the target is Off-Guard until its next Opportunity. <b>Success</b> You Control the weapon. <b>Graze</b> A neutral Bind forms. <b>Miss</b> You pressed badly. The target Controls your weapon instead.<br><b>Special</b> Evade cannot answer this attack. While you Control a weapon, the target has an Exposed Zone of your choice and takes −2 Situation to attacks with it (see Chapter 2: The Exchange).</td></tr><tr><td>Close ❶</td><td>Requirements You Control a foe's weapon.<br>Step toward that foe. The Bind holds, and the Controlled weapon cannot Intercept you. This is the only movement that does not end a Bind.</td></tr><tr><td>Recenter ❶</td><td>Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in.</td></tr></tbody></table><table><thead><tr><th>Reaction</th><th>Grants</th><th>Effect</th></tr></thead><tbody><tr><td>Parry ❶↺</td><td>Guard Training • Guard +2 Situation</td><td>You Guard with a +2 Situation bonus. You need a rigid weapon, a shield, or a permitted natural weapon in hand. If you Stop a Deliberate or Committed Strike, you take Control of the attacking weapon rather than a neutral Bind, and you may at once make a Quick Strike ⓿ against its owner: the riposte. A Stopped Quick Strike gives only a neutral Bind.</td></tr></tbody></table><p>The Zone a Controller opens follows the rules on @UUID[Compendium.starwrought.rules.JournalEntry.489b438244686d7b.JournalEntryPage.941b13c4400511a4]{Exposed}.</p><h2>In the system</h2><p>A Bind is recorded on both fighters and drawn on the map as a gold chain between their tokens, labelled with the two implements; a Controlled Bind runs from the Controller to the Controlled with an arrowhead and the word Control. The token carries Bound, Controlling or Controlled, and that effect names the partner, both implements and the state. The sheet's bind line and the Recenter Maneuver end it; a Strike between the two ends it when the Strike resolves.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 700,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
       "_id": "a0c1589242140c07",
       "_key": "!journal.pages!489b438244686d7b.a0c1589242140c07",
       "name": "Damage: order of operations",
@@ -194,7 +248,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 600,
+      "sort": 800,
       "ownership": {
         "default": -1
       },
@@ -221,7 +275,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 700,
+      "sort": 900,
       "ownership": {
         "default": -1
       },
@@ -248,7 +302,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 800,
+      "sort": 1000,
       "ownership": {
         "default": -1
       },
@@ -275,7 +329,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 900,
+      "sort": 1100,
       "ownership": {
         "default": -1
       },
@@ -302,7 +356,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1000,
+      "sort": 1200,
       "ownership": {
         "default": -1
       },
@@ -329,7 +383,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1100,
+      "sort": 1300,
       "ownership": {
         "default": -1
       },
@@ -356,7 +410,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1200,
+      "sort": 1400,
       "ownership": {
         "default": -1
       },
@@ -383,7 +437,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1300,
+      "sort": 1500,
       "ownership": {
         "default": -1
       },
@@ -410,7 +464,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1400,
+      "sort": 1600,
       "ownership": {
         "default": -1
       },
@@ -437,7 +491,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1500,
+      "sort": 1700,
       "ownership": {
         "default": -1
       },
@@ -464,7 +518,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1600,
+      "sort": 1800,
       "ownership": {
         "default": -1
       },
@@ -491,7 +545,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1700,
+      "sort": 1900,
       "ownership": {
         "default": -1
       },
@@ -518,7 +572,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1800,
+      "sort": 2000,
       "ownership": {
         "default": -1
       },
@@ -545,7 +599,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1900,
+      "sort": 2100,
       "ownership": {
         "default": -1
       },

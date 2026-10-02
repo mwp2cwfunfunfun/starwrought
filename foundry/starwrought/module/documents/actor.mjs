@@ -127,7 +127,11 @@ export class SwActor extends Actor {
   async #writeCondition(id, value, data) {
     const config = SW.CONDITIONS[id];
     const staticId = SW.statusEffectId(id);
-    const matching = this.effects.filter(e => e.statuses?.has(id));
+    // Foundry's own ownership rule for a status: the effect under its static id, or a single-status
+    // effect. An authored effect carrying several statuses (a net that is Prone and Restrained
+    // with a Speed change) is the GM's and is never deleted as a twin (review, 2026-10-01).
+    const ours = e => e.statuses?.has(id) && ((e.id === staticId) || (e.statuses.size === 1));
+    const matching = this.effects.filter(ours);
     const off = (value === false) || (config.numeric && Number(value) <= 0);
 
     if (off) {
@@ -159,7 +163,7 @@ export class SwActor extends Actor {
       return created ?? this.effects.get(staticId) ?? null;
     } catch (err) {
       // Another client got there first under the same id: that effect is the one to keep.
-      const theirs = this.effects.get(staticId) ?? this.effects.find(e => e.statuses?.has(id));
+      const theirs = this.effects.get(staticId) ?? this.effects.find(ours);
       if (!theirs) throw err;
       return theirs;
     }
@@ -1950,8 +1954,10 @@ export class SwActor extends Actor {
    * @param {boolean} [options.pair=true]  Write the partner's side too when this client owns it.
    *   False when this call IS the partner's side, picked up from the other's write
    *   (module/canvas/bind.mjs keeps the pair whole), so the pickup never bounces back.
+   * @param {string} [options.id]  The Bind's identity, shared by both sides; a pickup passes the
+   *   one it is mirroring, a fresh Bind gets a new one.
    */
-  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true, pair = true } = {}) {
+  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true, pair = true, id = "" } = {}) {
     const other = partner?.actor ?? (partner?.documentName === "Actor" ? partner : null);
     // A Bind is between two implements on two fighters; a token of your own is not a partner.
     if (!other || (other === this) || !other.uuid) return null;
@@ -1960,13 +1966,21 @@ export class SwActor extends Actor {
     mine = mine || this.rigidImplement?.name || "";
     theirs = theirs || other.rigidImplement?.name || "";
 
+    // One Bind per fighter (PHB v4.10, The Bind): forming one over a Bind with someone else ends
+    // the old one first, on both sides. endBind clears the old partner's side when this client
+    // owns it; otherwise its write carries previousPartner and the elected client clears it
+    // (module/canvas/bind.mjs, pickUpMirror). Review, 2026-10-01.
+    const current = this.system.bind;
+    if (current?.state && (current.partnerUuid !== other.uuid)) await this.endBind({ announce: false });
+    id = id || foundry.utils.randomID();
+
     // Both sides land here when this client owns both. Otherwise the write goes out marked
     // unpaired, and the partner's owning client (the GM's, when one is connected) writes the
     // mirror as the update reaches it, so a player's click on the card still forms the pair.
     const bothSides = pair && other.isOwner;
-    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs }, { paired: bothSides || !pair });
+    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs, id }, { paired: bothSides || !pair });
     if (bothSides) {
-      await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine }, { paired: true });
+      await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine, id }, { paired: true });
     }
 
     if (announce) {
@@ -2010,11 +2024,14 @@ export class SwActor extends Actor {
     const partner = SwActor.resolveActor(bind.partnerUuid);
     const partnerMirrors = partner?.system?.bind?.partnerUuid === this.uuid;
     const bothSides = pair && !!partner?.isOwner && partnerMirrors;
-    await this.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" }, {
+    // The emptied record keeps the Bind's id as a tombstone: the pair-keeper reads it to tell a
+    // Bind this side ended from a mirror that was never written (module/canvas/bind.mjs).
+    const ended = { state: "", partnerUuid: "", mine: "", theirs: "", id: bind.id ?? "" };
+    await this.#writeBind(ended, {
       paired: bothSides || !pair || !partnerMirrors,
       previousPartner: bind.partnerUuid
     });
-    if (bothSides) await partner.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" }, { paired: true });
+    if (bothSides) await partner.#writeBind({ ...ended }, { paired: true });
     if (announce) {
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: this }),
