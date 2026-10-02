@@ -29,7 +29,7 @@ import * as SW from "../config.mjs";
 import { AttackWorkflow, ACTIONS, TERMINAL_PHASES } from "./attack-workflow.mjs";
 import { renderAttackCard, updateAttackCard, mayControl } from "./attack-card.mjs";
 import { SwCheck } from "../dice/check.mjs";
-import { isLegalAnswer } from "../helpers/answers.mjs";
+import { isLegalAnswer, postureName } from "../helpers/answers.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 
 /** The socket channel system.json declares (`"socket": true`). */
@@ -882,7 +882,9 @@ export class AttackCoordinator {
     store[target.id] = {
       defense,
       reaction,
-      posture: posture ? { talentId: posture.talentId, name: actor.items.get(posture.talentId)?.name ?? "", zone: posture.zone } : null,
+      // The Posture's name as the table reads it: a root-granted one ("Set Your Feet ⓿↺") is
+      // named by the Reaction table, not by the root Talent it rides on (0.5.3).
+      posture: posture ? { talentId: posture.talentId, name: postureName(actor, posture) ?? "", zone: posture.zone } : null,
       userId: user.id
     };
     await AttackCoordinator.#savePrivate();
@@ -1292,10 +1294,37 @@ export class AttackCoordinator {
       return Number.isFinite(reading?.threshold) ? reading.threshold : null;
     }
     if (flags.kind === "defense") {
+      // A Defense card from before 0.5.3 carries no attack row; its number cannot be read again,
+      // and the default 10 would be a guess dressed as a Threshold.
+      if (!flags.attackId) return null;
       const attacker = resolveActor(flags.attackerUuid);
-      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId ?? null }) : null;
+      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId }) : null;
     }
     return null;
+  }
+
+  /**
+   * The resolution cards one die filled (0.5.3). Inside the attack flow a player attacker rolls
+   * once against every defender, so a reroll of that die is a reroll of every pairing it filled:
+   * the ids of all the attacker-rolled pairings' cards of the same Blow, this one included. A
+   * defender's die fills its own pairing alone, and a card no attack card knows (the plain path)
+   * is its own set.
+   * @param {string} messageId  A resolution card's id.
+   * @returns {string[]}
+   */
+  static siblingResolutions(messageId) {
+    if (!messageId) return [];
+    for (const doc of game.messages.contents) {
+      const pub = doc.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
+      const target = pub?.targets?.find(t => t.resolutionMessageId === messageId);
+      if (!target) continue;
+      if (target.roller !== "attacker") return [messageId];
+      const ids = pub.targets
+        .filter(t => (t.roller === "attacker") && t.resolutionMessageId)
+        .map(t => t.resolutionMessageId);
+      return ids.includes(messageId) ? ids : [messageId, ...ids];
+    }
+    return [messageId];
   }
 
   /**
@@ -1308,6 +1337,8 @@ export class AttackCoordinator {
   static async noteReroll({ oldId, result, reason = "" } = {}) {
     const newId = result?.message?.id ?? null;
     if (!oldId || !newId) return;
+    // The new card must say it replaced the old one: the hook is local, but the card is the record.
+    if (game.messages.get(newId)?.flags?.[SW.SYSTEM_ID]?.rerollOf !== oldId) return;
     for (const doc of game.messages.contents) {
       const pub = doc.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
       const index = pub?.targets?.findIndex(t => t.resolutionMessageId === oldId) ?? -1;

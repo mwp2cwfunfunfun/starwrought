@@ -90,9 +90,15 @@ export function stanceDefense(actor, key) {
  */
 export function stanceContext(actor) {
   const sys = actor.system;
-  const key = sys.stance in STANCES ? sys.stance : "evade";
+  // The Standing stance is one of the two basic Defenses (Mike, 2026-10-01: "Standing Stance
+  // should only include Evade or Guard"); a Reaction is chosen per Blow in the Combat Prompt, and
+  // the Reactions themselves are Maneuvers on the sheet once their rows are enabled. A stance
+  // stored as a Reaction by an earlier release reads as the Defense it stood on (Counter as the
+  // better basic one), so nothing breaks for a character who set one before 0.5.3.
+  const stored = (sys.stance in STANCES) ? sys.stance : "evade";
+  const key = BASIC_STANCES.includes(stored) ? stored : stanceDefense(actor, stored).defense;
 
-  const options = STANCE_ORDER.map(k => {
+  const options = BASIC_STANCES.map(k => {
     const stance = STANCES[k];
     const reaction = stance.reaction ? SW.REACTIONS[stance.reaction] : null;
     const { defense, threshold, bonus } = stanceDefense(actor, k);
@@ -144,10 +150,10 @@ export function stanceContext(actor) {
   });
 
   const current = options.find(o => o.active) ?? options[0];
-  const start = STANCE_ORDER.indexOf(current.key);
+  const start = BASIC_STANCES.indexOf(current.key);
   let next = null;
-  for (let i = 1; i < STANCE_ORDER.length; i++) {
-    const candidate = options[(start + i) % STANCE_ORDER.length];
+  for (let i = 1; i < BASIC_STANCES.length; i++) {
+    const candidate = options[(start + i) % BASIC_STANCES.length];
     if (!candidate.disabled) { next = candidate; break; }
   }
   return { key, current, next, options };

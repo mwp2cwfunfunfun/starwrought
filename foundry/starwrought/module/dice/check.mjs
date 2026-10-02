@@ -9,6 +9,7 @@
 
 import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
+import { postureName as postureNameOf } from "../helpers/answers.mjs";
 
 const { DialogV2 } = foundry.applications.api;
 const { renderTemplate } = foundry.applications.handlebars;
@@ -294,7 +295,7 @@ export class SwCheck {
     // the Posture's own name.
     // Plain (0.5.1, T16): the card appends the ⓿↺ itself, so the data's glyph would print twice.
     const postureName = posture
-      ? SW.plainName(posture.name ?? defender?.items?.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? SW.plainName(postureNameOf(defender, posture) ?? game.i18n.localize(SW.REACTIONS.posture.label))
       : "";
     const answerText = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
     const defenseLabel = game.i18n.localize(SW.DEFENSES[defense].label);
@@ -895,7 +896,9 @@ export class SwCheck {
       slug: flags.slug ?? null,
       thrown: !!flags.thrown,
       rollMode: message.whisper?.length ? "gmroll" : "publicroll",
-      reactionCharged: true,
+      // Paid when the first die landed: never again. A first card whose Charge button was never
+      // pressed still owes the ❶, so that card's state carries over and the charge runs as usual.
+      reactionCharged: flags.reactionCharged ? true : null,
       rerollOf: message.id,
       rerollReason: reason
     });

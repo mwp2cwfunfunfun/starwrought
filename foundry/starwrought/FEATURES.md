@@ -371,7 +371,12 @@ applied to the numbers; the rest are printed on the Zone and on the Wound card.
 
 A further Wound to a useless Arm or Leg goes to the Torso. A Torso or Head already at capacity that
 takes another Wound while the creature is not Dying begins Dying again. Taking any Wound abandons a
-Prepared Maneuver. One `wounded` token status marks that a Wound exists; the counts are on the sheet.
+Prepared Maneuver. One `wounded` token status marks that a Wound exists; the counts are on the sheet,
+each Zone with a plus and a minus that a player or the GM may press (0.5.3; Mike: "player and GM
+should be able to change Wounds, and log to chat"): plus takes the Wound through the same path a
+blow does, so its card says it was marked by hand and everything a Wound does still happens; minus
+is bookkeeping with no check behind it, said in its own card, and leaves Dying or Prone from that
+Wound for the table to tidy.
 
 **Dying** begins when the Torso or the Head takes its final Wound: Dying 1, or 2 if the blow was a
 Critical Hit, unconscious either way. Damage while Dying adds 1, or 2 from a Critical Hit. Dying 5
@@ -626,22 +631,20 @@ the drag clone exists only on the dragging client; they see Foundry's own drag r
 ### Stance: the defender answers
 
 "The defender chooses one of the two Defenses that answer it, and decides whether to spend an
-action on a Reaction." Each actor, character or adversary, carries a **stance**: how the next
-physical Attack is met. There are five: **Evade** and **Guard**, the two basic Defenses, which cost
-nothing; and **Void**, **Parry** and **Counter**, the Reactions built on them, which cost ❶ from the
-six when an attack lands on you and are only yours to hold when the Talent or rank that grants them
-is there (Evade Training, Guard Training with a rigid implement in hand, Expert rank in Melee for
-Counter). Awareness
-and Endure are not stances; the handbook calls for them by name.
+action on a Reaction." Each actor, character or adversary, carries a **stance**: the basic Defense
+the next physical Attack is met with, **Evade** or **Guard** (0.5.3; Mike: "Standing Stance should
+only include Evade or Guard"). The Reactions built on them, **Void**, **Parry** and **Counter**,
+cost ❶ from the six when an attack lands on you, are only yours when the Talent or rank that
+grants them is there (Evade Training, Guard Training with a rigid implement in hand, Expert rank
+in Melee for Counter), and are chosen blow by blow in the Combat Prompt rather than held as a
+stance; as Maneuvers they appear on the sheet's Maneuvers tab once their rows are enabled in
+`data/maneuvers.xlsx`. A stance a character set to a Reaction before 0.5.3 reads as the Defense it
+stood on. Awareness and Endure are not stances; the handbook calls for them by name.
 
-- **On the sheet**, five chips in the header, each showing the Threshold an attacker would meet
-  (the Reaction's +2 included), one click to switch, and the chosen Defense marked in the grid. A
-  Reaction chip the actor has not earned is drawn disabled, so the sheet still teaches what the
-  Talent would buy. Adversaries have the same chips, all five live, since their Reactions are the
-  GM's to declare.
-- **On the Token HUD**, one button showing the current answer, cycling to the next stance this
-  actor can actually take: the fastest way to change your mind when an arrow has just been pointed
-  at you.
+- **On the sheet**, two chips in the header, each showing the Threshold an attacker would meet,
+  one click to switch, and the chosen Defense marked in the grid. Adversaries have the same chips.
+- **On the Token HUD**, one button showing the current answer, flipping to the other Defense: the
+  fastest way to change your mind when an arrow has just been pointed at you.
 - **In the attack dialog, the answer is hidden.** The attacker sees only that the defender's stance
   meets the roll and a note that it is revealed on the card: no dropdown, because the choice is not
   theirs, and no Defense or Threshold, because knowing which would be playing the character sheet
@@ -670,10 +673,15 @@ The stance is what you *have decided*; since 0.5.0 the attack flow below asks yo
 blow by blow, in a prompt that arrives with the attack. The stance is the prompt's pre-selection,
 so a present player commits with one click, and the GM can answer for an absent player with their
 standing stance in one click too, which is what kept the 0.4.0 design from prompting at all. With
-the attack flow switched off the stance is read at the die exactly as before. Postures, the
-Talent-granted ⓿↺ Reactions that Expose a Zone until the end of the round, are an answer the prompt
-offers when you own one in the Defense's Constellation; the Exposed toggle on the sheet marks a
-Posture's Zone so Recenter leaves it alone and the round's end clears it. Since 0.5.1 the chips are
+the attack flow switched off the stance is read at the die exactly as before. Postures, the ⓿↺
+answers that Expose a Zone until the end of the round, are offered by the prompt in two forms: the
+Posture each Defense's Training root grants in its own text, **Give Ground ⓿↺** with Evade Training
+and **Set Your Feet ⓿↺** with Guard Training (0.5.3; Mike: "Where can I choose my Posture, like
+Give Ground or Set Your Feet?"; they ride on the root Talent, since they are no Talent of their
+own, and the card names them as the Reaction table does), and any Posture Talent you own in the
+Defense's Constellation (Slip the Line ⓿↺, Catch the Blade ⓿↺, once enabled). The Exposed toggle on
+the sheet marks a Posture's Zone so Recenter leaves it alone and the round's end clears it. Since
+0.5.1 the chips are
 labelled **Standing stance**, which is what they are: the default the prompt pre-selects, not the
 answer itself.
 
@@ -935,7 +943,7 @@ Maneuver until it is implemented.
 
 **Adversary sheet.** Written Threshold-first, because the players roll everything. The header has
 Vigor (current, maximum and Temporary, typed directly), Spent, actions per round, Speed in feet per
-Move, the Initiative Threshold, the five stance chips, the pips in an encounter, Wounds and Dying,
+Move, the Initiative Threshold, the two stance chips, the pips in an encounter, Wounds and Dying,
 and the Bind line. The stat block has the four Defense Thresholds, **one Attack Threshold per
 attack** (there is no penalty ladder any more), the four Zones with Protection typed directly,
 material, Wound pips with Treat and adjusters, and an Exposed toggle, and a **Reactions** panel
@@ -1017,8 +1025,16 @@ disabled. When the card hid its Threshold (an adversary's, inside the attack flo
 thrown on the roller's client and read on the active GM's client over the socket, which checks
 that the die is a Roll of the first card's own formula and that the asker owns the roller, reads
 the Threshold again from actor data, and answers with the outcome; with no GM connected the player
-is told so. The attack card that carried the pairing's outcome follows the new card, with a line in
-its log. Rerolling a card that was itself rerolled rerolls the newest; a superseded card refuses.
+is told so. Inside the flow a player attacker's one die resolved against every defender, so
+rerolling any of those cards rerolls them all with the one new die, each against its own
+Threshold. The attack card that carried the pairings' outcomes follows the new cards, with a line
+in its log. Rerolling a card that was itself rerolled rerolls the newest; a superseded card refuses.
+The reroll is of the die, not of what the table did with it: damage already applied, a Zone
+Exposed, a Bind formed or a Constellation Flared from the first result all stand, and the GM
+unwinds them by hand; the new card offers its Position again. An adversary's Threshold is read
+from its sheet as it stands when the die is read again, and a Reaction the first card never
+charged is charged now. The Hero Point is spent only once the reroll has gone through, so a
+refused or stale request costs nothing.
 
 **Damage cards** show the formula broken into its parts, the Deadly die, a Zone selector (locked to
 the Torso for a Quick Strike, offering the Exposed Zones for a Deliberate or Committed Hit, open for

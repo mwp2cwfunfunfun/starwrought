@@ -24,12 +24,38 @@ Built from Player's Handbook v4.10, unchanged. Seven notes from Mike at the tabl
   the card hid its Threshold (an adversary's, inside the attack flow) the die is thrown on the
   roller's client and read on the active GM's client over the socket, which checks the die is a
   Roll of the first card's formula and that the asker owns the roller, reads the Threshold again
-  from actor data, and answers with the outcome. The attack card that carried the pairing's
-  outcome follows the new card, with a line in its log. The check card's flags gain `modifiers`,
-  `attackId`, `rerollOf` and `rerollReason`; the sixteen keys of the 0.5.0 contract are untouched.
+  from actor data, and answers with the outcome. Inside the flow a player attacker's one die
+  resolved against every defender, so rerolling any of those cards rerolls them all with the one
+  new die. The attack card that carried the pairings' outcomes follows the new cards, with a line
+  in its log. The reroll is of the die, not of what the
+  table did with it: damage applied, a Zone Exposed, a Bind formed or a Flare lit from the first
+  result stand, and the new card offers its Position again. The Hero Point is spent only once the
+  reroll has gone through. The check card's flags gain `modifiers`, `attackId`, `rerollOf` and
+  `rerollReason`; the sixteen keys of the 0.5.0 contract are untouched. Two designs of this were
+  drawn up independently and judged against the code before it shipped; the plan is in the
+  session's workflow transcript, and its risk list shaped the three sentences above.
 
 ### Changed
 
+- **The Standing stance is Evade or Guard** (Mike, 2026-10-01: "Standing Stance should only include
+  Evade or Guard. Parry and Void will be in Maneuvers, when I Enable them in the xlsx file"). The
+  header's chips and the Token HUD's button offer the two basic Defenses; a Reaction is chosen blow
+  by blow in the Combat Prompt, and the Reactions appear on the Maneuvers tab once their rows in
+  `data/maneuvers.xlsx` are enabled. A stance set to a Reaction before 0.5.3 reads as the Defense
+  it stood on, Counter as the better of the two.
+- **Wounds can be changed by hand, by a player or the GM, and every change is said in chat** (Mike,
+  2026-10-01: "player and GM should be able to change Wounds, and log to chat"). The plus and minus
+  beside each Zone's Wound pips were the GM's alone and the minus was silent. Both now show for
+  anyone who may edit the sheet: plus takes the Wound through the same path a blow does, so its
+  card says it was marked by hand and a Prepared Maneuver, a Torso bleed or Dying follow as they
+  would; minus posts a "Wound removed" card naming who pressed it and leaves Dying or Prone from
+  that Wound for the table to tidy. One actor method, `adjustWounds`, serves both sheets.
+- **The Combat Prompt offers Give Ground and Set Your Feet** (Mike, 2026-10-01: "Where can I choose
+  my Posture, like Give Ground or Set Your Feet?"). The two Postures the Defense Training roots grant
+  in their own text are no Talents of their own, so the prompt never offered them; it offers them
+  now, on the root Talent's id, once Evade Training or Guard Training is owned, with the Reaction
+  table's wording as the hint, and the cards name them as the table does. Posture Talents in the
+  Defense's Constellation (Slip the Line, Catch the Blade) are offered as before once enabled.
 - **Short arrows keep their shaft** (Mike, 2026-10-01: "short distances have non-ideal targeting
   and bind arrows, in terms of readability"). When a targeting arrow is shorter than its distance
   pill, the pill steps off the line to the upper side instead of covering the arrow it describes;

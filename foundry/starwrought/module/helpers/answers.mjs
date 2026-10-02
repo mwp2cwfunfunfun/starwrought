@@ -62,11 +62,37 @@ export function legalAnswers(actor, defense) {
 
   const slug = SW.DEFENSES[defense]?.slug ?? defense;
   const postures = [];
+  // The Posture the Defense's Training root grants in its own text (PHB v4.10, the Reaction table:
+  // Give Ground ⓿↺ with Evade Training, Set Your Feet ⓿↺ with Guard Training). It is no Item of
+  // its own, so it rides on the root Talent's id and carries the table's name and effect (0.5.3;
+  // Mike: "Where can I choose my Posture, like Give Ground or Set Your Feet?").
+  const granted = SW.ROOT_POSTURES?.[slug];
+  if (granted && actor.system?.constellations?.[slug]?.rootOwned) {
+    const root = [...(actor.items ?? [])].find(i => (i?.type === "talent") && i.system?.root && !i.system?.bloodlineRoot && (i.system?.constellation === slug));
+    if (root) postures.push({ talentId: root.id, name: granted.name, hint: granted.effect, granted: true });
+  }
   for (const item of actor.items ?? []) {
     if (isPostureFor(item, slug)) postures.push({ talentId: item.id, name: item.name });
   }
 
   return { none: true, reactions: legalReactions, postures };
+}
+
+/**
+ * A Posture's name as the table reads it: the record's own when it carries one, else the Talent's,
+ * and for a root-granted Posture (SW.ROOT_POSTURES) the Reaction table's name rather than the
+ * root's ("Give Ground ⓿↺", never "Evade Training"). Null when nothing names it.
+ * @param {Actor|null} actor
+ * @param {{talentId?: string, name?: string}|null} posture
+ * @returns {string|null}
+ */
+export function postureName(actor, posture) {
+  if (posture?.name) return posture.name;
+  const item = posture?.talentId ? actor?.items?.get?.(posture.talentId) : null;
+  if (!item) return null;
+  const sys = item.system ?? {};
+  if (sys.root && !sys.bloodlineRoot && SW.ROOT_POSTURES?.[sys.constellation]) return SW.ROOT_POSTURES[sys.constellation].name;
+  return item.name ?? null;
 }
 
 /**
@@ -112,7 +138,7 @@ export function describeAnswer({ reaction = null, posture = null } = {}, actor =
     });
   }
   if (posture) {
-    const name = bareName(posture.name ?? actor?.items?.get?.(posture.talentId)?.name ?? "");
+    const name = bareName(postureName(actor, posture) ?? "");
     const glyph = `${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}`;
     if (!posture.zone) return game.i18n.format("STARWROUGHT.Attack.answerReaction", { name, glyph });
     const zone = game.i18n.localize(SW.ZONES[posture.zone]?.label ?? posture.zone);

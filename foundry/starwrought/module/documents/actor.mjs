@@ -16,6 +16,7 @@ import { SwCheck } from "../dice/check.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
+import { postureName as postureNameOf } from "../helpers/answers.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 
 const { DialogV2 } = foundry.applications.api;
@@ -374,7 +375,7 @@ export class SwActor extends Actor {
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
     // Plain, so the ⓿↺ the modifier line and the card append is the only one shown (0.5.1, T16).
     const postureName = posture
-      ? SW.plainName(posture.name ?? this.items.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? SW.plainName(postureNameOf(this, posture) ?? game.i18n.localize(SW.REACTIONS.posture.label))
       : "";
 
     const attackerToken = givenAttacker?.document ? givenAttacker
@@ -960,7 +961,7 @@ export class SwActor extends Actor {
 
     // The answer's name: a Reaction's label, or the Posture Talent's own name.
     const postureName = posture
-      ? (posture.name ?? this.items.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? (postureNameOf(this, posture) ?? game.i18n.localize(SW.REACTIONS.posture.label))
       : "";
     const answerLabel = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
 
@@ -1208,6 +1209,44 @@ export class SwActor extends Actor {
     });
 
     return { zone, landed, total: this.woundCount, dying: this.system.dying ?? 0, dyingFrom };
+  }
+
+  /**
+   * The sheet's Wound stepper, for a player or the GM (0.5.3; Mike: "player and GM should be able
+   * to change Wounds, and log to chat"). Adding goes through `applyWound`, so everything a Wound
+   * does fires and its card says it was marked by hand; taking one off is bookkeeping with no
+   * check behind it, written silently for the audit and said in its own card. Dying, Prone and a
+   * Zone's effects are not unwound by a removal: a corrected Wound is the table's to tidy after.
+   * @param {string} zone
+   * @param {number} delta  +1 or -1 from the stepper; any integer works.
+   * @returns {Promise<object|null>}
+   */
+  async adjustWounds(zone, delta) {
+    if (!(zone in SW.ZONES)) return null;
+    delta = Math.trunc(Number(delta) || 0);
+    if (!delta) return null;
+    if (delta > 0) return this.applyWound(zone, delta, { reasons: ["STARWROUGHT.Wound.reasonHand"] });
+
+    const current = this.system.zones?.[zone]?.wounds ?? 0;
+    const next = Math.max(0, current + delta);
+    if (next === current) return null;
+    await this.update({ [`system.zones.${zone}.wounds`]: next }, { swAnnounced: true });
+    // Wounded is also a token condition: on while any Zone carries a Wound.
+    const any = Object.keys(SW.ZONES).some(z => (this.system.zones?.[z]?.wounds ?? 0) > 0);
+    await this.setCondition("wounded", any);
+
+    const zoneLabel = game.i18n.localize(SW.ZONES[zone].label);
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-wound-removed">
+        <h3><i class="fa-solid fa-bandage"></i> ${game.i18n.localize("STARWROUGHT.Wound.removedTitle")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.Wound.removedText", {
+          name: foundry.utils.escapeHTML(this.name), zone: zoneLabel, count: next,
+          capacity: this.woundCapacity(zone), by: foundry.utils.escapeHTML(game.user.name)
+        })}</p></div>`,
+      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+    });
+    return { zone, wounds: next, total: this.woundCount };
   }
 
   /**

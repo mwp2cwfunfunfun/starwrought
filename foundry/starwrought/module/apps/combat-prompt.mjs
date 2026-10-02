@@ -486,10 +486,13 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     for (const p of legal.postures) {
       const talent = actor.items?.get?.(p.talentId);
+      // A root-granted Posture (Give Ground, Set Your Feet; 0.5.3) carries the Reaction table's
+      // effect as its hint, since the root Talent's own text is the whole of Evade or Guard Training.
+      const hint = p.hint || plainText(talent?.system?.effect) || game.i18n.localize("STARWROUGHT.Reaction.postureHint");
       answers.push({
         value: `posture:${p.talentId}`,
         label: glyphed(describeAnswer({ posture: { ...p, zone: null } }, actor)),
-        hint: plainText(talent?.system?.effect) || game.i18n.localize("STARWROUGHT.Reaction.postureHint"),
+        hint,
         active: draft.answer === `posture:${p.talentId}`,
         posture: true
       });

@@ -238,18 +238,11 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.treatWound(zone);
   }
 
-  /** Adding a Wound fires its rules through `applyWound`; taking one off is plain bookkeeping. */
+  /** The Wound stepper (0.5.3): adding fires the rules through `applyWound`, removing is said in chat. */
   static async #onAdjustWound(event, target) {
     const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
     if (!(zone in SW.ZONES)) return;
-    const delta = Number(target.dataset.delta) || 0;
-    if (delta > 0) return this.document.applyWound(zone, delta);
-    const current = this.document.system.zones[zone]?.wounds ?? 0;
-    const next = Math.max(0, current + delta);
-    if (next === current) return;
-    await this.document.update({ [`system.zones.${zone}.wounds`]: next });
-    const any = Object.keys(SW.ZONES).some(z => (this.document.system.zones[z]?.wounds ?? 0) > 0);
-    return this.document.setCondition("wounded", any);
+    return this.document.adjustWounds(zone, Number(target.dataset.delta) || 0);
   }
 
   static async #onEndBind() {

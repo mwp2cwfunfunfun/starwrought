@@ -328,9 +328,15 @@ export async function onChatSocket(message, senderId) {
       game.socket.emit(SOCKET, { ...reply, to: sender, messageId: message.messageId }, { recipients: [sender] });
       return;
     }
-    case "reroll:done":
+    case "reroll:done": {
+      // The die was read; the Hero Point the asker offered is spent now, by the asker's own client.
+      if (message.heroPoint) {
+        const flags = game.messages.get(message.messageId ?? "")?.flags?.[SW.SYSTEM_ID];
+        await spendHeroPointFor(resolveActor(flags?.actorUuid));
+      }
       notifyReroll(message.outcome ?? "");
       return;
+    }
     case "reroll:refused":
       ui.notifications.warn(game.i18n.localize(REROLL_REFUSALS[message.reason] ?? "STARWROUGHT.Reroll.refused"));
       return;
@@ -375,7 +381,8 @@ async function applyDamageForUser(request, userId) {
 const REROLL_REFUSALS = {
   noCard: "STARWROUGHT.Reroll.refusedNoCard",
   already: "STARWROUGHT.Reroll.already",
-  notYours: "STARWROUGHT.Reroll.refusedNotYours"
+  notYours: "STARWROUGHT.Reroll.refusedNotYours",
+  noThreshold: "STARWROUGHT.Reroll.noThreshold"
 };
 
 /**
@@ -399,10 +406,9 @@ async function rerollFromCard(message, flags) {
   const answer = await rerollDialog(roller);
   if (!answer) return;
   let reason = answer.reason;
-  if (answer.heroPoint) {
-    if (typeof roller.spendHeroPoint === "function") await roller.spendHeroPoint();
-    if (!reason) reason = game.i18n.localize("STARWROUGHT.Reroll.heroPointReason");
-  }
+  // The Hero Point is spent once the reroll has gone through (below, or on the GM's reply), so a
+  // refused or stale request costs nothing.
+  if (answer.heroPoint && !reason) reason = game.i18n.localize("STARWROUGHT.Reroll.heroPointReason");
 
   const roll = await new Roll(original.formula).evaluate();
   // Dice So Nice, when present, shows the die as it shows any roll's.
@@ -415,16 +421,64 @@ async function rerollFromCard(message, flags) {
     modifiers: flags.modifiers ?? []
   };
 
-  const shown = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : null;
-  const threshold = shown ?? (game.user.isGM ? AttackCoordinator.thresholdForCard(flags) : null);
+  // One die, every pairing it filled: inside the attack flow a player attacker's single roll
+  // resolves against every defender, so rerolling one of those cards rerolls them all, with the
+  // one new die. The coordinator authored those cards, so the set goes to the GM's client unless
+  // this is the GM.
+  const siblings = AttackCoordinator.siblingResolutions(message.id);
   const gm = game.users.activeGM;
-  if ((threshold !== null) && (message.isAuthor || game.user.isGM || !gm)) {
-    const result = await SwCheck.rerollCard(message, { rollData, reason, threshold });
+  if (game.user.isGM) {
+    const result = await rerollSet(siblings, { rollData, reason, clicked: message.id });
+    if (!result) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noThreshold"));
+    if (answer.heroPoint) await spendHeroPointFor(roller);
+    return notifyReroll(outcomeLabel(result));
+  }
+  const shown = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : null;
+  if ((siblings.length === 1) && (shown !== null) && (message.isAuthor || !gm)) {
+    const result = await SwCheck.rerollCard(message, { rollData, reason, threshold: shown });
+    if (result && !message.isAuthor) ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.notMarked"));
+    if (result && answer.heroPoint) await spendHeroPointFor(roller);
     return notifyReroll(outcomeLabel(result));
   }
   if (!gm) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noGm"));
-  game.socket.emit(SOCKET, { type: "reroll:apply", to: gm.id, messageId: message.id, rollData, reason }, { recipients: [gm.id] });
+  game.socket.emit(SOCKET, {
+    type: "reroll:apply", to: gm.id, messageId: message.id, rollData, reason, heroPoint: !!answer.heroPoint
+  }, { recipients: [gm.id] });
   return ui.notifications.info(game.i18n.localize("STARWROUGHT.Reroll.sent"));
+}
+
+/**
+ * Reroll a set of resolution cards with one die, on a client that may read every Threshold and
+ * mark every card (the GM's). Each card's Threshold is its own where it showed one, else read
+ * again from actor data. A card already superseded is left alone. Returns the clicked card's
+ * result (else the first), or null when no card could be read.
+ */
+async function rerollSet(ids, { rollData, reason, clicked = null }) {
+  let first = null;
+  let chosen = null;
+  for (const id of ids) {
+    const msg = game.messages.get(id);
+    const flags = msg?.flags?.[SW.SYSTEM_ID];
+    if (!flags || flags.superseded || !["attack", "defense"].includes(flags.kind)) continue;
+    const threshold = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : AttackCoordinator.thresholdForCard(flags);
+    if (threshold === null) continue;
+    const result = await SwCheck.rerollCard(msg, { rollData, reason, threshold });
+    if (!result) continue;
+    first ??= result;
+    if (id === clicked) chosen = result;
+  }
+  return chosen ?? first;
+}
+
+/** Spend one Hero Point for a reroll that went through, by the actor's own method, which posts its card. */
+async function spendHeroPointFor(actor) {
+  if (!actor?.isOwner || (typeof actor.spendHeroPoint !== "function")) return;
+  if (!(Number(actor.system?.heroPoints?.value) > 0)) return;
+  try {
+    await actor.spendHeroPoint();
+  } catch (err) {
+    console.error("STARWROUGHT | the Hero Point for a reroll could not be spent", err);
+  }
 }
 
 /** The small dialog: why, for the record, and a Hero Point to spend when the roller has one. */
@@ -489,9 +543,12 @@ async function rerollForUser(request, userId) {
   if (!roller || !user || !roller.testUserPermission(user, "OWNER")) return { type: "reroll:refused", reason: "notYours" };
   const rollData = rerollData(request.rollData, chat.rolls?.[0]?.formula ?? "");
   if (!rollData) return { type: "reroll:refused", reason: "noCard" };
-  const threshold = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : AttackCoordinator.thresholdForCard(flags);
-  const result = await SwCheck.rerollCard(chat, { rollData, reason: String(request.reason ?? "").slice(0, 80), threshold });
-  return { type: "reroll:done", outcome: outcomeLabel(result) };
+  // The one die fills every pairing it filled the first time (the attack flow's multi-target Strike).
+  const result = await rerollSet(AttackCoordinator.siblingResolutions(chat.id), {
+    rollData, reason: String(request.reason ?? "").slice(0, 80), clicked: chat.id
+  });
+  if (!result) return { type: "reroll:refused", reason: "noThreshold" };
+  return { type: "reroll:done", outcome: outcomeLabel(result), heroPoint: !!request.heroPoint };
 }
 
 /** A submitted die, if it is a Roll of the expected formula; null for anything else. */

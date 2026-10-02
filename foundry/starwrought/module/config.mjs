@@ -277,6 +277,27 @@ export const REACTIONS = Object.freeze({
   posture: { label: "STARWROUGHT.Reaction.posture", cost: 0, defense: null, bonus: 0, talent: null, rigid: false }
 });
 
+/**
+ * The Postures the two Defense Training roots grant in their own text (PHB v4.10, the Reaction
+ * table: Give Ground ⓿↺ with Evade Training, Set Your Feet ⓿↺ with Guard Training; +2 Situation to
+ * the named Defense for the triggering attack, a Zone of your choice Exposed until the end of the
+ * round, win or lose). They are not Talents of their own, so the Combat Prompt offers them on the
+ * root Talent's id once the root is owned (0.5.3; Mike: "Where can I choose my Posture, like Give
+ * Ground or Set Your Feet?"). Keyed by the Defense's Constellation slug.
+ */
+export const ROOT_POSTURES = Object.freeze({
+  evade: {
+    name: "Give Ground ⓿↺",
+    label: "STARWROUGHT.Posture.giveGround",
+    effect: "+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it."
+  },
+  guard: {
+    name: "Set Your Feet ⓿↺",
+    label: "STARWROUGHT.Posture.setYourFeet",
+    effect: "+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it."
+  }
+});
+
 /** Support: +1 Situation to melee attacks per other conscious ally whose Total Reach includes the target, to this maximum. */
 export const SUPPORT_MAX = 2;
 /** Evading a Graze gives this much ground, directly away from the attacker. */

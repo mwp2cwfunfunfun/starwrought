@@ -950,22 +950,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
-   * The GM's bookkeeping on a Zone's Wounds. Adding one goes through `applyWound` so everything a
-   * Wound does (abandoning a Prepared Maneuver, Torso bleed, Dying on a final Torso or Head Wound)
-   * fires; taking one off is a correction with no rules attached, so it is a plain update.
+   * The Wound stepper, for a player or the GM (0.5.3). Adding one goes through `applyWound` so
+   * everything a Wound does fires; taking one off is bookkeeping, said in chat. `adjustWounds`.
    */
   static async #onAdjustWound(event, target) {
     const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
     if (!(zone in SW.ZONES)) return;
-    const delta = Number(target.dataset.delta) || 0;
-    if (delta > 0) return this.document.applyWound(zone, delta);
-    const current = this.document.system.zones[zone]?.wounds ?? 0;
-    const next = Math.max(0, current + delta);
-    if (next === current) return;
-    await this.document.update({ [`system.zones.${zone}.wounds`]: next });
-    // Wounded is also a token condition: on while any Zone carries a Wound.
-    const any = Object.keys(SW.ZONES).some(z => (this.document.system.zones[z]?.wounds ?? 0) > 0);
-    return this.document.setCondition("wounded", any);
+    return this.document.adjustWounds(zone, Number(target.dataset.delta) || 0);
   }
 
   static async #onEndBind() {
