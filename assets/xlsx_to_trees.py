@@ -11,7 +11,12 @@
 #
 # An ACTIONS workbook (data/actions.xlsx, Mike, 2026-09-26) is recognised by its _Tree Index
 # carrying Name | Type | Meta note instead of Tree | Category. Its other sheets hold one action per
-# row and write assets/actions.json; see parse_actions_workbook below for the columns.
+# row and write assets/actions.json; see parse_actions_workbook below for the columns. Any number of
+# them are read (data/maneuvers.xlsx joined it in 0.5.1, T17: the Encounter Mode Maneuvers, scaffolded
+# once by make_maneuvers_xlsx.py and Mike's since); the same action in two of them is an error, an
+# About sheet is skipped, and a workbook the last actions.json names that is missing from data/ has
+# its actions carried over as found, so a fresh clone (which has maneuvers.xlsx but not Mike's
+# untracked actions.xlsx) still retires every roster row the absent workbook retired.
 #
 # An EQUIPMENT workbook (data/equipment.xlsx, Mike, 2026-10-01, ruling 64) has no _Tree Index and
 # is recognised by its Weapons, Armor and Shields sheets, one piece per row. It writes
@@ -246,7 +251,8 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
         if g("name"): typed[action_key(g("name"))] = {"type": g("type"), "meta": g("meta")}
     seen, no_cost = {}, []
     for ws in wb.worksheets:
-        if ws.title == "_Tree Index": continue
+        # An About sheet is notes for the author, as in the equipment workbook, not a sheet of actions.
+        if ws.title in ("_Tree Index", "About"): continue
         cm = header_map(ws, {"name": "action", "cost": "cost", "traits": "trait", "type": "type",
                              "prereq": "prereq", "req": "requirement", "trigger": "trigger",
                              "desc": "desc", "effect": "effect", "automation": "automation",
@@ -291,18 +297,62 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
                 warnings.append(f"{fname} / {ws.title} / {name}: not in _Tree Index, typed by "
                                 f"{'its Type cell' if pv('type') else 'its sheet name'}")
             traits = [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", pv("traits"))) if t]
+            # `workbook` says which file wrote the row, so a later run can tell whose actions are
+            # missing when that file is (carry_over_absent below), and so the Foundry build can
+            # label the Item's source. `sheet` keeps the group the row sits in.
             actions.append({"name": name, "type": atype, **cost,
                             "enabled": enabled_flag(cellv("enabled"), "enabled" in cm),
                             "traits": traits,
                             "prerequisites": pv("prereq"), "requirements": pv("req"),
                             "trigger": pv("trigger"), "description": cell_html(cellv("desc")) if pv("desc") else "",
                             "effect": effect, "automation": pv("automation"),
-                            "meta": (meta or {}).get("meta", ""), "costDefaulted": defaulted, "sheet": ws.title})
+                            "meta": (meta or {}).get("meta", ""), "costDefaulted": defaulted,
+                            "sheet": ws.title, "workbook": fname})
     for k in typed:
         if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
     if no_cost:
         warnings.append(f"{fname}: no Cost column on {', '.join(no_cost)}; an action with no glyph in its "
                         f"name costs one action ❶ until the column exists")
+
+def carry_over_absent(actions, action_files, present, defined, warnings):
+    """The actions of a workbook the last actions.json names that is not in data/ this run, carried
+    over as found. data/actions.xlsx is Mike's untracked working file, so a fresh clone has
+    maneuvers.xlsx and not it; regenerating from the workbooks present alone would drop Aid and let
+    the roster's Aid ship again, which no edit asked for. This is the per-workbook form of the
+    "left as found" rule the whole file follows when no actions workbook is present at all. A name
+    a present workbook now defines is that workbook's: the carried copy is dropped, and the run says
+    the two will collide when the absent workbook returns. Returns the carried actions."""
+    if not os.path.exists(AOUT): return []
+    try:
+        old = json.load(open(AOUT, encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        warnings.append(f"{AOUT} could not be read ({e}); nothing carried over from it"); return []
+    sources = old.get("source", [])
+    # A file written before actions carried `workbook` can still attribute them when it had one source.
+    sole = sources[0] if len(sources) == 1 else None
+    carried, dropped, unattributed = [], [], 0
+    for a in old.get("actions", []):
+        src = a.get("workbook") or sole
+        if not src:
+            unattributed += 1; continue
+        if src in action_files or src in present: continue
+        if a["name"].lower() in defined:
+            dropped.append((a["name"], src, defined[a["name"].lower()])); continue
+        a["workbook"] = src
+        carried.append(a)
+    if unattributed:
+        warnings.append(f"{os.path.basename(AOUT)} names {len(sources)} sources but {unattributed} of its actions do not say "
+                        f"which wrote them; they are not carried over")
+    for name, src, now in dropped:
+        warnings.append(f"'{name}' was {src}'s and is now defined in {now}, which wins; when {src} is back in data/ "
+                        f"the two will collide and the run will stop")
+    for src in sorted({a["workbook"] for a in carried}):
+        names = [a["name"] for a in carried if a["workbook"] == src]
+        warnings.append(f"{src} is not in data/; the {len(names)} action(s) it last wrote to {os.path.basename(AOUT)} are "
+                        f"carried over as found ({', '.join(names)}) and regenerate only when it is back"
+                        + (". data/actions.xlsx is Mike's untracked working file, so a fresh clone never has it"
+                           if src == "actions.xlsx" else ""))
+    return carried
 
 # ---- Equipment (Mike, 2026-10-01; ruling 64) -------------------------------------------------
 # data/equipment.xlsx is authoritative for weapons, armor and shields. It has no _Tree Index, so it
@@ -695,13 +745,17 @@ def main():
         for s in (bg.get("skills", []) if bg["enabled"] else []):
             if s in out and not out[s]["enabled"]:
                 warnings.append(f"Backgrounds / {bg['name']}: enabled, but its Skill '{s}' is a constellation whose root is not")
+    # The actions of an absent workbook, carried over as found (carry_over_absent), counted with the
+    # rest because they go into the file Foundry builds from.
+    carried = carry_over_absent(actions, action_files, {os.path.basename(f) for f in files}, defined_actions, warnings) if action_files else []
+    all_actions = actions + carried
     # What Foundry will ship (ruling 61), on one line beside the per-file counts. Every row is
     # still written; this counts the rows flagged Yes.
     print("enabled for Foundry: "
           f"{sum(1 for t in out.values() if t['enabled'])} of {len(out)} constellations, "
           f"{sum(1 for t in out.values() for n in t['nodes'] if n['enabled'])} of {sum(len(t['nodes']) for t in out.values())} talents, "
           f"{sum(1 for b in bgs if b['enabled'])} of {len(bgs)} backgrounds, "
-          f"{sum(1 for a in actions if a['enabled'])} of {len(actions)} actions, "
+          f"{sum(1 for a in all_actions if a['enabled'])} of {len(all_actions)} actions, "
           + ", ".join(f"{sum(1 for e in equipment[k] if e['enabled'])} of {len(equipment[k])} {k}" for k in equipment))
     for w in warnings: print("WARNING:", w)
     if errors:
@@ -718,14 +772,19 @@ def main():
         json.dump(langs, open(os.path.join(HERE, "languages.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
         print(f"wrote languages.json: {len(langs)} languages")
     # Written only when an actions workbook was read, so a checkout without one keeps the file it has.
+    # `source` names every workbook with actions in the file, the ones read this run first and the
+    # absent ones whose actions were carried over after them.
     if action_files:
-        json.dump({"source": action_files, "actions": actions}, open(AOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-        defaulted = [a["name"] for a in actions if a["costDefaulted"]]
-        print(f"wrote {AOUT}: {len(actions)} actions from {', '.join(action_files)}"
+        sources = action_files + sorted({a["workbook"] for a in carried} - set(action_files))
+        json.dump({"source": sources, "actions": all_actions}, open(AOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        defaulted = [a["name"] for a in all_actions if a.get("costDefaulted")]
+        print(f"wrote {AOUT}: {len(all_actions)} actions from {', '.join(sources)}"
+              + (f" ({len(carried)} carried over from a workbook not in data/)" if carried else "")
               + (f" ({len(defaulted)} with no Cost given, costed at one action: {', '.join(defaulted)})" if defaulted else ""))
     elif os.path.exists(AOUT):
         # Printed directly: the warnings list was flushed above, so appending to it here would say nothing.
-        print(f"WARNING: no actions workbook in data/; {AOUT} left as found. It is generated from data/actions.xlsx, not hand-kept.")
+        print(f"WARNING: no actions workbook in data/; {AOUT} left as found. It is generated from the actions "
+              f"workbooks (data/actions.xlsx, data/maneuvers.xlsx), not hand-kept.")
     # Written only when an equipment workbook was read, for the same reason (ruling 64).
     if equipment_files:
         json.dump({"source": equipment_files, **equipment}, open(EOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
