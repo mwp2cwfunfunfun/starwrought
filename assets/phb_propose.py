@@ -19,11 +19,17 @@ Edits, each confined to one paragraph (a table cell's paragraph counts):
                 equal the paragraph's whole text (a one-word table cell).
   rewrite       (anchor, new): every run of the paragraph struck through and `new` inserted in the
                 first run's formatting, for a line Word has split into many runs.
+  cell          (row, col, old, new): replace inside one table cell: the row is named by the exact
+                text of one of its cells ("=Berserker") or of several that must all sit in it
+                (["Berserker", "Rage"]); the cell is the `col`th of that row. For a cell that says
+                "3" like a dozen others. `old` None rewrites the cell.
   append        (anchor, addition): an inserted run at the end of the paragraph.
   insert_after  (anchor, text): a new paragraph after the anchor's, in the anchor's style and
                 numbering, its paragraph mark and text both marked inserted.
 
   run:  python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance
+        python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance --proposal vigor
+  Several proposals stack into one file, applied in the order given.
 
 The proposals are the PROPOSALS table below, one entry per proposal this script has produced, so
 a reviewer can read what is being proposed without opening Word.
@@ -134,7 +140,74 @@ PROPOSALS = {
     },
 }
 
+PROPOSALS["vigor"] = {
+    # Vigor, A plus B (Mike, 2026-10-02: "Go with A plus B"). The body sets the slope: your
+    # Ancestry's Vigor every level. Your first Calling pays an Opening Vigor once, at creation
+    # (Berserker 8, Hunter, Bravo and Weaponmaster 5, Ambusher 3), so a level-one dip into the
+    # toughest Calling buys a few points once and nothing after. Conditioning is the only other
+    # slope: 1 more Vigor a level at Expert rank in Endure, 2 at Master, 3 at Legendary, read live
+    # from the rank you hold. Nothing to record from level to level, nothing to retcon.
+    "from": "4.10",
+    "replace": [
+        (
+            "At 1st level: 10 + your Ancestry",
+            "10 + your Ancestry's Vigor + your Calling's Vigor.",
+            "10 + your Ancestry's Vigor + your first Calling's Opening Vigor. The Opening Vigor is paid once,"
+            " here: it is the Calling's share of what you start with, not of what you grow."
+        ),
+        (
+            "Each Calling grants Training in 1 Skill",
+            "adds a certain amount of Vigor per level,",
+            "adds its Opening Vigor to what you start with (once, and only from your first Calling),"
+        ),
+        (
+            "Vigor: Your Vigor at 1st level is",
+            "10 + Ancestry Vigor + Calling Vigor",
+            "10 + Ancestry Vigor + your first Calling's Opening Vigor"
+        ),
+        (
+            "+Vigor equal to Ancestry Vigor + Calling Vigor",
+            "+Vigor equal to Ancestry Vigor + Calling Vigor",
+            "+Vigor equal to Ancestry Vigor, plus 1 at Expert rank in Endure, 2 at Master, 3 at Legendary"
+        ),
+    ],
+    "rewrite": [
+        (
+            "At every level thereafter: add your Ancestry",
+            "At every level thereafter: add your Ancestry's Vigor again, plus your conditioning: 1 at Expert"
+            " rank in Endure, 2 at Master, 3 at Legendary. Your Calling adds nothing more. Its Opening Vigor"
+            " was paid at 1st level, and no Calling you open later adds any."
+        ),
+    ],
+    "cell": [
+        # The Callings table: the column is what you start with, not what you grow. Each row is
+        # found by the cell that names it, and the Vigor cell is two to the right.
+        (["Free Training", "Calling"], 2, None, "Opening Vigor"),
+        (["Berserker", "Rage"], 2, "4", "8"),
+        (["Ambusher", "Sneak Attack"], 2, "2", "3"),
+        (["Hunter", "Mark Prey"], 2, "3", "5"),
+        (["Bravo", "Panache"], 2, "3", "5"),
+        (["Weaponmaster", "Drilled"], 2, "3", "5"),
+    ],
+    "append": [
+        (
+            "You are Trained in Endure: add this Constellation",
+            " Your Vigor grows with your conditioning as well: at Expert rank in Endure you gain 1 more Vigor"
+            " at every level, 2 at Master, and 3 at Legendary."
+        ),
+    ],
+    "insert_after": [
+        (
+            "At every level thereafter: add your Ancestry's Vigor again",
+            "A Human Berserker therefore starts with 26 Vigor (10 + 8 + 8) and gains 8 a level, 9 a level once"
+            " Expert in Endure; a Human Ambusher starts with 21 and grows the same way."
+        ),
+    ],
+}
+
 PARA_RE = re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
+ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
+CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)
 RUN_RE = re.compile(r"<w:r\b[^>]*>.*?</w:r>", re.S)
 RPR_RE = re.compile(r"<w:rPr\b.*?</w:rPr>", re.S)
 PPR_RE = re.compile(r"<w:pPr\b.*?</w:pPr>", re.S)
@@ -203,7 +276,13 @@ def run_of(rpr, text, deleted=False):
 def replace_tracked(xml, anchor, old, new, rev):
     """Strike `old` through and insert `new` after it, inside the one run that holds it."""
     match = one_paragraph(xml, anchor)
-    paragraph = match.group(0)
+    return replace_at(xml, match.start(), match.end(), old, new, rev, anchor)
+
+
+def replace_at(xml, start, end, old, new, rev, label=""):
+    """replace_tracked's work on the paragraph that spans xml[start:end]."""
+    paragraph = xml[start:end]
+    anchor = label or visible(paragraph)[:40]
     if visible(paragraph).count(old) != 1:
         raise SystemExit("%r appears %d times in the paragraph for %r, wanted 1"
                          % (old[:50], visible(paragraph).count(old), anchor[:40]))
@@ -235,9 +314,54 @@ def replace_tracked(xml, anchor, old, new, rev):
         if post:
             pieces.append(run_of(rpr, post))
         edited = paragraph[: rm.start()] + "".join(pieces) + paragraph[rm.end():]
-        return xml[: match.start()] + edited + xml[match.end():]
+        return xml[:start] + edited + xml[end:]
     raise SystemExit("%r is split across runs in the paragraph for %r; shorten it to one run's worth"
                      % (old[:50], anchor[:40]))
+
+
+def cell_replace_tracked(xml, row_anchor, col, old, new, rev):
+    """
+    replace_tracked on the first paragraph of one table cell: the row is the one holding the
+    paragraph `row_anchor` names (usually "=Label", the row's own first cell, matched exactly),
+    and the cell is the `col`th of that row. For a cell that says "3", which no anchor could tell
+    from the other cells saying "3". Tables are never numbered, so a table nested in a text box
+    or a cell elsewhere in the book cannot shift the count.
+    """
+    # A row is named by one of its cells ("=Label"), or by several exact cell texts that must all
+    # sit in it (["Berserker", "Rage"]) when the first alone is a cell somewhere else too.
+    names = list(row_anchor) if isinstance(row_anchor, (list, tuple)) else [row_anchor]
+    first = names[0] if names[0].startswith("=") else "=" + names[0]
+    candidates = []
+    for pm in PARA_RE.finditer(xml):
+        if visible(pm.group(0)).strip() != first[1:]:
+            continue
+        starts = [m.start() for m in ROW_START_RE.finditer(xml, 0, pm.start())]
+        row_end = xml.find("</w:tr>", pm.end())
+        if not starts or (row_end < 0):
+            continue
+        row_start = starts[-1]
+        row = xml[row_start: row_end + len("</w:tr>")]
+        cell_texts = [visible(c.group(0)).strip() for c in CELL_RE.finditer(row)]
+        if all(n.lstrip("=") in cell_texts for n in names):
+            candidates.append((row_start, row))
+    if len(candidates) != 1:
+        raise SystemExit("row %r matched %d table rows, wanted exactly 1" % (names, len(candidates)))
+    row_start, row = candidates[0]
+    if "<w:tbl>" in row:
+        raise SystemExit("the row holding %r nests a table; edit that cell by hand" % names)
+    cells = list(CELL_RE.finditer(row))
+    if col >= len(cells):
+        raise SystemExit("the row holding %r has %d cells, no cell %d" % (names, len(cells), col))
+    cm = PARA_RE.search(cells[col].group(0))
+    if not cm:
+        raise SystemExit("cell %d of the row holding %r has no paragraph" % (col, names))
+    start = row_start + cells[col].start() + cm.start()
+    end = start + len(cm.group(0))
+    label = "%s, cell %d" % ("/".join(n.lstrip("=") for n in names), col)
+    # `old` None: the whole cell is rewritten, for a header Word has split into runs.
+    if old is None:
+        return rewrite_at(xml, start, end, new, rev, label)
+    return replace_at(xml, start, end, old, new, rev, label)
 
 
 def rewrite_tracked(xml, anchor, new, rev):
@@ -246,7 +370,13 @@ def rewrite_tracked(xml, anchor, new, rev):
     a line Word has split into many runs, where a one-run replace cannot land.
     """
     match = one_paragraph(xml, anchor)
-    paragraph = match.group(0)
+    return rewrite_at(xml, match.start(), match.end(), new, rev, anchor)
+
+
+def rewrite_at(xml, start, end, new, rev, label=""):
+    """rewrite_tracked's work on the paragraph that spans xml[start:end]."""
+    paragraph = xml[start:end]
+    anchor = label or visible(paragraph)[:40]
     runs = list(RUN_RE.finditer(paragraph))
     if not runs:
         raise SystemExit("no runs in the paragraph for anchor %r" % anchor[:60])
@@ -263,7 +393,7 @@ def rewrite_tracked(xml, anchor, new, rev):
         struck = rev.dele(run_of(rpr, text, deleted=True)) if text else ""
         edited = edited[: rm.start()] + struck + edited[rm.end():]
     edited = edited[: edited.rfind("</w:p>")] + rev.ins(run_of(first_rpr, new)) + "</w:p>"
-    return xml[: match.start()] + edited + xml[match.end():]
+    return xml[:start] + edited + xml[end:]
 
 
 def append_tracked(xml, anchor, addition, rev):
@@ -298,23 +428,26 @@ def insert_after_tracked(xml, anchor, text, rev):
 
 def main():
     argv = sys.argv[1:]
-    name = None
-    if "--proposal" in argv:
+    # Several proposals may stack into one file (--proposal armor-balance --proposal vigor), applied
+    # in the order given, so Mike reviews one document.
+    names = []
+    while "--proposal" in argv:
         i = argv.index("--proposal")
         if i + 1 >= len(argv):
             raise SystemExit(__doc__ + "\n--proposal needs a name")
-        name = argv[i + 1]
+        names.extend(n for n in argv[i + 1].split(",") if n)
         del argv[i: i + 2]
-    for a in argv:
+    for a in list(argv):
         if a.startswith("--proposal="):
-            name = a.split("=", 1)[1]
+            names.extend(n for n in a.split("=", 1)[1].split(",") if n)
+            argv.remove(a)
     force = "--force" in argv
     args = [a for a in argv if not a.startswith("--")]
     src = args[0] if len(args) > 0 else None
     dest = args[1] if len(args) > 1 else None
-    if not src or not dest or not name or name not in PROPOSALS:
+    unknown = [n for n in names if n not in PROPOSALS]
+    if not src or not dest or not names or unknown:
         raise SystemExit(__doc__ + "\nknown proposals: " + ", ".join(sorted(PROPOSALS)))
-    proposal = PROPOSALS[name]
 
     if os.path.abspath(src) == os.path.abspath(dest):
         raise SystemExit("source and destination are the same file; a proposal is a new file")
@@ -330,23 +463,29 @@ def main():
         raise SystemExit("no word/document.xml in %s" % src)
     before = len(xml)
 
-    edition_line = "PLAYTEST EDITION v%s" % proposal["from"]
-    if not any(edition_line in visible(m.group(0)) for m in PARA_RE.finditer(xml)):
-        raise SystemExit("this is not a v%s handbook: no %r line" % (proposal["from"], edition_line))
-
     rev = Revisions()
-    for anchor, old, new in proposal["replace"]:
-        xml = replace_tracked(xml, anchor, old, new, rev)
-        print("  replaced in:    %s..." % anchor.strip()[:56])
-    for anchor, new in proposal.get("rewrite", []):
-        xml = rewrite_tracked(xml, anchor, new, rev)
-        print("  rewrote:        %s..." % anchor.strip()[:56])
-    for anchor, addition in proposal["append"]:
-        xml = append_tracked(xml, anchor, addition, rev)
-        print("  appended to:    %s..." % anchor.strip()[:56])
-    for anchor, text in proposal["insert_after"]:
-        xml = insert_after_tracked(xml, anchor, text, rev)
-        print("  inserted after: %s..." % anchor.strip()[:56])
+    for name in names:
+        proposal = PROPOSALS[name]
+        edition_line = "PLAYTEST EDITION v%s" % proposal["from"]
+        if not any(edition_line in visible(m.group(0)) for m in PARA_RE.finditer(xml)):
+            raise SystemExit("this is not a v%s handbook: no %r line" % (proposal["from"], edition_line))
+        print("proposal %s:" % name)
+        for anchor, old, new in proposal.get("replace", []):
+            xml = replace_tracked(xml, anchor, old, new, rev)
+            print("  replaced in:    %s..." % anchor.strip()[:56])
+        for anchor, new in proposal.get("rewrite", []):
+            xml = rewrite_tracked(xml, anchor, new, rev)
+            print("  rewrote:        %s..." % anchor.strip()[:56])
+        for row_anchor, col, old, new in proposal.get("cell", []):
+            xml = cell_replace_tracked(xml, row_anchor, col, old, new, rev)
+            shown = "/".join(row_anchor) if isinstance(row_anchor, (list, tuple)) else row_anchor
+            print("  cell:           row %s, cell %d: %r -> %r" % (shown, col, old, new))
+        for anchor, addition in proposal.get("append", []):
+            xml = append_tracked(xml, anchor, addition, rev)
+            print("  appended to:    %s..." % anchor.strip()[:56])
+        for anchor, text in proposal.get("insert_after", []):
+            xml = insert_after_tracked(xml, anchor, text, rev)
+            print("  inserted after: %s..." % anchor.strip()[:56])
     print("  %d revision marks; document.xml %d -> %d bytes" % (rev.count, before, len(xml)))
 
     tmp = dest + ".tmp"
