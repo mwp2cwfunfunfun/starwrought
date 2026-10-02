@@ -77,6 +77,25 @@ EDITIONS = {
         "append": [],
         "rename": {},
     },
+    # v4.11 -> v4.12 (Mike, 2026-10-02): Mike accepted the wind-exemption proposal into his working
+    # copy of v4.11, rewrote the Wind bullet in his own words, trimmed the Fatigued row and Rage,
+    # and saved with no tracked changes left. His Wind sentence came out with the comparison the
+    # wrong way round ("If 10 + your Load Strain is less than your Endure Threshold, then ... you
+    # must roll"), which would make the conditioned fighter roll and excuse the unconditioned one.
+    # The one clause is turned round here, to the reading the accepted proposal carried (v4.12
+    # sync report, ruling 74); everything else is written out as he saved it.
+    "4.12": {
+        "from": "4.11",
+        "replace": [
+            (
+                "Wind. If 10 + your Load Strain is less than your Endure Threshold",
+                "If 10 + your Load Strain is less than your Endure Threshold",
+                "If your Endure Threshold is less than 10 + your Load Strain"
+            ),
+        ],
+        "append": [],
+        "rename": {},
+    },
     "3.4": {
         "from": "3.3",
         "replace": [

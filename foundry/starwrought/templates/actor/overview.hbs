@@ -171,8 +171,11 @@
         <span>{{localize "STARWROUGHT.Field.space"}}</span>
         <strong>{{system.space}} × {{system.space}} ft</strong>
       </div>
+      {{!-- Wind (PHB v4.12, ruling 74): the tooltip carries the Wind Threshold, the Endure Threshold
+            and whether this fighter is exempt, for the GM and the player alike (windTip in
+            actor-sheet.mjs), rendered as HTML by Foundry's tooltip. --}}
       <div class="sw-field sw-readonly {{#if system.loadStrain}}sw-alert{{/if}}"
-           data-tooltip="STARWROUGHT.Field.loadStrainHint">
+           data-tooltip="{{loadStrainTip}}" data-tooltip-class="sw-tooltip-rich">
         <span>{{localize "STARWROUGHT.Field.loadStrain"}}</span>
         <strong>{{system.loadStrain}}</strong>
       </div>

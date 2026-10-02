@@ -7,6 +7,90 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.6.1 (2026-10-02): Player's Handbook v4.12
+
+Built from Player's Handbook v4.12. Mike accepted the wind-exemption proposal from
+`assets/phb_propose.py` into his working copy, made edits of his own, and saved; the numbered
+edition was written from that file with `assets/phb_edit.py`, correcting one clause that had been
+saved inverted (see Notes). The book moved in three places: a fighter whose Endure Threshold
+already meets the Wind Threshold never rolls for Wind; the Fatigued row of the Conditions table is
+the one definition of the condition and no longer ties its end to the fight being over; and Rage's
+aftermath is written in the Wind condition's terms. Mike also enabled Endure Training in
+`data/defenses.xlsx`, so the Endure Constellation ships. A point release of the rules, so a patch
+bump, and no world migration. The rulings are 74 to 78 in `v4.12-sync-report.md`, continuing the
+v4.11 report's numbering.
+
+### Changed
+
+- **No Wind check for a fighter whose Endure Threshold meets 10 + Load Strain** (ruling 74). The
+  book: "Wind. If your Endure Threshold is less than 10 + your Load Strain, then at the end of the
+  third round of an encounter and every round after, you must roll Endure against 10 + Load Strain.
+  On a failure your Fatigued rises by 1." The data model derives `wind` (`threshold` = 10 + Load
+  Strain, `endureThreshold`, and `exempt` when the Endure Threshold is at least the Wind Threshold)
+  once Load Strain and the Defenses are both known; the round-end code posts no Wind card for an
+  exempt fighter and otherwise behaves as 0.6.0 did: from the end of the third round, every round,
+  a failure raising Fatigued by 1 to the ceiling of 3, and a card already posted still rolls. The
+  sheet's Load Strain field carries a tooltip for every viewer, GM or player, giving the Wind
+  Threshold and saying whether the character is exempt, with the numbers. The old "Load Strain 1
+  or more" clause is gone from the book, and the system keeps it as a gate: an unpenalised fighter
+  at Strain 0 is exempt anyway (Wind Threshold 10, Endure Threshold 10 or more), but Frightened N
+  can pull an Endure Threshold under 10, and nothing is winding a fighter who carries no Load, so
+  no Load Strain means no check (the sync report asks for the clause). The Endure Threshold is the one the Defense
+  grid shows, 10 + Might bonus + Endure Proficiency with whatever the Defense path folds in
+  (Frightened reaches it; Fatigued does not), so the exemption is read live and a Frightened
+  fighter can lose it for a round.
+- **The Fatigued row** (ruling 75). The book: "−N Condition (maximum of 3) penalty to Evade, Guard,
+  and Attack rolls; can't use Exploration Mode Activities. Ends after ten minutes of rest." The
+  roster's `conditions` row, the system's Fatigued hint and the Wind card texts carry the new
+  wording; nothing says "once the fight is over" any more. The condition's mechanics are unchanged
+  from 0.6.0 (Fatigued N, −N Condition to Evade, Guard and attack rolls, raised one step at a time
+  by a failed Wind check, to 3), and the Combat's deletion still clears it (see Notes).
+- **Rage's aftermath, in the data** (ruling 76). The Rage Talent's Effect on the Berserker sheet of
+  `data/callings.xlsx` takes the book's two sentences verbatim: "Afterward, increase your Fatigued
+  by 1 until you spend three actions to catch your breath." and "You may end your Rage as a free
+  action, increasing your Fatigued by 1 as though it had run its course." Deaf to Pain is
+  unchanged. Rage is not automated, so no code moved; the Constellation Compendium and the web app
+  pick the text up from `trees.json`, and the v4.11 report's ruling 73 is closed.
+- **The Endure Constellation ships** (ruling 77). Mike set Endure Training's `Enabled?` to Yes on
+  the Endure sheet of `data/defenses.xlsx`; the other four Endure Talents stay blank. So the
+  Constellation ships with its Root alone, Endure joins Evade and Guard as a Defense the wizard
+  can Train (Awareness still waits on its Root), Endure relief and the Endure Bonus to Vigor are
+  reachable in play, and the enabled counts are 12 of 31 Constellations and 38 of 177 Talents.
+- **The siblings moved with the book.** The web app's sheet says "no Wind check (Endure Threshold N
+  meets M)" when the character is exempt and "Wind from round 3: Endure vs M" when not, its wiki
+  states the v4.12 rule, and its roster Fatigued row is the book's; the printed sheet's Defense
+  ladder line notes the exemption in the words that fit. `FEATURES.md`, the READMEs and `CLAUDE.md`
+  name v4.12 and 0.6.1.
+
+### Notes
+
+- **The edition corrects an inverted clause** (ruling 74). Mike's saved sentence read "If 10 +
+  your Load Strain is less than your Endure Threshold, then ... you must roll", which would make the
+  fit fighter roll and spare the winded one. The accepted proposal carried the intended reading, so
+  the `phb_edit.py` entry that writes v4.12 turns the comparison round, and the correction is
+  flagged to Mike in the sync report.
+- **"Ends after ten minutes of rest" is still approximated by the end of the Combat** (ruling 75).
+  Ruling 70 cleared Fatigued when the Combat document is deleted as the nearest thing to "ten
+  minutes of rest once the fight is over"; the book no longer says "once the fight is over", so the
+  clear is now an approximation of the ten minutes rather than the rule's letter. The report asks
+  whether a clear from the rest card should replace it or join it.
+- **What Mike trimmed** (ruling 78). Sight and hearing and Speed at the margin each lost their last
+  sentence; the first sentence of each still carries the rule, so nothing downstream changes beyond
+  no longer quoting them. The Fatigued definition that stood in the Wind bullet is gone (the
+  Conditions table's job), and so are that bullet's two flavour sentences. The plate example is now
+  two paragraphs, and the Trained-versus-Expert Wind sentence the proposal added was not kept.
+- **Sleeping in armor without Comfort still sets nothing.** Unchanged from 0.6.0; the rule is the
+  table's.
+- The version stamps read 0.6.1 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: nothing stored changes
+  shape.
+- The handbook's v4.10 loose ends stand in v4.12: Key Terms still says ÷ 3, four Trained Defenses
+  and Varisians, Drilled still says "Weapons Proficiency Bonus", Table 9's Quick row still says
+  "Nothing", Melee Training still grants Counter, and Armored Fighting's heading and table still
+  disagree. `CLAUDE.md` carries the list.
+
+---
+
 ## 0.6.0 (2026-10-02): Player's Handbook v4.11
 
 Built from Player's Handbook v4.11. Mike accepted two proposals from `assets/phb_propose.py` (the

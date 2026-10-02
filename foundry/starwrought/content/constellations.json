@@ -114,7 +114,7 @@
     "attribute": "might",
     "parent": "",
     "img": "systems/starwrought/assets/constellations/endure.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "evade",

@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.6.0";
+export const SYSTEM_VERSION = "0.6.1";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -679,9 +679,14 @@ export const LEAP_FEET = 10;
 export const CRAWL_FEET = 3;
 /** Exploration Mode: feet per minute, miles per hour, miles per day, as multiples of Speed. */
 export const TRAVEL = Object.freeze({ feetPerMinute: 40, milesPerHour: 0.5, milesPerDay: 4 });
-/** At the end of this round and every round after, Load Strain 1+ rolls Endure vs 10 + Load Strain or grows Fatigued (PHB v4.11, Wind). */
+/**
+ * At the end of this round and every round after, a fighter carrying Load Strain rolls Endure
+ * against 10 + Load Strain or grows Fatigued (PHB v4.12, Wind), unless their Endure Threshold
+ * already meets that number: then there is no Wind check at all (ruling 74). The character model
+ * derives the comparison as `system.wind` (threshold, endureThreshold, exempt, due).
+ */
 export const WIND_ROUND = 3;
-/** Fatigued N rises by 1 on each failed Wind check, to this ceiling (PHB v4.11, Wind). */
+/** Fatigued N rises by 1 on each failed Wind check, to this ceiling (PHB v4.12, Wind). */
 export const FATIGUED_MAX = 3;
 /** Helm penalties to Awareness checks, the Awareness Threshold and Initiative, by the Head piece's name. */
 export const HELM_PENALTIES = Object.freeze({ "Closed helm": -2, "Open helm": -1 });
@@ -787,7 +792,11 @@ export const CONDITIONS = Object.freeze({
   heedless: { id: "heedless", name: "STARWROUGHT.Condition.heedless", img: "icons/svg/explosion.svg" },
   stunned: { id: "stunned", name: "STARWROUGHT.Condition.stunned", img: "icons/svg/daze.svg", numeric: true },
   slowed: { id: "slowed", name: "STARWROUGHT.Condition.slowed", img: "icons/svg/clockwork.svg", numeric: true },
-  /** Fatigued N (PHB v4.11, Wind): -N Condition to Evade, Guard and attack rolls, 1 to FATIGUED_MAX. */
+  /**
+   * Fatigued N (PHB v4.12, Conditions): -N Condition (maximum of 3, FATIGUED_MAX) to Evade, Guard
+   * and attack rolls, and no Exploration Mode Activities; ends after ten minutes of rest. Raised by
+   * a failed Wind check, which a fighter whose Endure Threshold meets 10 + Load Strain never makes.
+   */
   fatigued: { id: "fatigued", name: "STARWROUGHT.Condition.fatigued", img: "icons/svg/unconscious.svg", numeric: true },
   blinded: { id: "blinded", name: "STARWROUGHT.Condition.blinded", img: "icons/svg/blind.svg" },
   deafened: { id: "deafened", name: "STARWROUGHT.Condition.deafened", img: "icons/svg/deaf.svg" },

@@ -259,6 +259,37 @@ export function lockedTips(actor) {
   };
 }
 
+/**
+ * The Load Strain field's tooltip (0.6.1; PHB v4.12, Wind, ruling 74): what Load Strain is, then
+ * the Wind line with the numbers: the Wind Threshold (10 + Load Strain), the Endure Threshold, and
+ * whether this fighter is exempt. The field is derived and read-only for everyone, so unlike the
+ * locked tips this one is the same for the GM and the player. Three readings, one string each: an
+ * Endure Threshold that meets the Wind Threshold (exempt); Load Strain carried and the Threshold
+ * not met (the check comes from the end of the third round); and no Load Strain at all with an
+ * Endure Threshold below 10 (no check, but any Load would bring one). The numbers are the data
+ * model's (`system.wind`), read defensively for a document not yet through prepareDerivedData.
+ * HTML, which Foundry's tooltip renders.
+ * @param {Actor} actor
+ * @returns {string}
+ */
+export function windTip(actor) {
+  const L = key => game.i18n.localize(key);
+  const F = (key, data) => game.i18n.format(key, data);
+  const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
+  const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+  const sys = actor.system;
+  const strain = num(sys.loadStrain, 0);
+  const wind = sys.wind ?? {};
+  const threshold = num(wind.threshold, 10 + strain);
+  const endure = num(wind.endureThreshold ?? sys.defenses?.endure?.threshold, 10);
+  const exempt = wind.exempt ?? (endure >= threshold);
+  const key = exempt ? "STARWROUGHT.Field.windExempt"
+    : (strain >= 1) ? "STARWROUGHT.Field.windDue"
+      : "STARWROUGHT.Field.windNoLoad";
+  return `<p>${esc(L("STARWROUGHT.Field.loadStrainHint"))}</p>`
+    + `<p><span class="sw-tip-title">${esc(L("STARWROUGHT.Combat.wind"))}</span>${esc(F(key, { endure, threshold }))}</p>`;
+}
+
 export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** @inheritdoc */
   static DEFAULT_OPTIONS = {
@@ -388,6 +419,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.stance = stanceContext(actor);
     context.bind = bindContext(actor);
     context.lockedTips = lockedTips(actor);
+    // Wind (PHB v4.12, ruling 74): the Load Strain field says whether this fighter is exempt, with
+    // the numbers, to the GM and the player alike.
+    context.loadStrainTip = windTip(actor);
 
     context.zones = Object.keys(SW.ZONES).map(key => {
       const z = sys.zones[key];

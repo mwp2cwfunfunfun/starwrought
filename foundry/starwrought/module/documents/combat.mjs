@@ -428,11 +428,12 @@ async function mark(combatant, key, combat) {
 /* -------------------------------------------- */
 
 /**
- * The end of a round (PHB v4.10; Wind as PHB v4.11 has it):
+ * The end of a round (PHB v4.10; Wind as PHB v4.12 has it):
  *  - Persistent Damage is taken at the end of each round, dice rolled fresh, Protection ignored.
- *  - Wind: at the end of the third round and every round after, a fighter with Load Strain 1 or
- *    more rolls Endure against 10 + Load Strain; on a failure they are Fatigued 1, or their
- *    Fatigued rises by 1, to a maximum of 3.
+ *  - Wind: at the end of the third round and every round after, a fighter carrying Load Strain
+ *    whose Endure Threshold is less than 10 + Load Strain rolls Endure against that number; on a
+ *    failure their Fatigued rises by 1, to a maximum of 3. An Endure Threshold that meets the Wind
+ *    Threshold is exempt and never rolls (ruling 74).
  * Both are cards with a roll button, whispered to the actor's owners and the GM.
  */
 async function endRound(combat, round) {
@@ -449,10 +450,15 @@ async function endRound(combat, round) {
 
     if (round >= SW.WIND_ROUND) {
       const strain = Number(actor.system.loadStrain) || 0;
+      const threshold = 10 + strain;
       const fatigued = Number(actor.conditionValue?.("fatigued")) || 0;
+      // PHB v4.12, Wind (ruling 74): a fighter whose Endure Threshold meets 10 + Load Strain never
+      // rolls. The character model derives `wind.exempt`; an adversary may lack the field, so the
+      // comparison itself stands in. A fighter with no Load Strain has nothing to be winded by.
       // Fatigued 3 is as winded as the rule goes (ruling R3; until 0.6.0 one failure ended the
       // checks), and the unconscious and the Dying are out of the fight: nothing left to roll for.
-      if ((strain >= 1) && (fatigued < SW.FATIGUED_MAX) && !statuses.has("unconscious") && !statuses.has("dying")) {
+      const exempt = actor.system.wind?.exempt ?? (endureThresholdOf(actor) >= threshold);
+      if ((strain >= 1) && !exempt && (fatigued < SW.FATIGUED_MAX) && !statuses.has("unconscious") && !statuses.has("dying")) {
         await postWindReminder(actor, strain, round, fatigued);
       }
     }
@@ -460,11 +466,13 @@ async function endRound(combat, round) {
 }
 
 /**
- * The encounter ends: the Combat document is deleted. Fatigued "lasts until ten minutes of rest
- * once the fight is over" (PHB v4.11, Wind), and the end of the Combat is the nearest thing the
- * system can see to that, so Fatigued comes off every combatant here, on the client responsible
- * for each as the round's own writes are (ruling R4; the sync report says so). The pass streak a
- * GM-less table kept in memory goes with it.
+ * The encounter ends: the Combat document is deleted. Fatigued "ends after ten minutes of rest"
+ * (PHB v4.12, Conditions), and the end of the Combat is the nearest thing the system can see to
+ * that, so Fatigued comes off every combatant here, on the client responsible for each as the
+ * round's own writes are (ruling 70, R4). The v4.11 book tied the rest to "once the fight is
+ * over"; v4.12 does not, so this is an approximation of the ten minutes rather than the rule's
+ * letter (ruling 75; the v4.12 sync report asks whether a rest-card clear should replace or join
+ * it). The pass streak a GM-less table kept in memory goes with it.
  */
 async function onCombatEnds(combat) {
   localStreaks.delete(combat.id);
@@ -663,15 +671,28 @@ async function postRecoveryReminder(actor, round) {
   return postCard(actor, content, { whisper: ownersOf(actor) });
 }
 
+/**
+ * The Endure Threshold the Wind rule compares (PHB v4.12, ruling 74): the character model's own
+ * reading when it has one, else the Defense as the sheet shows it, else the bare 10.
+ */
+function endureThresholdOf(actor) {
+  const derived = Number(actor.system.wind?.endureThreshold);
+  if (Number.isFinite(derived)) return derived;
+  const shown = Number(actor.system.defenses?.endure?.threshold);
+  return Number.isFinite(shown) ? shown : 10;
+}
+
 async function postWindReminder(actor, strain, round, fatigued = 0) {
   const threshold = 10 + strain;
+  // The card says why it came: the Endure Threshold that fell short of the Wind Threshold.
+  const endure = endureThresholdOf(actor);
   // What a failure would make of them: Fatigued 1, or one more than they carry now.
   const next = Math.min(SW.FATIGUED_MAX, fatigued + 1);
   const content = cardHtml({
     root: "sw-round-card sw-wind-card",
     actorUuid: actor.uuid,
     title: localize("STARWROUGHT.Combat.wind"),
-    lines: [format("STARWROUGHT.Combat.windText", { name: escapeHTML(actor.name), round, strain, threshold, next })],
+    lines: [format("STARWROUGHT.Combat.windText", { name: escapeHTML(actor.name), round, strain, threshold, endure, next })],
     notes: [
       fatigued ? format("STARWROUGHT.Combat.windCarrying", { name: escapeHTML(actor.name), value: fatigued }) : "",
       localize("STARWROUGHT.Combat.windNote")
@@ -850,10 +871,11 @@ async function onRollRecovery({ actor }) {
 }
 
 /**
- * Wind (PHB v4.11, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
- * and on a failure Fatigued 1, or Fatigued raised by 1 to a maximum of 3: -N Condition to Evade,
- * Guard and attack rolls until ten minutes of rest once the fight is over. The card names the new
- * value.
+ * Wind (PHB v4.12, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
+ * and on a failure Fatigued raised by 1 to a maximum of 3: -N Condition to Evade, Guard and attack
+ * rolls until ten minutes of rest. The exemption (an Endure Threshold that meets the Wind
+ * Threshold, ruling 74) is applied where the card is posted, in endRound, not here: a card already
+ * posted still rolls. The card names the new value.
  */
 async function onWindCheck({ actor }) {
   if (!requireOwner(actor)) return;

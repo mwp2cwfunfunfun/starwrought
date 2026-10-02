@@ -262,7 +262,7 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br><b>Rage ❶<br>Duration</b> 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, you're fatigued until you spend three actions to catch your breath.<br>You may end your Rage as a free action, becoming fatigued as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
+    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br><b>Rage ❶<br>Duration</b> 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, increase your Fatigued by 1 until you spend three actions to catch your breath.<br>You may end your Rage as a free action, increasing your Fatigued by 1 as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
     "root": true
    },
    {
@@ -1530,7 +1530,7 @@ let TREES = {
  },
  "Endure": {
   "category": "Defense",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Might",
   "meta": "Defense constellation • Might (survive what does come through)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1539,7 +1539,7 @@ let TREES = {
     "name": "Endure Training",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) at Trained, 2 at Expert, 3 at Master, and 4 at Legendary. Your Vigor grows with your conditioning as well: at Expert rank in Endure you gain 1 more Vigor at every level, 2 at Master, and 3 at Legendary.",
     "root": true
    },

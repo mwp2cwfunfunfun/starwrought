@@ -1300,7 +1300,7 @@
   ],
   [
    "Fatigued N",
-   "−N Condition penalty to Evade, Guard, and attack rolls; can't use Exploration Mode Activities. Rises by 1 on each failed Wind check, to a maximum of 3; ends after ten minutes of rest once the fight is over."
+   "−N Condition (maximum of 3) penalty to Evade, Guard, and Attack rolls; can't use Exploration Mode Activities. Ends after ten minutes of rest."
   ],
   [
    "Persistent Damage",

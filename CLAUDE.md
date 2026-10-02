@@ -211,17 +211,26 @@ Endure Bonus is the conditioning clause of Endure Training, read live from the c
 once earned, lifts every level's share. A night's rest restores level × Presence bonus when that
 bonus is positive, else level. v4.11 sync report ruling 67 (R1); the 0.6.0 migration (ruling 72)
 moves a stored per-level Calling number to its Opening Vigor when it still equals the old table.
+Endure Training ships since 0.6.1 (ruling 77), so the Endure Bonus and Endure relief are reachable.
 
-**Load Strain (PHB v4.11).** Load Strain = the Load of the armor worn and a shield carried, less 1
+**Load Strain (PHB v4.12).** Load Strain = the Load of the armor worn and a shield carried, less 1
 for a matched harness, less Endure relief (Trained 1, Expert 2, Master 3, Legendary 4;
 `LOAD_RELIEF` in `config.mjs`), to a minimum of 0. It never touches Evade (armor does not make you
 easier to hit) and is no blanket penalty on Might or Agility: it shortens Rush and Leap by its value
 in feet, and it is an untyped penalty on Climb, Swim and Stealth checks only (Stealth automatically;
 an Athletics roll offers an unticked "Load Strain (Climb or Swim)" toggle, since the system cannot
-tell a Climb from a grapple). From the end of the third round a fighter with Strain 1 or more rolls
-Endure against 10 + Strain each round or becomes Fatigued 1, rising by 1 per failure to Fatigued 3
-(−N Condition to Evade, Guard and attack rolls); the system clears Fatigued when the encounter ends,
-its nearest reading of "ten minutes of rest once the fight is over". Rulings 68 to 71 (R2 to R5).
+tell a Climb from a grapple). **Wind (v4.12):** a fighter whose Endure Threshold is less than 10 +
+Load Strain rolls Endure against 10 + Load Strain at the end of the third round and every round
+after, each failure raising Fatigued by 1 to Fatigued 3 (−N Condition to Evade, Guard and attack
+rolls); a fighter whose Endure Threshold meets 10 + Load Strain never rolls. The system also keeps
+the old Strain 1 or more gate (the book dropped the clause): Frightened can pull an Endure
+Threshold under 10, and a fighter carrying no Load has nothing to be winded by. The exemption is
+read live from the Endure Threshold the grid shows (Frightened reaches it, Fatigued does not); the
+data model derives `wind` (`threshold`, `endureThreshold`, `exempt`, `due`),
+the round end posts no card for an exempt fighter, and the Load Strain field's tooltip gives both
+numbers to the GM and the player alike. The book ends Fatigued "after ten minutes of rest"; the
+system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 (R2 to R5), 74 and
+75.
 
 ## Where the source of truth lives
 
@@ -335,7 +344,7 @@ its nearest reading of "ten minutes of rest once the fight is over". Rulings 68 
 - The PHB prints three non-Trained talents in the whole book, all tier E and all in Melee
   (*Reactive Strike*, *Winding*, *Master Cut*); 174 of the 177 talents are Trained. The Expert,
   Master, and Legendary tiers are otherwise unwritten across all 31 constellations.
-- **Armored Fighting's Key Attribute is contradictory and still open in v4.10.** Its section heading
+- **Armored Fighting's Key Attribute is contradictory and still open in v4.12.** Its section heading
   says *Combat Style • Presence*; the Combat Styles summary table says **Might**. The data uses
   Presence, following the heading, as Shield Fighting was resolved. One cell in `combat_styles.xlsx`
   either way. **This is the tree-level `Feeds` only.** Armored Fighting's per-talent `Feeds`
@@ -348,8 +357,9 @@ its nearest reading of "ten minutes of rest once the fight is over". Rulings 68 
   blank, so Aid ships nowhere in Foundry (ruling 61). The book is Mike's to bring across, or the
   sheet is (v4.10 sync report, ruling 10).
 - **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
-  Constellation in v4.10 or v4.11; the data reads it as Melee. One sentence in the handbook.
-- **Key Terms carries v3.4 sentences, in v4.11 as in v4.10.** It still says Attribute Bonus is points divided by 3, that
+  Constellation in v4.10 or any book since, and v4.12 still prints the sentence; the data reads it
+  as Melee. One sentence in the handbook.
+- **Key Terms carries v3.4 sentences, in v4.12 as in v4.10.** It still says Attribute Bonus is points divided by 3, that
   every character begins Trained in all four Defenses, and that only a Committed Strike is
   Weighted; the Cultures introduction still names Varisians. Character Mechanics, Chapter 3 and the
   data all say ÷ 4, two Defenses, and Serrovane and Kestrel Reach.
@@ -357,7 +367,7 @@ its nearest reading of "ten minutes of rest once the fight is over". Rulings 68 
   ladder, and has Recenter clear a Zone Exposed by a Posture, which the rules forbid. The rules
   text governs; the example needs a pass.
 - **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** Still
-  so in v4.11. The system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
+  so in v4.12. The system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
   (`STRIKE_KINDS.exposeOnMiss`). One cell in the handbook either way.
 - **`data/actions.xlsx` has never been committed.** Its one row, Aid, is the only action
   `assets/actions.json` cannot regenerate on a fresh clone (the converter carries it over from
@@ -374,22 +384,21 @@ its nearest reading of "ten minutes of rest once the fight is over". Rulings 68 
   over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
 - **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**
   (Mike's ruling 63, 2026-10-01: Melee Training gives one Reaction, Intercept). Two sentences in the
-  book (Answering an Attack, the Reaction table); v4.11 still prints them.
-- **Mike's open question on the Wind check (2026-10-02, given with the v4.11 Load Strain changes):**
-  a fighter past some threshold "should not have to roll to be Winded", and the Armored Fighting
-  Constellation he plans to fill out may carry Talents for it. Nothing is built. Today every
-  fighter with Load Strain 1 or more rolls from the end of the third round, and Endure relief
-  (Strain brought to 0) is the only way out of the check; the round-end test in
-  `documents/combat.mjs` is the one place a gate would go, whatever shape it takes (a rank in
-  Endure, a Strain ceiling, a Talent flag once the Automation column has a grammar). The v4.11
-  sync report lays out the options.
-- **Rage's Effect in `callings.xlsx` says "fatigued"** in its own sense ("Afterward, you're fatigued
-  until you spend three actions to catch your breath"), and another Talent in the same
-  Constellation says you "ignore the Fatigued condition while Raging". Nothing in the system acts
-  on either; the system's Fatigued N is the Wind condition (v4.11 sync report ruling 73, R7).
-  Mike's cells.
+  book (Answering an Attack, the Reaction table); v4.12 still prints them.
 - **Sleeping in armor without Comfort ("waking Fatigued 1") is not implemented.** The rest card
-  restores Vigor and nothing else; the v4.11 brief said not to add it.
+  restores Vigor and nothing else; the v4.11 brief said not to add it, and v4.12 changed nothing
+  there.
+- **Fatigued still clears when the Combat is deleted** (ruling 70), though v4.12's Fatigued row
+  says only "Ends after ten minutes of rest", with nothing about the fight being over. The v4.12
+  sync report asks Mike whether a clear from the rest card should replace that or join it.
+
+Cleared 2026-10-02 (the v4.12 sync, system 0.6.1): Mike's open question on the Wind check, answered
+in the book (no Wind check when the Endure Threshold meets 10 + Load Strain, read live; the
+inverted clause in his saved file corrected by the edition, ruling 74); the Wind bullet's own
+Fatigued definition and the "once the fight is over" clause (ruling 75); Rage's "fatigued" in its
+own sense, now the Wind condition's Fatigued raised by 1 in the Berserker cell (ruling 76, closing
+73); the Endure Constellation disabled, now shipping with its Root alone (ruling 77). The sync
+report records the rulings (74 to 78).
 
 Cleared 2026-10-02 (the v4.11 sync, system 0.6.0): Load Strain on Evade and on every Might or
 Agility Skill check; the boolean Fatigued and its −1; Endure relief starting at Expert; the

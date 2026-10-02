@@ -490,6 +490,7 @@ export class SwCharacterData extends SwActorData {
     this.vigor.max = 0;
     this.spent = false;
     this.loadStrain = 0;
+    this.wind = { threshold: 10, endureThreshold: 10, exempt: true, due: false };
     this.matchedHarness = false;
     this.clatter = false;
     this.speed = this.details.ancestry.speed;
@@ -515,6 +516,8 @@ export class SwCharacterData extends SwActorData {
     this.#prepareArmor();
     this._prepareWounds();
     this.#prepareDefenses();
+    // Wind needs both Load Strain (#prepareArmor) and the Endure Threshold (#prepareDefenses) final.
+    this.#prepareWind();
     this.#prepareVigor();
     this.#prepareOffense();
     // Every ring the map can draw (0.5.1): the reach bands derived just above and the auras of
@@ -885,6 +888,36 @@ export class SwCharacterData extends SwActorData {
     this.stanceBonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : 0;
     if (this.defenses[this.stanceDefense]) this.defenses[this.stanceDefense].isStance = true;
     this.stanceThreshold = this.defenses[this.stanceDefense]?.threshold ?? 10;
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Wind (PHB v4.12, Load and Load Strain; ruling 74): "If your Endure Threshold is less than 10 +
+   * your Load Strain, then at the end of the third round of an encounter and every round after,
+   * you must roll Endure against 10 + Load Strain. On a failure your Fatigued rises by 1." So the
+   * Wind Threshold is 10 + Load Strain, and a fighter whose Endure Threshold meets it is exempt:
+   * no check at all, however long the fight runs. The Endure Threshold is the one the sheet shows,
+   * with everything the Defense pass folds in (Frightened reaches it; Fatigued does not, so being
+   * winded never brings the next check nearer).
+   *
+   * Derived after Load Strain (#prepareArmor) and the Defenses (#prepareDefenses); that order
+   * matters. `due` is whether the round-end check comes at all: Load Strain 1 or more, and no
+   * exemption. A fighter carrying no Load has nothing to be winded by, whatever penalties sit on
+   * their Endure, which is the Strain 1+ gate the system has kept since 0.6.0; the book's sentence
+   * leaves it implied. `combat.mjs` reads `exempt` at the end of the round and the sheet's Load
+   * Strain tooltip reads all of it (actor-sheet.mjs, windTip).
+   */
+  #prepareWind() {
+    const threshold = 10 + this.loadStrain;
+    const endureThreshold = this.defenses.endure?.threshold ?? 10;
+    const exempt = endureThreshold >= threshold;
+    this.wind = {
+      threshold,
+      endureThreshold,
+      exempt,
+      due: (this.loadStrain >= 1) && !exempt
+    };
   }
 
   /* -------------------------------------------- */

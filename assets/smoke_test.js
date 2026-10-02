@@ -134,11 +134,52 @@ const driver=`
     must(!dh.matched&&dh.shield&&dh.strain===dh.loadArmor+dh.shield[3]&&dh.strain>=3, "Load Strain is armor plus shield Load with no match and no Endure: "+dh.strain);
     must(dh.DT.Evade===10+dh.A.Agility+(dh.DR.Evade?RB[dh.DR.Evade]:0)&&dh.D.Evade===dh.DT.Evade-10, "Load Strain never comes off Evade (R2): Threshold "+dh.DT.Evade+" with Strain "+dh.strain);
     must(dh.rush===30-dh.strain&&dh.leap===Math.max(0,10-dh.strain), "Rush and Leap still lose Load Strain in feet");
-    must(vSheet(h).includes("never off Evade")&&vSheet(h).includes("Endure vs "+(10+dh.strain)), "the sheet says Strain stays off Evade and names the Wind Threshold");
+    // v4.12 (ruling 74): the sheet's Strain line names the Wind Threshold, or says why there is no Wind check.
+    // This fighter is Untrained in Endure (Threshold 10 + Might) under a Wind Threshold of 13 or more, so she rolls.
+    const hx=dh.DT.Endure>=10+dh.strain;
+    must(dh.wind&&dh.wind.threshold===10+dh.strain&&dh.wind.endureThreshold===dh.DT.Endure&&dh.wind.exempt===hx, "derive() carries the Wind numbers: threshold, Endure Threshold, exempt");
+    must(!hx, "Mira's leathers with a scale coif and a shield put the Wind Threshold ("+(10+dh.strain)+") above Untrained Endure ("+dh.DT.Endure+")");
+    must(vSheet(h).includes("never off Evade")&&vSheet(h).includes(hx?"no Wind check (Endure Threshold "+dh.DT.Endure+" meets "+(10+dh.strain)+")":"Wind from round 3: Endure vs "+(10+dh.strain)), "the sheet says Strain stays off Evade and names the Wind Threshold");
     const ht=derive(mk(1,["Endure Training"],{armor:h.armor,shield:h.shield})); must(ht.strain===dh.strain-1, "Trained Endure takes 1 off Load Strain (R5): "+ht.strain);
-    tab="wiki"; const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    tab="wiki"; render(); const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    must(secs.length>=5, "the wiki nav must be rendered before the stale sweep, found "+secs.length+" sections");
     const stale=/Calling's Vigor|Calling Vigor|Vigor per level<\\/b> \\(only|from your <b>Evade<\\/b>, and from any Might|Fatigued \\(−1/;
     for(const s of secs){ wikiSec=s; render(); const m=document.getElementById("main").innerHTML.match(stale); if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'"); } wikiSec=secs[0]; });
+  // PHB v4.12 (rulings 74 to 76): no Wind check for a fighter whose Endure Threshold is at least 10 + Load Strain;
+  // the Conditions table's Fatigued N row and Rage's two "Fatigued" sentences carry the book's text verbatim.
+  step("v4.12: the Wind exemption, the Fatigued row, and Rage's wording (rulings 74 to 76)", ()=>{
+    const mk=(endure,armor)=>migrate({name:"w",level:1,milestones:0,ancestry:"Human",calling:"Bravo",sparks:{},shield:null,languages:[],
+      armor:{Head:null,Torso:null,Arms:null,Legs:null,...armor},talents:endure?{Endure:endure}:{}});
+    const T=["Endure Training"];
+    // Untrained Endure (Threshold 10) in a scale coif (Load 2): Wind Threshold 12, so she rolls
+    const n=mk(null,{Head:"Scale coif"}), dn=derive(n);
+    must(dn.strain===2&&dn.DT.Endure===10&&dn.wind.threshold===12&&dn.wind.exempt===false, "Untrained Endure 10 under Wind 12 rolls; strain "+dn.strain+", Endure "+dn.DT.Endure);
+    must(vSheet(n).includes("Wind from round 3: Endure vs 12")&&!vSheet(n).includes("no Wind check"), "the sheet names the Wind Threshold for a fighter who rolls");
+    // Trained Endure (Threshold 13) in the same coif, relief 1: Strain 1, Wind 11, exempt
+    const x=mk(T,{Head:"Scale coif"}), dx=derive(x);
+    must(dx.strain===1&&dx.DT.Endure===13&&dx.wind.threshold===11&&dx.wind.exempt===true, "Trained Endure 13 meets Wind 11: no roll; strain "+dx.strain+", Endure "+dx.DT.Endure);
+    must(vSheet(x).includes("no Wind check (Endure Threshold 13 meets 11)")&&!vSheet(x).includes("Wind from round 3"), "the sheet says why no Wind check is rolled");
+    // "at least": equal is exempt; one more point of Strain is not
+    const eq=derive(mk(T,{Head:"Scale coif",Torso:"Scale hauberk"})); must(eq.strain===3&&eq.wind.threshold===13&&eq.wind.exempt, "Endure Threshold 13 against Wind 13 is exempt (at least, not more than)");
+    const over=derive(mk(T,{Head:"Scale coif",Torso:"Scale hauberk",Arms:"Mail sleeves"})); must(over.strain===4&&over.wind.threshold===14&&!over.wind.exempt, "Wind 14 against Endure 13 rolls");
+    // no Strain, no Wind line of either kind (the ladder's own text aside)
+    const z=mk(null,{}), dz=derive(z); must(dz.strain===0&&dz.wind.exempt&&!vSheet(z).includes("Wind from round 3")&&!vSheet(z).includes("no Wind check"), "at Strain 0 the sheet says nothing about Wind");
+    // ruling 75: the Conditions row, verbatim
+    const fat=R.conditions.find(c=>c[0]==="Fatigued N");
+    must(fat&&fat[1]==="−N Condition (maximum of 3) penalty to Evade, Guard, and Attack rolls; can't use Exploration Mode Activities. Ends after ten minutes of rest.", "the Fatigued N row carries the v4.12 text, found: "+(fat&&fat[1]));
+    // ruling 76: Rage's two sentences, inside the rich-text cell, with its bold run intact; Deaf to Pain untouched
+    const rage=treeOf("Berserker").nodes.find(nd=>nrmG(nd.name)==="Rage"); must(rage, "Rage is in Berserker");
+    must(rage.effect.includes("Afterward, increase your Fatigued by 1 until you spend three actions to catch your breath.")&&rage.effect.includes("You may end your Rage as a free action, increasing your Fatigued by 1 as though it had run its course."), "Rage's Effect carries the two v4.12 sentences: "+rage.effect);
+    must(!/you're fatigued|becoming fatigued/.test(rage.effect)&&rage.effect.includes("<b>Rage ❶<br>Duration</b> 10 rounds")&&rage.effect.includes("Temporary Vigor = level + Might"), "the old sentences are gone and the bold run survived the round trip");
+    const deaf=treeOf("Berserker").nodes.find(nd=>nd.name==="Deaf to Pain");
+    must(deaf&&deaf.effect==="You ignore the Fatigued condition while Raging, and when your Rage ends you need to spend only 1 action to catch your breath rather than 3.", "Deaf to Pain is unchanged");
+    // the wiki: the exemption is stated where Wind is explained, and nothing says "once the fight is over" or "Load Strain 1 or more"
+    tab="wiki"; render(); const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    const gone=/once the fight is over|Load Strain 1 or more|catch their breath after the fight|Fatigued \\(−1/; let said=0;
+    for(const s of secs){ wikiSec=s; render(); const html=document.getElementById("main").innerHTML;
+      const m=html.match(gone); if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'");
+      if(/<b>Wind\\.<\\/b>/.test(html)){ said++; must(/Endure Threshold/.test(html)&&/never rolls/.test(html), "wiki '"+s+"' explains Wind without the exemption"); } }
+    must(said>=2, "the Equipment and Combat sections both explain Wind, found "+said); wikiSec=secs[0]; });
   // Ruling 63: Melee Training grants Intercept alone; Counter needs Expert rank in Melee, which counts a
   // Combat Style's points once the Root is owned (ruling 13) and is gated at level 5 like every Expert rank.
   step("Reactions checklist: Counter at Melee Expert (ruling 63)", ()=>{
