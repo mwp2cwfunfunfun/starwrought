@@ -16,10 +16,11 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
 exactly, which needs a restart to take effect after installing. The current release is system
-0.5.2, built from Player's Handbook v4.10: six actions a round, the Exchange played as declare,
+0.5.3, built from Player's Handbook v4.10: six actions a round, the Exchange played as declare,
 commit, reveal, roll and resolve, auras and Reach drawn on the map with a Visible mark per range,
 the Bind drawn between the bound, Vigor and Wounds per Zone, a character sheet whose locked
-fields explain themselves, and Melee and Ranged in place of the old Weapons Constellation. The spreadsheets' `Enabled?` column decides which of the book's
+fields explain themselves, a Reroll on every Attack and Defense card, one Move per Opportunity on
+the map, and Melee and Ranged in place of the old Weapons Constellation. The spreadsheets' `Enabled?` column decides which of the book's
 Constellations, Talents, Maneuvers and equipment ship to Foundry, and the `Aura` column says which
 Talents draw a ring.
 

@@ -7,7 +7,8 @@
  * it. Two things do:
  *
  *   An arrow on the map, from the token doing the targeting to whatever it targets, in the
- *   targeting player's colour, drawn for everyone who can see both tokens.
+ *   targeting player's colour. The GM sees every arrow; a player sees only the arrows their own
+ *   user set (0.5.3), so who the adversaries are going for stays the GM's to reveal.
  *
  *   A line in the Combat Tracker under each combatant naming its targets, and a tint on the rows of
  *   whoever the active combatant has in its sights.
@@ -193,6 +194,10 @@ function draw() {
   for (const source of canvas.tokens.placeables) {
     const flag = source.document.getFlag(SW.SYSTEM_ID, FLAG);
     if (!flag?.ids?.length || !canSee(source)) continue;
+    // A player sees their own arrows and nobody else's (Mike, 2026-10-01; 0.5.3): who the
+    // adversaries, and the other players, have in their sights is the GM's to see and theirs to
+    // say. The GM sees every arrow.
+    if (!game.user.isGM && (flag.user !== game.user.id)) continue;
     const color = colorOf(flag.user);
     for (const id of flag.ids) {
       const target = canvas.tokens.get(id);
@@ -261,8 +266,36 @@ function arrow(source, target, color) {
 
   const whole = new PIXI.Container();
   whole.addChild(g);
-  whole.addChild(distanceLabel(source, target, { x: (from.x + tip.x) / 2, y: (from.y + tip.y) / 2 }, cell));
+  const mid = { x: (from.x + tip.x) / 2, y: (from.y + tip.y) / 2 };
+  const tag = distanceLabel(source, target, mid, cell);
+  // A short arrow (0.5.3; Mike: "short distances have non-ideal targeting and bind arrows"): a
+  // pill as long as the shaft hides the very arrow it describes, so it steps off the line to the
+  // upper side and leaves the shaft and head in view. The Bind chain's label keeps the lower side
+  // (bind.mjs), so the two never trade places.
+  if (tag.pillWidth > (len - head) * 0.8) {
+    const n = upperNormal(ux, uy);
+    const off = (tag.pillHeight / 2) + width + 3;
+    tag.position.set(n.x * off, n.y * off);
+  }
+  whole.addChild(tag);
   return whole;
+}
+
+/**
+ * The perpendicular to a direction that points up the screen (left, for a vertical line), so two
+ * labels sharing one line can take opposite sides and agree about which is which.
+ * @param {number} ux
+ * @param {number} uy
+ * @returns {{x: number, y: number}}
+ */
+export function upperNormal(ux, uy) {
+  let nx = -uy;
+  let ny = ux;
+  if ((ny > 0) || ((ny === 0) && (nx > 0))) {
+    nx = -nx;
+    ny = -ny;
+  }
+  return { x: nx, y: ny };
 }
 
 /**
@@ -295,6 +328,9 @@ function distanceLabel(source, target, at, cell) {
 
   const c = new PIXI.Container();
   c.addChild(pill, label);
+  // The pill's size, so the arrow can tell whether the label would cover it.
+  c.pillWidth = label.width + (pad * 2);
+  c.pillHeight = label.height + pad;
   return c;
 }
 

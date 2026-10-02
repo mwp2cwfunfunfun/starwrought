@@ -28,6 +28,7 @@
 
 import * as SW from "../config.mjs";
 import { previewOf } from "./reach.mjs";
+import { upperNormal } from "./targeting.mjs";
 
 /** The system's gold (`--sw-gold`), the colour the Bind takes on the sheet as well. */
 const GOLD = 0xE3B23C;
@@ -320,11 +321,15 @@ function chain(from, to, { control, dashed, mine, theirs }) {
   const tag = label(names, mid, cell, 0.55);
   const distancePill = Math.clamp(cell * 0.9, 12, 22) * 1.6;
   const offset = Math.max(cell * 0.55, (distancePill / 2) + (tag.height / 2) + 3);
-  tag.position.set(-(uy * offset), ux * offset);
+  // The lower side of the line, always: a short targeting arrow moves its distance pill to the
+  // upper side (targeting.mjs), so the two labels never trade places as the tokens move.
+  const n = upperNormal(ux, uy);
+  tag.position.set(-(n.x * offset), -(n.y * offset));
   whole.addChild(tag);
   if (control) {
-    // "Control" sits beside the head, off the line so it never covers the implements.
-    const at = { x: b.x - (ux * head * 1.6) - (uy * cell * 0.7), y: b.y - (uy * head * 1.6) + (ux * cell * 0.7) };
+    // "Control" sits beside the head, off the line on the upper side, so it covers neither the
+    // implements nor the Bind's own label.
+    const at = { x: b.x - (ux * head * 1.6) + (n.x * cell * 0.7), y: b.y - (uy * head * 1.6) + (n.y * cell * 0.7) };
     whole.addChild(label(game.i18n.localize("STARWROUGHT.Bind.controlLabel"), at, cell, 0.5, 0xF2EFFA));
   }
   return whole;

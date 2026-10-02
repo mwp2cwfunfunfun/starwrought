@@ -1275,6 +1275,65 @@ export class AttackCoordinator {
   }
 
   /**
+   * The Threshold a resolved card's die was read against, computed again from actor data for a
+   * reroll (0.5.3) of a card that hid it: the defender's Defense with the revealed answer folded
+   * in for an attack card, the adversary's Attack Threshold for a Defense card. Null when the
+   * actors are gone. The GM's client asks, so an adversary's number never reaches a player.
+   * @param {object} flags  A check card's `flags.starwrought`.
+   * @returns {number|null}
+   */
+  static thresholdForCard(flags) {
+    if (!flags) return null;
+    if (flags.kind === "attack") {
+      const defender = resolveActor(flags.defenderUuid);
+      const reading = AttackCoordinator.#thresholdFor(defender, {
+        defense: flags.defense, reaction: flags.reaction ?? null, posture: flags.posture ?? null
+      });
+      return Number.isFinite(reading?.threshold) ? reading.threshold : null;
+    }
+    if (flags.kind === "defense") {
+      const attacker = resolveActor(flags.attackerUuid);
+      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId ?? null }) : null;
+    }
+    return null;
+  }
+
+  /**
+   * A pairing's resolution card was rerolled (0.5.3): the attack card that carried its outcome
+   * follows the new card. Runs on every client from the `starwrought.reroll` hook; only one that
+   * may write the card (its author, or a GM) does so, and only once the Blow is complete, so this
+   * is a note in the record and never a step of the flow: the row's outcome and resolution card
+   * move, the revision advances, the log says so.
+   */
+  static async noteReroll({ oldId, result, reason = "" } = {}) {
+    const newId = result?.message?.id ?? null;
+    if (!oldId || !newId) return;
+    for (const doc of game.messages.contents) {
+      const pub = doc.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
+      const index = pub?.targets?.findIndex(t => t.resolutionMessageId === oldId) ?? -1;
+      if (index < 0) continue;
+      if (!(doc.isAuthor || game.user.isGM)) return;
+      if (!TERMINAL_PHASES.includes(pub.phase)) return;
+      const next = foundry.utils.deepClone(pub);
+      const target = next.targets[index];
+      const outcome = result?.outcome;
+      target.outcome = (typeof outcome === "string") ? outcome : (outcome?.key ?? target.outcome ?? null);
+      target.resolutionMessageId = newId;
+      next.revision = (next.revision ?? 0) + 1;
+      next.log = [...(next.log ?? []), reason
+        ? format("STARWROUGHT.Attack.rerolled", { name: target.name ?? "", reason })
+        : format("STARWROUGHT.Attack.rerolledPlain", { name: target.name ?? "" })];
+      next.messageId = doc.id;
+      try {
+        await updateAttackCard(next);
+      } catch (err) {
+        console.error("STARWROUGHT | the attack card could not follow a reroll", err);
+      }
+      return;
+    }
+  }
+
+  /**
    * Resolution (brief, step 5): one `SwCheck.resolveAgainst` per pairing, so every pairing gets
    * today's full card (Position, the damage buttons, the Reaction line) and the attack card's rows
    * get the outcomes. Persisted after each pairing, so a coordinator rebuilt mid-way resolves only

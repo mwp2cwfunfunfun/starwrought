@@ -56,6 +56,29 @@ const AURA_FILL = 0.06;
 const AURA_LINE = 0.7;
 const LINE_WIDTH = 2;
 
+/**
+ * How boldly a ring is drawn (0.5.3; Mike: "sometimes the Ranges are hard to see, depending on the
+ * colour of the battlemap tiles"). Every outline sits on a dark halo, the way the targeting arrows
+ * and the Bind chain carry an underlay, so a pale gold or mint line still reads on a sand-coloured
+ * floor; Strong, the client setting `ringContrast`, thickens the lines and deepens the fills for a
+ * bright or busy map. `halo` is added to the line width, `line` and `fill` multiply the style's.
+ */
+export const CONTRAST = Object.freeze({
+  normal: { halo: 2.5, haloAlpha: 0.45, line: 1, fill: 1 },
+  strong: { halo: 4, haloAlpha: 0.65, line: 1.5, fill: 1.8 }
+});
+const FILL_CEILING = 0.35;
+
+/** The contrast this client draws at: its setting, or Normal before the setting exists. */
+export function contrastLevel() {
+  try {
+    const key = game.settings.get(SW.SYSTEM_ID, "ringContrast");
+    return (key in CONTRAST) ? key : "normal";
+  } catch {
+    return "normal";
+  }
+}
+
 /* -------------------------------------------- */
 /*  Colours                                     */
 /* -------------------------------------------- */
@@ -209,7 +232,9 @@ function staircase(rows, size) {
 export function ringSignature(ranges, { w, h, dashed = false, labels = false } = {}) {
   const grid = canvas.scene.grid;
   const parts = ranges.map(r => [r.key, r.kind, r.feet, r.audience, colorOf(r), labels ? labelText(r) : ""].join(":"));
-  return [w, h, grid.size, grid.distance, dashed ? "d" : "s", labels ? "l" : "", ...parts].join("|");
+  // The contrast level is part of the drawing, so a change of the setting redraws (its onChange
+  // asks for a refresh, and the refresh sees a new signature).
+  return [w, h, grid.size, grid.distance, dashed ? "d" : "s", labels ? "l" : "", contrastLevel(), ...parts].join("|");
 }
 
 /**
@@ -238,21 +263,27 @@ export function drawRings(ranges, { w, h, dashed = false, labels = false } = {})
     .map(range => ({ range, geo: ringGeometry(Number(range.feet), w, h), style: styleOf(range) }));
 
   const g = new PIXI.Graphics();
+  const contrast = CONTRAST[contrastLevel()];
 
   // Fills first, so the outlines drawn over them stay crisp. Each ring's hole is the next ring in;
   // two rings of one size leave nothing between them, and the innermost stops at the footprint.
   for (let i = 0; i < shapes.length; i++) {
     const { geo, style } = shapes[i];
     if (!(style.fill > 0)) continue;
-    fillBand(g, geo, shapes[i + 1]?.geo ?? null, w, h, size, style);
+    const fill = Math.min(FILL_CEILING, style.fill * contrast.fill);
+    fillBand(g, geo, shapes[i + 1]?.geo ?? null, w, h, size, { ...style, fill });
   }
 
   // Then each ring's own edge, which is what makes it read as a boundary and not a wash. The
-  // token's own space is not "outside" any ring, so no edge is ever drawn against it.
+  // token's own space is not "outside" any ring, so no edge is ever drawn against it. A dark halo
+  // goes under every edge first (0.5.3), so the colour reads on a pale floor as well as a dark one.
+  const path = pts => (dashed ? dashedPath(g, pts, size) : solidPath(g, pts));
   for (const { geo, style } of shapes) {
-    g.lineStyle({ width: style.width, color: style.color, alpha: style.line, alignment: 0.5 });
-    if (dashed) dashedPath(g, geo.points, size);
-    else solidPath(g, geo.points);
+    const width = style.width * contrast.line;
+    g.lineStyle({ width: width + contrast.halo, color: 0x000000, alpha: contrast.haloAlpha, alignment: 0.5 });
+    path(geo.points);
+    g.lineStyle({ width, color: style.color, alpha: style.line, alignment: 0.5 });
+    path(geo.points);
   }
   g.lineStyle(0);
 

@@ -44,6 +44,26 @@ export function onRenderChatMessage(message, html) {
     if (actor && !actor.isOwner) el.remove();
   }
 
+  // A rerolled card (0.5.3) keeps its place in the record and loses its controls: the new throw
+  // below it is the one that acts. Done before the buttons are wired, so none of them is.
+  if (flags.superseded) {
+    const card = html.querySelector(".starwrought") ?? html;
+    card.classList.add("sw-superseded");
+    for (const el of card.querySelectorAll("button, select")) el.disabled = true;
+    for (const el of card.querySelectorAll("[data-sw-action]")) {
+      if (el.dataset.swAction !== "rulesPage") el.removeAttribute("data-sw-action");
+    }
+    const reason = flags.superseded.reason;
+    const note = document.createElement("p");
+    note.className = "sw-card-note sw-warn sw-superseded-note";
+    note.textContent = reason
+      ? game.i18n.format("STARWROUGHT.Reroll.supersededReason", { reason })
+      : game.i18n.localize("STARWROUGHT.Reroll.superseded");
+    const anchor = card.querySelector(".sw-card-roll");
+    if (anchor) anchor.after(note);
+    else card.prepend(note);
+  }
+
   // A Reaction already charged offers no button.
   if (flags.reactionCharged) {
     for (const el of html.querySelectorAll("[data-sw-action='chargeReaction']")) el.remove();
@@ -65,11 +85,6 @@ export function onRenderChatMessage(message, html) {
     if (button.dataset.swAction === "rulesPage") continue;
     button.addEventListener("click", event => onCardButton(event, message, flags));
   }
-
-  // Hide the apply row from players who cannot spend it.
-  if (!game.user.isGM && (flags.kind === "damage")) {
-    for (const el of html.querySelectorAll(".gm-only")) el.remove();
-  }
 }
 
 /* -------------------------------------------- */
@@ -83,8 +98,9 @@ async function onCardButton(event, message, flags) {
   try {
     switch (action) {
       case "damage": return await rollDamageFromCard(message, flags, button.dataset.outcome);
-      case "applyDamage": return await applyDamageFromCard(message, flags, button);
+      case "applyDamage": return await applyDamageFromCard(message, flags, button, event);
       case "flare": return await flareFromCard(message, flags, button);
+      case "reroll": return await rerollFromCard(message, flags);
       case "expose":
       case "exposeZone": return await exposeFromCard(button);
       case "formBind": return await formBindFromCard(button);
@@ -197,44 +213,302 @@ async function rollDamageFromCard(message, flags, outcome) {
 
 /* -------------------------------------------- */
 
-/** The damage card's Apply row. */
-async function applyDamageFromCard(message, flags, button) {
+/**
+ * The damage card's Apply row. The card names the creature it was rolled against, and that is who
+ * takes the damage (0.5.3; Mike: "when I roll damage on my target, it damages me instead"): this
+ * client spends it when it may write the actor, and otherwise asks the active GM's client to, over
+ * the system socket, since a player's Strike nearly always lands on an adversary the player cannot
+ * write. Shift-click spends it on the selected tokens instead: the GM's redirect, or a player
+ * taking an adversary's blow on themselves. A card with no target (damage rolled from the sheet
+ * with nothing targeted) falls back to the selection, then to the user's targets. The old order,
+ * selection first, put a player's own blow on their own selected token, which a player who has
+ * just Struck always has.
+ */
+async function applyDamageFromCard(message, flags, button, event) {
   const multiplier = Number(button.dataset.multiplier ?? 1);
   const card = button.closest(".starwrought.damage-card");
   const zone = card?.querySelector("select[name='zone']")?.value ?? SW.DEFAULT_ZONE;
 
-  const targets = resolveTargets(flags.targetUuid);
+  let targets;
+  if (event?.shiftKey) targets = resolveTargets("");
+  else if (flags.targetUuid) {
+    const named = resolveActor(flags.targetUuid);
+    if (!named) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.targetGone"));
+    if (!named.isOwner) return relayDamage(message, named, { zone, multiplier });
+    targets = [named];
+  } else targets = resolveTargets("");
   if (!targets.length) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
 
-  for (const actor of targets) {
-    const result = await SwDamage.apply(actor, {
-      base: flags.base,
-      deadly: flags.deadly,
-      type: flags.damageType,
-      zone,
-      critical: flags.critical,
-      graze: flags.graze,
-      strike: flags.strike ?? SW.DEFAULT_STRIKE,
-      armorPiercing: flags.armorPiercing,
-      massive: !!flags.massive,
-      nonlethal: !!flags.nonlethal,
-      multiplier
-    });
-    await postDamageSummary(actor, result, multiplier);
+  for (const actor of targets) await applyCard(actor, flags, { zone, multiplier });
+}
+
+/** Spend one damage card on one Actor, and post what the body felt. */
+async function applyCard(actor, flags, { zone, multiplier }) {
+  const result = await SwDamage.apply(actor, {
+    base: flags.base,
+    deadly: flags.deadly,
+    type: flags.damageType,
+    zone,
+    critical: flags.critical,
+    graze: flags.graze,
+    strike: flags.strike ?? SW.DEFAULT_STRIKE,
+    armorPiercing: flags.armorPiercing,
+    massive: !!flags.massive,
+    nonlethal: !!flags.nonlethal,
+    multiplier
+  });
+  await postDamageSummary(actor, result, multiplier);
+  return result;
+}
+
+/**
+ * Which Actors a card click should land on: the creature the uuid names when this user may write
+ * it, then the selected tokens, then the user's targets.
+ */
+function resolveTargets(targetUuid) {
+  const named = resolveActor(targetUuid);
+  if (named?.isOwner) return [named];
+  const controlled = canvas.tokens?.controlled?.map(t => t.actor).filter(a => a?.isOwner) ?? [];
+  if (controlled.length) return controlled;
+  return Array.from(game.user.targets).map(t => t.actor).filter(a => a?.isOwner);
+}
+
+/* -------------------------------------------- */
+/*  Damage over the socket (0.5.3)              */
+/* -------------------------------------------- */
+
+const SOCKET = `system.${SW.SYSTEM_ID}`;
+const MULTIPLIERS = [1, 0.5, -1];
+const REFUSALS = {
+  noCard: "STARWROUGHT.Notify.damageRefusedNoCard",
+  notYours: "STARWROUGHT.Notify.damageRefusedNotYours",
+  noTarget: "STARWROUGHT.Notify.damageRefusedNoTarget"
+};
+
+/**
+ * Ask the active GM's client to spend a damage card on a creature this client cannot write. The
+ * request carries the card's id and the two things the clicker chose, the Zone and the multiplier;
+ * the GM's client reads everything else (who was hit, the totals, the Strike) from the message
+ * itself, and who is asking from the server's stamp on the socket event, as the attack flow does.
+ */
+function relayDamage(message, target, { zone, multiplier }) {
+  const gm = game.users.activeGM;
+  if (!gm) return ui.notifications.warn(game.i18n.format("STARWROUGHT.Notify.noGmToApply", { name: target.name }));
+  game.socket.emit(SOCKET, { type: "damage:apply", to: gm.id, messageId: message.id, zone, multiplier }, { recipients: [gm.id] });
+  return ui.notifications.info(game.i18n.format("STARWROUGHT.Notify.damageSent", { name: target.name }));
+}
+
+/**
+ * The chat cards' half of the system socket: starwrought.mjs routes `damage:*` and `reroll:*`
+ * here and everything else to the attack coordinator. A `damage:apply` or `reroll:apply` is
+ * answered by the GM's client with `damage:applied`, `reroll:done` or a refusal, each addressed
+ * to the asker alone.
+ * @param {object} message
+ * @param {string} [senderId]  The emitting user's id, supplied by the server.
+ */
+export async function onChatSocket(message, senderId) {
+  if (!message || (typeof message !== "object") || (message.to !== game.user.id)) return;
+  const sender = ((typeof senderId === "string") && game.users.has(senderId)) ? senderId : null;
+  switch (message.type) {
+    case "damage:apply": {
+      if (!sender || !game.user.isGM) return;
+      const reply = await applyDamageForUser(message, sender);
+      game.socket.emit(SOCKET, { ...reply, to: sender, messageId: message.messageId }, { recipients: [sender] });
+      return;
+    }
+    case "damage:applied":
+      ui.notifications.info(game.i18n.format("STARWROUGHT.Notify.damageApplied", { name: message.name ?? "" }));
+      return;
+    case "damage:refused":
+      ui.notifications.warn(game.i18n.localize(REFUSALS[message.reason] ?? "STARWROUGHT.Notify.damageRefused"));
+      return;
+    case "reroll:apply": {
+      if (!sender || !game.user.isGM) return;
+      const reply = await rerollForUser(message, sender);
+      game.socket.emit(SOCKET, { ...reply, to: sender, messageId: message.messageId }, { recipients: [sender] });
+      return;
+    }
+    case "reroll:done":
+      notifyReroll(message.outcome ?? "");
+      return;
+    case "reroll:refused":
+      ui.notifications.warn(game.i18n.localize(REROLL_REFUSALS[message.reason] ?? "STARWROUGHT.Reroll.refused"));
+      return;
+    default:
+      return;
   }
 }
 
-/** Which Actors this apply-click should land on. */
-function resolveTargets(targetUuid) {
-  const controlled = canvas.tokens?.controlled?.map(t => t.actor).filter(a => a?.isOwner) ?? [];
-  if (controlled.length) return controlled;
-  const targeted = Array.from(game.user.targets).map(t => t.actor).filter(a => a?.isOwner);
-  if (targeted.length) return targeted;
-  if (targetUuid) {
-    const actor = resolveActor(targetUuid);
-    if (actor?.isOwner) return [actor];
+/** Kept under its old name for a module that imported it from 0.5.3's first cut. */
+export const onDamageSocket = onChatSocket;
+
+/**
+ * Spend a damage card for another user, on the GM's client. The asker must have rolled it (the
+ * card's author) or own the attacker; the creature is the one the card names, never one the
+ * request names; the Zone is held to what the Strike allows (a Quick Strike lands on the Torso and
+ * nowhere else) and the multiplier to the three buttons.
+ */
+async function applyDamageForUser(request, userId) {
+  const chat = game.messages.get(request.messageId);
+  const flags = chat?.flags?.[SW.SYSTEM_ID];
+  if (!chat || (flags?.kind !== "damage")) return { type: "damage:refused", reason: "noCard" };
+  const user = game.users.get(userId);
+  const attacker = resolveActor(flags.actorUuid);
+  const may = (chat.author?.id === userId) || (!!attacker && !!user && attacker.testUserPermission(user, "OWNER"));
+  if (!may) return { type: "damage:refused", reason: "notYours" };
+  const target = resolveActor(flags.targetUuid);
+  if (!target?.isOwner) return { type: "damage:refused", reason: "noTarget" };
+
+  const asked = String(request.zone ?? "");
+  let zone = (asked in SW.ZONES) ? asked : SW.DEFAULT_ZONE;
+  const kind = SW.STRIKE_KINDS[flags.strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
+  if (!flags.graze && !flags.critical && !kind.placeOnExposed) zone = SW.DEFAULT_ZONE;
+  const multiplier = MULTIPLIERS.includes(Number(request.multiplier)) ? Number(request.multiplier) : 1;
+  await applyCard(target, flags, { zone, multiplier });
+  return { type: "damage:applied", name: target.name };
+}
+
+/* -------------------------------------------- */
+/*  Rerolls (0.5.3)                              */
+/* -------------------------------------------- */
+
+const REROLL_REFUSALS = {
+  noCard: "STARWROUGHT.Reroll.refusedNoCard",
+  already: "STARWROUGHT.Reroll.already",
+  notYours: "STARWROUGHT.Reroll.refusedNotYours"
+};
+
+/**
+ * Throw an Attack or Defense card's die again (Mike, 2026-10-01: "Players (and the GM) should have
+ * a 'reroll' option on the Attack, for special cases", "and for Defense rolls, too"). The roller's
+ * owner or the GM clicks; a small dialog takes the reason, for the record, and offers to spend a
+ * Hero Point when the roller is a character holding one. The new d20 is thrown here, with the
+ * first die's formula, so a player throws the die they own. The reading happens where the
+ * Threshold can be known and the old card can be marked: on this client when the card showed its
+ * Threshold (or this is the GM, who may read a hidden one again) and this client may update the
+ * old card; otherwise on the active GM's client, over the socket, which answers with the outcome.
+ */
+async function rerollFromCard(message, flags) {
+  if (flags.superseded) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.already"));
+  const roller = resolveActor(flags.actorUuid);
+  if (!roller) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noActor"));
+  if (!roller.isOwner) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+  const original = message.rolls?.[0];
+  if (!original?.formula) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noRoll"));
+
+  const answer = await rerollDialog(roller);
+  if (!answer) return;
+  let reason = answer.reason;
+  if (answer.heroPoint) {
+    if (typeof roller.spendHeroPoint === "function") await roller.spendHeroPoint();
+    if (!reason) reason = game.i18n.localize("STARWROUGHT.Reroll.heroPointReason");
   }
-  return [];
+
+  const roll = await new Roll(original.formula).evaluate();
+  // Dice So Nice, when present, shows the die as it shows any roll's.
+  try { await game.dice3d?.showForRoll?.(roll, game.user, true); } catch { /* the dice module's business */ }
+  const rollData = {
+    roll: roll.toJSON(),
+    total: roll.total,
+    natural: roll.dice[0]?.results?.[0]?.result ?? null,
+    formula: roll.formula,
+    modifiers: flags.modifiers ?? []
+  };
+
+  const shown = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : null;
+  const threshold = shown ?? (game.user.isGM ? AttackCoordinator.thresholdForCard(flags) : null);
+  const gm = game.users.activeGM;
+  if ((threshold !== null) && (message.isAuthor || game.user.isGM || !gm)) {
+    const result = await SwCheck.rerollCard(message, { rollData, reason, threshold });
+    return notifyReroll(outcomeLabel(result));
+  }
+  if (!gm) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noGm"));
+  game.socket.emit(SOCKET, { type: "reroll:apply", to: gm.id, messageId: message.id, rollData, reason }, { recipients: [gm.id] });
+  return ui.notifications.info(game.i18n.localize("STARWROUGHT.Reroll.sent"));
+}
+
+/** The small dialog: why, for the record, and a Hero Point to spend when the roller has one. */
+async function rerollDialog(roller) {
+  const L = key => game.i18n.localize(key);
+  const hero = (roller.type === "character") ? (Number(roller.system.heroPoints?.value) || 0) : 0;
+  const content = `
+    <p>${game.i18n.format("STARWROUGHT.Reroll.prompt", { label: foundry.utils.escapeHTML(roller.name) })}</p>
+    <div class="form-group">
+      <label>${L("STARWROUGHT.Reroll.reasonLabel")}</label>
+      <input type="text" name="reason" maxlength="80" placeholder="${foundry.utils.escapeHTML(L("STARWROUGHT.Reroll.reasonPlaceholder"))}">
+    </div>
+    ${hero > 0 ? `<div class="form-group"><label class="checkbox"><input type="checkbox" name="heroPoint"> ${
+      game.i18n.format("STARWROUGHT.Reroll.heroPoint", { n: hero })}</label></div>` : ""}`;
+  return foundry.applications.api.DialogV2.prompt({
+    window: { title: L("STARWROUGHT.Reroll.title"), icon: "fa-solid fa-rotate-right" },
+    classes: ["starwrought"],
+    content,
+    ok: {
+      label: L("STARWROUGHT.Reroll.confirm"),
+      icon: "fa-solid fa-rotate-right",
+      callback: (event, button) => ({
+        reason: String(button.form.elements.reason?.value ?? "").trim().slice(0, 80),
+        heroPoint: !!button.form.elements.heroPoint?.checked
+      })
+    },
+    rejectClose: false
+  });
+}
+
+/**
+ * The new card's outcome as a label, for the notification: the attack's result (Hit, Graze, Miss,
+ * Critical Hit) on either side's card, since a Defense card's degree is written from the
+ * attacker's side and "Critical success" would read backwards to the defender.
+ */
+function outcomeLabel(result) {
+  const key = (typeof result?.outcome === "string") ? result.outcome : result?.outcome?.key;
+  const entry = key ? Object.values(SW.ATTACK_OUTCOMES).find(o => o.key === key) : null;
+  if (entry) return game.i18n.localize(entry.label);
+  if (result?.degree && SW.DEGREES[result.degree]) return game.i18n.localize(SW.DEGREES[result.degree].label);
+  return "";
+}
+
+function notifyReroll(outcome) {
+  return ui.notifications.info(outcome
+    ? game.i18n.format("STARWROUGHT.Reroll.done", { outcome })
+    : game.i18n.localize("STARWROUGHT.Reroll.donePlain"));
+}
+
+/**
+ * Read a rerolled die for another user, on the GM's client. The asker must own the roller; the
+ * die must be a Roll of the first card's own formula (the modifiers are not the asker's to
+ * change); the Threshold is the card's where it showed one, else read again from actor data.
+ */
+async function rerollForUser(request, userId) {
+  const chat = game.messages.get(request.messageId);
+  const flags = chat?.flags?.[SW.SYSTEM_ID];
+  if (!chat || !["attack", "defense"].includes(flags?.kind)) return { type: "reroll:refused", reason: "noCard" };
+  if (flags.superseded) return { type: "reroll:refused", reason: "already" };
+  const user = game.users.get(userId);
+  const roller = resolveActor(flags.actorUuid);
+  if (!roller || !user || !roller.testUserPermission(user, "OWNER")) return { type: "reroll:refused", reason: "notYours" };
+  const rollData = rerollData(request.rollData, chat.rolls?.[0]?.formula ?? "");
+  if (!rollData) return { type: "reroll:refused", reason: "noCard" };
+  const threshold = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : AttackCoordinator.thresholdForCard(flags);
+  const result = await SwCheck.rerollCard(chat, { rollData, reason: String(request.reason ?? "").slice(0, 80), threshold });
+  return { type: "reroll:done", outcome: outcomeLabel(result) };
+}
+
+/** A submitted die, if it is a Roll of the expected formula; null for anything else. */
+function rerollData(payload, formula) {
+  try {
+    const roll = Roll.fromData(payload?.roll);
+    if (!roll?.total || (roll.formula !== formula)) return null;
+    return {
+      roll: roll.toJSON(),
+      total: roll.total,
+      natural: roll.dice[0]?.results?.[0]?.result ?? null,
+      formula: roll.formula,
+      modifiers: null
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** A short card saying what the body actually felt. */

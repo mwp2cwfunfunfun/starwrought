@@ -21,7 +21,7 @@
  */
 
 import * as SW from "../config.mjs";
-import { movementNumbers, classifyMove } from "../documents/actions.mjs";
+import { movementNumbers, classifyMove, opportunityOf, moveCapped, moveCapApplies } from "../documents/actions.mjs";
 import { setting } from "../documents/combat.mjs";
 
 /** One colour per Move, first to sixth. Gold first. */
@@ -70,8 +70,22 @@ export function registerMoveRuler() {
       if (!context?.cost) return context;
       const move = this.#moveAt(waypoint);
       if (!move) return context;
-      context.cost.total = `${context.cost.total} ${labelFor(move)}`;
+      // Core prints "{total} {units}"; the units go before our glyphs, so the label reads
+      // "12 ft ❶×2" and not "12 ❶×2 ft" (0.5.3).
+      const units = context.cost.units ?? "";
+      context.cost.total = `${context.cost.total}${units ? ` ${units}` : ""} ${labelFor(move, this.#capped(move))}`;
+      context.cost.units = "";
       return context;
+    }
+
+    /**
+     * Is this more than the one Maneuver an Opportunity holds (0.5.3)? Only at the token's own
+     * Opportunity with the cap on; the drop would be refused (documents/actions.mjs), so the squares
+     * read red and the label says why before the player lets go.
+     */
+    #capped(move) {
+      const doc = this.token?.document ?? this.token;
+      return moveCapped(move) && moveCapApplies(doc);
     }
 
     /* -------------------------------------------- */
@@ -110,6 +124,7 @@ export function registerMoveRuler() {
       const move = this.#moveAt(waypoint);
       if (!move) return null;
       if (move.actions > actionsLeft(this.token)) return OVER_BUDGET;
+      if (this.#capped(move)) return OVER_BUDGET;
       if (move.kind === "step") return STEP_COLOR;
       if (move.kind === "rush") return RUSH_COLOR;
       return MOVE_COLORS[Math.min(move.moves, MOVE_COLORS.length) - 1];
@@ -149,15 +164,17 @@ function isStraight(start, waypoint, distance) {
 }
 
 /**
- * The label's action glyphs: "❶ Step", "❶", "❶×2", "❸ Rush", "❶×2 Crawl", and a hint when a Rush
- * would be cheaper.
+ * The label's action glyphs: "❶ Step", "❶", "❶×2", "❸ Rush", "❶×2 Crawl", a hint when a Rush
+ * would be cheaper, and "past one Move" when the drop would be refused (0.5.3).
  */
-function labelFor(move) {
+function labelFor(move, capped = false) {
   const g = SW.ACTION_GLYPHS;
   if (move.kind === "step") return `${g[1]} ${game.i18n.localize("STARWROUGHT.Actions.stepTitle")}`;
   if (move.kind === "rush") return `${g[3]} ${game.i18n.localize("STARWROUGHT.Actions.rushTitle")}`;
   const glyph = move.moves > 1 ? `${g[1]}×${move.moves}` : g[1];
-  if (move.kind === "crawl") return `${glyph} ${game.i18n.localize("STARWROUGHT.Actions.crawlTitle")}`;
+  const name = (move.kind === "crawl") ? ` ${game.i18n.localize("STARWROUGHT.Actions.crawlTitle")}` : "";
+  if (capped) return `${glyph}${name} · ${game.i18n.localize("STARWROUGHT.Actions.moveCapLabel")}`;
+  if (move.kind === "crawl") return `${glyph}${name}`;
   if (!move.rushInstead) return glyph;
   return `${glyph} (${g[3]} ${game.i18n.localize("STARWROUGHT.Actions.rushTitle")}?)`;
 }
@@ -173,10 +190,6 @@ function actionsLeft(token) {
   const full = Number(actor?.system?.actionsPerRound) || SW.ACTIONS_PER_ROUND;
   if (!actor?.system?.actions) return full;
   if (!setting("trackActions", true)) return full;
-  const combat = game.combat;
-  if (!combat?.started) return full;
-  const current = combat.combatant;
-  const mine = current && ((current.tokenId === token.id) || (!current.tokenId && (current.actor?.id === actor.id)));
-  if (!mine) return full;
+  if (!opportunityOf(token?.document ?? token)) return full;
   return Math.max(0, Number(actor.system.actions.value) || 0);
 }

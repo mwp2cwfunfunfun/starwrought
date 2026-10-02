@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.5.2**. Developed against
+Rules content built from **Player's Handbook v4.10**. System version **0.5.3**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -410,8 +410,10 @@ Unconscious, Dying) and so Passes by necessity. A GM who clicks Next Turn for a 
 has not Passed for it, and any Maneuver paid at your own Opportunity resets the streak. A lone
 combatant's Pass is a whole circuit and ends the round; its Next Turn or End Opportunity after a
 Maneuver is simply its next Opportunity in the same round, so its six actions and any Prepared
-Maneuver survive. With no GM connected the streak is kept in memory by one elected client. Under each tracker row: actions left as a glyph, the reserved count,
-and an hourglass while Preparing.
+Maneuver survive. With no GM connected the streak is kept in memory by one elected client. Under
+each tracker row: the actions left as a large gold number over the round's count ("5/6", red at
+zero) with a pip per action lit while unspent, the same pips the sheet shows (0.5.3; it was one
+small circled glyph), then the reserved count and an hourglass while Preparing.
 
 **Prepared Maneuvers.** A Maneuver of three or more actions is Prepared: one action now, the rest
 reserved, and you are Preparing (a token status) until your next Opportunity. The Committed Strike
@@ -457,8 +459,12 @@ something:
   as three at once (a drag is a move already made, so its Prepared telegraphing is left to the
   table);
 - anything else is one **Move ❶** per Speed's worth of feet, rounded up. Two Moves is two
-  Opportunities' worth, and the card says so; a bent path a straight Rush would have paid three for
-  gets a hint;
+  Opportunities' worth, so a drag that would take a second Move is refused before the token lands
+  (0.5.3; Mike: "we should not be able to Move more than our Speed at one time, in combat"), with a
+  notice saying how far one Move carries you and that a straight Rush is the way to go further. The
+  same holds for a second Crawl. The world setting **One Maneuver per Opportunity on the map**
+  switches the refusal off, and the move's card then counts the Moves for the table, as 0.5.2 did.
+  A bent path a straight Rush would have paid three for gets a hint;
 - at **Speed 0** (the final Legs Wound: Prone, and cannot Stand) every drag is a **Crawl ❶** per 3
   feet, which never provokes. The Speed read is what the Legs allow (`moveSpeed`), so an adversary's
   Legs Wounds reach the charge and the ruler while its stored Speed stays the creature's own.
@@ -579,9 +585,14 @@ see, and a pip for everyone else. At a table where the players roll everything, 
 going for" comes up every round, and a pip does not answer it.
 
 - **Arrows on the map.** From the token doing the targeting to whatever it targets, in the targeting
-  player's colour, drawn for everyone who can see both tokens. They start at the edge of one space
+  player's colour. The GM sees every arrow; a player sees only the arrows their own user set
+  (0.5.3; Mike: "players should not be able to see any targeting arrows other than their own"), so
+  who the adversaries are going for stays the GM's to reveal. They start at the edge of one space
   and end at the edge of the other with an arrowhead, over a dark underlay so they read on a light
-  map as well as a dark one. **Each carries the distance**, measured the way the handbook measures
+  map as well as a dark one. At short range, where the distance pill would cover the shaft it
+  describes, the pill steps off the line to the upper side and the arrow stays in view (0.5.3;
+  Mike: "short distances have non-ideal targeting and bind arrows"); the Bind chain's label keeps
+  the lower side, so the two never trade places. **Each carries the distance**, measured the way the handbook measures
   everything: edge to edge, in whole squares, diagonals exact, so adjacent reads 0 ft and a square
   two across and one up reads 2.2 ft. The number is gold when the target is within the source's
   Total Reach and plain when it is not. Client setting `showTargetArrows`.
@@ -760,7 +771,11 @@ stop on that square instead of finding out after the token has landed.
 
 The ruler line matches the squares, and the waypoint label prints the cost in actions beside the
 cost in feet: `3 ft ❶ Step`, `12 ft ❶×2`, `30 ft ❸ Rush`, or `18 ft ❶×3 (❸ Rush?)` when a straight
-Rush would have been cheaper than the Moves.
+Rush would have been cheaper than the Moves. The trail of an earlier Opportunity's Moves (core's
+movement history, drawn behind a new drag) is cleared as a combatant's Opportunity begins, by the
+client responsible for it (0.5.3; Mike: "My past Move trails should disappear when it is my
+opportunity to go again"), which covers the two cases core leaves: a table with no GM connected,
+and a lone combatant whose next Opportunity writes no Combat update.
 
 The count runs **from where the drag began, against the actions you have left at your own
 Opportunity**, not from the start of the round against a full six. Movement already made has already
@@ -769,8 +784,11 @@ next 6 are gold again. Outside an encounter, at someone else's Opportunity, or w
 off, the full six (or the creature's own count) is assumed and the bands simply show what a round of
 movement looks like.
 
-Nothing is prevented, in keeping with the rest of the system. The red squares are a warning, the
-drop still lands, and the overspend is announced in chat. Client setting `showMoveBands`; a client
+One thing is prevented (0.5.3): at your own Opportunity, a drag that would take a second Move or a
+second Crawl is refused when the token is dropped, since an Opportunity holds one Maneuver; those
+squares are red on the way and the label reads "❶×2 · past one Move", so the refusal is never a
+surprise. Everything else stays a warning: the red squares past your remaining actions, the drop
+still lands, and the overspend is announced in chat. Client setting `showMoveBands`; a client
 that still carries the old `showStrideBands` value has it read once, at registration, to seed the
 new setting's default. A Crawl is labelled as such; its squares are the Move colours by count.
 
@@ -981,11 +999,40 @@ defender answered with (and a Charge button when the attacker's client could not
 defender's ❶), a note when a Quick Strike's 20 was denied its Critical Hit, the Critical / Hit /
 Graze damage buttons, and the **Position block**: Expose the attacker or the defender (a Zone
 picker), Form Bind or Take Control, the riposte, Give ground 3 ft or Step, and the Counter's Quick
-Strike back, each shown only to the side it belongs to.
+Strike back, each shown only to the side it belongs to. A Strike at a target the weapon cannot
+reach says so on the card and is never refused; since 0.5.3 the cards the attack flow resolves say
+it too (they had the note switched off, so a partner Striking from outside his own reach went
+unremarked).
+
+**Reroll** (0.5.3; Mike: "Players (and the GM) should have a 'reroll' option on the Attack, for
+special cases", "and for Defense rolls, too"). Every Attack and Defense card offers Reroll to the
+roller's owner and to the GM. A small dialog takes the reason, for the record, and offers to spend
+a Hero Point when the roller is a character holding one. The d20 is thrown again with the first
+die's formula; everything else stays as it was (the weapon or attack row, the Strike, the
+defender's Defense, Reaction and Posture, the Proficiency rolled, the modifiers, the Threshold
+where it was shown), and nothing is paid again: the Reaction was charged when the first die
+landed and the Strike's actions were spent before it. The new card says it is a reroll and why;
+the old card stays in the record, dimmed, with its total struck through and every control
+disabled. When the card hid its Threshold (an adversary's, inside the attack flow) the die is
+thrown on the roller's client and read on the active GM's client over the socket, which checks
+that the die is a Roll of the first card's own formula and that the asker owns the roller, reads
+the Threshold again from actor data, and answers with the outcome; with no GM connected the player
+is told so. The attack card that carried the pairing's outcome follows the new card, with a line in
+its log. Rerolling a card that was itself rerolled rerolls the newest; a superseded card refuses.
 
 **Damage cards** show the formula broken into its parts, the Deadly die, a Zone selector (locked to
 the Torso for a Quick Strike, offering the Exposed Zones for a Deliberate or Committed Hit, open for
-a Graze or a Critical Hit) with a note saying whose choice it is, and Apply / half / heal.
+a Graze or a Critical Hit) with a note saying whose choice it is, and Apply / half / heal. Apply
+lands on the creature the card was rolled against (0.5.3). Your own client spends it when you may
+write that actor; otherwise the active GM's client does, asked over the system socket with the
+card's id, the Zone and the multiplier. It reads who was hit and how hard from the card itself and
+who is asking from the server's stamp on the event, allows only the card's author or the
+attacker's owner, holds a Quick Strike to the Torso, and answers you with "Applied to {name}" or
+the reason it refused; the applied card still goes to the GM alone for an adversary, and with no
+GM connected you are told so. Shift-click spends the card on your selected tokens instead (the
+GM's redirect, or a player taking an adversary's blow on themselves), and a card rolled with no
+target falls back to the selection, then your targets. Until 0.5.3 the selection came first, so a
+player's own Strike landed on their own selected token.
 
 **Applied cards** show the whole pipeline: what was rolled, what Weakness and Resistance did, the
 doubling, the Protection, the Vigor before and after, then what the body did about it: the Zone's
@@ -1044,14 +1091,16 @@ are markers for the table.
 |---|---|---|
 | Open Constellations automatically | on | When a Talent arrives on a character with no Constellation Item for it, fetch it so the sky is drawn |
 | Offer a Flare on a critical | on | Put the Flare button on critical chat cards |
+| One Maneuver per Opportunity on the map | on | At a combatant's own Opportunity a drag may be one Step, one Move, one Crawl or one straight Rush; a second Move's worth is refused before the token lands. Off, the move lands and its card counts the Moves |
 | Track the six-action round | on | Spend actions automatically for Strikes, Reactions, Raise a Shield, Recenter, drawing or stowing a weapon, and movement (a Step, one action per Move, or a Rush). Encounters only; the pips can always be corrected by hand |
 | Remind about Recovery checks | on | Post a Recovery card to the owner at the start of each round while a character is Dying, which is when the check is made |
 | Show Total Reach on the map | on | Draw the reach bands around the token you control or hover over. Per client |
 | Colour the drag ruler by Moves | on | Colour the squares a drag crosses by which action pays for them: a Step, each Move, a Rush, or past what you have left. Per client |
-| Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour. Per client |
+| Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour: every arrow for the GM, only their own for a player. Per client |
 | The attack flow | on | A character's Strike at a target declares first; defenders commit a Defense and an answer in private, all reveal at once, then the player rolls. Off, a character's Strike rolls at once against the standing stance, as 0.4.2 did; an adversary's attack row always declares |
 | Show a character's Threshold to the attacker | off | After the reveal, print the defending character's Threshold on the attack card and the resolution card for the attacking player. Inside the flow an adversary's Thresholds are never printed for players |
 | Show pinned auras | on | Draw every combatant's Visible ranges on the map while an encounter runs. Off, only the hover preview draws. Per client |
+| Range ring contrast | Normal | How boldly the reach and aura rings are drawn. Every ring has a dark halo under its outline so it reads on a pale floor; Strong thickens the lines and deepens the fills. Per client |
 
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
 for it is ignored.

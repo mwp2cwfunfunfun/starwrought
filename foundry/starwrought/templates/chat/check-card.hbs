@@ -47,11 +47,26 @@
   </div>
   {{/if}}
 
+  {{#if reroll}}
+  {{!-- A reroll (0.5.3) says so, and why, so the record reads in order. --}}
+  <p class="sw-card-note sw-reroll-note"><i class="fa-solid fa-rotate-right"></i> {{#if reroll.reason}}{{localize "STARWROUGHT.Reroll.noteReason" reason=reroll.reason}}{{else}}{{localize "STARWROUGHT.Reroll.note"}}{{/if}}</p>
+  {{/if}}
+
   {{#if degree}}
   <div class="sw-card-outcome sw-outcome-{{outcomeKey}}">
     {{#if isAttack}}{{outcome}}{{else}}{{degreeLabel}}{{/if}}
   </div>
   {{#if critDenied}}<p class="sw-card-note">{{localize "STARWROUGHT.Strike.quickNoCrit"}}</p>{{/if}}
+  {{/if}}
+
+  {{#if canReroll}}
+  {{!-- Reroll (0.5.3): the roller's owner and the GM may throw this die again for a special case.
+       The render hook removes it, with every other control, once the card is superseded. --}}
+  <div class="sw-card-reroll" data-owner-uuid="{{actor.uuid}}">
+    <button type="button" data-sw-action="reroll" data-tooltip="STARWROUGHT.Reroll.hint">
+      <i class="fa-solid fa-rotate-right"></i> {{localize "STARWROUGHT.Reroll.button"}}
+    </button>
+  </div>
   {{/if}}
 
   {{#if outcomes}}

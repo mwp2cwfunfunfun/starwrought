@@ -16,7 +16,7 @@ import {
 import { SwActor } from "./module/documents/actor.mjs";
 import { SwItem } from "./module/documents/item.mjs";
 import { SwCombat, SwCombatant } from "./module/documents/combat.mjs";
-import { onRenderChatMessage } from "./module/documents/chat.mjs";
+import { onRenderChatMessage, onChatSocket } from "./module/documents/chat.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
@@ -184,7 +184,15 @@ Hooks.once("ready", async () => {
   // Then the live Blows are rebuilt from the chat log: every card whose
   // `flags.starwrought.attackWorkflow.phase` is neither complete nor cancelled, with this client's
   // private commitments restored from its own `attackPrivate` setting.
-  game.socket.on(`system.${SW.SYSTEM_ID}`, AttackCoordinator.onSocket);
+  // One system socket, two listeners: `damage:*` (a player's Apply on a creature they cannot
+  // write) and `reroll:*` (a die read again on the GM's client), both 0.5.3, go to chat.mjs;
+  // everything else to the attack coordinator.
+  game.socket.on(`system.${SW.SYSTEM_ID}`, (message, senderId) => {
+    if (/^(damage|reroll):/.test(String(message?.type ?? ""))) return onChatSocket(message, senderId);
+    return AttackCoordinator.onSocket(message, senderId);
+  });
+  // A rerolled resolution card (0.5.3): the attack card that carried its outcome follows it.
+  Hooks.on("starwrought.reroll", data => AttackCoordinator.noteReroll(data));
   AttackCoordinator.register();
   // The Combat Prompt listens for the attack flow's state events and opens for whoever must act.
   SwCombatPrompt.register();
@@ -554,6 +562,18 @@ function registerSettings() {
     default: true
   });
 
+  // One Maneuver per Opportunity on the map (0.5.3; Mike, 2026-10-01): a drag at your own
+  // Opportunity may be one Step, one Move, one Crawl or one straight Rush, and a second Move's
+  // worth is refused before the token lands. Off, the move lands and its card counts the Moves.
+  game.settings.register(SW.SYSTEM_ID, "capMoves", {
+    name: "STARWROUGHT.Settings.capMoves",
+    hint: "STARWROUGHT.Settings.capMovesHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
   game.settings.register(SW.SYSTEM_ID, "trackActions", {
     name: "STARWROUGHT.Settings.trackActions",
     hint: "STARWROUGHT.Settings.trackActionsHint",
@@ -583,6 +603,24 @@ function registerSettings() {
     type: Boolean,
     default: true,
     onChange: () => { refreshAuras(); refreshReach(); }
+  });
+
+  // How boldly the rings are drawn (0.5.3; Mike: "sometimes the Ranges are hard to see, depending
+  // on the colour of the battlemap tiles"). Every ring has a dark halo under its outline at either
+  // level; Strong thickens the lines and deepens the fills. The level is part of the ring
+  // signature, so the refresh redraws.
+  game.settings.register(SW.SYSTEM_ID, "ringContrast", {
+    name: "STARWROUGHT.Settings.ringContrast",
+    hint: "STARWROUGHT.Settings.ringContrastHint",
+    scope: "client",
+    config: true,
+    type: String,
+    choices: {
+      normal: "STARWROUGHT.Settings.ringContrastNormal",
+      strong: "STARWROUGHT.Settings.ringContrastStrong"
+    },
+    default: "normal",
+    onChange: () => { refreshReach(); refreshAuras(); }
   });
 
   game.settings.register(SW.SYSTEM_ID, "showTargetArrows", {

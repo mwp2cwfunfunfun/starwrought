@@ -481,6 +481,22 @@ async function beginOpportunity(combat, combatant) {
   const actor = combatant.actor;
   if (!actor?.system || !responsibleFor(actor)) return;
 
+  // The trail of the last Opportunity's Moves goes when the next begins (Mike, 2026-10-01: "My past
+  // Move trails should disappear when it is my opportunity to go again"). Core clears every
+  // combatant's movement history when a turn starts, but only on the active GM's client and only
+  // when the Combat document changed: a table with no GM connected, and a lone combatant whose
+  // next Opportunity writes no update (nextTurn above), kept their trails. The responsible client
+  // clears this combatant's own token here, which it may write; a second clear after core's is
+  // free (0.5.3).
+  const token = combatant.token;
+  if (token?.isOwner && (token.movementHistory?.length > 0) && (typeof token.clearMovementHistory === "function")) {
+    try {
+      await token.clearMovementHistory();
+    } catch (err) {
+      console.warn("STARWROUGHT | the move trail could not be cleared", err);
+    }
+  }
+
   for (const shield of actor.items.filter(i => (i.type === "shield") && i.system.raised)) {
     await lowerShield(actor, shield);
   }
@@ -971,19 +987,37 @@ function onRenderTracker(app, element) {
   }
 }
 
-/** The line under the name: actions left as a glyph, plus what is reserved and what is Preparing. */
+/**
+ * The line under the name: actions left as a large number over the round's count, with a pip per
+ * action (lit while unspent), plus what is reserved and what is Preparing. It was one small
+ * circled glyph until 0.5.3 (Mike: "# actions remaining in combat tracker are very small/hard to
+ * read"); the pips are the sheet's, so the two readouts agree at a glance.
+ */
 function actionsReadout(actor, actions) {
   const line = document.createElement("div");
   line.className = "sw-tracker-actions";
   const value = Math.max(0, Number(actions.value) || 0);
-  const glyph = SW.ACTION_GLYPHS[value] ?? `${SW.ACTION_GLYPHS[6]}+${value - 6}`;
   const per = Number(actor.system.actionsPerRound) || SW.ACTIONS_PER_ROUND;
   line.dataset.tooltip = format("STARWROUGHT.Tracker.actionsLeft", { value, per });
+  if (!value) line.classList.add("sw-none");
 
   const count = document.createElement("span");
   count.className = "sw-tracker-actions-left";
-  count.textContent = glyph;
+  count.textContent = String(value);
+  const of = document.createElement("span");
+  of.className = "sw-tracker-actions-of";
+  of.textContent = `/${per}`;
+  count.append(of);
   line.append(count);
+
+  const pips = document.createElement("span");
+  pips.className = "sw-tracker-pips";
+  for (let i = 0; i < Math.min(per, 12); i++) {
+    const pip = document.createElement("i");
+    pip.className = `sw-tracker-pip${i < value ? " sw-lit" : ""}`;
+    pips.append(pip);
+  }
+  line.append(pips);
 
   const reserved = Number(actions.reserved) || 0;
   if (reserved) {

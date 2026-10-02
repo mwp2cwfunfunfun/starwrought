@@ -132,6 +132,35 @@ function reportDrift(drift) {
 
 /* -------------------------------------------- */
 
+/**
+ * The three places the system's version lives have to agree: system.json, which the server reads,
+ * and the two stamps the client compares it with at load (`SYSTEM_VERSION` in module/config.mjs
+ * and `--sw-css-version` in styles/starwrought.css) to catch a browser holding a cached release.
+ * `assets/package_system.mjs` made this check at packaging time; 0.5.2 shipped from this pipeline
+ * with both stamps still on 0.5.1, so every client saw the warning the stamps exist to raise.
+ * Checked here too, after every run, so a release cannot leave the repository with the stamps
+ * disagreeing (0.5.3).
+ * @returns {string[]}  One line per disagreement; empty when all three agree.
+ */
+function stampCheck() {
+  const manifest = JSON.parse(fs.readFileSync(path.join(SYSTEM, "system.json"), "utf8"));
+  const stamps = {
+    "module/config.mjs": /export const SYSTEM_VERSION = "([^"]+)"/,
+    "styles/starwrought.css": /--sw-css-version:\s*"([^"]+)"/
+  };
+  const problems = [];
+  for (const [rel, pattern] of Object.entries(stamps)) {
+    const text = fs.readFileSync(path.join(SYSTEM, rel), "utf8");
+    const found = text.match(pattern)?.[1] ?? null;
+    if (found !== manifest.version) {
+      problems.push(`foundry/starwrought/${rel} is stamped ${found ?? "with nothing"}; system.json says ${manifest.version}.`);
+    }
+  }
+  return problems;
+}
+
+/* -------------------------------------------- */
+
 console.log("STARWROUGHT full pipeline");
 const book = currentHandbook();
 const recorded = readSync().phb;
@@ -149,6 +178,16 @@ if (!checkOnly) {
       process.exit(1);
     }
   }
+}
+
+const stamps = stampCheck();
+if (stamps.length) {
+  console.log("\n" + "=".repeat(72));
+  console.log("VERSION STAMPS DISAGREE: the client would warn every user of a stale copy.");
+  console.log("=".repeat(72));
+  for (const line of stamps) console.log(`  - ${line}`);
+  console.log("\nBump SYSTEM_VERSION in module/config.mjs and --sw-css-version in styles/starwrought.css to match system.json.\n");
+  process.exit(1);
 }
 
 const drift = driftCheck();

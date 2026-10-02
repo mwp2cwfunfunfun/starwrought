@@ -7,6 +7,97 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.5.3 (2026-10-01): damage lands on the target, one Move per Opportunity, rerolls, rings that read
+
+Built from Player's Handbook v4.10, unchanged. Seven notes from Mike at the table, in one evening.
+
+### Added
+
+- **Reroll, on every Attack and Defense card** (Mike, 2026-10-01: "Players (and the GM) should have
+  a 'reroll' option on the Attack, for special cases", "and for Defense rolls, too"). The roller's
+  owner and the GM see the button. A small dialog takes the reason, for the record, and offers to
+  spend a Hero Point when the roller is a character holding one. The d20 is thrown again with the
+  first die's formula and everything else stays as it was: the weapon or attack row, the Strike,
+  the defender's Defense, Reaction and Posture, the Proficiency rolled, the modifiers and the
+  Threshold where it was shown. Nothing is paid again. The new card says it is a reroll and why;
+  the old card stays in the record, dimmed, struck through and with every control disabled. When
+  the card hid its Threshold (an adversary's, inside the attack flow) the die is thrown on the
+  roller's client and read on the active GM's client over the socket, which checks the die is a
+  Roll of the first card's formula and that the asker owns the roller, reads the Threshold again
+  from actor data, and answers with the outcome. The attack card that carried the pairing's
+  outcome follows the new card, with a line in its log. The check card's flags gain `modifiers`,
+  `attackId`, `rerollOf` and `rerollReason`; the sixteen keys of the 0.5.0 contract are untouched.
+
+### Changed
+
+- **Short arrows keep their shaft** (Mike, 2026-10-01: "short distances have non-ideal targeting
+  and bind arrows, in terms of readability"). When a targeting arrow is shorter than its distance
+  pill, the pill steps off the line to the upper side instead of covering the arrow it describes;
+  the Bind chain's label and its Control pill take the lower and upper sides by the same rule, so
+  the labels never trade places as the tokens move.
+
+- **One Maneuver per Opportunity, on the map** (Mike, 2026-10-01: "since we can only do one
+  Maneuver per opportunity now, we should not be able to Move more than our Speed at one time, in
+  combat"). At a combatant's own Opportunity a drag may be one Step, one Move, one Crawl or one
+  straight Rush; a drag that would take a second Move (or a second Crawl) is refused before the
+  token lands, with a notice saying how far one Move carries you and that a straight Rush is the
+  way to go further. The drag ruler paints those squares red on the way and labels them "past one
+  Move", so the refusal is never a surprise. This is the system's one block; everything else still
+  reports. New world setting **One Maneuver per Opportunity on the map**, on by default; off, the
+  move lands and its card counts the Moves for the table, as 0.5.2 did. The ruler and the charge
+  now ask one function whose Opportunity it is.
+- **Range rings read on a pale map** (Mike, 2026-10-01: "sometimes the Ranges are hard to see,
+  depending on the colour of the battlemap tiles"). Every reach and aura ring now sits on a dark
+  halo under its coloured outline, the way the targeting arrows and the Bind chain carry an
+  underlay, so a gold or mint line still shows on a sand floor. New client setting **Range ring
+  contrast**: Normal, or Strong, which thickens the lines and deepens the fills for a bright or
+  busy battlemap. The level is part of the ring signature, so changing it redraws at once.
+- **The move trail clears when your Opportunity comes round** (Mike, 2026-10-01: "My past Move
+  trails should disappear when it is my opportunity to go again"). Core clears every combatant's
+  movement history when a turn starts, but only on the active GM's client and only when the Combat
+  document changed, so a table with no GM connected, and a lone combatant whose next Opportunity
+  writes no update, kept their trails. The client responsible for a combatant now clears its token's
+  history as its Opportunity begins, whatever core did. The drag ruler's label also puts the units
+  before the glyphs ("12 ft ❶×2", not "12 ❶×2 ft").
+- **The Combat Tracker's actions readout can be read** (Mike, 2026-10-01: "# actions remaining in
+  combat tracker are very small/hard to read"). The one small circled glyph under each name is now
+  a large gold number over the round's count ("5/6"), red at zero, with a pip per action lit while
+  unspent, the same pips the sheet shows. Reserved actions and Preparing print beside it as before.
+- **A player sees only their own targeting arrows** (Mike, 2026-10-01). The arrows were drawn for
+  everyone who could see both tokens; now the GM sees every arrow and a player sees the arrows
+  their own user set, so who the adversaries, and the other players, are going for is the GM's to
+  reveal. The Combat Tracker's target line under each combatant is unchanged (a question for Mike
+  in the report).
+
+### Fixed
+
+- **A player's damage card damaged the player** (Mike, 2026-10-01: "when I roll damage on my
+  target as a user, it damages me instead"). The Apply row read the user's selected tokens before
+  the creature the card was rolled against, and a player who has just Struck has their own token
+  selected. Apply now lands on the creature the card names. When that creature is one the clicker
+  cannot write (an adversary, for a player), the active GM's client applies it, asked over the
+  system socket with the card's id, the Zone and the multiplier; it reads who was hit and how hard
+  from the card itself and who is asking from the server's stamp on the event, allows only the
+  card's author or the attacker's owner, holds a Quick Strike to the Torso, and answers the asker
+  with "Applied to {name}" or the reason it refused. With no GM connected the player is told so.
+  Shift-click spends the card on the selected tokens instead (the GM's redirect, or a player
+  taking an adversary's blow on themselves), and a card rolled with no target falls back to the
+  selection, then the user's targets. The card's Apply tooltip says all of this.
+- The render hook meant to hide the Apply row from players looked for a class the card has not
+  carried for several releases, so it did nothing; it is gone, since the row is now for everyone.
+- **The out-of-reach warning never reached the attack flow's cards** (Mike, 2026-10-01: "he was
+  within my range, but I wasn't within his range. It should have put the warning into chat, while
+  still allowing it"). The immediate card worked the note out before the die; the card the flow
+  resolves per pairing had the note written as empty. One reading now serves both
+  (`SwCheck.rangeNoteFor`), taken from the two tokens as they stand when the Blow resolves, for a
+  character's weapon and for an adversary's attack row alike. Said, never refused, as before.
+- **0.5.2 shipped with its version stamps still reading 0.5.1** (`SYSTEM_VERSION` in config.mjs
+  and `--sw-css-version` in the stylesheet), so every client on 0.5.2 saw the stale-copy warning
+  that those stamps exist to raise. Both read 0.5.3 now, and `build_all.mjs` refuses to pass while
+  the two stamps and system.json disagree, the check the packaging script already made.
+
+---
+
 ## 0.5.2 (2026-10-01): the Bind under the arrow, and locked fields that explain themselves
 
 Built from Player's Handbook v4.10, unchanged. Two pieces of feedback on 0.5.1, both from Mike.

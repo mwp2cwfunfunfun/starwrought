@@ -38,7 +38,9 @@ destroys it. Fix the source.
 
 ### The pipeline
 
-One command runs all of it and then checks for handbook drift:
+One command runs all of it, then checks for handbook drift and that the system's three version
+stamps agree (`system.json`, `SYSTEM_VERSION` in `module/config.mjs`, `--sw-css-version` in the
+stylesheet; a release bumps all three, or every client sees the stale-copy warning):
 
 ```
 node assets/build_all.mjs              # every step below, in order, then the drift check
@@ -186,7 +188,11 @@ and the state taken from the card's flags, never from a broadcast. Decisions are
 Prompt window, chat is the record and the recovery, the sheet is the reference. Inside the flow
 adversary Thresholds are never shown to players (a Reaction Strike still rolls at once and prints
 the number, as 0.4.2 did). The world setting `attackFlow` off restores the 0.4.2 behaviour for
-characters' Strikes; an adversary's attack row always declares.
+characters' Strikes; an adversary's attack row always declares. Since 0.5.3 the same system socket
+also carries `damage:*` and `reroll:*` requests to the active GM's client (`chat.mjs`,
+`onChatSocket`): a player's Apply on a creature they cannot write, and a die thrown again on the
+roller's client but read against a hidden Threshold on the GM's. Both read everything that matters
+from the chat message itself and the asker from the server's stamp, as the coordinator does.
 
 **Six actions a round (PHB v4.10).** Every combatant gets six actions at the start of each round,
 spent across Opportunities (one Maneuver per Opportunity, or Pass; a full circuit of Passes ends the

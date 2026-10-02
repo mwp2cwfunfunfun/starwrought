@@ -106,15 +106,12 @@ export function classifyMove(feet, { speed, step, rush }, { terrain = false, str
 
 /**
  * `preMoveToken` runs on the client that started the move, before it lands, so the pips are right
- * by the time the token stops. It may return false to block a move; this never does.
+ * by the time the token stops. It may return false to block a move, and since 0.5.3 it does, in
+ * one case: a drag at your own Opportunity that is more than one Maneuver's worth of movement
+ * (PHB v4.10, one Maneuver per Opportunity; Mike, 2026-10-01: "we should not be able to Move more
+ * than our Speed at one time, in combat"). Everything else here reports rather than rules.
  */
 function onTokenMoves(token, movement, options) {
-  chargeMovement(token, movement, options).catch(err => {
-    console.error("STARWROUGHT | could not charge a move", err);
-  });
-}
-
-async function chargeMovement(token, movement, options) {
   if (options?.swNoCost) return;
   if (["undo", "paste"].includes(movement.method)) return;
 
@@ -123,17 +120,12 @@ async function chargeMovement(token, movement, options) {
 
   // Only a Move at your own Opportunity is a Maneuver. Anything else (the GM repositioning a
   // token, a Step handed out by a Defense result, forced movement) costs nothing here.
-  const combat = game.combat;
-  if (!combat?.started) return;
-  if (combat.scene && (combat.scene.id !== token.parent?.id)) return;
-  const combatant = combat.getCombatantsByToken(token.id)[0] ?? combat.getCombatantsByActor(actor)[0] ?? null;
-  if (!combatant || (combat.combatant?.id !== combatant.id)) return;
+  const combatant = opportunityOf(token);
+  if (!combatant) return;
 
   // A path a region splits into pieces arrives as several updates under one movement id; the
   // first carries the pending remainder, so it pays for the whole.
   if (charged.has(movement.id) || movement.chain?.some(id => charged.has(id))) return;
-  charged.add(movement.id);
-  if (charged.size > 500) charged.clear();
 
   const feet = pathFeet(movement);
   if (feet.cost < 0.5) return;
@@ -143,14 +135,63 @@ async function chargeMovement(token, movement, options) {
   const terrain = feet.cost > feet.distance + 0.01;
   const move = classifyMove(feet.cost, numbers, { terrain, straight });
 
-  // The move always happens. spendActions announces an overspend in chat rather than refusing:
-  // the token is where the player put it, and the arithmetic reports rather than rules. The
-  // `trackActions` world setting switches off the spending and its card, nothing else.
+  // One Maneuver per Opportunity: a drag is one Step, one Move, one Crawl or one straight Rush.
+  // A second Move's worth is refused before the token lands (the ruler painted those squares red
+  // on the way), and the mover is told how far one Move carries them. The world setting `capMoves`
+  // switches the refusal off and restores the 0.5.2 card that counted the Moves for the table.
+  if (moveCapped(move) && setting("capMoves", true)) {
+    const key = (move.kind === "crawl") ? "STARWROUGHT.Actions.crawlCapped" : "STARWROUGHT.Actions.moveCapped";
+    ui.notifications.warn(format(key, {
+      name: actor.name, feet: Math.round(feet.cost), speed: numbers.speed, crawl: SW.CRAWL_FEET, rush: numbers.rush
+    }));
+    return false;
+  }
+
+  charged.add(movement.id);
+  if (charged.size > 500) charged.clear();
+  chargeMovement({ token, movement, actor, combatant, move, feet, numbers }).catch(err => {
+    console.error("STARWROUGHT | could not charge a move", err);
+  });
+}
+
+/**
+ * The combatant whose Opportunity it is, when that is this token's: a started encounter on the
+ * token's scene, with the token (or its actor) the current combatant. Null at any other time. The
+ * ruler asks the same question, so it is asked here once.
+ * @param {TokenDocument} token
+ * @returns {Combatant|null}
+ */
+export function opportunityOf(token) {
+  const actor = token?.actor;
+  if (!actor) return null;
+  const combat = game.combat;
+  if (!combat?.started) return null;
+  if (combat.scene && (combat.scene.id !== token.parent?.id)) return null;
+  const combatant = combat.getCombatantsByToken(token.id)[0] ?? combat.getCombatantsByActor(actor)[0] ?? null;
+  if (!combatant || (combat.combatant?.id !== combatant.id)) return null;
+  return combatant;
+}
+
+/** More than one Maneuver carries: a second Move, or a second Crawl. A straight Rush is one Maneuver. */
+export function moveCapped(move) {
+  return ((move?.kind === "move") || (move?.kind === "crawl")) && (move.moves > 1);
+}
+
+/** Does the one-Maneuver cap bind this token right now: the setting on, and its own Opportunity? */
+export function moveCapApplies(token) {
+  return setting("capMoves", true) && !!opportunityOf(token);
+}
+
+/** Spend the actions a move costs, say so, and offer the Intercepts it provokes. */
+async function chargeMovement({ token, movement, actor, combatant, move, feet, numbers }) {
+  // The move has been allowed to happen. spendActions announces an overspend in chat rather than
+  // refusing: the token is where the player put it, and the arithmetic reports rather than rules.
+  // The `trackActions` world setting switches off the spending and its card, nothing else.
   if (setting("trackActions", true)) {
     // The move's own card carries the actions-left line, so the spend posts no card of its own;
     // it is awaited so the card reads the count after the spend.
     await actor.spendActions?.(move.actions, { label: moveLabel(move, feet.cost), announce: false });
-    combat.registerAction?.(combatant);
+    game.combat?.registerAction?.(combatant);
     await announceMove(actor, move, feet.cost, numbers);
   }
 

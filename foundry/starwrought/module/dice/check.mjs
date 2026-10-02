@@ -8,6 +8,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { gapBetween } from "../canvas/geometry.mjs";
 
 const { DialogV2 } = foundry.applications.api;
 const { renderTemplate } = foundry.applications.handlebars;
@@ -220,7 +221,12 @@ export class SwCheck {
     threshold = null, showThreshold = true, speakerActor = null, slug = null, thrown = false,
     // The legacy key, which #toMessage maps to the configured mode: CONST.DICE_ROLL_MODES is a
     // deprecation shim in v14 and gone in v16 (review, 2026-10-01).
-    rollMode = "publicroll"
+    rollMode = "publicroll",
+    // A reroll (0.5.3) resolves a Blow whose Reaction was paid when the first die landed: true
+    // here skips the charge and prints the Reaction as already paid. Null means "charge as usual".
+    reactionCharged: alreadyCharged = null,
+    // A reroll names the card it replaces and why (0.5.3); both ride into the flags and the card.
+    rerollOf = null, rerollReason = ""
   } = {}) {
     if (!rollData) throw new Error("STARWROUGHT | resolveAgainst needs the roll's data.");
     // The roller may have sent its whole submission rather than the bare Roll data.
@@ -274,6 +280,16 @@ export class SwCheck {
       : SW.DEFENSES[defense].slug;
     const ranged = slug === SW.RANGED_SLUG;
 
+    // A Strike at a target the weapon cannot reach is said on the card, never refused, so the GM
+    // can adjudicate (Mike, 2026-10-01). The immediate card (rollAttack) worked this out before
+    // the die; a card resolved here (the attack flow, a reroll) had `rangeNote: null` written
+    // into it and so never said so (Mike, 2026-10-01: "he was within my range, but I wasn't
+    // within his range. It should have put the warning into chat"). The same reading as
+    // rollAttack's, per pairing, from the two tokens as they stand when the Blow resolves.
+    const rangeNote = (attackerDoc && defenderDoc && canvas?.ready)
+      ? this.rangeNoteFor({ attacker, weapon, attackItem, attackerDoc, defenderDoc, thrown, ranged })
+      : null;
+
     // The answer behind the Defense, named as answeringDefense names it: "Guard (Parry)", or
     // the Posture's own name.
     // Plain (0.5.1, T16): the card appends the ⓿↺ itself, so the data's glyph would print twice.
@@ -287,7 +303,10 @@ export class SwCheck {
     // PHB v4.10, Answering an Attack: the Reaction is paid when the Blow resolves. On an attack
     // this client charges the defender when it owns them; a Defense roll charged before the die.
     let reactionCharged = false;
-    if (reaction) reactionCharged = isAttack ? await this.chargeReaction(defender, reaction) : true;
+    if (reaction) {
+      if (alreadyCharged === true) reactionCharged = true;
+      else reactionCharged = isAttack ? await this.chargeReaction(defender, reaction) : true;
+    }
 
     const cfg = {
       actor: roller,
@@ -322,11 +341,15 @@ export class SwCheck {
       reactionNote: (reaction && SW.REACTIONS[reaction].rigid && !defender?.rigidImplement)
         ? game.i18n.localize("STARWROUGHT.Reaction.needsRigid") : null,
       defenseNote: null,
-      rangeNote: null,
+      rangeNote,
       thrown: !!thrown,
       rollMode,
       speakerActor,
-      outcomes: null
+      outcomes: null,
+      // An adversary's attack row, so a reroll of a Defense card can read the Attack Threshold again.
+      attackId: attackId ?? null,
+      rerollOf: rerollOf ?? null,
+      rerollReason: rerollReason ?? ""
     };
 
     const applied = Array.isArray(modifiers) ? modifiers : [];
@@ -757,8 +780,132 @@ export class SwCheck {
       // which Constellation it was related to is the table's call, so the button asks.
       canFlare: this.#canFlare(result, cfg),
       flareSlug: cfg.slug ?? "",
-      flareName: cfg.slug ? SW.getConstellation(cfg.slug).name : ""
+      flareName: cfg.slug ? SW.getConstellation(cfg.slug).name : "",
+      // Reroll (0.5.3): offered on every Attack and Defense card to the roller's owner and the GM;
+      // a card that is itself a reroll says so, and why.
+      canReroll: isExchange,
+      reroll: cfg.rerollOf ? { reason: cfg.rerollReason ?? "" } : null
     };
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * The out-of-reach or out-of-range note for a Strike, or null when the target is within what
+   * the attack can reach (PHB v4.10; Mike, 2026-10-01: said on the card, never refused). Melee: the
+   * whole-square gap between the two spaces is more than the attacker's Natural Reach plus the
+   * weapon's (or an adversary's attack row's reach). Ranged or thrown: more than the weapon's
+   * range. One reading for the immediate card and the resolved one.
+   * @param {object} opts
+   * @param {Actor} opts.attacker
+   * @param {Item|null} [opts.weapon]       A character's weapon.
+   * @param {Item|null} [opts.attackItem]   An adversary's attack row (an action Item).
+   * @param {TokenDocument} opts.attackerDoc
+   * @param {TokenDocument} opts.defenderDoc
+   * @param {boolean} [opts.thrown]
+   * @param {boolean} [opts.ranged]
+   * @returns {string|null}
+   */
+  static rangeNoteFor({ attacker, weapon = null, attackItem = null, attackerDoc, defenderDoc, thrown = false, ranged = false } = {}) {
+    if (!attackerDoc || !defenderDoc) return null;
+    let gap;
+    try {
+      gap = gapBetween(attackerDoc, defenderDoc);
+    } catch {
+      return null;
+    }
+    if (!Number.isFinite(gap)) return null;
+    const feet = Math.round(gap);
+    if (!ranged) {
+      const row = attackItem?.system?.attack ?? attackItem?.system ?? null;
+      const rowReach = Number(row?.reach);
+      const reachWith = weapon
+        ? (Number(attacker?.system?.reach) || 0) + (Number(weapon.system?.reach) || 0)
+        : (Number.isFinite(rowReach) ? rowReach : (Number(attacker?.system?.totalReach ?? attacker?.system?.reach) || 0));
+      return (gap > reachWith) ? game.i18n.format("STARWROUGHT.Strike.outOfReach", { gap: feet, reach: reachWith }) : null;
+    }
+    const range = thrown ? weapon?.system?.flags?.thrown : weapon?.system?.flags?.ranged;
+    if (Number.isFinite(range) && (range > 0) && (gap > range)) {
+      return game.i18n.format("STARWROUGHT.Strike.outOfRange", { gap: feet, range });
+    }
+    return null;
+  }
+
+  /**
+   * Throw an Attack or Defense card's die again (0.5.3; Mike: "Players (and the GM) should have a
+   * 'reroll' option on the Attack, for special cases", "and for Defense rolls, too"). Everything
+   * but the d20 stays as it was: the card's own flags carry the roller, the weapon or attack row,
+   * the Strike, the defender's Defense, Reaction and Posture, the Proficiency rolled, the applied
+   * modifiers and the Threshold where it was shown. Nothing is paid again: the Reaction was
+   * charged when the first die landed and the Strike's actions were spent before it. The new card
+   * names the one it replaces and the reason given; the old card is marked superseded here when
+   * this client may write it (its author or a GM), so its buttons stop acting.
+   *
+   * The Threshold is the caller's to supply when the card hid it: an adversary's number inside the
+   * attack flow is read again on the GM's client (chat.mjs relays the reroll there), from
+   * `AttackCoordinator.thresholdForCard`. A card that showed its Threshold shows it again.
+   *
+   * @param {ChatMessage} message       The card being rerolled.
+   * @param {object} options
+   * @param {object} options.rollData   `{ roll, total, natural, formula, modifiers }` of the new die.
+   * @param {string} [options.reason]   What the table said: "Hero Point", "GM ruling".
+   * @param {number|null} [options.threshold]  The Threshold to read the die against.
+   * @returns {Promise<object|null>}  resolveAgainst's result, or null for a card that cannot be rerolled.
+   */
+  static async rerollCard(message, { rollData, reason = "", threshold = null } = {}) {
+    const flags = message?.flags?.[SW.SYSTEM_ID];
+    if (!flags || !["attack", "defense"].includes(flags.kind) || !rollData) return null;
+    const actorOf = uuid => {
+      const doc = uuid ? fromUuidSync(uuid) : null;
+      if (!doc) return null;
+      return (doc.documentName === "Actor") ? doc : (doc.actor ?? null);
+    };
+    const tokenOf = uuid => {
+      const doc = uuid ? fromUuidSync(uuid) : null;
+      if (!doc) return null;
+      if (doc.documentName === "Token") return doc;
+      if (doc.documentName === "Actor") return doc.getActiveTokens(false, true)[0] ?? null;
+      return null;
+    };
+    const isAttack = flags.kind === "attack";
+    const roller = actorOf(flags.actorUuid);
+    if (!roller) return null;
+    const attacker = isAttack ? roller : actorOf(flags.attackerUuid);
+    const defender = isAttack ? actorOf(flags.defenderUuid) : roller;
+    // The card's "target" token is the defender's on an attack card and the attacker's on a Defense card.
+    const targetDoc = tokenOf(flags.targetUuid);
+    const own = actor => actor?.tokenOnScene?.() ?? (actor ? tokenOf(actor.uuid) : null);
+
+    const result = await this.resolveAgainst({
+      attacker, defender,
+      attackerToken: isAttack ? own(attacker) : targetDoc,
+      defenderToken: isAttack ? targetDoc : own(defender),
+      weapon: (flags.weaponId && attacker) ? (attacker.items.get(flags.weaponId) ?? null) : null,
+      attackId: flags.attackId ?? null,
+      strike: flags.strike ?? SW.DEFAULT_STRIKE,
+      rollData,
+      modifiers: Array.isArray(flags.modifiers) ? flags.modifiers : null,
+      kind: flags.kind,
+      defense: flags.defense ?? null,
+      reaction: flags.reaction ?? null,
+      posture: flags.posture ?? null,
+      threshold: Number.isNumeric(threshold) ? Number(threshold) : null,
+      showThreshold: Number.isNumeric(flags.threshold),
+      speakerActor: ChatMessage.getSpeakerActor(message.speaker) ?? roller,
+      slug: flags.slug ?? null,
+      thrown: !!flags.thrown,
+      rollMode: message.whisper?.length ? "gmroll" : "publicroll",
+      reactionCharged: true,
+      rerollOf: message.id,
+      rerollReason: reason
+    });
+
+    if (message.isAuthor || game.user.isGM) {
+      await message.update({ [`flags.${SW.SYSTEM_ID}.superseded`]: { by: result?.message?.id ?? null, reason } });
+    }
+    // The attack flow's card shows this pairing's outcome; the coordinator module moves it on.
+    Hooks.callAll("starwrought.reroll", { oldId: message.id, result, reason });
+    return result;
   }
 
   /**
@@ -790,6 +937,18 @@ export class SwCheck {
     };
     if (cfg.posture?.talentId) {
       flags.posture = { talentId: cfg.posture.talentId, name: cfg.posture.name ?? "", zone: cfg.posture.zone ?? null };
+    }
+    // Rerolls (0.5.3) throw the same die again from the card alone, so the card keeps what a
+    // reroll needs and the contract above does not carry: the applied modifiers by name (the
+    // new card lists them), the adversary's attack row behind a Defense card (its Threshold is
+    // read again, on the GM's client), and which card this one replaced, and why.
+    if (isExchange) {
+      flags.modifiers = (result.modifiers ?? []).map(m => ({ label: m.label, value: m.value, type: m.type ?? null }));
+      flags.attackId = cfg.attackId ?? null;
+      if (cfg.rerollOf) {
+        flags.rerollOf = cfg.rerollOf;
+        flags.rerollReason = cfg.rerollReason ?? "";
+      }
     }
     return flags;
   }
