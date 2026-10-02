@@ -1007,7 +1007,13 @@ defender answered with (and a Charge button when the attacker's client could not
 defender's ❶), a note when a Quick Strike's 20 was denied its Critical Hit, the Critical / Hit /
 Graze damage buttons, and the **Position block**: Expose the attacker or the defender (a Zone
 picker), Form Bind or Take Control, the riposte, Give ground 3 ft or Step, and the Counter's Quick
-Strike back, each shown only to the side it belongs to. A Strike at a target the weapon cannot
+Strike back, each shown only to the side it belongs to. An Expose is one side's choice on the other
+side's body, so when the chooser cannot write that actor (a player's Committed Hit on another
+player, or on an adversary) the GM's client marks the Zone, asked over the system socket with the
+card's id, the Zone and the two sides; it checks that the asker owns the choosing side and that
+both sides are the card's, and answers with the Zone (0.5.3; Mike: "he could not expose my zone
+because my character is not owned by him"). The Zone a Controller opens on a Bound partner goes the
+same way. A Strike at a target the weapon cannot
 reach says so on the card and is never refused; since 0.5.3 the cards the attack flow resolves say
 it too (they had the note switched off, so a partner Striking from outside his own reach went
 unremarked).

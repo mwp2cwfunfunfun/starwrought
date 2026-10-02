@@ -111,6 +111,14 @@ Built from Player's Handbook v4.10, unchanged. Seven notes from Mike at the tabl
   selection, then the user's targets. The card's Apply tooltip says all of this.
 - The render hook meant to hide the Apply row from players looked for a class the card has not
   carried for several releases, so it did nothing; it is gone, since the row is now for everyone.
+- **A player could not Expose the Zone the card gave them** (Mike, 2026-10-01: "when my partner
+  attacked me with a committed strike, it gave an error saying he could not expose my zone because
+  my character is not owned by him"). The Position block offers the Expose to the right side, but
+  the Zone lands on the other side's body, which a player cannot write. The choice now goes to the
+  GM's client over the system socket, as Apply does: it checks the asker owns the choosing side,
+  that both sides are the card's, marks the Zone and posts the Exposed card, and answers the asker.
+  The Zone a Controller opens on a Bound partner takes the same path. With no GM connected the
+  player is told whose owner must mark it.
 - **The out-of-reach warning never reached the attack flow's cards** (Mike, 2026-10-01: "he was
   within my range, but I wasn't within his range. It should have put the warning into chat, while
   still allowing it"). The immediate card worked the note out before the die; the card the flow

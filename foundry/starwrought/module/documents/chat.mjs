@@ -102,8 +102,8 @@ async function onCardButton(event, message, flags) {
       case "flare": return await flareFromCard(message, flags, button);
       case "reroll": return await rerollFromCard(message, flags);
       case "expose":
-      case "exposeZone": return await exposeFromCard(button);
-      case "formBind": return await formBindFromCard(button);
+      case "exposeZone": return await exposeFromCard(message, flags, button);
+      case "formBind": return await formBindFromCard(message, flags, button);
       case "giveGround": return await giveGroundFromCard(button);
       case "step": return await stepFromCard(button);
       case "counterStrike":
@@ -299,10 +299,10 @@ function relayDamage(message, target, { zone, multiplier }) {
 }
 
 /**
- * The chat cards' half of the system socket: starwrought.mjs routes `damage:*` and `reroll:*`
- * here and everything else to the attack coordinator. A `damage:apply` or `reroll:apply` is
- * answered by the GM's client with `damage:applied`, `reroll:done` or a refusal, each addressed
- * to the asker alone.
+ * The chat cards' half of the system socket: starwrought.mjs routes `damage:*`, `reroll:*` and
+ * `expose:*` here and everything else to the attack coordinator. A `damage:apply`, `reroll:apply`
+ * or `expose:apply` is answered by the GM's client with `damage:applied`, `reroll:done`,
+ * `expose:done` or a refusal, each addressed to the asker alone.
  * @param {object} message
  * @param {string} [senderId]  The emitting user's id, supplied by the server.
  */
@@ -339,6 +339,18 @@ export async function onChatSocket(message, senderId) {
     }
     case "reroll:refused":
       ui.notifications.warn(game.i18n.localize(REROLL_REFUSALS[message.reason] ?? "STARWROUGHT.Reroll.refused"));
+      return;
+    case "expose:apply": {
+      if (!sender || !game.user.isGM) return;
+      const reply = await exposeForUser(message, sender);
+      game.socket.emit(SOCKET, { ...reply, to: sender, messageId: message.messageId }, { recipients: [sender] });
+      return;
+    }
+    case "expose:done":
+      ui.notifications.info(game.i18n.format("STARWROUGHT.Position.exposeDone", { name: message.name ?? "", zone: message.zone ?? "" }));
+      return;
+    case "expose:refused":
+      ui.notifications.warn(game.i18n.localize(EXPOSE_REFUSALS[message.reason] ?? "STARWROUGHT.Position.exposeRefused"));
       return;
     default:
       return;
@@ -646,28 +658,83 @@ async function flareFromCard(message, flags, button) {
  * Expose a Zone on an actor from a card: the attacker after a Miss or a Weighted Graze (the
  * defender's choice of Zone), or the defender after a Committed Hit or a Deliberate Critical Hit
  * (the attacker's choice of a plausible Zone). The Zone comes from the widget's own select.
+ *
+ * The choice is one side's and the body is the other's, so the clicker usually cannot write the
+ * actor the Zone opens on (a player's Committed Hit on another player, or on an adversary). The
+ * GM's client does it then, asked over the system socket as Apply is (0.5.3; Mike: "it gave an
+ * error saying he could not expose my zone because my character is not owned by him"). The widget's
+ * `data-owner-uuid` names the side the choice belongs to; the GM's client checks the asker owns it.
  */
-async function exposeFromCard(button) {
+async function exposeFromCard(message, flags, button) {
   const zone = zoneFrom(button);
   const named = resolveActor(button.dataset.actorUuid ?? button.dataset.targetUuid);
   const targets = named ? [named] : resolveTargets("");
   if (!targets.length) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
+  const chooser = resolveActor(button.closest("[data-owner-uuid]")?.dataset.ownerUuid);
   for (const actor of targets) {
-    if (!actor.isOwner) {
-      ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.notOwnedExpose", { name: actor.name }));
-      continue;
-    }
-    await actor.setExposed(zone, true, { announced: true });
-    // The title opens the rules page for Exposed (0.5.1, T6).
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div class="starwrought action-card sw-exposed-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="Exposed" data-tooltip="STARWROUGHT.Rules.openExposed"><i class="fa-solid fa-bullseye"></i> ${
-        game.i18n.localize("STARWROUGHT.Condition.exposed")}</a></h3>
-        <p>${game.i18n.format("STARWROUGHT.Position.exposedText", {
-          name: actor.name, zone: game.i18n.localize(SW.ZONES[zone].label)
-        })}</p></div>`
-    });
+    if (actor.isOwner) await exposeAndSay(actor, zone);
+    else await relayExpose(message, { actor, chooser, zone });
   }
+}
+
+/** Open a Zone and say so: the Exposed card, whose title opens the rules page (0.5.1, T6). */
+async function exposeAndSay(actor, zone) {
+  await actor.setExposed(zone, true, { announced: true });
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `<div class="starwrought action-card sw-exposed-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="Exposed" data-tooltip="STARWROUGHT.Rules.openExposed"><i class="fa-solid fa-bullseye"></i> ${
+      game.i18n.localize("STARWROUGHT.Condition.exposed")}</a></h3>
+      <p>${game.i18n.format("STARWROUGHT.Position.exposedText", {
+        name: actor.name, zone: game.i18n.localize(SW.ZONES[zone].label)
+      })}</p></div>`
+  });
+}
+
+/**
+ * Ask the GM's client to open a Zone on a body this client cannot write, on a card that gives
+ * this client's side the choice. Without a GM, or without owning the choosing side, the old
+ * notice stands: the body's owner marks it.
+ */
+async function relayExpose(message, { actor, chooser, zone }) {
+  if (!chooser?.isOwner || !message) {
+    return ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.notOwnedExpose", { name: actor.name }));
+  }
+  const gm = game.users.activeGM;
+  if (!gm) return ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.noGmToExpose", { name: actor.name }));
+  game.socket.emit(SOCKET, {
+    type: "expose:apply", to: gm.id, messageId: message.id, actorUuid: actor.uuid, chooserUuid: chooser.uuid, zone
+  }, { recipients: [gm.id] });
+  return ui.notifications.info(game.i18n.format("STARWROUGHT.Position.exposeSent", {
+    name: actor.name, zone: game.i18n.localize(SW.ZONES[zone].label)
+  }));
+}
+
+const EXPOSE_REFUSALS = {
+  noCard: "STARWROUGHT.Position.exposeRefusedNoCard",
+  notYours: "STARWROUGHT.Position.exposeRefusedNotYours"
+};
+
+/**
+ * Open a Zone for another user, on the GM's client. The card names its two sides (the attacker
+ * and the defender, as Actor uuids in its flags); the body must be one of them, the chooser the
+ * other, and the asker must own the chooser. Nothing else in the request is trusted.
+ */
+async function exposeForUser(request, userId) {
+  const chat = game.messages.get(request.messageId);
+  const flags = chat?.flags?.[SW.SYSTEM_ID];
+  if (!chat || !flags) return { type: "expose:refused", reason: "noCard" };
+  const user = game.users.get(userId);
+  const body = resolveActor(request.actorUuid);
+  const chooser = resolveActor(request.chooserUuid);
+  if (!user || !body || !chooser || (body.uuid === chooser.uuid)) return { type: "expose:refused", reason: "notYours" };
+  const sides = [flags.attackerUuid, flags.defenderUuid, flags.actorUuid].map(u => resolveActor(u)?.uuid).filter(Boolean);
+  if (!sides.includes(body.uuid) || !sides.includes(chooser.uuid)) return { type: "expose:refused", reason: "notYours" };
+  if (!chooser.testUserPermission(user, "OWNER")) return { type: "expose:refused", reason: "notYours" };
+  if (!body.isOwner) return { type: "expose:refused", reason: "noCard" };
+  const asked = String(request.zone ?? "");
+  const zone = (asked in SW.ZONES) ? asked : SW.DEFAULT_ZONE;
+  await exposeAndSay(body, zone);
+  return { type: "expose:done", name: body.name, zone: game.i18n.localize(SW.ZONES[zone].label) };
 }
 
 /**
@@ -675,7 +742,7 @@ async function exposeFromCard(button) {
  * the defender's owner clicks; the attacker's side is mirrored when this client owns it too.
  * Taking Control also opens a Zone of the Controller's choice on the partner, while it lasts.
  */
-async function formBindFromCard(button) {
+async function formBindFromCard(message, flags, button) {
   const defender = ownedActor(button, "controllerUuid");
   if (!defender) return;
   const partner = resolveActor(button.dataset.partnerUuid);
@@ -695,9 +762,7 @@ async function formBindFromCard(button) {
   if (!control) return;
 
   // "Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts."
-  if (!partner.isOwner) {
-    return ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.notOwnedExpose", { name: partner.name }));
-  }
+  // The partner is usually not this client's to write; the GM's client opens the Zone (0.5.3).
   const options = Object.entries(SW.ZONES)
     .map(([key, z]) => `<option value="${key}" ${key === SW.DEFAULT_ZONE ? "selected" : ""}>${game.i18n.localize(z.label)}</option>`)
     .join("");
@@ -712,7 +777,9 @@ async function formBindFromCard(button) {
     },
     rejectClose: false
   });
-  if (zone && (zone in SW.ZONES)) await partner.setExposed(zone, true, { announced: true });
+  if (!zone || !(zone in SW.ZONES)) return;
+  if (partner.isOwner) await exposeAndSay(partner, zone);
+  else await relayExpose(message, { actor: partner, chooser: defender, zone });
 }
 
 /** An Evade that Grazed gives 3 feet of ground, directly away from the attacker. */

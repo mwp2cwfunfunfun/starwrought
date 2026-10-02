@@ -185,10 +185,11 @@ Hooks.once("ready", async () => {
   // `flags.starwrought.attackWorkflow.phase` is neither complete nor cancelled, with this client's
   // private commitments restored from its own `attackPrivate` setting.
   // One system socket, two listeners: `damage:*` (a player's Apply on a creature they cannot
-  // write) and `reroll:*` (a die read again on the GM's client), both 0.5.3, go to chat.mjs;
-  // everything else to the attack coordinator.
+  // write), `reroll:*` (a die read again on the GM's client) and `expose:*` (a Zone one side
+  // chooses on the other side's body), all 0.5.3, go to chat.mjs; everything else to the attack
+  // coordinator.
   game.socket.on(`system.${SW.SYSTEM_ID}`, (message, senderId) => {
-    if (/^(damage|reroll):/.test(String(message?.type ?? ""))) return onChatSocket(message, senderId);
+    if (/^(damage|reroll|expose):/.test(String(message?.type ?? ""))) return onChatSocket(message, senderId);
     return AttackCoordinator.onSocket(message, senderId);
   });
   // A rerolled resolution card (0.5.3): the attack card that carried its outcome follows it.
