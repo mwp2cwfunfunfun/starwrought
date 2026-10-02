@@ -1,0 +1,72 @@
+{{!-- The aura palette: every range this token carries, and the Visible mark on each. --}}
+<div class="sw-aura-palette-body">
+  <p class="sw-note">{{localize "STARWROUGHT.Aura.paletteHint"}}</p>
+
+  {{#if any}}
+  <ul class="sw-aura-list">
+    {{#each rows as |row|}}
+    <li class="sw-aura-row {{#if row.visible}}sw-aura-on{{/if}}" data-key="{{row.key}}" style="--sw-aura-color: {{row.color}}">
+      <span class="sw-aura-swatch"></span>
+      <span class="sw-aura-name">
+        {{row.label}}
+        {{#if row.gmOnly}}<i class="fa-solid fa-user-shield sw-aura-gm-mark" data-tooltip="STARWROUGHT.Aura.gmOnlyHint"></i>{{/if}}
+      </span>
+      <span class="sw-aura-feet">{{row.feet}} ft</span>
+      {{#unless row.isReach}}<span class="sw-aura-audience">{{row.audienceLabel}}</span>{{/unless}}
+      <button type="button" class="sw-aura-toggle {{#if row.visible}}sw-aura-on{{/if}}" data-action="toggleVisible"
+              data-key="{{row.key}}" data-tooltip="{{row.tooltip}}" aria-pressed="{{row.visible}}">
+        <i class="fa-solid {{#if row.visible}}fa-circle-dot{{else}}fa-circle{{/if}}"></i>
+      </button>
+      {{#if row.isCustom}}
+      <button type="button" class="sw-aura-remove" data-action="removeCustom" data-key="{{row.key}}"
+              data-tooltip="STARWROUGHT.Aura.remove">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+      {{/if}}
+    </li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="sw-empty">{{localize "STARWROUGHT.Aura.none"}}</p>
+  {{/if}}
+
+  <div class="sw-aura-footer">
+    <span class="sw-aura-count">{{localize "STARWROUGHT.Aura.visibleCount" count=visibleCount}}</span>
+    <button type="button" class="sw-inline-button" data-action="allOff" {{#unless visibleCount}}disabled{{/unless}}>
+      <i class="fa-regular fa-circle"></i> {{localize "STARWROUGHT.Aura.allOff"}}
+    </button>
+  </div>
+
+  {{#if owner}}
+  <fieldset class="sw-aura-custom">
+    <legend>{{localize "STARWROUGHT.Aura.custom"}}</legend>
+    <div class="sw-aura-custom-grid">
+      <label>
+        <span>{{localize "STARWROUGHT.Aura.customFeet"}}</span>
+        <input type="number" name="feet" min="0" step="1" value="15" required>
+      </label>
+      <label>
+        <span>{{localize "STARWROUGHT.Aura.customAudience"}}</span>
+        <select name="audience">{{selectOptions audiences selected="all"}}</select>
+      </label>
+      <label class="sw-wide">
+        <span>{{localize "STARWROUGHT.Aura.customLabel"}}</span>
+        <input type="text" name="label" placeholder="{{localize 'STARWROUGHT.Aura.customLabelPlaceholder'}}">
+      </label>
+      <label>
+        <span>{{localize "STARWROUGHT.Aura.customColor"}}</span>
+        <input type="color" name="color" value="{{defaultColor}}">
+      </label>
+      {{#if isGM}}
+      <label class="sw-aura-gmonly" data-tooltip="STARWROUGHT.Aura.gmOnlyHint">
+        <input type="checkbox" name="gmOnly">
+        <span>{{localize "STARWROUGHT.Aura.gmOnly"}}</span>
+      </label>
+      {{/if}}
+    </div>
+    <button type="submit" class="sw-inline-button sw-aura-add">
+      <i class="fa-solid fa-plus"></i> {{localize "STARWROUGHT.Aura.add"}}
+    </button>
+  </fieldset>
+  {{/if}}
+</div>

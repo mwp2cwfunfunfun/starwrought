@@ -9,6 +9,8 @@
 import * as SW from "../config.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
 import { actionsContext, bindContext, vigorContext, zoneWounds } from "./actor-sheet.mjs";
+// AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
+import { auraRowsByItem, rangeFor } from "../canvas/auras.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -43,7 +45,9 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       effectCreate: SwNpcSheet.#onEffectCreate,
       effectEdit: SwNpcSheet.#onEffectEdit,
       effectDelete: SwNpcSheet.#onEffectDelete,
-      effectToggle: SwNpcSheet.#onEffectToggle
+      effectToggle: SwNpcSheet.#onEffectToggle,
+      // AURAS (0.5.1)
+      toggleAura: SwNpcSheet.#onToggleAura
     }
   };
 
@@ -132,6 +136,8 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     };
 
     context.abilities = actor.items.filter(i => (i.type === "action") && !i.system.attack.enabled);
+    // AURAS (0.5.1): the ring toggle beside each ability row that carries an aura, by Item id.
+    context.auraByItem = auraRowsByItem(actor);
     context.otherItems = actor.items.filter(i => !["action"].includes(i.type));
     context.effects = actor.effects.map(e => ({ id: e.id, name: e.name, img: e.img, disabled: e.disabled }));
 
@@ -292,6 +298,18 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const id = target.closest("[data-effect-id]")?.dataset.effectId;
     const effect = this.document.effects.get(id);
     return effect?.update({ disabled: !effect.disabled });
+  }
+
+  /* -------------------------------------------- */
+  /*  Auras (0.5.1)                               */
+  /* -------------------------------------------- */
+
+  /** The ring toggle on an ability row: flip the Visible mark. */
+  static async #onToggleAura(event, target) {
+    const key = target.dataset.key;
+    if (!key) return;
+    const current = rangeFor(this.document, key)?.visible ?? false;
+    return this.document.setAuraVisible(key, !current);
   }
 
   #getItem(target) {

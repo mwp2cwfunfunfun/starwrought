@@ -84,6 +84,11 @@
             {{#if talent.root}}<em class="sw-root-mark" data-tooltip="STARWROUGHT.Field.rootHint">✧</em>{{/if}}
             {{#if talent.glyph}}<span class="sw-action-glyph">{{talent.glyph}}</span>{{/if}}
           </span>
+          {{!-- AURAS (0.5.1): the ring, on a Talent that carries one; lit when Visible. --}}
+          {{#with (lookup @root.auraByItem talent.id) as |aura|}}
+          <a class="sw-aura-toggle {{#if aura.visible}}sw-aura-on{{/if}}" data-action="toggleAura" data-key="{{aura.key}}"
+             data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
+          {{/with}}
           <div class="sw-talent-controls">
             <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
             <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.edit"><i class="fa-solid fa-pen"></i></a>

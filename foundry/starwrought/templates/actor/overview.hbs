@@ -210,6 +210,23 @@
       </div>
     </div>
 
+    {{!-- AURAS (0.5.1): the body's own ranges, each with its ring toggle. A Visible ring is pinned on
+          the map for everyone while an encounter runs; the rest preview on hover, control and drag. --}}
+    {{#if ranges.length}}
+    <div class="sw-ranges">
+      <span class="sw-ranges-label" data-tooltip="STARWROUGHT.Aura.rangesHint">{{localize "STARWROUGHT.Aura.ranges"}}</span>
+      {{#each ranges as |range|}}
+      <span class="sw-range-chip {{#if range.visible}}sw-aura-on{{/if}}" style="--sw-aura-color: {{range.color}}">
+        <span class="sw-aura-swatch"></span>
+        <span class="sw-range-name">{{range.label}}</span>
+        <strong>{{range.feet}} ft</strong>
+        <a class="sw-aura-toggle {{#if range.visible}}sw-aura-on{{/if}}" data-action="toggleAura" data-key="{{range.key}}"
+           data-tooltip="{{range.tooltip}}"><i class="fa-solid fa-circle-dot"></i></a>
+      </span>
+      {{/each}}
+    </div>
+    {{/if}}
+
     {{#if system.matchedHarness}}
     <p class="sw-note sw-good">{{localize "STARWROUGHT.Hint.matchedHarness"}}</p>
     {{/if}}
