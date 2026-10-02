@@ -2,7 +2,7 @@
  "meta": {
   "title": "STARWROUGHT",
   "subtitle": "CHARACTER  SHEET",
-  "version": "Playtest v4.10",
+  "version": "Playtest v4.11",
   "tagline": "You are what you do."
  },
  "identity": [
@@ -53,7 +53,7 @@
   "ac_label": "GUARD",
   "ac_micro": "check = d20 + Attribute + Proficiency; Threshold = 10 + Attribute + Proficiency. Level never touches the die",
   "armor_label": "ARMOR & WOUNDS BY ZONE",
-  "ladder_micro": "Load Strain = armor Load - Endure reduction (min 0): off Evade, Might/Agility skill checks, and Rush and Leap in feet. Wind: from round 3, Endure vs 10 + Strain each round or be Fatigued.",
+  "ladder_micro": "Load Strain = armor + shield Load - matched harness - Endure relief (min 0): off Climb, Swim, and Stealth; never off Evade. Wind: round 3 on, Endure vs 10 + Strain or Fatigued +1 (max 3).",
   "defenses": [
    [
     "AWARENESS",
@@ -62,7 +62,7 @@
    ],
    [
     "EVADE",
-    "Agility + prof - Load Strain",
+    "Agility + prof",
     "Blows, Blasts"
    ],
    [
@@ -122,7 +122,7 @@
  },
  "hp": {
   "label": "VIGOR",
-  "micro": "L1: 10 + Ancestry + Calling Vigor; + both again per level",
+  "micro": "10 + Opening Vigor + (Ancestry + Endure Bonus) x level",
   "boxes": [
    "MAX",
    "CURRENT",

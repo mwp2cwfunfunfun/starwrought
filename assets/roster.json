@@ -57,35 +57,35 @@
   [
    "Ambusher",
    "Stealth",
-   2,
+   8,
    "Agility",
    "Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +2d6 at Expert, +3d6 at Master, and +4d6 at Legendary."
   ],
   [
    "Berserker",
    "Athletics",
-   4,
+   12,
    "Might",
    "Rage ❶: Temporary Vigor equal to your level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts. The damage rises to +4 at Expert, +6 at Master, +8 at Legendary."
   ],
   [
    "Bravo",
    "Acrobatics",
-   3,
+   10,
    "Presence",
    "Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Situation to Evade and +1 ft to your Speeds while you hold it (Speed +2 ft at Expert, Evade +2 at Master, Speed +3 ft at Legendary)."
   ],
   [
    "Hunter",
    "Awareness",
-   3,
+   10,
    "Wits",
    "Mark Prey ❶: +1d8 precision damage the first time each round you Hit your prey (2d8 at Expert, 3d8 at Master, 4d8 at Legendary), and you always know roughly where it is within 60 feet."
   ],
   [
    "Weaponmaster",
    "Athletics",
-   3,
+   10,
    "Might",
    "Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee."
   ]
@@ -1299,8 +1299,8 @@
    "Lose N actions at the start of each round. Reduce by 1 at the end of each round."
   ],
   [
-   "Fatigued",
-   "−1 to Evade and Guard; can't use Exploration Mode Activities."
+   "Fatigued N",
+   "−N Condition penalty to Evade, Guard, and attack rolls; can't use Exploration Mode Activities. Rises by 1 on each failed Wind check, to a maximum of 3; ends after ten minutes of rest once the fight is over."
   ],
   [
    "Persistent Damage",
@@ -1538,7 +1538,7 @@
   [
    "5. Calling",
    "Your adventuring identity. This adds special techniques such as entering a rage or sneak attacking.",
-   "Training in one Skill or other Constellation, Vigor per level, and a signature ability.",
+   "Training in one Skill or other Constellation, Opening Vigor if it is your first Calling, and a signature ability.",
    "1 Calling"
   ],
   [

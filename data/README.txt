@@ -18,7 +18,13 @@ Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Tr
   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary; those generate
   the "ancestries" block of roster.json, so the chassis is authored once, here. Speed is feet per
   Move (a Human's is 6).
-  Calling rows may carry Skills: the Training the Calling grants at creation.
+  Calling rows may carry Skills: the Training the Calling grants at creation. A Calling's Vigor is
+  NOT authored here: it is the third column of the hand-kept callings block of assets/roster.json,
+  and since PHB v4.11 that column is the Calling's Opening Vigor (paid once, at 1st level, by your
+  first Calling: Berserker 12, Ambusher 8, Hunter, Bravo and Weaponmaster 10), not Vigor per level.
+  The Ancestry's Vigor stays per level; the two meet in Vigor = 10 + Opening Vigor + (Ancestry
+  Vigor + Endure Bonus) × level, where the Endure Bonus is Endure Training's conditioning clause
+  (0 until Expert, then 1 / 2 / 3).
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |

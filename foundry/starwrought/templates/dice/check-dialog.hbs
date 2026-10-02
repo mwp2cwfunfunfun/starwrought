@@ -61,6 +61,17 @@
     </div>
   </div>
 
+  {{#each extras as |x|}}
+  {{!-- A modifier the engine can name but not decide (Load Strain on a Climb or a Swim, PHB v4.11): offered unticked. --}}
+  <div class="form-group sw-extra-choice">
+    <label class="sw-choice" data-tooltip="{{x.hint}}">
+      <input type="checkbox" name="extra-{{x.key}}" {{#if x.checked}}checked{{/if}}>
+      <span>{{x.label}}</span>
+    </label>
+    <div class="form-fields"><strong>{{swSigned x.value}}</strong></div>
+  </div>
+  {{/each}}
+
   {{#if targetDefense}}
   {{!-- The defender's choice meets this roll, but it is theirs to reveal: the card shows it. --}}
   <div class="form-group">

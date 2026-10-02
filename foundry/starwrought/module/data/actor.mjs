@@ -29,9 +29,6 @@ const fields = foundry.data.fields;
 /** The five stances a defender can hold: the two basic Defenses and the three Reactions that answer a Blow. */
 export const STANCES = Object.freeze(["evade", "guard", "void", "parry", "counter"]);
 
-/** Fatigued (PHB v4.10, Wind): -1 to Evade and Guard until you catch your breath after the fight. */
-const FATIGUED_PENALTY = -1;
-
 /** The first Arms Wound (PHB v4.10, Wounds): -2 Situation to attacks and to Guard. */
 const ARMS_WOUND_PENALTY = -2;
 
@@ -433,7 +430,11 @@ export class SwCharacterData extends SwActorData {
         }),
         calling: new fields.SchemaField({
           name: new fields.StringField({ initial: "" }),
-          /** Vigor per level from your first Calling. Only the first counts, however many you open. */
+          /**
+           * Opening Vigor from your first Calling (PHB v4.11): added once, at 1st level. Only the
+           * first counts, however many you open. Until v4.11 this was a per-level number; the
+           * 0.6.0 world migration brings a stored table value across.
+           */
           vigor: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 })
         }),
         languages: new fields.StringField({ initial: "" }),
@@ -700,7 +701,8 @@ export class SwCharacterData extends SwActorData {
     this.clatter = (rigid >= 2) && !torsoRigid;
     this.noisy = this.clatter || pieces.some(p => p.system.traits?.includes?.("Noisy"));
 
-    // Load Strain, relieved by your Endure rank once you own Endure Training.
+    // Load Strain, relieved by your Endure rank once you own Endure Training: 1 at Trained, 2 at
+    // Expert, 3 at Master, 4 at Legendary (PHB v4.11), to a minimum of 0.
     let load = pieces.reduce((n, p) => n + (p.system.load ?? 0), 0);
     load += this.shield?.system.load ?? 0;
     if (this.matchedHarness) load -= 1;
@@ -747,16 +749,18 @@ export class SwCharacterData extends SwActorData {
    * bonuses and penalties, with no level term (PHB v4.10, Checks & Thresholds). A Threshold is
    * that check with a 10 in place of the die.
    *
-   * Folded in: Size (Evade and Guard, physical Attacks), Off-Guard, Frightened N, Fatigued,
-   * Load Strain on Evade, the helm on Awareness, a Parry weapon's Gear bonus and a raised
-   * shield's Gear bonus on Guard (same type, so the better one stands), the first Arms Wound on
-   * Guard, and the first Torso Wound as Off-Guard.
+   * Folded in: Size (Evade and Guard, physical Attacks), Off-Guard, Frightened N, Fatigued N
+   * (Evade and Guard), the helm on Awareness, a Parry weapon's Gear bonus and a raised shield's
+   * Gear bonus on Guard (same type, so the better one stands), the first Arms Wound on Guard, and
+   * the first Torso Wound as Off-Guard. Load Strain never touches Evade (PHB v4.11: "It never
+   * comes off your Evade"; it came off until 0.6.0).
    */
   #prepareDefenses() {
     const statuses = this.parent.statuses ?? new Set();
     const offGuard = statuses.has("offGuard") ? SW.OFF_GUARD_PENALTY : 0;
     const frightened = -(this.parent.conditionValue("frightened") ?? 0);
-    const fatigued = statuses.has("fatigued") ? FATIGUED_PENALTY : 0;
+    // Fatigued N (PHB v4.11, Wind): -N Condition to Evade and Guard, and to attack rolls below.
+    const fatigued = -(this.parent.conditionValue("fatigued") ?? 0);
     const sizeMods = SW.SIZES[this.size] ?? SW.SIZES.medium;
 
     // A Parry weapon in hand (PHB v4.10 weapon traits): +1 Gear to Guard against melee Attacks.
@@ -800,9 +804,6 @@ export class SwCharacterData extends SwActorData {
           label: game.i18n.localize("STARWROUGHT.Condition.frightened"),
           value: frightened, type: "condition"
         });
-      }
-      if (key === "evade" && this.loadStrain) {
-        modifiers.push({ label: game.i18n.localize("STARWROUGHT.Field.loadStrain"), value: -this.loadStrain });
       }
       if (key === "guard") {
         if (this.zones.arms.wounded) {
@@ -889,14 +890,22 @@ export class SwCharacterData extends SwActorData {
   /* -------------------------------------------- */
 
   /**
-   * Vigor (PHB v4.10): 10 + (Ancestry Vigor + Calling Vigor) at 1st level, and the same sum again
-   * at every level after, so max = 10 + per-level x level. Only your first Calling counts. A
-   * night's rest restores level x Presence, or level if Presence is 1 or less. At 0 you are Spent.
+   * Vigor (PHB v4.11, Your Vigor): at 1st level, Ancestry Vigor + Endure Bonus + your first
+   * Calling's Opening Vigor + 10; at every level after, Ancestry Vigor + Endure Bonus again. So
+   * max = 10 + Opening Vigor + (Ancestry Vigor + Endure Bonus) x level, plus the sheet's
+   * adjustment. The Endure Bonus is the conditioning clause of Endure Training (1 at Expert, 2 at
+   * Master, 3 at Legendary), read live from the current Endure rank, so it is 0 at 1st level and
+   * grows into every level already lived (ruling R1). Only your first Calling counts. A night's
+   * rest restores level x Presence, or level if Presence is 1 or less. At 0 you are Spent.
    */
   #prepareVigor() {
-    const perLevel = this.details.ancestry.vigor + this.details.calling.vigor;
+    const endure = this.constellations[SW.DEFENSES.endure.slug];
+    const endureBonus = SW.ENDURE_VIGOR_BONUS[endure?.rank ?? "untrained"] ?? 0;
+    const perLevel = this.details.ancestry.vigor + endureBonus;
+    this.vigor.opening = this.details.calling.vigor;
+    this.vigor.endureBonus = endureBonus;
     this.vigor.perLevel = perLevel;
-    this.vigor.max = Math.max(1, 10 + (perLevel * this.level) + this.bonuses.vigor);
+    this.vigor.max = Math.max(1, 10 + this.vigor.opening + (perLevel * this.level) + this.bonuses.vigor);
     this.vigor.value = Math.clamp(this.vigor.value, 0, this.vigor.max);
     this.vigor.pct = Math.round((this.vigor.value / this.vigor.max) * 100);
     this.vigor.rest = this.level * Math.max(1, this.attributes.presence.mod);
@@ -952,7 +961,9 @@ export class SwCharacterData extends SwActorData {
     this.unwieldy = this.reachWeapon?.system.flags?.unwieldy ?? 0;
 
     // Modifiers every attack roll carries, whatever the weapon. The first Arms Wound is -2
-    // Situation to attacks (and to Guard, folded in above).
+    // Situation to attacks (and to Guard, folded in above); Fatigued N is -N Condition to attack
+    // rolls (PHB v4.11, Wind), as it is to Evade and Guard. The check engine spreads this list
+    // into every attack, so the sheet's weapon rows and the die agree.
     this.attackModifiers = [];
     if (this.zones.arms.wounded) {
       this.attackModifiers.push({
@@ -960,6 +971,13 @@ export class SwCharacterData extends SwActorData {
           zone: game.i18n.localize(SW.ZONES.arms.label)
         }),
         value: ARMS_WOUND_PENALTY, type: "situation"
+      });
+    }
+    const fatigued = this.parent.conditionValue("fatigued") ?? 0;
+    if (fatigued) {
+      this.attackModifiers.push({
+        label: game.i18n.localize("STARWROUGHT.Condition.fatigued"),
+        value: -fatigued, type: "condition"
       });
     }
 

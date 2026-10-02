@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry Virtual Tabletop
 
-A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.10; see
+A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.11; see
 `FEATURES.md` for what it does and `CHANGELOG.md` for what changed). Classless, Constellation-built,
 and written for a virtual tabletop from the ground up: the arithmetic is the software's job so the
 table can spend its attention on decisions. Six actions a round spent across Opportunities, the
@@ -18,14 +18,17 @@ tracked, announced, and never enforced against the table.
 down, max +5, with no minimum +1). Proficiency Rank is derived from your spend in a Constellation
 and your level: Trained +3, Expert +6, Master +9, Legendary +12, gated at 1/4/9/16 points and
 levels 1/5/10/15. There is no level term in any check: d20 + Attribute + Proficiency, against a
-Threshold of 10 + the same. Vigor is `10 + (Ancestry Vigor + Calling Vigor) x level`. The Origin
+Threshold of 10 + the same. Vigor is `10 + Opening Vigor + (Ancestry Vigor + Endure Bonus) x level`,
+the Opening Vigor paid once by your first Calling and the Endure Bonus read from your Endure rank. The Origin
 Constellation's three Roots (Ancestry, Bloodline, Culture) pool into one rank, and Melee and Ranged
 are parents whose Combat Styles' points count toward their rank once their Root is owned.
 
 **The four Defenses.** Awareness, Evade, Guard, Endure are Constellations like any other, so each
-is `Attribute + Proficiency`, with a Threshold of ten plus that. Size, Off-Guard, Frightened,
-Fatigued, Load Strain, Wounds, a Parry weapon, a raised shield and a helm are folded in
-automatically, and bonuses of the same type do not stack. A character begins Trained in two.
+is `Attribute + Proficiency`, with a Threshold of ten plus that. Size, Off-Guard, Frightened N,
+Fatigued N, Wounds, a Parry weapon, a raised shield and a helm are folded in automatically, and
+bonuses of the same type do not stack. Load Strain never touches Evade: it is a clock (the Wind
+check from the third round, Fatigued 1 to 3) and a penalty to Climb, Swim and Stealth. A character
+begins Trained in two.
 
 **The six-action round.** Six actions at the start of each round, one Maneuver per Opportunity or
 Pass, a full circuit of Passes ending the round, Reactions paid from the same six, and Prepared

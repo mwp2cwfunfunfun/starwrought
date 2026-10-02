@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.5.3";
+export const SYSTEM_VERSION = "0.6.0";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -456,12 +456,32 @@ export const SPECIALIZATION = Object.freeze({
 // across Opportunities, and a Reaction costs the same actions an attack does.
 
 /**
- * Load Strain reduction from your Endure rank, once you own Endure Training. Trained buys none of
- * it: the relief starts at Expert (PHB v3.2 reword of Endure Training).
+ * Load Strain reduction from your Endure rank, once you own Endure Training (PHB v4.11, Endure
+ * Training: "reduce your Load Strain by 1 at Trained, 2 at Expert, 3 at Master, and 4 at
+ * Legendary", to a minimum of 0). Until v4.11 the relief began at Expert (ruling R5).
  */
 export const LOAD_RELIEF = Object.freeze({
+  untrained: 0, trained: 1, expert: 2, master: 3, legendary: 4
+});
+
+/**
+ * The Endure Bonus to Vigor (PHB v4.11, Endure Training: "at Expert rank in Endure you gain 1
+ * more Vigor at every level, 2 at Master, and 3 at Legendary"). It is the per-level term beside
+ * Ancestry Vigor, read live from the current Endure rank, so it counts at 1st level too, where it
+ * is 0 (ruling R1).
+ */
+export const ENDURE_VIGOR_BONUS = Object.freeze({
   untrained: 0, trained: 0, expert: 1, master: 2, legendary: 3
 });
+
+/**
+ * Where Load Strain lands on a check (PHB v4.11, Load and Load Strain: "Climb, Swim, and Stealth
+ * checks take your Load Strain as a penalty. Nothing else does"). Stealth is a Constellation of
+ * its own, so the engine applies it. Climb and Swim are Athletics checks the engine cannot tell
+ * from a grapple or a tumble, so the roll dialog offers the penalty there, unticked, for the
+ * player to take when the check is one of those (ruling R2). Evade never takes it.
+ */
+export const STRAIN_CHECKS = Object.freeze({ stealth: "always", athletics: "offered" });
 
 /* -------------------------------------------- */
 /*  Degrees of success                          */
@@ -659,8 +679,10 @@ export const LEAP_FEET = 10;
 export const CRAWL_FEET = 3;
 /** Exploration Mode: feet per minute, miles per hour, miles per day, as multiples of Speed. */
 export const TRAVEL = Object.freeze({ feetPerMinute: 40, milesPerHour: 0.5, milesPerDay: 4 });
-/** At the end of this round and every round after, Load Strain 1+ rolls Endure vs 10 + Load Strain or is Fatigued. */
+/** At the end of this round and every round after, Load Strain 1+ rolls Endure vs 10 + Load Strain or grows Fatigued (PHB v4.11, Wind). */
 export const WIND_ROUND = 3;
+/** Fatigued N rises by 1 on each failed Wind check, to this ceiling (PHB v4.11, Wind). */
+export const FATIGUED_MAX = 3;
 /** Helm penalties to Awareness checks, the Awareness Threshold and Initiative, by the Head piece's name. */
 export const HELM_PENALTIES = Object.freeze({ "Closed helm": -2, "Open helm": -1 });
 
@@ -749,7 +771,7 @@ export const ACTIVE_STATE = Object.freeze({
 
 /**
  * Conditions, registered as Foundry status effects so they can be toggled on a token.
- * `numeric` conditions carry a value (Frightened 2, Stunned 1, Wounded 3).
+ * `numeric` conditions carry a value (Frightened 2, Fatigued 1, Stunned 1, Wounded 3).
  * `zone` conditions are Exposed, one per Zone (0.5.1): the token status mirrors
  * `system.zones.<zone>.exposed`, and toggling the status from the palette writes the Zone.
  * `rulesPage` names the Rules Reference journal page the condition's row and card title open.
@@ -765,7 +787,8 @@ export const CONDITIONS = Object.freeze({
   heedless: { id: "heedless", name: "STARWROUGHT.Condition.heedless", img: "icons/svg/explosion.svg" },
   stunned: { id: "stunned", name: "STARWROUGHT.Condition.stunned", img: "icons/svg/daze.svg", numeric: true },
   slowed: { id: "slowed", name: "STARWROUGHT.Condition.slowed", img: "icons/svg/clockwork.svg", numeric: true },
-  fatigued: { id: "fatigued", name: "STARWROUGHT.Condition.fatigued", img: "icons/svg/unconscious.svg" },
+  /** Fatigued N (PHB v4.11, Wind): -N Condition to Evade, Guard and attack rolls, 1 to FATIGUED_MAX. */
+  fatigued: { id: "fatigued", name: "STARWROUGHT.Condition.fatigued", img: "icons/svg/unconscious.svg", numeric: true },
   blinded: { id: "blinded", name: "STARWROUGHT.Condition.blinded", img: "icons/svg/blind.svg" },
   deafened: { id: "deafened", name: "STARWROUGHT.Condition.deafened", img: "icons/svg/deaf.svg" },
   concealed: { id: "concealed", name: "STARWROUGHT.Condition.concealed", img: "icons/svg/light-off.svg" },

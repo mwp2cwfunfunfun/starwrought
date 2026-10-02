@@ -205,7 +205,40 @@ PROPOSALS["vigor"] = {
     ],
 }
 
-PARA_RE = re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
+PROPOSALS["wind-exemption"] = {
+    # The Wind exemption (Mike, 2026-10-02: "If the character passes a certain threshold something
+    # related, I think they should not have to roll to be Winded"). A take-10 rule in the book's
+    # own terms: a fighter whose Endure Threshold is at least the Wind Threshold (10 + Load Strain)
+    # passes without rolling, so conditioning rather than luck decides who never tires. Endure
+    # feeds Might, so the one number already carries both the training and the strength. In the
+    # plate example a fighter Trained in Endure rolls against 16, and one at Expert rank (Load
+    # Strain 5, Endure Threshold 16 or more) never rolls, nor does a Master. Fatigued never
+    # touches Endure, so the test holds through a fight; Frightened does, so fear can take a
+    # fighter's wind. Talents that buy the exemption outright, or cap Fatigued at 1, belong to the
+    # Armored Fighting Constellation once it has Talents, not here.
+    "from": "4.11",
+    "replace": [
+        (
+            "Wind. At the end of the third round",
+            "against 10 + Load Strain. ",
+            "against 10 + Load Strain. A fighter whose Endure Threshold is at least that number passes"
+            " without rolling: conditioning, not luck, decides who never tires. "
+        ),
+    ],
+    "rewrite": [],
+    "cell": [],
+    "append": [
+        (
+            "A complete harness of plate with closed helm",
+            " Trained in Endure, you roll for Wind against 16 from the third round unless your Might lifts"
+            " your Endure Threshold to it; at Expert rank (Load Strain 5, Endure Threshold 16 or more) you"
+            " never roll it at all."
+        ),
+    ],
+    "insert_after": [],
+}
+
+PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
 ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
 CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)
 RUN_RE = re.compile(r"<w:r\b[^>]*>.*?</w:r>", re.S)

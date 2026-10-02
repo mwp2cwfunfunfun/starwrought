@@ -7,6 +7,116 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.6.0 (2026-10-02): Player's Handbook v4.11
+
+Built from Player's Handbook v4.11. Mike accepted two proposals from `assets/phb_propose.py` (the
+vigor proposal and the armor-balance proposal) with tweaks of his own, and the book moved in two
+places: Vigor is an Opening sum from the first Calling plus a per-level share that grows with
+Endure, and Load Strain comes off the margins of a fight rather than off Evade. A rules sync is a
+minor bump, as 0.4.0 was for v4.10. The rulings are 67 to 73 in `v4.11-sync-report.md`, each
+carrying the sync brief's R label as well, so the brief, this entry and the report name the same
+thing the same way.
+
+### Changed
+
+- **Vigor is 10 + Opening Vigor + (Ancestry Vigor + Endure Bonus) × level** (ruling 67, R1). The
+  book: "At 1st level: Your Ancestry's Vigor + Endure Bonus + your first Calling's Opening Vigor +
+  10", and "At every level thereafter: Your Ancestry's Vigor + Endure Bonus." The Calling's number
+  is **Opening Vigor** now, paid once by the first Calling: Berserker 12, Ambusher 8, Hunter 10,
+  Bravo 10, Weaponmaster 10 (it was 4 / 2 / 3 / 3 / 3 per level). The Ancestry's stays per level
+  (Human 8). The **Endure Bonus** is the conditioning clause of Endure Training, 0 at Untrained
+  and Trained, 1 at Expert, 2 at Master, 3 at Legendary, read live from the Endure rank, so it is
+  0 at 1st level and lifts every level's share once earned. `#prepareVigor` exposes
+  `vigor.perLevel` and `vigor.opening`; the chargen review, the sheet's locked-field tooltips and
+  the chassis sheet's label say "Opening Vigor" for a Calling and "Vigor per level" for an
+  Ancestry. A night's rest is unchanged: level × Presence bonus when that bonus is positive, else
+  level.
+- **Load Strain never touches Evade** (ruling 68, R2). The book: "It never comes off your Evade",
+  and "Armor does not make you easier to hit, and it costs a fighter nothing on the roll, Guard or
+  Evade." The untyped Strain modifier is gone from the Evade modifiers and the Evade Threshold.
+  Rush and Leap keep their Strain in feet.
+- **Climb, Swim and Stealth take Load Strain; nothing else does** (ruling 68, R2). The book:
+  "Climb, Swim, and Stealth checks take your Load Strain as a penalty. Nothing else does: a
+  grapple, a tumble, and a single Move at full Speed are yours at full strength." A Stealth check
+  carries the untyped penalty automatically, labelled Load Strain. The system cannot tell a Climb
+  or a Swim from any other Athletics check, so the Athletics roll dialog offers an unticked **Load
+  Strain (Climb or Swim)** modifier whenever the actor's Strain is 1 or more; the player ticks it
+  when the check is one of those. The old blanket penalty on Might and Agility Skill checks is
+  gone.
+- **Fatigued is Fatigued N, and the Wind check deepens it** (ruling 69, R3). The book: "On a
+  failure they are Fatigued 1, or their Fatigued rises by 1, to a maximum of 3. Fatigued N is a −N
+  Condition penalty to Evade, Guard, and attack rolls." Fatigued is a value-carrying condition
+  like Frightened N (the sheet's Effects tab and the token palette read "Fatigued N"), applied as
+  −N Condition to Evade, Guard and to attack rolls, melee and ranged, in place of the boolean −1
+  to Evade and Guard. The Wind reminder posts from the end of the third round for anyone with
+  Load Strain 1 or more who is not yet Fatigued 3, unconscious or Dying (it used to stop once
+  Fatigued at all); a failed check sets Fatigued 1 or raises it by 1, to 3, and the card says the
+  new value. The Wind texts carry the v4.11 wording.
+- **Fatigued clears when the encounter ends** (ruling 70, R4). The book: "it lasts until ten
+  minutes of rest once the fight is over." The system has no clock for ten minutes of rest, so
+  the deletion of the Combat document is what clears it, beside the end-of-combat hooks that
+  already clear remembered targets and Intercept charges. No clear existed before: a boolean
+  Fatigued stayed until someone toggled it off.
+- **Endure relieves Load Strain from Trained** (ruling 71, R5). The book: "Training in Endure
+  reduces Load Strain as your Proficiency Rank in it rises: by 1 at Trained, 2 at Expert, 3 at
+  Master, and 4 at Legendary." `LOAD_RELIEF` reads Untrained 0, Trained 1, Expert 2, Master 3,
+  Legendary 4; it had read Expert 1, Master 2, Legendary 3 since 0.2.0. The Endure Training Talent
+  on the Endure sheet of `data/defenses.xlsx` carries the new tail (relief from Trained, and the
+  Vigor clause above).
+- **The data and the siblings moved with the book.** The roster's `callings` block carries Opening
+  Vigor in its third column (every consumer still indexes `[2]`); its `conditions` block reads
+  "Fatigued N" with the v4.11 text; the chargen step says a Calling grants "Opening Vigor if it is
+  your first Calling". The Constellation Compendium's Callings table is headed "Opening Vigor" and
+  its Vigor paragraph prints the new formula (the Ancestry table keeps "Vigor/lvl"). The web app
+  derives Vigor by the same formula, shows no Load Strain on Evade, and prints the book's relief
+  ladder (Trained 1 to Legendary 4, the very table 0.4.0 "corrected" away to match the old Talent)
+  and the v4.11 Wind note; its Mira sample and the smoke test expect 26 (10 + Human 8 + Ambusher
+  8 at 1st, up from 20). The character sheets' Mira is 26 as well, and the printed sheet's spec
+  (`assets/sheet_spec.json`) drops Load Strain from its Evade formula and prints the new Vigor
+  line. The Calling chassis description in the compendium reads "Grants Training in {training},
+  and {n} Opening Vigor, added once if it is your first Calling."
+
+### Migration
+
+- **0.6.0 world migration** (ruling 72, R6), run once by the first GM to open the world and
+  recorded in `systemVersion`, as the 0.4.0 Speed conversion and the 0.5.1 aura step were.
+  `system.details.calling.vigor` held the old per-level number. When the stored value equals the
+  old table value for the character's named Calling (Berserker 4, Ambusher 2, Hunter 3, Bravo 3,
+  Weaponmaster 3), it is set to that Calling's Opening Vigor, read from `content/chassis.json`
+  (`system.vigor` of the Calling) or from the old-to-new table; a value the GM typed is left
+  alone. `prepareDerivedData` then clamps `vigor.value` to the new maximum on the next render. A
+  chat line says how many characters it touched, as the 0.5.1 step does. A 1st-level Human
+  Weaponmaster goes from 21 (10 + (8 + 3) × 1) to 28 (10 + 10 + 8 × 1).
+- The version stamps read 0.6.0 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet.
+
+### Notes
+
+- **The Athletics toggle is a judgement left at the edge** (ruling 68, R2). "Climb or Swim" is a
+  fact about the fiction, not about the Constellation rolled, so the system asks rather than
+  guesses: the modifier is offered unticked and labelled, and the card shows it when it was taken.
+  If Climb and Swim ever become Maneuvers of their own in `data/maneuvers.xlsx`, the toggle can go
+  and the penalty can ride on them.
+- **"Ten minutes of rest once the fight is over" is approximated by the end of the Combat**
+  (ruling 70, R4). A fight that ends and a chase that begins inside the same Combat keeps the
+  Fatigued; a GM who deletes the Combat and wants the Fatigued to linger sets it again from the
+  palette. "Can't use Exploration Mode Activities" is the table's to hold.
+- **Rage's "fatigued" stays as the sheet has it** (ruling 73, R7). The Rage Talent in
+  `callings.xlsx` says "Afterward, you're fatigued until you spend three actions to catch your
+  breath", in its own sense; nothing in the system acts on it, and the cell is Mike's. The
+  system's Fatigued N is the Wind condition.
+- **Sleeping in armor without Comfort does not set Fatigued 1.** The rest card never did, and
+  nothing was added (R3): the rule is the table's.
+- **Mike's open question** (2026-10-02, recorded in the sync report): a fighter past some
+  threshold should not have to roll to be Winded at all, and an Armored Fighting Constellation to
+  come may carry Talents for it. Nothing is built; the round-end check in `combat.mjs` is the one
+  place a gate would go.
+- The handbook's v4.10 loose ends stand in v4.11: Key Terms still says ÷ 3 and four Trained
+  Defenses and names Varisians, Drilled still says "Weapons Proficiency Bonus", Table 9's Quick row
+  still says "Nothing", and Melee Training still grants Counter. `CLAUDE.md` carries the list.
+
+---
+
 ## 0.5.3 (2026-10-01): damage lands on the target, one Move per Opportunity, rerolls, rings that read
 
 Built from Player's Handbook v4.10, unchanged. Seven notes from Mike at the table, in one evening.

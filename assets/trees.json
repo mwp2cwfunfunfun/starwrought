@@ -1484,7 +1484,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
+    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) at Trained, 2 at Expert, 3 at Master, and 4 at Legendary. Your Vigor grows with your conditioning as well: at Expert rank in Endure you gain 1 more Vigor at every level, 2 at Master, and 3 at Legendary.",
     "root": true
    },
    {

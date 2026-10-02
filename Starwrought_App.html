@@ -1684,7 +1684,7 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) once you reach Expert rank, 2 at Master, and 3 at Legendary.",
+    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) at Trained, 2 at Expert, 3 at Master, and 4 at Legendary. Your Vigor grows with your conditioning as well: at Expert rank in Endure you gain 1 more Vigor at every level, 2 at Master, and 3 at Legendary.",
     "root": true
    },
    {
@@ -2343,35 +2343,35 @@ let R = {
   [
    "Ambusher",
    "Stealth",
-   2,
+   8,
    "Agility",
    "Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +2d6 at Expert, +3d6 at Master, and +4d6 at Legendary."
   ],
   [
    "Berserker",
    "Athletics",
-   4,
+   12,
    "Might",
    "Rage ❶: Temporary Vigor equal to your level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts. The damage rises to +4 at Expert, +6 at Master, +8 at Legendary."
   ],
   [
    "Bravo",
    "Acrobatics",
-   3,
+   10,
    "Presence",
    "Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Situation to Evade and +1 ft to your Speeds while you hold it (Speed +2 ft at Expert, Evade +2 at Master, Speed +3 ft at Legendary)."
   ],
   [
    "Hunter",
    "Awareness",
-   3,
+   10,
    "Wits",
    "Mark Prey ❶: +1d8 precision damage the first time each round you Hit your prey (2d8 at Expert, 3d8 at Master, 4d8 at Legendary), and you always know roughly where it is within 60 feet."
   ],
   [
    "Weaponmaster",
    "Athletics",
-   3,
+   10,
    "Might",
    "Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee."
   ]
@@ -3585,8 +3585,8 @@ let R = {
    "Lose N actions at the start of each round. Reduce by 1 at the end of each round."
   ],
   [
-   "Fatigued",
-   "−1 to Evade and Guard; can't use Exploration Mode Activities."
+   "Fatigued N",
+   "−N Condition penalty to Evade, Guard, and attack rolls; can't use Exploration Mode Activities. Rises by 1 on each failed Wind check, to a maximum of 3; ends after ten minutes of rest once the fight is over."
   ],
   [
    "Persistent Damage",
@@ -3824,7 +3824,7 @@ let R = {
   [
    "5. Calling",
    "Your adventuring identity. This adds special techniques such as entering a rage or sneak attacking.",
-   "Training in one Skill or other Constellation, Vigor per level, and a signature ability.",
+   "Training in one Skill or other Constellation, Opening Vigor if it is your first Calling, and a signature ability.",
    "1 Calling"
   ],
   [
@@ -4768,7 +4768,7 @@ let SHEET = {
  "meta": {
   "title": "STARWROUGHT",
   "subtitle": "CHARACTER  SHEET",
-  "version": "Playtest v4.10",
+  "version": "Playtest v4.11",
   "tagline": "You are what you do."
  },
  "identity": [
@@ -4819,7 +4819,7 @@ let SHEET = {
   "ac_label": "GUARD",
   "ac_micro": "check = d20 + Attribute + Proficiency; Threshold = 10 + Attribute + Proficiency. Level never touches the die",
   "armor_label": "ARMOR & WOUNDS BY ZONE",
-  "ladder_micro": "Load Strain = armor Load - Endure reduction (min 0): off Evade, Might/Agility skill checks, and Rush and Leap in feet. Wind: from round 3, Endure vs 10 + Strain each round or be Fatigued.",
+  "ladder_micro": "Load Strain = armor + shield Load - matched harness - Endure relief (min 0): off Climb, Swim, and Stealth; never off Evade. Wind: round 3 on, Endure vs 10 + Strain or Fatigued +1 (max 3).",
   "defenses": [
    [
     "AWARENESS",
@@ -4828,7 +4828,7 @@ let SHEET = {
    ],
    [
     "EVADE",
-    "Agility + prof - Load Strain",
+    "Agility + prof",
     "Blows, Blasts"
    ],
    [
@@ -4888,7 +4888,7 @@ let SHEET = {
  },
  "hp": {
   "label": "VIGOR",
-  "micro": "L1: 10 + Ancestry + Calling Vigor; + both again per level",
+  "micro": "10 + Opening Vigor + (Ancestry + Endure Bonus) x level",
   "boxes": [
    "MAX",
    "CURRENT",
@@ -5223,9 +5223,14 @@ function derive(ch){
   const A={}; for(const a of ["Might","Agility","Wits","Presence"]) A[a]=attrBonus(attrPoints(ch,a));
   const anc=R.ancestries.find(a=>a.name===ch.ancestry)||{vigor:8,speed:"6 ft",senses:"—",size:"Medium"};
   const cal=callingOf(ch.calling);
-  const perLvl=ancVigor(anc)+(cal?cal[2]:0); // only the first Calling counts
   const lvl=Math.max(1,ch.level);
-  const vigorMax=10+perLvl*lvl; // PHB v4.10 ch.2: 10 + Ancestry Vigor + Calling Vigor, and both again every level after
+  // PHB v4.11 ch.2 (Your Vigor): the Ancestry's Vigor every level, the first Calling's Opening Vigor once,
+  // and the Endure Bonus, Endure Training's conditioning clause (1 a level at Expert rank in Endure, 2 at
+  // Master, 3 at Legendary, nothing at Trained), read from the rank as it stands, level 1 included.
+  const endR=rankOf(ch,"Endure"), endureBonus=({E:1,M:2,L:3})[endR]||0;
+  const vigorOpening=cal?cal[2]:0; // the roster's third Calling column is Opening Vigor; only the first Calling counts
+  const perLvl=ancVigor(anc)+endureBonus;
+  const vigorMax=10+vigorOpening+perLvl*lvl;
 
   // ---- armor: four zones, each its own Protection, Load, and material. Defenses are untouched.
   const worn=armorOf(ch), prot={};
@@ -5237,10 +5242,11 @@ function derive(ch){
   if(matched) prot.Torso+=1;
   const sh=shieldOf(ch.shield);
   const loadTotal=loadArmor+(sh?sh[3]:0);
-  // Endure Training (ch.6): Load Strain −1 once you reach Expert, −2 at Master, −3 at Legendary
-  const endR=rankOf(ch,"Endure"), relief=({T:0,E:1,M:2,L:3})[endR]||0;
-  // ch.5: Load Strain is the Load itself. Might does not offset it; Endure rank and a matched harness do.
-  const strain=Math.max(0, loadArmor-relief-(matched?1:0));
+  // Endure Training (ch.6, v4.11): Load Strain −1 at Trained, −2 at Expert, −3 at Master, −4 at Legendary
+  const relief=({T:1,E:2,M:3,L:4})[endR]||0;
+  // ch.5 (v4.11): Load Strain is the Load of the armor worn and of a shield carried, less the matched-harness
+  // point and the Endure relief, minimum 0. Might does not offset it, and it never comes off Evade.
+  const strain=Math.max(0, loadTotal-relief-(matched?1:0));
   const torso=worn.find(p=>p[1]==="Torso"), hardOn=p=>/mail|plate/i.test(p[6]||p[5]||"");
   const clatter=worn.filter(hardOn).length>=2 && !(torso&&hardOn(torso));
   const noisy=clatter||worn.some(p=>/noisy/i.test(p[5]||""));
@@ -5262,12 +5268,12 @@ function derive(ch){
   const atkPen=Math.max(wounds.Arms>=1?2:0, finalW("Legs")?2:0); // −2 Situation to attacks: an Arms Wound, or Prone from a final Legs Wound (Conditions table)
   const noReactions=wounds.Head>=1;                                // Head Wound: "You cannot use Reactions."
 
-  // ---- the four Defenses: attribute + proficiency (+ size), no level. Untrained still adds its attribute.
+  // ---- the four Defenses: attribute + proficiency (+ size), no level, and no Load Strain (v4.11: it never
+  // comes off Evade). Untrained still adds its attribute.
   const D={}, DT={}, DR={};
   for(const d of DEFS){
     const r=rankOf(ch,d); DR[d]=r;
-    let v=(A[DEFF[d]]||0)+(r?RB[r]:0)+(sz[d]||0)-sitPen[d];
-    if(d==="Evade") v-=strain;
+    const v=(A[DEFF[d]]||0)+(r?RB[r]:0)+(sz[d]||0)-sitPen[d];
     D[d]=v; DT[d]=10+v; // D = what you roll and add; DT = the Threshold an attacker is measured against
   }
   // ---- Melee and Ranged: the two parents that own every attack roll. Specialization rides their rank.
@@ -5275,7 +5281,7 @@ function derive(ch){
   const speedBase=feet(anc.speed)||6; let speed=speedBase; // ft per Move ❶
   if(finalW("Legs")) speed=0; else for(let i=0;i<wounds.Legs;i++) speed=Math.floor(speed/2); // each Legs Wound short of the final halves what is left; the final is Prone and cannot Stand
   const vigorCur=(ch.vigorCur==null)?vigorMax:ch.vigorCur;
-  return {A, vigorMax, vigorPerLvl:perLvl, vigorCur, spent:vigorCur<=0, calling:cal, D, DT, DR, sitPen, atkPen, noReactions, prot, size, weakness,
+  return {A, vigorMax, vigorPerLvl:perLvl, vigorOpening, endureBonus, vigorCur, spent:vigorCur<=0, calling:cal, D, DT, DR, sitPen, atkPen, noReactions, prot, size, weakness,
     loadArmor, loadTotal, strain, endureRelief:relief, noisy, clatter, matched, quietOnly,
     shield:sh, shieldBonus:sh?sh[1]:0, natReach:NATREACH[size]||"2 ft",
     init:D.Awareness, helmPen, senses:anc.senses,
@@ -5386,11 +5392,11 @@ function newChar(){ return {id:"c"+Date.now(), name:"", level:1, milestones:0, a
 
 // Sample build, legal under v4.10: Melee Training and three Origin roots granted, the ten points
 // character creation hands you (3 Skill, 1 Lore, 1 Calling, 2 Defense, 3 Comets), plus the one
-// Driven grants back. Her leathers are a matched harness, which is the point. Vigor 20: 10 + Human 8 + Ambusher 2.
+// Driven grants back. Her leathers are a matched harness, which is the point. Vigor 26 (v4.11): 10 + Ambusher Opening 8 + Human 8.
 const TORVA = {id:"sample-mira", name:"Mira of the Long Road", level:1, milestones:0, ancestry:"Human", bloodline:"Versatile Human",
  culture:"Kestrel Reach", background:"Acrobat", calling:"Ambusher",
  armor:{Head:"Leather cap",Torso:"Leather cuirass",Arms:"Leather bracers",Legs:"Leather leggings"}, shield:null,
- vigorCur:20, vigorTmp:0, bankedM:0, bankedF:0, exposed:{}, dying:0, wounds:{Head:0,Torso:0,Arms:0,Legs:0},
+ vigorCur:26, vigorTmp:0, bankedM:0, bankedF:0, exposed:{}, dying:0, wounds:{Head:0,Torso:0,Arms:0,Legs:0},
  talents:{"Human":["Humanity","Versatile Human","Driven"],
   "Kestrel Reach":["Reacher"],"Lore (Circus)":["Deep Knowledge"],
   "Melee":["Melee Training"],
@@ -5583,7 +5589,7 @@ function vSheet(c){
       <div class="shattr"><span class="nm">LOAD / STRAIN</span>
         <span class="shmicro" style="width:96px;flex-shrink:0">armor ${d.loadArmor}${d.shield?" + shield "+d.shield[3]:""}; Endure −${d.endureRelief}</span>
         <span class="shcell em">${d.strain}</span></div>
-      <div class="shmicro">${S.defense.ladder_micro}${d.strain?` &bull; <b>−${d.strain} to Evade and to Might/Agility skill checks</b>`:""}${d.noisy?" &bull; <b>noisy</b>"+(d.clatter?" (clatter: hard pieces over a soft torso)":""):""}${d.quietOnly?" &bull; quiet: Load Strain never applies to Stealth":""}</div>
+      <div class="shmicro">${S.defense.ladder_micro}${d.strain?` &bull; <b>−${d.strain} to Climb, Swim, and Stealth checks; Rush and Leap ${d.strain} ft shorter; Wind from round 3: Endure vs ${10+d.strain}</b>`:""}${d.noisy?" &bull; <b>noisy</b>"+(d.clatter?" (clatter: hard pieces over a soft torso)":""):""}${d.quietOnly?" &bull; quiet: Load Strain never applies to Stealth":""}</div>
       <div class="shmicro">${S.defense.zone_micro}</div>
       ${shSec(SV.label,SV.micro)}
       <div style="display:flex;gap:6px;margin-top:5px;align-items:flex-end">
@@ -6129,10 +6135,10 @@ function wCalling(){
   let h=`<div class="callout">Your Calling is your primary adventuring identity. Callings are what other games call classes, except the signature feature sits at the <b>root</b>, so your very first point buys the fantasy. 'Barbarian' was never a job. It was Rage plus Athletics plus a big axe, and now it's yours in any combination.</div>`;
   h+=`<div class="cards">`+calls.map(cn=>{const tr=treeOf(cn), rt=tr.nodes.find(n=>n.root), row=callingOf(cn), sk=(tr.skills||[])[0];
     return `<div class="card ${wiz.picks.calName===cn?"sel":""}" data-cal="${cn}"><h4>${cn}${tr.feeds?attrIcon(tr.feeds):""}</h4>
-      <span class="tag">${row?"Vigor "+row[2]+"/level":""}${sk?" · Trained in "+sk:""}</span><p>${rt?stripT(rt.effect):""}</p></div>`;}).join("")+`</div>`;
+      <span class="tag">${row?"Opening Vigor "+row[2]:""}${sk?" · Trained in "+sk:""}</span><p>${rt?stripT(rt.effect):""}</p></div>`;}).join("")+`</div>`;
   if(wiz.picks.calName){
     const cn=wiz.picks.calName, sk=calSkillName(), row=callingOf(cn);
-    h+=`<div class="callout">Your Calling adds <b>${row?row[2]:0} Vigor per level</b> (only your first Calling counts)${sk?` and grants you Training in <b>${sk}</b>`:""}. Spend your <b>Calling point</b> in ${cn}: it buys the signature talent at its root. <span class="pill">${(wiz.picks.calling||[]).length}/1</span></div>`;
+    h+=`<div class="callout">Your Calling adds <b>${row?row[2]:0} Opening Vigor</b>, once, if it is your first Calling${sk?` and grants you Training in <b>${sk}</b>`:""}. Spend your <b>Calling point</b> in ${cn}: it buys the signature talent at its root. <span class="pill">${(wiz.picks.calling||[]).length}/1</span></div>`;
     h+=talentPicker([cn], wiz.picks.calling=wiz.picks.calling||[], "calling", 1, ()=>wizCh(null));
     if(sk){ h+=`<div class="callout" style="border-color:#4A7C59"><b>${sk}</b> Training, granted by ${cn} <span class="pill">${(wiz.picks.calSkill||[]).length}/1</span></div>`;
       h+=talentPicker([sk], wiz.picks.calSkill=wiz.picks.calSkill||[], "calSkill", 1, ()=>wizCh(null)); }
@@ -6172,7 +6178,7 @@ function wReview(){
     <div class="tree-row"><b style="flex:0 0 54px">Shield</b>
       <select data-wshield style="flex:1">${[""].concat((R.shields||[]).map(s=>s[0])).map(o=>`<option ${(wiz.ch.shield||"")===o?"selected":""}>${o}</option>`).join("")}</select>
       <span class="muted" style="flex:0 0 92px;text-align:right">${d.shieldBonus?"+"+d.shieldBonus+" Guard":"—"}</span></div>
-    <p class="muted" style="font-size:11.5px">Load ${d.loadArmor}${d.shield?" (+"+d.shield[3]+" shield)":""} · Load Strain <b>${d.strain}</b>${d.strain?" off Evade and off Might/Agility skill checks":""}${d.endureRelief?` · Endure −${d.endureRelief}`:""}${d.matched?" · matched harness: +1 torso Protection, −1 Load Strain":""}${d.noisy?" · noisy"+(d.clatter?" (clatter)":""):""}</p>
+    <p class="muted" style="font-size:11.5px">Load ${d.loadArmor}${d.shield?" (+"+d.shield[3]+" shield)":""} · Load Strain <b>${d.strain}</b>${d.strain?" off Climb, Swim, and Stealth checks and off Rush and Leap in feet, never off Evade":""}${d.endureRelief?` · Endure −${d.endureRelief}`:""}${d.matched?" · matched harness: +1 torso Protection, −1 Load Strain":""}${d.noisy?" · noisy"+(d.clatter?" (clatter)":""):""}</p>
     <div class="statgrid">
       ${["Might","Agility","Wits","Presence"].map(a=>`<div class="stat"><div class="v">+${d.A[a]}</div><div class="l">${a.toUpperCase()} (${attrPoints(c,a)} pts)</div></div>`).join("")}
       <div class="stat"><div class="v">${d.vigorMax}</div><div class="l">VIGOR (${d.vigorPerLvl}/level)</div></div>
@@ -6719,7 +6725,7 @@ function vWiki(){
     ${tbl(["Attribute points","Bonus"],[["0–3","+0"],["4–7","+1"],["8–11","+2"],["12–15","+3"],["16–19","+4"],["20+","+5 (the maximum)"]])}
     <h3>Derived numbers</h3>
     ${tbl(["Stat","Formula"],[
-      ["Vigor","10 + Ancestry Vigor + Calling Vigor at 1st level; add both again at every level after. Only your first Calling counts."],
+      ["Vigor","Ancestry Vigor + Endure Bonus + your first Calling's Opening Vigor + 10 at 1st level; add Ancestry Vigor + Endure Bonus again at every level after. The Endure Bonus is 1 at Expert rank in Endure, 2 at Master, 3 at Legendary."],
       ["Any Defense","attribute + proficiency (if any). Its Threshold is 10 + that. An Untrained Defense still adds its attribute; its Thresholds are simply 3 lower."],
       ["Any Threshold","10 + attribute + proficiency + bonuses and penalties: a check with a 10 in place of the die"],
       ["Attack roll","d20 + Strike Attribute + Melee (weapon in hand) or Ranged (weapon that leaves it) proficiency, against the Defense that answers it"],
@@ -6728,8 +6734,8 @@ function vWiki(){
       ["Graze","one weapon die − Protection, minimum 1, and nothing else"],
       ["Initiative","usually an Awareness check, or whatever you were actually doing (Stealth, if you were creeping)"],
       ["Speed","feet per Move ❶; a Human's is 6. Step ❶ is half your Speed; Rush ❸ is 5 × Speed in a straight line, less Load Strain"],
-      ["Load Strain","the total Load of your armor, minus your Endure reduction and the matched-harness point, minimum 0"],
-      ["A night's rest","Vigor equal to level × Presence (minimum your level). Wounds do not rest away."]])}
+      ["Load Strain","the Load of the armor you wear and of a shield you carry, less 1 for a matched harness and less your Endure relief (1 at Trained, 2 at Expert, 3 at Master, 4 at Legendary), minimum 0. Never off Evade: it shortens Rush and Leap in feet and penalises Climb, Swim, and Stealth checks"],
+      ["A night's rest","Vigor equal to level × Presence if that is positive, else your level. Wounds do not rest away."]])}
     <h3>Bonuses and penalties</h3>
     ${P("Three types, named for where the number comes from. A <b>Situation</b> bonus or penalty comes from where you stand and what is happening around you: cover, high ground, an ally's help, a foe Off-Guard. A <b>Condition</b> bonus or penalty comes from something on you: Frightened, or a stance you have taken. A <b>Gear</b> bonus or penalty comes from what you hold or wear: a raised shield. Bonuses of the same type do not stack; use the highest. Penalties of the same type do not stack; use the highest. A bonus and a penalty of the same type add together. Fractions always round down, and multipliers combine by addition: count how far past 1 each takes you, add those, and apply the result once.")}
     ${tbl(["Example","Result"],[["+1 Situation bonus, −2 Situation penalty","−1 Situation penalty (same type: add them together)"],["+1 Gear bonus, +1 Condition bonus","+1 Gear bonus and +1 Condition bonus (different types: keep them separate)"],["−3 Condition penalty, −1 Condition penalty","−3 Condition penalty (same type: only the highest penalty)"]])}
@@ -6776,10 +6782,10 @@ function vWiki(){
     +tbl(["Background","Skills (1 point each)","Lore (1 point)","You were…"],
       (bgData()||[]).map(b=>[b.name,(b.skills||[]).map(link).join(" & "),b.lore?link(b.lore):"—",stripT(b.desc)]));
 
-  if(wikiSec==="Callings") h+=`<div class="callout">Callings are what other games call classes, except the signature feature sits at the <b>root</b>, so your very first point buys the fantasy. 'Barbarian' was never a job. It was Rage plus Athletics plus a big axe. Now it's yours in any combination or permutation. Each Calling grants Training in 1 Skill or other Constellation, adds a certain amount of Vigor per level, and gives you a special ability.</div>`
-    +tbl(["Calling","Free Training","Vigor/lvl","Key attribute","Special ability"],
+  if(wikiSec==="Callings") h+=`<div class="callout">Callings are what other games call classes, except the signature feature sits at the <b>root</b>, so your very first point buys the fantasy. 'Barbarian' was never a job. It was Rage plus Athletics plus a big axe. Now it's yours in any combination or permutation. Each Calling grants Training in 1 Skill or other Constellation, gives you a special ability, and adds Vigor (if it is your first Calling).</div>`
+    +tbl(["Calling","Free Training","Opening Vigor","Key attribute","Special ability"],
       (R.callings||[]).map(c=>[link(c[0]),link(c[1]),c[2],c[3],c[4]]))
-    +P("Only your <b>first</b> Calling counts toward Vigor, however many you open later.");
+    +P("Only your <b>first</b> Calling adds its Opening Vigor, once, at 1st level, however many you open later.");
 
   if(wikiSec==="Defenses") h+=`<div class="callout">There are a multitude of ways you can attack your foes, and they have just as many for you. There are four ways to answer them. Your four Defenses are Constellations like any other. You begin play <b>Trained in two of them</b>, your choice, and the other two are Untrained until you spend Defense Talent Points on them; an Untrained Defense still adds its Attribute, it simply has no Proficiency Bonus. Each works two ways: your check is what you roll, and your Threshold is what someone else has to beat.</div>`
     +tbl(["Defense","Key attribute","In a word","Answers","Also answers"],
@@ -6811,9 +6817,9 @@ function vWiki(){
     ${P("<b>Starting equipment.</b> You begin play with <b>15 gold pieces</b>. Spend it on the tables below, plus a travelling kit: pack, bedroll, rope, rations for a week, torches, flint, waterskin, and the tools of your trade, all of which cost coppers and none of which needs tracking.")}
     <h3>Armor</h3>`
     +P("Armor is worn in four places: Arms, Legs, Torso, Head. Each Zone holds one piece, and each piece is bought, worn, and lost separately. There is no such thing as 'a suit of plate' on your sheet; there is a breastplate, a helm, a pair of vambraces, and greaves, and you own as many as you can afford. Each piece has <b>Protection</b> (subtracted from every instance of damage landing on that Zone, a Graze included), <b>Load</b>, and Traits. Your torso is the number that matters most, because ordinary Hits land there. The other three Zones come into play when someone has earned an opening.")
-    +`<div class="callout" style="border-color:#B8860B"><b>Load Strain</b> = the total Load of all armor you are wearing. Subtract your Load Strain from your <b>Evade</b>, and from any Might- or Agility-related Skill check. Training in ${link("Endure")} reduces Load Strain as your Proficiency Rank in it rises: −1 at Expert, −2 at Master, −3 at Legendary (to a minimum of 0).</div>`
+    +`<div class="callout" style="border-color:#B8860B"><b>Load Strain</b> = the Load of all the armor you are wearing and of a shield you carry, less 1 for a matched harness and less your Endure relief, to a minimum of 0. It never comes off your <b>Evade</b>, and it is no blanket penalty on Might or Agility: a fit fighter in a fitted harness runs, rolls, and wrestles like anyone else. What it costs is breath, senses, and the margins of movement, as the three points below say. Training in ${link("Endure")} reduces Load Strain as your Proficiency Rank in it rises: by 1 at Trained, 2 at Expert, 3 at Master, and 4 at Legendary.</div>`
     +`<h4>What armor costs in a fight</h4>`
-    +P("Armor does not make you easier to hit, and it costs a Guard fighter nothing on the roll. It costs three other things, all of them real. <b>Wind.</b> At the end of the third round of an encounter and every round after, a fighter with Load Strain 1 or more rolls Endure against <b>10 + Load Strain</b>. On a failure they are Fatigued (−1 Evade and Guard) until they catch their breath after the fight. Men in harness fought hard for a minute, not ten. <b>Sight and hearing.</b> A closed helm gives a <b>−2 Situation penalty</b> to Awareness checks, your Awareness Threshold, and Initiative; an open helm, <b>−1</b>. The Head Zone's Protection is bought with your eyes. <b>Speed at the margin.</b> Armor does not slow a walk; it kills a sprint and a climb. Your Rush and Leap distances are reduced by your Load Strain in feet, and Climb and Swim are Athletics checks, so Load Strain already applies to them.")
+    +P("Armor does not make you easier to hit, and it costs a fighter nothing on the roll, Guard or Evade. It costs three other things, all of them real. <b>Wind.</b> At the end of the third round of an encounter and every round after, a fighter with Load Strain 1 or more rolls Endure against <b>10 + Load Strain</b>. On a failure they are Fatigued 1, or their Fatigued rises by 1, to a maximum of 3. Fatigued N is a −N Condition penalty to Evade, Guard, and attack rolls, and it lasts until ten minutes of rest once the fight is over. A fighter in heavy harness wins the short fight and fades in the long one. Men in harness fought hard for a minute, not ten. <b>Sight and hearing.</b> A closed helm gives a <b>−2 Situation penalty</b> to Awareness checks, your Awareness Threshold, and Initiative; an open helm, <b>−1</b>. The Head Zone's Protection is bought with your eyes. <b>Speed at the margin.</b> Armor does not slow a walk; it kills a sprint and a climb. Your Rush and Leap distances are reduced by your Load Strain in feet, and Climb, Swim, and Stealth checks take your Load Strain as a penalty. Nothing else does: a grapple, a tumble, and a single Move at full Speed are yours at full strength.")
     +tbl(["Piece","Zone","Protection","Load","Price","Traits","Material"],(R.armorPieces||[]))
     +`<h3>Armor of proof</h3>`
     +P("Every piece is made of something, and every material has a blow it turns badly. Against the damage type its material turns poorly, a piece's Protection is <b>reduced by 1</b>. A Zone with no armor has no material, and so has no such weakness.")
@@ -6994,7 +7000,7 @@ function vWiki(){
   if(wikiSec==="Going Down") h+=`
     <div class="callout"><b>Vigor is not meat.</b> It is what you have left in you: wind, focus, the strength to keep your guard where it belongs, and the sort of luck that turns a killing blow into a shallow one. Losing Vigor is not collecting Wounds. It is running out of the things that keep Wounds from happening. Wounds are the meat, and they are tracked separately, by Zone. This is why a character at 3 Vigor is not carved apart: they are winded, sloppy, and one bad moment from finished. It is also why Vigor comes back with a night's sleep, and why a tenth-level character has more of it without having thicker skin.</div>
     <h3>Your Vigor</h3>
-    ${P("At 1st level: <b>10 + your Ancestry's Vigor + your Calling's Vigor</b>. At every level thereafter, add your Ancestry's Vigor + your Calling's Vigor again. Only your first Calling counts toward Vigor, however many you open later. A full night's rest restores Vigor equal to your <b>level × your Presence</b> (if that is greater than one; otherwise Vigor equal to your level).")}
+    ${P("At 1st level: <b>your Ancestry's Vigor + Endure Bonus + your first Calling's Opening Vigor + 10</b>. At every level thereafter: your Ancestry's Vigor + Endure Bonus. The Endure Bonus is your conditioning, from Endure Training: nothing at Trained, 1 at Expert rank in Endure, 2 at Master, 3 at Legendary, read from your rank as it stands. Only your first Calling adds its Opening Vigor, however many you open later. A full night's rest restores Vigor equal to your <b>level × your Presence</b> (if positive; otherwise Vigor equal to your level).")}
     <h3>Temporary Vigor</h3>
     ${P("A buffer laid over your Vigor. Damage comes out of it first, and only what is left over reaches your real Vigor. It is not healing: anything that restores Vigor restores your own, never these. You can only have one pool at a time; if an effect would give you a second, keep whichever pool is larger and discard the other. It lasts until it is spent or until the effect that granted it ends, whichever comes first. Losing your last point of Temporary Vigor is <i>not</i> the same as being reduced to 0 Vigor: it does not make you Spent. Protection applies first, because Protection reduces the damage itself.")}
     <h3>Reaching 0 Vigor: Spent</h3>
@@ -7018,7 +7024,7 @@ function vWiki(){
     <h3>Milestones & levels</h3>
     ${P("Every level is four Milestones. Milestones 1–3 grant 1 Milestone Talent Point apiece, spent <b>immediately</b> in a Flared Constellation. The 4th is the level-up: Vigor rises, new Proficiency Ranks may unlock, and you gain a <b>Comet</b>, a Talent Point that answers to no Constellation. Spend it immediately, anywhere, Flared or not, opened or not. <b>No Talent Point may ever be voluntarily banked.</b> If a Milestone point arrives with nothing Flared, it becomes a <b>Deferred Talent Point</b>, spent the instant something Flares. Level never touches the die: no roll or Threshold ticks up because you levelled, only because a rank did.")}
     <h3>Level-up checklist</h3>
-    ${P("+Vigor equal to Ancestry Vigor + Calling Vigor. Check the rank gates (Expert at level 5, Master at 10, Legendary at 15) and spend your Comet. Recompute Attributes if points moved; new weapon dice at 4th, 8th, 12th, and 16th (2 / 3 / 4 / 5 dice).")}
+    ${P("+Vigor equal to Ancestry Vigor + Endure Bonus. Check the rank gates (Expert at level 5, Master at 10, Legendary at 15) and spend your Comet. Recompute Attributes if points moved; new weapon dice at 4th, 8th, 12th, and 16th (2 / 3 / 4 / 5 dice).")}
     <h3>Also Flares</h3>
     ${P("<b>GM awards</b> for feats no die roll captured: carrying the survivor out of the fire Flares Athletics, no check required. <b>Downtime training</b>: a week with a teacher, rival, or manual Flares that constellation. This is the deliberate path to growth you haven't stumbled into at the table.")}
     <h3>Retraining</h3>

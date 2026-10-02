@@ -7,12 +7,12 @@
     "kind": "calling",
     "constellation": "weaponmaster",
     "attribute": "might",
-    "vigor": 3,
+    "vigor": 10,
     "grants": [
       "Athletics"
     ],
     "specialAbility": "<p>Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee.</p>",
-    "description": "<p>Grants Training in Athletics, and 3 Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>",
+    "description": "<p>Grants Training in Athletics, and 10 Opening Vigor, added once if it is your first Calling.</p>",
     "traits": [],
     "source": "STARWROUGHT Playtest v4.10"
   },

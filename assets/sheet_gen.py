@@ -565,13 +565,14 @@ def build(path, d=None, fillable=False):
     return geometry
 
 
-# Mira of the Long Road: a 1st-level Human ambusher, built under the v4.10 rules.
+# Mira of the Long Road: a 1st-level Human ambusher, built under the v4.10 rules with v4.11's Vigor.
 #   Granted: Melee Training. Origin roots: Humanity, Versatile Human, Reacher. Versatile Human's Opening
 #   point opened Dueling. Background (Acrobat): Athletics, Acrobatics, Lore (Circus). Calling: Sneak
 #   Attack, which brought Stealth Training. Defenses: Evade and Awareness. Comets: Driven (a Calling
 #   point, spent on Surprise Attacker), Kip Up, Skirmisher's Step. 16 Talents.
 #   Attribute points: Agility 8 (+2), Wits 4 (+1), Might 2 (+0), Presence 2 (+0); points / 4.
-#   Checks: d20 + Attribute + Proficiency (Trained +3), no level. Vigor 10 + 8 + 2 = 20.
+#   Checks: d20 + Attribute + Proficiency (Trained +3), no level. Vigor 10 + Ambusher Opening 8 + Human 8 = 26
+#   (v4.11: the Opening Vigor once, the Ancestry's Vigor plus the Endure Bonus every level; hers is 0, Untrained).
 MIRA = dict(
     name="Mira of the Long Road", ancestry="Human / Versatile Human", culture="Kestrel Reach",
     background="Acrobat / Ambusher",
@@ -585,7 +586,7 @@ MIRA = dict(
     armor_legs="Leather leggings", prot_legs="2",
     wounds_head=0, wounds_torso=0, wounds_arms=0, wounds_legs=0,
     load="0", strain="0", dying="0", spent=False,
-    vigor_max="20", vigor_cur="20", vigor_tmp="",
+    vigor_max="26", vigor_cur="26", vigor_tmp="",
     speed="6 ft", step="3 ft", rush="30 ft", leap="10 ft", init="+4",
     actions_spent=0, reserved="",
     melee_rank="Trained", melee_prof="+3", melee_spec="-",
@@ -640,7 +641,7 @@ MIRA = dict(
         "STRIKES: ❶ Quick 1d8 (+1d6 Sneak Attack if the foe is Off-Guard), Torso, no crit. ❷ Deliberate 1d8 + 0 Might, may take an Exposed Zone; a Miss Exposes her. ❸ Committed: Prepared and Weighted.",
         "MATCHED HARNESS: four leather pieces, same material and Protection, so the Torso gets +1 Protection and Load Strain drops to 0. Leather turns slashing poorly: -1 Protection against it.",
         "MOVEMENT: Speed 6 ft per Move ❶; Step ❶ 3 ft; Rush ❸ 30 ft in a straight line; Leap ❶ 10 ft. Skirmisher's Step: her Steps ignore difficult terrain.",
-        "VIGOR 20 = 10 + Human 8 + Ambusher 2; +10 per level. A night's rest restores level x Presence, minimum the level (1). At 0 she is Spent: every Hit Wounds.",
+        "VIGOR 26 = 10 + Ambusher Opening 8 (once) + Human 8; +8 per level (Human 8 + Endure Bonus 0 while Endure is Untrained). A night's rest restores level x Presence, minimum the level (1). At 0 she is Spent: every Hit Wounds.",
         "GOALS: Flare Dueling with a critical Feint. Grow Ambusher with Milestone points.",
     ],
     gear=["Full leather harness, cap to leggings (9 gp)", "Rapier and juggling knives",

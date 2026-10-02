@@ -67,6 +67,16 @@ EDITIONS = {
     # v3.3 -> v3.4 (Mike, 2026-09-26): the three bonus types are named for where the number comes
     # from. circumstance -> Situation, status -> Condition, item -> Gear. The stacking rule does not
     # change, and the paragraph that states it gains a sentence saying what the three are.
+    # v4.10 -> v4.11 (Mike, 2026-10-02): no edits here. The text was changed as tracked changes
+    # (assets/phb_propose.py, proposals armor-balance and vigor) and accepted by Mike in Word, with
+    # his own tweaks; this entry only writes the accepted file out under its number with the
+    # edition line moved, so the drift check and the sync see a v4.11.
+    "4.11": {
+        "from": "4.10",
+        "replace": [],
+        "append": [],
+        "rename": {},
+    },
     "3.4": {
         "from": "3.3",
         "replace": [
@@ -259,8 +269,15 @@ def main():
 
     # The edition line, done last so the anchors above still match the file they were written for.
     # Word keeps it in four runs: "PLAYTEST EDITION ", "v", "3.", "<minor>". Only the minor moves.
+    # Word keeps the line in runs that shift as it is edited: v3 files held the minor in its own run
+    # ("3.", "4"); the v4.11 draft holds the whole number in one ("v", "4.10"). Try the minor alone,
+    # then the whole number inside its run.
     old_minor, new_minor = edition["from"].split(".")[1], to.split(".")[1]
-    xml = replace_in_paragraph(xml, edition_line, "<w:t>%s</w:t>" % old_minor, "<w:t>%s</w:t>" % new_minor)
+    paragraph = one_paragraph(xml, edition_line).group(0)
+    if paragraph.count("<w:t>%s</w:t>" % old_minor) == 1:
+        xml = replace_in_paragraph(xml, edition_line, "<w:t>%s</w:t>" % old_minor, "<w:t>%s</w:t>" % new_minor)
+    else:
+        xml = replace_in_paragraph(xml, edition_line, ">%s</w:t>" % edition["from"], ">%s</w:t>" % to)
     print("  edition line: v%s -> v%s" % (edition["from"], to))
     print("  document.xml %d -> %d bytes" % (before, len(xml)))
 

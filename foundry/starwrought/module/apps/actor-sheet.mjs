@@ -249,7 +249,11 @@ export function lockedTips(actor) {
     culture: chassisTip("culture"),
     background: chassisTip("background"),
     calling: chassisTip("calling"),
-    ancestryVigor: `<p>${esc(F("STARWROUGHT.Sheet.lockedAncestryVigor", { name: ancestry, n: details.ancestry?.vigor ?? 0 }))}</p>${foot}`,
+    // PHB v4.11: the Ancestry's number is per level, beside the Endure Bonus; the Calling's is
+    // Opening Vigor, added once. The live Endure Bonus is the data model's (`vigor.endureBonus`).
+    ancestryVigor: `<p>${esc(F("STARWROUGHT.Sheet.lockedAncestryVigor", {
+      name: ancestry, n: details.ancestry?.vigor ?? 0, endure: actor.system.vigor?.endureBonus ?? 0
+    }))}</p>${foot}`,
     callingVigor: `<p>${esc(F("STARWROUGHT.Sheet.lockedCallingVigor", { name: calling, n: details.calling?.vigor ?? 0 }))}</p>${foot}`,
     ancestrySpeed: `<p>${esc(F("STARWROUGHT.Sheet.lockedSpeed", { name: ancestry, n: details.ancestry?.speed ?? 0 }))}</p>${foot}`
   };

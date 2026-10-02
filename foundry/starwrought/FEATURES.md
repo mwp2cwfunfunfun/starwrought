@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.10**. System version **0.5.3**. Developed against
+Rules content built from **Player's Handbook v4.11**. System version **0.6.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -28,7 +28,7 @@ will not let you past a step that still has a choice unmade or a point unspent.
 | Bloodline | Offers only the Bloodlines inside your Ancestry's Constellation; grants that Root. A step with nothing enabled says so and lets you continue |
 | Culture | Grants the Culture Root and adds its languages |
 | Background | Three directed points: Trained in two named Skills, and in a Lore of its own |
-| Calling | Sets Vigor per level; one Calling point buys the signature technique, one free Training goes to the Calling's Skill |
+| Calling | Sets your Opening Vigor, paid once at 1st level if it is your first Calling (Berserker 12, Ambusher 8, Hunter, Bravo and Weaponmaster 10); one Calling point buys the signature technique, one free Training goes to the Calling's Skill |
 | Defenses | Two points, on two different Defenses, with the threat-coverage panel open beside them |
 | Comets | Three points, anywhere you qualify for |
 | Review | Name it and finish. The review prints the Vigor formula with your numbers in it, the Attribute rule (points ÷ 4), the rank rule (Trained +3), and your Talent count against the 14-point floor, or against the floor reachable with what is enabled when that is lower |
@@ -162,7 +162,16 @@ anything it depends on changes.
   point counts. Only rank is inherited. The parent's own Talents must still be bought for their
   effects, and an Attribute Point is counted once, at the Talent's own feed. The sheet shows a
   parent's pool and how much of it is inherited, and a Combat Style carries a "child of" line.
-- **Vigor** = 10 + (Ancestry Vigor + Calling Vigor) × level. Only the first Calling counts.
+- **Vigor** = 10 + your first Calling's Opening Vigor + (Ancestry Vigor + Endure Bonus) × level
+  (PHB v4.11; sync report ruling 67). The Opening Vigor is paid once, at 1st level, and only by
+  the first Calling. The Ancestry's number is paid again at every level, and so is the **Endure
+  Bonus**: the conditioning clause of Endure Training, read live from your Endure rank, 0 at
+  Untrained and Trained, 1 at Expert, 2 at Master, 3 at Legendary. It is always 0 at 1st level,
+  since Expert needs 5th, and because it is read rather than recorded, reaching Expert lifts every
+  level's share at once, the levels already behind you included. A 1st-level Human Weaponmaster
+  has 28 (10 + 10 + 8 × 1); the same character at 5th with Expert Endure has 65 (10 + 10 +
+  (8 + 1) × 5). The sheet carries the per-level figure and the Opening figure separately, each
+  tooltip says where its number comes from, and the Adjustments field still adds on top.
 - **A night's rest** restores level × Presence Vigor, or level if Presence is 1 or less. It clears
   Temporary Vigor, gives no Hero Point (the GM awards those), and touches no Wound.
 - **Weapon dice by level**: one, then two at 4th, three at 8th, four at 12th, five at 16th.
@@ -174,8 +183,10 @@ Each is a Constellation, so each is Attribute Bonus + Proficiency Bonus, with a 
 plus that (plus Size, for Evade and Guard). Folded in automatically:
 
 - creature Size on Evade and Guard, outside the typed stack;
-- Off-Guard (−2 Situation to Evade and Guard), Frightened N (Condition), Fatigued (−1 Condition to
-  Evade and Guard), and Load Strain on Evade (untyped);
+- Off-Guard (−2 Situation to Evade and Guard), Frightened N and Fatigued N (each a −N Condition
+  penalty to Evade and Guard, so the worse of the two stands; Fatigued N reaches attack rolls as
+  well). Load Strain is not in the list: since PHB v4.11 armor never makes you easier to hit, and
+  Strain comes off nothing on the Defense grid;
 - the first Torso Wound as Off-Guard, and the first Arms Wound as −2 Situation to Guard;
 - a Parry weapon in hand (+1 Gear to Guard) and a raised shield (its Gear bonus to Guard), which
   share a type and so do not stack: the better one stands. A tower shield gives Cover instead of a
@@ -495,8 +506,11 @@ blocked or delayed.
 **At the end of a round**: a Zone Exposed by a Posture closes; every actor with Persistent Damage
 (from the Torso bleed, or a `persistentDamage` value on the actor or in its flags) gets a reminder
 card with a roll button; and from the end of the third round on, every actor with Load Strain 1 or
-more who is not already Fatigued, unconscious or Dying gets a **Wind** card: Endure against 10 +
-Load Strain, or Fatigued (−1 Evade and Guard) until after the fight. **At the start of a round**:
+more who is not yet Fatigued 3, unconscious or Dying gets a **Wind** card: Endure against 10 +
+Load Strain. A failure makes them Fatigued 1, or raises their Fatigued by 1, to a maximum of 3,
+and the card names the new value; Fatigued N is −N Condition to Evade, Guard and attack rolls. The
+system clears Fatigued when the encounter ends (the Combat is deleted), which is the nearest thing
+it can see to the book's "ten minutes of rest once the fight is over". **At the start of a round**:
 every actor's actions reset, the pass streak clears, and every Dying actor's Recovery card posts.
 
 ### Where your equipment is
@@ -513,11 +527,22 @@ each point of Protection. Putting away an implement that is in a Bind ends the B
 
 ### Armor and load
 
-Matched harness (+1 Torso Protection, −1 Load Strain), Clatter, and Load Strain relieved by your
-Endure rank from Expert (1 at Expert, 2 at Master, 3 at Legendary). Load Strain comes off Evade, off
-Might and Agility Skill checks, and off your Rush and Leap distances in feet. From the end of the
-third round a fighter with Load Strain 1 or more makes the Wind check above. A Closed helm is −2
-Situation to Awareness checks, the Awareness Threshold and Initiative; an Open helm −1.
+Load Strain is the Load of every piece worn and a shield carried, less 1 for a matched harness
+(which also gives +1 Torso Protection), less your Endure relief, to a minimum of 0. Endure relieves
+it from Trained (1 at Trained, 2 at Expert, 3 at Master, 4 at Legendary; Untrained relieves
+nothing), so a fighter Trained in Endure in full plate with a closed helm carries Strain 6 and a
+Master carries 4, as the book's own worked example has it. Clatter is as before.
+
+**Load Strain never touches Evade** (PHB v4.11: "Armor does not make you easier to hit"), and it is
+no blanket penalty on Might or Agility. What it costs is breath, senses and the margins of
+movement: it comes off your Rush and Leap distances in feet; a Stealth check takes it as an untyped
+penalty automatically, labelled Load Strain on the card; and because the system cannot tell a Climb
+or a Swim from a grapple, the roll dialog for an Athletics check offers an unticked **Load Strain
+(Climb or Swim)** modifier whenever your Strain is 1 or more, for the player to tick when the check
+is one of those. No other check takes it: a tumble and a single Move at full Speed are yours at
+full strength. From the end of the third round a fighter with Load Strain 1 or more makes the Wind
+check above, each failure deepening Fatigued by one, to Fatigued 3. A Closed helm is −2 Situation
+to Awareness checks, the Awareness Threshold and Initiative; an Open helm −1.
 
 **Shields.** Raise a Shield ❶ flips the shield's raised flag and pays the action; its Gear bonus to
 Guard is derived from the flag, and the tracker lowers it when your next Opportunity begins. A held
@@ -912,9 +937,9 @@ four Defenses (click to roll; Untrained ones marked), the four Zones with their 
 weakness, an Exposed toggle (a Posture's Exposure is labelled), and each Zone's **Wound pips**
 against its capacity with the effect in force, a **Treat** link, and plus and minus adjusters for
 the GM. A **Strikes panel** shows Melee and Ranged with rank and Proficiency, your weapon dice, your
-specialization in each, and the three Strike kinds with their glyphs. The body block has Ancestry
-and Calling Vigor per level, Speed with Step, Rush and Leap beside it, Natural and Total Reach,
-Space, Load Strain, Initiative and Familiarity. A row of table buttons: Recovery check, Refuse
+specialization in each, and the three Strike kinds with their glyphs. The body block has the Ancestry's
+Vigor per level and the Calling's Opening Vigor, Speed with Step, Rush and Leap beside it, Natural
+and Total Reach, Space, Load Strain, Initiative and Familiarity. A row of table buttons: Recovery check, Refuse
 Death, a night's rest (showing what it would restore). Constellations groups your skies by category,
 shows rank, Proficiency, points and what the next rank is waiting on, and folds open to the Talents
 you own with a Flare toggle on each Constellation; a parent shows its pool and how much is inherited,
@@ -963,15 +988,16 @@ cost from passive and ⓿ to ❻, an optional upper end with "to" or "or" betwee
 "❶ to ❸" and Disarm "❶ or ❸", a **Reaction ↺** checkbox, and the Reaction's own cost when it
 differs, printed as "❶ (⓿↺)" for a ❶ Maneuver whose Reaction half is free; no shipped Maneuver
 carries one yet. A Constellation names its parent (Melee or Ranged; anything but
-itself is allowed, so a third parent needs no code change). A chassis carries Vigor per level, Size
-and Speed in feet per Move. A weapon carries its Style, which is load-bearing for the Strike
+itself is allowed, so a third parent needs no code change). A chassis carries its Vigor (per level
+for an Ancestry, Opening Vigor for a Calling, and the sheet labels it so), Size and Speed in feet
+per Move. A weapon carries its Style, which is load-bearing for the Strike
 Attribute, and the sheet calls out the traits that decide what it can do in a Bind. A Talent or
 Maneuver carries its **Aura** (range in feet, who it concerns, Visible by default), editable by the
 GM on the Details tab.
 
 **What a player may change** (Mike, 2026-10-01). The sheet is the character's record, and some of
 it is the GM's to write. For a player, Ancestry, Bloodline, Culture, Background, Calling, Ancestry
-Vigor, Calling Vigor and Ancestry Speed are text, not fields, and each explains itself on hover
+Vigor, the Calling's Opening Vigor and Ancestry Speed are text, not fields, and each explains itself on hover
 (0.5.2): a name shows the chassis's description followed by its effect, with its Root Talent's
 description and effect in place of the summary when the character owns that Talent (Human: the
 ancestry's line, then Humanity; Soldier: the story, then what it trains), and a number says where
@@ -1079,7 +1105,8 @@ Opportunity (public), and when it is finished, abandoned, replaced or expires wi
 
 **Round cards**, whispered to the actor's owners and the GM: the Recovery check at the start of a
 round while Dying, with a roll button; the Wind check at the end of the third round and after, with
-an Endure button and a Fatigued card on a failure; and Persistent Damage at the end of every round,
+an Endure button and, on a failure, a card naming the new Fatigued value (1 the first time, one
+more each time after, to 3); and Persistent Damage at the end of every round,
 with a roll button, and after the roll an Endure button to end it (except the Torso bleed, which
 only treating the Wound closes) and a note that the amount is applied on the sheet.
 
@@ -1098,12 +1125,14 @@ Exposed card titles open their rules pages.
 ## 5. Conditions
 
 All 28 registered as toggleable token statuses: Off-Guard, Wrong-Footed, Frightened N, Prone,
-Grabbed, Restrained, Heedless, Stunned N, Slowed N, Fatigued, Blinded, Deafened, Concealed, Hidden,
+Grabbed, Restrained, Heedless, Stunned N, Slowed N, Fatigued N, Blinded, Deafened, Concealed, Hidden,
 Undetected, Unconscious, Dying N, Wounded, Spent, Bound, Controlled, Controlling, Preparing, Dead,
 and Exposed: Head, Torso, Arms and Legs.
 
-Off-Guard, Frightened N and Fatigued feed straight into the derived numbers; Grabbed and Restrained
-make Evade unavailable; Slowed N takes its actions at the start of the round. The system keeps
+Off-Guard, Frightened N and Fatigued N feed straight into the derived numbers (Fatigued N into attack
+rolls as well as Evade and Guard; the Wind check sets it and raises it one step at a time to 3, and
+the end of the encounter clears it); Grabbed and Restrained make Evade unavailable; Slowed N takes
+its actions at the start of the round. The system keeps
 Dying, Wounded, Spent, Bound, Controlled, Controlling, Preparing and the four Exposed in step
 between the sheet and the token, sets Prone from a final Legs Wound, Unconscious from Dying and
 Dead at Dying 5, and clears Spent when Vigor returns. Every condition effect sits under a static
@@ -1162,6 +1191,13 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   Damage has neither.
 - **A treated Wound is removed rather than bound.** The book keeps a bound Wound on the count for a
   week; the system takes it off the Zone on a successful Treat and says so on the card.
+- **Fatigued ends with the Combat, not with ten minutes of rest.** The system has no clock for the
+  rest the book names, so deleting the Combat document is what clears it; a GM who wants it to
+  linger into the next scene sets it again from the palette.
+- **Sleeping in armor without Comfort does not set Fatigued 1.** The rest card restores Vigor and
+  nothing else; that rule is the table's to apply.
+- **"Climb or Swim" is asked, not detected.** Load Strain lands on an Athletics check only when the
+  player ticks the dialog's toggle, because the system cannot tell a Climb from a grapple.
 - **Zone critical effects other than the Torso's are announced, not tracked.** A Critical Hit on the
   Torso sets Off-Guard; the Arms, Legs and Head effects until Recenter are printed for the table.
   The Wound versions of the same effects are applied to the numbers.

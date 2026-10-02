@@ -202,6 +202,27 @@ There is no Multiple Attack Penalty. Vigor replaces Hit Points; at 0 Vigor you a
 Hit Wounds a Zone; Wounds are per Zone (capacity 2 for Medium or smaller) and the Torso's or Head's
 final Wound is Dying.
 
+**Vigor (PHB v4.11).** Vigor max = 10 + your first Calling's Opening Vigor + (Ancestry Vigor +
+Endure Bonus) × level, plus any `bonuses.vigor` adjustment. Opening Vigor is paid once: Berserker
+12, Ambusher 8, Hunter 10, Bravo 10, Weaponmaster 10 (the roster's `callings` block, third column;
+through v4.10 it was 4 / 2 / 3 / 3 / 3 per level). Ancestry Vigor is per level (Human 8). The
+Endure Bonus is the conditioning clause of Endure Training, read live from the current Endure rank:
+0 at Untrained and Trained, 1 at Expert, 2 at Master, 3 at Legendary, so it is 0 at 1st level and,
+once earned, lifts every level's share. A night's rest restores level × Presence bonus when that
+bonus is positive, else level. v4.11 sync report ruling 67 (R1); the 0.6.0 migration (ruling 72)
+moves a stored per-level Calling number to its Opening Vigor when it still equals the old table.
+
+**Load Strain (PHB v4.11).** Load Strain = the Load of the armor worn and a shield carried, less 1
+for a matched harness, less Endure relief (Trained 1, Expert 2, Master 3, Legendary 4;
+`LOAD_RELIEF` in `config.mjs`), to a minimum of 0. It never touches Evade (armor does not make you
+easier to hit) and is no blanket penalty on Might or Agility: it shortens Rush and Leap by its value
+in feet, and it is an untyped penalty on Climb, Swim and Stealth checks only (Stealth automatically;
+an Athletics roll offers an unticked "Load Strain (Climb or Swim)" toggle, since the system cannot
+tell a Climb from a grapple). From the end of the third round a fighter with Strain 1 or more rolls
+Endure against 10 + Strain each round or becomes Fatigued 1, rising by 1 per failure to Fatigued 3
+(−N Condition to Evade, Guard and attack rolls); the system clears Fatigued when the encounter ends,
+its nearest reading of "ten minutes of rest once the fight is over". Rulings 68 to 71 (R2 to R5).
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -229,7 +250,10 @@ final Wound is Dying.
 - Ancestry rows in `data/ancestries.xlsx` `_Tree Index` also carry Vigor (the header may still read
   HP), Size, Speed (feet per Move; a Human's is 6), Senses, Summary. The pipeline reads those and
   generates the `ancestries` block of `roster.json` (keys `vigor`, and `hp` for one release), so
-  ancestry chassis is authored once, in the sheet.
+  ancestry chassis is authored once, in the sheet. A Calling's Vigor is not in a sheet: it is the
+  third column of the hand-kept `callings` block of `roster.json`, and since PHB v4.11 that column
+  is the Calling's **Opening Vigor** (paid once, at 1st level, by the first Calling), not Vigor per
+  level; every consumer indexes `[2]`. The Ancestry's Vigor stays per level.
 - `* Lore` sheets in `ancestries.xlsx` are authoring notes for player-facing text. The converter
   ignores them by design.
 - Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect, Feeds,
@@ -324,16 +348,16 @@ final Wound is Dying.
   blank, so Aid ships nowhere in Foundry (ruling 61). The book is Mike's to bring across, or the
   sheet is (v4.10 sync report, ruling 10).
 - **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
-  Constellation in v4.10; the data reads it as Melee. One sentence in the handbook.
-- **Key Terms carries v3.4 sentences.** It still says Attribute Bonus is points divided by 3, that
+  Constellation in v4.10 or v4.11; the data reads it as Melee. One sentence in the handbook.
+- **Key Terms carries v3.4 sentences, in v4.11 as in v4.10.** It still says Attribute Bonus is points divided by 3, that
   every character begins Trained in all four Defenses, and that only a Committed Strike is
   Weighted; the Cultures introduction still names Varisians. Character Mechanics, Chapter 3 and the
   data all say ÷ 4, two Defenses, and Serrovane and Kestrel Reach.
 - **The Example of Play does its sums at Trained +4** ("2 + 4, so d20+6") against the book's +3
   ladder, and has Recenter clear a Zone Exposed by a Posture, which the rules forbid. The rules
   text governs; the example needs a pass.
-- **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** The
-  system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
+- **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** Still
+  so in v4.11. The system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
   (`STRIKE_KINDS.exposeOnMiss`). One cell in the handbook either way.
 - **`data/actions.xlsx` has never been committed.** Its one row, Aid, is the only action
   `assets/actions.json` cannot regenerate on a fresh clone (the converter carries it over from
@@ -350,7 +374,27 @@ final Wound is Dying.
   over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
 - **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**
   (Mike's ruling 63, 2026-10-01: Melee Training gives one Reaction, Intercept). Two sentences in the
-  book (Answering an Attack, the Reaction table).
+  book (Answering an Attack, the Reaction table); v4.11 still prints them.
+- **Mike's open question on the Wind check (2026-10-02, given with the v4.11 Load Strain changes):**
+  a fighter past some threshold "should not have to roll to be Winded", and the Armored Fighting
+  Constellation he plans to fill out may carry Talents for it. Nothing is built. Today every
+  fighter with Load Strain 1 or more rolls from the end of the third round, and Endure relief
+  (Strain brought to 0) is the only way out of the check; the round-end test in
+  `documents/combat.mjs` is the one place a gate would go, whatever shape it takes (a rank in
+  Endure, a Strain ceiling, a Talent flag once the Automation column has a grammar). The v4.11
+  sync report lays out the options.
+- **Rage's Effect in `callings.xlsx` says "fatigued"** in its own sense ("Afterward, you're fatigued
+  until you spend three actions to catch your breath"), and another Talent in the same
+  Constellation says you "ignore the Fatigued condition while Raging". Nothing in the system acts
+  on either; the system's Fatigued N is the Wind condition (v4.11 sync report ruling 73, R7).
+  Mike's cells.
+- **Sleeping in armor without Comfort ("waking Fatigued 1") is not implemented.** The rest card
+  restores Vigor and nothing else; the v4.11 brief said not to add it.
+
+Cleared 2026-10-02 (the v4.11 sync, system 0.6.0): Load Strain on Evade and on every Might or
+Agility Skill check; the boolean Fatigued and its −1; Endure relief starting at Expert; the
+Calling's Vigor per level, now Opening Vigor; the web app's relief table, back to the book's
+Trained 1 to Legendary 4. The sync report records the rulings (67 to 73).
 
 Cleared 2026-09-28 (the v4.10 sync): the check formula's level term, the ÷ 3 divisor and the
 1/5/13/19 rank gates everywhere downstream; the Multiple Attack Penalty and its `trackMap` setting;

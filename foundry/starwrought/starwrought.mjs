@@ -40,7 +40,7 @@ import { SwCombatPrompt } from "./module/apps/combat-prompt.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
-  loadChassisIndex, invalidateChassisIndex,
+  loadChassisIndex, invalidateChassisIndex, chassisByName,
   invalidateBasicActions
 } from "./module/helpers/content.mjs";
 
@@ -221,6 +221,19 @@ Hooks.once("ready", async () => {
 /* -------------------------------------------- */
 
 /**
+ * The Callings table before and after PHB v4.11, by lowercased name: `perLevel` is the v4.10
+ * "Vigor/lvl" column a character stored, `opening` the v4.11 "Opening Vigor" that replaces it.
+ * Only the 0.6.0 migration reads this; the live numbers are the chassis compendium's.
+ */
+const LEGACY_CALLING_VIGOR = Object.freeze({
+  berserker: { perLevel: 4, opening: 12 },
+  ambusher: { perLevel: 2, opening: 8 },
+  hunter: { perLevel: 3, opening: 10 },
+  bravo: { perLevel: 3, opening: 10 },
+  weaponmaster: { perLevel: 3, opening: 10 }
+});
+
+/**
  * One-time changes to stored data, run by the first GM to open the world on a newer release and
  * recorded in the `systemVersion` world setting so they never run twice. The setting is stamped
  * every time the check runs, a brand-new world included, so the next load compares two versions
@@ -231,13 +244,16 @@ Hooks.once("ready", async () => {
  * itself (a Human's 25 is 6). Done once, here, rather than in `migrateData`, which ran on every
  * load and every write and so made 15 a ceiling no Speed could be typed past. The stored value is
  * read from `_source`, which `migrateData` no longer touches.
+ *
+ * 0.6.0 (PHB v4.11, ruling R6): a Calling's Vigor became Opening Vigor, added once at 1st level,
+ * where it had been a per-level number. See LEGACY_CALLING_VIGOR.
  */
 async function migrateWorld() {
   if (!game.user.isGM) return;
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1")) {
+  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1") && !needs("0.6.0")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -342,7 +358,39 @@ async function migrateWorld() {
     }
   }
 
+  // 0.6.0 (PHB v4.11): a Calling's Vigor is Opening Vigor, added once at 1st level, where it was
+  // a per-level number. A character whose stored value is the old table's for the Calling it
+  // names takes that Calling's Opening Vigor: the shipped chassis index's number when the index
+  // has moved with the book, else the table's. A value the GM typed by hand is left alone
+  // (ruling R6). Vigor itself needs no write: prepareDerivedData clamps it to the new maximum on
+  // the next render. Unlinked tokens carry their own actors, so every scene is walked.
+  let openings = 0;
+  if (needs("0.6.0")) {
+    const actors = [...game.actors];
+    for (const scene of game.scenes) {
+      for (const token of scene.tokens) if (!token.actorLink && token.actor) actors.push(token.actor);
+    }
+    for (const actor of actors) {
+      if (actor.type !== "character") continue;
+      const calling = foundry.utils.getProperty(actor._source, "system.details.calling") ?? {};
+      const legacy = LEGACY_CALLING_VIGOR[String(calling.name ?? "").trim().toLowerCase()];
+      if (!legacy || (Number(calling.vigor) !== legacy.perLevel)) continue;
+      const shipped = chassisByName(calling.name);
+      const indexed = Number(shipped?.system?.vigor ?? shipped?.system?.hp);
+      // An index still printing the per-level number has not moved with the book; the table has.
+      const opening = (Number.isFinite(indexed) && (indexed > 0) && (indexed !== legacy.perLevel))
+        ? indexed : legacy.opening;
+      await actor.update({ "system.details.calling.vigor": opening });
+      openings++;
+    }
+  }
+
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (openings > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.openingVigor", { version: game.system.version, count: openings });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (auras > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.auras", { version: game.system.version, count: auras });
     console.log(`STARWROUGHT | ${message}`);

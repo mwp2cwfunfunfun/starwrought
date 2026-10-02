@@ -92,14 +92,14 @@ const driver=`
     tab="explorer";
     for(const tn of allTreeNames()){ etree=tn; eview={mode:2,cat:treeOf(tn).category}; esel=null; render(); drawSky(); }
     tab="wizard"; for(let i=0;i<=8;i++){ wiz.step=i; render(); } });
-  // The v4.10 math on the sample: ÷4 attributes, +3 Trained, no level term, Vigor 10 + 8 + 2.
+  // The v4.10 math on the sample: ÷4 attributes, +3 Trained, no level term; v4.11 Vigor 10 + Ambusher Opening 8 + Human 8.
   step("rules math on Mira", ()=>{ const m=chars.find(c=>c.id===TORVA.id); must(m, "Mira loaded");
     const d=derive(m);
     must(attrBonus(3)===0&&attrBonus(4)===1&&attrBonus(8)===2&&attrBonus(40)===5, "attrBonus is points ÷ 4, capped at +5");
     must(RB.T===3&&RB.E===6&&RB.M===9&&RB.L===12, "ranks +3/+6/+9/+12");
     must(gatesFor("Skill").E===5&&gatesFor("Skill").M===10&&gatesFor("Skill").L===15, "gates L5/L10/L15");
-    must(d.vigorMax===20, "Vigor 10 + Human 8 + Ambusher 2 = 20, found "+d.vigorMax);
-    must(d.DT.Evade===10+d.A.Agility+3-d.strain, "Evade Threshold has no level term: "+d.DT.Evade);
+    must(d.vigorMax===26&&d.vigorOpening===8&&d.vigorPerLvl===8, "Vigor 10 + Ambusher Opening 8 + (Human 8 + Endure Bonus 0) × 1 = 26, found "+d.vigorMax);
+    must(d.DT.Evade===10+d.A.Agility+3, "Evade Threshold has no level term and no Load Strain: "+d.DT.Evade);
     must(d.DR.Endure===null&&d.DT.Endure===10+d.A.Might, "Untrained Endure is 10 + Might: "+d.DT.Endure);
     must(poolPts(m,"Melee")===2&&pointsIn(m,"Melee")===1, "Dueling's point counts toward Melee's rank pool");
     must(attrPoints(m,"Might")===Object.keys(m.talents).reduce((a,t)=>a+m.talents[t].filter(n=>((treeOf(t).nodes.find(x=>x.name===n)||{}).feeds||treeOf(t).feeds)==="Might").length,0), "Attribute Points are not double counted through a parent");
@@ -117,6 +117,28 @@ const driver=`
     must(dwl.speed===3&&dwl.step===1&&dwl.travel.mph===1, "one Legs Wound halves Speed 6 to 3; 3 ÷ 2 mph rounds down to 1");
     const dwl2=derive({...JSON.parse(JSON.stringify(m)), wounds:{Head:0,Torso:0,Arms:0,Legs:2}});
     must(dwl2.speed===0&&dwl2.rush===0&&dwl2.atkPen===2&&dwl2.sitPen.Evade===2, "the final Legs Wound is Prone: Speed 0, −2 to attacks, Off-Guard"); });
+  // PHB v4.11 (rulings R1, R2, R5): the first Calling's Opening Vigor once, the Ancestry's Vigor plus the Endure
+  // Bonus every level; Load Strain counts a shield, never comes off Evade, and Endure relieves it from Trained.
+  step("v4.11: Opening Vigor, the Endure Bonus, and Load Strain off Evade", ()=>{
+    must([["Ambusher",8],["Berserker",12],["Bravo",10],["Hunter",10],["Weaponmaster",10]].every(([n,v])=>callingOf(n)&&callingOf(n)[2]===v), "the roster's third Calling column is Opening Vigor: 8/12/10/10/10");
+    must(R.conditions.some(c=>c[0]==="Fatigued N"&&/maximum of 3/.test(c[1])), "the Conditions table carries Fatigued N");
+    const mk=(level,endure,extra={})=>migrate({name:"v",level,milestones:0,ancestry:"Human",calling:"Berserker",sparks:{},armor:null,shield:null,languages:[],talents:endure?{Endure:endure}:{},...extra});
+    const e0=derive(mk(1,null)); must(e0.vigorMax===30&&e0.vigorOpening===12&&e0.vigorPerLvl===8&&e0.endureBonus===0, "a L1 Human Berserker has 10 + Opening 12 + Human 8 = 30 Vigor, found "+e0.vigorMax);
+    must(derive(mk(3,null)).vigorMax===10+12+8*3, "Opening Vigor is added once: at L3 it is 10 + 12 + 24 = 46, found "+derive(mk(3,null)).vigorMax);
+    const t1=derive(mk(1,["Endure Training"])); must(t1.DR.Endure==="T"&&t1.endureBonus===0&&t1.endureRelief===1&&t1.vigorMax===30, "Trained Endure is relief 1 and no Vigor bonus (R5, R1)");
+    const FOUR=["Endure Training","Shrug It Off","Second Wind ❷","Braced Frame"];
+    const x5=derive(mk(5,FOUR)); must(x5.DR.Endure==="E"&&x5.endureBonus===1&&x5.vigorPerLvl===9&&x5.vigorMax===10+12+9*5&&x5.endureRelief===2, "Expert Endure at L5: +1 Vigor a level (10 + 12 + 45 = 67) and relief 2; found "+x5.vigorMax+", relief "+x5.endureRelief);
+    const x1=derive(mk(1,FOUR)); must(x1.DR.Endure==="T"&&x1.endureBonus===0&&x1.vigorMax===30, "the same four points at L1 are Trained: the Endure Bonus waits on the Expert gate");
+    // Load Strain: Mira's leathers with a scale coif are no matched harness, and the shield's Load counts (ch.5, v4.11).
+    const h=mk(1,null,{armor:{Head:"Scale coif",Torso:"Leather cuirass",Arms:"Leather bracers",Legs:"Leather leggings"},shield:"Shield"}); const dh=derive(h);
+    must(!dh.matched&&dh.shield&&dh.strain===dh.loadArmor+dh.shield[3]&&dh.strain>=3, "Load Strain is armor plus shield Load with no match and no Endure: "+dh.strain);
+    must(dh.DT.Evade===10+dh.A.Agility+(dh.DR.Evade?RB[dh.DR.Evade]:0)&&dh.D.Evade===dh.DT.Evade-10, "Load Strain never comes off Evade (R2): Threshold "+dh.DT.Evade+" with Strain "+dh.strain);
+    must(dh.rush===30-dh.strain&&dh.leap===Math.max(0,10-dh.strain), "Rush and Leap still lose Load Strain in feet");
+    must(vSheet(h).includes("never off Evade")&&vSheet(h).includes("Endure vs "+(10+dh.strain)), "the sheet says Strain stays off Evade and names the Wind Threshold");
+    const ht=derive(mk(1,["Endure Training"],{armor:h.armor,shield:h.shield})); must(ht.strain===dh.strain-1, "Trained Endure takes 1 off Load Strain (R5): "+ht.strain);
+    tab="wiki"; const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    const stale=/Calling's Vigor|Calling Vigor|Vigor per level<\\/b> \\(only|from your <b>Evade<\\/b>, and from any Might|Fatigued \\(−1/;
+    for(const s of secs){ wikiSec=s; render(); const m=document.getElementById("main").innerHTML.match(stale); if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'"); } wikiSec=secs[0]; });
   // Ruling 63: Melee Training grants Intercept alone; Counter needs Expert rank in Melee, which counts a
   // Combat Style's points once the Root is owned (ruling 13) and is gated at level 5 like every Expert rank.
   step("Reactions checklist: Counter at Melee Expert (ruling 63)", ()=>{

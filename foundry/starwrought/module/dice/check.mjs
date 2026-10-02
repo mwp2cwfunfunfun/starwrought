@@ -377,9 +377,10 @@ export class SwCheck {
 
   /**
    * The modifier a check would open its dialog with, before the player adds anything: the base
-   * terms, whatever the sheet can see for itself (Frightened, Load Strain, the adjustment fields),
-   * and whatever the caller passes in `config.modifiers`. The Relevant Check picker prints this
-   * beside each Constellation so that a strained Athletics ranks where the roll will land.
+   * terms, whatever the sheet can see for itself (Frightened, Load Strain on Stealth, the
+   * adjustment fields), and whatever the caller passes in `config.modifiers`. The Relevant Check
+   * picker prints this beside each Constellation so that a strained Stealth ranks where the roll
+   * will land. The dialog's own offers (Load Strain on a Climb or a Swim) are not in it.
    * @param {Actor} actor
    * @param {object} [config]  The same shape `roll()` takes; `kind` defaults to "check".
    * @returns {number}
@@ -416,8 +417,9 @@ export class SwCheck {
 
     // A Defense roll is the Defense's own Threshold with a die in place of the 10, so it rolls the
     // very modifiers the derived Defense already resolved: Attribute, Proficiency, the sheet's
-    // adjustment, Off-Guard, Frightened, Fatigued, Load Strain on Evade, a Parry weapon or a
-    // Wounded Arm on Guard, a helm on Awareness. Nothing here can drift from the number on the sheet.
+    // adjustment, Off-Guard, Frightened N, Fatigued N, a Parry weapon or a Wounded Arm on Guard,
+    // a helm on Awareness. Load Strain is not among them (PHB v4.11: "It never comes off your
+    // Evade"). Nothing here can drift from the number on the sheet.
     const defense = SW.DEFENSES[cfg.slug] ? sys.defenses?.[cfg.slug] : null;
     if (defense && Array.isArray(defense.modifiers)) {
       parts.push(...defense.modifiers.map(m => ({ ...m })));
@@ -484,9 +486,12 @@ export class SwCheck {
       parts.push(...sys.attackModifiers.map(m => ({ ...m })));
     }
 
-    // Load Strain bites any Might or Agility Skill check. Evade takes it through the Defense path.
-    const strainable = (cfg.kind === "check") && ["might", "agility"].includes(attribute);
-    if (strainable && sys.loadStrain) {
+    // Load Strain (PHB v4.11, Load and Load Strain): "Climb, Swim, and Stealth checks take your
+    // Load Strain as a penalty. Nothing else does." Stealth is applied here, untyped, as the
+    // system's own flat adjustment. Climb and Swim are Athletics checks the engine cannot tell
+    // from a grapple or a tumble, so the dialog offers the penalty on an Athletics check instead
+    // (#prompt). Until 0.6.0 every Might or Agility check took it, and Evade did too.
+    if ((cfg.kind === "check") && (SW.STRAIN_CHECKS[cfg.slug] === "always") && sys.loadStrain) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Field.loadStrain"), value: -sys.loadStrain });
     }
 
@@ -556,8 +561,9 @@ export class SwCheck {
   /* -------------------------------------------- */
 
   /**
-   * The pre-roll dialog: a situational modifier, the Threshold, the Strike kind for an attack,
-   * the Reaction for a Defense roll, and the roll mode.
+   * The pre-roll dialog: a situational modifier, the optional modifiers the engine can name but
+   * not decide, the Threshold, the Strike kind for an attack, the Reaction for a Defense roll, and
+   * the roll mode.
    * @returns {Promise<{config: object, extra: Array, rebuild: boolean}|null>}
    */
   static async #prompt(cfg, parts) {
@@ -565,6 +571,23 @@ export class SwCheck {
     const actor = cfg.actor;
     const isAttack = cfg.kind === "attack";
     const isDefense = cfg.kind === "defense";
+
+    // Modifiers offered unticked, because the rule applies to a check the engine cannot tell
+    // apart from its neighbours. Load Strain on an Athletics check (PHB v4.11): a Climb or a Swim
+    // takes it, a grapple or a tumble does not, and only the player knows which this is (ruling
+    // R2). Each is a checkbox named `extra-<key>`; the ticked ones join the roll below.
+    const extras = [];
+    const strain = Number(actor.system?.loadStrain) || 0;
+    if ((cfg.kind === "check") && (SW.STRAIN_CHECKS[cfg.slug] === "offered") && (strain >= 1)) {
+      extras.push({
+        key: "loadStrain",
+        label: game.i18n.localize("STARWROUGHT.Roll.strainClimbSwim"),
+        hint: game.i18n.localize("STARWROUGHT.Roll.strainClimbSwimHint"),
+        value: -strain,
+        type: "untyped",
+        checked: false
+      });
+    }
 
     // The three Strikes, with Committed marked as the one that waits for the next Opportunity.
     const strikes = isAttack ? Object.entries(SW.STRIKE_KINDS).map(([key, kind]) => ({
@@ -603,6 +626,7 @@ export class SwCheck {
       total: preview.total,
       isAttack,
       isDefense,
+      extras,
       strikes,
       lockStrike: !!cfg.lockStrike,
       strikeLabel: cfg.strike ? game.i18n.localize(SW.STRIKE_KINDS[cfg.strike].label) : "",
@@ -638,6 +662,10 @@ export class SwCheck {
     const extra = [];
     const bonus = Number(answer.bonus) || 0;
     if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "situation" });
+    // The offers the player ticked. A checkbox comes back as a boolean under its own name.
+    for (const offer of extras) {
+      if (answer[`extra-${offer.key}`] === true) extra.push({ label: offer.label, value: offer.value, type: offer.type });
+    }
 
     const config = { rollMode: answer.rollMode ?? cfg.rollMode };
     let rebuild = false;

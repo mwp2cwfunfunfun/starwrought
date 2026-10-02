@@ -71,7 +71,11 @@ const DEFENSE_POINTS = 2;
 const COMET_POINTS = 3;
 /** The book's floor for a finished 1st-level character: 1 granted plus 13 from the steps. */
 const MINIMUM_TALENTS = 14;
-/** Vigor at 1st level is this, plus Ancestry Vigor, plus Calling Vigor (PHB v4.10, Your Vigor). */
+/**
+ * Vigor at 1st level is this, plus Ancestry Vigor, plus your first Calling's Opening Vigor (PHB
+ * v4.11, Your Vigor). The Endure Bonus is in the formula too, but it is 0 until Expert rank, which
+ * needs 5th level, so the wizard never has to print it.
+ */
 const VIGOR_BASE = 10;
 
 /** The grant DSL in the spreadsheets, mapped onto the slot scopes the rules module understands. */
@@ -792,7 +796,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       img: c.img,
       chosen: this.picks.calling === c.name,
       lines: [
-        `${c.vigor} ${game.i18n.localize("STARWROUGHT.Field.vigorPerLevel")}`,
+        // Opening Vigor (PHB v4.11): added once, at 1st level, if this is the first Calling.
+        `${c.vigor} ${game.i18n.localize("STARWROUGHT.Field.openingVigor")}`,
         ...(c.grants ?? [])
       ],
       description: `${c.specialAbility ?? ""}${c.description ?? ""}`
@@ -933,7 +938,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     return game.i18n.format("STARWROUGHT.Chargen.reachableFloor", { available: reachable, minimum: MINIMUM_TALENTS });
   }
 
-  /** "10 + 8 + 3 = 21": the Vigor formula with this character's numbers in it. */
+  /** "10 + 8 + 8 = 26": the 1st-level Vigor formula with this character's numbers in it (base, Ancestry Vigor, Opening Vigor). */
   #vigorLine() {
     const sys = this.actor.system;
     const ancestry = Number(sys.details?.ancestry?.vigor) || 0;
@@ -1265,7 +1270,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
     const name = this.element.querySelector("input[name='charname']")?.value?.trim();
-    // Full Vigor to start: 10 + Ancestry Vigor + Calling Vigor, as the actor derives it.
+    // Full Vigor to start: 10 + Ancestry Vigor + the Calling's Opening Vigor, as the actor derives it.
     const updates = { "system.vigor.value": this.actor.system.vigor?.max ?? this.#vigorLine().total };
     if (name) updates.name = name;
     // The reachable floor is read before the wizard's flag goes, since it reads the picks.

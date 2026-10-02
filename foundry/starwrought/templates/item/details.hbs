@@ -145,8 +145,14 @@
         <select name="system.kind">{{selectOptions choices.kinds selected=system.kind}}</select></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.keyAttribute"}}</span>
         <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute}}</select></label>
+      {{!-- A Calling's number is Opening Vigor, added once at 1st level (PHB v4.11); an Ancestry's is per level. --}}
+      {{#if (eq system.kind "calling")}}
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.openingVigorHint"><span>{{localize "STARWROUGHT.Field.openingVigor"}}</span>
+        <input type="number" name="system.vigor" value="{{system.vigor}}" min="0"></label>
+      {{else}}
       <label class="sw-field" data-tooltip="STARWROUGHT.Field.vigorPerLevelHint"><span>{{localize "STARWROUGHT.Field.vigorPerLevel"}}</span>
         <input type="number" name="system.vigor" value="{{system.vigor}}" min="0"></label>
+      {{/if}}
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.size"}}</span>
         <select name="system.size">{{selectOptions choices.sizes selected=system.size}}</select></label>
       <label class="sw-field" data-tooltip="STARWROUGHT.Field.speedHint"><span>{{localize "STARWROUGHT.Field.speed"}}</span>

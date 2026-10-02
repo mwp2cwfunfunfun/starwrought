@@ -311,7 +311,7 @@ export function registerCombatTracking() {
   registered = true;
 
   Hooks.on("combatTurnChange", onTurnChange);
-  Hooks.on("deleteCombat", combat => localStreaks.delete(combat.id));
+  Hooks.on("deleteCombat", onCombatEnds);
   Hooks.on("renderCombatTracker", onRenderTracker);
   Hooks.on("renderChatMessageHTML", onRenderCard);
   Hooks.on("updateActor", onActorChanged);
@@ -428,10 +428,11 @@ async function mark(combatant, key, combat) {
 /* -------------------------------------------- */
 
 /**
- * The end of a round (PHB v4.10):
+ * The end of a round (PHB v4.10; Wind as PHB v4.11 has it):
  *  - Persistent Damage is taken at the end of each round, dice rolled fresh, Protection ignored.
  *  - Wind: at the end of the third round and every round after, a fighter with Load Strain 1 or
- *    more rolls Endure against 10 + Load Strain or is Fatigued until after the fight.
+ *    more rolls Endure against 10 + Load Strain; on a failure they are Fatigued 1, or their
+ *    Fatigued rises by 1, to a maximum of 3.
  * Both are cards with a roll button, whispered to the actor's owners and the GM.
  */
 async function endRound(combat, round) {
@@ -448,10 +449,32 @@ async function endRound(combat, round) {
 
     if (round >= SW.WIND_ROUND) {
       const strain = Number(actor.system.loadStrain) || 0;
-      // Already Fatigued, or out of the fight: nothing left for the check to do.
-      if ((strain >= 1) && !statuses.has("fatigued") && !statuses.has("unconscious") && !statuses.has("dying")) {
-        await postWindReminder(actor, strain, round);
+      const fatigued = Number(actor.conditionValue?.("fatigued")) || 0;
+      // Fatigued 3 is as winded as the rule goes (ruling R3; until 0.6.0 one failure ended the
+      // checks), and the unconscious and the Dying are out of the fight: nothing left to roll for.
+      if ((strain >= 1) && (fatigued < SW.FATIGUED_MAX) && !statuses.has("unconscious") && !statuses.has("dying")) {
+        await postWindReminder(actor, strain, round, fatigued);
       }
+    }
+  }
+}
+
+/**
+ * The encounter ends: the Combat document is deleted. Fatigued "lasts until ten minutes of rest
+ * once the fight is over" (PHB v4.11, Wind), and the end of the Combat is the nearest thing the
+ * system can see to that, so Fatigued comes off every combatant here, on the client responsible
+ * for each as the round's own writes are (ruling R4; the sync report says so). The pass streak a
+ * GM-less table kept in memory goes with it.
+ */
+async function onCombatEnds(combat) {
+  localStreaks.delete(combat.id);
+  if (!(combat instanceof SwCombat)) return;
+  for (const actor of actorsIn(combat)) {
+    if (!responsibleFor(actor) || !actor.statuses?.has("fatigued")) continue;
+    try {
+      await actor.setCondition?.("fatigued", false);
+    } catch (err) {
+      console.warn(`STARWROUGHT | Fatigued could not be cleared from ${actor.name}`, err);
     }
   }
 }
@@ -640,14 +663,19 @@ async function postRecoveryReminder(actor, round) {
   return postCard(actor, content, { whisper: ownersOf(actor) });
 }
 
-async function postWindReminder(actor, strain, round) {
+async function postWindReminder(actor, strain, round, fatigued = 0) {
   const threshold = 10 + strain;
+  // What a failure would make of them: Fatigued 1, or one more than they carry now.
+  const next = Math.min(SW.FATIGUED_MAX, fatigued + 1);
   const content = cardHtml({
     root: "sw-round-card sw-wind-card",
     actorUuid: actor.uuid,
     title: localize("STARWROUGHT.Combat.wind"),
-    lines: [format("STARWROUGHT.Combat.windText", { name: escapeHTML(actor.name), round, strain, threshold })],
-    notes: [localize("STARWROUGHT.Combat.windNote")],
+    lines: [format("STARWROUGHT.Combat.windText", { name: escapeHTML(actor.name), round, strain, threshold, next })],
+    notes: [
+      fatigued ? format("STARWROUGHT.Combat.windCarrying", { name: escapeHTML(actor.name), value: fatigued }) : "",
+      localize("STARWROUGHT.Combat.windNote")
+    ],
     buttons: [{
       action: "windCheck", icon: "fa-solid fa-lungs",
       label: format("STARWROUGHT.Combat.endureVs", { threshold })
@@ -822,8 +850,10 @@ async function onRollRecovery({ actor }) {
 }
 
 /**
- * Wind (PHB v4.10, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
- * and on a failure Fatigued (-1 Evade and Guard) until after the fight.
+ * Wind (PHB v4.11, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
+ * and on a failure Fatigued 1, or Fatigued raised by 1 to a maximum of 3: -N Condition to Evade,
+ * Guard and attack rolls until ten minutes of rest once the fight is over. The card names the new
+ * value.
  */
 async function onWindCheck({ actor }) {
   if (!requireOwner(actor)) return;
@@ -840,12 +870,15 @@ async function onWindCheck({ actor }) {
   });
   if (!result) return;
   if (["fail", "critFail"].includes(result.degree)) {
-    await actor.setCondition?.("fatigued", true);
+    const current = Number(actor.conditionValue?.("fatigued")) || 0;
+    const value = Math.min(SW.FATIGUED_MAX, current + 1);
+    await actor.setCondition?.("fatigued", value);
     await postCard(actor, cardHtml({
       root: "sw-round-card sw-wind-card",
       actorUuid: actor.uuid,
-      title: localize("STARWROUGHT.Condition.fatigued"),
-      lines: [format("STARWROUGHT.Combat.windFatigued", { name: escapeHTML(actor.name) })]
+      title: `${localize("STARWROUGHT.Condition.fatigued")} ${value}`,
+      lines: [format("STARWROUGHT.Combat.windFatigued", { name: escapeHTML(actor.name), value })],
+      notes: [(value >= SW.FATIGUED_MAX) ? localize("STARWROUGHT.Combat.windCeiling") : ""]
     }), { whisper: tableFor(actor) });
   }
 }

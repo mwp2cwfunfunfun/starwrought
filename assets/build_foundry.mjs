@@ -440,7 +440,7 @@ for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
       vigor: hp,
       grants: [training],
       specialAbility: `<p>${ability}</p>`,
-      description: `<p>Grants Training in ${training}, and ${hp} Vigor per level. Only your first Calling counts toward Vigor, however many you open later.</p>`,
+      description: `<p>Grants Training in ${training}, and ${hp} Opening Vigor, added once if it is your first Calling.</p>`,
       traits: [],
       source: "STARWROUGHT Playtest v4.10"
     }

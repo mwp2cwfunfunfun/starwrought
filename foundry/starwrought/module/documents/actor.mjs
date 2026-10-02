@@ -274,7 +274,7 @@ export class SwActor extends Actor {
     }
     const sys = this.system;
     // The number beside each Constellation is the one the roll dialog will open with, computed
-    // by the check engine itself, so Load Strain on a Might check or a Frightened value shows
+    // by the check engine itself, so Load Strain on a Stealth check or a Frightened value shows
     // here and ranks the list the way the dice will see it.
     const row = (slug, name, rank, attribute) => ({
       slug,
