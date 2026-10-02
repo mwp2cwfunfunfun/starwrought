@@ -138,6 +138,15 @@ EDITIONS = {
         "append": [],
         "rename": {},
     },
+    # v4.14 -> v4.15 (Mike, 2026-10-02: "make a formatting pass over the Handbook"): no text edit.
+    # assets/phb_format.py applied the conventions in handbook-style.md to v4.14 (styles only, the
+    # visible text byte for byte the same); this entry stamps that output with its number.
+    "4.15": {
+        "from": "4.14",
+        "replace": [],
+        "append": [],
+        "rename": {},
+    },
     "3.4": {
         "from": "3.3",
         "replace": [
@@ -342,11 +351,27 @@ def main():
     print("  edition line: v%s -> v%s" % (edition["from"], to))
     print("  document.xml %d -> %d bytes" % (before, len(xml)))
 
+    # The page footers carry their own stamp ("Playtest v4.10  •  page 38"), plain text in each
+    # footer part, which the cover-line bump above never reached: v4.14 still printed v4.10 at the
+    # foot of every page. Whatever number a footer holds, it now reads the edition being written.
+    footer_re = re.compile(r"Playtest v\d+(?:\.\d+)*")
+    footers = {}
+    for info, data in entries:
+        if re.fullmatch(r"word/footer\d*\.xml", info.filename):
+            text = data.decode("utf-8")
+            stamped, n = footer_re.subn("Playtest v%s" % to, text)
+            if n:
+                footers[info.filename] = stamped.encode("utf-8")
+    if footers:
+        print("  footer stamp: Playtest v%s in %d footer part(s)" % (to, len(footers)))
+
     tmp = dest + ".tmp"
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as out:
         for info, data in entries:
             if info.filename == "word/document.xml":
                 data = xml.encode("utf-8")
+            elif info.filename in footers:
+                data = footers[info.filename]
             # Keep the original entry metadata so Word sees the same package it wrote.
             new_info = zipfile.ZipInfo(info.filename, date_time=info.date_time)
             new_info.compress_type = info.compress_type

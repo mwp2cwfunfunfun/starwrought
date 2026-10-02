@@ -1,6 +1,7 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.14**. System version **0.6.3**. Developed against
+Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
+rule differs). System version **0.6.3**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in

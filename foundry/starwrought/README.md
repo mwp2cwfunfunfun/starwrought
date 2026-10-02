@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry Virtual Tabletop
 
-A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.14; see
+A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.15; see
 `FEATURES.md` for what it does and `CHANGELOG.md` for what changed). Classless, Constellation-built,
 and written for a virtual tabletop from the ground up: the arithmetic is the software's job so the
 table can spend its attention on decisions. Six actions a round spent across Opportunities, the

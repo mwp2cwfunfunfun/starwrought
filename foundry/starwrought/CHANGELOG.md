@@ -7,9 +7,10 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
-## 0.6.3 (2026-10-02): Player's Handbook v4.14
+## 0.6.3 (2026-10-02): Player's Handbook v4.15
 
-Built from Player's Handbook v4.14. Mike accepted the Attended redline and streamlined the Roll
+Built from Player's Handbook v4.15, which is v4.14's text, character for character, under a
+formatting pass (see Notes). Mike accepted the Attended redline and streamlined the Roll
 Playing Conventions paragraph and the two Result tables in tracked changes of his own; the
 integrator accepted those through Word and wrote the edition under the same file name, mending two
 slips on the way (see Notes). No rule moved in the book: the player still rolls, a Threshold is
@@ -124,10 +125,21 @@ patch release of the rules, so a patch bump, and no world migration. The rulings
   Taking it off does not."), the Breastplate's "Plate, Noisy, Attended" cell and the donning
   sentence are in the handbook, so the data and the system no longer run a step ahead of it on that
   item, and the documents stop saying they do. Nothing in the system changed.
-- **A formatting pass may follow as v4.15.** Mike asked for one over the handbook (how Traits,
+- **The formatting pass is v4.15.** Mike asked for one over the handbook (how Traits,
   Constellations, Talents, Defined Terms, Conditions and cross-references are set, and tables banded
-  by Word rather than by hand). It runs as a separate workflow and changes no rule; the documents
-  name v4.14, and the integrator renames if v4.15 lands first.
+  by Word rather than by hand). `assets/phb_format.py` applied the conventions written down in
+  `handbook-style.md` to v4.14 and `assets/phb_edit.py` stamped the result v4.15 (cover and, for
+  the first time, the page footers, which had read v4.10 since that edition). The visible text is
+  byte for byte v4.14's, checked paragraph by paragraph; the script refuses to write otherwise and
+  running it on its own output changes nothing. Fifteen SW character and table styles now carry the
+  look: one table style with a teal header row and automatic banding on all 74 data tables (the
+  hand-painted shading and the black grids are gone), Traits in a pale sage tint in place of the
+  green highlighter, Constellations and Talents italic, Talent names bold in their own rows, Key
+  Terms leads bold, section references underlined, action glyphs in one font at one size. An
+  adversarial verifier compared 35 pages before and after and found one visible inconsistency,
+  fixed before the stamp (the Callings table's Free Training column now italic in every cell).
+  What the pass left to Mike is listed in `handbook-style.md` under "Open choices" and in the
+  v4.14 sync report.
 - The version stamps read 0.6.3 in all three places: `system.json`, `SYSTEM_VERSION` in
   `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: nothing stored changes
   shape.

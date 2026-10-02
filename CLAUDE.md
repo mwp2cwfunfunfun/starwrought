@@ -298,7 +298,14 @@ v4.14 and the roster alike, "You can sleep in it without increasing your Fatigue
   He also hands over tracked changes of his own in a numbered file (v4.14: the Attended redline
   accepted and the Roll Playing Conventions paragraph streamlined); the integrator accepts those
   through Word and writes the edition under the same file name, mending any slip and flagging it
-  in the sync report (ruling 90).
+  in the sync report (ruling 90). **`assets/phb_format.py` is the formatting tool** (v4.15,
+  2026-10-02): it applies the conventions in `handbook-style.md` (the SW character and table
+  styles: Traits tinted, Constellations and Talents italic, one table style with automatic banding,
+  the heading look in the heading styles) to the newest edition and writes a new file whose visible
+  text it refuses to let differ by one character; rerun it on each new edition, then stamp the
+  result with `phb_edit.py`, which also carries the version into the page footers. A formatting
+  change is a change to `handbook-style.md` and the conventions table at the top of the script,
+  never a hand edit of runs.
   Check for a newer one before starting a sync; v3.1 landed while the
   v3.0 sync was still being written. `data/*.xlsx` derives from it and is authoritative for the app;
   when the two disagree, the handbook wins and the sheets need a pass.
