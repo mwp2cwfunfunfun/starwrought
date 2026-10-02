@@ -111,6 +111,18 @@ Built from Player's Handbook v4.10, unchanged. Seven notes from Mike at the tabl
   selection, then the user's targets. The card's Apply tooltip says all of this.
 - The render hook meant to hide the Apply row from players looked for a class the card has not
   carried for several releases, so it did nothing; it is gone, since the row is now for everyone.
+- **A declared Strike now pays when it declares** (Mike, 2026-10-01: "I used a deliberate strike,
+  but I don't think it reduced my actions by 2"). A character's Strike paid at the roll step, so a
+  Blow waiting for its defenders showed no spend, while an adversary's paid at declaration. Both
+  pay when they declare; the flow's roll step pays nothing; a Blow cancelled before any die was
+  thrown returns the actions with an "Actions returned" card. Prepared and free Strikes paid
+  elsewhere and are untouched.
+- **One Blow at a time** (Mike, 2026-10-01: "my partner clicked attack twice, and it popped up two
+  defense boxes", and a stale Defend task from an earlier attack lingering in the prompt). A
+  second declaration by the same attacker now replaces a Blow nobody has answered yet (the
+  replaced card says so, its actions come back, and the new Blow pays), and is refused once a
+  defender has committed or a die is in flight, with a notice naming the Blow in play. The
+  defender's prompt therefore shows one task per attacker.
 - **A player could not Expose the Zone the card gave them** (Mike, 2026-10-01: "when my partner
   attacked me with a committed strike, it gave an error saying he could not expose my zone because
   my character is not owned by him"). The Position block offers the Expose to the right side, but

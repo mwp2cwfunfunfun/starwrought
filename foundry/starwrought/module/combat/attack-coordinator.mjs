@@ -61,6 +61,7 @@ const REASONS = Object.freeze({
   gmOnly: "STARWROUGHT.Attack.gmOnly",
   counterNeedsMelee: "STARWROUGHT.Prompt.counterNeedsMelee",
   noTargets: "STARWROUGHT.Attack.noTargets",
+  alreadyDeclared: "STARWROUGHT.Attack.alreadyDeclared",
   noActor: "STARWROUGHT.Notify.noActor",
   noWeapon: "STARWROUGHT.Notify.noWeapon",
   badRoll: "STARWROUGHT.Attack.badRoll",
@@ -776,6 +777,22 @@ export class AttackCoordinator {
     if (!attacker) return { ok: false, reason: "noActor" };
     if (!attacker.testUserPermission(user, "OWNER")) return { ok: false, reason: "notYours" };
 
+    // One Blow at a time (0.5.3; Mike: "my partner clicked attack twice, and it popped up two
+    // defense boxes"). A Blow of this attacker's that nobody has answered yet is replaced by the
+    // new declaration, since a second click means one attack; one that is further along is kept
+    // and the new one refused, because a defender has committed or a die may be in flight.
+    for (const live of [...AttackCoordinator.#workflows.values()]) {
+      if (TERMINAL_PHASES.includes(live.phase) || (live.attacker?.actorUuid !== attacker.uuid)) continue;
+      const untouched = (live.phase === "defending") && !live.targets.some(t => t.committed);
+      if (!untouched) {
+        return {
+          ok: false, reason: "alreadyDeclared",
+          reasonData: { name: attacker.name, targets: live.targets.map(t => t.name).join(", ") }
+        };
+      }
+      await AttackCoordinator.#cancel(live, "STARWROUGHT.Attack.replaced");
+    }
+
     const targets = [];
     for (const row of (payload.targets ?? [])) {
       const tokenDoc = resolveTokenDoc(row?.tokenUuid);
@@ -966,6 +983,56 @@ export class AttackCoordinator {
   /* -------------------------------------------- */
 
   /**
+   * Cancel a Blow: the GM's control, or a declaration replaced by the attacker's next (0.5.3).
+   * Logged on the card, the private store dropped, the Strike's actions returned when no die was
+   * thrown, the card written and the cancellation broadcast, then forgotten.
+   * @returns {Promise<object>} the public state
+   */
+  static async #cancel(workflow, logKey = "STARWROUGHT.Attack.cancelled") {
+    AttackWorkflow.transition(workflow, "cancelled");
+    workflow.log.push(localize(logKey));
+    AttackCoordinator.#bump(workflow, { phase: true });
+    AttackCoordinator.#private.delete(workflow.id);
+    await AttackCoordinator.#savePrivate();
+    await AttackCoordinator.#refundStrike(workflow);
+    await AttackCoordinator.#persist(workflow);
+    const pub = AttackCoordinator.#public(workflow);
+    await AttackCoordinator.#broadcast(workflow, "cancelled");
+    AttackCoordinator.#forget(workflow.id);
+    return pub;
+  }
+
+  /**
+   * A Strike pays when it declares (0.5.3; a character's in rollAttack, an adversary's in
+   * attackWith). A Blow cancelled before any die was thrown gives those actions back, said in a
+   * card; a Prepared or free Strike paid elsewhere and is left alone, as is a Blow already rolled.
+   */
+  static async #refundStrike(workflow) {
+    const maneuver = workflow.maneuver ?? {};
+    if (maneuver.prepared || maneuver.free) return;
+    if (workflow.attackRoll || (workflow.targets ?? []).some(t => t.roll)) return;
+    const attacker = resolveActor(workflow.attacker?.actorUuid);
+    if (!attacker?.isOwner || !attacker.inEncounter || !attacker.system?.actions) return;
+    const kind = SW.STRIKE_KINDS[maneuver.strike];
+    const cost = Number(kind?.cost) || 0;
+    if (!cost) return;
+    const per = Number(attacker.actionsPerRound) || SW.ACTIONS_PER_ROUND;
+    const value = Math.min(per, (attacker.system.actions.value ?? 0) + cost);
+    await attacker.update({ "system.actions.value": value }, { swAnnounced: true });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: attacker }),
+      content: `<div class="starwrought action-card sw-refund-card">
+        <h3><i class="fa-solid fa-rotate-left"></i> ${localize("STARWROUGHT.Attack.refundedTitle")}</h3>
+        <p>${format("STARWROUGHT.Attack.refunded", {
+          name: foundry.utils.escapeHTML(attacker.name),
+          strike: `${localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost] ?? ""}`.trim(),
+          n: cost, left: value, per
+        })}</p></div>`,
+      whisper: attacker.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+    });
+  }
+
+  /**
    * The GM controls (brief, "Coordination" and "The absent player"), each logged on the card:
    * cancel; resetDefenses (every commitment cleared, back to `defending`); resendPrompts; and
    * useStances, which answers every uncommitted defender with its standing stance, as the live
@@ -976,15 +1043,7 @@ export class AttackCoordinator {
 
     switch (action) {
       case "cancel": {
-        AttackWorkflow.transition(workflow, "cancelled");
-        workflow.log.push(localize("STARWROUGHT.Attack.cancelled"));
-        AttackCoordinator.#bump(workflow, { phase: true });
-        AttackCoordinator.#private.delete(workflow.id);
-        await AttackCoordinator.#savePrivate();
-        await AttackCoordinator.#persist(workflow);
-        const pub = AttackCoordinator.#public(workflow);
-        await AttackCoordinator.#broadcast(workflow, "cancelled");
-        AttackCoordinator.#forget(workflow.id);
+        const pub = await AttackCoordinator.#cancel(workflow);
         return { ok: true, revision: pub.revision, public: pub };
       }
       case "resetDefenses": {

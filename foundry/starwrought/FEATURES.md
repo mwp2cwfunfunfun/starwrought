@@ -692,7 +692,14 @@ weapon row's ❶ ❷ ❸ or from an adversary's attack row, does not roll at onc
 Maneuver (weapon or attack, Strike kind) and the targets lock, and one **attack card** appears in
 chat. A Committed Strike in an encounter still Prepares first and declares when it is Finished.
 Counter, Intercept and the riposte are already answers to a declared Blow and roll at once, as
-before. With no target the Strike rolls at once too.
+before. With no target the Strike rolls at once too. **The declaration is the Maneuver** (0.5.3;
+Mike: "I used a deliberate strike, but I don't think it reduced my actions by 2"): a character's
+Strike pays its actions when it declares, as an adversary's always did, and the roll step pays
+nothing; a Blow the GM cancels before any die was thrown returns them, with a card. **One Blow at
+a time** (Mike: "my partner clicked attack twice, and it popped up two defense boxes"): a second
+declaration by the same attacker replaces a Blow nobody has answered yet, so a double click is one
+attack and one prompt, and is refused once a defender has committed or a die is in flight, with a
+notice naming the Blow in play.
 
 **Commit.** Every defender's controller gets the **Combat Prompt**: a small window, bottom-right,
 that never blocks Foundry. For a defender it offers the Defense (Evade or Guard) with the standing

@@ -489,7 +489,8 @@ export class SwActor extends Actor {
     const reactionStrike = ["intercept", "counter", "riposte"].includes(asReaction) ? asReaction : null;
     const strike = reactionStrike ? "quick" : (SW.STRIKE_KINDS[askedStrike] ? askedStrike : SW.DEFAULT_STRIKE);
     const free = askedFree || ["counter", "riposte"].includes(reactionStrike);
-    const paid = !!(prepared || free);
+    // The flow's blind roll is the second step of a Strike that paid when it declared (0.5.3).
+    const paid = !!(prepared || free || blind);
 
     // Your named target first, then your Foundry target, then the one target this token is
     // remembered as having, so a reload does not cost you the Threshold along with the arrow.
@@ -530,9 +531,22 @@ export class SwActor extends Actor {
     // below declares the changed one. Everything else declares now, with no dialog: the Strike
     // kind is the button pressed, and the dialog opens at the roll step with it locked.
     const preparesNow = SW.STRIKE_KINDS[strike].prepared && this.inEncounter && !paid;
-    if (declaring && targets.length && !preparesNow) {
-      return AttackCoordinator.declare({ attacker: this, weaponId, strike, targets, prepared, free, thrown });
-    }
+    // The declaration is the Maneuver (0.5.3; Mike: "I used a deliberate strike, but I don't think
+    // it reduced my actions by 2"): a character's Strike pays when it declares, as an adversary's
+    // does, and the flow's roll step pays nothing (`blind` counts as paid below). A Prepared
+    // Strike paid when it was Prepared, a Reaction's Strike was paid by the Reaction, and a Blow
+    // the GM cancels before any die returns the cost (AttackCoordinator).
+    const declareStrike = async kindKey => {
+      const pub = await AttackCoordinator.declare({ attacker: this, weaponId, strike: kindKey, targets, prepared, free, thrown });
+      if (pub && !paid) {
+        const k = SW.STRIKE_KINDS[kindKey] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
+        await this.spendActions(k.cost, {
+          label: `${game.i18n.localize(k.label)} ${SW.ACTION_GLYPHS[k.cost]}: ${weapon.name}`
+        });
+      }
+      return pub;
+    };
+    if (declaring && targets.length && !preparesNow) return declareStrike(strike);
 
     // A Strike at a target the weapon cannot reach is said on the card, never refused, so the GM
     // can adjudicate (Mike, 2026-10-01). Melee: the gap is more than Natural Reach plus the
@@ -682,7 +696,7 @@ export class SwActor extends Actor {
         // The dialog opened for a Committed Strike, which Prepares, and the player chose a Quick
         // or Deliberate one instead: with the flow on and a target, that Strike declares.
         if (declaring && targets.length && !paid && !(kind.prepared && this.inEncounter)) {
-          await AttackCoordinator.declare({ attacker: this, weaponId, strike: cfg.strike, targets, prepared, free, thrown });
+          await declareStrike(cfg.strike);
           return false;
         }
         if (reactionStrike === "intercept") {
