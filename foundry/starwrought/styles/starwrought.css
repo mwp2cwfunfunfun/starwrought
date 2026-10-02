@@ -1742,3 +1742,29 @@ li.combatant.sw-in-crosshairs {
 .starwrought.sw-attack-card.sw-attack-phase-cancelled { opacity: 0.75; }
 .starwrought.sw-attack-card.sw-attack-phase-cancelled h3 { color: var(--sw-ink-dim); }
 .starwrought.sw-attack-card.sw-attack-phase-complete { border-color: #3d6b4f; }
+
+/* --------------------------------------------------------------------------
+   Rules links (0.5.1, T6): the Bind and Exposed card titles, the sheet's bind
+   line, the Zones panel's EXPOSED badge and a condition's row on the Effects
+   tab open the Rules Reference page they name. Dotted, so a heading reads as
+   a link without turning into a button; gold on hover, like the rest.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-rules-link,
+.starwrought.action-card .sw-rules-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+  cursor: pointer;
+}
+.starwrought .sw-rules-link:hover,
+.starwrought.action-card .sw-rules-link:hover { color: var(--sw-gold); border-bottom-style: solid; text-shadow: none; }
+.starwrought .sw-rules-link i { margin-right: 0.15rem; }
+/* The bind line's state label keeps its small caps; only the underline says it opens something. */
+.starwrought .sw-bind-state.sw-rules-link { border-bottom-color: var(--sw-ink-dim); }
+.starwrought .sw-zone-flag .sw-rules-link { border-bottom-color: var(--sw-blood); }
+/* On the Effects tab: a small book beside the condition's name. */
+.starwrought .sw-effect-rules { flex: 0 0 auto; margin: 0 0.3rem; font-size: 0.8em; color: var(--sw-ink-dim); border: none; }
+.starwrought .sw-effect-rules:hover { color: var(--sw-gold); }
+/* The Exposed card takes the Zone's blood tint, as the bind card takes gold. */
+.starwrought .sw-exposed-card, .starwrought.sw-exposed-card { border-left: 3px solid var(--sw-blood); }

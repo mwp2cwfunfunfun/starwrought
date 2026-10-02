@@ -93,30 +93,76 @@ export class SwActor extends Actor {
 
   /**
    * Put a condition on, take it off, or set its value.
+   *
+   * One condition, one effect (0.5.1). Writes to one actor's conditions are run one after another
+   * on this client, so a second call finds what the first created instead of creating its own; the
+   * effect is created under the condition's static id (SW.statusEffectId), the id Foundry's token
+   * palette creates and looks for, so a status set by the rules and one toggled from the token are
+   * the same document and a create that loses a race with another client fails on the id rather
+   * than landing a twin; and any twin that exists anyway (an older release's) is removed on the
+   * way through.
    * @param {string} id
    * @param {number|boolean} [value]  A number for numeric conditions, true/false otherwise.
+   * @param {object} [data]  Effect data to carry on it (name, description, origin, flags); applied
+   *                         on creation and to an effect already there.
+   * @returns {Promise<ActiveEffect|null>}  The effect carrying the condition, or null when off.
    */
-  async setCondition(id, value = true) {
+  async setCondition(id, value = true, data = {}) {
     const config = SW.CONDITIONS[id];
-    if (!config) return;
-    const existing = this.effects.find(e => e.statuses?.has(id));
+    if (!config) return null;
+    const prior = SwActor.#conditionWrites.get(this.uuid) ?? Promise.resolve();
+    const run = prior.catch(() => null).then(() => this.#writeCondition(id, value, data));
+    SwActor.#conditionWrites.set(this.uuid, run);
+    try {
+      return await run;
+    } finally {
+      if (SwActor.#conditionWrites.get(this.uuid) === run) SwActor.#conditionWrites.delete(this.uuid);
+    }
+  }
+
+  /** Actor uuid -> the condition write in flight on this client, so they queue (see setCondition). */
+  static #conditionWrites = new Map();
+
+  /** One queued condition write; the rules are in setCondition's note. */
+  async #writeCondition(id, value, data) {
+    const config = SW.CONDITIONS[id];
+    const staticId = SW.statusEffectId(id);
+    const matching = this.effects.filter(e => e.statuses?.has(id));
     const off = (value === false) || (config.numeric && Number(value) <= 0);
 
-    if (off) return existing?.delete();
-
-    if (config.numeric) {
-      const n = Number(value) || 1;
-      const name = `${game.i18n.localize(config.name)} ${n}`;
-      if (existing) return existing.update({ name, [`flags.${SW.SYSTEM_ID}.value`]: n });
-      return this.createEmbeddedDocuments("ActiveEffect", [{
-        name, img: config.img, statuses: [id], flags: { [SW.SYSTEM_ID]: { value: n } }
-      }]);
+    if (off) {
+      if (matching.length) await this.deleteEmbeddedDocuments("ActiveEffect", matching.map(e => e.id));
+      return null;
     }
 
-    if (existing) return existing;
-    return this.createEmbeddedDocuments("ActiveEffect", [{
-      name: game.i18n.localize(config.name), img: config.img, statuses: [id]
-    }]);
+    // The one under the static id is the one the palette knows; any other goes.
+    matching.sort((a, b) => (a.id === staticId ? -1 : 0) - (b.id === staticId ? -1 : 0));
+    const [existing, ...twins] = matching;
+    if (twins.length) await this.deleteEmbeddedDocuments("ActiveEffect", twins.map(e => e.id));
+
+    const update = foundry.utils.deepClone(data ?? {});
+    if (config.numeric) {
+      const n = Number(value) || 1;
+      update.name ??= `${game.i18n.localize(config.name)} ${n}`;
+      foundry.utils.setProperty(update, `flags.${SW.SYSTEM_ID}.value`, n);
+    }
+    if (existing) {
+      if (!foundry.utils.isEmpty(update)) await existing.update(update);
+      return existing;
+    }
+
+    const source = foundry.utils.mergeObject({
+      _id: staticId, name: game.i18n.localize(config.name), img: config.img, statuses: [id]
+    }, update);
+    try {
+      const [created] = await this.createEmbeddedDocuments("ActiveEffect", [source], { keepId: true });
+      return created ?? this.effects.get(staticId) ?? null;
+    } catch (err) {
+      // Another client got there first under the same id: that effect is the one to keep.
+      const theirs = this.effects.get(staticId) ?? this.effects.find(e => e.statuses?.has(id));
+      if (!theirs) throw err;
+      return theirs;
+    }
   }
 
   /* -------------------------------------------- */
@@ -1741,21 +1787,34 @@ export class SwActor extends Actor {
    */
   async setExposed(zone, exposed = true, { posture = false } = {}) {
     if (!(zone in SW.ZONES)) return;
-    return this.update({
-      [`system.zones.${zone}.exposed`]: !!exposed,
-      [`system.zones.${zone}.postureExposed`]: !!exposed && !!posture
-    });
+    const on = !!exposed;
+    const z = this.system.zones?.[zone];
+    // The Zone is the record; a call that changes nothing writes nothing, so the palette hook
+    // (which calls this when a status is toggled on the token) settles in one pass.
+    if ((!!z?.exposed !== on) || (!!z?.postureExposed !== (on && !!posture))) {
+      await this.update({
+        [`system.zones.${zone}.exposed`]: on,
+        [`system.zones.${zone}.postureExposed`]: on && !!posture
+      });
+    }
+    // The token status mirrors the Zone (0.5.1): Exposed: Head on the token when the Head is open.
+    await this.setCondition(SW.ZONE_CONDITIONS[zone], on);
+    return this.system.zones?.[zone];
   }
 
   /** End of round: a Zone Exposed by a Posture closes now, and only now. */
   async clearPostureExposed() {
     const updates = {};
+    const closed = [];
     for (const zone of Object.keys(SW.ZONES)) {
       if (!this.system.zones?.[zone]?.postureExposed) continue;
       updates[`system.zones.${zone}.exposed`] = false;
       updates[`system.zones.${zone}.postureExposed`] = false;
+      closed.push(zone);
     }
     if (Object.keys(updates).length) await this.update(updates);
+    // The statuses follow the Zones they mirror.
+    for (const zone of closed) await this.setCondition(SW.ZONE_CONDITIONS[zone], false);
   }
 
   /* -------------------------------------------- */
@@ -1763,26 +1822,35 @@ export class SwActor extends Actor {
   /**
    * Form a Bind with a partner (PHB v4.10, The Bind): neutral when neither has the line, or
    * Controlled by one of them. One relationship per implement, both named. Written on both
-   * actors when this client owns both; otherwise on this one, and the card says the other side
-   * is for its owner to set.
+   * actors when this client owns both; otherwise on this one, marked unpaired, and the partner's
+   * owning client writes the mirror as the update reaches it (module/canvas/bind.mjs).
    * @param {Actor|Token} partner
    * @param {object} [options]
    * @param {"neutral"|"controlling"|"controlled"} [options.state]  This actor's side of it.
    * @param {string} [options.mine]    This actor's implement. Defaults to the rigid one in hand.
    * @param {string} [options.theirs]  The partner's implement.
    * @param {boolean} [options.announce=true]
+   * @param {boolean} [options.pair=true]  Write the partner's side too when this client owns it.
+   *   False when this call IS the partner's side, picked up from the other's write
+   *   (module/canvas/bind.mjs keeps the pair whole), so the pickup never bounces back.
    */
-  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true } = {}) {
+  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true, pair = true } = {}) {
     const other = partner?.actor ?? (partner?.documentName === "Actor" ? partner : null);
-    if (!other) return null;
+    // A Bind is between two implements on two fighters; a token of your own is not a partner.
+    if (!other || (other === this) || !other.uuid) return null;
     const mirror = { neutral: "neutral", controlling: "controlled", controlled: "controlling" };
     if (!(state in mirror)) state = "neutral";
     mine = mine || this.rigidImplement?.name || "";
     theirs = theirs || other.rigidImplement?.name || "";
 
-    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs });
-    const bothSides = other.isOwner;
-    if (bothSides) await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine });
+    // Both sides land here when this client owns both. Otherwise the write goes out marked
+    // unpaired, and the partner's owning client (the GM's, when one is connected) writes the
+    // mirror as the update reaches it, so a player's click on the card still forms the pair.
+    const bothSides = pair && other.isOwner;
+    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs }, { paired: bothSides || !pair });
+    if (bothSides) {
+      await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine }, { paired: true });
+    }
 
     if (announce) {
       const controller = state === "controlling" ? this : state === "controlled" ? other : null;
@@ -1797,11 +1865,13 @@ export class SwActor extends Actor {
             mine: mine || game.i18n.localize("STARWROUGHT.Bind.weapon"),
             theirs: theirs || game.i18n.localize("STARWROUGHT.Bind.weapon")
           });
+      // The title opens the rules page for the Bind (0.5.1, T6): chat.mjs wires `rulesPage` on
+      // every card, flags or none.
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: this }),
-        content: `<div class="starwrought action-card sw-bind-card"><h3><i class="fa-solid fa-link"></i> ${
-          game.i18n.localize("STARWROUGHT.Bind.label")}</h3><p>${text}</p>${
-          bothSides ? "" : `<p class="sw-card-note sw-warn">${game.i18n.format("STARWROUGHT.Bind.partnerNotOwned", { partner: other.name })}</p>`
+        content: `<div class="starwrought action-card sw-bind-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="The Bind" data-tooltip="STARWROUGHT.Rules.openBind"><i class="fa-solid fa-link"></i> ${
+          game.i18n.localize("STARWROUGHT.Bind.label")}</a></h3><p>${text}</p>${
+          bothSides ? "" : `<p class="sw-card-note">${game.i18n.format("STARWROUGHT.Bind.partnerNotOwned", { partner: other.name })}</p>`
         }</div>`
       });
     }
@@ -1811,34 +1881,71 @@ export class SwActor extends Actor {
   /**
    * End the Bind this actor is in: a Strike between the two resolved, someone Moved or Stepped
    * (Close excepted), someone Recentered, the Controller was attacked by a third party, or an
-   * implement was dropped or Disarmed. The partner's side is cleared too when this client owns it.
+   * implement was dropped or Disarmed. The partner's side is cleared too when this client owns it;
+   * otherwise the write goes out unpaired and the partner's owning client clears the mirror.
    * @param {object} [options]
    * @param {boolean} [options.announce=true]
+   * @param {boolean} [options.pair=true]  False when this call is the mirror being picked up.
    */
-  async endBind({ announce = true } = {}) {
+  async endBind({ announce = true, pair = true } = {}) {
     const bind = this.system.bind;
     if (!bind?.state) return;
     const partner = SwActor.resolveActor(bind.partnerUuid);
-    await this.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" });
-    if (partner?.isOwner && (partner.system?.bind?.partnerUuid === this.uuid)) {
-      await partner.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" });
-    }
+    const partnerMirrors = partner?.system?.bind?.partnerUuid === this.uuid;
+    const bothSides = pair && !!partner?.isOwner && partnerMirrors;
+    await this.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" }, {
+      paired: bothSides || !pair || !partnerMirrors,
+      previousPartner: bind.partnerUuid
+    });
+    if (bothSides) await partner.#writeBind({ state: "", partnerUuid: "", mine: "", theirs: "" }, { paired: true });
     if (announce) {
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: this }),
-        content: `<div class="starwrought action-card sw-bind-card"><h3><i class="fa-solid fa-link-slash"></i> ${
-          game.i18n.localize("STARWROUGHT.Bind.label")}</h3>
+        content: `<div class="starwrought action-card sw-bind-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="The Bind" data-tooltip="STARWROUGHT.Rules.openBind"><i class="fa-solid fa-link-slash"></i> ${
+          game.i18n.localize("STARWROUGHT.Bind.label")}</a></h3>
           <p>${game.i18n.format("STARWROUGHT.Bind.ended", { name: this.name, partner: partner?.name ?? "" })}</p></div>`
       });
     }
   }
 
-  /** Write one side of a Bind and keep the three token statuses in step with it. */
-  async #writeBind(bind) {
-    await this.update({ "system.bind": bind });
-    await this.setCondition("bound", bind.state === "neutral");
-    await this.setCondition("controlling", bind.state === "controlling");
-    await this.setCondition("controlled", bind.state === "controlled");
+  /**
+   * Write one side of a Bind and keep the three token statuses in step with it. The status
+   * effect carries the Bind (0.5.1, T4): its name says who with, its description names the
+   * partner, both implements and the state, its origin is the partner, and
+   * `flags.starwrought.bind = {partnerUuid, mine, theirs, state}` is the record for anything that
+   * reads effects rather than actors. The update's `swBind` option tells the pair-keeper in
+   * module/canvas/bind.mjs whether the writer handled both sides.
+   * @param {{state: string, partnerUuid: string, mine: string, theirs: string}} bind
+   * @param {{paired?: boolean, previousPartner?: string}} [mark]
+   */
+  async #writeBind(bind, { paired = true, previousPartner = "" } = {}) {
+    await this.update({ "system.bind": bind }, { swBind: { paired, previousPartner } });
+
+    const partner = bind.state ? SwActor.resolveActor(bind.partnerUuid) : null;
+    const weapon = game.i18n.localize("STARWROUGHT.Bind.weapon");
+    const args = {
+      partner: partner?.name ?? game.i18n.localize("STARWROUGHT.Bind.unknownPartner"),
+      mine: bind.mine || weapon,
+      theirs: bind.theirs || weapon
+    };
+    const states = { neutral: "bound", controlling: "controlling", controlled: "controlled" };
+    for (const [state, conditionId] of Object.entries(states)) {
+      const on = bind.state === state;
+      if (!on) {
+        await this.setCondition(conditionId, false);
+        continue;
+      }
+      const condition = SW.CONDITIONS[conditionId];
+      const stateWord = state.charAt(0).toUpperCase() + state.slice(1);
+      await this.setCondition(conditionId, true, {
+        name: `${game.i18n.localize(condition.name)}: ${game.i18n.format(`STARWROUGHT.Bind.effect${stateWord}`, args)}`,
+        description: `<p>${game.i18n.format(`STARWROUGHT.Bind.${state}`, args)}</p>`
+          + `<p>${game.i18n.localize(`${condition.name}Hint`)}</p>`
+          + `<p>${game.i18n.format("STARWROUGHT.Rules.where", { page: condition.rulesPage })}</p>`,
+        origin: partner?.uuid ?? bind.partnerUuid ?? "",
+        flags: { [SW.SYSTEM_ID]: { bind: { partnerUuid: bind.partnerUuid, mine: bind.mine, theirs: bind.theirs, state } } }
+      });
+    }
   }
 
   /* -------------------------------------------- */

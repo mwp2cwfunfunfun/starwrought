@@ -292,6 +292,8 @@ export class SwCheck {
       actor: roller,
       item: isAttack ? weapon : null,
       weaponId: isAttack ? (weapon?.id ?? "") : "",
+      // The attack by name on either card, so a Defense card's Bind records what was Stopped (0.5.1).
+      attackName,
       kind,
       slug,
       label: isAttack ? (attackName || roller.name) : defenseLabel,
@@ -859,7 +861,9 @@ export class SwCheck {
           // The weapon that was Stopped, so the Bind records what is held and not whatever the
           // attacker happens to hold first: the Controlled −2 and the "uncontrolled weapon ends
           // the Bind" rule both key on it. A Defense roll has no attacking Item; blank there.
-          theirs: isAttack ? (cfg.item?.name ?? "") : "",
+          // A Defense card inside the attack flow names the attack it resolved (`attackName`,
+          // 0.5.1), so the Bind records "Bite" rather than "weapon".
+          theirs: isAttack ? (cfg.item?.name ?? "") : (cfg.attackName ?? ""),
           label: control ? "STARWROUGHT.Bind.takeControl" : "STARWROUGHT.Bind.form"
         };
         pos.riposte = control && (reaction === "parry");

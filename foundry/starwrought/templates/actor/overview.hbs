@@ -94,7 +94,8 @@
         {{#if zone.wounds.effect}}<div class="sw-zone-wound-effect">{{zone.wounds.effect}}</div>{{/if}}
         {{#if zone.exposed}}
         <div class="sw-zone-flag">
-          {{localize "STARWROUGHT.Condition.exposed"}}{{#if zone.postureExposed}} <small>({{localize "STARWROUGHT.Reaction.posture"}})</small>{{/if}}
+          {{!-- The badge opens the rules page for Exposed (0.5.1, T6). --}}
+          <a class="sw-rules-link" data-action="rulesPage" data-page="Exposed" data-tooltip="STARWROUGHT.Rules.openExposed">{{localize "STARWROUGHT.Condition.exposed"}}</a>{{#if zone.postureExposed}} <small>({{localize "STARWROUGHT.Reaction.posture"}})</small>{{/if}}
         </div>
         {{/if}}
       </div>

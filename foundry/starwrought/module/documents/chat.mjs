@@ -26,6 +26,15 @@ import { SwCombatPrompt } from "../apps/combat-prompt.mjs";
 
 /** Wire up a rendered chat card. */
 export function onRenderChatMessage(message, html) {
+  // A card title that opens a Rules Reference page (0.5.1, T6: the Bind and Exposed cards). Those
+  // cards carry no flags, so this is wired before the flags gate and skipped by the loop below.
+  for (const link of html.querySelectorAll("[data-sw-action='rulesPage']")) {
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      openRulesPage(link.dataset.page);
+    });
+  }
+
   const flags = message.flags?.[SW.SYSTEM_ID];
   if (!flags) return;
 
@@ -53,6 +62,7 @@ export function onRenderChatMessage(message, html) {
   if (flags.kind === ATTACK_CARD_KIND) pruneAttackThresholds(html, flags.attackWorkflow);
 
   for (const button of html.querySelectorAll("[data-sw-action]")) {
+    if (button.dataset.swAction === "rulesPage") continue;
     button.addEventListener("click", event => onCardButton(event, message, flags));
   }
 
@@ -119,6 +129,27 @@ export function resolveTokenDoc(uuid) {
   if (!doc) return null;
   if (doc.documentName === "Token") return doc;
   if (doc.documentName === "Actor") return doc.getActiveTokens(false, true)[0] ?? null;
+  return null;
+}
+
+/**
+ * Open a page of the shipped Rules Reference by its title (0.5.1, T6). The page is found by name
+ * in the `rules` compendium, never by id: the ids are deterministic in the build, but the client
+ * has no business knowing them. Used by the Bind and Exposed card titles, the sheet's bind line,
+ * the Zones panel's EXPOSED badge and the Effects tab.
+ * @param {string} title  The page's name, as build_foundry.mjs's journalPages spells it.
+ * @returns {Promise<Application|null>}
+ */
+export async function openRulesPage(title) {
+  if (!title) return null;
+  const pack = game.packs.get(`${SW.SYSTEM_ID}.rules`);
+  const entries = pack ? await pack.getDocuments() : [];
+  const wanted = String(title).trim().toLowerCase();
+  for (const entry of entries) {
+    const page = entry.pages.find(p => p.name.trim().toLowerCase() === wanted);
+    if (page) return entry.sheet.render({ force: true, pageId: page.id });
+  }
+  ui.notifications.warn(game.i18n.format("STARWROUGHT.Rules.missing", { page: title }));
   return null;
 }
 
@@ -296,9 +327,11 @@ async function exposeFromCard(button) {
       continue;
     }
     await actor.setExposed(zone, true);
+    // The title opens the rules page for Exposed (0.5.1, T6).
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Condition.exposed")}</h3>
+      content: `<div class="starwrought action-card sw-exposed-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="Exposed" data-tooltip="STARWROUGHT.Rules.openExposed"><i class="fa-solid fa-bullseye"></i> ${
+        game.i18n.localize("STARWROUGHT.Condition.exposed")}</a></h3>
         <p>${game.i18n.format("STARWROUGHT.Position.exposedText", {
           name: actor.name, zone: game.i18n.localize(SW.ZONES[zone].label)
         })}</p></div>`
@@ -316,12 +349,18 @@ async function formBindFromCard(button) {
   if (!defender) return;
   const partner = resolveActor(button.dataset.partnerUuid);
   if (!partner) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
+  // A card can name the same creature twice (a linked actor's token striking another of its
+  // tokens); a Bind is between two fighters, so there is nothing to form.
+  if (partner === defender) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.samePartner"));
   const control = button.dataset.mode === "control";
-  await defender.formBind(partner, {
+  const bind = await defender.formBind(partner, {
     state: control ? "controlling" : "neutral",
     mine: button.dataset.mine ?? "",
     theirs: button.dataset.theirs ?? ""
   });
+  // formBind returns the recorded side, or null when it could not form one; say so rather than
+  // leaving the player to find out from the sheet (0.5.1, T4).
+  if (!bind?.state) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.notFormed"));
   if (!control) return;
 
   // "Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts."
