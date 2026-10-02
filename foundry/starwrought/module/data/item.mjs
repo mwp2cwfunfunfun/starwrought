@@ -225,6 +225,39 @@ function prepareCost(system) {
   system.costValue = SW.actionCostValue(system.cost);
 }
 
+/**
+ * The aura of a Talent or Maneuver (0.5.1): the "within N feet" its Effect speaks of, drawn on the
+ * map around whoever carries it. `range` is feet from the edge of the carrier's space, null when
+ * the ability has none (a blank Aura cell in the spreadsheet); `affects` is who it concerns, which
+ * picks its colour (SW.AURA_COLORS); `visible` is the default mark. Visible auras are Pinned for
+ * every combatant once an encounter starts, the rest show only as a preview (Mike's rule), and the
+ * carrier's own mark in `actor.system.auras.visible` overrides this default.
+ */
+function auraFields() {
+  return {
+    aura: new fields.SchemaField({
+      range: new fields.NumberField({ required: true, nullable: true, integer: true, min: 0, initial: null }),
+      affects: new fields.StringField({
+        required: true, choices: Object.keys(SW.AURA_AUDIENCES), initial: "all"
+      }),
+      visible: new fields.BooleanField({ initial: false })
+    })
+  };
+}
+
+/** Whether the ability has an aura at all, its colour, and the short line the sheet prints for it. */
+function prepareAura(system) {
+  const aura = system.aura;
+  system.hasAura = Number.isInteger(aura?.range) && (aura.range > 0);
+  system.auraColor = SW.AURA_COLORS[aura?.affects] ?? SW.AURA_COLORS.all;
+  system.auraLabel = system.hasAura
+    ? game.i18n.format("STARWROUGHT.Field.auraSummary", {
+      feet: aura.range,
+      affects: game.i18n.localize(SW.AURA_AUDIENCES[aura.affects]?.label ?? SW.AURA_AUDIENCES.all.label)
+    })
+    : "";
+}
+
 /** Description plus the Trait line, which every Item in the game has. */
 function describedFields() {
   return {
@@ -375,7 +408,9 @@ export class SwTalentData extends SwItemData {
         value: new fields.StringField({ initial: "" })
       }),
       /** Another Talent this one hands over outright, with no Talent Point spent. */
-      freeTalent: new fields.StringField({ initial: "" })
+      freeTalent: new fields.StringField({ initial: "" }),
+      /** The "within N feet" of the Effect, drawn on the map (0.5.1). */
+      ...auraFields()
     });
   }
 
@@ -410,6 +445,7 @@ export class SwTalentData extends SwItemData {
     if (!this.constellation && this.constellationName) {
       this.constellation = SW.slugify(this.constellationName);
     }
+    prepareAura(this);
   }
 
   get chatDescription() {
@@ -677,6 +713,8 @@ export class SwActionData extends SwItemData {
        * shown on the Item sheet so the intent travels with the action until it is implemented.
        */
       automation: new fields.StringField({ initial: "" }),
+      /** The "within N feet" of the Effect, drawn on the map (0.5.1). */
+      ...auraFields(),
       /** Rolled as a check: which Constellation, and which Defense it is measured against. */
       check: new fields.SchemaField({
         enabled: new fields.BooleanField({ initial: false }),
@@ -713,6 +751,7 @@ export class SwActionData extends SwItemData {
     prepareCost(this);
     /** A Maneuver of three or more actions is Prepared: one now, the rest at your next Opportunity. */
     this.prepared = this.costValue >= SW.PREPARED_THRESHOLD;
+    prepareAura(this);
   }
 
   /** The rules, when the action has them written separately from its flavour. */

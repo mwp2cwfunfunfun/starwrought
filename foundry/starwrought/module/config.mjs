@@ -643,6 +643,42 @@ export const WIND_ROUND = 3;
 /** Helm penalties to Awareness checks, the Awareness Threshold and Initiative, by the Head piece's name. */
 export const HELM_PENALTIES = Object.freeze({ "Closed helm": -2, "Open helm": -1 });
 
+/* -------------------------------------------- */
+/*  Auras (0.5.1)                               */
+/* -------------------------------------------- */
+
+/**
+ * Who an aura concerns. An ability's "within N feet" is drawn around its carrier, and the colour
+ * says at a glance whether the ring is a gift to allies, a threat to enemies, or simply a distance.
+ */
+export const AURA_AUDIENCES = Object.freeze({
+  all: { label: "STARWROUGHT.Field.auraAffectsAll" },
+  allies: { label: "STARWROUGHT.Field.auraAffectsAllies" },
+  enemies: { label: "STARWROUGHT.Field.auraAffectsEnemies" }
+});
+
+/**
+ * The colour an aura is drawn in, by audience, as the "#rrggbb" strings the stylesheet's tokens
+ * hold (--sw-green, --sw-blood, --sw-presence), so a swatch on the sheet and the ring on the map are
+ * the same colour. A custom ring carries its own colour in this form, which is why these are strings
+ * and not PIXI numbers; the canvas converts with Color.from.
+ */
+export const AURA_COLORS = Object.freeze({
+  allies: "#5f9e6a",
+  enemies: "#b4453f",
+  all: "#c07ad8"
+});
+
+/**
+ * The reach bands in the same form, keyed as the entries of `actor.system.ranges` are: Natural
+ * Reach, Total Reach and the Unwieldy dead zone. They mirror the colours reach.mjs has always drawn.
+ */
+export const REACH_COLORS = Object.freeze({
+  reach: "#7fb3c8",
+  totalReach: "#e3b23c",
+  unwieldy: "#b4453f"
+});
+
 /** The icon a freshly created Item of each type gets, rather than the generic bag. */
 export const TYPE_ICONS = Object.freeze({
   constellation: "systems/starwrought/assets/icons/constellation.svg",

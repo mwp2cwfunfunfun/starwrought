@@ -1,7 +1,7 @@
 # STARWROUGHT data pipeline: data/*.xlsx -> assets/trees.json
 # Header-driven: column ORDER doesn't matter; column NAMES do (first word wins).
 # Recognized tree-sheet columns: Talent | Tier | Root | Requires | Prerequisites | Description | Effect | Feeds
-#                                Grants | Choice | Free Talent | Enabled?
+#                                Grants | Choice | Free Talent | Aura | Enabled?
 # Recognized index columns:      Tree | Category | Feeds | Flare (triggers) | Meta | Skills
 #   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
@@ -161,6 +161,53 @@ def header_map(ws, wanted):
 def enabled_flag(cell, has_column):
     return plain(cell).lower() == "yes" if has_column else True
 
+# ---- The Aura column (system 0.5.1) -----------------------------------------------------------
+# "Within N feet" of the carrier, drawn on the map by the Foundry system as a ring the carrier can
+# show or hide. Recognised by its first word like every other header, on the talent sheets and the
+# action sheets alike. Accepted values, case blind and whitespace tolerant:
+#   "15 ft" or "15 feet"      fifteen feet around the carrier, concerning everyone
+#   "15 ft allies"            concerning allies only; "15 ft enemies" likewise
+#   "15 ft allies visible"    Visible by default: Pinned for every combatant once an encounter
+#                             starts (Mike's rule); without the word it shows only as a preview
+#   "none"                    the Effect says "within N feet" but the circle is centred somewhere
+#                             else (Rebounding Toss rebounds from the target), so stay quiet
+#   blank                     no aura
+# Anything else is an error. The row carries {"range": 15, "affects": "allies", "visible": true}
+# only when the cell is set. "Within reach" and "adjacent" get no cell: the reach bands draw those.
+# The converter warns when a tag-stripped Effect says "within N feet" and the cell is blank or
+# names a different N, so a new tier surfaces on its sync instead of shipping without its ring.
+AURA_VALUE = re.compile(r"^(\d+)\s*(?:ft\.?|feet|foot)(?:\s+(all|allies|enemies))?(?:\s+(visible))?$", re.I)
+AURA_IN_EFFECT = re.compile(r"\bwithin\s+(\d+)\s*(?:feet|ft)\b", re.I)
+
+def parse_aura(text):
+    """None for a blank cell, "none" for an explicit none, False for a value that does not parse,
+    else the aura dict. "all" is accepted as the spelled-out form of the default audience."""
+    s = re.sub(r"\s+", " ", text or "").strip().lower()
+    if not s: return None
+    if s == "none": return "none"
+    m = AURA_VALUE.match(s)
+    if not m: return False
+    return {"range": int(m.group(1)), "affects": m.group(2) or "all", "visible": bool(m.group(3))}
+
+def aura_for(cell, has_column, effect, where, warnings, errors):
+    """A row's Aura cell, read against its Effect. Returns the aura to store or None, appending the
+    error for a value that does not parse and the drift warnings described above."""
+    aura = parse_aura(plain(cell)) if has_column else None
+    said = AURA_IN_EFFECT.search(re.sub(r"<[^>]+>", " ", effect or ""))
+    if aura is False:
+        errors.append(f"{where}: Aura '{plain(cell)}' not understood ('15 ft', '15 feet', '15 ft allies', "
+                      f"'15 ft enemies', add 'visible' to pin it by default, or 'none')")
+        return None
+    if aura == "none": return None
+    if said and aura is None:
+        warnings.append(f"{where}: Effect says 'within {said.group(1)} feet' but the Aura cell is "
+                        + ("blank" if has_column else "missing (the sheet has no Aura column)")
+                        + f"; set it ('{said.group(1)} ft', with 'allies' or 'enemies' and 'visible' as the "
+                        f"rule reads) or 'none' if the circle is centred somewhere other than the carrier")
+    elif said and aura and int(said.group(1)) != aura["range"]:
+        warnings.append(f"{where}: Effect says 'within {said.group(1)} feet' but the Aura cell says {aura['range']} ft")
+    return aura or None
+
 # Requires-matching strips the cost glyphs off a name: the v4.10 ⓿❶❷❸❹❺❻ and ↺ (with a bracketed
 # Reaction cost such as "Aid ❶ (⓿↺)"), the v3 ◆ and ◇, and the capstone star.
 GLYPH_CLASS = "◆◇↺★⓿❶❷❸❹❺❻"
@@ -171,7 +218,7 @@ def norm(s):
 # ---- Actions ---------------------------------------------------------------------------------
 # Recognised action-sheet columns (first word wins, order free):
 #   Action | Cost | Traits | Type | Prerequisites | Requirements | Trigger | Description | Effect |
-#   Automation
+#   Automation | Aura
 # Cost accepts the handbook's glyphs or words: "◆", "◆◆", "◆ to ◆◆◆", "◆ or ◆◆◆", "↺", "◇",
 # "1", "1 to 3", "reaction", "free". With no Cost column the glyphs in the Action name are read,
 # the way talent names are; with neither, the action costs one action and the converter says so.
@@ -256,7 +303,7 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
         cm = header_map(ws, {"name": "action", "cost": "cost", "traits": "trait", "type": "type",
                              "prereq": "prereq", "req": "requirement", "trigger": "trigger",
                              "desc": "desc", "effect": "effect", "automation": "automation",
-                             "enabled": "enabled"})
+                             "aura": "aura", "enabled": "enabled"})
         if "name" not in cm:
             warnings.append(f"{fname} / {ws.title}: no Action column, sheet ignored"); continue
         if "effect" not in cm:
@@ -308,6 +355,9 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
                             "effect": effect, "automation": pv("automation"),
                             "meta": (meta or {}).get("meta", ""), "costDefaulted": defaulted,
                             "sheet": ws.title, "workbook": fname})
+            # The aura (0.5.1), carried only when the cell is set, as on the talent sheets.
+            aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{fname} / {ws.title} / {name}", warnings, errors)
+            if aura: actions[-1]["aura"] = aura
     for k in typed:
         if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
     if no_cost:
@@ -598,7 +648,7 @@ def main():
             ws = wb[name]
             cm = header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "req": "requires",
                                  "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": "feeds", "grants": "grants",
-                                 "choice": "choice", "freetalent": "free", "enabled": "enabled"})
+                                 "choice": "choice", "freetalent": "free", "aura": "aura", "enabled": "enabled"})
             if "name" not in cm or "tier" not in cm or "effect" not in cm:
                 errors.append(f"{fname} / {name}: sheet needs Talent, Tier and Effect columns"); continue
             nodes, root_count, root_name = [], 0, None
@@ -647,6 +697,10 @@ def main():
                 # the only one in the book so far: it gives you Weapon Familiarity outright.
                 ft = pv("freetalent")
                 if ft: node["freeTalent"] = ft
+                # "Within N feet" of the carrier, drawn on the map (0.5.1). The cell is checked
+                # against the Effect, so a new tier cannot ship without its ring; see aura_for.
+                aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{name} / {nname}", warnings, errors)
+                if aura: node["aura"] = aura
                 if requires: node["requires"] = requires
                 if desc and desc.upper() != "TBD": node["desc"] = desc
                 if prereqs and norm(prereqs) != norm(nname): node["prereqs"] = prereqs

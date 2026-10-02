@@ -109,6 +109,19 @@ function actionName(name) {
   return bare || String(name).trim();
 }
 
+/**
+ * The aura of a Talent or Maneuver (0.5.1), as the converter wrote it from the Aura column: feet
+ * around the carrier, who it concerns, and whether it is Visible by default. Only a row with the
+ * cell set carries one; the Item model supplies "none" for every other, so the sources stay small.
+ */
+const auraOf = row => (row.aura ? {
+  aura: {
+    range: Number.isInteger(row.aura.range) ? row.aura.range : null,
+    affects: row.aura.affects ?? "all",
+    visible: !!row.aura.visible
+  }
+} : {});
+
 /** Split an authored Trait line into an array. */
 function splitTraits(line) {
   if (Array.isArray(line)) return line;
@@ -282,6 +295,7 @@ for (const [name, tree] of Object.entries(trees)) {
         },
         choice: { prompt: node.choice ?? "", value: "" },
         freeTalent: node.freeTalent ?? "",
+        ...auraOf(node),
         traits: [],
         source: "STARWROUGHT Playtest v4.10"
       }
@@ -673,6 +687,7 @@ for (const a of shippedSheetActions) {
       description: a.description ? `<p>${a.description}</p>` : "",
       effect: paragraphs(a.effect),
       automation: a.automation ?? "",
+      ...auraOf(a),
       source: "data/actions.xlsx"
     }
   });

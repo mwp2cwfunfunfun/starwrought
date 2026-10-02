@@ -30,6 +30,11 @@
       "value": ""
     },
     "freeTalent": "",
+    "aura": {
+      "range": 15,
+      "affects": "allies",
+      "visible": true
+    },
     "traits": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
