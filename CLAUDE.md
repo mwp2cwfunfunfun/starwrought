@@ -214,7 +214,11 @@ final Wound is Dying.
   editing one in place, so the version Mike authored stays the version Mike authored. Verify with a
   diff of the two documents: entry count, paragraph count, and the exact list of changed lines,
   each explained by the intended edit. The edition line is the first cell of the cover table, so
-  `doc.paragraphs` never shows it; read it as `doc.tables[0].rows[0].cells[0]`. Check for a newer one before starting a sync; v3.1 landed while the
+  `doc.paragraphs` never shows it; read it as `doc.tables[0].rows[0].cells[0]`. **`assets/phb_propose.py`
+  is the other tool** (2026-10-02): the same surgical edits, but left as Word tracked changes (author
+  "Claude") in a `<name>_proposal.docx` for Mike to accept or reject, its `PROPOSALS` table one entry
+  per proposal made; a proposal is not an edition, the drift check ignores the name, and the sync
+  follows only once Mike accepts into a numbered handbook. Check for a newer one before starting a sync; v3.1 landed while the
   v3.0 sync was still being written. `data/*.xlsx` derives from it and is authoritative for the app;
   when the two disagree, the handbook wins and the sheets need a pass.
 - **`assets/build_phb.js` deliberately does not regenerate the handbook.** That would put rules prose
