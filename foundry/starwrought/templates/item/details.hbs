@@ -98,6 +98,28 @@
     </div>
   </div>
 
+  {{!-- The aura (0.5.1): the "within N feet" of the Effect, drawn on the map around the carrier. --}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Field.aura"}}
+      {{#if system.hasAura}}<span class="sw-points">{{system.auraLabel}}</span>{{/if}}
+    </h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Field.auraHint"}}</p>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.auraRange"}}</span>
+        <input type="number" name="system.aura.range" value="{{system.aura.range}}" min="0" step="1"
+               placeholder="{{localize 'STARWROUGHT.Field.auraNone'}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.auraAffects"}}</span>
+        <select name="system.aura.affects">
+          <option value="all" {{#if (eq system.aura.affects "all")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsAll"}}</option>
+          <option value="allies" {{#if (eq system.aura.affects "allies")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsAllies"}}</option>
+          <option value="enemies" {{#if (eq system.aura.affects "enemies")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsEnemies"}}</option>
+        </select></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.auraVisibleHint"><span>{{localize "STARWROUGHT.Field.auraVisible"}}</span>
+        <input type="checkbox" name="system.aura.visible" {{checked system.aura.visible}}></label>
+    </div>
+  </div>
+
   <div class="sw-panel">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.grant"}}</h3>
     <div class="sw-body-grid">
@@ -226,6 +248,28 @@
         <input type="text" name="system.trigger" value="{{system.trigger}}"></label>
       <label class="sw-field" data-tooltip="STARWROUGHT.Field.basicHint"><span>{{localize "STARWROUGHT.Field.basic"}}</span>
         <input type="checkbox" name="system.basic" {{checked system.basic}}></label>
+    </div>
+  </div>
+
+  {{!-- The aura (0.5.1): the "within N feet" of the Effect, drawn on the map around the carrier. --}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Field.aura"}}
+      {{#if system.hasAura}}<span class="sw-points">{{system.auraLabel}}</span>{{/if}}
+    </h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Field.auraHint"}}</p>
+    <div class="sw-body-grid">
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.auraRange"}}</span>
+        <input type="number" name="system.aura.range" value="{{system.aura.range}}" min="0" step="1"
+               placeholder="{{localize 'STARWROUGHT.Field.auraNone'}}"></label>
+      <label class="sw-field"><span>{{localize "STARWROUGHT.Field.auraAffects"}}</span>
+        <select name="system.aura.affects">
+          <option value="all" {{#if (eq system.aura.affects "all")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsAll"}}</option>
+          <option value="allies" {{#if (eq system.aura.affects "allies")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsAllies"}}</option>
+          <option value="enemies" {{#if (eq system.aura.affects "enemies")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsEnemies"}}</option>
+        </select></label>
+      <label class="sw-field" data-tooltip="STARWROUGHT.Field.auraVisibleHint"><span>{{localize "STARWROUGHT.Field.auraVisible"}}</span>
+        <input type="checkbox" name="system.aura.visible" {{checked system.aura.visible}}></label>
     </div>
   </div>
 

@@ -15,6 +15,10 @@
 
 import * as SW from "../config.mjs";
 import { helmPenaltyFor } from "./item.mjs";
+import { rangesOf } from "../helpers/ranges.mjs";
+
+/** Re-exported so the canvas can import the ranges list from the model that derives it (0.5.1). */
+export { rangesOf } from "../helpers/ranges.mjs";
 
 const fields = foundry.data.fields;
 
@@ -106,6 +110,33 @@ function commonActorFields() {
     stance: new fields.StringField({ required: true, choices: STANCES, initial: "evade" }),
     actions: actionFields(),
     bind: bindFields(),
+    /**
+     * Auras (0.5.1). `visible` holds the Visible marks, key to boolean: the Item id of a Talent or
+     * Maneuver that carries an aura, `reach`, `totalReach` or `unwieldy` for the reach bands, or
+     * a custom ring's key. A key absent from the map means the data default: the Item's own
+     * `aura.visible`, false for a band, true for a custom ring. Stored on the actor rather than
+     * the token so a new token inherits it (Mike). `custom` is the rings drawn by hand on the token
+     * HUD; `gmOnly` keeps one from the players for good. The derived list that reads all of this
+     * is `system.ranges`; see helpers/ranges.mjs.
+     */
+    auras: new fields.SchemaField({
+      visible: new fields.ObjectField({ initial: {} }),
+      custom: new fields.ArrayField(new fields.SchemaField({
+        key: new fields.StringField({ required: true, blank: false, initial: () => foundry.utils.randomID() }),
+        label: new fields.StringField({ initial: "" }),
+        feet: new fields.NumberField({ required: true, integer: true, min: 0, initial: 5 }),
+        audience: new fields.StringField({
+          required: true, choices: Object.keys(SW.AURA_AUDIENCES), initial: "all"
+        }),
+        /** "#rrggbb"; blank takes the audience's colour. */
+        color: new fields.StringField({
+          required: true, blank: true, initial: "",
+          validate: value => (value === "") || /^#[0-9a-f]{6}$/i.test(value),
+          validationError: "must be a #rrggbb colour, or blank for the audience's colour"
+        }),
+        gmOnly: new fields.BooleanField({ initial: false })
+      }), { initial: [] })
+    }),
     traits: new fields.SchemaField({
       resistances: damageModifierField("STARWROUGHT.Field.resistances"),
       weaknesses: damageModifierField("STARWROUGHT.Field.weaknesses"),
@@ -465,6 +496,7 @@ export class SwCharacterData extends SwActorData {
     this.ranged = { rank: "untrained", proficiency: 0, specialization: 0 };
     this.reactions = { parry: false, void: false, counter: false, intercept: false, rigid: false, blocked: null };
     this.attackModifiers = [];
+    this.ranges = [];
   }
 
   /* -------------------------------------------- */
@@ -478,6 +510,9 @@ export class SwCharacterData extends SwActorData {
     this.#prepareDefenses();
     this.#prepareVigor();
     this.#prepareOffense();
+    // Every ring the map can draw (0.5.1): the reach bands derived just above and the auras of
+    // the Talents owned. Last, because Total Reach and Unwieldy are read from the offense pass.
+    this.ranges = rangesOf(this.parent);
   }
 
   /* -------------------------------------------- */
@@ -1099,6 +1134,7 @@ export class SwNpcData extends SwActorData {
     this.woundCount = 0;
     this.moveSpeed = this.speed;
     this.reactions = { parry: true, void: true, counter: true, intercept: true, rigid: true, blocked: null };
+    this.ranges = [];
   }
 
   /* -------------------------------------------- */
@@ -1176,6 +1212,9 @@ export class SwNpcData extends SwActorData {
     // Movement. The stored `speed` is the creature's own; `moveSpeed` is what its Legs allow.
     this._prepareMovement(this.speed, 0);
     this.conscious = !statuses.has("unconscious") && !this.isDying;
+    // Every ring the map can draw (0.5.1): reach from the attacks above, and the auras of any
+    // Talent or Maneuver the adversary owns.
+    this.ranges = rangesOf(this.parent);
   }
 }
 
