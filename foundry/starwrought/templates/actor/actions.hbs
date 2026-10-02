@@ -60,6 +60,11 @@
         <a class="sw-item-name" data-action="itemUse">{{swPlainName action.name}}</a>
         {{#if action.system.category}}<span class="sw-item-tag">{{action.system.category}}</span>{{/if}}
         {{#each action.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+        {{!-- AURAS (0.5.1): the ring, on a Maneuver that carries one; lit when Visible. --}}
+        {{#with (lookup @root.auraByItem action.id) as |aura|}}
+        <a class="sw-aura-toggle {{#if aura.visible}}sw-aura-on{{/if}}" data-action="toggleAura" data-key="{{aura.key}}"
+           data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
+        {{/with}}
         <div class="sw-item-controls">
           <a data-action="itemChat"><i class="fa-solid fa-comment"></i></a>
           <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>

@@ -20,6 +20,10 @@ import { onRenderChatMessage } from "./module/documents/chat.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
+// AURAS (0.5.1): the pinned rings, the client setting that mutes them, and the GM's two controls.
+import {
+  registerAuras, refresh as refreshAuras, aurasSuppressed, setAurasSuppressed, clearAuraMarks
+} from "./module/canvas/auras.mjs";
 import { registerStrideRuler } from "./module/canvas/ruler.mjs";
 import { registerTargeting, refresh as refreshTargets } from "./module/canvas/targeting.mjs";
 import { registerBind } from "./module/canvas/bind.mjs";
@@ -142,6 +146,7 @@ Hooks.once("init", async () => {
   registerActionTracking();
   registerAudit();
   registerReachRings();
+  registerAuras(); // AURAS (0.5.1)
   registerStrideRuler();
   registerTargeting();
   registerBind();
@@ -424,6 +429,37 @@ function registerExposedStatuses() {
 }
 
 /**
+ * AURAS (0.5.1): the GM's two Token-layer controls. Suppress auras is a toggle on the scene flag
+ * `flags.starwrought.aurasSuppressed`: players see no pinned ring until it is released, and the
+ * marks themselves are untouched. Clear aura marks is a button: every combatant's Visible marks
+ * back to their data defaults, after a confirm. Foundry builds the controls once per canvas, so
+ * the toggle reads its state from the flag then; auras.mjs rebuilds them when the flag changes.
+ */
+Hooks.on("getSceneControlButtons", controls => {
+  if (!game.user?.isGM) return;
+  const tools = controls.tokens?.tools;
+  if (!tools) return;
+  const order = Object.keys(tools).length;
+  tools.swSuppressAuras = {
+    name: "swSuppressAuras",
+    title: "STARWROUGHT.Aura.suppress",
+    icon: "fa-solid fa-circle-xmark",
+    order,
+    toggle: true,
+    active: aurasSuppressed(),
+    onChange: (event, active) => setAurasSuppressed(active)
+  };
+  tools.swClearAuras = {
+    name: "swClearAuras",
+    title: "STARWROUGHT.Aura.clear",
+    icon: "fa-solid fa-eraser",
+    order: order + 1,
+    button: true,
+    onChange: () => clearAuraMarks()
+  };
+});
+
+/**
  * Buying a Talent in a Constellation you have not opened is buying its Root, so draw the sky
  * whenever a Talent lands on a character without one.
  */
@@ -492,6 +528,17 @@ function registerSettings() {
     type: Boolean,
     default: true,
     onChange: () => refreshReach()
+  });
+
+  // AURAS (0.5.1): the pinned drawing, muted on this client. The preview stays under showReach.
+  game.settings.register(SW.SYSTEM_ID, "showAuras", {
+    name: "STARWROUGHT.Settings.showAuras",
+    hint: "STARWROUGHT.Settings.showAurasHint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => refreshAuras()
   });
 
   game.settings.register(SW.SYSTEM_ID, "showTargetArrows", {

@@ -19,3 +19,6 @@ __pycache__/
 *.pyc
 ~$*.docx
 ~$*.xlsx
+
+# Agent worktrees made by the Claude desktop app
+.claude/worktrees/

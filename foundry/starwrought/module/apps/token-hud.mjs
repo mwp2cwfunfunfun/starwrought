@@ -1,5 +1,5 @@
 /**
- * The stance toggle on the Token HUD.
+ * The stance toggle and the aura ring on the Token HUD.
  *
  * "The defender chooses one of the two Defenses that answer it, and decides whether to spend an
  * action on a Reaction." The sheet has the chips, but the sheet is a window away; the HUD is a
@@ -7,9 +7,15 @@
  * answer, cycling to the next one this actor can actually take: Evade, Guard, then Void, Parry and
  * Counter when the Talent behind them is owned (and, for Counter, Expert rank in Melee reached;
  * ruling 63). A Reaction stance the actor has not earned is skipped, not offered.
+ *
+ * Below it, the ring (0.5.1): badged with how many of the actor's ranges are Visible, which is
+ * what an encounter pins for everyone. Click opens the palette to choose; right-click switches
+ * every ring on this actor off. Owners and the GM see it, on characters and adversaries alike.
  */
 
 import { stanceContext } from "../helpers/stance.mjs";
+import { rangesFor } from "../canvas/auras.mjs";
+import { SwAuraPalette } from "./aura-palette.mjs";
 
 /** Register the HUD injection. */
 export function registerStanceHud() {
@@ -18,10 +24,24 @@ export function registerStanceHud() {
 
 function onRenderTokenHud(hud, element) {
   const actor = hud.object?.actor;
-  if (!actor?.system?.stance || !actor.isOwner) return;
+  if (!actor?.system || !actor.isOwner) return;
   const column = element.querySelector(".col.right");
   if (!column) return;
 
+  const stance = actor.system.stance ? stanceButton(hud, actor) : null;
+  const ring = auraButton(hud, actor);
+  // Both above core's own controls: the stance first, the ring beneath it.
+  if (stance) column.prepend(stance);
+  if (ring) {
+    if (stance) stance.after(ring);
+    else column.prepend(ring);
+  }
+}
+
+/* -------------------------------------------- */
+
+/** The stance button: the current answer, cycling to the next this actor can take. */
+function stanceButton(hud, actor) {
   const { current, next } = stanceContext(actor);
   const button = document.createElement("button");
   button.type = "button";
@@ -58,5 +78,52 @@ function onRenderTokenHud(hud, element) {
     });
   } else button.disabled = true;
 
-  column.prepend(button);
+  return button;
+}
+
+/* -------------------------------------------- */
+
+/**
+ * The ring button: how many ranges are Visible, as a badge. Click opens the palette beside it (a
+ * second click closes it); right-click puts every mark on this actor off. Never disabled, since
+ * the palette is also where a custom ring is added to an actor that has no ranges yet.
+ */
+function auraButton(hud, actor) {
+  const ranges = rangesFor(actor);
+  const visible = ranges.filter(r => r.visible);
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "control-icon sw-hud-auras";
+  if (visible.length) button.classList.add("sw-lit");
+  button.dataset.tooltip = visible.length
+    ? game.i18n.format("STARWROUGHT.Aura.hudTooltip", { count: visible.length })
+    : game.i18n.localize("STARWROUGHT.Aura.hudTooltipNone");
+  button.setAttribute("aria-label", button.dataset.tooltip);
+
+  const icon = document.createElement("i");
+  icon.className = "fa-solid fa-circle-dot";
+  icon.inert = true;
+  button.append(icon);
+  if (visible.length) {
+    const badge = document.createElement("span");
+    badge.className = "sw-hud-badge";
+    badge.textContent = String(visible.length);
+    badge.inert = true;
+    button.append(badge);
+  }
+
+  button.addEventListener("click", async event => {
+    event.preventDefault();
+    await SwAuraPalette.open(hud.object, { anchor: button });
+  });
+  button.addEventListener("contextmenu", async event => {
+    event.preventDefault();
+    event.stopPropagation();
+    const keys = rangesFor(actor).filter(r => r.visible).map(r => r.key);
+    if (keys.length) await actor.setAuraVisible(keys, false);
+    hud.render();
+  });
+
+  return button;
 }

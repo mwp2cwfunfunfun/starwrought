@@ -1355,6 +1355,172 @@ li.combatant.sw-in-crosshairs {
 #token-hud .sw-hud-stance.unavailable { box-shadow: inset 0 0 0 2px #d9534f; border-radius: 4px; }
 #token-hud .sw-hud-stance:disabled { opacity: 0.6; cursor: default; }
 
+/* --------------------------------------------------------------------------
+   Auras (0.5.1). The HUD's ring button and its badge, the palette it opens,
+   and the ring toggles on the sheets. The HUD is core's, so its rules are not
+   scoped; the rest is.
+   -------------------------------------------------------------------------- */
+#token-hud .sw-hud-auras { position: relative; }
+#token-hud .sw-hud-auras.sw-lit { color: #c07ad8; }
+#token-hud .sw-hud-auras .sw-hud-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: #c07ad8;
+  color: #171326;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* The palette is a window, so it sets the form variables the way the prompt does. */
+.starwrought.sw-aura-palette {
+  --color-form-label: var(--sw-ink);
+  --color-form-label-hover: var(--sw-flare);
+  --color-form-hint: var(--sw-ink-dim);
+  --color-text-primary: var(--sw-ink);
+  --color-text-secondary: var(--sw-ink-dim);
+  color-scheme: dark;
+}
+.starwrought.sw-aura-palette .window-content {
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+  padding: 0;
+  gap: 0;
+}
+.starwrought .sw-aura-palette-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem 0.6rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+.starwrought .sw-aura-palette-body .sw-note { margin: 0; }
+.starwrought .sw-aura-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.starwrought .sw-aura-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.45rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+}
+.starwrought .sw-aura-row.sw-aura-on {
+  border-color: var(--sw-aura-color, var(--sw-gold-dim));
+  background: rgba(255, 255, 255, 0.04);
+}
+.starwrought .sw-aura-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--sw-aura-color, var(--sw-gold));
+  box-shadow: 0 0 4px var(--sw-aura-color, var(--sw-gold));
+  flex: 0 0 auto;
+}
+.starwrought .sw-aura-name { flex: 1 1 6rem; font-size: 0.85rem; }
+.starwrought .sw-aura-gm-mark { font-size: 0.7rem; color: var(--sw-ink-dim); margin-left: 0.2rem; }
+.starwrought .sw-aura-feet { color: var(--sw-gold); font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+.starwrought .sw-aura-audience {
+  font-size: 0.68rem;
+  color: var(--sw-ink-dim);
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  padding: 0.02rem 0.4rem;
+  white-space: nowrap;
+}
+.starwrought button.sw-aura-toggle,
+.starwrought button.sw-aura-remove {
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  line-height: 1;
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+}
+.starwrought button.sw-aura-remove { color: #c88; }
+.starwrought .sw-aura-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-aura-custom {
+  margin: 0;
+  padding: 0.4rem 0.6rem 0.6rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+}
+.starwrought .sw-aura-custom legend {
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-aura-custom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.45rem;
+}
+.starwrought .sw-aura-custom-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.7rem;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-aura-custom-grid label.sw-wide { grid-column: 1 / -1; }
+.starwrought .sw-aura-custom-grid input[type="color"] { height: 1.75rem; padding: 0.1rem 0.15rem; }
+.starwrought .sw-aura-custom-grid label.sw-aura-gmonly { flex-direction: row; align-items: center; gap: 0.35rem; align-self: end; }
+
+/* The ring toggle: unlit, a dim dot beside a row's controls; lit, the ring's own colour. It sits
+   beside the controls rather than inside them, so a lit ring stays lit while the controls are dim. */
+.starwrought .sw-aura-toggle { color: var(--sw-ink-dim); opacity: 0.5; font-size: 0.8rem; }
+.starwrought .sw-aura-toggle:hover { opacity: 1; }
+.starwrought .sw-aura-toggle.sw-aura-on {
+  color: var(--sw-aura-color, var(--sw-presence));
+  opacity: 1;
+  text-shadow: 0 0 6px var(--sw-aura-color, var(--sw-presence));
+}
+.starwrought .sw-item-row > .sw-aura-toggle { order: 4; }
+
+/* The Overview's Ranges line: the body's own ranges, each a chip with its ring toggle. */
+.starwrought .sw-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.starwrought .sw-ranges-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+  margin-right: 0.2rem;
+}
+.starwrought .sw-range-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.3rem 0.1rem 0.45rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+.starwrought .sw-range-chip.sw-aura-on { border-color: var(--sw-aura-color, var(--sw-gold-dim)); background: rgba(255, 255, 255, 0.04); }
+.starwrought .sw-range-chip strong { color: var(--sw-gold); }
+
 @keyframes sw-slot-flash {
   0%, 100% { box-shadow: none; }
   25%, 75% { box-shadow: 0 0 0 2px var(--sw-flare), 0 0 14px rgba(255, 216, 103, 0.5); }

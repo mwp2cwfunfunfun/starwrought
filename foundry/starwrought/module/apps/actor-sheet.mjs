@@ -11,6 +11,8 @@ import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
 import { loadBasicActions } from "../helpers/content.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
+// AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
+import { auraRowsByItem, reachRangeRows, rangeFor } from "../canvas/auras.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -241,7 +243,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       effectCreate: SwCharacterSheet.#onEffectCreate,
       effectEdit: SwCharacterSheet.#onEffectEdit,
       effectDelete: SwCharacterSheet.#onEffectDelete,
-      effectToggle: SwCharacterSheet.#onEffectToggle
+      effectToggle: SwCharacterSheet.#onEffectToggle,
+      // AURAS (0.5.1)
+      toggleAura: SwCharacterSheet.#onToggleAura
     }
   };
 
@@ -355,6 +359,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
     // The action economy, shown only when it means something: in an encounter.
     context.actions = actionsContext(actor);
+
+    // AURAS (0.5.1): the ring toggle beside each Talent or Maneuver row that carries an aura,
+    // looked up by Item id in the templates, and the body's own ranges for the Ranges line.
+    context.auraByItem = auraRowsByItem(actor);
+    context.ranges = reachRangeRows(actor);
 
     // Movement, in feet: a Move, a Step, a Rush, a Leap.
     context.movement = {
@@ -1049,6 +1058,18 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const id = target.closest("[data-effect-id]")?.dataset.effectId;
     const effect = this.document.effects.get(id);
     return effect?.update({ disabled: !effect.disabled });
+  }
+
+  /* -------------------------------------------- */
+  /*  Auras (0.5.1)                               */
+  /* -------------------------------------------- */
+
+  /** The ring toggle on a Talent or Maneuver row, or on the Overview's Ranges line: flip the Visible mark. */
+  static async #onToggleAura(event, target) {
+    const key = target.dataset.key;
+    if (!key) return;
+    const current = rangeFor(this.document, key)?.visible ?? false;
+    return this.document.setAuraVisible(key, !current);
   }
 
   /** Find the Item a clicked row belongs to. */

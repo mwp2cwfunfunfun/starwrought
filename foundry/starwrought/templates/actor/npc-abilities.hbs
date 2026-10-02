@@ -15,6 +15,11 @@
         <span class="sw-action-glyph">{{ability.system.glyph}}</span>
         <a class="sw-item-name" data-action="itemChat">{{swPlainName ability.name}}</a>
         {{#each ability.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+        {{!-- AURAS (0.5.1): the ring, on an ability that carries one; lit when Visible. --}}
+        {{#with (lookup @root.auraByItem ability.id) as |aura|}}
+        <a class="sw-aura-toggle {{#if aura.visible}}sw-aura-on{{/if}}" data-action="toggleAura" data-key="{{aura.key}}"
+           data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
+        {{/with}}
         <div class="sw-item-controls">
           <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
           <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
