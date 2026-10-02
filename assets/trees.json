@@ -1282,7 +1282,7 @@
  },
  "Awareness": {
   "category": "Defense",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Wits",
   "meta": "Defense constellation • Wits (don't be surprised)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
@@ -1291,7 +1291,7 @@
     "name": "Awareness Training",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You are Trained in Awareness: add this Constellation's Proficiency Bonus to your Awareness checks, and to your Awareness Threshold (the number Sneak, Feint, and Lie attempts are measured against). Initiative is usually an Awareness check. Awareness answers Blights and Beguilement (see Chapter 2: The Four Threats).",
     "root": true
    },

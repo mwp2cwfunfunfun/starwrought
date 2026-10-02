@@ -51,7 +51,7 @@
     "attribute": "wits",
     "parent": "",
     "img": "systems/starwrought/assets/constellations/awareness.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "berserker",

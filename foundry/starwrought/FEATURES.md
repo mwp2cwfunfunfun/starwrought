@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.12**. System version **0.6.1**. Developed against
+Rules content built from **Player's Handbook v4.13**. System version **0.6.2**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -129,9 +129,10 @@ and because the sheet is authoritative for any action it names, the roster's Aid
 as well; nothing ships for Aid until the row is enabled. Since 0.6.1 the **Endure Constellation
 ships with its Root alone** (Mike enabled Endure Training on the Endure sheet of
 `data/defenses.xlsx`; the other four Endure Talents stay blank; sync report ruling 77), so Endure
-joins Evade and Guard as a Defense the wizard can Train (Awareness still waits on its Root), and
-Endure relief and the Endure Bonus to Vigor are reachable in play; the enabled counts are 12 of 31
-Constellations and 38 of 177 Talents. Weapons, armor and shields follow the same
+relief and the Endure Bonus to Vigor are reachable in play, and since 0.6.2 **Awareness ships the
+same way** (Mike enabled Awareness Training on the Awareness sheet; its other four rows stay blank;
+ruling 83), so every one of the four Defenses is one the wizard's Defenses step can Train; the
+enabled counts are 13 of 31 Constellations and 39 of 177 Talents. Weapons, armor and shields follow the same
 rule from `data/equipment.xlsx` (Weapons, Armor and Shields tabs, built from the handbook's Chapter 5
 tables): the Equipment compendium holds the enabled rows under the same document ids as before, and
 the web app and the Constellation Compendium keep the whole tables.
@@ -178,7 +179,9 @@ anything it depends on changes.
   (8 + 1) × 5). The sheet carries the per-level figure and the Opening figure separately, each
   tooltip says where its number comes from, and the Adjustments field still adds on top.
 - **A night's rest** restores level × Presence Vigor, or level if Presence is 1 or less. It clears
-  Temporary Vigor, gives no Hero Point (the GM awards those), and touches no Wound.
+  Temporary Vigor and, since 0.6.2, Fatigued (ten minutes of rest is less than a night; the Rest
+  card says so when it did; PHB v4.13, sync report ruling 81), gives no Hero Point (the GM awards
+  those), and touches no Wound.
 - **Weapon dice by level**: one, then two at 4th, three at 8th, four at 12th, five at 16th.
   **Specialization** by Melee or Ranged rank: +2 Expert, +3 Master, +4 Legendary.
 
@@ -510,16 +513,25 @@ blocked or delayed.
 
 **At the end of a round**: a Zone Exposed by a Posture closes; every actor with Persistent Damage
 (from the Torso bleed, or a `persistentDamage` value on the actor or in its flags) gets a reminder
-card with a roll button; and from the end of the third round on, every actor whose Endure
-Threshold is below the **Wind Threshold** (10 + Load Strain) and who is not yet Fatigued 3,
-unconscious or Dying gets a **Wind** card: Endure against that Threshold. A fighter whose Endure
-Threshold meets it is exempt and gets no card (PHB v4.12, Wind; sync report ruling 74), which at
-Load Strain 0 is everyone, since no Endure Threshold is below 10. The exemption is read live from
-the Threshold the Defense grid shows, so Frightened can take it away for a round; the Load Strain
-field's tooltip gives both numbers. A failure raises Fatigued by 1 (Fatigued 1 the first time), to
-a maximum of 3, and the card names the new value; Fatigued N is −N Condition to Evade, Guard and
-attack rolls. The book ends Fatigued "after ten minutes of rest"; the system has no clock for that
-rest, so it clears Fatigued when the encounter ends (the Combat is deleted), an approximation.
+card with a roll button; and every actor with Load Strain 1 or more whose Endure Threshold is
+below the **Wind Threshold** (10 + Load Strain), and who is not yet Fatigued 3, unconscious or
+Dying, gets a **Wind** card: Endure against that Threshold, at the end of round 1 and of every
+round after (PHB v4.13, Wind: "If your Load Strain is at least 1 and your Endure Threshold is less
+than 10 + your Load Strain, then at the end of every round while in an encounter, you must roll
+Endure against 10 + Load Strain"; sync report rulings 79 and 80; through v4.12 and system 0.6.1
+the first check came at the end of the third round). A fighter whose Endure Threshold meets the
+Wind Threshold is exempt and gets no card (ruling 74), and so is anyone carrying no Load Strain,
+whatever Frightened has done to their Endure Threshold; both halves of the gate are the book's
+sentence now. The exemption is read live from the Threshold the Defense grid shows, so Frightened
+can take it away for a round; the Load Strain field's tooltip gives both numbers. A failure raises
+Fatigued by 1 (Fatigued 1 the first time), to a maximum of 3, and the card names the new value;
+Fatigued N is −N Condition to Evade, Guard and attack rolls. The book ends Fatigued "after ten
+minutes of rest", and the system has no clock for that rest, so the Fatigued card carries a **Ten
+minutes' rest** button for the actor's owner or the GM: it sets Fatigued off and posts a one-line
+card saying the fighter has caught their breath (clicked once Fatigued is already gone, it says so
+quietly and does nothing else). A night's rest clears it too. Nothing clears it at the Combat's
+end: a fighter who leaves one fight Fatigued carries it into the next scene until someone rests
+(ruling 81; through 0.6.1 the Combat's deletion cleared it).
 **At the start of a round**:
 every actor's actions reset, the pass streak clears, and every Dying actor's Recovery card posts.
 
@@ -533,7 +545,10 @@ The Equipment tab is laid out that way rather than by item type: what is in hand
 Zone (with each Zone's Wounds beside its Protection), then everything else together. A Zone with
 nothing on it offers whatever you have packed for it, so putting a helm back on is one click.
 Drawing or stowing costs an Interact, and armor names its own donning time, which is a minute for
-each point of Protection. Putting away an implement that is in a Bind ends the Bind.
+each point of Protection; an **Attended** piece (the Breastplate, since 0.6.2) names two, "4 min,
+8 alone", because it fastens behind the shoulder and alone takes twice as long to put on, though it
+comes off in the usual time (see Armor and load). Putting away an implement that is in a Bind ends
+the Bind.
 
 ### Armor and load
 
@@ -543,19 +558,35 @@ it from Trained (1 at Trained, 2 at Expert, 3 at Master, 4 at Legendary; Untrain
 nothing), so a fighter Trained in Endure in full plate with a closed helm carries Strain 6 and a
 Master carries 4, as the book's own worked example has it. Clatter is as before.
 
-**Load Strain never touches Evade** (PHB v4.12: "Heavy armor does not make you easier to hit"), and
+**Load Strain never touches Evade** (PHB v4.13, as v4.12: "Heavy armor does not make you easier to hit"), and
 it is no blanket penalty on Might or Agility. What it costs is breath, senses and the margins of
 movement: it comes off your Rush and Leap distances in feet; a Stealth check takes it as an untyped
 penalty automatically, labelled Load Strain on the card; and because the system cannot tell a Climb
 or a Swim from a grapple, the roll dialog for an Athletics check offers an unticked **Load Strain
 (Climb or Swim)** modifier whenever your Strain is 1 or more, for the player to tick when the check
-is one of those. No other check takes it. The Wind check above is the clock: from the end of the
-third round a fighter whose Endure Threshold is below 10 + Load Strain rolls Endure against that
-number each round, each failure deepening Fatigued by one, to Fatigued 3; a fighter whose Endure
-Threshold meets it never rolls (PHB v4.12), and the Load Strain field's tooltip gives both numbers
-and says which side of the line you stand on, to the GM and the player alike. Endure Training ships
-since 0.6.1, so the relief and the exemption are both reachable. A Closed helm is −2 Situation to
-Awareness checks, the Awareness Threshold and Initiative; an Open helm −1.
+is one of those. No other check takes it. The Wind check above is the clock: at the end of every
+round, from the first, a fighter with Load Strain 1 or more whose Endure Threshold is below 10 +
+Load Strain rolls Endure against that number, each failure deepening Fatigued by one, to Fatigued
+3; a fighter whose Endure Threshold meets it never rolls, and neither does one carrying no Strain
+(PHB v4.13: "If your Load Strain is at least 1 and your Endure Threshold is less than 10 + your
+Load Strain, then at the end of every round while in an encounter, you must roll Endure against
+10 + Load Strain"; the third-round delay of v4.11 and v4.12 is gone from the book and the system
+follows it). The Load Strain field's tooltip gives both numbers and says which side of the line
+you stand on, to the GM and the player alike. Endure Training ships since 0.6.1, so the relief and
+the exemption are both reachable. Fatigued, once it has set in, outlasts the fight: ten minutes'
+rest ends it, by the button on the Fatigued card or by a night's rest, never by the Combat's end.
+A Closed helm is −2 Situation to Awareness checks, the Awareness Threshold and Initiative; an Open
+helm −1.
+
+**Attended** (0.6.2; sync report ruling 82; Mike: "Yes to all") is an armor trait on the
+Breastplate alone, and it is display only: "It fastens behind the shoulder, beyond your own reach:
+alone, putting it on takes twice as long. Taking it off does not." The armor Item derives
+`attended` from its traits and `donTimeAlone` (twice the donning time when Attended, else the
+same), the Equipment tab's time tag reads "4 min, 8 alone" on the piece and its hint says why, and
+the Rules Reference journal's armor traits table defines it. No Load, Protection, Strain or check
+reads it. The trait is in the data and the system a step ahead of the book, at Mike's word: its
+wording stands in the handbook as tracked changes for him to accept, while the Constellation
+Compendium and the web app already print it.
 
 **Shields.** Raise a Shield ❶ flips the shield's raised flag and pays the action; its Gear bonus to
 Guard is derived from the flag, and the tracker lowers it when your next Opportunity begins. A held
@@ -1119,10 +1150,12 @@ Torso or Head could hold.
 Opportunity (public), and when it is finished, abandoned, replaced or expires with the round.
 
 **Round cards**, whispered to the actor's owners and the GM: the Recovery check at the start of a
-round while Dying, with a roll button; the Wind check at the end of the third round and after, for
-a fighter whose Endure Threshold is below 10 + Load Strain (one whose Threshold meets it is exempt
-and gets no card), with an Endure button and, on a failure, a card naming the new Fatigued value
-(1 the first time, one more each time after, to 3); and Persistent Damage at the end of every round,
+round while Dying, with a roll button; the Wind check at the end of every round, for a fighter
+with Load Strain 1 or more whose Endure Threshold is below 10 + Load Strain (one whose Threshold
+meets it is exempt and gets no card), with an Endure button and, on a failure, a card naming the
+new Fatigued value (1 the first time, one more each time after, to 3) and carrying the **Ten
+minutes' rest** button that ends the condition, for the owner or the GM, with a one-line card when
+it does; and Persistent Damage at the end of every round,
 with a roll button, and after the roll an Endure button to end it (except the Torso bleed, which
 only treating the Wound closes) and a note that the amount is applied on the sheet.
 
@@ -1147,8 +1180,9 @@ and Exposed: Head, Torso, Arms and Legs.
 
 Off-Guard, Frightened N and Fatigued N feed straight into the derived numbers (Fatigued N into attack
 rolls as well as Evade and Guard; a failed Wind check raises it one step at a time to its maximum
-of 3; the book ends it "after ten minutes of rest", which the system approximates by clearing it
-when the encounter ends); Grabbed and Restrained make Evade unavailable; Slowed N takes
+of 3; the book ends it "after ten minutes of rest", and the table says when those have passed: the
+Fatigued card's Ten minutes' rest button or a night's rest clears it, and the Combat's end does
+not); Grabbed and Restrained make Evade unavailable; Slowed N takes
 its actions at the start of the round. The system keeps
 Dying, Wounded, Spent, Bound, Controlled, Controlling, Preparing and the four Exposed in step
 between the sheet and the token, sets Prone from a final Legs Wound, Unconscious from Dying and
@@ -1208,10 +1242,11 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   Damage has neither.
 - **A treated Wound is removed rather than bound.** The book keeps a bound Wound on the count for a
   week; the system takes it off the Zone on a successful Treat and says so on the card.
-- **Fatigued ends with the Combat, not after ten minutes of rest.** The book's Fatigued N "ends
-  after ten minutes of rest", and since v4.12 says nothing about the fight being over. The system
-  has no clock for the rest, so deleting the Combat document is what clears it, an approximation;
-  a GM who wants it to linger into the next scene sets it again from the palette.
+- **Ten minutes of rest is a button, not a clock.** The book's Fatigued N "ends after ten minutes
+  of rest". The system has no clock for the rest and no longer guesses at one (through 0.6.1 it
+  cleared Fatigued when the Combat was deleted), so the Fatigued card offers the owner or the GM a
+  Ten minutes' rest button, a night's rest clears it, and whether ten minutes passed between one
+  scene and the next is the table's to say.
 - **Sleeping in armor without Comfort does not set Fatigued 1.** The rest card restores Vigor and
   nothing else; that rule is the table's to apply.
 - **"Climb or Swim" is asked, not detected.** Load Strain lands on an Athletics check only when the

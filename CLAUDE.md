@@ -211,26 +211,38 @@ Endure Bonus is the conditioning clause of Endure Training, read live from the c
 once earned, lifts every level's share. A night's rest restores level × Presence bonus when that
 bonus is positive, else level. v4.11 sync report ruling 67 (R1); the 0.6.0 migration (ruling 72)
 moves a stored per-level Calling number to its Opening Vigor when it still equals the old table.
-Endure Training ships since 0.6.1 (ruling 77), so the Endure Bonus and Endure relief are reachable.
+Endure Training ships since 0.6.1 (ruling 77), so the Endure Bonus and Endure relief are reachable;
+Awareness Training ships since 0.6.2 (ruling 83), so every Defense can be Trained in Foundry.
 
-**Load Strain (PHB v4.12).** Load Strain = the Load of the armor worn and a shield carried, less 1
+**Load Strain (PHB v4.13).** Load Strain = the Load of the armor worn and a shield carried, less 1
 for a matched harness, less Endure relief (Trained 1, Expert 2, Master 3, Legendary 4;
 `LOAD_RELIEF` in `config.mjs`), to a minimum of 0. It never touches Evade (armor does not make you
 easier to hit) and is no blanket penalty on Might or Agility: it shortens Rush and Leap by its value
 in feet, and it is an untyped penalty on Climb, Swim and Stealth checks only (Stealth automatically;
 an Athletics roll offers an unticked "Load Strain (Climb or Swim)" toggle, since the system cannot
-tell a Climb from a grapple). **Wind (v4.12):** a fighter whose Endure Threshold is less than 10 +
-Load Strain rolls Endure against 10 + Load Strain at the end of the third round and every round
-after, each failure raising Fatigued by 1 to Fatigued 3 (−N Condition to Evade, Guard and attack
-rolls); a fighter whose Endure Threshold meets 10 + Load Strain never rolls. The system also keeps
-the old Strain 1 or more gate (the book dropped the clause): Frightened can pull an Endure
-Threshold under 10, and a fighter carrying no Load has nothing to be winded by. The exemption is
-read live from the Endure Threshold the grid shows (Frightened reaches it, Fatigued does not); the
-data model derives `wind` (`threshold`, `endureThreshold`, `exempt`, `due`),
-the round end posts no card for an exempt fighter, and the Load Strain field's tooltip gives both
-numbers to the GM and the player alike. The book ends Fatigued "after ten minutes of rest"; the
-system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 (R2 to R5), 74 and
-75.
+tell a Climb from a grapple). **Wind (v4.13):** "If your Load Strain is at least 1 and your Endure
+Threshold is less than 10 + your Load Strain, then at the end of every round while in an
+encounter, you must roll Endure against 10 + Load Strain. On a failure your Fatigued rises by 1."
+So a fighter with Load Strain 1 or more whose Endure Threshold is below 10 + Load Strain rolls
+Endure against 10 + Load Strain at the end of every round, from round 1 (`WIND_ROUND` 1; through
+v4.12 and system 0.6.1 the first check came at the end of the third round, and the v4.13 sync
+report asks Mike whether dropping the delay was meant), each failure raising Fatigued by 1 to
+Fatigued 3 (−N Condition to Evade, Guard and attack rolls); a fighter whose Endure Threshold meets
+10 + Load Strain never rolls, and the Strain 1 or more gate is the book's clause again rather than
+the system's guess (v4.12 had dropped it). The exemption is read live from the Endure Threshold
+the grid shows (Frightened reaches it, Fatigued does not); the data model derives `wind`
+(`threshold`, `endureThreshold`, `exempt`, `due`), the round end posts no card for an exempt
+fighter, and the Load Strain field's tooltip gives both numbers to the GM and the player alike.
+Fatigued ends with ten minutes' rest and with nothing else (Mike, 2026-10-02: "it should only go
+away with a 10 minutes' rest"): the Combat's end does not clear it; a night's rest does, and the
+Fatigued card carries a "Ten minutes' rest" button for the actor's owner or the GM, so the
+judgement of whether ten minutes passed sits with the table and not in a formula. **Attended**
+(v4.13 sync, ruling 82; Mike's "Yes to all" on the armor-help design) is an armor trait on the
+Breastplate alone, display only: the armor Item derives `attended` and `donTimeAlone` (twice
+`donTime`), the Equipment tab's time tag reads "4 min, 8 alone" and its hint says why, and nothing
+else reads it; the trait is in `data/equipment.xlsx` and the roster's hand-kept `armorTraits` block
+ahead of the book, which has it only as a redline pending Mike's acceptance. Rulings 68 to 71 (R2
+to R5), 74, 75 and 79 to 83.
 
 ## Where the source of truth lives
 
@@ -248,7 +260,11 @@ system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 
   is the other tool** (2026-10-02): the same surgical edits, but left as Word tracked changes (author
   "Claude") in a `<name>_proposal.docx` for Mike to accept or reject, its `PROPOSALS` table one entry
   per proposal made; a proposal is not an edition, the drift check ignores the name, and the sync
-  follows only once Mike accepts into a numbered handbook. Check for a newer one before starting a sync; v3.1 landed while the
+  follows only once Mike accepts into a numbered handbook. Mike also edits the current edition in
+  place as well as accepting redlines (v4.13's Wind bullet was rewritten in the v4.12 file on the
+  shelf), so `build_all.mjs` records the edition's SHA-256 in `data/SYNC.json` at `--accept-phb`
+  and reports drift when the same-numbered file changes, not only when a higher number appears.
+  Check for a newer one before starting a sync; v3.1 landed while the
   v3.0 sync was still being written. `data/*.xlsx` derives from it and is authoritative for the app;
   when the two disagree, the handbook wins and the sheets need a pass.
 - **`assets/build_phb.js` deliberately does not regenerate the handbook.** That would put rules prose
@@ -344,7 +360,7 @@ system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 
 - The PHB prints three non-Trained talents in the whole book, all tier E and all in Melee
   (*Reactive Strike*, *Winding*, *Master Cut*); 174 of the 177 talents are Trained. The Expert,
   Master, and Legendary tiers are otherwise unwritten across all 31 constellations.
-- **Armored Fighting's Key Attribute is contradictory and still open in v4.12.** Its section heading
+- **Armored Fighting's Key Attribute is contradictory and still open in v4.13.** Its section heading
   says *Combat Style • Presence*; the Combat Styles summary table says **Might**. The data uses
   Presence, following the heading, as Shield Fighting was resolved. One cell in `combat_styles.xlsx`
   either way. **This is the tree-level `Feeds` only.** Armored Fighting's per-talent `Feeds`
@@ -357,9 +373,9 @@ system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 
   blank, so Aid ships nowhere in Foundry (ruling 61). The book is Mike's to bring across, or the
   sheet is (v4.10 sync report, ruling 10).
 - **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
-  Constellation in v4.10 or any book since, and v4.12 still prints the sentence; the data reads it
+  Constellation in v4.10 or any book since, and v4.13 still prints the sentence; the data reads it
   as Melee. One sentence in the handbook.
-- **Key Terms carries v3.4 sentences, in v4.12 as in v4.10.** It still says Attribute Bonus is points divided by 3, that
+- **Key Terms carries v3.4 sentences, in v4.13 as in v4.10.** It still says Attribute Bonus is points divided by 3, that
   every character begins Trained in all four Defenses, and that only a Committed Strike is
   Weighted; the Cultures introduction still names Varisians. Character Mechanics, Chapter 3 and the
   data all say ÷ 4, two Defenses, and Serrovane and Kestrel Reach.
@@ -367,7 +383,7 @@ system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 
   ladder, and has Recenter clear a Zone Exposed by a Posture, which the rules forbid. The rules
   text governs; the example needs a pass.
 - **Table 9's Quick row says a Miss costs "Nothing"; the Result rules say any Miss Exposes.** Still
-  so in v4.12. The system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
+  so in v4.13. The system follows the Result rules (v4.10 sync report, ruling 51) and keeps the switch in one place
   (`STRIKE_KINDS.exposeOnMiss`). One cell in the handbook either way.
 - **`data/actions.xlsx` has never been committed.** Its one row, Aid, is the only action
   `assets/actions.json` cannot regenerate on a fresh clone (the converter carries it over from
@@ -384,13 +400,30 @@ system clears it when the Combat is deleted, an approximation. Rulings 68 to 71 
   over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
 - **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**
   (Mike's ruling 63, 2026-10-01: Melee Training gives one Reaction, Intercept). Two sentences in the
-  book (Answering an Attack, the Reaction table); v4.12 still prints them.
+  book (Answering an Attack, the Reaction table); v4.13 still prints them.
 - **Sleeping in armor without Comfort ("waking Fatigued 1") is not implemented.** The rest card
-  restores Vigor and nothing else; the v4.11 brief said not to add it, and v4.12 changed nothing
-  there.
-- **Fatigued still clears when the Combat is deleted** (ruling 70), though v4.12's Fatigued row
-  says only "Ends after ten minutes of rest", with nothing about the fight being over. The v4.12
-  sync report asks Mike whether a clear from the rest card should replace that or join it.
+  restores Vigor (and, since 0.6.2, clears Fatigued) and nothing else; the v4.11 brief said not to
+  add the armor rule, and neither v4.12 nor v4.13 changed anything there.
+- **Attended is in the data and the system ahead of the book.** The Breastplate's Traits cell in
+  `data/equipment.xlsx` and the roster's hand-kept `armorTraits` block carry the trait (v4.13 sync
+  report ruling 82, on Mike's "Yes to all"), and the Equipment tab prints its donning time alone;
+  the handbook has it only as tracked changes in
+  `Starwrought_Players_Handbook_v4.13_attended_proposal.docx` (the trait row, the Breastplate's
+  cell, a sentence in the donning paragraph). Until Mike accepts the redline into a numbered
+  edition, or amends the wording, the data runs a step ahead of the book on this one item. The
+  report also floats renaming the Breastplate to Cuirass, which would make the trait self-explaining.
+- **The handbook's Comfort row still says "without waking fatigued"**, lowercase, the old boolean's
+  word, while the donning paragraph says "waking Fatigued 1" and the Conditions table defines
+  Fatigued N. One cell in the armor traits table, Mike's to change.
+
+Cleared 2026-10-02 (the v4.13 sync, system 0.6.2): the third-round delay on the Wind check, now the
+end of every round from round 1 (ruling 79, flagged to Mike in case the delay was meant to stay);
+the v4.12 report's question on the Strain 1 or more clause, now the book's own words (ruling 80);
+Fatigued clearing when the Combat is deleted, now ending only with ten minutes' rest, by the
+Fatigued card's button or a night's rest (ruling 81, superseding 70); the armor-help question, now
+the Attended trait on the Breastplate, display only (ruling 82); the Awareness Constellation
+disabled, now shipping with its Root alone so every Defense ships (ruling 83). The sync report
+records the rulings (79 to 83).
 
 Cleared 2026-10-02 (the v4.12 sync, system 0.6.1): Mike's open question on the Wind check, answered
 in the book (no Wind check when the Endure Threshold meets 10 + Load Strain, read live; the

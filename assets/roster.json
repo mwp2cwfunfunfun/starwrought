@@ -655,7 +655,7 @@
    4,
    2,
    "15 gp",
-   "Plate, Noisy",
+   "Plate, Noisy, Attended",
    "Plate"
   ],
   [
@@ -914,6 +914,10 @@
   ]
  ],
  "armorTraits": [
+  [
+   "Attended",
+   "It fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as long. Taking it off does not."
+  ],
   [
    "Comfort",
    "You can sleep in it without waking fatigued."

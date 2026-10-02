@@ -96,6 +96,25 @@ EDITIONS = {
         "append": [],
         "rename": {},
     },
+    # v4.12 -> v4.13 (Mike, 2026-10-02): Mike edited v4.12 in place (Wind "at the end of every round
+    # while in an encounter", the third-round delay gone) and then dictated the final sentence in
+    # conversation with a clause his saved file never received: "If your Load Strain is at least 1
+    # and your Endure Threshold is less than 10 + your Load Strain, then at the end of every round
+    # while in an encounter, you must roll Endure against 10 + Load Strain." This entry writes his
+    # saved file out as v4.13 with that clause in, so the edition reads as he said it should (v4.13
+    # sync report, ruling 80); the saved v4.12 is restored to what was committed.
+    "4.13": {
+        "from": "4.12",
+        "replace": [
+            (
+                "Wind. If your Endure Threshold is less than 10 + your Load Strain",
+                "If your Endure Threshold is less than 10 + your Load Strain",
+                "If your Load Strain is at least 1 and your Endure Threshold is less than 10 + your Load Strain"
+            ),
+        ],
+        "append": [],
+        "rename": {},
+    },
     "3.4": {
         "from": "3.3",
         "replace": [

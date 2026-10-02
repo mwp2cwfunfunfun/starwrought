@@ -139,7 +139,7 @@ const driver=`
     const hx=dh.DT.Endure>=10+dh.strain;
     must(dh.wind&&dh.wind.threshold===10+dh.strain&&dh.wind.endureThreshold===dh.DT.Endure&&dh.wind.exempt===hx, "derive() carries the Wind numbers: threshold, Endure Threshold, exempt");
     must(!hx, "Mira's leathers with a scale coif and a shield put the Wind Threshold ("+(10+dh.strain)+") above Untrained Endure ("+dh.DT.Endure+")");
-    must(vSheet(h).includes("never off Evade")&&vSheet(h).includes(hx?"no Wind check (Endure Threshold "+dh.DT.Endure+" meets "+(10+dh.strain)+")":"Wind from round 3: Endure vs "+(10+dh.strain)), "the sheet says Strain stays off Evade and names the Wind Threshold");
+    must(vSheet(h).includes("never off Evade")&&vSheet(h).includes(hx?"no Wind check (Endure Threshold "+dh.DT.Endure+" meets "+(10+dh.strain)+")":"Wind each round: Endure vs "+(10+dh.strain)), "the sheet says Strain stays off Evade and names the Wind Threshold");
     const ht=derive(mk(1,["Endure Training"],{armor:h.armor,shield:h.shield})); must(ht.strain===dh.strain-1, "Trained Endure takes 1 off Load Strain (R5): "+ht.strain);
     tab="wiki"; render(); const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
     must(secs.length>=5, "the wiki nav must be rendered before the stale sweep, found "+secs.length+" sections");
@@ -154,16 +154,16 @@ const driver=`
     // Untrained Endure (Threshold 10) in a scale coif (Load 2): Wind Threshold 12, so she rolls
     const n=mk(null,{Head:"Scale coif"}), dn=derive(n);
     must(dn.strain===2&&dn.DT.Endure===10&&dn.wind.threshold===12&&dn.wind.exempt===false, "Untrained Endure 10 under Wind 12 rolls; strain "+dn.strain+", Endure "+dn.DT.Endure);
-    must(vSheet(n).includes("Wind from round 3: Endure vs 12")&&!vSheet(n).includes("no Wind check"), "the sheet names the Wind Threshold for a fighter who rolls");
+    must(vSheet(n).includes("Wind each round: Endure vs 12")&&!vSheet(n).includes("no Wind check"), "the sheet names the Wind Threshold for a fighter who rolls");
     // Trained Endure (Threshold 13) in the same coif, relief 1: Strain 1, Wind 11, exempt
     const x=mk(T,{Head:"Scale coif"}), dx=derive(x);
     must(dx.strain===1&&dx.DT.Endure===13&&dx.wind.threshold===11&&dx.wind.exempt===true, "Trained Endure 13 meets Wind 11: no roll; strain "+dx.strain+", Endure "+dx.DT.Endure);
-    must(vSheet(x).includes("no Wind check (Endure Threshold 13 meets 11)")&&!vSheet(x).includes("Wind from round 3"), "the sheet says why no Wind check is rolled");
+    must(vSheet(x).includes("no Wind check (Endure Threshold 13 meets 11)")&&!vSheet(x).includes("Wind each round: Endure vs"), "the sheet says why no Wind check is rolled");
     // "at least": equal is exempt; one more point of Strain is not
     const eq=derive(mk(T,{Head:"Scale coif",Torso:"Scale hauberk"})); must(eq.strain===3&&eq.wind.threshold===13&&eq.wind.exempt, "Endure Threshold 13 against Wind 13 is exempt (at least, not more than)");
     const over=derive(mk(T,{Head:"Scale coif",Torso:"Scale hauberk",Arms:"Mail sleeves"})); must(over.strain===4&&over.wind.threshold===14&&!over.wind.exempt, "Wind 14 against Endure 13 rolls");
     // no Strain, no Wind line of either kind (the ladder's own text aside)
-    const z=mk(null,{}), dz=derive(z); must(dz.strain===0&&dz.wind.exempt&&!vSheet(z).includes("Wind from round 3")&&!vSheet(z).includes("no Wind check"), "at Strain 0 the sheet says nothing about Wind");
+    const z=mk(null,{}), dz=derive(z); must(dz.strain===0&&dz.wind.exempt&&!vSheet(z).includes("Wind each round: Endure vs")&&!vSheet(z).includes("no Wind check"), "at Strain 0 the sheet says nothing about Wind (the ladder's own text aside)");
     // ruling 75: the Conditions row, verbatim
     const fat=R.conditions.find(c=>c[0]==="Fatigued N");
     must(fat&&fat[1]==="−N Condition (maximum of 3) penalty to Evade, Guard, and Attack rolls; can't use Exploration Mode Activities. Ends after ten minutes of rest.", "the Fatigued N row carries the v4.12 text, found: "+(fat&&fat[1]));
@@ -173,13 +173,45 @@ const driver=`
     must(!/you're fatigued|becoming fatigued/.test(rage.effect)&&rage.effect.includes("<b>Rage ❶<br>Duration</b> 10 rounds")&&rage.effect.includes("Temporary Vigor = level + Might"), "the old sentences are gone and the bold run survived the round trip");
     const deaf=treeOf("Berserker").nodes.find(nd=>nd.name==="Deaf to Pain");
     must(deaf&&deaf.effect==="You ignore the Fatigued condition while Raging, and when your Rage ends you need to spend only 1 action to catch your breath rather than 3.", "Deaf to Pain is unchanged");
-    // the wiki: the exemption is stated where Wind is explained, and nothing says "once the fight is over" or "Load Strain 1 or more"
+    // the wiki: the exemption is stated where Wind is explained, and nothing says "once the fight is over" (the
+    // "Load Strain 1 or more" clause is the book's again since v4.13, ruling 80, so it is no longer swept for)
     tab="wiki"; render(); const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
-    const gone=/once the fight is over|Load Strain 1 or more|catch their breath after the fight|Fatigued \\(−1/; let said=0;
+    const gone=/once the fight is over|catch their breath after the fight|Fatigued \\(−1/; let said=0;
     for(const s of secs){ wikiSec=s; render(); const html=document.getElementById("main").innerHTML;
       const m=html.match(gone); if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'");
       if(/<b>Wind\\.<\\/b>/.test(html)){ said++; must(/Endure Threshold/.test(html)&&/never rolls/.test(html), "wiki '"+s+"' explains Wind without the exemption"); } }
     must(said>=2, "the Equipment and Combat sections both explain Wind, found "+said); wikiSec=secs[0]; });
+  // PHB v4.13 (rulings 79 to 82): the Wind check comes at the end of every round, from the first, for a fighter
+  // with Load Strain 1 or more (the book's clause again); the Breastplate is Attended, a display-only trait that
+  // lives in the roster's armorTraits block, first in the alphabet, and in the Equipment wiki's donning paragraph.
+  step("v4.13: Wind every round, the Strain clause, and the Attended trait (rulings 79 to 82)", ()=>{
+    const bp=(R.armorPieces||[]).find(r=>r[0]==="Breastplate"); must(bp, "the Breastplate is in the roster's armor table");
+    must(bp[5]==="Plate, Noisy, Attended"&&bp[6]==="Plate", "the Breastplate's Traits read 'Plate, Noisy, Attended' with Plate as its Material, found: "+bp[5]+" / "+bp[6]);
+    must((R.armorPieces||[]).filter(r=>/Attended/.test(r[5])).length===1, "Attended is on the Breastplate alone");
+    const AT="It fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as long. Taking it off does not.";
+    must(R.armorTraits&&R.armorTraits[0]&&R.armorTraits[0][0]==="Attended"&&R.armorTraits[0][1]===AT, "the armorTraits block has the Attended row first, verbatim; found: "+JSON.stringify(R.armorTraits&&R.armorTraits[0]));
+    must(R.armorTraits.map(r=>r[0]).join(",")==="Attended,Comfort,Noisy,Quiet", "the armor traits stay alphabetical: "+R.armorTraits.map(r=>r[0]).join(","));
+    tab="wiki"; render(); const secs=[...document.getElementById("main").innerHTML.matchAll(/data-w="([^"]+)"/g)].map(m=>m[1]);
+    const stale=/third round|round 3\\b|round three/i; let said=0, traitRows=0;
+    for(const s of secs){ wikiSec=s; render(); const html=document.getElementById("main").innerHTML;
+      const m=html.match(stale); if(m) throw new Error("wiki '"+s+"' still says '"+m[0]+"'");
+      if(/<b>Wind\\.<\\/b>/.test(html)){ said++; must(/Load Strain is at least 1/.test(html)&&/end of every round/.test(html), "wiki '"+s+"' explains Wind without the v4.13 clause (Strain at least 1, every round)"); }
+      if(html.includes(AT)) traitRows++; }
+    must(said>=2, "the Equipment and Combat sections both explain Wind, found "+said);
+    must(traitRows>=1, "the armor traits table prints the Attended row from the roster block");
+    wikiSec="Equipment"; render(); const eq=document.getElementById("main").innerHTML;
+    must(eq.includes("Plate, Noisy, Attended"), "the Equipment section's armor table prints the Breastplate's Attended trait");
+    must(eq.includes("Putting on or taking off a single piece takes 1 minute per point of Protection it has. An Attended piece takes that long only with a second pair of hands; alone, putting it on takes twice as long, though it comes off in the usual time."), "the donning paragraph carries the Attended sentence after the donning sentence");
+    wikiSec="Thresholds"; render(); must(/Wind against 10 \\+ Load Strain \\(at the end of every round, with Load Strain of at least 1;/.test(document.getElementById("main").innerHTML), "the Thresholds parenthetical says every round and names the Strain clause");
+    wikiSec=secs[0];
+    // the sheet: a fighter with Strain rolls every round; Mira's leathers are Load 0, so her sheet says nothing about Wind
+    const mk=(endure,armor)=>migrate({name:"w13",level:1,milestones:0,ancestry:"Human",calling:"Bravo",sparks:{},shield:null,languages:[],
+      armor:{Head:null,Torso:null,Arms:null,Legs:null,...armor},talents:endure?{Endure:endure}:{}});
+    const b=mk(null,{Torso:"Breastplate"}), db=derive(b);
+    must(db.strain===2&&db.wind.threshold===12&&!db.wind.exempt&&vSheet(b).includes("Wind each round: Endure vs 12"), "an Untrained fighter in a Breastplate (Load 2) rolls Wind each round against 12; strain "+db.strain);
+    const mira=chars.find(c=>c.id===TORVA.id); must(mira, "Mira loaded"); const dm=derive(mira), sm=vSheet(mira);
+    must(dm.strain===0&&!/Wind each round: Endure vs|Wind from round|no Wind check \\(|round 3\\b/.test(sm), "Mira's leathers are Load 0: her Strain line says nothing about Wind (the ladder's own text aside)");
+    must(sm.includes("Wind, each round: Endure vs 10 + Strain")&&!sm.includes("round 3 on"), "the ladder's static text says each round"); });
   // Ruling 63: Melee Training grants Intercept alone; Counter needs Expert rank in Melee, which counts a
   // Combat Style's points once the Root is owned (ruling 13) and is gated at level 5 like every Expert rank.
   step("Reactions checklist: Counter at Melee Expert (ruling 63)", ()=>{

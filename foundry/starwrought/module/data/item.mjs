@@ -625,6 +625,15 @@ export class SwArmorData extends SwItemData {
     this.quiet = this.traits.some(t => /quiet/i.test(t));
     /** Putting it on takes 1 minute per point of Protection. */
     this.donTime = this.protection;
+    /**
+     * Attended (ruling 82; Mike's "Yes to all", 2026-10-02): the piece fastens behind the shoulder,
+     * beyond its wearer's own reach, so alone it takes twice as long to put on; with a second pair
+     * of hands, and coming off, it takes the usual time. Display only: the equipment tab's time tag
+     * prints both numbers and nothing else acts on it. The Breastplate alone carries the trait, and
+     * the data runs one step ahead of the handbook on it until Mike accepts the redline.
+     */
+    this.attended = this.traits.some(t => /attended/i.test(t));
+    this.donTimeAlone = this.attended ? 2 * this.donTime : this.donTime;
     /** A helm's cost in sight and hearing, by name (PHB v4.10): Closed helm -2, Open helm -1. */
     this.helmPenalty = (this.zone === "head") ? helmPenaltyFor(this.parent?.name) : 0;
   }

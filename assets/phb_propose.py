@@ -10,7 +10,8 @@ not match `Starwrought_Players_Handbook_v<n>.docx`). Every other zip entry is co
 for byte, and the source is never written. Accepting the changes and saving as the next numbered
 handbook is Mike's step; the sync of data, app and system follows that, by the handbook rule.
 
-Edits, each confined to one paragraph (a table cell's paragraph counts):
+Edits, each confined to one paragraph (a table cell's paragraph counts), or, for `row`, to one new
+table row:
 
   replace       (anchor, old, new): `old` must occur once in the visible text of the paragraph
                 holding `anchor`, and sit inside one run. That run is split: the text before, the
@@ -23,12 +24,21 @@ Edits, each confined to one paragraph (a table cell's paragraph counts):
                 text of one of its cells ("=Berserker") or of several that must all sit in it
                 (["Berserker", "Rage"]); the cell is the `col`th of that row. For a cell that says
                 "3" like a dozen others. `old` None rewrites the cell.
+  row           (row_anchor, position, cells): a new table row "before" or "after" the row named
+                the way `cell` names one (["Comfort", "You can sleep in it without waking
+                fatigued."]), cut from that row's own XML so it keeps the cell widths, borders,
+                shading and margins, the row properties, and each cell's paragraph properties and
+                first-run formatting; `cells` gives one text per cell, and each cell becomes one
+                paragraph holding one run. The row mark (w:trPr/w:ins), each paragraph mark and
+                each run are marked inserted, so Word shows the row as one insertion and Reject
+                removes it whole.
   append        (anchor, addition): an inserted run at the end of the paragraph.
   insert_after  (anchor, text): a new paragraph after the anchor's, in the anchor's style and
                 numbering, its paragraph mark and text both marked inserted.
 
   run:  python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance
         python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance --proposal vigor
+        python assets/phb_propose.py <in.docx> <out.docx> --proposal attended
   Several proposals stack into one file, applied in the order given.
 
 The proposals are the PROPOSALS table below, one entry per proposal this script has produced, so
@@ -238,9 +248,53 @@ PROPOSALS["wind-exemption"] = {
     "insert_after": [],
 }
 
+PROPOSALS["attended"] = {
+    # Attended (Mike, 2026-10-02: "Yes to all" on the armor-help design). A piece that fastens
+    # behind the shoulder, beyond the wearer's own reach, takes twice as long to put on alone and
+    # comes off in the usual time; the Breastplate alone carries it. The judge panel's design:
+    # a trait rather than a column, named for what the piece needs rather than what it is, so the
+    # armor table stays one word wider and a Cuirass could carry it tomorrow. Display only: the
+    # trait is a time tag on the equipment tab and a sentence in the donning rules, and no check,
+    # Threshold, Load or Protection reads it. The data and the system carry it from 0.6.2 at
+    # Mike's word; the book follows once he accepts this redline (v4.13 sync report, ruling 82).
+    "from": "4.13",
+    "replace": [
+        # The donning paragraph: Word holds the two middle sentences in one plain run.
+        (
+            "Putting on or taking off a single piece",
+            "A full kit takes as long as its pieces. ",
+            "A full kit takes as long as its pieces. An Attended piece takes that long only with a second"
+            " pair of hands; alone, putting it on takes twice as long, though it comes off in the usual time. "
+        ),
+    ],
+    "rewrite": [],
+    "cell": [
+        # The armor table: the Breastplate's Traits cell, five to the right of its name.
+        (["Breastplate", "Torso"], 5, "Plate, Noisy", "Plate, Noisy, Attended"),
+    ],
+    "row": [
+        # The armor traits table, alphabetical: Attended goes in above Comfort, in Comfort's dress.
+        (
+            ["Comfort", "You can sleep in it without waking fatigued."],
+            "before",
+            [
+                "Attended",
+                "It fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as"
+                " long. Taking it off does not.",
+            ],
+        ),
+    ],
+    "append": [],
+    "insert_after": [],
+}
+
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
 ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
 CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)
+# A row's and a cell's property blocks, and the rare table-property exceptions a row may open with.
+TRPR_RE = re.compile(r"<w:trPr\b[^>]*/>|<w:trPr\b[^>]*>.*?</w:trPr>", re.S)
+TCPR_RE = re.compile(r"<w:tcPr\b[^>]*/>|<w:tcPr\b[^>]*>.*?</w:tcPr>", re.S)
+TBLPREX_RE = re.compile(r"<w:tblPrEx\b[^>]*/>|<w:tblPrEx\b[^>]*>.*?</w:tblPrEx>", re.S)
 RUN_RE = re.compile(r"<w:r\b[^>]*>.*?</w:r>", re.S)
 RPR_RE = re.compile(r"<w:rPr\b.*?</w:rPr>", re.S)
 PPR_RE = re.compile(r"<w:pPr\b.*?</w:pPr>", re.S)
@@ -352,16 +406,14 @@ def replace_at(xml, start, end, old, new, rev, label=""):
                      % (old[:50], anchor[:40]))
 
 
-def cell_replace_tracked(xml, row_anchor, col, old, new, rev):
+def one_row(xml, row_anchor):
     """
-    replace_tracked on the first paragraph of one table cell: the row is the one holding the
-    paragraph `row_anchor` names (usually "=Label", the row's own first cell, matched exactly),
-    and the cell is the `col`th of that row. For a cell that says "3", which no anchor could tell
-    from the other cells saying "3". Tables are never numbered, so a table nested in a text box
-    or a cell elsewhere in the book cannot shift the count.
+    The one table row `row_anchor` names, as (names, start, row_xml). A row is named by one of its
+    cells ("=Label", the row's own first cell, matched exactly), or by several exact cell texts
+    that must all sit in it (["Berserker", "Rage"]) when the first alone is a cell somewhere else
+    too. Tables are never numbered, so a table nested in a text box or a cell elsewhere in the
+    book cannot shift the count; a row that nests a table of its own is refused.
     """
-    # A row is named by one of its cells ("=Label"), or by several exact cell texts that must all
-    # sit in it (["Berserker", "Rage"]) when the first alone is a cell somewhere else too.
     names = list(row_anchor) if isinstance(row_anchor, (list, tuple)) else [row_anchor]
     first = names[0] if names[0].startswith("=") else "=" + names[0]
     candidates = []
@@ -381,7 +433,17 @@ def cell_replace_tracked(xml, row_anchor, col, old, new, rev):
         raise SystemExit("row %r matched %d table rows, wanted exactly 1" % (names, len(candidates)))
     row_start, row = candidates[0]
     if "<w:tbl>" in row:
-        raise SystemExit("the row holding %r nests a table; edit that cell by hand" % names)
+        raise SystemExit("the row holding %r nests a table; edit it by hand" % names)
+    return names, row_start, row
+
+
+def cell_replace_tracked(xml, row_anchor, col, old, new, rev):
+    """
+    replace_tracked on the first paragraph of one table cell: the row is the one `row_anchor`
+    names (see one_row), and the cell is the `col`th of that row. For a cell that says "3", which
+    no anchor could tell from the other cells saying "3".
+    """
+    names, row_start, row = one_row(xml, row_anchor)
     cells = list(CELL_RE.finditer(row))
     if col >= len(cells):
         raise SystemExit("the row holding %r has %d cells, no cell %d" % (names, len(cells), col))
@@ -441,22 +503,84 @@ def append_tracked(xml, anchor, addition, rev):
     return xml[: match.start()] + edited + xml[match.end():]
 
 
+def inserted_ppr(ppr, rev):
+    """
+    A paragraph's properties with its paragraph mark recorded as inserted: the w:ins goes first
+    inside w:pPr/w:rPr (the schema's order), which is created when the properties have none.
+    """
+    mark = rev.mark()
+    opening = re.search(r"<w:rPr\b[^>]*/>|<w:rPr\b[^>]*>", ppr)
+    if opening is None:
+        return ppr[: ppr.rfind("</w:pPr>")] + "<w:rPr>%s</w:rPr></w:pPr>" % mark
+    if opening.group(0).endswith("/>"):
+        return ppr[: opening.start()] + "<w:rPr>%s</w:rPr>" % mark + ppr[opening.end():]
+    return ppr[: opening.end()] + mark + ppr[opening.end():]
+
+
 def insert_after_tracked(xml, anchor, text, rev):
     """A new paragraph after the anchor's, in its style, with its mark and its text both inserted."""
     match = one_paragraph(xml, anchor)
     paragraph = match.group(0)
     ppr = PPR_RE.search(paragraph)
-    ppr = ppr.group(0) if ppr else "<w:pPr></w:pPr>"
-    mark = rev.mark()
-    if "<w:rPr" in ppr:
-        ppr = re.sub(r"(<w:rPr\b[^>]*>)", r"\1" + mark, ppr, count=1)
-    else:
-        ppr = ppr[: ppr.rfind("</w:pPr>")] + "<w:rPr>%s</w:rPr></w:pPr>" % mark
+    ppr = inserted_ppr(ppr.group(0) if ppr else "<w:pPr></w:pPr>", rev)
     runs = RUN_RE.findall(paragraph)
     rpr = RPR_RE.search(runs[0]) if runs else None
     rpr = rpr.group(0) if rpr else ""
     new_paragraph = "<w:p>%s%s</w:p>" % (ppr, rev.ins(run_of(rpr, text)))
     return xml[: match.end()] + new_paragraph + xml[match.end():]
+
+
+def row_insert_tracked(xml, row_anchor, position, cells, rev):
+    """
+    A new table row "before" or "after" the one `row_anchor` names (see one_row), cut from that
+    row's own XML: it keeps each cell's properties (width, borders, shading, margins), the row's
+    properties (cantSplit, a fixed height), the paragraph properties of each cell's first
+    paragraph and the run properties of its first run. Each cell becomes one paragraph holding
+    one run of its text from `cells`, which gives one text per cell of the anchor row. Word sees
+    an inserted row: the row mark (w:trPr/w:ins, created when the row has no w:trPr), each
+    paragraph mark (w:pPr/w:rPr/w:ins) and each run (w:ins) are all revisions by AUTHOR, so the
+    row shows as one insertion and Reject removes it whole. The copy carries none of the
+    anchor's paragraph or revision ids, which Word wants unique.
+    """
+    if position not in ("before", "after"):
+        raise SystemExit("row position must be 'before' or 'after', not %r" % (position,))
+    names, row_start, row = one_row(xml, row_anchor)
+    tcs = list(CELL_RE.finditer(row))
+    if not tcs:
+        raise SystemExit("the row holding %r has no cells" % (names,))
+    if len(cells) != len(tcs):
+        raise SystemExit("the row holding %r has %d cells; %d texts were given" % (names, len(tcs), len(cells)))
+    # Row properties: the anchor's, gaining the insertion mark. In w:trPr the mark sits after the
+    # row's own properties and before any w:del or w:trPrChange, as the schema orders them.
+    head = row[: tcs[0].start()]
+    mark = rev.mark()
+    trpr = TRPR_RE.search(head)
+    if trpr is None or trpr.group(0).endswith("/>"):
+        trpr_xml = "<w:trPr>%s</w:trPr>" % mark
+    else:
+        block = trpr.group(0)
+        later = re.search(r"<w:del\b|<w:trPrChange\b", block)
+        at = later.start() if later else block.rfind("</w:trPr>")
+        trpr_xml = block[:at] + mark + block[at:]
+    tblprex = TBLPREX_RE.search(head)
+    parts = ["<w:tr>", tblprex.group(0) if tblprex else "", trpr_xml]
+    for tc, text in zip(tcs, cells):
+        cell = tc.group(0)
+        tcpr = TCPR_RE.search(cell)
+        pm = PARA_RE.search(cell)
+        if not pm:
+            raise SystemExit("a cell of the row holding %r has no paragraph; edit it by hand" % (names,))
+        paragraph = pm.group(0)
+        ppr = PPR_RE.search(paragraph)
+        ppr = inserted_ppr(ppr.group(0) if ppr else "<w:pPr></w:pPr>", rev)
+        runs = RUN_RE.findall(paragraph)
+        rpr = RPR_RE.search(runs[0]) if runs else None
+        rpr = rpr.group(0) if rpr else ""
+        parts.append("<w:tc>%s<w:p>%s%s</w:p></w:tc>" % (tcpr.group(0) if tcpr else "", ppr, rev.ins(run_of(rpr, text))))
+    parts.append("</w:tr>")
+    new_row = "".join(parts)
+    at = row_start if position == "before" else row_start + len(row)
+    return xml[:at] + new_row + xml[at:]
 
 
 def main():
@@ -513,6 +637,10 @@ def main():
             xml = cell_replace_tracked(xml, row_anchor, col, old, new, rev)
             shown = "/".join(row_anchor) if isinstance(row_anchor, (list, tuple)) else row_anchor
             print("  cell:           row %s, cell %d: %r -> %r" % (shown, col, old, new))
+        for row_anchor, position, cells in proposal.get("row", []):
+            xml = row_insert_tracked(xml, row_anchor, position, cells, rev)
+            shown = "/".join(row_anchor) if isinstance(row_anchor, (list, tuple)) else row_anchor
+            print("  row:            %s row %s: %r" % (position, shown[:56], cells))
         for anchor, addition in proposal.get("append", []):
             xml = append_tracked(xml, anchor, addition, rev)
             print("  appended to:    %s..." % anchor.strip()[:56])

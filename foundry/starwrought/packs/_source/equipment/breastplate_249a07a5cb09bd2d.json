@@ -10,7 +10,8 @@
     "material": "plate",
     "traits": [
       "Plate",
-      "Noisy"
+      "Noisy",
+      "Attended"
     ],
     "price": "15 gp",
     "quantity": 1,

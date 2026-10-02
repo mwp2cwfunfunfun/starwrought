@@ -143,7 +143,11 @@
         {{#if thing.isArmor}}
         <span class="sw-item-tag">{{thing.zoneLabel}}</span>
         <span class="sw-item-tag">{{localize "STARWROUGHT.Field.protection"}} {{thing.protection}}</span>
+        {{#if thing.attended}}
+        <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Carry.donTimeAttendedHint'}}">{{thing.donTime}} min, {{thing.donTimeAlone}} alone</span>
+        {{else}}
         <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Carry.donTimeHint'}}">{{thing.donTime}} min</span>
+        {{/if}}
         {{/if}}
         {{#if thing.isWeapon}}<span class="sw-item-tag">{{thing.damage}}</span>{{/if}}
         {{#if thing.isShield}}<span class="sw-item-tag">{{localize "STARWROUGHT.Defense.guard"}} {{swSigned thing.bonus}}</span>{{/if}}

@@ -620,7 +620,8 @@
    "price": "15 gp",
    "traits": [
     "Plate",
-    "Noisy"
+    "Noisy",
+    "Attended"
    ],
    "material": "Plate",
    "enabled": true

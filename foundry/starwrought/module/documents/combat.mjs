@@ -318,6 +318,7 @@ export function registerCombatTracking() {
 
   cardActions.set("rollRecovery", onRollRecovery);
   cardActions.set("windCheck", onWindCheck);
+  cardActions.set("windRest", onWindRest);
   cardActions.set("persistentRoll", onPersistentRoll);
   cardActions.set("persistentEndure", onPersistentEndure);
   cardActions.set("finishPrepared", onFinishPrepared);
@@ -428,12 +429,13 @@ async function mark(combatant, key, combat) {
 /* -------------------------------------------- */
 
 /**
- * The end of a round (PHB v4.10; Wind as PHB v4.12 has it):
+ * The end of a round (PHB v4.10; Wind as PHB v4.13 has it):
  *  - Persistent Damage is taken at the end of each round, dice rolled fresh, Protection ignored.
- *  - Wind: at the end of the third round and every round after, a fighter carrying Load Strain
- *    whose Endure Threshold is less than 10 + Load Strain rolls Endure against that number; on a
- *    failure their Fatigued rises by 1, to a maximum of 3. An Endure Threshold that meets the Wind
- *    Threshold is exempt and never rolls (ruling 74).
+ *  - Wind: at the end of every round, from the first (ruling 79; v4.11 and v4.12 waited for the
+ *    third), a fighter carrying Load Strain 1 or more whose Endure Threshold is less than 10 +
+ *    Load Strain rolls Endure against that number; on a failure their Fatigued rises by 1, to a
+ *    maximum of 3. An Endure Threshold that meets the Wind Threshold is exempt and never rolls
+ *    (ruling 74).
  * Both are cards with a roll button, whispered to the actor's owners and the GM.
  */
 async function endRound(combat, round) {
@@ -452,11 +454,12 @@ async function endRound(combat, round) {
       const strain = Number(actor.system.loadStrain) || 0;
       const threshold = 10 + strain;
       const fatigued = Number(actor.conditionValue?.("fatigued")) || 0;
-      // PHB v4.12, Wind (ruling 74): a fighter whose Endure Threshold meets 10 + Load Strain never
+      // PHB v4.13, Wind (ruling 74): a fighter whose Endure Threshold meets 10 + Load Strain never
       // rolls. The character model derives `wind.exempt`; an adversary may lack the field, so the
-      // comparison itself stands in. A fighter with no Load Strain has nothing to be winded by.
-      // Fatigued 3 is as winded as the rule goes (ruling R3; until 0.6.0 one failure ended the
-      // checks), and the unconscious and the Dying are out of the fight: nothing left to roll for.
+      // comparison itself stands in. A fighter with no Load Strain has nothing to be winded by,
+      // which is the book's own clause since v4.13 (ruling 80). Fatigued 3 is as winded as the rule
+      // goes (ruling R3; until 0.6.0 one failure ended the checks), and the unconscious and the
+      // Dying are out of the fight: nothing left to roll for.
       const exempt = actor.system.wind?.exempt ?? (endureThresholdOf(actor) >= threshold);
       if ((strain >= 1) && !exempt && (fatigued < SW.FATIGUED_MAX) && !statuses.has("unconscious") && !statuses.has("dying")) {
         await postWindReminder(actor, strain, round, fatigued);
@@ -466,25 +469,15 @@ async function endRound(combat, round) {
 }
 
 /**
- * The encounter ends: the Combat document is deleted. Fatigued "ends after ten minutes of rest"
- * (PHB v4.12, Conditions), and the end of the Combat is the nearest thing the system can see to
- * that, so Fatigued comes off every combatant here, on the client responsible for each as the
- * round's own writes are (ruling 70, R4). The v4.11 book tied the rest to "once the fight is
- * over"; v4.12 does not, so this is an approximation of the ten minutes rather than the rule's
- * letter (ruling 75; the v4.12 sync report asks whether a rest-card clear should replace or join
- * it). The pass streak a GM-less table kept in memory goes with it.
+ * The encounter ends: the Combat document is deleted. The pass streak a GM-less table kept in
+ * memory goes with it, and nothing else happens here. Through 0.6.1 Fatigued came off every
+ * combatant at this point, the end of the fight standing in for the "ten minutes of rest" that
+ * end it (ruling 70); Mike's word (2026-10-02) is that it "should only go away with a 10 minutes'
+ * rest", so the condition now outlives the Combat and is cleared by the Fatigued card's own
+ * button (onWindRest) or by a night's rest (SwActor#restForTheNight), ruling 81.
  */
 async function onCombatEnds(combat) {
   localStreaks.delete(combat.id);
-  if (!(combat instanceof SwCombat)) return;
-  for (const actor of actorsIn(combat)) {
-    if (!responsibleFor(actor) || !actor.statuses?.has("fatigued")) continue;
-    try {
-      await actor.setCondition?.("fatigued", false);
-    } catch (err) {
-      console.warn(`STARWROUGHT | Fatigued could not be cleared from ${actor.name}`, err);
-    }
-  }
 }
 
 /**
@@ -871,11 +864,12 @@ async function onRollRecovery({ actor }) {
 }
 
 /**
- * Wind (PHB v4.12, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
+ * Wind (PHB v4.13, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
  * and on a failure Fatigued raised by 1 to a maximum of 3: -N Condition to Evade, Guard and attack
  * rolls until ten minutes of rest. The exemption (an Endure Threshold that meets the Wind
  * Threshold, ruling 74) is applied where the card is posted, in endRound, not here: a card already
- * posted still rolls. The card names the new value.
+ * posted still rolls. The card names the new value and carries the "Ten minutes' rest" button that
+ * ends the condition (onWindRest, ruling 81).
  */
 async function onWindCheck({ actor }) {
   if (!requireOwner(actor)) return;
@@ -900,9 +894,39 @@ async function onWindCheck({ actor }) {
       actorUuid: actor.uuid,
       title: `${localize("STARWROUGHT.Condition.fatigued")} ${value}`,
       lines: [format("STARWROUGHT.Combat.windFatigued", { name: escapeHTML(actor.name), value })],
-      notes: [(value >= SW.FATIGUED_MAX) ? localize("STARWROUGHT.Combat.windCeiling") : ""]
+      notes: [
+        (value >= SW.FATIGUED_MAX) ? localize("STARWROUGHT.Combat.windCeiling") : "",
+        localize("STARWROUGHT.Combat.windRestNote")
+      ],
+      buttons: [{ action: "windRest", icon: "fa-solid fa-mug-hot", label: localize("STARWROUGHT.Combat.windRest") }]
     }), { whisper: tableFor(actor) });
   }
+}
+
+/**
+ * Ten minutes' rest (PHB v4.13, Conditions: Fatigued "ends after ten minutes of rest"; ruling 81).
+ * The system has no clock for ten minutes, and the end of the Combat is not one either (through
+ * 0.6.1 it cleared Fatigued there, ruling 70, now superseded), so whether the ten minutes have
+ * passed is the table's call: the Fatigued card carries this button for the actor's owner or the
+ * GM (`requireOwner`; a GM owns everything). Fatigued comes off whole, whatever its value, and a
+ * one-line card tells the same table the Fatigued card went to. A night's rest clears it too
+ * (SwActor#restForTheNight). Clicked for an actor no longer Fatigued, it says so quietly and
+ * writes nothing.
+ */
+async function onWindRest({ actor }) {
+  if (!requireOwner(actor)) return;
+  const current = Number(actor.conditionValue?.("fatigued")) || 0;
+  if (!current) {
+    ui.notifications.info(format("STARWROUGHT.Notify.notFatigued", { name: actor.name }));
+    return;
+  }
+  await actor.setCondition?.("fatigued", false);
+  return postCard(actor, cardHtml({
+    root: "sw-round-card sw-wind-card sw-wind-rest-card",
+    actorUuid: actor.uuid,
+    title: localize("STARWROUGHT.Combat.windRest"),
+    lines: [format("STARWROUGHT.Combat.windRested", { name: escapeHTML(actor.name), value: current })]
+  }), { whisper: tableFor(actor) });
 }
 
 /**

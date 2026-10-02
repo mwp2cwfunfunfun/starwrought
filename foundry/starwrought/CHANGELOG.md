@@ -7,6 +7,98 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.6.2 (2026-10-02): Player's Handbook v4.13
+
+Built from Player's Handbook v4.13. Mike rewrote the Wind bullet in the v4.12 file on the shelf and
+dictated the clause; the numbered edition was written with `assets/phb_edit.py` (EDITIONS "4.13"),
+and from this release the pipeline also fingerprints the edition it synced to (see Notes). The book
+moved in one place, twice over: the "Load Strain 1 or more" gate is back in the Wind sentence, and
+the third-round delay is gone, so the Wind check comes at the end of every round from round 1.
+Three of Mike's answers to the v4.12 report's questions move the system as well: Fatigued ends
+with ten minutes' rest and never with the Combat; the armor-help design is in ("Yes to all"), as
+the Attended trait on the Breastplate; and Awareness Training is enabled in `data/defenses.xlsx`,
+so every Defense ships. A point release of the rules, so a patch bump, and no world migration. The
+rulings are 79 to 83 in `v4.13-sync-report.md`, continuing the v4.12 report's numbering.
+
+### Changed
+
+- **The Wind check comes at the end of every round** (ruling 79). The book: "Wind. If your Load
+  Strain is at least 1 and your Endure Threshold is less than 10 + your Load Strain, then at the
+  end of every round while in an encounter, you must roll Endure against 10 + Load Strain. On a
+  failure your Fatigued rises by 1." `WIND_ROUND` is 1: the first card posts at the end of round 1,
+  for a fighter with Load Strain 1 or more whose Endure Threshold is below 10 + Load Strain and who
+  is not yet Fatigued 3, unconscious or Dying; the exemption, its live reading and the Load Strain
+  tooltip are as 0.6.1 left them. Every string, comment and document that said "the third round"
+  now says the end of every round: the sheet's Wind hint and tooltip, the Wind card, the Combat's
+  comments, `FEATURES.md`, the READMEs and `CLAUDE.md`. The delay had stood since 0.6.0 and in the
+  book through v4.12; the sync report asks Mike whether dropping it was meant.
+- **The Strain clause is the book's** (ruling 80). "If your Load Strain is at least 1" is back in
+  the sentence, as the v4.12 report asked. The system had kept the gate as its own guess since the
+  clause fell out of v4.12, so nothing moves in code; the question is closed.
+- **Fatigued ends with ten minutes' rest, and the table says when** (ruling 81; Mike: "it should
+  only go away with a 10 minutes' rest"). The Combat's deletion no longer clears it: `onCombatEnds`
+  keeps only its own housekeeping, and a fighter who leaves one fight Fatigued carries it into the
+  next scene until someone rests. Two things clear it. A night's rest (`restForTheNight`) clears
+  Fatigued, since ten minutes is less than a night, and the Rest card says so when it did. And the
+  Fatigued card a failed Wind check posts carries a **Ten minutes' rest** button for the actor's
+  owner or the GM: it sets Fatigued off and posts a one-line card ("{name} has caught their breath:
+  Fatigued ends."); clicked on a fighter who is no longer Fatigued, it says so quietly and does
+  nothing else. The judgement (did ten minutes pass?) sits with the table and not in a formula. The
+  token palette toggle still works, and the Fatigued hint says the condition ends after ten minutes
+  of rest, through the rest card or the card's button. The v4.11 report's ruling 70 is superseded.
+- **Attended, on the Breastplate** (ruling 82; Mike: "Yes to all"). A new armor trait, display
+  only. Its definition, first in the roster's hand-kept `armorTraits` block (alphabetical: Attended,
+  Comfort, Noisy, Quiet): "It fastens behind the shoulder, beyond your own reach: alone, putting it
+  on takes twice as long. Taking it off does not." The Breastplate's Traits cell on the Armor sheet
+  of `data/equipment.xlsx` reads "Plate, Noisy, Attended" (Material first, so the converter stays
+  quiet), and `equipment.json`, the roster's `armorPieces` block, the Equipment compendium, the
+  Rules Reference journal's trait table, the web app and the Constellation Compendium follow. The
+  armor Item derives `attended` and `donTimeAlone` (twice `donTime` when the traits include
+  Attended, else equal to it); the Equipment tab's time tag reads "4 min, 8 alone" on an Attended
+  piece, and its hint says why. Nothing else acts on it: no Load, Protection or check reads the
+  trait. The handbook does not carry it yet. The wording goes to Mike as tracked changes
+  (`Starwrought_Players_Handbook_v4.13_attended_proposal.docx`, the `attended` proposal of
+  `assets/phb_propose.py`: the trait row, the Breastplate's cell and a sentence in the donning
+  paragraph), so on this one item the data runs a step ahead of the book, at his word.
+- **The Awareness Constellation ships** (ruling 83). Mike set Awareness Training's `Enabled?` to
+  Yes on the Awareness sheet of `data/defenses.xlsx`; the other four rows stay blank. So Awareness
+  ships with its Root alone, every Defense is now one the wizard's Defenses step can Train, and the
+  enabled counts are 13 of 31 Constellations and 39 of 177 Talents (the integrator's build stamps
+  them into `content/sync.json`).
+- **The siblings moved with the book.** The web app's sheet says "Wind each round: Endure vs M"
+  (the exempt wording as before), its wiki carries the Strain clause and says every round, and its
+  Equipment section prints Attended in the traits table and in the donning sentence; the printed
+  sheet's Defense ladder line says "each round"; the Constellation Compendium's armor paragraph says
+  every round with the Strain clause and gains the Attended sentence, and its traits table prints
+  the roster block. `FEATURES.md`, the READMEs and `CLAUDE.md` name v4.13 and 0.6.2.
+
+### Notes
+
+- **Mike edited v4.12 in place and dictated the clause.** The Wind rewrite was made in the v4.12
+  file on the shelf rather than in a new one, so the drift check, which compared version numbers,
+  saw nothing move. The edition `Starwrought_Players_Handbook_v4.13.docx` carries his dictated
+  sentence through `phb_edit.py` (EDITIONS "4.13"). From this release `build_all.mjs` also records a
+  content hash (SHA-256) of the handbook in `data/SYNC.json` at `--accept-phb`, so an in-place edit
+  of the synced edition is reported as drift, not only a higher number.
+- **Was dropping the third-round delay intended?** The system follows the sentence. If the delay
+  was meant to stay, `WIND_ROUND` is one number and the strings say "every round" in a handful of
+  places; the sync report asks.
+- **The Comfort row still says "waking fatigued"**, lowercase, the old boolean's word, while the
+  donning paragraph says "waking Fatigued 1" and the Conditions table defines Fatigued N. Mike's
+  cell; the report asks.
+- **Sleeping in armor without Comfort still sets nothing.** Unchanged from 0.6.0; the rule is the
+  table's.
+- The version stamps read 0.6.2 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: nothing stored changes
+  shape.
+- The handbook's v4.10 loose ends stand in v4.13: Key Terms still says ÷ 3, four Trained Defenses
+  and Varisians, Drilled still says "Weapons Proficiency Bonus", Table 9's Quick row still says
+  "Nothing", Melee Training still grants Counter, Aid is still "Aid ❶ (⓿↺)" against the sheet's
+  single action, and Armored Fighting's heading and table still disagree. `CLAUDE.md` carries the
+  list.
+
+---
+
 ## 0.6.1 (2026-10-02): Player's Handbook v4.12
 
 Built from Player's Handbook v4.12. Mike accepted the wind-exemption proposal from

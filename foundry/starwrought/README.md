@@ -1,6 +1,6 @@
 # STARWROUGHT for Foundry Virtual Tabletop
 
-A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.12; see
+A game system implementing the STARWROUGHT Playtest rules (Player's Handbook v4.13; see
 `FEATURES.md` for what it does and `CHANGELOG.md` for what changed). Classless, Constellation-built,
 and written for a virtual tabletop from the ground up: the arithmetic is the software's job so the
 table can spend its attention on decisions. Six actions a round spent across Opportunities, the
@@ -27,9 +27,10 @@ are parents whose Combat Styles' points count toward their rank once their Root 
 is `Attribute + Proficiency`, with a Threshold of ten plus that. Size, Off-Guard, Frightened N,
 Fatigued N, Wounds, a Parry weapon, a raised shield and a helm are folded in automatically, and
 bonuses of the same type do not stack. Load Strain never touches Evade: it is a clock (the Wind
-check from the third round, Fatigued 1 to 3, which a fighter whose Endure Threshold already meets
-10 + Load Strain never rolls) and a penalty to Climb, Swim and Stealth. A character begins Trained
-in two.
+check at the end of every round for a fighter with Load Strain 1 or more, Fatigued 1 to 3, which a
+fighter whose Endure Threshold already meets 10 + Load Strain never rolls, and which only ten
+minutes' rest ends: a button on the Fatigued card, or a night's rest) and a penalty to Climb, Swim
+and Stealth. A character begins Trained in two, and since 0.6.2 all four Defenses ship.
 
 **The six-action round.** Six actions at the start of each round, one Maneuver per Opportunity or
 Pass, a full circuit of Passes ending the round, Reactions paid from the same six, and Prepared
@@ -72,8 +73,8 @@ recorded plus a list on the sheet.
 
 | Pack | Contents |
 |---|---|
-| Constellations | The Constellations whose Root is enabled in the spreadsheets (12 of the 31 authored today, Endure among them since 0.6.1), with their Key Attribute, category, parent and plate art |
-| Talents | The enabled Talents (38 of the 177 authored today), foldered by Constellation. `Enabled? = Yes` in `data/*.xlsx` is what ships a row; the content index still names every Constellation so owned Talents of a disabled one resolve |
+| Constellations | The Constellations whose Root is enabled in the spreadsheets (13 of the 31 authored today, Endure among them since 0.6.1 and Awareness since 0.6.2, so every Defense), with their Key Attribute, category, parent and plate art |
+| Talents | The enabled Talents (39 of the 177 authored today), foldered by Constellation. `Enabled? = Yes` in `data/*.xlsx` is what ships a row; the content index still names every Constellation so owned Talents of a disabled one resolve |
 | Ancestries, Bloodlines, Cultures, Backgrounds & Callings | The enabled chassis Items (5 of the 13 authored today: the Human Ancestry, the Torchbearer Human Bloodline, the Serrovane Culture, the Acrobat Background and the Weaponmaster Calling). The five folders always ship |
 | Equipment | The enabled rows of `data/equipment.xlsx` (today 4 of the 29 weapons, 9 of the 20 armor pieces and none of the 3 shields authored), under the same document ids the roster gave them. The four folders always ship |
 | Maneuvers & Activities | 52 Maneuvers, Activities and Reactions today, foldered as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special; Exploration Mode; Downtime Mode; Reactions). Those authored in `data/actions.xlsx` replace the roster's row of the same name, and only an enabled sheet row ships, so an action authored there but not enabled (Aid today) appears nowhere until its row reads Yes |

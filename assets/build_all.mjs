@@ -18,6 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -72,6 +73,16 @@ function readSync() {
   return JSON.parse(fs.readFileSync(SYNC, "utf8"));
 }
 
+/**
+ * The SHA-256 of the handbook file, recorded in SYNC.json at --accept-phb. Mike edits the current
+ * edition in place as well as accepting redlines (2026-10-02: v4.12 gained a new Wind sentence
+ * under its own number), and a version-number comparison cannot see that, so the hash is what
+ * tells a same-numbered handbook that moved from one that did not.
+ */
+function handbookHash(book) {
+  return crypto.createHash("sha256").update(fs.readFileSync(path.join(ROOT, book.file))).digest("hex");
+}
+
 /* -------------------------------------------- */
 
 function run(step) {
@@ -91,16 +102,23 @@ function run(step) {
 /* -------------------------------------------- */
 
 /**
- * Has the handbook moved without the rest of the repository following it?
- * @returns {{ok: boolean, book: object, recorded: string|null, missing: string[]}}
+ * Has the handbook moved without the rest of the repository following it? A new number on the
+ * shelf is drift; so is the same number with different bytes, once a hash has been recorded.
+ * @returns {{ok: boolean, book: object, recorded: string|null, missing: string[], changed: boolean, syncedOn: string|null}}
  */
 function driftCheck() {
   const book = currentHandbook();
-  const recorded = readSync().phb;
-  if (!book) return { ok: true, book: null, recorded, missing: [] };
+  const sync = readSync();
+  const recorded = sync.phb;
+  if (!book) return { ok: true, book: null, recorded, missing: [], changed: false, syncedOn: null };
 
   const drifted = compareVersions(book.version, recorded ?? "0") !== 0;
-  if (!drifted) return { ok: true, book, recorded, missing: [] };
+  if (!drifted) {
+    // Same edition number: the bytes decide. No recorded hash (a SYNC.json from before 0.6.2) is
+    // taken as in step; the next --accept-phb records one.
+    const changed = !!sync.phbSha256 && (handbookHash(book) !== sync.phbSha256);
+    return { ok: !changed, book, recorded, missing: [], changed, syncedOn: sync.syncedOn ?? null };
+  }
 
   // The two documents that must name the new version before it counts as synced.
   const missing = [];
@@ -109,13 +127,18 @@ function driftCheck() {
     const text = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
     if (!text.includes(`v${book.version}`)) missing.push(`foundry/starwrought/${rel}`);
   }
-  return { ok: false, book, recorded, missing };
+  return { ok: false, book, recorded, missing, changed: false, syncedOn: null };
 }
 
 function reportDrift(drift) {
   console.log("\n" + "=".repeat(72));
-  console.log(`HANDBOOK DRIFT: the repository is synced to v${drift.recorded ?? "nothing"},`
-    + ` but ${drift.book.file} is on the shelf.`);
+  if (drift.changed) {
+    console.log(`HANDBOOK DRIFT: ${drift.book.file} has changed since it was synced`
+      + `${drift.syncedOn ? ` on ${drift.syncedOn}` : ""}, under the same edition number.`);
+  } else {
+    console.log(`HANDBOOK DRIFT: the repository is synced to v${drift.recorded ?? "nothing"},`
+      + ` but ${drift.book.file} is on the shelf.`);
+  }
   console.log("=".repeat(72));
   console.log("\nA handbook change is not finished until all of these have caught up:");
   console.log("  1. data/*.xlsx          the rules text the spreadsheets carry");
@@ -201,8 +224,13 @@ if (accept) {
   const data = readSync();
   data.phb = drift.book?.version ?? data.phb;
   data.syncedOn = new Date().toISOString().slice(0, 10);
+  // The bytes of the edition as synced, so an in-place edit under the same number reads as drift.
+  if (drift.book) {
+    data.phbFile = drift.book.file;
+    data.phbSha256 = handbookHash(drift.book);
+  }
   fs.writeFileSync(SYNC, `${JSON.stringify(data, null, 2)}\n`, "utf8");
-  console.log(`\nStamped data/SYNC.json: synced to v${data.phb}.`);
+  console.log(`\nStamped data/SYNC.json: synced to v${data.phb}${data.phbSha256 ? ` (${data.phbSha256.slice(0, 12)})` : ""}.`);
   process.exit(0);
 }
 

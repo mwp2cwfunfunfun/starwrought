@@ -260,13 +260,13 @@ export function lockedTips(actor) {
 }
 
 /**
- * The Load Strain field's tooltip (0.6.1; PHB v4.12, Wind, ruling 74): what Load Strain is, then
- * the Wind line with the numbers: the Wind Threshold (10 + Load Strain), the Endure Threshold, and
- * whether this fighter is exempt. The field is derived and read-only for everyone, so unlike the
- * locked tips this one is the same for the GM and the player. Three readings, one string each: an
- * Endure Threshold that meets the Wind Threshold (exempt); Load Strain carried and the Threshold
- * not met (the check comes from the end of the third round); and no Load Strain at all with an
- * Endure Threshold below 10 (no check, but any Load would bring one). The numbers are the data
+ * The Load Strain field's tooltip (0.6.1; PHB v4.13, Wind, rulings 74 and 79): what Load Strain
+ * is, then the Wind line with the numbers: the Wind Threshold (10 + Load Strain), the Endure
+ * Threshold, and whether this fighter is exempt. The field is derived and read-only for everyone,
+ * so unlike the locked tips this one is the same for the GM and the player. Three readings, one
+ * string each: an Endure Threshold that meets the Wind Threshold (exempt); Load Strain carried and
+ * the Threshold not met (the check comes at the end of every round); and no Load Strain at all
+ * with an Endure Threshold below 10 (no check, but any Load would bring one). The numbers are the data
  * model's (`system.wind`), read defensively for a document not yet through prepareDerivedData.
  * HTML, which Foundry's tooltip renders.
  * @param {Actor} actor
@@ -728,6 +728,12 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   /** A plain carried thing: a shield, a stowed weapon, a piece of armor in the pack, gear. */
   #carryRow(item) {
+    // Armor is the one thing you cannot shuffle mid-fight: a minute per point of Protection, with a
+    // floor of 1 so a piece never reads "0 min". An Attended piece (ruling 82, display only) takes
+    // twice that to put on alone; the sheet doubles its own floored number rather than reading the
+    // data model's `donTimeAlone`, so the two figures in the tag always agree.
+    const donTime = item.type === "armor" ? Math.max(1, item.system.protection) : 0;
+    const attended = (item.type === "armor") && !!item.system.attended;
     return {
       id: item.id,
       name: item.name,
@@ -746,8 +752,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       protection: item.system.protection,
       bonus: item.system.bonus,
       hardness: item.system.hardness,
-      // Armor is the one thing you cannot shuffle mid-fight.
-      donTime: item.type === "armor" ? Math.max(1, item.system.protection) : 0
+      donTime,
+      attended,
+      donTimeAlone: attended ? 2 * donTime : donTime
     };
   }
 
