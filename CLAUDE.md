@@ -267,7 +267,18 @@ final Wound is Dying.
   rows, are flagged `basic` and appear on every character's Actions tab straight from the
   compendium, never copied. The Automation column is stored on the Item (`system.automation`) and
   shown on its sheet; nothing acts on it yet. That column is where the talent-automation grammar
-  will land, once it has one.
+  will land, once it has one. **`data/maneuvers.xlsx` is the second actions workbook** (Mike,
+  2026-10-01; 0.5.1, T17): the Encounter Mode Maneuvers, one sheet per Chapter 2 group, scaffolded
+  once from the roster's `actions` block by `assets/make_maneuvers_xlsx.py` (names plain, glyphs in
+  Cost, Requirements and Trigger lifted into their columns, Type `Basic Action`, the 0.5.1 `Aura`
+  column with Seek at `30 ft`, `Enabled?` blank on every row, Aid left to `actions.xlsx`) and
+  Mike's to edit since; the script refuses to overwrite it. Blank is the point: every roster
+  Maneuver is retired under its old document id and ships nowhere until its row reads Yes. The
+  converter reads every actions workbook in `data/`, errors on an action defined in two, skips an
+  `About` sheet, stamps each action with its `workbook` and `sheet`, and carries over as found the
+  actions of a workbook the last `actions.json` names that is missing from `data/`, with a warning
+  (a fresh clone has `maneuvers.xlsx` but not the untracked `actions.xlsx`, and Aid must stay
+  retired).
 - A workbook open in Excel is converted from its last saved version (Excel saves atomically). It
   used to be skipped, which silently wrote a `trees.json` without its trees.
 

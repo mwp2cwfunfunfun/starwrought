@@ -63,13 +63,16 @@ BACKGROUNDS (backgrounds.xlsx)
   to assets/backgrounds.json with its flag. The converter WARNS when an enabled Background grants
   a Skill whose constellation root is disabled, since that Training point has nowhere to land.
 
-ACTIONS WORKBOOK (actions.xlsx)
-  Recognised by its _Tree Index carrying  Name | Type | Meta note  instead of Tree | Category.
-  Every other sheet holds one action per row. Columns (first word wins, order free):
+ACTIONS WORKBOOKS (actions.xlsx, maneuvers.xlsx)
+  Recognised by a _Tree Index carrying  Name | Type | Meta note  instead of Tree | Category. Any
+  number of them are read; the same action in two of them is an ERROR, and a sheet named "About"
+  is skipped as notes for the author (as in the equipment workbook). Every other sheet holds one
+  action per row. Columns (first word wins, order free):
     Action | Cost | Traits | Type | Prerequisites | Requirements | Trigger | Description | Effect |
-    Automation | Enabled?
+    Automation | Aura | Enabled?
   Type comes from the row's own Type cell if there is one, else the _Tree Index row of that name,
-    else the sheet's name (with a warning that the action is not in the index).
+    else the sheet's name (with a warning that the action is not in the index). A Type beginning
+    with "Basic" puts the action on every character's Maneuvers tab in Foundry.
   Cost takes glyphs or words: ❶, ❷, ❸ (up to ❻), ⓿ (free), ↺ beside a cost for a Reaction
     ("❶↺", "⓿↺"), "❶ to ❸", "❶ or ❸", "❶ (⓿↺)" for a Maneuver whose Reaction half has a cost of
     its own (Aid), "1 or 3", "reaction", "free". The v3 forms ◆, ◆◆◆, ◇ and "◆ to ◆◆◆" still
@@ -78,15 +81,35 @@ ACTIONS WORKBOOK (actions.xlsx)
     is required; a cell reading "None" counts as blank.
   Description is the flavour line; Effect is the rules, rich text welcome. Automation is prose for
     now: it travels onto the Foundry Item and its sheet, and nothing acts on it yet.
-  Writes assets/actions.json. THE SHEET WINS: any action it names retires the roster.json row of
-    the same name from the compendium, the app and the compendium docx, under the same document
-    id. Roster rows the sheet does not carry yet stay. Actions typed "Basic Action" appear on
-    every character's Actions tab in Foundry, read from the compendium rather than copied.
+  Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
+    sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
+    default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.
+  Writes assets/actions.json, every action stamped with the `sheet` and `workbook` it came from.
+    THE SHEET WINS: any action it names retires the roster.json row of the same name from the
+    compendium, the app and the compendium docx, under the same document id. Roster rows no sheet
+    carries yet stay. Actions typed "Basic Action" appear on every character's Maneuvers tab in
+    Foundry, read from the compendium rather than copied.
   Enabled? works as on a tree sheet: "Yes" ships the action to Foundry, anything else keeps it
     out, and a sheet without the column ships every row. Every action is still written to
     actions.json with its flag. A disabled action STILL retires the roster row of the same name
     (the sheet is authoritative for any action it names), so until Aid reads Yes it ships nowhere
     in Foundry.
+  maneuvers.xlsx (Mike, 2026-10-01, T17) holds the Encounter Mode Maneuvers: one sheet per group
+    of the handbook's Chapter 2 tables (Motion; Attack; Defense & Recovery; Watching, Deceiving &
+    Helping; Handling Things; Special). It was scaffolded ONCE from the roster's Maneuver tables by
+    assets/make_maneuvers_xlsx.py: names written plain with the glyphs moved to Cost, the
+    "Requirements" and "Trigger" lines lifted out of the Effect into their columns, Type "Basic
+    Action", Aura filled where the text earns it (Seek, 30 ft), and Enabled? BLANK on every row.
+    Blank is the point: naming a roster row retires it, so the roster's Maneuvers ship nowhere in
+    Foundry until a row reads Yes, one at a time as Mike curates them. The file is a SOURCE now:
+    edit it, never regenerate it (the script refuses to overwrite it; --force does, and loses every
+    edit made since). Aid is not in it because actions.xlsx already defines Aid.
+  actions.xlsx is Mike's untracked working file (Aid). A checkout without it keeps what it last
+    wrote: the converter carries over, as found, the actions of any workbook actions.json names
+    that is missing from data/, and WARNS, so a fresh clone (maneuvers.xlsx present, actions.xlsx
+    not) still retires the roster rows the absent workbook retired. An action a present workbook
+    now defines is that workbook's, and the run says the two will collide when the absent one is
+    back.
 
 EQUIPMENT WORKBOOK (equipment.xlsx)
   Authoritative for weapons, armor and shields (Mike, 2026-10-01; v4.10 sync report ruling 64),
