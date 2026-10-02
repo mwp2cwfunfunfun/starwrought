@@ -52,6 +52,30 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
 
   /* -------------------------------------------- */
 
+  /**
+   * Item types that are the book's rather than the player's: a non-GM user opens their sheet to
+   * read, never to edit (0.5.1, T15). A Talent's build-time choice is still the owner's to answer,
+   * through the chargen dialog that asks when the Talent arrives, not through this sheet. Gear and
+   * Maneuvers stay the owner's to edit: a player renames their own sword.
+   */
+  static READ_ONLY_FOR_PLAYERS = Object.freeze(["talent", "constellation", "chassis"]);
+
+  /** Is this sheet read-only for this user only because of what the Item is, not who owns it? */
+  get lockedForPlayer() {
+    return !game.user.isGM && SwItemSheet.READ_ONLY_FOR_PLAYERS.includes(this.document.type);
+  }
+
+  /**
+   * @inheritdoc
+   * False for a player on a Talent, Constellation or Chassis: DocumentSheetV2 then disables every
+   * form element on render and refuses the form's submission, and the templates hide the add and
+   * delete controls behind `editable`.
+   */
+  get isEditable() {
+    if (!super.isEditable) return false;
+    return !this.lockedForPlayer;
+  }
+
   /** @inheritdoc */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
@@ -62,6 +86,7 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       system: item.system,
       fields: item.system.schema.fields,
       editable: this.isEditable,
+      lockedForPlayer: this.lockedForPlayer,
       config: SW,
       SW,
       type: item.type,

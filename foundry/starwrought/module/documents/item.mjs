@@ -56,7 +56,8 @@ export class SwItem extends Item {
           const key = (own !== undefined && own !== null && own !== "") ? own : this.system.cost;
           const n = SW.actionCostValue(key);
           if (n) {
-            await actor.spendActions(n, { label: `${this.name} ${this.system.glyph ?? ""}`.trim() });
+            // The plain name, so the glyph appended here is the only one (0.5.1, T16).
+            await actor.spendActions(n, { label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() });
           }
         }
         if (this.system.check.enabled && actor) {
@@ -65,7 +66,7 @@ export class SwItem extends Item {
             item: this,
             kind: "check",
             slug: this.system.check.constellation,
-            label: this.name,
+            label: SW.plainName(this.name),
             subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
             outcomes: this.#outcomeList()
           }, rest, { inplace: false }));
@@ -159,7 +160,8 @@ export class SwItem extends Item {
       case "armor":
         return `${game.i18n.localize(this.system.zoneLabel)} • ${game.i18n.localize("STARWROUGHT.Field.protection")} ${this.system.protection}`;
       case "action":
-        return `${this.system.glyph} ${this.system.category}`.trim();
+        // The card's title carries the glyph (item-card.hbs, 0.5.1 T16), so the subline does not.
+        return String(this.system.category ?? "").trim();
       default:
         return "";
     }

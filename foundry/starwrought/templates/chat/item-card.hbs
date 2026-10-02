@@ -3,7 +3,8 @@
   <header class="sw-card-header">
     <img src="{{item.img}}" alt="{{item.name}}">
     <div class="sw-card-titles">
-      <h3>{{item.name}}</h3>
+      {{!-- The name without the glyph the data carries in it; the cost is printed once, in gold (0.5.1, T16). --}}
+      <h3>{{swPlainName item.name}}{{#if item.system.glyph}} <span class="sw-action-glyph sw-card-glyph">{{item.system.glyph}}</span>{{/if}}</h3>
       {{#if subtitle}}<span class="sw-card-subtitle">{{subtitle}}</span>{{/if}}
     </div>
   </header>

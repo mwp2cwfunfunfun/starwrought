@@ -32,14 +32,16 @@
 
         <div class="sw-item-controls">
           {{#if thing.isWeapon}}
-          {{!-- Three Strikes: the count of actions is how much of yourself is behind the blow. --}}
+          {{!-- Three Strikes: the count of actions is how much of yourself is behind the blow. The
+                glyph is the large gold one the Maneuvers tab uses (0.5.1, T1): the count is what
+                a player reads off this row in a fight. --}}
           <span class="sw-strike-buttons">
             <a class="sw-strike-button sw-strike-quick" data-action="strike" data-strike="quick"
-               data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}">{{swStrikeGlyph "quick"}} <span>{{localize "STARWROUGHT.Strike.quick"}}</span></a>
+               data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}"><span class="sw-action-glyph">{{swStrikeGlyph "quick"}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.quick"}}</span></a>
             <a class="sw-strike-button sw-strike-deliberate" data-action="strike" data-strike="deliberate"
-               data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}">{{swStrikeGlyph "deliberate"}} <span>{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
+               data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}"><span class="sw-action-glyph">{{swStrikeGlyph "deliberate"}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
             <a class="sw-strike-button sw-strike-committed" data-action="strike" data-strike="committed"
-               data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}">{{swStrikeGlyph "committed"}} <span>{{localize "STARWROUGHT.Strike.committed"}}</span></a>
+               data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}"><span class="sw-action-glyph">{{swStrikeGlyph "committed"}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.committed"}}</span></a>
           </span>
           {{/if}}
           <a data-action="setCarry" data-state="worn" data-tooltip="STARWROUGHT.Carry.stowHint">

@@ -141,17 +141,22 @@
         <span>{{localize "STARWROUGHT.Field.size"}}</span>
         <select name="system.size">{{selectOptions sizeChoices selected=system.size}}</select>
       </label>
-      <label class="sw-field">
+      {{!-- Ancestry Vigor, Calling Vigor and Ancestry Speed are set at creation (0.5.1, T8): the
+            player reads them, the GM types them. --}}
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Field.ancestryVigor"}}</span>
-        <input type="number" name="system.details.ancestry.vigor" value="{{system.details.ancestry.vigor}}" min="0">
+        {{#if isGM}}<input type="number" name="system.details.ancestry.vigor" value="{{system.details.ancestry.vigor}}" min="0">
+        {{else}}<strong class="sw-locked-value">{{system.details.ancestry.vigor}}</strong>{{/if}}
       </label>
-      <label class="sw-field">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Field.callingVigor"}}</span>
-        <input type="number" name="system.details.calling.vigor" value="{{system.details.calling.vigor}}" min="0">
+        {{#if isGM}}<input type="number" name="system.details.calling.vigor" value="{{system.details.calling.vigor}}" min="0">
+        {{else}}<strong class="sw-locked-value">{{system.details.calling.vigor}}</strong>{{/if}}
       </label>
-      <label class="sw-field" data-tooltip="STARWROUGHT.Field.speedHint">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" data-tooltip="{{#if isGM}}STARWROUGHT.Field.speedHint{{else}}STARWROUGHT.Sheet.lockedField{{/if}}">
         <span>{{localize "STARWROUGHT.Field.ancestrySpeed"}}</span>
-        <input type="number" name="system.details.ancestry.speed" value="{{system.details.ancestry.speed}}" min="0">
+        {{#if isGM}}<input type="number" name="system.details.ancestry.speed" value="{{system.details.ancestry.speed}}" min="0">
+        {{else}}<strong class="sw-locked-value">{{system.details.ancestry.speed}} ft</strong>{{/if}}
       </label>
       <div class="sw-field sw-readonly" data-tooltip="{{totalReachHint}}">
         <span>{{localize "STARWROUGHT.Field.totalReach"}}</span>
@@ -224,9 +229,13 @@
       <button type="button" data-action="recovery" {{#unless system.dying}}disabled{{/unless}}>
         <i class="fa-solid fa-heart-pulse"></i> {{localize "STARWROUGHT.Roll.recovery"}}
       </button>
-      <button type="button" data-action="refuseDeath" {{#unless system.heroPoints.value}}disabled{{/unless}}>
-        <i class="fa-solid fa-hand"></i> {{localize "STARWROUGHT.Roll.refuseDeath"}}
-      </button>
+      {{!-- Refuse Death is for the Dying with a Hero Point (0.5.1, T13). The tooltip rides on the
+            wrapper because a disabled button swallows the hover. --}}
+      <span class="sw-button-wrap" data-tooltip="{{refuse.hint}}">
+        <button type="button" data-action="refuseDeath" {{#unless refuse.enabled}}disabled{{/unless}}>
+          <i class="fa-solid fa-hand"></i> {{localize "STARWROUGHT.Roll.refuseDeath"}}
+        </button>
+      </span>
       <button type="button" data-action="rest" data-tooltip="{{localize 'STARWROUGHT.Rest.hint'}}">
         <i class="fa-solid fa-bed"></i> {{localize "STARWROUGHT.Rest.title"}}
         <em>({{swSigned vigor.rest}} {{localize "STARWROUGHT.Field.vigor"}})</em>

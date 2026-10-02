@@ -1078,7 +1078,7 @@ export class AttackCoordinator {
       if (zone && (zone in SW.ZONES)) {
         const actor = resolveActor(target.actorUuid);
         if (actor?.isOwner) {
-          actor.setExposed(zone, false)
+          actor.setExposed(zone, false, { announced: true })
             .catch(err => console.error(`STARWROUGHT | ${actor.name}: the Posture's Zone could not be closed again`, err));
         }
       }

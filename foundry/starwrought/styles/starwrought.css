@@ -203,6 +203,81 @@
 .starwrought .sw-field.sw-readonly strong { font-size: 0.95rem; color: var(--sw-gold); }
 .starwrought .sw-field.sw-alert strong { color: var(--sw-blood); }
 
+/* 0.5.1, the player-facing sheet (v0.51 TODO: T1, T8, T9, T10, T11, T13, T15, T16). One block.
+   -- Level and Milestones: a badge for the player, three star pips for everyone (T11).
+   -- Locked fields: identity and the chassis numbers read as text for a player (T8).
+   -- Hero Points: the player's one Spend button (T9).
+   -- The Strike pills' glyph at the Maneuvers tab's size (T1), the Refuse Death wrapper (T13),
+      the read-only Item sheet (T15), the card glyph (T16) and the audit card (T10). */
+.starwrought .sw-progress { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+.starwrought .sw-progress-row { display: flex; gap: 0.5rem; align-items: center; }
+.starwrought .sw-level-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(227, 178, 60, 0.18), rgba(227, 178, 60, 0.05));
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+  white-space: nowrap;
+}
+.starwrought .sw-level-badge strong { font-size: 1.05rem; color: var(--sw-gold); letter-spacing: 0; }
+.starwrought .sw-milestone-pips { display: inline-flex; gap: 0.2rem; padding-right: 0.3rem; cursor: help; }
+.starwrought .sw-milestone-pip { font-size: 0.8rem; color: var(--sw-edge); }
+.starwrought .sw-milestone-pip.sw-filled { color: var(--sw-flare); text-shadow: 0 0 6px rgba(255, 216, 103, 0.65); }
+
+.starwrought .sw-field.sw-locked { cursor: help; }
+.starwrought .sw-locked-value {
+  display: block;
+  min-height: 1.6rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-bottom-color: var(--sw-edge);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--sw-ink);
+}
+.starwrought .sw-locked-value:empty::before { content: "\2013"; color: var(--sw-ink-dim); opacity: 0.5; }
+
+.starwrought .sw-hero-spend-row { gap: 0.45rem; }
+.starwrought button.sw-hero-spend {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-color: var(--sw-gold-dim);
+  color: var(--sw-flare);
+  background: linear-gradient(180deg, rgba(255, 216, 103, 0.18), rgba(255, 216, 103, 0.05));
+  white-space: nowrap;
+}
+.starwrought button.sw-hero-spend:disabled { border-color: var(--sw-edge); color: var(--sw-ink-dim); background: transparent; }
+.starwrought.action-card.sw-hero-card { border-left: 3px solid var(--sw-gold); }
+.starwrought.action-card.sw-hero-card h3 .fa-star { color: var(--sw-flare); }
+
+/* The Strike pills: the gold numeral at the Maneuvers tab's size, the word small beside it. */
+.starwrought .sw-strike-button { padding: 0 0.5rem 0 0.3rem; gap: 0.25rem; }
+.starwrought .sw-strike-button .sw-action-glyph { font-size: 1.45rem; min-width: 0; letter-spacing: 0; line-height: 1.1; }
+.starwrought .sw-strike-button .sw-strike-word { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.starwrought .sw-button-wrap { display: inline-flex; }
+.starwrought .sw-button-wrap > button { width: 100%; }
+
+.starwrought .sw-item-name-locked { margin: 0; border-bottom: 1px solid var(--sw-edge); padding-bottom: 0.1rem; }
+.starwrought .sw-item-locked { margin-left: 0.5rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sw-gold-dim); cursor: help; }
+.starwrought.sheet input:disabled,
+.starwrought.sheet select:disabled,
+.starwrought.sheet textarea:disabled { border-color: transparent; border-bottom-color: var(--sw-edge); background: transparent; color: var(--sw-ink); opacity: 1; }
+
+.starwrought .sw-card-header h3 .sw-card-glyph { font-size: 1.2rem; min-width: 0; letter-spacing: 0; vertical-align: -0.1em; }
+
+.starwrought.action-card.sw-audit-card { border-left: 3px solid var(--sw-wits); }
+.starwrought.action-card.sw-audit-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sw-ink-dim); }
+.starwrought .sw-audit-lines { margin: 0; padding: 0 0 0 1rem; font-size: 0.8rem; line-height: 1.4; }
+
 .starwrought .sw-item-type { color: var(--sw-ink-dim); font-size: 0.8rem; }
 .starwrought .sw-item-subline { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8rem; }
 
@@ -863,7 +938,30 @@
 .starwrought .sw-bind-controlled { border-color: var(--sw-blood); background: linear-gradient(90deg, rgba(180, 69, 63, 0.18), transparent 70%); }
 .starwrought .sw-reaction-chip { color: var(--sw-agility); border-color: #3a6b62; }
 
-.starwrought prose-mirror { min-height: 8rem; display: block; }
+/* The Biography and Notes editors (0.5.1, T19). Foundry lays <prose-mirror> out as a column flex
+   box: a menu row and an editor container that takes the rest, with the content absolutely
+   positioned inside. The old `display: block` here broke that: with no flex, the menu row and the
+   editor container had no height of their own, so clicking the pen gave a toolbar drawn over a
+   zero-height editing area, and nothing to type into. Flex is restored, the content is in flow so
+   the box grows with what is written (Foundry's own `content-sized` treatment), and the pen is
+   shown always rather than on hover, so a player can see that the field is editable at all. */
+.starwrought prose-mirror {
+  display: flex;
+  flex-direction: column;
+  min-height: 10rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.2);
+}
+.starwrought prose-mirror.active { border-color: var(--sw-gold-dim); }
+.starwrought prose-mirror .editor-container { flex: 1 1 auto; overflow: visible; }
+.starwrought prose-mirror .editor-content { position: unset; padding: 0.4rem 2.2rem 0.4rem 0.6rem; font-size: 0.85rem; line-height: 1.45; }
+.starwrought prose-mirror.active .editor-content { padding-right: 0.6rem; min-height: 6rem; }
+.starwrought prose-mirror button.toggle:enabled { display: block; }
+.starwrought prose-mirror button.toggle { margin: 0.25rem; padding: 0.15rem 0.45rem; font-size: 0.75rem; line-height: 1; }
+.starwrought prose-mirror menu { background: var(--sw-night-3); border: 1px solid var(--sw-edge); }
+.starwrought prose-mirror menu button { color: var(--sw-ink); background: transparent; border: none; padding: 0.2rem 0.35rem; }
+.starwrought prose-mirror menu button:hover { color: var(--sw-flare); }
 
 /* --------------------------------------------------------------------------
    Character creation

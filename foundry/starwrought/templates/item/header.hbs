@@ -3,8 +3,18 @@
   <img class="sw-portrait sw-item-portrait" src="{{item.img}}" alt="{{item.name}}"
        data-action="editImage" data-tooltip="STARWROUGHT.Sheet.editImage">
   <div class="sw-header-body">
+    {{!-- A player reads a Talent, a Constellation or a Chassis rather than editing it (0.5.1, T15),
+          so the name is text, printed plain beside its glyph (T16); the GM keeps the input, which
+          holds the stored name, glyph and all. --}}
+    {{#if lockedForPlayer}}
+    <h2 class="sw-charname sw-item-name-locked">{{swPlainName item.name}}</h2>
+    {{else}}
     <input class="sw-charname" type="text" name="name" value="{{item.name}}">
-    <div class="sw-item-type">{{typeLabel}}</div>
+    {{/if}}
+    <div class="sw-item-type">
+      {{typeLabel}}
+      {{#if lockedForPlayer}}<span class="sw-item-locked" data-tooltip="STARWROUGHT.Sheet.readOnlyItemHint"><i class="fa-solid fa-lock"></i> {{localize "STARWROUGHT.Sheet.readOnlyItem"}}</span>{{/if}}
+    </div>
     {{#if isTalent}}
     <div class="sw-item-subline">
       <span class="sw-tier sw-tier-{{system.tier}}">{{localize system.tierLabel}}</span>

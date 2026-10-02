@@ -13,7 +13,7 @@
       <li class="sw-item-row sw-action-row" data-item-id="{{ability.id}}">
         <img src="{{ability.img}}" alt="{{ability.name}}">
         <span class="sw-action-glyph">{{ability.system.glyph}}</span>
-        <a class="sw-item-name" data-action="itemChat">{{ability.name}}</a>
+        <a class="sw-item-name" data-action="itemChat">{{swPlainName ability.name}}</a>
         {{#each ability.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
         <div class="sw-item-controls">
           <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>

@@ -18,6 +18,7 @@ import { SwItem } from "./module/documents/item.mjs";
 import { SwCombat, SwCombatant } from "./module/documents/combat.mjs";
 import { onRenderChatMessage } from "./module/documents/chat.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
+import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
 import { registerStrideRuler } from "./module/canvas/ruler.mjs";
 import { registerTargeting, refresh as refreshTargets } from "./module/canvas/targeting.mjs";
@@ -137,6 +138,7 @@ Hooks.once("init", async () => {
 
   registerSettings();
   registerActionTracking();
+  registerAudit();
   registerReachRings();
   registerStrideRuler();
   registerTargeting();

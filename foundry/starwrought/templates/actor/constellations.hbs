@@ -76,17 +76,23 @@
       <ol class="sw-talent-list">
         {{#each con.talents as |talent|}}
         <li class="sw-talent" data-item-id="{{talent.id}}">
+          {{!-- The image opens the Talent (0.5.1, T14); the chat control on the right sends it. The
+                name is printed plain, with the gold glyph the one cost shown (T16). --}}
           <img class="sw-talent-img" src="{{talent.img}}" alt="{{talent.name}}"
-               data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat">
+               data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.view">
           <span class="sw-tier sw-tier-{{talent.tier}}">{{talent.tier}}</span>
           <span class="sw-talent-name">
-            {{talent.name}}
+            {{swPlainName talent.name}}
             {{#if talent.root}}<em class="sw-root-mark" data-tooltip="STARWROUGHT.Field.rootHint">✧</em>{{/if}}
             {{#if talent.glyph}}<span class="sw-action-glyph">{{talent.glyph}}</span>{{/if}}
           </span>
           <div class="sw-talent-controls">
             <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
+            {{#if @root.isGM}}
             <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.edit"><i class="fa-solid fa-pen"></i></a>
+            {{else}}
+            <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.view"><i class="fa-solid fa-eye"></i></a>
+            {{/if}}
             <a data-action="itemDelete" data-tooltip="STARWROUGHT.Sheet.delete"><i class="fa-solid fa-trash"></i></a>
           </div>
         </li>

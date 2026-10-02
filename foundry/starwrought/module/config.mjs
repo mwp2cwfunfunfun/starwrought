@@ -897,3 +897,28 @@ export function slugify(name) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+/* -------------------------------------------- */
+/*  Plain names (0.5.1, T16)                    */
+/* -------------------------------------------- */
+
+/**
+ * A Talent's or Maneuver's name as it is printed beside its gold cost glyph. The spreadsheets put
+ * the glyph in the name ("Bull Rush ❷", "Strike ❶ to ❸", "Aid ❶ (⓿↺)") and document ids hash that
+ * name, so the data keeps it; the sheets and cards print the cost once, as `system.glyph`, and
+ * the name without it. Mirrors stripGlyphs and actionName in assets/build_foundry.mjs: the v4.10
+ * glyphs and ↺, a bracketed Reaction cost, the v3 ◆ and ◇, the capstone star, and the "to" or
+ * "or" a cost range leaves dangling. A name that was nothing but glyphs comes back as it was.
+ * @param {string} name
+ * @returns {string}
+ */
+export function plainName(name) {
+  const raw = String(name ?? "");
+  const bare = raw
+    .replace(/\(\s*[◆◇↺★⓿❶❷❸❹❺❻\s]*\)/g, "")
+    .replace(/[◆◇↺★⓿❶❷❸❹❺❻]/g, "")
+    .replace(/\s+(to|or)\s*$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return bare || raw.trim();
+}

@@ -22,7 +22,7 @@
         <li class="sw-item-row sw-action-row" data-uuid="{{action.uuid}}">
           <img src="{{action.img}}" alt="{{action.name}}">
           <span class="sw-action-glyph" data-tooltip="{{action.costLabel}}">{{action.glyph}}</span>
-          <a class="sw-item-name" data-action="basicUse" data-tooltip="{{action.hint}}">{{action.name}}</a>
+          <a class="sw-item-name" data-action="basicUse" data-tooltip="{{action.hint}}">{{swPlainName action.name}}</a>
           {{#each action.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
           {{#if action.requirements}}
           <span class="sw-item-tag" data-tooltip="{{action.requirements}}">{{localize "STARWROUGHT.Field.requirements"}}</span>
@@ -57,7 +57,7 @@
       <li class="sw-item-row sw-action-row" data-item-id="{{action.id}}">
         <img src="{{action.img}}" alt="{{action.name}}">
         <span class="sw-action-glyph" data-tooltip="{{action.system.costLabel}}">{{action.system.glyph}}</span>
-        <a class="sw-item-name" data-action="itemUse">{{action.name}}</a>
+        <a class="sw-item-name" data-action="itemUse">{{swPlainName action.name}}</a>
         {{#if action.system.category}}<span class="sw-item-tag">{{action.system.category}}</span>{{/if}}
         {{#each action.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
         <div class="sw-item-controls">

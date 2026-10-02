@@ -104,6 +104,9 @@ export function bindContext(actor) {
 /** Bind states, mapped onto the condition each shows on the token. */
 const BIND_KEYS = Object.freeze({ neutral: "bound", controlling: "controlling", controlled: "controlled" });
 
+/** Milestones that grant a Talent Point before the next one is a level (PHB v4.10: four make a level). */
+const MILESTONES_PER_LEVEL = 3;
+
 /**
  * Vigor as the bar draws it: the value's share of the track, and Temporary Vigor laid on top as
  * its own segment, capped so the two together never overflow. Shared by both sheets.
@@ -194,6 +197,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rest: SwCharacterSheet.#onRest,
       recovery: SwCharacterSheet.#onRecovery,
       refuseDeath: SwCharacterSheet.#onRefuseDeath,
+      spendHeroPoint: SwCharacterSheet.#onSpendHeroPoint,
       treatWound: SwCharacterSheet.#onTreatWound,
       adjustWound: SwCharacterSheet.#onAdjustWound,
       endBind: SwCharacterSheet.#onEndBind,
@@ -353,6 +357,26 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.dyingMax = SW.DYING_MAX;
     context.heroMax = SW.HERO_POINTS_MAX;
     context.woundCount = sys.woundCount ?? Object.keys(SW.ZONES).reduce((n, z) => n + (sys.zones[z]?.wounds ?? 0), 0);
+
+    // 0.5.1 (T11): the Milestones as three star pips under the level, filled as they are reached;
+    // the GM sees the same pips beside the inputs. The fourth Milestone is the level itself.
+    const reached = Math.clamp(Number(sys.milestone) || 0, 0, MILESTONES_PER_LEVEL);
+    context.milestones = {
+      reached,
+      pips: Array.fromRange(MILESTONES_PER_LEVEL, 1).map(n => ({ n, filled: n <= reached })),
+      tooltip: game.i18n.format("STARWROUGHT.Milestone.pipHint", { n: reached, of: MILESTONES_PER_LEVEL })
+    };
+
+    // 0.5.1 (T13): Refuse Death is for the Dying with a Hero Point to spend; the button says why
+    // it is off otherwise. The tooltip rides on a wrapper, since a disabled button swallows hover.
+    const dying = (Number(sys.dying) || 0) > 0;
+    const heroPoints = (Number(sys.heroPoints?.value) || 0) > 0;
+    context.refuse = {
+      enabled: dying && heroPoints,
+      hint: game.i18n.localize(!dying ? "STARWROUGHT.Roll.refuseDeathNotDying"
+        : !heroPoints ? "STARWROUGHT.Roll.refuseDeathNoHero"
+        : "STARWROUGHT.Roll.refuseDeathHint")
+    };
     context.resistancesText = SwCharacterSheet.formatDamageMods(sys.traits.resistances);
     context.weaknessesText = SwCharacterSheet.formatDamageMods(sys.traits.weaknesses);
     context.immunitiesText = Array.from(sys.traits.immunities ?? []).join(", ");
@@ -376,6 +400,33 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.partId = partId;
     if (context.tabs?.[partId]) context.tab = context.tabs[partId];
     return context;
+  }
+
+  /**
+   * An open Biography or Notes editor across a re-render (0.5.1, T19). The sheet redraws its parts
+   * whenever the actor changes, and a change can arrive from anywhere while a player is typing: a
+   * round's reset, a GM's edit, a Wound. Foundry's part sync keeps focus and scroll but not an
+   * open <prose-mirror>, whose teardown saves into a detached element and so loses the draft. So
+   * the draft is saved first, while the old part is still in the form (the save fires the change
+   * the sheet submits on), and the editor is reopened on the new part.
+   * @inheritdoc
+   */
+  _preSyncPartState(partId, newElement, priorElement, state) {
+    super._preSyncPartState(partId, newElement, priorElement, state);
+    state.swOpenEditors = [];
+    for (const editor of priorElement.querySelectorAll("prose-mirror[open]")) {
+      if (editor.name) state.swOpenEditors.push(editor.name);
+      try { editor.save(); } catch (err) { console.error("STARWROUGHT | an open editor could not be saved before the sheet redrew", err); }
+    }
+  }
+
+  /** @inheritdoc */
+  _syncPartState(partId, newElement, priorElement, state) {
+    super._syncPartState(partId, newElement, priorElement, state);
+    for (const name of state.swOpenEditors ?? []) {
+      const editor = newElement.querySelector(`prose-mirror[name="${CSS.escape(name)}"]`);
+      if (editor && !editor.disabled) editor.toggleAttribute("open", true);
+    }
   }
 
   /* -------------------------------------------- */
@@ -769,6 +820,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.refuseDeath();
   }
 
+  /** The player's one Hero Point control (0.5.1, T9): spend one, and the table is told. */
+  static async #onSpendHeroPoint() {
+    return this.document.spendHeroPoint();
+  }
+
   /** Ten minutes and an Endure check against 10 + the Wounds carried. The actor rolls it. */
   static async #onTreatWound(event, target) {
     const zone = target.closest("[data-zone]")?.dataset.zone ?? target.dataset.zone;
@@ -906,8 +962,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.setStance(target.dataset.stance);
   }
 
+  /** The reset arrow: a hand adjustment, so the audit announces it (0.5.1, T10). */
   static async #onResetActions() {
-    return this.document.resetActions();
+    return this.document.resetActions({ byHand: true });
   }
 
   /** Pass: decline this Opportunity. Not a Maneuver; a full circuit of Passes ends the round. */

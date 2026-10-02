@@ -299,7 +299,8 @@ export class SwDamage {
       droppedTo0: (before > 0) && (after === 0)
     };
 
-    await actor.update(updates);
+    // swAnnounced: the applied card says what the Blow took; the audit stays quiet (0.5.1, T10).
+    await actor.update(updates, { swAnnounced: true });
 
     // Reaching 0 Vigor is Spent: still on your feet, nothing left between the blows and the body.
     if (result.droppedTo0) await actor.setCondition("spent", true);
