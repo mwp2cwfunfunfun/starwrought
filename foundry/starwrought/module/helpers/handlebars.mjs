@@ -69,6 +69,12 @@ export function registerHandlebarsHelpers() {
     /** Add numbers. */
     swAdd(...args) {
       return args.slice(0, -1).reduce((n, v) => n + (Number(v) || 0), 0);
+    },
+
+    // 0.5.1 (T16): a Talent's or Maneuver's name without the cost glyph the data carries in it,
+    // so a row prints the gold glyph once and the name beside it. See SW.plainName.
+    swPlainName(name) {
+      return SW.plainName(name);
     }
   });
 }

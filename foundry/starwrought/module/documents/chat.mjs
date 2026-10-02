@@ -295,7 +295,7 @@ async function exposeFromCard(button) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.notOwnedExpose", { name: actor.name }));
       continue;
     }
-    await actor.setExposed(zone, true);
+    await actor.setExposed(zone, true, { announced: true });
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
       content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Condition.exposed")}</h3>
@@ -342,7 +342,7 @@ async function formBindFromCard(button) {
     },
     rejectClose: false
   });
-  if (zone && (zone in SW.ZONES)) await partner.setExposed(zone, true);
+  if (zone && (zone in SW.ZONES)) await partner.setExposed(zone, true, { announced: true });
 }
 
 /** An Evade that Grazed gives 3 feet of ground, directly away from the attacker. */

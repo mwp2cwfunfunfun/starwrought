@@ -276,8 +276,9 @@ export class SwCheck {
 
     // The answer behind the Defense, named as answeringDefense names it: "Guard (Parry)", or
     // the Posture's own name.
+    // Plain (0.5.1, T16): the card appends the ⓿↺ itself, so the data's glyph would print twice.
     const postureName = posture
-      ? (posture.name ?? defender?.items?.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? SW.plainName(posture.name ?? defender?.items?.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
       : "";
     const answerText = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
     const defenseLabel = game.i18n.localize(SW.DEFENSES[defense].label);

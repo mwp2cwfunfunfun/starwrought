@@ -198,7 +198,8 @@ function answerText(revealed) {
   if (revealed.posture) {
     const zone = SW.ZONES[revealed.posture.zone];
     return game.i18n.format("STARWROUGHT.Attack.answerPosture", {
-      name: revealed.posture.name ?? "",
+      // Plain (0.5.1, T16): the string appends ⓿↺ itself.
+      name: SW.plainName(revealed.posture.name ?? ""),
       zone: zone ? game.i18n.localize(zone.label) : (revealed.posture.zone ?? "")
     });
   }

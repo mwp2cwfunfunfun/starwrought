@@ -9,36 +9,59 @@
     <div class="sw-name-row">
       <input class="sw-charname" type="text" name="name" value="{{actor.name}}"
              placeholder="{{localize 'STARWROUGHT.Sheet.namePlaceholder'}}">
-      <div class="sw-level">
-        <label>{{localize "STARWROUGHT.Field.level"}}</label>
-        <input type="number" name="system.level" value="{{system.level}}" min="1" max="20" step="1">
-      </div>
-      <div class="sw-milestone" data-tooltip="STARWROUGHT.Field.milestoneHint">
-        <label>{{localize "STARWROUGHT.Field.milestone"}}</label>
-        <input type="number" name="system.milestone" value="{{system.milestone}}" min="0" max="3" step="1">
+      {{!-- Level and Milestones (0.5.1, T11): the GM types them; a player reads a badge, and both
+            see the same three star pips, filled as Milestones are reached. The fourth is a level. --}}
+      <div class="sw-progress">
+        <div class="sw-progress-row">
+          {{#if isGM}}
+          <div class="sw-level">
+            <label>{{localize "STARWROUGHT.Field.level"}}</label>
+            <input type="number" name="system.level" value="{{system.level}}" min="1" max="20" step="1">
+          </div>
+          <div class="sw-milestone" data-tooltip="STARWROUGHT.Field.milestoneHint">
+            <label>{{localize "STARWROUGHT.Field.milestone"}}</label>
+            <input type="number" name="system.milestone" value="{{system.milestone}}" min="0" max="3" step="1">
+          </div>
+          {{else}}
+          <span class="sw-level-badge" data-tooltip="STARWROUGHT.Milestone.levelHint">
+            {{localize "STARWROUGHT.Field.level"}} <strong>{{system.level}}</strong>
+          </span>
+          {{/if}}
+        </div>
+        <span class="sw-milestone-pips" data-tooltip="{{milestones.tooltip}}">
+          {{#each milestones.pips as |pip|}}
+          <i class="sw-milestone-pip {{#if pip.filled}}fa-solid sw-filled{{else}}fa-regular{{/if}} fa-star"></i>
+          {{/each}}
+        </span>
       </div>
     </div>
 
+    {{!-- Identity (0.5.1, T8): set at creation, read by the player, typed only by the GM. --}}
     <div class="sw-identity">
-      <label class="sw-field">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.ancestry"}}</span>
-        <input type="text" name="system.details.ancestry.name" value="{{system.details.ancestry.name}}">
+        {{#if isGM}}<input type="text" name="system.details.ancestry.name" value="{{system.details.ancestry.name}}">
+        {{else}}<strong class="sw-locked-value">{{system.details.ancestry.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.bloodline"}}</span>
-        <input type="text" name="system.details.bloodline.name" value="{{system.details.bloodline.name}}">
+        {{#if isGM}}<input type="text" name="system.details.bloodline.name" value="{{system.details.bloodline.name}}">
+        {{else}}<strong class="sw-locked-value">{{system.details.bloodline.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.culture"}}</span>
-        <input type="text" name="system.details.culture.name" value="{{system.details.culture.name}}">
+        {{#if isGM}}<input type="text" name="system.details.culture.name" value="{{system.details.culture.name}}">
+        {{else}}<strong class="sw-locked-value">{{system.details.culture.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.background"}}</span>
-        <input type="text" name="system.details.background.name" value="{{system.details.background.name}}">
+        {{#if isGM}}<input type="text" name="system.details.background.name" value="{{system.details.background.name}}">
+        {{else}}<strong class="sw-locked-value">{{system.details.background.name}}</strong>{{/if}}
       </label>
-      <label class="sw-field">
+      <label class="sw-field {{#unless isGM}}sw-locked{{/unless}}" {{#unless isGM}}data-tooltip="STARWROUGHT.Sheet.lockedField"{{/unless}}>
         <span>{{localize "STARWROUGHT.Chassis.calling"}}</span>
-        <input type="text" name="system.details.calling.name" value="{{system.details.calling.name}}">
+        {{#if isGM}}<input type="text" name="system.details.calling.name" value="{{system.details.calling.name}}">
+        {{else}}<strong class="sw-locked-value">{{system.details.calling.name}}</strong>{{/if}}
       </label>
     </div>
 
@@ -76,13 +99,25 @@
       {{/if}}
 
       <div class="sw-counters">
-        <div class="sw-counter" data-tooltip="STARWROUGHT.Field.heroPointsHint">
+        {{!-- Hero Points (0.5.1, T9): the GM awards them with the stepper; a player has one button,
+              Spend, and every press is a public card. Refuse Death takes them all by its own path. --}}
+        <div class="sw-counter sw-hero-counter" data-tooltip="{{#if isGM}}STARWROUGHT.Field.heroPointsHint{{else}}STARWROUGHT.HeroPoints.playerHint{{/if}}">
           <span class="sw-counter-label">{{localize "STARWROUGHT.Field.heroPoints"}}</span>
+          {{#if isGM}}
           <div class="sw-stepper">
             <a data-action="adjust" data-path="system.heroPoints.value" data-delta="-1">−</a>
             <strong>{{system.heroPoints.value}}</strong>
             <a data-action="adjust" data-path="system.heroPoints.value" data-delta="1">+</a>
           </div>
+          {{else}}
+          <div class="sw-stepper sw-hero-spend-row">
+            <strong>{{system.heroPoints.value}}</strong>
+            <button type="button" class="sw-hero-spend" data-action="spendHeroPoint"
+                    {{#unless system.heroPoints.value}}disabled{{/unless}}>
+              <i class="fa-solid fa-star"></i> {{localize "STARWROUGHT.HeroPoints.spend"}}
+            </button>
+          </div>
+          {{/if}}
         </div>
         <div class="sw-counter {{#if woundCount}}sw-alert{{/if}}" data-tooltip="STARWROUGHT.Field.woundCountHint">
           <span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounds"}}</span>

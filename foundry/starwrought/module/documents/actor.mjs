@@ -322,8 +322,9 @@ export class SwActor extends Actor {
     // Zone is the player's choice at the prompt, so one without a Zone is not a Posture yet.
     const posture = (askedPosture?.talentId && (askedPosture.zone in SW.ZONES)) ? askedPosture : null;
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
+    // Plain, so the ⓿↺ the modifier line and the card append is the only one shown (0.5.1, T16).
     const postureName = posture
-      ? (posture.name ?? this.items.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? SW.plainName(posture.name ?? this.items.get(posture.talentId)?.name ?? game.i18n.localize(SW.REACTIONS.posture.label))
       : "";
 
     const attackerToken = givenAttacker?.document ? givenAttacker
@@ -1168,7 +1169,7 @@ export class SwActor extends Actor {
   async beginDying({ critical = false } = {}) {
     const start = critical ? 2 : 1;
     const dying = Math.min(SW.DYING_MAX, Math.max(this.system.dying ?? 0, start));
-    await this.update({ "system.dying": dying });
+    await this.update({ "system.dying": dying }, { swAnnounced: true });
     await this.setCondition("dying", dying);
     await this.setCondition("unconscious", true);
     if (this.system.actions?.preparing) await this.abandonPrepared({ reason: "wound" });
@@ -1179,7 +1180,7 @@ export class SwActor extends Actor {
   /** Taking damage while Dying increases the value by 1, or by 2 from a Critical Hit. */
   async increaseDying(amount = 1) {
     const dying = Math.min(SW.DYING_MAX, (this.system.dying ?? 0) + amount);
-    await this.update({ "system.dying": dying });
+    await this.update({ "system.dying": dying }, { swAnnounced: true });
     await this.setCondition("dying", dying);
     if (dying >= SW.DYING_MAX) await this.#die();
   }
@@ -1195,7 +1196,7 @@ export class SwActor extends Actor {
   async endDying({ conscious = false, vigor = 0, hp = 0 } = {}) {
     const updates = { "system.dying": 0 };
     if (conscious) updates["system.vigor.value"] = Math.max(1, Number(vigor) || Number(hp) || 0);
-    await this.update(updates);
+    await this.update(updates, { swAnnounced: true });
     await this.setCondition("dying", 0);
     if (conscious) {
       await this.setCondition("unconscious", false);
@@ -1241,7 +1242,7 @@ export class SwActor extends Actor {
       case "success": {
         const dying = this.system.dying - 1;
         if (dying <= 0) await this.endDying({ conscious: false });
-        else await this.update({ "system.dying": dying }).then(() => this.setCondition("dying", dying));
+        else await this.update({ "system.dying": dying }, { swAnnounced: true }).then(() => this.setCondition("dying", dying));
         break;
       }
       case "fail":
@@ -1263,11 +1264,17 @@ export class SwActor extends Actor {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noHeroPoints"));
       return;
     }
+    // Only the Dying refuse death (0.5.1, T13): the button is disabled otherwise, and a macro
+    // that reaches here anyway is told why nothing happened.
+    if (!((this.system.dying ?? 0) > 0)) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Roll.refuseDeathNotDying"));
+      return;
+    }
     await this.update({
       "system.dying": 0,
       "system.vigor.value": 0,
       "system.heroPoints.value": 0
-    });
+    }, { swAnnounced: true });
     await this.setCondition("dying", 0);
     await this.setCondition("dead", false);
     await this.setCondition("unconscious", true);
@@ -1277,6 +1284,35 @@ export class SwActor extends Actor {
       content: `<div class="starwrought refuse-death"><h3>${game.i18n.localize("STARWROUGHT.Roll.refuseDeath")}</h3>
         <p>${game.i18n.format("STARWROUGHT.Roll.refuseDeathText", { name: this.name })}</p></div>`
     });
+  }
+
+  /* -------------------------------------------- */
+  /*  Hero Points (0.5.1, T9)                     */
+  /* -------------------------------------------- */
+
+  /**
+   * Spend one Hero Point, and say so. Players cannot add Hero Points (the GM awards them, with the
+   * stepper the GM's sheet keeps), so the player's header carries one button, this, and every
+   * press is a public card: "Hrolda spends a Hero Point (2 left)." Refuse Death keeps its own
+   * path and takes every point at once. The update is marked for the audit (module/documents/
+   * audit.mjs), which would otherwise announce the same change a second time.
+   * @returns {Promise<number|null>} the points left, or null when there was nothing to spend
+   */
+  async spendHeroPoint() {
+    const have = Number(this.system.heroPoints?.value) || 0;
+    if (have <= 0) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noHeroPoints"));
+      return null;
+    }
+    const left = have - 1;
+    await this.update({ "system.heroPoints.value": left }, { swAnnounced: true });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-hero-card" data-actor-uuid="${this.uuid}">
+        <h3><i class="fa-solid fa-star"></i> ${game.i18n.localize("STARWROUGHT.HeroPoints.title")}</h3>
+        <p>${game.i18n.format("STARWROUGHT.HeroPoints.spent", { name: foundry.utils.escapeHTML(this.name), left })}</p></div>`
+    });
+    return left;
   }
 
   /* -------------------------------------------- */
@@ -1385,7 +1421,8 @@ export class SwActor extends Actor {
     if (n <= 0) return true;
 
     const left = this.system.actions.value ?? 0;
-    await this.update({ "system.actions.value": Math.max(0, left - n) });
+    // swAnnounced: the spend card (or the overspend card) says it; the audit stays quiet.
+    await this.update({ "system.actions.value": Math.max(0, left - n) }, { swAnnounced: true });
     if (n > left) await this.#announceOverspend({ label, need: n, left });
     else if (announce && this.announcesSpends) await this.#announceSpend({ label, spent: n });
 
@@ -1468,8 +1505,12 @@ export class SwActor extends Actor {
    * A fresh round: six actions (an adversary's own number), nothing reserved, nothing Preparing.
    * Unspent actions expired with the old round; a Prepared Maneuver that never reached its next
    * Opportunity expires with them. Slowed N loses N actions at the start of the round.
+   * @param {object} [options]
+   * @param {boolean} [options.byHand=false]  The sheet's reset arrow rather than the round's turn:
+   *                                           a player's hand adjustment, which the audit announces
+   *                                           (0.5.1, T10); the round's own reset is marked silent.
    */
-  async resetActions() {
+  async resetActions({ byHand = false } = {}) {
     const sys = this.system;
     if (!sys.actions) return;
     const per = (this.type === "npc") ? (sys.actionsPerRound ?? SW.ACTIONS_PER_ROUND) : SW.ACTIONS_PER_ROUND;
@@ -1479,7 +1520,7 @@ export class SwActor extends Actor {
       "system.actions.value": Math.max(0, per - slowed),
       "system.actions.reserved": 0,
       "system.actions.preparing": null
-    });
+    }, { swAnnounced: !byHand });
     if (hadPreparation) {
       await this.setCondition("preparing", false);
       await ChatMessage.create({
@@ -1524,7 +1565,7 @@ export class SwActor extends Actor {
       "system.actions.value": Math.max(0, left - cost),
       "system.actions.reserved": reserve,
       "system.actions.preparing": preparing
-    });
+    }, { swAnnounced: true });
     // "You must have enough unspent actions." Announced, not enforced.
     if (cost > left) await this.#announceOverspend({ label: game.i18n.format("STARWROUGHT.Prepared.paying", { what: label }), need: cost, left });
     await this.setCondition("preparing", true);
@@ -1594,7 +1635,7 @@ export class SwActor extends Actor {
       "system.actions.value": (actions.value ?? 0) + (actions.reserved ?? 0),
       "system.actions.reserved": 0,
       "system.actions.preparing": null
-    });
+    }, { swAnnounced: true });
     await this.setCondition("preparing", false);
     const key = reason === "wound" ? "STARWROUGHT.Wound.abandonsPrepared"
       : reason === "replaced" ? "STARWROUGHT.Prepared.abandonedReplaced"
@@ -1720,7 +1761,7 @@ export class SwActor extends Actor {
       if (this.system.zones?.[zone]?.postureExposed) { kept++; continue; }
       updates[`system.zones.${zone}.exposed`] = false;
     }
-    await this.update(updates);
+    await this.update(updates, { swAnnounced: true });
     const hadBind = !!this.system.bind?.state;
     if (hadBind) await this.endBind({ announce: false });
     await ChatMessage.create({
@@ -1738,13 +1779,16 @@ export class SwActor extends Actor {
    * @param {boolean} [exposed=true]
    * @param {object} [options]
    * @param {boolean} [options.posture=false]
+   * @param {boolean} [options.announced]  The caller's card already says it (a Posture's reveal,
+   *                                        a Position offer), so the audit stays quiet (0.5.1,
+   *                                        T10). Defaults to `posture`; a sheet toggle is announced.
    */
-  async setExposed(zone, exposed = true, { posture = false } = {}) {
+  async setExposed(zone, exposed = true, { posture = false, announced = posture } = {}) {
     if (!(zone in SW.ZONES)) return;
     return this.update({
       [`system.zones.${zone}.exposed`]: !!exposed,
       [`system.zones.${zone}.postureExposed`]: !!exposed && !!posture
-    });
+    }, { swAnnounced: !!announced });
   }
 
   /** End of round: a Zone Exposed by a Posture closes now, and only now. */
@@ -1755,7 +1799,7 @@ export class SwActor extends Actor {
       updates[`system.zones.${zone}.exposed`] = false;
       updates[`system.zones.${zone}.postureExposed`] = false;
     }
-    if (Object.keys(updates).length) await this.update(updates);
+    if (Object.keys(updates).length) await this.update(updates, { swAnnounced: true });
   }
 
   /* -------------------------------------------- */
@@ -1932,9 +1976,10 @@ export class SwActor extends Actor {
       : (sys.level ?? 1) * Math.max(1, sys.attributes?.presence?.mod ?? 0);
     const max = Number.isNumeric(vigor.max) ? vigor.max : (vigor.value + rest);
     const healed = Math.max(0, Math.min(rest, max - vigor.value));
+    // A night's rest gives no Hero Point (Mike, 0.5.1 T12); the GM awards those. The rest card
+    // says what the night did, so the audit stays quiet about the Temporary Vigor it cleared.
     const updates = { "system.vigor.value": vigor.value + healed, "system.vigor.temp": 0 };
-    if (sys.heroPoints) updates["system.heroPoints.value"] = Math.max(sys.heroPoints.value ?? 0, 1);
-    await this.update(updates);
+    await this.update(updates, { swAnnounced: true });
     if ((vigor.value + healed) > 0) await this.setCondition("spent", false);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
