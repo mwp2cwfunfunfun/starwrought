@@ -474,8 +474,13 @@ v4.14 and the roster alike, "You can sleep in it without increasing your Fatigue
   rank and bonus for each Skill Constellation and Defense, read live; (d) a Loot panel, Items on
   the party Actor that a member's owner Takes onto their character, with a card announcing it;
   (e) an Exploration Mode panel where each member picks an Activity from the actions compendium's
-  Exploration group and rolls its check from the party sheet. Go or not is Mike's call; the v4.14
-  sync report asks.
+  Exploration group and rolls its check from the party sheet. The full design is
+  `party-sheet-plan.md` in the project root (2026-10-02, a three-lens panel and a judge): a
+  `party` Actor type extending `TypeDataModel` (never `SwActorData`), GM-owned with Observer
+  players, rule state left on the characters and read live, four phases (the party and the
+  Milestone award at 0.7.0; loot and the purse over a `party:take` relay; the road, with Travel
+  Speed and Initiative by Activity; Downtime), sixteen decisions for Mike with recommendations,
+  and the twelve handbook sentences the later phases lean on. Go or not is Mike's call.
 - **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
