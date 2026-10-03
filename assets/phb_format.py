@@ -1329,6 +1329,36 @@ def set_style_rpr(styles, style_id, rpr_inner, report):
     return styles[: m.start()] + new_block + styles[m.end():]
 
 
+def canonicalize_style_ids(xml, styles, report):
+    """
+    Word rewrites a custom style's id from its name when it saves ("SW Table" becomes SWTable,
+    "SW Rank Trained" becomes SWRankTrained), so an edition the author has opened and saved no
+    longer carries the ids this script looks for, and a rerun would define its styles a second
+    time beside Word's and restyle every run. The style's name is the stable key: every style of
+    ours is found by name in styles.xml and its id put back to ours, in both parts, wherever the id
+    is referenced (rStyle, pStyle, tblStyle, basedOn, link, next), before any pass runs. An id is
+    only an identifier, so the rename changes nothing a reader sees; Word will rename them again on
+    its next save, and this puts them back again.
+    """
+    ours = {name: style_id for style_id, name, _ in CHARACTER_STYLES}
+    ours["SW Constellation Meta"] = "SwMeta"
+    ours["SW Table"] = "SwTable"
+    renames = {}
+    for m in re.finditer(r'<w:style\b[^>]*w:styleId="([^"]+)"[^>]*>\s*<w:name w:val="([^"]+)"', styles):
+        actual, name = m.group(1), m.group(2)
+        wanted = ours.get(name)
+        if wanted and actual != wanted:
+            renames[actual] = wanted
+    for old, new in renames.items():
+        for attr in ("w:val", "w:styleId"):
+            xml = xml.replace('%s="%s"' % (attr, old), '%s="%s"' % (attr, new))
+            styles = styles.replace('%s="%s"' % (attr, old), '%s="%s"' % (attr, new))
+    if renames:
+        report.count("0 style ids put back after Word renamed them", len(renames))
+        report.note("style ids put back", ", ".join("%s to %s" % kv for kv in sorted(renames.items())))
+    return xml, styles
+
+
 def update_styles(styles, report):
     for style_id, (color, sz) in HEADING_RPR.items():
         styles = set_style_rpr(styles, style_id, '<w:b/><w:bCs/><w:color w:val="%s"/><w:sz w:val="%s"/><w:szCs w:val="%s"/>' % (color, sz, sz), report)
@@ -1406,6 +1436,7 @@ def main():
 
     dicts = Dictionaries(ROOT)
     report = Report(verbose)
+    xml, styles = canonicalize_style_ids(xml, styles, report)
     print("formatting %s" % os.path.basename(src))
     print("  dictionaries: %d Constellations, %d Talents (%d multiword), %d Conditions, %d Trait words, %d Maneuvers and Activities"
           % (len(dicts.constellations), len(dicts.talents), len(dicts.talents_multi), len(dicts.conditions), len(dicts.traits), len(dicts.maneuvers)))
