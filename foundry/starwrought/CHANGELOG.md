@@ -139,7 +139,9 @@ patch release of the rules, so a patch bump, and no world migration. The rulings
   adversarial verifier compared 35 pages before and after and found one visible inconsistency,
   fixed before the stamp (the Callings table's Free Training column now italic in every cell).
   What the pass left to Mike is listed in `handbook-style.md` under "Open choices" and in the
-  v4.14 sync report.
+  v4.14 sync report. Mike then refreshed the contents field and removed Appendix A (This Book's
+  Style), whose conventions `handbook-style.md` now carries; `data/SYNC.json` records the hash of
+  the edition as he saved it. No rule moved.
 - The version stamps read 0.6.3 in all three places: `system.json`, `SYSTEM_VERSION` in
   `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: nothing stored changes
   shape.

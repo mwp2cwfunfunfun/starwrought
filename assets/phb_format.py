@@ -573,13 +573,17 @@ class Model:
         for p in self.paras:
             p.field_open = depth > 0
             depth += p.xml.count('w:fldCharType="begin"') - p.xml.count('w:fldCharType="end"')
-        # Sections: before the Welcome heading nothing is touched; Appendix A is the style guide.
+        # Sections: before the Welcome heading nothing is touched. Appendix A was the book's own style
+        # guide through v4.14 and is treated as its own section where it exists; Mike removed it in
+        # v4.15 once handbook-style.md took over its job, so a handbook without it runs the body to
+        # the end of the document.
         welcome = [p for p in self.paras if p.heading == 1 and p.text.strip().startswith(WELCOME_HEADING)]
         appendix = [p for p in self.paras if p.heading == 1 and p.text.strip().startswith(APPENDIX_HEADING)]
-        if len(welcome) != 1 or len(appendix) != 1:
+        if len(welcome) != 1 or len(appendix) > 1:
             raise SystemExit("this does not look like the handbook: Heading 1 %r found %d times, %r %d times"
                              % (WELCOME_HEADING, len(welcome), APPENDIX_HEADING, len(appendix)))
-        self.welcome_start, self.appendix_start = welcome[0].start, appendix[0].start
+        self.welcome_start = welcome[0].start
+        self.appendix_start = appendix[0].start if appendix else len(self.xml) + 1
         for p in self.paras:
             p.section = "pre" if p.start < self.welcome_start else ("appendix" if p.start >= self.appendix_start else "body")
         for t in self.tables:

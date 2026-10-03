@@ -41,7 +41,8 @@ in the Traits column of the weapon, armor and Maneuver tables, where the column 
 what the words are, nor in the key column of the three Trait glossary tables, which stays plain.
 Trait names are Title Case.
 
-**Constellations and Talents** print in italic (SW Constellation, SW Talent), as Appendix A says:
+**Constellations and Talents** print in italic (SW Constellation, SW Talent), as the book's old
+style appendix said before this file replaced it:
 "Roll *Athletics* against Evade or Guard", "*Two-Weapon Fighting* is a child of Melee", "requires
 *Shield Fighting Training*". The Requires column of every Talent table is italic because it names
 Talents. Defense names, Skill names and Combat Style names are Constellations. The glyph after a
@@ -120,8 +121,8 @@ one. Expert, Master and Legendary tier colors are taken from the rank table; no 
 color before. Three highlighted "Move" runs became Trait-tagged because they were highlighted,
 though Move is a Maneuver and Motion is the Trait. Updating the contents field in Word will print
 every entry regular unless the TOC 1 style is made bold, since the headings' bold now lives in the
-styles. Appendix A still says Traits are highlighted in green and defined terms are hyperlinked;
-the footer still says v4.10.
+styles. The book's Appendix A (This Book's Style) was removed by the author in v4.15 once this file
+took over its job; the edition tool stamps the footers now.
 
 ## Style rule
 
