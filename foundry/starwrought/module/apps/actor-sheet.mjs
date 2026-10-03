@@ -6,6 +6,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { MILESTONES_PER_LEVEL } from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
@@ -107,8 +108,8 @@ export function bindContext(actor) {
 /** Bind states, mapped onto the condition each shows on the token. */
 const BIND_KEYS = Object.freeze({ neutral: "bound", controlling: "controlling", controlled: "controlled" });
 
-/** Milestones that grant a Talent Point before the next one is a level (PHB v4.10: four make a level). */
-const MILESTONES_PER_LEVEL = 3;
+// MILESTONES_PER_LEVEL lived here until 0.7.0; it is SW.MILESTONES_PER_LEVEL now, so the Party
+// Sheet's Milestone award and these pips count from one constant (party-sheet-plan.md).
 
 /**
  * The Rules Reference page an effect's row opens: the first of its statuses that names one in
@@ -321,6 +322,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       recovery: SwCharacterSheet.#onRecovery,
       refuseDeath: SwCharacterSheet.#onRefuseDeath,
       spendHeroPoint: SwCharacterSheet.#onSpendHeroPoint,
+      spendDeferred: SwCharacterSheet.#onSpendDeferred,
       treatWound: SwCharacterSheet.#onTreatWound,
       adjustWound: SwCharacterSheet.#onAdjustWound,
       endBind: SwCharacterSheet.#onEndBind,
@@ -505,6 +507,17 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       reached,
       pips: Array.fromRange(MILESTONES_PER_LEVEL, 1).map(n => ({ n, filled: n <= reached })),
       tooltip: game.i18n.format("STARWROUGHT.Milestone.pipHint", { n: reached, of: MILESTONES_PER_LEVEL })
+    };
+
+    // 0.7.0 (party-sheet-plan.md, part 3; ruling 94): the Deferred Talent Points the character
+    // holds, a Milestone point that found no Flared Constellation. A reminder with a number on it,
+    // shown beside the pips while above 0, with one control, Spent, for the owner or the GM.
+    const deferred = Math.max(0, Number(sys.deferred) || 0);
+    context.deferred = {
+      count: deferred,
+      show: deferred > 0,
+      canSpend: actor.isOwner || game.user.isGM,
+      tooltip: game.i18n.format("STARWROUGHT.Deferred.badgeHint", { n: deferred })
     };
 
     // 0.5.1 (T13): Refuse Death is for the Dying with a Hero Point to spend; the button says why
@@ -1063,6 +1076,20 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** The player's one Hero Point control (0.5.1, T9): spend one, and the table is told. */
   static async #onSpendHeroPoint() {
     return this.document.spendHeroPoint();
+  }
+
+  /**
+   * The Deferred badge's one control (0.7.0, ruling 94): spend one Deferred Talent Point, and the
+   * table is told. ApplicationV2 actions fire whatever the sheet's editability, so the permission
+   * is checked again here: the owner, or the GM.
+   */
+  static async #onSpendDeferred() {
+    const actor = this.document;
+    if (!actor.isOwner && !game.user.isGM) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+      return null;
+    }
+    return actor.spendDeferred();
   }
 
   /** Ten minutes and an Endure check against 10 + the Wounds carried. The actor rolls it. */

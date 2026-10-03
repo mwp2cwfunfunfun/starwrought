@@ -401,7 +401,21 @@ export class SwCharacterData extends SwActorData {
         })
       }),
 
-      milestone: new fields.NumberField({ required: true, integer: true, min: 0, max: 3, initial: 0 }),
+      milestone: new fields.NumberField({
+        required: true, integer: true, min: 0, max: SW.MILESTONES_PER_LEVEL, initial: 0
+      }),
+
+      /**
+       * Deferred Talent Points (PHB v4.15, Table 4: "a Milestone Talent Point with no Flared
+       * Constellation becomes a Deferred Talent Point ... spent the instant a Constellation is
+       * Flared"). A count, not a budget (ruling 94, 2026-10-02: counted on the character, nothing
+       * enforced). The Party Sheet's Milestone award adds 1 for a member with no Flared
+       * Constellation to receive the point; the header's Spent control, or the party's, takes 1 off
+       * when the player spends it, which is a Talent bought or dragged as today and policed by
+       * nothing; the Flare card carries a reminder line while this is above 0 (party-sheet-plan.md,
+       * part 3 and risk 4). New in 0.7.0 with a default, so no world migration.
+       */
+      deferred: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
 
       zones: new fields.SchemaField(
         Object.keys(SW.ZONES).reduce((obj, z) => {

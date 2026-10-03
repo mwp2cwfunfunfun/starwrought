@@ -33,6 +33,19 @@
           <i class="sw-milestone-pip {{#if pip.filled}}fa-solid sw-filled{{else}}fa-regular{{/if}} fa-star"></i>
           {{/each}}
         </span>
+        {{!-- Deferred Talent Points (0.7.0, ruling 94): a Milestone point that found no Flared
+              Constellation, counted and never enforced. Shown while above 0, beside the pips, with
+              one control, Spent, for the owner or the GM. --}}
+        {{#if deferred.show}}
+        <span class="sw-level-badge sw-deferred-badge" data-tooltip="{{deferred.tooltip}}">
+          {{localize "STARWROUGHT.Deferred.badge"}} <strong>{{deferred.count}}</strong>
+          {{#if deferred.canSpend}}
+          <button type="button" class="sw-hero-spend sw-deferred-spend" data-action="spendDeferred">
+            <i class="fa-solid fa-hourglass-end"></i> {{localize "STARWROUGHT.Deferred.spend"}}
+          </button>
+          {{/if}}
+        </span>
+        {{/if}}
       </div>
     </div>
 

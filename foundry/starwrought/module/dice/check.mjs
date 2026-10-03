@@ -79,6 +79,9 @@ export class SwCheck {
 
     const actor = cfg.actor;
     if (!actor) throw new Error("STARWROUGHT | A check needs an Actor.");
+    // A party is never a combatant and rolls nothing (0.7.0, party-sheet-plan.md risk 1): a check
+    // from the Party Sheet is made as the member, through the member's own methods.
+    if (actor.type === SW.PARTY_TYPE) throw new Error("STARWROUGHT | A party rolls nothing; roll as the member.");
 
     // An attack is one of the three Strikes; a Defense roll answers one. When nobody says which,
     // the blow is read as Deliberate: full damage, and the middle of the table.
@@ -545,6 +548,9 @@ export class SwCheck {
     if (cfg.defenseForced) return;
     const defender = cfg.defender ?? (cfg.targetUuid ? fromUuidSync(cfg.targetUuid)?.actor : null);
     if (!defender?.answeringDefense) return;
+    // A party token targeted by mistake has no Defenses to read (0.7.0, risk 1): the Threshold
+    // stays unknown rather than reading as a bare 10.
+    if (defender.type === SW.PARTY_TYPE) return;
     // The threat the answer is read against: whether the Blow is ranged and how far it came, so
     // a Counter stance falls away for an arrow or a foe beyond Reach (PHB v4.10, Answering an Attack).
     const now = defender.answeringDefense(cfg.threat ?? {});

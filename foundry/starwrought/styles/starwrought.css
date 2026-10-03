@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.6.3";
+  --sw-css-version: "0.7.0";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -2102,3 +2102,270 @@ li.combatant.sw-in-crosshairs {
 .starwrought .sw-effect-rules:hover { color: var(--sw-gold); }
 /* The Exposed card takes the Zone's blood tint, as the bind card takes gold. */
 .starwrought .sw-exposed-card, .starwrought.sw-exposed-card { border-left: 3px solid var(--sw-blood); }
+
+/* --------------------------------------------------------------------------
+   The party (0.7.0; party-sheet-plan.md, phase 1). The GM's console and the
+   players' window: a header with the session and the GM's buttons, a roster
+   that is always open above the tabs (one status row per member, every number
+   the member's own), the Skills grid as a table, and the cards the party
+   speaks. The roster reuses the character header's pieces where it can (the
+   Vigor track, the Milestone pips, the level badge, the stat counters) so the
+   two sheets read as one.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-party-header .sw-portrait { border-color: var(--sw-presence); }
+.starwrought .sw-session-badge { border-color: var(--sw-edge); cursor: help; }
+.starwrought .sw-session-badge strong { color: var(--sw-presence); }
+.starwrought .sw-party-blurb { margin: 0; }
+.starwrought .sw-party-controls { align-items: center; }
+.starwrought .sw-party-controls .sw-party-add-players { margin-left: auto; }
+.starwrought .sw-party-drop { margin: 0; color: var(--sw-ink-dim); font-style: italic; }
+.starwrought .sw-party-drop i { margin-right: 0.2rem; opacity: 0.7; }
+
+/* The roster: a block above the tabs that holds its own scroll when the party is large, so the
+   grid tab below always keeps room. */
+.starwrought .sw-party-roster {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 55%;
+  overflow: hidden auto;
+  scrollbar-gutter: stable;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--sw-edge);
+}
+.starwrought .sw-roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.starwrought .sw-roster-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+}
+.starwrought .sw-roster-row.sw-roster-spent { border-color: #7a3a3a; }
+.starwrought .sw-roster-row.sw-roster-dying { border-color: var(--sw-blood); box-shadow: 0 0 8px rgba(180, 69, 63, 0.35); }
+.starwrought .sw-roster-row.sw-roster-missing { border-style: dashed; opacity: 0.75; align-items: center; }
+.starwrought .sw-roster-portrait {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 2px solid var(--sw-gold-dim);
+  border-radius: var(--sw-radius);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.starwrought .sw-roster-portrait:hover { border-color: var(--sw-flare); }
+.starwrought .sw-roster-portrait-missing {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sw-ink-dim); border-color: var(--sw-edge); cursor: default; font-size: 1.4rem;
+}
+.starwrought .sw-roster-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.starwrought .sw-roster-name-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.starwrought .sw-roster-name { font-family: var(--font-h1, inherit); font-size: 1.05rem; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-roster-name-missing { color: var(--sw-ink-dim); font-style: italic; font-weight: 500; }
+.starwrought .sw-roster-main > .sw-note { margin: 0; }
+.starwrought .sw-roster-players { display: inline-flex; gap: 0.2rem; margin-left: auto; cursor: help; }
+.starwrought .sw-player-dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--sw-player-color, var(--sw-ink-dim));
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 5px var(--sw-player-color, transparent);
+}
+.starwrought .sw-player-dot.sw-player-off { opacity: 0.3; box-shadow: none; }
+
+/* The Deferred badge (ruling 94): a reminder with a number on it, and one control, Spent. */
+.starwrought .sw-deferred-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--sw-agility);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(111, 194, 176, 0.18), rgba(111, 194, 176, 0.05));
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+  white-space: nowrap;
+  cursor: help;
+}
+.starwrought .sw-deferred-badge i { color: var(--sw-agility); font-size: 0.7rem; align-self: center; }
+.starwrought .sw-deferred-badge strong { font-size: 0.95rem; color: var(--sw-agility); letter-spacing: 0; }
+.starwrought .sw-deferred-spend {
+  margin-left: 0.15rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--sw-agility);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--sw-agility);
+}
+.starwrought .sw-deferred-spend:hover { background: rgba(111, 194, 176, 0.2); color: var(--sw-ink); text-shadow: none; }
+
+/* The vitals line: the Vigor track at the character sheet's size, then the counters. */
+.starwrought .sw-roster-vitals { display: flex; align-items: flex-start; gap: 0.6rem; flex-wrap: wrap; }
+.starwrought .sw-roster-vigor { flex: 1 1 200px; min-width: 160px; }
+.starwrought .sw-roster-vigor .sw-vigor-track { height: 24px; }
+.starwrought .sw-roster-vigor .sw-vigor-text strong { font-size: 0.95rem; }
+.starwrought .sw-roster-vigor .sw-vigor-text em { font-size: 0.75rem; color: var(--sw-ink-dim); font-style: normal; }
+.starwrought .sw-roster-temp { font-size: 0.65rem; color: var(--sw-agility); margin-left: 0.2rem; cursor: help; }
+.starwrought .sw-roster-stats { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.starwrought .sw-roster-stat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 58px;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: help;
+}
+.starwrought .sw-roster-stat strong { font-size: 0.95rem; line-height: 1.2; }
+.starwrought .sw-roster-stat strong em { font-size: 0.65rem; color: var(--sw-ink-dim); font-style: normal; }
+.starwrought .sw-roster-stat.sw-alert { border-color: var(--sw-gold-dim); }
+.starwrought .sw-roster-stat.sw-alert strong { color: var(--sw-gold); }
+.starwrought .sw-roster-stat.sw-danger { border-color: var(--sw-blood); box-shadow: 0 0 8px rgba(180, 69, 63, 0.4); }
+.starwrought .sw-roster-stat.sw-danger strong { color: #ff6b63; }
+.starwrought .sw-roster-stat.sw-roster-warn { border-color: #7a5a2a; }
+.starwrought .sw-roster-stat.sw-roster-warn strong { color: #d8a25a; }
+.starwrought .sw-roster-hero .sw-stepper { gap: 0.3rem; }
+.starwrought .sw-roster-hero .sw-stepper strong { font-size: 0.95rem; }
+.starwrought .sw-roster-adjust { font-size: 0.9rem; line-height: 1; padding: 0 0.2rem; color: var(--sw-ink-dim); }
+.starwrought .sw-roster-adjust:hover { color: var(--sw-flare); }
+.starwrought .sw-roster-adjust-off { opacity: 0.35; }
+
+/* The Flare chips: lit gold, as the Constellations tab draws a Flared sky; live ones hover brighter. */
+.starwrought .sw-roster-flares { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; font-size: 0.75rem; }
+.starwrought .sw-roster-flares-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sw-ink-dim); }
+.starwrought .sw-roster-flares-label i { color: var(--sw-flare); margin-right: 0.15rem; }
+.starwrought .sw-flare-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.08rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.2), rgba(255, 216, 103, 0.06));
+  color: var(--sw-flare);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-shadow: 0 0 6px rgba(255, 216, 103, 0.35);
+  cursor: help;
+}
+.starwrought a.sw-flare-chip-live { cursor: pointer; }
+.starwrought a.sw-flare-chip-live:hover { border-color: var(--sw-flare); background: rgba(255, 216, 103, 0.3); color: #fff; }
+.starwrought .sw-flare-chip-add { border-style: dashed; background: transparent; color: var(--sw-ink-dim); text-shadow: none; cursor: pointer; padding-inline: 0.4rem; }
+.starwrought .sw-flare-chip-add:hover { color: var(--sw-flare); border-color: var(--sw-flare); }
+.starwrought .sw-roster-none { color: var(--sw-ink-dim); font-style: italic; font-size: 0.72rem; }
+.starwrought .sw-roster-remove { flex: 0 0 auto; align-self: center; padding: 0.3rem; font-size: 0.9rem; color: var(--sw-ink-dim); }
+.starwrought .sw-roster-remove:hover { color: var(--sw-blood); text-shadow: none; }
+.starwrought .sw-roster-empty { margin: 0; }
+.starwrought .sw-roster-observer { margin: 0.3rem 0 0; text-align: center; }
+
+/* The Skills grid: a table, members across, Constellations down. Gold marks the best in a row;
+   an Untrained cell is dim; a live cell lights on hover; a blank cell is a Lore the member has not
+   opened. */
+.starwrought .sw-party-grid-panel .sw-panel-title .sw-points { text-transform: none; letter-spacing: 0; font-weight: normal; }
+.starwrought .sw-party-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.8rem;
+  margin: 0;
+}
+.starwrought .sw-party-grid th,
+.starwrought .sw-party-grid td { padding: 0.2rem 0.3rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.starwrought .sw-party-grid thead th { border-bottom: 1px solid var(--sw-edge); vertical-align: bottom; }
+.starwrought .sw-party-grid .sw-grid-rowhead {
+  width: 11rem;
+  text-align: left;
+  font-weight: 500;
+  color: var(--sw-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.starwrought .sw-party-grid .sw-grid-rowhead .sw-glyph { font-size: 0.85rem; margin-right: 0.2rem; }
+.starwrought .sw-party-grid .sw-grid-member { text-align: center; }
+.starwrought .sw-grid-member .sw-grid-portrait {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 0.15rem;
+  object-fit: cover;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  cursor: pointer;
+}
+.starwrought .sw-grid-member-live .sw-grid-portrait { border-color: var(--sw-gold-dim); }
+.starwrought .sw-grid-member-name {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--sw-ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.starwrought .sw-grid-member-live .sw-grid-member-name { color: var(--sw-gold); }
+.starwrought .sw-party-grid .sw-grid-group th {
+  padding-top: 0.5rem;
+  text-align: left;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-ink-dim);
+  border-bottom: 1px solid var(--sw-edge);
+}
+.starwrought .sw-party-grid .sw-grid-cell { text-align: center; }
+.starwrought .sw-grid-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 4.2rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+.starwrought .sw-grid-value strong { font-size: 0.95rem; color: var(--sw-ink); }
+.starwrought .sw-grid-rank {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--sw-edge);
+  line-height: 1.3;
+}
+.starwrought .sw-grid-untrained .sw-grid-value strong { color: var(--sw-ink-dim); opacity: 0.7; }
+.starwrought .sw-grid-best .sw-grid-value { border-color: var(--sw-gold-dim); background: rgba(227, 178, 60, 0.12); }
+.starwrought .sw-grid-best .sw-grid-value strong { color: var(--sw-flare); text-shadow: 0 0 6px rgba(255, 216, 103, 0.4); }
+.starwrought a.sw-grid-value { cursor: pointer; }
+.starwrought a.sw-grid-value:hover { border-color: var(--sw-gold); background: rgba(255, 216, 103, 0.18); text-shadow: none; }
+.starwrought a.sw-grid-value:hover strong { color: var(--sw-flare); }
+.starwrought .sw-grid-static { cursor: help; }
+.starwrought .sw-grid-row-initiative .sw-grid-value:not(a) { opacity: 0.6; }
+.starwrought .sw-grid-blank { color: var(--sw-edge); }
+.starwrought .sw-grid-blank::before { content: "\2013"; color: var(--sw-edge); }
+
+/* The dialogs: the award's preview list, the reason field. */
+.starwrought.sw-party-dialog .sw-milestone-preview { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.starwrought.sw-party-dialog .sw-milestone-preview label.checkbox { display: flex; align-items: flex-start; gap: 0.45rem; font-size: 0.82rem; line-height: 1.35; }
+.starwrought.sw-party-dialog .sw-milestone-preview input[type="checkbox"] { flex: 0 0 auto; margin-top: 0.15rem; }
+.starwrought.sw-party-dialog .sw-note { margin: 0.4rem 0 0; }
+
+/* The cards the party speaks, and the member's Hero Point and Deferred lines. */
+.starwrought.action-card.sw-party-card { border-left: 3px solid var(--sw-presence); }
+.starwrought.action-card.sw-party-card h3 .fa-play,
+.starwrought.action-card.sw-party-card h3 .fa-bed,
+.starwrought.action-card.sw-party-card h3 .fa-rotate-left { color: var(--sw-presence); }
+.starwrought.action-card.sw-milestone-card { border-left-color: var(--sw-gold); }
+.starwrought.action-card.sw-milestone-card h3 .fa-star { color: var(--sw-flare); }
+.starwrought.action-card.sw-milestone-taken-back { border-left-color: var(--sw-ink-dim); }
+.starwrought.action-card.sw-deferred-card { border-left: 3px solid var(--sw-agility); }
+.starwrought.action-card.sw-deferred-card h3 .fa-hourglass-half { color: var(--sw-agility); }

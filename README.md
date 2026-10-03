@@ -16,15 +16,17 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
 exactly, which needs a restart to take effect after installing. The current release is system
-0.6.3, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
+0.7.0, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
 commit, reveal, roll and resolve, auras and Reach drawn on the map with a Visible mark per range,
 the Bind drawn between the bound, Vigor and Wounds per Zone, a character sheet whose locked
 fields explain themselves, a Reroll on every Attack and Defense card, one Move per Opportunity on
 the map, Melee and Ranged in place of the old Weapons Constellation, Vigor from your Ancestry
-and your first Calling's Opening Vigor, and Load Strain as a clock (the Wind check at the end of
+and your first Calling's Opening Vigor, Load Strain as a clock (the Wind check at the end of
 every round and Fatigued N, with no check for a fighter whose Endure Threshold already meets 10 +
-Load Strain, and only ten minutes' rest to end the Fatigued) rather than a penalty to Evade, and
-Flare lists that show the Constellations you have Opened until you ask for the rest. The
+Load Strain, and only ten minutes' rest to end the Fatigued) rather than a penalty to Evade,
+Flare lists that show the Constellations you have Opened until you ask for the rest, and a Party
+Sheet (the roster as a status board, Begin session and Hero Point awards, the Milestone award
+with the book's Deferred Talent Point and Take back, and a Skills grid of every member). The
 spreadsheets' `Enabled?` column decides which of the book's
 Constellations, Talents, Maneuvers and equipment ship to Foundry, and the `Aura` column says which
 Talents draw a ring.

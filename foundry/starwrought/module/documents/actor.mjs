@@ -830,6 +830,9 @@ export class SwActor extends Actor {
     for (const token of canvas.tokens.placeables) {
       const actor = token.actor;
       if (!actor || (token.document.id === attackerToken.id) || (token.document.id === targetToken.document.id)) continue;
+      // A party is never a combatant (0.7.0, party-sheet-plan.md risk 1): a friendly party token
+      // standing in reach is nobody's ally and hands out no Support.
+      if (actor.type === SW.PARTY_TYPE) continue;
       if (token.document.disposition !== attackerToken.disposition) continue;
       if (token.document.hidden) continue;
       const statuses = actor.statuses ?? new Set();
@@ -1414,6 +1417,38 @@ export class SwActor extends Actor {
       content: `<div class="starwrought action-card sw-hero-card" data-actor-uuid="${this.uuid}">
         <h3><i class="fa-solid fa-star"></i> ${game.i18n.localize("STARWROUGHT.HeroPoints.title")}</h3>
         <p>${game.i18n.format("STARWROUGHT.HeroPoints.spent", { name: foundry.utils.escapeHTML(this.name), left })}</p></div>`
+    });
+    return left;
+  }
+
+  /* -------------------------------------------- */
+  /*  Deferred Talent Points (0.7.0)              */
+  /* -------------------------------------------- */
+
+  /**
+   * Spend one Deferred Talent Point, and say so (party-sheet-plan.md, part 3; ruling 94). The
+   * count is a reminder with a number on it: the Party Sheet's Milestone award adds one when a
+   * member has no Flared Constellation to receive the point (PHB v4.15, Table 4), and this takes
+   * one off when the player spends it, which is a Talent bought or dragged as today and policed by
+   * nothing. The header's Deferred badge and the party's roster both come here, so the one-line
+   * card ("{name} spends a Deferred Talent Point.") is said once from either; the update is marked
+   * for the audit, since the card is the announcement. Spending one that is not held writes
+   * nothing and says so in a notice.
+   * @returns {Promise<number|null>} the points still held, or null when there was nothing to spend
+   */
+  async spendDeferred() {
+    const have = Number(this.system.deferred) || 0;
+    if (have <= 0) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Deferred.none"));
+      return null;
+    }
+    const left = have - 1;
+    await this.update({ "system.deferred": left }, { swAnnounced: true });
+    const key = left > 0 ? "STARWROUGHT.Deferred.spentLeft" : "STARWROUGHT.Deferred.spent";
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-deferred-card" data-actor-uuid="${this.uuid}">
+        <p><i class="fa-solid fa-hourglass-end"></i> ${game.i18n.format(key, { name: foundry.utils.escapeHTML(this.name), left })}</p></div>`
     });
     return left;
   }
@@ -2199,10 +2234,16 @@ export class SwActor extends Actor {
    * Lit, it is the Flare card the chat button used to post itself; put out, a one-line card. The
    * audit stays out of it: Flares are an object, not a watched field, and the card is the
    * announcement. Putting out a Flare that was never lit writes nothing and says nothing.
+   *
+   * A reason (0.7.0, party-sheet-plan.md part 1: the Party Sheet's GM Flare award asks for one
+   * through the shared picker) is printed on the lit card as its own line, "Awarded by the GM:
+   * <reason>"; the put-out card never carries it.
    * @param {string} slug
    * @param {boolean} [state]
+   * @param {object} [options]
+   * @param {string} [options.reason]  Why the GM lit it, for the card. Blank prints nothing.
    */
-  async toggleFlare(slug, state) {
+  async toggleFlare(slug, state, { reason = "" } = {}) {
     const lit = !!this.system.flares?.[slug];
     const next = state ?? !lit;
     if (!next && !lit) return this;
@@ -2211,20 +2252,42 @@ export class SwActor extends Actor {
     await this.update(next
       ? { [`system.flares.${slug}`]: true }
       : { [`system.flares.-=${slug}`]: null });
-    await this.#announceFlare(slug, next);
+    await this.#announceFlare(slug, next, { reason });
     return this;
   }
 
-  /** The Flare card: lit (the title and the Milestone line) or put out (one line). */
-  async #announceFlare(slug, lit) {
+  /**
+   * The Flare card: lit (the title, the Milestone line, the GM's reason when one was given, and
+   * the Deferred reminder while the character holds a Deferred Talent Point: Table 4's point waits
+   * only because nothing was Flared to receive it, and this is the moment it is spent, ruling 94)
+   * or put out (one line).
+   */
+  async #announceFlare(slug, lit, { reason = "" } = {}) {
     const name = this.system.constellations?.[slug]?.name ?? SW.getConstellation(slug)?.name ?? slug;
-    const content = lit
-      ? `<div class="starwrought action-card sw-flare-card">
+    if (!lit) {
+      return ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        content: `<div class="starwrought action-card sw-flare-card sw-flare-out">
+        <p><i class="fa-solid fa-certificate"></i> ${game.i18n.format("STARWROUGHT.Flare.putOut", { name })}</p></div>`
+      });
+    }
+    const lines = [`<p>${game.i18n.format("STARWROUGHT.Flare.message", { name })}</p>`];
+    const why = String(reason ?? "").trim();
+    if (why) {
+      lines.push(`<p class="sw-card-note sw-flare-reason">${
+        game.i18n.format("STARWROUGHT.Flare.awardedBy", { reason: foundry.utils.escapeHTML(why) })}</p>`);
+    }
+    const deferred = Number(this.system.deferred) || 0;
+    if (deferred > 0) {
+      lines.push(`<p class="sw-card-note sw-flare-deferred">${
+        game.i18n.format(deferred === 1 ? "STARWROUGHT.Flare.deferredHeld" : "STARWROUGHT.Flare.deferredHeldMany", { n: deferred })}</p>`);
+    }
+    return ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-flare-card">
         <h3><i class="fa-solid fa-certificate"></i> ${game.i18n.localize("STARWROUGHT.Flare.title")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Flare.message", { name })}</p></div>`
-      : `<div class="starwrought action-card sw-flare-card sw-flare-out">
-        <p><i class="fa-solid fa-certificate"></i> ${game.i18n.format("STARWROUGHT.Flare.putOut", { name })}</p></div>`;
-    return ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: this }), content });
+        ${lines.join("\n        ")}</div>`
+    });
   }
 
   /** Which Constellations are currently Flared. */
@@ -2272,10 +2335,28 @@ export class SwActor extends Actor {
   /*  Creation                                    */
   /* -------------------------------------------- */
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   * A party (0.7.0, party-sheet-plan.md: "GM-owned, default ownership Observer so every player can
+   * open it") is created linked, since there is one document and no copies of it on a map, and
+   * with Observer as its default ownership unless whoever created it set a default of their own.
+   * It gets none of the body's token settings: no sight, no bars, no footprint from a Size it does
+   * not have. Nothing draws a party token in phase 1.
+   */
   async _preCreate(data, options, user) {
     const allowed = await super._preCreate(data, options, user);
     if (allowed === false) return false;
+
+    if (this.type === SW.PARTY_TYPE) {
+      const source = {
+        prototypeToken: { actorLink: true, displayName: CONST.TOKEN_DISPLAY_MODES.OWNER_HOVER, width: 1, height: 1 }
+      };
+      if (data.ownership?.default === undefined) {
+        source.ownership = { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER };
+      }
+      this.updateSource(source);
+      return;
+    }
 
     const prototypeToken = {
       sight: { enabled: true },

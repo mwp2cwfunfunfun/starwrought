@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.6.3";
+export const SYSTEM_VERSION = "0.7.0";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -548,6 +548,42 @@ export const HERO_POINTS_MAX = 3;
 export const RECOVERY_BASE = 10;
 /** Treating a Wound: ten minutes and an Endure check against 10 + the Wounds the patient carries. */
 export const TREAT_WOUND_BASE = 10;
+
+/* -------------------------------------------- */
+/*  Advancement                                 */
+/* -------------------------------------------- */
+
+/**
+ * Milestones that each grant a Milestone Talent Point before the next one is a level (PHB v4.10,
+ * Character Mechanics: four make a level, and the fourth is the level itself). Read by the
+ * character sheet's star pips and, since 0.7.0, by the Party Sheet's Milestone award
+ * (party-sheet-plan.md, part 3), so both count from one constant: an award to a member already at
+ * this count raises the level and resets the count, and current Vigor rises with the maximum
+ * (ruling 92). It lived in apps/actor-sheet.mjs until 0.7.0.
+ */
+export const MILESTONES_PER_LEVEL = 3;
+
+/* -------------------------------------------- */
+/*  The party (0.7.0)                           */
+/* -------------------------------------------- */
+
+/**
+ * The Actor type of a party (party-sheet-plan.md, phase 1; Mike's "Go!", 2026-10-02): the GM's
+ * console and the players' window at once, GM-owned with Observer players, holding only party
+ * bookkeeping (members, the session, the last Milestone award, notes) and reading everything about
+ * its members live at render. Its data model extends TypeDataModel directly, never SwActorData, so
+ * it has no Zones, Vigor, stance or actions, and a party is never a combatant: Support's ally
+ * count, `actorsIn` in combat.mjs and the Combat Tracker's readout skip an actor of this type by
+ * name (the plan's risk 1), so no card, readout or bonus ever involves a party.
+ *
+ * The rulings the sheet is built to (91 to 95, continuing the v4.14 report's numbering): a
+ * Milestone award goes to every member by default, with a checkbox per member to withhold it (91);
+ * when the fourth Milestone raises a level, current Vigor rises by the same amount as the maximum
+ * (92); Begin session sets every member's Hero Points to exactly 1 (93); Deferred Talent Points are
+ * counted on the character and nothing is enforced (94); players see every member's Thresholds on
+ * the Skills grid (95).
+ */
+export const PARTY_TYPE = "party";
 
 /* -------------------------------------------- */
 /*  Actions: six a round                        */

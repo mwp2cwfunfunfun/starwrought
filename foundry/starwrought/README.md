@@ -11,6 +11,9 @@ tracked, announced, and never enforced against the table.
 - **Foundry:** developed against **v14**; the manifest declares a v13 minimum, which is untested.
 - **Grid:** 1 foot per square, exact diagonals. A Medium creature is a 3x3 token. Speed is feet per
   Move; a Human's is 6.
+- **Actor types:** `character`, `npc` (the adversary, written Threshold-first) and, since 0.7.0,
+  `party`: the Party Sheet, GM-owned and open to every player as an Observer, which stores only
+  its own bookkeeping and reads its members live.
 
 ## What it does for you
 
@@ -65,7 +68,17 @@ related to. The list shows the Constellations you have Opened (an Item or a Tale
 a checkbox for the rest, and the sheet's Constellations tab has the same toggle, so a Constellation
 you have never opened can be Flared from either; it then shows on your sheet at 0 points so the
 Milestone point has somewhere to go. A Flare is said in chat whether it came from a card or from
-the sheet.
+the sheet, and the GM can light one from the party sheet with a reason that the card prints.
+
+**The party.** A `party` Actor with one sheet (0.7.0, phase 1 of `party-sheet-plan.md`): the
+roster as a status board of every member's level, Milestones, Hero Points, Vigor, Wounds, Dying,
+Fatigued, Load Strain, Speed and Flares, read live and never copied; Begin session (every Hero
+Point to 1) and Hero Point awards with a reason; the party's night; the Milestone award with its
+preview, the book's Deferred Talent Point counted on the character when no Constellation is
+Flared, and Take back; and a Skills grid of every member's Defenses, Initiative, Skills, Melee,
+Ranged and Lores, each cell rolling as that member. Every rule effect runs through the member's
+own methods and cards; the party is never a combatant. Loot, the road and Downtime are later
+phases and are not built.
 
 **Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that
 leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a rank without
@@ -124,12 +137,12 @@ mklink /J "%LOCALAPPDATA%\FoundryVTT\Data\systems\starwrought" "C:\path\to\StarW
 system.json              the manifest
 starwrought.mjs          entry point: CONFIG wiring, hooks, settings
 module/config.mjs        every rule constant, in one place
-module/data/             Actor and Item data models, and all the derived arithmetic
+module/data/             Actor (character, adversary, party) and Item data models, and all the derived arithmetic
 module/documents/        Actor, Item, Combat (the round and the Opportunities), action tracking, and the chat card behaviour
 module/dice/             the check engine and the damage pipeline
 module/canvas/           reach bands, the drag ruler, targeting arrows, and the grid geometry
-module/apps/             the three sheets, the creation wizard and the Token HUD stance button
-module/helpers/          the content registry, chargen data and rules, the stance model, Handlebars helpers
+module/apps/             the four sheets (character, adversary, party, Item), the creation wizard, the shared Flare picker and the Token HUD stance button
+module/helpers/          the content registry, chargen data and rules, the stance model, the party operations, Handlebars helpers
 templates/               Handlebars for sheets, chat cards, and the roll dialog
 content/                 the Constellation index, read at init before compendia exist
 packs/                   compiled compendia (generated)
@@ -151,4 +164,9 @@ The full list is section 7 of `FEATURES.md`. The short version:
 - Persistent Damage is an end-of-round reminder card; the amount is applied on the sheet by hand.
 - A treated Wound is removed from the Zone rather than kept as a bound Wound for a week.
 - Cover, Concealment and detection states are reference material, not automation.
+- A Deferred Talent Point is a count on the character, not a lock: nothing stops a Talent drag and
+  the count does not fall when one lands. The party sheet's Milestone award and Take back write
+  numbers the GM could type by hand, and enforce nothing.
+- The party's Notes tab is GM-only in the template and readable by any Observer from the console;
+  nothing secret belongs on the party.
 - Magic is not in the playtest, so it is not here.

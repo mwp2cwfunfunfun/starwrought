@@ -9,6 +9,9 @@
 
 import * as SW from "./module/config.mjs";
 import { SwCharacterData, SwNpcData } from "./module/data/actor.mjs";
+// THE PARTY (0.7.0): a third Actor type, GM-owned with Observer players, extending TypeDataModel
+// directly so the combat machinery never sees one (party-sheet-plan.md, phase 1).
+import { SwPartyData } from "./module/data/party.mjs";
 import {
   SwActionData, SwArmorData, SwChassisData, SwConstellationData,
   SwGearData, SwShieldData, SwTalentData, SwWeaponData, LEGACY_SPEED_FLOOR, migrateSpeed
@@ -30,6 +33,7 @@ import { registerBind } from "./module/canvas/bind.mjs";
 import { registerStanceHud } from "./module/apps/token-hud.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
+import { SwPartySheet } from "./module/apps/party-sheet.mjs";
 import { SwItemSheet } from "./module/apps/item-sheet.mjs";
 import { SwChargen, promptForChoice } from "./module/apps/chargen.mjs";
 import { loadChargenContent } from "./module/helpers/chargen-data.mjs";
@@ -58,7 +62,7 @@ Hooks.once("init", async () => {
     SwCheck,
     SwDamage,
     documents: { SwActor, SwItem, SwCombat, SwCombatant },
-    applications: { SwCharacterSheet, SwNpcSheet, SwItemSheet, SwChargen },
+    applications: { SwCharacterSheet, SwNpcSheet, SwPartySheet, SwItemSheet, SwChargen },
     /** Open the creation wizard on an Actor: `game.starwrought.chargen(actor)`. */
     chargen: actor => new SwChargen(actor).render({ force: true }),
     /**
@@ -82,7 +86,10 @@ Hooks.once("init", async () => {
   /* Data models */
   CONFIG.Actor.dataModels = {
     character: SwCharacterData,
-    npc: SwNpcData
+    npc: SwNpcData,
+    // The party (0.7.0): members, the session, the last Milestone award and the GM's notes; every
+    // number about a member is read live from the member, never stored here.
+    [SW.PARTY_TYPE]: SwPartyData
   };
   CONFIG.Item.dataModels = {
     constellation: SwConstellationData,
@@ -98,7 +105,8 @@ Hooks.once("init", async () => {
   /* Labels and icons */
   CONFIG.Actor.typeLabels = {
     character: "STARWROUGHT.Type.character",
-    npc: "STARWROUGHT.Type.npc"
+    npc: "STARWROUGHT.Type.npc",
+    [SW.PARTY_TYPE]: "STARWROUGHT.Type.party"
   };
   CONFIG.Item.typeLabels = {
     constellation: "STARWROUGHT.Type.constellation",
@@ -114,7 +122,9 @@ Hooks.once("init", async () => {
      old numeric `wounded` is gone from the list. */
   CONFIG.Actor.trackableAttributes = {
     character: { bar: ["vigor"], value: ["level", "dying", "heroPoints.value", "loadStrain", "actions.value"] },
-    npc: { bar: ["vigor"], value: ["level", "dying", "actionsPerRound", "thresholds.evade", "thresholds.guard"] }
+    npc: { bar: ["vigor"], value: ["level", "dying", "actionsPerRound", "thresholds.evade", "thresholds.guard"] },
+    // A party has no bar and no value to track: nothing draws or counts its token (0.7.0).
+    [SW.PARTY_TYPE]: { bar: [], value: [] }
   };
 
   /* Conditions, as toggleable token statuses. The static id is the one SwActor#setCondition creates
@@ -135,6 +145,9 @@ Hooks.once("init", async () => {
   });
   Actors.registerSheet(SW.SYSTEM_ID, SwNpcSheet, {
     types: ["npc"], makeDefault: true, label: "STARWROUGHT.Sheet.npc"
+  });
+  Actors.registerSheet(SW.SYSTEM_ID, SwPartySheet, {
+    types: [SW.PARTY_TYPE], makeDefault: true, label: "STARWROUGHT.Sheet.party"
   });
   Items.registerSheet(SW.SYSTEM_ID, SwItemSheet, {
     makeDefault: true, label: "STARWROUGHT.Sheet.item"

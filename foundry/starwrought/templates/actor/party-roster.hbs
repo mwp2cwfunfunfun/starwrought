@@ -1,0 +1,164 @@
+{{!-- The roster (0.7.0): a status board, one row per member, always open above the tabs. Every
+      number is the member's own derived data, read at render and redrawn on the member's hooks.
+      A player sees the same board, read-only but for three live things: the portraits, the Flare
+      chips on a character they own (click puts one out), and the Deferred badge's Spent on their
+      own character. Every control a player may click is an anchor, never a button, since the
+      sheet disables every form element for a user who cannot edit the party. --}}
+<section class="sw-party-roster">
+
+  {{#if rows.length}}
+  <ol class="sw-roster">
+    {{#each rows as |row|}}
+    <li class="sw-roster-row {{#if row.missing}}sw-roster-missing{{/if}} {{#if row.spent}}sw-roster-spent{{/if}} {{#if row.dying}}sw-roster-dying{{/if}}"
+        data-uuid="{{row.uuid}}">
+
+      {{#if row.missing}}
+      {{!-- The Actor cannot be found: a row with Remove only (plan, risk 7). --}}
+      <span class="sw-roster-portrait sw-roster-portrait-missing"><i class="fa-solid fa-user-slash"></i></span>
+      <div class="sw-roster-main">
+        <div class="sw-roster-name-row">
+          <span class="sw-roster-name sw-roster-name-missing">{{row.name}}</span>
+        </div>
+        <p class="sw-note">{{localize "STARWROUGHT.Party.missingHint"}}</p>
+      </div>
+      {{#if @root.isGM}}
+      <a class="sw-roster-remove" data-action="removeMember" data-tooltip="STARWROUGHT.Party.remove">
+        <i class="fa-solid fa-user-minus"></i>
+      </a>
+      {{/if}}
+
+      {{else}}
+      <img class="sw-roster-portrait" src="{{row.img}}" alt="{{row.name}}" data-action="openMember"
+           data-tooltip="STARWROUGHT.Party.openSheet">
+
+      <div class="sw-roster-main">
+
+        <div class="sw-roster-name-row">
+          <a class="sw-roster-name" data-action="openMember" data-tooltip="STARWROUGHT.Party.openSheet">{{row.name}}</a>
+          <span class="sw-level-badge" data-tooltip="STARWROUGHT.Milestone.levelHint">
+            {{localize "STARWROUGHT.Field.level"}} <strong>{{row.level}}</strong>
+          </span>
+          <span class="sw-milestone-pips" data-tooltip="{{row.milestones.tooltip}}">
+            {{#each row.milestones.pips as |pip|}}
+            <i class="sw-milestone-pip {{#if pip.filled}}fa-solid sw-filled{{else}}fa-regular{{/if}} fa-star"></i>
+            {{/each}}
+          </span>
+          {{#if row.deferred}}
+          {{!-- A Deferred Talent Point, counted, not enforced (ruling 94). Spent is the owner's, and the GM's. --}}
+          <span class="sw-deferred-badge" data-tooltip="{{localize 'STARWROUGHT.Party.deferredHint'}}">
+            <i class="fa-solid fa-hourglass-half"></i> {{localize "STARWROUGHT.Party.deferred"}} <strong>{{row.deferred}}</strong>
+            {{#if row.owner}}
+            <a class="sw-deferred-spend" data-action="spendDeferred" data-tooltip="{{localize 'STARWROUGHT.Party.deferredSpendHint'}}">{{localize "STARWROUGHT.Party.deferredSpend"}}</a>
+            {{/if}}
+          </span>
+          {{/if}}
+          <span class="sw-roster-players" data-tooltip="STARWROUGHT.Party.playersHint">
+            {{#each row.players as |player|}}
+            <i class="sw-player-dot {{#unless player.active}}sw-player-off{{/unless}}" style="--sw-player-color: {{player.color}}" data-tooltip="{{player.name}}"></i>
+            {{/each}}
+          </span>
+        </div>
+
+        <div class="sw-roster-vitals">
+          {{!-- The Vigor bar as the character sheet draws it, Temporary Vigor laid on top, Spent at 0. --}}
+          <div class="sw-vigor sw-roster-vigor {{#if row.spent}}sw-spent{{/if}}">
+            <div class="sw-vigor-track">
+              <div class="sw-vigor-fill" style="width: {{row.vigor.pct}}%"></div>
+              {{#if row.vigor.tempPct}}<div class="sw-vigor-temp" style="left: {{row.vigor.pct}}%; width: {{row.vigor.tempPct}}%"></div>{{/if}}
+              <span class="sw-vigor-text">
+                <span class="sw-vigor-name">{{localize "STARWROUGHT.Field.vigor"}}</span>
+                <strong>{{row.vigor.value}}</strong>
+                <em>/ {{row.vigor.max}}</em>
+                {{#if row.vigor.temp}}<small class="sw-roster-temp" data-tooltip="STARWROUGHT.Field.tempHint">+{{row.vigor.temp}}</small>{{/if}}
+                {{#if row.spent}}
+                <span class="sw-spent-badge" data-tooltip="{{localize 'STARWROUGHT.Field.spentHint'}}">{{localize "STARWROUGHT.Condition.spent"}}</span>
+                {{/if}}
+              </span>
+            </div>
+          </div>
+
+          <div class="sw-roster-stats">
+            {{!-- Hero Points: the GM's plus asks for a reason and awards one, the minus corrects; a
+                  player reads the count and spends from their own sheet. --}}
+            <span class="sw-roster-stat sw-roster-hero"
+                  data-tooltip="{{#if @root.isGM}}{{localize 'STARWROUGHT.Party.heroPointsHint'}}{{else}}{{localize 'STARWROUGHT.Party.heroPointsPlayerHint'}}{{/if}}">
+              <span class="sw-counter-label">{{localize "STARWROUGHT.Field.heroPoints"}}</span>
+              <span class="sw-stepper">
+                {{#if @root.isGM}}<a class="sw-roster-adjust" data-action="correctHeroPoint" data-delta="-1" data-tooltip="STARWROUGHT.HeroPoints.correctHint">−</a>{{/if}}
+                <strong>{{row.heroPoints}}<em>/{{row.heroMax}}</em></strong>
+                {{#if @root.isGM}}<a class="sw-roster-adjust {{#if row.heroFull}}sw-roster-adjust-off{{/if}}" data-action="awardHeroPoint" data-tooltip="STARWROUGHT.HeroPoints.awardHint">+</a>{{/if}}
+              </span>
+            </span>
+            <span class="sw-roster-stat {{#if row.woundCount}}sw-alert{{/if}}" data-tooltip="{{row.woundsTip}}">
+              <span class="sw-counter-label">{{localize "STARWROUGHT.Field.wounds"}}</span>
+              <strong>{{row.woundCount}}</strong>
+            </span>
+            {{#if row.dying}}
+            <span class="sw-roster-stat sw-danger" data-tooltip="STARWROUGHT.Field.dyingHint">
+              <span class="sw-counter-label">{{localize "STARWROUGHT.Field.dying"}}</span>
+              <strong>{{row.dying}}</strong>
+            </span>
+            {{/if}}
+            {{#if row.fatigued}}
+            <span class="sw-roster-stat sw-roster-warn" data-tooltip="STARWROUGHT.Condition.fatiguedHint">
+              <span class="sw-counter-label">{{localize "STARWROUGHT.Condition.fatigued"}}</span>
+              <strong>{{row.fatigued}}</strong>
+            </span>
+            {{/if}}
+            {{!-- Load Strain with the Wind tooltip the character sheet builds (windTip), HTML. --}}
+            <span class="sw-roster-stat {{#if row.loadStrain}}sw-alert{{/if}}" data-tooltip="{{row.loadStrainTip}}" data-tooltip-class="sw-tooltip-rich">
+              <span class="sw-counter-label">{{localize "STARWROUGHT.Field.loadStrain"}}</span>
+              <strong>{{row.loadStrain}}</strong>
+            </span>
+            <span class="sw-roster-stat" data-tooltip="STARWROUGHT.Field.speedHint">
+              <span class="sw-counter-label">{{localize "STARWROUGHT.Field.speed"}}</span>
+              <strong>{{row.speed}} ft</strong>
+            </span>
+          </div>
+        </div>
+
+        {{!-- The Flared Constellations as chips. Live on a character the user owns (click puts one
+              out, through toggleFlare, which posts its card); the GM's plus opens the shared picker
+              and lights the choice with a reason. --}}
+        <div class="sw-roster-flares">
+          <span class="sw-roster-flares-label"><i class="fa-solid fa-certificate"></i> {{localize "STARWROUGHT.Party.flared"}}</span>
+          {{#each row.flares as |flare|}}
+          {{#if row.owner}}
+          <a class="sw-flare-chip sw-flare-chip-live" data-action="flareOut" data-slug="{{flare.slug}}"
+             data-tooltip="{{localize 'STARWROUGHT.Party.flareOutHint' name=flare.name}}">{{flare.name}}</a>
+          {{else}}
+          <span class="sw-flare-chip" data-tooltip="{{localize 'STARWROUGHT.Party.flareHint' name=flare.name}}">{{flare.name}}</span>
+          {{/if}}
+          {{else}}
+          <span class="sw-roster-none">{{localize "STARWROUGHT.Party.flaredNone"}}</span>
+          {{/each}}
+          {{#if @root.isGM}}
+          <a class="sw-flare-chip sw-flare-chip-add" data-action="flareAward" data-tooltip="{{localize 'STARWROUGHT.Party.flareAwardHint'}}">
+            <i class="fa-solid fa-plus"></i>
+          </a>
+          {{/if}}
+        </div>
+
+      </div>
+
+      {{#if @root.isGM}}
+      <a class="sw-roster-remove" data-action="removeMember" data-tooltip="STARWROUGHT.Party.remove">
+        <i class="fa-solid fa-user-minus"></i>
+      </a>
+      {{/if}}
+      {{/if}}
+
+    </li>
+    {{/each}}
+  </ol>
+  {{else}}
+  <div class="sw-panel sw-empty-panel sw-roster-empty">
+    <p>{{#if isGM}}{{localize "STARWROUGHT.Party.emptyGm"}}{{else}}{{localize "STARWROUGHT.Party.emptyPlayer"}}{{/if}}</p>
+  </div>
+  {{/if}}
+
+  {{#unless isGM}}{{#unless anyOwned}}{{#if rows.length}}
+  <p class="sw-note sw-roster-observer">{{localize "STARWROUGHT.Party.noOwnedMember"}}</p>
+  {{/if}}{{/unless}}{{/unless}}
+
+</section>

@@ -19,10 +19,10 @@
 import * as SW from "../config.mjs";
 import { SwDamage } from "../dice/damage.mjs";
 import { SwCheck } from "../dice/check.mjs";
-import { enabledConstellations } from "../helpers/content.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 import { CARD_KIND as ATTACK_CARD_KIND, thresholdVisibleTo, mayControl } from "../combat/attack-card.mjs";
 import { SwCombatPrompt } from "../apps/combat-prompt.mjs";
+import { pickFlare } from "../apps/flare-picker.mjs";
 
 /** Wire up a rendered chat card. */
 export function onRenderChatMessage(message, html) {
@@ -609,14 +609,10 @@ async function postDamageSummary(actor, result, multiplier) {
  * Bonus. Kessa's crit came off a Great Weapon Fighting talent, but the roll itself was Melee.
  * So the button asks, defaulting to the Constellation that was rolled.
  *
- * The list is the character's own Constellations (0.6.3, ruling 85; Mike: "the drop-down list
- * should only show Opened Constellations"): every sky the data model draws on the sheet, which is
- * one whose Item or Talent the character holds, one already Flared, and a parent whose Combat
- * Styles hold points. A checkbox under the select adds every Constellation that ships (Enabled? =
- * Yes, ruling 61), each marked as not opened, since a Milestone Talent Point spent in a Flared
- * Constellation buys its Root. The box starts ticked when the rolled Constellation is itself
- * unopened, so the preselection can be seen. DialogV2's content is static HTML, so the box is
- * wired in the `render` callback, which DialogV2.wait hands `(event, dialog)`.
+ * The dialog is `pickFlare` (module/apps/flare-picker.mjs, 0.7.0), shared with the Party Sheet's
+ * GM Flare award: the character's Opened Constellations (0.6.3, ruling 85), the "Show
+ * Constellations you have not opened" checkbox and the preselection of the rolled Constellation,
+ * exactly as this function built them until 0.7.0. The chat path asks for no reason.
  *
  * The card is the actor's to post (`toggleFlare`, ruling 86), so a Flare is said once whichever
  * button lit it.
@@ -627,60 +623,9 @@ async function flareFromCard(message, flags, button) {
   if (!actor?.isOwner) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
 
   const suggested = button.dataset.slug || "";
-  const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
-  // The sheet's own entries (an owned one that has since been disabled stays listed).
-  const opened = new Map(Object.values(actor.system.constellations ?? {}).map(c => [c.slug, c.name]));
-  // Everything that ships and is not already there. The Lore template is not itself a sky a
-  // character opens or rolls (a Lore is always Lore (X)), as the Relevant Check picker reads it.
-  const unopened = new Map();
-  for (const meta of enabledConstellations()) {
-    if (!meta.slug || opened.has(meta.slug) || SW.isLoreSlug(meta.slug)) continue;
-    unopened.set(meta.slug, meta.name);
-  }
-  const notOpened = game.i18n.localize("STARWROUGHT.Flare.notOpened");
-  const optionsFor = (showUnopened, selected) => {
-    const rows = [...opened.entries()].map(([slug, name]) => ({ slug, name, label: name }));
-    if (showUnopened) {
-      for (const [slug, name] of unopened) rows.push({ slug, name, label: `${name} ${notOpened}` });
-    }
-    return rows
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(r => `<option value="${esc(r.slug)}"${r.slug === selected ? " selected" : ""}>${esc(r.label)}</option>`)
-      .join("");
-  };
-  const startUnopened = !!suggested && !opened.has(suggested) && unopened.has(suggested);
-
-  const slug = await foundry.applications.api.DialogV2.prompt({
-    window: { title: game.i18n.localize("STARWROUGHT.Flare.title"), icon: "fa-solid fa-certificate" },
-    classes: ["starwrought", "sw-flare-dialog"],
-    content: `<p>${game.i18n.localize("STARWROUGHT.Flare.prompt")}</p>
-      <select name="slug" style="width: 100%">${optionsFor(startUnopened, suggested)}</select>
-      <div class="form-group sw-flare-unopened">
-        <label class="checkbox"><input type="checkbox" name="showUnopened"${startUnopened ? " checked" : ""}> ${
-          game.i18n.localize("STARWROUGHT.Flare.showUnopened")}</label>
-      </div>`,
-    render: (event, dialog) => {
-      // v14 hands the DialogV2 instance; an earlier build handed the <dialog> element itself.
-      const root = (dialog instanceof HTMLElement) ? dialog : (dialog?.element ?? null);
-      const select = root?.querySelector?.("select[name='slug']");
-      const box = root?.querySelector?.("input[name='showUnopened']");
-      if (!select || !box) return;
-      box.addEventListener("change", () => {
-        // Keep the pick where it can be kept: an unopened pick falls back to the rolled
-        // Constellation when the box is unticked and that one is opened.
-        const current = select.value;
-        const keep = (box.checked || opened.has(current)) ? current : (opened.has(suggested) ? suggested : "");
-        select.innerHTML = optionsFor(box.checked, keep);
-      });
-    },
-    ok: {
-      label: game.i18n.localize("STARWROUGHT.Flare.button"),
-      callback: (event, target) => target.form.elements.slug.value
-    },
-    rejectClose: false
-  });
-  if (!slug) return;
-  return actor.toggleFlare(slug, true);
+  const pick = await pickFlare(actor, { suggested });
+  if (!pick) return;
+  return actor.toggleFlare(pick.slug, true);
 }
 
 /* -------------------------------------------- */

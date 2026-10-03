@@ -275,6 +275,31 @@ and, since Mike accepted the redline into PHB v4.14, the book. The Comfort row b
 v4.14 and the roster alike, "You can sleep in it without increasing your Fatigued value by 1."
 (ruling 84). Rulings 68 to 71 (R2 to R5), 74, 75, 79 to 84.
 
+**The party (0.7.0; `party-sheet-plan.md`, phase 1; rulings 91 to 95).** A `party` Actor type
+(`SW.PARTY_TYPE` in `config.mjs`) whose data model `SwPartyData` extends `TypeDataModel` directly,
+never `SwActorData`, so it has no Zones, Wounds, Vigor, stance or actions, and whose `_preCreate`
+makes it linked and Observer by default: the GM writes it, every player opens it, and nothing
+secret goes on it (the Notes tab is a convenience, not a vault). Rule state stays on the characters
+(level, Milestones, Hero Points, Flares, the `deferred` count) and the sheet reads it live at
+render, computing nothing member-dependent in the party's own `prepareDerivedData` and
+re-rendering on the member hooks (`updateActor`, Items and Active Effects on a member) debounced
+on a timer, never a requestAnimationFrame latch. Every rule effect runs through the member's
+existing method (`toggleFlare`, `restForTheNight`, `rollCheck`, `rollDefense`, the Combat's
+Initiative roll) and every direct write is `actor.update(..., { swAnnounced: true })`, so the party
+adds buttons and a handful of cards, never a second rules engine or a doubled Adjusted card. A
+party is never a combatant: Support's ally count (`supportFor` in `documents/actor.mjs`),
+`actorsIn` and `canAct` (`combat.mjs`), the tracker readout and `SwCheck.roll` skip or refuse
+`SW.PARTY_TYPE` explicitly, and nothing draws or counts its token. The
+rulings: 91 a Milestone award goes to every member by default, with a checkbox per member to
+withhold it; 92 a level from the fourth Milestone raises current Vigor by the maximum's rise; 93
+Begin session sets every member's Hero Points to exactly 1; 94 Deferred Talent Points are counted
+on the character (`system.deferred`) and nothing is enforced; 95 players see every member's
+Thresholds on the Skills grid. `MILESTONES_PER_LEVEL` lives in `config.mjs` beside
+`HERO_POINTS_MAX`; the Flare dialog is the shared `pickFlare` in `module/apps/flare-picker.mjs`,
+which `flareFromCard` and the roster both call, and `toggleFlare(slug, state, { reason })` prints
+the reason on the lit card and the Deferred reminder while the count is above 0. Phases 2 to 4
+(loot and the purse over a `party:take` relay, the road, Downtime) are planned, not built.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -465,26 +490,35 @@ v4.14 and the roster alike, "You can sleep in it without increasing your Fatigue
   Attribute follows PHB v4.14 (0.6.3, ruling 87), but no weapon in `data/equipment.xlsx` carries
   the trait, so the branch has nothing to act on. Mike authors one when he wants it, with
   "Composite" in its Traits; the converter needs no change.
-- **A party sheet is planned, not built** (ruling 89; Mike asked whether Foundry has one built in,
-  2026-10-02). Foundry core (v13 and v14) has no party sheet: the party is a core idea only as the
-  players' assigned characters, and the party features Mike names come from systems that build
-  their own (pf2e's Party actor, dnd5e's Group actor). The plan, for a release of its own: a
-  `party` Actor type with (a) a members list of linked character Actors; (b) a Milestone award
-  button writing one Milestone to every member with a chat card; (c) a Skills grid, every member's
-  rank and bonus for each Skill Constellation and Defense, read live; (d) a Loot panel, Items on
-  the party Actor that a member's owner Takes onto their character, with a card announcing it;
-  (e) an Exploration Mode panel where each member picks an Activity from the actions compendium's
-  Exploration group and rolls its check from the party sheet. The full design is
-  `party-sheet-plan.md` in the project root (2026-10-02, a three-lens panel and a judge): a
-  `party` Actor type extending `TypeDataModel` (never `SwActorData`), GM-owned with Observer
-  players, rule state left on the characters and read live, four phases (the party and the
-  Milestone award at 0.7.0; loot and the purse over a `party:take` relay; the road, with Travel
-  Speed and Initiative by Activity; Downtime), sixteen decisions for Mike with recommendations,
-  and the twelve handbook sentences the later phases lean on. Go or not is Mike's call.
+- **Phases 2 to 4 of the Party Sheet are planned, not built** (`party-sheet-plan.md` in the
+  project root; phase 1 shipped as system 0.7.0, rulings 91 to 95). Phase 2 is loot and the purse
+  (the Loot tab with Take, Give to the party and Give to, over `party:take` and `party:give`
+  requests relayed to the active GM's client as `damage:apply` is; the purse with Split; Ask
+  everyone on the Skills grid; 0.7.1). Phase 3 is the road (two positional columns on the roster's
+  hand-kept `explorationActions` rows and `system.exploration` on the character; the Exploration
+  panel with the party's Travel Speed, terrain and the Fatigued gate; Begin the encounter with
+  Initiative by Activity, the Scout's bonus and the Defender's shield; 0.7.2, and it leans on four
+  handbook sentences the plan drafts and a pipeline change). Phase 4 is Downtime (the days, Train
+  through the shared Flare picker with its once-between-Milestones warning, the Retrain and
+  Provision reminder lines; 0.7.3). The plan's decisions 6 to 16 and its twelve handbook sentences
+  (items 1, 2, 3, 7, 8 and 12 bear on phase 1 and are wanted, not needed) are Mike's. Nothing in
+  phase 1 is enforced: the Deferred count is a reminder with a number on it, and a Talent drag is
+  as unpoliced as before.
 - **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (the Party Sheet, phase 1, system 0.7.0): the party sheet, planned in the v4.14
+sync (ruling 89), now built as a `party` Actor type and sheet with the roster as a status board,
+Begin session, Hero Point awards with a reason, the party's night, the Milestone award with its
+preview and Take back, and the Skills grid; the Deferred Talent Point the book names in Table 4 and
+the system lacked, now `system.deferred` on the character with a Spent control and a reminder on
+the Flare card (ruling 94); the Flare dialog bound to the chat card, now the shared `pickFlare`
+with the GM's reason on the lit card; `MILESTONES_PER_LEVEL` in the sheet, now in `config.mjs`;
+and the three places a third Actor type would have met code written for two (Support's ally count,
+`actorsIn`, the tracker readout), fenced. No handbook moved and `data/SYNC.json` is untouched; the
+rulings (91 to 95) are recorded in the 0.7.0 changelog entry.
 
 Cleared 2026-10-02 (the v4.14 sync, system 0.6.3): the Flare dialog listing every shipping
 Constellation at once, now the Opened ones with a checkbox for the rest, and the sheet's

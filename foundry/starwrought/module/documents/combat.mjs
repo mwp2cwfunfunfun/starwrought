@@ -412,6 +412,9 @@ function didPass(combatant, at) {
 /** Can this combatant do anything at its Opportunity? Not if it is out of the fight or out cold. */
 function canAct(combatant) {
   if (combatant.isDefeated) return false;
+  // A party cannot act at all (0.7.0, risk 1): its Opportunity Passes by necessity, so a party
+  // token in the tracker never breaks the circuit of Passes.
+  if (combatant.actor?.type === SW.PARTY_TYPE) return false;
   const statuses = combatant.actor?.statuses;
   return !(statuses?.has("unconscious") || statuses?.has("dying"));
 }
@@ -572,6 +575,9 @@ function actorsIn(combat) {
   for (const combatant of combat.combatants) {
     const actor = combatant.actor;
     if (!actor?.system || seen.has(actor.uuid)) continue;
+    // A party is never a combatant (0.7.0, party-sheet-plan.md risk 1): no Wind, Recovery or reset
+    // card is ever addressed to one, whatever token the GM dragged into the tracker.
+    if (actor.type === SW.PARTY_TYPE) continue;
     seen.add(actor.uuid);
     out.push(actor);
   }
@@ -1034,6 +1040,8 @@ function onRenderTracker(app, element) {
     const combatant = combat.combatants.get(li.dataset.combatantId);
     const actor = combatant?.actor;
     if (!actor?.system) continue;
+    // A party is never a combatant (0.7.0, risk 1): no actions readout, no Pass button.
+    if (actor.type === SW.PARTY_TYPE) continue;
 
     const actions = actor.system.actions;
     if (actions && combat.started && !li.querySelector(".sw-tracker-actions")) {

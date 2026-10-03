@@ -1,7 +1,7 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
 Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
-rule differs). System version **0.6.3**. Developed against
+rule differs). System version **0.7.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -644,6 +644,17 @@ no longer Flared. `toggleFlare` posts the card itself, so a Flare from a card is
 entry point is left silent; putting out a Flare that was never lit writes nothing and says nothing.
 The Adjusted card for hand edits has never covered Flares, and the Flare card is the announcement.
 
+**The picker is shared, and the GM can award a Flare with a reason** (0.7.0). The dialog the
+critical's card opens lives in `module/apps/flare-picker.mjs` as `pickFlare` (the Opened list, the
+"Show Constellations you have not opened" checkbox, the preselection), and `flareFromCard` calls it
+and then `toggleFlare` as before, so nothing on the chat path changed. The party sheet's roster
+opens the same picker from its GM-only Flare plus, with an optional one-line reason, and
+`toggleFlare(slug, state, { reason })` prints the reason on the lit card as its own line ("awarded
+by the GM: <reason>"), so a Flare the GM grants for something the dice never saw is said with its
+cause. While the character holds a Deferred Talent Point the lit card also carries "You hold a
+Deferred Talent Point: spend it here now." (ruling 94; see The party, under Sheets). The put-out
+card, and the silence on a Flare that was never lit, are unchanged.
+
 ### Initiative
 
 Awareness by default, with no level term and the helm's penalty inside it, or whatever you were
@@ -1099,9 +1110,13 @@ it comes from and what it feeds. The sheet reads the chassis from the compendium
 from `content/chassis.json`, which `build_foundry.mjs` writes for every authored chassis whether
 or not Enabled? let it into the pack, so a Background or Calling switched off after a character
 chose it still has its text. Level is a badge with three star pips
-beneath it for the Milestones reached (the fourth is the level); Hero Points show a count and a
+beneath it for the Milestones reached (the fourth is the level) and, since 0.7.0, a **Deferred**
+badge beside them while the character holds a Deferred Talent Point, with a **Spent** control for
+the owner or the GM that lowers the count by one and posts a one-line card (ruling 94; see The
+party, below); Hero Points show a count and a
 **Spend** button that posts "Hrolda spends a Hero Point (2 left)" to everyone, with no way to add
-one; Refuse Death is disabled unless the character is Dying and holds a Hero Point; and a Talent,
+one (the GM awards them from the party sheet); Refuse Death is disabled unless the character is
+Dying and holds a Hero Point; and a Talent,
 Constellation or Chassis opens read-only (a lock badge in the header, the plain name, no Effect
 controls), while a weapon or a piece of gear stays theirs to rename. The GM keeps every field. A
 night's rest no longer hands out a Hero Point. Names print plain beside their one gold cost glyph
@@ -1119,6 +1134,122 @@ Immunities, coin, a Zone Exposed or closed by hand, and gear added, dropped, dra
 the system does for them (a Strike's spend, a Reaction charged, Recenter, damage applied, a
 Recovery roll, the round's reset) already posts its own card and is not said twice; the GM's edits
 are silent.
+
+### The party
+
+**A `party` Actor type with one sheet** (0.7.0; `party-sheet-plan.md`, phase 1; rulings 91 to
+95), GM-owned and Observer by default so every player can open it. The sheet is the GM's console
+and the players' window at once: one template set that branches on who is looking and on which
+members they own, as the character sheet's header does. The party stores only its own bookkeeping
+(the members, the session, the last Milestone award for Take back, the GM's notes) and reads
+everything about its members live at render, never copying a number off a character. It never does
+a member's arithmetic: every rule effect it offers (a Flare, a Hero Point, a rest, a Milestone, a
+check, an Initiative) runs on the member's own Actor through a method that already exists and
+already posts its card, so the party adds buttons and a handful of cards, not a second rules
+engine. Its data model extends `TypeDataModel` directly, never `SwActorData`, so it has no Zones,
+Wounds, Vigor, stance or actions; a party is never a combatant, and nothing draws or counts its
+token (section 7). Phase 1 is the party, the session, the awards and the Skills grid; loot and the
+purse, the road and Downtime are the plan's later phases and are not built.
+
+**The roster and status board.** Always open above the tabs, one row per member, every number on
+it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
+name, the level badge with the three Milestone pips and the Deferred badge while the character
+holds a Deferred Talent Point, Hero Points with the GM's award controls, the Vigor bar with
+Temporary Vigor and the Spent badge, Wounds with the Zones on hover, Dying N, Fatigued N, Load
+Strain with the Wind tooltip the character sheet builds, Speed, the owning players' colour dots
+(dim when not connected), the Flared Constellations as chips, a GM-only Flare plus, and Remove
+with a confirm. Members join by drag (a linked token resolves to its Actor; an unlinked token, an
+adversary, a party or a compendium Actor is refused with a notice) or by the toolbar button that
+adds every player's assigned character once, in insertion order, which is the order. A member
+whose Actor has been deleted prints as a missing row with Remove alone, and the roster is the GM's
+list rather than the user list, so a character reassigned to another player stays until removed.
+Membership posts nothing: the roster is the record.
+
+**Session start and Hero Points.** Begin session, after a confirm, raises the session number and
+sets every member's Hero Points to exactly 1 (ruling 93): PHB P73 and P434 say each session starts
+with 1 and the GM awards more, and Refusing Death's "until the next session" reads the same way, so
+a GM who wants a player to keep a point adds it back in public. On each row the GM has a plus that
+asks for an optional one-line reason and writes +1, refused with a notice at the maximum of 3
+before anything is written, and a minus as a correction. **The party rests** runs
+`restForTheNight()` on every member in turn, each posting its own rest card exactly as the sheet's
+Rest button does, then one party line; the confirm names the members whose worn Torso piece lacks
+Comfort, and the armor rule itself stays the table's (section 7).
+
+**The Milestone award, the Deferred point and Take back.** Award a Milestone opens a dialog
+listing every member ticked, with a preview line each: who reaches Milestone 2 of 3 and may spend
+a Milestone Talent Point now in a Flared Constellation (named); who reaches it with no
+Constellation Flared, so the point is Deferred; who reaches the 4th and so the level, with Vigor
+before and after and a Comet. A Milestone belongs to the table (ruling 91): untick a character who
+has left or sat the arc out. Confirm disables the button while it runs and writes each ticked
+member: `milestone + 1`, or for a member at 3 `level + 1` and `milestone 0`, then reads the
+recomputed maximum and raises current Vigor by the same rise (ruling 92; P62 says "Vigor rises",
+and a character would otherwise come out of a level at 20 of 36), and `deferred + 1` for a member
+with no Flare receiving a point (ruling 94). The before-state of every member written is kept on
+the party; **Take back** reverses exactly those numbers on exactly those members, refuses with a
+notice when any of them has since been edited by hand, posts a card and forgets the award. No other
+undo: a Talent already spent is the player's to move. Rank unlocks need no write; the card says
+when 5th, 10th or 15th opens one. The system still does not police the spend: this part announces
+and remembers.
+
+**Deferred Talent Points** (ruling 94) are the book's own exception to "never banked": Table 4
+says a Milestone Talent Point with no Flared Constellation to receive it "becomes a Deferred Talent
+Point", spent "the instant a Constellation is Flared". The character carries a count,
+`system.deferred`, raised by an award that finds no Flare and lowered by **Spent**, a control on
+the Deferred badge (beside the Milestone pips on the character sheet, and on the roster) for the
+owner or the GM, which posts a one-line card spoken by the character ("{name} spends a Deferred
+Talent Point."). The lit Flare card carries a reminder line while the count is above 0. It is a
+reminder with a number on it, not a budget: nothing stops a Talent drag, and the count is not
+decremented when one lands.
+
+**The Skills grid.** A tab with Constellations as rows and members as columns, because the
+question at the table is "who has Stealth". The four Defenses first, each cell showing the
+Threshold (what a Sneak, a Feint or a Lie is measured against) with the modifier and rank on hover;
+then Initiative, live only while a Combat holds the member; the seven Skill Constellations; Melee
+and Ranged, rank and Proficiency with the inherited pool on hover; and one row per Lore any member
+has opened, blank for the rest. A Skill cell shows the rank letter and the signed modifier from the
+same preview the roll dialog uses (`SwCheck.previewTotal`), so Stealth carries Load Strain, a
+closed helm reaches Awareness and Initiative, and a Frightened member's whole column moves within
+the debounce; Untrained is dimmed at +0, the Threshold is in the tooltip, and the best in each row
+is marked gold, ties all marked. Clicking a cell rolls that check as that member, through the
+member's own `rollCheck`, `rollDefense` or the Combat's Initiative roll, so the card speaks as the
+member and can Flare; Shift-click skips the dialog as the sheet does.
+
+**What the player sees, and what the GM sees.** The GM sees everything and holds every party
+write: membership, Begin session, the awards and corrections, the night, the Milestone and Take
+back, the Flare plus, Remove, the Notes tab. A player sees the same roster and the same grid,
+Thresholds included (ruling 95; a world setting is one line if the table objects, and adversaries'
+Thresholds never appear on the party sheet), read-only but for three live things: portrait clicks
+on any member, the Flare chips on a character they own (a click puts one out through
+`toggleFlare`, which posts its card), and the Spent control on their own Deferred badge; grid
+cells roll only for members they own, and a click on another member's cell does nothing. A player
+who owns no member sees the board and an empty-state line. Every action handler re-checks
+permission before writing (the GM for party writes; the actor's owner for a put-out Flare or a
+Spent), since ApplicationV2 actions fire regardless of editability, and every write to a character
+goes through the same `swAnnounced` path the rest card uses, so the Adjusted card never doubles a
+party card. Observer ownership means every player can read the document, the Notes tab included,
+from the console: it is a convenience, not a vault, and nothing secret belongs on the party.
+
+**The cards.** Spoken by the party: Begin session ("Session 12 begins. Every character starts with
+1 Hero Point.", with a line per member whose count changed, "Wren: 3 to 1"); the Milestone award,
+one line per member ("Hrolda reaches Milestone 2 of 3: a Milestone Talent Point, to be spent now
+in a Flared Constellation: Melee, Athletics."; "Wren reaches Milestone 3 of 3: no Constellation is
+Flared, so the point is Deferred: spend it the instant one Flares (Deferred held: 1)."; "Kessa
+reaches the 4th Milestone: level 3. Vigor 36 to 45. A Comet: a Talent Point for any Constellation,
+Flared or not."); Take back; and the party's line after the night. Spoken by the member: a Hero
+Point awarded ("The GM awards Hrolda a Hero Point: carrying Toric out of the fire (2 of 3).") or
+corrected ("Hrolda's Hero Points corrected to 1."); a Deferred point Spent; each member's own rest
+card; and the Flare card `toggleFlare` already posts, with "awarded by the GM" and the reason when
+the GM lit it from the roster. Membership, a Remove and the GM's notes post nothing.
+
+**What re-renders it.** The sheet registers the member hooks once when it opens and lets them go
+when it closes: `updateActor`; an Item created, changed or deleted on a member (a Talent, a
+Constellation, a helm donned); an Active Effect created, changed or deleted on a member (Fatigued
+and Frightened are effects). It re-renders on a timer of about 150 ms, never a
+requestAnimationFrame latch, and only when the changed document is a member or belongs to one, so
+six members and the attack flow running do not redraw the board on every pip. Nothing
+member-dependent is computed in the party's own `prepareDerivedData`; it is all computed at render
+from the resolved members, because one Actor's derived data must not depend on another's prepare
+order.
 
 ---
 
@@ -1214,7 +1345,10 @@ a Defense roll button against the attack's Threshold.
 Also: Move, Step and Rush cards saying what a drag cost and why; the Pass card; Bind formed, Control
 taken and Bind ended; Exposed; Give ground; Step; Recenter; Treat Wound; a night's rest; Refuse
 Death; a Hero Point spent; the **Flare** card, lit or put out, from a critical's card or from the
-sheet (0.6.3); the **Adjusted** card for a player's hand edits (0.5.1); and the overspend card,
+sheet (0.6.3), with the GM's reason when it was awarded from the party sheet (0.7.0); the
+**party's cards** (0.7.0: Begin session, a Hero Point awarded or corrected, the Milestone award
+and Take back, the party's night, a Deferred Talent Point Spent; see The party, under Sheets); the
+**Adjusted** card for a player's hand edits (0.5.1); and the overspend card,
 whenever something happened without the actions to pay for it. The Bind and Exposed card titles
 open their rules pages.
 
@@ -1277,7 +1411,19 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 - **Prerequisites outside the wizard are not enforced.** Drag a Talent onto a sheet by hand and
   nothing stops you. The wizard enforces them; the sheet trusts you.
 - **Talent Point types are not a budget after creation.** Milestone, Comet, Deferred and the rest are
-  documented in the Rules compendium, and the no-banking rule is not policed.
+  documented in the Rules compendium, and the no-banking rule is not policed. Since 0.7.0 the
+  Milestone award writes the Milestone and says where the point may go, and that is all it does.
+- **Deferred Talent Points are counted, not enforced** (0.7.0; ruling 94). `system.deferred` on
+  the character is a reminder with a number on it: a Milestone award that finds no Flared
+  Constellation raises it, the Spent control on the badge lowers it, and the Flare card reminds
+  you while it is above 0. Nothing stops a Talent drag, the count does not fall when one lands,
+  and whether the point was spent where the book says is the table's to see.
+- **A party is never a combatant** (0.7.0; the plan's risk 1). The `party` Actor has no Zones,
+  Wounds, Vigor, stance or actions, and Support's ally count (`supportFor`), `actorsIn`, `canAct`,
+  the Combat Tracker's readout and the check engine skip or refuse it by type. A party token
+  dropped into a Combat survives a round with no card
+  addressed to it, no readout under its row and no Support line for it on a member's Strike;
+  nothing draws or counts its token, and no party token is meant to stand on any map.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

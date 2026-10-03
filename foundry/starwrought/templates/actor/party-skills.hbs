@@ -1,0 +1,70 @@
+{{!-- The Skills grid (0.7.0; plan, part 4): Constellations as rows, members as columns, because
+      the question is "who has Stealth". The Defenses show the Threshold (ruling 95: players see
+      them too), Initiative is live only while a Combat holds the member, a Skill cell is the rank
+      letter and the signed modifier from SwCheck.previewTotal with the Threshold on hover, the best
+      in each row is gold (ties all), and a cell is live only on a member the user owns. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{#if grid.columns.length}}
+  <div class="sw-panel sw-party-grid-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Party.skillsTitle"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Party.skillsHint"}}</span>
+    </h3>
+
+    <table class="sw-party-grid">
+      <thead>
+        <tr>
+          <th class="sw-grid-rowhead sw-grid-corner"></th>
+          {{#each grid.columns as |col|}}
+          <th class="sw-grid-member {{#if col.live}}sw-grid-member-live{{/if}}" data-uuid="{{col.uuid}}">
+            <img class="sw-grid-portrait" src="{{col.img}}" alt="{{col.name}}" data-action="openMember"
+                 data-tooltip="STARWROUGHT.Party.openSheet">
+            <span class="sw-grid-member-name">{{col.name}}</span>
+          </th>
+          {{/each}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each grid.groups as |group|}}
+        <tr class="sw-grid-group">
+          <th colspan="{{@root.grid.span}}">{{group.label}}</th>
+        </tr>
+        {{#each group.rows as |row|}}
+        <tr class="sw-grid-row sw-grid-row-{{row.kind}}">
+          <th class="sw-grid-rowhead" {{#if row.hint}}data-tooltip="{{row.hint}}"{{/if}}>
+            {{#if row.glyph}}<span class="sw-glyph sw-glyph-{{row.attribute}}">{{row.glyph}}</span>{{/if}}
+            <span class="sw-grid-row-name">{{row.label}}</span>
+          </th>
+          {{#each row.cells as |cell|}}
+          <td class="sw-grid-cell {{#if cell.best}}sw-grid-best{{/if}} {{#if cell.untrained}}sw-grid-untrained{{/if}} {{#if cell.blank}}sw-grid-blank{{/if}} {{#if cell.live}}sw-grid-live{{/if}}">
+            {{#unless cell.blank}}
+            {{#if cell.live}}
+            <a class="sw-grid-value" data-action="rollCell" data-uuid="{{cell.uuid}}" data-kind="{{cell.kind}}"
+               data-key="{{cell.key}}" data-slug="{{cell.slug}}" data-tooltip="{{cell.tooltip}}">
+              {{#if cell.rankAbbr}}<span class="sw-grid-rank sw-rank-{{cell.rank}}">{{cell.rankAbbr}}</span>{{/if}}
+              <strong>{{cell.display}}</strong>
+            </a>
+            {{else}}
+            <span class="sw-grid-value sw-grid-static" data-tooltip="{{cell.tooltip}}">
+              {{#if cell.rankAbbr}}<span class="sw-grid-rank sw-rank-{{cell.rank}}">{{cell.rankAbbr}}</span>{{/if}}
+              <strong>{{cell.display}}</strong>
+            </span>
+            {{/if}}
+            {{/unless}}
+          </td>
+          {{/each}}
+        </tr>
+        {{/each}}
+        {{/each}}
+      </tbody>
+    </table>
+    <p class="sw-note">{{localize "STARWROUGHT.Party.skillsNote"}}</p>
+  </div>
+  {{else}}
+  <div class="sw-panel sw-empty-panel">
+    <p>{{localize "STARWROUGHT.Party.skillsNoMembers"}}</p>
+  </div>
+  {{/if}}
+
+</section>

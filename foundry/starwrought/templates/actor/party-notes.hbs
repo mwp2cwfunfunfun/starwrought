@@ -1,0 +1,14 @@
+{{!-- The GM's notes (0.7.0). A part the sheet renders for the GM alone; not a vault, since an
+      Observer can read the document from the console, and FEATURES says so (plan, risk 8). --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Party.notesTitle"}}</h3>
+    <prose-mirror name="system.notes" value="{{system.notes}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>
+      {{{enrichedNotes}}}
+    </prose-mirror>
+    <p class="sw-note">{{localize "STARWROUGHT.Party.notesHint"}}</p>
+  </div>
+
+</section>
