@@ -145,9 +145,11 @@ content mode reports it as a warning and goes on (ruling 115).
   included. It also stops trusting `python` on PATH: Mike's first double-click of
   `sync_content.cmd` resolved an interpreter without openpyxl and fell over at the first import, so
   the script now probes for the four modules the steps need (`STARWROUGHT_PYTHON` if set, then
-  `python`, `py -3`, then every install the py launcher lists by path), runs every Python step
-  with the first that has them, prints which in its header, and when none does names what it
-  tried and the pip line.
+  the project's `.venv`, then `python`, `py -3`, then every install the py launcher lists by
+  path), runs every Python step with the first that has them, prints which in its header, and
+  when nothing on the machine has them makes `.venv` in the project root and installs them there
+  (the modules had been installed into one Windows account's user site, invisible to the PC's
+  other account; a venv in the folder is shared by both). `.venv/` is gitignored.
 - **`build_foundry.mjs`** keeps `_stats.systemId` on every document, writes `index.json` beside
   the sources from `writeSources()` and stamps the hash in `push()`, the one place every builder
   (`item()`, `folder()`, the rules journal and the macros) passes through once its document is

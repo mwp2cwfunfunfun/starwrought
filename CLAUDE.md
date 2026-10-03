@@ -92,9 +92,11 @@ warning in content mode)" banner and exits 0, because adding a Talent to a sheet
 sync (ruling 115); a failing step and the stamp check still exit 1, and `--content` with
 `--skip-slow`, `--check` or `--accept-phb` is an error (a handbook sync is never stamped from the
 mode whose point is that it is not one). `build_all.mjs` resolves the Python its steps run with by
-probing for the four modules they import (`STARWROUGHT_PYTHON`, `python`, `py -3`, then every
-install `py -0p` lists) and prints the one it chose, because Mike's first double-click of
-`sync_content.cmd` resolved a `python` without openpyxl (2026-10-03). `build_foundry.mjs` stamps every document with
+probing for the four modules they import (`STARWROUGHT_PYTHON`, the project's `.venv`, `python`,
+`py -3`, then every install `py -0p` lists), makes `.venv` in the project root and installs the
+modules into it when nothing on the machine has them, and prints the one it chose: Mike's first
+double-click of `sync_content.cmd` ran as the PC's other account and found C:\Python313 without the
+user-site modules Dad's account had (2026-10-03). `.venv/` is gitignored. `build_foundry.mjs` stamps every document with
 `flags.starwrought.contentHash` (a short SHA-1 of its canonical content, keys sorted) and writes
 `packs/_source/index.json` (`stamp`; a `build` hash over every document hash in id order, which
 changes only when content does; `system`; and per pack every document and folder with `_id`,

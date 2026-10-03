@@ -60,14 +60,28 @@ if (content && (checkOnly || skipSlow || accept)) {
 const PY_MODULES = ["openpyxl", "matplotlib", "reportlab", "docx"];
 
 /**
+ * The project's own Python environment: `.venv` in the project root, gitignored, made by
+ * bootstrapVenv() the first time no interpreter on the machine has the modules. It belongs to the
+ * folder rather than to an account, which is the point: on Mike's machine the modules were in one
+ * account's user site (`pip install --user` lands in AppData\Roaming), and a double-click from the
+ * other account found the same C:\Python313 with none of them (2026-10-03).
+ */
+const VENV = path.join(ROOT, ".venv");
+const VENV_PYTHON = process.platform === "win32"
+  ? path.join(VENV, "Scripts", "python.exe")
+  : path.join(VENV, "bin", "python");
+
+/**
  * Where a Python might be, in the order worth trying: the one named in STARWROUGHT_PYTHON, the
- * `python` on PATH, the py launcher's default, then every install the launcher knows by its full
- * path (`py -0p`), which reaches past an active venv or the Store placeholder sitting first on PATH.
+ * project's `.venv` when it exists, the `python` on PATH, the py launcher's default, then every
+ * install the launcher knows by its full path (`py -0p`), which reaches past an active venv or the
+ * Store placeholder sitting first on PATH.
  * @returns {Array<{cmd: string, args: string[], why: string}>}
  */
 function pythonCandidates() {
   const list = [];
   if (process.env.STARWROUGHT_PYTHON) list.push({ cmd: process.env.STARWROUGHT_PYTHON, args: [], why: "STARWROUGHT_PYTHON" });
+  if (fs.existsSync(VENV_PYTHON)) list.push({ cmd: VENV_PYTHON, args: [], why: "the project's .venv" });
   if (process.platform === "win32") {
     list.push({ cmd: "python", args: [], why: "python on PATH" });
     list.push({ cmd: "py", args: ["-3"], why: "the py launcher" });
@@ -103,20 +117,72 @@ function probeSummary(probe) {
  * @returns {{cmd: string, args: string[], why: string, path: string}}
  */
 function resolvePython() {
-  const tried = [];
   const probe = `import sys, ${PY_MODULES.join(", ")}; print(sys.executable)`;
-  for (const candidate of pythonCandidates()) {
-    const result = spawnSync(candidate.cmd, [...candidate.args, "-c", probe], { encoding: "utf8", shell: false });
-    if (!result.error && (result.status === 0)) {
-      return { ...candidate, path: (result.stdout ?? "").trim().split(/\r?\n/).at(-1) || candidate.cmd };
+  const attempt = candidates => {
+    const tried = [];
+    for (const candidate of candidates) {
+      const result = spawnSync(candidate.cmd, [...candidate.args, "-c", probe], { encoding: "utf8", shell: false });
+      if (!result.error && (result.status === 0)) {
+        return { found: { ...candidate, path: (result.stdout ?? "").trim().split(/\r?\n/).at(-1) || candidate.cmd }, tried };
+      }
+      tried.push({ candidate, line: `  ${[candidate.cmd, ...candidate.args].join(" ")} (${candidate.why}): ${probeSummary(result)}` });
     }
-    tried.push(`  ${[candidate.cmd, ...candidate.args].join(" ")} (${candidate.why}): ${probeSummary(result)}`);
+    return { found: null, tried };
+  };
+
+  const first = attempt(pythonCandidates());
+  if (first.found) return first.found;
+
+  // Nothing on the machine has the modules: make the project its own environment and try that.
+  // Any Python that runs at all can build a venv; the first candidate that answered `--version`
+  // is the base (the Store placeholder answers with its advice and a non-zero status, so it is not).
+  const base = first.tried.map(t => t.candidate).find(c => {
+    const v = spawnSync(c.cmd, [...c.args, "--version"], { encoding: "utf8", shell: false });
+    return !v.error && (v.status === 0);
+  });
+  if (base && bootstrapVenv(base)) {
+    const second = attempt([{ cmd: VENV_PYTHON, args: [], why: "the project's .venv, just made" }]);
+    if (second.found) return second.found;
+    first.tried.push(...second.tried);
   }
+
   console.error("\nNo Python with the pipeline's modules was found. Tried:");
-  for (const line of tried) console.error(line);
-  console.error(`\nInstall them into the Python you mean to use:\n  <python> -m pip install ${PY_MODULES.map(m => (m === "docx" ? "python-docx" : m)).join(" ")}`);
-  console.error("or point STARWROUGHT_PYTHON at an interpreter that has them, e.g. C:\\Python313\\python.exe.\n");
+  for (const t of first.tried) console.error(t.line);
+  const pip = PY_MODULES.map(m => (m === "docx" ? "python-docx" : m)).join(" ");
+  console.error(`\nMake the project's own environment and install them there (any account on this machine can then use it):`);
+  console.error(process.platform === "win32"
+    ? `  py -3 -m venv .venv\n  .venv\\Scripts\\python -m pip install ${pip}`
+    : `  python3 -m venv .venv\n  .venv/bin/python -m pip install ${pip}`);
+  console.error("or point STARWROUGHT_PYTHON at an interpreter that has them.\n");
   process.exit(1);
+}
+
+/**
+ * Build `.venv` in the project root from `base` and install the four modules into it, printing
+ * what is happening since pip takes a minute the first time. False when either step fails (no
+ * network, no venv module), in which case the caller's message says what to do by hand. A venv
+ * that exists but is broken is rebuilt, since a half-made one is why we are here.
+ * @param {{cmd: string, args: string[]}} base  A Python that runs.
+ * @returns {boolean}
+ */
+function bootstrapVenv(base) {
+  console.log(`\n  No Python here has the pipeline's modules; making the project's own environment at ${path.relative(ROOT, VENV)}`);
+  console.log(`  (${[base.cmd, ...base.args].join(" ")} -m venv, then pip; a minute or two the first time).`);
+  fs.rmSync(VENV, { recursive: true, force: true });
+  const made = spawnSync(base.cmd, [...base.args, "-m", "venv", VENV], { cwd: ROOT, stdio: "inherit", shell: false });
+  if (made.error || (made.status !== 0) || !fs.existsSync(VENV_PYTHON)) {
+    console.error("  The venv could not be made.");
+    return false;
+  }
+  const pip = PY_MODULES.map(m => (m === "docx" ? "python-docx" : m));
+  const installed = spawnSync(VENV_PYTHON, ["-m", "pip", "install", "--disable-pip-version-check", ...pip], {
+    cwd: ROOT, stdio: "inherit", shell: false
+  });
+  if (installed.error || (installed.status !== 0)) {
+    console.error("  pip could not install the modules (no network?).");
+    return false;
+  }
+  return true;
 }
 
 /** Resolved once the steps are about to run; --check runs no Python and needs none. */

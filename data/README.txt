@@ -258,8 +258,12 @@ Then check it still runs, and still reads right:
 
 No PYTHONUTF8 needed: the scripts declare their encodings. Needs openpyxl, matplotlib, reportlab,
 python-docx and the docx npm package. build_all.mjs (and so sync_content.cmd) finds a Python that
-has the four modules on its own: it tries STARWROUGHT_PYTHON if set, then python on PATH, then the
-py launcher, then every install the launcher lists, and names the one it chose in its header; a
-double-click can resolve a different python than a shell does (a venv, the Microsoft Store
-placeholder), which is why it probes rather than trusts. When none has them it says what it tried
-and prints the pip line. The individual steps above run with whichever python you type.
+has the four modules on its own: it tries STARWROUGHT_PYTHON if set, then the project's own .venv,
+then python on PATH, then the py launcher, then every install the launcher lists, and names the
+one it chose in its header. A double-click can resolve a different python than a shell does, and
+a `pip install --user` lands in one Windows account's profile where another account's python
+cannot see it (this PC has two accounts), which is why it probes rather than trusts. When nothing
+on the machine has them it makes .venv in the project root (gitignored) and installs the four
+modules into it, a minute or two the first time, and uses that from then on; .venv belongs to the
+folder, so every account that can read the folder shares it. The individual steps above run with
+whichever python you type; to use the project's, type .venv\Scripts\python instead of python.

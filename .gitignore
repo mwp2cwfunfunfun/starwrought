@@ -2,6 +2,11 @@
 dist/
 node_modules/
 
+# The project's own Python environment, made by build_all.mjs when no interpreter on the machine
+# has the pipeline's modules (0.8.0): it belongs to the folder, not to an account, so a
+# double-click from either account on this PC finds the same modules.
+.venv/
+
 # Pre-version snapshots. Large, and git already keeps the history.
 backup/
 
