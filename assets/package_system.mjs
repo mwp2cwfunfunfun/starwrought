@@ -9,8 +9,11 @@
  *                     resolves if the asset is named the same in every release.
  *   system.json       the same manifest, alone, for a `manifest` URL.
  *
- * `packs/_source` is left out. Those JSON files are the input to the compiled LevelDB packs, not
- * something Foundry reads at runtime, and they are most of the weight.
+ * `packs/_source` rides along since 0.8.0. Those JSON files are the input to the compiled LevelDB
+ * packs, and since the content loop they are also what the in-game Sync content tool reads
+ * (`packs/_source/index.json` and the per-pack files, served as static files), so a system
+ * installed from a release can be synced in place when a later build lands beside it. They are
+ * most of the weight, and worth it.
  *
  * Run it from the project root:
  *
@@ -33,8 +36,11 @@ const DIST = join(ROOT, "dist");
 const STAGE = join(DIST, "staging");
 const ASSET = "starwrought.zip";
 
-/** Anything here is build input rather than something the server needs. */
-const EXCLUDE = new Set([join(SYSTEM, "packs", "_source")]);
+/**
+ * Anything here is build input rather than something the server needs. Nothing today: the pack
+ * sources used to be left out, and the in-game sync (0.8.0) reads them at runtime.
+ */
+const EXCLUDE = new Set([]);
 
 /**
  * LevelDB's per-process files. `LOCK` is held open by whatever Foundry is running against these

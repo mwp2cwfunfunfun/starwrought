@@ -118,6 +118,8 @@ export function preloadTemplates() {
     "systems/starwrought/templates/chat/item-card.hbs",
     "systems/starwrought/templates/dice/check-dialog.hbs",
     "systems/starwrought/templates/apps/combat-prompt.hbs",
+    // Sync content (0.8.0): the plan window the content loop ends in.
+    "systems/starwrought/templates/apps/content-sync.hbs",
     "systems/starwrought/templates/chat/attack-workflow-card.hbs",
     "systems/starwrought/templates/chargen/steps.hbs",
     "systems/starwrought/templates/chargen/body.hbs",

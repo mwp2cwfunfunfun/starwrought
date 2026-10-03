@@ -8,11 +8,23 @@
  * rather than remembered.
  *
  *   node assets/build_all.mjs                 run every step, then check for drift
+ *   node assets/build_all.mjs --content       the content loop: spreadsheets to the web app, the viewer
+ *                                             and the Foundry pack sources, no compile (0.8.0)
  *   node assets/build_all.mjs --check         only check for drift, build nothing
  *   node assets/build_all.mjs --accept-phb    record the current handbook as synced (after the work)
  *   node assets/build_all.mjs --skip-slow     skip the plate renderer, the sheets, and the compendium
  *
  * Exit 1 on any failing step, or on unresolved handbook drift.
+ *
+ * --content (Mike, 2026-10-03; rulings 115 to 117) is its own mode and takes no other flag. It runs
+ * xlsx_to_trees, inject, render_constellations --changed (only the plates whose Constellation moved
+ * or is new), build_foundry --no-compile (the pack sources and packs/_source/index.json, never the
+ * LevelDB compendia, which a running Foundry holds open) and check_style; it skips the sheets, the
+ * compendium docx and the features docx and says so; and it reports handbook drift as a warning
+ * rather than stopping, because adding a Talent to a sheet is not a handbook sync (ruling 115). The
+ * open Foundry world then syncs its compendia from the sources in place (Settings > STARWROUGHT >
+ * Sync content). sync_content.cmd in the project root runs this mode from a double-click. Exit 1 on
+ * a failing step or on disagreeing version stamps; drift alone exits 0 in this mode.
  */
 
 import fs from "node:fs";
@@ -30,19 +42,36 @@ const args = process.argv.slice(2);
 const checkOnly = args.includes("--check");
 const accept = args.includes("--accept-phb");
 const skipSlow = args.includes("--skip-slow");
+const content = args.includes("--content");
+
+// Content mode is a different question from the other three flags: --check and --skip-slow shape the
+// full pipeline, and --accept-phb stamps a handbook sync, which content work by definition is not
+// (ruling 115). Refuse the mix rather than guess which flag wins.
+if (content && (checkOnly || skipSlow || accept)) {
+  console.error("--content is its own mode: run it alone, not with --check, --skip-slow or --accept-phb.");
+  process.exit(1);
+}
 
 const PY = process.platform === "win32" ? "python" : "python3";
 
-/** Every step, in the order CLAUDE.md prints them. */
+/**
+ * Every step, in the order CLAUDE.md prints them. `slow` marks what --skip-slow leaves out. `content`
+ * is the step's shape in --content mode: `false` skips it (the sheets, the compendium docx and the
+ * features docx belong to a release, not to a content change), an argument list replaces `args` (the
+ * plates only where the Constellation moved; the pack sources without a compile), and absent runs
+ * the step as it is.
+ */
 const STEPS = [
   { name: "xlsx_to_trees", cmd: PY, args: ["assets/xlsx_to_trees.py"] },
   { name: "inject", cmd: PY, args: ["assets/inject.py"] },
-  { name: "render_constellations", cmd: PY, args: ["assets/render_constellations.py"], slow: true },
-  { name: "sheet_gen", cmd: PY, args: ["assets/sheet_gen.py"], slow: true },
-  { name: "build_phb", cmd: "node", args: ["assets/build_phb.js"], slow: true },
-  { name: "build_foundry", cmd: "node", args: ["assets/build_foundry.mjs"] },
+  { name: "render_constellations", cmd: PY, args: ["assets/render_constellations.py"], slow: true,
+    content: ["assets/render_constellations.py", "--changed"] },
+  { name: "sheet_gen", cmd: PY, args: ["assets/sheet_gen.py"], slow: true, content: false },
+  { name: "build_phb", cmd: "node", args: ["assets/build_phb.js"], slow: true, content: false },
+  { name: "build_foundry", cmd: "node", args: ["assets/build_foundry.mjs"],
+    content: ["assets/build_foundry.mjs", "--no-compile"] },
   // FEATURES.md as a Word document, so the printable copy never lags the file the handbook rule moves.
-  { name: "build_features_docx", cmd: PY, args: ["assets/build_features_docx.py"] },
+  { name: "build_features_docx", cmd: PY, args: ["assets/build_features_docx.py"], content: false },
   { name: "check_style", cmd: PY, args: ["assets/check_style.py", "--quiet"] }
 ];
 
@@ -85,9 +114,10 @@ function handbookHash(book) {
 
 /* -------------------------------------------- */
 
-function run(step) {
-  process.stdout.write(`\n=== ${step.name} ===\n`);
-  const result = spawnSync(step.cmd, step.args, { cwd: ROOT, stdio: "inherit", shell: false });
+/** Run one step; `args` and `label` are the content-mode overrides, else the step's own. */
+function run(step, { args: stepArgs = step.args, label = step.name } = {}) {
+  process.stdout.write(`\n=== ${label} ===\n`);
+  const result = spawnSync(step.cmd, stepArgs, { cwd: ROOT, stdio: "inherit", shell: false });
   if (result.error) {
     console.error(`  could not run ${step.cmd}: ${result.error.message}`);
     return false;
@@ -130,13 +160,19 @@ function driftCheck() {
   return { ok: false, book, recorded, missing, changed: false, syncedOn: null };
 }
 
-function reportDrift(drift) {
+/**
+ * Say what drifted and what has to catch up. In content mode (`warning`) the same report is printed
+ * under a banner that says it is a warning, and the run goes on: the handbook rule is about a
+ * handbook sync, and the content loop is not one (ruling 115). The full pipeline still stops here.
+ */
+function reportDrift(drift, { warning = false } = {}) {
+  const head = warning ? "HANDBOOK DRIFT (a warning in content mode)" : "HANDBOOK DRIFT";
   console.log("\n" + "=".repeat(72));
   if (drift.changed) {
-    console.log(`HANDBOOK DRIFT: ${drift.book.file} has changed since it was synced`
+    console.log(`${head}: ${drift.book.file} has changed since it was synced`
       + `${drift.syncedOn ? ` on ${drift.syncedOn}` : ""}, under the same edition number.`);
   } else {
-    console.log(`HANDBOOK DRIFT: the repository is synced to v${drift.recorded ?? "nothing"},`
+    console.log(`${head}: the repository is synced to v${drift.recorded ?? "nothing"},`
       + ` but ${drift.book.file} is on the shelf.`);
   }
   console.log("=".repeat(72));
@@ -150,7 +186,12 @@ function reportDrift(drift) {
     console.log(`\nStill not naming v${drift.book.version}:`);
     for (const m of drift.missing) console.log(`  - ${m}`);
   }
-  console.log(`\nWhen the work is done:  node assets/build_all.mjs --accept-phb\n`);
+  if (warning) {
+    console.log("\nContent mode does not stop for this: a content change is not a handbook sync (ruling 115).");
+    console.log("The full pipeline will, until the work above is done and recorded:  node assets/build_all.mjs --accept-phb\n");
+  } else {
+    console.log(`\nWhen the work is done:  node assets/build_all.mjs --accept-phb\n`);
+  }
 }
 
 /* -------------------------------------------- */
@@ -184,7 +225,7 @@ function stampCheck() {
 
 /* -------------------------------------------- */
 
-console.log("STARWROUGHT full pipeline");
+console.log(content ? "STARWROUGHT content loop" : "STARWROUGHT full pipeline");
 const book = currentHandbook();
 const recorded = readSync().phb;
 console.log(`  handbook on the shelf: ${book ? book.file : "none"}`);
@@ -192,11 +233,21 @@ console.log(`  repository synced to:  v${recorded ?? "nothing"}`);
 
 if (!checkOnly) {
   for (const step of STEPS) {
+    if (content && step.content === false) {
+      console.log(`\n=== ${step.name} (skipped in content mode) ===`);
+      continue;
+    }
     if (skipSlow && step.slow) {
       console.log(`\n=== ${step.name} (skipped) ===`);
       continue;
     }
-    if (!run(step)) {
+    // In content mode a step with its own argument list runs with it, and the heading shows the
+    // flags that differ from the full pipeline's, so the log says which shape ran.
+    const contentArgs = content && Array.isArray(step.content) ? step.content : null;
+    const ok = contentArgs
+      ? run(step, { args: contentArgs, label: `${step.name} ${contentArgs.filter(a => !step.args.includes(a)).join(" ")}`.trim() })
+      : run(step);
+    if (!ok) {
       console.error("\nPipeline stopped. Nothing further was run.");
       process.exit(1);
     }
@@ -235,8 +286,13 @@ if (accept) {
 }
 
 if (!drift.ok) {
-  reportDrift(drift);
-  process.exit(1);
+  reportDrift(drift, { warning: content });
+  if (!content) process.exit(1);
 }
 
-console.log(`\nAll steps clean, and the repository is synced to PHB v${drift.recorded}.`);
+if (content) {
+  console.log("\nContent rebuilt: the web app and the viewer are current (reload the browser tab); in Foundry,");
+  console.log("sync the open world from Settings > STARWROUGHT > Sync content.");
+} else {
+  console.log(`\nAll steps clean, and the repository is synced to PHB v${drift.recorded}.`);
+}

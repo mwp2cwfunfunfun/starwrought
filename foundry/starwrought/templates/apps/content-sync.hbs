@@ -1,0 +1,113 @@
+{{!-- Sync content (0.8.0): the plan by pack and by name, the copies line, the three buttons; a
+      progress line while applying; the result in place of the plan after. Context from
+      ContentSync#_prepareContext: loading, applying, progress, error, result, plan, refreshCopies,
+      copiesDisabled, buttons. --}}
+<div class="sw-content-sync-body">
+
+  {{#if error}}
+  <p class="sw-note sw-warn sw-content-error"><i class="fa-solid fa-triangle-exclamation"></i> {{error}}</p>
+  {{/if}}
+
+  {{#if loading}}
+  <p class="sw-content-progress"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{localize "STARWROUGHT.Content.reading"}}</span></p>
+  {{/if}}
+
+  {{#if result}}
+  {{!-- After the Sync: what was written, the copies, any error lines, and whether the build was recorded. --}}
+  <section class="sw-content-result">
+    <h3><i class="fa-solid fa-circle-check"></i> {{localize "STARWROUGHT.Content.resultTitle"}}</h3>
+    <ul class="sw-content-result-list">
+      {{#each result.packs as |pack|}}
+      <li>{{pack.text}}</li>
+      {{/each}}
+      <li>{{result.copies}}</li>
+    </ul>
+    {{#if result.done}}<p class="sw-note sw-good">{{result.done}}</p>{{/if}}
+    {{#if result.errorsText}}
+    <p class="sw-note sw-warn">{{result.errorsText}}</p>
+    <ul class="sw-content-errors">
+      {{#each result.errors as |line|}}<li>{{line}}</li>{{/each}}
+    </ul>
+    {{/if}}
+  </section>
+  {{/if}}
+
+  {{#if plan}}
+  {{!-- The header: when the sources were built, when this world last synced, the build hash. --}}
+  <header class="sw-content-head">
+    <div>
+      <span class="sw-content-label">{{localize "STARWROUGHT.Content.builtOn"}}</span>
+      <strong>{{plan.when}}</strong>
+    </div>
+    <div>
+      <span class="sw-content-label">{{localize "STARWROUGHT.Content.lastSynced"}}</span>
+      <strong>{{plan.lastWhen}}</strong>
+    </div>
+    <div>
+      <span class="sw-content-label">{{localize "STARWROUGHT.Content.build"}}</span>
+      <code data-tooltip="{{plan.build}}">{{plan.buildShort}}</code>
+    </div>
+  </header>
+
+  {{#if plan.empty}}
+  <p class="sw-content-empty"><i class="fa-solid fa-circle-check"></i> {{plan.emptyText}}</p>
+  {{else}}
+  {{!-- One section per pack: its label, the three counts, and a collapsible name list for each kind
+        of change, folders marked. A pack with nothing to do says so in a line. --}}
+  {{#each plan.packs as |pack|}}
+  <section class="sw-content-pack {{#unless pack.hasWork}}sw-content-level{{/unless}}">
+    <header class="sw-content-pack-head">
+      <h3>{{pack.label}}</h3>
+      <span class="sw-content-counts">
+        <span class="sw-content-count sw-content-create" data-tooltip="STARWROUGHT.Content.create"><i class="fa-solid fa-plus"></i> {{pack.counts.create}}</span>
+        <span class="sw-content-count sw-content-update" data-tooltip="STARWROUGHT.Content.update"><i class="fa-solid fa-pen"></i> {{pack.counts.update}}</span>
+        <span class="sw-content-count sw-content-delete" data-tooltip="STARWROUGHT.Content.delete"><i class="fa-solid fa-minus"></i> {{pack.counts.delete}}</span>
+      </span>
+    </header>
+    {{#if pack.hasWork}}
+    {{#each pack.lists as |list|}}
+    <details class="sw-content-list sw-content-list-{{list.kind}}">
+      <summary>{{list.label}}</summary>
+      <ul>
+        {{#each list.items as |row|}}
+        <li>{{row.name}}{{#if row.folder}} <span class="sw-content-folder-tag">{{localize "STARWROUGHT.Content.folderTag"}}</span>{{/if}}</li>
+        {{/each}}
+      </ul>
+    </details>
+    {{/each}}
+    {{else}}
+    <p class="sw-note">{{localize "STARWROUGHT.Content.packLevel"}}</p>
+    {{/if}}
+  </section>
+  {{/each}}
+  <p class="sw-note">{{localize "STARWROUGHT.Content.deleteNote"}}</p>
+  {{/if}}
+
+  {{#if plan.skipped}}<p class="sw-note sw-warn">{{plan.skipped}}</p>{{/if}}
+
+  {{!-- The characters' copies (ruling 117): ticked by default, disabled when nothing would be refreshed. --}}
+  <label class="sw-content-copies {{#unless plan.copies.any}}sw-content-copies-none{{/unless}}" data-tooltip="STARWROUGHT.Content.copiesHint">
+    <input type="checkbox" name="refreshCopies" {{checked refreshCopies}} {{disabled copiesDisabled}}>
+    <span>
+      <strong>{{localize "STARWROUGHT.Content.copiesLabel"}}</strong>
+      <small>{{plan.copies.line}}</small>
+    </span>
+  </label>
+  {{/if}}
+
+  {{#if applying}}
+  <p class="sw-content-progress"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{progress}}</span></p>
+  {{/if}}
+
+  <footer class="sw-content-buttons">
+    <button type="button" data-action="refresh" {{disabled buttons.refreshDisabled}}>
+      <i class="fa-solid fa-arrows-rotate"></i> {{localize "STARWROUGHT.Content.refresh"}}
+    </button>
+    <button type="button" class="sw-primary" data-action="sync" {{disabled buttons.syncDisabled}}>
+      <i class="fa-solid fa-rotate"></i> {{localize "STARWROUGHT.Content.sync"}}
+    </button>
+    <button type="button" data-action="close" {{disabled buttons.closeDisabled}}>
+      <i class="fa-solid fa-xmark"></i> {{localize "STARWROUGHT.Content.close"}}
+    </button>
+  </footer>
+</div>

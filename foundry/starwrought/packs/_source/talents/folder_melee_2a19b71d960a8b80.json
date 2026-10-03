@@ -7,6 +7,10 @@
   "sorting": "a",
   "sort": 0,
   "color": "#3b2f63",
-  "flags": {},
+  "flags": {
+    "starwrought": {
+      "contentHash": "d3f89859a3fd77fa"
+    }
+  },
   "_key": "!folders!2a19b71d960a8b80"
 }

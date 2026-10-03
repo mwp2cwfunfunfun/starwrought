@@ -47,6 +47,9 @@ import { SwCheck } from "./module/dice/check.mjs";
 import { SwDamage } from "./module/dice/damage.mjs";
 import { AttackCoordinator } from "./module/combat/attack-coordinator.mjs";
 import { SwCombatPrompt } from "./module/apps/combat-prompt.mjs";
+// THE CONTENT LOOP (0.8.0): the open world's compendia synced from the pack sources on disk, no
+// restart (content-loop brief; rulings 115 to 117). The window, and the two reads the load offer makes.
+import { ContentSync, fetchContentIndex, planContentSync, formatWhen } from "./module/apps/content-sync.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
@@ -78,6 +81,11 @@ Hooks.once("init", async () => {
      */
     attacks: AttackCoordinator,
     combatPrompt: SwCombatPrompt,
+    /**
+     * Sync content (0.8.0): open the window that brings this world's compendia level with the
+     * pack sources `node assets/build_all.mjs --content` wrote, for a macro or the console. GM only.
+     */
+    syncContent: () => ContentSync.open(),
     /** Which Player's Handbook the shipped content was built from. */
     rules: rulesVersion
   };
@@ -242,7 +250,54 @@ Hooks.once("ready", async () => {
   // offered to the party helpers, which keep the one that is the roller's Activity's roll on the
   // roller's own character. Registered here, once, beside the cache it reads.
   registerRoadHooks();
+
+  // THE CONTENT LOOP (0.8.0): with the migration done and everything above in place, offer the GM
+  // a Sync when the sources on disk are newer than what this world last synced. Not awaited: the
+  // dialog waits on the GM, and nothing in ready depends on the answer.
+  offerContentSync();
 });
+
+/* -------------------------------------------- */
+/*  The content loop (0.8.0)                    */
+/* -------------------------------------------- */
+
+/**
+ * The offer at load (content-loop brief, Agent B item 6; ruling 115). The GM's client reads
+ * `packs/_source/index.json`; when its `build` is not the one the world last synced
+ * (`contentBuild`), the plan is computed. An empty plan (a fresh world whose compiled packs
+ * already match the sources, or a build that changed nothing) is recorded silently, so nobody is
+ * nagged over a rerun; otherwise one confirm names the counts and opens Sync content on Yes. No
+ * does nothing, and the question comes again at the next load, since nothing was recorded. Every
+ * failure is logged and the world loads: no index is the common case on a checkout that has never
+ * run the content build.
+ */
+async function offerContentSync() {
+  if (!game.user.isGM) return;
+  try {
+    const index = await fetchContentIndex({ notify: false });
+    if (!index?.build) return;
+    const synced = game.settings.get(SW.SYSTEM_ID, "contentBuild");
+    if (index.build === synced) return;
+    const plan = await planContentSync(index);
+    if (plan.empty) {
+      await game.settings.set(SW.SYSTEM_ID, "contentBuild", plan.build);
+      await game.settings.set(SW.SYSTEM_ID, "contentStamp", plan.stamp);
+      console.log(`STARWROUGHT | the compendia already match the content build ${plan.build.slice(0, 8)}; recorded.`);
+      return;
+    }
+    const yes = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("STARWROUGHT.Content.offerTitle"), icon: "fa-solid fa-rotate" },
+      content: `<p>${game.i18n.format("STARWROUGHT.Content.offerBody", {
+        when: foundry.utils.escapeHTML(formatWhen(plan.stamp)),
+        create: plan.counts.create, update: plan.counts.update, delete: plan.counts.delete
+      })}</p>`,
+      rejectClose: false
+    });
+    if (yes) await ContentSync.open({ plan });
+  } catch (err) {
+    console.error("STARWROUGHT | the content sync offer failed", err);
+  }
+}
 
 /* -------------------------------------------- */
 /*  World migration                             */
@@ -810,6 +865,35 @@ function registerSettings() {
     config: false,
     type: String,
     default: ""
+  });
+
+  // THE CONTENT LOOP (0.8.0; ruling 115): the `build` hash and the `stamp` of the pack sources this
+  // world last synced its compendia to, written by applyContentSync when a sync completes without an
+  // error and compared against `packs/_source/index.json` at every GM load (offerContentSync). Hidden:
+  // the menu below is the switch, and the values are the record, not a choice.
+  game.settings.register(SW.SYSTEM_ID, "contentBuild", {
+    scope: "world",
+    config: false,
+    type: String,
+    default: ""
+  });
+  game.settings.register(SW.SYSTEM_ID, "contentStamp", {
+    scope: "world",
+    config: false,
+    type: String,
+    default: ""
+  });
+
+  // Settings > STARWROUGHT > Sync content: the window over the plan and the writes, for the GM alone
+  // (restricted). The menu constructs the class itself, so ContentSync keeps to one window by
+  // closing the one before it on first render rather than through its constructor.
+  game.settings.registerMenu(SW.SYSTEM_ID, "contentSync", {
+    name: "STARWROUGHT.Settings.contentSync",
+    label: "STARWROUGHT.Settings.contentSyncLabel",
+    hint: "STARWROUGHT.Settings.contentSyncHint",
+    icon: "fa-solid fa-rotate",
+    type: ContentSync,
+    restricted: true
   });
 }
 

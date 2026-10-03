@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.7.5";
+  --sw-css-version: "0.8.0";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -2737,3 +2737,186 @@ li.combatant.sw-in-crosshairs {
 .starwrought.action-card.sw-flare-card .sw-flare-already { font-style: italic; }
 .starwrought.action-card.sw-encounter-card { border-left-color: var(--sw-blood); }
 .starwrought.action-card.sw-encounter-card h3 .fa-flag { color: var(--sw-blood); }
+
+/* --------------------------------------------------------------------------
+   Sync content (0.8.0): the window that brings the open world's compendia
+   level with the pack sources on disk (rulings 115 to 117), and its card.
+   The same night as the prompt and the palette; compact, since a plan is a
+   list of names and three numbers per pack.
+   -------------------------------------------------------------------------- */
+
+/* A window, so it sets the form variables the way the prompt does. */
+.starwrought.sw-content-sync {
+  --color-form-label: var(--sw-ink);
+  --color-form-label-hover: var(--sw-flare);
+  --color-form-hint: var(--sw-ink-dim);
+  --color-text-primary: var(--sw-ink);
+  --color-text-secondary: var(--sw-ink-dim);
+  color-scheme: dark;
+  min-width: 420px;
+}
+.starwrought.sw-content-sync .window-content {
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+  padding: 0;
+  gap: 0;
+}
+/* The body is the scroll container (the part's own root, so scroll position survives a render). */
+.starwrought .sw-content-sync-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem 0.7rem;
+  max-height: 78vh;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+.starwrought .sw-content-sync-body .sw-note { margin: 0; }
+.starwrought .sw-content-error { padding: 0.3rem 0.45rem; border-left: 3px solid #d8a25a; border-radius: 0 4px 4px 0; background: rgba(216, 162, 90, 0.12); }
+
+/* The header: when the sources were built, when this world last synced, the build hash. */
+.starwrought .sw-content-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.4rem 0.8rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-content-head > div { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.starwrought .sw-content-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-content-head strong { font-size: 0.82rem; color: var(--sw-ink); }
+.starwrought .sw-content-head code {
+  font-size: 0.78rem;
+  color: var(--sw-gold);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--sw-edge);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  cursor: help;
+}
+
+/* Nothing to sync. */
+.starwrought .sw-content-empty { margin: 0.2rem 0; font-size: 0.9rem; color: var(--sw-gold); text-align: center; }
+.starwrought .sw-content-empty .fa-circle-check { color: var(--sw-green); }
+
+/* One pack, one section: its label, the three counts, and a collapsible list per kind. */
+.starwrought .sw-content-pack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.4rem 0.55rem 0.45rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-content-pack.sw-content-level { opacity: 0.7; }
+.starwrought .sw-content-pack-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.starwrought .sw-content-pack-head h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--sw-gold);
+  border: none;
+  font-family: var(--font-h3, inherit);
+}
+.starwrought .sw-content-counts { display: flex; gap: 0.3rem; flex: 0 0 auto; }
+.starwrought .sw-content-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 2.6rem;
+  justify-content: center;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-ink-dim);
+  background: rgba(0, 0, 0, 0.35);
+}
+.starwrought .sw-content-count i { font-size: 0.6rem; }
+/* Created green, updated gold, deleted blood: the same three everywhere in the window. */
+.starwrought .sw-content-count.sw-content-create { color: var(--sw-green); border-color: #3d6b4f; }
+.starwrought .sw-content-count.sw-content-update { color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+.starwrought .sw-content-count.sw-content-delete { color: #e08a84; border-color: #7a3a36; }
+
+.starwrought .sw-content-list { margin: 0; }
+.starwrought .sw-content-list summary {
+  cursor: pointer;
+  font-size: 0.76rem;
+  color: var(--sw-ink-dim);
+  padding: 0.1rem 0.2rem;
+  border-radius: 4px;
+}
+.starwrought .sw-content-list summary:hover { color: var(--sw-flare); background: rgba(255, 255, 255, 0.04); }
+.starwrought .sw-content-list-create summary { border-left: 2px solid var(--sw-green); }
+.starwrought .sw-content-list-update summary { border-left: 2px solid var(--sw-gold); }
+.starwrought .sw-content-list-delete summary { border-left: 2px solid var(--sw-blood); }
+.starwrought .sw-content-list ul {
+  list-style: none;
+  margin: 0.15rem 0 0.2rem 0.6rem;
+  padding: 0;
+  columns: 2;
+  column-gap: 1rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+.starwrought .sw-content-list li { break-inside: avoid; padding: 0 0.2rem; }
+.starwrought .sw-content-list li:nth-child(odd) { background: rgba(255, 255, 255, 0.03); }
+.starwrought .sw-content-folder-tag {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sw-ink-dim);
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  padding: 0 0.3rem;
+  margin-left: 0.2rem;
+}
+
+/* The characters' copies (ruling 117): a checkbox and its line. */
+.starwrought .sw-content-copies {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  cursor: pointer;
+}
+.starwrought .sw-content-copies.sw-content-copies-none { opacity: 0.6; cursor: default; }
+.starwrought .sw-content-copies input { margin-top: 0.15rem; }
+.starwrought .sw-content-copies > span { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.starwrought .sw-content-copies strong { font-size: 0.8rem; color: var(--sw-ink); }
+.starwrought .sw-content-copies small { font-size: 0.72rem; color: var(--sw-ink-dim); line-height: 1.35; }
+
+/* While applying: the buttons dim and this line says where it is. */
+.starwrought .sw-content-progress { margin: 0; font-size: 0.8rem; color: var(--sw-gold); }
+.starwrought .sw-content-progress .fa-spinner { color: var(--sw-flare); }
+
+.starwrought .sw-content-buttons { display: flex; gap: 0.3rem; margin-top: 0.1rem; }
+.starwrought .sw-content-buttons button { flex: 1; font-size: 0.8rem; white-space: nowrap; }
+
+/* After: the result in place of the plan. */
+.starwrought .sw-content-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.45rem 0.55rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(120deg, rgba(255, 216, 103, 0.1), transparent 70%);
+}
+.starwrought .sw-content-result h3 { margin: 0; font-size: 0.92rem; color: var(--sw-gold); border: none; font-family: var(--font-h3, inherit); }
+.starwrought .sw-content-result h3 .fa-circle-check { color: var(--sw-green); }
+.starwrought .sw-content-result-list { margin: 0; padding: 0 0 0 1rem; font-size: 0.78rem; line-height: 1.4; }
+.starwrought .sw-content-errors { margin: 0; padding: 0 0 0 1rem; font-size: 0.72rem; color: #d8a25a; line-height: 1.35; }
+
+/* The GM-whispered record. */
+.starwrought.action-card.sw-content-card h3 .fa-rotate { color: var(--sw-gold); }
+.starwrought.action-card.sw-content-card .sw-card-note .sw-warn { color: #d8a25a; }

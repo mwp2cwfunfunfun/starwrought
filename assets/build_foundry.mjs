@@ -5,6 +5,7 @@
  * assets/trees.json + assets/roster.json + assets/backgrounds.json + assets/languages.json
  *   + assets/actions.json and assets/equipment.json when the converter has written them
  *   -> foundry/starwrought/packs/_source/<pack>/*.json     (compendium pack sources)
+ *   -> foundry/starwrought/packs/_source/index.json        (the content index the in-game sync reads)
  *   -> foundry/starwrought/content/constellations.json     (the runtime Constellation index)
  *   -> foundry/starwrought/assets/constellations/*.png     (plate art, copied)
  *   -> foundry/starwrought/packs/<pack>                    (compiled LevelDB, if the CLI is present)
@@ -14,6 +15,14 @@
  *
  * Document ids are a hash of pack plus name, so they are stable across rebuilds. That matters:
  * an id becomes a compendium UUID the moment somebody drags a Talent onto a character sheet.
+ *
+ * Since 0.8.0 every document also carries `flags.starwrought.contentHash`, a hash of its content
+ * alone, and packs/_source/index.json lists every Item and Folder with its id, file and hash
+ * (ruling 116). The sources are the content and the compiled packs are a release artifact (ruling
+ * 115): an open Foundry world syncs its compendia from the sources in place through Settings >
+ * STARWROUGHT > Sync content, diffing by id and hash, and the LevelDB compile below is for a release
+ * or a fresh install, run with Foundry closed. `node assets/build_all.mjs --content` is the loop
+ * that runs this with --no-compile.
  *
  * Foundry is the play surface and ships only what the spreadsheets mark `Enabled? = Yes` (Mike,
  * 2026-10-01; ruling 61). The converter drops nothing: every talent, tree, background and action in
@@ -42,6 +51,9 @@ const ROOT = path.resolve(HERE, "..");
 const SYSTEM = path.join(ROOT, "foundry", "starwrought");
 const SOURCE = path.join(SYSTEM, "packs", "_source");
 const CONTENT = path.join(SYSTEM, "content");
+// The manifest, for the system version the content index records (the Foundry side shows it beside
+// the build it is syncing to). Read once, here, so a missing manifest fails before any writing.
+const manifest = JSON.parse(fs.readFileSync(path.join(SYSTEM, "system.json"), "utf8"));
 
 const ICON = {
   constellation: "systems/starwrought/assets/icons/constellation.svg",
@@ -86,6 +98,53 @@ function count(kind, enabled) {
 /** A stable 16-character document id. */
 function docId(pack, key) {
   return crypto.createHash("sha1").update(`starwrought|${pack}|${key}`).digest("hex").slice(0, 16);
+}
+
+/**
+ * The same value with its object keys sorted, recursively, arrays kept in order. JSON.stringify
+ * writes keys in insertion order, so two documents assembled in a different order would stringify
+ * differently while meaning the same thing; canonical form is what makes the content hash below
+ * stable across runs and across the order this script happens to put the fields together.
+ */
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
+  }
+  return value;
+}
+
+/**
+ * The content hash (0.8.0, ruling 116): the SHA-1 of a document's canonical content, sixteen hex
+ * characters like the ids. The id says which document; the hash says whether it changed. The
+ * in-game Sync content tool compares the hash in the index against `flags.starwrought.contentHash`
+ * on the document in the compendium and updates only the ones that differ, so a rerun with nothing
+ * changed syncs nothing.
+ */
+function contentHash(value) {
+  return crypto.createHash("sha1").update(JSON.stringify(canonical(value))).digest("hex").slice(0, 16);
+}
+
+/**
+ * The fields the content hash covers. An Item is its name, type, image, system data, folder and
+ * sort; a Folder its name, type, parent, sorting, sort and color. Both leave out the id and the key
+ * (fixed by construction), the flags (where the hash itself lives), ownership and `_stats`. The
+ * rules journal and the macros are hashed over everything but those same bookkeeping fields, so
+ * every document in packs/_source carries a hash and the index lists them all; the in-game sync
+ * writes a journal by deleting and recreating it under its id (its pages are an embedded
+ * collection) and a macro through updateDocuments, as it does an Item.
+ */
+const UNHASHED = new Set(["_id", "_key", "flags", "_stats", "ownership"]);
+function hashable(collection, doc) {
+  if (collection === "items") {
+    const { name, type, img, system, folder, sort } = doc;
+    return { name, type, img, system, folder, sort };
+  }
+  if (collection === "folders") {
+    const { name, type, folder, sorting, sort, color } = doc;
+    return { name, type, folder, sorting, sort, color };
+  }
+  return Object.fromEntries(Object.entries(doc).filter(([key]) => !UNHASHED.has(key)));
 }
 
 /**
@@ -157,8 +216,17 @@ function parseReach(text) {
 
 const packs = {};
 
-/** Queue one document into a pack. */
+/**
+ * Queue one document into a pack, stamped with its content hash (ruling 116). Every builder
+ * (item(), folder(), the journal and the macros) passes through here once its document is complete,
+ * so this is the one place the hash is set. It is written onto the document itself before the copy
+ * is taken, so the object the builder keeps and the one that is written agree.
+ */
 function push(pack, collection, doc) {
+  doc.flags = {
+    ...(doc.flags ?? {}),
+    starwrought: { ...(doc.flags?.starwrought ?? {}), contentHash: contentHash(hashable(collection, doc)) }
+  };
   (packs[pack] ??= []).push({ ...doc, _key: `!${collection}!${doc._id}` });
   return doc;
 }
@@ -1102,20 +1170,62 @@ for (const macro of MACROS) {
 /*  Write everything out                        */
 /* -------------------------------------------- */
 
+/** Ids are lowercase hex, so a plain code-unit comparison is the stable order (no locale in it). */
+const byId = (a, b) => (a._id < b._id ? -1 : a._id > b._id ? 1 : 0);
+
+/**
+ * packs/_source/<pack>/*.json, one file per document, and beside them packs/_source/index.json
+ * (0.8.0, ruling 116): the catalogue the in-game Sync content tool fetches as a static file under
+ * systems/starwrought/ to diff an open world's compendia against the sources without a compile.
+ *
+ *   { stamp, build, system,
+ *     packs: { <pack>: { documents: [{ _id, name, type, file, hash }], folders: [{ _id, name, file, hash }] } } }
+ *
+ * `file` is relative to packs/_source/<pack>/. Every pack is listed, the rules journal and the
+ * macros with the Items, since the journal's Languages, Exposed and Bind pages are built from the
+ * sheets and the roster and must reach an open world too; the sync writes each pack through its
+ * own document class. The `stamp` is the time of this run and changes every time; the `build` is a hash
+ * over every listed entry's id and content hash, packs by name and entries by id, so it changes
+ * only when content changes, and it is the one field the Foundry side compares to decide whether a
+ * world has anything to sync. Everything but the stamp must be deterministic: a second run over
+ * unchanged sources writes the same build, and a rerun with nothing changed syncs nothing.
+ */
 function writeSources() {
   fs.rmSync(SOURCE, { recursive: true, force: true });
   let count = 0;
+  const listed = {};
   for (const [pack, docs] of Object.entries(packs)) {
     const dir = path.join(SOURCE, pack);
     fs.mkdirSync(dir, { recursive: true });
+    const documents = [];
+    const folders = [];
     for (const doc of docs) {
       const prefix = doc._key.startsWith("!folders") ? "folder_" : "";
       const file = `${prefix}${slugify(doc.name) || doc._id}_${doc._id}.json`;
       fs.writeFileSync(path.join(dir, file), `${JSON.stringify(doc, null, 2)}\n`, "utf8");
       count += 1;
+      const hash = doc.flags.starwrought.contentHash;
+      // Every document is listed, whatever its class: the Items, the rules journal (whose
+      // Languages, Exposed and Bind pages are built from the sheets and the roster) and the macros.
+      // The sync writes each through its pack's own document class. A journal has no `type`.
+      if (doc._key.startsWith("!folders!")) folders.push({ _id: doc._id, name: doc.name, file, hash });
+      else documents.push({ _id: doc._id, name: doc.name, type: doc.type ?? "", file, hash });
     }
     console.log(`  ${pack.padEnd(16)} ${docs.length} documents`);
+    listed[pack] = { documents: documents.sort(byId), folders: folders.sort(byId) };
   }
+
+  const index = { stamp: new Date().toISOString(), build: "", system: manifest.version, packs: {} };
+  const lines = [];
+  for (const pack of Object.keys(listed).sort()) {
+    index.packs[pack] = listed[pack];
+    for (const entry of [...listed[pack].documents, ...listed[pack].folders].sort(byId)) {
+      lines.push(`${pack}|${entry._id}|${entry.hash}`);
+    }
+  }
+  index.build = crypto.createHash("sha1").update(lines.join("\n")).digest("hex").slice(0, 16);
+  fs.writeFileSync(path.join(SOURCE, "index.json"), `${JSON.stringify(index, null, 2)}\n`, "utf8");
+  console.log(`  index.json       ${lines.length} entries in ${Object.keys(index.packs).length} packs, build ${index.build}`);
   return count;
 }
 
@@ -1235,10 +1345,18 @@ console.log(`  enabled for Foundry: ${ratio("constellations")} constellations, $
 console.log(`  equipment: ${ratio("equipment")} enabled`
   + (equipment ? " (data/equipment.xlsx)" : " (roster fallback: assets/equipment.json is absent)"));
 
+// --no-compile is the content loop's way in (build_all.mjs --content): the sources and the index
+// are the content, and the open world syncs from them in place (ruling 115). The compile is for a
+// release or a fresh install, with Foundry closed, and its lock message in compile() stays as it was.
+const noCompile = process.argv.includes("--no-compile");
 let compiled = null;
-if (!process.argv.includes("--no-compile")) compiled = await compile();
+if (!noCompile) compiled = await compile();
 
-if (compiled === false) {
+if (noCompile) {
+  console.log("\nSources and index written. In an open Foundry world: Settings > STARWROUGHT > Sync content");
+  console.log("(the GM is also offered it at load). The compendia on disk are compiled when the full pipeline");
+  console.log("runs with Foundry closed.");
+} else if (compiled === false) {
   console.log("\nSources are current; the compendia were left alone.");
   process.exitCode = 1;
 } else {

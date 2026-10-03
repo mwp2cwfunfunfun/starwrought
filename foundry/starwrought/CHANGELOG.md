@@ -7,6 +7,224 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.8.0 (2026-10-03): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
+the handbook's loose ends stand where 0.7.5 left them. The release is **the content loop** (Mike,
+2026-10-03: "for the next part of the build, I want the ability to add to any of the data
+spreadsheets and run a command or a script to incorporate those into the Foundry VTT module. They
+don't need automation... we will work on an automation framework after this part. (and add them
+into the local web app)"). One command, `node assets/build_all.mjs --content`, or a double-click on
+`sync_content.cmd` in the project root, converts the spreadsheets, rebuilds the web app and the
+Constellation viewer, renders only the plates whose Constellation changed or is new, writes the
+Foundry pack sources with a content hash on every document and an index of them all, and runs the
+style check; it never compiles the LevelDB packs and never stops for handbook drift. Then, in the
+open Foundry world, a **Sync content** tool (Settings > STARWROUGHT > Sync content, offered to the
+GM at load when the index on disk is newer than what the world last synced) diffs the index
+against the compendia by document id and content hash, shows what would be created, updated and
+deleted, by name, and applies it with the packs unlocked for the moment of the write, no restart.
+Through 0.7.5 a content change meant stopping Foundry, building, starting Foundry and relaunching
+the world, because the compile fails while Foundry holds the packs open; that is the part removed.
+A minor bump for a new tool, two hidden world settings with a settings menu, and a pipeline mode;
+no data model moves and no migration, since the hash is a flag and the settings have defaults. The
+decisions are rulings 115 to 117, continuing the 0.7.5 entry's 114 (see Notes). The content loop
+is the first half of what Mike asked for; the automation framework is next.
+`Starwrought_Players_Handbook_v4.16.docx` is still on the shelf as this ships, untracked and
+unsynced; `build_all.mjs` reports the drift until that sync, which is a later release's, and in
+content mode reports it as a warning and goes on (ruling 115).
+
+### Added
+
+- **`node assets/build_all.mjs --content`**, the content loop's one command (ruling 115). It runs
+  `xlsx_to_trees`, `inject`, `render_constellations --changed`, `build_foundry --no-compile` and
+  `check_style --quiet`, in that order, and skips `sheet_gen`, `build_phb` and
+  `build_features_docx`, saying so: the character sheets, the Constellation Compendium and the
+  features docx are release outputs, not content. The version-stamp check runs as it always has (a
+  repository invariant, not a handbook matter). The drift check runs too, but in content mode its
+  report prints under a "HANDBOOK DRIFT (a warning in content mode)" banner and the run exits 0,
+  because adding a Talent to a sheet is not a handbook sync; a failing step still exits 1. The
+  closing line: "Content rebuilt: the web app and the viewer are current (reload the browser tab);
+  in Foundry, sync the open world from Settings > STARWROUGHT > Sync content." `--content` with
+  `--skip-slow` or `--check` is refused ("--content is its own mode"). **`sync_content.cmd`** in the
+  project root is the same command for a double-click: it changes to its own folder, runs the
+  build and pauses so the window stays open to be read.
+- **A content hash on every pack document, and an index of them** (`build_foundry.mjs`; ruling
+  116). Every Item and Folder the build writes carries `flags.starwrought.contentHash`: the first
+  16 hex characters of the SHA-1 of `JSON.stringify` over a canonical object (keys sorted
+  recursively, so the hash is stable across runs and across the order the code assembles fields),
+  `{ name, type, img, system, folder, sort }` for an Item and `{ name, type, folder, sorting, sort,
+  color }` for a Folder, set once the document is complete. `writeSources()` then writes
+  `packs/_source/index.json`: `stamp` (the ISO time of the build, different every run), `build`
+  (a SHA-1 over every pack's document hashes in id order, so it changes only when content does;
+  the Foundry side compares `build`, and a rerun with nothing changed syncs nothing), `system`
+  (the manifest version) and, per pack, its documents and folders, each with `_id`, `name`, `type`,
+  `file` (the path relative to `packs/_source/<pack>/`) and `hash`. Foundry serves it as a static
+  file under `systems/starwrought/`. Every id and key is what it was: document ids still hash the
+  pack and the key, so a document keeps its UUID on every sheet across the change. With
+  `--no-compile` the run closes with "Sources and index written. In an open Foundry world:
+  Settings > STARWROUGHT > Sync content (the GM is also offered it at load). The compendia on disk
+  are compiled when the full pipeline runs with Foundry closed."; the lock-detection message on a
+  compile that finds Foundry holding the packs stays.
+- **Plates rendered only when their Constellation changed** (`render_constellations.py
+  --changed`). A sidecar, `assets/constellations/.plates.json`, maps each plate file to the SHA-1
+  of its tree's canonical JSON (the whole tree entry from `trees.json`, keys sorted). With the
+  flag the renderer draws only the plates whose hash differs or whose PNG is missing, prunes the
+  plates of trees that are gone as before, rewrites the sidecar and prints "rendered: N plates (M
+  unchanged)"; without it everything renders as before and the sidecar is still written, so the
+  first `--content` run after a full build has hashes to compare.
+- **Sync content** (`module/apps/content-sync.mjs`, `templates/apps/content-sync.hbs`; ruling
+  116). A GM-only application, one instance, under Settings > STARWROUGHT > Sync content
+  (`game.settings.registerMenu`, restricted, the `fa-solid fa-rotate` icon) and as
+  `game.starwrought.syncContent()` for a macro. It fetches the index (cache-busted with the clock;
+  a notice and nothing more when the file is absent, as on an install that never ran the 0.8.0
+  pipeline) and builds **the plan**: for every pack the index names that
+  `game.packs.get("starwrought.<pack>")` resolves, the pack's own index with the content hash, the
+  folder and the type, and its folders; **create** is every index id the pack lacks, **update**
+  every id whose stored hash differs from the index's or is absent (a pack compiled before 0.8.0
+  carries none, so the first plan after upgrading lists every document as an update, which is
+  the hashes being written and nothing more), **delete** every pack id the index no longer names,
+  and the same three for folders; a name on every entry so the plan reads; a pack the index names
+  that the world lacks is listed as skipped; `plan.empty` when there is nothing to do, with
+  `plan.build` and `plan.stamp` from the index. **The window**: the index's `stamp` as a date and
+  time, the stamp the world last synced, the `build` as a short hash; a table per pack with the
+  three counts and three collapsible lists of names; the copies line with its checkbox; Refresh
+  plan, Sync and Close; the buttons disabled and a progress line while it applies, and the result
+  in place of the plan after. An empty plan says "Nothing to sync: the compendia match the sources
+  built {when}." Every string is under `STARWROUGHT.Content.*`.
+- **Applying the plan.** Per pack, inside one try/finally so a pack is never left unlocked: the
+  lock state remembered, `pack.configure({ locked: false })`; folders first, each needed one's
+  JSON fetched from `systems/starwrought/packs/_source/<pack>/<file>` with `_key` stripped,
+  `Folder.implementation.createDocuments(..., { pack, keepId: true })` and `updateDocuments` for
+  the changed; then the Items the same way, `createDocuments` with `keepId` so the UUID the
+  sources chose is the UUID the world gets, `updateDocuments` with `recursive: false, diff: false`
+  so a key the source dropped leaves the stored document rather than lingering, and
+  `deleteDocuments` for the stale; folders deleted last; the lock restored. Everything is counted.
+  Then the world settings `contentBuild` and `contentStamp` take the plan's `build` and `stamp`,
+  `reloadContentIndexes()` refreshes what the system read at init, every open sheet
+  (`foundry.applications.instances` with a `document`) re-renders so lists catch up, and one
+  GM-whispered card with the counts (`cardHtml`, the system's idiom, speaker none, whispered to
+  `ChatMessage.getWhisperRecipients("GM")`) is posted so there is a record.
+- **Refresh the characters' copies** (ruling 117), a checkbox on the plan, ticked by default once
+  the world has synced before (unticked on a world's very first sync, when no copy carries a hash
+  and every one would be rewritten) and disabled when there is nothing to refresh. For every world
+  Actor (character, adversary and party alike; an unlinked token's synthetic actor is skipped),
+  for every embedded Item of a type the packs carry, the source is found by
+  `_stats.compendiumSource` or `flags.core.sourceId` naming
+  `Compendium.starwrought.<pack>.Item.<id>`, else by type and name (case-insensitive) in the
+  index. If the copy's own `flags.starwrought.contentHash` differs from the index's or is absent,
+  the copy takes the source's `name`, `img` and `system` with the fields that are the character's
+  own written back from the copy where the type has them (`system.quantity`, the carry
+  `system.state`, a shield's `system.raised`, a Talent's `system.choice.value`, a weapon's
+  `system.style`, `twoHands` and `versatileActive`, an action's adversary `attack` block, a
+  consumable's `uses`, and a Lore instance's placement: the Constellation a Lore Talent was cloned
+  into, the slug and name of a Lore (X) Constellation Item); anything else edited by hand on the
+  copy is lost; and the hash; applied per Actor with
+  `actor.updateEmbeddedDocuments("Item", updates, { recursive: false, diff: false, swAnnounced: true })`,
+  so the copy keeps its `_id` and the Adjusted card says nothing. The plan shows "N copies on M
+  characters would be refreshed" before the GM ticks; the result counts per Actor and names them.
+- **The offer at load.** On the GM's client, in the ready hook after the migration: the index is
+  fetched and its `build` compared with the world's `contentBuild`. When they differ the plan is
+  computed; an empty plan records the build and stamp silently, so a fresh world whose compiled
+  packs already match the sources is never nagged; otherwise a `DialogV2.confirm`: "The content
+  on disk was rebuilt {when} and differs from this world's compendia: {n} to create, {m} to update,
+  {k} to delete. Open Sync content?" Yes opens the tool; No does nothing, and the question returns
+  at the next load. Any error logs and moves on, and the world loads regardless.
+- **`reloadContentIndexes()`** in `module/helpers/content.mjs`: empties the Constellation registry
+  (a register call adds or overrides and never removes, so a Constellation the sources dropped
+  would otherwise stay on offer in every picker until a page reload), refetches
+  `content/constellations.json` and `content/sync.json` (cache-busted), re-registers the
+  Constellations and calls `refreshConstellationRegistry()`, then `invalidateBasicActions()`,
+  `invalidateChassisIndex()` with `loadChassisIndex()`, and `invalidateExplorationActivities()`
+  from `helpers/party.mjs`, so the Basic Maneuvers panel, the wizard's cards and the party's
+  Activity lists read the synced content without a reload of the page.
+
+### Changed
+
+- **`build_all.mjs`** gains the `--content` mode, and its usage block names it beside `--check`,
+  `--skip-slow` and `--accept-phb`; the full run is what it was, LevelDB compile and drift gate
+  included.
+- **`build_foundry.mjs`** keeps `_stats.systemId` on every document, writes `index.json` beside
+  the sources from `writeSources()` and stamps the hash in `push()`, the one place every builder
+  (`item()`, `folder()`, the rules journal and the macros) passes through once its document is
+  complete, so the index lists every pack and every document (the journal's Languages, Exposed and
+  Bind pages are built from the sheets and the roster, and must reach an open world too); nothing
+  else in the build changes, and no id or key moves. `assets/package_system.mjs` now carries
+  `packs/_source` into the release zip, so a system installed from a release has the index and
+  the sources the in-game sync reads.
+- **`config.mjs`** gains `CONTENT_INDEX_PATH` and `CONTENT_SOURCE_PATH` (where the index and the
+  per-pack sources are fetched from), beside `SYSTEM_VERSION`.
+- **Two hidden world settings**, `contentBuild` and `contentStamp` (strings), hold the build the
+  world last synced to and when it was built, and the `contentSync` menu opens the tool; the
+  Handlebars preloader lists the new template, and the stylesheet gains the `sw-content-sync`
+  block, compact and in the system's idiom.
+- **`data/README.txt`** opens with a new section, "ADDING CONTENT: the loop", before "Index
+  columns" (add rows, sheets or a workbook; set `Enabled?` to Yes on what should ship; save;
+  double-click `sync_content.cmd`; reload the web app; in Foundry take the Sync content offer or
+  open it from Settings, read the plan, Sync), and its closing "To sync after editing" block names
+  the two paths: the content loop above, and the full pipeline with Foundry closed for a release.
+- The version stamps read 0.8.0 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: the hash is a flag the
+  first sync writes, and a setting never set reads as an empty string, which no `build` equals.
+
+### Notes
+
+- **The rulings, 115 to 117**, the brief's three for the content loop, numbered on from the 0.7.5
+  entry's 114.
+  - **115. The sources are the content; the compiled packs are a release artifact.** A content
+    change is finished when the spreadsheets, the web app and the pack sources agree and the open
+    world has synced; the LevelDB compile is for a release or a fresh install, done with Foundry
+    closed. `build_all.mjs --content` reports handbook drift as a warning and never stops for it,
+    because adding a Talent to a sheet is not a handbook sync.
+  - **116. The in-game sync is a diff by id and hash, shown before it is applied, and it deletes
+    stale system documents by name.** Document ids hash the pack and the key, so a document keeps its
+    id across builds and its UUID on every sheet; a content hash on every document
+    (`flags.starwrought.contentHash`) says whether it changed. A document in a system pack that the
+    sources no longer carry is stale and is deleted, listed by name in the plan first; a GM's own
+    content belongs in the world, not in the system's packs, and the plan says so.
+  - **117. Refreshing a character's copy keeps the character's state.** An owned Item whose source
+    changed takes the source's name, image and system data, except the fields that are the
+    character's own: `quantity`, the carry `state`, a shield's `raised`, a Talent's `choice.value`.
+    The copy is found by its recorded compendium source, else by type and name in the index.
+    Opt in, ticked by default, counted and named in the plan.
+- **What the loop does not do.** The handbook, the Constellation Compendium docx, the PDFs and the
+  compiled packs on disk are not touched by `--content`: those are the full
+  `node assets/build_all.mjs`, run with Foundry closed, for a release. A fresh install reads the
+  compiled packs it was shipped with before its first sync, and the release workflow still compiles
+  them on a fresh checkout. Nothing in the loop acts on a Talent's Effect: the Automation column
+  travels onto the Item as before and nothing reads it, and the automation framework is the next
+  part of the build (Mike: "we will work on an automation framework after this part").
+- **The first sync after upgrading writes hashes into the packs and, with the copies box ticked,
+  rewrites every owned copy.** A world whose packs were compiled by 0.7.5 or earlier holds
+  documents with no `contentHash`, so its first plan lists every document as an update with
+  nothing to create or delete; applying it stamps the hash on each, the setting takes the build,
+  and the second plan is empty. The characters' copies carry no hash either, so the same plan
+  counts every owned Item on every world Actor that resolves to a source, and the box starts
+  unticked for that reason: ticked, each copy is rewritten from the current source, keeping the
+  character's own fields and losing any hand edit to the rest. A fresh world whose compiled packs
+  came from the same build as the sources is recorded silently at load and never asked.
+- **A GM's own content belongs in the world.** The plan deletes a stale system document by name
+  and shows it before anything is applied (ruling 116); a Talent or weapon the GM wrote into one of
+  the system's packs would be listed for deletion, since the sources do not carry it. The diff
+  reads and writes the system's own packs alone: a world compendium of the GM's own is never
+  touched, and world Actors are read only for the copies refresh, which the GM ticks.
+- **The copies refresh is opt in and keeps the character's state** (ruling 117), and the copy
+  keeps its `_id`, so nothing on the sheet re-links. The fields it preserves are the four named; a
+  key the sources dropped leaves the copy as it leaves a pack document (`recursive: false, diff:
+  false`), and a copy whose source cannot be found by its recorded source or by type and name is
+  left alone and counted nowhere.
+- **What the pipeline touched.** The pipeline itself: `build_all.mjs` (the mode),
+  `build_foundry.mjs` (the hash, the index, the closing lines) and `render_constellations.py` (the
+  sidecar and `--changed`), with `sync_content.cmd` new in the project root. No roster row,
+  compendium page or web app table moves, and no document id changes; every pack source gains the
+  hash flag, so the next full pipeline run with Foundry closed recompiles the packs on disk with
+  it, and until then the in-game sync writes it into the open world's packs.
+- The handbook's v4.10 loose ends stand in v4.15 as 0.6.3 listed them; `CLAUDE.md` carries the
+  list. `Starwrought_Players_Handbook_v4.16.docx` is on the shelf, untracked and unsynced, as the
+  0.7.2 entry says, and `build_all.mjs` reports the drift until that sync, which is a later
+  release's; in content mode it is a warning and the run goes on.
+
+---
+
 ## 0.7.5 (2026-10-02): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
@@ -893,7 +1111,7 @@ the plan are rulings 91 to 95, continuing the v4.14 report's numbering (see Note
   its own rest card exactly as the sheet's Rest button does (Vigor restored, Temporary Vigor
   cleared, Fatigued ended and said when it was, Spent cleared once there is Vigor again), then one
   party line. The confirm names the members whose worn Torso piece lacks Comfort; sleeping in armor
-  itself stays unimplemented (`FEATURES.md`, section 7).
+  itself stays unimplemented (`FEATURES.md`, section 8).
 - **The Milestone award, the Deferred count and Take back** (rulings 91, 92 and 94). Award a
   Milestone opens a dialog listing every member ticked, with a preview line each: "Hrolda:
   Milestone 2 of 3, a Milestone Talent Point (Flared: Melee, Athletics)"; "Wren: Milestone 3 of 3,
@@ -926,7 +1144,7 @@ the plan are rulings 91 to 95, continuing the v4.14 report's numbering (see Note
   control; and the Flare card carries one more line while the character holds one ("You hold a
   Deferred Talent Point: spend it here now."). It is a reminder with a number on it, not a budget:
   nothing stops a Talent drag and the count is not decremented when one lands (`FEATURES.md`,
-  section 7).
+  section 8).
 - **The Skills grid.** A tab: Constellations as rows, members as columns, because the question at
   the table is "who has Stealth". Rows for the four Defenses (the cell shows the Threshold, since
   that is what a Sneak, a Feint or a Lie is measured against; modifier and rank on hover), an

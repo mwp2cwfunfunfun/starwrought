@@ -13,6 +13,12 @@ backup/
 # and in the release workflow.
 foundry/starwrought/packs/*
 !foundry/starwrought/packs/_source/
+# The content index (0.8.0) carries the time of its build, so it would dirty the tree on every
+# content run; a checkout rebuilds it with the sources (node assets/build_all.mjs --content), and
+# the release packager carries it into the zip from the build it just made.
+foundry/starwrought/packs/_source/index.json
+# The plate renderer's memory of what it last drew (--changed); a fresh clone redraws once.
+assets/constellations/.plates.json
 
 # Python, Word and Excel leavings. The ~$ files are Office's open-document locks.
 __pycache__/

@@ -1,5 +1,9 @@
 * text=auto
 
+# Windows batch files run under cmd.exe, which wants CRLF; pin it so a checkout on any platform
+# keeps sync_content.cmd runnable.
+*.cmd text eol=crlf
+
 # Authored and generated binaries. The compiled compendium packs are not committed at all (see
 # .gitignore); their JSON sources under packs/_source are ordinary text.
 *.docx binary

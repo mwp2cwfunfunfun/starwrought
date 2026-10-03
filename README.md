@@ -16,7 +16,7 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
 exactly, which needs a restart to take effect after installing. The current release is system
-0.7.5, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
+0.8.0, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
 commit, reveal, roll and resolve, auras and Reach drawn on the map with a Visible mark per range,
 the Bind drawn between the bound, Vigor and Wounds per Zone, a character sheet whose locked
 fields explain themselves, a Reroll on every Attack and Defense card, one Move per Opportunity on
@@ -34,7 +34,9 @@ Activity written onto the Combatants, keeping a roll already made on the road as
 roll when the GM ticks its box, and a Downtime panel at its foot: the days the GM gives, the three
 Downtime Activities printed from the pack, and Train, which Flares a Constellation through the
 shared picker, says so on the card, and warns when it was already used since the last
-Milestone). The
+Milestone), and, since 0.8.0, the content loop: one command rebuilds the web app and the Foundry
+pack sources from the spreadsheets, and the GM syncs the open world's compendia from Settings,
+no restart. The
 spreadsheets' `Enabled?` column decides which of the book's
 Constellations, Talents, Maneuvers and equipment ship to Foundry, and the `Aura` column says which
 Talents draw a ring.
@@ -59,6 +61,7 @@ See [the system's FEATURES.md](foundry/starwrought/FEATURES.md) for what it actu
 | `data/*.xlsx` | All game content: one workbook per category, one sheet per Constellation |
 | `foundry/starwrought/` | The Foundry VTT system |
 | `assets/` | The pipeline that turns the spreadsheets into everything else |
+| `sync_content.cmd` | The content loop for a double-click: `node assets/build_all.mjs --content`, in a window that pauses |
 | `Starwrought_App.html` | A standalone character builder, no server required |
 | `Starwrought_Constellation_Compendium.docx` | Every Constellation, generated from the data |
 
@@ -78,6 +81,20 @@ It needs Node, plus `openpyxl`, `matplotlib`, `reportlab` and `python-docx` for 
 `--check` runs only the drift check, and `--skip-slow` leaves out the plates, the character sheets
 and the compendium.
 
+For a change to the spreadsheets while a Foundry world is open, there is a shorter loop (0.8.0):
+
+```
+node assets/build_all.mjs --content
+```
+
+or a double-click on `sync_content.cmd`. It converts the spreadsheets, rebuilds the web app and the
+Constellation viewer (reload the browser tab), renders only the plates whose Constellation changed,
+writes the Foundry pack sources with a content hash on every document and an index of them, and
+runs the style check; it compiles no packs and reports handbook drift as a warning rather than
+stopping. Then, in Foundry, the GM takes the Sync content offer at load or opens Settings >
+STARWROUGHT > Sync content, reads the plan (created, updated, deleted, by name) and syncs the open
+world's compendia in place. No restart.
+
 To package the Foundry system for a server of your own:
 
 ```
@@ -89,9 +106,11 @@ That writes `dist/starwrought.zip`, which can be unpacked straight into a Foundr
 release.
 
 The compiled compendium packs under `foundry/starwrought/packs/` are not committed: they are
-LevelDB databases that a running Foundry rewrites. Their JSON sources in `packs/_source` are, and
-`node assets/build_foundry.mjs` compiles them, which is also what the release workflow does on a
-fresh checkout.
+LevelDB databases that a running Foundry rewrites, and since 0.8.0 they are a release artifact,
+what a fresh install reads before its first sync. Their JSON sources in `packs/_source` are
+committed, with the `index.json` the in-game sync reads, and `node assets/build_foundry.mjs`
+compiles them with Foundry closed, which is also what the release workflow does on a fresh
+checkout. An open world is brought up to the sources by Sync content, never by a recompile.
 
 ## Licence
 

@@ -295,7 +295,7 @@ export async function correctHeroPoint(actor, delta) {
 /**
  * Who would sleep in armor without Comfort tonight: the members whose worn Torso piece lacks the
  * trait, named for the confirm. The book's "waking Fatigued 1" is not implemented (FEATURES,
- * section 7); the preview names them and the table decides.
+ * section 8, "What it deliberately does not do"); the preview names them and the table decides.
  * @param {Actor} party
  * @returns {Array<{name: string, piece: string}>}
  */

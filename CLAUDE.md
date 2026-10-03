@@ -19,7 +19,7 @@ are sources and which are output, and leave the repo building.**
 | `data/*.xlsx` | `assets/trees.json`, `backgrounds.json`, `languages.json`, `actions.json` |
 | `assets/roster.json` (hand-kept blocks) and `sheet_spec.json` | the `ancestries` block of `roster.json` (the converter overwrites it from `ancestries.xlsx`), and its `weaponsMelee`, `weaponsRanged`, `armorPieces` and `shields` blocks (overwritten from `equipment.xlsx`); `assets/equipment.json` |
 | `assets/app_template.html`, `constellation_template.html` | `Starwrought_App.html`, `Starwrought_Talent_Constellations.html` |
-| `assets/*.py`, `assets/build_phb.js` | `assets/constellations/*.png`, the PDFs, the compendium |
+| `assets/*.py`, `assets/build_phb.js` | `assets/constellations/*.png` and the `.plates.json` sidecar beside them, the PDFs, the compendium |
 | `foundry/starwrought/FEATURES.md` | `Starwrought_Foundry_Features.docx` (`assets/build_features_docx.py` lays the Markdown out as a Word document for printing or a PDF) |
 | `foundry/starwrought/` **except** `packs/`, `content/`, `assets/constellations/` | those three, which `assets/build_foundry.mjs` regenerates |
 | `data/SYNC.json` (via `build_all.mjs --accept-phb`) | `foundry/starwrought/content/sync.json` |
@@ -47,6 +47,7 @@ node assets/build_all.mjs              # every step below, in order, then the dr
 node assets/build_all.mjs --check      # only the drift check
 node assets/build_all.mjs --skip-slow  # skip the plates, the sheets, and the compendium docx
 node assets/build_all.mjs --accept-phb # record the current handbook as synced, once the work is done
+node assets/build_all.mjs --content    # the content loop (0.8.0): spreadsheets to the web app and the pack sources, no compile, drift a warning
 ```
 
 **THE HANDBOOK RULE (Mike, 2026-08-27, standing).** When the PHB moves, everything downstream moves
@@ -79,11 +80,48 @@ rebuild, which matters because an id becomes a compendium UUID the moment a Tale
 character sheet. `check_style.py` scans the system's `lang/en.json`, its templates, and
 `packs/_source/`, so the Foundry content is held to the same two rules as everything else.
 
-**The compiled packs are not in git.** `foundry/install.mjs` links the repo folder into Foundry's
-data directory, so a running Foundry rewrites the LevelDB log and manifest files under `packs/<pack>/`
-every time a world opens; committed, they dirtied the tree on every session. `packs/_source/*.json`
-is committed and is the source of truth; `build_foundry.mjs` compiles it locally, and
-`.github/workflows/release.yml` compiles it again on a fresh checkout before packaging.
+**THE CONTENT LOOP (Mike, 2026-10-03; system 0.8.0; rulings 115 to 117).** "I want the ability to
+add to any of the data spreadsheets and run a command or a script to incorporate those into the
+Foundry VTT module... (and add them into the local web app)." `node assets/build_all.mjs --content`,
+or a double-click on `sync_content.cmd` in the project root, runs `xlsx_to_trees`, `inject`,
+`render_constellations --changed` (a sidecar `assets/constellations/.plates.json` of tree hashes;
+only a changed or new Constellation's plate is drawn, gone ones pruned), `build_foundry
+--no-compile` and `check_style --quiet`, skips the sheets, the compendium docx and the features
+docx, never compiles the LevelDB packs, and reports handbook drift under a "HANDBOOK DRIFT (a
+warning in content mode)" banner and exits 0, because adding a Talent to a sheet is not a handbook
+sync (ruling 115); a failing step and the stamp check still exit 1, and `--content` with
+`--skip-slow`, `--check` or `--accept-phb` is an error (a handbook sync is never stamped from the
+mode whose point is that it is not one). `build_foundry.mjs` stamps every document with
+`flags.starwrought.contentHash` (a short SHA-1 of its canonical content, keys sorted) and writes
+`packs/_source/index.json` (`stamp`; a `build` hash over every document hash in id order, which
+changes only when content does; `system`; and per pack every document and folder with `_id`,
+`name`, `type`, `file`, `hash`), which Foundry serves as a static file. In the open world the GM
+runs **Sync content** (`module/apps/content-sync.mjs`; Settings > STARWROUGHT > Sync content,
+`game.starwrought.syncContent()`, and offered at load when the index's `build` differs from the
+world setting `contentBuild`, recorded silently when the plan is empty): a diff of the index
+against the compendia by id and hash, shown as a plan (create, update, delete, by name, folders
+too; a pre-0.8.0 pack has no hashes, so its first plan is every document as an update) before it
+is applied with each pack unlocked for the write and re-locked in a finally, `keepId` on creates,
+`recursive: false, diff: false` on updates, stale system documents deleted by name (a GM's own
+content belongs in the world; ruling 116), then `contentBuild` and `contentStamp` recorded,
+`reloadContentIndexes()` (`helpers/content.mjs`) refreshing the registry, the chassis index, the
+Basic Maneuvers and the party's Activities, every open sheet re-rendered and one GM-whispered card
+as the record. Ticked by default, the sync also refreshes the characters' owned copies of changed
+Items (found by their recorded compendium source, else by type and name), keeping `quantity`,
+`state`, `raised`, `choice.value` and the copy's `_id`, written with `swAnnounced` (ruling 117).
+The full `build_all.mjs` with Foundry closed is still what compiles the packs, for a release or a
+fresh install. The automation framework is the next part; the loop carries the Automation column
+unchanged.
+
+**The compiled packs are not in git, and since 0.8.0 they are a release artifact.**
+`foundry/install.mjs` links the repo folder into Foundry's data directory, so a running Foundry
+rewrites the LevelDB log and manifest files under `packs/<pack>/` every time a world opens;
+committed, they dirtied the tree on every session. `packs/_source/*.json` is committed and is the
+source of truth, with `index.json` beside it since 0.8.0; `build_foundry.mjs` compiles it locally,
+with Foundry closed, and `.github/workflows/release.yml` compiles it again on a fresh checkout
+before packaging. An open world is brought up to the sources by Sync content in game, never by a
+recompile under it: the compile fails while Foundry holds the packs open, which is the restart the
+content loop removes.
 
 ### What is expected of a change, not asked permission for
 
@@ -651,6 +689,26 @@ Mike's (Known outstanding work, below).
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+- **The automation framework** (Mike, 2026-10-03: "we will work on an automation framework after
+  this part"): the Automation column has no grammar yet. It travels onto the Item as
+  `system.automation` and its sheet shows it, and nothing acts on it; a Talent's Effect is prose
+  the sheet displays (`FEATURES.md`, section 8). The content loop (0.8.0) is the first half of
+  what Mike asked for and carries the column unchanged; the grammar is the next part of the build.
+
+Cleared 2026-10-03 (the content loop, system 0.8.0): the stop, build, start and relaunch round
+trip a content change needed through 0.7.5, because the LevelDB compile fails while Foundry holds
+the packs open; now `node assets/build_all.mjs --content` (and `sync_content.cmd` for a
+double-click): the spreadsheets converted, the web app and the viewer rebuilt, only the changed or
+new plates rendered against the `.plates.json` sidecar, the pack sources written with
+`flags.starwrought.contentHash` on every document and `packs/_source/index.json` over them, the
+style check run, no compile, and handbook drift printed as a warning (ruling 115); and in the open
+world **Sync content** (`module/apps/content-sync.mjs`; Settings > STARWROUGHT > Sync content,
+`game.starwrought.syncContent()`, offered to the GM at load when the index's `build` differs from
+`contentBuild`), a diff by id and hash shown as a plan before it is applied, stale system documents
+deleted by name (ruling 116), and the characters' owned copies refreshed with `quantity`, `state`,
+`raised` and `choice.value` kept (ruling 117). No handbook moved and `data/SYNC.json` is
+untouched; `Starwrought_Players_Handbook_v4.16.docx` stays on the shelf unsynced; the rulings (115
+to 117) are recorded in the 0.8.0 changelog entry. The automation framework is the next part.
 
 Cleared 2026-10-02 (the Party Sheet, phase 4, system 0.7.5): the Downtime the plan's part 10
 described, the last phase, now a panel at the foot of the On the road tab (Mike: "go ahead with

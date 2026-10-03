@@ -38,7 +38,11 @@
   "ownership": {
     "default": 0
   },
-  "flags": {},
+  "flags": {
+    "starwrought": {
+      "contentHash": "c19c11e4ce3d0c3d"
+    }
+  },
   "effects": [],
   "_stats": {
     "systemId": "starwrought"

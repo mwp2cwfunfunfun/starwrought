@@ -31,15 +31,51 @@ export const rulesVersion = {
   enabled: { constellations: 0, talents: 0 }
 };
 
+/**
+ * The slugs the shipped index registered on its last read. `reloadContentIndexes` (0.8.0) compares
+ * the next read against it: a Constellation the index has dropped, and no pack or world Item still
+ * carries, is switched off in the registry rather than left enabled on the strength of a file that
+ * no longer names it. Lore instances and anything registered by a Talent at runtime are not in this
+ * set, so they are never touched.
+ */
+let indexedSlugs = new Set();
+
+/**
+ * Read the shipped Constellation index into the registry. `fresh` adds a cache-busting query, for
+ * a re-read after the sources changed under a running world (the content loop, 0.8.0).
+ * @param {{fresh?: boolean}} [options]
+ * @returns {Promise<boolean>}  Whether the index was read.
+ */
+async function registerShippedIndex({ fresh = false } = {}) {
+  const url = fresh ? `${INDEX_PATH}?t=${Date.now()}` : INDEX_PATH;
+  const response = await foundry.utils.fetchJsonWithTimeout(url);
+  const seen = new Set();
+  for (const entry of response ?? []) {
+    if (!entry?.slug) continue;
+    seen.add(entry.slug);
+    // An index written before the Enabled? gate has no flag; absent means enabled, the same
+    // reading the converter gives a sheet without the column (ruling 60).
+    SW.registerConstellation({ ...entry, parent: entry.parent ?? "", enabled: entry.enabled !== false });
+  }
+  // Dropped from the index since the last read: off, until the pack or the world says otherwise
+  // (refreshConstellationRegistry re-enables whatever either still holds).
+  for (const slug of indexedSlugs) {
+    if (!seen.has(slug) && SW.constellations[slug]) SW.constellations[slug].enabled = false;
+  }
+  indexedSlugs = seen;
+  return true;
+}
+
+/** Read the sync stamp (which handbook, how much of the book is enabled) into `rulesVersion`. */
+async function readSyncStamp({ fresh = false } = {}) {
+  const url = fresh ? `${SYNC_PATH}?t=${Date.now()}` : SYNC_PATH;
+  Object.assign(rulesVersion, await foundry.utils.fetchJsonWithTimeout(url));
+}
+
 /** Load the shipped Constellation index. Safe to call before compendia are ready. */
 export async function loadConstellationIndex() {
   try {
-    const response = await foundry.utils.fetchJsonWithTimeout(INDEX_PATH);
-    for (const entry of response ?? []) {
-      // An index written before the Enabled? gate has no flag; absent means enabled, the same
-      // reading the converter gives a sheet without the column (ruling 60).
-      SW.registerConstellation({ ...entry, parent: entry.parent ?? "", enabled: entry.enabled !== false });
-    }
+    await registerShippedIndex();
     const total = Object.keys(SW.constellations).length;
     console.log(`STARWROUGHT | Registered ${total} Constellations (${enabledConstellations().length} enabled for play).`);
   } catch (error) {
@@ -47,7 +83,7 @@ export async function loadConstellationIndex() {
   }
 
   try {
-    Object.assign(rulesVersion, await foundry.utils.fetchJsonWithTimeout(SYNC_PATH));
+    await readSyncStamp();
     console.log(`STARWROUGHT | Rules content built from Player's Handbook v${rulesVersion.phb}.`);
     // A stamp written before ruling 61 has no `enabled` block; the default above stands in.
     if (rulesVersion.enabled?.constellations || rulesVersion.enabled?.talents) {
@@ -55,6 +91,63 @@ export async function loadConstellationIndex() {
     }
   } catch {
     // A system built before the sync stamp existed. Not worth a warning.
+  }
+}
+
+/**
+ * THE CONTENT LOOP (0.8.0; ruling 115): after Sync content has written the compendia from the pack
+ * sources, read everything this module and its neighbours cached at load again, so the open world
+ * sees the new content without a reload. In order: the shipped Constellation index and the sync
+ * stamp (fresh, past any cache), then the registry from the pack and the world as at ready; then
+ * every memoised list is forgotten and, where a reader expects it loaded, loaded again: the Basic
+ * Actions, the chassis by name, the Exploration and Downtime Activities (helpers/party.mjs) and the
+ * creation wizard's shop (helpers/chargen-data.mjs, only if it had been read this session). The
+ * last two are reached through dynamic imports: party.mjs imports the Flare picker and
+ * chargen-data.mjs imports this module, so a static import either way would close a circle. Every
+ * step is fenced on its own: a list that cannot be re-read is left for its next reader, and the
+ * sync that called this has already succeeded.
+ * @returns {Promise<void>}
+ */
+export async function reloadContentIndexes() {
+  // Start from an empty registry, so a Constellation the sources dropped is forgotten too: every
+  // register call below adds or overrides and none removes, and a stale entry would keep offering
+  // the deleted Constellation in every picker until the page reloaded (the 0.8.0 live test, where
+  // a throwaway "Sync Test" outlived its own deletion). Lore instances are never in the registry,
+  // so nothing a character holds is lost by this.
+  for (const slug of Object.keys(SW.constellations)) delete SW.constellations[slug];
+  try {
+    await registerShippedIndex({ fresh: true });
+  } catch (error) {
+    console.warn("STARWROUGHT | the shipped Constellation index could not be re-read", error);
+  }
+  try {
+    await readSyncStamp({ fresh: true });
+  } catch {
+    // As at load: a system without the stamp.
+  }
+  try {
+    await refreshConstellationRegistry();
+  } catch (error) {
+    console.error("STARWROUGHT | the Constellation registry could not be refreshed", error);
+  }
+  invalidateBasicActions();
+  invalidateChassisIndex();
+  try {
+    await loadChassisIndex({ fresh: true });
+  } catch (error) {
+    console.warn("STARWROUGHT | the chassis index could not be re-read", error);
+  }
+  try {
+    const { invalidateExplorationActivities } = await import("./party.mjs");
+    invalidateExplorationActivities();
+  } catch (error) {
+    console.warn("STARWROUGHT | the Activities cache could not be forgotten", error);
+  }
+  try {
+    const { SwContent, loadChargenContent } = await import("./chargen-data.mjs");
+    if (SwContent?.loaded) await loadChargenContent({ force: true });
+  } catch (error) {
+    console.warn("STARWROUGHT | the creation wizard's content could not be re-read", error);
   }
 }
 
@@ -186,13 +279,17 @@ const CHASSIS_PATH = "systems/starwrought/content/chassis.json";
  * column let it into the pack (a Soldier stays a Soldier after Backgrounds are switched off); the
  * compendium; and a world Item of the same name, as the Basic Actions do. An index entry is a
  * plain record shaped like an Item ({name, img, system}), so a reader needs no second code path.
+ * `fresh` adds a cache-busting query to the shipped index, for the re-read after a content sync
+ * (0.8.0); the pack and the world are always read live.
+ * @param {{fresh?: boolean}} [options]
  * @returns {Promise<Map<string, Item|object>>}  Lowercased name to the unowned Item or record.
  */
-export async function loadChassisIndex() {
+export async function loadChassisIndex({ fresh = false } = {}) {
   if (chassisIndex) return chassisIndex;
   const byName = new Map();
   try {
-    for (const entry of await foundry.utils.fetchJsonWithTimeout(CHASSIS_PATH) ?? []) {
+    const url = fresh ? `${CHASSIS_PATH}?t=${Date.now()}` : CHASSIS_PATH;
+    for (const entry of await foundry.utils.fetchJsonWithTimeout(url) ?? []) {
       byName.set(String(entry.name).toLowerCase(), { ...entry, type: "chassis", shipped: true });
     }
   } catch {

@@ -1,7 +1,7 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
 Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
-rule differs). System version **0.7.1**. Developed against
+rule differs). System version **0.8.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -9,7 +9,9 @@ This file is about behaviour, not content. What is *in* the compendia is listed 
 
 > **Standing rule.** When the handbook moves, this file moves with it. `node assets/build_all.mjs`
 > refuses to pass while the handbook on the shelf is newer than `data/SYNC.json`, and refuses to
-> stamp a new version until this file and the changelog both name it.
+> stamp a new version until this file and the changelog both name it. Since 0.8.0 the content
+> loop, `node assets/build_all.mjs --content`, reports that drift as a warning and goes on, because
+> adding a Talent to a sheet is not a handbook sync (ruling 115; section 7).
 
 ---
 
@@ -600,7 +602,7 @@ Noisy, Attended" cell and the donning sentence), so the book, the data and the s
 the Constellation Compendium and the web app print the same row. The Comfort row beside it reads,
 since v4.14, "You can sleep in it without increasing your Fatigued value by 1."; the roster's
 hand-kept `armorTraits` block carries that sentence, and nothing in the system acts on it (see
-section 7).
+section 8).
 
 **Shields.** Raise a Shield ❶ flips the shield's raised flag and pays the action; its Gear bonus to
 Guard is derived from the flag, and the tracker lowers it when your next Opportunity begins. A held
@@ -1200,7 +1202,7 @@ check, an Initiative) runs on the member's own Actor through a method that alrea
 already posts its card, so the party adds buttons and a handful of cards, not a second rules
 engine. Its data model extends `TypeDataModel` directly, never `SwActorData`, so it has no Zones,
 Wounds, Vigor, stance or actions; a party is never a combatant, and nothing draws or counts its
-token (section 7). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
+token (section 8). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
 phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; phase 3 (0.7.2;
 rulings 101 to 107) is the road: each member's Exploration Activity, the party's Travel Speed, the
 Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity, and its second
@@ -1231,7 +1233,7 @@ asks for an optional one-line reason and writes +1, refused with a notice at the
 before anything is written, and a minus as a correction. **The party rests** runs
 `restForTheNight()` on every member in turn, each posting its own rest card exactly as the sheet's
 Rest button does, then one party line; the confirm names the members whose worn Torso piece lacks
-Comfort, and the armor rule itself stays the table's (section 7).
+Comfort, and the armor rule itself stays the table's (section 8).
 
 **The Milestone award, the Deferred point and Take back.** Award a Milestone opens a dialog
 listing every member ticked, with a preview line each: who reaches Milestone 2 of 3 and may spend
@@ -1295,7 +1297,7 @@ the same rows with **Take** on each, which asks which member when they own two a
 the stack is above one; an empty tab says so. Carry state means nothing on a party, so it is
 ignored there, and an Item that reaches a character through Take or Give arrives carried, so
 drawing it is an Interact as the book prices it. The row prints the price the Item carries and
-nothing computes with it (section 7): the book has no shared loot and no party purse, so the tab
+nothing computes with it (section 8): the book has no shared loot and no party purse, so the tab
 moves Items and values nothing.
 
 **Take and Give, over the relay** (ruling 97; the plan's risks 5 and 6). A Take is two writes a
@@ -1314,7 +1316,7 @@ source second, so a failure between the two leaves a duplicate and never a loss;
 and answers done or refused (gone, not enough, not yours, no member, not physical) to the asker
 alone, as a notice. Requests are served in arrival order on the GM's client, so two players taking
 the last potion resolve as one Take and one refusal. With no GM connected the controls say so and
-write nothing (section 7). The drops go the same way (ruling 98): a party Item dragged onto a
+write nothing (section 8). The drops go the same way (ruling 98): a party Item dragged onto a
 character sheet is a Take of the whole stack rather than Foundry's silent copy, whoever drags it,
 one of a player's own Items dragged onto the party sheet is a Give of the whole stack, and the Loot
 tab's Take button is where a count is asked; a player's drop from the compendium or the sidebar
@@ -1405,7 +1407,7 @@ miles an hour ÷ 2, floored as the character's own figure is; miles a day × 4, 
 a minute · 1 mile an hour · 12 miles a day", then "Wren sets the pace (Search, Half)" naming the
 pacesetter (the lowest effective Speed; the first on ties), the ten-minutes-per-location note while
 anyone Searches (P346), and the terrain, a select for the GM (`system.travel.terrain`, the party's
-one field for this phase) and a word for a player. Nothing moves a token at any pace (section 7),
+one field for this phase) and a word for a player. Nothing moves a token at any pace (section 8),
 and a party with no members prints blanks and zeros.
 
 **The Fatigued gate** (ruling 101). The book's Fatigued row says "can't use Exploration Mode
@@ -1479,7 +1481,7 @@ panel prints both and runs nothing. **The days** are `system.downtime.days` on t
 integer the GM types in the party form's own field and a player reads as a number, with the P348
 hint beside it (the GM typically tells you how many you have before the world begins to move
 quickly again); nothing counts them down, spends them or refuses anything for want of them
-(section 7), and nothing is derived from them. **The Activities** print from the Actions pack's
+(section 8), and nothing is derived from them. **The Activities** print from the Actions pack's
 Downtime Mode folder (`downtimeActivities` in `helpers/party.mjs`, the category read off the Item;
 cached per session as the Exploration Activities are and forgotten with them when a world action
 Item changes; a world Item of the same name and category replaces the printed one), one row each
@@ -1733,6 +1735,11 @@ are markers for the table.
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
 for it is ignored.
 
+**Sync content** (0.8.0) is a menu under the system's settings rather than a setting: GM only, it
+opens the tool section 7 describes. Behind it two hidden world settings, `contentBuild` and
+`contentStamp`, hold the build hash and the build time the world last synced to; they have no
+entry in Configure Settings, and the offer at load compares the first with the index on disk.
+
 **A stale-copy warning.** At load the system compares the server's version with a stamp carried in
 its own code and another in its stylesheet. If either disagrees, the browser is running a cached
 copy of an older release (a caching proxy such as Cloudflare in its default configuration will do
@@ -1741,7 +1748,90 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. What it deliberately does not do
+## 7. Keeping the content in step: the content loop
+
+**One command, two outputs, no restart** (0.8.0; rulings 115 to 117). The spreadsheets in
+`data/*.xlsx` are the content, and the web app and the Foundry compendia are two readers of it.
+Through 0.7.5 getting a new row into Foundry meant stopping the server, running the pipeline,
+starting it again and relaunching the world, because the LevelDB compile fails while Foundry holds
+the packs open. Since 0.8.0 the loop is: edit a sheet, run one command, reload the web app, and in
+the open world take the sync.
+
+**The command.** `node assets/build_all.mjs --content` from the project root, or a double-click on
+`sync_content.cmd` beside it (the same command in a window that pauses so it can be read). It
+converts the spreadsheets, rebuilds the web app and the Constellation viewer, renders only the
+plates whose Constellation changed or is new (a sidecar of tree hashes beside the plates says
+which), writes the Foundry pack sources under `packs/_source/` with a content hash on every
+document and an index of them all, and runs the style check. It skips the character sheets, the
+Constellation Compendium docx and the features docx, which are release outputs, and it never
+compiles the compendia. The handbook drift check still runs, as a warning: adding a Talent to a
+sheet is not a handbook sync, so the run says the handbook on the shelf is newer and exits 0 all
+the same, where the full pipeline exits 1 (ruling 115). A failing step still fails the run.
+
+**The hash and the index.** Every document the build writes carries
+`flags.starwrought.contentHash`, a short SHA-1 of its canonical content (name, type, image, system
+data, folder and sort for an Item; name, type, parent, sorting, sort and colour for a Folder; keys
+sorted, so the hash is the same however the build assembled the fields). `packs/_source/index.json`
+lists every pack's documents and folders with their id, name, type, source file and hash, carries
+the time of the build as `stamp`, and carries a `build` hash over every document hash in id order,
+which changes only when content does. Document ids are what they always were, a hash of the pack
+and the key, so a document keeps its UUID on every sheet across every rebuild. Foundry serves the
+index and the sources as static files under `systems/starwrought/`.
+
+**Sync content.** In the open world the GM opens it from Settings > STARWROUGHT > Sync content (or
+`game.starwrought.syncContent()` in a macro), and is offered it at load whenever the index on disk
+was built from a different `build` than the one the world last synced: "The content on disk was
+rebuilt {when} and differs from this world's compendia: {n} to create, {m} to update, {k} to
+delete. Open Sync content?" No does nothing and asks again next time; a world whose compendia
+already match the sources (a fresh install, say) is recorded silently and never asked. The tool
+reads the index, diffs it against the compendia by document id and content hash, and shows **the
+plan** before it touches anything (ruling 116): per pack, what would be created (an id the pack
+lacks), updated (an id whose stored hash differs from the index's, or has none: a pack compiled
+before 0.8.0 carries no hashes, so the first plan after upgrading lists every document as an
+update, and applying it writes the current source over each and stamps the hash) and deleted (an
+id the sources no longer carry), every
+entry by name, in three collapsible lists, with folders handled the same way and a pack the world
+lacks listed as skipped. The header gives the build's time, the time the world last synced and the
+build's short hash; an empty plan says "Nothing to sync: the compendia match the sources built
+{when}." Sync applies it: each pack is unlocked for the moment of the write and locked again
+(inside a try/finally, so a pack is never left open), folders are created and updated first and
+deleted last, created documents keep the ids the sources chose, updates replace the stored
+document rather than merging into it so a key the source dropped does not linger, the world
+records the build and stamp it synced, the Constellation registry, the chassis index, the Basic
+Maneuvers and the party's Activity lists are reloaded without a reload of the page, every open
+sheet re-renders, and one GM-whispered card carries the counts so there is a record. A document
+the GM wrote into one of the system's packs by hand is stale by this rule and will be listed for
+deletion; a GM's own content belongs in the world, and the plan says so.
+
+**Refreshing the characters' copies** (ruling 117). A Talent on a sheet is a copy of its
+compendium document, made when it was dragged, and a sync of the pack does not reach it. The plan
+offers to, with a checkbox ("N copies on M characters would be refreshed"; ticked by default once
+the world has synced before, unticked on its very first sync, when no copy carries a hash and every
+one counts; disabled when there are none): for every world Actor, character, adversary and party
+alike, every owned Item whose source resolves (by the compendium source the copy recorded when it
+was dragged, else by type and name in the index) and whose stored content hash is not the index's,
+or has none, takes the source's name, image and system data, except what is the character's own:
+`quantity`, the carry `state`, a shield's `raised`, a Talent's `choice.value`, a weapon's Combat
+Style (`style`), `twoHands` and `versatileActive`, an action's adversary `attack` block, a
+consumable's `uses`, and a Lore instance's placement (the Constellation a Lore Talent was cloned
+into, the slug and name of a Lore (X) Constellation Item). Anything else edited by hand on the copy
+is lost to the refresh, which is why the box is the GM's. The copies line can stand on an otherwise
+empty plan, since level compendia say nothing about the copies. The copy keeps its `_id`, so
+nothing on the sheet re-links, the write raises no Adjusted card, unlinked token actors are
+skipped, and the result counts per Actor and names them. A copy whose source cannot be found, or
+whose recorded source is another compendium's, is left alone.
+
+**What the compiled packs are now.** The LevelDB databases under `packs/<pack>/` are a release
+artifact (ruling 115): what a fresh install reads before its first sync, compiled from
+`packs/_source/` by the full `node assets/build_all.mjs` with Foundry closed and by the release
+workflow on a fresh checkout. The content loop never compiles them; Sync content brings the running
+world's compendia up to the sources instead, through Foundry's own document API, so what is on
+disk after a sync is what Foundry wrote, as it is after any session. They are not in git, as
+before; the sources and the index are.
+
+---
+
+## 8. What it deliberately does not do
 
 - **Prerequisites outside the wizard are not enforced.** Drag a Talent onto a sheet by hand and
   nothing stops you. The wizard enforces them; the sheet trusts you.
@@ -1793,6 +1883,14 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   sells nothing (the loot values nothing, and the uncommon-goods Threshold is the GM's); each says so
   in a line. The book's "only once between Milestones" is counted for each character, which the
   downtime proposal asks the book to say and no edition yet does.
+- **The content loop compiles nothing and polices nothing** (0.8.0; rulings 115 to 117).
+  `--content` writes the pack sources and the index and leaves the LevelDB packs on disk as the
+  last full pipeline run left them; Sync content writes the open world's system compendia from the
+  sources and nothing else: it never touches a world compendium of the GM's own, a stale system
+  document is deleted by name only after the plan has shown it, and a GM's content belongs in the
+  world. The copies refresh is a checkbox, and a copy whose source cannot be found is left alone.
+  Nothing in the loop acts on a Talent's Effect or the Automation column: the automation framework
+  is the next part of the build.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

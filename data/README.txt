@@ -6,6 +6,32 @@ inside THAT file. The converter merges every file; the same tree in two files is
 sheets missing from their file's index are ignored with a warning. A workbook open in Excel
 (~$lock file present) is converted from its last saved version, with a warning saying so.
 
+ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
+  Add rows to a sheet, a sheet to a workbook, or a whole new workbook in this folder. A new
+  workbook needs its own "_Tree Index" sheet naming the trees inside it, as the first paragraph
+  says; an actions workbook carries a  Name | Type | Meta note  index instead (ACTIONS WORKBOOKS,
+  below); weapons, armor and shields live in equipment.xlsx and nowhere else (EQUIPMENT WORKBOOK,
+  below). Set Enabled? to Yes on anything that should ship to Foundry; the web app shows everything
+  regardless. Save the workbook (leaving it open in Excel is fine: the last saved version converts).
+  Then double-click sync_content.cmd in the project root, or from the project root run
+    node assets/build_all.mjs --content
+  It converts every workbook, rebuilds the web app Starwrought_App.html and the constellation
+  viewer (reload the browser tab), renders the plate of a new or changed Constellation and prunes
+  a gone one's, writes the Foundry pack sources with their content index, and runs the style
+  check. It never compiles the LevelDB compendia (a running Foundry holds them open) and never
+  stops for a newer handbook on the shelf: that is printed as a warning, because adding content is
+  not a handbook sync.
+  Then in Foundry, as the GM, in the open world: take the Sync content offer at load, or open
+  Settings > STARWROUGHT > Sync content at any time. Read the plan (created / updated / deleted, by
+  name), tick or untick "refresh the characters' copies" (an owned Talent or weapon takes the new
+  text while keeping its quantity, carry state, raised shield and chosen option), and press Sync.
+  Nothing restarts, and nothing already on a sheet changes its UUID.
+  What the loop does NOT do: the handbook, the Constellation Compendium docx, the PDFs and the
+  compiled packs on disk. Those belong to a release: close Foundry and run the full pipeline,
+  node assets/build_all.mjs (the two paths are set out at the bottom of this file). And it is not
+  the automation framework: the Automation column is still prose, and that framework is the next
+  part.
+
 Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Triggers | Meta note | Parent
   Parent (v4.10): names the parent Constellation whose rank this tree's Talents also count toward.
   Melee and Ranged are the parents; every Combat Style names one of them. Rank only is inherited:
@@ -185,15 +211,45 @@ talent whose Requires or Free Talent names a disabled talent, and an enabled Bac
 Skill whose root is disabled. The run ends its counts with one line of what Foundry will ship
 ("enabled for Foundry: N of 31 constellations, N of 177 talents, ...").
 
-To sync after editing, from the project root:
+To sync after editing, from the project root, one of two paths:
+
+  THE CONTENT LOOP (Foundry may stay open; ADDING CONTENT at the top of this file):
+  sync_content.cmd   or   node assets/build_all.mjs --content
+    -> assets/trees.json + backgrounds.json + languages.json + actions.json + equipment.json, and
+       the generated blocks of roster.json                       (xlsx_to_trees.py)
+    -> Starwrought_App.html + the constellation viewer           (inject.py)
+    -> assets/constellations/*.png, only the plates whose Constellation changed or is new; the
+       sidecar .plates.json beside them remembers the rest        (render_constellations.py --changed)
+    -> foundry/starwrought/packs/_source/**, with index.json     (build_foundry.mjs --no-compile)
+    -> foundry/starwrought/content/{constellations,chassis,sync}.json, the runtime indexes the
+       in-game Sync re-reads, and foundry/starwrought/assets/constellations/*.png, copied from
+       assets/ and pruned to match                                 (build_foundry.mjs, the same run)
+    -> the style check, the version stamps, and handbook drift as a warning
+  then, in the open Foundry world, as the GM: Settings > STARWROUGHT > Sync content.
+
+  THE FULL PIPELINE (Foundry CLOSED: a release, or a handbook sync):
+  node assets/build_all.mjs
+    everything above, every plate, plus the fillable and Mira character sheets (sheet_gen.py), the
+    Constellation Compendium docx (build_phb.js), the compiled LevelDB compendia (build_foundry.mjs
+    compiles them, which fails while Foundry holds them open) and the features docx; then the
+    version stamps and the handbook drift check, which exits 1 while the handbook on the shelf is
+    newer than data/SYNC.json says.
+
+  The steps one at a time, if you want one of them alone:
   python assets/xlsx_to_trees.py             -> assets/trees.json + backgrounds.json + languages.json
                                                 + actions.json + equipment.json, and the ancestries,
                                                 weaponsMelee, weaponsRanged, armorPieces and shields
                                                 blocks of roster.json
   python assets/inject.py                    -> Starwrought_App.html + the constellation viewer
-  python assets/render_constellations.py     -> assets/constellations/*.png
+  python assets/render_constellations.py     -> assets/constellations/*.png (--changed: only what moved)
   python assets/sheet_gen.py                 -> the fillable and Mira character sheets
   node   assets/build_phb.js                 -> Starwrought_Constellation_Compendium.docx
+  node   assets/build_foundry.mjs            -> the pack sources and index.json, the runtime indexes under
+                                                foundry/starwrought/content/ (constellations.json,
+                                                chassis.json, sync.json), the plates copied into
+                                                foundry/starwrought/assets/constellations/, and the
+                                                compiled packs (--no-compile: everything but the
+                                                LevelDB compile)
 
 Then check it still runs, and still reads right:
   python -c "import re,io; h=io.open('Starwrought_App.html',encoding='utf-8').read(); io.open('app.js','w',encoding='utf-8',newline='\n').write(max(re.findall(r'<script>(.*?)</script>',h,re.S),key=len))"

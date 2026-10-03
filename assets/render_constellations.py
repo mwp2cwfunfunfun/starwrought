@@ -1,5 +1,5 @@
 # SPARKS constellation plates for the PHB: print-light mirror of the app layout
-import json, os, math, io
+import json, os, math, io, sys, hashlib
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
@@ -334,8 +334,42 @@ def plate_text(s):
         out.append(next((k for k in kin if all(ord(c) in _PLATE_CHARMAP for c in k)), ch))
     return "".join(out)
 
-rendered = set()
+# --changed (0.8.0, the content loop): render only the plates whose Constellation changed or is new.
+# The sidecar .plates.json beside the plates maps each plate file to the SHA-1 of its tree's
+# canonical JSON (the whole entry from trees.json, keys sorted), and is rewritten on every run, flag
+# or no flag. With the flag a plate is redrawn when its hash differs from the sidecar's, when the
+# sidecar does not know it, or when the PNG is missing; every other plate is kept as it is. The hash
+# covers the tree alone, so a change to this script or to HUES wants an unflagged run, which is what
+# the full pipeline does. build_foundry.mjs copies *.png only, so the sidecar never reaches the system.
+CHANGED = "--changed" in sys.argv
+SIDECAR = os.path.join(OUT, ".plates.json")
+
+def tree_hash(tree):
+    canon = json.dumps(tree, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha1(canon.encode("utf-8")).hexdigest()
+
+def read_sidecar():
+    try:
+        with io.open(SIDECAR, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):  # no sidecar yet, or not JSON: every plate counts as changed
+        return {}
+
+def plate_slug(name):
+    slug = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")
+    while "--" in slug: slug = slug.replace("--","-")
+    return slug
+
+previous = read_sidecar() if CHANGED else {}
+hashes = {}
+plates = set(); unchanged = 0
 for name, t in TREES.items():
+    png = plate_slug(name) + ".png"
+    hashes[png] = tree_hash(t)
+    if CHANGED and previous.get(png) == hashes[png] and os.path.exists(os.path.join(OUT, png)):
+        plates.add(png); unchanged += 1
+        continue
     hue = HUES.get(name, "#8FA8C8"); hued = darken(hue)
     pts, edges, G = layout(name)
     fig, ax = plt.subplots(figsize=(7.0,3.9), dpi=200)
@@ -387,15 +421,16 @@ for name, t in TREES.items():
                 (W/2, 2), ha="center", fontsize=5.2, color=GREY, zorder=6)
     ax.text(W-12, Hh-16, name, fontsize=8, color=hued, weight="bold", ha="right", zorder=3,
             family="DejaVu Serif")
-    slug = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")
-    while "--" in slug: slug = slug.replace("--","-")
     plt.subplots_adjust(left=0,right=1,top=1,bottom=0)
-    plt.savefig(os.path.join(OUT, slug+".png"), facecolor="#FBF8F2", bbox_inches="tight", pad_inches=0.04)
+    plt.savefig(os.path.join(OUT, png), facecolor="#FBF8F2", bbox_inches="tight", pad_inches=0.04)
     plt.close()
-    rendered.add(slug+".png")
+    plates.add(png)
 # A plate whose tree is gone (Weapons, after the Melee/Ranged split) is pruned, so the count is honest
-# and build_foundry.mjs does not keep copying a retired Constellation into the system.
+# and build_foundry.mjs does not keep copying a retired Constellation into the system. The sidecar is
+# rebuilt from the trees alone, so a gone tree drops out of it with its plate.
 for f in os.listdir(OUT):
-    if f.endswith(".png") and f not in rendered:
+    if f.endswith(".png") and f not in plates:
         os.remove(os.path.join(OUT, f))
-print("rendered:", len(rendered), "plates")
+with io.open(SIDECAR, "w", encoding="utf-8", newline="\n") as f:
+    f.write(json.dumps(hashes, sort_keys=True, indent=2, ensure_ascii=False) + "\n")
+print("rendered: %d plates (%d unchanged)" % (len(plates) - unchanged, unchanged))

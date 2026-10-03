@@ -104,6 +104,19 @@ leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a r
 Familiarity, and Technical drops you to Untrained. Familiarity is derived from what your Talents
 recorded plus a list on the sheet.
 
+**Sync content.** Since 0.8.0 a content change needs no restart. `node assets/build_all.mjs
+--content` from the project root (or a double-click on `sync_content.cmd` beside it) converts the
+spreadsheets, rebuilds the web app and the viewer, and writes the pack sources under
+`packs/_source/` with a content hash on every document and an index of them all, compiling nothing;
+then the GM, in the open world, takes the offer at load or opens Settings > STARWROUGHT > Sync
+content, reads the plan (what would be created, updated and deleted, by name, per pack, and how
+many owned copies on how many characters would be refreshed) and presses Sync. The packs are
+unlocked for the moment of the write and locked again, document ids and UUIDs never change, a
+character's copy of a changed Talent takes the new text and keeps its own state (quantity, carry
+state, a raised shield, a chosen option), and one GM-whispered card records the counts. The
+compiled packs on disk are a release artifact now: what a fresh install reads before its first
+sync, rebuilt by the full pipeline with Foundry closed (rulings 115 to 117).
+
 ## Compendia
 
 | Pack | Contents |
@@ -123,17 +136,33 @@ rather than copied.
 
 ## Building the content
 
-From the project root:
+Two paths, from the project root. **The content loop** (0.8.0), for a change to the spreadsheets
+while a world is open:
 
 ```bash
-node assets/build_foundry.mjs
+node assets/build_all.mjs --content
 ```
 
-That writes `packs/_source/**.json`, `content/constellations.json`, and copies the constellation
-plates, then compiles the LevelDB packs with `@foundryvtt/foundryvtt-cli` if it is installed.
-Pass `--no-compile` to stop after the sources. Document ids are a hash of the pack and the
-document's name, so they stay stable across rebuilds: an id becomes a compendium UUID the moment
-somebody drags a Talent onto a sheet.
+(or a double-click on `sync_content.cmd`). It converts `data/*.xlsx`, rebuilds the web app and the
+viewer, renders the changed plates, writes `packs/_source/**.json`, `packs/_source/index.json` and
+`content/*.json`, runs the style check, compiles nothing and reports handbook drift as a warning.
+Then, in Foundry, the GM syncs the open world from Settings > STARWROUGHT > Sync content (offered
+at load when the index is newer than what the world last synced). **The full pipeline**, for a
+release or a fresh install, with Foundry closed:
+
+```bash
+node assets/build_all.mjs
+```
+
+which runs every step, then compiles the LevelDB packs from the sources with
+`@foundryvtt/foundryvtt-cli` (`node assets/build_foundry.mjs` alone does the Foundry part, and
+`--no-compile` stops it after the sources and the index). The compile fails while Foundry holds the
+packs open, which is why the loop never runs it. Document ids are a hash of the pack and the
+document's key, so they stay stable across rebuilds: an id becomes a compendium UUID the moment
+somebody drags a Talent onto a sheet. Every document also carries `flags.starwrought.contentHash`,
+a short hash of its content, which is what the in-game sync compares; `index.json` carries a
+`build` hash over all of them that changes only when content does, so a rerun with nothing changed
+syncs nothing.
 
 ## Installing
 
@@ -160,17 +189,17 @@ module/data/             Actor (character, adversary, party) and Item data model
 module/documents/        Actor, Item, Combat (the round and the Opportunities), action tracking, and the chat card behaviour
 module/dice/             the check engine and the damage pipeline
 module/canvas/           reach bands, the drag ruler, targeting arrows, and the grid geometry
-module/apps/             the four sheets (character, adversary, party, Item), the creation wizard, the shared Flare picker and the Token HUD stance button
+module/apps/             the four sheets (character, adversary, party, Item), the creation wizard, the shared Flare picker, the Sync content tool and the Token HUD stance button
 module/helpers/          the content registry, chargen data and rules, the stance model, the party operations, Handlebars helpers
 templates/               Handlebars for sheets, chat cards, and the roll dialog
 content/                 the Constellation index, read at init before compendia exist
-packs/                   compiled compendia (generated)
-packs/_source/           compendium sources (generated)
+packs/                   compiled compendia (generated; a release artifact, compiled with Foundry closed)
+packs/_source/           compendium sources and index.json (generated; what Sync content reads in game)
 ```
 
 ## Known gaps
 
-The full list is section 7 of `FEATURES.md`. The short version:
+The full list is section 8 of `FEATURES.md`. The short version:
 
 - Talent prerequisites and point budgets are enforced by the character-creation wizard and nowhere
   else. Drag a Talent onto a sheet by hand and nothing stops you.
@@ -194,4 +223,8 @@ The full list is section 7 of `FEATURES.md`. The short version:
 - Downtime is a panel, not a mode: the days are a number nothing counts down, Train warns when it
   was already used since the last Milestone and never refuses, and Retrain and Provision have no
   control; each says it is done by hand.
+- The content loop compiles nothing, and the in-game sync writes only the system's own packs: a
+  document the GM wrote into one of them by hand is stale by the sources and is listed for
+  deletion; a GM's content belongs in the world. Nothing acts on the Automation column yet; the
+  automation framework is the next part.
 - Magic is not in the playtest, so it is not here.

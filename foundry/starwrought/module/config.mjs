@@ -193,7 +193,20 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.7.5";
+export const SYSTEM_VERSION = "0.8.0";
+
+/**
+ * THE CONTENT LOOP (0.8.0; the content-loop brief, Mike 2026-10-03; ruling 115). The pack sources
+ * are the content; the compiled LevelDB packs are a release artifact. `node assets/build_all.mjs
+ * --content` writes `packs/_source/<pack>/*.json` and, beside them, `packs/_source/index.json`:
+ * every document and folder by id with its content hash, and one `build` hash over all of them.
+ * Foundry serves the system folder as static files, so the open world reads both over HTTP and
+ * `module/apps/content-sync.mjs` brings the compendia level with them in place, no restart. These
+ * two paths are the only place the layout is named on the Foundry side; the builder's SOURCE
+ * constant is the same folder from the other end.
+ */
+export const CONTENT_INDEX_PATH = "systems/starwrought/packs/_source/index.json";
+export const CONTENT_SOURCE_PATH = "systems/starwrought/packs/_source";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,

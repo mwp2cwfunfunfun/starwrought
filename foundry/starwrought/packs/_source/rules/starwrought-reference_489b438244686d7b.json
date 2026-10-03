@@ -6,7 +6,11 @@
   "ownership": {
     "default": 2
   },
-  "flags": {},
+  "flags": {
+    "starwrought": {
+      "contentHash": "e92bdce625d076cb"
+    }
+  },
   "categories": [],
   "_stats": {
     "systemId": "starwrought"
