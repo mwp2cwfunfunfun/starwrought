@@ -266,12 +266,19 @@ export class SwActor extends Actor {
    * included (Untrained is a real answer, at +0 Proficiency), says why, and the card names both.
    * The roll itself is an ordinary check in that Constellation, so a critical can Flare it.
    * @param {object} [options]  Passed through to the roll. `threshold` prefills the picker.
+   * @param {string} [options.slug]  Opens the picker on this Constellation (0.7.2, ruling 107: the
+   *                                 Party Sheet's Investigate row hands over the member's chosen Lore
+   *                                 or Skill). A preselection, not the roll's Constellation: the
+   *                                 player still confirms or changes it, and it is not passed on.
    */
   async rollRelevantCheck(options = {}) {
     if (this.type !== "character") {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Roll.relevantNpc"));
       return null;
     }
+    // The picker's opening value is taken out of what goes on to the roll: `rollCheck` merges its
+    // options over the chosen slug, so a `slug` left in them would roll it whatever the player picked.
+    const { slug: preselect = "", ...passed } = options;
     const sys = this.system;
     // The number beside each Constellation is the one the roll dialog will open with, computed
     // by the check engine itself, so Load Strain on a Stealth check or a Frightened value shows
@@ -301,17 +308,28 @@ export class SwActor extends Actor {
       rows.push(row(slug, con.name, con.rank, con.attribute));
     }
     rows.sort((a, b) => (Number(b.trained) - Number(a.trained)) || (b.mod - a.mod) || a.name.localeCompare(b.name));
+    // A preselection the list cannot offer (a Lore this character has not opened) opens nowhere in
+    // particular, as the picker always did.
+    const opening = rows.some(r => r.slug === preselect) ? preselect : "";
 
     const content = await renderTemplate("systems/starwrought/templates/dice/relevant-check.hbs", {
       trained: rows.filter(r => r.trained),
       untrained: rows.filter(r => !r.trained),
-      threshold: Number.isNumeric(options.threshold) ? options.threshold : ""
+      threshold: Number.isNumeric(passed.threshold) ? passed.threshold : ""
     });
     const answer = await DialogV2.wait({
       window: { title: game.i18n.localize("STARWROUGHT.Roll.relevantCheck"), icon: "fa-solid fa-scale-balanced" },
       classes: ["starwrought", "check-dialog"],
       position: { width: 460 },
       content,
+      // The template marks no option selected, so the opening value is set once the dialog is
+      // drawn. v14 hands the DialogV2 instance; an earlier build handed the <dialog> element.
+      render: (event, dialog) => {
+        if (!opening) return;
+        const root = (dialog instanceof HTMLElement) ? dialog : (dialog?.element ?? null);
+        const select = root?.querySelector?.("select[name='slug']");
+        if (select) select.value = opening;
+      },
       buttons: [
         { action: "roll", label: "STARWROUGHT.Roll.roll", icon: "fa-solid fa-dice-d20", default: true,
           callback: (event, button) => new foundry.applications.ux.FormDataExtended(button.form).object },
@@ -325,7 +343,7 @@ export class SwActor extends Actor {
     if (!chosen) return null;
     const why = String(answer.why ?? "").trim();
     const opts = {
-      ...options,
+      ...passed,
       label: game.i18n.localize("STARWROUGHT.Roll.relevantCheck"),
       // The card's subtitle is the approval surface: which Constellation, and the reason given.
       subtitle: why ? `${chosen.name}: ${why}` : chosen.name

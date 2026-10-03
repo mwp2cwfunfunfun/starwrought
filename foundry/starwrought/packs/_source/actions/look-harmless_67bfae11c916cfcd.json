@@ -13,6 +13,17 @@
     "requirements": "Travel Speed: Half",
     "traits": [],
     "description": "<p>Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.<br>Requirements You wield no weapon with a Reach greater than Adjacent, and your worn armor totals Load 1 or less.<br>When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy you are Observed to.<br><b>Critical Success</b> They are Wrong-Footed to you until the end of your first Opportunity. <b>Success</b> They are Wrong-Footed to your first attack. <b>Failure</b> Nothing; they were watching you all along. <b>Critical Failure</b> You overplayed it. You are Wrong-Footed to them until your next Opportunity.<br>Outside an encounter, a successful Guile check lets you approach, pass, or linger without being challenged by anyone who would otherwise have wanted to know your business.</p>",
+    "exploration": {
+      "travel": "half",
+      "check": "guile",
+      "initiative": "guile",
+      "effect": ""
+    },
+    "check": {
+      "enabled": true,
+      "constellation": "guile",
+      "defense": ""
+    },
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",

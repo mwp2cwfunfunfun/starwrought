@@ -7,6 +7,296 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.7.2 (2026-10-02): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
+the handbook's loose ends stand where 0.7.1 left them. The release is phase 3 of the Party Sheet,
+built from parts 8 and 9 of `party-sheet-plan.md` (Mike, on phase 2: "Mostly good! The checkbox
+here looks odd. Fix that, and go to phase 3!"): the On the road tab, where each member picks an
+Exploration Activity and the party reads its Travel Speed off the slowest of them; the Fatigued
+gate; Say the plan; and Begin the encounter, which puts the members into a Combat on the viewed
+scene with Initiative by Activity written on their Combatants, so every Initiative roll in the
+system rolls what the Activity names. The Actor type exists since 0.7.0 and this adds a tab, a
+handful of fields and a pipeline change, so a patch bump to 0.7.2; every new field
+(`system.exploration` on the character, `system.travel.terrain` on the party, `system.exploration`
+on an action Item) has a default, so no world migration. Unlike the two releases before it, this one
+touches the data: two positional columns on the roster's hand-kept `explorationActions` rows and an
+eighth row, Avoid Notice, so `assets/roster.json`, `packs/_source/` and the compendium docx move
+(the web app's Exploration table keeps its three columns and gains the Avoid Notice row). The
+system runs ahead of the book
+on four sentences and a strike, carried as tracked changes in
+`Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx` for Mike to accept or reject (see
+Notes). The decisions are rulings 101 to 107, continuing the 0.7.1 entry's numbering.
+`Starwrought_Players_Handbook_v4.16.docx` is on the shelf as this ships, untracked, open in Word
+with its cover still reading v4.15 and a Persistent Damage rewrite half-written; it is not synced
+here, `build_all.mjs` reports the drift until it is, and that sync is the next release's.
+
+### Added
+
+- **The Exploration Activity, on the character** (plan, part 8; ruling 106). `system.exploration
+  { activity, constellation }` on `SwCharacterData`: `activity` is the compendium `_id` of the
+  Activity Item in the Actions pack's Exploration Mode folder, with "" meaning Travel, the default;
+  `constellation` is a slug, Investigate's chosen Lore or Skill, and "" otherwise. The pick is the
+  character's: it is written directly by the owner or the GM (`setActivity` in
+  `module/helpers/party.mjs`, which checks Owner permission first; an owner may write their own
+  Actor, so unlike a Take it needs no relay and no GM connected), with `swAnnounced` so the Adjusted
+  card never doubles it, and announced as one line spoken by the member: "Wren's Activity is now
+  Search (Half)." or, when only the Constellation changed, "Toric Investigates with Lore
+  (Warfare)." A Fatigued member's pick of anything but Travel is refused with a notice before
+  anything is written (ruling 101).
+- **The Activity data, through the pipeline** (plan, part 8 and decision 11; rulings 103 and 104).
+  Every row of the roster's hand-kept `explorationActions` block gains two positional columns, the
+  description column untouched: column 4 is the Constellation the Activity rolls now ("" for none,
+  a Constellation name as the trees print it, or `choice` for the member's own pick), column 5 the
+  Constellation it rolls for Initiative ("" for Awareness, the default; a name; or `choice`).
+  Travel "", ""; Hustle "", "Athletics"; Search "Awareness", ""; Scout "", ""; Defend "", "";
+  Investigate "choice", "choice"; Look Harmless "Guile", "Guile"; and a new eighth row, **Avoid
+  Notice** (Half; "You move quietly and keep to cover. Roll Stealth; the GM applies it to the
+  Awareness Threshold of anyone who might notice you. When an encounter begins, you can roll
+  Stealth."; "Stealth", "Stealth"), which P342 names and the Example of Play rolls while Table 95
+  has no row for it (ruling 103). `build_foundry.mjs` writes the columns onto the Activity Item as
+  `system.exploration { travel, check, initiative, effect }`: `travel` is the Speed word lowercased
+  ("full", "half" or "double", an error on anything else); `check` and `initiative` are the slug of
+  the named Constellation, resolved against the trees and the four Defenses with an error on a
+  name that is neither, `choice` and "" carried as they are; `effect` is "scout" or "defend" by
+  the row's name and "" for the rest, because the Scout's bonus and Step and the Defender's shield
+  are not Constellations but things Begin the encounter does, so a row Mike adds later needs no
+  code unless it does something new. A row that names a check-now Constellation also gets
+  `system.check { enabled: true, constellation }`, so Search's Roll rolls Awareness. The document
+  key stays `exploration:<slug>`, so the seven existing ids do not move and Avoid Notice is the one
+  new document (the pack's `source: "STARWROUGHT Playtest v4.10"` on these rows is left as it
+  prints). `SwActionData` carries the matching schema, blank on every other action, and derives
+  `exploration.multiplier` and `isExploration`; the web app's two `tbl(...)` calls slice the rows
+  to three columns, so its Exploration table changes by the Avoid Notice row alone; `build_phb.js` and `phb_format.py`
+  read the rows by position and needed no change, so the compendium docx changes by the new row
+  alone.
+- **The On the road tab** (plan, part 8; rulings 101, 102, 106 and 107). A third tab on the party
+  sheet, after Skills and before Loot, visible to players. The top line is the party's **Travel
+  Speed** (`partyTravel` in `helpers/party.mjs`): each member's Speed (`system.moveSpeed`, so a
+  Speed adjustment counts) times their Activity's multiplier (Full 1, Half ½, Double 2;
+  `SW.ACTIVITY_SPEEDS`), the lowest of those times the terrain (`SW.TERRAIN`: normal 1, Difficult
+  ½, Greater Difficult ⅓; PHB P343 to P344), through the book's three formulae in `SW.TRAVEL` (feet
+  a minute × 40, rounded; miles an hour ÷ 2, floored as the character's own figure is; miles a day
+  × 4, rounded): "120 feet a minute · 1 mile an hour · 12 miles a day", with "Wren sets the pace
+  (Search, Half)" naming the pacesetter (the lowest effective Speed; the first on ties), the
+  ten-minutes-per-location note while anyone Searches (P346), and the terrain as a select for the
+  GM (`system.travel.terrain`, the party's one new field) and a word for a player. Display only
+  (ruling 102): nothing moves a token, and a party with no members prints blanks and zeros. Below
+  it, for the GM, **Say the plan** and **Begin the encounter**, neither asking a confirm; Begin is
+  dimmed with a tooltip while no scene is viewed. Then one row per member: portrait, name, the
+  Activity select (the Actions pack's Exploration Mode folder through `explorationActivities`,
+  folder order then name, cached per session as the Basic Maneuvers are; a world action Item of the
+  same name and category replaces the printed one), the Travel word, the Initiative Constellation
+  the pick implies (Awareness, Stealth, Athletics, or Investigate's pick), the Constellation select
+  for Investigate (the member's opened Constellations plus their Lores), the warnings in small
+  amber type, the Roll button when the Activity rolls now, and the member's Combatant state while
+  a Combat holds them (the number once rolled; "ready: Stealth" when flagged and not yet rolled).
+  **The warnings** (`activityWarnings`) are read from live data and never enforced (ruling 107):
+  Look Harmless with a held weapon whose reach is above 0, named, or worn armor whose Load totals
+  more than 1, with the total (the Activity's Requirements); Investigate with no Constellation
+  chosen; a `choice` Initiative with no pick, which falls back to Awareness. **The Roll button**
+  (owner or GM) rolls the check-now Constellation as the member with no Threshold through the path
+  Ask everyone uses, a Defense slug as the Defense check and a Skill as a check, so Search posts
+  the ordinary card for the GM to apply; Investigate opens the Relevant Check picker
+  (`rollRelevantCheck({ dialog: true, slug })`) on the chosen Constellation. **The Fatigued gate**
+  (ruling 101): while a member's Fatigued is above 0 their select is locked to Travel with the
+  reason as its tooltip ("Hrolda is Fatigued 2 and can only Travel"), `activityOf` resolves them
+  to Travel for the speed line and the cards, and the stored pick is left as it was, so it comes
+  back the moment the Fatigue ends (ten minutes' rest, ruling 81). A player's own rows are live and
+  the others read-only (ruling 106); every control a player may use is an anchor with a
+  `data-action`, since DocumentSheetV2 disables form elements for an Observer, so a player's row
+  carries the Activity and the Constellation as anchors that open a small picker dialog (the
+  Activity select, and the Constellation select shown only while the chosen Activity asks for
+  one), and Set writes the pick. The GM gets working selects on every member.
+- **Say the plan** (GM only; the plan's risk 12). One public card spoken by the party: a line per
+  member, "Wren: Search (Half); Initiative: Awareness" or "Toric: Investigate (Half), with Lore
+  (Warfare); Initiative: Lore (Warfare)", with that member's warnings in a dim line beneath, then
+  the speed line, "The party moves at 120 feet a minute, 1 mile an hour, 12 miles a day over
+  Difficult terrain: Wren sets the pace (Search, Half).", and the ten-minutes line while anyone
+  Searches. A pick posts one line and Say the plan is the record; if the one line proves too many
+  at the table, the pick goes quiet and this card stands alone.
+- **Begin the encounter** (plan, part 9; ruling 105). GM only. The viewed scene must exist (a
+  notice otherwise). The Combat is an unstarted one on that scene, reused, or a new active one
+  created on it. For each member, every token of theirs on the scene (matched by Actor id, linked
+  or not) becomes a Combatant, one per token as the tracker does, an existing Combatant reused; a
+  member with no token there is named in the card's "no token" line and skipped. Then on every
+  member Combatant two flags: `flags.starwrought.initiativeConstellation`, the Activity's
+  Initiative Constellation ("" reads Awareness; `choice` reads the member's
+  `system.exploration.constellation`, or Awareness with a note when none is chosen), and
+  `flags.starwrought.initiativeModifiers`, one entry per other member present whose Activity has
+  the effect scout, `{ label: "Scout (Hrolda)", value: 1, type: "situation" }`
+  (`SW.SCOUT_INITIATIVE_BONUS`; two Scouts give each other one and everyone else two of the same
+  type, of which one applies, as the book's stacking rule says; a member with no Scout gets an
+  empty list). Present means with a token on the scene: a Scout the card names in its "no token"
+  line gives no bonus, and an absent Defender's shield is not raised, since whoever is not in the
+  encounter was not travelling with it. A Combatant that already carries an Initiative value is left alone, its flags not
+  rewritten, and named in the card. For every member whose Activity has the effect defend, the
+  held shield (`actor.system.shield`, else the held shield Item) is written `system.raised` true
+  with `swAnnounced`, no action spent and no card of its own, since the Raise a Shield card would
+  print a cost; `combat.mjs` lowers it at the Defender's next Opportunity as it lowers any raised
+  shield, which is the book's "begins Raised". Then one public card spoken by the party: "The
+  encounter begins.", a line per member ("Wren (Avoid Notice) rolls Stealth for Initiative, +1
+  Situation from Hrolda."), "Hrolda may Step ⓿ on rolling Initiative." for a Scout, for Look
+  Harmless the GM's comparison line with the Activity's four degrees printed from the Item's
+  description, to be applied by hand against each enemy's Awareness Threshold (adversary Thresholds
+  never reach a player), and, in the card's notes, for an Investigator "Toric rolls for Investigate
+  only if the encounter is related to it: the GM's call, before the die." Nothing rolls here:
+  players roll their own from the tracker or the sheet, the GM rolls for the absent, and both read
+  the flags.
+- **Initiative by Activity, everywhere a die is rolled** (ruling 105; the plan's risk 10 closed).
+  `SwCombatant._getInitiativeFormula` adds the sum of the Combatant's `initiativeModifiers` to the
+  formula, one per type at most (the highest bonus and the worst penalty of each type, as `SwCheck`
+  assembles them; with every Scout entry +1 Situation that is +1), and a new `initiativeModifiers`
+  getter returns the flag or an empty list. `SwCombat.rollInitiativeWithCheck(combatantId, slug =
+  null, { modifiers = null } = {})` defaults the slug to `combatant.initiativeConstellation` and
+  the modifiers to the Combatant's flag, passes the modifiers to `SwCheck.roll` as typed
+  modifiers, and names the Constellation in the card's subtitle. The character sheet's Roll
+  Initiative passed `system.initiative.slug` (Awareness) through 0.7.1 and would have overridden
+  the flag; it passes the Combatant's `initiativeConstellation` now, and the Skills grid's
+  Initiative cell does the same. The tracker's own roll reads both flags through
+  `_getInitiativeFormula`, which since this release asks the check engine for the very total the
+  dialog would show (the flagged Constellation's terms, the sheet's Initiative adjustment, the helm
+  and the modifiers one per type), where it used to swap two Constellation terms by hand and carry
+  the Awareness adjustment into a Stealth roll. The "Roll Initiative by Activity" macro goes
+  through `rollInitiativeWithCheck` with the Constellation the player nominates, which replaces the
+  flagged one and is written back to the flag after the roll, as the tracker's "roll with" always
+  has; the Scouts' modifiers still apply to it, since the macro passes none of its own. A flag
+  naming a Constellation nobody can roll (a Lore deleted since it was picked) reads as Awareness
+  rather than a made-up name at Might +0.
+- **The config.** `ACTIVITY_SPEEDS` (full 1, half ½, double 2), `TERRAIN` (normal 1, difficult ½,
+  greater ⅓), `EXPLORATION_EFFECTS` (scout, defend), `SCOUT_INITIATIVE_BONUS` (1) and
+  `ACTIVITY_CHOICE` ("choice", the token both roster columns use for the member's own pick) join
+  `TRAVEL` in `config.mjs`, each label an i18n key.
+
+### Changed
+
+- **`rollRelevantCheck(options)` accepts `options.slug`**, preselecting that Constellation in the
+  Relevant Check picker (set on the select when the dialog renders, the template untouched, and
+  taken out of the options passed on to the roll so the player's final pick is what rolls);
+  Investigate's Roll is the first caller, and the picker is otherwise unchanged.
+- **An Initiative roll through the check dialog carries the sheet's Initiative adjustment when it
+  rolls Awareness.** `SwCheck`'s Defense branch returned before the Initiative terms were added, so
+  the sheet's, the grid's and the party's Awareness Initiative dropped `system.bonuses.initiative`
+  while the tracker's formula kept it; the adjustment is added in that branch now (the helm is
+  already among Awareness's own modifiers and is not doubled).
+- **The Skills grid's Initiative cell shows the number it will roll.** In an encounter it is
+  assembled for the Combatant's flagged Constellation with the Scouts' bonus, through the same path
+  the roll uses, so a member flagged Stealth at +0 no longer reads the Awareness +2; out of one it
+  is the default modifier as before.
+- **"1 mile an hour" and "1 mile a day"** on the speed line and the plan card, the plural otherwise.
+- **`SwActionData` gains `system.exploration`** `{ travel, check, initiative, effect }`, written by
+  `build_foundry.mjs` on the eight Exploration Mode Activities and blank on every other action,
+  with `exploration.multiplier` and `isExploration` (category "Exploration Mode") derived.
+- **The party sheet redraws its road part** on the member hooks already wired, on the party's own
+  update (the terrain), and on the Combat hooks (`createCombat`, `updateCombat`, `deleteCombat`,
+  `createCombatant`, `updateCombatant`, `deleteCombatant`), on the same timer of about 150 ms,
+  registered in `_onRender` and released in `_onClose` as the member hooks are, so a member's
+  Initiative appears on their row as it is rolled.
+- **The party sheet's actions** gain `pickActivity`, `pickConstellation`, `activityRoll`,
+  `sayThePlan` and `beginEncounter`, each re-checking permission before writing, as the rest do;
+  the GM's row selects and the terrain select are handled in `_onChangeForm` and by the party form's
+  own submit.
+- **Checkboxes draw as Foundry's square glyph** (Mike, on 0.7.1: "The checkbox here looks odd").
+  The stylesheet's text-input dress (background, border, radius, shadow, a form label's line
+  height) reached `input[type="checkbox"]` and `input[type="radio"]`, which Foundry draws with
+  `appearance: none` and a Font Awesome square, so the Ask everyone dialog's "Players see the
+  Threshold" stretched into a tall outlined pill; both types are now exempted from it, which also
+  straightens the Milestone preview's and the Split dialog's checkboxes.
+- The version stamps read 0.7.2 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: `system.exploration` on
+  a character defaults to Travel with no Constellation, `system.travel.terrain` on a party to
+  normal, and an action Item's `system.exploration` to blank.
+
+### Notes
+
+- **The rulings, 101 to 107**, Mike's answers to the plan's parts 8 and 9 and its decisions 6 to
+  11, numbered on from the 0.7.1 entry's 100.
+  - 101. **A Fatigued character Travels and does nothing else** (decision 6). The book's Fatigued
+    row says "can't use Exploration Mode Activities"; read literally the party cannot move once a
+    fighter in plate is winded. The Activity select locks to Travel with the reason while Fatigued
+    is above 0; the stored pick is left as it was and comes back when the Fatigue ends (ten
+    minutes' rest, ruling 81). The proposal's sentence says so in the book.
+  - 102. **The party's Travel Speed is the slowest member's, display only** (decision 7). Each
+    member's Speed × their Activity's multiplier (Full 1, Half ½, Double 2); the lowest, × the
+    terrain (normal 1, Difficult ½, Greater Difficult ⅓, from P343 and P344), through the book's
+    three formulae (feet a minute × 40, miles an hour ÷ 2 floored as the character's own figures
+    are, miles a day × 4). Named for the pacesetter. Nothing moves a token; the terrain is a select
+    on the party and a word on the card.
+  - 103. **Avoid Notice lands as data ahead of the book** (decision 8). P342 names it and the
+    Example of Play rolls it, and Table 95 has no row; the roster gains the row ("Half; roll
+    Stealth, the GM applies it to the Awareness Threshold of anyone who might notice you; Stealth
+    for Initiative"), so it ships in the pack, the web app and the compendium docx now, and the
+    proposal adds the row to Table 95 for Mike to accept or strike. Decision 9 rides in the same
+    proposal: "Earning a Living" struck from P354 for "Provisioning", a Table 96 Activity, until
+    there is an income rule.
+  - 104. **The Activity data lives in two positional columns on the roster rows** (decision 11):
+    what the Activity rolls now and what it rolls for Initiative, as Constellation names, blank,
+    or `choice` for the member's own pick (Investigate). `build_foundry.mjs` writes them as
+    `system.exploration { travel, check, initiative, effect }` and `system.check` on the Activity
+    Item under its existing id; the compendium docx and the formatter read the rows by position
+    and change nothing but the new row; the web app prints three columns. The Scout's bonus and
+    Step and the Defender's shield are not Constellations: they are `effect` tags the builder sets
+    by the row's name (scout, defend) and the system reads from the Item, so a row Mike adds needs
+    no code unless it does something new.
+  - 105. **Begin the encounter writes Initiative by Activity onto the Combatants, and every roll
+    reads it.** A Combat on the viewed scene (an unstarted one reused), every member's token
+    added, `initiativeConstellation` set from the Activity (Awareness when it names none;
+    Investigate's pick, or Awareness with a note), `initiativeModifiers` carrying one +1 Situation
+    per Scout present for every other member present (two Scouts give each other one and everyone
+    else two of the same type, of which one applies, as the book's stacking rule says; a member
+    with no token on the scene neither gives nor gets one), a Defender's held shield
+    Raised with no action spent, and one card. A Combatant that has already rolled is left alone
+    and named. The tracker's roll, `rollInitiativeWithCheck`, the sheet's Roll Initiative (which
+    passed Awareness through 0.7.1, plan risk 10) and the grid's cell honour the flags. The
+    Scout's Step is announced, not moved; Look Harmless's degrees are printed for the GM to compare
+    by hand against each enemy's Awareness Threshold (adversary Thresholds never reach a player);
+    whether an Investigation was related is the GM's call before the die (judgement at the edge,
+    never in a formula).
+  - 106. **The pick is the character's.** `system.exploration` on the character, written by its
+    owner or the GM directly (an owner may write their own Actor, so no relay), announced as one
+    line spoken by the member; "Say the plan" is the record (risk 12).
+  - 107. **An Activity's own roll goes through the member's check.** The row's Roll rolls the
+    check-now Constellation as the member with no Threshold (Search and Investigate say the GM
+    applies the roll, as Ask everyone's blank Threshold does); Investigate opens the Relevant Check
+    picker on the chosen Constellation; Look Harmless's Requirements are a warning read from live
+    data (a held weapon with Reach, worn Load above 1), never a refusal.
+- **The system runs ahead of the book, and says so here.** Four handbook sentences (the party's
+  Travel Speed after P344; the Fatigued row; Initiative when Activities differ, appended to P323;
+  the Avoid Notice row in Table 95) and the P354 strike of "Earning a Living" for "Provisioning"
+  (decision 9) are in
+  `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx`, written by `assets/phb_propose.py`
+  (`PROPOSALS["on-the-road"]`, from 4.15) as Word tracked changes under the author Claude, for Mike
+  to accept or reject. A proposal is not an edition: the drift check ignores the name,
+  `data/SYNC.json` is untouched because no edition changed, and the system runs ahead of the book
+  on all five until Mike accepts into a numbered handbook, at which point the sync follows as the
+  handbook rule says.
+- **What phase 3 does not do.** Nothing moves a token: the Travel Speed is a line, the terrain a
+  word, and the Scout's Step is announced and not taken. Nothing is enforced that the book leaves
+  to the table: the Fatigued gate locks a select and refuses a pick, and that is the whole of it;
+  Look Harmless's Requirements warn and never refuse; Look Harmless is compared by the GM by hand
+  against each enemy's Awareness Threshold, and whether an Investigation was related is the GM's
+  call before the die, because a judgement inside a formula cannot be automated. Begin the
+  encounter rolls nothing and shows no adversary Threshold. No party token on any map. Phase 4
+  (Downtime: the days, Train through the shared Flare picker with its once-between-Milestones
+  warning, the Retrain and Provision reminder lines; 0.7.3) stands as the plan wrote it;
+  `CLAUDE.md` names it under Known outstanding work.
+- **No GM connected is needed for a pick.** A member's Activity is a write to the member's own
+  Actor, which its owner may make, so the pick travels no socket; Say the plan and Begin the
+  encounter are the GM's own writes. Take and Give to the party still go to the active GM's client
+  as 0.7.1 left them.
+- **What the pipeline touched.** `assets/roster.json` (the two columns and the Avoid Notice row);
+  `packs/_source/actions/`, where the seven Exploration Mode documents gain `system.exploration`
+  under their old ids, Search and Look Harmless gain `system.check` as well, and Avoid Notice is
+  new with both; the compendium docx (the Avoid Notice row); and the built web app, whose
+  Exploration table gains the Avoid Notice row and nothing else, the slice holding it to three
+  columns. The spreadsheets are untouched: the
+  Exploration Activities are a hand-kept roster block (decision 11), and move to a
+  `data/maneuvers.xlsx` sheet whenever the Maneuver rows are being enabled anyway.
+- The handbook's v4.10 loose ends stand in v4.15 as 0.6.3 listed them; `CLAUDE.md` carries the
+  list.
+
+---
+
 ## 0.7.1 (2026-10-02): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and

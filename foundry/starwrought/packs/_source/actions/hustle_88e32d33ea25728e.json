@@ -13,6 +13,12 @@
     "requirements": "Travel Speed: Double",
     "traits": [],
     "description": "<p>When an encounter begins, you can roll Athletics.</p>",
+    "exploration": {
+      "travel": "double",
+      "check": "",
+      "initiative": "athletics",
+      "effect": ""
+    },
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",

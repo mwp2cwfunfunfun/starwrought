@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.7.1";
+  --sw-css-version: "0.7.2";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -122,6 +122,25 @@
   border-color: var(--sw-gold);
   box-shadow: 0 0 6px rgba(227, 178, 60, 0.35);
   outline: none;
+}
+/* A checkbox is drawn by Foundry's own glyph (appearance none, a Font Awesome square in ::before),
+   so the text-input dress above must not reach it. Boxed and bordered, and inheriting a form
+   label's line height, it stretched into a tall outlined pill beside "Players see the Threshold"
+   (Mike, 2026-10-02, the Ask everyone dialog). */
+.starwrought input[type="checkbox"],
+.starwrought input[type="radio"] {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  height: auto;
+  line-height: 1;
+  flex: none;
+}
+.starwrought input[type="checkbox"]:focus,
+.starwrought input[type="radio"]:focus {
+  border: none;
+  box-shadow: none;
 }
 
 .starwrought a { color: var(--sw-ink); cursor: pointer; }
@@ -2481,3 +2500,135 @@ li.combatant.sw-in-crosshairs {
   border-color: var(--sw-gold-dim);
   color: var(--sw-flare);
 }
+
+/* --------------------------------------------------------------------------
+   On the road (0.7.2; party-sheet-plan.md, parts 8 and 9). The party's
+   Travel Speed as one line with the terrain beside it, then one row per
+   member in the roster's idiom (portrait, name, the Activity control, the
+   tags, a Roll), the warnings small and amber under the row. The GM's
+   controls are selects; an owner's are anchors dressed as a select, since the
+   sheet disables form elements for a user who cannot edit the party; a
+   Fatigued row is locked and says why on hover. The cards the road speaks
+   take the agility teal, so a pick and the plan read apart from the party's
+   purple, and the encounter card the blood red of the fight it opens.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-road-panel .sw-panel-title { flex-wrap: wrap; }
+.starwrought .sw-road-panel .sw-panel-title .sw-points { text-transform: none; letter-spacing: 0; font-weight: normal; }
+.starwrought .sw-road-panel .sw-panel-title .sw-panel-buttons { margin-left: auto; display: inline-flex; gap: 0.3rem; }
+/* Begin the encounter with no scene viewed: shown, dimmed, and the tooltip says why (a disabled
+   button would swallow the hover). */
+.starwrought .sw-road-panel button.sw-button-off { opacity: 0.45; cursor: help; }
+
+/* The speed line (ruling 102). */
+.starwrought .sw-road-speed {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-road-figures { display: inline-flex; align-items: baseline; gap: 0.3rem; font-size: 0.78rem; color: var(--sw-ink-dim); cursor: help; white-space: nowrap; }
+.starwrought .sw-road-figures strong { font-size: 1.05rem; color: var(--sw-gold); }
+.starwrought .sw-road-figures .sw-road-dot { color: var(--sw-edge); padding-inline: 0.1rem; }
+.starwrought .sw-road-terrain { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--sw-ink-dim); cursor: help; }
+.starwrought .sw-road-terrain i { opacity: 0.7; }
+.starwrought .sw-road-terrain select { width: auto; height: 1.5rem; padding: 0 0.3rem; font-size: 0.75rem; }
+.starwrought .sw-road-terrain-hard,
+.starwrought .sw-road-terrain-hard select { color: #d8a25a; }
+.starwrought .sw-road-pace { margin-left: auto; font-size: 0.75rem; font-style: italic; color: var(--sw-ink-dim); }
+.starwrought .sw-road-searching { margin: 0.3rem 0 0; }
+.starwrought .sw-road-searching i { margin-right: 0.2rem; opacity: 0.7; }
+
+/* The rows: one per member, wrapping, the warnings on a line of their own. */
+.starwrought .sw-road-rows { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.starwrought .sw-road-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.starwrought .sw-road-row.sw-road-live { border-color: var(--sw-gold-dim); }
+.starwrought .sw-road-row.sw-road-locked { border-style: dashed; }
+.starwrought .sw-road-portrait { width: 32px; height: 32px; object-fit: cover; border: 1px solid var(--sw-gold-dim); border-radius: 4px; cursor: pointer; flex: 0 0 auto; }
+.starwrought .sw-road-portrait:hover { border-color: var(--sw-flare); }
+.starwrought .sw-road-name {
+  flex: 0 1 9rem;
+  min-width: 6rem;
+  font-family: var(--font-h1, inherit);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sw-gold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.starwrought .sw-road-activity,
+.starwrought .sw-road-constellation { display: inline-flex; align-items: center; gap: 0.3rem; }
+.starwrought .sw-road-select { font-size: 0.82rem; }
+.starwrought select.sw-road-select { width: auto; max-width: 14rem; height: 1.6rem; padding: 0 0.3rem; font-size: 0.8rem; }
+/* An owner's control: an anchor dressed as a select, opening the picker dialog (ruling 106). */
+.starwrought a.sw-road-select-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--sw-ink);
+}
+.starwrought a.sw-road-select-live:hover { border-color: var(--sw-gold); background: rgba(255, 216, 103, 0.12); text-shadow: none; }
+.starwrought a.sw-road-select-live i { font-size: 0.7rem; color: var(--sw-ink-dim); }
+/* Locked to Travel while Fatigued (ruling 101): amber, with the reason on hover. */
+.starwrought .sw-road-select-locked { color: #d8a25a; cursor: help; }
+.starwrought .sw-road-select-locked i { font-size: 0.7rem; margin-right: 0.1rem; }
+.starwrought .sw-road-unpicked { color: #d8a25a; font-style: italic; }
+.starwrought .sw-road-speedword { color: var(--sw-ink); cursor: help; }
+.starwrought .sw-road-initiative { cursor: help; }
+.starwrought .sw-road-initiative i { color: var(--sw-wits); margin-right: 0.15rem; }
+.starwrought .sw-road-initiative.sw-road-fallback { border-style: dashed; }
+.starwrought .sw-road-combat { cursor: help; border-color: var(--sw-gold-dim); color: var(--sw-gold); }
+.starwrought .sw-road-combat.sw-road-combat-rolled { background: rgba(255, 216, 103, 0.12); }
+.starwrought .sw-road-roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-flare);
+  white-space: nowrap;
+}
+.starwrought .sw-road-roll:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); text-shadow: none; }
+/* The warnings (ruling 107): read from live data, never a refusal, so small and amber, not red. */
+.starwrought .sw-road-warnings {
+  flex: 1 1 100%;
+  margin: 0;
+  padding-left: calc(32px + 0.5rem);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  cursor: help;
+}
+.starwrought .sw-road-warnings i { font-size: 0.65rem; }
+
+/* The picker dialog: the Constellation group shows only while the chosen Activity wants one. */
+.starwrought.sw-party-dialog .sw-road-dialog-hidden { display: none; }
+
+/* The cards the road speaks: a pick spoken by the member, the plan and the encounter by the party. */
+.starwrought.action-card.sw-travel-card { border-left: 3px solid var(--sw-agility); }
+.starwrought.action-card.sw-travel-card h3 .fa-route { color: var(--sw-agility); }
+.starwrought.action-card.sw-travel-card .sw-card-note b { color: var(--sw-gold); }
+.starwrought.action-card.sw-encounter-card { border-left-color: var(--sw-blood); }
+.starwrought.action-card.sw-encounter-card h3 .fa-flag { color: var(--sw-blood); }

@@ -1,9 +1,10 @@
 /**
- * The party data model (0.7.0; party-sheet-plan.md, part 1; 0.7.1 adds the purse, part 6).
+ * The party data model (0.7.0; party-sheet-plan.md, part 1; 0.7.1 adds the purse, part 6; 0.7.2
+ * adds the terrain, part 8).
  *
  * A party is the characters who travel together, and this document stores only what is party
  * bookkeeping: who is in it, which session the table is on, the last Milestone award so it can be
- * taken back, the purse, and the GM's notes. Its embedded Items are the loot (0.7.1): the four
+ * taken back, the purse, the terrain it is crossing, and the GM's notes. Its embedded Items are the loot (0.7.1): the four
  * physical types alone, since `SwItem._preCreate` refuses anything else on a party. Everything
  * about the members (level, Milestones, Hero Points, Vigor, Wounds, Flares, every rank and
  * Threshold) stays on the characters and is read live by the sheet at render, never copied here:
@@ -16,6 +17,8 @@
  * documents/actor.mjs sets its prototype token linked and its default ownership to Observer, so
  * every player can open the sheet while only the GM writes it.
  */
+
+import * as SW from "../config.mjs";
 
 const fields = foundry.data.fields;
 
@@ -76,6 +79,21 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
       currency: new fields.SchemaField(currencyFields()),
 
       /**
+       * The road (0.7.2; plan, part 8; ruling 102): the terrain the party is crossing, one of
+       * `SW.TERRAIN` (normal, Difficult, Greater Difficult; PHB v4.15 P343 to P344), which the
+       * Travel Speed line multiplies by (1, one half, one third). Display only: the party's
+       * speed is the slowest member's after their Activity, times this, and nothing moves a
+       * token. The GM's select writes it; a player reads the word. The choices are read when the
+       * schema is built, so a config without the table (an older client's cached module) still
+       * loads, with "normal" as the one value it accepts.
+       */
+      travel: new fields.SchemaField({
+        terrain: new fields.StringField({
+          required: true, choices: () => Object.keys(SW.TERRAIN ?? { normal: true }), initial: "normal"
+        })
+      }),
+
+      /**
        * The GM's notes. GM-only in the template, not a vault: a player with Observer ownership can
        * read the document from the console, and FEATURES says so (plan, risk 8).
        */
@@ -89,7 +107,8 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
    * Nothing member-dependent is derived here, on purpose (plan, risk 2): the sheet resolves the
    * members and computes the board at render, and re-renders on their hooks. Only the party's own
    * counts are set, so a template or a macro can read them without touching the array; the purse
-   * in copper is one of them, since Split and the sheet both want the one number.
+   * in copper is one of them, since Split and the sheet both want the one number, and the terrain's
+   * multiplier is another (the party's own field, no member in it).
    * @override
    */
   prepareDerivedData() {
@@ -97,6 +116,7 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
     this.hasAwardToTakeBack = !!(this.lastAward?.members?.length);
     this.purseCopper = Object.entries(COIN_IN_COPPER)
       .reduce((sum, [coin, worth]) => sum + ((Number(this.currency?.[coin]) || 0) * worth), 0);
+    this.travel.multiplier = SW.TERRAIN?.[this.travel.terrain]?.multiplier ?? 1;
   }
 
   /** The members' uuids, in order. */

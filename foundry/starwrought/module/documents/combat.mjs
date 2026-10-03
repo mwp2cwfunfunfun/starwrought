@@ -52,31 +52,63 @@ export class SwCombatant extends Combatant {
    * PHB v4.10: Initiative is Attribute Bonus + Proficiency Bonus + bonuses, with the helm penalty
    * (Closed helm -2, Open helm -1). Level never touches the die. The data model folds every term of
    * the default Constellation into `system.initiative.mod`; rolling with what you were actually
-   * doing swaps that Constellation's two terms for the chosen one's and keeps the rest.
+   * doing rolls that Constellation's two terms instead. Since 0.7.2 the typed modifiers the Party
+   * Sheet's Begin the encounter wrote onto this Combatant (a Scout's +1 Situation for every other
+   * member present, ruling 105) go on top, collapsed per type as every check is: two Scouts leave
+   * two entries of one type, of which one applies. This is the tracker's die, and it asks the check
+   * engine for the very total the dialog of `rollInitiativeWithCheck` would show (`previewTotal`
+   * with the same Constellation and the same modifiers), so the two can never disagree: through
+   * 0.7.1 this swapped the two Constellation terms by hand on `system.initiative.mod` and carried
+   * the sheet's Awareness adjustment along into a Stealth roll, which the dialog did not.
    */
   _getInitiativeFormula() {
     const actor = this.actor;
     if (!actor) return "1d20";
     if (actor.type === "npc") return String(actor.system.thresholds?.initiative ?? 10);
 
-    const sys = actor.system;
-    let mod = Number(sys.initiative?.mod) || 0;
-    const base = sys.initiative?.slug ?? SW.DEFENSES.awareness.slug;
-    const slug = this.getFlag(SW.SYSTEM_ID, "initiativeConstellation") || base;
-    if ((slug !== base) && (typeof sys.proficiency === "function")) {
-      const from = sys.proficiency(base);
-      const to = sys.proficiency(slug);
-      mod += (sys.attributes?.[to.attribute]?.mod ?? 0) + (to.proficiency ?? 0)
-        - (sys.attributes?.[from.attribute]?.mod ?? 0) - (from.proficiency ?? 0);
-    }
+    const mod = SwCheck.previewTotal(actor, {
+      kind: "initiative",
+      slug: this.initiativeConstellation,
+      modifiers: this.initiativeModifiers.map(m => ({ ...m }))
+    });
     return `1d20 ${mod < 0 ? "-" : "+"} ${Math.abs(mod)}`;
   }
 
-  /** Which Constellation this combatant is rolling Initiative with. */
+  /**
+   * Which Constellation this combatant is rolling Initiative with: the `initiativeConstellation`
+   * flag (the tracker's "roll with", or since 0.7.2 the Activity's Constellation that Begin the
+   * encounter wrote, ruling 105), else the actor's default, else Awareness. The data's token for
+   * "the member's own pick" (SW.ACTIVITY_CHOICE, Investigate's row) is resolved before the flag is
+   * written; a flag that still carries it reads the character's pick here, Awareness when there is
+   * none, so no reader ever asks the proficiency of a word.
+   */
   get initiativeConstellation() {
-    return this.getFlag(SW.SYSTEM_ID, "initiativeConstellation")
-      || this.actor?.system.initiative?.slug
-      || SW.DEFENSES.awareness.slug;
+    const flagged = this.getFlag(SW.SYSTEM_ID, "initiativeConstellation");
+    const actor = this.actor;
+    // A slug nobody can name (a Lore deleted since it was chosen, a Constellation renamed) is not
+    // rolled under a made-up name at Might +0: it reads as Awareness, as a blank pick does.
+    const known = slug => !!slug && (!!actor?.system?.constellations?.[slug] || !!SW.constellations[slug]
+      || Object.values(SW.DEFENSES).some(d => d.slug === slug));
+    if (flagged === SW.ACTIVITY_CHOICE) {
+      const pick = actor?.system.exploration?.constellation;
+      return known(pick) ? pick : SW.DEFENSES.awareness.slug;
+    }
+    if (flagged) return known(flagged) ? flagged : SW.DEFENSES.awareness.slug;
+    return actor?.system.initiative?.slug || SW.DEFENSES.awareness.slug;
+  }
+
+  /**
+   * The typed modifiers this combatant's Initiative carries beyond its Constellation, as the Party
+   * Sheet's Begin the encounter wrote them (0.7.2, ruling 105): `[{ label, value, type }]`, one
+   * entry per Scout among the OTHER members ("Scout (Hrolda)", +1 Situation), or [] when nothing
+   * was written. An entry with no number is dropped rather than rolled. The entries are the flag's
+   * own objects, so a caller that hands them to the check engine copies them first.
+   * @type {Array<{label: string, value: number, type?: string}>}
+   */
+  get initiativeModifiers() {
+    const raw = this.getFlag(SW.SYSTEM_ID, "initiativeModifiers");
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(m => m && Number.isNumeric(m.value));
   }
 }
 
@@ -106,10 +138,20 @@ export class SwCombat extends Combat {
   /**
    * Roll Initiative for one combatant through the normal check pipeline, so the card shows the
    * Constellation, the modifiers, and any situational bonus.
+   *
+   * Since 0.7.2 both arguments default to what the Combatant carries (ruling 105; party-sheet-plan.md,
+   * risk 10): the Constellation its `initiativeConstellation` flag names (the Activity's, written by
+   * the Party Sheet's Begin the encounter; else the actor's default, Awareness) and the typed
+   * modifiers its `initiativeModifiers` flag holds (a Scout's +1 Situation). A caller that names a
+   * Constellation overrides the flag, as the tracker's "roll with" always has; one that passes
+   * `modifiers` replaces the flag's list rather than adding to it. The card's subtitle names the
+   * Constellation rolled, and the die is the one `_getInitiativeFormula` would throw.
    * @param {string} combatantId
-   * @param {string} slug
+   * @param {string|null} [slug]              The Constellation to roll with; null reads the flag.
+   * @param {object} [options]
+   * @param {Array|null} [options.modifiers]  Typed modifiers for the die; null reads the flag.
    */
-  async rollInitiativeWithCheck(combatantId, slug) {
+  async rollInitiativeWithCheck(combatantId, slug = null, { modifiers = null } = {}) {
     const combatant = this.combatants.get(combatantId);
     const actor = combatant?.actor;
     if (!actor) return null;
@@ -120,13 +162,18 @@ export class SwCombat extends Combat {
       return value;
     }
 
+    slug ??= combatant.initiativeConstellation;
+    modifiers ??= combatant.initiativeModifiers;
     const meta = actor.system.constellations?.[slug] ?? SW.getConstellation(slug);
     const result = await SwCheck.roll({
       actor,
       kind: "initiative",
       slug,
       label: game.i18n.localize("STARWROUGHT.Roll.initiative"),
-      subtitle: meta.name
+      subtitle: meta.name,
+      // Copies: the flag's own objects are the Combatant's data, and the check engine's dialog
+      // marks what it applies.
+      modifiers: modifiers.map(m => ({ ...m }))
     });
     if (!result) return null;
     await combatant.setFlag(SW.SYSTEM_ID, "initiativeConstellation", slug);

@@ -1215,37 +1215,58 @@
   [
    "Travel",
    "Full",
-   "When an encounter begins, you can roll Awareness."
+   "When an encounter begins, you can roll Awareness.",
+   "",
+   ""
   ],
   [
    "Hustle",
    "Double",
-   "When an encounter begins, you can roll Athletics."
+   "When an encounter begins, you can roll Athletics.",
+   "",
+   "Athletics"
   ],
   [
    "Search",
    "Half",
-   "Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures. When an encounter begins, you can roll Awareness."
+   "Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures. When an encounter begins, you can roll Awareness.",
+   "Awareness",
+   ""
   ],
   [
    "Scout",
    "Half",
-   "Every ally gains a +1 Situation bonus to initiative, and you may Step ⓿ when you roll initiative. When an encounter begins, you can roll Awareness."
+   "Every ally gains a +1 Situation bonus to initiative, and you may Step ⓿ when you roll initiative. When an encounter begins, you can roll Awareness.",
+   "",
+   ""
   ],
   [
    "Defend",
    "Half",
-   "Your shield begins Raised and a weapon is already in hand. When an encounter begins, you can roll Awareness."
+   "Your shield begins Raised and a weapon is already in hand. When an encounter begins, you can roll Awareness.",
+   "",
+   ""
   ],
   [
    "Investigate",
    "Half",
-   "Roll a relevant Lore or Skill check; the GM applies it to the Thresholds to potentially recall relevant information about your surroundings. When an encounter begins, you can roll the same Lore or Skill check, if the encounter is related to what you are Investigating."
+   "Roll a relevant Lore or Skill check; the GM applies it to the Thresholds to potentially recall relevant information about your surroundings. When an encounter begins, you can roll the same Lore or Skill check, if the encounter is related to what you are Investigating.",
+   "choice",
+   "choice"
   ],
   [
    "Look Harmless",
    "Half",
-   "Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.<br>Requirements You wield no weapon with a Reach greater than Adjacent, and your worn armor totals Load 1 or less.<br>When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy you are Observed to.<br><b>Critical Success</b> They are Wrong-Footed to you until the end of your first Opportunity. <b>Success</b> They are Wrong-Footed to your first attack. <b>Failure</b> Nothing; they were watching you all along. <b>Critical Failure</b> You overplayed it. You are Wrong-Footed to them until your next Opportunity.<br>Outside an encounter, a successful Guile check lets you approach, pass, or linger without being challenged by anyone who would otherwise have wanted to know your business."
+   "Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.<br>Requirements You wield no weapon with a Reach greater than Adjacent, and your worn armor totals Load 1 or less.<br>When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy you are Observed to.<br><b>Critical Success</b> They are Wrong-Footed to you until the end of your first Opportunity. <b>Success</b> They are Wrong-Footed to your first attack. <b>Failure</b> Nothing; they were watching you all along. <b>Critical Failure</b> You overplayed it. You are Wrong-Footed to them until your next Opportunity.<br>Outside an encounter, a successful Guile check lets you approach, pass, or linger without being challenged by anyone who would otherwise have wanted to know your business.",
+   "Guile",
+   "Guile"
+  ],
+  [
+   "Avoid Notice",
+   "Half",
+   "You move quietly and keep to cover. Roll Stealth; the GM applies it to the Awareness Threshold of anyone who might notice you. When an encounter begins, you can roll Stealth.",
+   "Stealth",
+   "Stealth"
   ]
  ],
  "downtimeActions": [

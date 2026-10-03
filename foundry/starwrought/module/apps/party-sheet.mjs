@@ -1,31 +1,40 @@
 /**
- * The party sheet (0.7.0; party-sheet-plan.md, parts 1 to 4; 0.7.1 adds parts 6 and 7).
+ * The party sheet (0.7.0; party-sheet-plan.md, parts 1 to 4; 0.7.1 adds parts 6 and 7; 0.7.2
+ * adds parts 8 and 9).
  *
  * The GM's console and the players' window at once: one template set that branches on `isGM`
  * and on per-member ownership, as the character sheet's header does. The header carries the
  * session and the GM's buttons; the roster, always open above the tabs, is a status board with
  * one row per member; the Skills grid is a tab, Constellations as rows and members as columns,
- * each row header carrying the GM's Ask everyone; the Loot tab (0.7.1) lists the party's
- * embedded Items and the purse; the GM's notes are a tab the players never see.
+ * each row header carrying the GM's Ask everyone; the On the road tab (0.7.2) carries each
+ * member's Exploration Activity, the party's Travel Speed, Say the plan and Begin the encounter;
+ * the Loot tab (0.7.1) lists the party's embedded Items and the purse; the GM's notes are a tab
+ * the players never see.
  *
  * Everything member-dependent is computed here, in `_prepareContext`, from the resolved members
  * (plan, risk 2): the party's own data model derives nothing from them. The sheet re-renders its
- * roster and grid on the member hooks (updateActor, Items and Active Effects on a member; a
- * member deleted), and its loot part on the party's own Item changes, debounced on a timer,
- * never a requestAnimationFrame latch, and only when the changed document is a member, belongs
- * to one, or is the party's own loot. Every rule effect runs on the member's own Actor through a
- * method that already exists and posts its card: `rollCheck`, `rollDefense`, the Combat's
- * `rollInitiativeWithCheck`, `toggleFlare`, `restForTheNight`, and the party operations in
- * helpers/party.mjs for the few small writes the party makes to a member.
+ * roster, grid and road on the member hooks (updateActor, Items and Active Effects on a member; a
+ * member deleted), its road and grid on the Combat hooks (a Combat or a member's Combatant made,
+ * changed or deleted; the viewed scene changing), and its loot part on the party's own Item
+ * changes, debounced on a timer, never a requestAnimationFrame latch, and only when the changed
+ * document is a member, belongs to one, or is the party's own loot. Every rule effect runs on the
+ * member's own Actor through a method that already exists and posts its card: `rollCheck`,
+ * `rollDefense`, `rollRelevantCheck`, the Combat's `rollInitiativeWithCheck`, `toggleFlare`,
+ * `restForTheNight`, and the party operations in helpers/party.mjs for the few small writes the
+ * party makes to a member.
  *
  * ApplicationV2 actions fire regardless of editability, and a player opens this sheet as an
  * Observer, so every handler re-checks before writing: `game.user.isGM` for the party's writes
  * and the GM's buttons, `testUserPermission(game.user, "OWNER")` on the member for a player's
- * Flare put-out, Spent and Take. For the same reason every control a player may click is an
- * anchor, since DocumentSheetV2 disables every form element for a user who cannot edit. A
- * player's Take, and a Give by drag, are two writes a player cannot make alone, so they go to the
- * active GM's client through documents/party-socket.mjs (ruling 97); the GM's own Give to, Split
- * and Ask everyone write directly through helpers/party.mjs.
+ * Flare put-out, Spent, Take, Activity pick and Activity roll. For the same reason every control
+ * a player may click is an anchor, since DocumentSheetV2 disables every form element for a user
+ * who cannot edit: the Activity and Constellation controls on the road are selects for the GM,
+ * written through `_onChangeForm`, and for an owner who cannot edit the party they are anchors
+ * that open a small picker dialog (a dialog's own form is never disabled), both ending in the
+ * same `setActivity` (ruling 106). A player's Take, and a Give by drag, are two writes a player
+ * cannot make alone, so they go to the active GM's client through documents/party-socket.mjs
+ * (ruling 97); the GM's own Give to, Split, Ask everyone, Say the plan and Begin the encounter
+ * write directly through helpers/party.mjs.
  */
 
 import * as SW from "../config.mjs";
@@ -37,7 +46,10 @@ import {
   resolveMembers, memberCandidate, addMember, removeMember, addPlayerCharacters,
   beginSession, awardHeroPoint, correctHeroPoint, partyRests, restPreview,
   previewMilestone, awardMilestone, takeBackAward, spendDeferred,
-  isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper, askedName, askEveryone
+  isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper, askedName, askEveryone,
+  explorationActivities, invalidateExplorationActivities, travelActivity, activityOf, activityWarnings,
+  activityHasChoice, activityRoll, initiativeFor, constellationName, travelWord, travelUnits,
+  setActivity, partyTravel, sayThePlan, beginEncounter
 } from "../helpers/party.mjs";
 import { requestTake, requestGive } from "../documents/party-socket.mjs";
 
@@ -61,9 +73,22 @@ const MEMBER_DOCUMENT_HOOKS = Object.freeze([
   "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"
 ]);
 
-/** The parts the member hooks redraw, and the one the party's own loot changes redraw. */
-const MEMBER_PARTS = Object.freeze(["roster", "skills"]);
+/**
+ * The parts the member hooks redraw; the ones the Combat hooks redraw (the road's Combatant
+ * state and the grid's Initiative row are live only while a Combat holds the member); the one a
+ * world Activity's change redraws; and the one the party's own loot changes redraw.
+ */
+const MEMBER_PARTS = Object.freeze(["roster", "skills", "road"]);
+const COMBAT_PARTS = Object.freeze(["road", "skills"]);
+const ROAD_PARTS = Object.freeze(["road"]);
 const LOOT_PARTS = Object.freeze(["loot"]);
+
+/**
+ * The hooks a Combat's change arrives on (0.7.2): the Combat itself, its Combatants, and the
+ * viewed scene, which decides whether Begin the encounter has somewhere to begin.
+ */
+const COMBAT_HOOKS = Object.freeze(["createCombat", "updateCombat", "deleteCombat", "canvasReady"]);
+const COMBATANT_HOOKS = Object.freeze(["createCombatant", "updateCombatant", "deleteCombatant"]);
 
 /** Foundry's render context for a change to the party's own embedded Items: the loot. */
 const LOOT_RENDER_CONTEXT = /^(create|update|delete)Item$/;
@@ -96,7 +121,12 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       lootChat: SwPartySheet.#onLootChat,
       lootEdit: SwPartySheet.#onLootEdit,
       lootDelete: SwPartySheet.#onLootDelete,
-      splitPurse: SwPartySheet.#onSplitPurse
+      splitPurse: SwPartySheet.#onSplitPurse,
+      pickActivity: SwPartySheet.#onPickActivity,
+      pickConstellation: SwPartySheet.#onPickConstellation,
+      activityRoll: SwPartySheet.#onActivityRoll,
+      sayThePlan: SwPartySheet.#onSayThePlan,
+      beginEncounter: SwPartySheet.#onBeginEncounter
     }
   };
 
@@ -106,6 +136,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     roster: { template: "systems/starwrought/templates/actor/party-roster.hbs" },
     tabs: { template: "templates/generic/tab-navigation.hbs" },
     skills: { template: "systems/starwrought/templates/actor/party-skills.hbs", scrollable: [""] },
+    road: { template: "systems/starwrought/templates/actor/party-road.hbs", scrollable: [""] },
     loot: { template: "systems/starwrought/templates/actor/party-loot.hbs", scrollable: [""] },
     notes: { template: "systems/starwrought/templates/actor/party-notes.hbs", scrollable: [""] }
   };
@@ -117,6 +148,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       labelPrefix: "STARWROUGHT.Tab",
       tabs: [
         { id: "skills", icon: "fa-solid fa-table-cells" },
+        { id: "road", icon: "fa-solid fa-route" },
         { id: "loot", icon: "fa-solid fa-sack" },
         { id: "notes", icon: "fa-solid fa-book-open" }
       ]
@@ -192,6 +224,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.rows = members.map(m => this.#memberRow(m));
     context.anyOwned = context.rows.some(r => r.owner);
     context.grid = this.#prepareGrid(members.map(m => m.actor).filter(Boolean));
+    context.road = await this.#prepareRoad();
     context.loot = this.#prepareLoot(members);
     context.milestoneMax = SW.MILESTONES_PER_LEVEL;
     context.heroMax = SW.HERO_POINTS_MAX;
@@ -339,16 +372,32 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       })
     });
 
-    // Initiative: the modifier, live only while a Combat holds the member.
+    // Initiative: the modifier, live only while a Combat holds the member, and since 0.7.2 the
+    // Constellation the Combatant is flagged to roll (Begin the encounter's, ruling 105; Awareness
+    // when nothing flagged it) named on hover, since the cell rolls that and not Awareness.
     const initiativeCells = actors.map(actor => {
-      const mod = Number(actor.system.initiative?.mod) || 0;
-      const inCombat = !!actor.combatant;
+      const combatant = actor.combatant;
+      const inCombat = !!combatant;
+      // Out of an encounter the cell shows the default (Awareness) modifier the model derives. In
+      // one it shows the number the cell will actually roll: the flagged Constellation's terms and
+      // the Scouts' bonus, through the same assembly the roll uses, so a Combatant flagged Stealth
+      // at +0 never reads "+2" (live test, 0.7.2).
+      const mod = inCombat
+        ? SwCheck.previewTotal(actor, {
+          kind: "initiative", slug: combatant.initiativeConstellation, modifiers: combatant.initiativeModifiers ?? []
+        })
+        : (Number(actor.system.initiative?.mod) || 0);
+      const tooltip = inCombat
+        ? `${F("STARWROUGHT.Party.initiativeLiveTip", { mod: signed(mod) })} ${F("STARWROUGHT.Travel.gridInitiativeTip", {
+          constellation: constellationName(actor, combatant.initiativeConstellation)
+        })}`
+        : F("STARWROUGHT.Party.initiativeNotInCombat", { mod: signed(mod) });
       return base(actor, {
         kind: "initiative",
         value: mod, display: signed(mod),
         rank: null, rankAbbr: "", untrained: false,
         live: inCombat && (live.get(actor.uuid) ?? false),
-        tooltip: F(inCombat ? "STARWROUGHT.Party.initiativeLiveTip" : "STARWROUGHT.Party.initiativeNotInCombat", { mod: signed(mod) })
+        tooltip
       });
     });
     groups[0].rows.push({
@@ -448,6 +497,150 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
 
     return { columns, groups, span: columns.length + 1 };
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * The road (0.7.2; plan, parts 8 and 9; rulings 101, 102 and 105 to 107): the party's Travel
+   * Speed line from `partyTravel`, the terrain, and one row per member with the Activity, its
+   * Travel word, the Constellation the pick implies for Initiative, Investigate's Constellation,
+   * the warnings, the Roll when the Activity rolls now, and the member's Combatant state while a
+   * Combat holds them. Every Activity is read from the Actions pack's Exploration Mode folder
+   * (`explorationActivities`), never from a table here (plan, risk 9). A row is live for the
+   * member's owner and the GM: the GM's selects are written through `_onChangeForm`, an owner's
+   * anchors open the picker dialog. A Fatigued member's row is locked to Travel with the reason
+   * (ruling 101), for the GM as for the player, since `setActivity` refuses either.
+   * @returns {Promise<object>}
+   */
+  async #prepareRoad() {
+    const party = this.document;
+    const isGM = game.user.isGM;
+    const activities = await explorationActivities();
+    const travelItem = travelActivity(activities);
+    const travel = partyTravel(party, activities);
+    // Travel first in every list, since it is the default and the one "" stands for.
+    const ordered = travelItem ? [travelItem, ...activities.filter(a => a !== travelItem)] : [...activities];
+    const valueOf = item => (item && travelItem && (item === travelItem)) ? "" : (item?.id ?? "");
+
+    const rows = travel.members.map(member => {
+      const { actor, item, locked, lockedReason } = member;
+      const owner = actor.testUserPermission(game.user, "OWNER");
+      const live = owner || isGM;
+      const pick = String(actor.system.exploration?.constellation ?? "").trim();
+      const needsConstellation = !locked && activityHasChoice(item);
+      const init = initiativeFor(actor, item);
+      const roll = (live && !locked) ? activityRoll(actor, item) : null;
+      const combatant = actor.combatant;
+      const rolled = !!combatant && (combatant.initiative !== null) && (combatant.initiative !== undefined);
+      const flagged = combatant ? constellationName(actor, combatant.initiativeConstellation) : "";
+      const options = needsConstellation ? this.#constellationOptions(actor, pick) : [];
+      return {
+        uuid: actor.uuid,
+        id: actor.id,
+        name: actor.name,
+        img: actor.img,
+        owner,
+        live,
+        locked,
+        lockedReason,
+        fatigued: member.fatigued,
+        activity: {
+          id: valueOf(item),
+          name: item?.name ?? L("STARWROUGHT.Travel.noActivities"),
+          speed: travelWord(item),
+          effectiveSpeed: member.speed,
+          waiting: (locked && member.stored && (member.stored !== item)) ? member.stored.name : ""
+        },
+        options: ordered.map(a => ({ id: valueOf(a), name: a.name, speed: travelWord(a), selected: a === item })),
+        needsConstellation,
+        constellation: needsConstellation ? {
+          slug: pick,
+          name: pick ? constellationName(actor, pick) : "",
+          trained: options.filter(o => o.trained),
+          untrained: options.filter(o => !o.trained),
+          hint: F("STARWROUGHT.Travel.constellationHint", { name: actor.name, activity: item?.name ?? "" })
+        } : null,
+        initiative: {
+          slug: init.slug,
+          name: init.name,
+          fallback: init.fallback,
+          hint: init.fallback ? L("STARWROUGHT.Travel.initiativeFallbackHint") : L("STARWROUGHT.Travel.initiativeTagHint")
+        },
+        roll: roll ? {
+          ...roll,
+          label: F("STARWROUGHT.Travel.rollNow", { name: roll.name }),
+          hint: F("STARWROUGHT.Travel.rollNowHint", { name: roll.name, member: actor.name })
+        } : null,
+        warnings: activityWarnings(actor, item),
+        combatant: combatant ? {
+          rolled,
+          value: rolled ? combatant.initiative : null,
+          constellation: flagged,
+          hint: rolled
+            ? F("STARWROUGHT.Travel.combatRolledHint", { name: actor.name })
+            : F("STARWROUGHT.Travel.combatReadyHint", { name: actor.name, constellation: flagged })
+        } : null
+      };
+    });
+
+    const pace = travel.pacesetter;
+    const terrainOptions = Object.entries(SW.TERRAIN ?? {})
+      .map(([key, t]) => ({ key, label: L(t.label), selected: key === travel.terrain }));
+    const canBegin = isGM && !!canvas?.scene;
+    return {
+      rows,
+      hasActivities: activities.length > 0,
+      travel: {
+        feet: travel.feetPerMinute,
+        mph: travel.milesPerHour,
+        mpd: travel.milesPerDay,
+        ...travelUnits(travel),
+        pacesetter: pace
+          ? F("STARWROUGHT.Travel.pacesetter", { name: pace.actor.name, activity: pace.item?.name ?? "", speed: travelWord(pace.item) })
+          : L("STARWROUGHT.Travel.noSpeed"),
+        terrain: travel.terrain,
+        terrainLabel: L(SW.TERRAIN?.[travel.terrain]?.label ?? "STARWROUGHT.Travel.terrainNormal"),
+        terrainOptions,
+        difficult: travel.terrain !== "normal",
+        searching: travel.searching
+      },
+      canBegin,
+      beginTip: canBegin
+        ? F("STARWROUGHT.Travel.beginEncounterHint", { scene: canvas.scene.name })
+        : L("STARWROUGHT.Travel.beginNoScene")
+    };
+  }
+
+  /**
+   * The Constellations a member may Investigate with, as the Relevant Check picker offers them:
+   * the ones they have opened first (every entry of `system.constellations` but the Lore
+   * template, their Lores included), then every Constellation that ships (`enabledConstellations`,
+   * ruling 61) that they have not, Untrained being a real answer at +0. Each with its rank, and
+   * marked when it is the member's pick.
+   * @param {Actor} actor
+   * @param {string} pick  The slug stored on the character.
+   * @returns {Array<{slug: string, name: string, rank: string, rankLabel: string, trained: boolean, selected: boolean}>}
+   */
+  #constellationOptions(actor, pick) {
+    const rows = new Map();
+    for (const [slug, entry] of Object.entries(actor.system.constellations ?? {})) {
+      if (slug === "lore") continue;
+      rows.set(slug, { slug, name: entry.name, rank: entry.rank ?? "untrained" });
+    }
+    for (const meta of enabledConstellations()) {
+      if (!meta.slug || (meta.slug === "lore") || rows.has(meta.slug)) continue;
+      rows.set(meta.slug, { slug: meta.slug, name: meta.name, rank: "untrained" });
+    }
+    const order = SW.RANK_ORDER;
+    return [...rows.values()]
+      .sort((a, b) => (order.indexOf(b.rank) - order.indexOf(a.rank)) || a.name.localeCompare(b.name))
+      .map(r => ({
+        ...r,
+        rankLabel: L(SW.RANKS[r.rank]?.label ?? SW.RANKS.untrained.label),
+        trained: r.rank !== "untrained",
+        selected: r.slug === pick
+      }));
   }
 
   /* -------------------------------------------- */
@@ -556,7 +749,11 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
    * Listen for the members' changes: the Actor itself, its Items and Active Effects (Fatigued is
    * an effect; armor is an Item), and its deletion, which turns its row into a missing one.
    * Nothing here reads the change; it only asks for a redraw when the document is a member or
-   * belongs to one, and the redraw reads live data.
+   * belongs to one, and the redraw reads live data. Since 0.7.2 the same list holds the Combat
+   * hooks (a Combat made, changed or deleted, a member's Combatant made, changed or deleted, the
+   * viewed scene changing), which redraw the road and the grid, and a world action Item's change,
+   * which may be one of the road's Activities rewritten, so the cached list is dropped and the
+   * road redrawn. All released together in `_onClose`.
    */
   #registerMemberHooks() {
     const hooks = [];
@@ -564,10 +761,22 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const onEmbedded = doc => {
       const parent = doc?.parent;
       if ((parent?.documentName === "Actor") && this.#isMember(parent)) this.#queueRender(MEMBER_PARTS);
+      else if (!parent && (doc?.documentName === "Item") && (doc.type === "action")) {
+        invalidateExplorationActivities();
+        this.#queueRender(ROAD_PARTS);
+      }
     };
     hooks.push(["updateActor", Hooks.on("updateActor", onActor)]);
     hooks.push(["deleteActor", Hooks.on("deleteActor", onActor)]);
     for (const hook of MEMBER_DOCUMENT_HOOKS) hooks.push([hook, Hooks.on(hook, onEmbedded)]);
+
+    const onCombat = () => this.#queueRender(COMBAT_PARTS);
+    const onCombatant = combatant => {
+      // An unlinked token's Combatant carries a synthetic Actor; `actorId` is the member's either way.
+      if (this.#isMemberId(combatant?.actorId ?? combatant?.actor?.id)) this.#queueRender(COMBAT_PARTS);
+    };
+    for (const hook of COMBAT_HOOKS) hooks.push([hook, Hooks.on(hook, onCombat)]);
+    for (const hook of COMBATANT_HOOKS) hooks.push([hook, Hooks.on(hook, onCombatant)]);
     this.#memberHooks = hooks;
   }
 
@@ -580,6 +789,13 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   #isMember(actor) {
     const uuid = actor?.uuid;
     if (!uuid) return false;
+    return (this.document.system.members ?? []).some(m => m.uuid === uuid);
+  }
+
+  /** Is this world Actor id one of the party's members? A member is a world Actor, so its uuid is `Actor.<id>`. */
+  #isMemberId(id) {
+    if (!id) return false;
+    const uuid = `Actor.${id}`;
     return (this.document.system.members ?? []).some(m => m.uuid === uuid);
   }
 
@@ -732,7 +948,9 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /**
    * @inheritdoc
    * The quantity input on a loot row belongs to the Item, not the party, so it carries no `name`
-   * (the form never submits it) and is written here; everything else is the party's own form.
+   * (the form never submits it) and is written here; the GM's Activity and Constellation selects
+   * on a road row belong to the member the same way (0.7.2); everything else is the party's own
+   * form, the terrain select included.
    */
   _onChangeForm(formConfig, event) {
     const input = event.target;
@@ -740,7 +958,28 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       this.#onChangeQuantity(input).catch(err => console.error("STARWROUGHT | the loot quantity could not be written", err));
       return;
     }
+    if (input?.matches?.("select[data-activity], select[data-constellation]")) {
+      this.#onChangeRoad(input).catch(err => console.error("STARWROUGHT | the Activity could not be written", err));
+      return;
+    }
     return super._onChangeForm(formConfig, event);
+  }
+
+  /**
+   * The GM's selects on a road row (ruling 106): the member's Activity, or Investigate's
+   * Constellation, through `setActivity`, which writes the member and says the line. A refusal
+   * (the member Fatigued, an id the list does not know) writes nothing, so the road is redrawn to
+   * put the select back where the data is.
+   */
+  async #onChangeRoad(select) {
+    if (!game.user.isGM) return;
+    const actor = this.#memberFor(select);
+    if (!actor) return;
+    const change = select.hasAttribute("data-activity")
+      ? { activityId: String(select.value ?? "") }
+      : { constellation: String(select.value ?? "") };
+    const written = await setActivity(actor, change);
+    if (!written) this.#queueRender(ROAD_PARTS);
   }
 
   /** The GM's edit of a stack's count. Never below 0; the sheet redraws from the Item's own hook. */
@@ -990,11 +1229,171 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           ui.notifications.warn(L("STARWROUGHT.Notify.noCombatant"));
           return;
         }
-        return combat.rollInitiativeWithCheck(combatant.id, actor.system.initiative?.slug ?? SW.DEFENSES.awareness.slug);
+        // The Constellation the Combatant is flagged to roll (Begin the encounter's, ruling 105),
+        // Awareness when nothing flagged it; through 0.7.1 this passed Awareness and would have
+        // overridden the Activity (plan, risk 10).
+        return combat.rollInitiativeWithCheck(combatant.id, combatant.initiativeConstellation);
       }
       default:
         return actor.rollCheck(target.dataset.slug, { dialog });
     }
+  }
+
+  /* -------------------------------------------- */
+  /*  The road (parts 8 and 9, 0.7.2)             */
+  /* -------------------------------------------- */
+
+  /**
+   * An owner's Activity anchor (ruling 106): the picker dialog, since the sheet disables a form
+   * element for a user who cannot edit the party and a dialog's own form is never disabled. The
+   * GM has selects on the row instead and never reaches this.
+   */
+  static async #onPickActivity(event, target) {
+    const actor = this.#memberFor(target);
+    if (!actor) return;
+    if (!actor.testUserPermission(game.user, "OWNER")) {
+      ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+      return;
+    }
+    return this.#pickActivity(actor, { focus: "activity" });
+  }
+
+  /** An owner's Constellation anchor on an Investigate row: the same picker, opened on the Constellation. */
+  static async #onPickConstellation(event, target) {
+    const actor = this.#memberFor(target);
+    if (!actor) return;
+    if (!actor.testUserPermission(game.user, "OWNER")) {
+      ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+      return;
+    }
+    return this.#pickActivity(actor, { focus: "constellation" });
+  }
+
+  /**
+   * The picker: the Activity (Travel first, each with its Travel word) and, shown while the
+   * chosen Activity leaves a Constellation to the member (Investigate), the Constellation, from
+   * the member's opened Constellations and every one that ships. Refused with the reason while
+   * the member is Fatigued (ruling 101), before any dialog. Set ends in `setActivity`, which
+   * writes once and says the line.
+   * @param {Actor} actor
+   * @param {object} [options]
+   * @param {"activity"|"constellation"} [options.focus]  Which select takes focus.
+   * @returns {Promise<object|null>}
+   */
+  async #pickActivity(actor, { focus = "activity" } = {}) {
+    const activities = await explorationActivities();
+    if (!activities.length) {
+      ui.notifications.warn(L("STARWROUGHT.Travel.noActivities"));
+      return null;
+    }
+    const pick = activityOf(actor, activities);
+    if (pick.locked) {
+      ui.notifications.warn(pick.lockedReason);
+      return null;
+    }
+    const travelItem = travelActivity(activities);
+    const ordered = travelItem ? [travelItem, ...activities.filter(a => a !== travelItem)] : [...activities];
+    const valueOf = item => (item === travelItem) ? "" : item.id;
+    const current = String(actor.system.exploration?.constellation ?? "").trim();
+
+    const activityOptions = ordered.map(a => `<option value="${esc(valueOf(a))}" data-choice="${activityHasChoice(a) ? 1 : 0}"${a === pick.item ? " selected" : ""}>${esc(a.name)} (${esc(travelWord(a))})</option>`).join("");
+    const option = r => `<option value="${esc(r.slug)}"${r.selected ? " selected" : ""}>${esc(r.name)} · ${esc(r.rankLabel)}</option>`;
+    const rows = this.#constellationOptions(actor, current);
+    const trained = rows.filter(r => r.trained).map(option).join("");
+    const untrained = rows.filter(r => !r.trained).map(option).join("");
+    const constellationOptions = `<option value="">${esc(L("STARWROUGHT.Travel.constellationNone"))}</option>`
+      + (trained ? `<optgroup label="${esc(L("STARWROUGHT.Roll.relevantTrained"))}">${trained}</optgroup>` : "")
+      + (untrained ? `<optgroup label="${esc(L("STARWROUGHT.Roll.relevantUntrained"))}">${untrained}</optgroup>` : "");
+    const showConstellation = activityHasChoice(pick.item);
+
+    const answer = await DialogV2.wait({
+      window: { title: F("STARWROUGHT.Travel.pickTitle", { name: actor.name }), icon: "fa-solid fa-route" },
+      classes: ["starwrought", "sw-party-dialog"],
+      position: { width: 440 },
+      content: `<p>${esc(F("STARWROUGHT.Travel.pickIntro", { name: actor.name }))}</p>
+        <div class="form-group">
+          <label>${esc(L("STARWROUGHT.Travel.activity"))}</label>
+          <div class="form-fields"><select name="activity"${focus === "activity" ? " autofocus" : ""}>${activityOptions}</select></div>
+        </div>
+        <div class="form-group sw-road-dialog-constellation${showConstellation ? "" : " sw-road-dialog-hidden"}">
+          <label>${esc(L("STARWROUGHT.Travel.constellation"))}</label>
+          <div class="form-fields"><select name="constellation"${focus === "constellation" ? " autofocus" : ""}>${constellationOptions}</select></div>
+        </div>
+        <p class="sw-note">${esc(L("STARWROUGHT.Travel.pickHint"))}</p>`,
+      render: (renderEvent, dialog) => {
+        const root = dialog.element;
+        const activitySelect = root.querySelector("select[name='activity']");
+        const group = root.querySelector(".sw-road-dialog-constellation");
+        const update = () => {
+          const chosen = activitySelect?.selectedOptions?.[0];
+          group?.classList.toggle("sw-road-dialog-hidden", chosen?.dataset.choice !== "1");
+        };
+        activitySelect?.addEventListener("change", update);
+        update();
+      },
+      buttons: [
+        {
+          action: "set", label: "STARWROUGHT.Travel.pickButton", icon: "fa-solid fa-check", default: true,
+          callback: (clickEvent, button) => new foundry.applications.ux.FormDataExtended(button.form).object
+        },
+        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    if (!answer || (answer === "cancel")) return null;
+    return setActivity(actor, {
+      activityId: String(answer.activity ?? ""),
+      constellation: String(answer.constellation ?? "")
+    });
+  }
+
+  /**
+   * The Roll on a road row (ruling 107): the check-now Constellation as the member, with no
+   * Threshold, through the path Ask everyone's Roll takes (a Defense slug rolls as the Defense
+   * check, a Skill as a check; Search and Investigate say the GM applies the roll); Investigate's
+   * `choice` opens the member's Relevant Check picker on the chosen Constellation. Owner or GM;
+   * Shift-click skips the dialog, as the grid does.
+   */
+  static async #onActivityRoll(event, target) {
+    const actor = this.#memberFor(target);
+    if (!actor) return;
+    if (!actor.testUserPermission(game.user, "OWNER")) {
+      ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+      return;
+    }
+    const activities = await explorationActivities();
+    const pick = activityOf(actor, activities);
+    const roll = activityRoll(actor, pick.item);
+    if (!roll) return;
+    const dialog = !event.shiftKey;
+    if (roll.kind === "choice") {
+      return actor.rollRelevantCheck({ dialog, slug: String(actor.system.exploration?.constellation ?? "").trim() });
+    }
+    if (roll.kind === "defense") {
+      return actor.rollDefense(roll.key, { dialog, kind: "check", thresholdLabel: L("STARWROUGHT.Field.threshold") });
+    }
+    return actor.rollCheck(roll.slug, { dialog });
+  }
+
+  /** Say the plan (ruling 106): the GM's card of every member's Activity and the speed line. No confirm. */
+  static async #onSayThePlan() {
+    if (!game.user.isGM) return;
+    return sayThePlan(this.document);
+  }
+
+  /**
+   * Begin the encounter (ruling 105): the Combat on the viewed scene, the members' tokens as
+   * Combatants, the Initiative flags, the Defenders' shields, one card, nothing rolled. No
+   * confirm; the button is dimmed with the reason when no scene is viewed, and the helper says
+   * so again should the scene close between the render and the click.
+   */
+  static async #onBeginEncounter() {
+    if (!game.user.isGM) return;
+    if (!canvas?.scene) {
+      ui.notifications.warn(L("STARWROUGHT.Travel.noScene"));
+      return;
+    }
+    return beginEncounter(this.document);
   }
 
   /* -------------------------------------------- */

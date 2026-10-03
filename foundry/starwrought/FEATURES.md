@@ -659,8 +659,25 @@ card, and the silence on a Flare that was never lit, are unchanged.
 
 Awareness by default, with no level term and the helm's penalty inside it, or whatever you were
 actually doing: the "Roll Initiative by Activity" macro lets a player nominate the Constellation,
-and the roll swaps Awareness's two terms for the chosen Constellation's and keeps the rest.
-Adversaries do not roll; they carry an Initiative Threshold and the GM writes the order down.
+and the roll swaps Awareness's two terms for the chosen Constellation's and keeps the rest. Since
+0.7.2 the party sheet's Begin the encounter writes the same thing for the whole party at once (see
+The party, under Sheets; ruling 105): every member Combatant carries two flags,
+`initiativeConstellation`, the Constellation the member's Exploration Activity names (Awareness
+when it names none; Stealth for Avoid Notice, Athletics for Hustle, Guile for Look Harmless,
+Investigate's own pick), and `initiativeModifiers`, a list of typed modifiers with one +1
+Situation entry per Scout among the other members with a token on the scene ("Scout (Hrolda)"; a
+member the card names as having no token neither gives nor gets one), and every roll in the system
+reads both: the tracker's roll through `SwCombatant._getInitiativeFormula`, which since 0.7.2 asks
+the check engine for the very total the dialog would show (the flagged Constellation's terms, the
+sheet's Initiative adjustment, the helm, and the modifiers one per type at most, so two Scouts are
++1 and not +2); the "Roll Initiative by Activity" macro, which replaces the Constellation with the
+one the player nominates and writes it back to the flag, the Scouts' modifiers still applying since
+it passes none of its own; `rollInitiativeWithCheck`, whose
+Constellation and modifiers default to the flags and whose card names the Constellation in its
+subtitle; the character sheet's Roll Initiative, which passed Awareness through 0.7.1 and would
+have overridden the flag; and the Skills grid's Initiative cell. A Combatant that has already
+rolled is never rewritten by a second Begin. Adversaries do not roll; they carry an Initiative
+Threshold and the GM writes the order down.
 
 ### The grid, and Total Reach
 
@@ -1150,8 +1167,8 @@ are silent.
 95), GM-owned and Observer by default so every player can open it. The sheet is the GM's console
 and the players' window at once: one template set that branches on who is looking and on which
 members they own, as the character sheet's header does. The party stores only its own bookkeeping
-(the members, the session, the last Milestone award for Take back, the GM's notes, and since 0.7.1
-the purse and the loot Items) and reads
+(the members, the session, the last Milestone award for Take back, the GM's notes, since 0.7.1
+the purse and the loot Items, and since 0.7.2 the terrain the party is crossing) and reads
 everything about its members live at render, never copying a number off a character. It never does
 a member's arithmetic: every rule effect it offers (a Flare, a Hero Point, a rest, a Milestone, a
 check, an Initiative) runs on the member's own Actor through a method that already exists and
@@ -1159,8 +1176,10 @@ already posts its card, so the party adds buttons and a handful of cards, not a 
 engine. Its data model extends `TypeDataModel` directly, never `SwActorData`, so it has no Zones,
 Wounds, Vigor, stance or actions; a party is never a combatant, and nothing draws or counts its
 token (section 7). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
-phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; the road and Downtime
-are the plan's later phases and are not built.
+phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; phase 3 (0.7.2;
+rulings 101 to 107) is the road: each member's Exploration Activity, the party's Travel Speed, the
+Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity; Downtime is the
+plan's last phase and is not built.
 
 **The roster and status board.** Always open above the tabs, one row per member, every number on
 it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
@@ -1280,20 +1299,110 @@ members in one batch write (announced, so no Adjusted card doubles it), writes t
 to the purse and posts one card spoken by the party listing each share and what stayed. There is
 no Contribute: the GM types coin in, and who gets what beyond an equal share is the table's.
 
+**On the road** (0.7.2; plan, part 8; rulings 101, 102, 106 and 107). A third tab, after Skills
+and before Loot, open to players. Each member has an Exploration Activity, and the pick is the
+character's (ruling 106): `system.exploration { activity, constellation }` on the character, the
+compendium id of an Activity in the Actions pack's Exploration Mode folder ("" is Travel, the
+default) and, for Investigate, the slug of the Lore or Skill chosen. It is written directly by the
+member's owner or the GM (an owner may write their own Actor, so unlike a Take it needs no relay
+and no GM connected), announced with `swAnnounced` so the Adjusted card never doubles it, and said
+in one line spoken by the member ("Wren's Activity is now Search (Half)."; "Toric Investigates
+with Lore (Warfare)."). The Activity Items themselves carry what each Activity does, written by the
+pipeline from two positional columns on the roster's `explorationActions` rows (rulings 103 and
+104): `system.exploration { travel, check, initiative, effect }`, the Travel word, the
+Constellation the Activity rolls now (Search: Awareness; Look Harmless: Guile; Avoid Notice:
+Stealth; Investigate: the member's own pick), the Constellation it rolls for Initiative (Awareness
+unless the row says otherwise: Hustle Athletics, Look Harmless Guile, Avoid Notice Stealth,
+Investigate the pick), and an effect tag for the two Activities that do something at the start of
+an encounter rather than roll (scout, defend), so the panel reads the Item and holds no table of its
+own, and a row Mike adds needs no code unless it does something new. Avoid Notice, which P342 names
+and the Example of Play rolls while Table 95 has no row for it, is the eighth row and ships in the
+pack, the web app and the compendium docx ahead of the book (ruling 103; the proposal adds the row
+to Table 95). One row per member: portrait, name, the Activity select (the folder's Items in folder
+order, cached per session as the Basic Maneuvers are; a world action Item of the same name and
+category replaces the printed one), the Travel word, the Initiative Constellation the pick implies,
+the Constellation select for Investigate (the member's opened Constellations plus their Lores), the
+warnings in small amber type, the Roll button when the Activity rolls now, and the member's
+Combatant state while a Combat holds them (the number once rolled; "ready: Stealth" when flagged
+and not yet rolled). **The warnings** are read from live data and never enforced (ruling 107):
+Look Harmless with a held weapon whose reach is above 0, named, or worn armor whose Load totals
+more than 1, with the total (the Activity's Requirements); Investigate with no Constellation chosen;
+a Constellation left to the member's pick for Initiative with no pick made, which falls back to
+Awareness. **The Roll button** (the member's owner or the GM) rolls the check-now Constellation as
+the member with no Threshold through the path Ask everyone uses, a Defense as the Defense check and
+a Skill as a check, so Search posts the ordinary card and the GM applies the total; Investigate
+opens the Relevant Check picker on the chosen Constellation (`rollRelevantCheck` takes a `slug` to
+preselect since 0.7.2). A player's own rows are live and the others read-only; every control a
+player may use is an anchor rather than a form element, since DocumentSheetV2 disables form
+elements for an Observer. The GM gets working selects on every member.
+
+**The party's Travel Speed** (ruling 102), the tab's top line, display only: each member's Speed
+(`system.moveSpeed`, so a Speed adjustment counts) times their Activity's multiplier (Full 1, Half
+½, Double 2), the lowest of those times the terrain (normal 1, Difficult ½, Greater Difficult ⅓;
+PHB P343 to P344), through the book's three formulae (`SW.TRAVEL`: feet a minute × 40, rounded;
+miles an hour ÷ 2, floored as the character's own figure is; miles a day × 4, rounded). "120 feet
+a minute · 1 mile an hour · 12 miles a day", then "Wren sets the pace (Search, Half)" naming the
+pacesetter (the lowest effective Speed; the first on ties), the ten-minutes-per-location note while
+anyone Searches (P346), and the terrain, a select for the GM (`system.travel.terrain`, the party's
+one field for this phase) and a word for a player. Nothing moves a token at any pace (section 7),
+and a party with no members prints blanks and zeros.
+
+**The Fatigued gate** (ruling 101). The book's Fatigued row says "can't use Exploration Mode
+Activities", which read literally stops the party once a fighter in plate is winded, so a Fatigued
+member Travels and does nothing else: while their Fatigued is above 0 their select is locked to
+Travel with the reason as its tooltip ("Hrolda is Fatigued 2 and can only Travel"), the speed line
+and the cards read them as Travelling, a pick of anything else is refused with a notice before it
+is written, and the stored pick is left as it was, so it comes back the moment the Fatigue ends
+(ten minutes' rest by the Fatigued card's button, or a night's rest; ruling 81). The proposal's
+sentence says so in the book.
+
+**Say the plan** (GM only; the plan's risk 12). One public card spoken by the party: a line per
+member ("Wren: Search (Half); Initiative: Awareness"; "Toric: Investigate (Half), with Lore
+(Warfare); Initiative: Lore (Warfare)") with that member's warnings dim beneath, then the speed
+line ("The party moves at 120 feet a minute, 1 mile an hour, 12 miles a day over Difficult
+terrain: Wren sets the pace (Search, Half).") and the ten-minutes line while anyone Searches. No
+confirm. A pick posts one line and Say the plan is the record; should the one line prove too many,
+the pick goes quiet and this card stands alone.
+
+**Begin the encounter** (0.7.2; plan, part 9; ruling 105). GM only, with a scene viewed (the button
+is dimmed with a tooltip otherwise). It finds an unstarted Combat on that scene or creates an
+active one, adds every member's tokens on the scene as Combatants (one per token, as the tracker
+does; a Combatant already there is reused; a member with no token is named in the card and
+skipped), and writes two flags on each member Combatant: `initiativeConstellation`, the
+Constellation the member's Activity names for Initiative (Awareness when it names none;
+Investigate's pick, or Awareness with a note when none is chosen), and `initiativeModifiers`, one
++1 Situation entry per Scout among the other members present ("Scout (Hrolda)"; two Scouts give
+each other one and everyone else two of the same type, of which one applies, as the book's stacking
+rule says; a member with no token on the scene neither gives nor gets one, and an absent Defender's
+shield stays as it was). A Combatant that has already rolled is left alone, its flags not rewritten, and named. A
+Defender's held shield begins Raised: written with no action spent and no card of its own (the
+Raise a Shield card would print a cost), and lowered at the Defender's next Opportunity as any
+raised shield is. Then one public card spoken by the party: "The encounter begins.", a line per
+member ("Wren (Avoid Notice) rolls Stealth for Initiative, +1 Situation from Hrolda."), "Hrolda
+may Step ⓿ on rolling Initiative." for a Scout, for Look Harmless the GM's comparison line with the
+Activity's four degrees printed from the Item, to be applied by hand against each enemy's Awareness
+Threshold (adversary Thresholds never reach a player), and, in the card's notes, for an
+Investigator "Toric rolls for Investigate only if the encounter is related to it: the GM's call,
+before the die." Nothing rolls here: players roll their own Initiative from
+the tracker or the sheet, the GM rolls for the absent, and every roll reads the flags (see
+Initiative, under What the system works out for you).
+
 **What the player sees, and what the GM sees.** The GM sees everything and holds every party
 write: membership, Begin session, the awards and corrections, the night, the Milestone and Take
 back, the Flare plus, Remove, the Notes tab, the loot's quantities, Give to and Delete, the purse
-and Split, Ask everyone. A player sees the same roster, the same grid and the same loot,
+and Split, Ask everyone, and since 0.7.2 the terrain, any member's Activity, Say the plan and
+Begin the encounter. A player sees the same roster, the same grid, the same loot and the same road,
 Thresholds included (ruling 95; a world setting is one line if the table objects, and adversaries'
 Thresholds never appear on the party sheet), read-only but for a few live things: portrait clicks
 on any member, the Flare chips on a character they own (a click puts one out through
 `toggleFlare`, which posts its card), the Spent control on their own Deferred badge, Take on a
-loot row when they own a member, a drag of their own gear onto the party, and the Roll button
-with their member's name on an Ask everyone card; grid
+loot row when they own a member, a drag of their own gear onto the party, the Roll button
+with their member's name on an Ask everyone card, and on the On the road tab the Activity and
+Investigate Constellation of a member they own and that member's Activity Roll (ruling 106); grid
 cells roll only for members they own, and a click on another member's cell does nothing. A player
 who owns no member sees the board and an empty-state line. Every action handler re-checks
-permission before writing (the GM for party writes; the actor's owner for a put-out Flare or a
-Spent; and the relay checks a Take or Give again on the GM's client), since ApplicationV2 actions
+permission before writing (the GM for party writes; the actor's owner for a put-out Flare, a
+Spent or an Activity pick; and the relay checks a Take or Give again on the GM's client), since ApplicationV2 actions
 fire regardless of editability, and every write to a character
 goes through the same `swAnnounced` path the rest card uses, so the Adjusted card never doubles a
 party card. Observer ownership means every player can read the document, the Notes tab, the loot
@@ -1307,15 +1416,21 @@ in a Flared Constellation: Melee, Athletics."; "Wren reaches Milestone 3 of 3: n
 Flared, so the point is Deferred: spend it the instant one Flares (Deferred held: 1)."; "Kessa
 reaches the 4th Milestone: level 3. Vigor 36 to 45. A Comet: a Talent Point for any Constellation,
 Flared or not."); Take back; the party's line after the night; the Split card listing the shares
-and the remainder (0.7.1); and the Ask everyone card ("Everyone roll Awareness.") with its Roll
-buttons. Spoken by the member: a Hero
+and the remainder (0.7.1); the Ask everyone card ("Everyone roll Awareness.") with its Roll
+buttons; and, since 0.7.2, Say the plan (a line per member, the warnings, the speed line) and
+Begin the encounter ("The encounter begins.", who rolls what for Initiative and from whom the +1
+comes, the Scout's Step, Look Harmless's degrees for the GM, Investigate's "if related", and who
+had no token or had already rolled). Spoken by the member: a Hero
 Point awarded ("The GM awards Hrolda a Hero Point: carrying Toric out of the fire (2 of 3).") or
 corrected ("Hrolda's Hero Points corrected to 1."); a Deferred point Spent; each member's own rest
 card; the Flare card `toggleFlare` already posts, with "awarded by the GM" and the reason when
-the GM lit it from the roster; and, since 0.7.1, under a title naming the direction ("From the
+the GM lit it from the roster; since 0.7.1, under a title naming the direction ("From the
 party's loot", "To the party's loot"), a Take ("Hrolda takes Longsword."; "Wren takes 6 × Arrows
 (14 left)."), a Give ("Hrolda gives 3 × Torch.", the Item's name as it is) and the GM's Give to
-("Toric is given a Dagger."). Membership, a Remove, the GM's notes, and the GM's
+("Toric is given a Dagger."); and, since 0.7.2, an Activity pick ("Wren's Activity is now Search
+(Half)."; "Toric Investigates with Lore (Warfare).") and the ordinary check card an Activity's
+Roll posts, with no Threshold. Membership, a Remove, the GM's notes, the terrain, a Defender's
+shield raised by Begin the encounter, and the GM's
 own drops, edits and deletes on the loot post nothing.
 
 **What re-renders it.** The sheet registers the member hooks once when it opens and lets them go
@@ -1325,7 +1440,10 @@ and Frightened are effects). It re-renders on a timer of about 150 ms, never a
 requestAnimationFrame latch, and only when the changed document is a member or belongs to one, so
 six members and the attack flow running do not redraw the board on every pip. Since 0.7.1 the
 party's own Item hooks and its own `updateActor` (a Take served on the GM's client, a Give, the
-purse edited or Split) redraw the loot part on the same timer. Nothing
+purse edited or Split) redraw the loot part on the same timer, and since 0.7.2 the road part
+redraws on the member hooks (a pick is an `updateActor` on the member; Fatigued is an effect), on
+the party's own update (the terrain) and on the Combat hooks (a Combat or a Combatant created,
+changed or deleted), so a member's Initiative appears on their row as it is rolled. Nothing
 member-dependent is computed in the party's own `prepareDerivedData`; it is all computed at render
 from the resolved members, because one Actor's derived data must not depend on another's prepare
 order.
@@ -1515,7 +1633,19 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   to the party run on the active GM's client, as damage, rerolls and Expose do, because an Observer
   cannot write the party; with no GM connected the controls say so and nothing is written, and a
   party Item dragged onto a player's sheet is refused rather than copied. The GM's own moves never
-  touch the socket.
+  touch the socket. An Activity pick (0.7.2) needs none: it is a write to the member's own Actor.
+- **The road is a line and a card, not movement** (0.7.2; rulings 101, 102, 105 and 107). The
+  party's Travel Speed is display only and the terrain is a select and a word; nothing moves a
+  token at any pace. The Fatigued gate locks a member's Activity to Travel and refuses a pick of
+  anything else, and that is the whole of what the book's Fatigued row does here. Look Harmless's
+  Requirements (a held weapon with Reach, worn Load above 1) are a warning, never a refusal, and
+  its degrees are printed for the GM to compare by hand against each enemy's Awareness Threshold,
+  since "each enemy you are Observed to" is a judgement about a line between two tokens; whether an
+  Investigation was related to the encounter is the GM's call, made before the die; the Scout's
+  Step ⓿ is announced, not taken. Begin the encounter rolls nothing: players roll their own
+  Initiative, the GM rolls for the absent, and no adversary Threshold reaches a player. The book's
+  sentences for all of this (the party's Travel Speed, the Fatigued row, Initiative when Activities
+  differ, the Avoid Notice row) are a proposal for Mike to accept, not yet an edition.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

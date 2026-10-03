@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.7.1";
+export const SYSTEM_VERSION = "0.7.2";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -593,6 +593,79 @@ export const MILESTONES_PER_LEVEL = 3;
  * everyone posts one party card with a Roll button per member for its owner or the GM (100).
  */
 export const PARTY_TYPE = "party";
+
+/* -------------------------------------------- */
+/*  On the road (0.7.2)                         */
+/* -------------------------------------------- */
+
+/**
+ * Phase 3 of the Party Sheet (party-sheet-plan.md, parts 8 and 9; rulings 101 to 107): the
+ * Exploration Mode Activity each character is doing, the party's Travel Speed, and Initiative by
+ * Activity when the encounter begins. The Activity data itself is content, not code: two
+ * positional columns on the roster's `explorationActions` rows (the Constellation the Activity
+ * rolls now, and the one it rolls for Initiative, each a name as the trees print it, blank, or
+ * ACTIVITY_CHOICE for the member's own pick), which `assets/build_foundry.mjs` writes onto the
+ * Activity Item as `system.exploration` and `system.check` (ruling 104). What follows here is the
+ * handful of words the book uses that the data only names. Nothing in it is enforced: a Fatigued
+ * character's select locks to Travel and the stored pick waits (ruling 101), the party's speed is
+ * a line of text and no token moves (ruling 102), and a Scout's Step is announced and not taken
+ * (ruling 105).
+ */
+
+/**
+ * What an Activity does to Travel Speed (PHB v4.15, Exploration Mode: "Exploration Mode Activities
+ * (such as Avoid Notice) halve it, except Hustle, which doubles it"; Travel is the full figure).
+ * Keyed by the roster row's Speed word, lowercased; the Activity Item derives `multiplier` from it,
+ * and the party's Travel Speed is the lowest member's Speed × multiplier, through the book's three
+ * formulae in TRAVEL (ruling 102).
+ */
+export const ACTIVITY_SPEEDS = Object.freeze({
+  full: { label: "STARWROUGHT.Travel.full", multiplier: 1 },
+  half: { label: "STARWROUGHT.Travel.half", multiplier: 0.5 },
+  double: { label: "STARWROUGHT.Travel.double", multiplier: 2 }
+});
+
+/**
+ * Terrain (PHB v4.15, P343 to P344: "Difficult Terrain halves it; Greater Difficult Terrain cuts it
+ * to one-third"). A select on the party (`system.travel.terrain`) and a word on the card, display
+ * only (ruling 102).
+ */
+export const TERRAIN = Object.freeze({
+  normal: { label: "STARWROUGHT.Travel.terrainNormal", multiplier: 1 },
+  difficult: { label: "STARWROUGHT.Travel.terrainDifficult", multiplier: 0.5 },
+  greater: { label: "STARWROUGHT.Travel.terrainGreater", multiplier: 1 / 3 }
+});
+
+/**
+ * What Begin the encounter does for an Activity beyond its Initiative Constellation (ruling 105).
+ * build_foundry.mjs sets the tag from the slug of the roster row's name, so Scout and Defend carry
+ * one and every other row carries "": a row Mike adds needs no code unless it does something new
+ * (ruling 104). `scout`: every OTHER member's Combatant gets +1 Situation to Initiative
+ * (SCOUT_INITIATIVE_BONUS) and the Scout may Step ⓿ on rolling it, which the card says and
+ * nothing moves. `defend`: the held shield begins Raised, no action spent and no card of its own;
+ * it comes down at the Defender's first Opportunity as any raised shield does, which is what
+ * "begins Raised" buys.
+ */
+export const EXPLORATION_EFFECTS = Object.freeze({
+  scout: { label: "STARWROUGHT.Travel.effectScout" },
+  defend: { label: "STARWROUGHT.Travel.effectDefend" }
+});
+
+/**
+ * Scout (PHB v4.15, Table 95): "Every ally gains a +1 Situation bonus to initiative". Written onto
+ * each other member's Combatant as an `initiativeModifiers` entry of type "situation", one per
+ * Scout; two Scouts give each other one and everyone else two of the same type, of which one
+ * applies, as the stacking rule in BONUS_TYPES says (ruling 105).
+ */
+export const SCOUT_INITIATIVE_BONUS = 1;
+
+/**
+ * The token the two roster columns use for "the member's own pick": Investigate rolls the Lore or
+ * Skill the character chose (`system.exploration.constellation`) now and for Initiative. The
+ * builder writes it through as is; Begin the encounter resolves it against the character's pick,
+ * Awareness when there is none, before writing the Combatant's flag (ruling 105).
+ */
+export const ACTIVITY_CHOICE = "choice";
 
 /* -------------------------------------------- */
 /*  Actions: six a round                        */

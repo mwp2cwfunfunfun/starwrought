@@ -27,6 +27,17 @@
  * only the member's owner (or the GM) can press, the Threshold optional and hidden from players
  * unless the GM shows it. The GM's own moves live here (Give to, Split); a player's Take or Give
  * runs on the active GM's client through documents/party-socket.mjs (rulings 97 and 98).
+ *
+ * Phase 3 (0.7.2; plan, parts 8 and 9): the road. 101 a Fatigued character Travels and does
+ * nothing else (the Activity locks to Travel with the reason; the stored pick waits); 102 the
+ * party's Travel Speed is the slowest member's after their Activity, times the terrain, display
+ * only; 105 Begin the encounter writes Initiative by Activity onto the Combatants (the
+ * Constellation, the Scout's +1 Situation for every other member, a Defender's shield Raised with
+ * no action spent) and rolls nothing; 106 the pick is the character's, written by its owner or the
+ * GM directly and said once by the member; 107 an Activity's own roll goes through the member's
+ * check with no Threshold. What an Activity rolls now and for Initiative, its Travel word and its
+ * effect are read from the action Item's `system.exploration`, which the pipeline writes from the
+ * roster's two positional columns (ruling 104): nothing here is a table of Activity names.
  */
 
 import * as SW from "../config.mjs";
@@ -881,4 +892,641 @@ export async function rollAskedCheck(message, flags, button) {
   const slug = button.dataset.slug || flags?.slug;
   if (!slug) return null;
   return actor.rollCheck(slug, options);
+}
+
+/* -------------------------------------------- */
+/*  The road (parts 8 and 9, 0.7.2)             */
+/* -------------------------------------------- */
+
+/**
+ * The compendium category of an Exploration Mode Activity, as `build_foundry.mjs` writes it on the
+ * action Item (the folder of the same name in the Actions pack is the book's Table 95) and as the
+ * action data model derives `isExploration` from it since 0.7.2. Read here only for an Item the
+ * model has not flagged.
+ */
+const EXPLORATION_CATEGORY = "Exploration Mode";
+
+/**
+ * The Activities the sheet knows by name, as `SW.slugify` spells them, because the book writes
+ * what they do in prose rather than in a column (ruling 104): Look Harmless's Requirements (a held
+ * weapon with Reach, worn Load above 1) are a warning drawn from live data and never a refusal
+ * (ruling 107); Search is what holds a location to ten minutes (P346) and the party to Half;
+ * Investigate is the one whose chat line reads "Investigates with"; Travel is the default row, the
+ * one "" stands for on the character. Everything else an Activity does (its Travel word, what it
+ * rolls now and for Initiative, the Scout's and the Defender's effect) is read from
+ * `system.exploration` on the Item, so a row Mike adds needs no code here unless it does
+ * something new.
+ */
+const LOOK_HARMLESS = "look-harmless";
+const SEARCH = "search";
+const INVESTIGATE = "investigate";
+const TRAVEL = "travel";
+
+/**
+ * The two flags on a Combatant (`flags.starwrought.*`) that Begin the encounter writes and every
+ * Initiative roll in the system reads (ruling 105): the Constellation to roll, and the typed
+ * modifiers to add (one Scout entry per other Scout, all +1 Situation, of which one applies).
+ */
+const FLAG_INITIATIVE_CONSTELLATION = "initiativeConstellation";
+const FLAG_INITIATIVE_MODIFIERS = "initiativeModifiers";
+
+/** The pipeline's `effect` tags (SW.EXPLORATION_EFFECTS), named once. */
+const EFFECT_SCOUT = "scout";
+const EFFECT_DEFEND = "defend";
+
+let explorationCache = null;
+
+/** Is this action Item an Exploration Mode Activity? The model's flag when it carries one, the category otherwise. */
+function isExplorationAction(item) {
+  if (!item || (item.type !== "action")) return false;
+  return item.system.isExploration ?? (item.system.category === EXPLORATION_CATEGORY);
+}
+
+/**
+ * The Exploration Mode Activities (Table 95): the Actions pack's "Exploration Mode" folder, in
+ * folder order, then the Items' own sort, then by name, cached once per session as
+ * `loadBasicActions` caches the Basic Actions (helpers/content.mjs). A world action Item of the
+ * same name in the same category replaces the printed one and keeps its place, so a GM's rewrite
+ * wins, and a world-only addition goes after the book. These are unowned Items: nothing is copied
+ * to a character, the pick is an id on the character (ruling 106).
+ * @returns {Promise<Item[]>}
+ */
+export async function explorationActivities() {
+  if (explorationCache) return explorationCache;
+  const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
+  const printed = pack ? (await pack.getDocuments()).filter(isExplorationAction) : [];
+  const key = item => item.name.trim().toLowerCase();
+  const place = new Map(printed.map(i => [key(i), Number(i.folder?.sort) || 0]));
+  const byName = new Map(printed.map(i => [key(i), i]));
+  for (const item of game.items ?? []) {
+    if (isExplorationAction(item)) byName.set(key(item), item);
+  }
+  const order = item => place.get(key(item)) ?? 1000;
+  explorationCache = [...byName.values()].sort((a, b) =>
+    (order(a) - order(b))
+    || ((Number(a.sort) || 0) - (Number(b.sort) || 0))
+    || a.name.localeCompare(b.name));
+  return explorationCache;
+}
+
+/** Forget the cached Activities, so the next render reads the world again (a world action Item changed). */
+export function invalidateExplorationActivities() {
+  explorationCache = null;
+}
+
+/**
+ * The `system.exploration` block of an Activity, with the model's own defaults for an Item that
+ * lacks one (a world Item written by hand): Full, nothing rolled now, Awareness for Initiative,
+ * no effect. A named check-now Constellation is also read from `system.check`, which the pipeline
+ * writes beside it, so an Item carrying only that still rolls.
+ * @param {Item|null} item
+ * @returns {{travel: string, check: string, initiative: string, effect: string}}
+ */
+export function explorationOf(item) {
+  const ex = item?.system?.exploration ?? {};
+  const check = item?.system?.check;
+  return {
+    travel: ex.travel || "full",
+    check: ex.check || ((check?.enabled && check?.constellation) ? String(check.constellation) : ""),
+    initiative: ex.initiative || "",
+    effect: ex.effect || ""
+  };
+}
+
+/** The Activity's Travel word (Full, Half, Double), localized. */
+export function travelWord(item) {
+  return L(SW.ACTIVITY_SPEEDS?.[explorationOf(item).travel]?.label ?? "STARWROUGHT.Travel.full");
+}
+
+/** The Activity's Speed multiplier (Full 1, Half one half, Double 2). */
+export function travelMultiplier(item) {
+  return Number(SW.ACTIVITY_SPEEDS?.[explorationOf(item).travel]?.multiplier) || 1;
+}
+
+/** An Activity's name as a slug, for the four the book writes in prose. */
+function activitySlug(item) {
+  return item ? SW.slugify(item.name) : "";
+}
+
+/** Does this Activity leave a Constellation to the member's own pick, now or for Initiative? */
+export function activityHasChoice(item) {
+  const ex = explorationOf(item);
+  return (ex.check === SW.ACTIVITY_CHOICE) || (ex.initiative === SW.ACTIVITY_CHOICE);
+}
+
+/**
+ * The default Activity, the one "" stands for on the character: the row named Travel; failing
+ * that, a Full row that rolls nothing and does nothing; failing that, the first row. Null with no
+ * Activities at all (an unbuilt pack).
+ * @param {Item[]} activities
+ * @returns {Item|null}
+ */
+export function travelActivity(activities) {
+  const list = Array.isArray(activities) ? activities : [];
+  if (!list.length) return null;
+  return list.find(a => activitySlug(a) === TRAVEL)
+    ?? list.find(a => {
+      const ex = explorationOf(a);
+      return (ex.travel === "full") && !ex.check && !ex.effect;
+    })
+    ?? list[0];
+}
+
+/**
+ * The member's Activity, resolved from `system.exploration.activity` (ruling 106): "" or an id
+ * the list does not know is Travel. While the member is Fatigued the Activity IS Travel and the
+ * row is locked with the reason (ruling 101): the book's Fatigued row says "can't use Exploration
+ * Mode Activities", and read literally the party cannot move once a fighter in plate is winded,
+ * so Travel stays open and nothing else does. The stored pick is left as it was and comes back
+ * when the Fatigue ends (ten minutes' rest, ruling 81); `stored` says what is waiting.
+ * @param {Actor} actor
+ * @param {Item[]} activities
+ * @returns {{item: Item|null, stored: Item|null, locked: boolean, lockedReason: string, fatigued: number}}
+ */
+export function activityOf(actor, activities) {
+  const list = Array.isArray(activities) ? activities : [];
+  const travel = travelActivity(list);
+  const id = String(actor?.system?.exploration?.activity ?? "").trim();
+  let stored = id ? (list.find(a => a.id === id) ?? null) : null;
+  if (id && !stored) {
+    // A compendium id stored before the GM wrote a world Item of the same name: the pack's index
+    // still knows the name, and the name finds the replacement.
+    const name = game.packs.get(`${SW.SYSTEM_ID}.actions`)?.index.get(id)?.name;
+    if (name) stored = list.find(a => a.name.trim().toLowerCase() === name.trim().toLowerCase()) ?? null;
+  }
+  stored ??= travel;
+  const fatigued = Number(actor?.conditionValue?.("fatigued")) || 0;
+  if (fatigued > 0) {
+    let reason = F("STARWROUGHT.Travel.fatiguedLock", { name: actor.name, n: fatigued });
+    if (stored && travel && (stored !== travel)) reason += ` ${F("STARWROUGHT.Travel.fatiguedLockStored", { activity: stored.name })}`;
+    return { item: travel, stored, locked: true, lockedReason: reason, fatigued };
+  }
+  return { item: stored, stored, locked: false, lockedReason: "", fatigued: 0 };
+}
+
+/**
+ * A Constellation's name as the member's own data spells it, a Defense's label for one of the
+ * four, the content index's name otherwise, and the slug when nothing knows it.
+ * @param {Actor|null} actor
+ * @param {string} slug
+ * @returns {string}
+ */
+export function constellationName(actor, slug) {
+  if (!slug) return "";
+  const own = actor?.system?.constellations?.[slug]?.name;
+  if (own) return own;
+  const def = Object.values(SW.DEFENSES).find(d => d.slug === slug);
+  if (def) return L(def.label);
+  return SW.getConstellation(slug)?.name ?? slug;
+}
+
+/**
+ * What the member rolls for Initiative under this Activity (PHB P323: Awareness, or another
+ * Constellation by Activity): the Item's `exploration.initiative` ("" is Awareness; `choice` is
+ * the member's own pick, Awareness until one is made, with `fallback` saying so).
+ * @param {Actor} actor
+ * @param {Item|null} item
+ * @returns {{slug: string, name: string, choice: boolean, fallback: boolean}}
+ */
+export function initiativeFor(actor, item) {
+  const awareness = SW.DEFENSES.awareness.slug;
+  const named = explorationOf(item).initiative;
+  if (!named) return { slug: awareness, name: constellationName(actor, awareness), choice: false, fallback: false };
+  if (named === SW.ACTIVITY_CHOICE) {
+    const pick = memberPick(actor);
+    const slug = pick || awareness;
+    return { slug, name: constellationName(actor, slug), choice: true, fallback: !pick };
+  }
+  return { slug: named, name: constellationName(actor, named), choice: false, fallback: false };
+}
+
+/**
+ * Is this slug a Constellation anyone can name: one the character has opened, one the registry
+ * knows (every shipping Constellation, enabled or not, and the four Defenses, so an Untrained pick
+ * at +0 is a real answer), or a Lore the character holds? Anything else is a stale pick (a Lore
+ * deleted since it was chosen, a renamed Constellation), and `SW.getConstellation` would otherwise
+ * synthesize a name and Might for it and roll it without a word (review, 0.7.2).
+ * @param {Actor} actor
+ * @param {string} slug
+ * @returns {boolean}
+ */
+export function knownConstellation(actor, slug) {
+  if (!slug) return false;
+  if (actor?.system?.constellations?.[slug]) return true;
+  if (SW.constellations[slug]) return true;
+  return Object.values(SW.DEFENSES).some(d => d.slug === slug);
+}
+
+/** The member's own pick (Investigate's Lore or Skill), or "" when none is made or it is stale. */
+export function memberPick(actor) {
+  const pick = String(actor?.system?.exploration?.constellation ?? "").trim();
+  return knownConstellation(actor, pick) ? pick : "";
+}
+
+/**
+ * What the member rolls NOW under this Activity, if anything (ruling 107): the Item's
+ * `exploration.check`. A Defense's slug rolls as the Defense check (Search's Awareness, as Ask
+ * everyone rolls a Defense: a plain check against a Threshold the GM holds, never an answer to an
+ * Attack), any other slug as a check, and `choice` opens the Relevant Check picker on the member's
+ * pick. Null when the Activity rolls nothing now.
+ * @param {Actor} actor
+ * @param {Item|null} item
+ * @returns {{kind: "check"|"defense"|"choice", slug: string, key: string, name: string}|null}
+ */
+export function activityRoll(actor, item) {
+  const check = explorationOf(item).check;
+  if (!check) return null;
+  if (check === SW.ACTIVITY_CHOICE) {
+    const pick = memberPick(actor);
+    return { kind: "choice", slug: pick, key: "", name: pick ? constellationName(actor, pick) : L("STARWROUGHT.Roll.relevantCheck") };
+  }
+  const key = Object.keys(SW.DEFENSES).find(k => SW.DEFENSES[k].slug === check) ?? "";
+  return { kind: key ? "defense" : "check", slug: check, key, name: constellationName(actor, check) };
+}
+
+/**
+ * The warnings a row shows, read from live data and never enforced (ruling 107): Look Harmless's
+ * Requirements, "You wield no weapon with a Reach greater than Adjacent, and your worn armor
+ * totals Load 1 or less", as a held weapon whose `system.reach` is above 0 (the data writes
+ * Adjacent as 0 and a Shortsword as 2), named with its Reach, and the worn pieces' Load summed
+ * when it passes 1; an Activity whose roll is the member's pick with no pick made; and a pick
+ * left blank where only Initiative wanted one (Awareness until then). Localized strings, in the
+ * order the row prints them.
+ * @param {Actor} actor
+ * @param {Item|null} item
+ * @returns {string[]}
+ */
+export function activityWarnings(actor, item) {
+  const warnings = [];
+  if (!actor || !item) return warnings;
+  const ex = explorationOf(item);
+  if (activitySlug(item) === LOOK_HARMLESS) {
+    const reaching = actor.items.filter(i => (i.type === "weapon") && i.system.held && ((Number(i.system.reach) || 0) > 0));
+    for (const weapon of reaching) {
+      warnings.push(F("STARWROUGHT.Travel.warnReach", { weapon: weapon.name, reach: Number(weapon.system.reach) || 0 }));
+    }
+    const load = Object.values(actor.system.worn ?? {}).filter(Boolean)
+      .reduce((sum, piece) => sum + (Number(piece.system?.load) || 0), 0);
+    if (load > 1) warnings.push(F("STARWROUGHT.Travel.warnLoad", { load }));
+  }
+  // A stale pick (a Lore since deleted) counts as none, so the row says so rather than rolling it.
+  const pick = memberPick(actor);
+  if (!pick) {
+    if (ex.check === SW.ACTIVITY_CHOICE) warnings.push(F("STARWROUGHT.Travel.warnNoConstellation", { activity: item.name }));
+    else if (ex.initiative === SW.ACTIVITY_CHOICE) warnings.push(F("STARWROUGHT.Travel.warnInitiativeFallback", { activity: item.name }));
+  }
+  return warnings;
+}
+
+/**
+ * Set a member's Activity, its Constellation, or both (ruling 106). The owner or the GM, directly:
+ * an owner may write their own Actor, so there is no relay. `activityId` is the Item's id, "" for
+ * Travel, or undefined to keep what is stored; `constellation` is a slug, "" to clear, or
+ * undefined to keep it, and it is cleared when the Activity names its own Constellations (the
+ * pick means nothing to Search). Refused with a notice while the member is Fatigued and the
+ * Activity is not Travel (ruling 101). Travel is stored as "" so the default never depends on an
+ * id. One write with `{ swAnnounced: true }`, then ONE line spoken by the member: "{name}'s
+ * Activity is now Search (Half)." or, when only the Constellation moved, "{name} Investigates
+ * with Lore (Warfare)." (risk 12: if a line a pick is too many, this goes quiet and Say the plan
+ * is the record). Nothing written and nothing said when nothing changed.
+ * @param {Actor} actor
+ * @param {object} [change]
+ * @param {string} [change.activityId]
+ * @param {string} [change.constellation]
+ * @returns {Promise<{activity: string, constellation: string, item: Item|null}|null>}
+ */
+export async function setActivity(actor, { activityId, constellation } = {}) {
+  if (!actor || (actor.type !== "character")) return null;
+  if (!actor.testUserPermission(game.user, "OWNER")) {
+    ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+    return null;
+  }
+  const activities = await explorationActivities();
+  const travel = travelActivity(activities);
+  const current = actor.system.exploration ?? { activity: "", constellation: "" };
+  const before = activityOf(actor, activities).stored ?? travel;
+
+  let item = before;
+  if (activityId !== undefined) {
+    const id = String(activityId ?? "").trim();
+    item = id ? (activities.find(a => a.id === id) ?? null) : travel;
+    if (!item) {
+      ui.notifications.warn(L("STARWROUGHT.Travel.unknownActivity"));
+      return null;
+    }
+  }
+  let slug = String(current.constellation ?? "").trim();
+  if (constellation !== undefined) slug = String(constellation ?? "").trim();
+  if (!activityHasChoice(item)) slug = "";
+
+  const fatigued = Number(actor.conditionValue?.("fatigued")) || 0;
+  if ((fatigued > 0) && item && travel && (item !== travel)) {
+    ui.notifications.warn(F("STARWROUGHT.Travel.fatiguedRefused", { name: actor.name, n: fatigued }));
+    return null;
+  }
+
+  const storedId = (item && travel && (item === travel)) ? "" : (item?.id ?? "");
+  const activityChanged = item !== before;
+  const constellationChanged = slug !== String(current.constellation ?? "").trim();
+  if (!activityChanged && !constellationChanged) return null;
+
+  await actor.update({
+    "system.exploration.activity": storedId,
+    "system.exploration.constellation": slug
+  }, { swAnnounced: true });
+
+  const name = escapeHTML(actor.name);
+  const activity = escapeHTML(item?.name ?? "");
+  const picked = slug ? escapeHTML(constellationName(actor, slug)) : "";
+  let line;
+  if (activityChanged) {
+    line = picked
+      ? F("STARWROUGHT.Travel.saidActivityWith", { name, activity, speed: escapeHTML(travelWord(item)), constellation: picked })
+      : F("STARWROUGHT.Travel.saidActivity", { name, activity, speed: escapeHTML(travelWord(item)) });
+  } else if (picked) {
+    line = (activitySlug(item) === INVESTIGATE)
+      ? F("STARWROUGHT.Travel.saidInvestigate", { name, constellation: picked })
+      : F("STARWROUGHT.Travel.saidConstellation", { name, activity, constellation: picked });
+  } else {
+    line = F("STARWROUGHT.Travel.saidConstellationCleared", { name, activity });
+  }
+  await postMemberCard(actor, {
+    root: "sw-travel-card",
+    icon: "fa-solid fa-route",
+    title: L("STARWROUGHT.Travel.cardTitle"),
+    lines: [line]
+  });
+  return { activity: storedId, constellation: slug, item };
+}
+
+/**
+ * The party's Travel Speed (ruling 102), display only. Each member's `moveSpeed` (after the Legs'
+ * Wounds, as the character's own figures read it) times their Activity's multiplier; the lowest,
+ * times the terrain (`SW.TERRAIN`: normal 1, Difficult one half, Greater Difficult one third;
+ * PHB P343 to P344); then the book's three figures through `SW.TRAVEL`, miles an hour rounded
+ * down as the character's are (Math Conventions: an odd Speed never prints a half mile), the
+ * other two rounded. The pacesetter is the slowest member, the first on a tie; `searching` says
+ * whether anyone Searches, for the ten-minutes note (P346). No members: zero figures and no
+ * pacesetter. Nothing here moves a token.
+ * @param {Actor} party
+ * @param {Item[]} activities
+ * @returns {{speed: number, feetPerMinute: number, milesPerHour: number, milesPerDay: number,
+ *   pacesetter: {actor: Actor, item: Item|null, multiplier: number, speed: number}|null,
+ *   terrain: string, terrainMultiplier: number, searching: boolean,
+ *   members: Array<{actor: Actor, item: Item|null, stored: Item|null, locked: boolean, lockedReason: string, fatigued: number, multiplier: number, speed: number}>}}
+ */
+export function partyTravel(party, activities) {
+  const terrain = String(party?.system?.travel?.terrain ?? "normal");
+  const terrainMultiplier = Number(SW.TERRAIN?.[terrain]?.multiplier) || 1;
+  const members = memberActors(party).map(actor => {
+    const pick = activityOf(actor, activities);
+    const multiplier = travelMultiplier(pick.item);
+    const speed = (Number(actor.system.moveSpeed) || 0) * multiplier;
+    return { actor, ...pick, multiplier, speed };
+  });
+  if (!members.length) {
+    return { speed: 0, feetPerMinute: 0, milesPerHour: 0, milesPerDay: 0, pacesetter: null, terrain, terrainMultiplier, searching: false, members };
+  }
+  let slowest = members[0];
+  for (const member of members) if (member.speed < slowest.speed) slowest = member;
+  const speed = slowest.speed * terrainMultiplier;
+  return {
+    speed,
+    feetPerMinute: Math.round(speed * SW.TRAVEL.feetPerMinute),
+    milesPerHour: Math.floor(speed * SW.TRAVEL.milesPerHour),
+    milesPerDay: Math.round(speed * SW.TRAVEL.milesPerDay),
+    pacesetter: { actor: slowest.actor, item: slowest.item, multiplier: slowest.multiplier, speed: slowest.speed },
+    terrain,
+    terrainMultiplier,
+    searching: members.some(m => activitySlug(m.item) === SEARCH),
+    members
+  };
+}
+
+/** The terrain clause of the speed line: "" on normal ground, " over Difficult terrain" otherwise. */
+function terrainClause(terrain) {
+  if (!terrain || (terrain === "normal")) return "";
+  const label = SW.TERRAIN?.[terrain]?.label;
+  return label ? F("STARWROUGHT.Travel.speedOver", { terrain: L(label) }) : "";
+}
+
+/**
+ * Say the plan (ruling 106: the record): one public card spoken by the party, a line per member
+ * ("Hrolda: Search (Half); Initiative: Awareness.", with the Constellation when the Activity is
+ * the member's pick and the Fatigued lock when it holds), the member's warnings dim beneath it,
+ * then the speed line ("The party moves at 120 feet a minute, 1 miles an hour, 12 miles a day:
+ * Wren sets the pace (Search, Half).") and the ten-minutes note when anyone Searches. GM only.
+ * @param {Actor} party
+ * @returns {Promise<ChatMessage|null>}
+ */
+/**
+ * The unit words beside the two figures that can read as one: "1 mile an hour" and "1 mile a day"
+ * (a Searching party over Greater Difficult terrain gets there), the plural otherwise. Feet never
+ * reach one in practice and keep their one word.
+ * @param {{milesPerHour: number, milesPerDay: number}} travel  From partyTravel.
+ * @returns {{mphUnit: string, mpdUnit: string}}
+ */
+export function travelUnits(travel) {
+  return {
+    mphUnit: L((Number(travel?.milesPerHour) === 1) ? "STARWROUGHT.Travel.mileAnHour" : "STARWROUGHT.Travel.milesAnHour"),
+    mpdUnit: L((Number(travel?.milesPerDay) === 1) ? "STARWROUGHT.Travel.mileADay" : "STARWROUGHT.Travel.milesADay")
+  };
+}
+
+export async function sayThePlan(party) {
+  if (!game.user.isGM) return null;
+  const activities = await explorationActivities();
+  const travel = partyTravel(party, activities);
+  if (!travel.members.length) {
+    ui.notifications.warn(L("STARWROUGHT.Travel.planNoMembers"));
+    return null;
+  }
+  const lines = [];
+  const notes = [];
+  for (const member of travel.members) {
+    const { actor, item } = member;
+    const name = escapeHTML(actor.name);
+    let line = F("STARWROUGHT.Travel.planLine", { name, activity: escapeHTML(item?.name ?? ""), speed: escapeHTML(travelWord(item)) });
+    const pick = String(actor.system.exploration?.constellation ?? "").trim();
+    if (activityHasChoice(item) && pick) line += F("STARWROUGHT.Travel.planWith", { constellation: escapeHTML(constellationName(actor, pick)) });
+    line += F("STARWROUGHT.Travel.planInitiative", { constellation: escapeHTML(initiativeFor(actor, item).name) });
+    if (member.locked) line += ` ${escapeHTML(F("STARWROUGHT.Travel.planLocked", { n: member.fatigued }))}`;
+    const warnings = activityWarnings(actor, item);
+    if (warnings.length) line += `<br><span class="sw-card-note sw-warn">${warnings.map(w => escapeHTML(w)).join(" ")}</span>`;
+    lines.push(line);
+  }
+  const pace = travel.pacesetter;
+  lines.push(escapeHTML(F("STARWROUGHT.Travel.speedCard", {
+    feet: travel.feetPerMinute, mph: travel.milesPerHour, mpd: travel.milesPerDay,
+    ...travelUnits(travel),
+    terrain: terrainClause(travel.terrain),
+    pacesetter: pace.actor.name, activity: pace.item?.name ?? "", speed: travelWord(pace.item)
+  })));
+  if (travel.searching) notes.push(escapeHTML(L("STARWROUGHT.Travel.searchingNote")));
+  return postPartyCard(party, {
+    root: "sw-travel-card sw-plan-card",
+    icon: "fa-solid fa-route",
+    title: L("STARWROUGHT.Travel.planTitle"),
+    lines,
+    notes
+  });
+}
+
+/**
+ * The degrees of success printed on an Activity, for the GM to compare by hand: the Item's
+ * description from its first "Critical Success" to the end of that run of text, or the whole
+ * description when it prints no degrees. The system's own content is written this way (Look
+ * Harmless); a GM's rewrite is theirs and prints as written.
+ * @param {Item|null} item
+ * @returns {string}  HTML, as the Item carries it.
+ */
+function degreesOf(item) {
+  const html = String(item?.system?.description ?? "");
+  const at = html.indexOf("<b>Critical Success</b>");
+  if (at < 0) return html;
+  const rest = html.slice(at);
+  const end = rest.search(/<br\s*\/?>|<\/p>/i);
+  return end < 0 ? rest : rest.slice(0, end);
+}
+
+/**
+ * Begin the encounter (ruling 105): Initiative by Activity written onto the Combatants, and
+ * nothing rolled. GM only. The viewed scene must exist. An unstarted Combat on that scene is
+ * reused, else one is created and made active. For every member, their tokens on the scene
+ * (linked or not: `actorId` is the member's) become Combatants where they are not already, one
+ * per token as the tracker does; a member with no token is named in the card and skipped for
+ * everything that follows (a Scout with no token on the field gives no bonus). Then, on every
+ * member Combatant that has not rolled: `initiativeConstellation` is the Activity's Initiative
+ * Constellation (Awareness when it names none; Investigate's pick, or Awareness with a note), and
+ * `initiativeModifiers` carries one entry per OTHER present member whose Activity has the
+ * `scout` effect (`{ label: "Scout (Hrolda)", value: 1, type: "situation" }`; same type, so two
+ * Scouts give everyone else two of which one applies, and each other one, as the book's stacking
+ * rule says). A Combatant that already has an Initiative value is left alone and named. Every
+ * present member whose Activity has the `defend` effect has their held shield Raised with
+ * `update({ "system.raised": true }, { swAnnounced: true })`, no action spent and no card of its
+ * own (the Raise a Shield card would print a cost); it comes down at their next Opportunity, as
+ * any raised shield does, which is the book's "begins Raised". Then ONE public card spoken by the
+ * party. The Scout's Step is announced, not moved; Look Harmless's degrees are printed for the GM
+ * to compare by hand against each enemy's Awareness Threshold (adversary Thresholds never reach a
+ * player); whether an Investigation was related is the GM's call before the die. Players roll
+ * their own from the tracker or the sheet; the GM rolls for the absent.
+ * @param {Actor} party
+ * @returns {Promise<Combat|null>}
+ */
+export async function beginEncounter(party) {
+  if (!game.user.isGM) return null;
+  const scene = canvas?.scene ?? null;
+  if (!scene) {
+    ui.notifications.warn(L("STARWROUGHT.Travel.noScene"));
+    return null;
+  }
+  const members = memberActors(party);
+  if (!members.length) {
+    ui.notifications.warn(L("STARWROUGHT.Travel.planNoMembers"));
+    return null;
+  }
+  const activities = await explorationActivities();
+
+  let combat = game.combats.find(c => (c.scene?.id === scene.id) && !c.started) ?? null;
+  const created = !combat;
+  if (!combat) combat = await Combat.implementation.create({ scene: scene.id, active: true });
+  else if (!combat.active) await combat.activate();
+  if (!combat) return null;
+
+  // Who is on the field: the members' tokens, one Combatant each.
+  const present = [];
+  const absent = [];
+  const toCreate = [];
+  for (const actor of members) {
+    const tokens = scene.tokens.filter(t => t.actorId === actor.id);
+    if (!tokens.length) {
+      absent.push(actor);
+      continue;
+    }
+    present.push({ actor, pick: activityOf(actor, activities), tokens });
+    for (const token of tokens) {
+      if (combat.getCombatantsByToken(token.id)[0]) continue;
+      toCreate.push({ tokenId: token.id, sceneId: scene.id, actorId: token.actorId, hidden: token.hidden });
+    }
+  }
+  if (toCreate.length) await combat.createEmbeddedDocuments("Combatant", toCreate);
+
+  // The flags: the Constellation each rolls, and the Scouts' bonus for everyone but the Scout.
+  const scouts = present.filter(p => explorationOf(p.pick.item).effect === EFFECT_SCOUT);
+  const updates = [];
+  const entries = [];
+  for (const p of present) {
+    const init = initiativeFor(p.actor, p.pick.item);
+    const modifiers = scouts.filter(s => s.actor !== p.actor).map(s => ({
+      label: F("STARWROUGHT.Travel.scoutBonus", { name: s.actor.name }),
+      value: Number(SW.SCOUT_INITIATIVE_BONUS) || 1,
+      type: "situation"
+    }));
+    const combatants = p.tokens.map(t => combat.getCombatantsByToken(t.id)[0] ?? null).filter(Boolean);
+    let rolled = 0;
+    for (const combatant of combatants) {
+      if ((combatant.initiative !== null) && (combatant.initiative !== undefined)) {
+        rolled++;
+        continue;
+      }
+      updates.push({
+        _id: combatant.id,
+        [`flags.${SW.SYSTEM_ID}.${FLAG_INITIATIVE_CONSTELLATION}`]: init.slug,
+        [`flags.${SW.SYSTEM_ID}.${FLAG_INITIATIVE_MODIFIERS}`]: modifiers
+      });
+    }
+    entries.push({ ...p, init, modifiers, combatants, rolled, scouts: scouts.filter(s => s.actor !== p.actor).map(s => s.actor.name) });
+  }
+  if (updates.length) await combat.updateEmbeddedDocuments("Combatant", updates);
+
+  // The Defenders' shields: Raised, quietly, with no action spent.
+  for (const entry of entries) {
+    if (explorationOf(entry.pick.item).effect !== EFFECT_DEFEND) continue;
+    const actor = entry.actor;
+    const shield = actor.system.shield ?? actor.items.find(i => (i.type === "shield") && i.system.held) ?? null;
+    entry.shield = shield;
+    if (shield && !shield.system.raised) await shield.update({ "system.raised": true }, { swAnnounced: true });
+  }
+
+  // The card.
+  const lines = [escapeHTML(F(created ? "STARWROUGHT.Travel.encounterCreated" : "STARWROUGHT.Travel.encounterReused", { scene: scene.name }))];
+  const notes = [];
+  for (const entry of entries) {
+    const { actor, pick, init } = entry;
+    const name = escapeHTML(actor.name);
+    const activity = escapeHTML(pick.item?.name ?? "");
+    if (entry.rolled && (entry.rolled === entry.combatants.length)) {
+      lines.push(escapeHTML(F("STARWROUGHT.Travel.encounterRolledAlready", { name: actor.name, activity: pick.item?.name ?? "" })));
+      continue;
+    }
+    const bonus = entry.modifiers.length
+      ? F("STARWROUGHT.Travel.encounterScoutBonus", { value: entry.modifiers[0].value, scouts: escapeHTML(entry.scouts.join(", ")) })
+      : "";
+    let line = F("STARWROUGHT.Travel.encounterRolls", { name, activity, constellation: escapeHTML(init.name), bonus });
+    if (init.fallback) line += ` ${escapeHTML(F("STARWROUGHT.Travel.encounterFallback", { name: actor.name }))}`;
+    const ex = explorationOf(pick.item);
+    if (ex.effect === EFFECT_SCOUT) line += ` ${escapeHTML(F("STARWROUGHT.Travel.encounterScoutStep", { name: actor.name }))}`;
+    if (ex.effect === EFFECT_DEFEND) {
+      line += ` ${escapeHTML(entry.shield
+        ? F("STARWROUGHT.Travel.encounterDefend", { name: actor.name, shield: entry.shield.name })
+        : F("STARWROUGHT.Travel.encounterDefendNoShield", { name: actor.name }))}`;
+    }
+    if (pick.locked) line += ` ${escapeHTML(F("STARWROUGHT.Travel.planLocked", { n: pick.fatigued }))}`;
+    lines.push(line);
+    if (activitySlug(pick.item) === LOOK_HARMLESS) {
+      lines.push(`${escapeHTML(F("STARWROUGHT.Travel.encounterLookHarmless", { name: actor.name, constellation: init.name }))}<br><span class="sw-card-note">${degreesOf(pick.item)}</span>`);
+    }
+    if (activityHasChoice(pick.item)) notes.push(escapeHTML(F("STARWROUGHT.Travel.encounterInvestigate", { name: actor.name, activity: pick.item?.name ?? "" })));
+  }
+  if (absent.length) notes.push(escapeHTML(F("STARWROUGHT.Travel.encounterNoToken", { scene: scene.name, names: absent.map(a => a.name).join(", ") })));
+  if (!entries.length) notes.push(escapeHTML(F("STARWROUGHT.Travel.encounterNoCombatants", { scene: scene.name })));
+  notes.push(escapeHTML(L("STARWROUGHT.Travel.encounterPlayersRoll")));
+  await postPartyCard(party, {
+    root: "sw-travel-card sw-encounter-card",
+    icon: "fa-solid fa-flag",
+    title: L("STARWROUGHT.Travel.encounterTitle"),
+    lines,
+    notes
+  });
+  return combat;
 }

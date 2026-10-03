@@ -39,6 +39,7 @@ table row:
   run:  python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance
         python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance --proposal vigor
         python assets/phb_propose.py <in.docx> <out.docx> --proposal attended
+        python assets/phb_propose.py <in.docx> <out.docx> --proposal on-the-road
   Several proposals stack into one file, applied in the order given.
 
 The proposals are the PROPOSALS table below, one entry per proposal this script has produced, so
@@ -286,6 +287,94 @@ PROPOSALS["attended"] = {
     ],
     "append": [],
     "insert_after": [],
+}
+
+PROPOSALS["on-the-road"] = {
+    # On the road (Mike, 2026-10-02, on 0.7.1: "Mostly good! ... go to phase 3!"). Phase 3 of the
+    # Party Sheet puts the Exploration Activities on the party sheet and begins the encounter from
+    # them, and it leans on four sentences the book does not have and one name it should not: the
+    # plan's handbook needs 4, 5, 6 and 9 and its decision 9 (party-sheet-plan.md; system 0.7.2,
+    # rulings 101 to 105). The system runs ahead of the book on all five until Mike accepts or
+    # strikes them here; no edition changes, so data/SYNC.json stands.
+    #   The Initiative paragraph (P323) gains the rule the party sheet applies: each character rolls
+    # once, with Awareness or with the Constellation their own Activity names, so a party doing
+    # different things rolls different checks; a Scout's +1 Situation reaches every ally, and two
+    # Scouts give no more than one (same type, so one applies); whether an Investigation was related
+    # is the GM's call, made before the die (judgement at the edge, never in a formula; ruling 105).
+    #   The Travel Speed bullets (P343 to P344) gain a fourth factor: a party moves at its slowest
+    # member's Travel Speed after that member's Activity has halved or doubled it, so one companion
+    # Searching holds everyone to Half. Display only in the system (ruling 102): the sentence is
+    # what the party sheet's speed line reads as, and nothing moves a token.
+    #   The Conditions table's Fatigued row said "can't use Exploration Mode Activities", which read
+    # literally stops the party moving once a fighter in plate is winded. It now says a Fatigued
+    # character can Travel and take no other Activity (ruling 101): the party sheet locks the pick
+    # to Travel with the reason while Fatigued is above 0, and the stored pick comes back when the
+    # ten minutes' rest ends it.
+    #   Table 95 (the Exploration Activities) gains Avoid Notice, beside Search, its mirror (one
+    # rolls to notice, the other to go unnoticed), in Scout's dress: P342 names the Activity and the
+    # Example of Play rolls it, but the table had no row, so the row the roster ships (ruling 103)
+    # is the row offered here. Decision 9 rides along: Downtime's "Earning a Living" is named in
+    # P354 and nowhere in Table 96, so the name is struck for "Provisioning" (a Table 96 Activity,
+    # and not a cognate of the Retraining beside it) until there is an income rule.
+    "from": "4.15",
+    "replace": [
+        # The Downtime Mode paragraph (P354): the name sits in the first, plain run.
+        (
+            "such as Retraining or Earning a Living",
+            "Earning a Living",
+            "Provisioning"
+        ),
+    ],
+    "rewrite": [],
+    "cell": [
+        # The Conditions table: the Fatigued row's one-line entry, one to the right of its name. Word
+        # holds the line in seven runs, and the clause sits whole in one of them.
+        (
+            ["Fatigued N"],
+            1,
+            "can't use Exploration Mode Activities",
+            "can Travel but take no other Exploration Mode Activity"
+        ),
+    ],
+    "row": [
+        # Table 95: Avoid Notice goes in above Scout, in Scout's dress, one text per cell (Maneuver,
+        # Traits, Speed, Effect). The row is named by three of its cells; "Scout" alone is a whole
+        # paragraph nowhere else in the book, the other two say which table.
+        (
+            ["Scout", "Exploration", "Half"],
+            "before",
+            [
+                "Avoid Notice",
+                "Exploration",
+                "Half",
+                "You move quietly and keep to cover. Roll Stealth; the GM applies it to the Awareness"
+                " Threshold of anyone who might notice you. When an encounter begins, you can roll Stealth.",
+            ],
+        ),
+    ],
+    "append": [
+        # The Initiative paragraph (P323). Its last run is the full stop, in plain formatting, so the
+        # addition is plain too; the Constellation names in it are not tinted, as the formatting pass
+        # (phb_format.py) tints them on the next edition.
+        (
+            "Initiative could be rolled using a different Constellation, like Stealth.",
+            " Each character rolls once, with Awareness or with the Constellation their own Activity names,"
+            " so a party doing different things rolls different checks. A Scout's +1 Situation bonus"
+            " reaches every ally travelling with them, and two Scouts give no more than one. Whether an"
+            " Investigation was related to the encounter is the GM's call, made before the die is thrown."
+        ),
+    ],
+    "insert_after": [
+        # The Travel Speed bullets (P343 to P344): the new paragraph takes the bullet's style and
+        # numbering, so it lands as the fourth factor. The bullet's bold sits on its paragraph mark
+        # alone and its run is plain, so the new text is plain, as the three above it are.
+        (
+            "Travelling through Greater Difficult Terrain cuts it to one-third.",
+            "A party that travels together moves at the Travel Speed of its slowest member, after that"
+            " member's Activity has halved or doubled it. One companion Searching holds the whole party"
+            " to Half."
+        ),
+    ],
 }
 
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)

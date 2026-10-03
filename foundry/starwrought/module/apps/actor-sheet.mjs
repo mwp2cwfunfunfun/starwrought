@@ -1036,6 +1036,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.rollRelevantCheck({ dialog: !event.shiftKey });
   }
 
+  /**
+   * Roll Initiative with what the Combatant carries (0.7.2, ruling 105; party-sheet-plan.md, risk
+   * 10): the Constellation the Party Sheet's Begin the encounter wrote for the character's Activity
+   * and the Scout's +1 Situation beside it, or the actor's default when nothing was written. Through
+   * 0.7.1 this passed the sheet's own default (Awareness) and so overrode the flag the tracker
+   * honoured; `rollInitiativeWithCheck` now reads both flags itself when nothing is passed.
+   */
   static async #onRollInitiative(event, target) {
     const combat = game.combat;
     const combatant = combat?.getCombatantsByActor(this.document)?.[0];
@@ -1043,7 +1050,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noCombatant"));
       return;
     }
-    return combat.rollInitiativeWithCheck(combatant.id, this.document.system.initiative.slug);
+    return combat.rollInitiativeWithCheck(combatant.id);
   }
 
   static async #onToggleFlare(event, target) {

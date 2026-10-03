@@ -735,6 +735,31 @@ export class SwActionData extends SwItemData {
         constellation: new fields.StringField({ initial: "" }),
         defense: new fields.StringField({ initial: "" })
       }),
+      /**
+       * An Exploration Mode Activity's part in the road (0.7.2; party-sheet-plan.md, part 8;
+       * ruling 104), written by assets/build_foundry.mjs from the two positional columns on the
+       * roster's `explorationActions` rows and blank on every other action. `travel` is the row's
+       * Speed word, lowercased, a key of SW.ACTIVITY_SPEEDS; `check` is the slug of the
+       * Constellation the Activity rolls now (Search's Awareness, Look Harmless's Guile), "" when it
+       * rolls nothing, or SW.ACTIVITY_CHOICE for the member's own pick (Investigate); `initiative`
+       * is the same for the Constellation it rolls for Initiative, "" meaning Awareness, the
+       * default; `effect` is what Begin the encounter does for it beyond the Initiative
+       * Constellation, a key of SW.EXPLORATION_EFFECTS set by the row's name (scout, defend) or "".
+       * The Party Sheet reads all of it from the Item and never from a table of its own, so a row
+       * Mike adds to the roster ships here with no code (the plan's risk 9). `blank: true` is said
+       * outright on the two choice fields: a StringField with choices refuses "" by default, and ""
+       * is the value every Maneuver carries.
+       */
+      exploration: new fields.SchemaField({
+        travel: new fields.StringField({
+          required: true, blank: true, choices: ["", ...Object.keys(SW.ACTIVITY_SPEEDS)], initial: ""
+        }),
+        check: new fields.StringField({ initial: "" }),
+        initiative: new fields.StringField({ initial: "" }),
+        effect: new fields.StringField({
+          required: true, blank: true, choices: ["", ...Object.keys(SW.EXPLORATION_EFFECTS)], initial: ""
+        })
+      }),
       /** An adversary's attack, expressed the way the players meet it. */
       attack: new fields.SchemaField({
         enabled: new fields.BooleanField({ initial: false }),
@@ -766,6 +791,12 @@ export class SwActionData extends SwItemData {
     /** A Maneuver of three or more actions is Prepared: one now, the rest at your next Opportunity. */
     this.prepared = this.costValue >= SW.PREPARED_THRESHOLD;
     prepareAura(this);
+    // The road (0.7.2, ruling 104): the Activity's Travel Speed multiplier, 1 for anything that is
+    // not an Activity (a Maneuver's `travel` is ""), and whether this is an Exploration Mode
+    // Activity at all, which is its folder in the pack and its `category` here. The Party Sheet
+    // reads both from the Item.
+    this.exploration.multiplier = SW.ACTIVITY_SPEEDS[this.exploration.travel]?.multiplier ?? 1;
+    this.isExploration = this.category === "Exploration Mode";
   }
 
   /** The rules, when the action has them written separately from its flavour. */

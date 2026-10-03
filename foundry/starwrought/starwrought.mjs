@@ -23,6 +23,7 @@ import { onRenderChatMessage, onChatSocket } from "./module/documents/chat.mjs";
 // THE PARTY'S LOOT (0.7.1): a player's Take from the loot and Give to the party, served on the
 // active GM's client over the same socket (party-sheet-plan.md, part 6; ruling 97).
 import { onPartySocket } from "./module/documents/party-socket.mjs";
+import { invalidateExplorationActivities } from "./module/helpers/party.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
@@ -222,13 +223,14 @@ Hooks.once("ready", async () => {
     console.error("STARWROUGHT | the live attacks could not be rebuilt", err);
   }
 
-  // The Basic Actions list is memoised. Forget it whenever an unowned action changes, so a GM's
-  // new, edited, re-flagged or deleted Basic Action reaches the sheets without a reload. Owned
-  // copies are a character's own and never in the list, so they do not count.
+  // The Basic Actions list and the Exploration Mode Activities list (0.7.2) are memoised. Forget
+  // both whenever an unowned action changes, so a GM's new, edited, re-flagged or deleted Basic
+  // Action or Activity reaches the sheets without a reload, whether or not a sheet is open. Owned
+  // copies are a character's own and never in either list, so they do not count.
   for (const hook of ["createItem", "updateItem", "deleteItem"]) {
     Hooks.on(hook, item => {
       if (item.parent) return;
-      if (item.type === "action") invalidateBasicActions();
+      if (item.type === "action") { invalidateBasicActions(); invalidateExplorationActivities(); }
       // A GM's new or edited world chassis is read on the next sheet render.
       if (item.type === "chassis") { invalidateChassisIndex(); loadChassisIndex(); }
     });

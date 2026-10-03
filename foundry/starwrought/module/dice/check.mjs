@@ -432,6 +432,13 @@ export class SwCheck {
       }
       cfg.attribute = defense.attribute;
       cfg.rank = defense.rank;
+      // Initiative rolled with Awareness (the default) comes through here, and the sheet's
+      // Initiative adjustment belongs on it as the tracker's formula has always had it
+      // (`_getInitiativeFormula` folds `system.initiative.mod`, which includes it). The helm is
+      // already among Awareness's own modifiers, so only the adjustment is added (0.7.2).
+      if ((cfg.kind === "initiative") && sys.bonuses?.initiative) {
+        parts.push({ label: game.i18n.localize("STARWROUGHT.Field.initiativeBonus"), value: sys.bonuses.initiative });
+      }
       return parts;
     }
 

@@ -33,7 +33,9 @@ import { fileURLToPath } from "node:url";
 // The slug rule and the action-cost parser are imported from the system rather than copied, so
 // they cannot drift: a slug that disagrees is a Talent that stops matching its Constellation.
 // This is why module/config.mjs must stay free of Foundry globals at module scope.
-import { slugify, parseActionCost } from "../foundry/starwrought/module/config.mjs";
+import {
+  slugify, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE
+} from "../foundry/starwrought/module/config.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -728,9 +730,80 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
   }
 }
 
+/**
+ * A content error the build must not paper over: say it and stop. Every document is queued in
+ * memory until writeSources() runs at the end, so a build that fails here leaves packs/_source and
+ * the compendia exactly as they were.
+ */
+function fail(message) {
+  console.error(`\n  ${message}`);
+  process.exit(1);
+}
+
+/**
+ * The Constellations an Activity column may name (0.7.2, ruling 104): every tree in trees.json and
+ * the four Defenses, by name as the trees print them, case blind. The four Defenses are trees too,
+ * and their lowercased names are their slugs, so the second loop is the brief's belt to the first
+ * loop's braces. Lore is a template and its instances are the character's own, so a column cannot
+ * name one; ACTIVITY_CHOICE covers Investigate's pick.
+ */
+const activityConstellations = new Map();
+for (const treeName of Object.keys(trees)) {
+  const slug = slugify(treeName);
+  if (slug === "lore") continue; // the template: no character rolls it, so no column may name it
+  activityConstellations.set(treeName.trim().toLowerCase(), slug);
+}
+for (const slug of Object.keys(DEFENSES)) activityConstellations.set(slug, slug);
+
+/**
+ * One Activity column: "" as is, `choice` as is (written as the constant, whatever its case), else
+ * the slug of the named Constellation. A name that is neither is an authoring error and stops the
+ * build, because a slug nobody can roll would ship as a silent Awareness.
+ * @param {string} cell      The roster cell.
+ * @param {string} activity  The row's name, for the message.
+ * @param {string} column    Which column, for the message.
+ * @returns {string}
+ */
+function activityConstellation(cell, activity, column) {
+  const text = String(cell ?? "").trim();
+  if (!text) return "";
+  if (text.toLowerCase() === ACTIVITY_CHOICE) return ACTIVITY_CHOICE;
+  const slug = activityConstellations.get(text.toLowerCase());
+  if (!slug) {
+    fail(`roster.json explorationActions: "${activity}" names "${text}" for ${column}, which is neither a `
+      + `Constellation in trees.json nor a Defense (nor "${ACTIVITY_CHOICE}"; a Lore is the member's own pick, `
+      + `so write "${ACTIVITY_CHOICE}" for one).`);
+  }
+  return slug;
+}
+
+// The Exploration Mode Activities (PHB v4.15, Table 95), from the roster's hand-kept rows. Since
+// 0.7.2 (party-sheet-plan.md, part 8; ruling 104) each row carries two more positional columns:
+// the Constellation the Activity rolls NOW (Search's Awareness, Look Harmless's Guile) and the one
+// it rolls for INITIATIVE (Hustle's Athletics, Avoid Notice's Stealth), each a name, blank, or
+// `choice` for the member's own pick (Investigate's relevant Lore or Skill). They land on the Item
+// as `system.exploration` and, for a named check-now Constellation, `system.check`, so the Party
+// Sheet reads the Activity from the Item and never from a table of its own (the plan's risk 9).
+// The Scout's bonus and Step and the Defender's shield are `effect` tags set by the row's name,
+// not Constellations, so a row Mike adds ships here with no code unless it does something new.
+// The key and the name are as they were, so the ids do not move (an id is a compendium UUID the
+// moment an Activity lands on a sheet), and neither does the Source line.
 const explorationFolder = folder("actions", "Exploration Mode", { sort: 90, color: "#2f5a3f" });
-for (const [name, speed, description] of roster.explorationActions ?? []) {
+for (const [name, speed, description, checkNow = "", initiative = ""] of roster.explorationActions ?? []) {
   if (supersededBySheet(name)) continue;
+  const travel = String(speed ?? "").trim().toLowerCase();
+  if (!ACTIVITY_SPEEDS[travel]) {
+    fail(`roster.json explorationActions: "${name}" has Speed "${speed}"; it must be one of `
+      + `${Object.keys(ACTIVITY_SPEEDS).map(k => k[0].toUpperCase() + k.slice(1)).join(", ")}.`);
+  }
+  const check = activityConstellation(checkNow, name, "the check it rolls now");
+  const rolls = activityConstellation(initiative, name, "Initiative");
+  const effectSlug = slugify(name);
+  const effect = EXPLORATION_EFFECTS[effectSlug] ? effectSlug : "";
+  // A named check-now Constellation is also the Item's own check (SwItem#roll rolls it), so an
+  // owned copy of Search rolls Awareness from the sheet exactly as the Party Sheet's Roll does.
+  // `choice` is not a Constellation and opens the Relevant Check picker instead (ruling 107).
+  const named = check && (check !== ACTIVITY_CHOICE);
   item("actions", {
     key: `exploration:${slugify(name)}`,
     name,
@@ -742,6 +815,8 @@ for (const [name, speed, description] of roster.explorationActions ?? []) {
       requirements: `Travel Speed: ${speed}`,
       traits: [],
       description: `<p>${description}</p>`,
+      exploration: { travel, check, initiative: rolls, effect },
+      ...(named ? { check: { enabled: true, constellation: check, defense: "" } } : {}),
       source: "STARWROUGHT Playtest v4.10"
     }
   });

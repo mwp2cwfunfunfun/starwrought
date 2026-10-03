@@ -13,7 +13,8 @@ tracked, announced, and never enforced against the table.
   Move; a Human's is 6.
 - **Actor types:** `character`, `npc` (the adversary, written Threshold-first) and, since 0.7.0,
   `party`: the Party Sheet, GM-owned and open to every player as an Observer, which stores only
-  its own bookkeeping (since 0.7.1 the loot and the purse among it) and reads its members live.
+  its own bookkeeping (since 0.7.1 the loot and the purse among it, since 0.7.2 the terrain it is
+  crossing) and reads its members live.
 
 ## What it does for you
 
@@ -80,8 +81,14 @@ Ranged and Lores, each cell rolling as that member, with Ask everyone on each ro
 card with a Roll button per member; and a Loot tab (0.7.1, phase 2) where the GM stashes what the
 party found and a player who owns a member takes it, or gives their own gear to the party, over a
 relay to the active GM's client, beside a purse the GM can Split among the members in copper.
+Since 0.7.2 (phase 3) the On the road tab: each member's Exploration Activity (the pick is the
+character's, written by its owner or the GM and said in one line), the party's Travel Speed read
+off the slowest member after their Activity and the terrain (display only; nothing moves a token),
+a Fatigued member held to Travel, Say the plan, and Begin the encounter, which puts the members
+into a Combat on the viewed scene with the Constellation their Activity names and the Scouts' +1
+Situation written on their Combatants, so every Initiative roll in the system rolls by Activity.
 Every rule effect runs through the member's own methods and cards; the party is never a
-combatant, and the loot values nothing. The road and Downtime are later phases and are not built.
+combatant, and the loot values nothing. Downtime is the plan's last phase and is not built.
 
 **Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that
 leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a rank without
@@ -96,7 +103,7 @@ recorded plus a list on the sheet.
 | Talents | The enabled Talents (39 of the 177 authored today), foldered by Constellation. `Enabled? = Yes` in `data/*.xlsx` is what ships a row; the content index still names every Constellation so owned Talents of a disabled one resolve |
 | Ancestries, Bloodlines, Cultures, Backgrounds & Callings | The enabled chassis Items (5 of the 13 authored today: the Human Ancestry, the Torchbearer Human Bloodline, the Serrovane Culture, the Acrobat Background and the Weaponmaster Calling). The five folders always ship |
 | Equipment | The enabled rows of `data/equipment.xlsx` (today 4 of the 29 weapons, 9 of the 20 armor pieces and none of the 3 shields authored), under the same document ids the roster gave them. The four folders always ship |
-| Maneuvers & Activities | 52 Maneuvers, Activities and Reactions today, foldered as the book groups them (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special; Exploration Mode; Downtime Mode; Reactions). Those authored in `data/actions.xlsx` replace the roster's row of the same name, and only an enabled sheet row ships, so an action authored there but not enabled (Aid today) appears nowhere until its row reads Yes |
+| Maneuvers & Activities | 14 documents today: the eight Exploration Mode Activities (Avoid Notice joined them in 0.7.2), the three Downtime Mode Activities, and the Reactions folder's Give Ground, Set Your Feet and Posture; the Encounter Mode folders (Motion; Attack; Defense & Recovery; Watching, Deceiving & Helping; Handling Things; Special) stand empty until their rows in `data/maneuvers.xlsx` read Yes. Those authored in `data/actions.xlsx` replace the roster's row of the same name, and only an enabled sheet row ships, so an action authored there but not enabled (Aid today) appears nowhere until its row reads Yes |
 | Rules Reference | 20 pages of reference tables |
 | Macros | Recenter, Recovery Check, A Night's Rest, Relevant Check, Roll Initiative by Activity |
 

@@ -1988,6 +1988,8 @@ function vWiki(){
 
   if(wikiSec==="Conditions") h+=tbl(["Condition","In one line"],R.conditions);
 
+  // the roster's exploration and downtime rows may carry columns past the third for Foundry alone (0.7.2: the
+  // Constellation an Activity rolls now and the one it rolls for Initiative); the tables here print three
   if(wikiSec==="Maneuvers") h+=`<div class="callout">A <b>Maneuver</b> is anything you do at an Opportunity: a Step, a Strike, a Gain Control, a spell. Each has a cost in actions, the six you receive each round, marked ⓿, ❶, ❷, ❸, and so on. A Maneuver of two or more actions is a single indivisible thing: interrupt it and you lose all of it. A <b>⓿ Maneuver</b> costs no actions and never uses up your Opportunity: you may perform any number of them alongside the Maneuver you take, and ⓿ Reactions whenever their Trigger occurs. You take <b>one Maneuver at each of your Opportunities</b>. Between Opportunities you may spend actions only on <b>Reactions ↺</b>: Maneuvers with the Reaction trait, performed the moment their Trigger occurs. A Maneuver of ❸ or more is <b>Prepared</b>: spend one action now and set the rest aside as reserved; at your next Opportunity you must finish it or abandon it (losing the action spent), and taking a Wound abandons it for you. <b>Pass</b> is not a Maneuver at all: it is declining your Opportunity, and a full circuit of Passes ends the round.</div>`
     +`<h3>Encounter Mode</h3>`
     +sheetTables("Encounter")
@@ -1996,11 +1998,11 @@ function vWiki(){
     +`<h3>Exploration Mode</h3>`
     +P("Your Travel Speed is <b>Speed × 40 feet per minute</b>, <b>Speed ÷ 2 miles per hour</b>, or <b>Speed × 4 miles per day</b>. Exploration Mode Activities (such as Avoid Notice) halve it, except Hustle, which doubles it. Difficult Terrain halves it; Greater Difficult Terrain cuts it to one-third. As a rule of thumb, it takes about 10 minutes to proceed through a location while performing Activities such as Search, be it a ballroom, a dungeon corridor, or a forest clearing.")
     +sheetTables("Exploration")
-    +tbl(["Activity","Speed","Effect"],notSheet(R.explorationActions))
+    +tbl(["Activity","Speed","Effect"],notSheet(R.explorationActions).map(r=>r.slice(0,3)))
     +`<h3>Downtime Mode</h3>`
     +P("You spend days, and the GM typically tells you how many you have before the world begins to move quickly again. One activity per day: an activity that takes a week is the same choice made on seven consecutive days, and interrupting it loses the days already spent unless the GM says otherwise. Ordinary rest is not a Downtime Activity: a night's sleep already restores some of your Vigor but none of your Wounds; Downtime is for the things a night's rest cannot fix.")
     +sheetTables("Downtime")
-    +tbl(["Activity","Duration","Effect"],notSheet(R.downtimeActions));
+    +tbl(["Activity","Duration","Effect"],notSheet(R.downtimeActions).map(r=>r.slice(0,3)));
 
   if(wikiSec==="Combat") h+=`
     <div class="callout"><b>Every attack in Starwrought is an exchange</b>: a sword, a fireball, a poisoned cup, or a lie told to a guard. A fencing master would tell you the first question is not whether it landed but who came out of it holding the advantage. One roll answers three things at once: whether harm landed, how much, and who is out of position. The exchange runs in the same order every time: the Attack is declared, the Defense answers it, the die decides the Result, the Damage and effects land, and the Position of everyone involved is settled.</div>

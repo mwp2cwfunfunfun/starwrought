@@ -13,6 +13,17 @@
     "requirements": "Travel Speed: Half",
     "traits": [],
     "description": "<p>Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures. When an encounter begins, you can roll Awareness.</p>",
+    "exploration": {
+      "travel": "half",
+      "check": "awareness",
+      "initiative": "",
+      "effect": ""
+    },
+    "check": {
+      "enabled": true,
+      "constellation": "awareness",
+      "defense": ""
+    },
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",

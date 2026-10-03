@@ -316,7 +316,42 @@ nothing), while the GM's own moves run the same code locally; a party Item dropp
 sheet moves the whole stack (ruling 98), Split divides copper equally and leaves the remainder in
 the purse (ruling 99), and Ask everyone posts one party card with a Roll button per member that
 only the owner or the GM can press, the Threshold hidden from players unless the GM shows it
-(ruling 100). Phases 3 and 4 (the road, Downtime) are planned, not built.
+(ruling 100). Since 0.7.2 (phase 3; rulings 101 to 107) the party has the **On the road** tab
+(`templates/actor/party-road.hbs`; the helpers in `module/helpers/party.mjs`). Each member's
+Exploration Activity is `system.exploration { activity, constellation }` on the character (the
+compendium `_id` of the Activity Item in the Actions pack's Exploration Mode folder, "" meaning
+Travel; Investigate's chosen slug), written directly by the owner or the GM with `swAnnounced`
+and said in one line by the member (`setActivity`; ruling 106: the pick is the character's, and
+an owner may write their own Actor, so no relay and no GM connected). The Activity data is two
+positional columns on the roster's hand-kept `explorationActions` rows (column 4 what the Activity
+rolls now, column 5 what it rolls for Initiative: "", a Constellation name as the trees print it,
+or `choice` for the member's own pick; the Avoid Notice row added as the eighth, ruling 103),
+which `build_foundry.mjs` writes onto the Activity Item under its existing id as
+`system.exploration { travel, check, initiative, effect }` and, for a named check-now
+Constellation, `system.check`; the `effect` tags scout and defend are set by the row's name, since
+the Scout's bonus and Step and the Defender's shield are not Constellations (ruling 104;
+`SW.ACTIVITY_SPEEDS`, `SW.TERRAIN`, `SW.EXPLORATION_EFFECTS`, `SW.SCOUT_INITIATIVE_BONUS` and
+`SW.ACTIVITY_CHOICE` in `config.mjs`; the web app slices the rows to three columns, and
+`build_phb.js` and `phb_format.py` read by position). The party's Travel Speed (`partyTravel`) is
+the slowest member's `moveSpeed` × their Activity's multiplier, × the terrain in
+`system.travel.terrain` on the party, through `SW.TRAVEL`, named for the pacesetter and display
+only (ruling 102). A Fatigued member is locked to Travel with the reason and the stored pick
+untouched (`activityOf`; ruling 101). An Activity's own Roll goes through the member's check with
+no Threshold, Investigate opens the Relevant Check picker on the chosen slug
+(`rollRelevantCheck({ dialog: true, slug })`), and Look Harmless's Requirements are a warning from
+live data (`activityWarnings`; ruling 107). `sayThePlan` posts the record. `beginEncounter` (GM
+only) puts every member's tokens on the viewed scene into a Combat (an unstarted one reused) and
+writes `flags.starwrought.initiativeConstellation` and `initiativeModifiers` (one +1 Situation
+entry per Scout present, for every other member present; a member with no token on the scene
+neither gives nor gets one) on their Combatants, raises a Defender's held shield with
+no action spent, leaves a Combatant that has rolled alone, and posts one card; nothing rolls
+there. `SwCombatant._getInitiativeFormula` (the modifiers one per type at most),
+`rollInitiativeWithCheck` (slug and modifiers defaulting to the flags), the character sheet's Roll
+Initiative and the grid's cell all read the flags (ruling 105; plan risk 10 closed). The system
+runs ahead of PHB v4.15 on four sentences and a strike, carried as tracked changes in
+`Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx` (`assets/phb_propose.py`,
+`PROPOSALS["on-the-road"]`); `data/SYNC.json` is untouched. Phase 4 (Downtime) is planned, not
+built.
 
 ## Where the source of truth lives
 
@@ -508,25 +543,51 @@ only the owner or the GM can press, the Threshold hidden from players unless the
   Attribute follows PHB v4.14 (0.6.3, ruling 87), but no weapon in `data/equipment.xlsx` carries
   the trait, so the branch has nothing to act on. Mike authors one when he wants it, with
   "Composite" in its Traits; the converter needs no change.
-- **Phases 3 and 4 of the Party Sheet are planned, not built** (`party-sheet-plan.md` in the
-  project root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse
-  over the `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100). Phase 3 is the road
-  (two positional columns on the roster's
-  hand-kept `explorationActions` rows and `system.exploration` on the character; the Exploration
-  panel with the party's Travel Speed, terrain and the Fatigued gate; Begin the encounter with
-  Initiative by Activity, the Scout's bonus and the Defender's shield; 0.7.2, and it leans on four
-  handbook sentences the plan drafts and a pipeline change). Phase 4 is Downtime (the days, Train
-  through the shared Flare picker with its once-between-Milestones warning, the Retrain and
-  Provision reminder lines; 0.7.3). The plan's decisions 6 to 14 and its twelve handbook sentences
-  (items 1, 2, 3, 7, 8 and 12 bear on phase 1 and are wanted, not needed; item 10, shared loot
-  and a common purse, is optional for phase 2, decision 16) are Mike's. Nothing in phases 1 and 2
-  is enforced: the Deferred count is a reminder with a number on it, a Talent drag is as
-  unpoliced as before, and the loot values nothing (no selling, no price computed, no party
-  token; a player's Take needs a GM connected).
+- **Phase 4 of the Party Sheet is planned, not built** (`party-sheet-plan.md` in the project
+  root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse over the
+  `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100; phase 3, the road, as 0.7.2,
+  rulings 101 to 107). Phase 4 is Downtime (a Days field the GM sets, the three Downtime
+  Activities from the pack's Downtime Mode folder, Train through the shared Flare picker with its
+  once-between-Milestones warning, which warns and never refuses, decision 14, and the Retrain and
+  Provision reminder lines; 0.7.3), and it leans on the plan's handbook item 11 (Train "once
+  between Milestones", counted for each character). **Phase 3 runs ahead of the book** on four
+  sentences and a strike: the party's Travel Speed after P344 (item 4), the Fatigued row's "can
+  Travel but take no other Exploration Mode Activity" (item 5, decision 6), Initiative when
+  Activities differ, appended to P323 (item 6), the Avoid Notice row in Table 95 (item 9,
+  decision 8), and "Earning a Living" struck from P354 for "Provisioning" (decision 9). All five are Word tracked
+  changes under the author Claude in `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx`
+  (`assets/phb_propose.py`, `PROPOSALS["on-the-road"]`; gitignored as every `*_proposal.docx` is),
+  for Mike to accept or reject. A proposal is not an edition: `data/SYNC.json` is untouched, the
+  drift check ignores the name, and the sync follows once Mike accepts into a numbered handbook.
+  Until then the system's Travel Speed, Fatigued gate, Initiative by Activity and Avoid Notice row
+  have no sentence in the book behind them. The plan's decisions 10 and 12 to 14 and its remaining
+  handbook sentences (items 1, 2, 3, 7, 8 and 12 bear on phase 1 and are wanted, not needed; item
+  10, shared loot and a common purse, is optional for phase 2, decision 16; item 11 is phase 4's)
+  are Mike's. Nothing in phases 1 to 3 is enforced: the Deferred count is a reminder with a number
+  on it, a Talent drag is as unpoliced as before, the loot values nothing (no selling, no price
+  computed, no party token; a player's Take needs a GM connected), the Travel Speed moves no
+  token, the Fatigued gate locks a select and refuses a pick and nothing else, Look Harmless's
+  Requirements warn, and Begin the encounter rolls nothing.
 - **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (the Party Sheet, phase 3, system 0.7.2): the road the plan's parts 8 and 9
+described, now the On the road tab: each member's Exploration Activity on the character
+(`system.exploration`, written by its owner or the GM and said in one line, ruling 106); the
+Activity data as two positional columns on the roster's `explorationActions` rows and the Avoid
+Notice row, written by `build_foundry.mjs` onto the Activity Items under their old ids (rulings
+103 and 104); the party's Travel Speed off the slowest member and the terrain, display only
+(ruling 102); the Fatigued gate holding a member to Travel with the stored pick untouched (ruling
+101); an Activity's own Roll through the member's check and Look Harmless's Requirements as a
+warning (ruling 107); Say the plan; and Begin the encounter writing Initiative by Activity and the
+Scouts' +1 Situation onto the Combatants and raising a Defender's shield, with every Initiative
+roll in the system reading the flags, the character sheet's Roll Initiative among them (ruling
+105; plan risk 10 closed). The checkbox dress (the Ask everyone dialog's tall pill) mended in the
+stylesheet. No handbook moved and `data/SYNC.json` is untouched; the system runs ahead of the book
+on four sentences and a strike, carried in `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx`
+for Mike to accept or reject; the rulings (101 to 107) are recorded in the 0.7.2 changelog entry.
 
 Cleared 2026-10-02 (the Party Sheet, phase 2, system 0.7.1): the loot and the purse the plan's
 part 6 described, now the Loot tab (embedded Items of the four physical types, `SwItem._preCreate`

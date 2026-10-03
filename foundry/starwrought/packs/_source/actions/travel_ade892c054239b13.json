@@ -13,6 +13,12 @@
     "requirements": "Travel Speed: Full",
     "traits": [],
     "description": "<p>When an encounter begins, you can roll Awareness.</p>",
+    "exploration": {
+      "travel": "full",
+      "check": "",
+      "initiative": "",
+      "effect": ""
+    },
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",

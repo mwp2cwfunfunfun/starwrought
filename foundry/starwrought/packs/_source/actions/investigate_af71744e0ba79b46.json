@@ -13,6 +13,12 @@
     "requirements": "Travel Speed: Half",
     "traits": [],
     "description": "<p>Roll a relevant Lore or Skill check; the GM applies it to the Thresholds to potentially recall relevant information about your surroundings. When an encounter begins, you can roll the same Lore or Skill check, if the encounter is related to what you are Investigating.</p>",
+    "exploration": {
+      "travel": "half",
+      "check": "choice",
+      "initiative": "choice",
+      "effect": ""
+    },
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",

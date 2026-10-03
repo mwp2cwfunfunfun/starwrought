@@ -417,6 +417,25 @@ export class SwCharacterData extends SwActorData {
        */
       deferred: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
 
+      /**
+       * On the road (0.7.2; party-sheet-plan.md, part 8; ruling 106): the Exploration Mode Activity
+       * this character is doing, as the compendium `_id` of the Activity Item in the Actions pack's
+       * "Exploration Mode" folder ("" is Travel, the default), and for Investigate the slug of the
+       * Lore or Skill being rolled ("" otherwise). The pick is the character's: written by its owner
+       * or the GM directly (an owner may write their own Actor, so no relay), announced as one line
+       * spoken by the member, and read live by the Party Sheet's "On the road" tab, which computes
+       * the party's Travel Speed from it at render (ruling 102) and writes the Initiative
+       * Constellation it implies onto the Combatant when the encounter begins (ruling 105). A
+       * Fatigued character Travels and does nothing else (ruling 101): the sheet locks the select
+       * and leaves the stored pick alone, so it comes back when the Fatigue ends. Nothing here is
+       * derived from it: the character's own numbers do not change with what they are doing on the
+       * road. New with defaults, so no world migration.
+       */
+      exploration: new fields.SchemaField({
+        activity: new fields.StringField({ initial: "" }),
+        constellation: new fields.StringField({ initial: "" })
+      }),
+
       zones: new fields.SchemaField(
         Object.keys(SW.ZONES).reduce((obj, z) => {
           obj[z] = zoneFields();

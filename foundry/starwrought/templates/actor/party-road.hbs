@@ -1,0 +1,168 @@
+{{!-- On the road (0.7.2; plan, parts 8 and 9; rulings 101, 102 and 105 to 107): the party's Travel
+      Speed and the terrain, then one row per member with their Exploration Activity (Table 95),
+      its Travel word, the Constellation it rolls for Initiative, Investigate's Constellation, the
+      warnings read from live data and never enforced, the Roll when the Activity rolls now, and
+      the member's Combatant state while a Combat holds them. The GM's controls are selects (the
+      terrain through the party's own form; the Activity and the Constellation through the sheet's
+      change handler, written to the member); a player who owns a member gets anchors that open a
+      picker dialog, since the sheet disables every form element for a user who cannot edit the
+      party; everyone else reads. A Fatigued member's Activity is locked to Travel with the reason
+      (ruling 101). Every Activity is read from the Actions pack's Exploration Mode folder, never
+      from a table here (plan, risk 9). --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{#if road.rows.length}}
+  <div class="sw-panel sw-road-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Travel.title"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Travel.titleHint"}}</span>
+      {{#if isGM}}
+      <span class="sw-panel-buttons">
+        <button type="button" class="sw-inline-button" data-action="sayThePlan"
+                data-tooltip="{{localize 'STARWROUGHT.Travel.sayThePlanHint'}}">
+          <i class="fa-solid fa-bullhorn"></i> {{localize "STARWROUGHT.Travel.sayThePlan"}}
+        </button>
+        <button type="button" class="sw-inline-button sw-road-begin {{#unless road.canBegin}}sw-button-off{{/unless}}"
+                data-action="beginEncounter" data-tooltip="{{road.beginTip}}">
+          <i class="fa-solid fa-flag"></i> {{localize "STARWROUGHT.Travel.beginEncounter"}}
+        </button>
+      </span>
+      {{/if}}
+    </h3>
+
+    {{!-- The Travel Speed line (ruling 102): the slowest member's after their Activity, times the
+          terrain, display only. The GM's terrain select is the party's own field. --}}
+    <div class="sw-road-speed">
+      <span class="sw-road-figures" data-tooltip="{{localize 'STARWROUGHT.Travel.speedHint'}}">
+        <strong>{{road.travel.feet}}</strong> {{localize "STARWROUGHT.Travel.feetAMinute"}}
+        <span class="sw-road-dot">·</span>
+        <strong>{{road.travel.mph}}</strong> {{road.travel.mphUnit}}
+        <span class="sw-road-dot">·</span>
+        <strong>{{road.travel.mpd}}</strong> {{road.travel.mpdUnit}}
+      </span>
+      <span class="sw-road-terrain {{#if road.travel.difficult}}sw-road-terrain-hard{{/if}}"
+            data-tooltip="{{localize 'STARWROUGHT.Travel.terrainHint'}}">
+        <i class="fa-solid fa-mountain"></i>
+        {{#if isGM}}
+        <select name="system.travel.terrain">
+          {{#each road.travel.terrainOptions as |t|}}
+          <option value="{{t.key}}" {{#if t.selected}}selected{{/if}}>{{t.label}}</option>
+          {{/each}}
+        </select>
+        {{else}}
+        <span>{{road.travel.terrainLabel}}</span>
+        {{/if}}
+      </span>
+      <span class="sw-road-pace">{{road.travel.pacesetter}}</span>
+    </div>
+    {{#if road.travel.searching}}
+    <p class="sw-note sw-road-searching"><i class="fa-solid fa-magnifying-glass"></i> {{localize "STARWROUGHT.Travel.searchingNote"}}</p>
+    {{/if}}
+    {{#unless road.hasActivities}}
+    <p class="sw-note sw-warn">{{localize "STARWROUGHT.Travel.noActivities"}}</p>
+    {{/unless}}
+
+    <ol class="sw-road-rows">
+      {{#each road.rows as |row|}}
+      <li class="sw-road-row {{#if row.locked}}sw-road-locked{{/if}} {{#if row.live}}sw-road-live{{/if}}" data-uuid="{{row.uuid}}">
+        <img class="sw-road-portrait" src="{{row.img}}" alt="{{row.name}}" data-action="openMember"
+             data-tooltip="STARWROUGHT.Party.openSheet">
+        <a class="sw-road-name" data-action="openMember" data-tooltip="STARWROUGHT.Party.openSheet">{{row.name}}</a>
+
+        {{!-- The Activity: locked to Travel while Fatigued (ruling 101); the GM's select; an
+              owner's anchor; a word for the rest. --}}
+        <span class="sw-road-activity"
+              data-tooltip="{{#if row.locked}}{{row.lockedReason}}{{else}}{{localize 'STARWROUGHT.Travel.activityHint'}}{{/if}}">
+          {{#if row.locked}}
+          <span class="sw-road-select sw-road-select-locked"><i class="fa-solid fa-lock"></i> {{row.activity.name}}</span>
+          {{else if @root.isGM}}
+          <select class="sw-road-select interface-only" data-activity>
+            {{#each row.options as |opt|}}
+            <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.name}} ({{opt.speed}})</option>
+            {{/each}}
+          </select>
+          {{else if row.owner}}
+          <a class="sw-road-select sw-road-select-live" data-action="pickActivity"
+             data-tooltip="{{localize 'STARWROUGHT.Travel.pickActivityHint' name=row.name}}">{{row.activity.name}} <i class="fa-solid fa-caret-down"></i></a>
+          {{else}}
+          <span class="sw-road-select">{{row.activity.name}}</span>
+          {{/if}}
+          <span class="sw-item-tag sw-road-speedword"
+                data-tooltip="{{localize 'STARWROUGHT.Travel.speedWordHint' speed=row.activity.effectiveSpeed}}">{{row.activity.speed}}</span>
+        </span>
+
+        {{!-- Investigate's Constellation (ruling 107): the member's pick, rolled now and for Initiative. --}}
+        {{#if row.needsConstellation}}
+        <span class="sw-road-constellation" data-tooltip="{{row.constellation.hint}}">
+          {{#if @root.isGM}}
+          <select class="sw-road-select interface-only" data-constellation>
+            <option value="" {{#unless row.constellation.slug}}selected{{/unless}}>{{localize "STARWROUGHT.Travel.constellationNone"}}</option>
+            {{#if row.constellation.trained.length}}
+            <optgroup label="{{localize 'STARWROUGHT.Roll.relevantTrained'}}">
+              {{#each row.constellation.trained as |c|}}
+              <option value="{{c.slug}}" {{#if c.selected}}selected{{/if}}>{{c.name}} · {{c.rankLabel}}</option>
+              {{/each}}
+            </optgroup>
+            {{/if}}
+            {{#if row.constellation.untrained.length}}
+            <optgroup label="{{localize 'STARWROUGHT.Roll.relevantUntrained'}}">
+              {{#each row.constellation.untrained as |c|}}
+              <option value="{{c.slug}}" {{#if c.selected}}selected{{/if}}>{{c.name}} · {{c.rankLabel}}</option>
+              {{/each}}
+            </optgroup>
+            {{/if}}
+          </select>
+          {{else if row.owner}}
+          <a class="sw-road-select sw-road-select-live {{#unless row.constellation.slug}}sw-road-unpicked{{/unless}}" data-action="pickConstellation"
+             data-tooltip="{{localize 'STARWROUGHT.Travel.pickConstellationHint' name=row.name}}">
+            {{#if row.constellation.slug}}{{row.constellation.name}}{{else}}{{localize "STARWROUGHT.Travel.constellationNone"}}{{/if}} <i class="fa-solid fa-caret-down"></i>
+          </a>
+          {{else}}
+          <span class="sw-road-select {{#unless row.constellation.slug}}sw-road-unpicked{{/unless}}">
+            {{#if row.constellation.slug}}{{row.constellation.name}}{{else}}{{localize "STARWROUGHT.Travel.constellationNone"}}{{/if}}
+          </span>
+          {{/if}}
+        </span>
+        {{/if}}
+
+        {{!-- What the Activity rolls for Initiative when the encounter begins (P323). --}}
+        <span class="sw-item-tag sw-road-initiative {{#if row.initiative.fallback}}sw-road-fallback{{/if}}" data-tooltip="{{row.initiative.hint}}">
+          <i class="fa-solid fa-dice-d20"></i> {{localize "STARWROUGHT.Travel.initiativeTag" constellation=row.initiative.name}}
+        </span>
+
+        {{!-- The member's Combatant while a Combat holds them: the number once rolled, else what it will roll. --}}
+        {{#if row.combatant}}
+        <span class="sw-item-tag sw-road-combat {{#if row.combatant.rolled}}sw-road-combat-rolled{{/if}}" data-tooltip="{{row.combatant.hint}}">
+          {{#if row.combatant.rolled}}{{localize "STARWROUGHT.Travel.combatRolled" value=row.combatant.value}}{{else}}{{localize "STARWROUGHT.Travel.combatReady" constellation=row.combatant.constellation}}{{/if}}
+        </span>
+        {{/if}}
+
+        {{!-- The Roll when the Activity rolls now (ruling 107), for the owner or the GM. --}}
+        {{#if row.roll}}
+        <a class="sw-road-roll" data-action="activityRoll" data-tooltip="{{row.roll.hint}}">
+          <i class="fa-solid fa-dice-d20"></i> {{row.roll.label}}
+        </a>
+        {{/if}}
+
+        {{#if row.warnings.length}}
+        <p class="sw-note sw-warn sw-road-warnings" data-tooltip="{{localize 'STARWROUGHT.Travel.warningsHint'}}">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          {{#each row.warnings as |warning|}}<span>{{warning}}</span>{{/each}}
+        </p>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ol>
+
+    <p class="sw-note">{{localize "STARWROUGHT.Travel.roadNote"}}</p>
+    {{#unless isGM}}{{#unless anyOwned}}
+    <p class="sw-note">{{localize "STARWROUGHT.Party.noOwnedMember"}}</p>
+    {{/unless}}{{/unless}}
+  </div>
+  {{else}}
+  <div class="sw-panel sw-empty-panel">
+    <p>{{localize "STARWROUGHT.Travel.noMembers"}}</p>
+  </div>
+  {{/if}}
+
+</section>

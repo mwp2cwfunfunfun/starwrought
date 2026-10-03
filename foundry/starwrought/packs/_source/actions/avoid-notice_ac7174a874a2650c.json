@@ -1,6 +1,6 @@
 {
-  "_id": "53c6f5149d602a2d",
-  "name": "Scout",
+  "_id": "ac7174a874a2650c",
+  "name": "Avoid Notice",
   "type": "action",
   "img": "icons/svg/target.svg",
   "system": {
@@ -12,12 +12,17 @@
     "category": "Exploration Mode",
     "requirements": "Travel Speed: Half",
     "traits": [],
-    "description": "<p>Every ally gains a +1 Situation bonus to initiative, and you may Step ⓿ when you roll initiative. When an encounter begins, you can roll Awareness.</p>",
+    "description": "<p>You move quietly and keep to cover. Roll Stealth; the GM applies it to the Awareness Threshold of anyone who might notice you. When an encounter begins, you can roll Stealth.</p>",
     "exploration": {
       "travel": "half",
-      "check": "",
-      "initiative": "",
-      "effect": "scout"
+      "check": "stealth",
+      "initiative": "stealth",
+      "effect": ""
+    },
+    "check": {
+      "enabled": true,
+      "constellation": "stealth",
+      "defense": ""
     },
     "source": "STARWROUGHT Playtest v4.10"
   },
@@ -31,5 +36,5 @@
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!53c6f5149d602a2d"
+  "_key": "!items!ac7174a874a2650c"
 }
