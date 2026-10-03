@@ -89,7 +89,9 @@ into a Combat on the viewed scene with the Constellation their Activity names an
 Situation written on their Combatants, so every Initiative roll in the system rolls by Activity.
 Since 0.7.3 a member's road roll (Stealth while Avoiding Notice, say) is remembered on their row
 as a chip, and Begin the encounter offers, one checkbox per member, to keep it as the Initiative
-roll rather than throw the die twice. Every rule effect runs through the member's own methods and
+roll rather than throw the die twice; since 0.7.4 an Initiative rolled with a Constellation carries
+every modifier that Constellation's check does, Load Strain on Stealth included (ruling 111).
+Every rule effect runs through the member's own methods and
 cards; the party is never a
 combatant, and the loot values nothing. Downtime is the plan's last phase and is not built.
 

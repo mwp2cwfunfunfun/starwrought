@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.7.3";
+export const SYSTEM_VERSION = "0.7.4";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,

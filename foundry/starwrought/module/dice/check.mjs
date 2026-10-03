@@ -474,12 +474,18 @@ export class SwCheck {
       cfg.rank = prof.rank;
     }
 
-    // The sheet's own catch-all adjustments.
+    // The sheet's own catch-all adjustments. An Initiative rolled with a Constellation is a check
+    // in that Constellation (Mike, 2026-10-02, ruling 111: "ALL active modifiers for any roll
+    // should be applied even if that roll is used for initiative"), so it carries everything the
+    // check would, the check adjustment here and Load Strain below, and then Initiative's own terms
+    // on top. Through 0.7.3 an Initiative rolled with Stealth took neither.
+    const asCheck = (cfg.kind === "check") || (cfg.kind === "initiative");
     if (cfg.kind === "attack" && sys.bonuses?.attack) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Field.attackBonus"), value: sys.bonuses.attack });
-    } else if (cfg.kind === "check" && sys.bonuses?.checks) {
+    } else if (asCheck && sys.bonuses?.checks) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Field.checkBonus"), value: sys.bonuses.checks });
-    } else if (cfg.kind === "initiative") {
+    }
+    if (cfg.kind === "initiative") {
       if (sys.bonuses?.initiative) {
         parts.push({ label: game.i18n.localize("STARWROUGHT.Field.initiativeBonus"), value: sys.bonuses.initiative });
       }
@@ -509,8 +515,9 @@ export class SwCheck {
     // Load Strain as a penalty. Nothing else does." Stealth is applied here, untyped, as the
     // system's own flat adjustment. Climb and Swim are Athletics checks the engine cannot tell
     // from a grapple or a tumble, so the dialog offers the penalty on an Athletics check instead
-    // (#prompt). Until 0.6.0 every Might or Agility check took it, and Evade did too.
-    if ((cfg.kind === "check") && (SW.STRAIN_CHECKS[cfg.slug] === "always") && sys.loadStrain) {
+    // (#prompt). Until 0.6.0 every Might or Agility check took it, and Evade did too. An Initiative
+    // rolled with Stealth (Avoid Notice) is a Stealth check and takes it too (ruling 111, 0.7.4).
+    if (asCheck && (SW.STRAIN_CHECKS[cfg.slug] === "always") && sys.loadStrain) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Field.loadStrain"), value: -sys.loadStrain });
     }
 

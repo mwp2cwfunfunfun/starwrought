@@ -372,12 +372,16 @@ a ticked member's roll as Initiative: the sheet's `beginEncounter` action asks f
 `combat.setInitiative(id, value)` where `value` is the natural die plus
 `SwCheck.previewTotal(actor, { kind: "initiative", slug, modifiers: [...scouts, ...roll.modifiers] })`,
 the same die re-counted as an Initiative in one typed-stacking pass (the helm where the check
-lacked it, the sheet's Initiative adjustment in place of its check adjustment, the Scouts' +1
-stacking with a check's own Situation entry by the rule, and Load Strain coming off a Stealth
-check, since the engine's Initiative never takes it; whether it should is an open question for the
-book), and the card says so with the difference signed when it is not zero (ruling 109). Nothing
-computes with the record but that, nothing is enforced (the GM unticks a box), and the remembered
-roll stays afterwards. Phase 4 (Downtime) is planned, not built.
+lacked it, the sheet's Initiative adjustment, the Scouts' +1 stacking with a check's own Situation
+entry by the rule), and the card says so with the difference signed when it is not zero (ruling
+109). **Ruling 111 (Mike, 2026-10-02, 0.7.4): an Initiative rolled with a Constellation carries
+every modifier that Constellation's check does** ("ALL active modifiers for any roll should be
+applied even if that roll is used for initiative"): `SwCheck`'s Initiative assembly is the check
+assembly for the slug (the check adjustment, Load Strain on Stealth) plus Initiative's own terms
+(the helm, the Initiative adjustment, the Combatant's modifiers); through 0.7.3 a Stealth Initiative
+took neither Load Strain nor the check adjustment. Nothing computes with the record but that,
+nothing is enforced (the GM unticks a box), and the remembered roll stays afterwards. Phase 4
+(Downtime) is planned, not built.
 
 ## Where the source of truth lives
 
@@ -573,11 +577,14 @@ roll stays afterwards. Phase 4 (Downtime) is planned, not built.
   root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse over the
   `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100; phase 3, the road, as 0.7.2,
   rulings 101 to 107, and its second cut, the road roll remembered on the character and kept as
-  Initiative when the GM ticks it, as 0.7.3, rulings 108 to 110, the last release). Phase 4 is
+  Initiative when the GM ticks it, as 0.7.3, rulings 108 to 110, and the Initiative assembly
+  carrying every modifier of the Constellation's check, as 0.7.4, ruling 111, the last release).
+  Phase 4 is
   Downtime (a Days field the GM sets, the three Downtime
   Activities from the pack's Downtime Mode folder, Train through the shared Flare picker with its
   once-between-Milestones warning, which warns and never refuses, decision 14, and the Retrain and
-  Provision reminder lines; 0.7.4, the next number, since 0.7.3 went to the road roll), and it
+  Provision reminder lines; 0.7.5, the next number, since 0.7.3 and 0.7.4 went to the road roll
+  and the Initiative ruling), and it
   leans on the plan's handbook item 11 (Train "once
   between Milestones", counted for each character). **Phase 3 runs ahead of the book** on four
   sentences and a strike: the party's Travel Speed after P344 (item 4), the Fatigued row's "can
@@ -602,6 +609,14 @@ roll stays afterwards. Phase 4 (Downtime) is planned, not built.
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (system 0.7.4): the 0.7.3 question whether an Initiative rolled with Stealth
+takes Load Strain, answered by Mike ("ALL active modifiers for any roll should be applied even if
+that roll is used for initiative"): `SwCheck`'s Initiative assembly now carries everything the
+Constellation's check does (the check adjustment, Load Strain on Stealth) before Initiative's own
+terms, so a fresh Avoid Notice Initiative, the tracker's formula, the grid's cell and a kept road
+roll all agree with the Stealth check (ruling 111, recorded in the 0.7.4 changelog entry). No
+handbook moved and `data/SYNC.json` is untouched.
 
 Cleared 2026-10-02 (the Party Sheet, phase 3's second cut, system 0.7.3): Mike's two sentences on
 the On the road tab after 0.7.2 (the result of the rolls shown on the tab; a box to use that roll

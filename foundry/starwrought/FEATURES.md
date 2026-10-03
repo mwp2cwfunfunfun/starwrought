@@ -684,15 +684,17 @@ Initiative assembly for that Constellation (`SwCheck.previewTotal` with `kind: "
 static and pure, so nothing is rolled and nothing is written to work it out) added to the natural
 die the check threw, with the Combatant's modifiers and the typed extras the check itself carried
 (the dialog's situational entry, kept on the record) resolved in one pass, so a +2 Situation for
-cover and a Scout's +1 Situation stack as every check does, highest only. Against the check's own
-total the difference is the helm's penalty where the check did not already carry it (an Awareness
-check does, so a Search's Awareness never carries the helm twice), the sheet's Initiative
-adjustment in place of its check adjustment, the Scouts' +1, and Load Strain coming off a Stealth
-check, since the engine's Initiative never takes it. A Stealth 17 rolled by an Open-helm wearer at
-−1 with a Scout present and no Load Strain is kept as 17 + 0; the card names the terms whenever the
-difference is not zero ("..., +1 for Initiative's own terms in place of the check's (the helm, the
-Scouts' bonus, the sheet's adjustment; Load Strain comes off, since Initiative never takes it):
-18."). The value is written with
+cover and a Scout's +1 Situation stack as every check does, highest only. Since 0.7.4 an
+Initiative rolled with a Constellation carries every modifier that Constellation's check does
+(ruling 111; Mike: "ALL active modifiers for any roll should be applied even if that roll is used
+for initiative"): the check adjustment, and Load Strain on a Stealth roll, which through 0.7.3 an
+Initiative never took. So against the check's own total the only difference is Initiative's own
+terms: the helm's penalty where the check did not already carry it (an Awareness check does, so a
+Search's Awareness never carries the helm twice), the sheet's Initiative adjustment, and the
+Scouts' +1. A Stealth 17 rolled by an Open-helm wearer at −1 with a Scout present is kept as 17 + 0,
+whatever their Load Strain; the card names the terms whenever the difference is not zero ("..., +1
+for Initiative's own terms (the helm, the Scouts' bonus, the sheet's Initiative adjustment): 18.").
+The value is written with
 `combat.setInitiative` onto every unrolled Combatant of the member, so the tracker, the party row
 and the grid's cell read it as any rolled Initiative, and the Combatant has rolled as far as a
 second Begin is concerned. Adversaries do not roll; they carry an Initiative Threshold and the GM
@@ -1457,8 +1459,8 @@ Combatants have their Initiative set (`combat.setInitiative`) to the roll's tota
 own terms, the arithmetic under Initiative (section 2); the card's line for them replaces "rolls
 Stealth for Initiative" with "Wren keeps the Stealth 17 rolled on the road as Initiative." or,
 when the terms move it, "Wren keeps the Stealth 17 rolled on the road as Initiative, +1 for
-Initiative's own terms in place of the check's (the helm, the Scouts' bonus, the sheet's
-adjustment; Load Strain comes off, since Initiative never takes it): 18.", the Scout's Step and
+Initiative's own terms (the helm, the Scouts' bonus, the sheet's Initiative adjustment): 18.",
+the Scout's Step and
 the Defender's shield lines following as they do. An unticked member rolls fresh from the tracker
 or the sheet as before; a kept member has rolled, so a second Begin names them and leaves them
 alone; the remembered roll stays on the character and its chip on the row. The GM decides per

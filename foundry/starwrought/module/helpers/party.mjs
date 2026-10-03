@@ -1608,12 +1608,13 @@ function degreesOf(item) {
  * a character "can roll" their Activity's Constellation when the encounter begins, and a roll
  * already made in that Constellation on the road is that roll. `keep` names the members (by Actor
  * uuid) the GM ticked in the sheet's dialog (`keepableRolls` lists who may be asked about); for
- * each whose `roadRoll` is usable and whose Combatants have not rolled, the Initiative is the
- * roll's total plus the Initiative-only terms a check does not carry, which the check engine
- * finds as the difference between its Initiative assembly for that Constellation (with the
- * Combatant's Scout modifiers) and its check assembly: the helm's penalty, the sheet's Initiative
- * adjustment less its check adjustment, the Scouts' +1, and whatever else the two assemblies
- * differ by (Load Strain comes off a Stealth check and not off Initiative, so it comes back here).
+ * each whose `roadRoll` is usable and whose Combatants have not rolled, the Initiative is the same
+ * die re-counted as an Initiative by the check engine: the natural die plus its Initiative
+ * assembly for that Constellation with the Combatant's Scout modifiers and the check's own typed
+ * extras resolved in one pass. Since ruling 111 (0.7.4) an Initiative rolled with a Constellation
+ * carries every modifier that Constellation's check does, so against the check's total the only
+ * difference is Initiative's own terms: the helm where the check lacked it, the sheet's Initiative
+ * adjustment, and the Scouts' +1 (stacking with a check's own Situation entry by the rule).
  * The flags are written first as for anyone, `setInitiative` sets the number, the card says what
  * was kept and by how much it moved, and the remembered roll is left in place. An unticked member
  * rolls fresh as before; nothing else about Begin changes.
@@ -1695,9 +1696,10 @@ export async function beginEncounter(party, { keep = [] } = {}) {
   // (the dialog's situational entry) resolved in ONE pass, so a +2 Situation for cover and a
   // Scout's +1 Situation stack as the rule says, highest only, rather than both landing (the
   // review of 0.7.3). Against the check's total that is the helm where the check lacked it, the
-  // sheet's Initiative adjustment in place of its check adjustment, the Scouts' bonus, and Load
-  // Strain coming off a Stealth check, since the engine's Initiative never takes it (nor would a
-  // fresh die; whether it should is a question for the book, in the CHANGELOG's Notes). A record
+  // sheet's Initiative adjustment and the Scouts' bonus, and nothing else: since ruling 111
+  // (0.7.4) an Initiative rolled with a Constellation carries every modifier that Constellation's
+  // check does, Load Strain on a Stealth roll included, so the kept die lands where a fresh one
+  // would with the same face. A record
   // with no die (none is written without one, but the schema allows it) falls back to the total
   // plus the gap between the two assemblies. `previewTotal` is static and pure.
   const kept = new Set(Array.isArray(keep) ? keep : []);

@@ -7,6 +7,46 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.7.4 (2026-10-02): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved in the book, so `data/SYNC.json` is
+untouched. One rule moved in the system, on Mike's word. The 0.7.3 entry asked whether an
+Initiative rolled with Stealth should take Load Strain as a Stealth check does; the answer (Mike,
+2026-10-02): "Yes - ALL active modifiers for any roll should be applied even if that roll is used
+for initiative." A patch bump; nothing stored changes, so no migration.
+
+### Changed
+
+- **An Initiative rolled with a Constellation carries every modifier that Constellation's check
+  does** (ruling 111). `SwCheck`'s Initiative assembly for a Skill or Combat Style slug is now the
+  check assembly for that slug (Attribute, Proficiency, the sheet's check adjustment, Frightened,
+  and Load Strain where the check takes it: Stealth) with Initiative's own terms on top (the
+  sheet's Initiative adjustment, the helm's penalty, the Combatant's typed modifiers). Through
+  0.7.3 a Stealth Initiative took neither the check adjustment nor Load Strain, so a fighter in
+  plate Avoiding Notice rolled a worse Stealth check than Stealth Initiative. The default Awareness
+  Initiative is unchanged: it was already the Awareness check (the Defense's own modifiers, the
+  helm among them) plus the Initiative adjustment. Every Initiative reader follows, since all of
+  them ask the engine: the tracker's formula (`_getInitiativeFormula`), the check dialog
+  (`rollInitiativeWithCheck`, the sheet's Roll Initiative, the grid's cell) and a kept road roll
+  (`beginEncounter`, whose re-count of the die now lands where a fresh die with the same face
+  would, Load Strain included).
+- **The kept-roll card and the Begin dialog** no longer say that Load Strain comes off: the terms
+  Initiative adds to a check are the helm where the check lacked it, the Scouts' bonus and the
+  sheet's Initiative adjustment, and the strings name those three.
+- The version stamps read 0.7.4 in all three places.
+
+### Notes
+
+- **Ruling 111** (Mike, 2026-10-02): "ALL active modifiers for any roll should be applied even if
+  that roll is used for initiative." An Initiative rolled with a Constellation is a check in that
+  Constellation and carries everything the check carries; Initiative's own terms go on top. The
+  0.7.3 Notes' question is closed by it.
+- Phase 4 of the Party Sheet (Downtime) takes the next number, 0.7.5. `Starwrought_Players_Handbook_v4.16.docx`
+  is still on the shelf, untracked and unsynced; `build_all.mjs` reports the drift until that
+  sync.
+
+---
+
 ## 0.7.3 (2026-10-02): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
