@@ -91,7 +91,10 @@ docx, never compiles the LevelDB packs, and reports handbook drift under a "HAND
 warning in content mode)" banner and exits 0, because adding a Talent to a sheet is not a handbook
 sync (ruling 115); a failing step and the stamp check still exit 1, and `--content` with
 `--skip-slow`, `--check` or `--accept-phb` is an error (a handbook sync is never stamped from the
-mode whose point is that it is not one). `build_foundry.mjs` stamps every document with
+mode whose point is that it is not one). `build_all.mjs` resolves the Python its steps run with by
+probing for the four modules they import (`STARWROUGHT_PYTHON`, `python`, `py -3`, then every
+install `py -0p` lists) and prints the one it chose, because Mike's first double-click of
+`sync_content.cmd` resolved a `python` without openpyxl (2026-10-03). `build_foundry.mjs` stamps every document with
 `flags.starwrought.contentHash` (a short SHA-1 of its canonical content, keys sorted) and writes
 `packs/_source/index.json` (`stamp`; a `build` hash over every document hash in id order, which
 changes only when content does; `system`; and per pack every document and folder with `_id`,

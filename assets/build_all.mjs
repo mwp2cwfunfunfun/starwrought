@@ -52,27 +52,95 @@ if (content && (checkOnly || skipSlow || accept)) {
   process.exit(1);
 }
 
-const PY = process.platform === "win32" ? "python" : "python3";
+/**
+ * The modules the Python steps import between them. An interpreter that has all four is the one
+ * the pipeline was set up with; one that lacks them is a different Python (a venv, the Microsoft
+ * Store's placeholder, a second install), and running the steps with it fails on the first import.
+ */
+const PY_MODULES = ["openpyxl", "matplotlib", "reportlab", "docx"];
 
 /**
- * Every step, in the order CLAUDE.md prints them. `slow` marks what --skip-slow leaves out. `content`
- * is the step's shape in --content mode: `false` skips it (the sheets, the compendium docx and the
- * features docx belong to a release, not to a content change), an argument list replaces `args` (the
- * plates only where the Constellation moved; the pack sources without a compile), and absent runs
- * the step as it is.
+ * Where a Python might be, in the order worth trying: the one named in STARWROUGHT_PYTHON, the
+ * `python` on PATH, the py launcher's default, then every install the launcher knows by its full
+ * path (`py -0p`), which reaches past an active venv or the Store placeholder sitting first on PATH.
+ * @returns {Array<{cmd: string, args: string[], why: string}>}
+ */
+function pythonCandidates() {
+  const list = [];
+  if (process.env.STARWROUGHT_PYTHON) list.push({ cmd: process.env.STARWROUGHT_PYTHON, args: [], why: "STARWROUGHT_PYTHON" });
+  if (process.platform === "win32") {
+    list.push({ cmd: "python", args: [], why: "python on PATH" });
+    list.push({ cmd: "py", args: ["-3"], why: "the py launcher" });
+    const listed = spawnSync("py", ["-0p"], { encoding: "utf8", shell: false });
+    if (!listed.error && (listed.status === 0)) {
+      for (const line of `${listed.stdout}\n${listed.stderr}`.split(/\r?\n/)) {
+        const found = line.match(/(\S:\\\S.*python\.exe)\s*$/i)?.[1];
+        if (found && !list.some(c => c.cmd.toLowerCase() === found.toLowerCase())) {
+          list.push({ cmd: found, args: [], why: "registered with the py launcher" });
+        }
+      }
+    }
+  } else {
+    list.push({ cmd: "python3", args: [], why: "python3 on PATH" });
+    list.push({ cmd: "python", args: [], why: "python on PATH" });
+  }
+  return list;
+}
+
+/** One line on why a candidate was not it: not found, the Store placeholder's advice, or the import that failed. */
+function probeSummary(probe) {
+  if (probe.error) return probe.error.code === "ENOENT" ? "not found" : probe.error.message;
+  const text = `${probe.stderr ?? ""}\n${probe.stdout ?? ""}`.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  return text.find(s => /Error|not found/i.test(s)) ?? text.at(-1) ?? `exited ${probe.status}`;
+}
+
+/**
+ * The Python the steps run with: the first candidate that imports every module the steps need
+ * (Mike, 2026-10-03: the first double-click of sync_content.cmd resolved a `python` without
+ * openpyxl and fell over at xlsx_to_trees' first import, while this shell's `python` had it). The
+ * probe prints the interpreter's path so the header can say which one was chosen; none usable is
+ * a plain failure that names every candidate tried and the install line.
+ * @returns {{cmd: string, args: string[], why: string, path: string}}
+ */
+function resolvePython() {
+  const tried = [];
+  const probe = `import sys, ${PY_MODULES.join(", ")}; print(sys.executable)`;
+  for (const candidate of pythonCandidates()) {
+    const result = spawnSync(candidate.cmd, [...candidate.args, "-c", probe], { encoding: "utf8", shell: false });
+    if (!result.error && (result.status === 0)) {
+      return { ...candidate, path: (result.stdout ?? "").trim().split(/\r?\n/).at(-1) || candidate.cmd };
+    }
+    tried.push(`  ${[candidate.cmd, ...candidate.args].join(" ")} (${candidate.why}): ${probeSummary(result)}`);
+  }
+  console.error("\nNo Python with the pipeline's modules was found. Tried:");
+  for (const line of tried) console.error(line);
+  console.error(`\nInstall them into the Python you mean to use:\n  <python> -m pip install ${PY_MODULES.map(m => (m === "docx" ? "python-docx" : m)).join(" ")}`);
+  console.error("or point STARWROUGHT_PYTHON at an interpreter that has them, e.g. C:\\Python313\\python.exe.\n");
+  process.exit(1);
+}
+
+/** Resolved once the steps are about to run; --check runs no Python and needs none. */
+const PY = checkOnly ? null : resolvePython();
+
+/**
+ * Every step, in the order CLAUDE.md prints them. `py` marks a Python step, run with the resolved
+ * interpreter; `slow` marks what --skip-slow leaves out. `content` is the step's shape in
+ * --content mode: `false` skips it (the sheets, the compendium docx and the features docx belong to
+ * a release, not to a content change), an argument list replaces `args` (the plates only where the
+ * Constellation moved; the pack sources without a compile), and absent runs the step as it is.
  */
 const STEPS = [
-  { name: "xlsx_to_trees", cmd: PY, args: ["assets/xlsx_to_trees.py"] },
-  { name: "inject", cmd: PY, args: ["assets/inject.py"] },
-  { name: "render_constellations", cmd: PY, args: ["assets/render_constellations.py"], slow: true,
+  { name: "xlsx_to_trees", py: true, args: ["assets/xlsx_to_trees.py"] },
+  { name: "inject", py: true, args: ["assets/inject.py"] },
+  { name: "render_constellations", py: true, args: ["assets/render_constellations.py"], slow: true,
     content: ["assets/render_constellations.py", "--changed"] },
-  { name: "sheet_gen", cmd: PY, args: ["assets/sheet_gen.py"], slow: true, content: false },
+  { name: "sheet_gen", py: true, args: ["assets/sheet_gen.py"], slow: true, content: false },
   { name: "build_phb", cmd: "node", args: ["assets/build_phb.js"], slow: true, content: false },
   { name: "build_foundry", cmd: "node", args: ["assets/build_foundry.mjs"],
     content: ["assets/build_foundry.mjs", "--no-compile"] },
   // FEATURES.md as a Word document, so the printable copy never lags the file the handbook rule moves.
-  { name: "build_features_docx", cmd: PY, args: ["assets/build_features_docx.py"], content: false },
-  { name: "check_style", cmd: PY, args: ["assets/check_style.py", "--quiet"] }
+  { name: "build_features_docx", py: true, args: ["assets/build_features_docx.py"], content: false },
+  { name: "check_style", py: true, args: ["assets/check_style.py", "--quiet"] }
 ];
 
 /* -------------------------------------------- */
@@ -117,9 +185,12 @@ function handbookHash(book) {
 /** Run one step; `args` and `label` are the content-mode overrides, else the step's own. */
 function run(step, { args: stepArgs = step.args, label = step.name } = {}) {
   process.stdout.write(`\n=== ${label} ===\n`);
-  const result = spawnSync(step.cmd, stepArgs, { cwd: ROOT, stdio: "inherit", shell: false });
+  // A Python step runs with the interpreter resolvePython() chose, launcher arguments included.
+  const cmd = step.py ? PY.cmd : step.cmd;
+  const argv = step.py ? [...PY.args, ...stepArgs] : stepArgs;
+  const result = spawnSync(cmd, argv, { cwd: ROOT, stdio: "inherit", shell: false });
   if (result.error) {
-    console.error(`  could not run ${step.cmd}: ${result.error.message}`);
+    console.error(`  could not run ${cmd}: ${result.error.message}`);
     return false;
   }
   if (result.status !== 0) {
@@ -230,6 +301,7 @@ const book = currentHandbook();
 const recorded = readSync().phb;
 console.log(`  handbook on the shelf: ${book ? book.file : "none"}`);
 console.log(`  repository synced to:  v${recorded ?? "nothing"}`);
+if (PY) console.log(`  python:                ${PY.path} (${PY.why})`);
 
 if (!checkOnly) {
   for (const step of STEPS) {

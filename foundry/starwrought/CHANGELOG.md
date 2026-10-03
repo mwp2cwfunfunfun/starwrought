@@ -142,7 +142,12 @@ content mode reports it as a warning and goes on (ruling 115).
 
 - **`build_all.mjs`** gains the `--content` mode, and its usage block names it beside `--check`,
   `--skip-slow` and `--accept-phb`; the full run is what it was, LevelDB compile and drift gate
-  included.
+  included. It also stops trusting `python` on PATH: Mike's first double-click of
+  `sync_content.cmd` resolved an interpreter without openpyxl and fell over at the first import, so
+  the script now probes for the four modules the steps need (`STARWROUGHT_PYTHON` if set, then
+  `python`, `py -3`, then every install the py launcher lists by path), runs every Python step
+  with the first that has them, prints which in its header, and when none does names what it
+  tried and the pip line.
 - **`build_foundry.mjs`** keeps `_stats.systemId` on every document, writes `index.json` beside
   the sources from `writeSources()` and stamps the hash in `push()`, the one place every builder
   (`item()`, `folder()`, the rules journal and the macros) passes through once its document is
