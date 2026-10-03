@@ -182,10 +182,26 @@ export class SwItem extends Item {
 
   /* -------------------------------------------- */
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   *
+   * THE PARTY'S LOOT (0.7.1; party-sheet-plan.md, part 6): a party holds gear and nothing else.
+   * A Talent, a Constellation, a chassis or a Maneuver dropped on a party is refused here, with a
+   * notice, before it lands, whoever drops it and from wherever (the compendium, the sidebar, a
+   * character sheet). The fence is on the document so every path meets it: the party sheet's
+   * drop, a macro, a module.
+   */
   async _preCreate(data, options, user) {
     const allowed = await super._preCreate(data, options, user);
     if (allowed === false) return false;
+    const parent = this.parent;
+    if ((parent?.documentName === "Actor") && (parent.type === SW.PARTY_TYPE) && !this.isPhysical) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Loot.fenceNotPhysical", {
+        name: this.name,
+        type: game.i18n.localize(CONFIG.Item.typeLabels?.[this.type] ?? this.type)
+      }));
+      return false;
+    }
     // Give new Items a type-appropriate icon rather than the generic bag.
     if (!data.img || (data.img === "icons/svg/item-bag.svg")) {
       const img = SW.TYPE_ICONS[this.type];

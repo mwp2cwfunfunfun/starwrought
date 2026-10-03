@@ -1,5 +1,5 @@
 /**
- * The party's operations (0.7.0; party-sheet-plan.md, parts 1 to 3).
+ * The party's operations (0.7.0; party-sheet-plan.md, parts 1 to 3; 0.7.1 adds parts 6 and 7).
  *
  * The party sheet is the GM's console and the players' window; these are the verbs it calls, and
  * nothing else needs to know about them. The party never does a member's arithmetic: a rest is the
@@ -10,19 +10,28 @@
  * the player-edit audit (documents/audit.mjs) never doubles a card the party has already posted.
  *
  * Cards: the party speaks (`ChatMessage.getSpeaker({ actor: party })`) for Begin session, the
- * Milestone award, Take back and the party's night; the member speaks for a Hero Point award or
- * correction and for a Deferred point spent. Dialogs belong to the sheet; these functions refuse,
- * write and say.
+ * Milestone award, Take back, the party's night, the Split and Ask everyone; the member speaks for
+ * a Hero Point award or correction, a Deferred point spent and a Give to. Dialogs belong to the
+ * sheet; these functions refuse, write and say.
  *
  * Rulings (Mike, 2026-10-02, numbered on from the v4.14 report): 91 a Milestone award goes to
  * every member by default, with a checkbox per member to withhold it; 92 when the fourth Milestone
  * raises a level, current Vigor rises by the same amount as the maximum; 93 Begin session sets
  * every member's Hero Points to exactly 1; 94 Deferred Talent Points are counted on the character
  * and nothing is enforced; 95 players see every member's Thresholds on the Skills grid.
+ *
+ * Phase 2 (0.7.1): 96 the loot and the purse are a convenience with no rule authority (they move
+ * Items and coin and value nothing; a row prints its price, nothing computes with it); 99 Split
+ * divides the purse in copper equally among the ticked members and the remainder stays in the
+ * purse; 100 Ask everyone posts one card spoken by the party with a Roll button per member that
+ * only the member's owner (or the GM) can press, the Threshold optional and hidden from players
+ * unless the GM shows it. The GM's own moves live here (Give to, Split); a player's Take or Give
+ * runs on the active GM's client through documents/party-socket.mjs (rulings 97 and 98).
  */
 
 import * as SW from "../config.mjs";
 import { cardHtml, postCard } from "../documents/combat.mjs";
+import { COIN_IN_COPPER } from "../data/party.mjs";
 
 const { escapeHTML } = foundry.utils;
 const L = key => game.i18n.localize(key);
@@ -530,4 +539,346 @@ export async function spendDeferred(actor) {
     lines: [F("STARWROUGHT.Party.deferredSpent", { name: escapeHTML(actor.name), left })]
   });
   return left;
+}
+
+/* -------------------------------------------- */
+/*  Coin (part 6, 0.7.1)                        */
+/* -------------------------------------------- */
+
+/** A purse or a character's coin as copper, through the ladder in data/party.mjs. */
+export function toCopper(currency) {
+  return Object.entries(COIN_IN_COPPER)
+    .reduce((sum, [coin, worth]) => sum + (Math.max(0, Math.floor(Number(currency?.[coin]) || 0)) * worth), 0);
+}
+
+/** Copper broken into gp, sp and cp, the larger coin first, so 3025 is 30 gp 2 sp 5 cp. */
+export function fromCopper(copper) {
+  let left = Math.max(0, Math.floor(Number(copper) || 0));
+  const coins = {};
+  for (const [coin, worth] of Object.entries(COIN_IN_COPPER)) {
+    coins[coin] = Math.floor(left / worth);
+    left -= coins[coin] * worth;
+  }
+  return coins;
+}
+
+/** Copper as a card prints it: "30 gp 2 sp 5 cp", the empty coins left out, "0 cp" for nothing. */
+export function coinText(copper) {
+  const parts = Object.entries(fromCopper(copper)).filter(([, n]) => n > 0).map(([coin, n]) => `${n} ${coin}`);
+  return parts.length ? parts.join(" ") : "0 cp";
+}
+
+/* -------------------------------------------- */
+/*  The loot (part 6, 0.7.1)                    */
+/* -------------------------------------------- */
+
+/** Is this Item one a party can hold: a weapon, a piece of armor, a shield or gear (SW.PHYSICAL_TYPES)? */
+export function isLoot(item) {
+  return !!item && (item.documentName === "Item") && SW.PHYSICAL_TYPES.includes(item.type);
+}
+
+/**
+ * May this stack move from the party to that member? The GM's own check before a Give to; the
+ * relay (documents/party-socket.mjs) makes the same checks again on the GM's client for a Take,
+ * trusting its payload for nothing but ids and the count.
+ * @param {Actor} party
+ * @param {Item} item        An Item embedded on the party.
+ * @param {Actor} actor      The destination character.
+ * @param {number} quantity  How many of the stack.
+ * @returns {{count: number, stock: number, refusal: string|null}}  The count and the stock, or the i18n key saying why not.
+ */
+export function lootMoveCheck(party, item, actor, quantity) {
+  const stock = Number(item?.system?.quantity) || 0;
+  const count = Math.floor(Number(quantity) || 0);
+  if (!item || (item.parent !== party)) return { count, stock, refusal: "STARWROUGHT.Loot.giveToGone" };
+  if (!isLoot(item)) return { count, stock, refusal: "STARWROUGHT.Loot.giveToNotPhysical" };
+  const member = !!actor && (party.system.members ?? []).some(m => m.uuid === actor.uuid);
+  if (!member || (actor.type !== "character")) return { count, stock, refusal: "STARWROUGHT.Loot.giveToNoMember" };
+  if ((count < 1) || (count > stock)) return { count, stock, refusal: "STARWROUGHT.Loot.giveToNotEnough" };
+  return { count, stock, refusal: null };
+}
+
+/**
+ * Move part or all of a stack from one Actor to another. A copy of the Item's source data lands on
+ * the destination FIRST, with `system.quantity` the moved count and `system.state` "carried" when
+ * the destination is a character (carry state means nothing on a party, and a thing taken from
+ * the loot is in the pack until an Interact draws it), and the source is decremented or deleted
+ * SECOND, so a failure between the two leaves a duplicate and never a loss (plan, part 6). Both
+ * writes are announced, so the audit says nothing. No merging: arrows taken from the party are a
+ * second stack beside the character's own, as a drop from the compendium would be.
+ * @param {Item} item
+ * @param {Actor} destination
+ * @param {number} count
+ * @returns {Promise<{created: Item|null, left: number}>}  The new Item, and how many stayed behind.
+ */
+export async function moveStack(item, destination, count) {
+  const stock = Number(item.system.quantity) || 0;
+  const moved = Math.clamp(Math.floor(Number(count) || 0), 1, Math.max(1, stock));
+  const data = item.toObject();
+  delete data._id;
+  delete data.folder;
+  delete data.sort;
+  data.system ??= {};
+  data.system.quantity = moved;
+  if (destination.type !== SW.PARTY_TYPE) data.system.state = "carried";
+  const [created] = await destination.createEmbeddedDocuments("Item", [data], { swAnnounced: true });
+  const left = Math.max(0, stock - moved);
+  if (left > 0) await item.update({ "system.quantity": left }, { swAnnounced: true });
+  else await item.delete({ swAnnounced: true });
+  return { created: created ?? null, left };
+}
+
+/**
+ * The GM's direct Give to (plan, part 6): the stack, or part of it, lands on the member as carried
+ * and leaves the party, and the member speaks: "Toric is given a Dagger." This is the one move
+ * that needs no relay, since the GM writes both documents; a player's Take or Give goes through
+ * documents/party-socket.mjs (ruling 97). Refused, with a notice and no write, when the Item is
+ * gone from the party, is not physical, the character is not a member, or the count is not in
+ * stock.
+ * @param {Actor} party
+ * @param {Item} item
+ * @param {Actor} actor
+ * @param {number|null} [quantity]  How many; the whole stack when null.
+ * @returns {Promise<Item|null>}  The Item created on the member, or null when refused.
+ */
+export async function giveTo(party, item, actor, quantity = null) {
+  if (!game.user.isGM) return null;
+  const asked = (quantity === null || quantity === undefined) ? (Number(item?.system?.quantity) || 0) : quantity;
+  const { count, stock, refusal } = lootMoveCheck(party, item, actor, asked);
+  if (refusal) {
+    ui.notifications.warn(F(refusal, { name: actor?.name ?? "", item: item?.name ?? "", count, stock }));
+    return null;
+  }
+  const { created, left } = await moveStack(item, actor, count);
+  const name = escapeHTML(actor.name);
+  const itemName = escapeHTML(item.name);
+  let line = (count === 1)
+    ? F("STARWROUGHT.Loot.givenOne", { name, item: itemName })
+    : F("STARWROUGHT.Loot.givenMany", { name, item: itemName, count });
+  if (left > 0) line += ` ${F("STARWROUGHT.Loot.left", { left })}`;
+  await postMemberCard(actor, {
+    root: "sw-loot-card",
+    icon: "fa-solid fa-hand-holding",
+    title: L("STARWROUGHT.Loot.cardTitle"),
+    lines: [line]
+  });
+  return created;
+}
+
+/* -------------------------------------------- */
+/*  The purse (part 6, 0.7.1)                   */
+/* -------------------------------------------- */
+
+/**
+ * What a Split would do, for the dialog: the purse in copper, each ticked member's share and the
+ * remainder, before anything is written.
+ * @param {Actor} party
+ * @param {number} count  How many members are ticked.
+ * @returns {{total: number, share: number, remainder: number}}
+ */
+export function previewSplit(party, count) {
+  const total = toCopper(party.system.currency);
+  const n = Math.max(0, Math.floor(Number(count) || 0));
+  if (!n) return { total, share: 0, remainder: total };
+  return { total, share: Math.floor(total / n), remainder: total % n };
+}
+
+/**
+ * Split the purse among the ticked members (ruling 99): the coin to copper, an equal share to each
+ * in one `Actor.updateDocuments` batch (announced, so no Adjusted card doubles it), the remainder
+ * written back to the purse, and one card spoken by the party listing every share and what
+ * stayed. A share is added to what the member already holds, coin by coin, so a member's own gp,
+ * sp and cp are never re-counted into other denominations. Refused, with a notice and no write,
+ * when nobody is ticked, the purse is empty, or it holds less than one copper a head.
+ * @param {Actor} party
+ * @param {string[]} uuids  The ticked members.
+ * @returns {Promise<{total: number, share: number, remainder: number, members: string[]}|null>}
+ */
+export async function splitPurse(party, uuids) {
+  if (!game.user.isGM) return null;
+  const chosen = new Set(Array.isArray(uuids) ? uuids : []);
+  const members = resolveMembers(party).filter(m => m.actor && chosen.has(m.uuid)).map(m => m.actor);
+  if (!members.length) {
+    ui.notifications.warn(L("STARWROUGHT.Loot.splitNoMembers"));
+    return null;
+  }
+  const { total, share, remainder } = previewSplit(party, members.length);
+  if (total <= 0) {
+    ui.notifications.warn(L("STARWROUGHT.Loot.splitEmpty"));
+    return null;
+  }
+  if (share <= 0) {
+    ui.notifications.warn(F("STARWROUGHT.Loot.splitTooSmall", { total: coinText(total), n: members.length }));
+    return null;
+  }
+
+  const shareCoins = fromCopper(share);
+  const updates = members.map(actor => {
+    const have = actor.system.currency ?? {};
+    const update = { _id: actor.id };
+    for (const coin of Object.keys(COIN_IN_COPPER)) {
+      update[`system.currency.${coin}`] = Math.max(0, Math.floor(Number(have[coin]) || 0)) + shareCoins[coin];
+    }
+    return update;
+  });
+  await Actor.implementation.updateDocuments(updates, { swAnnounced: true });
+  await party.update({ "system.currency": fromCopper(remainder) });
+
+  const lines = [escapeHTML(F("STARWROUGHT.Loot.splitLine", { total: coinText(total), n: members.length, share: coinText(share) }))];
+  for (const actor of members) {
+    lines.push(escapeHTML(F("STARWROUGHT.Loot.splitShare", {
+      name: actor.name, share: coinText(share), now: coinText(toCopper(actor.system.currency))
+    })));
+  }
+  lines.push(escapeHTML(remainder
+    ? F("STARWROUGHT.Loot.splitRemainder", { remainder: coinText(remainder) })
+    : L("STARWROUGHT.Loot.splitNoRemainder")));
+  await postPartyCard(party, {
+    root: "sw-purse-card",
+    icon: "fa-solid fa-coins",
+    title: L("STARWROUGHT.Loot.splitTitle"),
+    lines
+  });
+  return { total, share, remainder, members: members.map(a => a.uuid) };
+}
+
+/* -------------------------------------------- */
+/*  Ask everyone (part 7, 0.7.1)                */
+/* -------------------------------------------- */
+
+/** The `data-sw-action` the card's buttons carry and the flag kind on the message, for documents/chat.mjs. */
+export const ASK_CARD_KIND = "partyAsk";
+
+/**
+ * What the card calls the thing asked for: a Defense's label, or the Constellation's name as a
+ * member's own data spells it (falling back to the content index, then the slug).
+ * @param {Actor} party
+ * @param {string} slug
+ * @param {object} [options]
+ * @param {"check"|"defense"} [options.kind]
+ * @param {string} [options.key]  The Defense key.
+ * @returns {string}
+ */
+export function askedName(party, slug, { kind = "check", key = "" } = {}) {
+  if (kind === "defense") return L(SW.DEFENSES[key]?.label ?? SW.DEFENSES.awareness.label);
+  for (const actor of memberActors(party)) {
+    const name = actor.system.constellations?.[slug]?.name;
+    if (name) return name;
+  }
+  return SW.getConstellation(slug)?.name ?? slug;
+}
+
+/**
+ * Ask everyone (ruling 100): one public card spoken by the party, "Everyone roll Awareness.", with
+ * a row per member and a Roll button on each. A button carries the member's uuid as
+ * `data-owner-uuid`, which the render pass in documents/chat.mjs removes for every viewer who does
+ * not own the member (the GM owns everything), and `data-sw-action="partyAsk"`, which the
+ * dispatcher there hands to `rollAskedCheck`. The Threshold goes onto the buttons and into the
+ * flags only when the GM chose to show it. A Threshold the GM kept hidden is written nowhere:
+ * Foundry has no store a player's client cannot read (a whispered message, a flag and a world
+ * setting all reach every client and differ only in what is displayed), so the card says the GM
+ * holds it and reads the totals, which the plan calls the normal case anyway (Search and
+ * Investigate have the GM apply the roll to the Thresholds).
+ * @param {Actor} party
+ * @param {string} slug  The Constellation's slug (a Defense's own slug for a Defense).
+ * @param {object} [options]
+ * @param {"check"|"defense"} [options.kind]  Which method the member rolls with.
+ * @param {string} [options.key]  The Defense key, for a Defense.
+ * @param {number|null} [options.threshold]  The number to beat, if the GM has one.
+ * @param {boolean} [options.show]  Whether players see the Threshold.
+ * @returns {Promise<ChatMessage|null>}
+ */
+export async function askEveryone(party, slug, { kind = "check", key = "", threshold = null, show = false } = {}) {
+  if (!game.user.isGM) return null;
+  const actors = memberActors(party);
+  if (!actors.length) {
+    ui.notifications.warn(L("STARWROUGHT.Party.askNoMembers"));
+    return null;
+  }
+  const isDefense = kind === "defense";
+  if (isDefense && !SW.DEFENSES[key]) return null;
+  if (!isDefense && !slug) return null;
+  const name = askedName(party, slug, { kind, key });
+  const has = Number.isNumeric(threshold);
+  const shown = (show && has) ? Number(threshold) : null;
+
+  const note = (shown !== null) ? F("STARWROUGHT.Party.askThresholdShown", { threshold: shown })
+    : has ? L("STARWROUGHT.Party.askThresholdHeld")
+    : L("STARWROUGHT.Party.askNoThreshold");
+  const rows = actors.map(actor => {
+    const attrs = [
+      `data-sw-action="${ASK_CARD_KIND}"`,
+      `data-owner-uuid="${escapeHTML(actor.uuid)}"`,
+      `data-slug="${escapeHTML(slug)}"`,
+      `data-kind="${isDefense ? "defense" : "check"}"`,
+      `data-key="${escapeHTML(isDefense ? key : "")}"`
+    ];
+    if (shown !== null) attrs.push(`data-threshold="${shown}"`);
+    return `<li class="sw-ask-row">
+      <img class="sw-ask-portrait" src="${escapeHTML(actor.img)}" alt="">
+      <span class="sw-ask-name">${escapeHTML(actor.name)}</span>
+      <button type="button" ${attrs.join(" ")}><i class="fa-solid fa-dice-d20"></i> ${escapeHTML(L("STARWROUGHT.Roll.roll"))}</button>
+    </li>`;
+  });
+  const content = `<div class="starwrought action-card sw-party-card sw-ask-card" data-actor-uuid="${escapeHTML(party.uuid)}">
+    <h3><i class="fa-solid fa-bullhorn"></i> ${escapeHTML(F("STARWROUGHT.Party.askTitle", { name }))}</h3>
+    <p>${escapeHTML(F("STARWROUGHT.Party.askLine", { name }))}</p>
+    <p class="sw-card-note">${escapeHTML(note)}</p>
+    <ul class="sw-ask-rows">${rows.join("")}</ul></div>`;
+  return ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor: party }),
+    content,
+    flags: {
+      [SW.SYSTEM_ID]: {
+        kind: ASK_CARD_KIND,
+        partyUuid: party.uuid,
+        slug,
+        checkKind: isDefense ? "defense" : "check",
+        key: isDefense ? key : "",
+        name,
+        threshold: shown,
+        members: actors.map(a => a.uuid)
+      }
+    }
+  });
+}
+
+/**
+ * The Roll button on an Ask everyone card (ruling 100), reached through the dispatcher in
+ * documents/chat.mjs. The member is read from the button's `data-owner-uuid`; the press is the
+ * member's owner's or the GM's and nobody else's (the render pass has already hidden it from the
+ * rest; this is the check behind the hiding); the roll is the member's own `rollCheck` for a Skill
+ * or a Lore and `rollDefense` for a Defense, so the card speaks as the member and can Flare. The
+ * Threshold is passed only when the button carries one. A Defense asked this way is a plain check
+ * against a Threshold (Awareness against a Stealth Threshold, Endure against a poison's), never an
+ * answer to an Attack: `kind: "check"` keeps the degrees the right way up, since the engine reads
+ * a Defense roll from the attacker's side.
+ * @param {ChatMessage} message
+ * @param {object} flags  The system's flags on the message.
+ * @param {HTMLButtonElement} button
+ * @returns {Promise<object|null>}  The resolved check, or null.
+ */
+export async function rollAskedCheck(message, flags, button) {
+  let actor = null;
+  try { actor = fromUuidSync(button?.dataset.ownerUuid ?? ""); } catch { actor = null; }
+  if (actor?.documentName === "Token") actor = actor.actor ?? null;
+  if (!actor || (actor.documentName !== "Actor")) {
+    ui.notifications.warn(L("STARWROUGHT.Notify.noActor"));
+    return null;
+  }
+  if (!actor.testUserPermission(game.user, "OWNER")) {
+    ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+    return null;
+  }
+  const options = {};
+  const threshold = button.dataset.threshold;
+  if (Number.isNumeric(threshold)) options.threshold = Number(threshold);
+  if (button.dataset.kind === "defense") {
+    const key = SW.DEFENSES[button.dataset.key] ? button.dataset.key : null;
+    if (!key) return null;
+    return actor.rollDefense(key, { ...options, kind: "check", thresholdLabel: L("STARWROUGHT.Field.threshold") });
+  }
+  const slug = button.dataset.slug || flags?.slug;
+  if (!slug) return null;
+  return actor.rollCheck(slug, options);
 }

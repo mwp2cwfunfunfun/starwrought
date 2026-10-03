@@ -13,7 +13,7 @@ tracked, announced, and never enforced against the table.
   Move; a Human's is 6.
 - **Actor types:** `character`, `npc` (the adversary, written Threshold-first) and, since 0.7.0,
   `party`: the Party Sheet, GM-owned and open to every player as an Observer, which stores only
-  its own bookkeeping and reads its members live.
+  its own bookkeeping (since 0.7.1 the loot and the purse among it) and reads its members live.
 
 ## What it does for you
 
@@ -75,10 +75,13 @@ roster as a status board of every member's level, Milestones, Hero Points, Vigor
 Fatigued, Load Strain, Speed and Flares, read live and never copied; Begin session (every Hero
 Point to 1) and Hero Point awards with a reason; the party's night; the Milestone award with its
 preview, the book's Deferred Talent Point counted on the character when no Constellation is
-Flared, and Take back; and a Skills grid of every member's Defenses, Initiative, Skills, Melee,
-Ranged and Lores, each cell rolling as that member. Every rule effect runs through the member's
-own methods and cards; the party is never a combatant. Loot, the road and Downtime are later
-phases and are not built.
+Flared, and Take back; a Skills grid of every member's Defenses, Initiative, Skills, Melee,
+Ranged and Lores, each cell rolling as that member, with Ask everyone on each row (0.7.1), one
+card with a Roll button per member; and a Loot tab (0.7.1, phase 2) where the GM stashes what the
+party found and a player who owns a member takes it, or gives their own gear to the party, over a
+relay to the active GM's client, beside a purse the GM can Split among the members in copper.
+Every rule effect runs through the member's own methods and cards; the party is never a
+combatant, and the loot values nothing. The road and Downtime are later phases and are not built.
 
 **Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that
 leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a rank without
@@ -169,4 +172,7 @@ The full list is section 7 of `FEATURES.md`. The short version:
   numbers the GM could type by hand, and enforce nothing.
 - The party's Notes tab is GM-only in the template and readable by any Observer from the console;
   nothing secret belongs on the party.
+- The party's loot and purse move Items and coin and value nothing: no selling, no price computed,
+  no shop. A player's Take or Give runs on the active GM's client, so it needs a GM connected; the
+  GM's own moves do not.
 - Magic is not in the playtest, so it is not here.

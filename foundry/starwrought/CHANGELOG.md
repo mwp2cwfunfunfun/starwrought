@@ -7,6 +7,149 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.7.1 (2026-10-02): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
+the handbook's loose ends stand where 0.7.0 left them. The release is phase 2 of the Party Sheet,
+built from parts 6 and 7 of `party-sheet-plan.md` (Mike, on phase 1: "looks good! let's go for the
+next phase"): the Loot tab, where the GM stashes what the party found and a player takes it onto
+their own character, or gives their own gear to the party, over a relay to the active GM's client;
+the party's purse, with Split among the party; and Ask everyone on the Skills grid, one card with a
+Roll button per member. The Actor type exists since 0.7.0 and this adds a tab and a relay, so a
+patch bump to 0.7.1; the one new field (`system.currency` on the party) has a default, so no world
+migration. The decisions are rulings 96 to 100, continuing the 0.7.0 entry's numbering (see Notes).
+
+### Added
+
+- **The Loot tab** (plan, part 6; ruling 96). A party now holds embedded Items, of the four
+  physical types alone (weapon, armor, shield and gear, `SW.PHYSICAL_TYPES`; anything else is
+  refused at creation, see Changed), and the Loot tab lists them one to a row: image, name,
+  quantity, the price string the Item carries, a type tag, and the controls that belong to whoever
+  is looking. Items arrive by drop from the Equipment compendium, the Items sidebar or a character
+  sheet; the GM's drop from a character copies, as Foundry does, and a drop of a Talent or a
+  Maneuver is refused with a notice. For the GM the quantity is an input, **Give to** opens a
+  member picker and moves the Item onto that member (it arrives carried and leaves the party), and
+  **Delete** removes it; the GM's own drops, edits and deletes post nothing. A player who owns a
+  member sees the same rows with **Take** on each, which asks which member when they own two and
+  how many when the stack is above one. An empty tab says so. Carry state means nothing on a party
+  (nothing is held or worn by one), so it is ignored there, and every Item that reaches a character
+  through Take or Give arrives with `system.state` "carried": drawing it is an Interact, as the book
+  prices it. The row prints the price the Item carries and nothing computes with it: the book has
+  no shared loot and no party purse (coin is per character; the only price rule is Provision's half
+  price), so the tab is a convenience that moves Items and coin and values nothing.
+- **Take and Give, over the relay** (ruling 97; the plan's risks 5 and 6). A Take is two writes a
+  player cannot make alone, a create on their character and a decrement on a party they only
+  Observe, so the whole move runs on the active GM's client, asked over the system socket exactly
+  as a player's damage Apply, a reroll against a hidden Threshold and an Expose on another's body
+  have travelled since 0.5.3. The asking client (`requestTake` and `requestGive` in
+  `module/documents/party-socket.mjs`) emits `party:take` or `party:give` with the party's uuid,
+  the Item's id, the character's uuid and the count, addressed to `game.users.activeGM` alone, and
+  says it was sent; the GM's own Take or Give runs the same code locally, with no socket. The GM's
+  client (`onPartySocket`) ignores a message not addressed to it, acts only for a sender the server
+  stamped, re-reads the party, the Item and the character from their ids, and trusts the payload
+  for nothing but those ids and the count. It checks that the asker owns the destination character
+  for a Take or the source character for a Give, that the character is a member of that party, that
+  the Item is physical and that the count is in stock; creates on the destination first (a copy of
+  the Item's source data with `system.quantity` set to the moved count, and `system.state`
+  "carried" when the destination is a character) and decrements or deletes the source second, so a
+  failure between the two leaves a duplicate and never a loss; posts the card; and answers
+  `party:done` or `party:refused` (gone, not enough, not yours, no member, not physical) to the
+  asker alone, shown as a notice. Requests are served in arrival order on the GM's client (a
+  promise chain, as `SwActor`'s condition writes are), so two players taking the last potion within
+  a second resolve as one Take and one refusal. With no GM connected the Take and Give controls say
+  so and write nothing. The drops go the same way (ruling 98): a party Item dragged onto a
+  character sheet is a Take of the whole stack rather than Foundry's silent copy, whoever drags it,
+  and a player's drag of one of their own Items onto the party sheet is a Give of the whole stack;
+  the Loot tab's Take button is where a count is asked. A player's drop from the compendium or the
+  sidebar onto the party is the GM's alone and is refused with a notice. Public cards spoken by the
+  member, under a title that names the direction ("From the party's loot", "To the party's loot"):
+  "Hrolda takes Longsword."; "Wren takes 6 × Arrows (14 left)."; "Hrolda gives 3 × Torch." (the
+  Item's name as it is, since the system cannot pluralise one); and for the GM's Give to, "Toric is
+  given a Dagger."
+- **The purse and Split** (ruling 99). `system.currency { gp, sp, cp }` on the party, the same
+  shape as a character's coin so the template idiom carries over: inputs for the GM, read-only
+  numbers for a player. **Split among the party** opens a dialog listing every member ticked, then
+  `splitPurse`: the coin goes to copper, is divided equally among the ticked members in one
+  `Actor.updateDocuments` batch written with `swAnnounced` (so the Adjusted card never doubles it),
+  and the remainder is written back to the purse; one card spoken by the party lists each share and
+  what stayed.
+- **Ask everyone** (plan, part 7; ruling 100). On each row header of the Skills grid the GM has an
+  Ask everyone control: a small dialog with an optional Threshold and a checkbox, "players see the
+  Threshold", then `askEveryone` posts one public card spoken by the party ("Everyone roll
+  Awareness.") with a row per member and a Roll button on each, live only for that member's owner
+  and the GM (the render pass that already hides other owners' buttons by `data-owner-uuid` hides
+  these too). The button (`rollAskedCheck` in `helpers/party.mjs`) calls the member's own
+  `rollCheck` for a Skill or a Lore and `rollDefense` for a Defense, so the card speaks as the
+  member and can Flare, with the Threshold prefilled only when the card carries one; a Threshold
+  the GM kept hidden is never in the DOM and never in a flag a player can read. Search and
+  Investigate say the GM applies the roll to the Thresholds, so a blank Threshold is the normal
+  case and the GM reads the totals off the cards.
+
+### Changed
+
+- **The system socket carries `party:*`.** The router in `starwrought.mjs` sends `damage:*`,
+  `reroll:*` and `expose:*` to `onChatSocket` as before, `party:*` to `onPartySocket` in the new
+  `module/documents/party-socket.mjs`, and everything else to the attack coordinator. Both
+  listeners read the asker from the server's stamp on the message and never from the payload.
+- **A party Item dropped on a character sheet moves.** The character sheet's `_onDropItem`
+  detects an Item whose parent is a party and routes through `requestTake` for the whole stack
+  (ruling 98) without letting Foundry copy it; every other drop onto the sheet is as it was.
+- **Non-physical Items are refused on a party.** `SwItem._preCreate` returns false with a notice
+  when the type is not weapon, armor, shield or gear and the parent is a party, so a Talent, a
+  Constellation, a chassis or a Maneuver dropped on the Loot tab never lands.
+- **The party sheet redraws its loot** on the party's own Item hooks and its own `updateActor`
+  (the purse), on the same timer of about 150 ms the roster and the grid use for the members'
+  changes.
+- **The chat dispatcher** gains `partyAsk`, the Ask everyone card's button, which hands the click
+  to `rollAskedCheck`.
+- The version stamps read 0.7.1 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: `system.currency`
+  defaults to 0 of each coin, and a party made under 0.7.0 holds no Items.
+
+### Notes
+
+- **The rulings, 96 to 100**, Mike's answers to the plan's parts 6 and 7, numbered on from the
+  0.7.0 entry's 95. 96: the loot and the purse are a convenience with no rule authority; they move
+  Items and coin and value nothing, and a row prints a price with nothing computing from it. 97: a
+  player's Take or Give runs on the active GM's client over the system socket, the asker read from
+  the server's stamp, the destination written before the source, requests served in arrival order,
+  and with no GM connected the controls say so and write nothing. 98: dragging a party Item onto a
+  character sheet moves the whole stack; the Loot tab's Take button is what asks a count for a
+  stack. 99: Split divides the purse in copper equally among the ticked members and the remainder
+  stays in the purse. 100: Ask everyone posts one card spoken by the party with a Roll button per
+  member that only the member's owner (or the GM) can press, the Threshold optional and hidden from
+  players unless the GM shows it.
+- **A party Take needs a GM connected.** Phase 1 needed none: every write was the GM's own or a
+  player's on a character they own. Take and Give to the party are the first party writes a player
+  cannot make alone, and they go to `game.users.activeGM` exactly as damage, rerolls and Expose do;
+  with no GM connected the controls say so and nothing is written, and a party Item dragged onto a
+  player's sheet is refused rather than copied. The GM's own moves (Give to, Split, drops, deletes,
+  edits) never touch the socket. With two GMs every request is addressed to the active GM alone and
+  the other GM's client ignores a message not addressed to it (the plan's risk 6).
+- **Observer ownership exposes the document**, loot and purse included. Every player can open the
+  party and read every row and every coin, which is the point of a shared stash, and the console
+  shows the same to anyone with Observer ownership whether the template shows it or not. Nothing
+  secret belongs on the party, a hidden Threshold least of all: Ask everyone keeps a Threshold the
+  GM did not show out of the DOM and out of any flag a player can read.
+- **What phase 2 does not do.** No selling and no shop: Sell at half price was struck by the plan's
+  judge because it parses a price to compute a number the GM reads off the row, and Provision's
+  half price stays the table's. No price is computed anywhere: the row prints the string the Item
+  carries. No Contribute to the purse (struck for the same reason; the GM types the coin in). No
+  party token on any map. The Loot tab polices nothing beyond ownership, membership and stock: a
+  player may Take anything the party holds, and the table hears it. Phase 3 (the road: the
+  Exploration panel, the party's Travel Speed and terrain, the Fatigued gate, Begin the encounter
+  with Initiative by Activity; 0.7.2, leaning on four handbook sentences and a pipeline change) and
+  phase 4 (Downtime; 0.7.3) stand as the plan wrote them; `CLAUDE.md` names them under Known
+  outstanding work.
+- **The handbook sentence phase 2 could use** is the plan's item 10 under "What the handbook would
+  need" (shared loot and a common purse), marked optional there and not needed for the system to
+  behave as described (decision 16). The spreadsheets, `assets/roster.json`, the web app, the
+  Constellation Compendium and `packs/_source/` are untouched by this release.
+- The handbook's v4.10 loose ends stand in v4.15 as 0.6.3 listed them; `CLAUDE.md` carries the
+  list.
+
+---
+
 ## 0.7.0 (2026-10-02): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and

@@ -101,6 +101,7 @@ export function preloadTemplates() {
     "systems/starwrought/templates/actor/party-header.hbs",
     "systems/starwrought/templates/actor/party-roster.hbs",
     "systems/starwrought/templates/actor/party-skills.hbs",
+    "systems/starwrought/templates/actor/party-loot.hbs",
     "systems/starwrought/templates/actor/party-notes.hbs",
     "systems/starwrought/templates/actor/stance-chips.hbs",
     "systems/starwrought/templates/actor/action-pips.hbs",

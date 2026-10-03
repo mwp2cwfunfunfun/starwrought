@@ -1,7 +1,7 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
 Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
-rule differs). System version **0.7.0**. Developed against
+rule differs). System version **0.7.1**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -874,8 +874,14 @@ cards, the coordinator's private commitments from its own browser. Requests and 
 system's socket addressed to one user, so the server delivers them to that client alone, and the
 coordinator reads who is asking from the server's own stamp on the message, never from the
 payload; a state broadcast is only a wake-up, and every client takes the state itself from the
-card's flags, which only their author or a GM can write. With no GM connected the attacker's
-client coordinates and holds the GM controls, and an adversary target answers with its standing
+card's flags, which only their author or a GM can write. The same socket carries, since 0.5.3, a
+player's damage Apply on a creature they cannot write, a die read again against a hidden Threshold
+and an Expose on a body the chooser cannot write (`damage:*`, `reroll:*` and `expose:*`, handled
+in `chat.mjs` by `onChatSocket`; see Chat) and, since 0.7.1, a party Take or Give (`party:*`,
+`onPartySocket` in `party-socket.mjs`; see The party, under Sheets), each addressed to the active
+GM's client, which reads the asker from the server's stamp and answers the asker alone; the router
+in `starwrought.mjs` sorts the three by the prefix of the message type. With no GM connected the
+attacker's client coordinates and holds the GM controls, and an adversary target answers with its standing
 stance at once, since nobody can declare for it, as it does if the last GM leaves mid-defense. At
 such a table the attacker's own client is the one holding the defenders' commitments until the
 reveal, which asks the players to trust one another; the GM is the arbiter the design assumes. A
@@ -1047,7 +1053,10 @@ you own with a Flare toggle on each Constellation; a parent shows its pool and h
 and a Combat Style says which parent it is a child of. Its toolbar's **Show every Constellation**
 toggle (0.6.3) adds the shipping Constellations you have not opened as dimmed rows with a Flare
 control and nothing else, and remembers the choice per client (see Flares). Equipment lays armor out by Zone with the
-Zone's Wounds beside its Protection. Also Maneuvers, Effects and Biography.
+Zone's Wounds beside its Protection; a party's Item dragged onto the sheet moves from the party's
+loot rather than copying, the whole stack (0.7.1; ruling 98; see The party): the player's drag is
+a Take over the relay to the GM's client, the GM's the same move made locally. Also Maneuvers,
+Effects and Biography.
 
 **Weapon rows.** Each held weapon shows the Strike Attribute that won (glyph and attack modifier,
 with the standing attack modifiers such as an Arms Wound's −2 folded in so it agrees with the roll
@@ -1141,15 +1150,17 @@ are silent.
 95), GM-owned and Observer by default so every player can open it. The sheet is the GM's console
 and the players' window at once: one template set that branches on who is looking and on which
 members they own, as the character sheet's header does. The party stores only its own bookkeeping
-(the members, the session, the last Milestone award for Take back, the GM's notes) and reads
+(the members, the session, the last Milestone award for Take back, the GM's notes, and since 0.7.1
+the purse and the loot Items) and reads
 everything about its members live at render, never copying a number off a character. It never does
 a member's arithmetic: every rule effect it offers (a Flare, a Hero Point, a rest, a Milestone, a
 check, an Initiative) runs on the member's own Actor through a method that already exists and
 already posts its card, so the party adds buttons and a handful of cards, not a second rules
 engine. Its data model extends `TypeDataModel` directly, never `SwActorData`, so it has no Zones,
 Wounds, Vigor, stance or actions; a party is never a combatant, and nothing draws or counts its
-token (section 7). Phase 1 is the party, the session, the awards and the Skills grid; loot and the
-purse, the road and Downtime are the plan's later phases and are not built.
+token (section 7). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
+phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; the road and Downtime
+are the plan's later phases and are not built.
 
 **The roster and status board.** Always open above the tabs, one row per member, every number on
 it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
@@ -1214,19 +1225,79 @@ is marked gold, ties all marked. Clicking a cell rolls that check as that member
 member's own `rollCheck`, `rollDefense` or the Combat's Initiative roll, so the card speaks as the
 member and can Flare; Shift-click skips the dialog as the sheet does.
 
+**Ask everyone** (0.7.1; plan, part 7; ruling 100). Each row header of the grid carries, for the
+GM, an Ask everyone control: a small dialog with an optional Threshold and a checkbox, "players see
+the Threshold", then one public card spoken by the party ("Everyone roll Awareness.") with a row
+per member and a Roll button on each. The button is live for that member's owner and for the GM,
+and for nobody else (the same render pass that hides other owners' buttons on every card hides
+these); it calls the member's own `rollCheck` for a Skill or a Lore and `rollDefense` for a
+Defense, so the card speaks as the member and can Flare, with the Threshold prefilled only when
+the card carries one. A Threshold the GM kept hidden is never in the DOM and never in a flag a
+player can read. Search and Investigate say the GM applies the roll to the Thresholds, so a blank
+Threshold is the normal case and the GM reads the totals off the cards.
+
+**The loot** (0.7.1; plan, part 6; rulings 96 to 98). A party holds embedded Items of the four
+physical types alone, weapon, armor, shield and gear; a Talent, a Constellation, a chassis or a
+Maneuver dropped on it is refused at creation with a notice. The Loot tab lists them one to a row:
+image, name, quantity, the price string the Item carries, a type tag, and the controls that belong
+to whoever is looking. Items arrive by drop from the Equipment compendium, the Items sidebar or a
+character sheet (the GM's drop from a character copies, as Foundry does). For the GM the quantity
+is an input, **Give to** opens a member picker and moves the Item onto that member, and **Delete**
+removes it; the GM's own drops, edits and deletes post nothing. A player who owns a member sees
+the same rows with **Take** on each, which asks which member when they own two and how many when
+the stack is above one; an empty tab says so. Carry state means nothing on a party, so it is
+ignored there, and an Item that reaches a character through Take or Give arrives carried, so
+drawing it is an Interact as the book prices it. The row prints the price the Item carries and
+nothing computes with it (section 7): the book has no shared loot and no party purse, so the tab
+moves Items and values nothing.
+
+**Take and Give, over the relay** (ruling 97; the plan's risks 5 and 6). A Take is two writes a
+player cannot make alone, a create on their character and a decrement on a party they only
+Observe, so the whole move runs on the active GM's client, asked over the system socket as a
+player's damage Apply, a reroll against a hidden Threshold and an Expose on another's body are
+(see The attack flow, Who may do what). The asking client emits `party:take` or `party:give` with
+the party's uuid, the Item's id, the character's uuid and the count, addressed to the active GM
+alone, and says it was sent; the GM's own Take or Give runs the same code locally with no socket.
+The GM's client ignores a message not addressed to it, acts only for a sender the server stamped,
+re-reads the party, the Item and the character from their ids and trusts the payload for nothing
+but those ids and the count; checks that the asker owns the destination character for a Take or
+the source character for a Give, that the character is a member of that party, that the Item is
+physical and the count is in stock; creates on the destination first and decrements or deletes the
+source second, so a failure between the two leaves a duplicate and never a loss; posts the card;
+and answers done or refused (gone, not enough, not yours, no member, not physical) to the asker
+alone, as a notice. Requests are served in arrival order on the GM's client, so two players taking
+the last potion resolve as one Take and one refusal. With no GM connected the controls say so and
+write nothing (section 7). The drops go the same way (ruling 98): a party Item dragged onto a
+character sheet is a Take of the whole stack rather than Foundry's silent copy, whoever drags it,
+one of a player's own Items dragged onto the party sheet is a Give of the whole stack, and the Loot
+tab's Take button is where a count is asked; a player's drop from the compendium or the sidebar
+onto the party is the GM's alone and is refused with a notice.
+
+**The purse** (ruling 99). `system.currency` on the party, gp, sp and cp in the character's own
+shape: inputs for the GM, read-only numbers for a player. **Split among the party** opens a dialog
+listing every member ticked, then turns the coin to copper, divides it equally among the ticked
+members in one batch write (announced, so no Adjusted card doubles it), writes the remainder back
+to the purse and posts one card spoken by the party listing each share and what stayed. There is
+no Contribute: the GM types coin in, and who gets what beyond an equal share is the table's.
+
 **What the player sees, and what the GM sees.** The GM sees everything and holds every party
 write: membership, Begin session, the awards and corrections, the night, the Milestone and Take
-back, the Flare plus, Remove, the Notes tab. A player sees the same roster and the same grid,
+back, the Flare plus, Remove, the Notes tab, the loot's quantities, Give to and Delete, the purse
+and Split, Ask everyone. A player sees the same roster, the same grid and the same loot,
 Thresholds included (ruling 95; a world setting is one line if the table objects, and adversaries'
-Thresholds never appear on the party sheet), read-only but for three live things: portrait clicks
+Thresholds never appear on the party sheet), read-only but for a few live things: portrait clicks
 on any member, the Flare chips on a character they own (a click puts one out through
-`toggleFlare`, which posts its card), and the Spent control on their own Deferred badge; grid
+`toggleFlare`, which posts its card), the Spent control on their own Deferred badge, Take on a
+loot row when they own a member, a drag of their own gear onto the party, and the Roll button
+with their member's name on an Ask everyone card; grid
 cells roll only for members they own, and a click on another member's cell does nothing. A player
 who owns no member sees the board and an empty-state line. Every action handler re-checks
 permission before writing (the GM for party writes; the actor's owner for a put-out Flare or a
-Spent), since ApplicationV2 actions fire regardless of editability, and every write to a character
+Spent; and the relay checks a Take or Give again on the GM's client), since ApplicationV2 actions
+fire regardless of editability, and every write to a character
 goes through the same `swAnnounced` path the rest card uses, so the Adjusted card never doubles a
-party card. Observer ownership means every player can read the document, the Notes tab included,
+party card. Observer ownership means every player can read the document, the Notes tab, the loot
+and the purse included,
 from the console: it is a convenience, not a vault, and nothing secret belongs on the party.
 
 **The cards.** Spoken by the party: Begin session ("Session 12 begins. Every character starts with
@@ -1235,18 +1306,26 @@ one line per member ("Hrolda reaches Milestone 2 of 3: a Milestone Talent Point,
 in a Flared Constellation: Melee, Athletics."; "Wren reaches Milestone 3 of 3: no Constellation is
 Flared, so the point is Deferred: spend it the instant one Flares (Deferred held: 1)."; "Kessa
 reaches the 4th Milestone: level 3. Vigor 36 to 45. A Comet: a Talent Point for any Constellation,
-Flared or not."); Take back; and the party's line after the night. Spoken by the member: a Hero
+Flared or not."); Take back; the party's line after the night; the Split card listing the shares
+and the remainder (0.7.1); and the Ask everyone card ("Everyone roll Awareness.") with its Roll
+buttons. Spoken by the member: a Hero
 Point awarded ("The GM awards Hrolda a Hero Point: carrying Toric out of the fire (2 of 3).") or
 corrected ("Hrolda's Hero Points corrected to 1."); a Deferred point Spent; each member's own rest
-card; and the Flare card `toggleFlare` already posts, with "awarded by the GM" and the reason when
-the GM lit it from the roster. Membership, a Remove and the GM's notes post nothing.
+card; the Flare card `toggleFlare` already posts, with "awarded by the GM" and the reason when
+the GM lit it from the roster; and, since 0.7.1, under a title naming the direction ("From the
+party's loot", "To the party's loot"), a Take ("Hrolda takes Longsword."; "Wren takes 6 × Arrows
+(14 left)."), a Give ("Hrolda gives 3 × Torch.", the Item's name as it is) and the GM's Give to
+("Toric is given a Dagger."). Membership, a Remove, the GM's notes, and the GM's
+own drops, edits and deletes on the loot post nothing.
 
 **What re-renders it.** The sheet registers the member hooks once when it opens and lets them go
 when it closes: `updateActor`; an Item created, changed or deleted on a member (a Talent, a
 Constellation, a helm donned); an Active Effect created, changed or deleted on a member (Fatigued
 and Frightened are effects). It re-renders on a timer of about 150 ms, never a
 requestAnimationFrame latch, and only when the changed document is a member or belongs to one, so
-six members and the attack flow running do not redraw the board on every pip. Nothing
+six members and the attack flow running do not redraw the board on every pip. Since 0.7.1 the
+party's own Item hooks and its own `updateActor` (a Take served on the GM's client, a Give, the
+purse edited or Split) redraw the loot part on the same timer. Nothing
 member-dependent is computed in the party's own `prepareDerivedData`; it is all computed at render
 from the resolved members, because one Actor's derived data must not depend on another's prepare
 order.
@@ -1347,7 +1426,9 @@ taken and Bind ended; Exposed; Give ground; Step; Recenter; Treat Wound; a night
 Death; a Hero Point spent; the **Flare** card, lit or put out, from a critical's card or from the
 sheet (0.6.3), with the GM's reason when it was awarded from the party sheet (0.7.0); the
 **party's cards** (0.7.0: Begin session, a Hero Point awarded or corrected, the Milestone award
-and Take back, the party's night, a Deferred Talent Point Spent; see The party, under Sheets); the
+and Take back, the party's night, a Deferred Talent Point Spent; 0.7.1: a Take from the loot, a
+Give to the party, the GM's Give to, the Split, and Ask everyone with a Roll button per member;
+see The party, under Sheets); the
 **Adjusted** card for a player's hand edits (0.5.1); and the overspend card,
 whenever something happened without the actions to pay for it. The Bind and Exposed card titles
 open their rules pages.
@@ -1424,6 +1505,17 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   dropped into a Combat survives a round with no card
   addressed to it, no readout under its row and no Support line for it on a member's Strike;
   nothing draws or counts its token, and no party token is meant to stand on any map.
+- **Loot values nothing** (0.7.1; ruling 96). The party's Loot tab and purse move Items and coin
+  and claim no rule authority: the book has no shared loot and no party purse (coin is per
+  character, and the only price rule is Provision's half price). A row prints the price string the
+  Item carries and nothing computes with it; there is no selling, no shop and no Contribute, and
+  Split divides copper equally and leaves the remainder in the purse. Who may take what, beyond
+  owning a member and the stock being there, is the table's.
+- **A party Take needs a GM connected** (0.7.1; ruling 97). A player's Take from the loot and Give
+  to the party run on the active GM's client, as damage, rerolls and Expose do, because an Observer
+  cannot write the party; with no GM connected the controls say so and nothing is written, and a
+  party Item dragged onto a player's sheet is refused rather than copied. The GM's own moves never
+  touch the socket.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

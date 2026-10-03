@@ -23,6 +23,8 @@ import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 import { CARD_KIND as ATTACK_CARD_KIND, thresholdVisibleTo, mayControl } from "../combat/attack-card.mjs";
 import { SwCombatPrompt } from "../apps/combat-prompt.mjs";
 import { pickFlare } from "../apps/flare-picker.mjs";
+// THE PARTY (0.7.1, part 7): the Ask everyone card's Roll buttons, one per member.
+import { rollAskedCheck } from "../helpers/party.mjs";
 
 /** Wire up a rendered chat card. */
 export function onRenderChatMessage(message, html) {
@@ -35,10 +37,13 @@ export function onRenderChatMessage(message, html) {
     });
   }
 
-  const flags = message.flags?.[SW.SYSTEM_ID];
+  // A card with buttons of ours is wired whether or not it carries flags (0.7.1: the party's Ask
+  // everyone card has a Roll button per member and may carry none a player can read).
+  const flags = message.flags?.[SW.SYSTEM_ID] ?? (html.querySelector("[data-sw-action]") ? {} : null);
   if (!flags) return;
 
-  // Offers meant for one side of the exchange vanish for everyone who cannot act on them.
+  // Offers meant for one side of the exchange vanish for everyone who cannot act on them. The
+  // Ask everyone card's per-member Roll buttons (0.7.1) ride on this: each names its member.
   for (const el of html.querySelectorAll("[data-owner-uuid]")) {
     const actor = resolveActor(el.dataset.ownerUuid);
     if (actor && !actor.isOwner) el.remove();
@@ -120,6 +125,8 @@ async function onCardButton(event, message, flags) {
       case "attackReset": return await gmAttackRequest(flags, button, "resetDefenses");
       case "attackResend": return await gmAttackRequest(flags, button, "resendPrompts");
       case "attackUseStances": return await gmAttackRequest(flags, button, "useStances");
+      // The party's Ask everyone card (0.7.1): the member's owner, or the GM, rolls as the member.
+      case "partyAsk": return await rollAskedCheck(message, flags, button);
       default: return;
     }
   } finally {
@@ -300,7 +307,8 @@ function relayDamage(message, target, { zone, multiplier }) {
 
 /**
  * The chat cards' half of the system socket: starwrought.mjs routes `damage:*`, `reroll:*` and
- * `expose:*` here and everything else to the attack coordinator. A `damage:apply`, `reroll:apply`
+ * `expose:*` here, `party:*` to party-socket.mjs (0.7.1) and everything else to the attack
+ * coordinator. A `damage:apply`, `reroll:apply`
  * or `expose:apply` is answered by the GM's client with `damage:applied`, `reroll:done`,
  * `expose:done` or a refusal, each addressed to the asker alone.
  * @param {object} message

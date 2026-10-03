@@ -222,7 +222,13 @@ characters' Strikes; an adversary's attack row always declares. Since 0.5.3 the 
 also carries `damage:*` and `reroll:*` requests to the active GM's client (`chat.mjs`,
 `onChatSocket`): a player's Apply on a creature they cannot write, and a die thrown again on the
 roller's client but read against a hidden Threshold on the GM's. Both read everything that matters
-from the chat message itself and the asker from the server's stamp, as the coordinator does.
+from the chat message itself and the asker from the server's stamp, as the coordinator does. Since
+0.7.1 it also carries `party:*` (`documents/party-socket.mjs`, `onPartySocket`): a player's Take
+from or Give to the party's loot, run on the active GM's client in arrival order, the destination
+written before the source, the asker from the server's stamp and the payload trusted for nothing
+but ids and a count. The router in `starwrought.mjs` is one line per listener:
+`/^(damage|reroll|expose):/` to `onChatSocket`, `/^party:/` to `onPartySocket`, everything else to
+the attack coordinator.
 
 **Six actions a round (PHB v4.10).** Every combatant gets six actions at the start of each round,
 spent across Opportunities (one Maneuver per Opportunity, or Pass; a full circuit of Passes ends the
@@ -297,8 +303,20 @@ on the character (`system.deferred`) and nothing is enforced; 95 players see eve
 Thresholds on the Skills grid. `MILESTONES_PER_LEVEL` lives in `config.mjs` beside
 `HERO_POINTS_MAX`; the Flare dialog is the shared `pickFlare` in `module/apps/flare-picker.mjs`,
 which `flareFromCard` and the roster both call, and `toggleFlare(slug, state, { reason })` prints
-the reason on the lit card and the Deferred reminder while the count is above 0. Phases 2 to 4
-(loot and the purse over a `party:take` relay, the road, Downtime) are planned, not built.
+the reason on the lit card and the Deferred reminder while the count is above 0. Since 0.7.1
+(phase 2; rulings 96 to 100) the party also holds the loot (embedded Items of `SW.PHYSICAL_TYPES`
+only; `SwItem._preCreate` refuses the rest) and a purse (`system.currency`, the character's
+shape), and both are a convenience with no rule authority: the book has no shared loot and no
+party purse, so they move Items and coin and value nothing (a row prints the Item's price string
+and nothing computes with it; ruling 96). A player's Take or Give is two writes an Observer cannot
+make, so it runs on the active GM's client over the system socket as `party:take` or `party:give`
+(`documents/party-socket.mjs`; ruling 97: the asker from the server's stamp, the destination
+written before the source, arrival order, and with no GM connected the controls say so and write
+nothing), while the GM's own moves run the same code locally; a party Item dropped on a character
+sheet moves the whole stack (ruling 98), Split divides copper equally and leaves the remainder in
+the purse (ruling 99), and Ask everyone posts one party card with a Roll button per member that
+only the owner or the GM can press, the Threshold hidden from players unless the GM shows it
+(ruling 100). Phases 3 and 4 (the road, Downtime) are planned, not built.
 
 ## Where the source of truth lives
 
@@ -490,24 +508,35 @@ the reason on the lit card and the Deferred reminder while the count is above 0.
   Attribute follows PHB v4.14 (0.6.3, ruling 87), but no weapon in `data/equipment.xlsx` carries
   the trait, so the branch has nothing to act on. Mike authors one when he wants it, with
   "Composite" in its Traits; the converter needs no change.
-- **Phases 2 to 4 of the Party Sheet are planned, not built** (`party-sheet-plan.md` in the
-  project root; phase 1 shipped as system 0.7.0, rulings 91 to 95). Phase 2 is loot and the purse
-  (the Loot tab with Take, Give to the party and Give to, over `party:take` and `party:give`
-  requests relayed to the active GM's client as `damage:apply` is; the purse with Split; Ask
-  everyone on the Skills grid; 0.7.1). Phase 3 is the road (two positional columns on the roster's
+- **Phases 3 and 4 of the Party Sheet are planned, not built** (`party-sheet-plan.md` in the
+  project root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse
+  over the `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100). Phase 3 is the road
+  (two positional columns on the roster's
   hand-kept `explorationActions` rows and `system.exploration` on the character; the Exploration
   panel with the party's Travel Speed, terrain and the Fatigued gate; Begin the encounter with
   Initiative by Activity, the Scout's bonus and the Defender's shield; 0.7.2, and it leans on four
   handbook sentences the plan drafts and a pipeline change). Phase 4 is Downtime (the days, Train
   through the shared Flare picker with its once-between-Milestones warning, the Retrain and
-  Provision reminder lines; 0.7.3). The plan's decisions 6 to 16 and its twelve handbook sentences
-  (items 1, 2, 3, 7, 8 and 12 bear on phase 1 and are wanted, not needed) are Mike's. Nothing in
-  phase 1 is enforced: the Deferred count is a reminder with a number on it, and a Talent drag is
-  as unpoliced as before.
+  Provision reminder lines; 0.7.3). The plan's decisions 6 to 14 and its twelve handbook sentences
+  (items 1, 2, 3, 7, 8 and 12 bear on phase 1 and are wanted, not needed; item 10, shared loot
+  and a common purse, is optional for phase 2, decision 16) are Mike's. Nothing in phases 1 and 2
+  is enforced: the Deferred count is a reminder with a number on it, a Talent drag is as
+  unpoliced as before, and the loot values nothing (no selling, no price computed, no party
+  token; a player's Take needs a GM connected).
 - **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (the Party Sheet, phase 2, system 0.7.1): the loot and the purse the plan's
+part 6 described, now the Loot tab (embedded Items of the four physical types, `SwItem._preCreate`
+refusing the rest) with the GM's Give to and Delete, a player's Take, and Give to the party, the
+player's moves relayed to the active GM's client as `party:take` and `party:give` over the system
+socket (`documents/party-socket.mjs`; destination first, source second, arrival order, the asker
+from the server's stamp) and the character sheet's drop of a party Item moving the whole stack;
+`system.currency` on the party with Split in copper; and Ask everyone on the Skills grid, one party
+card with a Roll button per member and the Threshold hidden unless shown. No handbook moved and
+`data/SYNC.json` is untouched; the rulings (96 to 100) are recorded in the 0.7.1 changelog entry.
 
 Cleared 2026-10-02 (the Party Sheet, phase 1, system 0.7.0): the party sheet, planned in the v4.14
 sync (ruling 89), now built as a `party` Actor type and sheet with the roster as a status board,

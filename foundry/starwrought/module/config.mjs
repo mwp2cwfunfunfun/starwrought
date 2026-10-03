@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.7.0";
+export const SYSTEM_VERSION = "0.7.1";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -582,6 +582,15 @@ export const MILESTONES_PER_LEVEL = 3;
  * (92); Begin session sets every member's Hero Points to exactly 1 (93); Deferred Talent Points are
  * counted on the character and nothing is enforced (94); players see every member's Thresholds on
  * the Skills grid (95).
+ *
+ * Phase 2 (0.7.1; rulings 96 to 100): the party's embedded Items are its loot, PHYSICAL_TYPES only
+ * (documents/item.mjs refuses the rest in `_preCreate`), and `system.currency` its purse. Neither
+ * is a rule: they move Items and coin and value nothing (96). A player's Take or Give runs on the
+ * active GM's client over the system socket (documents/party-socket.mjs), the asker read from the
+ * server's stamp, destination written before source, requests served in arrival order, and with
+ * no GM connected nothing is written (97); a party Item dropped on a character sheet moves the
+ * whole stack (98); Split divides the purse equally in copper and the remainder stays (99); Ask
+ * everyone posts one party card with a Roll button per member for its owner or the GM (100).
  */
 export const PARTY_TYPE = "party";
 

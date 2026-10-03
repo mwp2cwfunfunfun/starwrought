@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.7.0";
+  --sw-css-version: "0.7.1";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -2369,3 +2369,115 @@ li.combatant.sw-in-crosshairs {
 .starwrought.action-card.sw-milestone-taken-back { border-left-color: var(--sw-ink-dim); }
 .starwrought.action-card.sw-deferred-card { border-left: 3px solid var(--sw-agility); }
 .starwrought.action-card.sw-deferred-card h3 .fa-hourglass-half { color: var(--sw-agility); }
+
+/* Ask everyone on a grid row header (0.7.1; plan, part 7): a bullhorn that shows itself on hover. */
+.starwrought .sw-grid-rowhead .sw-grid-ask {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--sw-ink-dim);
+  opacity: 0.35;
+  cursor: pointer;
+}
+.starwrought .sw-grid-rowhead:hover .sw-grid-ask { opacity: 1; }
+.starwrought .sw-grid-rowhead .sw-grid-ask:hover { color: var(--sw-flare); text-shadow: none; }
+
+/* --------------------------------------------------------------------------
+   The loot and the purse (0.7.1; party-sheet-plan.md, part 6). The rows reuse
+   the equipment tab's item-row pieces (image, name, tags, controls) so the two
+   sheets read as one; the count is an input for the GM and a number for a
+   player, Take and Give to are the two verbs, and the purse is the character's
+   currency block with Split beside it.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-loot-drop { margin: 0 0 0.35rem; font-style: italic; }
+.starwrought .sw-loot-drop i { margin-right: 0.2rem; opacity: 0.7; }
+.starwrought .sw-loot-row.draggable { cursor: grab; }
+.starwrought .sw-loot-row.draggable:active { cursor: grabbing; }
+.starwrought .sw-loot-row .sw-item-name { cursor: pointer; }
+.starwrought .sw-loot-quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-block: 0;
+  color: var(--sw-ink);
+}
+.starwrought .sw-loot-times { color: var(--sw-ink-dim); font-size: 0.7rem; }
+.starwrought .sw-loot-quantity input {
+  width: 3.2rem;
+  height: 1.3rem;
+  padding: 0 0.2rem;
+  text-align: center;
+  font-size: 0.8rem;
+  border: none;
+  border-bottom: 1px solid var(--sw-edge);
+  background: transparent;
+}
+.starwrought .sw-loot-quantity input:focus { border-bottom-color: var(--sw-gold); box-shadow: none; }
+.starwrought .sw-loot-quantity strong { font-size: 0.85rem; }
+.starwrought .sw-loot-price { color: var(--sw-gold-dim); }
+.starwrought .sw-loot-controls { align-items: center; }
+.starwrought .sw-loot-controls .sw-loot-give,
+.starwrought .sw-loot-controls .sw-loot-take {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: var(--sw-gold);
+  white-space: nowrap;
+}
+.starwrought .sw-loot-controls .sw-loot-give:hover,
+.starwrought .sw-loot-controls a.sw-loot-take:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); text-shadow: none; }
+/* A player's Take with no GM connected: shown, named, and not live (ruling 97). */
+.starwrought .sw-loot-row .sw-loot-controls .sw-loot-take-off { border-style: dashed; color: var(--sw-ink-dim); cursor: help; opacity: 1; }
+.starwrought .sw-loot-row.sw-disabled .sw-item-name { text-decoration: line-through; }
+/* A player's controls stay visible: the row is theirs to act on, not to tidy. */
+.starwrought .sw-loot-row .sw-loot-controls:has(.sw-loot-take) { opacity: 1; }
+
+.starwrought .sw-purse-panel .sw-panel-title .sw-panel-buttons { margin-left: auto; }
+.starwrought .sw-purse-row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.starwrought .sw-purse { margin-top: 0; }
+.starwrought .sw-purse-readonly { gap: 0.8rem; }
+.starwrought .sw-purse-coin { font-size: 0.75rem; color: var(--sw-ink-dim); }
+.starwrought .sw-purse-coin strong { font-size: 0.95rem; color: var(--sw-gold); margin-right: 0.15rem; }
+.starwrought .sw-purse-total { font-size: 0.75rem; color: var(--sw-ink-dim); cursor: help; }
+.starwrought .sw-purse-panel .sw-note { margin-top: 0.4rem; }
+
+/* The dialogs: the Take and Give to picker, the Split list with its live preview. */
+.starwrought.sw-party-dialog .form-group { margin: 0.4rem 0 0; }
+.starwrought.sw-party-dialog .form-fields { display: flex; align-items: center; gap: 0.4rem; }
+.starwrought.sw-party-dialog .sw-loot-stock { font-size: 0.72rem; color: var(--sw-ink-dim); white-space: nowrap; }
+.starwrought.sw-party-dialog .sw-split-list label.checkbox { align-items: center; }
+.starwrought.sw-party-dialog .sw-split-name { flex: 1 1 auto; }
+.starwrought.sw-party-dialog .sw-split-has { font-size: 0.72rem; color: var(--sw-ink-dim); white-space: nowrap; }
+.starwrought.sw-party-dialog .sw-split-preview { color: var(--sw-gold); }
+
+/* The cards: a Give to spoken by the member, the Split spoken by the party, and Ask everyone
+   with a row per member and a Roll button that only the member's owner and the GM keep. */
+.starwrought.action-card.sw-loot-card { border-left: 3px solid var(--sw-gold-dim); }
+.starwrought.action-card.sw-loot-card h3 .fa-hand-holding { color: var(--sw-gold); }
+.starwrought.action-card.sw-purse-card h3 .fa-coins,
+.starwrought.action-card.sw-ask-card h3 .fa-bullhorn { color: var(--sw-presence); }
+.starwrought .sw-ask-rows { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.starwrought .sw-ask-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  font-size: 0.8rem;
+}
+.starwrought .sw-ask-portrait { width: 22px; height: 22px; object-fit: cover; border: none; border-radius: 3px; flex: 0 0 auto; }
+.starwrought .sw-ask-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.starwrought .sw-ask-row button {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+  border-color: var(--sw-gold-dim);
+  color: var(--sw-flare);
+}

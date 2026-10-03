@@ -1,26 +1,31 @@
 /**
- * The party sheet (0.7.0; party-sheet-plan.md, parts 1 to 4).
+ * The party sheet (0.7.0; party-sheet-plan.md, parts 1 to 4; 0.7.1 adds parts 6 and 7).
  *
  * The GM's console and the players' window at once: one template set that branches on `isGM`
  * and on per-member ownership, as the character sheet's header does. The header carries the
  * session and the GM's buttons; the roster, always open above the tabs, is a status board with
- * one row per member; the Skills grid is a tab, Constellations as rows and members as columns;
- * the GM's notes are a tab the players never see.
+ * one row per member; the Skills grid is a tab, Constellations as rows and members as columns,
+ * each row header carrying the GM's Ask everyone; the Loot tab (0.7.1) lists the party's
+ * embedded Items and the purse; the GM's notes are a tab the players never see.
  *
  * Everything member-dependent is computed here, in `_prepareContext`, from the resolved members
  * (plan, risk 2): the party's own data model derives nothing from them. The sheet re-renders its
  * roster and grid on the member hooks (updateActor, Items and Active Effects on a member; a
- * member deleted), debounced on a timer, never a requestAnimationFrame latch, and only when the
- * changed document is a member or belongs to one. Every rule effect runs on the member's own
- * Actor through a method that already exists and posts its card: `rollCheck`, `rollDefense`, the
- * Combat's `rollInitiativeWithCheck`, `toggleFlare`, `restForTheNight`, and the party operations
- * in helpers/party.mjs for the few small writes the party makes to a member.
+ * member deleted), and its loot part on the party's own Item changes, debounced on a timer,
+ * never a requestAnimationFrame latch, and only when the changed document is a member, belongs
+ * to one, or is the party's own loot. Every rule effect runs on the member's own Actor through a
+ * method that already exists and posts its card: `rollCheck`, `rollDefense`, the Combat's
+ * `rollInitiativeWithCheck`, `toggleFlare`, `restForTheNight`, and the party operations in
+ * helpers/party.mjs for the few small writes the party makes to a member.
  *
  * ApplicationV2 actions fire regardless of editability, and a player opens this sheet as an
  * Observer, so every handler re-checks before writing: `game.user.isGM` for the party's writes
  * and the GM's buttons, `testUserPermission(game.user, "OWNER")` on the member for a player's
- * Flare put-out and Spent. For the same reason every control a player may click is an anchor,
- * since DocumentSheetV2 disables every form element for a user who cannot edit.
+ * Flare put-out, Spent and Take. For the same reason every control a player may click is an
+ * anchor, since DocumentSheetV2 disables every form element for a user who cannot edit. A
+ * player's Take, and a Give by drag, are two writes a player cannot make alone, so they go to the
+ * active GM's client through documents/party-socket.mjs (ruling 97); the GM's own Give to, Split
+ * and Ask everyone write directly through helpers/party.mjs.
  */
 
 import * as SW from "../config.mjs";
@@ -31,8 +36,10 @@ import { pickFlare } from "./flare-picker.mjs";
 import {
   resolveMembers, memberCandidate, addMember, removeMember, addPlayerCharacters,
   beginSession, awardHeroPoint, correctHeroPoint, partyRests, restPreview,
-  previewMilestone, awardMilestone, takeBackAward, spendDeferred
+  previewMilestone, awardMilestone, takeBackAward, spendDeferred,
+  isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper, askedName, askEveryone
 } from "../helpers/party.mjs";
+import { requestTake, requestGive } from "../documents/party-socket.mjs";
 
 const { HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -53,6 +60,13 @@ const MEMBER_DOCUMENT_HOOKS = Object.freeze([
   "createItem", "updateItem", "deleteItem",
   "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"
 ]);
+
+/** The parts the member hooks redraw, and the one the party's own loot changes redraw. */
+const MEMBER_PARTS = Object.freeze(["roster", "skills"]);
+const LOOT_PARTS = Object.freeze(["loot"]);
+
+/** Foundry's render context for a change to the party's own embedded Items: the loot. */
+const LOOT_RENDER_CONTEXT = /^(create|update|delete)Item$/;
 
 export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** @inheritdoc */
@@ -75,7 +89,14 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       flareAward: SwPartySheet.#onFlareAward,
       flareOut: SwPartySheet.#onFlareOut,
       spendDeferred: SwPartySheet.#onSpendDeferred,
-      rollCell: SwPartySheet.#onRollCell
+      rollCell: SwPartySheet.#onRollCell,
+      askEveryone: SwPartySheet.#onAskEveryone,
+      lootTake: SwPartySheet.#onLootTake,
+      lootGive: SwPartySheet.#onLootGive,
+      lootChat: SwPartySheet.#onLootChat,
+      lootEdit: SwPartySheet.#onLootEdit,
+      lootDelete: SwPartySheet.#onLootDelete,
+      splitPurse: SwPartySheet.#onSplitPurse
     }
   };
 
@@ -85,6 +106,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     roster: { template: "systems/starwrought/templates/actor/party-roster.hbs" },
     tabs: { template: "templates/generic/tab-navigation.hbs" },
     skills: { template: "systems/starwrought/templates/actor/party-skills.hbs", scrollable: [""] },
+    loot: { template: "systems/starwrought/templates/actor/party-loot.hbs", scrollable: [""] },
     notes: { template: "systems/starwrought/templates/actor/party-notes.hbs", scrollable: [""] }
   };
 
@@ -95,6 +117,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       labelPrefix: "STARWROUGHT.Tab",
       tabs: [
         { id: "skills", icon: "fa-solid fa-table-cells" },
+        { id: "loot", icon: "fa-solid fa-sack" },
         { id: "notes", icon: "fa-solid fa-book-open" }
       ]
     }
@@ -103,8 +126,11 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** The member hooks this sheet registered, as [hook, id] pairs, or null while none are. */
   #memberHooks = null;
 
-  /** The pending redraw, or null. One timer collects a burst of member changes into one render. */
+  /** The pending redraw, or null. One timer collects a burst of changes into one render. */
   #renderTimer = null;
+
+  /** The parts the pending redraw will draw: a burst that touches a member and the loot draws both. */
+  #renderParts = new Set();
 
   /** True while a Milestone award is being written, so a second click cannot double it (plan, risk 3). */
   #awarding = false;
@@ -166,6 +192,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.rows = members.map(m => this.#memberRow(m));
     context.anyOwned = context.rows.some(r => r.owner);
     context.grid = this.#prepareGrid(members.map(m => m.actor).filter(Boolean));
+    context.loot = this.#prepareLoot(members);
     context.milestoneMax = SW.MILESTONES_PER_LEVEL;
     context.heroMax = SW.HERO_POINTS_MAX;
 
@@ -306,8 +333,8 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         });
         const attribute = SW.DEFENSES[key].attribute;
         return {
-          key: `defense-${key}`, kind: "defense", label: L(def.label), hint: L(def.hint),
-          attribute, glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "", cells: mark(cells)
+          key: `defense-${key}`, kind: "defense", defenseKey: key, slug: def.slug, label: L(def.label), hint: L(def.hint),
+          attribute, glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "", cells: mark(cells), askable: true
         };
       })
     });
@@ -326,7 +353,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     });
     groups[0].rows.push({
       key: "initiative", kind: "initiative", label: L("STARWROUGHT.Field.initiative"),
-      hint: L("STARWROUGHT.Party.initiativeHint"), attribute: "", glyph: "", cells: mark(initiativeCells)
+      hint: L("STARWROUGHT.Party.initiativeHint"), attribute: "", glyph: "", cells: mark(initiativeCells), askable: false
     });
 
     // A Skill cell: the preview total, rank letter, Threshold in the tooltip.
@@ -343,7 +370,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const skillRow = (slug, name, attribute) => ({
       key: `skill-${slug}`, kind: "check", slug, label: name, hint: "",
       attribute, glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "",
-      cells: mark(actors.map(actor => checkCell(actor, slug, name)))
+      cells: mark(actors.map(actor => checkCell(actor, slug, name))), askable: true
     });
 
     // The Skill Constellations that ship, the Lore template excluded, and any skill a member has
@@ -387,7 +414,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const attribute = actors[0]?.system.constellations?.[slug]?.attribute ?? SW.constellations[slug]?.attribute ?? fallbackAttribute;
       return {
         key: `weapon-${slug}`, kind: "check", slug, label: name, hint: L(`STARWROUGHT.Field.${key}Hint`),
-        attribute, glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "", cells: mark(cells)
+        attribute, glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "", cells: mark(cells), askable: true
       };
     };
     groups.push({
@@ -411,7 +438,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         rows: [...lores.entries()]
           .sort((a, b) => a[1].name.localeCompare(b[1].name))
           .map(([slug, meta]) => ({
-            key: `lore-${slug}`, kind: "check", slug, label: meta.name, hint: "",
+            key: `lore-${slug}`, kind: "check", slug, label: meta.name, hint: "", askable: true,
             attribute: meta.attribute, glyph: SW.ATTRIBUTES[meta.attribute]?.glyph ?? "",
             cells: mark(actors.map(actor => (actor.system.constellations?.[slug]
               ? checkCell(actor, slug, meta.name)
@@ -424,6 +451,69 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /* -------------------------------------------- */
+
+  /**
+   * The Loot tab (0.7.1; plan, part 6; rulings 96 to 98): one row per embedded Item of a physical
+   * type, by name, with the price string the Item carries and nothing computed from it; the
+   * purse; and who may do what. The GM edits quantities, Gives to a member and Deletes; a player
+   * who owns a member Takes, which goes to the active GM's client, so the rows say when no GM is
+   * connected and the Take would write nothing. Carry state means nothing on a party and is not
+   * shown.
+   * @param {Array<{uuid: string, actor: Actor|null}>} members
+   * @returns {object}
+   */
+  #prepareLoot(members) {
+    const party = this.document;
+    const isGM = game.user.isGM;
+    const present = members.filter(m => m.actor);
+    const owned = present.filter(m => m.actor.testUserPermission(game.user, "OWNER"));
+    const gmActive = !!game.users.activeGM;
+    const canTake = !isGM && (owned.length > 0);
+
+    const rows = party.items
+      .filter(item => isLoot(item))
+      .map(item => {
+        const quantity = Math.max(0, Number(item.system.quantity) || 0);
+        return {
+          id: item.id,
+          uuid: item.uuid,
+          name: item.name,
+          img: item.img,
+          type: item.type,
+          typeLabel: L(CONFIG.Item.typeLabels?.[item.type] ?? `TYPES.Item.${item.type}`),
+          quantity,
+          price: String(item.system.price ?? "").trim(),
+          traits: item.type === "weapon" ? (item.system.totalTraits ?? "") : "",
+          inStock: quantity > 0,
+          canTake: canTake && (quantity > 0),
+          stack: quantity > 1
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const purse = party.system.currency ?? { gp: 0, sp: 0, cp: 0 };
+    const copper = toCopper(purse);
+    return {
+      rows,
+      count: rows.length,
+      isGM,
+      canTake,
+      gmActive,
+      ownedCount: owned.length,
+      memberCount: present.length,
+      purse: {
+        gp: Number(purse.gp) || 0,
+        sp: Number(purse.sp) || 0,
+        cp: Number(purse.cp) || 0,
+        copper,
+        text: coinText(copper),
+        empty: copper <= 0
+      },
+      canSplit: isGM && (copper > 0) && (present.length > 0)
+    };
+  }
+
+  /* -------------------------------------------- */
   /*  Rendering and the member hooks              */
   /* -------------------------------------------- */
 
@@ -431,6 +521,24 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
     if (!this.#memberHooks) this.#registerMemberHooks();
+  }
+
+  /**
+   * @inheritdoc
+   * Foundry re-renders a document's sheets when one of its embedded Items is created, changed or
+   * deleted (`renderContext` "createItem", "updateItem", "deleteItem"). On a party that is the
+   * loot moving, and a Take served on the GM's client is two such changes in a row, so those
+   * renders go through the same timer as the member hooks and draw the loot part alone, once
+   * (brief, item 4). The party's own update (the purse edited or Split, the name, the notes) and
+   * every explicit render still draw as the base class does.
+   */
+  async render(options = {}, _options = {}) {
+    if (typeof options === "boolean") options = Object.assign(_options, { force: options });
+    if (!options.force && this.rendered && LOOT_RENDER_CONTEXT.test(String(options.renderContext ?? ""))) {
+      this.#queueRender(LOOT_PARTS);
+      return this;
+    }
+    return super.render(options);
   }
 
   /** @inheritdoc */
@@ -441,6 +549,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       clearTimeout(this.#renderTimer);
       this.#renderTimer = null;
     }
+    this.#renderParts.clear();
   }
 
   /**
@@ -451,10 +560,10 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
    */
   #registerMemberHooks() {
     const hooks = [];
-    const onActor = actor => { if (this.#isMember(actor)) this.#queueRender(); };
+    const onActor = actor => { if (this.#isMember(actor)) this.#queueRender(MEMBER_PARTS); };
     const onEmbedded = doc => {
       const parent = doc?.parent;
-      if ((parent?.documentName === "Actor") && this.#isMember(parent)) this.#queueRender();
+      if ((parent?.documentName === "Actor") && this.#isMember(parent)) this.#queueRender(MEMBER_PARTS);
     };
     hooks.push(["updateActor", Hooks.on("updateActor", onActor)]);
     hooks.push(["deleteActor", Hooks.on("deleteActor", onActor)]);
@@ -475,16 +584,21 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
-   * Redraw the roster and the grid once the burst settles: a setTimeout, never a
-   * requestAnimationFrame latch (plan, risk 2), and only the two member-dependent parts. A change
-   * that arrives while the timer runs is read by the render it already scheduled.
+   * Redraw once the burst settles: a setTimeout, never a requestAnimationFrame latch (plan, risk
+   * 2), and only the parts asked for (the roster and the grid for a member's change, the loot for
+   * the party's own Items; a burst that touches both draws both). A change that arrives while the
+   * timer runs is read by the render it already scheduled.
+   * @param {readonly string[]} parts
    */
-  #queueRender() {
+  #queueRender(parts) {
+    for (const part of parts) this.#renderParts.add(part);
     if (this.#renderTimer) return;
     this.#renderTimer = setTimeout(() => {
       this.#renderTimer = null;
-      if (!this.rendered) return;
-      this.render({ parts: ["roster", "skills"] })
+      const drawn = [...this.#renderParts];
+      this.#renderParts.clear();
+      if (!this.rendered || !drawn.length) return;
+      super.render({ parts: drawn })
         .catch(err => console.error("STARWROUGHT | the party sheet could not redraw", err));
     }, RERENDER_DELAY);
   }
@@ -564,6 +678,81 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return added ? candidate : null;
   }
 
+  /**
+   * @inheritdoc
+   * The base class accepts a drop from an editor alone, which would stop a player's Give before
+   * it reached `_onDropItem`; every drop handler here re-checks who is dropping and what, so the
+   * gate is opened and the handlers decide.
+   */
+  _canDragDrop() {
+    return true;
+  }
+
+  /**
+   * @inheritdoc
+   * A dropped Item (0.7.1; plan, part 6; rulings 97 and 98). The GM's drop copies, as Foundry
+   * does, from the Equipment compendium, the Items sidebar or a character sheet; a non-physical
+   * type is refused at creation by `SwItem._preCreate`, with its own notice, so nothing more is
+   * done here. A player's drop of one of their own character's Items is a Give of the whole stack,
+   * sent to the active GM's client through `requestGive` and copied nowhere by this client; a
+   * player's drop from the compendium or the sidebar is the GM's alone and is refused with a
+   * notice. A drop of the party's own Item onto itself is Foundry's sort, the GM's.
+   */
+  async _onDropItem(event, item) {
+    const party = this.document;
+    const parent = item?.parent ?? null;
+    if (parent?.uuid === party.uuid) return game.user.isGM ? super._onDropItem(event, item) : null;
+
+    if (game.user.isGM) {
+      if (!this.isEditable) return null;
+      return super._onDropItem(event, item);
+    }
+
+    const fromCharacter = (parent?.documentName === "Actor") && (parent.type === "character");
+    if (!fromCharacter) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.dropGmOnly"));
+      return null;
+    }
+    if (!parent.testUserPermission(game.user, "OWNER")) {
+      ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+      return null;
+    }
+    if (!isLoot(item)) {
+      ui.notifications.warn(F("STARWROUGHT.Loot.giveNotPhysical", { item: item?.name ?? "" }));
+      return null;
+    }
+    await requestGive({ actor: parent, item, party, quantity: Number(item.system.quantity) || 1 });
+    return null;
+  }
+
+  /* -------------------------------------------- */
+  /*  Form changes                                */
+  /* -------------------------------------------- */
+
+  /**
+   * @inheritdoc
+   * The quantity input on a loot row belongs to the Item, not the party, so it carries no `name`
+   * (the form never submits it) and is written here; everything else is the party's own form.
+   */
+  _onChangeForm(formConfig, event) {
+    const input = event.target;
+    if (input?.matches?.("input[data-loot-quantity]")) {
+      this.#onChangeQuantity(input).catch(err => console.error("STARWROUGHT | the loot quantity could not be written", err));
+      return;
+    }
+    return super._onChangeForm(formConfig, event);
+  }
+
+  /** The GM's edit of a stack's count. Never below 0; the sheet redraws from the Item's own hook. */
+  async #onChangeQuantity(input) {
+    if (!game.user.isGM || !this.isEditable) return;
+    const item = this.#lootFor(input);
+    if (!item) return;
+    const quantity = Math.max(0, Math.floor(Number(input.value) || 0));
+    if (quantity === (Number(item.system.quantity) || 0)) return;
+    await item.update({ "system.quantity": quantity });
+  }
+
   /* -------------------------------------------- */
   /*  Actions                                     */
   /* -------------------------------------------- */
@@ -573,6 +762,14 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const uuid = target.closest("[data-uuid]")?.dataset.uuid;
     if (!uuid) return null;
     return resolveMembers(this.document).find(m => m.uuid === uuid)?.actor ?? null;
+  }
+
+  /** The loot Item a clicked control belongs to, from the nearest `data-item-id`, read live from the party. */
+  #lootFor(target) {
+    const id = target.closest("[data-item-id]")?.dataset.itemId;
+    if (!id) return null;
+    const item = this.document.items.get(id) ?? null;
+    return isLoot(item) ? item : null;
   }
 
   static async #onEditImage() {
@@ -798,5 +995,272 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       default:
         return actor.rollCheck(target.dataset.slug, { dialog });
     }
+  }
+
+  /* -------------------------------------------- */
+  /*  Ask everyone (part 7, 0.7.1)                */
+  /* -------------------------------------------- */
+
+  /**
+   * The GM's Ask everyone on a grid row header (ruling 100): a small dialog, an optional
+   * Threshold and whether the players see it, then one card spoken by the party with a Roll
+   * button per member. A hidden Threshold is written nowhere (helpers/party.mjs, askEveryone
+   * says why), and the dialog says so before the GM types one.
+   */
+  static async #onAskEveryone(event, target) {
+    if (!game.user.isGM) return;
+    const kind = target.dataset.kind === "defense" ? "defense" : "check";
+    const slug = target.dataset.slug ?? "";
+    const key = target.dataset.key ?? "";
+    if ((kind === "defense") ? !SW.DEFENSES[key] : !slug) return;
+    const party = this.document;
+    if (!resolveMembers(party).some(m => m.actor)) {
+      ui.notifications.warn(L("STARWROUGHT.Party.askNoMembers"));
+      return;
+    }
+    const name = askedName(party, slug, { kind, key });
+    const answer = await DialogV2.wait({
+      window: { title: F("STARWROUGHT.Party.askTitle", { name }), icon: "fa-solid fa-bullhorn" },
+      classes: ["starwrought", "sw-party-dialog"],
+      position: { width: 440 },
+      content: `<p>${esc(F("STARWROUGHT.Party.askIntro", { name }))}</p>
+        <div class="form-group">
+          <label>${esc(L("STARWROUGHT.Field.threshold"))}</label>
+          <div class="form-fields">
+            <input type="number" name="threshold" min="0" step="1" autofocus placeholder="${esc(L("STARWROUGHT.Roll.thresholdPlaceholder"))}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox"><input type="checkbox" name="show"> ${esc(L("STARWROUGHT.Party.askShow"))}</label>
+        </div>
+        <p class="sw-note">${esc(L("STARWROUGHT.Party.askShowHint"))}</p>`,
+      buttons: [
+        {
+          action: "ask", label: "STARWROUGHT.Party.askButton", icon: "fa-solid fa-bullhorn", default: true,
+          callback: (clickEvent, button) => new foundry.applications.ux.FormDataExtended(button.form).object
+        },
+        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    if (!answer || (answer === "cancel")) return;
+    const threshold = Number.isNumeric(answer.threshold) ? Number(answer.threshold) : null;
+    return askEveryone(party, slug, { kind, key, threshold, show: answer.show === true });
+  }
+
+  /* -------------------------------------------- */
+  /*  The loot and the purse (part 6, 0.7.1)      */
+  /* -------------------------------------------- */
+
+  /**
+   * One dialog for a Take and a Give to: which member (a select, when there is more than one to
+   * choose from) and how many (a number, when the stack is above one). With one member and one
+   * thing there is nothing to ask and the dialog is skipped.
+   * @param {object} spec
+   * @param {string} spec.title
+   * @param {string} spec.icon
+   * @param {string} spec.intro
+   * @param {string} spec.button  The i18n key of the confirming button.
+   * @param {Array<{uuid: string, name: string}>} spec.members  Who may receive.
+   * @param {number} spec.stock
+   * @param {boolean} [spec.alwaysAsk]  Show the dialog even with nothing to choose (the GM confirms a Give to).
+   * @returns {Promise<{uuid: string, quantity: number}|null>}
+   */
+  async #pickMemberAndCount({ title, icon, intro, button, members, stock, alwaysAsk = false }) {
+    if (!members.length) return null;
+    const askMember = members.length > 1;
+    const askCount = stock > 1;
+    if (!askMember && !askCount && !alwaysAsk) return { uuid: members[0].uuid, quantity: 1 };
+
+    const options = members.map(m => `<option value="${esc(m.uuid)}">${esc(m.name)}</option>`).join("");
+    const memberField = askMember || alwaysAsk
+      ? `<div class="form-group">
+          <label>${esc(L("STARWROUGHT.Loot.toWhom"))}</label>
+          <div class="form-fields"><select name="uuid" autofocus>${options}</select></div>
+        </div>`
+      : `<input type="hidden" name="uuid" value="${esc(members[0].uuid)}">`;
+    const countField = askCount
+      ? `<div class="form-group">
+          <label>${esc(L("STARWROUGHT.Loot.howMany"))}</label>
+          <div class="form-fields">
+            <input type="number" name="quantity" min="1" max="${stock}" step="1" value="1" ${askMember || alwaysAsk ? "" : "autofocus"}>
+            <span class="sw-loot-stock">${esc(F("STARWROUGHT.Loot.ofStock", { stock }))}</span>
+          </div>
+        </div>`
+      : `<input type="hidden" name="quantity" value="1">`;
+
+    const answer = await DialogV2.wait({
+      window: { title, icon },
+      classes: ["starwrought", "sw-party-dialog"],
+      position: { width: 420 },
+      content: `<p>${esc(intro)}</p>${memberField}${countField}`,
+      buttons: [
+        {
+          action: "go", label: button, icon, default: true,
+          callback: (clickEvent, pressed) => new foundry.applications.ux.FormDataExtended(pressed.form).object
+        },
+        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    if (!answer || (answer === "cancel") || !answer.uuid) return null;
+    const quantity = Math.clamp(Math.floor(Number(answer.quantity) || 0), 1, Math.max(1, stock));
+    return { uuid: String(answer.uuid), quantity };
+  }
+
+  /**
+   * A player's Take (rulings 97 and 98): which of their members when they own two, how many when
+   * the stack is above one, then `requestTake`, which runs the move on the active GM's client or
+   * says that no GM is connected and writes nothing. The GM has Give to instead.
+   */
+  static async #onLootTake(event, target) {
+    const party = this.document;
+    const item = this.#lootFor(target);
+    if (!item) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.rowGone"));
+      return;
+    }
+    const owned = resolveMembers(party)
+      .filter(m => m.actor?.testUserPermission(game.user, "OWNER"))
+      .map(m => ({ uuid: m.uuid, name: m.actor.name, actor: m.actor }));
+    if (!owned.length) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.takeNoMember"));
+      return;
+    }
+    const stock = Number(item.system.quantity) || 0;
+    if (stock < 1) {
+      ui.notifications.warn(F("STARWROUGHT.Loot.takeNone", { item: item.name }));
+      return;
+    }
+    const pick = await this.#pickMemberAndCount({
+      title: F("STARWROUGHT.Loot.takeTitle", { item: item.name }),
+      icon: "fa-solid fa-hand",
+      intro: F("STARWROUGHT.Loot.takeIntro", { item: item.name, stock }),
+      button: "STARWROUGHT.Loot.take",
+      members: owned,
+      stock
+    });
+    if (!pick) return;
+    const actor = owned.find(m => m.uuid === pick.uuid)?.actor ?? null;
+    if (!actor) return;
+    return requestTake({ party, item, actor, quantity: pick.quantity });
+  }
+
+  /**
+   * The GM's Give to (plan, part 6): a member picker, a count for a stack, then `giveTo`, which
+   * lands the Item on the member as carried, takes it off the party and posts the member's card.
+   */
+  static async #onLootGive(event, target) {
+    if (!game.user.isGM) return;
+    const party = this.document;
+    const item = this.#lootFor(target);
+    if (!item) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.rowGone"));
+      return;
+    }
+    const members = resolveMembers(party).filter(m => m.actor).map(m => ({ uuid: m.uuid, name: m.actor.name, actor: m.actor }));
+    if (!members.length) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.giveNoMembers"));
+      return;
+    }
+    const stock = Number(item.system.quantity) || 0;
+    if (stock < 1) {
+      ui.notifications.warn(F("STARWROUGHT.Loot.takeNone", { item: item.name }));
+      return;
+    }
+    const pick = await this.#pickMemberAndCount({
+      title: F("STARWROUGHT.Loot.giveTitle", { item: item.name }),
+      icon: "fa-solid fa-hand-holding",
+      intro: F("STARWROUGHT.Loot.giveIntro", { item: item.name, stock }),
+      button: "STARWROUGHT.Loot.giveTo",
+      members,
+      stock,
+      alwaysAsk: true
+    });
+    if (!pick) return;
+    const actor = members.find(m => m.uuid === pick.uuid)?.actor ?? null;
+    if (!actor) return;
+    return giveTo(party, item, actor, pick.quantity);
+  }
+
+  /** The name on a loot row puts the Item's card on the table, for anyone who can see the sheet. */
+  static async #onLootChat(event, target) {
+    return this.#lootFor(target)?.toMessage();
+  }
+
+  /** The GM's pen: the Item's own sheet. */
+  static async #onLootEdit(event, target) {
+    if (!game.user.isGM) return;
+    return this.#lootFor(target)?.sheet.render({ force: true });
+  }
+
+  /** The GM's Delete, with the confirm the character sheet uses. Posts nothing. */
+  static async #onLootDelete(event, target) {
+    if (!game.user.isGM || !this.isEditable) return;
+    const item = this.#lootFor(target);
+    if (!item) return;
+    const confirmed = await DialogV2.confirm({
+      window: { title: F("STARWROUGHT.Prompt.deleteTitle", { name: item.name }) },
+      content: `<p>${esc(F("STARWROUGHT.Prompt.deleteBody", { name: item.name }))}</p>`,
+      rejectClose: false
+    });
+    if (confirmed) return item.delete();
+  }
+
+  /**
+   * Split among the party (ruling 99): a dialog listing every member ticked, with what each would
+   * receive and what would stay, kept current as boxes are ticked, then `splitPurse`.
+   */
+  static async #onSplitPurse() {
+    if (!game.user.isGM) return;
+    const party = this.document;
+    const members = resolveMembers(party).filter(m => m.actor);
+    if (!members.length) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.splitNoMembers"));
+      return;
+    }
+    const total = toCopper(party.system.currency);
+    if (total <= 0) {
+      ui.notifications.warn(L("STARWROUGHT.Loot.splitEmpty"));
+      return;
+    }
+    const items = members.map(m => `<li><label class="checkbox">
+        <input type="checkbox" name="split" value="${esc(m.uuid)}" checked>
+        <span class="sw-split-name">${esc(m.actor.name)}</span>
+        <span class="sw-split-has">${esc(F("STARWROUGHT.Loot.splitHas", { coin: coinText(toCopper(m.actor.system.currency)) }))}</span>
+      </label></li>`).join("");
+    const previewText = count => {
+      const { share, remainder } = previewSplit(party, count);
+      return count
+        ? F("STARWROUGHT.Loot.splitPreview", { total: coinText(total), n: count, share: coinText(share), remainder: coinText(remainder) })
+        : L("STARWROUGHT.Loot.splitPreviewNone");
+    };
+    const chosen = await DialogV2.wait({
+      window: { title: L("STARWROUGHT.Loot.splitTitle"), icon: "fa-solid fa-coins" },
+      classes: ["starwrought", "sw-party-dialog"],
+      position: { width: 480 },
+      content: `<p>${esc(F("STARWROUGHT.Loot.splitIntro", { total: coinText(total) }))}</p>
+        <ul class="sw-milestone-preview sw-split-list">${items}</ul>
+        <p class="sw-note sw-split-preview">${esc(previewText(members.length))}</p>`,
+      render: (renderEvent, dialog) => {
+        const root = dialog.element;
+        const preview = root.querySelector(".sw-split-preview");
+        const update = () => {
+          const count = root.querySelectorAll("input[name='split']:checked").length;
+          if (preview) preview.textContent = previewText(count);
+        };
+        for (const box of root.querySelectorAll("input[name='split']")) box.addEventListener("change", update);
+      },
+      buttons: [
+        {
+          action: "split", label: "STARWROUGHT.Loot.splitButton", icon: "fa-solid fa-coins", default: true,
+          callback: (clickEvent, button) => Array.from(button.form.querySelectorAll("input[name='split']:checked")).map(i => i.value)
+        },
+        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    if (!Array.isArray(chosen) || !chosen.length) return;
+    return splitPurse(party, chosen);
   }
 }

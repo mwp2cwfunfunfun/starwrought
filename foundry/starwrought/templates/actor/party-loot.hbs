@@ -1,0 +1,113 @@
+{{!-- The Loot tab (0.7.1; plan, part 6; rulings 96 to 98): the party's embedded Items, one to a
+      row, and the purse. The GM edits a stack's count, Gives to a member and Deletes; a player who
+      owns a member Takes, which asks the active GM's client to make the move, so the row says when
+      no GM is connected. The price is the string the Item carries and nothing computes with it.
+      Every control a player may click is an anchor, since the sheet disables every form element
+      for a user who cannot edit the party; a row is draggable, so a party Item dropped onto a
+      character sheet is a Take of the whole stack. --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel sw-loot-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Loot.title"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Loot.titleHint"}}</span>
+    </h3>
+
+    {{#if loot.isGM}}
+    <p class="sw-note sw-loot-drop"><i class="fa-solid fa-hand-pointer"></i> {{localize "STARWROUGHT.Loot.dropHintGm"}}</p>
+    {{else}}
+    <p class="sw-note sw-loot-drop">
+      {{#if loot.canTake}}
+      {{#if loot.gmActive}}{{localize "STARWROUGHT.Loot.playerHint"}}{{else}}<i class="fa-solid fa-plug-circle-xmark"></i> {{localize "STARWROUGHT.Loot.noGm"}}{{/if}}
+      {{else}}
+      {{localize "STARWROUGHT.Loot.observerHint"}}
+      {{/if}}
+    </p>
+    {{/if}}
+
+    <ol class="sw-item-list sw-loot-list">
+      {{#each loot.rows as |row|}}
+      <li class="sw-item-row sw-loot-row draggable {{#unless row.inStock}}sw-disabled{{/unless}}" data-item-id="{{row.id}}" data-uuid="{{row.uuid}}">
+        <img src="{{row.img}}" alt="{{row.name}}">
+        <a class="sw-item-name" data-action="lootChat" data-tooltip="STARWROUGHT.Loot.showHint">{{row.name}}</a>
+
+        {{!-- The count: the GM's input, a player's number. --}}
+        <span class="sw-item-tag sw-loot-quantity" data-tooltip="STARWROUGHT.Field.quantity">
+          <span class="sw-loot-times">×</span>
+          {{#if @root.isGM}}
+          <input type="number" data-loot-quantity min="0" step="1" value="{{row.quantity}}">
+          {{else}}
+          <strong>{{row.quantity}}</strong>
+          {{/if}}
+        </span>
+
+        <span class="sw-item-tag sw-loot-type">{{row.typeLabel}}</span>
+        {{#if row.price}}
+        <span class="sw-item-tag sw-loot-price" data-tooltip="{{localize 'STARWROUGHT.Loot.priceHint'}}">{{row.price}}</span>
+        {{/if}}
+
+        <div class="sw-item-controls sw-loot-controls">
+          {{#if @root.isGM}}
+          <a class="sw-loot-give" data-action="lootGive" data-tooltip="{{localize 'STARWROUGHT.Loot.giveToHint'}}">
+            <i class="fa-solid fa-hand-holding"></i> {{localize "STARWROUGHT.Loot.giveTo"}}
+          </a>
+          <a data-action="lootEdit" data-tooltip="STARWROUGHT.Loot.editHint"><i class="fa-solid fa-pen"></i></a>
+          <a data-action="lootDelete" data-tooltip="STARWROUGHT.Loot.deleteHint"><i class="fa-solid fa-trash"></i></a>
+          {{else if row.canTake}}
+          {{#if @root.loot.gmActive}}
+          <a class="sw-loot-take" data-action="lootTake"
+             data-tooltip="{{#if row.stack}}{{localize 'STARWROUGHT.Loot.takeStackHint' stock=row.quantity}}{{else}}{{localize 'STARWROUGHT.Loot.takeHint'}}{{/if}}">
+            <i class="fa-solid fa-hand"></i> {{localize "STARWROUGHT.Loot.take"}}
+          </a>
+          {{else}}
+          <span class="sw-loot-take sw-loot-take-off" data-tooltip="{{localize 'STARWROUGHT.Loot.noGm'}}">
+            <i class="fa-solid fa-hand"></i> {{localize "STARWROUGHT.Loot.take"}}
+          </span>
+          {{/if}}
+          {{/if}}
+        </div>
+        {{#if row.traits}}<span class="sw-item-traits">{{row.traits}}</span>{{/if}}
+      </li>
+      {{else}}
+      <li class="sw-empty">{{#if @root.isGM}}{{localize "STARWROUGHT.Loot.emptyGm"}}{{else}}{{localize "STARWROUGHT.Loot.emptyPlayer"}}{{/if}}</li>
+      {{/each}}
+    </ol>
+  </div>
+
+  {{!-- The purse (ruling 99): the character's own currency block, the GM's to type in, and Split
+        among the party, which divides it in copper and leaves the remainder here. --}}
+  <div class="sw-panel sw-purse-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Loot.purse"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Loot.purseHint"}}</span>
+      {{#if isGM}}
+      <span class="sw-panel-buttons">
+        <button type="button" class="sw-inline-button" data-action="splitPurse"
+                data-tooltip="{{localize 'STARWROUGHT.Loot.splitHint'}}" {{#unless loot.canSplit}}disabled{{/unless}}>
+          <i class="fa-solid fa-coins"></i> {{localize "STARWROUGHT.Loot.split"}}
+        </button>
+      </span>
+      {{/if}}
+    </h3>
+    <div class="sw-purse-row">
+      {{#if isGM}}
+      <div class="sw-currency sw-purse">
+        <label><span>gp</span><input type="number" name="system.currency.gp" value="{{loot.purse.gp}}" min="0" step="1"></label>
+        <label><span>sp</span><input type="number" name="system.currency.sp" value="{{loot.purse.sp}}" min="0" step="1"></label>
+        <label><span>cp</span><input type="number" name="system.currency.cp" value="{{loot.purse.cp}}" min="0" step="1"></label>
+      </div>
+      {{else}}
+      <div class="sw-currency sw-purse sw-purse-readonly">
+        <span class="sw-purse-coin"><strong>{{loot.purse.gp}}</strong> gp</span>
+        <span class="sw-purse-coin"><strong>{{loot.purse.sp}}</strong> sp</span>
+        <span class="sw-purse-coin"><strong>{{loot.purse.cp}}</strong> cp</span>
+      </div>
+      {{/if}}
+      <span class="sw-purse-total" data-tooltip="{{localize 'STARWROUGHT.Loot.purseTotalHint'}}">
+        {{#if loot.purse.empty}}{{localize "STARWROUGHT.Loot.purseEmpty"}}{{else}}{{localize "STARWROUGHT.Loot.purseTotal" coin=loot.purse.text}}{{/if}}
+      </span>
+    </div>
+    <p class="sw-note">{{localize "STARWROUGHT.Loot.purseNote"}}</p>
+  </div>
+
+</section>

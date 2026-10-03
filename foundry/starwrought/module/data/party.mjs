@@ -1,12 +1,14 @@
 /**
- * The party data model (0.7.0; party-sheet-plan.md, part 1).
+ * The party data model (0.7.0; party-sheet-plan.md, part 1; 0.7.1 adds the purse, part 6).
  *
  * A party is the characters who travel together, and this document stores only what is party
  * bookkeeping: who is in it, which session the table is on, the last Milestone award so it can be
- * taken back, and the GM's notes. Everything about the members (level, Milestones, Hero Points,
- * Vigor, Wounds, Flares, every rank and Threshold) stays on the characters and is read live by the
- * sheet at render, never copied here: one Actor's derived data must not depend on another's
- * prepare order (plan, risk 2), so `prepareDerivedData` below derives nothing from the members.
+ * taken back, the purse, and the GM's notes. Its embedded Items are the loot (0.7.1): the four
+ * physical types alone, since `SwItem._preCreate` refuses anything else on a party. Everything
+ * about the members (level, Milestones, Hero Points, Vigor, Wounds, Flares, every rank and
+ * Threshold) stays on the characters and is read live by the sheet at render, never copied here:
+ * one Actor's derived data must not depend on another's prepare order (plan, risk 2), so
+ * `prepareDerivedData` below derives nothing from the members.
  *
  * It extends `TypeDataModel` directly and never `SwActorData` (risk 1): a party has no Zones, no
  * Wounds, no Vigor, no stance and no actions, so the combat machinery never sees one and nothing
@@ -16,6 +18,22 @@
  */
 
 const fields = foundry.data.fields;
+
+/**
+ * What each coin is worth in copper, the larger coin first (the order matters to `fromCopper` in
+ * helpers/party.mjs, which breaks a copper total down in this order). The book prices gear in
+ * gold pieces and the travelling kit in coppers and states no ladder; ten to one, as the
+ * character's `currency` field has always assumed, is the system's reading (0.7.1, ruling 99).
+ */
+export const COIN_IN_COPPER = Object.freeze({ gp: 100, sp: 10, cp: 1 });
+
+/** The three coin fields, in the character's own shape (data/actor.mjs), so the template idiom carries over. */
+function currencyFields() {
+  return Object.keys(COIN_IN_COPPER).reduce((obj, coin) => {
+    obj[coin] = new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 });
+    return obj;
+  }, {});
+}
 
 export class SwPartyData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
@@ -49,6 +67,15 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
       lastAward: new fields.ObjectField({ required: true, nullable: true, initial: null }),
 
       /**
+       * The purse (0.7.1; plan, part 6; ruling 99): gp, sp and cp, the coin the party has not
+       * divided. The GM types it in and Split among the party divides it, in copper, equally
+       * among the ticked members, the remainder staying here. A convenience with no rule
+       * authority (ruling 96): the book has coin per character and no common purse, so nothing
+       * computes with it. Integers, never negative, nothing until the GM writes some.
+       */
+      currency: new fields.SchemaField(currencyFields()),
+
+      /**
        * The GM's notes. GM-only in the template, not a vault: a player with Observer ownership can
        * read the document from the console, and FEATURES says so (plan, risk 8).
        */
@@ -61,12 +88,15 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
   /**
    * Nothing member-dependent is derived here, on purpose (plan, risk 2): the sheet resolves the
    * members and computes the board at render, and re-renders on their hooks. Only the party's own
-   * counts are set, so a template or a macro can read them without touching the array.
+   * counts are set, so a template or a macro can read them without touching the array; the purse
+   * in copper is one of them, since Split and the sheet both want the one number.
    * @override
    */
   prepareDerivedData() {
     this.memberCount = this.members.length;
     this.hasAwardToTakeBack = !!(this.lastAward?.members?.length);
+    this.purseCopper = Object.entries(COIN_IN_COPPER)
+      .reduce((sum, [coin, worth]) => sum + ((Number(this.currency?.[coin]) || 0) * worth), 0);
   }
 
   /** The members' uuids, in order. */

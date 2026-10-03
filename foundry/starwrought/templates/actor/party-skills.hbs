@@ -2,7 +2,8 @@
       the question is "who has Stealth". The Defenses show the Threshold (ruling 95: players see
       them too), Initiative is live only while a Combat holds the member, a Skill cell is the rank
       letter and the signed modifier from SwCheck.previewTotal with the Threshold on hover, the best
-      in each row is gold (ties all), and a cell is live only on a member the user owns. --}}
+      in each row is gold (ties all), and a cell is live only on a member the user owns. Since 0.7.1
+      each row header but Initiative's carries the GM's Ask everyone (plan, part 7; ruling 100). --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
   {{#if grid.columns.length}}
@@ -35,6 +36,10 @@
           <th class="sw-grid-rowhead" {{#if row.hint}}data-tooltip="{{row.hint}}"{{/if}}>
             {{#if row.glyph}}<span class="sw-glyph sw-glyph-{{row.attribute}}">{{row.glyph}}</span>{{/if}}
             <span class="sw-grid-row-name">{{row.label}}</span>
+            {{#if @root.isGM}}{{#if row.askable}}
+            <a class="sw-grid-ask" data-action="askEveryone" data-kind="{{row.kind}}" data-slug="{{row.slug}}" data-key="{{row.defenseKey}}"
+               data-tooltip="{{localize 'STARWROUGHT.Party.askHint' name=row.label}}"><i class="fa-solid fa-bullhorn"></i></a>
+            {{/if}}{{/if}}
           </th>
           {{#each row.cells as |cell|}}
           <td class="sw-grid-cell {{#if cell.best}}sw-grid-best{{/if}} {{#if cell.untrained}}sw-grid-untrained{{/if}} {{#if cell.blank}}sw-grid-blank{{/if}} {{#if cell.live}}sw-grid-live{{/if}}">

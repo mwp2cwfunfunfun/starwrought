@@ -12,6 +12,8 @@ import { SwChargen } from "./chargen.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
 import { loadBasicActions, chassisByName, enabledConstellations } from "../helpers/content.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
+// THE PARTY'S LOOT (0.7.1): a party Item dropped on this sheet is a Take over the relay, not a copy.
+import { requestTake } from "../documents/party-socket.mjs";
 // AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
 import { auraRowsByItem, reachRangeRows, rangeFor } from "../canvas/auras.mjs";
 
@@ -899,8 +901,20 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /*  Drops                                       */
   /* -------------------------------------------- */
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   *
+   * THE PARTY'S LOOT (0.7.1; party-sheet-plan.md, part 6; ruling 98): an Item dragged off a
+   * party onto this sheet is a Take, not Foundry's silent copy. The whole stack moves (the Loot
+   * tab's Take button is the place to ask for part of one), through `requestTake`: the GM's own
+   * client moves it at once, a player's asks the active GM's client over the system socket, and
+   * both post the member's card. The base class never sees the drop, so nothing is copied.
+   */
   async _onDropItem(event, item) {
+    if ((item?.parent?.documentName === "Actor") && (item.parent.type === SW.PARTY_TYPE)) {
+      await requestTake({ party: item.parent, item, actor: this.document, quantity: item.system?.quantity });
+      return null;
+    }
     const created = await super._onDropItem(event, item);
     // Buying a Talent in a Constellation you have not opened is buying its Root, so draw the sky.
     const docs = Array.isArray(created) ? created : [created];

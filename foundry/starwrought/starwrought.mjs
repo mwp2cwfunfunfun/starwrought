@@ -20,6 +20,9 @@ import { SwActor } from "./module/documents/actor.mjs";
 import { SwItem } from "./module/documents/item.mjs";
 import { SwCombat, SwCombatant } from "./module/documents/combat.mjs";
 import { onRenderChatMessage, onChatSocket } from "./module/documents/chat.mjs";
+// THE PARTY'S LOOT (0.7.1): a player's Take from the loot and Give to the party, served on the
+// active GM's client over the same socket (party-sheet-plan.md, part 6; ruling 97).
+import { onPartySocket } from "./module/documents/party-socket.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
@@ -197,12 +200,15 @@ Hooks.once("ready", async () => {
   // Then the live Blows are rebuilt from the chat log: every card whose
   // `flags.starwrought.attackWorkflow.phase` is neither complete nor cancelled, with this client's
   // private commitments restored from its own `attackPrivate` setting.
-  // One system socket, two listeners: `damage:*` (a player's Apply on a creature they cannot
+  // One system socket, three listeners: `damage:*` (a player's Apply on a creature they cannot
   // write), `reroll:*` (a die read again on the GM's client) and `expose:*` (a Zone one side
-  // chooses on the other side's body), all 0.5.3, go to chat.mjs; everything else to the attack
-  // coordinator.
+  // chooses on the other side's body), all 0.5.3, go to chat.mjs; `party:*` (a player's Take from
+  // the party's loot or Give to the party, 0.7.1) goes to party-socket.mjs; everything else to
+  // the attack coordinator.
   game.socket.on(`system.${SW.SYSTEM_ID}`, (message, senderId) => {
-    if (/^(damage|reroll|expose):/.test(String(message?.type ?? ""))) return onChatSocket(message, senderId);
+    const type = String(message?.type ?? "");
+    if (/^(damage|reroll|expose):/.test(type)) return onChatSocket(message, senderId);
+    if (/^party:/.test(type)) return onPartySocket(message, senderId);
     return AttackCoordinator.onSocket(message, senderId);
   });
   // A rerolled resolution card (0.5.3): the attack card that carried its outcome follows it.
