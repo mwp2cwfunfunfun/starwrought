@@ -8,7 +8,9 @@
       picker dialog, since the sheet disables every form element for a user who cannot edit the
       party; everyone else reads. A Fatigued member's Activity is locked to Travel with the reason
       (ruling 101). Every Activity is read from the Actions pack's Exploration Mode folder, never
-      from a table here (plan, risk 9). --}}
+      from a table here (plan, risk 9). At the foot, since 0.7.5, the Downtime panel (plan, part
+      10; rulings 112 to 114): the days, the Downtime Activities from the pack's Downtime Mode
+      folder, and Train per member. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
   {{#if road.rows.length}}
@@ -174,5 +176,78 @@
     <p>{{localize "STARWROUGHT.Travel.noMembers"}}</p>
   </div>
   {{/if}}
+
+  {{!-- Downtime (0.7.5; plan, part 10; rulings 112 to 114): a panel, not a mode. The Days field is
+        the party's own form field (the GM's input; a number for everyone else) and nothing counts
+        it. The Activity rows print from the Actions pack's Downtime Mode folder with the duration
+        the Item's Requirements carry, Retrain's and Provision's rows each with their hand line
+        (ruling 114). The member strip carries Train for the owner or the GM, an anchor that opens
+        the shared Flare picker and lights the pick through the member's own toggleFlare (ruling
+        113); it turns amber with the warning on hover while Train was already used since the
+        member's last Milestone, and it still works. Every player control is an anchor. --}}
+  <div class="sw-panel sw-downtime-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Travel.downtimeTitle"}}
+      <span class="sw-points">{{localize "STARWROUGHT.Travel.downtimeHint"}}</span>
+      <span class="sw-downtime-days" data-tooltip="{{localize 'STARWROUGHT.Travel.daysHint'}}">
+        <i class="fa-solid fa-hourglass"></i>
+        <span class="sw-downtime-days-label">{{localize "STARWROUGHT.Travel.days"}}</span>
+        {{#if isGM}}
+        <input type="number" name="system.downtime.days" value="{{road.downtime.days}}" min="0" step="1">
+        {{else}}
+        <strong>{{road.downtime.days}}</strong>
+        {{/if}}
+      </span>
+    </h3>
+
+    {{#if road.downtime.hasActivities}}
+    <ul class="sw-downtime-rows">
+      {{#each road.downtime.activities as |a|}}
+      <li class="sw-downtime-row" data-activity-id="{{a.id}}">
+        <span class="sw-downtime-name">{{a.name}}</span>
+        {{#if a.duration}}
+        <span class="sw-item-tag sw-downtime-duration" data-tooltip="{{localize 'STARWROUGHT.Travel.durationHint'}}">
+          <i class="fa-regular fa-clock"></i> {{a.duration}}
+        </span>
+        {{/if}}
+        <div class="sw-downtime-text">{{{a.description}}}</div>
+        {{#if a.byHand}}
+        <p class="sw-note sw-downtime-byhand"><i class="fa-solid fa-hand"></i> {{a.byHand}}</p>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ul>
+    {{else}}
+    <p class="sw-note sw-warn">{{localize "STARWROUGHT.Travel.noDowntimeActivities"}}</p>
+    {{/if}}
+
+    {{!-- The member strip: Train for the owner or the GM; the warning for everyone, since the
+          record is on the character. --}}
+    {{#if road.downtime.members.length}}
+    <ol class="sw-train-rows">
+      {{#each road.downtime.members as |m|}}
+      <li class="sw-train-row {{#if m.used}}sw-train-used{{/if}} {{#if m.live}}sw-road-live{{/if}}" data-uuid="{{m.uuid}}">
+        <img class="sw-road-portrait" src="{{m.img}}" alt="{{m.name}}" data-action="openMember"
+             data-tooltip="STARWROUGHT.Party.openSheet">
+        <a class="sw-road-name sw-train-name" data-action="openMember" data-tooltip="STARWROUGHT.Party.openSheet">{{m.name}}</a>
+        {{#if m.live}}
+        <a class="sw-train-button {{#if m.used}}sw-train-used{{/if}}" data-action="train" data-tooltip="{{m.trainHint}}">
+          {{#if m.used}}<i class="fa-solid fa-triangle-exclamation"></i>{{else}}<i class="fa-solid fa-certificate"></i>{{/if}}
+          {{localize "STARWROUGHT.Travel.train"}}
+        </a>
+        {{else if m.used}}
+        <span class="sw-item-tag sw-train-used-mark" data-tooltip="{{m.usedHint}}">
+          <i class="fa-solid fa-triangle-exclamation"></i> {{localize "STARWROUGHT.Travel.trainUsed"}}
+        </span>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ol>
+    {{else}}
+    <p class="sw-note">{{localize "STARWROUGHT.Travel.trainNoMembers"}}</p>
+    {{/if}}
+
+    <p class="sw-note">{{localize "STARWROUGHT.Travel.downtimeNote"}}</p>
+  </div>
 
 </section>

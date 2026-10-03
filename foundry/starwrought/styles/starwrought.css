@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.7.4";
+  --sw-css-version: "0.7.5";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -2642,5 +2642,98 @@ li.combatant.sw-in-crosshairs {
 .starwrought.action-card.sw-travel-card { border-left: 3px solid var(--sw-agility); }
 .starwrought.action-card.sw-travel-card h3 .fa-route { color: var(--sw-agility); }
 .starwrought.action-card.sw-travel-card .sw-card-note b { color: var(--sw-gold); }
+
+/* --------------------------------------------------------------------------
+   Downtime (0.7.5; party-sheet-plan.md, part 10; rulings 112 to 114). A
+   panel at the foot of the On the road tab, in the road's idiom: the Days
+   count in the title line (the GM's input, a gold figure for everyone else),
+   one row per Downtime Activity with its duration as a tag and its text
+   beneath, the hand lines small and dim under Retrain and Provision, then a
+   strip of member chips with Train. Train is a pill like the road's Roll; it
+   turns amber, never disabled, while Train was already used since the
+   member's last Milestone, since the warning is a reminder and not a refusal
+   (decision 14). The training line on the Flare card takes the agility teal
+   the road's cards use, so a Flare lit by training reads apart from one lit
+   at the table.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-downtime-panel { margin-top: 0.6rem; }
+.starwrought .sw-downtime-panel .sw-panel-title { flex-wrap: wrap; }
+.starwrought .sw-downtime-panel .sw-panel-title .sw-points { text-transform: none; letter-spacing: 0; font-weight: normal; }
+/* The days (ruling 112): a number the GM types and nothing counts. */
+.starwrought .sw-downtime-days {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sw-ink-dim);
+  cursor: help;
+}
+.starwrought .sw-downtime-days i { opacity: 0.7; }
+.starwrought .sw-downtime-days-label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.6rem; }
+.starwrought .sw-downtime-days input { width: 4rem; height: 1.5rem; padding: 0 0.3rem; text-align: center; font-size: 0.85rem; color: var(--sw-gold); }
+.starwrought .sw-downtime-days strong { font-size: 1.05rem; color: var(--sw-gold); }
+
+/* The Activity rows (Table 96), data first: name, duration tag, the text, the hand line. */
+.starwrought .sw-downtime-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.starwrought .sw-downtime-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.starwrought .sw-downtime-name { font-family: var(--font-h1, inherit); font-size: 0.95rem; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-downtime-duration { cursor: help; color: var(--sw-ink); }
+.starwrought .sw-downtime-duration i { font-size: 0.65rem; margin-right: 0.15rem; opacity: 0.8; }
+.starwrought .sw-downtime-text { flex: 1 1 100%; font-size: 0.78rem; line-height: 1.4; color: var(--sw-ink); }
+.starwrought .sw-downtime-text p { margin: 0; }
+.starwrought .sw-downtime-text p + p { margin-top: 0.2rem; }
+/* The hand lines (ruling 114): a reminder, so small and dim, not amber. */
+.starwrought .sw-downtime-byhand { flex: 1 1 100%; margin: 0; }
+.starwrought .sw-downtime-byhand i { font-size: 0.65rem; margin-right: 0.2rem; opacity: 0.7; }
+
+/* The member strip: a chip per member, the portrait at the road's size, and Train. */
+.starwrought .sw-train-rows { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.starwrought .sw-train-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.starwrought .sw-train-row.sw-road-live { border-color: var(--sw-gold-dim); }
+.starwrought .sw-train-row.sw-train-used { border-color: #7a5a2a; }
+.starwrought .sw-train-name { flex: 0 1 auto; min-width: 0; }
+.starwrought .sw-train-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-flare);
+  white-space: nowrap;
+}
+.starwrought .sw-train-button:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); text-shadow: none; }
+/* Train already used since the last Milestone (ruling 113): amber, the warning on hover, still live. */
+.starwrought .sw-train-button.sw-train-used { color: #d8a25a; border-color: #7a5a2a; }
+.starwrought .sw-train-button.sw-train-used:hover { background: rgba(216, 162, 90, 0.14); border-color: #d8a25a; }
+.starwrought .sw-train-used-mark { color: #d8a25a; border-color: #7a5a2a; cursor: help; }
+.starwrought .sw-train-used-mark i { font-size: 0.65rem; margin-right: 0.15rem; }
+
+/* The Flare card's training lines (ruling 113). */
+.starwrought.action-card.sw-flare-card .sw-flare-trained { color: var(--sw-agility); }
+.starwrought.action-card.sw-flare-card .sw-flare-already { font-style: italic; }
 .starwrought.action-card.sw-encounter-card { border-left-color: var(--sw-blood); }
 .starwrought.action-card.sw-encounter-card h3 .fa-flag { color: var(--sw-blood); }

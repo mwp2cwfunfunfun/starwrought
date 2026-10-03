@@ -380,8 +380,43 @@ applied even if that roll is used for initiative"): `SwCheck`'s Initiative assem
 assembly for the slug (the check adjustment, Load Strain on Stealth) plus Initiative's own terms
 (the helm, the Initiative adjustment, the Combatant's modifiers); through 0.7.3 a Stealth Initiative
 took neither Load Strain nor the check adjustment. Nothing computes with the record but that,
-nothing is enforced (the GM unticks a box), and the remembered roll stays afterwards. Phase 4
-(Downtime) is planned, not built.
+nothing is enforced (the GM unticks a box), and the remembered roll stays afterwards. **Since 0.7.5
+(phase 4, the plan's last; rulings 112 to 114) the On the road tab ends in a Downtime panel**
+(`party-road.hbs`, below the member rows, its own heading). `system.downtime.days` on the party
+(`SwPartyData`; an integer, min 0, initial 0) is the GM's "you have ten days" (PHB P348): typed by
+the GM in the party form's own field, shown to players as a number, and nothing counts it down,
+spends it or refuses anything for want of it; nothing is derived from it (ruling 112). The three
+Downtime Activities print from the Actions pack's "Downtime Mode" folder with their Duration
+(`system.requirements`) and Effect (`downtimeActivities` in `module/helpers/party.mjs`, the
+category read off the Item since the model does not flag it, cached per session exactly as
+`explorationActivities` is, a world action Item of the same name and category replacing the
+printed one, and `invalidateExplorationActivities` clearing both caches, so no new hook), data
+first: a row Mike adds to the roster's hand-kept `downtimeActions` block appears with no code
+change. Per member a Train control (the owner's or the GM's; `train` in `helpers/party.mjs`,
+Owner permission checked first) opens `pickFlare(actor, { askReason: false })`, the dialog the
+critical card and the roster's Flare award use, and lights the pick through
+`toggleFlare(slug, true, { trained: true })`, whose card says "Flared by seven days' training."
+(`STARWROUGHT.Flare.trained`) in place of the GM's reason line, so the Flare is said once as every
+Flare is; then the character records `flags.starwrought.trainedAt { level, milestone, time }` (a
+flag, not schema, as the plan says; `trainedAt` reads it, `trainUsed` compares it). While that
+equals the member's current level and Milestone count exactly the control is amber
+(`sw-train-used`) with "Train already used since the last Milestone" as its tooltip, and the card
+says so too, and it refuses nothing (decision 14: the system prevents nothing anywhere else, and a
+GM may rule an exception); the next Milestone award makes the record stale by comparison and
+nothing clears it; a Constellation already lit is not lit again (`toggleFlare` skips the write),
+but the training line is still said, with "was already Flared; nothing on the sheet changes"
+beneath it, a line every caller lighting a lit Constellation now gets (ruling 113). Retrain and
+Provision print their rows and one line each saying they are done
+by hand: Retrain's Talent Point is moved by dragging as today and the restrictions are the player's
+and the GM's to honour; Provision's buying and selling, the half price and the uncommon-goods
+check are the table's; the system adds no control for either (ruling 114). A Train is a write to
+the member's own Actor (the Flare and the flag), so no relay and no GM connected; the Days field is
+the GM's own write. The system runs ahead of PHB v4.15 on one clause, Table 96's Train row counted
+for each character (the plan's handbook item 11: "only once between one Milestone and the next,
+counted for each character"), carried as a tracked change in
+`Starwrought_Players_Handbook_v4.15_downtime_proposal.docx` (`assets/phb_propose.py`,
+`PROPOSALS["downtime"]`); `data/SYNC.json` is untouched. The plan is built; what remains of it is
+Mike's (Known outstanding work, below).
 
 ## Where the source of truth lives
 
@@ -573,42 +608,67 @@ nothing is enforced (the GM unticks a box), and the remembered roll stays afterw
   Attribute follows PHB v4.14 (0.6.3, ruling 87), but no weapon in `data/equipment.xlsx` carries
   the trait, so the branch has nothing to act on. Mike authors one when he wants it, with
   "Composite" in its Traits; the converter needs no change.
-- **Phase 4 of the Party Sheet is planned, not built** (`party-sheet-plan.md` in the project
-  root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse over the
-  `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100; phase 3, the road, as 0.7.2,
-  rulings 101 to 107, and its second cut, the road roll remembered on the character and kept as
-  Initiative when the GM ticks it, as 0.7.3, rulings 108 to 110, and the Initiative assembly
-  carrying every modifier of the Constellation's check, as 0.7.4, ruling 111, the last release).
-  Phase 4 is
-  Downtime (a Days field the GM sets, the three Downtime
-  Activities from the pack's Downtime Mode folder, Train through the shared Flare picker with its
-  once-between-Milestones warning, which warns and never refuses, decision 14, and the Retrain and
-  Provision reminder lines; 0.7.5, the next number, since 0.7.3 and 0.7.4 went to the road roll
-  and the Initiative ruling), and it
-  leans on the plan's handbook item 11 (Train "once
-  between Milestones", counted for each character). **Phase 3 runs ahead of the book** on four
-  sentences and a strike: the party's Travel Speed after P344 (item 4), the Fatigued row's "can
-  Travel but take no other Exploration Mode Activity" (item 5, decision 6), Initiative when
-  Activities differ, appended to P323 (item 6), the Avoid Notice row in Table 95 (item 9,
-  decision 8), and "Earning a Living" struck from P354 for "Provisioning" (decision 9). All five are Word tracked
-  changes under the author Claude in `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx`
-  (`assets/phb_propose.py`, `PROPOSALS["on-the-road"]`; gitignored as every `*_proposal.docx` is),
-  for Mike to accept or reject. A proposal is not an edition: `data/SYNC.json` is untouched, the
-  drift check ignores the name, and the sync follows once Mike accepts into a numbered handbook.
-  Until then the system's Travel Speed, Fatigued gate, Initiative by Activity and Avoid Notice row
-  have no sentence in the book behind them. The plan's decisions 10 and 12 to 14 and its remaining
-  handbook sentences (items 1, 2, 3, 7, 8 and 12 bear on phase 1 and are wanted, not needed; item
-  10, shared loot and a common purse, is optional for phase 2, decision 16; item 11 is phase 4's)
-  are Mike's. Nothing in phases 1 to 3 is enforced: the Deferred count is a reminder with a number
-  on it, a Talent drag is as unpoliced as before, the loot values nothing (no selling, no price
-  computed, no party token; a player's Take needs a GM connected), the Travel Speed moves no
-  token, the Fatigued gate locks a select and refuses a pick and nothing else, Look Harmless's
-  Requirements warn, Begin the encounter rolls nothing, and a road roll is kept as Initiative only
-  while the GM leaves its box ticked (0.7.3; the record itself is a convenience the GM reads).
+- **The Party Sheet plan is built; what remains of it is Mike's** (`party-sheet-plan.md` in the
+  project root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse
+  over the `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100; phase 3, the road, as
+  0.7.2, rulings 101 to 107, and its second cut, the road roll remembered on the character and kept
+  as Initiative when the GM ticks it, as 0.7.3, rulings 108 to 110, with the Initiative assembly
+  carrying every modifier of the Constellation's check as 0.7.4, ruling 111; phase 4, Downtime, as
+  0.7.5, rulings 112 to 114: the Days field, the three Downtime Activities from the pack's Downtime
+  Mode folder, Train through the shared Flare picker with its once-between-Milestones warning, and
+  the Retrain and Provision lines). **The decisions.** Each of the plan's sixteen was built to the
+  panel's recommendation by the phase that met it (14, warn and never refuse a second Train, by
+  phase 4), and every one stays Mike's to overrule: 1 to 5 (the Observer Actor and the relay, the
+  party's Milestone, Vigor rising with a level, Hero Points to exactly 1, the Deferred count), 6 to
+  9 and 11 (the Fatigued gate, the slowest member's pace, the Avoid Notice row, the Earning a Living
+  strike, the roster columns), 10 (the card prints 5, 10, 15; P567 is the book's), 12 and 13
+  (players see Thresholds; characters only may join), 14, 15 and 16 (Loot before Exploration; no
+  sentence on shared loot). **The handbook sentences.** None of the plan's twelve is in an edition.
+  Phase 3 runs ahead of the book on four and a strike: the party's Travel Speed after P344 (item
+  4), the Fatigued row's "can Travel but take no other Exploration Mode Activity" (item 5, decision
+  6), Initiative when Activities differ, appended to P323 (item 6), the Avoid Notice row in Table
+  95 (item 9, decision 8), and "Earning a Living" struck from P354 for "Provisioning" (decision 9),
+  all five Word tracked changes under the author Claude in
+  `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx` (`assets/phb_propose.py`,
+  `PROPOSALS["on-the-road"]`; gitignored as every `*_proposal.docx` is). Phase 4 runs ahead on one
+  clause: Table 96's Train row, "only once between Milestones." to "only once between one Milestone
+  and the next, counted for each character." (item 11, which the `trainedAt` flag embodies), in
+  `Starwrought_Players_Handbook_v4.15_downtime_proposal.docx` (`PROPOSALS["downtime"]`). Both are
+  for Mike to accept or reject; a proposal is not an edition: `data/SYNC.json` is untouched, the
+  drift check ignores the names, and the sync follows once Mike accepts into a numbered handbook.
+  Until then the system's Travel Speed, Fatigued gate, Initiative by Activity, Avoid Notice row and
+  per-character Train count have no sentence in the book behind them. The remaining sentences are
+  wanted, not needed: items 1, 2, 3, 7, 8 and 12 bear on phase 1, and item 10, shared loot and a
+  common purse, is optional for phase 2 (decision 16). **Nothing in the four phases is enforced:**
+  the Deferred count is a reminder with a number on it, a Talent drag is as unpoliced as before,
+  the loot values nothing (no selling, no price computed, no party token; a player's Take needs a
+  GM connected), the Travel Speed moves no token, the Fatigued gate locks a select and refuses a
+  pick and nothing else, Look Harmless's Requirements warn, Begin the encounter rolls nothing, a
+  road roll is kept as Initiative only while the GM leaves its box ticked (0.7.3; the record itself
+  is a convenience the GM reads), the Downtime days are a number nothing counts down, Train warns
+  and never refuses, and Retrain and Provision have no control (0.7.5).
 - **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (the Party Sheet, phase 4, system 0.7.5): the Downtime the plan's part 10
+described, the last phase, now a panel at the foot of the On the road tab (Mike: "go ahead with
+phase 4 too"): the days the GM gives as `system.downtime.days` on the party, an integer nothing
+counts down (ruling 112); the three Downtime Activities printed from the Actions pack's Downtime
+Mode folder with their Duration and Effect (`downtimeActivities` in `module/helpers/party.mjs`,
+cached and cleared beside the Exploration ones), so a row added to the roster's `downtimeActions`
+needs no code; Train per member through the shared `pickFlare` with no reason field, lighting the
+pick through `toggleFlare(slug, true, { trained: true })`, whose card says "Flared by seven days'
+training.", and recording `flags.starwrought.trainedAt { level, milestone, time }` on the
+character, the control amber with "Train already used since the last Milestone" while the record
+equals the member's count and refusing nothing (ruling 113; decision 14); Retrain and Provision
+printing one line each saying they are done by hand (ruling 114). The book's "only once between
+Milestones" counted for each character is one tracked cell in
+`Starwrought_Players_Handbook_v4.15_downtime_proposal.docx` (the plan's handbook item 11), for Mike
+to accept or reject. No handbook moved and `data/SYNC.json` is untouched; no data moved, so the
+pipeline's outputs stand as 0.7.2 left them; the rulings (112 to 114) are recorded in the 0.7.5
+changelog entry. The plan is built.
 
 Cleared 2026-10-02 (system 0.7.4): the 0.7.3 question whether an Initiative rolled with Stealth
 takes Load Strain, answered by Mike ("ALL active modifiers for any roll should be applied even if

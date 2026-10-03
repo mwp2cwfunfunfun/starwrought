@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.7.4";
+export const SYSTEM_VERSION = "0.7.5";
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
@@ -562,6 +562,19 @@ export const TREAT_WOUND_BASE = 10;
  * (ruling 92). It lived in apps/actor-sheet.mjs until 0.7.0.
  */
 export const MILESTONES_PER_LEVEL = 3;
+
+/**
+ * The flag on a character (`flags.starwrought.trainedAt`) the Party Sheet's Downtime panel writes
+ * when a member Trains (0.7.5; party-sheet-plan.md, part 10; ruling 113): `{ level, milestone,
+ * time }`, the level and Milestone count the seven days' training happened at and when. A flag
+ * and not schema, as the plan says: it is a reminder's record, read by `trainUsed` in
+ * helpers/party.mjs for the panel's amber mark and by `SwActor#toggleFlare`'s card for its warning
+ * line, and compared against the character's current count rather than cleared, so the next
+ * Milestone award makes it stale and nothing has to reset it (the plan's judge struck a
+ * `trainedSinceMilestone` field the award would have had to clear). Nothing refuses a Train for it
+ * (decision 14).
+ */
+export const TRAINED_AT_FLAG = "trainedAt";
 
 /* -------------------------------------------- */
 /*  The party (0.7.0)                           */

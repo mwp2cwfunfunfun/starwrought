@@ -40,6 +40,7 @@ table row:
         python assets/phb_propose.py <in.docx> <out.docx> --proposal armor-balance --proposal vigor
         python assets/phb_propose.py <in.docx> <out.docx> --proposal attended
         python assets/phb_propose.py <in.docx> <out.docx> --proposal on-the-road
+        python assets/phb_propose.py <in.docx> <out.docx> --proposal downtime
   Several proposals stack into one file, applied in the order given.
 
 The proposals are the PROPOSALS table below, one entry per proposal this script has produced, so
@@ -375,6 +376,42 @@ PROPOSALS["on-the-road"] = {
             " to Half."
         ),
     ],
+}
+
+PROPOSALS["downtime"] = {
+    # Downtime (Mike, 2026-10-02: "go ahead with phase 4 too"). Phase 4 of the Party Sheet, the last
+    # the plan has (party-sheet-plan.md, part 10; system 0.7.5, rulings 112 to 114), prints the
+    # Downtime Activities on the party sheet and gives each member a Train control that lights a
+    # Constellation through the shared Flare picker. It leans on one clause the book leaves open:
+    # Table 96's Train row says "You may benefit from Train only once between Milestones", and a
+    # Milestone is awarded to the party together (decision 2; ruling 91), so the sentence can be read
+    # as one Train for the whole party between Milestones, or one for each character. The system
+    # reads it for each character: Train records the member's level and Milestone count on the
+    # character (`flags.starwrought.trainedAt`), and while that still equals the live count the
+    # control warns "Train already used since the last Milestone" and refuses nothing (decision 14:
+    # the system prevents nothing anywhere else, and a GM may rule an exception; ruling 113). The
+    # next Milestone award makes the record stale by comparison, so "between Milestones" is counted
+    # from the character's own Milestones and never from a calendar or the GM's Days. The redline is
+    # the plan's handbook need 11, in the table's own cell, so the book says what the warning
+    # measures. No edition changes, so data/SYNC.json stands.
+    "from": "4.15",
+    "replace": [],
+    "rewrite": [],
+    "cell": [
+        # Table 96 (the Downtime Activities): the Train row's Effect, three to the right of its name.
+        # Word holds the whole cell in one run, so the clause lands as one strike and one insertion
+        # in the cell's own formatting. The row is named by three of its cells: "Train" alone is a
+        # whole paragraph nowhere else in the book, and the other two say which table.
+        (
+            ["Train", "Downtime", "7 days"],
+            3,
+            "only once between Milestones.",
+            "only once between one Milestone and the next, counted for each character.",
+        ),
+    ],
+    "row": [],
+    "append": [],
+    "insert_after": [],
 }
 
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)

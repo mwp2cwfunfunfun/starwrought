@@ -1,10 +1,11 @@
 /**
  * The party data model (0.7.0; party-sheet-plan.md, part 1; 0.7.1 adds the purse, part 6; 0.7.2
- * adds the terrain, part 8).
+ * adds the terrain, part 8; 0.7.5 adds the Downtime days, part 10).
  *
  * A party is the characters who travel together, and this document stores only what is party
  * bookkeeping: who is in it, which session the table is on, the last Milestone award so it can be
- * taken back, the purse, the terrain it is crossing, and the GM's notes. Its embedded Items are the loot (0.7.1): the four
+ * taken back, the purse, the terrain it is crossing, the Downtime days the GM has given it, and the
+ * GM's notes. Its embedded Items are the loot (0.7.1): the four
  * physical types alone, since `SwItem._preCreate` refuses anything else on a party. Everything
  * about the members (level, Milestones, Hero Points, Vigor, Wounds, Flares, every rank and
  * Threshold) stays on the characters and is read live by the sheet at render, never copied here:
@@ -94,6 +95,21 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
       }),
 
       /**
+       * Downtime (0.7.5; plan, part 10; ruling 112): the days the GM has given the party, the
+       * book's "you have ten days" (PHB v4.15 P348: the GM typically tells you how many before the
+       * world begins to move quickly again). An integer the GM types and the players read, and
+       * that is the whole of it: nothing in the system counts it down, spends it against an
+       * Activity's duration or refuses anything for want of it, because how the days are spent is
+       * the table's conversation and not a formula (the plan struck per-member day counters).
+       * Downtime is a panel on the On the road tab, not a mode; the Activities it lists are read
+       * from the Actions pack and Train is the member's own Flare, so this one number is all the
+       * party itself stores. Never negative, 0 until the GM writes some.
+       */
+      downtime: new fields.SchemaField({
+        days: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 })
+      }),
+
+      /**
        * The GM's notes. GM-only in the template, not a vault: a player with Observer ownership can
        * read the document from the console, and FEATURES says so (plan, risk 8).
        */
@@ -108,7 +124,8 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
    * members and computes the board at render, and re-renders on their hooks. Only the party's own
    * counts are set, so a template or a macro can read them without touching the array; the purse
    * in copper is one of them, since Split and the sheet both want the one number, and the terrain's
-   * multiplier is another (the party's own field, no member in it).
+   * multiplier is another (the party's own field, no member in it). The Downtime days derive
+   * nothing at all (ruling 112): the number is shown as typed.
    * @override
    */
   prepareDerivedData() {

@@ -1,5 +1,6 @@
 /**
- * The party's operations (0.7.0; party-sheet-plan.md, parts 1 to 3; 0.7.1 adds parts 6 and 7).
+ * The party's operations (0.7.0; party-sheet-plan.md, parts 1 to 3; 0.7.1 adds parts 6 and 7;
+ * 0.7.2 and 0.7.3 add parts 8 and 9; 0.7.5 adds part 10).
  *
  * The party sheet is the GM's console and the players' window; these are the verbs it calls, and
  * nothing else needs to know about them. The party never does a member's arithmetic: a rest is the
@@ -49,6 +50,17 @@
  * whose roll is in the Constellation their Activity rolls for Initiative, the Initiative set to the
  * roll's total plus the Initiative-only terms the check engine finds between its two assemblies;
  * 110 the remembered roll is the character's and public, the roll's own card the record of the die.
+ *
+ * Phase 4 (0.7.5; plan, part 10): Downtime, the last planned phase. 112 Downtime is a panel, not
+ * a mode: the party's `downtime.days` is the GM's "you have ten days", shown to the players and
+ * counted down, spent or enforced by nothing, and the Downtime Activities print from the Actions
+ * pack's Downtime Mode folder with their Duration and Effect, so a row Mike adds to the roster's
+ * `downtimeActions` appears on the panel with no code change; 113 Train lights a Flare through the
+ * shared picker (`pickFlare`) and the member's own `toggleFlare`, whose card says it was training,
+ * and the character records `flags.starwrought.trainedAt { level, milestone, time }`, which warns
+ * on the panel and the card while it equals the member's current level and Milestone count and
+ * refuses nothing (decision 14); 114 Retrain and Provision are done by hand, each printing its row
+ * and one line, with no control added for either.
  */
 
 import * as SW from "../config.mjs";
@@ -57,6 +69,10 @@ import { COIN_IN_COPPER } from "../data/party.mjs";
 // The kept roll's Initiative-only terms (ruling 109) are the difference between two of the engine's
 // own assemblies, so the party never does the Initiative arithmetic itself.
 import { SwCheck } from "../dice/check.mjs";
+// Train (ruling 113) asks which Constellation through the dialog the critical card and the roster's
+// Flare award use, so a Flare is picked the same way from every entry point. No cycle: the picker
+// imports config.mjs and helpers/content.mjs, and neither imports this file.
+import { pickFlare } from "../apps/flare-picker.mjs";
 
 const { escapeHTML } = foundry.utils;
 const L = key => game.i18n.localize(key);
@@ -948,12 +964,40 @@ const FLAG_INITIATIVE_MODIFIERS = "initiativeModifiers";
 const EFFECT_SCOUT = "scout";
 const EFFECT_DEFEND = "defend";
 
+/** The two per-session lists, each read once and forgotten together (see invalidateExplorationActivities). */
 let explorationCache = null;
+let downtimeCache = null;
 
 /** Is this action Item an Exploration Mode Activity? The model's flag when it carries one, the category otherwise. */
 function isExplorationAction(item) {
   if (!item || (item.type !== "action")) return false;
   return item.system.isExploration ?? (item.system.category === EXPLORATION_CATEGORY);
+}
+
+/**
+ * The Activities of one kind: the Actions pack's documents that pass `isKind`, in folder order,
+ * then the Items' own sort, then by name. A world action Item of the same name that passes the
+ * same test replaces the printed one and keeps its place, so a GM's rewrite wins, and a
+ * world-only addition goes after the book. These are unowned Items: nothing is copied to a
+ * character. The body `explorationActivities` had since 0.7.2, shared with the Downtime list
+ * since 0.7.5; each caller keeps its own cache.
+ * @param {(item: Item) => boolean} isKind
+ * @returns {Promise<Item[]>}
+ */
+async function activitiesIn(isKind) {
+  const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
+  const printed = pack ? (await pack.getDocuments()).filter(isKind) : [];
+  const key = item => item.name.trim().toLowerCase();
+  const place = new Map(printed.map(i => [key(i), Number(i.folder?.sort) || 0]));
+  const byName = new Map(printed.map(i => [key(i), i]));
+  for (const item of game.items ?? []) {
+    if (isKind(item)) byName.set(key(item), item);
+  }
+  const order = item => place.get(key(item)) ?? 1000;
+  return [...byName.values()].sort((a, b) =>
+    (order(a) - order(b))
+    || ((Number(a.sort) || 0) - (Number(b.sort) || 0))
+    || a.name.localeCompare(b.name));
 }
 
 /**
@@ -967,25 +1011,21 @@ function isExplorationAction(item) {
  */
 export async function explorationActivities() {
   if (explorationCache) return explorationCache;
-  const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
-  const printed = pack ? (await pack.getDocuments()).filter(isExplorationAction) : [];
-  const key = item => item.name.trim().toLowerCase();
-  const place = new Map(printed.map(i => [key(i), Number(i.folder?.sort) || 0]));
-  const byName = new Map(printed.map(i => [key(i), i]));
-  for (const item of game.items ?? []) {
-    if (isExplorationAction(item)) byName.set(key(item), item);
-  }
-  const order = item => place.get(key(item)) ?? 1000;
-  explorationCache = [...byName.values()].sort((a, b) =>
-    (order(a) - order(b))
-    || ((Number(a.sort) || 0) - (Number(b.sort) || 0))
-    || a.name.localeCompare(b.name));
+  explorationCache = await activitiesIn(isExplorationAction);
   return explorationCache;
 }
 
-/** Forget the cached Activities, so the next render reads the world again (a world action Item changed). */
+/**
+ * Forget the cached Activities, so the next render reads the world again (a world action Item
+ * changed). Since 0.7.5 the Downtime list (`downtimeActivities`) is forgotten in the same breath:
+ * the callers (starwrought.mjs, on any unowned action's create, update or delete; the party
+ * sheet's own hook) cannot tell which folder a changed action sits in and should not have to, so
+ * the one function clears both lists and no second hook is needed. The name is kept, since every
+ * caller has it.
+ */
 export function invalidateExplorationActivities() {
   explorationCache = null;
+  downtimeCache = null;
 }
 
 /**
@@ -1244,11 +1284,12 @@ export function registerRoadHooks() {
 
 /**
  * How long ago, in the row's own words: "just now" under a minute, then minutes, hours and days,
- * the singular for one of each. "" for a record with no time.
+ * the singular for one of each. "" for a record with no time. Exported since 0.7.5 for the
+ * Downtime panel's training record, which is dated the same way.
  * @param {number|null} time  Epoch milliseconds.
  * @returns {string}
  */
-function agoText(time) {
+export function agoText(time) {
   if (!Number.isNumeric(time)) return "";
   const minutes = Math.floor(Math.max(0, Date.now() - Number(time)) / 60000);
   if (minutes < 1) return L("STARWROUGHT.Travel.agoNow");
@@ -1782,4 +1823,134 @@ export async function beginEncounter(party, { keep = [] } = {}) {
     notes
   });
   return combat;
+}
+
+/* -------------------------------------------- */
+/*  Downtime (part 10, 0.7.5)                   */
+/* -------------------------------------------- */
+
+/**
+ * The compendium category of a Downtime Activity, as `build_foundry.mjs` writes it on the action
+ * Item (the folder of the same name in the Actions pack is the book's Table 96: Retrain, Train,
+ * Provision). The action data model flags Exploration (`isExploration`) and not Downtime, so the
+ * category is read here, with a flag honoured should the model grow one.
+ */
+const DOWNTIME_CATEGORY = "Downtime Mode";
+
+/**
+ * The two Downtime Activities the panel says are done by hand (ruling 114), as `SW.slugify` spells
+ * them: Retrain's Talent Point moves by dragging as today, and Provision's buying and selling are
+ * the table's. Named here only to hang one localized line each on their rows; every other row,
+ * Train included, prints what the Item carries and nothing more, so a row Mike adds needs no name
+ * here unless it wants a line of its own.
+ */
+const RETRAIN = "retrain";
+const PROVISION = "provision";
+
+/** Is this action Item a Downtime Activity? The model's flag when it carries one, the category otherwise. */
+function isDowntimeAction(item) {
+  if (!item || (item.type !== "action")) return false;
+  return item.system.isDowntime ?? (item.system.category === DOWNTIME_CATEGORY);
+}
+
+/**
+ * The Downtime Activities (Table 96): the Actions pack's "Downtime Mode" folder, built and ordered
+ * as `explorationActivities` builds the road's list and cached once per session the same way; a
+ * world action Item of the same name in the same category replaces the printed one.
+ * `invalidateExplorationActivities` forgets this list too, so a GM's rewrite reaches the panel
+ * without a reload. Data first (ruling 112): a row Mike adds to the roster's `downtimeActions`
+ * ships through the pipeline into this folder and appears on the panel with no code change.
+ * @returns {Promise<Item[]>}
+ */
+export async function downtimeActivities() {
+  if (downtimeCache) return downtimeCache;
+  downtimeCache = await activitiesIn(isDowntimeAction);
+  return downtimeCache;
+}
+
+/**
+ * The hand line a Downtime row carries (ruling 114), localized, or "" for a row that has none:
+ * Retrain's and Provision's say the system adds no control for them. Train has no line, because
+ * the member strip below the rows is its control.
+ * @param {Item|null} item
+ * @returns {string}
+ */
+export function downtimeHandLine(item) {
+  const slug = item ? SW.slugify(item.name) : "";
+  if (slug === RETRAIN) return L("STARWROUGHT.Travel.retrainByHand");
+  if (slug === PROVISION) return L("STARWROUGHT.Travel.provisionByHand");
+  return "";
+}
+
+/**
+ * When the character last Trained (ruling 113): the `trainedAt` flag (`SW.TRAINED_AT_FLAG`) as
+ * `{ level, milestone, time }`, or null when they never have or the record is malformed. A flag,
+ * not schema, as the plan says.
+ * @param {Actor|null} actor
+ * @returns {{level: number, milestone: number, time: number|null}|null}
+ */
+export function trainedAt(actor) {
+  const at = actor?.getFlag?.(SW.SYSTEM_ID, SW.TRAINED_AT_FLAG) ?? null;
+  if (!at || !Number.isNumeric(at.level) || !Number.isNumeric(at.milestone)) return null;
+  return {
+    level: Number(at.level),
+    milestone: Number(at.milestone),
+    time: Number.isNumeric(at.time) ? Number(at.time) : null
+  };
+}
+
+/**
+ * Has Train been used since the character's last Milestone (ruling 113)? True while the record's
+ * level and Milestone count both equal the character's current ones: the book's "only once
+ * between Milestones" (Table 96), counted for each character. The next Milestone award moves one
+ * of the two numbers and the record goes stale by comparison; nothing clears it, and nothing
+ * refuses a second Train for it (decision 14: the panel warns, the card warns, the GM may rule an
+ * exception). A record from an award since taken back (`takeBackAward`) matches again, which is
+ * right: the Milestone it was counted from is the current one once more. The Flare card makes the
+ * same comparison inline (documents/actor.mjs, `#announceFlare`), reading the record as it stood
+ * before the Train that posts it.
+ * @param {Actor|null} actor
+ * @returns {boolean}
+ */
+export function trainUsed(actor) {
+  const at = trainedAt(actor);
+  if (!at) return false;
+  return (at.level === (Number(actor.system.level) || 0))
+    && (at.milestone === (Number(actor.system.milestone) || 0));
+}
+
+/**
+ * Train (Table 96; ruling 113): seven days with a teacher, a rival or a manual, and a
+ * Constellation of the character's choice is Flared. The owner's or the GM's, since a Flare is the
+ * character's own: `pickFlare`, the dialog the critical card and the roster's Flare award open,
+ * with no reason field (the card's second line says what lit it); then the member's own
+ * `toggleFlare(slug, true, { trained: true })`, which posts the card with "Flared by seven days'
+ * training." and, read from the record as it stands BEFORE this Train, the warning that Train was
+ * already used since the last Milestone; then the record itself, `flags.starwrought.trainedAt
+ * { level, milestone, time }`, one update with `{ swAnnounced: true }` as every write to a member
+ * is (a flag is no field the audit watches, so no Adjusted card would have followed either way;
+ * the option is the house rule, not a fix). The order matters: the card compares the old record,
+ * the panel's mark reads the new one as the member's `updateActor` redraws the road. A dismissed
+ * picker writes nothing and says nothing. A Constellation already lit is said so on the card and
+ * the record is written all the same, since the seven days were spent.
+ * @param {Actor} actor
+ * @returns {Promise<string|null>}  The slug lit, or null when nothing was.
+ */
+export async function train(actor) {
+  if (!actor || (actor.type !== "character")) return null;
+  if (!actor.testUserPermission(game.user, "OWNER")) {
+    ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
+    return null;
+  }
+  const pick = await pickFlare(actor, { askReason: false });
+  if (!pick?.slug) return null;
+  await actor.toggleFlare(pick.slug, true, { trained: true });
+  await actor.update({
+    [`flags.${SW.SYSTEM_ID}.${SW.TRAINED_AT_FLAG}`]: {
+      level: Number(actor.system.level) || 0,
+      milestone: Number(actor.system.milestone) || 0,
+      time: Date.now()
+    }
+  }, { swAnnounced: true });
+  return pick.slug;
 }

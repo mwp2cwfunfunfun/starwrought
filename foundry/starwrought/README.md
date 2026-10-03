@@ -14,7 +14,7 @@ tracked, announced, and never enforced against the table.
 - **Actor types:** `character`, `npc` (the adversary, written Threshold-first) and, since 0.7.0,
   `party`: the Party Sheet, GM-owned and open to every player as an Observer, which stores only
   its own bookkeeping (since 0.7.1 the loot and the purse among it, since 0.7.2 the terrain it is
-  crossing) and reads its members live.
+  crossing, since 0.7.5 the Downtime days the GM gives) and reads its members live.
 
 ## What it does for you
 
@@ -91,9 +91,13 @@ Since 0.7.3 a member's road roll (Stealth while Avoiding Notice, say) is remembe
 as a chip, and Begin the encounter offers, one checkbox per member, to keep it as the Initiative
 roll rather than throw the die twice; since 0.7.4 an Initiative rolled with a Constellation carries
 every modifier that Constellation's check does, Load Strain on Stealth included (ruling 111).
-Every rule effect runs through the member's own methods and
-cards; the party is never a
-combatant, and the loot values nothing. Downtime is the plan's last phase and is not built.
+Since 0.7.5 (phase 4, the plan's last) the tab ends in a Downtime panel: the days the GM gives
+(a number nothing counts down), the three Downtime Activities printed from the pack with their
+Duration and Effect, Train per member, which Flares a Constellation through the shared picker,
+says "Flared by seven days' training." on the card and warns, never refuses, when it was already
+used since the last Milestone, and one line each saying Retrain and Provision are done by hand.
+Every rule effect runs through the member's own methods and cards; the party is never a
+combatant, and the loot values nothing. The plan is built.
 
 **Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that
 leaves it rolls Ranged. Intuitive weapons use the full rank, Practiced drops a rank without
@@ -187,4 +191,7 @@ The full list is section 7 of `FEATURES.md`. The short version:
 - The party's loot and purse move Items and coin and value nothing: no selling, no price computed,
   no shop. A player's Take or Give runs on the active GM's client, so it needs a GM connected; the
   GM's own moves do not.
+- Downtime is a panel, not a mode: the days are a number nothing counts down, Train warns when it
+  was already used since the last Milestone and never refuses, and Retrain and Provision have no
+  control; each says it is done by hand.
 - Magic is not in the playtest, so it is not here.

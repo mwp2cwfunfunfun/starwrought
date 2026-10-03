@@ -1,15 +1,16 @@
 /**
  * The party sheet (0.7.0; party-sheet-plan.md, parts 1 to 4; 0.7.1 adds parts 6 and 7; 0.7.2
- * adds parts 8 and 9).
+ * adds parts 8 and 9; 0.7.5 adds part 10).
  *
  * The GM's console and the players' window at once: one template set that branches on `isGM`
  * and on per-member ownership, as the character sheet's header does. The header carries the
  * session and the GM's buttons; the roster, always open above the tabs, is a status board with
  * one row per member; the Skills grid is a tab, Constellations as rows and members as columns,
  * each row header carrying the GM's Ask everyone; the On the road tab (0.7.2) carries each
- * member's Exploration Activity, the party's Travel Speed, Say the plan and Begin the encounter;
- * the Loot tab (0.7.1) lists the party's embedded Items and the purse; the GM's notes are a tab
- * the players never see.
+ * member's Exploration Activity, the party's Travel Speed, Say the plan and Begin the encounter,
+ * and at its foot the Downtime panel (0.7.5: the days, the Downtime Activities, Train); the Loot
+ * tab (0.7.1) lists the party's embedded Items and the purse; the GM's notes are a tab the
+ * players never see.
  *
  * Everything member-dependent is computed here, in `_prepareContext`, from the resolved members
  * (plan, risk 2): the party's own data model derives nothing from them. The sheet re-renders its
@@ -26,7 +27,7 @@
  * ApplicationV2 actions fire regardless of editability, and a player opens this sheet as an
  * Observer, so every handler re-checks before writing: `game.user.isGM` for the party's writes
  * and the GM's buttons, `testUserPermission(game.user, "OWNER")` on the member for a player's
- * Flare put-out, Spent, Take, Activity pick and Activity roll. For the same reason every control
+ * Flare put-out, Spent, Take, Activity pick, Activity roll and Train. For the same reason every control
  * a player may click is an anchor, since DocumentSheetV2 disables every form element for a user
  * who cannot edit: the Activity and Constellation controls on the road are selects for the GM,
  * written through `_onChangeForm`, and for an owner who cannot edit the party they are anchors
@@ -49,7 +50,8 @@ import {
   isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper, askedName, askEveryone,
   explorationActivities, invalidateExplorationActivities, travelActivity, activityOf, activityWarnings,
   activityHasChoice, activityRoll, initiativeFor, constellationName, travelWord, travelUnits,
-  setActivity, partyTravel, sayThePlan, beginEncounter, roadRoll, keepableRolls
+  setActivity, partyTravel, sayThePlan, beginEncounter, roadRoll, keepableRolls,
+  downtimeActivities, downtimeHandLine, trainedAt, trainUsed, train, agoText
 } from "../helpers/party.mjs";
 import { requestTake, requestGive } from "../documents/party-socket.mjs";
 
@@ -126,7 +128,8 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       pickConstellation: SwPartySheet.#onPickConstellation,
       activityRoll: SwPartySheet.#onActivityRoll,
       sayThePlan: SwPartySheet.#onSayThePlan,
-      beginEncounter: SwPartySheet.#onBeginEncounter
+      beginEncounter: SwPartySheet.#onBeginEncounter,
+      train: SwPartySheet.#onTrain
     }
   };
 
@@ -625,7 +628,71 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       canBegin,
       beginTip: canBegin
         ? F("STARWROUGHT.Travel.beginEncounterHint", { scene: canvas.scene.name })
-        : L("STARWROUGHT.Travel.beginNoScene")
+        : L("STARWROUGHT.Travel.beginNoScene"),
+      // The Downtime panel at the foot of the part (0.7.5; plan, part 10).
+      downtime: await this.#prepareDowntime()
+    };
+  }
+
+  /**
+   * The Downtime panel (0.7.5; plan, part 10; rulings 112 to 114), at the foot of the road part:
+   * the days the GM has given (the party's own field, typed by the GM and read by the players,
+   * counted by nothing), the Downtime Activities from the Actions pack's Downtime Mode folder with
+   * the duration the Item's Requirements carry and its description enriched (a GM's world rewrite
+   * may carry links), Retrain's and Provision's hand lines, and one strip entry per member with
+   * the Train control for the owner or the GM and the once-between-Milestones warning for
+   * everyone, since the record is a flag on the character that every reader of it can see. The
+   * road part redraws on the member's `updateActor`, and the flag write is one, so the amber mark
+   * appears as the Flare card lands and goes as the next Milestone card does. Nothing here is
+   * member-dependent arithmetic on the party (plan, risk 2): every number is read off the member.
+   * @returns {Promise<object>}
+   */
+  async #prepareDowntime() {
+    const party = this.document;
+    const isGM = game.user.isGM;
+    const TextEditor = foundry.applications.ux.TextEditor.implementation;
+    const activities = [];
+    for (const item of await downtimeActivities()) {
+      activities.push({
+        id: item.id,
+        slug: SW.slugify(item.name),
+        name: item.name,
+        duration: String(item.system.requirements ?? "").trim(),
+        description: await TextEditor.enrichHTML(String(item.system.description ?? ""), { relativeTo: item }),
+        byHand: downtimeHandLine(item)
+      });
+    }
+    const of = SW.MILESTONES_PER_LEVEL;
+    const members = resolveMembers(party).filter(m => m.actor).map(({ uuid, actor }) => {
+      const owner = actor.testUserPermission(game.user, "OWNER");
+      const used = trainUsed(actor);
+      const at = used ? trainedAt(actor) : null;
+      const ago = at ? agoText(at.time) : "";
+      const usedHint = used
+        ? F("STARWROUGHT.Travel.trainUsedHint", {
+          name: actor.name, level: at.level, milestone: at.milestone, of,
+          when: ago ? F("STARWROUGHT.Travel.trainedWhen", { ago }) : ""
+        })
+        : "";
+      return {
+        uuid,
+        id: actor.id,
+        name: actor.name,
+        img: actor.img,
+        owner,
+        live: owner || isGM,
+        used,
+        usedHint,
+        // The anchor's tooltip: the warning while it stands, what Train does otherwise.
+        trainHint: used ? usedHint : F("STARWROUGHT.Travel.trainHint", { name: actor.name })
+      };
+    });
+    return {
+      days: Math.max(0, Number(party.system.downtime?.days) || 0),
+      activities,
+      hasActivities: activities.length > 0,
+      members,
+      anyLive: members.some(m => m.live)
     };
   }
 
@@ -1440,6 +1507,24 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     // unticked is an empty list, and everyone rolls fresh.
     if (!Array.isArray(keep)) return;
     return beginEncounter(party, { keep });
+  }
+
+  /* -------------------------------------------- */
+  /*  Downtime (part 10, 0.7.5)                   */
+  /* -------------------------------------------- */
+
+  /**
+   * Train (ruling 113): the member's Flare by seven days' training, for the owner or the GM,
+   * through `train` in helpers/party.mjs, which checks the permission (with the notice), opens the
+   * shared Flare picker, lights the pick through the member's own `toggleFlare` (the card says it
+   * was training, and warns when Train was already used since the last Milestone) and writes the
+   * `trainedAt` record. The anchor is amber with the warning on hover while the record matches the
+   * member's level and Milestone count, and it still works: nothing is refused (decision 14).
+   */
+  static async #onTrain(event, target) {
+    const actor = this.#memberFor(target);
+    if (!actor) return;
+    return train(actor);
   }
 
   /* -------------------------------------------- */

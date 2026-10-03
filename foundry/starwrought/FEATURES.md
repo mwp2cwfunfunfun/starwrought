@@ -653,7 +653,11 @@ opens the same picker from its GM-only Flare plus, with an optional one-line rea
 by the GM: <reason>"), so a Flare the GM grants for something the dice never saw is said with its
 cause. While the character holds a Deferred Talent Point the lit card also carries "You hold a
 Deferred Talent Point: spend it here now." (ruling 94; see The party, under Sheets). The put-out
-card, and the silence on a Flare that was never lit, are unchanged.
+card, and the silence on a Flare that was never lit, are unchanged. Since 0.7.5 the party sheet's
+Train opens the same picker with no reason field and lights the pick with
+`toggleFlare(slug, true, { trained: true })`, whose card says "Flared by seven days' training." in
+place of the award line (a reason and the training line both print when both are given; see The
+party, Downtime, under Sheets).
 
 ### Initiative
 
@@ -1201,7 +1205,9 @@ phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; phas
 rulings 101 to 107) is the road: each member's Exploration Activity, the party's Travel Speed, the
 Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity, and its second
 cut (0.7.3; rulings 108 to 110) remembers each member's road roll on their row and lets Begin the
-encounter keep it as the Initiative roll; Downtime is the plan's last phase and is not built.
+encounter keep it as the Initiative roll; phase 4 (0.7.5; rulings 112 to 114) is Downtime, the
+plan's last: the days the GM gives, the three Downtime Activities printed from the pack, Train
+through the shared Flare picker, and the Retrain and Provision lines. The plan is built.
 
 **The roster and status board.** Always open above the tabs, one row per member, every number on
 it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
@@ -1466,11 +1472,50 @@ or the sheet as before; a kept member has rolled, so a second Begin names them a
 alone; the remembered roll stays on the character and its chip on the row. The GM decides per
 member, every time: the record is a convenience, and the box is the whole of the enforcement.
 
+**Downtime** (0.7.5; plan, part 10; rulings 112 to 114). The foot of the On the road tab, under
+its own heading, open to players as the rest of the tab is. Downtime is a panel, not a mode: the
+book's Downtime is days the GM gives ("you have ten days", P348) and three Activities, and the
+panel prints both and runs nothing. **The days** are `system.downtime.days` on the party, an
+integer the GM types in the party form's own field and a player reads as a number, with the P348
+hint beside it (the GM typically tells you how many you have before the world begins to move
+quickly again); nothing counts them down, spends them or refuses anything for want of them
+(section 7), and nothing is derived from them. **The Activities** print from the Actions pack's
+Downtime Mode folder (`downtimeActivities` in `helpers/party.mjs`, the category read off the Item;
+cached per session as the Exploration Activities are and forgotten with them when a world action
+Item changes; a world Item of the same name and category replaces the printed one), one row each
+with the Duration tag from the Item's Requirements and the Effect: Retrain (1 month), Train (7
+days), Provision (1 day). The panel holds no table of its own, so a row Mike adds to the roster's
+`downtimeActions` block appears with no code change, and an empty folder says so. **Train** is the
+one control: under the Activities, one entry per member (portrait, name, Train), live for the
+member's owner and for the GM and offered to nobody else. It opens the shared Flare picker with no
+reason field (the reason is the training), and a pick lights that Constellation through the
+member's own `toggleFlare`, so the Flare card is posted as every Flare is, spoken by the member and
+public, its second line "Flared by seven days' training." in place of the GM's award line, the
+Deferred reminder following while the member holds a Deferred point; Cancel writes nothing. The
+character then records `flags.starwrought.trainedAt { level, milestone, time }`, and while that
+equals the member's level and Milestone count exactly the Train control is amber with "Train
+already used since the last Milestone" on hover, and the card says so too when a second Train is
+taken anyway; it refuses nothing (decision 14: the system prevents nothing anywhere else, and a GM
+may rule an exception). The next Milestone award makes the record stale by comparison and nothing
+clears it; a flag never written reads as never trained. A Constellation already lit is not lit
+again (the write is skipped), but the training line is still said, with "<name> was already Flared;
+nothing on the sheet changes." beneath it, so a Train is never silent; that line reaches the
+critical card's Flare button and the roster's GM award too when they pick a Flared Constellation,
+where 0.7.4 posted a plain Flared card. The flag write is an
+`updateActor` on the member and the road part redraws on it, so the amber mark appears as the card
+lands. **Retrain and Provision** carry one line each saying they are done by hand: Retrain's
+Talent Point is moved by dragging as today, with the restrictions the player's and the GM's to
+honour; Provision's buying and selling, the half price and the uncommon-goods check are the
+table's. The system adds no control for either (ruling 114). The book says Train may be used "only
+once between Milestones"; the system counts that for each character, which is what the downtime
+proposal asks the book to say (the plan's handbook item 11; see the 0.7.5 changelog entry).
+
 **What the player sees, and what the GM sees.** The GM sees everything and holds every party
 write: membership, Begin session, the awards and corrections, the night, the Milestone and Take
 back, the Flare plus, Remove, the Notes tab, the loot's quantities, Give to and Delete, the purse
-and Split, Ask everyone, and since 0.7.2 the terrain, any member's Activity, Say the plan and
-Begin the encounter. A player sees the same roster, the same grid, the same loot and the same road,
+and Split, Ask everyone, since 0.7.2 the terrain, any member's Activity, Say the plan and Begin
+the encounter, and since 0.7.5 the Downtime days and Train on any member. A player sees the same
+roster, the same grid, the same loot and the same road,
 Thresholds included (ruling 95; a world setting is one line if the table objects, and adversaries'
 Thresholds never appear on the party sheet), read-only but for a few live things: portrait clicks
 on any member, the Flare chips on a character they own (a click puts one out through
@@ -1478,11 +1523,12 @@ on any member, the Flare chips on a character they own (a click puts one out thr
 loot row when they own a member, a drag of their own gear onto the party, the Roll button
 with their member's name on an Ask everyone card, and on the On the road tab the Activity and
 Investigate Constellation of a member they own and that member's Activity Roll (ruling 106; the
-remembered-roll chip on every row is read by all and pressed by nobody, since 0.7.3); grid
+remembered-roll chip on every row is read by all and pressed by nobody, since 0.7.3), and since
+0.7.5 Train on a member they own, the Downtime days a number to them; grid
 cells roll only for members they own, and a click on another member's cell does nothing. A player
 who owns no member sees the board and an empty-state line. Every action handler re-checks
 permission before writing (the GM for party writes; the actor's owner for a put-out Flare, a
-Spent or an Activity pick; and the relay checks a Take or Give again on the GM's client), since ApplicationV2 actions
+Spent, an Activity pick or a Train; and the relay checks a Take or Give again on the GM's client), since ApplicationV2 actions
 fire regardless of editability, and every write to a character
 goes through the same `swAnnounced` path the rest card uses, so the Adjusted card never doubles a
 party card. Observer ownership means every player can read the document, the Notes tab, the loot
@@ -1507,7 +1553,9 @@ had no token or had already rolled). Spoken by the member: a Hero
 Point awarded ("The GM awards Hrolda a Hero Point: carrying Toric out of the fire (2 of 3).") or
 corrected ("Hrolda's Hero Points corrected to 1."); a Deferred point Spent; each member's own rest
 card; the Flare card `toggleFlare` already posts, with "awarded by the GM" and the reason when
-the GM lit it from the roster; since 0.7.1, under a title naming the direction ("From the
+the GM lit it from the roster, or, since 0.7.5, "Flared by seven days' training." when Train lit
+it, with the warning line when Train was already used since the last Milestone; since 0.7.1,
+under a title naming the direction ("From the
 party's loot", "To the party's loot"), a Take ("Hrolda takes Longsword."; "Wren takes 6 × Arrows
 (14 left)."), a Give ("Hrolda gives 3 × Torch.", the Item's name as it is) and the GM's Give to
 ("Toric is given a Dagger."); and, since 0.7.2, an Activity pick ("Wren's Activity is now Search
@@ -1529,7 +1577,8 @@ redraws on the member hooks (a pick is an `updateActor` on the member; Fatigued 
 the party's own update (the terrain) and on the Combat hooks (a Combat or a Combatant created,
 changed or deleted), so a member's Initiative appears on their row as it is rolled (since 0.7.3
 the remembered roll is one such `updateActor` on the member, so the chip appears as the roll's
-card lands). Nothing
+card lands, and since 0.7.5 a Train's `trainedAt` flag is another, so the amber mark appears as the
+Flare card lands). Nothing
 member-dependent is computed in the party's own `prepareDerivedData`; it is all computed at render
 from the resolved members, because one Actor's derived data must not depend on another's prepare
 order.
@@ -1628,7 +1677,8 @@ a Defense roll button against the attack's Threshold.
 Also: Move, Step and Rush cards saying what a drag cost and why; the Pass card; Bind formed, Control
 taken and Bind ended; Exposed; Give ground; Step; Recenter; Treat Wound; a night's rest; Refuse
 Death; a Hero Point spent; the **Flare** card, lit or put out, from a critical's card or from the
-sheet (0.6.3), with the GM's reason when it was awarded from the party sheet (0.7.0); the
+sheet (0.6.3), with the GM's reason when it was awarded from the party sheet (0.7.0) or "Flared by
+seven days' training." when the party sheet's Train lit it (0.7.5); the
 **party's cards** (0.7.0: Begin session, a Hero Point awarded or corrected, the Milestone award
 and Take back, the party's night, a Deferred Talent Point Spent; 0.7.1: a Take from the loot, a
 Give to the party, the GM's Give to, the Split, and Ask everyone with a Roll button per member;
@@ -1732,6 +1782,17 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
   Initiative, the GM rolls for the absent, and no adversary Threshold reaches a player. The book's
   sentences for all of this (the party's Travel Speed, the Fatigued row, Initiative when Activities
   differ, the Avoid Notice row) are a proposal for Mike to accept, not yet an edition.
+- **Downtime is a panel, not a mode** (0.7.5; rulings 112 to 114). The party's days are an integer
+  the GM types, and nothing counts them down, spends them or refuses anything for want of them: no
+  clock, no calendar, no per-member day counters. The three Activities are printed from the pack
+  with their Duration and Effect. Train lights a Flare through the shared picker and warns, in
+  amber, in the tooltip and on the card, when it was already used since the last Milestone, and
+  refuses nothing (decision 14: a GM may rule an exception); there is no "already Flared this
+  session" warning, which would need a history the system does not keep. Retrain moves no Talent
+  (the drag is the move, and the restrictions are the player's and the GM's) and Provision buys and
+  sells nothing (the loot values nothing, and the uncommon-goods Threshold is the GM's); each says so
+  in a line. The book's "only once between Milestones" is counted for each character, which the
+  downtime proposal asks the book to say and no edition yet does.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

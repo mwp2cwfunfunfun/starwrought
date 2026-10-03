@@ -16,7 +16,7 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
 exactly, which needs a restart to take effect after installing. The current release is system
-0.7.4, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
+0.7.5, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
 commit, reveal, roll and resolve, auras and Reach drawn on the map with a Visible mark per range,
 the Bind drawn between the bound, Vigor and Wounds per Zone, a character sheet whose locked
 fields explain themselves, a Reroll on every Attack and Defense card, one Move per Opportunity on
@@ -31,7 +31,10 @@ everyone on each row, the party's loot and purse, which a player takes from and 
 over a relay to the GM's client, and the On the road tab: each member's Exploration Activity,
 the party's Travel Speed read off its slowest member, and Begin the encounter with Initiative by
 Activity written onto the Combatants, keeping a roll already made on the road as the Initiative
-roll when the GM ticks its box). The
+roll when the GM ticks its box, and a Downtime panel at its foot: the days the GM gives, the three
+Downtime Activities printed from the pack, and Train, which Flares a Constellation through the
+shared picker, says so on the card, and warns when it was already used since the last
+Milestone). The
 spreadsheets' `Enabled?` column decides which of the book's
 Constellations, Talents, Maneuvers and equipment ship to Foundry, and the `Aura` column says which
 Talents draw a ring.
