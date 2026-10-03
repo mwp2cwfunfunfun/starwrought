@@ -21,6 +21,8 @@
       "Reaction"
     ],
     "description": "<p>A Situation bonus to the named Defense, taken before you know whether the attack succeeded. It costs no actions, but a Zone of your choice becomes Exposed until the end of the round, whether or not the Posture works, and Recenter does not clear it. Its bonus is Situation, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack.</p>",
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b93d96fd63573850",
@@ -30,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "2d405234a39c453c"
+      "contentHash": "4d477ce17396309f"
     }
   },
   "effects": [],

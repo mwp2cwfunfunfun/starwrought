@@ -50,7 +50,7 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
        */
       members: new fields.ArrayField(new fields.SchemaField({
         uuid: new fields.StringField({ required: true, blank: false })
-      }), { initial: [] }),
+      }), { initial: () => [] }),
 
       /**
        * The session: its number, which Begin session raises and the session card names, and the

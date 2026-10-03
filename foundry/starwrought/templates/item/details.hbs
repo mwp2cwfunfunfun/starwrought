@@ -284,12 +284,6 @@
   </div>
 
   <div class="sw-panel">
-    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.automation"}}</h3>
-    <p class="sw-note">{{localize "STARWROUGHT.Hint.automation"}}</p>
-    <textarea name="system.automation" rows="3" {{#unless editable}}disabled{{/unless}}>{{system.automation}}</textarea>
-  </div>
-
-  <div class="sw-panel">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.actionCheck"}}</h3>
     <div class="sw-body-grid">
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.rollsCheck"}}</span>
@@ -332,6 +326,40 @@
       <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Degree.critFail"}}</span>
         <input type="text" name="system.outcomes.critFail" value="{{system.outcomes.critFail}}"></label>
     </div>
+  </div>
+  {{/if}}
+
+  {{!-- The automation framework (0.9.0; rulings 118 to 120), on a Talent, a Constellation and an
+       action: the cell as the author wrote it, one rule per line, and beneath it what the grammar
+       read, one row per line with the kind word as a tag and the kind's summary. A line that did
+       not parse, or names a kind this system does not have, is a red row with the message; the
+       build fails on such a line, while a line edited here saves and is marked (SwItem#_preUpdate). --}}
+  {{#if hasRulesPanel}}
+  <div class="sw-panel sw-rules-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Section.automation"}}
+      {{#if ruleLines.length}}
+      <span class="sw-points">{{#if (eq ruleLines.length 1)}}{{localize "STARWROUGHT.Rules.countOne"}}{{else}}{{localize "STARWROUGHT.Rules.count" n=ruleLines.length}}{{/if}}</span>
+      {{/if}}
+    </h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.automation"}}</p>
+    <textarea name="system.automation" rows="3" spellcheck="false" {{#unless editable}}disabled{{/unless}}>{{system.automation}}</textarea>
+    <h4 class="sw-subtitle sw-rules-head">{{localize "STARWROUGHT.Rules.asRead"}}</h4>
+    <ol class="sw-rules-list">
+      {{#each ruleLines as |rule|}}
+      <li class="sw-rule {{#if rule.error}}sw-rule-error{{/if}}" data-tooltip-text="{{localize 'STARWROUGHT.Rules.lineTooltip' line=rule.line text=rule.text}}">
+        <span class="sw-rule-line">{{rule.line}}</span>
+        {{#if rule.kind}}<span class="sw-trait sw-rule-kind">{{rule.kind}}</span>{{/if}}
+        <span class="sw-rule-summary">
+          {{#if rule.unknown}}{{localize "STARWROUGHT.Rules.unknownKind" kind=rule.kind}}
+          {{else if rule.error}}{{localize "STARWROUGHT.Rules.error" message=rule.error}} <code class="sw-rule-text">{{rule.text}}</code>
+          {{else}}{{rule.summary}}{{/if}}
+        </span>
+      </li>
+      {{else}}
+      <li class="sw-rule sw-rule-empty"><em class="sw-empty">{{localize "STARWROUGHT.Rules.none"}}</em></li>
+      {{/each}}
+    </ol>
   </div>
   {{/if}}
 

@@ -45,6 +45,13 @@ import { fileURLToPath } from "node:url";
 import {
   slugify, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE
 } from "../foundry/starwrought/module/config.mjs";
+// The automation grammar (0.9.0; ruling 120) is imported from the system for the same reason: the
+// build and the client must read an Automation cell identically, so there is one parser and it is
+// the system's. grammar.mjs imports the kinds registry itself, so the registry is live here; the
+// index is also imported directly for the summary line's count of kinds. Both are free of Foundry
+// globals at module scope, as config.mjs is.
+import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
+import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -192,6 +199,46 @@ function splitTraits(line) {
     .filter(t => t && t !== "—" && t !== "-");
 }
 
+/* -------------------------------------------- */
+/*  The automation framework (0.9.0)            */
+/* -------------------------------------------- */
+
+/** What the Automation cells added up to, for the summary line: rules, documents carrying any, kinds used. */
+const automationTally = { rules: 0, documents: 0, kinds: new Set() };
+
+/**
+ * An Item's `automation` and `rules` from the cell the converter copied through (0.9.0; rulings
+ * 118 to 120). The cell is parsed here with the system's own grammar, and a line that does not
+ * parse FAILS the build naming the Constellation, the Talent and the line, as a bad Aura cell stops
+ * the converter: nothing half-read ships, and sync_content.cmd stops before the sources are
+ * written (fail() exits before writeSources() runs). What is written is the text itself, so the
+ * sheet shows the cell as the author wrote it, and the parsed rules, `{ kind, line, text, ...data }`
+ * each, so the client never has to parse a compendium Item to use it. With no rule kinds defined
+ * yet, every non-comment line is "unknown rule kind" and fails here, which is the framework
+ * working as built: the kinds are added one at a time with Mike (ruling 119). An empty cell is
+ * `automation: ""` and `rules: []`, written on every Talent, Constellation and action so the
+ * field is always present on a source.
+ * @param {string} text           The cell, or "" / undefined for none.
+ * @param {object} context        For the messages: `source` is "<Constellation> / <Talent>" (or the
+ *                                action's sheet and name); itemName, constellation and itemType
+ *                                travel to the kinds' own parse for their messages.
+ * @returns {{automation: string, rules: object[]}}
+ */
+function automationOf(text, context) {
+  const automation = String(text ?? "");
+  if (!automation.trim()) return { automation: "", rules: [] };
+  const { rules, errors } = parseAutomation(automation, context);
+  if (errors.length) {
+    fail(errors.map(e => `automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`).join("\n  "));
+  }
+  if (rules.length) {
+    automationTally.rules += rules.length;
+    automationTally.documents += 1;
+    for (const rule of rules) automationTally.kinds.add(rule.kind);
+  }
+  return { automation, rules };
+}
+
 const DAMAGE_ABBR = { B: "bludgeoning", P: "piercing", S: "slashing" };
 
 /** "1d8 S" into a die size and a damage type. */
@@ -323,6 +370,10 @@ for (const [name, tree] of Object.entries(trees)) {
       identity: ["Ancestry", "Culture", "Bloodline", "Heritage"].includes(tree.category),
       description: tree.meta ? `<p>${tree.meta}</p>` : "",
       traits: [],
+      // A Constellation Item may carry rules one day (0.9.0); the _Tree Index has no Automation
+      // column yet, so both are empty and present, as on every Talent and action.
+      automation: "",
+      rules: [],
       source: "STARWROUGHT Playtest v4.10"
     }
   });
@@ -366,6 +417,10 @@ for (const [name, tree] of Object.entries(trees)) {
         choice: { prompt: node.choice ?? "", value: "" },
         freeTalent: node.freeTalent ?? "",
         ...auraOf(node),
+        // The Automation cell, parsed with the system's grammar; a bad line stops the build here.
+        ...automationOf(node.automation, {
+          itemName: node.name, constellation: name, itemType: "talent", source: `${name} / ${node.name}`
+        }),
         traits: [],
         source: "STARWROUGHT Playtest v4.10"
       }
@@ -770,7 +825,13 @@ for (const a of shippedSheetActions) {
       trigger: a.trigger ?? "",
       description: a.description ? `<p>${a.description}</p>` : "",
       effect: paragraphs(a.effect),
-      automation: a.automation ?? "",
+      // The sheet's Automation column is the same column as a Talent's now (0.9.0), no longer
+      // prose: parsed with the system's grammar, and a bad line stops the build naming the
+      // workbook, the sheet and the action.
+      ...automationOf(a.automation, {
+        itemName: a.name, constellation: actionGroup(a), itemType: "action",
+        source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`
+      }),
       ...auraOf(a),
       source: actionSource(a)
     }
@@ -792,6 +853,9 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
         basic: true,
         traits: splitTraits(traitLine),
         description: `<p>${description}</p>`,
+        // A roster row has no Automation cell; the fields are present and empty (0.9.0).
+        automation: "",
+        rules: [],
         source: "STARWROUGHT Playtest v4.10"
       }
     });
@@ -885,6 +949,8 @@ for (const [name, speed, description, checkNow = "", initiative = ""] of roster.
       description: `<p>${description}</p>`,
       exploration: { travel, check, initiative: rolls, effect },
       ...(named ? { check: { enabled: true, constellation: check, defense: "" } } : {}),
+      automation: "",
+      rules: [],
       source: "STARWROUGHT Playtest v4.10"
     }
   });
@@ -904,6 +970,8 @@ for (const [name, time, description] of roster.downtimeActions ?? []) {
       requirements: time,
       traits: [],
       description: `<p>${description}</p>`,
+      automation: "",
+      rules: [],
       source: "STARWROUGHT Playtest v4.10"
     }
   });
@@ -935,6 +1003,8 @@ for (const [name, grantedBy, description] of roster.postures ?? []) {
       check: { enabled: false, constellation: defenseWord, defense: defenseWord },
       traits: ["Reaction"],
       description: `<p>${description}</p>`,
+      automation: "",
+      rules: [],
       source: "STARWROUGHT Playtest v4.10"
     }
   });
@@ -1344,6 +1414,18 @@ console.log(`  enabled for Foundry: ${ratio("constellations")} constellations, $
 // is always N of N, since hand-kept rows carry no flag.
 console.log(`  equipment: ${ratio("equipment")} enabled`
   + (equipment ? " (data/equipment.xlsx)" : " (roster fallback: assets/equipment.json is absent)"));
+// The Automation cells (0.9.0): what parsed, over how many documents, in how many kinds. With no
+// kinds registered the framework can carry no rule, and the line says so rather than printing a
+// bare zero; with kinds defined but no cell using them, it says that instead.
+const kinds = knownKinds();
+if (automationTally.rules) {
+  console.log(`  automation: ${automationTally.rules} rules on ${automationTally.documents} documents `
+    + `(${automationTally.kinds.size} kinds in use)`);
+} else if (!kinds.length) {
+  console.log("  automation: no rules (no rule kinds are defined yet)");
+} else {
+  console.log(`  automation: no rules (${kinds.length} kinds defined, none in use)`);
+}
 
 // --no-compile is the content loop's way in (build_all.mjs --content): the sources and the index
 // are the content, and the open world syncs from them in place (ruling 115). The compile is for a

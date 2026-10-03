@@ -21,6 +21,8 @@
       "Reaction"
     ],
     "description": "<p>+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</p>",
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b93d96fd63573850",
@@ -30,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7a7cf86d946e1513"
+      "contentHash": "191bf37bfa0e6989"
     }
   },
   "effects": [],

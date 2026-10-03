@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Defense constellation • Might (survive what does come through)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "4e6bea2801fbb230"
+      "contentHash": "6f014f546ce35524"
     }
   },
   "effects": [],

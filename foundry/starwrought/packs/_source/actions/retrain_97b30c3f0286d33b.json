@@ -13,6 +13,8 @@
     "requirements": "1 month",
     "traits": [],
     "description": "<p>Move 1 already spent Talent Point to another Talent you qualify for. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or a Talent that would reduce your Proficiency Rank in a Constellation.</p>",
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b938ff7019fcd374",
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "996183bc8958c5a5"
+      "contentHash": "bb68e6b5789d332c"
     }
   },
   "effects": [],

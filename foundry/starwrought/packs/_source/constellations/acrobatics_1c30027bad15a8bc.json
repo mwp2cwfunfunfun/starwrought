@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Skill constellation • Agility</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "a7527f8349b12499"
+      "contentHash": "1239928ba28dd53c"
     }
   },
   "effects": [],

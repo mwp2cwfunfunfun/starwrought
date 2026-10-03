@@ -30,6 +30,8 @@
       "value": ""
     },
     "freeTalent": "Weapon Familiarity",
+    "automation": "",
+    "rules": [],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
@@ -40,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ee44dd9eaaf6f413"
+      "contentHash": "070725a41553b834"
     }
   },
   "effects": [],

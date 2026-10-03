@@ -21,6 +21,8 @@
       "Reaction"
     ],
     "description": "<p>+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</p>",
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b93d96fd63573850",
@@ -30,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c191e3532a3ad92c"
+      "contentHash": "06c31a14b1e495a6"
     }
   },
   "effects": [],

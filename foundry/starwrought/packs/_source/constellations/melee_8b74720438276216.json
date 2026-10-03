@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Weapon • Might (Represents transferable fundamentals: measure, timing, reading an opponent, footwork, maintaining guard, committing to a strike, etc. Melee is a parent Constellation: every Talent you buy in Two-Weapon Fighting, Shield Fighting, Brawling, Dueling, Great Weapon Fighting, Spear & Polearm Fighting, or Armored Fighting counts toward your Melee rank.)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "742278d8c95a9f2e"
+      "contentHash": "f4636bfff903709a"
     }
   },
   "effects": [],

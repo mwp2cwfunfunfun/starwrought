@@ -63,6 +63,14 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
    */
   static READ_ONLY_FOR_PLAYERS = Object.freeze(["talent", "constellation", "chassis"]);
 
+  /**
+   * Item types that carry the Automation panel (0.9.0): the three the engine collects rules from
+   * (module/rules/engine.mjs, collectRules) and whose data models carry `automation` and `rules`
+   * (rulesFields in module/data/item.mjs). The two lists must agree, or a type would show a
+   * textarea with no field behind it or carry rules no sheet can show.
+   */
+  static RULE_TYPES = Object.freeze(["talent", "constellation", "action"]);
+
   /** Is this sheet read-only for this user only because of what the Item is, not who owns it? */
   get lockedForPlayer() {
     return !game.user.isGM && SwItemSheet.READ_ONLY_FOR_PLAYERS.includes(this.document.type);
@@ -118,7 +126,12 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       isShield: item.type === "shield",
       isGear: item.type === "gear",
       isAction: item.type === "action",
-      isPhysical: SW.PHYSICAL_TYPES.includes(item.type)
+      isPhysical: SW.PHYSICAL_TYPES.includes(item.type),
+      // The Automation panel (0.9.0; ruling 118): whether this type has one, and the data model's
+      // view of the stored rules for its "As read" list (prepareRules in module/data/item.mjs),
+      // passed by name so the template does not reach through `system` for a derived value.
+      hasRulesPanel: SwItemSheet.RULE_TYPES.includes(item.type),
+      ruleLines: item.system.ruleLines ?? []
     });
 
     // Choice lists, localized once here so the templates stay declarative.

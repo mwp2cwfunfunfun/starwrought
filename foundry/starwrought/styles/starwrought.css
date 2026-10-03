@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.8.0";
+  --sw-css-version: "0.9.0";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -1813,7 +1813,32 @@ li.combatant.sw-in-crosshairs {
 .starwrought .sw-action-row .sw-item-name:hover { color: var(--sw-gold); }
 .starwrought .sw-card-flavor { font-size: 0.78rem; font-style: italic; color: var(--sw-ink-dim); margin-top: 0.35rem; }
 .starwrought .sw-card-flavor p { margin: 0; }
-.starwrought textarea[name="system.automation"] { width: 100%; min-height: 3.5rem; font-size: 0.78rem; resize: vertical; }
+/* The automation framework (0.9.0): the Automation panel on a Talent, a Constellation and an
+   action. The textarea is the cell, one rule per line, so it is set in a monospace face; the
+   "As read" list beneath it is what the grammar made of it, one row per line: the line number,
+   the kind word as a tag in the trait idiom, the kind's summary. A row that did not parse, or
+   names a kind this system does not have, is red, and the raw line prints beside the message so
+   the slip can be seen without hunting the textarea. */
+.starwrought textarea[name="system.automation"] {
+  width: 100%; min-height: 3.5rem; font-size: 0.78rem; resize: vertical;
+  font-family: var(--font-monospace, monospace);
+}
+.starwrought .sw-rules-head { margin-top: 0.5rem; }
+.starwrought .sw-rules-list { list-style: none; margin: 0.25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.starwrought .sw-rule {
+  display: flex; align-items: baseline; gap: 0.4rem;
+  padding: 0.15rem 0.4rem; border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04); border-left: 2px solid var(--sw-edge);
+  font-size: 0.78rem; line-height: 1.35;
+}
+.starwrought .sw-rule-line { flex: 0 0 1.1rem; text-align: right; font-size: 0.68rem; color: var(--sw-ink-dim); }
+.starwrought .sw-rule-kind { color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+.starwrought .sw-rule-summary { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.starwrought .sw-rule-text { font-family: var(--font-monospace, monospace); font-size: 0.72rem; color: var(--sw-ink-dim); }
+.starwrought .sw-rule-error { border-left-color: #d9534f; background: rgba(217, 83, 79, 0.12); }
+.starwrought .sw-rule-error .sw-rule-summary { color: #e0736f; }
+.starwrought .sw-rule-empty { background: none; border-left-color: transparent; padding: 0; }
+.starwrought .sw-rule-empty .sw-empty { padding: 0.1rem 0; }
 
 /* The defender's answer: stated, not offered. */
 .starwrought .sw-answering { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }

@@ -648,7 +648,8 @@ def main():
             ws = wb[name]
             cm = header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "req": "requires",
                                  "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": "feeds", "grants": "grants",
-                                 "choice": "choice", "freetalent": "free", "aura": "aura", "enabled": "enabled"})
+                                 "choice": "choice", "freetalent": "free", "aura": "aura", "automation": "automation",
+                                 "enabled": "enabled"})
             if "name" not in cm or "tier" not in cm or "effect" not in cm:
                 errors.append(f"{fname} / {name}: sheet needs Talent, Tier and Effect columns"); continue
             nodes, root_count, root_name = [], 0, None
@@ -701,6 +702,16 @@ def main():
                 # against the Effect, so a new tier cannot ship without its ring; see aura_for.
                 aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{name} / {nname}", warnings, errors)
                 if aura: node["aura"] = aura
+                # The Automation cell (0.9.0; rulings 118 and 120): one rule per line in the grammar
+                # the Foundry system owns (module/rules/grammar.mjs). It is copied through as text,
+                # exactly as the action sheets' column is, and never parsed here: build_foundry.mjs
+                # parses it with that grammar and stops on a line it does not know, naming the cell,
+                # and the client parses it again with the same module. Python holds no second parser,
+                # so the two can never disagree. Line breaks inside the cell are the rule boundaries,
+                # and plain() keeps them. A cell reading "None" or a dash is an empty cell, as the
+                # action parser reads it.
+                auto = blank_none(plain(cellv("automation")))
+                if auto: node["automation"] = auto
                 if requires: node["requires"] = requires
                 if desc and desc.upper() != "TBD": node["desc"] = desc
                 if prereqs and norm(prereqs) != norm(nname): node["prereqs"] = prereqs

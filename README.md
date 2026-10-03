@@ -16,7 +16,7 @@ https://github.com/mwp2cwfunfunfun/starwrought/releases/latest/download/system.j
 
 Foundry 13 or later. The system sets its own grid: one foot per square, with diagonals measured
 exactly, which needs a restart to take effect after installing. The current release is system
-0.8.0, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
+0.9.0, built from Player's Handbook v4.15: six actions a round, the Exchange played as declare,
 commit, reveal, roll and resolve, auras and Reach drawn on the map with a Visible mark per range,
 the Bind drawn between the bound, Vigor and Wounds per Zone, a character sheet whose locked
 fields explain themselves, a Reroll on every Attack and Defense card, one Move per Opportunity on
@@ -36,8 +36,10 @@ Downtime Activities printed from the pack, and Train, which Flares a Constellati
 shared picker, says so on the card, and warns when it was already used since the last
 Milestone), and, since 0.8.0, the content loop: one command rebuilds the web app and the Foundry
 pack sources from the spreadsheets, and the GM syncs the open world's compendia from Settings,
-no restart. The
-spreadsheets' `Enabled?` column decides which of the book's
+no restart; and, since 0.9.0, the automation framework: an `Automation` column on every Talent sheet and action sheet,
+read by one grammar into rule data on the Item and the Actor, with no rule kinds defined yet, so
+it changes nothing in play until the first kind, an aura, is built with Mike, one kind at a time.
+The spreadsheets' `Enabled?` column decides which of the book's
 Constellations, Talents, Maneuvers and equipment ship to Foundry, and the `Aura` column says which
 Talents draw a ring.
 

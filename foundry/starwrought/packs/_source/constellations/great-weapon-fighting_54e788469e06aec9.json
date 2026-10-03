@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Combat Style • Might (two hands, full commitment)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "8afb7b9681218018"
+      "contentHash": "a70cb0a7457fbfc7"
     }
   },
   "effects": [],

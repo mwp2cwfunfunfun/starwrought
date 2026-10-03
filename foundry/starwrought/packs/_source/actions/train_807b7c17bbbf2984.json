@@ -13,6 +13,8 @@
     "requirements": "7 days",
     "traits": [],
     "description": "<p>You work with a teacher, a rival, or a manual. A Constellation of your choice becomes Flared. You may benefit from Train only once between Milestones.</p>",
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "b938ff7019fcd374",
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "aa827cf76ea96f48"
+      "contentHash": "66d0e3a80da2e3b9"
     }
   },
   "effects": [],

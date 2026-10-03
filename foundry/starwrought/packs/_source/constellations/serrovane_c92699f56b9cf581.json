@@ -13,6 +13,8 @@
     "identity": true,
     "description": "<p>Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f635605c345ef6ad"
+      "contentHash": "1b272e7a5f45b5ed"
     }
   },
   "effects": [],

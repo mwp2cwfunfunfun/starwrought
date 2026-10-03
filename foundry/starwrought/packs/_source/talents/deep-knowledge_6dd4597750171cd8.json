@@ -30,6 +30,8 @@
       "value": ""
     },
     "freeTalent": "",
+    "automation": "",
+    "rules": [],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
@@ -40,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f58ce0186526d619"
+      "contentHash": "9caa094f653fc3de"
     }
   },
   "effects": [],

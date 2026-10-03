@@ -7,6 +7,221 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.9.0 (2026-10-03): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
+the handbook's loose ends stand where 0.8.0 left them. The release is **the automation framework**,
+the second half of what Mike asked for after the content loop (Mike, 2026-10-03: "I'd like an
+Automation field in the data .xlsx files. And based on what is in there, when I run
+sync_content.cmd (or when you run it as part of a build), it will create the Foundry VTT automation
+code. However, I want to make sure the Foundry VTT automation code is well-built. For example, if I
+create an automation syntax for the Torchbearer 15' aura, we should create the syntax that will
+work for OTHER auras, too, without additional coding."), built to his second instruction and no
+further: "Important - do NOT survey the talents yet or build ANY of the automation hooks. just
+build the framework. we will build automation syntax hooks one at a time." So this is the skeleton
+only, and **it does nothing in play yet.** An Automation column on every Talent sheet (the action
+sheets had one) holds one rule per line, `kind: arguments`, in a small grammar that lives in the
+system (`module/rules/grammar.mjs`) and is pure enough for Node to import, so `build_foundry.mjs`
+parses every cell at build time into rule data on the Item (`system.rules`) and the client parses
+the same text identically for the Item sheet; rule kinds are plug-ins with one contract in a
+registry that is empty (`module/rules/kinds/index.mjs`); and the Actor indexes every owned Item's
+rules (`system.rules { all, byKind, unknown }`, `actor.rulesOfKind(kind)`) for engine hooks that
+do not exist yet. No kind is implemented, no hook is wired into a roll, the attack flow, damage, a
+condition, movement or an aura, and no Talent's text was read: every non-comment line in a cell is
+"unknown rule kind" today, which the build refuses and the sheet marks. Kinds come one at a time
+with Mike, each with its hook, its test, its line in `data/README.txt` and its docs; the first is
+the aura, for Torchbearer, and it will serve every aura in the book. The design record is
+`automation-plan.md` in the project root. A minor bump for a framework: three new modules, a
+self-test, a new `automation` field on the Talent and the Constellation and a `rules` array on three Item types, all
+with defaults and no migration. The decisions are rulings 118 to 120,
+continuing the 0.8.0 entry's 117 (see Notes). `Starwrought_Players_Handbook_v4.16.docx` is still
+on the shelf, untracked and unsynced, as 0.8.0 said; `build_all.mjs` reports the drift until that
+sync, which is a later release's, and in content mode goes on (ruling 115).
+
+### Added
+
+- **The Automation column on the tree sheets** (`xlsx_to_trees.py`). Every Talent sheet may carry
+  an `Automation` column beside `Aura` and `Enabled?` (column order free; the first word of the
+  header wins, as for every column). The converter copies a non-empty cell's text through as
+  `automation` on the Talent node, exactly as the action sheets' column already travelled, and
+  parses nothing: the grammar lives in the system, and Python never holds a second copy of it
+  (ruling 120).
+- **The grammar** (`module/rules/grammar.mjs`, new; ruling 120). One rule per line: the kind word
+  (everything up to the first `:` or whitespace, lower-cased), then its arguments, trimmed; the
+  colon optional when there are none; blank lines ignored; a line beginning with `#` a comment.
+  `parseAutomation(text, context)` returns `{ rules, errors }`: each rule `{ kind, line, text,
+  ...data }` with `data` whatever the kind's `parse` returned, each error `{ line, text, message }`
+  with a message a game designer can act on (`unknown rule kind "aura" (no rule kinds are defined
+  yet)` while the registry is empty, `known kinds: a, b, c` once it is not; a kind's own
+  `RuleSyntaxError` with its line; any other throw caught into an error line, never a crash).
+  `summarize(rule)` gives the kind's one-line summary, or the error text, or `unknown rule kind`.
+  The shared helpers a kind may use are `splitArgs(text)` (commas outside quotes) and
+  `keyValues(parts)` (`key=value` pairs), and nothing more until a kind needs it. No Foundry global
+  at module scope and no i18n inside: Node imports it as `build_foundry.mjs` imports `config.mjs`,
+  and the sheet localizes around it.
+- **The kind registry, empty** (`module/rules/kinds/index.mjs`, new; ruling 119). `KINDS`,
+  `registerKind(def)`, `kindOf(word)`, `knownKinds()`. A kind is one file in `module/rules/kinds/`
+  exporting `{ id, aliases, parse(args, context), summary(rule), hooks }`: its word (lower-case,
+  letters and hyphens), the other words accepted before the colon, its argument syntax and
+  validation (a plain object returned, or `RuleSyntaxError` thrown, with `{ itemName,
+  constellation, itemType, line }` to hand for the message), its summary line for the sheet, and
+  the engine hook points it speaks at, empty in 0.9.0 and defined one at a time with the kind that
+  needs them. `registerKind` refuses a definition missing `id`, `parse` or `summary`, or whose id
+  or alias is already taken. The index registers nothing; a comment names the first kind to come,
+  an aura for Torchbearer, and says it is not here. `module/rules/README.md` (new) is "Adding a
+  rule kind", step by step: the file, the contract, the registration, the checks in
+  `assets/test_rules.mjs`, the line in `data/README.txt` naming the kind's syntax, the engine hook
+  (where it would be wired, and that it is defined with the kind), the docs (CHANGELOG, FEATURES),
+  and the content loop that carries it (a kind's code ships with the system; a cell that uses it
+  reaches an open world through Sync content).
+- **The rule index on the Actor** (`module/rules/engine.mjs`, new). `collectRules(actor)` walks the
+  owned Talent, action and Constellation Items (a Constellation Item may carry rules one day),
+  reads each one's `system.rules`, and returns `{ all, byKind, unknown }` of `{ rule, item }`
+  pairs, with an error entry, or a rule whose kind the registry lacks, sorted into `unknown` with
+  its reason; pure over the documents, no side effects; `rulesOfKind(actor, kind)` beside it.
+  `SwCharacterData` and `SwNpcData` set `this.rules` from it first thing in `prepareDerivedData`,
+  before the Constellations, and `SwActor#rulesOfKind(kind)` is the engine's `rulesOfKind` with
+  `this`: the word is trimmed and lower-cased and an alias resolves to its kind's id, as in a cell;
+  the answer comes from `system.rules.byKind` when the data model prepared an index, else from the
+  Items on the spot (a party has no `SwActorData` and holds loot only, so it answers `[]`); and the
+  result is always an array, so a kind's engine hook can later iterate it without a guard and
+  without walking the Items. Nothing reads them yet, and the code says so.
+- **The parse at build time** (`build_foundry.mjs`; ruling 118). For every Talent node and every
+  action with Automation text, the build parses the cell with the system's own grammar, passing
+  `{ itemName, constellation, itemType, source }` for its messages (the action's sheet standing in
+  for the Constellation). Any error fails the build with one line per error, `automation:
+  <Constellation> / <Talent>, line <n>: <message> ("<text>")`, so `sync_content.cmd` stops naming
+  the cell before the sources are written, as a bad Aura cell stops the converter; otherwise the
+  document carries `system.automation` (the text) and `system.rules` (the parsed rules). The run's
+  summary gains `automation: N rules on M documents (K kinds in use)`, which today reads
+  `automation: no rules (no rule kinds are defined yet)`. The content hash covers `system`, so a
+  changed cell changes the hash and the open world syncs it like any field (ruling 120).
+- **The data.** `SwTalentData` and `SwConstellationData` gain `automation` (a string; the action
+  model has had it since the column arrived) and `SwTalentData`, `SwActionData` and `SwConstellationData` gain `rules` (an
+  array of objects, initial `[]`). Each derives `ruleLines` for the sheet in `prepareDerivedData`,
+  through the grammar: one entry per stored rule with the kind word, the line, the text, the kind's
+  summary and an error, which is the stored error, or "unknown rule kind" when the registry does
+  not know the word. Every Talent, action and Constellation source carries `rules: []` after a
+  clean build.
+- **The Item sheet's Automation panel** (`templates/item/details.hbs`) shows for Talents and
+  Constellations as well as Maneuvers: the textarea, editable where the sheet is, then an **As
+  read** list, one row per rule with the kind word in a tag and the summary, and a red row with the
+  message for an error or an unknown kind. An empty list says "No rules (the framework has no rule
+  kinds yet; they are added one at a time)". The rows' strings are under `STARWROUGHT.Rules.*`,
+  and the panel's title and hint (`STARWROUGHT.Section.automation`, `STARWROUGHT.Hint.automation`)
+  are reworded to the framework: one rule per line, `kind: arguments`; a `#` line is a comment.
+- **A GM's edit saves and is marked, never refused** (`SwItem._preUpdate`; ruling 118). When
+  `system.automation` changes on a world Item or an owned copy, the Item parses the new text and
+  writes `system.rules` as the parsed rules plus an `{ error, line, text }` entry per line that did
+  not parse, so the text always saves, the sheet shows what is wrong, and an engine can skip the
+  line. The build never writes an error entry, because the build fails instead.
+- **`assets/test_rules.mjs`**, a self-test of the framework, run by `build_all.mjs` in every step-running mode (`--check` runs none)
+  (content mode included) as the step `test_rules`, right before `build_foundry`. It registers a
+  throwaway kind in process (`test-only`; never shipped) and checks that blank and comment lines
+  parse to nothing, an unknown kind is one error naming the word and the line, the throwaway kind
+  parses its arguments and `summarize` prints its summary, a kind that throws `RuleSyntaxError`
+  yields an error line and no crash, `registerKind` refuses a duplicate id and a definition without
+  `parse`, and `collectRules` over a fake actor-like object (a plain `{ items: [...] }` with
+  `system.rules`) indexes by kind and sorts errors and unknowns. Exit 1 names the failing check;
+  success prints "rules framework: N checks passed".
+- **`automation-plan.md`** in the project root: the framework's design record in
+  `party-sheet-plan.md`'s voice, with Mike's words, the design, the data, the contract, how a kind
+  is added, what was deliberately not done and why, the backlog as Mike framed it, and the
+  decisions that are his.
+
+### Changed
+
+- **`data/README.txt`** names the Automation column on the tree sheets (one rule per line, `kind:
+  arguments`, `#` comments, no kinds yet so any other line stops the build naming the cell, kinds
+  added one at a time and each named there with its syntax when it lands), and the action sheets'
+  Automation is the same column now, no longer prose. Its ADDING CONTENT section says what a bad
+  cell does to the loop: it stops before the sources are written.
+- **`FEATURES.md`** gains section 7, "Automation: the framework", before the content loop (now
+  section 8; "What it deliberately does not do" is 9), and `CLAUDE.md` a standing paragraph of the
+  same name with the rule that kinds are added one at a time with Mike, each with its hook, its
+  test, its README line and its docs.
+- **Every `ArrayField` in the system's data models now takes its initial value from a function**
+  (`initial: () => []`), never a literal array. Foundry hands one literal to every document whose
+  source lacks the field and, since v13, updates an `ArrayField` in place to keep its identity, so
+  the literal `[]` on the new `rules` field made seven of Hrolda's Talents share one array: an
+  unknown kind typed into one Talent's textarea appeared on all seven until the page reloaded (the
+  0.9.0 live test). `traits`, the party's `members` and the road roll's `modifiers` carried the same
+  latent hazard and take the function now; nothing stored changes.
+- **`build_all.mjs`** runs `test_rules` as a step in every step-running mode (`--check` runs none), before `build_foundry`, so a
+  framework that cannot pass its own checks never builds the packs.
+- The stylesheet gains the As read list in the sheet's idiom.
+- The version stamps read 0.9.0 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: `automation` and
+  `rules` have defaults, so a Talent written before 0.9.0 reads as a blank cell with no rules.
+
+### Notes
+
+- **The rulings, 118 to 120**, the brief's three for the framework, numbered on from the 0.8.0
+  entry's 117.
+  - **118. The cell is data, not code.** An Automation cell is one rule per line in a small grammar
+    that the build parses into rule data on the Item and the client reads with one engine; nothing
+    generates JavaScript from a cell. A line the grammar does not know stops the build naming the
+    Constellation, the Talent and the line, as a bad Aura cell does; the same line on a world Item
+    edited in Foundry saves and is marked on the sheet, never thrown on.
+  - **119. Rule kinds are plug-ins with one contract, added one at a time.** A kind is one file:
+    its word, its argument syntax and validation, its summary for the sheet, and the engine hooks it
+    speaks at, defined with it and not before. The framework ships with none (Mike, 2026-10-03: "do
+    NOT survey the talents yet or build ANY of the automation hooks. just build the framework. we
+    will build automation syntax hooks one at a time"). A kind serves every Talent that uses its
+    word: the aura that will serve Torchbearer serves every aura in the book.
+  - **120. One grammar in one place.** The grammar module is the system's, pure enough for Node to
+    import, so the build and the client parse a cell identically and the converter carries text
+    only. The content loop carries a cell's rules to an open world as it carries any field, and the
+    copies refresh overwrites an owned copy's rules from the source, since the cell is the author.
+- **No kinds, no survey, by instruction; the first kind is the aura.** Nothing in this release
+  reads a Talent's Effect, and no cell in `data/*.xlsx` was filled in: the survey of which Talents
+  want which kinds was not made, because Mike said not to make it yet, and the first kind was not
+  built, because he said the kinds are built one at a time. Mike's own example sets the order: the
+  aura, for Torchbearer Human's 15 feet, written so that it serves every aura in the book without
+  more code (ruling 119); the `Aura` column (0.5.1) already draws the ring on the map, and what the
+  aura kind adds is the effect inside it. Each kind that follows is one file, its hook defined with
+  it and wired nowhere before, its checks in `test_rules.mjs`, its line in `data/README.txt` and its
+  prose here and in `FEATURES.md`; `module/rules/README.md` is the recipe.
+- **"Create the Foundry VTT automation code" is read as rule data, not generated code** (ruling
+  118). A cell that produced JavaScript would put the rules in two places and make every Talent a
+  program to review; a cell that is data is parsed once, by one grammar, into one shape the engine
+  reads, and the engine is the only code. That is also what makes Mike's "work for OTHER auras,
+  too, without additional coding" true by construction: the kind owns the word, and every cell
+  that uses the word is served by it.
+- **What a cell may hold today.** Blank, or lines beginning with `#`. Any other line fails the
+  build with `unknown rule kind "<word>" (no rule kinds are defined yet)`, which is the framework
+  working as designed, not a bug: the error names the Constellation, the Talent and the line, and
+  the loop stops before the sources are written, so the open world never sees a half-built set.
+  The same line typed into a world Item's textarea saves, shows a red "unknown rule kind" row, and
+  lands in the actor's `system.rules.unknown`; `rulesOfKind("aura")` returns `[]`; nothing else
+  changes.
+- **The copies refresh overwrites an owned copy's Automation and rules from the source** (ruling
+  120). A Talent on a sheet whose textarea a GM edited diverges from its compendium source; the
+  next Sync content with the copies box ticked writes the source's `system.automation` and
+  `system.rules` over it, as it writes every field but the character's own, because the cell is
+  the author. Whether an edited copy's Automation should instead survive a refresh is Mike's call,
+  and is recorded in `automation-plan.md` with the other two decisions that are his: the first
+  kind's syntax, and whether the web app and the Constellation Compendium docx should print the
+  cell, which neither does today.
+- **What the framework touched, and what it left.** New: `module/rules/grammar.mjs`,
+  `module/rules/kinds/index.mjs`, `module/rules/engine.mjs`, `module/rules/README.md`,
+  `assets/test_rules.mjs`, `automation-plan.md`. Changed: the converter's header map and node, the
+  Foundry build's Talent and action builders and its summary, `build_all.mjs`'s steps, the Talent,
+  action and Constellation data models, the Item document's `_preUpdate`, the character and
+  adversary data models' prepare and the Actor document, the Item sheet and its template, the
+  language file, the stylesheet and the three stamps. Untouched: every roll, the attack flow, the
+  damage pipeline, conditions, movement, the auras on the map, every spreadsheet cell, the web app,
+  the Constellation Compendium docx, the roster, the handbook and `data/SYNC.json`. No document id
+  moves; every pack source gains `rules: []`, and every Constellation source `automation: ""`
+  beside it, so the next Sync content lists every Talent, action and Constellation as an update,
+  which is the fields being written and nothing more.
+- The handbook's v4.10 loose ends stand in v4.15 as 0.6.3 listed them; `CLAUDE.md` carries the
+  list. `Starwrought_Players_Handbook_v4.16.docx` is on the shelf, untracked and unsynced, as the
+  0.7.2 entry says, and `build_all.mjs` reports the drift until that sync, which is a later
+  release's; in content mode it is a warning and the run goes on.
+
+---
+
 ## 0.8.0 (2026-10-03): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and

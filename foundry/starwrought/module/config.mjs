@@ -193,7 +193,7 @@ export const DEFENSES = Object.freeze({
  * a cached copy of an older release. `assets/package_system.mjs` refuses to package unless this,
  * `--sw-css-version` in styles/starwrought.css and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.8.0";
+export const SYSTEM_VERSION = "0.9.0";
 
 /**
  * THE CONTENT LOOP (0.8.0; the content-loop brief, Mike 2026-10-03; ruling 115). The pack sources

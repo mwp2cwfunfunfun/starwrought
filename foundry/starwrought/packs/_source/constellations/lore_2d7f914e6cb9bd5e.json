@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Skill constellation • Wits (the template every Lore (X) Constellation copies)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ac159d3818faf049"
+      "contentHash": "243897f904daf880"
     }
   },
   "effects": [],

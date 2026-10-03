@@ -24,6 +24,8 @@
       "constellation": "guile",
       "defense": ""
     },
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",
@@ -33,7 +35,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c71f6aa10c3320de"
+      "contentHash": "e716f3dca08a71bd"
     }
   },
   "effects": [],

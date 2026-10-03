@@ -13,6 +13,8 @@
     "identity": true,
     "description": "<p>Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "fe5541b9e1817263"
+      "contentHash": "cd8a5bbdec1ec793"
     }
   },
   "effects": [],

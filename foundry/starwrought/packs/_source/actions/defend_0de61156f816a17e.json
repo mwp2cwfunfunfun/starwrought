@@ -19,6 +19,8 @@
       "initiative": "",
       "effect": "defend"
     },
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",
@@ -28,7 +30,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c0d8f06f65bba527"
+      "contentHash": "e828f5f07ecf30a3"
     }
   },
   "effects": [],

@@ -19,6 +19,8 @@
       "initiative": "athletics",
       "effect": ""
     },
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",
@@ -28,7 +30,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "58e396740a155d20"
+      "contentHash": "fb7fa4b8e544669b"
     }
   },
   "effects": [],

@@ -24,6 +24,8 @@
       "constellation": "awareness",
       "defense": ""
     },
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",
@@ -33,7 +35,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "a3be88c820815ec1"
+      "contentHash": "e3fd37b5b2a7fa48"
     }
   },
   "effects": [],

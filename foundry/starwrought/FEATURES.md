@@ -1,7 +1,7 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
 Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
-rule differs). System version **0.8.0**. Developed against
+rule differs). System version **0.9.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -11,7 +11,7 @@ This file is about behaviour, not content. What is *in* the compendia is listed 
 > refuses to pass while the handbook on the shelf is newer than `data/SYNC.json`, and refuses to
 > stamp a new version until this file and the changelog both name it. Since 0.8.0 the content
 > loop, `node assets/build_all.mjs --content`, reports that drift as a warning and goes on, because
-> adding a Talent to a sheet is not a handbook sync (ruling 115; section 7).
+> adding a Talent to a sheet is not a handbook sync (ruling 115; section 8).
 
 ---
 
@@ -602,7 +602,7 @@ Noisy, Attended" cell and the donning sentence), so the book, the data and the s
 the Constellation Compendium and the web app print the same row. The Comfort row beside it reads,
 since v4.14, "You can sleep in it without increasing your Fatigued value by 1."; the roster's
 hand-kept `armorTraits` block carries that sentence, and nothing in the system acts on it (see
-section 8).
+section 9).
 
 **Shields.** Raise a Shield ❶ flips the shield's raised flag and pays the action; its Gear bonus to
 Guard is derived from the flag, and the tracker lowers it when your next Opportunity begins. A held
@@ -1126,9 +1126,10 @@ unless it carries the Reaction trait, in which case its cost comes off the six.
 
 A Maneuver Item carries a **Description** (the flavour line), an **Effect** (the rules),
 Prerequisites, Requirements, a Trigger, its cost range, the Reaction trait with its own cost, and
-**Automation** notes, which are the author's instructions from the spreadsheet's Automation column.
-Nothing acts on those notes yet. They are shown on the Item sheet so the intent travels with the
-Maneuver until it is implemented.
+its **Automation** cell, which since 0.9.0 is one rule per line in the framework's grammar rather
+than notes (section 7): the Item sheet shows the text and, under it, what the system read from
+each line, and nothing acts on a rule yet, since no rule kind exists. The intent still travels with
+the Maneuver; the framework is what will read it, one kind at a time.
 
 **Adversary sheet.** Written Threshold-first, because the players roll everything. The header has
 Vigor (current, maximum and Temporary, typed directly), Spent, actions per round, Speed in feet per
@@ -1151,7 +1152,9 @@ per Move. A weapon carries its Style, which is load-bearing for the Strike
 Attribute (the field's hint states the rule, the composite bow included), and the sheet calls out
 the traits that decide what it can do in a Bind. A Talent or
 Maneuver carries its **Aura** (range in feet, who it concerns, Visible by default), editable by the
-GM on the Details tab.
+GM on the Details tab. A Talent, Maneuver or Constellation carries its **Automation** panel
+(0.9.0; section 7): the cell's text, editable by the GM, and an As read list of what the framework
+made of each line, which with no rule kinds defined says so and lists nothing.
 
 **What a player may change** (Mike, 2026-10-01). The sheet is the character's record, and some of
 it is the GM's to write. For a player, Ancestry, Bloodline, Culture, Background, Calling, Ancestry
@@ -1202,7 +1205,7 @@ check, an Initiative) runs on the member's own Actor through a method that alrea
 already posts its card, so the party adds buttons and a handful of cards, not a second rules
 engine. Its data model extends `TypeDataModel` directly, never `SwActorData`, so it has no Zones,
 Wounds, Vigor, stance or actions; a party is never a combatant, and nothing draws or counts its
-token (section 8). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
+token (section 9). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
 phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; phase 3 (0.7.2;
 rulings 101 to 107) is the road: each member's Exploration Activity, the party's Travel Speed, the
 Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity, and its second
@@ -1233,7 +1236,7 @@ asks for an optional one-line reason and writes +1, refused with a notice at the
 before anything is written, and a minus as a correction. **The party rests** runs
 `restForTheNight()` on every member in turn, each posting its own rest card exactly as the sheet's
 Rest button does, then one party line; the confirm names the members whose worn Torso piece lacks
-Comfort, and the armor rule itself stays the table's (section 8).
+Comfort, and the armor rule itself stays the table's (section 9).
 
 **The Milestone award, the Deferred point and Take back.** Award a Milestone opens a dialog
 listing every member ticked, with a preview line each: who reaches Milestone 2 of 3 and may spend
@@ -1297,7 +1300,7 @@ the same rows with **Take** on each, which asks which member when they own two a
 the stack is above one; an empty tab says so. Carry state means nothing on a party, so it is
 ignored there, and an Item that reaches a character through Take or Give arrives carried, so
 drawing it is an Interact as the book prices it. The row prints the price the Item carries and
-nothing computes with it (section 8): the book has no shared loot and no party purse, so the tab
+nothing computes with it (section 9): the book has no shared loot and no party purse, so the tab
 moves Items and values nothing.
 
 **Take and Give, over the relay** (ruling 97; the plan's risks 5 and 6). A Take is two writes a
@@ -1316,7 +1319,7 @@ source second, so a failure between the two leaves a duplicate and never a loss;
 and answers done or refused (gone, not enough, not yours, no member, not physical) to the asker
 alone, as a notice. Requests are served in arrival order on the GM's client, so two players taking
 the last potion resolve as one Take and one refusal. With no GM connected the controls say so and
-write nothing (section 8). The drops go the same way (ruling 98): a party Item dragged onto a
+write nothing (section 9). The drops go the same way (ruling 98): a party Item dragged onto a
 character sheet is a Take of the whole stack rather than Foundry's silent copy, whoever drags it,
 one of a player's own Items dragged onto the party sheet is a Give of the whole stack, and the Loot
 tab's Take button is where a count is asked; a player's drop from the compendium or the sidebar
@@ -1407,7 +1410,7 @@ miles an hour ÷ 2, floored as the character's own figure is; miles a day × 4, 
 a minute · 1 mile an hour · 12 miles a day", then "Wren sets the pace (Search, Half)" naming the
 pacesetter (the lowest effective Speed; the first on ties), the ten-minutes-per-location note while
 anyone Searches (P346), and the terrain, a select for the GM (`system.travel.terrain`, the party's
-one field for this phase) and a word for a player. Nothing moves a token at any pace (section 8),
+one field for this phase) and a word for a player. Nothing moves a token at any pace (section 9),
 and a party with no members prints blanks and zeros.
 
 **The Fatigued gate** (ruling 101). The book's Fatigued row says "can't use Exploration Mode
@@ -1481,7 +1484,7 @@ panel prints both and runs nothing. **The days** are `system.downtime.days` on t
 integer the GM types in the party form's own field and a player reads as a number, with the P348
 hint beside it (the GM typically tells you how many you have before the world begins to move
 quickly again); nothing counts them down, spends them or refuses anything for want of them
-(section 8), and nothing is derived from them. **The Activities** print from the Actions pack's
+(section 9), and nothing is derived from them. **The Activities** print from the Actions pack's
 Downtime Mode folder (`downtimeActivities` in `helpers/party.mjs`, the category read off the Item;
 cached per session as the Exploration Activities are and forgotten with them when a world action
 Item changes; a world Item of the same name and category replaces the printed one), one row each
@@ -1736,7 +1739,7 @@ The `trackMap` setting is gone with the Multiple Attack Penalty; a world that st
 for it is ignored.
 
 **Sync content** (0.8.0) is a menu under the system's settings rather than a setting: GM only, it
-opens the tool section 7 describes. Behind it two hidden world settings, `contentBuild` and
+opens the tool section 8 describes. Behind it two hidden world settings, `contentBuild` and
 `contentStamp`, hold the build hash and the build time the world last synced to; they have no
 entry in Configure Settings, and the offer at load compares the first with the index on disk.
 
@@ -1748,7 +1751,64 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Keeping the content in step: the content loop
+## 7. Automation: the framework
+
+**What it is, and what it is not** (0.9.0; rulings 118 to 120). Since 0.9.0 every Talent sheet in
+`data/*.xlsx` may carry an **Automation** column, as the action sheets already did, and the system
+has a framework for reading it. **The framework does nothing in play yet.** It parses the column,
+stores what it read on the Item, indexes it on the Actor and shows it on the Item sheet, and that
+is the whole of it: no roll, no Strike, no damage, no condition, no movement and no aura reads a
+rule, because no rule kind exists. Mike's instruction (2026-10-03): "do NOT survey the talents yet
+or build ANY of the automation hooks. just build the framework. we will build automation syntax
+hooks one at a time." Kinds are added one at a time with Mike, each with its engine hook, its
+test, its line in `data/README.txt` and its docs; the first will be an aura, for Torchbearer
+Human's 15 feet, and it will serve every aura in the book without more code. Until then a Talent's
+Effect is prose the sheet displays (section 9), and the design record is `automation-plan.md` in
+the project root.
+
+**The cell.** One rule per line, `kind: arguments` (the colon optional when there are no
+arguments), blank lines ignored, a line beginning with `#` a comment. The kind word is the word
+before the colon, and the arguments are the kind's own to define and check. With no kinds defined,
+the only cell that builds is a blank one or one of comments; any other line is "unknown rule
+kind", and the build says so by name.
+
+**The build** (ruling 118). `build_foundry.mjs` parses every Talent's and every Maneuver's cell with
+the system's own grammar module (`module/rules/grammar.mjs`, pure enough for Node to import, so
+the build and the client read a cell identically; ruling 120). A line it does not know fails the
+build with `automation: <Constellation> / <Talent>, line <n>: <message> ("<text>")`, so
+`sync_content.cmd` stops naming the cell before the sources are written, exactly as a bad Aura
+cell stops the converter. A clean cell writes `system.automation` (the text) and `system.rules`
+(the parsed rules) on the document; the run's summary counts them, and today reads "automation: no
+rules (no rule kinds are defined yet)". The content hash covers the rules, so a changed cell
+reaches an open world through Sync content as any field does, and the copies refresh overwrites an
+owned copy's rules from the source, since the cell is the author (ruling 120).
+
+**The Item sheet.** The Automation panel on a Talent, a Maneuver and a Constellation shows the
+textarea and, under it, **As read**: one row per rule with its kind word in a tag and the kind's
+one-line summary, or a red row with the message for a line that did not parse or a kind the system
+does not know. With nothing stored it says "No rules (the framework has no rule kinds yet; they are
+added one at a time)". A GM who edits the textarea on a world Item or an owned copy sees the text
+save and the list mark each line: the Item parses on update and stores the error entries beside
+the rules, and never refuses the edit (ruling 118). The text is the GM's to type; what the system
+makes of it is shown, not enforced.
+
+**The Actor.** At prepare, a character or adversary collects every owned Talent's, Maneuver's and
+Constellation's rules into `system.rules { all, byKind, unknown }`, and `actor.rulesOfKind("aura")`
+answers from the index without walking the Items. Today every list is empty, a line of an unknown
+kind lands in `unknown`, and the call returns `[]`; this is where a kind's engine hook will look
+when there is one.
+
+**Kinds are plug-ins** (ruling 119). A kind is one file in `module/rules/kinds/` with one contract:
+its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
+can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
+defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which today
+registers nothing and says in a comment which kind comes first. `module/rules/README.md` is the
+recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every step-running mode (`--check` builds nothing)
+of `build_all.mjs` before the Foundry build.
+
+---
+
+## 8. Keeping the content in step: the content loop
 
 **One command, two outputs, no restart** (0.8.0; rulings 115 to 117). The spreadsheets in
 `data/*.xlsx` are the content, and the web app and the Foundry compendia are two readers of it.
@@ -1831,7 +1891,7 @@ before; the sources and the index are.
 
 ---
 
-## 8. What it deliberately does not do
+## 9. What it deliberately does not do
 
 - **Prerequisites outside the wizard are not enforced.** Drag a Talent onto a sheet by hand and
   nothing stops you. The wizard enforces them; the sheet trusts you.
@@ -1889,8 +1949,18 @@ before; the sources and the index are.
   sources and nothing else: it never touches a world compendium of the GM's own, a stale system
   document is deleted by name only after the plan has shown it, and a GM's content belongs in the
   world. The copies refresh is a checkbox, and a copy whose source cannot be found is left alone.
-  Nothing in the loop acts on a Talent's Effect or the Automation column: the automation framework
-  is the next part of the build.
+  Since 0.9.0 the loop parses the Automation column and stops on a line it does not know; nothing
+  acts on a Talent's Effect or on a parsed rule, because no rule kind exists yet (section 7).
+- **The automation framework does nothing in play** (0.9.0; rulings 118 to 120). It parses the
+  Automation column, stores the rules on the Item, indexes them on the Actor and shows them on the
+  Item sheet, and no roll, Strike, damage step, condition, movement or aura reads one, because the
+  registry of rule kinds is empty by Mike's instruction ("do NOT survey the talents yet or build
+  ANY of the automation hooks. just build the framework. we will build automation syntax hooks one
+  at a time"). Every rule line in a cell is "unknown rule kind" today and stops the build by name;
+  the same line on a world Item saves and is marked, never refused. Kinds are added one at a time
+  with Mike, each with its hook, its test, its README line and its docs; the first is the aura, for
+  Torchbearer. Nothing generates code from a cell: the cell is data, and the engine is the only
+  code.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.
@@ -1928,7 +1998,9 @@ before; the sources and the index are.
   line between two tokens, which is the standing risk the working agreement names.
 - **Levelling is manual.** Change the level field; everything recomputes. There is no level-up
   wizard yet.
-- **Talent effects are prose the sheet displays**, not rules the system acts on. That is the next
-  piece of work, and it will be authored in the spreadsheets rather than in code.
+- **Talent effects are prose the sheet displays**, not rules the system acts on. The framework
+  that will read them shipped in 0.9.0 (section 7) with no rule kinds, so it changes nothing in
+  play; the rules will be authored in the spreadsheets' Automation column, one kind at a time with
+  Mike, never as code written per Talent.
 - **No equipment shopping**, in the wizard or out of it.
 - **No magic**, because the playtest has none.

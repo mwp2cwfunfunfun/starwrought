@@ -28,9 +28,11 @@ ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   Nothing restarts, and nothing already on a sheet changes its UUID.
   What the loop does NOT do: the handbook, the Constellation Compendium docx, the PDFs and the
   compiled packs on disk. Those belong to a release: close Foundry and run the full pipeline,
-  node assets/build_all.mjs (the two paths are set out at the bottom of this file). And it is not
-  the automation framework: the Automation column is still prose, and that framework is the next
-  part.
+  node assets/build_all.mjs (the two paths are set out at the bottom of this file). Since 0.9.0
+  the loop also reads the Automation column (Tree columns, below): a line the framework does not
+  know STOPS the build, naming the Constellation, the Talent and the line, before the sources are
+  written. There are no rule kinds yet, so leave the cell blank or a "#" comment; the framework
+  does nothing in play until the first kind lands, one at a time with Mike.
 
 Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Triggers | Meta note | Parent
   Parent (v4.10): names the parent Constellation whose rank this tree's Talents also count toward.
@@ -54,7 +56,8 @@ Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Tr
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |
-                Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled? | Aura
+                Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled? | Aura |
+                Automation
   Column ORDER does not matter; the first word of the header does.
   Aura (0.5.1): the Effect's "within N feet", drawn on the map around the carrier. Accepted:
         "N ft" or "N feet" (everyone), "N ft allies", "N ft enemies", "all" spelled out for
@@ -65,6 +68,21 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         is blank, the sheet has no Aura column, or the cell names a different N. "Within reach"
         and "adjacent" get no cell: the reach bands draw those. The action sheets take the same
         grammar.
+  Automation (0.9.0): what the Foundry system should DO with the talent, one rule per line, in a
+        small grammar the system owns (foundry/starwrought/module/rules/grammar.mjs):
+        "kind: arguments" (the colon optional when there are no arguments), blank lines ignored, a
+        line beginning with "#" a comment. The converter copies the cell through as text and parses
+        nothing; build_foundry.mjs parses it, and a line it does not know is an ERROR that stops the
+        build (and so sync_content.cmd) naming the Constellation, the Talent and the line, before
+        the sources are written, as a bad Aura cell stops the converter. THERE ARE NO RULE KINDS
+        YET (Mike, 2026-10-03: "do NOT survey the talents yet or build ANY of the automation hooks.
+        just build the framework. we will build automation syntax hooks one at a time"): every rule
+        line reads as "unknown rule kind" today, so a cell may hold only a blank or "#" comments
+        until the first kind lands, and the framework does nothing in play until then. Kinds are
+        added one at a time, with Mike, and each is named here with its syntax when it ships; the
+        first will be an aura (for Torchbearer), written to serve every aura in the book. The same
+        line typed into a world Item's textarea in Foundry saves and is marked on the Item sheet
+        rather than refused. The action sheets take the same column.
   Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
         anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
         column means the sheet has not been curated yet, not that it is all off. A constellation
@@ -120,8 +138,10 @@ ACTIONS WORKBOOKS (actions.xlsx, maneuvers.xlsx)
     read. Without a Cost column the glyphs in the Action name are read, as for talents; with
     neither, the action costs one action ❶ and the converter names the ones it defaulted. Effect
     is required; a cell reading "None" counts as blank.
-  Description is the flavour line; Effect is the rules, rich text welcome. Automation is prose for
-    now: it travels onto the Foundry Item and its sheet, and nothing acts on it yet.
+  Description is the flavour line; Effect is the rules, rich text welcome. Automation (0.9.0) is
+    the same column as on a tree sheet, no longer prose: one rule per line, "kind: arguments", a
+    "#" line a comment, parsed by build_foundry.mjs, which stops on a line it does not know; there
+    are no rule kinds yet, so leave it blank or a comment (Tree columns, above).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.
@@ -220,7 +240,9 @@ To sync after editing, from the project root, one of two paths:
     -> Starwrought_App.html + the constellation viewer           (inject.py)
     -> assets/constellations/*.png, only the plates whose Constellation changed or is new; the
        sidecar .plates.json beside them remembers the rest        (render_constellations.py --changed)
-    -> foundry/starwrought/packs/_source/**, with index.json     (build_foundry.mjs --no-compile)
+    -> the automation framework's self-test, no output of its own (test_rules.mjs, 0.9.0)
+    -> foundry/starwrought/packs/_source/**, with index.json; an Automation line the framework
+       does not know stops here, naming the cell                 (build_foundry.mjs --no-compile)
     -> foundry/starwrought/content/{constellations,chassis,sync}.json, the runtime indexes the
        in-game Sync re-reads, and foundry/starwrought/assets/constellations/*.png, copied from
        assets/ and pruned to match                                 (build_foundry.mjs, the same run)

@@ -8,6 +8,11 @@
  */
 
 import * as SW from "../config.mjs";
+// The automation framework (0.9.0; rulings 118 to 120): the grammar that read a cell at build
+// time reads the stored rules again here, for the sheet's "As read" list, and the kinds registry
+// says whether a stored rule's kind is one this system has. Both are pure modules.
+import { summarize } from "../rules/grammar.mjs";
+import { kindOf } from "../rules/kinds/index.mjs";
 
 const fields = foundry.data.fields;
 
@@ -261,11 +266,62 @@ function prepareAura(system) {
     : "";
 }
 
+/**
+ * The automation framework's two fields (0.9.0; rulings 118 to 120), on a Talent, a Constellation
+ * and an action. `automation` is the cell as the author wrote it in the spreadsheet's Automation
+ * column: one rule per line, `kind: arguments`, a `#` line a comment. `rules` is what the grammar
+ * read from it: `{ kind, line, text, ...data }` per parsed rule, where `data` is whatever the
+ * kind's own `parse` returned, written by assets/build_foundry.mjs for compendium content (a line
+ * that does not parse fails the build there, so a built rule is never an error), and by
+ * SwItem#_preUpdate when a GM edits the textarea on a world Item, which also writes
+ * `{ error, line, text }` for a line that did not parse so the text always saves and the sheet can
+ * say what is wrong. The entries are plain objects because each kind owns its own shape; the
+ * engine (module/rules/engine.mjs) indexes them on the Actor by kind, and nothing reads them yet:
+ * the kinds, and the hooks they speak at, are added one at a time (ruling 119).
+ */
+function rulesFields() {
+  return {
+    automation: new fields.StringField({ initial: "" }),
+    // `initial` as a function, never a literal array: Foundry hands the same literal to every
+    // document whose source lacks the field and, since v13, updates an ArrayField in place to keep
+    // its identity, so a literal `[]` made seven of Hrolda's Talents share one `rules` array and an
+    // error typed on one of them appeared on all seven (the 0.9.0 live test).
+    rules: new fields.ArrayField(new fields.ObjectField(), { initial: () => [] })
+  };
+}
+
+/**
+ * The sheet's view of the stored rules, one row per entry: the kind word for its tag, the line
+ * number and text for the tooltip, the kind's summary (or the error text) through the grammar, and
+ * `error` for the red row. A parsed rule whose kind this system does not have (a pack built by a
+ * later system, or a kind since renamed) is marked `unknown` and the sheet localizes that itself;
+ * an entry the client wrote as an error carries the grammar's own plain-English message, which the
+ * sheet prints under a localized label, since the grammar holds no i18n (the build prints the same
+ * message in the terminal). Derived every prepare, never stored.
+ * @param {object} system  Anything carrying `rules`.
+ */
+function prepareRules(system) {
+  system.ruleLines = (system.rules ?? []).map(r => {
+    const kind = r.kind ?? "";
+    const unknown = !r.error && !kindOf(kind);
+    return {
+      kind,
+      line: r.line,
+      text: r.text ?? "",
+      summary: summarize(r),
+      error: r.error ?? (unknown ? "unknown rule kind" : ""),
+      unknown
+    };
+  });
+  system.hasRules = system.ruleLines.length > 0;
+}
+
 /** Description plus the Trait line, which every Item in the game has. */
 function describedFields() {
   return {
     description: new fields.HTMLField({ initial: "" }),
-    traits: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+    // A function initial, for the reason rulesFields() gives: a literal `[]` is one shared array.
+    traits: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: () => [] }),
     source: new fields.StringField({ initial: "" })
   };
 }
@@ -351,7 +407,13 @@ export class SwConstellationData extends SwItemData {
       meta: new fields.StringField({ initial: "" }),
       flareTrigger: new fields.StringField({ initial: "" }),
       /** Identity Constellations are granted by a character-creation choice, never bought. */
-      identity: new fields.BooleanField({ initial: false })
+      identity: new fields.BooleanField({ initial: false }),
+      /**
+       * A Constellation Item may carry rules one day (0.9.0): the engine collects from it as from
+       * a Talent, and the sheet shows the panel. Nothing authors a cell for one yet (the _Tree
+       * Index has no Automation column), so the build writes both fields empty.
+       */
+      ...rulesFields()
     });
   }
 
@@ -369,6 +431,7 @@ export class SwConstellationData extends SwItemData {
     this.categoryLabel = SW.CATEGORIES[this.category]?.label ?? "";
     this.attributeGlyph = SW.ATTRIBUTES[this.attribute]?.glyph ?? "";
     this.parentName = this.parentSlug ? (SW.getConstellation(this.parentSlug)?.name ?? "") : "";
+    prepareRules(this);
   }
 }
 
@@ -388,7 +451,7 @@ export class SwTalentData extends SwItemData {
       /** A Bloodline root: granted by the chargen choice, never listed among buyable Talents. */
       bloodlineRoot: new fields.BooleanField({ initial: false }),
       capstone: new fields.BooleanField({ initial: false }),
-      requires: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+      requires: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: () => [] }),
       prerequisites: new fields.StringField({ initial: "" }),
       /** A Talent may feed an Attribute other than its Constellation's Key Attribute. */
       attribute: new fields.StringField({ required: false, blank: true, initial: "" }),
@@ -413,7 +476,9 @@ export class SwTalentData extends SwItemData {
       /** Another Talent this one hands over outright, with no Talent Point spent. */
       freeTalent: new fields.StringField({ initial: "" }),
       /** The "within N feet" of the Effect, drawn on the map (0.5.1). */
-      ...auraFields()
+      ...auraFields(),
+      /** The Automation cell and the rules read from it (0.9.0). See rulesFields. */
+      ...rulesFields()
     });
   }
 
@@ -449,6 +514,7 @@ export class SwTalentData extends SwItemData {
       this.constellation = SW.slugify(this.constellationName);
     }
     prepareAura(this);
+    prepareRules(this);
   }
 
   get chatDescription() {
@@ -484,7 +550,7 @@ export class SwChassisData extends SwItemData {
       senses: new fields.StringField({ initial: "" }),
       languages: new fields.StringField({ initial: "" }),
       /** The Skills or Constellations this choice grants Training in. */
-      grants: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+      grants: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: () => [] }),
       specialAbility: new fields.HTMLField({ initial: "" })
     });
   }
@@ -722,11 +788,11 @@ export class SwActionData extends SwItemData {
       /** The rules text. `description` is the flavour line above it. */
       effect: new fields.HTMLField({ initial: "" }),
       /**
-       * What the system should do when this action is used, as the author wrote it in the
-       * Automation column of data/actions.xlsx. Prose for now: nothing reads it yet, and it is
-       * shown on the Item sheet so the intent travels with the action until it is implemented.
+       * The Automation column of the actions workbooks, and the rules read from it (0.9.0). The
+       * field has carried the cell since 0.5.x, as prose nothing acted on; it is the framework's
+       * column now, the same column as a Talent's, parsed with the same grammar. See rulesFields.
        */
-      automation: new fields.StringField({ initial: "" }),
+      ...rulesFields(),
       /** The "within N feet" of the Effect, drawn on the map (0.5.1). */
       ...auraFields(),
       /** Rolled as a check: which Constellation, and which Defense it is measured against. */
@@ -797,6 +863,7 @@ export class SwActionData extends SwItemData {
     // reads both from the Item.
     this.exploration.multiplier = SW.ACTIVITY_SPEEDS[this.exploration.travel]?.multiplier ?? 1;
     this.isExploration = this.category === "Exploration Mode";
+    prepareRules(this);
   }
 
   /** The rules, when the action has them written separately from its flavour. */

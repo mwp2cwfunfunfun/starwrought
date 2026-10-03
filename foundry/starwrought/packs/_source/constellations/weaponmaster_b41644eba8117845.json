@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Calling • Might (3 Vigor/level • Drilled)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "58287b6e97a0bd53"
+      "contentHash": "a64ec21dfc698a24"
     }
   },
   "effects": [],

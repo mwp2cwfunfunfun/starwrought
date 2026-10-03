@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Defense constellation • Presence (don't let it through • Parry Reaction and Set Your Feet Posture)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e82d44071f6bb170"
+      "contentHash": "d41da3c57fd272c0"
     }
   },
   "effects": [],

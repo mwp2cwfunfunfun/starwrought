@@ -188,6 +188,7 @@ module/config.mjs        every rule constant, in one place
 module/data/             Actor (character, adversary, party) and Item data models, and all the derived arithmetic
 module/documents/        Actor, Item, Combat (the round and the Opportunities), action tracking, and the chat card behaviour
 module/dice/             the check engine and the damage pipeline
+module/rules/            the automation framework (0.9.0): the grammar, the kind registry (empty; kinds come one at a time), the Actor's rule index, and the recipe for adding a kind
 module/canvas/           reach bands, the drag ruler, targeting arrows, and the grid geometry
 module/apps/             the four sheets (character, adversary, party, Item), the creation wizard, the shared Flare picker, the Sync content tool and the Token HUD stance button
 module/helpers/          the content registry, chargen data and rules, the stance model, the party operations, Handlebars helpers
@@ -199,12 +200,15 @@ packs/_source/           compendium sources and index.json (generated; what Sync
 
 ## Known gaps
 
-The full list is section 8 of `FEATURES.md`. The short version:
+The full list is section 9 of `FEATURES.md`. The short version:
 
 - Talent prerequisites and point budgets are enforced by the character-creation wizard and nowhere
   else. Drag a Talent onto a sheet by hand and nothing stops you.
-- Talent effects are prose the sheet displays, not rules the system acts on. That is the next
-  piece of work, and it will be authored in the spreadsheets rather than in code.
+- Talent effects are prose the sheet displays, not rules the system acts on. The framework that
+  will read them shipped in 0.9.0 (the `Automation` column, one grammar in `module/rules/`, an
+  empty registry of rule kinds, the rules indexed on the Actor) and does nothing in play yet: no
+  rule kind exists, so no roll, Strike, damage, condition, movement or aura reads a rule. Kinds
+  are added one at a time with Mike, the first an aura; `module/rules/README.md` says how.
 - "Expose a plausible Zone" is a picker the attacker may use, never a rule the engine resolves.
 - Bind writes on a partner you do not own, and Reaction charges on a defender you do not own, need
   that owner's click on the card.
@@ -225,6 +229,6 @@ The full list is section 8 of `FEATURES.md`. The short version:
   control; each says it is done by hand.
 - The content loop compiles nothing, and the in-game sync writes only the system's own packs: a
   document the GM wrote into one of them by hand is stale by the sources and is listed for
-  deletion; a GM's content belongs in the world. Nothing acts on the Automation column yet; the
-  automation framework is the next part.
+  deletion; a GM's content belongs in the world. Since 0.9.0 the loop also stops on an Automation
+  line the framework does not know, before the sources are written.
 - Magic is not in the playtest, so it is not here.

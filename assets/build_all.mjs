@@ -18,8 +18,9 @@
  *
  * --content (Mike, 2026-10-03; rulings 115 to 117) is its own mode and takes no other flag. It runs
  * xlsx_to_trees, inject, render_constellations --changed (only the plates whose Constellation moved
- * or is new), build_foundry --no-compile (the pack sources and packs/_source/index.json, never the
- * LevelDB compendia, which a running Foundry holds open) and check_style; it skips the sheets, the
+ * or is new), test_rules (the automation grammar's self-test, 0.9.0), build_foundry --no-compile
+ * (the pack sources and packs/_source/index.json, never the LevelDB compendia, which a running
+ * Foundry holds open) and check_style; it skips the sheets, the
  * compendium docx and the features docx and says so; and it reports handbook drift as a warning
  * rather than stopping, because adding a Talent to a sheet is not a handbook sync (ruling 115). The
  * open Foundry world then syncs its compendia from the sources in place (Settings > STARWROUGHT >
@@ -202,6 +203,11 @@ const STEPS = [
     content: ["assets/render_constellations.py", "--changed"] },
   { name: "sheet_gen", py: true, args: ["assets/sheet_gen.py"], slow: true, content: false },
   { name: "build_phb", cmd: "node", args: ["assets/build_phb.js"], slow: true, content: false },
+  // The automation framework's self-test (0.9.0; ruling 120): the grammar and the registry that
+  // build_foundry, next, parses every Automation cell with. It runs in every step-running mode (--check runs none), content mode
+  // included, and is never slow, because a grammar that broke would fail every cell in the book at
+  // once with a message about the cells rather than about the grammar; this names the grammar.
+  { name: "test_rules", cmd: "node", args: ["assets/test_rules.mjs"] },
   { name: "build_foundry", cmd: "node", args: ["assets/build_foundry.mjs"],
     content: ["assets/build_foundry.mjs", "--no-compile"] },
   // FEATURES.md as a Word document, so the printable copy never lags the file the handbook rule moves.

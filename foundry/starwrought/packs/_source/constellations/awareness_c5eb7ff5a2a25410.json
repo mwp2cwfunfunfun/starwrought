@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Defense constellation • Wits (don't be surprised)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "beb8ba35ba597d3e"
+      "contentHash": "3988d3c810bbf51e"
     }
   },
   "effects": [],

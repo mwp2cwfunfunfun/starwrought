@@ -18,6 +18,7 @@ import { gapBetween } from "../canvas/geometry.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
 import { postureName as postureNameOf } from "../helpers/answers.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
+import { rulesOfKind as rulesOfKindOn } from "../rules/engine.mjs";
 
 const { DialogV2 } = foundry.applications.api;
 const { renderTemplate } = foundry.applications.handlebars;
@@ -211,6 +212,28 @@ export class SwActor extends Actor {
       && isRigid(i)
       && !/natural/i.test(i.system.group ?? ""));
     return weapon ? { name: weapon.name } : null;
+  }
+
+  /* -------------------------------------------- */
+  /*  Automation rules                            */
+  /* -------------------------------------------- */
+
+  /**
+   * The rules of one kind across every owned Talent, action and Constellation Item (0.9.0;
+   * ruling 119), from the index the data model collects at prepare (`system.rules.byKind`,
+   * SwActorData#_prepareRules). Each entry is `{ rule, item }`: the stored rule, with whatever its
+   * kind's `parse` put in it, and the Item carrying it. The engine's own `rulesOfKind` does the
+   * reading, so an alias resolves to its kind's id here as it does in a cell, and a party, which
+   * has no SwActorData and so no index, is collected on the spot and answers an empty list like
+   * any actor with no rules. This is the question a kind's engine hook will ask when the first
+   * kind lands (an aura, for Torchbearer, when Mike and Claude build it); nothing calls it yet, by
+   * Mike's instruction, and no roll, attack, damage, condition, movement or aura code reads the
+   * index. An unknown kind's rules sit in `system.rules.unknown`, not here.
+   * @param {string} kind  The kind's word, as before the colon in the cell.
+   * @returns {Array<{rule: object, item: Item}>}
+   */
+  rulesOfKind(kind) {
+    return rulesOfKindOn(this, kind);
   }
 
   /* -------------------------------------------- */

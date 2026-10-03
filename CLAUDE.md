@@ -66,6 +66,7 @@ python assets/inject.py               # templates + JSON -> the two root HTML fi
 python assets/render_constellations.py # -> assets/constellations/*.png
 python assets/sheet_gen.py            # -> the fillable and Mira character sheets
 node   assets/build_phb.js            # -> Starwrought_Constellation_Compendium.docx
+node   assets/test_rules.mjs          # the automation framework's self-test (0.9.0): exit 1 on a failing check, else "rules framework: N checks passed"
 node   assets/build_foundry.mjs       # -> foundry/starwrought/{packs,content,assets/constellations}
 python assets/build_features_docx.py  # FEATURES.md -> Starwrought_Foundry_Features.docx (print or PDF)
 python assets/check_style.py          # the two absolute rules below, enforced. Exit 1 on a violation.
@@ -79,6 +80,17 @@ stops after the sources. Document ids hash the pack plus the document name, so t
 rebuild, which matters because an id becomes a compendium UUID the moment a Talent lands on a
 character sheet. `check_style.py` scans the system's `lang/en.json`, its templates, and
 `packs/_source/`, so the Foundry content is held to the same two rules as everything else.
+Since 0.9.0 `build_foundry.mjs` also imports the system's own grammar module,
+`foundry/starwrought/module/rules/grammar.mjs` (pure, as `config.mjs` is), and parses every
+Talent's and action's **Automation** cell through it: a line that does not parse fails the build
+with `automation: <Constellation> / <Talent>, line <n>: <message> ("<text>")`, the Aura column's
+precedent, and a clean cell is written onto the document as `system.automation` (the text) and
+`system.rules` (the parsed rules). The converter copies the cell through as text and knows nothing
+of the grammar, so Python and JavaScript never hold two parsers. `node assets/test_rules.mjs` is
+the framework's self-test, run by `build_all.mjs` in every step-running mode (`--check` runs none) as the step `test_rules`, right
+before `build_foundry`. With no rule kinds defined, as in 0.9.0, the only cell that builds is a
+blank one or one of `#` comments, and the summary line reads `automation: no rules (no rule kinds
+are defined yet)`.
 
 **THE CONTENT LOOP (Mike, 2026-10-03; system 0.8.0; rulings 115 to 117).** "I want the ability to
 add to any of the data spreadsheets and run a command or a script to incorporate those into the
@@ -115,8 +127,10 @@ as the record. Ticked by default, the sync also refreshes the characters' owned 
 Items (found by their recorded compendium source, else by type and name), keeping `quantity`,
 `state`, `raised`, `choice.value` and the copy's `_id`, written with `swAnnounced` (ruling 117).
 The full `build_all.mjs` with Foundry closed is still what compiles the packs, for a release or a
-fresh install. The automation framework is the next part; the loop carries the Automation column
-unchanged.
+fresh install. Since 0.9.0 the loop also runs `test_rules` (the automation framework's self-test)
+before `build_foundry`, and `build_foundry` parses every Automation cell: a line the grammar does
+not know fails the step naming the Constellation, the Talent and the line, before the sources are
+written, so the open world never syncs a half-built set (the automation framework, below).
 
 **The compiled packs are not in git, and since 0.8.0 they are a release artifact.**
 `foundry/install.mjs` links the repo folder into Foundry's data directory, so a running Foundry
@@ -461,6 +475,60 @@ counted for each character"), carried as a tracked change in
 `PROPOSALS["downtime"]`); `data/SYNC.json` is untouched. The plan is built; what remains of it is
 Mike's (Known outstanding work, below).
 
+**The automation framework (0.9.0; `automation-plan.md`; rulings 118 to 120).** Mike, 2026-10-03:
+"I'd like an Automation field in the data .xlsx files. And based on what is in there, when I run
+sync_content.cmd (or when you run it as part of a build), it will create the Foundry VTT automation
+code. However, I want to make sure the Foundry VTT automation code is well-built. For example, if I
+create an automation syntax for the Torchbearer 15' aura, we should create the syntax that will
+work for OTHER auras, too, without additional coding." Then: "Important - do NOT survey the talents
+yet or build ANY of the automation hooks. just build the framework. we will build automation syntax
+hooks one at a time." So 0.9.0 is the skeleton, and **it does nothing in play**. The pieces: an
+`Automation` column on every tree sheet (the action sheets had one), copied through by the
+converter as `automation` on the node with no parsing, so Python never holds a second grammar; one
+grammar module, `foundry/starwrought/module/rules/grammar.mjs`, pure (no Foundry global at module
+scope, no i18n inside; the sheet localizes around it and the build prints its plain English),
+imported by `build_foundry.mjs` at build time and by the client at runtime so both parse a cell
+identically (`parseAutomation(text, context) -> { rules, errors }`, `summarize(rule)`,
+`RuleSyntaxError` with `line` and `text`, `splitArgs`, `keyValues`, `KIND_WORD`); the cell one
+rule per line, `kind: arguments`, the colon optional without arguments, blank lines ignored, a `#`
+line a comment, the kind word everything up to the first `:` or whitespace, lower-cased; a
+registry of rule kinds in `module/rules/kinds/index.mjs` (`KINDS`, `registerKind`, `kindOf`,
+`knownKinds`) that registers nothing, a kind being one file in `module/rules/kinds/` exporting
+`{ id, aliases, parse(args, context), summary(rule), hooks }` with `registerKind` refusing a
+definition missing `id`, `parse` or `summary` or whose id or alias is taken, and the context for
+messages `{ itemName, constellation, itemType, line }`; the build failing on a line that does not
+parse with `automation: <Constellation> / <Talent>, line <n>: <message> ("<text>")`, the Aura
+column's precedent, so `sync_content.cmd` stops before the sources are written (ruling 118), and
+with the registry empty the message `unknown rule kind "<word>" (no rule kinds are defined yet)`,
+else `known kinds: a, b, c`; `system.automation` and `system.rules` on the Talent, action and
+Constellation Items (`{ kind, line, text, ...data }` per rule, `data` whatever the kind's `parse`
+returned; `{ error, line, text }` for a line a GM's edit of the textarea left unparsed, written by
+`SwItem._preUpdate` so the text always saves and the sheet shows what is wrong, never by the
+build, which fails instead, and never refused), with `ruleLines` derived for the sheet;
+`collectRules(actor)` in `module/rules/engine.mjs` indexing them on the character and the
+adversary at prepare as `system.rules { all, byKind, unknown }` (an error entry or an unknown kind
+into `unknown` with its reason), first thing in `prepareDerivedData` before the Constellations,
+with `SwActor#rulesOfKind(kind)` reading `byKind`, so a kind's engine hook can later ask without
+walking the Items; the Item sheet's Automation panel on Talents and Constellations as well as
+Maneuvers, with its **As read** list (the kind word in a tag, the summary, a red row for an error
+or an unknown kind, and "No rules (the framework has no rule kinds yet; they are added one at a
+time)" for an empty list; `STARWROUGHT.Rules.*`); and `assets/test_rules.mjs`, the self-test, as
+the `test_rules` step of every `build_all.mjs` mode before `build_foundry`. **The rule: kinds are
+added one at a time, with Mike** (ruling 119), each with its file, its hook (defined with the kind
+that needs it and wired nowhere before: a hook point chosen before its first kind is a guess), its
+checks in `test_rules.mjs`, its line in `data/README.txt` naming its syntax, and its CHANGELOG and
+FEATURES prose, by the recipe in `module/rules/README.md`; the first is the aura, for Torchbearer,
+and a kind serves every Talent that uses its word. Nothing generates JavaScript from a cell: the
+cell is data and the engine is the only code, which is what makes "work for OTHER auras, too,
+without additional coding" true by construction. The content loop carries a cell's rules to an
+open world as any field, and the copies refresh (0.8.0) overwrites an owned copy's
+`system.automation` and `system.rules` from the source, since the cell is the author (ruling 120).
+Nothing in `module/rules/` is called by a roll, the attack flow, the damage pipeline, a condition,
+movement or the auras on the map, and no Talent's Effect was read to find out which kinds the book
+wants: both by instruction. Mike's decisions, recorded in the plan: the first kind's syntax;
+whether the web app and the compendium docx should print the cell (neither does); whether an
+edited copy's Automation should survive a refresh.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -515,8 +583,11 @@ Mike's (Known outstanding work, below).
   appended to pin it by default once an encounter starts, or `none` when the circle is centred
   elsewhere, as Rebounding Toss's is; the converter errors on anything else and warns when an
   Effect says "within N feet" and the cell is blank or disagrees; reach and adjacency get no
-  cell). Column order does not matter; the first word of
-  the header does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
+  cell), **Automation** (0.9.0: one rule per line, `kind: arguments`, a `#` line a comment, copied
+  through as text by the converter and parsed by `build_foundry.mjs`, which fails on a line it does
+  not know; no rule kinds are defined yet, so a cell may hold only a blank or comments until the
+  first kind lands, and `data/README.txt` names each kind's syntax as it ships). Column order does
+  not matter; the first word of the header does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
   a **Parent** column (v4.10): a Combat Style names Melee or Ranged, and the converter errors on a
   Parent that names no tree or has a parent of its own. Action glyphs ride in the Talent name in the
   v4.10 symbols (❶ ❷ ❸, ⓿, ↺ beside a cost); the v3 ◆ and ◇ still convert.
@@ -560,8 +631,9 @@ Mike's (Known outstanding work, below).
   carry yet stay until it does. Actions typed `Basic Action`, and the roster's Encounter Mode
   rows, are flagged `basic` and appear on every character's Actions tab straight from the
   compendium, never copied. The Automation column is stored on the Item (`system.automation`) and
-  shown on its sheet; nothing acts on it yet. That column is where the talent-automation grammar
-  will land, once it has one. **`data/maneuvers.xlsx` is the second actions workbook** (Mike,
+  shown on its sheet; since 0.9.0 it is the same column as on a tree sheet, one rule per line in
+  the framework's grammar and parsed by the build into `system.rules`, no longer prose, and with
+  no rule kinds defined nothing acts on it yet (the automation framework, above). **`data/maneuvers.xlsx` is the second actions workbook** (Mike,
   2026-10-01; 0.5.1, T17): the Encounter Mode Maneuvers, one sheet per Chapter 2 group, scaffolded
   once from the roster's `actions` block by `assets/make_maneuvers_xlsx.py` (names plain, glyphs in
   Cost, Requirements and Trigger lifted into their columns, Type `Basic Action`, the 0.5.1 `Aura`
@@ -694,11 +766,41 @@ Mike's (Known outstanding work, below).
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
-- **The automation framework** (Mike, 2026-10-03: "we will work on an automation framework after
-  this part"): the Automation column has no grammar yet. It travels onto the Item as
-  `system.automation` and its sheet shows it, and nothing acts on it; a Talent's Effect is prose
-  the sheet displays (`FEATURES.md`, section 8). The content loop (0.8.0) is the first half of
-  what Mike asked for and carries the column unchanged; the grammar is the next part of the build.
+- **The first rule kind: the aura, for Torchbearer** (0.9.0; `automation-plan.md`). The framework
+  ships with an empty registry, by instruction (Mike, 2026-10-03: "do NOT survey the talents yet
+  or build ANY of the automation hooks. just build the framework. we will build automation syntax
+  hooks one at a time"), so it does nothing in play and every rule line in a cell stops the build
+  as "unknown rule kind". Mike's own example sets the first kind: an aura, written so that the
+  syntax serves every aura in the book ("the Torchbearer 15' aura ... the syntax that will work for
+  OTHER auras, too, without additional coding"); the `Aura` column (0.5.1) already draws the ring,
+  and the kind adds the effect inside it. Its syntax is Mike's to settle first; then one file in
+  `module/rules/kinds/`, its hook defined with it, its checks in `assets/test_rules.mjs`, its line
+  in `data/README.txt`, its CHANGELOG and FEATURES prose, by the recipe in `module/rules/README.md`.
+  Then one kind at a time, each from the Talent that wants it; no survey of the Talents until Mike
+  asks for one. Also his: whether the web app and the compendium docx should print the cell
+  (neither does), and whether an edited copy's Automation should survive the copies refresh (today
+  it does not; the cell is the author, ruling 120). A Talent's Effect stays prose the sheet
+  displays (`FEATURES.md`, section 9) until a kind reads it.
+
+Cleared 2026-10-03 (the automation framework, system 0.9.0): the Automation column with no grammar
+behind it, now one grammar in one place (`foundry/starwrought/module/rules/grammar.mjs`, pure, so
+`build_foundry.mjs` and the client parse a cell identically and the converter carries text only;
+ruling 120) over an `Automation` column on every tree sheet as well as the action sheets; the cell
+as data, one rule per line, `kind: arguments`, `#` a comment, parsed by the build into
+`system.rules` on the Talent, action and Constellation Items, a line the grammar does not know
+stopping the build naming the Constellation, the Talent and the line, and the same line typed into
+a world Item saved and marked on the sheet, never thrown on (ruling 118); rule kinds as plug-ins
+with one contract (`{ id, aliases, parse, summary, hooks }`, enforced by `registerKind` in
+`module/rules/kinds/index.mjs`), the registry empty, each kind to be added one at a time with Mike
+with its hook defined with it (ruling 119); the rules indexed on the character and the adversary at
+prepare (`collectRules` in `module/rules/engine.mjs`; `system.rules { all, byKind, unknown }`;
+`SwActor#rulesOfKind`), read by nothing yet; the Item sheet's Automation panel with its As read
+list; `assets/test_rules.mjs` as the `test_rules` step of every `build_all.mjs` mode; the recipe in
+`module/rules/README.md`; and `automation-plan.md` in the project root. Not done, by Mike's
+instruction: the survey of the Talents, any rule kind, any engine hook. No handbook moved and
+`data/SYNC.json` is untouched; `Starwrought_Players_Handbook_v4.16.docx` stays on the shelf
+unsynced; the rulings (118 to 120) are recorded in the 0.9.0 changelog entry. The first kind is
+the aura (Known outstanding work, above).
 
 Cleared 2026-10-03 (the content loop, system 0.8.0): the stop, build, start and relaunch round
 trip a content change needed through 0.7.5, because the LevelDB compile fails while Foundry holds

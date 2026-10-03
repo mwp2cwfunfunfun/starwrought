@@ -16,6 +16,7 @@
 import * as SW from "../config.mjs";
 import { helmPenaltyFor } from "./item.mjs";
 import { rangesOf } from "../helpers/ranges.mjs";
+import { collectRules } from "../rules/engine.mjs";
 
 /** Re-exported so the canvas can import the ranges list from the model that derives it (0.5.1). */
 export { rangesOf } from "../helpers/ranges.mjs";
@@ -138,7 +139,7 @@ function commonActorFields() {
           validationError: "must be a #rrggbb colour, or blank for the audience's colour"
         }),
         gmOnly: new fields.BooleanField({ initial: false })
-      }), { initial: [] })
+      }), { initial: () => [] })
     }),
     traits: new fields.SchemaField({
       resistances: damageModifierField("STARWROUGHT.Field.resistances"),
@@ -323,6 +324,26 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
   }
 
   /* -------------------------------------------- */
+  /*  Automation rules                            */
+  /* -------------------------------------------- */
+
+  /**
+   * The rule index (0.9.0; rulings 118 to 120): every rule on every owned Talent, action and
+   * Constellation Item, collected once per prepare into `{ all, byKind, unknown }` (each entry
+   * `{ rule, item }`), so a kind's engine hook can later ask `actor.rulesOfKind("aura")` without
+   * walking the Items. It runs FIRST in the derived pass of a character and an adversary alike,
+   * before the Constellations roll up, because the hooks a kind will bring want to read the index
+   * from inside the passes that follow. Today nothing reads it: no kind exists (Mike, 2026-10-03:
+   * "just build the framework. we will build automation syntax hooks one at a time"), so the index
+   * is a mirror of the Items and nothing more. Pure over the embedded documents, which Foundry
+   * prepares before the parent's derived data, so each Item's `system.rules` is final here. A
+   * party is not an SwActorData and gets no index; SwActor#rulesOfKind answers it an empty list.
+   */
+  _prepareRules() {
+    this.rules = collectRules(this.parent);
+  }
+
+  /* -------------------------------------------- */
   /*  Movement                                    */
   /* -------------------------------------------- */
 
@@ -457,7 +478,7 @@ export class SwCharacterData extends SwActorData {
            * re-assembled as an Initiative in one typed-stacking pass with the Scouts' bonus rather
            * than added to it (ruling 109; the review of 0.7.3).
            */
-          modifiers: new fields.ArrayField(new fields.ObjectField(), { initial: [] })
+          modifiers: new fields.ArrayField(new fields.ObjectField(), { initial: () => [] })
         })
       }),
 
@@ -569,6 +590,8 @@ export class SwCharacterData extends SwActorData {
 
   /** @override */
   prepareDerivedData() {
+    // The rule index first (0.9.0), so every pass below could read it once a kind gives it a reader.
+    this._prepareRules();
     this.#prepareConstellations();
     this.#prepareAttributes();
     this.#prepareArmor();
@@ -1257,6 +1280,8 @@ export class SwNpcData extends SwActorData {
 
   /** @override */
   prepareDerivedData() {
+    // The rule index first (0.9.0), as on a character: an adversary's Talents and attacks may carry rules too.
+    this._prepareRules();
     this.vigor.value = Math.clamp(this.vigor.value, 0, this.vigor.max);
     this.vigor.pct = this.vigor.max ? Math.round((this.vigor.value / this.vigor.max) * 100) : 0;
     this.spent = this.vigor.value === 0;

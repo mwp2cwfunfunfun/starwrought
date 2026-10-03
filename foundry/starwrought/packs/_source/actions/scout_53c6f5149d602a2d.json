@@ -19,6 +19,8 @@
       "initiative": "",
       "effect": "scout"
     },
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": "e80cf8f5d20bb8b2",
@@ -28,7 +30,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "09af101d59111f6c"
+      "contentHash": "bea7655fb1e8e9d1"
     }
   },
   "effects": [],

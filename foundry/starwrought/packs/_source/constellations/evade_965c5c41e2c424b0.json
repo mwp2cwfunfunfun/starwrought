@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Defense constellation • Agility (don't be there • Void Reaction and Give Ground Posture)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6b8ed985410b3c81"
+      "contentHash": "92a7439cf5c0ee4c"
     }
   },
   "effects": [],

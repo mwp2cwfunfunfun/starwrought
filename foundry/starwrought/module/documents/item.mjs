@@ -4,6 +4,7 @@
 
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
+import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
 
 export class SwItem extends Item {
   /** @inheritdoc */
@@ -207,6 +208,37 @@ export class SwItem extends Item {
       const img = SW.TYPE_ICONS[this.type];
       if (img) this.updateSource({ img });
     }
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * @inheritdoc
+   *
+   * THE AUTOMATION FRAMEWORK (0.9.0; ruling 118): when a GM edits the Automation textarea on a
+   * world Item, or an owner on their copy, the text is parsed here with the grammar the build
+   * used and `system.rules` is rewritten from it through the grammar's own `ruleEntries`: the
+   * parsed rules, and `{ error, line, text }` for every line that did not parse, in the cell's
+   * line order. The update is never refused. The text always saves and the sheet shows the red
+   * row, so a half-typed cell is a cell with a mark on it rather than a lost keystroke; the build
+   * is the strict one, and a bad line fails it. (A compendium copy on a character edited here
+   * diverges from its source until the content loop's copies refresh (0.8.0) overwrites both
+   * fields from the source again, which is right: the cell is the author, ruling 120.) `changed`
+   * is the differential, so a sheet that submits its whole form still only reaches the parse when
+   * the textarea's text is in the diff; both the expanded and the flattened spelling of the key
+   * are read, since a macro may pass either.
+   */
+  async _preUpdate(changed, options, user) {
+    const allowed = await super._preUpdate(changed, options, user);
+    if (allowed === false) return false;
+    const text = foundry.utils.getProperty(changed, "system.automation") ?? changed["system.automation"];
+    if (typeof text !== "string") return;
+    const parsed = parseAutomation(text, {
+      itemName: this.name,
+      constellation: (this.type === "constellation") ? this.name : (this.system.constellationName || this.system.category || ""),
+      itemType: this.type
+    });
+    foundry.utils.setProperty(changed, "system.rules", ruleEntries(parsed));
   }
 
   /* -------------------------------------------- */

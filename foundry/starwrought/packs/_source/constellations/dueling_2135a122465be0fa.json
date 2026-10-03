@@ -13,6 +13,8 @@
     "identity": false,
     "description": "<p>Combat Style • Agility (one one-handed weapon, other hand free)</p>",
     "traits": [],
+    "automation": "",
+    "rules": [],
     "source": "STARWROUGHT Playtest v4.10"
   },
   "folder": null,
@@ -22,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "b4587e3092cac76a"
+      "contentHash": "0edb9b559024d36e"
     }
   },
   "effects": [],
