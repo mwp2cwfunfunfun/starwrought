@@ -49,7 +49,7 @@ import {
   isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper, askedName, askEveryone,
   explorationActivities, invalidateExplorationActivities, travelActivity, activityOf, activityWarnings,
   activityHasChoice, activityRoll, initiativeFor, constellationName, travelWord, travelUnits,
-  setActivity, partyTravel, sayThePlan, beginEncounter
+  setActivity, partyTravel, sayThePlan, beginEncounter, roadRoll, keepableRolls
 } from "../helpers/party.mjs";
 import { requestTake, requestGive } from "../documents/party-socket.mjs";
 
@@ -531,6 +531,9 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const needsConstellation = !locked && activityHasChoice(item);
       const init = initiativeFor(actor, item);
       const roll = (live && !locked) ? activityRoll(actor, item) : null;
+      // The roll remembered on the road (ruling 108), for everyone who can see the row: it is the
+      // character's and public (ruling 110), so it is not gated on `live` as the Roll button is.
+      const remembered = roadRoll(actor, item);
       const combatant = actor.combatant;
       const rolled = !!combatant && (combatant.initiative !== null) && (combatant.initiative !== undefined);
       const flagged = combatant ? constellationName(actor, combatant.initiativeConstellation) : "";
@@ -571,6 +574,20 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           ...roll,
           label: F("STARWROUGHT.Travel.rollNow", { name: roll.name }),
           hint: F("STARWROUGHT.Travel.rollNowHint", { name: roll.name, member: actor.name })
+        } : null,
+        // The chip after the Initiative tag: "Stealth 17", the die and when on hover, and whether
+        // it stands as the Initiative roll when the encounter begins (ruling 109) or Initiative
+        // rolls another Constellation.
+        remembered: remembered ? {
+          name: remembered.name,
+          total: remembered.total,
+          natural: remembered.natural,
+          ago: remembered.ago,
+          usable: remembered.usable,
+          hint: F(remembered.usable ? "STARWROUGHT.Travel.rolledHint" : "STARWROUGHT.Travel.rolledHintUnusable", {
+            name: actor.name, constellation: remembered.name, total: remembered.total,
+            natural: remembered.natural ?? "?", ago: remembered.ago, initiative: init.name
+          })
         } : null,
         warnings: activityWarnings(actor, item),
         combatant: combatant ? {
@@ -1386,6 +1403,13 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
    * Combatants, the Initiative flags, the Defenders' shields, one card, nothing rolled. No
    * confirm; the button is dimmed with the reason when no scene is viewed, and the helper says
    * so again should the scene close between the render and the click.
+   *
+   * Since 0.7.3 (ruling 109) one question first, and only when there is something to ask: when a
+   * present member's remembered road roll is in the Constellation their Activity rolls for
+   * Initiative and their Combatant has not rolled (`keepableRolls`), a dialog lists them, one
+   * checkbox each, ticked by default ("Keep Wren's Stealth 17 as Initiative"); Begin passes the
+   * ticked uuids on, Cancel does nothing at all. With nobody to ask about, Begin runs as it did.
+   * The checkboxes draw as Foundry's glyph by the 0.7.2 fix and are not restyled here.
    */
   static async #onBeginEncounter() {
     if (!game.user.isGM) return;
@@ -1393,7 +1417,29 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ui.notifications.warn(L("STARWROUGHT.Travel.noScene"));
       return;
     }
-    return beginEncounter(this.document);
+    const party = this.document;
+    const keepable = keepableRolls(party, await explorationActivities());
+    if (!keepable.length) return beginEncounter(party);
+
+    const items = keepable.map(k => `<li><label class="checkbox"><input type="checkbox" name="keep" value="${esc(k.actor.uuid)}" checked> ${esc(F("STARWROUGHT.Travel.keepLine", { name: k.actor.name, constellation: k.roll.name, total: k.roll.total }))}</label></li>`).join("");
+    const keep = await DialogV2.wait({
+      window: { title: L("STARWROUGHT.Travel.beginEncounter"), icon: "fa-solid fa-flag" },
+      classes: ["starwrought", "sw-party-dialog"],
+      position: { width: 500 },
+      content: `<p>${esc(L("STARWROUGHT.Travel.keepIntro"))}</p><ul class="sw-milestone-preview sw-road-keep">${items}</ul><p class="sw-note">${esc(L("STARWROUGHT.Travel.keepHint"))}</p>`,
+      buttons: [
+        {
+          action: "begin", label: "STARWROUGHT.Travel.keepButton", icon: "fa-solid fa-flag", default: true,
+          callback: (clickEvent, button) => Array.from(button.form.querySelectorAll("input[name='keep']:checked")).map(i => i.value)
+        },
+        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    // Cancel, or the window closed, is "cancel" or null: nothing begins. Begin with every box
+    // unticked is an empty list, and everyone rolls fresh.
+    if (!Array.isArray(keep)) return;
+    return beginEncounter(party, { keep });
   }
 
   /* -------------------------------------------- */

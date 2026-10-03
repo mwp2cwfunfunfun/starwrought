@@ -23,7 +23,9 @@ import { onRenderChatMessage, onChatSocket } from "./module/documents/chat.mjs";
 // THE PARTY'S LOOT (0.7.1): a player's Take from the loot and Give to the party, served on the
 // active GM's client over the same socket (party-sheet-plan.md, part 6; ruling 97).
 import { onPartySocket } from "./module/documents/party-socket.mjs";
-import { invalidateExplorationActivities } from "./module/helpers/party.mjs";
+// THE ROAD (0.7.2 and 0.7.3): the Activities cache, and the one hook that remembers a member's
+// Activity roll on their character (ruling 108).
+import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
 import { registerActionTracking } from "./module/documents/actions.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
@@ -235,6 +237,11 @@ Hooks.once("ready", async () => {
       if (item.type === "chassis") { invalidateChassisIndex(); loadChassisIndex(); }
     });
   }
+
+  // The road roll remembered (0.7.3, ruling 108): every check this client posts a card for is
+  // offered to the party helpers, which keep the one that is the roller's Activity's roll on the
+  // roller's own character. Registered here, once, beside the cache it reads.
+  registerRoadHooks();
 });
 
 /* -------------------------------------------- */

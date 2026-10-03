@@ -350,8 +350,34 @@ there. `SwCombatant._getInitiativeFormula` (the modifiers one per type at most),
 Initiative and the grid's cell all read the flags (ruling 105; plan risk 10 closed). The system
 runs ahead of PHB v4.15 on four sentences and a strike, carried as tracked changes in
 `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx` (`assets/phb_propose.py`,
-`PROPOSALS["on-the-road"]`); `data/SYNC.json` is untouched. Phase 4 (Downtime) is planned, not
-built.
+`PROPOSALS["on-the-road"]`); `data/SYNC.json` is untouched. Since 0.7.3 (phase 3's second cut;
+rulings 108 to 110) the Activity's roll is remembered on the character: `system.exploration.roll
+{ slug, total, natural, time }` on `SwCharacterData`, written on the roller's own client from the
+`starwrought.check` hook (`rememberActivityRoll` and `registerRoadHooks` in
+`module/helpers/party.mjs`, registered at ready in `starwrought.mjs` beside the Activities-cache
+invalidation) when the roller is a character the user owns, the result's kind is "check" and its
+Constellation is the one the Activity rolls now (`activityCheckSlug`: the Item's `check` slug, or
+`memberPick` for Investigate) and its card was public (a blind or whispered roll is not written,
+since the chip is public), with `swAnnounced` and no card of its own, since the roll's card is
+the record of the die (ruling 110); never an Initiative or Attack roll nor a Defense rolled in
+answer to an Attack (a Defense rolled for its own sake, a Search's Awareness, arrives as a check
+and is), never another Constellation, and cleared by `setActivity` in the same update when the
+pick changes (ruling 108). The record carries the check's typed extras (`roll.modifiers`, from
+`result.extras`, which `SwCheck.roll` now puts on every result). The road row shows it as a chip (`roadRoll`: name, total, die, a relative time, `usable`
+when the slug is `initiativeFor`'s; a roll whose slug is no longer the check-now Constellation is
+stale and shown as nothing), Say the plan prints it, and `beginEncounter(party, { keep })` keeps
+a ticked member's roll as Initiative: the sheet's `beginEncounter` action asks first through a
+`DialogV2` with one checkbox per member `keepableRolls` finds (present on the viewed scene,
+`usable`, Combatant unrolled), ticked by default, and a kept member's unrolled Combatants get
+`combat.setInitiative(id, value)` where `value` is the natural die plus
+`SwCheck.previewTotal(actor, { kind: "initiative", slug, modifiers: [...scouts, ...roll.modifiers] })`,
+the same die re-counted as an Initiative in one typed-stacking pass (the helm where the check
+lacked it, the sheet's Initiative adjustment in place of its check adjustment, the Scouts' +1
+stacking with a check's own Situation entry by the rule, and Load Strain coming off a Stealth
+check, since the engine's Initiative never takes it; whether it should is an open question for the
+book), and the card says so with the difference signed when it is not zero (ruling 109). Nothing
+computes with the record but that, nothing is enforced (the GM unticks a box), and the remembered
+roll stays afterwards. Phase 4 (Downtime) is planned, not built.
 
 ## Where the source of truth lives
 
@@ -546,10 +572,13 @@ built.
 - **Phase 4 of the Party Sheet is planned, not built** (`party-sheet-plan.md` in the project
   root; phase 1 shipped as system 0.7.0, rulings 91 to 95; phase 2, loot and the purse over the
   `party:*` relay and Ask everyone, as 0.7.1, rulings 96 to 100; phase 3, the road, as 0.7.2,
-  rulings 101 to 107). Phase 4 is Downtime (a Days field the GM sets, the three Downtime
+  rulings 101 to 107, and its second cut, the road roll remembered on the character and kept as
+  Initiative when the GM ticks it, as 0.7.3, rulings 108 to 110, the last release). Phase 4 is
+  Downtime (a Days field the GM sets, the three Downtime
   Activities from the pack's Downtime Mode folder, Train through the shared Flare picker with its
   once-between-Milestones warning, which warns and never refuses, decision 14, and the Retrain and
-  Provision reminder lines; 0.7.3), and it leans on the plan's handbook item 11 (Train "once
+  Provision reminder lines; 0.7.4, the next number, since 0.7.3 went to the road roll), and it
+  leans on the plan's handbook item 11 (Train "once
   between Milestones", counted for each character). **Phase 3 runs ahead of the book** on four
   sentences and a strike: the party's Travel Speed after P344 (item 4), the Fatigued row's "can
   Travel but take no other Exploration Mode Activity" (item 5, decision 6), Initiative when
@@ -567,11 +596,28 @@ built.
   on it, a Talent drag is as unpoliced as before, the loot values nothing (no selling, no price
   computed, no party token; a player's Take needs a GM connected), the Travel Speed moves no
   token, the Fatigued gate locks a select and refuses a pick and nothing else, Look Harmless's
-  Requirements warn, and Begin the encounter rolls nothing.
+  Requirements warn, Begin the encounter rolls nothing, and a road roll is kept as Initiative only
+  while the GM leaves its box ticked (0.7.3; the record itself is a convenience the GM reads).
 - **The v4.14 Result table's Hit row lacks the Quick qualifier.** "Hit. Full damage or effect. For
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
+
+Cleared 2026-10-02 (the Party Sheet, phase 3's second cut, system 0.7.3): Mike's two sentences on
+the On the road tab after 0.7.2 (the result of the rolls shown on the tab; a box to use that roll
+when the GM Begins the Encounter), now the Activity's roll remembered on the character from the
+`starwrought.check` hook (`system.exploration.roll`; `rememberActivityRoll` in
+`module/helpers/party.mjs`), for a check in the Constellation the Activity rolls now and nothing
+else, cleared by `setActivity` when the pick changes (ruling 108); the chip on the member's row
+with the die and the time on hover, and Say the plan printing it; Begin the encounter asking the GM
+first, one ticked checkbox per present member whose roll is in their Initiative Constellation and
+whose Combatant has not rolled (`keepableRolls`), and keeping a ticked roll as Initiative as the
+same die re-counted by the check engine's Initiative assembly with the Scouts' bonus and the
+check's own typed extras in one pass (`SwCheck.previewTotal`), written with `setInitiative` and
+named on the card (ruling 109); the record the roller's own write and public, the roll's card the record of the
+die (ruling 110). No handbook moved and `data/SYNC.json` is untouched; no data moved, so the
+pipeline's outputs stand as 0.7.2 left them; the rulings (108 to 110) are recorded in the 0.7.3
+changelog entry.
 
 Cleared 2026-10-02 (the Party Sheet, phase 3, system 0.7.2): the road the plan's parts 8 and 9
 described, now the On the road tab: each member's Exploration Activity on the character

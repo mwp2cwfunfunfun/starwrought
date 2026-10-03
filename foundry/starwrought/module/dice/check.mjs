@@ -93,6 +93,7 @@ export class SwCheck {
     let parts = this.#assemble(actor, cfg);
 
     // Ask the player what they want to add, and against what.
+    let dialogExtra = [];
     if (cfg.dialog) {
       const answer = await this.#prompt(cfg, parts);
       if (!answer) return null;
@@ -100,8 +101,15 @@ export class SwCheck {
       // A Reaction chosen in the dialog can change which Defense is rolled, so the base terms are
       // rebuilt around the new slug before the extras go on.
       if (answer.rebuild) parts = this.#assemble(actor, cfg);
-      parts.push(...answer.extra);
+      dialogExtra = Array.isArray(answer.extra) ? answer.extra : [];
+      parts.push(...dialogExtra);
     }
+    // Everything the roll carried beyond the base terms the sheet assembles: the caller's typed
+    // modifiers and the dialog's extras. The Party Sheet's remembered road roll keeps these (0.7.3,
+    // ruling 109), so a kept roll can be re-assembled as an Initiative with one typed-stacking pass.
+    const extras = [...(cfg.modifiers ?? []), ...dialogExtra]
+      .filter(m => Number.isNumeric(m?.value))
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null }));
 
     // PHB v4.10, Answering an Attack: a Reaction is paid "before any roll from the same six you
     // attack with". Parry and Void add +2 Situation to the Defense; Counter adds nothing to it.
@@ -162,6 +170,7 @@ export class SwCheck {
       outcome,
       critDenied,
       modifiers: applied,
+      extras,
       modTotal,
       config: cfg
     };

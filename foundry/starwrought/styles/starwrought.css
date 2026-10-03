@@ -28,7 +28,7 @@
 :root {
   /* The version this stylesheet shipped as. The game compares it with the server's at load, to
      catch a browser (or a proxy) holding on to an older copy. Must match system.json. */
-  --sw-css-version: "0.7.2";
+  --sw-css-version: "0.7.3";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);
@@ -2595,6 +2595,18 @@ li.combatant.sw-in-crosshairs {
 .starwrought .sw-road-initiative { cursor: help; }
 .starwrought .sw-road-initiative i { color: var(--sw-wits); margin-right: 0.15rem; }
 .starwrought .sw-road-initiative.sw-road-fallback { border-style: dashed; }
+/* The road roll remembered on the character (0.7.3, ruling 108): a chip after the Initiative tag.
+   Dim and dotted while Initiative rolls another Constellation; in the Initiative tag's colour when
+   it stands as the Initiative roll at Begin the encounter (ruling 109). */
+.starwrought .sw-road-rolled { cursor: help; color: var(--sw-ink-dim); border-style: dotted; }
+.starwrought .sw-road-rolled i { font-size: 0.65rem; margin-right: 0.15rem; opacity: 0.8; }
+.starwrought .sw-road-rolled.sw-road-rolled-usable {
+  color: var(--sw-wits);
+  border-color: var(--sw-wits);
+  border-style: solid;
+  background: rgba(122, 166, 232, 0.1);
+}
+.starwrought .sw-road-rolled.sw-road-rolled-usable i { opacity: 1; }
 .starwrought .sw-road-combat { cursor: help; border-color: var(--sw-gold-dim); color: var(--sw-gold); }
 .starwrought .sw-road-combat.sw-road-combat-rolled { background: rgba(255, 216, 103, 0.12); }
 .starwrought .sw-road-roll {

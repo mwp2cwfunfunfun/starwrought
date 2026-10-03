@@ -130,6 +130,16 @@
           <i class="fa-solid fa-dice-d20"></i> {{localize "STARWROUGHT.Travel.initiativeTag" constellation=row.initiative.name}}
         </span>
 
+        {{!-- The Activity's roll remembered on the character (0.7.3, ruling 108): "Stealth 17", the
+              die and when on hover; lit in the Initiative tag's colour when it stands as the
+              Initiative roll at Begin the encounter (ruling 109), dim when Initiative rolls another
+              Constellation. Public, as the pick is (ruling 110), so it shows on every row. --}}
+        {{#if row.remembered}}
+        <span class="sw-item-tag sw-road-rolled {{#if row.remembered.usable}}sw-road-rolled-usable{{/if}}" data-tooltip="{{row.remembered.hint}}">
+          <i class="fa-solid fa-dice"></i> {{localize "STARWROUGHT.Travel.rolledChip" constellation=row.remembered.name total=row.remembered.total}}
+        </span>
+        {{/if}}
+
         {{!-- The member's Combatant while a Combat holds them: the number once rolled, else what it will roll. --}}
         {{#if row.combatant}}
         <span class="sw-item-tag sw-road-combat {{#if row.combatant.rolled}}sw-road-combat-rolled{{/if}}" data-tooltip="{{row.combatant.hint}}">

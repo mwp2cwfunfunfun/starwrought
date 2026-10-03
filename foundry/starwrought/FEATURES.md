@@ -676,8 +676,27 @@ it passes none of its own; `rollInitiativeWithCheck`, whose
 Constellation and modifiers default to the flags and whose card names the Constellation in its
 subtitle; the character sheet's Roll Initiative, which passed Awareness through 0.7.1 and would
 have overridden the flag; and the Skills grid's Initiative cell. A Combatant that has already
-rolled is never rewritten by a second Begin. Adversaries do not roll; they carry an Initiative
-Threshold and the GM writes the order down.
+rolled is never rewritten by a second Begin. Since 0.7.3 a roll the member already made on the
+road may be kept as the Initiative roll instead of rolled again (see The party, Keeping a road
+roll as Initiative; ruling 109): the kept Initiative is the roll's total plus the Initiative-only
+terms a check does not carry, which the check engine computes as the difference between its
+Initiative assembly for that Constellation (`SwCheck.previewTotal` with `kind: "initiative"`,
+static and pure, so nothing is rolled and nothing is written to work it out) added to the natural
+die the check threw, with the Combatant's modifiers and the typed extras the check itself carried
+(the dialog's situational entry, kept on the record) resolved in one pass, so a +2 Situation for
+cover and a Scout's +1 Situation stack as every check does, highest only. Against the check's own
+total the difference is the helm's penalty where the check did not already carry it (an Awareness
+check does, so a Search's Awareness never carries the helm twice), the sheet's Initiative
+adjustment in place of its check adjustment, the Scouts' +1, and Load Strain coming off a Stealth
+check, since the engine's Initiative never takes it. A Stealth 17 rolled by an Open-helm wearer at
+−1 with a Scout present and no Load Strain is kept as 17 + 0; the card names the terms whenever the
+difference is not zero ("..., +1 for Initiative's own terms in place of the check's (the helm, the
+Scouts' bonus, the sheet's adjustment; Load Strain comes off, since Initiative never takes it):
+18."). The value is written with
+`combat.setInitiative` onto every unrolled Combatant of the member, so the tracker, the party row
+and the grid's cell read it as any rolled Initiative, and the Combatant has rolled as far as a
+second Begin is concerned. Adversaries do not roll; they carry an Initiative Threshold and the GM
+writes the order down.
 
 ### The grid, and Total Reach
 
@@ -1178,8 +1197,9 @@ Wounds, Vigor, stance or actions; a party is never a combatant, and nothing draw
 token (section 7). Phase 1 (0.7.0) is the party, the session, the awards and the Skills grid;
 phase 2 (0.7.1; rulings 96 to 100) is the loot, the purse and Ask everyone; phase 3 (0.7.2;
 rulings 101 to 107) is the road: each member's Exploration Activity, the party's Travel Speed, the
-Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity; Downtime is the
-plan's last phase and is not built.
+Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity, and its second
+cut (0.7.3; rulings 108 to 110) remembers each member's road roll on their row and lets Begin the
+encounter keep it as the Initiative roll; Downtime is the plan's last phase and is not built.
 
 **The roster and status board.** Always open above the tabs, one row per member, every number on
 it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
@@ -1322,7 +1342,8 @@ to Table 95). One row per member: portrait, name, the Activity select (the folde
 order, cached per session as the Basic Maneuvers are; a world action Item of the same name and
 category replaces the printed one), the Travel word, the Initiative Constellation the pick implies,
 the Constellation select for Investigate (the member's opened Constellations plus their Lores), the
-warnings in small amber type, the Roll button when the Activity rolls now, and the member's
+warnings in small amber type, the Roll button when the Activity rolls now, since 0.7.3 the
+member's remembered road roll as a chip ("Stealth 17"; below), and the member's
 Combatant state while a Combat holds them (the number once rolled; "ready: Stealth" when flagged
 and not yet rolled). **The warnings** are read from live data and never enforced (ruling 107):
 Look Harmless with a held weapon whose reach is above 0, named, or worn armor whose Load totals
@@ -1335,6 +1356,38 @@ opens the Relevant Check picker on the chosen Constellation (`rollRelevantCheck`
 preselect since 0.7.2). A player's own rows are live and the others read-only; every control a
 player may use is an anchor rather than a form element, since DocumentSheetV2 disables form
 elements for an Observer. The GM gets working selects on every member.
+
+**The remembered roll** (0.7.3; rulings 108 and 110). When a member rolls the Constellation their
+Activity rolls now, from the row's Roll, an Ask everyone card, a Skills grid cell or their own
+sheet, the result is remembered on the character as `system.exploration.roll { slug, total,
+natural, time }` and shown on their row as a chip after the Initiative tag: a die, the
+Constellation and the total ("Stealth 17"), with the natural die and when it was rolled on hover
+("Wren rolled Stealth 17 (d20 12) 3 minutes ago; it stands as the Initiative roll when the
+encounter begins, unless the GM unticks it"; the time is "just now" under a minute, then "a minute
+ago" or "{n} minutes ago", "an hour ago" or "{n} hours ago", and "a day ago" or "{n} days ago").
+The record is made on the roller's own client from the `starwrought.check` hook
+(`rememberActivityRoll` in `helpers/party.mjs`, registered once at ready by `registerRoadHooks`),
+and only for a public check: the result's kind must be "check", its Constellation the one the
+Activity rolls now (`activityCheckSlug`: the Activity Item's check slug, or the member's own pick
+for Investigate), the roller a character the user owns, the total a number, and the card public (a
+blind or whispered roll is not remembered, since the chip is). An Initiative or an Attack roll is
+never remembered, nor a Defense rolled in answer to an Attack (the engine's kind "defense"), nor a
+check in another Constellation (Stealth while Searching gets no chip, because Search rolls
+Awareness); a Defense rolled for its own sake arrives as a check from every entry point, which is
+how a Search's Awareness is remembered from the sheet's Defenses block or the grid as well as from
+the row; and the attack flow's blind roller never reaches the hook. The write
+is announced, so no Adjusted card, and posts nothing of its own: the card the roll posted is the
+record of the die and the chip is a pointer to it (ruling 110), read by every client that can read
+the character, as the pick is. It stands until a newer roll in the same Constellation replaces it
+or the pick changes: `setActivity` clears it in the same update, because a Search is not an Avoid
+Notice, and a roll whose Constellation is no longer the Activity's is stale and shown as nothing.
+The chip takes the Initiative tag's colour while the roll's Constellation is the one the Activity
+rolls for Initiative, which is when Begin the encounter can keep it (Keeping a road roll as
+Initiative, below), and is dimmed otherwise, with "Initiative rolls Awareness instead" on hover;
+with the eight shipping rows every Activity that rolls now rolls the same Constellation for
+Initiative, so the dim chip waits on a row whose two columns differ. Say the plan prints the roll
+at the end of the member's line (" Rolled Stealth 17 on the road."). Nothing computes with the
+record except a kept Initiative.
 
 **The party's Travel Speed** (ruling 102), the tab's top line, display only: each member's Speed
 (`system.moveSpeed`, so a Speed adjustment counts) times their Activity's multiplier (Full 1, Half
@@ -1360,9 +1413,11 @@ sentence says so in the book.
 member ("Wren: Search (Half); Initiative: Awareness"; "Toric: Investigate (Half), with Lore
 (Warfare); Initiative: Lore (Warfare)") with that member's warnings dim beneath, then the speed
 line ("The party moves at 120 feet a minute, 1 mile an hour, 12 miles a day over Difficult
-terrain: Wren sets the pace (Search, Half).") and the ten-minutes line while anyone Searches. No
-confirm. A pick posts one line and Say the plan is the record; should the one line prove too many,
-the pick goes quiet and this card stands alone.
+terrain: Wren sets the pace (Search, Half).") and the ten-minutes line while anyone Searches. Since
+0.7.3 a member's line ends " Rolled Stealth 17 on the road." while a roll is remembered, and says
+nothing more when that roll is usable for Initiative, since the Begin dialog is where that is
+asked. No confirm. A pick posts one line and Say the plan is the record; should the one line prove
+too many, the pick goes quiet and this card stands alone.
 
 **Begin the encounter** (0.7.2; plan, part 9; ruling 105). GM only, with a scene viewed (the button
 is dimmed with a tooltip otherwise). It finds an unstarted Combat on that scene or creates an
@@ -1385,7 +1440,29 @@ Threshold (adversary Thresholds never reach a player), and, in the card's notes,
 Investigator "Toric rolls for Investigate only if the encounter is related to it: the GM's call,
 before the die." Nothing rolls here: players roll their own Initiative from
 the tracker or the sheet, the GM rolls for the absent, and every roll reads the flags (see
-Initiative, under What the system works out for you).
+Initiative, under What the system works out for you); since 0.7.3 a roll already made on the road
+may be kept instead (next).
+
+**Keeping a road roll as Initiative** (0.7.3; ruling 109). The book says that when an encounter
+begins a character "can roll" their Activity's Constellation; a roll already made in that
+Constellation on the road is that roll, so Begin the encounter offers to keep it rather than have
+the die thrown twice. Before anything is written it gathers the present members (a token on the
+viewed scene) whose remembered roll is in the Constellation their Activity rolls for Initiative and
+whose Combatant on the scene's unstarted Combat, if there is one, has not rolled (`keepableRolls`;
+no Combat or no Combatant counts as not rolled); with none, Begin runs with no dialog, as before.
+Otherwise a dialog with an intro line and one checkbox per such member, ticked by default ("Keep
+Wren's Stealth 17 as Initiative"), and Begin and Cancel; Cancel writes nothing. The Combat, the
+Combatants and the two flags are then written exactly as before, and each kept member's unrolled
+Combatants have their Initiative set (`combat.setInitiative`) to the roll's total plus Initiative's
+own terms, the arithmetic under Initiative (section 2); the card's line for them replaces "rolls
+Stealth for Initiative" with "Wren keeps the Stealth 17 rolled on the road as Initiative." or,
+when the terms move it, "Wren keeps the Stealth 17 rolled on the road as Initiative, +1 for
+Initiative's own terms in place of the check's (the helm, the Scouts' bonus, the sheet's
+adjustment; Load Strain comes off, since Initiative never takes it): 18.", the Scout's Step and
+the Defender's shield lines following as they do. An unticked member rolls fresh from the tracker
+or the sheet as before; a kept member has rolled, so a second Begin names them and leaves them
+alone; the remembered roll stays on the character and its chip on the row. The GM decides per
+member, every time: the record is a convenience, and the box is the whole of the enforcement.
 
 **What the player sees, and what the GM sees.** The GM sees everything and holds every party
 write: membership, Begin session, the awards and corrections, the night, the Milestone and Take
@@ -1398,7 +1475,8 @@ on any member, the Flare chips on a character they own (a click puts one out thr
 `toggleFlare`, which posts its card), the Spent control on their own Deferred badge, Take on a
 loot row when they own a member, a drag of their own gear onto the party, the Roll button
 with their member's name on an Ask everyone card, and on the On the road tab the Activity and
-Investigate Constellation of a member they own and that member's Activity Roll (ruling 106); grid
+Investigate Constellation of a member they own and that member's Activity Roll (ruling 106; the
+remembered-roll chip on every row is read by all and pressed by nobody, since 0.7.3); grid
 cells roll only for members they own, and a click on another member's cell does nothing. A player
 who owns no member sees the board and an empty-state line. Every action handler re-checks
 permission before writing (the GM for party writes; the actor's owner for a put-out Flare, a
@@ -1417,9 +1495,12 @@ Flared, so the point is Deferred: spend it the instant one Flares (Deferred held
 reaches the 4th Milestone: level 3. Vigor 36 to 45. A Comet: a Talent Point for any Constellation,
 Flared or not."); Take back; the party's line after the night; the Split card listing the shares
 and the remainder (0.7.1); the Ask everyone card ("Everyone roll Awareness.") with its Roll
-buttons; and, since 0.7.2, Say the plan (a line per member, the warnings, the speed line) and
+buttons; and, since 0.7.2, Say the plan (a line per member, with the remembered road roll since
+0.7.3, the warnings, the speed line) and
 Begin the encounter ("The encounter begins.", who rolls what for Initiative and from whom the +1
-comes, the Scout's Step, Look Harmless's degrees for the GM, Investigate's "if related", and who
+comes, since 0.7.3 who keeps a road roll instead ("Wren keeps the Stealth 17 rolled on the road
+as Initiative.", with Initiative's own terms named when they move it), the Scout's Step, Look
+Harmless's degrees for the GM, Investigate's "if related", and who
 had no token or had already rolled). Spoken by the member: a Hero
 Point awarded ("The GM awards Hrolda a Hero Point: carrying Toric out of the fire (2 of 3).") or
 corrected ("Hrolda's Hero Points corrected to 1."); a Deferred point Spent; each member's own rest
@@ -1430,7 +1511,8 @@ party's loot", "To the party's loot"), a Take ("Hrolda takes Longsword."; "Wren 
 ("Toric is given a Dagger."); and, since 0.7.2, an Activity pick ("Wren's Activity is now Search
 (Half)."; "Toric Investigates with Lore (Warfare).") and the ordinary check card an Activity's
 Roll posts, with no Threshold. Membership, a Remove, the GM's notes, the terrain, a Defender's
-shield raised by Begin the encounter, and the GM's
+shield raised by Begin the encounter, the remembered road roll (since 0.7.3; the check's own card
+is its record), and the GM's
 own drops, edits and deletes on the loot post nothing.
 
 **What re-renders it.** The sheet registers the member hooks once when it opens and lets them go
@@ -1443,7 +1525,9 @@ party's own Item hooks and its own `updateActor` (a Take served on the GM's clie
 purse edited or Split) redraw the loot part on the same timer, and since 0.7.2 the road part
 redraws on the member hooks (a pick is an `updateActor` on the member; Fatigued is an effect), on
 the party's own update (the terrain) and on the Combat hooks (a Combat or a Combatant created,
-changed or deleted), so a member's Initiative appears on their row as it is rolled. Nothing
+changed or deleted), so a member's Initiative appears on their row as it is rolled (since 0.7.3
+the remembered roll is one such `updateActor` on the member, so the chip appears as the roll's
+card lands). Nothing
 member-dependent is computed in the party's own `prepareDerivedData`; it is all computed at render
 from the resolved members, because one Actor's derived data must not depend on another's prepare
 order.

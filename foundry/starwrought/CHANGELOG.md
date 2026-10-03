@@ -7,6 +7,194 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.7.3 (2026-10-02): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
+the handbook's loose ends stand where 0.7.2 left them. The release is the second cut of phase 3 of
+the Party Sheet, built from what Mike saw on the On the road tab after 0.7.2 (with a screenshot:
+"in On the Road, the result of the rolls should be displayed. For example, I rolled Stealth for
+Avoid Notice. Also, when the GM Begins the Encounter, they should be able to check a box or
+something to use that roll."): a member's Activity roll, once made, is remembered on the character
+and shown on their row as a chip, Say the plan prints it, and Begin the encounter asks the GM, one
+checkbox per member whose remembered roll is in the Constellation their Activity rolls for
+Initiative, whether to keep it as the Initiative roll, writing the total plus Initiative's own terms
+onto the Combatant rather than having the die thrown twice. One new field
+(`system.exploration.roll` on the character) with a default, so no world migration; no data moves,
+so a patch bump to 0.7.3. The decisions are rulings 108 to 110, continuing the 0.7.2 entry's
+numbering (see Notes). `Starwrought_Players_Handbook_v4.16.docx` is still on the shelf as this
+ships, untracked and not synced here, as the 0.7.2 entry says; `build_all.mjs` reports the drift
+until it is, and that sync is a later release's.
+
+### Added
+
+- **The remembered road roll** (ruling 108). `system.exploration.roll { slug, total, natural, time }`
+  on `SwCharacterData`, defaults "" / null / null / null: the member's most recent check in the
+  Constellation their Activity rolls now, wherever it was rolled (the road row's Roll, an Ask
+  everyone card, a Skills grid cell, the character sheet's own Skill roll). It is recorded on the
+  roller's own client from the `starwrought.check` hook (`rememberActivityRoll` in
+  `module/helpers/party.mjs`, registered once at ready by `registerRoadHooks`, beside the
+  Activities-cache invalidation), and only when the roller is a character the current user owns,
+  the result's kind is "check", its Constellation is the one the Activity rolls now
+  (`activityCheckSlug`: the Item's `check` slug, or the member's own pick for Investigate) and the
+  result has a numeric total and its card was public (a blind or whispered roll is not written,
+  since the chip is public, ruling 110). An Initiative or Attack roll is never recorded, nor a
+  Defense rolled in answer to an Attack (the engine's kind "defense"), nor a check in another
+  Constellation; a Defense rolled for its own sake arrives as a check from every entry point, which
+  is how a Search's Awareness is remembered; and the attack flow's blind roller (`postCard: false`)
+  never reaches the hook, which keeps its meaning of "a card was posted". The write carries
+  `swAnnounced`, so no Adjusted card, and posts nothing of its own: the roll's card is the record
+  of the die, and the field is a pointer to it with the total and the natural die on it (ruling
+  110). `setActivity` clears it in the same update whenever the Activity or the Constellation
+  changes, because a Search is not an Avoid Notice; otherwise it stands until a newer roll in the
+  same Constellation replaces it, and Begin the encounter leaves it in place.
+- **The chip on the row.** After the Initiative tag and before the Combatant chip, when a roll is
+  remembered and its Constellation is still the one the Activity rolls now (`roadRoll`; a roll in a
+  Constellation the Activity no longer rolls is stale and shown as nothing): a die, the
+  Constellation and the total ("Stealth 17"), with the die and the time on hover ("Wren rolled
+  Stealth 17 (d20 12) 3 minutes ago; it stands as the Initiative roll when the encounter begins,
+  unless the GM unticks it", or, when the Activity rolls another Constellation for Initiative,
+  "...; Initiative rolls Awareness instead"). The chip takes the Initiative tag's colour while the
+  roll is usable for Initiative (its Constellation is the one `initiativeFor` names) and is dimmed
+  when it is not; the time is "just now" under a minute, then "a minute ago" or "{n} minutes ago",
+  "an hour ago" or "{n} hours ago", and "a day ago" or "{n} days ago". With the eight shipping rows every
+  Activity that rolls now rolls the same Constellation for Initiative (Search Awareness, Look
+  Harmless Guile, Avoid Notice Stealth, Investigate the pick), so the dim chip waits on a row whose
+  two columns differ. Every client that can read the character sees it, as it sees the pick
+  (ruling 110). The row's order is otherwise unchanged.
+- **Say the plan prints it.** A member's line ends " Rolled Stealth 17 on the road." while a roll
+  is remembered, and says nothing more when the roll is usable for Initiative: the Begin dialog is
+  where that is asked.
+- **Begin the encounter can keep a road roll as Initiative** (ruling 109). Before anything is
+  written, Begin gathers the present members (a token on the viewed scene) whose remembered roll is
+  in the Constellation their Activity rolls for Initiative and whose Combatant on the scene's
+  unstarted Combat, if there is one, has not rolled (`keepableRolls`; no Combat or no Combatant
+  counts as not rolled). When there are none, Begin runs as 0.7.2 built it, with no dialog.
+  Otherwise a dialog (`DialogV2` under the party's dialog classes, so the 0.7.2 checkbox fix draws
+  its boxes as glyphs) with an intro line and one checkbox per such member, ticked by default
+  ("Keep Wren's Stealth 17 as Initiative"), and Begin and Cancel; Cancel writes nothing. Then
+  `beginEncounter(party, { keep })`, `keep` the ticked members' uuids. The Combat, the Combatants
+  and the two flags are written exactly as before; then, for each kept member whose roll is still
+  usable and whose Combatants have no Initiative, the Initiative is the same die re-counted as an
+  Initiative: the natural die plus the check engine's Initiative assembly for that Constellation
+  (`SwCheck.previewTotal` with `kind: "initiative"`, static and pure) with the Combatant's
+  modifiers and the typed extras the check itself carried (the dialog's situational entry, kept on
+  the record as `exploration.roll.modifiers`) resolved in one typed-stacking pass, so a +2
+  Situation entered for the Stealth check and a Scout's +1 Situation stack as the rule says,
+  highest only. Against the check's own total that means the helm's penalty where the check did
+  not carry it (an Awareness check does), the sheet's Initiative adjustment in place of its check
+  adjustment, the Scouts' +1, and Load Strain coming off a Stealth check, since the engine's
+  Initiative never takes it (the fresh die would not either; whether it should is a question for
+  the book, see Notes). That number is written onto each of the member's unrolled Combatants with
+  `combat.setInitiative`, so the tracker, the row's Combatant chip and the grid's Initiative cell
+  read it as they read any rolled Initiative. The card's line for a kept member replaces "rolls
+  Stealth for Initiative": "Wren keeps the Stealth 17 rolled on the road as Initiative." or, when
+  the terms move it, "Wren keeps the Stealth 17 rolled on the road as Initiative, +1 for
+  Initiative's own terms in place of the check's (the helm, the Scouts' bonus, the sheet's
+  adjustment; Load Strain comes off, since Initiative never takes it): 18.", the delta signed;
+  the Scout's Step line and the Defender's shield line follow as they do. An unticked member rolls
+  fresh as before, a kept member has rolled as far as a second Begin is concerned and is left alone
+  and named, and the remembered roll stays on the character afterwards. Nothing else about Begin
+  changes.
+
+### Changed
+
+- **`setActivity` clears the remembered roll** in the same update when the Activity or the
+  Constellation changes, so a chip never outlives the pick it was rolled for.
+- **`beginEncounter(party, { keep = [] } = {})`** takes the uuids of the members whose road roll
+  is kept; called with none it does what 0.7.2's did. `sayThePlan` appends the remembered roll to a
+  member's line. The party sheet's `beginEncounter` action opens the keep dialog first when
+  `keepableRolls` finds anyone, and calls straight through when it does not.
+- **The party sheet's road rows** carry the member's remembered roll, shaped for the template with
+  the name, the total, the die, the relative time, whether it is usable and the hover text; the
+  road part redraws on the member's `updateActor` as it has since 0.7.2, so the chip appears as the
+  roll's card lands.
+- **`registerRoadHooks`** in `module/helpers/party.mjs` is called once from `starwrought.mjs` at
+  ready and registers the one `starwrought.check` listener; nothing else listens for the record.
+- The version stamps read 0.7.3 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: `system.exploration.roll`
+  on a character defaults to nothing remembered.
+
+### Notes
+
+- **The rulings, 108 to 110**, Mike's two sentences on the On the road tab after 0.7.2, numbered
+  on from the 0.7.2 entry's 107.
+  - **108. The Activity's roll is remembered on the character.** `system.exploration.roll
+    { slug, total, natural, time }` on `SwCharacterData` (defaults "" / null / null / null; no
+    migration): the member's most recent check in the Constellation their Activity rolls now,
+    wherever it was rolled (the road row's Roll, an Ask everyone card, the Skills grid, the
+    character sheet), recorded on the roller's own client from the `starwrought.check` hook when the
+    result's kind is "check" and its Constellation is the Activity's check-now Constellation (or
+    the member's own pick for Investigate) and its card was public. An Initiative or Attack roll is
+    never recorded, nor a Defense rolled in answer to an Attack, nor a check in another
+    Constellation; a Defense rolled for its own sake, as a Search's Awareness is, arrives as a check
+    and is. `setActivity` clears it when the Activity or the pick
+    changes, because a Search is not an Avoid Notice. The row shows it as a chip ("Stealth 17", the
+    die and when it was rolled on hover), Say the plan prints it, and it stands until the pick
+    changes or a newer roll replaces it. The record is a convenience the GM reads; nothing computes
+    with it except ruling 109.
+  - **109. Begin the encounter can keep a road roll as the Initiative roll.** The book says a
+    character "can roll" their Activity's Constellation when the encounter begins; a roll already
+    made in that Constellation on the road is that roll. When a present member's remembered roll is
+    in the Constellation their Activity rolls for Initiative and their Combatant has not rolled,
+    Begin the encounter asks the GM, one checkbox per such member, ticked by default: "Keep Mike's
+    Stealth 17 as Initiative". A kept roll's Initiative is the same die re-counted as an Initiative
+    by the check engine: the natural die plus the Initiative assembly for that Constellation
+    (`SwCheck.previewTotal`, `kind: "initiative"`) with the Combatant's modifiers and the typed
+    extras the check carried, resolved together so same-type bonuses stack as the rule says. Against
+    the check's total that is the helm's penalty where the check lacked it, the sheet's Initiative
+    adjustment in place of its check adjustment, the Scouts' +1, and Load Strain coming off a
+    Stealth check, since the engine's Initiative never takes it. The Combatant's flags are written
+    as for anyone, its Initiative is set with `setInitiative`, and the card says so: "Mike keeps the
+    Stealth 17 rolled on the road as Initiative." or, when the terms move it, "... as Initiative, +1
+    for Initiative's own terms in place of the check's (the helm, the Scouts' bonus, the sheet's
+    adjustment; Load Strain comes off, since Initiative never takes it): 18." An unticked member
+    rolls fresh as before. No dialog when nobody has a roll to keep. The remembered roll is left in
+    place afterwards.
+  - **110. The remembered roll is the character's and public.** It is written by the roller (an
+    owner writes their own Actor; the GM may roll for anyone) and read by every client that can read
+    the character, as the pick is; the card the roll posted is the record of the die, and the chip
+    is a pointer to it.
+- **What this does not do.** The record is a convenience the GM reads: nothing computes with it
+  but a kept Initiative, and that only while the GM leaves the member's box ticked. Begin still
+  rolls nothing: a kept total is a number already rolled in public, carried over with Initiative's
+  own terms, and the card names both. Nothing is enforced: an unticked member rolls fresh, a roll
+  in a Constellation the Activity does not roll now is never remembered (Stealth while Searching
+  gets no chip, because Search rolls Awareness), and the GM may still roll any Initiative from the
+  tracker over a chip. No adversary Threshold is shown anywhere in it, no token moves, and no card
+  is posted for the record itself: the chip points at the card the roll already posted (ruling 110).
+- **Where the book stands.** The Avoid Notice row (data since 0.7.2, ruling 103) and P342 say that
+  when an encounter begins the character "can roll" the Activity's Constellation; ruling 109 reads
+  a roll already made on the road in that Constellation as that roll rather than a second die. No
+  new sentence is proposed: `Starwrought_Players_Handbook_v4.15_on-the-road_proposal.docx` stands
+  as 0.7.2 left it, so the system runs ahead of PHB v4.15 on the same four sentences and a strike
+  and no more.
+- **No GM connected is needed for the record.** The roll is written to the roller's own Actor by
+  the roller's client (an owner may write their own Actor; the GM may roll for anyone and writes
+  the same way), so it travels no socket; the keep dialog and the kept Initiative are the GM's own
+  writes, as Begin's always were.
+- **Phase 4** (Downtime: the days, Train through the shared Flare picker with its
+  once-between-Milestones warning, the Retrain and Provision reminder lines) stands as the plan
+  wrote it and takes the next number, 0.7.4, since this release took 0.7.3; `CLAUDE.md` names it
+  under Known outstanding work.
+- **A question for the book: does an Initiative rolled with Stealth take Load Strain?** The
+  engine's Initiative assembly has never carried Load Strain, whichever Constellation is rolled,
+  while a Stealth check always does (PHB v4.13, Load Strain: "Climb, Swim, and Stealth checks take
+  it as a penalty"). A kept Avoid Notice roll follows the engine, so a Stealth 15 rolled at Load
+  Strain 2 is kept as Initiative 17, and the card says Load Strain came off. If an Initiative
+  rolled with Stealth is a Stealth check in the book's sense, the fix is one branch in `SwCheck`'s
+  Initiative assembly and the kept roll follows it for free; until Mike says, the fresh die and
+  the kept die agree with each other.
+- **What the pipeline touched.** No data moves: no roster row, pack document, compendium page or
+  web app table, so the spreadsheets, `assets/roster.json`, `packs/_source/` and the built HTML
+  stand as 0.7.2 left them; `build_all.mjs` is run for the drift check and the version stamps
+  alone.
+- The handbook's v4.10 loose ends stand in v4.15 as 0.6.3 listed them; `CLAUDE.md` carries the
+  list. `Starwrought_Players_Handbook_v4.16.docx` is on the shelf, untracked and unsynced, as the
+  0.7.2 entry says, and `build_all.mjs` reports the drift until that sync, which is a later
+  release's.
+
+---
+
 ## 0.7.2 (2026-10-02): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and

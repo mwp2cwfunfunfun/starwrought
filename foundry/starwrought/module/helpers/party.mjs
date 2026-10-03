@@ -38,11 +38,25 @@
  * check with no Threshold. What an Activity rolls now and for Initiative, its Travel word and its
  * effect are read from the action Item's `system.exploration`, which the pipeline writes from the
  * roster's two positional columns (ruling 104): nothing here is a table of Activity names.
+ *
+ * Phase 3b (0.7.3; Mike, with a screenshot of the tab: "the result of the rolls should be
+ * displayed ... when the GM Begins the Encounter, they should be able to check a box or something
+ * to use that roll"): 108 the Activity's roll is remembered on the character
+ * (`system.exploration.roll`, written from the `starwrought.check` hook on the roller's client
+ * when the check is in the Constellation the Activity rolls now, cleared when the pick changes,
+ * shown as a chip and printed by Say the plan, computed with by nothing but the next ruling); 109
+ * Begin the encounter can keep a remembered roll as the Initiative roll, one checkbox per member
+ * whose roll is in the Constellation their Activity rolls for Initiative, the Initiative set to the
+ * roll's total plus the Initiative-only terms the check engine finds between its two assemblies;
+ * 110 the remembered roll is the character's and public, the roll's own card the record of the die.
  */
 
 import * as SW from "../config.mjs";
 import { cardHtml, postCard } from "../documents/combat.mjs";
 import { COIN_IN_COPPER } from "../data/party.mjs";
+// The kept roll's Initiative-only terms (ruling 109) are the difference between two of the engine's
+// own assemblies, so the party never does the Initiative arithmetic itself.
+import { SwCheck } from "../dice/check.mjs";
 
 const { escapeHTML } = foundry.utils;
 const L = key => game.i18n.localize(key);
@@ -1137,11 +1151,176 @@ export function activityRoll(actor, item) {
   const check = explorationOf(item).check;
   if (!check) return null;
   if (check === SW.ACTIVITY_CHOICE) {
-    const pick = memberPick(actor);
+    const pick = activityCheckSlug(actor, item);
     return { kind: "choice", slug: pick, key: "", name: pick ? constellationName(actor, pick) : L("STARWROUGHT.Roll.relevantCheck") };
   }
   const key = Object.keys(SW.DEFENSES).find(k => SW.DEFENSES[k].slug === check) ?? "";
   return { kind: key ? "defense" : "check", slug: check, key, name: constellationName(actor, check) };
+}
+
+/**
+ * The Constellation the Activity rolls NOW for this member, resolved to a slug (ruling 108): the
+ * Item's check-now Constellation, the member's own pick for `choice` (Investigate; "" while none
+ * is made or the pick is stale), or "" when the Activity rolls nothing now. The Roll button and the
+ * remembered roll both read it, so what the button rolls is what the record counts.
+ * @param {Actor} actor
+ * @param {Item|null} item
+ * @returns {string}
+ */
+export function activityCheckSlug(actor, item) {
+  const check = explorationOf(item).check;
+  if (!check) return "";
+  if (check === SW.ACTIVITY_CHOICE) return memberPick(actor);
+  return check;
+}
+
+/* -------------------------------------------- */
+/*  The road roll remembered (0.7.3)            */
+/* -------------------------------------------- */
+
+/** What `system.exploration.roll` reads when nothing is remembered: the schema's own defaults. */
+const NO_ROAD_ROLL = Object.freeze({ slug: "", total: null, natural: null, time: null, modifiers: [] });
+
+/**
+ * Remember a check as the Activity's roll (ruling 108): the body of the `starwrought.check` hook.
+ * Writes nothing unless `actor` is a character this user owns (the roller's own client records it,
+ * and an owner may write their own Actor; the GM may roll for anyone), the result is a plain check
+ * (`config.kind` "check": an Initiative, Attack or Defense roll is never the Activity's roll, and a
+ * Defense rolled for its own sake comes through as a check, which is how Search's Awareness
+ * arrives), its Constellation is the one the member's Activity rolls now (`activityCheckSlug`; a
+ * Fatigued member Travels, which rolls nothing, so nothing is kept for them), and it has a total.
+ * Wherever it was rolled counts: the road row's Roll, an Ask everyone card, the Skills grid, the
+ * character sheet. One write with `{ swAnnounced: true }` and no chat: the roll's own card is the
+ * record of the die, and this is a pointer to it (ruling 110). A newer roll in the same
+ * Constellation replaces an older one; a check in another Constellation leaves it alone.
+ * @param {Actor|null} actor   The roller (`result.config.actor`).
+ * @param {object|null} result The check engine's result (`{ total, natural, config }`).
+ * @returns {Promise<object|null>}  The record written, or null when nothing was.
+ */
+export async function rememberActivityRoll(actor, result) {
+  if (!actor || (actor.documentName !== "Actor") || (actor.type !== "character")) return null;
+  if (!actor.isOwner) return null;
+  const cfg = result?.config ?? null;
+  if (!cfg || (cfg.kind !== "check")) return null;
+  const slug = String(cfg.slug ?? "").trim();
+  if (!slug || !Number.isNumeric(result.total)) return null;
+  // The chip is public (ruling 110), so only a public roll is remembered: a blind or whispered
+  // card would otherwise show its total to every player on the party sheet. The posted card says
+  // what it was (`SwCheck.#toMessage` sets `result.message` before the hook fires); the roll mode
+  // is the fallback when no card was made.
+  const message = result.message ?? null;
+  const hidden = message
+    ? (!!message.blind || ((message.whisper?.length ?? 0) > 0))
+    : !["publicroll", "public"].includes(String(cfg.rollMode ?? ""));
+  if (hidden) return null;
+  const activities = await explorationActivities();
+  const { item } = activityOf(actor, activities);
+  if (activityCheckSlug(actor, item) !== slug) return null;
+  const record = {
+    slug,
+    total: Number(result.total),
+    natural: Number.isNumeric(result.natural) ? Number(result.natural) : null,
+    time: Date.now(),
+    // The check's own typed extras (the dialog's situational entry, a caller's typed bonus), so a
+    // kept roll can be re-counted as an Initiative in one typed-stacking pass (ruling 109).
+    modifiers: (Array.isArray(result.extras) ? result.extras : [])
+      .filter(m => Number.isNumeric(m?.value))
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null }))
+  };
+  await actor.update({ "system.exploration.roll": record }, { swAnnounced: true });
+  return record;
+}
+
+/**
+ * The road's one hook, registered once at ready (starwrought.mjs): every check the engine posts a
+ * card for is offered to `rememberActivityRoll`, which keeps the ones that are the roller's
+ * Activity's roll. `SwCheck.roll` fires `starwrought.check` after the card, with `config.actor` the
+ * roller; a blind roll (the attack flow's, `postCard: false`) never fires it, which is right, since
+ * no Activity rolls an Attack.
+ */
+export function registerRoadHooks() {
+  Hooks.on("starwrought.check", result => rememberActivityRoll(result?.config?.actor ?? null, result));
+}
+
+/**
+ * How long ago, in the row's own words: "just now" under a minute, then minutes, hours and days,
+ * the singular for one of each. "" for a record with no time.
+ * @param {number|null} time  Epoch milliseconds.
+ * @returns {string}
+ */
+function agoText(time) {
+  if (!Number.isNumeric(time)) return "";
+  const minutes = Math.floor(Math.max(0, Date.now() - Number(time)) / 60000);
+  if (minutes < 1) return L("STARWROUGHT.Travel.agoNow");
+  if (minutes < 60) return (minutes === 1) ? L("STARWROUGHT.Travel.agoMinute") : F("STARWROUGHT.Travel.agoMinutes", { n: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return (hours === 1) ? L("STARWROUGHT.Travel.agoHour") : F("STARWROUGHT.Travel.agoHours", { n: hours });
+  const days = Math.floor(hours / 24);
+  return (days === 1) ? L("STARWROUGHT.Travel.agoDay") : F("STARWROUGHT.Travel.agoDays", { n: days });
+}
+
+/**
+ * The member's remembered roll, read against the Activity they are doing now (ruling 108): null
+ * when nothing is remembered, or when the remembered Constellation is no longer the one the
+ * Activity rolls now (the pick moved under it without `setActivity`, say, or a stale Lore), in
+ * which case it is stale and shown as nothing rather than as a number that means something else.
+ * `usable` says whether it is in the Constellation the Activity rolls for Initiative, which is what
+ * Begin the encounter asks about (ruling 109); `ago` is the time in words for the hover.
+ * @param {Actor} actor
+ * @param {Item|null} item  The member's Activity (`activityOf(...).item`).
+ * @returns {{slug: string, name: string, total: number, natural: number|null, time: number|null, usable: boolean, ago: string}|null}
+ */
+export function roadRoll(actor, item) {
+  const record = actor?.system?.exploration?.roll ?? null;
+  const slug = String(record?.slug ?? "").trim();
+  if (!slug || !Number.isNumeric(record?.total)) return null;
+  const now = activityCheckSlug(actor, item);
+  if (!now || (slug !== now)) return null;
+  const time = Number.isNumeric(record.time) ? Number(record.time) : null;
+  return {
+    slug,
+    name: constellationName(actor, slug),
+    total: Number(record.total),
+    natural: Number.isNumeric(record.natural) ? Number(record.natural) : null,
+    time,
+    modifiers: (Array.isArray(record.modifiers) ? record.modifiers : [])
+      .filter(m => Number.isNumeric(m?.value))
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null })),
+    usable: slug === initiativeFor(actor, item).slug,
+    ago: agoText(time)
+  };
+}
+
+/**
+ * The members whose remembered roll Begin the encounter can keep as Initiative (ruling 109), for
+ * the sheet's dialog: present (a token on the viewed scene, as Begin counts presence), their
+ * `roadRoll` usable (in the Constellation their Activity rolls for Initiative), and at least one of
+ * their Combatants on the scene's unstarted Combat not yet rolled (no Combat, or no Combatant yet,
+ * is "not rolled" too: Begin will make one). A member who has rolled Initiative is left alone and
+ * not listed, so a second Begin asks nothing about them.
+ * @param {Actor} party
+ * @param {Item[]} activities
+ * @returns {Array<{actor: Actor, item: Item|null, roll: object, init: {slug: string, name: string, choice: boolean, fallback: boolean}}>}
+ */
+export function keepableRolls(party, activities) {
+  const scene = canvas?.scene ?? null;
+  if (!scene) return [];
+  const combat = game.combats.find(c => (c.scene?.id === scene.id) && !c.started) ?? null;
+  const rows = [];
+  for (const actor of memberActors(party)) {
+    const tokens = scene.tokens.filter(t => t.actorId === actor.id);
+    if (!tokens.length) continue;
+    const { item } = activityOf(actor, activities);
+    const roll = roadRoll(actor, item);
+    if (!roll?.usable) continue;
+    const unrolled = tokens.some(t => {
+      const combatant = combat?.getCombatantsByToken(t.id)[0] ?? null;
+      return !combatant || (combatant.initiative === null) || (combatant.initiative === undefined);
+    });
+    if (!unrolled) continue;
+    rows.push({ actor, item, roll, init: initiativeFor(actor, item) });
+  }
+  return rows;
 }
 
 /**
@@ -1230,9 +1409,13 @@ export async function setActivity(actor, { activityId, constellation } = {}) {
   const constellationChanged = slug !== String(current.constellation ?? "").trim();
   if (!activityChanged && !constellationChanged) return null;
 
+  // The remembered roll goes with the pick (ruling 108): a Search is not an Avoid Notice, and a
+  // Lore rolled for one Investigation is not the Skill chosen for the next. Cleared in the same
+  // write, so no render sees the old number beside the new Activity.
   await actor.update({
     "system.exploration.activity": storedId,
-    "system.exploration.constellation": slug
+    "system.exploration.constellation": slug,
+    "system.exploration.roll": { ...NO_ROAD_ROLL }
   }, { swAnnounced: true });
 
   const name = escapeHTML(actor.name);
@@ -1303,6 +1486,12 @@ export function partyTravel(party, activities) {
   };
 }
 
+/** A modifier as a card prints it: "+1", "−2" (the minus sign, as the sheet's figures print it), "+0". */
+function signedText(value) {
+  const n = Number(value) || 0;
+  return `${n < 0 ? "−" : "+"}${Math.abs(n)}`;
+}
+
 /** The terrain clause of the speed line: "" on normal ground, " over Difficult terrain" otherwise. */
 function terrainClause(terrain) {
   if (!terrain || (terrain === "normal")) return "";
@@ -1350,6 +1539,10 @@ export async function sayThePlan(party) {
     const pick = String(actor.system.exploration?.constellation ?? "").trim();
     if (activityHasChoice(item) && pick) line += F("STARWROUGHT.Travel.planWith", { constellation: escapeHTML(constellationName(actor, pick)) });
     line += F("STARWROUGHT.Travel.planInitiative", { constellation: escapeHTML(initiativeFor(actor, item).name) });
+    // The roll remembered on the road (ruling 108), as the row's chip shows it. Whether it can
+    // stand as Initiative is Begin the encounter's question, asked there and not here.
+    const remembered = roadRoll(actor, item);
+    if (remembered) line += escapeHTML(F("STARWROUGHT.Travel.planRolled", { constellation: remembered.name, total: remembered.total }));
     if (member.locked) line += ` ${escapeHTML(F("STARWROUGHT.Travel.planLocked", { n: member.fatigued }))}`;
     const warnings = activityWarnings(actor, item);
     if (warnings.length) line += `<br><span class="sw-card-note sw-warn">${warnings.map(w => escapeHTML(w)).join(" ")}</span>`;
@@ -1410,10 +1603,26 @@ function degreesOf(item) {
  * to compare by hand against each enemy's Awareness Threshold (adversary Thresholds never reach a
  * player); whether an Investigation was related is the GM's call before the die. Players roll
  * their own from the tracker or the sheet; the GM rolls for the absent.
+ *
+ * Since 0.7.3 (ruling 109) a roll made on the road can stand as the Initiative roll: the book says
+ * a character "can roll" their Activity's Constellation when the encounter begins, and a roll
+ * already made in that Constellation on the road is that roll. `keep` names the members (by Actor
+ * uuid) the GM ticked in the sheet's dialog (`keepableRolls` lists who may be asked about); for
+ * each whose `roadRoll` is usable and whose Combatants have not rolled, the Initiative is the
+ * roll's total plus the Initiative-only terms a check does not carry, which the check engine
+ * finds as the difference between its Initiative assembly for that Constellation (with the
+ * Combatant's Scout modifiers) and its check assembly: the helm's penalty, the sheet's Initiative
+ * adjustment less its check adjustment, the Scouts' +1, and whatever else the two assemblies
+ * differ by (Load Strain comes off a Stealth check and not off Initiative, so it comes back here).
+ * The flags are written first as for anyone, `setInitiative` sets the number, the card says what
+ * was kept and by how much it moved, and the remembered roll is left in place. An unticked member
+ * rolls fresh as before; nothing else about Begin changes.
  * @param {Actor} party
+ * @param {object} [options]
+ * @param {string[]} [options.keep]  Actor uuids whose remembered roll stands as Initiative.
  * @returns {Promise<Combat|null>}
  */
-export async function beginEncounter(party) {
+export async function beginEncounter(party, { keep = [] } = {}) {
   if (!game.user.isGM) return null;
   const scene = canvas?.scene ?? null;
   if (!scene) {
@@ -1479,6 +1688,37 @@ export async function beginEncounter(party) {
   }
   if (updates.length) await combat.updateEmbeddedDocuments("Combatant", updates);
 
+  // The road rolls kept as Initiative (ruling 109): the ticked members whose remembered roll is in
+  // the Constellation they roll for Initiative and whose Combatants have not rolled. The number is
+  // the same die re-counted as an Initiative: the natural die plus the engine's Initiative
+  // assembly for that Constellation, with the Scouts' modifiers and the check's own typed extras
+  // (the dialog's situational entry) resolved in ONE pass, so a +2 Situation for cover and a
+  // Scout's +1 Situation stack as the rule says, highest only, rather than both landing (the
+  // review of 0.7.3). Against the check's total that is the helm where the check lacked it, the
+  // sheet's Initiative adjustment in place of its check adjustment, the Scouts' bonus, and Load
+  // Strain coming off a Stealth check, since the engine's Initiative never takes it (nor would a
+  // fresh die; whether it should is a question for the book, in the CHANGELOG's Notes). A record
+  // with no die (none is written without one, but the schema allows it) falls back to the total
+  // plus the gap between the two assemblies. `previewTotal` is static and pure.
+  const kept = new Set(Array.isArray(keep) ? keep : []);
+  for (const entry of entries) {
+    if (!kept.has(entry.actor.uuid)) continue;
+    const roll = roadRoll(entry.actor, entry.pick.item);
+    if (!roll?.usable) continue;
+    const unrolled = entry.combatants.filter(c => (c.initiative === null) || (c.initiative === undefined));
+    if (!unrolled.length) continue;
+    const scoutMods = entry.modifiers.map(m => ({ ...m }));
+    const value = Number.isNumeric(roll.natural)
+      ? roll.natural + SwCheck.previewTotal(entry.actor, {
+        kind: "initiative", slug: roll.slug, modifiers: [...scoutMods, ...roll.modifiers.map(m => ({ ...m }))]
+      })
+      : roll.total + SwCheck.previewTotal(entry.actor, { kind: "initiative", slug: roll.slug, modifiers: scoutMods })
+        - SwCheck.previewTotal(entry.actor, { kind: "check", slug: roll.slug });
+    const delta = value - roll.total;
+    for (const combatant of unrolled) await combat.setInitiative(combatant.id, value);
+    entry.kept = { name: roll.name, total: roll.total, delta, value };
+  }
+
   // The Defenders' shields: Raised, quietly, with no action spent.
   for (const entry of entries) {
     if (explorationOf(entry.pick.item).effect !== EFFECT_DEFEND) continue;
@@ -1499,11 +1739,22 @@ export async function beginEncounter(party) {
       lines.push(escapeHTML(F("STARWROUGHT.Travel.encounterRolledAlready", { name: actor.name, activity: pick.item?.name ?? "" })));
       continue;
     }
-    const bonus = entry.modifiers.length
-      ? F("STARWROUGHT.Travel.encounterScoutBonus", { value: entry.modifiers[0].value, scouts: escapeHTML(entry.scouts.join(", ")) })
-      : "";
-    let line = F("STARWROUGHT.Travel.encounterRolls", { name, activity, constellation: escapeHTML(init.name), bonus });
-    if (init.fallback) line += ` ${escapeHTML(F("STARWROUGHT.Travel.encounterFallback", { name: actor.name }))}`;
+    let line;
+    if (entry.kept) {
+      // A kept road roll stands in for the "rolls X for Initiative" line (ruling 109), with the
+      // move when Initiative's own terms made one; the Scout's Step and the shield still follow.
+      const k = entry.kept;
+      const constellation = escapeHTML(k.name);
+      line = k.delta
+        ? F("STARWROUGHT.Travel.encounterKeptAdjusted", { name, constellation, total: k.total, delta: signedText(k.delta), value: k.value })
+        : F("STARWROUGHT.Travel.encounterKept", { name, constellation, total: k.total });
+    } else {
+      const bonus = entry.modifiers.length
+        ? F("STARWROUGHT.Travel.encounterScoutBonus", { value: entry.modifiers[0].value, scouts: escapeHTML(entry.scouts.join(", ")) })
+        : "";
+      line = F("STARWROUGHT.Travel.encounterRolls", { name, activity, constellation: escapeHTML(init.name), bonus });
+      if (init.fallback) line += ` ${escapeHTML(F("STARWROUGHT.Travel.encounterFallback", { name: actor.name }))}`;
+    }
     const ex = explorationOf(pick.item);
     if (ex.effect === EFFECT_SCOUT) line += ` ${escapeHTML(F("STARWROUGHT.Travel.encounterScoutStep", { name: actor.name }))}`;
     if (ex.effect === EFFECT_DEFEND) {

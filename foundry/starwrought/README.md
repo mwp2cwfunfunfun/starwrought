@@ -87,7 +87,10 @@ off the slowest member after their Activity and the terrain (display only; nothi
 a Fatigued member held to Travel, Say the plan, and Begin the encounter, which puts the members
 into a Combat on the viewed scene with the Constellation their Activity names and the Scouts' +1
 Situation written on their Combatants, so every Initiative roll in the system rolls by Activity.
-Every rule effect runs through the member's own methods and cards; the party is never a
+Since 0.7.3 a member's road roll (Stealth while Avoiding Notice, say) is remembered on their row
+as a chip, and Begin the encounter offers, one checkbox per member, to keep it as the Initiative
+roll rather than throw the die twice. Every rule effect runs through the member's own methods and
+cards; the party is never a
 combatant, and the loot values nothing. Downtime is the plan's last phase and is not built.
 
 **Melee, Ranged and Weapon Handling.** A weapon in hand rolls your Melee Proficiency; one that

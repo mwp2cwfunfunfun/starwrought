@@ -433,7 +433,32 @@ export class SwCharacterData extends SwActorData {
        */
       exploration: new fields.SchemaField({
         activity: new fields.StringField({ initial: "" }),
-        constellation: new fields.StringField({ initial: "" })
+        constellation: new fields.StringField({ initial: "" }),
+        /**
+         * The Activity's roll, remembered (0.7.3; rulings 108 to 110): the character's most recent
+         * check in the Constellation their Activity rolls now (Avoid Notice's Stealth, Search's
+         * Awareness, Investigate's pick), wherever it was rolled, as the slug, the total, the die
+         * and when. Written on the roller's own client from the `starwrought.check` hook
+         * (`rememberActivityRoll` in helpers/party.mjs), by the owner or the GM, so it is the
+         * character's and public as the pick is (ruling 110); the card the roll posted is the record
+         * of the die and this is a pointer to it. Cleared by `setActivity` when the Activity or the
+         * pick changes, because a Search is not an Avoid Notice (ruling 108). Nothing computes with
+         * it except Begin the encounter, which may keep it as the Initiative roll (ruling 109). New
+         * with defaults, so no world migration.
+         */
+        roll: new fields.SchemaField({
+          slug: new fields.StringField({ initial: "" }),
+          total: new fields.NumberField({ required: true, nullable: true, integer: true, initial: null }),
+          natural: new fields.NumberField({ required: true, nullable: true, integer: true, initial: null }),
+          time: new fields.NumberField({ required: true, nullable: true, integer: true, initial: null }),
+          /**
+           * The typed modifiers the check carried beyond its base terms (the dialog's situational
+           * entry, a caller's typed bonus), as `{ label, value, type }`, so a kept roll is
+           * re-assembled as an Initiative in one typed-stacking pass with the Scouts' bonus rather
+           * than added to it (ruling 109; the review of 0.7.3).
+           */
+          modifiers: new fields.ArrayField(new fields.ObjectField(), { initial: [] })
+        })
       }),
 
       zones: new fields.SchemaField(
