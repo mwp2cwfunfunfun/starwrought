@@ -122,7 +122,8 @@ const driver=`
   // The v4.10 math on the sample: ÷4 attributes, +3 Trained, no level term; v4.11 Vigor 10 + Ambusher Opening 8 + Human 8.
   step("rules math on Mira", ()=>{ const m=chars.find(c=>c.id===TORVA.id); must(m, "Mira loaded");
     const d=derive(m);
-    must(attrBonus(3)===0&&attrBonus(4)===1&&attrBonus(8)===2&&attrBonus(40)===5, "attrBonus is points ÷ 4, capped at +5");
+    // PHB v4.21 names no maximum (sync report ruling 158): 40 points is +10, not the old +5 cap.
+    must(attrBonus(3)===0&&attrBonus(4)===1&&attrBonus(8)===2&&attrBonus(40)===10, "attrBonus is points ÷ 4, no maximum (ruling 158)");
     must(RB.T===3&&RB.E===6&&RB.M===9&&RB.L===12, "ranks +3/+6/+9/+12");
     must(gatesFor("Skill").E===5&&gatesFor("Skill").M===10&&gatesFor("Skill").L===15, "gates L5/L10/L15");
     must(d.vigorMax===26&&d.vigorOpening===8&&d.vigorPerLvl===8, "Vigor 10 + Ambusher Opening 8 + (Human 8 + Endure Bonus 0) × 1 = 26, found "+d.vigorMax);
