@@ -13,7 +13,7 @@
  *
  * The count is taken **from where the drag began**, against the actions you have **remaining** at
  * your own Opportunity, not from the start of the round against a full six. Movement already made
- * has already been charged (see `documents/actions.mjs`), so counting it twice would be wrong.
+ * has already been charged (see `documents/movement.mjs`), so counting it twice would be wrong.
  * Outside an encounter, or at someone else's Opportunity, the full six is assumed.
  *
  * Nothing here prevents anything, in keeping with the rest of the system: the red squares are a
@@ -21,11 +21,17 @@
  */
 
 import * as SW from "../config.mjs";
-import { movementNumbers, classifyMove, opportunityOf, moveCapped, moveCapApplies } from "../documents/actions.mjs";
-import { setting } from "../documents/combat.mjs";
+import { movementNumbers, classifyMove, opportunityOf, moveCapped, moveCapApplies } from "../documents/movement.mjs";
+import { setting } from "../helpers/settings.mjs";
 
-/** One colour per Move, first to sixth. Gold first. */
-const MOVE_COLORS = [0xE3B23C, 0x4FA45C, 0x5B9BD5, 0x9B6BD6, 0x2FA39A, 0xC94C8A];
+/**
+ * One colour per Move, first to twelfth (the system's ceiling, SW.ACTIONS_MAX). Gold first; the
+ * seventh onward are for a combatant with more than six actions (0.10.1) and repeat no earlier hue.
+ */
+const MOVE_COLORS = [
+  0xE3B23C, 0x4FA45C, 0x5B9BD5, 0x9B6BD6, 0x2FA39A, 0xC94C8A,
+  0xD8734A, 0x8FB339, 0x4A7FD6, 0xB55CB0, 0x3D9E8C, 0xD06A4F
+];
 
 /** Within a Step. */
 const STEP_COLOR = 0xBFE3DA;
@@ -80,7 +86,7 @@ export function registerMoveRuler() {
 
     /**
      * Is this more than the one Maneuver an Opportunity holds (0.5.3)? Only at the token's own
-     * Opportunity with the cap on; the drop would be refused (documents/actions.mjs), so the squares
+     * Opportunity with the cap on; the drop would be refused (documents/movement.mjs), so the squares
      * read red and the label says why before the player lets go.
      */
     #capped(move) {
@@ -187,7 +193,7 @@ function labelFor(move, capped = false) {
  */
 function actionsLeft(token) {
   const actor = token?.actor;
-  const full = Number(actor?.system?.actionsPerRound) || SW.ACTIONS_PER_ROUND;
+  const full = Number.isFinite(actor?.actionsPerRound) ? actor.actionsPerRound : SW.ACTIONS_PER_ROUND;
   if (!actor?.system?.actions) return full;
   if (!setting("trackActions", true)) return full;
   if (!opportunityOf(token?.document ?? token)) return full;

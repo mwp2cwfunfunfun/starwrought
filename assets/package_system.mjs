@@ -54,17 +54,20 @@ const repo = valueOf("--repo") ?? process.env.GITHUB_REPOSITORY ?? null;
 
 const manifest = JSON.parse(readFileSync(join(SYSTEM, "system.json"), "utf8"));
 
-// Three places carry the version, and the game compares them at load to catch a browser holding a
-// stale copy (starwrought.mjs, checkForStaleAssets). They have to agree, or every client warns.
-const stamps = {
-  "module/config.mjs": /export const SYSTEM_VERSION = "([^"]+)"/,
-  "styles/starwrought.css": /--sw-css-version:\s*"([^"]+)"/
-};
+// The code and every stylesheet carry the version, and the game compares each with system.json's
+// at load to catch a browser holding a stale copy (starwrought.mjs, checkForStaleAssets). They
+// have to agree, or every client warns. A stylesheet's stamp is named for the file
+// (`--sw-css-version-<name>`; styles/README.md), and the list is the manifest's own.
+const stamps = { "module/config/system.mjs": /export const SYSTEM_VERSION = "([^"]+)"/ };
+for (const entry of manifest.styles ?? []) {
+  const rel = typeof entry === "string" ? entry : entry.src;
+  stamps[rel] = new RegExp(`--sw-css-version-${basename(rel, ".css")}:\\s*"([^"]+)"`);
+}
 for (const [rel, pattern] of Object.entries(stamps)) {
   const found = readFileSync(join(SYSTEM, rel), "utf8").match(pattern)?.[1];
   if (found !== manifest.version) {
     console.error(`\n${rel} is stamped ${found ?? "with nothing"}; system.json says ${manifest.version}.`);
-    console.error("Stamp all three the same before packaging.");
+    console.error("Stamp them all the same before packaging (node assets/build_all.mjs --check lists every one that lags).");
     process.exit(1);
   }
 }

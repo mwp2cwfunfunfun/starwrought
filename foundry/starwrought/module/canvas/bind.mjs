@@ -17,139 +17,45 @@
  * The chain follows a drag clone, as the targeting arrows do, so a player sees the line stretch
  * before the Move that would end it is paid for.
  *
- * This module also keeps the pair whole. A Bind is written on two actors, and the client that
- * forms it may own only one of them (a player clicking "Form a Bind" on the card against an
- * adversary). The actor update carries an `swBind` option saying whether the writer handled both
- * sides; when it did not, the one client elected to write for the partner (the active GM, else the
- * first connected owner) writes the mirror as the update reaches it. The same pickup clears the
- * partner's side when a Bind ends. A sweep at ready settles anything left half-written while an
- * owner was away.
+ * This module only draws. Keeping the two-sided record whole when the writer owns one side (the
+ * `swBind` update option, the elected mirror writer, the sweep at ready) is documents/bind.mjs,
+ * which shared this file through 0.10.1; the mirror table and the uuid resolver come from there.
  */
 
 import * as SW from "../config.mjs";
+import { MIRROR, resolveActor } from "../documents/bind.mjs";
 import { previewOf } from "./reach.mjs";
 import { upperNormal } from "./targeting.mjs";
 
 /** The system's gold (`--sw-gold`), the colour the Bind takes on the sheet as well. */
 const GOLD = 0xE3B23C;
 
-/** This actor's state -> the state the partner's side must show. */
-const MIRROR = Object.freeze({ neutral: "neutral", controlling: "controlled", controlled: "controlling" });
-
 /** The PIXI container the chains live in, one per canvas. */
 let layer = null;
 
-/** Register the hooks that keep the chains on the map and the pairs whole. */
+/** Register the hooks that keep the chains on the map. */
 export function registerBind() {
-  // A scene change brings this scene's unlinked tokens into the sweep, so it runs again here.
   Hooks.on("canvasReady", () => {
     // A layer drawn between the canvas turning ready and this hook would otherwise be forgotten
     // while still attached (see reach.mjs).
     if (layer && !layer.destroyed) layer.destroy({ children: true });
     layer = null;
     refresh();
-    if (game.ready) keepPaired();
   });
   Hooks.on("refreshToken", () => refresh());
   Hooks.on("createToken", () => refresh());
   Hooks.on("deleteToken", () => refresh());
   Hooks.on("updateToken", () => refresh());
   Hooks.on("deleteActor", () => refresh());
-  Hooks.on("updateActor", onUpdateActor);
-  Hooks.once("ready", () => keepPaired());
+  // A Bind written anywhere redraws the map; its other half is documents/bind.mjs's business.
+  Hooks.on("updateActor", (actor, changes) => {
+    if (foundry.utils.hasProperty(changes, "system.bind")) refresh();
+  });
 
   // The drag preview is cleared by Foundry on a cancel or, on a drop, once the token update is
   // back from the server, and the refreshToken hook settles the chain then. A client whose
   // ticker is not running (a hidden tab) flushes no render flags, so this is the fallback.
   document.addEventListener("pointerup", () => setTimeout(refresh, 0));
-}
-
-/* -------------------------------------------- */
-/*  Keeping the pair whole                      */
-/* -------------------------------------------- */
-
-/** A Bind written anywhere redraws the map and, if its other half is missing, writes it. */
-function onUpdateActor(actor, changes, options) {
-  if (!foundry.utils.hasProperty(changes, "system.bind")) return;
-  refresh();
-  pickUpMirror(actor, options?.swBind ?? {});
-}
-
-/**
- * Write the partner's side of a Bind this actor just recorded, or clear it for a Bind this actor
- * just ended, when the writer could not and this client is the one elected to.
- * @param {Actor} actor
- * @param {{paired?: boolean, previousPartner?: string}} mark  The update's `swBind` option.
- */
-function pickUpMirror(actor, { paired = true, previousPartner = "" } = {}) {
-  if (paired) return;
-  const bind = actor.system?.bind;
-  const partner = resolveActor(bind?.state ? bind.partnerUuid : previousPartner);
-  if (!partner || (partner === actor) || !partner.isOwner || !isMirrorWriter(partner)) return;
-  const theirs = partner.system?.bind;
-
-  if (bind?.state) {
-    // The partner's empty side still naming this Bind's id is the side that ended it (a Recenter
-    // or a Move while nobody could write the mirror): the record here is the stale half, so it is
-    // cleared rather than the pair re-formed (review, 2026-10-01). A record from before Binds had
-    // ids falls through to the mirror write below, as it always did.
-    if (!theirs?.state && theirs?.id && (theirs.id === bind.id)) {
-      if (actor.isOwner) {
-        actor.endBind({ announce: false, pair: false })
-          .catch(err => console.error(`STARWROUGHT | ${actor.name}: a Bind its partner had ended could not be cleared`, err));
-      }
-      return;
-    }
-    const want = MIRROR[bind.state];
-    if ((theirs?.state === want) && (theirs.partnerUuid === actor.uuid)) return;
-    partner.formBind(actor, { state: want, mine: bind.theirs, theirs: bind.mine, id: bind.id, announce: false, pair: false })
-      .catch(err => console.error(`STARWROUGHT | ${partner.name}: the Bind's other side could not be written`, err));
-    return;
-  }
-  if (theirs?.state && (theirs.partnerUuid === actor.uuid)) {
-    partner.endBind({ announce: false, pair: false })
-      .catch(err => console.error(`STARWROUGHT | ${partner.name}: the Bind's other side could not be cleared`, err));
-  }
-}
-
-/**
- * Exactly one client writes a mirror: the active GM, who owns everything, else the connected
- * owner with the lowest id. Two owners of one character therefore never race each other.
- */
-function isMirrorWriter(actor) {
-  const gm = game.users.activeGM;
-  if (gm) return gm.id === game.user.id;
-  const owners = game.users
-    .filter(u => u.active && actor.testUserPermission(u, "OWNER"))
-    .sort((a, b) => a.id.localeCompare(b.id));
-  return owners[0]?.id === game.user.id;
-}
-
-/**
- * Settle half-written pairs: every actor recording a Bind whose partner does not record it back
- * gets its mirror written, by the elected client, or is cleared when the partner's emptied record
- * carries this Bind's id (the partner ended it while nobody could write the mirror). Run once at
- * ready, for a Bind formed or ended while the partner's owner was away; one changed while they are
- * connected is picked up as it is written.
- */
-export function keepPaired() {
-  const actors = [...game.actors];
-  for (const token of canvas?.scene?.tokens ?? []) {
-    if (!token.actorLink && token.actor) actors.push(token.actor);
-  }
-  for (const actor of actors) {
-    if (actor.system?.bind?.state) pickUpMirror(actor, { paired: false });
-  }
-}
-
-/** The Actor behind a uuid, whether the uuid names an Actor or a Token; null when it names nothing. */
-function resolveActor(uuid) {
-  if (!uuid) return null;
-  let doc = null;
-  try { doc = fromUuidSync(uuid); } catch { doc = null; }
-  if (!doc) return null;
-  if (doc.documentName === "Actor") return doc;
-  return doc.actor ?? null;
 }
 
 /* -------------------------------------------- */

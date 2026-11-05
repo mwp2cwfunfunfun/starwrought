@@ -39,8 +39,12 @@ destroys it. Fix the source.
 ### The pipeline
 
 One command runs all of it, then checks for handbook drift and that the system's three version
-stamps agree (`system.json`, `SYSTEM_VERSION` in `module/config.mjs`, `--sw-css-version` in the
-stylesheet; a release bumps all three, or every client sees the stale-copy warning):
+stamps agree (`system.json`, `SYSTEM_VERSION` in `module/config/system.mjs`, and `--sw-css-version-<name>`
+in each of the eleven stylesheets `system.json` lists, one per window since 0.10.1 with the map in
+`foundry/starwrought/styles/README.md`; a release bumps them all, or every client sees the
+stale-copy warning naming the file). The same check fails when a `.css` in `styles/` is not listed
+in `system.json`, and when one selector list is declared twice anywhere in `styles/`, since two
+declarations would make the load order decide which reads:
 
 ```
 node assets/build_all.mjs              # every step below, in order, then the drift check
@@ -88,9 +92,10 @@ precedent, and a clean cell is written onto the document as `system.automation` 
 `system.rules` (the parsed rules). The converter copies the cell through as text and knows nothing
 of the grammar, so Python and JavaScript never hold two parsers. `node assets/test_rules.mjs` is
 the framework's self-test, run by `build_all.mjs` in every step-running mode (`--check` runs none) as the step `test_rules`, right
-before `build_foundry`. With no rule kinds defined, as in 0.9.0, the only cell that builds is a
-blank one or one of `#` comments, and the summary line reads `automation: no rules (no rule kinds
-are defined yet)`.
+before `build_foundry`. One kind is defined since 0.10.0, `bonus` (the automation framework,
+below), so a cell may hold blank lines, `#` comments and `bonus` lines; the summary line reads
+`automation: N rules on M documents (K kinds in use)`, its plurals counted, or `automation: no
+rules (1 kind defined, none in use)` while no cell uses the kind, which is today.
 
 **THE CONTENT LOOP (Mike, 2026-10-03; system 0.8.0; rulings 115 to 117).** "I want the ability to
 add to any of the data spreadsheets and run a command or a script to incorporate those into the
@@ -208,7 +213,7 @@ wording.
 
 **Flares (0.6.3; sync report rulings 85 and 86).** A Constellation is *Opened* for a character when
 they hold its Constellation Item or any Talent in it (the entries the data model's
-`#prepareConstellations` builds from Items; one drawn only because it is Flared is listed too). The
+`prepareConstellations` in `module/data/character/constellations.mjs` builds from Items; one drawn only because it is Flared is listed too). The
 Flare dialog on a critical's card lists Opened Constellations only, the rolled one preselected, with
 a checkbox "Show Constellations you have not opened" that adds every shipping Constellation
 (`enabledConstellations()`, ruling 61) marked "(not opened)"; the sheet's Constellations tab has a
@@ -252,7 +257,7 @@ Attribute is the higher of two numbers: the weapon's natural Attribute (Might; o
 weapon with the Finesse trait, and for any ranged weapon other than a composite bow or a thrown
 weapon), or the Key Attribute of a Combat Style whose root you have and whose weapons you are
 wielding. Work it out once per weapon and write it on your sheet. Damage still adds Might where the
-Strike allows it." Implemented: `attackAttribute` in `module/data/item.mjs` is the natural
+Strike allows it." Implemented: `attackAttribute` in `module/data/items/weapon.mjs` is the natural
 Attribute (Agility for Finesse and for a ranged weapon without the **Composite** trait, which the
 weapon trait parser reads into `flags.composite`; Might otherwise, a thrown weapon included, since a
 Thrown weapon is not `isRanged`); `strikeAttributeFor` in `module/data/actor.mjs` takes the higher
@@ -277,8 +282,9 @@ adversary Thresholds are never shown to players (a Reaction Strike still rolls a
 the number, as 0.4.2 did). The world setting `attackFlow` off restores the 0.4.2 behaviour for
 characters' Strikes; an adversary's attack row always declares. Since 0.5.3 the same system socket
 also carries `damage:*` and `reroll:*` requests to the active GM's client (`chat.mjs`,
-`onChatSocket`): a player's Apply on a creature they cannot write, and a die thrown again on the
-roller's client but read against a hidden Threshold on the GM's. Both read everything that matters
+`onChatSocket`, since 0.10.1 a router over the card families in `documents/cards/`): a player's
+Apply on a creature they cannot write, and a die thrown again on the roller's client but read
+against a hidden Threshold on the GM's. Both read everything that matters
 from the chat message itself and the asker from the server's stamp, as the coordinator does. Since
 0.7.1 it also carries `party:*` (`documents/party-socket.mjs`, `onPartySocket`): a player's Take
 from or Give to the party's loot, run on the active GM's client in arrival order, the destination
@@ -350,7 +356,7 @@ on a timer, never a requestAnimationFrame latch. Every rule effect runs through 
 existing method (`toggleFlare`, `restForTheNight`, `rollCheck`, `rollDefense`, the Combat's
 Initiative roll) and every direct write is `actor.update(..., { swAnnounced: true })`, so the party
 adds buttons and a handful of cards, never a second rules engine or a doubled Adjusted card. A
-party is never a combatant: Support's ally count (`supportFor` in `documents/actor.mjs`),
+party is never a combatant: Support's ally count (`supportFor` in `documents/actor/attack.mjs`),
 `actorsIn` and `canAct` (`combat.mjs`), the tracker readout and `SwCheck.roll` skip or refuse
 `SW.PARTY_TYPE` explicitly, and nothing draws or counts its token. The
 rulings: 91 a Milestone award goes to every member by default, with a checkbox per member to
@@ -493,7 +499,8 @@ identically (`parseAutomation(text, context) -> { rules, errors }`, `summarize(r
 rule per line, `kind: arguments`, the colon optional without arguments, blank lines ignored, a `#`
 line a comment, the kind word everything up to the first `:` or whitespace, lower-cased; a
 registry of rule kinds in `module/rules/kinds/index.mjs` (`KINDS`, `registerKind`, `kindOf`,
-`knownKinds`) that registers nothing, a kind being one file in `module/rules/kinds/` exporting
+`knownKinds`) that registered nothing in 0.9.0 and registers `bonus` since 0.10.0, a kind being
+one file in `module/rules/kinds/` exporting
 `{ id, aliases, parse(args, context), summary(rule), hooks }` with `registerKind` refusing a
 definition missing `id`, `parse` or `summary` or whose id or alias is taken, and the context for
 messages `{ itemName, constellation, itemType, line }`; the build failing on a line that does not
@@ -511,23 +518,99 @@ into `unknown` with its reason), first thing in `prepareDerivedData` before the 
 with `SwActor#rulesOfKind(kind)` reading `byKind`, so a kind's engine hook can later ask without
 walking the Items; the Item sheet's Automation panel on Talents and Constellations as well as
 Maneuvers, with its **As read** list (the kind word in a tag, the summary, a red row for an error
-or an unknown kind, and "No rules (the framework has no rule kinds yet; they are added one at a
-time)" for an empty list; `STARWROUGHT.Rules.*`); and `assets/test_rules.mjs`, the self-test, as
+or an unknown kind, and "No rules." for an empty list; `STARWROUGHT.Rules.*`); and
+`assets/test_rules.mjs`, the self-test, as
 the `test_rules` step of every `build_all.mjs` mode before `build_foundry`. **The rule: kinds are
 added one at a time, with Mike** (ruling 119), each with its file, its hook (defined with the kind
 that needs it and wired nowhere before: a hook point chosen before its first kind is a guess), its
 checks in `test_rules.mjs`, its line in `data/README.txt` naming its syntax, and its CHANGELOG and
-FEATURES prose, by the recipe in `module/rules/README.md`; the first is the aura, for Torchbearer,
-and a kind serves every Talent that uses its word. Nothing generates JavaScript from a cell: the
-cell is data and the engine is the only code, which is what makes "work for OTHER auras, too,
-without additional coding" true by construction. The content loop carries a cell's rules to an
-open world as any field, and the copies refresh (0.8.0) overwrites an owned copy's
-`system.automation` and `system.rules` from the source, since the cell is the author (ruling 120).
-Nothing in `module/rules/` is called by a roll, the attack flow, the damage pipeline, a condition,
-movement or the auras on the map, and no Talent's Effect was read to find out which kinds the book
-wants: both by instruction. Mike's decisions, recorded in the plan: the first kind's syntax;
-whether the web app and the compendium docx should print the cell (neither does); whether an
-edited copy's Automation should survive a refresh.
+FEATURES prose, by the recipe in `module/rules/README.md`; the first was `bonus` (0.10.0, below),
+the next is the aura, for Torchbearer, and a kind serves every Talent that uses its word. Nothing
+generates JavaScript from a cell: the cell is data and the engine is the only code, which is what
+makes "work for OTHER auras, too, without additional coding" true by construction. The content
+loop carries a cell's rules to an open world as any field, and the copies refresh (0.8.0)
+overwrites an owned copy's `system.automation` and `system.rules` from the source, since the cell
+is the author (ruling 120). In 0.9.0 nothing in `module/rules/` was called by a roll, the attack
+flow, the damage pipeline, a condition, movement or the auras on the map, and no Talent's Effect
+was read to find out which kinds the book wants: both by instruction; since 0.10.0 the check
+engine and the Defense pass call the `modifiers` hook point (below), and nothing else does. Mike's
+decisions, recorded in the plan: the first kind's syntax (settled, ruling 121); whether the web app
+and the compendium docx should print the cell (neither does); whether an edited copy's Automation
+should survive a refresh.
+
+**The first kind, `bonus` (0.10.0; rulings 121 to 124).** Mike, 2026-10-03: "okay, first
+automation kind we will create is the Human Ancestry one. The Effect is: 'You gain a +1 Condition
+bonus on checks to Aid. If you are Expert in Human, this becomes a +2 Condition bonus. If you are
+Master, +3. If you are Legendary, +4.' So we need Automation for something like ... IF
+(Constellation Proficiency = VALUE) where VALUE = Untrained, Trained, Expert, Master, Legendary,
+Grant [X Value (+1, +2, -1, -2, etc.)]; [Y type (Condition, Situation, Gear, etc.)]; [Z Check
+(Constellation or Maneuver Roll)]. In this case, it would use a Maneuver called Aid." The kind
+(`module/rules/kinds/bonus.mjs`, no aliases): `bonus: <value> <Type> to <Target> [if
+<Constellation> is <Rank>]`; the value a signed integer, a bare `1` reading `+1`, `0` refused ("a
+bonus of 0 does nothing"); the Type `Situation`, `Condition` or `Gear`, case blind, the retired
+`circumstance`, `status` and `item` refused naming the current word and `untyped` refused ("no
+Talent bonus is untyped"); `to` required, a Constellation or a Maneuver by the name the trees and
+the action sheets print, the slug form reading too and a Maneuver's glyphs ignored
+(`slugify(plainName(name))`); the `if` clause optional, `is` not `=`, the five rank words (keys of
+`SW.RANKS`), and EQUALITY, as Mike wrote it, so a Talent that scales by rank writes one line per
+rank and Humanity is four, one per sentence (ruling 121); anything else refused printing the shape
+`bonus: +1 Condition to Aid if Human is Expert`. Stored on the Item: `{ kind: "bonus", line, text,
+value, type, to: { name, slug, type: "constellation" | "action" | null }, when: { constellation,
+name, rank } | null }`. `to.type` and the names come from `context.resolve(name) -> { type, slug,
+name } | null`, an optional function the two callers of the grammar put on the parse context
+(`build_foundry.mjs`, one resolver over every key of `trees.json`, every sheet action and every
+roster `actions` row, enabled or not, a Constellation winning over an action of the same name,
+passed to both `automationOf` calls; `resolveRuleTarget(name)` in `module/helpers/content.mjs`,
+over `SW.constellations`, the Actions pack's index and world action Items, null while `game` is
+not ready, for `SwItem._preUpdate`); with a resolver an unknown target, an `if` Constellation that
+resolves to a Maneuver or nothing, and a Lore target (`SW.isLoreSlug`) are RuleSyntaxErrors;
+without one `to.type` is null and the hook matches on slug alone. Summary: `+1 Condition bonus to
+Aid while Human is Expert`, `penalty` when negative, no `while` without an `if`. **The `modifiers`
+hook point** (ruling 124): a kind that affects a roll declares `hooks.modifiers(entries, context,
+actor) -> Modifier[]`, `entries` its own rules on the actor (`[{ rule, item }]` from `rulesOfKind`),
+`context` `{ kind: "check" | "attack" | "defense" | "initiative", slug, item }`, a Modifier
+`{ label, value, type, offer?, key?, hint? }`; `ruleModifiers(actor, context) -> { applied,
+offered }` in `module/rules/engine.mjs` walks `KINDS`, skips a kind without the hook or without
+rules on this actor, calls each inside try/catch (`console.error("STARWROUGHT | the \"<id>\" kind's
+modifiers hook failed:", error)` and nothing contributed; a roll never dies over a rule), drops a
+non-numeric or zero value, files `offer === true` under `offered` with `key` defaulted to
+`<kind>-<n>` when the kind gave none (the kind sets its own), the rest under `applied`;
+`previewTotal` ignores offers. Two
+call sites, both existing passes and no third: `baseModifiers` in `module/dice/check/modifiers.mjs`, the non-Defense branch,
+at its end (`parts.push(...applied); cfg.ruleOffers = offered;`), with the dialog (`prompt` in `module/dice/check/dialog.mjs`) listing
+`cfg.ruleOffers` as unticked checkboxes after the Load Strain offer and the existing `extra-<key>`
+loop carrying a ticked one into the roll and `result.extras` (so a kept road roll re-counts it,
+0.7.3); and `prepareDefenses` in `module/data/character/defenses.mjs` (the character's Defense pass), inside the per-Defense loop before
+`SW.resolveModifiers`, applied only, the index and the ranks both final by then, so a Defense roll
+(which rolls the Defense's own `modifiers`), an Initiative rolled with Awareness and a Defense
+rolled as a check carry a bonus once and never twice. The npc early return stands: adversaries roll
+flat and rules do not reach them in 0.10.0. The `bonus` hook: a conditioned rule fires only while
+`actor.system.proficiency(when.constellation).rank` (`"untrained"` when absent) equals `when.rank`,
+so never on an adversary; a Constellation target applies when `context.slug === to.slug`; a
+Maneuver target applies when `context.item.type === "action"` and `slugify(plainName(name))` is
+`to.slug`, and on a `check` without it is OFFERED (`key: "bonus-<item.id ?? item.name>-<line>"`,
+label `<Talent>: <Target>`, hint "<Talent>: this bonus applies to checks to <Target>. Tick it if
+this roll is one."), never on an attack, a Defense or an Initiative (ruling 122); a `to.type` of
+null tries both and offers only when the slug matched no Constellation; an applied modifier is
+`{ label: plainName(item.name), value, type }`, so the card reads "Humanity +1"; typed stacking is
+`SW.resolveModifiers`'s, so two Humanity lines never both fire and overlapping lines of one type
+give the highest. **A Relevant Check Maneuver** (ruling 123): `check.enabled` with a blank
+`constellation` means a Relevant Check; `SwItem#use` then calls `actor.rollRelevantCheck({ item:
+this, label: plainName(this.name), subtitle: "<glyph> <category>", outcomes })` (an npc gets the
+existing warning and null), `rollRelevantCheck` lets a caller's `label` stand, `build_foundry.mjs`
+sets `check: { enabled: true, constellation: "", defense: "" }` on a sheet action whose Effect
+says "relevant check" (case blind) and names no check (Aid, which Mike enabled in
+`data/maneuvers.xlsx` on 2026-10-03, so `packs/_source/actions/aid_30d830c3ca03647e.json` ships
+with it set and Aid's roll opens the picker carrying the Maneuver), and `templates/item/details.hbs`
+says so under the check panel
+(`STARWROUGHT.Hint.relevantCheck`); no new schema field. `STARWROUGHT.Rules.none` reads "No
+rules." and the build's summary counts its plurals, reading `automation: no rules (1 kind defined,
+none in use)` until a cell uses the kind. **Humanity's cell is not written** (Excel held
+`data/ancestries.xlsx` open; the Human sheet has no Automation column), so the four lines are
+Mike's to paste (Known outstanding work, below), and no cell in the book uses the kind yet. The
+rule stands: one kind at a time, with Mike; the hook point generic, so a later kind that wants the
+same moment adds no engine code, and a new moment is defined with the first kind that needs it
+(ruling 124; ruling 119 stands); the next kind is the aura, for Torchbearer.
 
 ## Where the source of truth lives
 
@@ -585,8 +668,8 @@ edited copy's Automation should survive a refresh.
   Effect says "within N feet" and the cell is blank or disagrees; reach and adjacency get no
   cell), **Automation** (0.9.0: one rule per line, `kind: arguments`, a `#` line a comment, copied
   through as text by the converter and parsed by `build_foundry.mjs`, which fails on a line it does
-  not know; no rule kinds are defined yet, so a cell may hold only a blank or comments until the
-  first kind lands, and `data/README.txt` names each kind's syntax as it ships). Column order does
+  not know; one kind since 0.10.0, `bonus: <value> <Type> to <Target> [if <Constellation> is
+  <Rank>]`, and `data/README.txt` names each kind's syntax as it ships). Column order does
   not matter; the first word of the header does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
   a **Parent** column (v4.10): a Combat Style names Melee or Ranged, and the converter errors on a
   Parent that names no tree or has a parent of its own. Action glyphs ride in the Talent name in the
@@ -607,7 +690,8 @@ edited copy's Automation should survive a refresh.
   on an enabled row that leans on a disabled one; `build_foundry.mjs` writes only the enabled
   documents, keeps every Constellation in the content index with its flag, and stamps the enabled
   counts into `content/sync.json`. The web app and the compendium docx show the whole book. A
-  disabled sheet action still retires the roster row of its name (Aid ships nowhere until enabled).
+  disabled sheet action still retires the roster row of its name (the 39 blank Maneuver rows today;
+  Aid was one until Mike set its row to Yes on 2026-10-03, and it ships since).
 - **`data/equipment.xlsx` is the equipment workbook** (Mike, 2026-10-01; ruling 64). Index-less,
   recognised by its Weapons, Armor and Shields sheets (an About sheet is ignored). Weapons: Weapon,
   Kind (Melee or Ranged), Handling, Group, Damage, Reach (melee) or Range (ranged), Traits, Price,
@@ -618,9 +702,11 @@ edited copy's Automation should survive a refresh.
   `equipment.json` and ships only the enabled rows under the same document ids. Built from the
   handbook's Chapter 5 tables; the handbook wins when they disagree, and the sheet needs a pass.
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
-- **`data/actions.xlsx` is the actions workbook** (Mike, 2026-09-26). The converter recognises it by
-  its `_Tree Index` carrying `Name | Type | Meta note` instead of `Tree | Category`; every other
-  sheet in it holds one action per row. Columns (first word wins): Action, Cost, Traits, Type,
+- **`data/maneuvers.xlsx` is the actions workbook** (the format Mike's, 2026-09-26, as
+  `data/actions.xlsx`; the file his since 2026-10-01, 0.5.1, T17; the only one since 2026-10-03).
+  The converter recognises an actions workbook by its `_Tree Index` carrying `Name | Type | Meta
+  note` instead of `Tree | Category`; every other sheet in it holds one action per row. Columns
+  (first word wins): Action, Cost, Traits, Type,
   Prerequisites, Requirements, Trigger, Description, Effect, Automation. Cost takes glyphs or
   words (`◆`, `◆ to ◆◆◆`, `↺`, `◇`, `1 or 3`, `reaction`); without a Cost column the glyphs in the
   name are read, and with neither the action costs one action and the converter says which ones.
@@ -632,19 +718,29 @@ edited copy's Automation should survive a refresh.
   rows, are flagged `basic` and appear on every character's Actions tab straight from the
   compendium, never copied. The Automation column is stored on the Item (`system.automation`) and
   shown on its sheet; since 0.9.0 it is the same column as on a tree sheet, one rule per line in
-  the framework's grammar and parsed by the build into `system.rules`, no longer prose, and with
-  no rule kinds defined nothing acts on it yet (the automation framework, above). **`data/maneuvers.xlsx` is the second actions workbook** (Mike,
-  2026-10-01; 0.5.1, T17): the Encounter Mode Maneuvers, one sheet per Chapter 2 group, scaffolded
-  once from the roster's `actions` block by `assets/make_maneuvers_xlsx.py` (names plain, glyphs in
+  the framework's grammar and parsed by the build into `system.rules`, no longer prose, and since
+  0.10.0 a `bonus` line in it acts; a Maneuver's name is also what a Talent's `bonus ... to
+  <Maneuver>` is matched against, and a Maneuver whose Effect says "Relevant Check" and names no
+  check opens the picker carrying the Maneuver when used (the automation framework, above).
+  The workbook holds the Encounter Mode Maneuvers, one sheet per Chapter 2 group, scaffolded once
+  from the roster's `actions` block by `assets/make_maneuvers_xlsx.py` (names plain, glyphs in
   Cost, Requirements and Trigger lifted into their columns, Type `Basic Action`, the 0.5.1 `Aura`
-  column with Seek at `30 ft`, `Enabled?` blank on every row, Aid left to `actions.xlsx`) and
-  Mike's to edit since; the script refuses to overwrite it. Blank is the point: every roster
-  Maneuver is retired under its old document id and ships nowhere until its row reads Yes. The
-  converter reads every actions workbook in `data/`, errors on an action defined in two, skips an
-  `About` sheet, stamps each action with its `workbook` and `sheet`, and carries over as found the
-  actions of a workbook the last `actions.json` names that is missing from `data/`, with a warning
-  (a fresh clone has `maneuvers.xlsx` but not the untracked `actions.xlsx`, and Aid must stay
-  retired).
+  column with Seek at `30 ft`, `Enabled?` blank on every row, and Aid left to `actions.xlsx`,
+  which then held it alone) and Mike's to edit since; the script refuses to overwrite it. Blank is
+  the point: a roster Maneuver named by a row is retired under its old document id and ships
+  nowhere until its row reads Yes. **Aid moved here on 2026-10-03**, during the 0.10.0 build: Mike
+  authored it on the sheet "Watching, Deceiving & Helping" (row 9) with `Enabled? = Yes` and
+  deleted `data/actions.xlsx`, which had never been committed. The converter handled the move
+  ("'Aid' was actions.xlsx's and is now defined in maneuvers.xlsx, which wins"), `assets/actions.json`
+  lists 40 actions from this workbook alone, Aid the one enabled, and Aid ships for the first time,
+  under the document id the roster's row had (`packs/_source/actions/aid_30d830c3ca03647e.json`,
+  with `check` set from its Effect). Aid is not yet in the `_Tree Index`, so the converter types
+  it from its Type cell with a warning; that is Mike's to tidy. The converter still reads every
+  actions workbook in `data/`, errors on an action defined in two, skips an `About` sheet, stamps
+  each action with its `workbook` and `sheet`, and carries over as found the actions of a
+  workbook the last `actions.json` names that is missing from `data/`, with a warning: the rule
+  that kept Aid retired on a fresh clone while it lived in the untracked file, now with nothing to
+  carry, and kept for the next workbook that goes missing.
 - A workbook open in Excel is converted from its last saved version (Excel saves atomically). It
   used to be skipped, which silently wrote a `trees.json` without its trees.
 
@@ -666,12 +762,12 @@ edited copy's Automation should survive a refresh.
   either way. **This is the tree-level `Feeds` only.** Armored Fighting's per-talent `Feeds`
   overrides are deliberate and mixed (Mike, 2026-08-27): six Might including the root, three
   Presence, two Wits, two Agility. Resolving the heading-vs-table question must not flatten them.
-- **Aid differs between the sheet and the book.** `data/actions.xlsx` has Aid as a single action
-  with a Relevant Check; PHB v4.10 has Prepare ❶ plus a ⓿↺ Reaction against Threshold 15. The sheet
-  wins by the standing rule (2026-09-26): its Aid is what the web app and the compendium docx
-  show, and it is what Foundry will carry once the row reads Enabled? = Yes; today the row is
-  blank, so Aid ships nowhere in Foundry (ruling 61). The book is Mike's to bring across, or the
-  sheet is (v4.10 sync report, ruling 10).
+- **Aid differs between the sheet and the book.** `data/maneuvers.xlsx` has Aid as a single action
+  ❶ with a Relevant Check against Threshold 15; PHB v4.10 has Prepare ❶ plus a ⓿↺ Reaction against
+  Threshold 15, and v4.14 still prints it so. The sheet wins by the standing rule (2026-09-26): its
+  Aid is what the web app, the compendium docx and, since Mike enabled the row on 2026-10-03,
+  Foundry all carry. The book is Mike's to bring across, or the sheet is (v4.10 sync report,
+  ruling 10).
 - **Drilled's Effect in the book still says "Weapons Proficiency Bonus".** There is no Weapons
   Constellation in v4.10 or any book since, and v4.14 still prints the sentence; the data reads it
   as Melee. One sentence in the handbook.
@@ -691,17 +787,15 @@ edited copy's Automation should survive a refresh.
   entry sides with the table's "Nothing". The system follows the Result rules (v4.10 sync report,
   ruling 51) and keeps the switch in one place (`STRIKE_KINDS.exposeOnMiss`). One cell in the
   handbook either way.
-- **`data/actions.xlsx` has never been committed.** Its one row, Aid, is the only action
-  `assets/actions.json` cannot regenerate on a fresh clone (the converter carries it over from
-  the last `actions.json` with a warning). `data/maneuvers.xlsx`, which authors the other 39
-  Maneuvers since 0.5.1, is tracked. Adding `actions.xlsx` to git is Mike's call. Aid is not
-  enabled, so it ships nowhere (ruling 61).
-- **No Basic Maneuver ships until Mike enables rows in `data/maneuvers.xlsx`** (0.5.1, at his
-  request: "get rid of all of these"). The Maneuvers tab's Basic panel stands empty and says so.
-  The compendium docx and the web app print every Maneuver under one "Basic Action" heading now
-  that the rows carry Type "Basic Action"; in Foundry the six book groups survive, since the
-  builder takes an action's group from the sheet it sits on (its folder and `category`), and the
-  Type only decides the `basic` flag.
+- **Aid is the one Basic Maneuver that ships; the other 39 wait on Mike enabling their rows in
+  `data/maneuvers.xlsx`** (0.5.1, at his request: "get rid of all of these"; Aid's row set to Yes
+  on 2026-10-03). The Maneuvers tab's Basic panel carries Aid under Watching, Deceiving & Helping
+  and nothing else. The compendium docx and the web app print every Maneuver under one "Basic
+  Action" heading now that the rows carry Type "Basic Action"; in Foundry the six book groups
+  survive, since the builder takes an action's group from the sheet it sits on (its folder and
+  `category`), and the Type only decides the `basic` flag. Aid is not in the workbook's
+  `_Tree Index`, so the converter types it from its Type cell and warns every run until Mike adds
+  the row.
 - **Two `Enabled?` loose ends for Mike:** Drilled is enabled while the Weapon Familiarity it hands
   over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
 - **The handbook grants Counter with Melee Training; the system grants it at Expert rank in Melee**
@@ -766,21 +860,278 @@ edited copy's Automation should survive a refresh.
   a Blow, lands on the Torso, or on an Exposed Zone the attacker chooses" (also without a subject),
   while Reading the Result for a Blow says "if the Strike was Deliberate or Committed" and Table 9
   holds a Quick Strike to the Torso. The system holds it to the Torso. Two words in one cell, Mike's.
-- **The first rule kind: the aura, for Torchbearer** (0.9.0; `automation-plan.md`). The framework
-  ships with an empty registry, by instruction (Mike, 2026-10-03: "do NOT survey the talents yet
-  or build ANY of the automation hooks. just build the framework. we will build automation syntax
-  hooks one at a time"), so it does nothing in play and every rule line in a cell stops the build
-  as "unknown rule kind". Mike's own example sets the first kind: an aura, written so that the
-  syntax serves every aura in the book ("the Torchbearer 15' aura ... the syntax that will work for
-  OTHER auras, too, without additional coding"); the `Aura` column (0.5.1) already draws the ring,
-  and the kind adds the effect inside it. Its syntax is Mike's to settle first; then one file in
-  `module/rules/kinds/`, its hook defined with it, its checks in `assets/test_rules.mjs`, its line
-  in `data/README.txt`, its CHANGELOG and FEATURES prose, by the recipe in `module/rules/README.md`.
-  Then one kind at a time, each from the Talent that wants it; no survey of the Talents until Mike
-  asks for one. Also his: whether the web app and the compendium docx should print the cell
-  (neither does), and whether an edited copy's Automation should survive the copies refresh (today
-  it does not; the cell is the author, ruling 120). A Talent's Effect stays prose the sheet
-  displays (`FEATURES.md`, section 9) until a kind reads it.
+- **Humanity's Automation cell is Mike's to paste** (0.10.0; ruling 121). The `bonus` kind ships
+  and no cell in the book uses it: Excel held `data/ancestries.xlsx` open while 0.10.0 was built,
+  and the Human sheet has no `Automation` column yet. Add one (header `Automation`; order free,
+  the first word of the header wins) and paste into Humanity's cell, one line each:
+  `bonus: +1 Condition to Aid if Human is Trained`, `bonus: +2 Condition to Aid if Human is
+  Expert`, `bonus: +3 Condition to Aid if Human is Master`, `bonus: +4 Condition to Aid if Human
+  is Legendary`; then `sync_content.cmd` and Sync content in the open world. Until then every
+  `system.rules` is `[]`, the build's summary reads `automation: no rules (1 kind defined, none in
+  use)`, and Humanity's Effect is prose the sheet displays. Aid itself ships since Mike enabled its
+  row in `data/maneuvers.xlsx` on 2026-10-03, so its Relevant Check opens the picker carrying the
+  Maneuver (ruling 123) and a `bonus ... to Aid` rule is applied to that roll (verified live: the
+  card reads "Aid", "Humanity +1 condition"); on any other check it is offered unticked.
+- **The attack coordinator stays whole until the Threat model broadens** (Mike, 2026-11-04, on
+  the ninth architecture recommendation). `module/combat/attack-coordinator.mjs` (1,702 lines)
+  has three real seams, the socket transport, the private commitment store and recovery, and
+  resolution, but its static methods share private state, it has not churned since 0.5.0, and the
+  declaration is a weapon Blow against Evade or Guard in four places (the payload, the legal
+  answer, the Threshold fallback, `resolveAgainst` with a weapon and a Strike kind) while
+  `SW.THREATS` is referenced nowhere in `module/combat/`. The first non-Blow Threat (a spell
+  against Endure or Awareness, a bomb's Blast) needs a `threat` on the declaration, a source
+  abstraction in place of weapon-or-attack-row, and a resolution profile by source (the action
+  Item's `outcomes` field), landing first in the pure `attack-workflow.mjs`; the split is done in
+  that change, along the seam it exposes ("what the attack is" from "how the table agrees"), the
+  socket transport first, possibly shared with the damage, reroll and loot relays.
+- **The aura, for Torchbearer, is the next kind** (`automation-plan.md`). Mike's own example ("the
+  Torchbearer 15' aura ... the syntax that will work for OTHER auras, too, without additional
+  coding"): the `Aura` column (0.5.1) already draws the ring, and the kind adds the effect inside
+  it. Its syntax is Mike's to settle first; then one file in `module/rules/kinds/`, its hook point
+  (`modifiers` if that serves it, else a new one defined with it; ruling 119), its checks in
+  `assets/test_rules.mjs`, its line in `data/README.txt`, its CHANGELOG and FEATURES prose, by the
+  recipe in `module/rules/README.md`. Then one kind at a time, each from the Talent that wants it;
+  no survey of the Talents until Mike asks for one. Also his: whether the web app and the
+  compendium docx should print the cell (neither does), and whether an edited copy's Automation
+  should survive the copies refresh (today it does not; the cell is the author, ruling 120). A
+  Talent's Effect stays prose the sheet displays (`FEATURES.md`, section 9) until a kind reads it;
+  `bonus` reads Humanity's once the cell is pasted.
+
+Cleared 2026-11-04 (the action counter on the Token HUD, system 0.10.1; the fifteenth
+recommendation, Mike's own: "show a small action counter in the Token HUD, such as 4/6, rather
+than a full token bar"): nothing on the token showed actions; now `actionsCounter` in
+`module/apps/token-hud.mjs`, first in the HUD's right column in an encounter only, the free count
+over the round's count with the shared three-state pips (`actionPips`) and the legend tooltip, a
+readout re-rendered on the shown actor's `system.actions` changes; and a defect found on the way,
+token bars left on `hp` by the 0.6.0 rename, fixed by the 0.10.1 step of `migrateWorld`
+(`STARWROUGHT.Migration.tokenBars`; a world already stamped 0.10.1 by a pre-release build runs it
+by setting `systemVersion` to `0.10.0` once). Checked live: four bars retargeted, the counter
+absent outside an encounter and moving from 6/6 to 4/6 to 1/6 with the reserve shown. No handbook
+moved and `data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (more than six actions a round, system 0.10.1; the fourteenth recommendation,
+Mike's own: "Ensure the system supports situations where more than 6 actions are allowed (e.g.,
+maybe some NPCs, or a haste spell)"): an adversary already had `actionsPerRound` (its field, 1 to
+12) and a character was six in two places with nothing to raise it; now `bonuses.actions` on the
+character (the Overview's "Actions a round" adjustment, an Active Effect's target for a haste-like
+effect, negative allowed) and `prepareActions` in `module/data/character/actions.mjs` deriving
+`system.actionsPerRound` as six plus it, clamped to 0 and `SW.ACTIONS_MAX` (12, the system's
+ceiling, now read by the schema maxima, the adversary's input, the tracker's slice and the clamp);
+`SwActor#actionsPerRound` the one getter over the field on both types, read by the reset, the
+pips, the tracker, the ruler and the refund; glyphs ❼ to ⓬ and six more ruler colours. No
+Quickened condition (Mike's choice; it comes with the first spell that needs it, as a proposal).
+Checked live at +2 (8 of 8, eight pips), +9 (12), −8 (0) and Slowed 1 (7 of 8). No handbook moved
+and `data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (reserved actions on the pips, system 0.10.1; the thirteenth of the
+recommendations, Mike's own: "Use a more illustrative display in Combat Tracker and Character
+Sheet to take Reserved actions into account"): the tracker lit a pip only while free, from its own
+arithmetic, so a reserved action looked spent there; now `actionPips(actor)` in
+`module/helpers/actor-context.mjs` is the one computation of the three states, the counts and the
+legend ("2 available, 2 reserved, 2 spent.", `STARWROUGHT.Actions.legend`) behind the sheet's
+`actionsContext` and the tracker's `actionsReadout`; the token `--sw-reserved` (violet) replaces
+the borrowed Agility colour on the sheet and fills the tracker's `sw-reserved` pip (`sw-free`,
+`sw-reserved`, `sw-spent` in place of `sw-lit`); the legend ends both tooltips; the tracker's big
+number stays the free count by Mike's choice, the mock's "4/6" having counted the reserve in.
+Checked live with a Maneuver Prepared and abandoned. No handbook moved and `data/SYNC.json` is
+untouched; no ruling.
+
+Cleared 2026-11-04 (the four Actor-side documents, system 0.10.1; the twelfth of the architecture
+recommendations, all four parts by Mike's "Do all four"): `documents/actions.mjs`, which charged
+a token drag and offered the Intercept and nothing else, is `documents/movement.mjs`
+(`registerMovementTracking`); `documents/combat.mjs` (1,192 lines) keeps `SwCombatant`, `SwCombat`
+and the round's hooks (612), with the card idiom in `helpers/cards.mjs` (`cardHtml`, `postCard`,
+`ownersOf`, `tableFor`, `requireOwner`, `actorFromUuid`, `cardActions`, `registerCardButtons`),
+the election in `helpers/authority.mjs` (`isElected`, `responsibleFor`), the safe read in
+`helpers/settings.mjs` (`setting`), the round's cards and their buttons in
+`documents/cards/round.mjs` and the tracker's readout in `apps/combat-tracker.mjs`
+(`registerTrackerReadout`, called by `starwrought.mjs` so the module may import `SwCombat` without
+a circle); `documents/chat.mjs` (899) keeps the render pass, the `onCardButton` dispatch and
+`onChatSocket`, now a router by prefix (195), over `documents/cards/{shared,damage,reroll,flare,
+position,attack}.mjs`, each family answering its own socket messages through `shared.mjs`'s
+`replyTo`, the never-imported `onDamageSocket` alias dropped; and `documents/actor.mjs` (2,471,
+the most-changed file) is the composition, the lookups and the lifecycle (160) over thirteen
+mixins in `documents/actor/` (`conditions`, `wounds`, `checks`, `defense`, `attack`, `points`,
+`actions`, `carrying`, `position`, `auras`, `bind`, `flares`, `rest`), bodies verbatim, each
+`#private` asserted to be called only from its own section, the conditions' static write queue a
+module Map, the Bind's `SwActor.resolveActor` calls the pair-keeper's resolver, and `sameName` now
+`SW.sameName` in `config/names.mjs`. Checked by a free-identifier check on all 28 files, a clean
+load, one button of each card kind driven in a short encounter, the Actor's method surface (59
+names, three statics) and 785 read-only answers on four actors identical before and after, and
+every write path once (the 0.10.1 changelog entry lists them). **"`documents/actor.mjs`" in this
+file names the class; a method's body is in the section file named for it.** No handbook moved and
+`data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the check engine's parts, system 0.10.1; the eleventh of the architecture
+recommendations): `module/dice/check.mjs` (1,206 lines) split along its own groups into
+`module/dice/check/` (`modifiers`, `dialog`, `card`, `position`, `strike`), `SwCheck` the facade
+with `roll`, `resolveAgainst` and every public static, so no caller moved; `check.mjs` 642 lines.
+Checked with the die pinned (`CONFIG.Dice.randomUniform` constant): preview totals, three
+dialogs' HTML and eight cards with their flags diffed before and after. No handbook moved and
+`data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the character model's passes, system 0.10.1; the tenth of the architecture
+recommendations, whose Item half was the second): `SwCharacterData`'s nine derived-data passes,
+now exported functions over the model in `module/data/character/` (`constellations`,
+`attributes`, `armor`, `defenses` with the stance, `wind`, `vigor`, `offense`, and `shared` for
+the Arms Wound penalty and the Evade availability the adversary uses too), each headed with what
+it reads and writes; `prepareDerivedData` the one place the order lives; the class keeping its
+schema, base data and public methods; `actor.mjs` 833 lines from 1,384; the shared base
+`SwActorData` untouched, since it already was the shared layer. Checked by diffing every Actor's
+full derived data and public-method answers before and after in the running world. No handbook
+moved and `data/SYNC.json` is untouched; no ruling. **The next handbook sync lands in the pass
+named for the rule** (Wind in `wind.mjs`, Vigor in `vigor.mjs`).
+
+Cleared 2026-11-04 (a Maneuver the system implements is an Action first, system 0.10.1; the
+eighth of the architecture recommendations, Mike's own: "Actions like Recenter should be an
+Action first, and a Macro second"): `module/documents/maneuvers.mjs`, the table of Maneuvers the
+system implements keyed by the slug of the plain name (`recenter` runs `SwActor#recenter`;
+`raise-a-shield` raises the held shield through its own method, warning with
+`STARWROUGHT.Actions.noShieldHeld` when none is held), asked first by `SwItem#use` for an action
+Item; the Recenter Macro now uses the Recenter Item from the Actions pack for each selected token
+and runs the method directly while the row is not enabled; the sheet and card buttons unchanged.
+Through 0.10.0 the Recenter and Raise a Shield Maneuver Items, used, posted a card and did
+nothing. Checked live with temporary world Items named as the rows are (Zones closed, Bind ended
+both sides, shield raised and lowered, the no-shield warning, a near-miss name falling back to
+the card, the Macro's fallback). Enabling the two rows in `data/maneuvers.xlsx` stays Mike's. No
+handbook moved and `data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the automation framework's review, system 0.10.1; the seventh of the
+architecture recommendations, an outside review written against 0.9.0): its largest finding, an
+unspecified hook contract, had closed in 0.10.0; four confirmed findings fixed: the self-test's
+unknown-kind word is `not-a-real-kind` (a constant, with a check that no kind takes it), never a
+real kind's name; `module/rules/syntax.mjs` holds `RuleSyntaxError`, `splitArgs` and `keyValues`
+and imports nothing (`errors.mjs` renamed and grown), so a kind file imports from it and the
+config and never from the grammar or the registry, and the self-test imports the `bonus` file
+first to prove no circle; the grammar's `plainData` refuses a kind's data that is not JSON-plain
+(NaN, a function, a Date, a cycle) as the kind's bug with the path, and drops undefined as JSON
+does; and `module/rules/README.md` states the two hook-point categories (calculated, answering
+with data on any client; triggered, defined with the first such kind with its one executing
+client, event identity and failure rule) and the stale-parse policy (no version on a rule, the
+text is the version). The rest of the review waits for the first triggered kind (ruling 119).
+No handbook moved and `data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the Bind's pair-keeper, system 0.10.1; the sixth of the architecture
+recommendations): the half of `canvas/bind.mjs` that wrote documents (the mirror pickup when the
+writer owns one side, the elected writer, the sweep at ready), now `module/documents/bind.mjs`
+with `registerBindSync` beside `registerBind` in `starwrought.mjs`; `canvas/bind.mjs` only draws;
+the mirror table and the uuid resolver defined once there and imported by `documents/actor.mjs` (since the actor split, `documents/actor/bind.mjs` and `actor.mjs`)
+(whose `formBind` carried a copy of the table and whose static `resolveActor` now delegates) and
+by the canvas. Checked live by forcing the pickup both ways with pairing off, a sweep over a
+half-emptied pair, and the chain counted on the map. No handbook moved and `data/SYNC.json` is
+untouched; no ruling.
+
+Cleared 2026-11-04 (three of the apps, system 0.10.1; the fifth of the architecture
+recommendations, which reviewed six): the seven context builders the character, adversary and
+party sheets share, exports of `apps/actor-sheet.mjs` that two other sheets imported, now
+`module/helpers/actor-context.mjs` beside `stance.mjs`; the synchronisation of
+`apps/content-sync.mjs` (fetch, plan, apply, the copies, the card) now
+`module/helpers/content-sync.mjs`, the window importing it and re-exporting the three entry
+points so the 0.8.0 import path holds; the party sheet's five per-tab context builders, now plain
+functions over the party in `module/apps/party/{roster,skills,road,loot}.mjs`, the 27 handlers
+and the member hooks staying with the sheet (the feature behaviour was always
+`helpers/party.mjs`). Not split, by the same review: `chargen.mjs` (the step logic is already
+small methods; the point-slot engine is the complexity and is bound to the wizard's state),
+`combat-prompt.mjs` and `item-sheet.mjs`. Checked by diffing every tab's rendered HTML of the
+three sheets and the Sync content window before and after. No handbook moved and `data/SYNC.json`
+is untouched; no ruling.
+
+Cleared 2026-11-04 (the Item details tab split, system 0.10.1; the fourth of the architecture
+recommendations): the 386-line `templates/item/details.hbs` branching eight ways, now a 7-line
+dispatcher including `templates/item/details/<type>.hbs` by name through Foundry's `concat`, one
+partial per Item type and three shared panels beside them (`aura`, written out twice through
+0.10.0; `automation`, whose include sites are now the list of types that show it, so
+`SwItemSheet.RULE_TYPES` and `hasRulesPanel` are gone; `physical`), all twelve registered in
+`preloadTemplates`, which a new type must be added to; and the physical panel's "Worn or
+wielded" checkbox on the derived `system.equipped`, which worked only by tripping the 0.4
+`migrateCarryState` on every write, now a select on `system.state` (In hand, Worn, Packed;
+`STARWROUGHT.Field.carryState`). Checked by diffing each type's rendered details HTML before and
+after (identical but for that control) and exercising the select live. No handbook moved and
+`data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the rules constants split, system 0.10.1; the third of the architecture
+recommendations): the one 1,166-line `module/config.mjs`, the most-changed file in the system,
+now an 83-line barrel of explicit named re-exports over `module/config/`, twenty files, one
+concept each (`system`, `attributes`, `proficiency`, `constellations` with the runtime registry,
+`exchange`, `degrees`, `zones`, `sizes`, `weapons`, `load`, `recovery`, `advancement`, `party`,
+`actions`, `movement`, `auras`, `items`, `conditions`, `modifiers`, `names`), every one pure at
+module scope and headed to say so; the split refiled by concept rather than by the drifted
+banners (the Exchange and the version stamp out of "Constellations", Load Strain and the Endure
+Vigor bonus out of "Weapons", Wind, Fatigued and the helms out of "Movement", the Item types out
+of "Auras"), renamed nothing and changed no value; `SYSTEM_VERSION` is in
+`module/config/system.mjs` and the stamp checks read it there; `build_all.mjs` imports the barrel
+and every file in plain Node and fails on a name a file exports that the barrel does not, or the
+reverse, or a file that will not import; no file imports the barrel, so no cycle. Checked by a
+node dump of all 108 exports (names, constants, function source, a call table) before and after,
+identical but for the old file's line endings, and the live world's Item schemas, 38 Items' and
+four Actors' derived data and the status effects, identical. **In this file, "`X` in
+`config.mjs`" still means the barrel; the constant's own file is the concept's under
+`module/config/`.** No handbook moved and `data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the Item data models split, system 0.10.1; the second of the architecture
+recommendations): the one 873-line `module/data/item.mjs`, now a 27-line barrel over
+`module/data/items/`, one file per Item type (`constellation`, `talent`, `chassis`, `weapon`,
+`armor`, `shield`, `gear`, `action`, each with a header naming the shared pieces it uses, no type
+file importing another) and the shared pieces one concern per file (`base`, `cost`, `aura`,
+`rules`, `physical`, `weapon-traits`), the review's single `shared-fields.mjs` declined because
+each concern is a trio of fields, migration and prepare that belongs together and apart;
+`weapon-traits.mjs` pure, so `assets/build_foundry.mjs` imports `splitTraits` from the system and
+drops the copy it carried (pack sources byte-identical), and a build-time check of the Traits
+column can use `parseWeaponTraits` without a second parser; the one-time Speed migration out of
+the Item models into `module/data/legacy.mjs`; `helmPenaltyFor` with armor, where `actor.mjs`
+imports it. Checked by recording every Item type's schema and 38 sample Items' full derived data
+in the running world before and after and diffing (identical), `node --check`, `test_rules`, the
+build, and a clean world load. No handbook moved and `data/SYNC.json` is untouched; no ruling.
+
+Cleared 2026-11-04 (the stylesheet split, system 0.10.1; the first of Mike's architecture
+recommendations from an outside review, each to be validated before any code moves): the one
+2,947-line `styles/starwrought.css`, now eleven files, one per window, in the order `system.json`
+lists them, each opening with what it owns, what it serves and what it builds on, with the map and
+the rules in `foundry/starwrought/styles/README.md` (a file relies only on the files before it; no
+selector list declared twice, `:root` excepted; every `.css` in the folder listed in the manifest);
+the one stale-copy stamp, now one per file (`--sw-css-version-<name>`), read off
+`game.system.styles` by `checkForStaleAssets` so the warning names the stale file; the stamp check
+in `build_all.mjs` and `package_system.mjs` reading the manifest's list and `build_all.mjs` failing
+on an unlisted stylesheet or a repeated selector list; and the four places where the old file's
+order silently decided a rule, fixed: the Strike pills' 0.5.1 padding, dead behind the base rule,
+now the one rule; `sw-choice` shared by the check dialog's options and the wizard's cards, the
+options now `sw-dialog-option` in their own authored look and the cards keeping the size the
+collision gave them, written down; `.sw-defense` once; the stance, wound and bind cards' accents,
+dead behind the base card's `border` shorthand, now showing. The split was done by a script slicing
+the old file by line range with a coverage assertion, the rule sets compared, and the computed
+styles of 2,313 elements across nine open windows diffed before and after on the live system
+(identical but for the pills and the pinned wizard size). Not done, Mike's call: whether the
+wizard's card names should return to 14px (two lines in `chargen.css`), and whether to adopt
+Foundry's cascade layers (the scrollbar block would have to stay out). No handbook moved and
+`data/SYNC.json` is untouched; no ruling, the count stands at 124.
+
+Cleared 2026-10-03 (the first rule kind, system 0.10.0): the empty registry, now one kind, `bonus`
+(`module/rules/kinds/bonus.mjs`; `bonus: <value> <Type> to <Target> [if <Constellation> is
+<Rank>]`, Mike's sketch made concrete, the rank test equality as he wrote it, the three type words
+only with the retired words refused by name, the target a Constellation or a Maneuver by the
+book's name; ruling 121); the framework reading nothing in play, now the `modifiers` hook point
+(`ruleModifiers` in `module/rules/engine.mjs`), generic dispatch over every registered kind from
+two existing passes, the check assembly and the Defense pass, so a later kind that wants the same
+moment adds no engine code (ruling 124); a Maneuver-targeted bonus applied to a roll made from the
+Maneuver's Item and offered unticked on any other check, never on an attack, a Defense or an
+Initiative (ruling 122); a Maneuver whose check is enabled with no Constellation named, now a
+Relevant Check that opens the picker carrying the Maneuver, set by the build from an Effect that
+says "Relevant Check" (ruling 123; Aid ships with it set, the first shipped Maneuver document); the
+grammar's parse context carrying a `resolve` from both its callers; `STARWROUGHT.Rules.none` and
+the build summary's plurals; the self-test's bonus section; the recipe's step 5 rewritten for
+generic dispatch. Also cleared the same day, by Mike's hand during the build: the never-committed
+`data/actions.xlsx` and its one row. Mike moved Aid into the tracked `data/maneuvers.xlsx`
+("Watching, Deceiving & Helping", row 9) with `Enabled? = Yes` and deleted `actions.xlsx`; the
+converter said "'Aid' was actions.xlsx's and is now defined in maneuvers.xlsx, which wins",
+`assets/actions.json` lists 40 actions from one workbook, and Aid ships for the first time under
+the roster row's old document id, so a fresh clone now regenerates every action and the carry-over
+rule has nothing to carry. Not done: Humanity's cell (Excel held `data/ancestries.xlsx` open; the
+four lines are Mike's to paste, Known outstanding work, above), Aid's `_Tree Index` row (the
+converter warns), any survey, any second kind, and adversaries, which roll flat. No handbook moved
+and `data/SYNC.json` is untouched;
+`Starwrought_Players_Handbook_v4.16.docx` stays on the shelf unsynced; the rulings (121 to 124)
+are recorded in the 0.10.0 changelog entry. The next kind is the aura (Known outstanding work,
+above).
 
 Cleared 2026-10-03 (the automation framework, system 0.9.0): the Automation column with no grammar
 behind it, now one grammar in one place (`foundry/starwrought/module/rules/grammar.mjs`, pure, so

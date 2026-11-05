@@ -12,10 +12,13 @@ import { SwCharacterData, SwNpcData } from "./module/data/actor.mjs";
 // THE PARTY (0.7.0): a third Actor type, GM-owned with Observer players, extending TypeDataModel
 // directly so the combat machinery never sees one (party-sheet-plan.md, phase 1).
 import { SwPartyData } from "./module/data/party.mjs";
+// The Item models, one file per type under module/data/items/ since 0.10.1; item.mjs is the barrel.
 import {
   SwActionData, SwArmorData, SwChassisData, SwConstellationData,
-  SwGearData, SwShieldData, SwTalentData, SwWeaponData, LEGACY_SPEED_FLOOR, migrateSpeed
+  SwGearData, SwShieldData, SwTalentData, SwWeaponData
 } from "./module/data/item.mjs";
+// The one-time world migration's conversions (the v3.x Speed), used by the migration block below.
+import { LEGACY_SPEED_FLOOR, migrateSpeed } from "./module/data/legacy.mjs";
 import { SwActor } from "./module/documents/actor.mjs";
 import { SwItem } from "./module/documents/item.mjs";
 import { SwCombat, SwCombatant } from "./module/documents/combat.mjs";
@@ -26,7 +29,8 @@ import { onPartySocket } from "./module/documents/party-socket.mjs";
 // THE ROAD (0.7.2 and 0.7.3): the Activities cache, and the one hook that remembers a member's
 // Activity roll on their character (ruling 108).
 import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
-import { registerActionTracking } from "./module/documents/actions.mjs";
+import { registerMovementTracking } from "./module/documents/movement.mjs";
+import { registerTrackerReadout } from "./module/apps/combat-tracker.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
 import { registerReachRings, refresh as refreshReach } from "./module/canvas/reach.mjs";
 // AURAS (0.5.1): the pinned rings, the client setting that mutes them, and the GM's two controls.
@@ -36,6 +40,8 @@ import {
 import { registerStrideRuler } from "./module/canvas/ruler.mjs";
 import { registerTargeting, refresh as refreshTargets } from "./module/canvas/targeting.mjs";
 import { registerBind } from "./module/canvas/bind.mjs";
+// THE BIND'S PAIR (0.10.1): the two-sided record kept whole, a document concern, beside its drawing.
+import { registerBindSync } from "./module/documents/bind.mjs";
 import { registerStanceHud } from "./module/apps/token-hud.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
@@ -49,7 +55,8 @@ import { AttackCoordinator } from "./module/combat/attack-coordinator.mjs";
 import { SwCombatPrompt } from "./module/apps/combat-prompt.mjs";
 // THE CONTENT LOOP (0.8.0): the open world's compendia synced from the pack sources on disk, no
 // restart (content-loop brief; rulings 115 to 117). The window, and the two reads the load offer makes.
-import { ContentSync, fetchContentIndex, planContentSync, formatWhen } from "./module/apps/content-sync.mjs";
+import { ContentSync } from "./module/apps/content-sync.mjs";
+import { fetchContentIndex, planContentSync, formatWhen } from "./module/helpers/content-sync.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
@@ -171,13 +178,15 @@ Hooks.once("init", async () => {
   CONFIG.Dice.rolls = [Roll];
 
   registerSettings();
-  registerActionTracking();
+  registerMovementTracking(); // the round's hooks and cards first, then the drag and the Intercept
+  registerTrackerReadout();
   registerAudit();
   registerReachRings();
   registerAuras(); // AURAS (0.5.1)
   registerStrideRuler();
   registerTargeting();
   registerBind();
+  registerBindSync();
   registerExposedStatuses();
   registerStanceHud();
   registerHandlebarsHelpers();
@@ -330,13 +339,15 @@ const LEGACY_CALLING_VIGOR = Object.freeze({
  *
  * 0.6.0 (PHB v4.11, ruling R6): a Calling's Vigor became Opening Vigor, added once at 1st level,
  * where it had been a per-level number. See LEGACY_CALLING_VIGOR.
+ *
+ * 0.10.1: token bars left on `hp` by the 0.6.0 rename point at `vigor`.
  */
 async function migrateWorld() {
   if (!game.user.isGM) return;
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1") && !needs("0.6.0")) {
+  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -468,7 +479,41 @@ async function migrateWorld() {
     }
   }
 
+  // 0.10.1: a token bar left on `hp` drew nothing since 0.6.0 renamed Hit Points to Vigor; the
+  // actor data moved then and the token bars did not. Prototype tokens and every scene's tokens
+  // with a bar on `hp` point it at `vigor`. (Found on Hrolda's token while building the HUD's
+  // action counter, 2026-11-04.)
+  let bars = 0;
+  if (needs("0.10.1")) {
+    const retarget = doc => {
+      const changes = {};
+      for (const bar of ["bar1", "bar2"]) if (doc?.[bar]?.attribute === "hp") changes[`${bar}.attribute`] = "vigor";
+      return changes;
+    };
+    for (const actor of game.actors) {
+      const changes = retarget(actor.prototypeToken);
+      if (foundry.utils.isEmpty(changes)) continue;
+      await actor.update(Object.fromEntries(Object.entries(changes).map(([k, v]) => [`prototypeToken.${k}`, v])));
+      bars++;
+    }
+    for (const scene of game.scenes) {
+      const updates = [];
+      for (const token of scene.tokens) {
+        const changes = retarget(token);
+        if (!foundry.utils.isEmpty(changes)) updates.push({ _id: token.id, ...changes });
+      }
+      if (!updates.length) continue;
+      await scene.updateEmbeddedDocuments("Token", updates);
+      bars += updates.length;
+    }
+  }
+
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (bars > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.tokenBars", { version: game.system.version, count: bars });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (openings > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.openingVigor", { version: game.system.version, count: openings });
     console.log(`STARWROUGHT | ${message}`);
@@ -533,16 +578,24 @@ async function normaliseConditionEffects(actor) {
  * A server behind a caching proxy can hand a browser this week's templates with last week's
  * stylesheet or script: Cloudflare, for one, rewrites Foundry's `no-cache` into a four-hour browser
  * cache. The result looks exactly like a bug in the new release. Foundry reads system.json on the
- * server, so `game.system.version` is always current; the code and the stylesheet each carry their
- * own stamp, and a mismatch means a stale copy, which a hard reload cures.
+ * server, so `game.system.version` is always current; the code and every stylesheet each carry
+ * their own stamp, and a mismatch means a stale copy, which a hard reload cures.
+ *
+ * The stylesheets are the `styles` array of system.json (0.10.1: one file per window; see
+ * styles/README.md), and each sets `--sw-css-version-<file name>` on :root, so a proxy holding one
+ * old file among eleven fresh ones is still caught, and the warning names the file.
  */
 function checkForStaleAssets() {
   const server = game.system.version;
-  const css = getComputedStyle(document.documentElement).getPropertyValue("--sw-css-version")
-    .trim().replace(/^["']|["']$/g, "");
   const stale = [];
   if (SW.SYSTEM_VERSION !== server) stale.push(`${game.i18n.localize("STARWROUGHT.Notify.staleCode")} ${SW.SYSTEM_VERSION}`);
-  if (css !== server) stale.push(`${game.i18n.localize("STARWROUGHT.Notify.staleStyles")} ${css || "?"}`);
+  const root = getComputedStyle(document.documentElement);
+  for (const entry of game.system.styles ?? []) {
+    const src = typeof entry === "string" ? entry : entry.src;
+    const stem = src.split("/").pop().replace(/\.css$/, "");
+    const css = root.getPropertyValue(`--sw-css-version-${stem}`).trim().replace(/^["']|["']$/g, "");
+    if (css !== server) stale.push(`${src.split("/").slice(-2).join("/")} ${css || "?"}`);
+  }
   if (!stale.length) return;
   const message = game.i18n.format("STARWROUGHT.Notify.staleAssets", { server, stale: stale.join(", ") });
   console.warn(`STARWROUGHT | ${message}`);

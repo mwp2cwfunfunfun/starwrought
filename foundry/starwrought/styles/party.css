@@ -1,0 +1,632 @@
+/* ==========================================================================
+   STARWROUGHT: the party.
+   The party sheet (0.7.0 to 0.7.5) and the cards it speaks: the roster, the Skills grid, the
+   loot and the purse, On the road and Downtime, and the party's dialogs. Serves
+   templates/actor/party-*.hbs, module/apps/party-sheet.mjs and module/helpers/party.mjs.
+   Builds on sheet.css (item rows, currency, panels), character.css (the Vigor track, the
+   level badge, the Milestone pips, the stepper) and chat.css (the action card).
+
+   Load order is the order of the `styles` array in system.json. A file may rely on the files
+   listed before it and never on one listed after it; no selector list is declared twice
+   anywhere in styles/ (build_all.mjs checks), so the order never decides how a rule reads.
+   styles/README.md has the map of what lives where and where a new rule goes.
+   ========================================================================== */
+
+/* The stale-copy stamp: see the note in starwrought.css. */
+:root { --sw-css-version-party: "0.10.1"; }
+
+/* --------------------------------------------------------------------------
+   The party (0.7.0; party-sheet-plan.md, phase 1). The GM's console and the
+   players' window: a header with the session and the GM's buttons, a roster
+   that is always open above the tabs (one status row per member, every number
+   the member's own), the Skills grid as a table, and the cards the party
+   speaks. The roster reuses the character header's pieces where it can (the
+   Vigor track, the Milestone pips, the level badge, the stat counters) so the
+   two sheets read as one.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-party-header .sw-portrait { border-color: var(--sw-presence); }
+.starwrought .sw-session-badge { border-color: var(--sw-edge); cursor: help; }
+.starwrought .sw-session-badge strong { color: var(--sw-presence); }
+.starwrought .sw-party-blurb { margin: 0; }
+.starwrought .sw-party-controls { align-items: center; }
+.starwrought .sw-party-controls .sw-party-add-players { margin-left: auto; }
+.starwrought .sw-party-drop { margin: 0; color: var(--sw-ink-dim); font-style: italic; }
+.starwrought .sw-party-drop i { margin-right: 0.2rem; opacity: 0.7; }
+
+/* The roster: a block above the tabs that holds its own scroll when the party is large, so the
+   grid tab below always keeps room. */
+.starwrought .sw-party-roster {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 55%;
+  overflow: hidden auto;
+  scrollbar-gutter: stable;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--sw-edge);
+}
+.starwrought .sw-roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.starwrought .sw-roster-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent);
+}
+.starwrought .sw-roster-row.sw-roster-spent { border-color: #7a3a3a; }
+.starwrought .sw-roster-row.sw-roster-dying { border-color: var(--sw-blood); box-shadow: 0 0 8px rgba(180, 69, 63, 0.35); }
+.starwrought .sw-roster-row.sw-roster-missing { border-style: dashed; opacity: 0.75; align-items: center; }
+.starwrought .sw-roster-portrait {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 2px solid var(--sw-gold-dim);
+  border-radius: var(--sw-radius);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.starwrought .sw-roster-portrait:hover { border-color: var(--sw-flare); }
+.starwrought .sw-roster-portrait-missing {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sw-ink-dim); border-color: var(--sw-edge); cursor: default; font-size: 1.4rem;
+}
+.starwrought .sw-roster-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.starwrought .sw-roster-name-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.starwrought .sw-roster-name { font-family: var(--font-h1, inherit); font-size: 1.05rem; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-roster-name-missing { color: var(--sw-ink-dim); font-style: italic; font-weight: 500; }
+.starwrought .sw-roster-main > .sw-note { margin: 0; }
+.starwrought .sw-roster-players { display: inline-flex; gap: 0.2rem; margin-left: auto; cursor: help; }
+.starwrought .sw-player-dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--sw-player-color, var(--sw-ink-dim));
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 5px var(--sw-player-color, transparent);
+}
+.starwrought .sw-player-dot.sw-player-off { opacity: 0.3; box-shadow: none; }
+
+/* The Deferred badge (ruling 94): a reminder with a number on it, and one control, Spent. */
+.starwrought .sw-deferred-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--sw-agility);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(111, 194, 176, 0.18), rgba(111, 194, 176, 0.05));
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+  white-space: nowrap;
+  cursor: help;
+}
+.starwrought .sw-deferred-badge i { color: var(--sw-agility); font-size: 0.7rem; align-self: center; }
+.starwrought .sw-deferred-badge strong { font-size: 0.95rem; color: var(--sw-agility); letter-spacing: 0; }
+.starwrought .sw-deferred-spend {
+  margin-left: 0.15rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--sw-agility);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--sw-agility);
+}
+.starwrought .sw-deferred-spend:hover { background: rgba(111, 194, 176, 0.2); color: var(--sw-ink); text-shadow: none; }
+
+/* The vitals line: the Vigor track at the character sheet's size, then the counters. */
+.starwrought .sw-roster-vitals { display: flex; align-items: flex-start; gap: 0.6rem; flex-wrap: wrap; }
+.starwrought .sw-roster-vigor { flex: 1 1 200px; min-width: 160px; }
+.starwrought .sw-roster-vigor .sw-vigor-track { height: 24px; }
+.starwrought .sw-roster-vigor .sw-vigor-text strong { font-size: 0.95rem; }
+.starwrought .sw-roster-vigor .sw-vigor-text em { font-size: 0.75rem; color: var(--sw-ink-dim); font-style: normal; }
+.starwrought .sw-roster-temp { font-size: 0.65rem; color: var(--sw-agility); margin-left: 0.2rem; cursor: help; }
+.starwrought .sw-roster-stats { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.starwrought .sw-roster-stat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 58px;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: help;
+}
+.starwrought .sw-roster-stat strong { font-size: 0.95rem; line-height: 1.2; }
+.starwrought .sw-roster-stat strong em { font-size: 0.65rem; color: var(--sw-ink-dim); font-style: normal; }
+.starwrought .sw-roster-stat.sw-alert { border-color: var(--sw-gold-dim); }
+.starwrought .sw-roster-stat.sw-alert strong { color: var(--sw-gold); }
+.starwrought .sw-roster-stat.sw-danger { border-color: var(--sw-blood); box-shadow: 0 0 8px rgba(180, 69, 63, 0.4); }
+.starwrought .sw-roster-stat.sw-danger strong { color: #ff6b63; }
+.starwrought .sw-roster-stat.sw-roster-warn { border-color: #7a5a2a; }
+.starwrought .sw-roster-stat.sw-roster-warn strong { color: #d8a25a; }
+.starwrought .sw-roster-hero .sw-stepper { gap: 0.3rem; }
+.starwrought .sw-roster-hero .sw-stepper strong { font-size: 0.95rem; }
+.starwrought .sw-roster-adjust { font-size: 0.9rem; line-height: 1; padding: 0 0.2rem; color: var(--sw-ink-dim); }
+.starwrought .sw-roster-adjust:hover { color: var(--sw-flare); }
+.starwrought .sw-roster-adjust-off { opacity: 0.35; }
+
+/* The Flare chips: lit gold, as the Constellations tab draws a Flared sky; live ones hover brighter. */
+.starwrought .sw-roster-flares { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; font-size: 0.75rem; }
+.starwrought .sw-roster-flares-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sw-ink-dim); }
+.starwrought .sw-roster-flares-label i { color: var(--sw-flare); margin-right: 0.15rem; }
+.starwrought .sw-flare-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.08rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  background: linear-gradient(160deg, rgba(255, 216, 103, 0.2), rgba(255, 216, 103, 0.06));
+  color: var(--sw-flare);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-shadow: 0 0 6px rgba(255, 216, 103, 0.35);
+  cursor: help;
+}
+.starwrought a.sw-flare-chip-live { cursor: pointer; }
+.starwrought a.sw-flare-chip-live:hover { border-color: var(--sw-flare); background: rgba(255, 216, 103, 0.3); color: #fff; }
+.starwrought .sw-flare-chip-add { border-style: dashed; background: transparent; color: var(--sw-ink-dim); text-shadow: none; cursor: pointer; padding-inline: 0.4rem; }
+.starwrought .sw-flare-chip-add:hover { color: var(--sw-flare); border-color: var(--sw-flare); }
+.starwrought .sw-roster-none { color: var(--sw-ink-dim); font-style: italic; font-size: 0.72rem; }
+.starwrought .sw-roster-remove { flex: 0 0 auto; align-self: center; padding: 0.3rem; font-size: 0.9rem; color: var(--sw-ink-dim); }
+.starwrought .sw-roster-remove:hover { color: var(--sw-blood); text-shadow: none; }
+.starwrought .sw-roster-empty { margin: 0; }
+.starwrought .sw-roster-observer { margin: 0.3rem 0 0; text-align: center; }
+
+/* The Skills grid: a table, members across, Constellations down. Gold marks the best in a row;
+   an Untrained cell is dim; a live cell lights on hover; a blank cell is a Lore the member has not
+   opened. */
+.starwrought .sw-party-grid-panel .sw-panel-title .sw-points { text-transform: none; letter-spacing: 0; font-weight: normal; }
+.starwrought .sw-party-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.8rem;
+  margin: 0;
+}
+.starwrought .sw-party-grid th,
+.starwrought .sw-party-grid td { padding: 0.2rem 0.3rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.starwrought .sw-party-grid thead th { border-bottom: 1px solid var(--sw-edge); vertical-align: bottom; }
+.starwrought .sw-party-grid .sw-grid-rowhead {
+  width: 11rem;
+  text-align: left;
+  font-weight: 500;
+  color: var(--sw-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.starwrought .sw-party-grid .sw-grid-rowhead .sw-glyph { font-size: 0.85rem; margin-right: 0.2rem; }
+.starwrought .sw-party-grid .sw-grid-member { text-align: center; }
+.starwrought .sw-grid-member .sw-grid-portrait {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 0.15rem;
+  object-fit: cover;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  cursor: pointer;
+}
+.starwrought .sw-grid-member-live .sw-grid-portrait { border-color: var(--sw-gold-dim); }
+.starwrought .sw-grid-member-name {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--sw-ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.starwrought .sw-grid-member-live .sw-grid-member-name { color: var(--sw-gold); }
+.starwrought .sw-party-grid .sw-grid-group th {
+  padding-top: 0.5rem;
+  text-align: left;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-ink-dim);
+  border-bottom: 1px solid var(--sw-edge);
+}
+.starwrought .sw-party-grid .sw-grid-cell { text-align: center; }
+.starwrought .sw-grid-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 4.2rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+.starwrought .sw-grid-value strong { font-size: 0.95rem; color: var(--sw-ink); }
+.starwrought .sw-grid-rank {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--sw-edge);
+  line-height: 1.3;
+}
+.starwrought .sw-grid-untrained .sw-grid-value strong { color: var(--sw-ink-dim); opacity: 0.7; }
+.starwrought .sw-grid-best .sw-grid-value { border-color: var(--sw-gold-dim); background: rgba(227, 178, 60, 0.12); }
+.starwrought .sw-grid-best .sw-grid-value strong { color: var(--sw-flare); text-shadow: 0 0 6px rgba(255, 216, 103, 0.4); }
+.starwrought a.sw-grid-value { cursor: pointer; }
+.starwrought a.sw-grid-value:hover { border-color: var(--sw-gold); background: rgba(255, 216, 103, 0.18); text-shadow: none; }
+.starwrought a.sw-grid-value:hover strong { color: var(--sw-flare); }
+.starwrought .sw-grid-static { cursor: help; }
+.starwrought .sw-grid-row-initiative .sw-grid-value:not(a) { opacity: 0.6; }
+.starwrought .sw-grid-blank { color: var(--sw-edge); }
+.starwrought .sw-grid-blank::before { content: "\2013"; color: var(--sw-edge); }
+
+/* The dialogs: the award's preview list, the reason field. */
+.starwrought.sw-party-dialog .sw-milestone-preview { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.starwrought.sw-party-dialog .sw-milestone-preview label.checkbox { display: flex; align-items: flex-start; gap: 0.45rem; font-size: 0.82rem; line-height: 1.35; }
+.starwrought.sw-party-dialog .sw-milestone-preview input[type="checkbox"] { flex: 0 0 auto; margin-top: 0.15rem; }
+.starwrought.sw-party-dialog .sw-note { margin: 0.4rem 0 0; }
+
+/* The cards the party speaks, and the member's Hero Point and Deferred lines. */
+.starwrought.action-card.sw-party-card { border-left: 3px solid var(--sw-presence); }
+.starwrought.action-card.sw-party-card h3 .fa-play,
+.starwrought.action-card.sw-party-card h3 .fa-bed,
+.starwrought.action-card.sw-party-card h3 .fa-rotate-left { color: var(--sw-presence); }
+.starwrought.action-card.sw-milestone-card { border-left-color: var(--sw-gold); }
+.starwrought.action-card.sw-milestone-card h3 .fa-star { color: var(--sw-flare); }
+.starwrought.action-card.sw-milestone-taken-back { border-left-color: var(--sw-ink-dim); }
+.starwrought.action-card.sw-deferred-card { border-left: 3px solid var(--sw-agility); }
+.starwrought.action-card.sw-deferred-card h3 .fa-hourglass-half { color: var(--sw-agility); }
+
+/* Ask everyone on a grid row header (0.7.1; plan, part 7): a bullhorn that shows itself on hover. */
+.starwrought .sw-grid-rowhead .sw-grid-ask {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--sw-ink-dim);
+  opacity: 0.35;
+  cursor: pointer;
+}
+.starwrought .sw-grid-rowhead:hover .sw-grid-ask { opacity: 1; }
+.starwrought .sw-grid-rowhead .sw-grid-ask:hover { color: var(--sw-flare); text-shadow: none; }
+
+/* --------------------------------------------------------------------------
+   The loot and the purse (0.7.1; party-sheet-plan.md, part 6). The rows reuse
+   the equipment tab's item-row pieces (image, name, tags, controls) so the two
+   sheets read as one; the count is an input for the GM and a number for a
+   player, Take and Give to are the two verbs, and the purse is the character's
+   currency block with Split beside it.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-loot-drop { margin: 0 0 0.35rem; font-style: italic; }
+.starwrought .sw-loot-drop i { margin-right: 0.2rem; opacity: 0.7; }
+.starwrought .sw-loot-row.draggable { cursor: grab; }
+.starwrought .sw-loot-row.draggable:active { cursor: grabbing; }
+.starwrought .sw-loot-row .sw-item-name { cursor: pointer; }
+.starwrought .sw-loot-quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-block: 0;
+  color: var(--sw-ink);
+}
+.starwrought .sw-loot-times { color: var(--sw-ink-dim); font-size: 0.7rem; }
+.starwrought .sw-loot-quantity input {
+  width: 3.2rem;
+  height: 1.3rem;
+  padding: 0 0.2rem;
+  text-align: center;
+  font-size: 0.8rem;
+  border: none;
+  border-bottom: 1px solid var(--sw-edge);
+  background: transparent;
+}
+.starwrought .sw-loot-quantity input:focus { border-bottom-color: var(--sw-gold); box-shadow: none; }
+.starwrought .sw-loot-quantity strong { font-size: 0.85rem; }
+.starwrought .sw-loot-price { color: var(--sw-gold-dim); }
+.starwrought .sw-loot-controls { align-items: center; }
+.starwrought .sw-loot-controls .sw-loot-give,
+.starwrought .sw-loot-controls .sw-loot-take {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: var(--sw-gold);
+  white-space: nowrap;
+}
+.starwrought .sw-loot-controls .sw-loot-give:hover,
+.starwrought .sw-loot-controls a.sw-loot-take:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); text-shadow: none; }
+/* A player's Take with no GM connected: shown, named, and not live (ruling 97). */
+.starwrought .sw-loot-row .sw-loot-controls .sw-loot-take-off { border-style: dashed; color: var(--sw-ink-dim); cursor: help; opacity: 1; }
+.starwrought .sw-loot-row.sw-disabled .sw-item-name { text-decoration: line-through; }
+/* A player's controls stay visible: the row is theirs to act on, not to tidy. */
+.starwrought .sw-loot-row .sw-loot-controls:has(.sw-loot-take) { opacity: 1; }
+
+.starwrought .sw-purse-panel .sw-panel-title .sw-panel-buttons { margin-left: auto; }
+.starwrought .sw-purse-row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.starwrought .sw-purse { margin-top: 0; }
+.starwrought .sw-purse-readonly { gap: 0.8rem; }
+.starwrought .sw-purse-coin { font-size: 0.75rem; color: var(--sw-ink-dim); }
+.starwrought .sw-purse-coin strong { font-size: 0.95rem; color: var(--sw-gold); margin-right: 0.15rem; }
+.starwrought .sw-purse-total { font-size: 0.75rem; color: var(--sw-ink-dim); cursor: help; }
+.starwrought .sw-purse-panel .sw-note { margin-top: 0.4rem; }
+
+/* The dialogs: the Take and Give to picker, the Split list with its live preview. */
+.starwrought.sw-party-dialog .form-group { margin: 0.4rem 0 0; }
+.starwrought.sw-party-dialog .form-fields { display: flex; align-items: center; gap: 0.4rem; }
+.starwrought.sw-party-dialog .sw-loot-stock { font-size: 0.72rem; color: var(--sw-ink-dim); white-space: nowrap; }
+.starwrought.sw-party-dialog .sw-split-list label.checkbox { align-items: center; }
+.starwrought.sw-party-dialog .sw-split-name { flex: 1 1 auto; }
+.starwrought.sw-party-dialog .sw-split-has { font-size: 0.72rem; color: var(--sw-ink-dim); white-space: nowrap; }
+.starwrought.sw-party-dialog .sw-split-preview { color: var(--sw-gold); }
+
+/* The cards: a Give to spoken by the member, the Split spoken by the party, and Ask everyone
+   with a row per member and a Roll button that only the member's owner and the GM keep. */
+.starwrought.action-card.sw-loot-card { border-left: 3px solid var(--sw-gold-dim); }
+.starwrought.action-card.sw-loot-card h3 .fa-hand-holding { color: var(--sw-gold); }
+.starwrought.action-card.sw-purse-card h3 .fa-coins,
+.starwrought.action-card.sw-ask-card h3 .fa-bullhorn { color: var(--sw-presence); }
+.starwrought .sw-ask-rows { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.starwrought .sw-ask-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  font-size: 0.8rem;
+}
+.starwrought .sw-ask-portrait { width: 22px; height: 22px; object-fit: cover; border: none; border-radius: 3px; flex: 0 0 auto; }
+.starwrought .sw-ask-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.starwrought .sw-ask-row button {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+  border-color: var(--sw-gold-dim);
+  color: var(--sw-flare);
+}
+
+/* --------------------------------------------------------------------------
+   On the road (0.7.2; party-sheet-plan.md, parts 8 and 9). The party's
+   Travel Speed as one line with the terrain beside it, then one row per
+   member in the roster's idiom (portrait, name, the Activity control, the
+   tags, a Roll), the warnings small and amber under the row. The GM's
+   controls are selects; an owner's are anchors dressed as a select, since the
+   sheet disables form elements for a user who cannot edit the party; a
+   Fatigued row is locked and says why on hover. The cards the road speaks
+   take the agility teal, so a pick and the plan read apart from the party's
+   purple, and the encounter card the blood red of the fight it opens.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-road-panel .sw-panel-title { flex-wrap: wrap; }
+.starwrought .sw-road-panel .sw-panel-title .sw-points { text-transform: none; letter-spacing: 0; font-weight: normal; }
+.starwrought .sw-road-panel .sw-panel-title .sw-panel-buttons { margin-left: auto; display: inline-flex; gap: 0.3rem; }
+/* Begin the encounter with no scene viewed: shown, dimmed, and the tooltip says why (a disabled
+   button would swallow the hover). */
+.starwrought .sw-road-panel button.sw-button-off { opacity: 0.45; cursor: help; }
+
+/* The speed line (ruling 102). */
+.starwrought .sw-road-speed {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.starwrought .sw-road-figures { display: inline-flex; align-items: baseline; gap: 0.3rem; font-size: 0.78rem; color: var(--sw-ink-dim); cursor: help; white-space: nowrap; }
+.starwrought .sw-road-figures strong { font-size: 1.05rem; color: var(--sw-gold); }
+.starwrought .sw-road-figures .sw-road-dot { color: var(--sw-edge); padding-inline: 0.1rem; }
+.starwrought .sw-road-terrain { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--sw-ink-dim); cursor: help; }
+.starwrought .sw-road-terrain i { opacity: 0.7; }
+.starwrought .sw-road-terrain select { width: auto; height: 1.5rem; padding: 0 0.3rem; font-size: 0.75rem; }
+.starwrought .sw-road-terrain-hard,
+.starwrought .sw-road-terrain-hard select { color: #d8a25a; }
+.starwrought .sw-road-pace { margin-left: auto; font-size: 0.75rem; font-style: italic; color: var(--sw-ink-dim); }
+.starwrought .sw-road-searching { margin: 0.3rem 0 0; }
+.starwrought .sw-road-searching i { margin-right: 0.2rem; opacity: 0.7; }
+
+/* The rows: one per member, wrapping, the warnings on a line of their own. */
+.starwrought .sw-road-rows { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.starwrought .sw-road-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.starwrought .sw-road-row.sw-road-live { border-color: var(--sw-gold-dim); }
+.starwrought .sw-road-row.sw-road-locked { border-style: dashed; }
+.starwrought .sw-road-portrait { width: 32px; height: 32px; object-fit: cover; border: 1px solid var(--sw-gold-dim); border-radius: 4px; cursor: pointer; flex: 0 0 auto; }
+.starwrought .sw-road-portrait:hover { border-color: var(--sw-flare); }
+.starwrought .sw-road-name {
+  flex: 0 1 9rem;
+  min-width: 6rem;
+  font-family: var(--font-h1, inherit);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sw-gold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.starwrought .sw-road-activity,
+.starwrought .sw-road-constellation { display: inline-flex; align-items: center; gap: 0.3rem; }
+.starwrought .sw-road-select { font-size: 0.82rem; }
+.starwrought select.sw-road-select { width: auto; max-width: 14rem; height: 1.6rem; padding: 0 0.3rem; font-size: 0.8rem; }
+/* An owner's control: an anchor dressed as a select, opening the picker dialog (ruling 106). */
+.starwrought a.sw-road-select-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--sw-ink);
+}
+.starwrought a.sw-road-select-live:hover { border-color: var(--sw-gold); background: rgba(255, 216, 103, 0.12); text-shadow: none; }
+.starwrought a.sw-road-select-live i { font-size: 0.7rem; color: var(--sw-ink-dim); }
+/* Locked to Travel while Fatigued (ruling 101): amber, with the reason on hover. */
+.starwrought .sw-road-select-locked { color: #d8a25a; cursor: help; }
+.starwrought .sw-road-select-locked i { font-size: 0.7rem; margin-right: 0.1rem; }
+.starwrought .sw-road-unpicked { color: #d8a25a; font-style: italic; }
+.starwrought .sw-road-speedword { color: var(--sw-ink); cursor: help; }
+.starwrought .sw-road-initiative { cursor: help; }
+.starwrought .sw-road-initiative i { color: var(--sw-wits); margin-right: 0.15rem; }
+.starwrought .sw-road-initiative.sw-road-fallback { border-style: dashed; }
+/* The road roll remembered on the character (0.7.3, ruling 108): a chip after the Initiative tag.
+   Dim and dotted while Initiative rolls another Constellation; in the Initiative tag's colour when
+   it stands as the Initiative roll at Begin the encounter (ruling 109). */
+.starwrought .sw-road-rolled { cursor: help; color: var(--sw-ink-dim); border-style: dotted; }
+.starwrought .sw-road-rolled i { font-size: 0.65rem; margin-right: 0.15rem; opacity: 0.8; }
+.starwrought .sw-road-rolled.sw-road-rolled-usable {
+  color: var(--sw-wits);
+  border-color: var(--sw-wits);
+  border-style: solid;
+  background: rgba(122, 166, 232, 0.1);
+}
+.starwrought .sw-road-rolled.sw-road-rolled-usable i { opacity: 1; }
+.starwrought .sw-road-combat { cursor: help; border-color: var(--sw-gold-dim); color: var(--sw-gold); }
+.starwrought .sw-road-combat.sw-road-combat-rolled { background: rgba(255, 216, 103, 0.12); }
+.starwrought .sw-road-roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-flare);
+  white-space: nowrap;
+}
+.starwrought .sw-road-roll:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); text-shadow: none; }
+/* The warnings (ruling 107): read from live data, never a refusal, so small and amber, not red. */
+.starwrought .sw-road-warnings {
+  flex: 1 1 100%;
+  margin: 0;
+  padding-left: calc(32px + 0.5rem);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  cursor: help;
+}
+.starwrought .sw-road-warnings i { font-size: 0.65rem; }
+
+/* The picker dialog: the Constellation group shows only while the chosen Activity wants one. */
+.starwrought.sw-party-dialog .sw-road-dialog-hidden { display: none; }
+
+/* The cards the road speaks: a pick spoken by the member, the plan and the encounter by the party. */
+.starwrought.action-card.sw-travel-card { border-left: 3px solid var(--sw-agility); }
+.starwrought.action-card.sw-travel-card h3 .fa-route { color: var(--sw-agility); }
+.starwrought.action-card.sw-travel-card .sw-card-note b { color: var(--sw-gold); }
+
+/* --------------------------------------------------------------------------
+   Downtime (0.7.5; party-sheet-plan.md, part 10; rulings 112 to 114). A
+   panel at the foot of the On the road tab, in the road's idiom: the Days
+   count in the title line (the GM's input, a gold figure for everyone else),
+   one row per Downtime Activity with its duration as a tag and its text
+   beneath, the hand lines small and dim under Retrain and Provision, then a
+   strip of member chips with Train. Train is a pill like the road's Roll; it
+   turns amber, never disabled, while Train was already used since the
+   member's last Milestone, since the warning is a reminder and not a refusal
+   (decision 14). The training line on the Flare card takes the agility teal
+   the road's cards use, so a Flare lit by training reads apart from one lit
+   at the table.
+   -------------------------------------------------------------------------- */
+
+.starwrought .sw-downtime-panel { margin-top: 0.6rem; }
+.starwrought .sw-downtime-panel .sw-panel-title { flex-wrap: wrap; }
+.starwrought .sw-downtime-panel .sw-panel-title .sw-points { text-transform: none; letter-spacing: 0; font-weight: normal; }
+/* The days (ruling 112): a number the GM types and nothing counts. */
+.starwrought .sw-downtime-days {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sw-ink-dim);
+  cursor: help;
+}
+.starwrought .sw-downtime-days i { opacity: 0.7; }
+.starwrought .sw-downtime-days-label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.6rem; }
+.starwrought .sw-downtime-days input { width: 4rem; height: 1.5rem; padding: 0 0.3rem; text-align: center; font-size: 0.85rem; color: var(--sw-gold); }
+.starwrought .sw-downtime-days strong { font-size: 1.05rem; color: var(--sw-gold); }
+
+/* The Activity rows (Table 96), data first: name, duration tag, the text, the hand line. */
+.starwrought .sw-downtime-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.starwrought .sw-downtime-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.starwrought .sw-downtime-name { font-family: var(--font-h1, inherit); font-size: 0.95rem; font-weight: 600; color: var(--sw-gold); }
+.starwrought .sw-downtime-duration { cursor: help; color: var(--sw-ink); }
+.starwrought .sw-downtime-duration i { font-size: 0.65rem; margin-right: 0.15rem; opacity: 0.8; }
+.starwrought .sw-downtime-text { flex: 1 1 100%; font-size: 0.78rem; line-height: 1.4; color: var(--sw-ink); }
+.starwrought .sw-downtime-text p { margin: 0; }
+.starwrought .sw-downtime-text p + p { margin-top: 0.2rem; }
+/* The hand lines (ruling 114): a reminder, so small and dim, not amber. */
+.starwrought .sw-downtime-byhand { flex: 1 1 100%; margin: 0; }
+.starwrought .sw-downtime-byhand i { font-size: 0.65rem; margin-right: 0.2rem; opacity: 0.7; }
+
+/* The member strip: a chip per member, the portrait at the road's size, and Train. */
+.starwrought .sw-train-rows { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.starwrought .sw-train-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.starwrought .sw-train-row.sw-road-live { border-color: var(--sw-gold-dim); }
+.starwrought .sw-train-row.sw-train-used { border-color: #7a5a2a; }
+.starwrought .sw-train-name { flex: 0 1 auto; min-width: 0; }
+.starwrought .sw-train-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--sw-gold-dim);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--sw-flare);
+  white-space: nowrap;
+}
+.starwrought .sw-train-button:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); text-shadow: none; }
+/* Train already used since the last Milestone (ruling 113): amber, the warning on hover, still live. */
+.starwrought .sw-train-button.sw-train-used { color: #d8a25a; border-color: #7a5a2a; }
+.starwrought .sw-train-button.sw-train-used:hover { background: rgba(216, 162, 90, 0.14); border-color: #d8a25a; }
+.starwrought .sw-train-used-mark { color: #d8a25a; border-color: #7a5a2a; cursor: help; }
+.starwrought .sw-train-used-mark i { font-size: 0.65rem; margin-right: 0.15rem; }
+
+/* The Flare card's training lines (ruling 113). */
+.starwrought.action-card.sw-flare-card .sw-flare-trained { color: var(--sw-agility); }
+.starwrought.action-card.sw-flare-card .sw-flare-already { font-style: italic; }
+.starwrought.action-card.sw-encounter-card { border-left-color: var(--sw-blood); }
+.starwrought.action-card.sw-encounter-card h3 .fa-flag { color: var(--sw-blood); }

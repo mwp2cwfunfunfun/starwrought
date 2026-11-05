@@ -10,7 +10,9 @@ coding." And the second, which fixes the scope of the release: "Important - do N
 talents yet or build ANY of the automation hooks. just build the framework. we will build
 automation syntax hooks one at a time." The design panel that would have debated the shape was
 stopped at that word. What follows is the framework and nothing else, and **it does nothing in play
-yet**: no rule kind exists, no engine hook is wired, and no Talent's text has been read.
+yet**: no rule kind exists, no engine hook is wired, and no Talent's text has been read. The first
+kind followed the same day, as system 0.10.0 (the section at the end): Mike named it, and it was
+not the aura.
 
 ## The shape, in one paragraph
 
@@ -106,38 +108,51 @@ The recipe, in full, is `module/rules/README.md`. In outline, and every step wit
 
 ## The backlog, as Mike framed it
 
-1. **The aura, for Torchbearer Human.** The 15 feet the `Aura` column (0.5.1) already draws on the
+1. **The first kind was `bonus`, for Humanity** (0.10.0; the section at the end). Mike named it on
+   2026-10-03, ahead of the aura, and its syntax came from his own sketch.
+2. **The aura, for Torchbearer Human.** The 15 feet the `Aura` column (0.5.1) already draws on the
    map; what the kind adds is the effect inside the ring, written so that every aura in the book is
-   served by the same word. The syntax is Mike's to settle first (decision 1).
-2. **Then one at a time.** Each kind from the Talent that wants it, by the recipe above, with its
-   hook, its test, its README line and its docs. No order is fixed beyond the first.
+   served by the same word. The syntax is Mike's to settle first. It is the next kind.
+3. **Then one at a time.** Each kind from the Talent that wants it, by the recipe above, with its
+   hook, its test, its README line and its docs. No order is fixed beyond the next.
 
 ## Decisions that are Mike's
 
-1. **The first kind's syntax.** What `aura:` takes, and what the engine does inside the ring: the
-   bonus, who it reaches, when it is read. Nothing in 0.9.0 presumes an answer.
+1. **The first kind's syntax.** Settled in 0.10.0 (ruling 121): `bonus: <value> <Type> to <Target>
+   [if <Constellation> is <Rank>]`, Mike's sketch made concrete, equality on the rank as he wrote
+   it. What `aura:` takes, and what the engine does inside the ring (the bonus, who it reaches, when
+   it is read), is the next decision of the same shape, and nothing in 0.10.0 presumes an answer.
 2. **Whether the web app and the Constellation Compendium docx should print the cell.** Neither
    does today; both are the authoring views of the whole book, and the cell is addressed to the
    engine. Printing it would show an author what the system will do with a Talent beside what the
-   Talent says.
+   Talent says. Still open after 0.10.0.
 3. **Whether an owned copy's edited Automation should survive a refresh.** Today the copies refresh
    overwrites `system.automation` and `system.rules` from the source, as it overwrites every field
    but the character's own (quantity, carry state, a raised shield, a chosen option), because the
    cell is the author (ruling 120). Keeping a GM's edit would make the copy the author of its own
-   rules and let a Talent on a sheet diverge from the book.
+   rules and let a Talent on a sheet diverge from the book. Still open after 0.10.0.
 
 ## Risks
 
 1. **A kind that needs GM judgement inside a formula.** The standing risk the working agreement
    names ("Expose a plausible Zone"). A kind's `parse` can validate syntax; it cannot validate a
-   judgement. Prefer kinds a machine can resolve, and put the judgement at the edges.
+   judgement. Prefer kinds a machine can resolve, and put the judgement at the edges. The `bonus`
+   kind met it at once: whether a check made from the sheet is an Aid is a judgement, and the kind
+   puts it at the edge, an unticked offer in the roll dialog, applied unasked only when the roll is
+   made from the Maneuver's own Item (0.10.0, ruling 122).
 2. **The grammar growing to fit one kind.** `splitArgs` and `keyValues` are the whole of the shared
    helpers until a kind needs more; a helper added for one kind is a helper every later kind
-   inherits.
-3. **A hook point chosen too early.** None is chosen in 0.9.0; the first is chosen with the aura.
-4. **The build refusing on purpose.** With no kinds, any rule line stops `sync_content.cmd`. That is
-   the design, and `data/README.txt` says so, but a first-time author will meet it; the message
-   names the cell and says no kinds are defined yet.
+   inherits. The `bonus` kind needed neither, nor any grammar change: its resolver rides in the
+   parse context the grammar already passes through.
+3. **A hook point chosen too early.** None was chosen in 0.9.0. The first, `modifiers`, was chosen
+   in 0.10.0 with the `bonus` kind, the first kind that needed it, and it is generic: the engine
+   asks every registered kind at the two moments it is called, so a second kind at the same moment
+   adds no engine code (ruling 124). A moment no kind yet speaks at is still undefined, the aura's
+   among them, and stays so until its first kind.
+4. **The build refusing on purpose.** With one kind, any other kind word stops `sync_content.cmd`,
+   and so does a `bonus` line the kind refuses. That is the design, and `data/README.txt` says so,
+   but a first-time author will meet it; the message names the cell and lists the known kinds, or
+   says what is wrong with the line in words the author can act on.
 
 ## Files, 0.9.0
 
@@ -152,3 +167,172 @@ Touches `assets/xlsx_to_trees.py` (the tree sheets' header map and node), `asset
 `CHANGELOG.md`, `FEATURES.md`, both READMEs, `CLAUDE.md` and `data/README.txt`. Untouched: every
 spreadsheet cell, `assets/roster.json`, the web app, the Constellation Compendium docx, the
 handbook, `data/SYNC.json`, and every roll, card and canvas layer in the system.
+
+## 0.10.0: the first kind, `bonus`
+
+Built 2026-10-03, the same day as the framework, against system 0.9.0 and Player's Handbook v4.15.
+Mike's words: "okay, first automation kind we will create is the Human Ancestry one. The Effect
+is: 'You gain a +1 Condition bonus on checks to Aid. If you are Expert in Human, this becomes a +2
+Condition bonus. If you are Master, +3. If you are Legendary, +4.' So we need Automation for
+something like ... IF (Constellation Proficiency = VALUE) where VALUE = Untrained, Trained, Expert,
+Master, Legendary, Grant [X Value (+1, +2, -1, -2, etc.)]; [Y type (Condition, Situation, Gear,
+etc.)]; [Z Check (Constellation or Maneuver Roll)]. In this case, it would use a Maneuver called
+Aid." So the first kind was not the aura the plan expected but a bonus, and its syntax was Mike's
+own sketch, made concrete rather than designed. The rulings are 121 to 124 in the 0.10.0 changelog
+entry. The release adds one kind and the one hook point it needs, and nothing else: no survey of
+the other Talents, no second kind, no second moment (ruling 119 stands).
+
+### The syntax (ruling 121)
+
+Kind word `bonus`, no aliases. One rule:
+
+```
+bonus: <value> <Type> to <Target> [if <Constellation> is <Rank>]
+```
+
+- `<value>`: a signed integer, `+1`, `-2`; a bare `1` reads as `+1`. `0` is a RuleSyntaxError ("a
+  bonus of 0 does nothing").
+- `<Type>`: `Situation`, `Condition` or `Gear`, case blind (the book's three types since v3.3). The
+  retired words `circumstance`, `status` and `item` (`SW.LEGACY_BONUS_TYPES`) are a RuleSyntaxError
+  that names the current word; `untyped` is one too ("no Talent bonus is untyped").
+- `to <Target>`: required. The Constellation or the Maneuver the bonus applies to, by name as the
+  trees and the action sheets print it, case blind; the slug form (`armored-fighting`) also reads,
+  and glyphs in a Maneuver's name are ignored (`slugify(plainName(name))`).
+- `if <Constellation> is <Rank>`: optional. `<Rank>` is `Untrained`, `Trained`, `Expert`, `Master`
+  or `Legendary`, case blind (keys of `SW.RANKS`). The condition is EQUALITY, as Mike wrote it
+  ("Constellation Proficiency = VALUE"): the rule applies while the character's rank in that
+  Constellation is exactly that rank. A bad rank word lists the five; `=` in place of `is` is
+  refused with the shape ("write `if Human is Expert`").
+
+One case-blind regex over the argument string reads it all; anything that does not match prints the
+shape, `bonus: +1 Condition to Aid if Human is Expert`. Humanity's cell is four lines, one per
+sentence of its Effect:
+
+```
+bonus: +1 Condition to Aid if Human is Trained
+bonus: +2 Condition to Aid if Human is Expert
+bonus: +3 Condition to Aid if Human is Master
+bonus: +4 Condition to Aid if Human is Legendary
+```
+
+"Expert in Human" is the Origin's rank: the three Ancestry Roots pool one rank, which
+`actor.system.proficiency("human").rank` already returns. Nothing in the syntax says "or higher";
+a Talent that wants that form says so when it comes.
+
+### The stored rule
+
+```js
+{ kind: "bonus", line, text,
+  value: 1,                       // signed integer, never 0
+  type: "condition",              // "situation" | "condition" | "gear"
+  to:   { name: "Aid", slug: "aid", type: "action" },        // type: "constellation" | "action" | null
+  when: { constellation: "human", name: "Human", rank: "expert" } }   // or null
+```
+
+`to.type` and the resolved names come from `context.resolve(name) -> { type, slug, name } | null`,
+an optional function the caller puts on the parse context; the grammar passes the caller's context
+through to `parse` already, so no grammar change. With a resolver, a target it does not know is a
+RuleSyntaxError (`"Aidd" names no Constellation or Maneuver`), an `if` Constellation that resolves
+to a Maneuver or to nothing is one (`"Aid" is not a Constellation`), and the Lore template
+(`SW.isLoreSlug`) is one as a target ("a Lore is the character's own; a bonus cannot name it").
+Without a resolver (the self-test) the kind stores `to.type: null` and the slugs it can compute,
+and the hook matches on slug alone. The two callers of the grammar each give one:
+`assets/build_foundry.mjs` builds a resolver over every key of `trees.json` and every sheet action
+and roster `actions` row, enabled or not (a disabled action still resolves: the cell is right, the
+row is simply off; Aid was one until Mike enabled it on 2026-10-03), a Constellation winning over
+an action of the same name, and passes it to
+both `automationOf` calls; `resolveRuleTarget(name)` in `module/helpers/content.mjs` answers from
+`SW.constellations`, the Actions pack's index and world action Items, null while `game` is not
+ready, for `SwItem._preUpdate`. The summary reads `+1 Condition bonus to Aid while Human is
+Expert`, `penalty` for a negative value, no `while` without an `if`.
+
+### The hook point, `modifiers` (ruling 124)
+
+The one new engine seam, and it is generic. A kind that affects a roll declares
+`hooks.modifiers(entries, context, actor) -> Modifier[]`: `entries` its own rules on this actor
+(`[{ rule, item }]`, from `rulesOfKind`), `context` `{ kind: "check" | "attack" | "defense" |
+"initiative", slug, item }` (the roll's kind, the Constellation supplying the Proficiency Bonus,
+and the Item behind the roll when there is one), each Modifier `{ label, value, type, offer?,
+key?, hint? }`. A Modifier without `offer` is APPLIED to the roll; one with `offer: true` is
+OFFERED unticked in the roll dialog (the Load Strain Climb-or-Swim precedent, PHB v4.11, ruling
+R2), with `key` unique per offer and `hint` the tooltip; `previewTotal` ignores offers.
+`ruleModifiers(actor, context) -> { applied, offered }` in `module/rules/engine.mjs` is the
+dispatcher: it walks `KINDS`, skips a kind without the hook or with no rules on this actor, calls
+each inside try/catch (a kind's throw is logged as that kind's failure and contributes nothing; a
+roll never dies over a rule), keeps only modifiers with a numeric non-zero value, and files
+`offer === true` under `offered` with `key` defaulted to `<kind>-<item id or name>-<line>`. That
+is the whole of what the engine knows: a second kind that wants the same moment names `modifiers`
+in its `hooks` and adds no engine edit, which answers Mike's question of the day (are the
+automations modular enough to tinker with one without touching the rest?) by construction.
+
+**The two call sites**, both existing passes, no third:
+
+- `module/dice/check.mjs`, `SwCheck.#baseModifiers`, the non-Defense branch, at its end: the
+  applied modifiers join the base terms, the offered ones ride on the config as `ruleOffers`, and
+  `#prompt` lists them after the Load Strain offer as unticked checkboxes; the existing
+  `extra-<key>` loop carries a ticked one into the roll and `result.extras`, so a kept road roll
+  re-counts it (0.7.3). The Defense branch returns the Defense's own `modifiers`, which the data
+  model has already folded the rules into, so a Defense roll, an Initiative rolled with Awareness
+  and a Defense rolled as a check carry the bonus once and never twice. The npc early return
+  stands: adversaries roll flat, and rules do not reach them in 0.10.0.
+- `module/data/actor.mjs`, `SwCharacterData.#prepareDefenses`, inside the per-Defense loop before
+  `SW.resolveModifiers`: the applied modifiers of a `defense` context join the list. The index and
+  the ranks are both final by then, so `bonus: +1 Gear to Guard if Human is Expert` moves the Guard
+  Threshold on the sheet and the Guard roll alike, as Frightened does. Offers are ignored here.
+
+**The `bonus` kind's hook.** For each rule: with an `if` clause, read
+`actor.system.proficiency(when.constellation).rank` (`"untrained"` when the actor has no
+`proficiency`, so a conditioned rule never fires for an adversary) and skip unless it equals
+`when.rank`. A Constellation target applies when `context.slug` is `to.slug`. A Maneuver target
+applies when `context.item` is an action whose `slugify(plainName(name))` is `to.slug`; when it is
+not and the roll is a `check`, it is offered instead (`key: "bonus-<item.id ?? item.name>-<line>"`,
+label `<Talent>: <Target>`, hint "<Talent>: this bonus applies to checks to <Target>. Tick it if
+this roll is one."), never on an attack, a Defense or an Initiative (ruling 122). A `to.type` of
+null tries both and offers only when the slug matched no Constellation. The applied modifier is
+`{ label: plainName(item.name), value, type }`, so the card reads "Humanity +1". Typed stacking
+is `SW.resolveModifiers`'s: two Humanity lines never both match (one rank at a time), and a
+designer who writes overlapping lines gets the highest of the type.
+
+### A Maneuver's roll carries the Maneuver (rulings 122 and 123)
+
+A Maneuver roll is a roll made from the Maneuver's Item. `SwItem#use` for an action with a named
+check (Search's Awareness) already passed `item: this` to `SwCheck.roll`, so the hook matches it
+as it stands. Aid's check is a Relevant Check, which had no representation: `use()` posted the
+card and the player rolled from the sheet with no Item. Now `check.enabled` with a blank
+`constellation` means a Relevant Check, and `use()` calls `actor.rollRelevantCheck` with the
+Maneuver as `item`, its plain name as the label and its glyph and category as the subtitle;
+`rollRelevantCheck` lets a caller's `label` stand. `build_foundry.mjs` sets `check: { enabled:
+true, constellation: "", defense: "" }` on a sheet action whose Effect says "relevant check" (case
+blind) and names no check; Aid's row reads Yes since Mike moved it into `data/maneuvers.xlsx` on
+2026-10-03, so Aid ships with `check` set and its roll opens the picker carrying the Maneuver
+(verified live: the card reads "Aid", "Humanity +1 condition"). `templates/item/details.hbs` says so under the "Rolls a
+check" panel (`STARWROUGHT.Hint.relevantCheck`). No new schema field. The judgement "is this roll
+an Aid?" therefore sits at the edge: applied when the roll is the Maneuver's own, offered to the
+player otherwise, decided by the engine never.
+
+### What was deliberately not done, and why
+
+- **Humanity's cell.** Excel held `data/ancestries.xlsx` open, and the Human sheet has no
+  Automation column yet; the four lines above are Mike's to paste under a new `Automation` header,
+  then `sync_content.cmd` and Sync content. Until then no cell in the book uses the kind, and the
+  build's summary says so (`automation: no rules (1 kind defined, none in use)`).
+- **The survey.** Still not made; the kind came from the one Talent Mike named.
+- **A second kind, a second moment.** The aura is next, and its hook point, if `modifiers` does
+  not serve it, is defined with it (ruling 119).
+- **Adversaries.** The npc branch of the check engine returns the GM's flat bonus, and an
+  adversary's Defenses are the Thresholds the GM typed; a rule on an adversary's action is indexed
+  and read by nothing.
+
+### Files, 0.10.0
+
+Creates `module/rules/kinds/bonus.mjs`. Touches `module/rules/kinds/index.mjs` (the
+registration), `module/rules/engine.mjs` (`ruleModifiers`), `module/rules/README.md` (the kind,
+the hook point, step 5 for generic dispatch), `module/dice/check.mjs`, `module/data/actor.mjs`,
+`module/documents/item.mjs`, `module/documents/actor.mjs`, `module/helpers/content.mjs`,
+`templates/item/details.hbs`, `lang/en.json`, `assets/build_foundry.mjs` (the resolver, the
+Relevant Check `check`, the summary's plurals), `assets/test_rules.mjs`, `module/config.mjs`,
+`system.json` and the stylesheet (0.10.0), `CHANGELOG.md`, `FEATURES.md`, `CLAUDE.md`,
+`data/README.txt` and this file. Untouched: the grammar module, the converter, every spreadsheet
+cell (Humanity's included), `assets/roster.json`, the web app, the Constellation Compendium docx,
+the handbook, `data/SYNC.json`, the attack flow, the damage pipeline, conditions, movement and the
+auras on the map.

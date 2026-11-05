@@ -1,0 +1,92 @@
+{{!-- The Talent's own fields: the Talent, its Requires, its build-time Choice, its Grant. Shared
+     panels: aura, automation. --}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.talent"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.constellation"}}</span>
+      <select name="system.constellation">{{selectOptions choices.constellations selected=system.constellation blank=""}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.tier"}}</span>
+      <select name="system.tier">{{selectOptions choices.tiers selected=system.tier}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.cost"}}</span>
+      <select name="system.cost">{{selectOptions choices.costs selected=system.cost}}</select></label>
+    <label class="sw-field" data-tooltip="STARWROUGHT.Field.costMaxHint">
+      <span>{{localize "STARWROUGHT.Field.costMax"}}</span>
+      <select name="system.costMax">{{selectOptions choices.costs selected=system.costMax blank=(localize "STARWROUGHT.Field.costFixed")}}</select></label>
+    <label class="sw-field" data-tooltip="STARWROUGHT.Field.reactionHint"><span>{{localize "STARWROUGHT.Field.reaction"}} ↺</span>
+      <input type="checkbox" name="system.reaction" {{checked system.reaction}}></label>
+    <label class="sw-field" data-tooltip="STARWROUGHT.Field.reactionCostHint"><span>{{localize "STARWROUGHT.Field.reactionCost"}}</span>
+      <select name="system.reactionCost" {{#unless system.reaction}}disabled{{/unless}}>{{selectOptions choices.reactionCosts selected=system.reactionCost blank=(localize "STARWROUGHT.Field.reactionCostSame")}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.feeds"}}</span>
+      <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute blank=(localize "STARWROUGHT.Field.constellationDefault")}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.root"}}</span>
+      <input type="checkbox" name="system.root" {{checked system.root}}></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.bloodlineRoot"}}</span>
+      <input type="checkbox" name="system.bloodlineRoot" {{checked system.bloodlineRoot}}></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.capstone"}}</span>
+      <input type="checkbox" name="system.capstone" {{checked system.capstone}}></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.prerequisites"}}</span>
+      <input type="text" name="system.prerequisites" value="{{system.prerequisites}}"></label>
+  </div>
+</div>
+
+<div class="sw-panel requirement-editor">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.requires"}}</h3>
+  <div class="sw-trait-list">
+    {{#each system.requires as |req index|}}
+    <span class="sw-trait">{{req}}
+      {{#if @root.editable}}<a data-action="removeRequirement" data-index="{{index}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+    </span>
+    {{else}}
+    <em class="sw-empty">{{localize "STARWROUGHT.Sheet.rootOnly"}}</em>
+    {{/each}}
+  </div>
+  {{#if editable}}
+  <div class="sw-add-row">
+    <input type="text" name="newRequirement" placeholder="{{localize 'STARWROUGHT.Field.addRequirement'}}">
+    <button type="button" data-action="addRequirement"><i class="fa-solid fa-plus"></i></button>
+  </div>
+  {{/if}}
+</div>
+
+<div class="sw-panel {{#if system.needsChoice}}sw-slot-stuck{{/if}}">
+  <h3 class="sw-panel-title">
+    {{localize "STARWROUGHT.Field.choice"}}
+    {{#if system.needsChoice}}<span class="sw-points sw-warn">{{localize "STARWROUGHT.Field.choiceUnanswered"}}</span>{{/if}}
+  </h3>
+  <p class="sw-note">{{localize "STARWROUGHT.Field.choiceHint"}}</p>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.choicePrompt"}}</span>
+      <input type="text" name="system.choice.prompt" value="{{system.choice.prompt}}"
+             placeholder="{{localize 'STARWROUGHT.Field.choicePromptPlaceholder'}}"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.choiceValue"}}</span>
+      {{#if choiceOptions}}
+      <select name="system.choice.value">{{selectOptions choiceOptions selected=system.choice.value blank=""}}</select>
+      {{else}}
+      <input type="text" name="system.choice.value" value="{{system.choice.value}}">
+      {{/if}}</label>
+    {{#if canAnswerChoice}}
+    {{!-- An anchor, not a button: a button is a form element and the read-only pass would disable it. --}}
+    <a class="sw-inline-button" data-action="chooseValue" data-tooltip="STARWROUGHT.Field.choiceHint"><i class="fa-solid fa-hand-pointer"></i> {{localize "STARWROUGHT.Chargen.choiceOk"}}</a>
+    {{/if}}
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.freeTalent"}}</span>
+      <input type="text" name="system.freeTalent" value="{{system.freeTalent}}"
+             placeholder="{{localize 'STARWROUGHT.Field.freeTalentPlaceholder'}}"></label>
+  </div>
+</div>
+
+{{> "systems/starwrought/templates/item/details/aura.hbs"}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.grant"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.grantN"}}</span>
+      <input type="number" name="system.grant.n" value="{{system.grant.n}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.grantMode"}}</span>
+      <input type="text" name="system.grant.mode" value="{{system.grant.mode}}"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.grantScope"}}</span>
+      <input type="text" name="system.grant.scope" value="{{system.grant.scope}}"></label>
+  </div>
+</div>
+
+{{> "systems/starwrought/templates/item/details/automation.hbs"}}

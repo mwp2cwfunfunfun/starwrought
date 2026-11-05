@@ -5,14 +5,28 @@
  * penalties, measured against a Threshold of 10 + the same modifier. Level never touches the die;
  * it opens ranks and pays out Talent Points. Attacks and Defenses are the same roll read from
  * opposite sides, which is why they share this code and differ only in which way the degrees run.
+ *
+ * The bonuses and penalties come from three places: what the sheet can see for itself (Frightened,
+ * Load Strain on Stealth, the adjustment fields), what the caller worked out (Support, Unwieldy, a
+ * Talent's bonus passed in `modifiers`), and, since 0.10.0, what the Automation rules on the
+ * character's Items grant (the `modifiers` hook point in ../rules/engine.mjs, asked once per roll
+ * in check/modifiers.mjs; ruling 124). A rule the engine can name but not decide (a bonus to a Maneuver
+ * on a check made without that Maneuver's Item) is offered unticked in the dialog, as Load Strain
+ * on a Climb or a Swim is (ruling 122).
  */
 
 import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 import { postureName as postureNameOf } from "../helpers/answers.mjs";
+// The engine's parts, one module each (0.10.1): the modifiers a roll starts from, the dialog, the
+// card and Settle Position. This file is the entry point and the order of a roll; it keeps
+// roll, resolveAgainst and the public statics so every caller still says `SwCheck.x`.
+import { assemble } from "./check/modifiers.mjs";
+import { prompt } from "./check/dialog.mjs";
+import { toMessage } from "./check/card.mjs";
+import { strikeCanCrit } from "./check/strike.mjs";
 
-const { DialogV2 } = foundry.applications.api;
-const { renderTemplate } = foundry.applications.handlebars;
+
 
 /**
  * @typedef {object} SwCheckConfig
@@ -25,6 +39,9 @@ const { renderTemplate } = foundry.applications.handlebars;
  * @property {number|null} [threshold]        The number to beat, if it is known.
  * @property {string} [thresholdLabel]        Where the Threshold came from.
  * @property {Array} [modifiers]              Extra typed modifiers.
+ * @property {Array} [ruleOffers]             Written by the engine, not the caller (0.10.0): the
+ *                                            Automation rules' modifiers offered unticked in the
+ *                                            dialog, `{ key, label, value, type, hint }` each.
  * @property {string} [strike]                quick | deliberate | committed. An attack's commitment,
  *                                            or the commitment behind the blow a Defense answers.
  * @property {string|null} [reaction]         parry | void | counter | null. On a Defense roll, the
@@ -88,19 +105,20 @@ export class SwCheck {
     if (["attack", "defense"].includes(cfg.kind) && !SW.STRIKE_KINDS[cfg.strike]) cfg.strike = SW.DEFAULT_STRIKE;
     if (cfg.reaction && !SW.REACTIONS[cfg.reaction]) cfg.reaction = null;
 
-    // Assemble the standard modifiers from the character sheet, then whatever the caller worked
-    // out that the sheet cannot see: Unwieldy against a close target, Support, a Talent's bonus.
-    let parts = this.#assemble(actor, cfg);
+    // Assemble the standard modifiers from the character sheet and the Automation rules on the
+    // character's Items (0.10.0), then whatever the caller worked out that neither can see:
+    // Unwieldy against a close target, Support, a Talent's bonus passed by hand.
+    let parts = assemble(actor, cfg);
 
     // Ask the player what they want to add, and against what.
     let dialogExtra = [];
     if (cfg.dialog) {
-      const answer = await this.#prompt(cfg, parts);
+      const answer = await prompt(cfg, parts);
       if (!answer) return null;
       Object.assign(cfg, answer.config);
       // A Reaction chosen in the dialog can change which Defense is rolled, so the base terms are
       // rebuilt around the new slug before the extras go on.
-      if (answer.rebuild) parts = this.#assemble(actor, cfg);
+      if (answer.rebuild) parts = assemble(actor, cfg);
       dialogExtra = Array.isArray(answer.extra) ? answer.extra : [];
       parts.push(...dialogExtra);
     }
@@ -153,7 +171,7 @@ export class SwCheck {
       if (cfg.kind === "defense") degree = SW.invertDegree(degree);
       // PHB v4.10, Strikes: a Quick Strike cannot Critically Hit; a natural 20 is a Hit. Agile
       // weapons are light enough to bite on the way in, and may.
-      if ((cfg.kind === "attack") && (degree === "critSuccess") && !this.strikeCanCrit(cfg.strike, cfg.item)) {
+      if ((cfg.kind === "attack") && (degree === "critSuccess") && !strikeCanCrit(cfg.strike, cfg.item)) {
         degree = "success";
         critDenied = true;
       }
@@ -182,7 +200,7 @@ export class SwCheck {
     // from this result through resolveAgainst.
     if (cfg.postCard === false) return result;
 
-    await this.#toMessage(result);
+    await toMessage(result);
     Hooks.callAll("starwrought.check", result);
     return result;
   }
@@ -232,7 +250,7 @@ export class SwCheck {
     weapon = null, attackId = null, strike = SW.DEFAULT_STRIKE, rollData, modifiers = null,
     kind = "attack", defense = null, reaction = null, posture = null,
     threshold = null, showThreshold = true, speakerActor = null, slug = null, thrown = false,
-    // The legacy key, which #toMessage maps to the configured mode: CONST.DICE_ROLL_MODES is a
+    // The legacy key, which the card's toMessage maps to the configured mode: CONST.DICE_ROLL_MODES is a
     // deprecation shim in v14 and gone in v16 (review, 2026-10-01).
     rollMode = "publicroll",
     // A reroll (0.5.3) resolves a Blow whose Reaction was paid when the first die landed: true
@@ -272,7 +290,7 @@ export class SwCheck {
       // A Defense roll is the same comparison read from the other side.
       if (!isAttack) degree = SW.invertDegree(degree);
       // PHB v4.10, Strikes: a Quick Strike cannot Critically Hit unless the weapon is Agile.
-      if (isAttack && (degree === "critSuccess") && !this.strikeCanCrit(strike, weapon)) {
+      if (isAttack && (degree === "critSuccess") && !strikeCanCrit(strike, weapon)) {
         degree = "success";
         critDenied = true;
       }
@@ -380,7 +398,7 @@ export class SwCheck {
       config: cfg
     };
 
-    await this.#toMessage(result);
+    await toMessage(result);
     Hooks.callAll("starwrought.check", result);
     return { message: result.message, outcome: outcome?.key ?? null, degree, critDenied, threshold };
   }
@@ -390,152 +408,30 @@ export class SwCheck {
   /**
    * The modifier a check would open its dialog with, before the player adds anything: the base
    * terms, whatever the sheet can see for itself (Frightened, Load Strain on Stealth, the
-   * adjustment fields), and whatever the caller passes in `config.modifiers`. The Relevant Check
-   * picker prints this beside each Constellation so that a strained Stealth ranks where the roll
-   * will land. The dialog's own offers (Load Strain on a Climb or a Swim) are not in it.
+   * adjustment fields), the Automation rules that apply to the roll as configured (0.10.0: a
+   * `bonus` to the Constellation named, or to the Maneuver in `config.item`), and whatever the
+   * caller passes in `config.modifiers`. The Relevant Check picker prints this beside each
+   * Constellation so that a strained Stealth ranks where the roll will land. The dialog's own
+   * offers (Load Strain on a Climb or a Swim; a rule's bonus to a Maneuver this roll may or may not
+   * be) are not in it.
    * @param {Actor} actor
    * @param {object} [config]  The same shape `roll()` takes; `kind` defaults to "check".
    * @returns {number}
    */
   static previewTotal(actor, config = {}) {
     const cfg = foundry.utils.mergeObject({ kind: "check" }, config, { inplace: false });
-    return SW.resolveModifiers(this.#assemble(actor, cfg)).total;
+    return SW.resolveModifiers(assemble(actor, cfg)).total;
   }
-
-  /** The base terms plus the caller's own modifiers. */
-  static #assemble(actor, cfg) {
-    const parts = this.#baseModifiers(actor, cfg);
-    parts.push(...(cfg.modifiers ?? []));
-    return parts;
-  }
-
-  /* -------------------------------------------- */
 
   /**
-   * Attribute Bonus and Proficiency Bonus, the two terms every check in the game has (PHB v4.10:
-   * there is no level term), and the conditions the sheet can see for itself.
-   * @returns {Array}
-   */
-  static #baseModifiers(actor, cfg) {
-    const parts = [];
-    const sys = actor.system;
-
-    // Adversaries roll flat; the players own the dice in STARWROUGHT, so an NPC check is rare
-    // and uses whatever the GM typed on the sheet.
-    if (actor.type === "npc") {
-      if (cfg.flatBonus) parts.push({ label: cfg.label, value: cfg.flatBonus });
-      return parts;
-    }
-
-    // A Defense roll is the Defense's own Threshold with a die in place of the 10, so it rolls the
-    // very modifiers the derived Defense already resolved: Attribute, Proficiency, the sheet's
-    // adjustment, Off-Guard, Frightened N, Fatigued N, a Parry weapon or a Wounded Arm on Guard,
-    // a helm on Awareness. Load Strain is not among them (PHB v4.11: "It never comes off your
-    // Evade"). Nothing here can drift from the number on the sheet.
-    const defense = SW.DEFENSES[cfg.slug] ? sys.defenses?.[cfg.slug] : null;
-    if (defense && Array.isArray(defense.modifiers)) {
-      parts.push(...defense.modifiers.map(m => ({ ...m })));
-      // Size touches only Evade and Guard, and sits outside the typed stack.
-      if (defense.sizeMod) {
-        parts.push({ label: game.i18n.localize("STARWROUGHT.Roll.size"), value: defense.sizeMod });
-      }
-      cfg.attribute = defense.attribute;
-      cfg.rank = defense.rank;
-      // Initiative rolled with Awareness (the default) comes through here, and the sheet's
-      // Initiative adjustment belongs on it as the tracker's formula has always had it
-      // (`_getInitiativeFormula` folds `system.initiative.mod`, which includes it). The helm is
-      // already among Awareness's own modifiers, so only the adjustment is added (0.7.2).
-      if ((cfg.kind === "initiative") && sys.bonuses?.initiative) {
-        parts.push({ label: game.i18n.localize("STARWROUGHT.Field.initiativeBonus"), value: sys.bonuses.initiative });
-      }
-      return parts;
-    }
-
-    const prof = cfg.slug ? sys.proficiency(cfg.slug) : null;
-    // A weapon's Handling can lower the rank that applies without changing what you have bought.
-    if (prof && cfg.rankOverride && (cfg.rankOverride !== prof.rank)) {
-      prof.rank = cfg.rankOverride;
-      prof.proficiency = SW.rankBonus(cfg.rankOverride);
-      cfg.handlingNote = true;
-    }
-    const attribute = cfg.attribute || prof?.attribute;
-    if (attribute) {
-      parts.push({
-        label: game.i18n.localize(SW.ATTRIBUTES[attribute].label),
-        value: sys.attributes[attribute].mod
-      });
-      cfg.attribute = attribute;
-    }
-    if (prof) {
-      parts.push({
-        label: `${prof.name} (${game.i18n.localize(SW.RANKS[prof.rank].label)})`,
-        value: prof.proficiency
-      });
-      cfg.rank = prof.rank;
-    }
-
-    // The sheet's own catch-all adjustments. An Initiative rolled with a Constellation is a check
-    // in that Constellation (Mike, 2026-10-02, ruling 111: "ALL active modifiers for any roll
-    // should be applied even if that roll is used for initiative"), so it carries everything the
-    // check would, the check adjustment here and Load Strain below, and then Initiative's own terms
-    // on top. Through 0.7.3 an Initiative rolled with Stealth took neither.
-    const asCheck = (cfg.kind === "check") || (cfg.kind === "initiative");
-    if (cfg.kind === "attack" && sys.bonuses?.attack) {
-      parts.push({ label: game.i18n.localize("STARWROUGHT.Field.attackBonus"), value: sys.bonuses.attack });
-    } else if (asCheck && sys.bonuses?.checks) {
-      parts.push({ label: game.i18n.localize("STARWROUGHT.Field.checkBonus"), value: sys.bonuses.checks });
-    }
-    if (cfg.kind === "initiative") {
-      if (sys.bonuses?.initiative) {
-        parts.push({ label: game.i18n.localize("STARWROUGHT.Field.initiativeBonus"), value: sys.bonuses.initiative });
-      }
-      // PHB v4.10, Helms: a Closed helm is −2 Situation to Initiative, an Open helm −1.
-      const helm = SW.HELM_PENALTIES[sys.worn?.head?.name] ?? 0;
-      if (helm) parts.push({ label: sys.worn.head.name, value: helm, type: "situation" });
-    }
-
-    // Conditions the system can see for itself.
-    const frightened = actor.conditionValue("frightened");
-    if (frightened) {
-      parts.push({
-        label: game.i18n.localize("STARWROUGHT.Condition.frightened"),
-        value: -frightened,
-        type: "condition"
-      });
-    }
-
-    // The typed modifiers the data model says every attack carries: a Wounded Arm's −2 Situation
-    // (PHB v4.10, Wounds), and whatever else the sheet can see. A Controlled weapon's −2 is the
-    // same type and is resolved against them rather than added.
-    if ((cfg.kind === "attack") && Array.isArray(sys.attackModifiers)) {
-      parts.push(...sys.attackModifiers.map(m => ({ ...m })));
-    }
-
-    // Load Strain (PHB v4.11, Load and Load Strain): "Climb, Swim, and Stealth checks take your
-    // Load Strain as a penalty. Nothing else does." Stealth is applied here, untyped, as the
-    // system's own flat adjustment. Climb and Swim are Athletics checks the engine cannot tell
-    // from a grapple or a tumble, so the dialog offers the penalty on an Athletics check instead
-    // (#prompt). Until 0.6.0 every Might or Agility check took it, and Evade did too. An Initiative
-    // rolled with Stealth (Avoid Notice) is a Stealth check and takes it too (ruling 111, 0.7.4).
-    if (asCheck && (SW.STRAIN_CHECKS[cfg.slug] === "always") && sys.loadStrain) {
-      parts.push({ label: game.i18n.localize("STARWROUGHT.Field.loadStrain"), value: -sys.loadStrain });
-    }
-
-    return parts;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Can this Strike Critically Hit? Quick cannot, unless the weapon is Agile (PHB v4.10).
+   * Can this Strike Critically Hit? Quick cannot, unless the weapon is Agile (PHB v4.10). The rule
+   * lives in check/strike.mjs; this is the public name the damage roll calls.
    * @param {string} strike
    * @param {Item|null} weapon
    * @returns {boolean}
    */
   static strikeCanCrit(strike, weapon) {
-    const kind = SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
-    if (kind.canCrit) return true;
-    return !!(kind.agileCanCrit && weapon?.system?.flags?.agile);
+    return strikeCanCrit(strike, weapon);
   }
 
   /**
@@ -587,266 +483,6 @@ export class SwCheck {
     cfg.defenderRigid = defender.rigidImplement ?? null;
   }
 
-  /* -------------------------------------------- */
-
-  /**
-   * The pre-roll dialog: a situational modifier, the optional modifiers the engine can name but
-   * not decide, the Threshold, the Strike kind for an attack, the Reaction for a Defense roll, and
-   * the roll mode.
-   * @returns {Promise<{config: object, extra: Array, rebuild: boolean}|null>}
-   */
-  static async #prompt(cfg, parts) {
-    const preview = SW.resolveModifiers(parts);
-    const actor = cfg.actor;
-    const isAttack = cfg.kind === "attack";
-    const isDefense = cfg.kind === "defense";
-
-    // Modifiers offered unticked, because the rule applies to a check the engine cannot tell
-    // apart from its neighbours. Load Strain on an Athletics check (PHB v4.11): a Climb or a Swim
-    // takes it, a grapple or a tumble does not, and only the player knows which this is (ruling
-    // R2). Each is a checkbox named `extra-<key>`; the ticked ones join the roll below.
-    const extras = [];
-    const strain = Number(actor.system?.loadStrain) || 0;
-    if ((cfg.kind === "check") && (SW.STRAIN_CHECKS[cfg.slug] === "offered") && (strain >= 1)) {
-      extras.push({
-        key: "loadStrain",
-        label: game.i18n.localize("STARWROUGHT.Roll.strainClimbSwim"),
-        hint: game.i18n.localize("STARWROUGHT.Roll.strainClimbSwimHint"),
-        value: -strain,
-        type: "untyped",
-        checked: false
-      });
-    }
-
-    // The three Strikes, with Committed marked as the one that waits for the next Opportunity.
-    const strikes = isAttack ? Object.entries(SW.STRIKE_KINDS).map(([key, kind]) => ({
-      key,
-      label: game.i18n.localize(kind.label),
-      glyph: SW.ACTION_GLYPHS[kind.cost],
-      hint: game.i18n.localize(`STARWROUGHT.Strike.${key}Hint`),
-      active: key === cfg.strike,
-      prepared: kind.prepared && actor.inEncounter && !cfg.prepared,
-      canCrit: this.strikeCanCrit(key, cfg.item)
-    })) : [];
-
-    // The Reactions this defender owns, offered only against an Attack Threshold: a Defense rolled
-    // for its own sake (Endure against a poison) has nothing to React to, and a Defense answering
-    // a Reaction (an adversary's Intercept) is the basic roll alone, since a Reaction never
-    // triggers a Reaction (PHB v4.10, Answering an Attack); the caller says so with `basicOnly`.
-    const owned = actor.system.reactions ?? {};
-    const reactions = (isDefense && !cfg.basicOnly && ["evade", "guard"].includes(cfg.slug))
-      ? Object.entries(SW.REACTIONS)
-        .filter(([key]) => ["parry", "void", "counter"].includes(key))
-        .filter(([key]) => (actor.type === "npc") || owned[key])
-        .map(([key, reaction]) => ({
-          key,
-          label: game.i18n.localize(reaction.label),
-          glyph: `${SW.ACTION_GLYPHS[reaction.cost]}${SW.REACTION_GLYPH}`,
-          hint: game.i18n.localize(`STARWROUGHT.Reaction.${key}Hint`),
-          defense: reaction.defense ? game.i18n.localize(SW.DEFENSES[reaction.defense].label) : "",
-          active: key === cfg.reaction,
-          warn: reaction.rigid && !actor.rigidImplement
-        }))
-      : [];
-
-    const content = await renderTemplate("systems/starwrought/templates/dice/check-dialog.hbs", {
-      cfg,
-      parts: preview.applied,
-      total: preview.total,
-      isAttack,
-      isDefense,
-      extras,
-      strikes,
-      lockStrike: !!cfg.lockStrike,
-      strikeLabel: cfg.strike ? game.i18n.localize(SW.STRIKE_KINDS[cfg.strike].label) : "",
-      strikeGlyph: cfg.strike ? SW.ACTION_GLYPHS[SW.STRIKE_KINDS[cfg.strike].cost] : "",
-      reactions,
-      actionsLeft: actor.inEncounter ? (actor.system.actions?.value ?? null) : null,
-      targetName: cfg.targetName ?? "",
-      targetDefense: cfg.targetDefense ?? null,
-      defenseForced: !!cfg.defenseForced,
-      // A Defense rolled inside the attack flow meets the coordinator's Threshold, an adversary's
-      // withheld from players, so the dialog offers no box for one (live test, 2026-10-01).
-      thresholdWithheld: !!cfg.workflow,
-      threshold: Number.isNumeric(cfg.threshold) ? cfg.threshold : "",
-      rollModes: CONFIG.Dice.rollModes,
-      rollMode: cfg.rollMode
-    });
-
-    const answer = await DialogV2.wait({
-      window: { title: cfg.label, icon: "fa-solid fa-dice-d20" },
-      classes: ["starwrought", "check-dialog"],
-      position: { width: 440 },
-      content,
-      buttons: [
-        { action: "roll", label: "STARWROUGHT.Roll.roll", icon: "fa-solid fa-dice-d20", default: true,
-          callback: (event, button) => new foundry.applications.ux.FormDataExtended(button.form).object },
-        { action: "cancel", label: "STARWROUGHT.Roll.cancel", icon: "fa-solid fa-xmark" }
-      ],
-      rejectClose: false
-    });
-
-    if (!answer || answer === "cancel") return null;
-
-    const extra = [];
-    const bonus = Number(answer.bonus) || 0;
-    if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "situation" });
-    // The offers the player ticked. A checkbox comes back as a boolean under its own name.
-    for (const offer of extras) {
-      if (answer[`extra-${offer.key}`] === true) extra.push({ label: offer.label, value: offer.value, type: offer.type });
-    }
-
-    const config = { rollMode: answer.rollMode ?? cfg.rollMode };
-    let rebuild = false;
-
-    if (!cfg.targetDefense && !isDefense && Number.isNumeric(answer.threshold)) {
-      // A blank box means no Threshold is known, not a Threshold of zero, which every roll beats.
-      config.threshold = Number(answer.threshold);
-    }
-    if (isDefense && Number.isNumeric(answer.threshold)) config.threshold = Number(answer.threshold);
-
-    if (isAttack && !cfg.lockStrike && SW.STRIKE_KINDS[answer.strike]) config.strike = answer.strike;
-
-    if (isDefense && reactions.length) {
-      const chosen = SW.REACTIONS[answer.reaction] ? answer.reaction : null;
-      config.reaction = chosen;
-      // Void is an Evade and Parry is a Guard, whatever Defense the button was pressed on.
-      const def = chosen ? SW.REACTIONS[chosen].defense : null;
-      if (def && (def !== cfg.slug)) {
-        config.slug = SW.DEFENSES[def].slug;
-        config.label = game.i18n.localize(SW.DEFENSES[def].label);
-        config.subtitle = game.i18n.localize(SW.DEFENSES[def].hint);
-        config.defense = def;
-        rebuild = true;
-      }
-    }
-    return { config, extra, rebuild };
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Post the card. One renderer for every check card: `roll()` and `resolveAgainst` both come
-   * through here, so an attack resolved by the coordinator is the very card an immediate attack
-   * posts, with the same content, flags and buttons (0.5.0 brief).
-   */
-  static async #toMessage(result) {
-    const cfg = result.config;
-    const isExchange = ["attack", "defense"].includes(cfg.kind);
-    const position = isExchange ? this.#position(cfg, result) : null;
-
-    const content = await renderTemplate(
-      "systems/starwrought/templates/chat/check-card.hbs",
-      await this.#cardContext(result, position)
-    );
-
-    const messageData = {
-      speaker: ChatMessage.getSpeaker({ actor: cfg.speakerActor ?? cfg.actor }),
-      content,
-      rolls: [result.roll],
-      flags: { starwrought: this.#cardFlags(result, position) }
-    };
-    // v14 renamed applyRollMode to applyMode and the modes to "public", "gm", "blind", "self";
-    // the dialog still speaks the legacy keys, which core's own mapper translates. The old call
-    // remains for a v13 world (review, 2026-10-01).
-    if (typeof ChatMessage.applyMode === "function") {
-      const mode = foundry.dice.Roll._mapLegacyRollMode?.(cfg.rollMode) ?? cfg.rollMode;
-      ChatMessage.applyMode(messageData, mode);
-    } else {
-      ChatMessage.applyRollMode(messageData, cfg.rollMode);
-    }
-    result.message = await ChatMessage.create(messageData);
-  }
-
-  /** The render context of templates/chat/check-card.hbs for a result. */
-  static async #cardContext(result, position) {
-    const cfg = result.config;
-    const item = cfg.item;
-    const isExchange = ["attack", "defense"].includes(cfg.kind);
-
-    const enrich = html => foundry.applications.ux.TextEditor.implementation.enrichHTML(
-      html ?? "", { rollData: cfg.actor.getRollData(), relativeTo: item }
-    );
-
-    const strikeKind = isExchange ? SW.STRIKE_KINDS[cfg.strike] : null;
-    const reaction = cfg.reaction ? SW.REACTIONS[cfg.reaction] : null;
-    // A Posture stands where a Reaction would on the card: "{name} ⓿↺ (Expose {zone})". The two
-    // never answer the same Blow together, so the slot is one or the other.
-    let postureLabel = "";
-    if (!reaction && cfg.posture?.talentId) {
-      const name = cfg.posture.name ?? game.i18n.localize(SW.REACTIONS.posture.label);
-      postureLabel = SW.ZONES[cfg.posture.zone]
-        ? game.i18n.format("STARWROUGHT.Attack.answerPosture", { name, zone: game.i18n.localize(SW.ZONES[cfg.posture.zone].label) })
-        : `${name} ${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}`;
-    }
-
-    // Which damage buttons the attacker gets: a Quick Strike that cannot crit has no Critical.
-    const canDamage = !!result.outcome?.damage && !!cfg.weaponId;
-    const damageButtons = canDamage ? ["critical", "hit", "graze"]
-      .filter(key => (key !== "critical") || this.strikeCanCrit(cfg.strike, item))
-      .map(key => ({ key, label: `STARWROUGHT.Outcome.${key}`, primary: key === result.outcome.key }))
-      : [];
-
-    return {
-      label: cfg.label,
-      subtitle: cfg.subtitle ?? "",
-      kind: cfg.kind,
-      actor: cfg.actor,
-      item,
-      itemDescription: item ? await enrich(item.system.chatDescription) : "",
-      // An action authored with separate flavour and rules prints both, flavour first, as the
-      // item card does.
-      itemFlavor: (item?.type === "action" && item.system.effect && item.system.description)
-        ? await enrich(item.system.description)
-        : "",
-      total: result.total,
-      formula: result.roll.formula,
-      natural: result.natural,
-      threshold: result.threshold,
-      thresholdLabel: result.thresholdLabel,
-      modifiers: result.modifiers,
-      degree: result.degree,
-      degreeLabel: result.degree ? game.i18n.localize(SW.DEGREES[result.degree].label) : "",
-      outcome: result.outcome ? game.i18n.localize(result.outcome.label) : "",
-      outcomeKey: result.outcome?.key ?? "",
-      isAttack: isExchange,
-      canDamage,
-      damageButtons,
-      weaponId: cfg.weaponId ?? "",
-      targetUuid: cfg.targetUuid ?? "",
-      strike: isExchange ? cfg.strike : "",
-      strikeLabel: strikeKind ? game.i18n.localize(strikeKind.label) : "",
-      strikeGlyph: strikeKind ? SW.ACTION_GLYPHS[strikeKind.cost] : "",
-      critDenied: result.critDenied,
-      // Why the defender answered with a Defense other than their stance, if they did. The card is
-      // where the answer is revealed, so this is where the reason belongs.
-      defenseNote: cfg.defenseNote ?? "",
-      rangeNote: cfg.rangeNote ?? "",
-      // The Reaction behind the Defense: the roller's own on a Defense card, the defender's stance
-      // on an attack card. The ❶ is charged to the defender when the attack resolves; when the
-      // rolling client does not own them, the card offers the button to whoever does.
-      reaction: cfg.reaction ?? "",
-      reactionLabel: reaction
-        ? `${game.i18n.localize(reaction.label)} ${SW.ACTION_GLYPHS[reaction.cost]}${SW.REACTION_GLYPH}`
-        : postureLabel,
-      reactionNote: cfg.reactionNote ?? "",
-      reactionDue: !!reaction && !cfg.reactionCharged && (cfg.kind === "attack") && !!position?.defenderUuid,
-      position,
-      outcomes: cfg.outcomes ?? null,
-      // A Constellation Flares on a Critical Success or Critical Failure on a roll with
-      // consequences, directly related to a Talent in it. The die can tell us the first half;
-      // which Constellation it was related to is the table's call, so the button asks.
-      canFlare: this.#canFlare(result, cfg),
-      flareSlug: cfg.slug ?? "",
-      flareName: cfg.slug ? SW.getConstellation(cfg.slug).name : "",
-      // Reroll (0.5.3): offered on every Attack and Defense card to the roller's owner and the GM;
-      // a card that is itself a reroll says so, and why.
-      canReroll: isExchange,
-      reroll: cfg.rerollOf ? { reason: cfg.rerollReason ?? "" } : null
-    };
-  }
-
-  /* -------------------------------------------- */
 
   /**
    * The out-of-reach or out-of-range note for a Strike, or null when the target is within what
@@ -967,161 +603,6 @@ export class SwCheck {
     Hooks.callAll("starwrought.reroll", { oldId: message.id, result, reason });
     return result;
   }
-
-  /**
-   * The `flags.starwrought` a check card carries. Every card button rebuilds its state from these
-   * after a reload (chat.mjs), so the sixteen keys are a contract: none is renamed or dropped. A
-   * Posture, when one answered, is a seventeenth key the attack flow's card reads.
-   */
-  static #cardFlags(result, position) {
-    const cfg = result.config;
-    const isExchange = ["attack", "defense"].includes(cfg.kind);
-    const flags = {
-      kind: cfg.kind,
-      degree: result.degree,
-      outcome: result.outcome?.key ?? null,
-      actorUuid: cfg.actor.uuid,
-      itemUuid: cfg.item?.uuid ?? null,
-      weaponId: cfg.weaponId ?? null,
-      targetUuid: cfg.targetUuid ?? null,
-      threshold: result.threshold,
-      strike: isExchange ? cfg.strike : null,
-      // The Proficiency rolled (melee or ranged), so the damage card adds the right specialization.
-      slug: cfg.slug ?? null,
-      thrown: !!cfg.thrown,
-      defense: cfg.defense ?? null,
-      reaction: cfg.reaction ?? null,
-      reactionCharged: !!cfg.reactionCharged,
-      attackerUuid: position?.attackerUuid ?? null,
-      defenderUuid: position?.defenderUuid ?? null
-    };
-    if (cfg.posture?.talentId) {
-      flags.posture = { talentId: cfg.posture.talentId, name: cfg.posture.name ?? "", zone: cfg.posture.zone ?? null };
-    }
-    // Rerolls (0.5.3) throw the same die again from the card alone, so the card keeps what a
-    // reroll needs and the contract above does not carry: the applied modifiers by name (the
-    // new card lists them), the adversary's attack row behind a Defense card (its Threshold is
-    // read again, on the GM's client), and which card this one replaced, and why.
-    if (isExchange) {
-      flags.modifiers = (result.modifiers ?? []).map(m => ({ label: m.label, value: m.value, type: m.type ?? null }));
-      flags.attackId = cfg.attackId ?? null;
-      if (cfg.rerollOf) {
-        flags.rerollOf = cfg.rerollOf;
-        flags.rerollReason = cfg.rerollReason ?? "";
-      }
-    }
-    return flags;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Settle Position (PHB v4.10, The Exchange, step 5): what the card offers once the Result is
-   * read. Everything here is an offer to the side the rule favours, never an automatic write,
-   * because "a plausible Zone" and "if they Guarded with a rigid weapon" are the table's to confirm.
-   *
-   *  - Miss: the attacker is Exposed in a Zone of the defender's choice, whatever the Strike. A
-   *    Guard with a rigid implement takes Control (a Quick Strike can only be bound). An Evade
-   *    may Step.
-   *  - Graze: Weighted (Committed) Exposes the attacker. A Guard with a rigid implement forms a
-   *    neutral Bind, or Control if it was a Parry against a Deliberate or Committed Strike. An
-   *    Evade gives 3 feet directly away, or a Step of its own choosing if it Voided.
-   *  - The Bind is offered only when the attack can be bound: a melee weapon or natural attack
-   *    that is neither Flexible nor Unparryable. Otherwise the card says why not.
-   *  - Hit or Critical Hit: a Committed Strike may Expose a plausible Zone on any Hit; a Deliberate
-   *    Strike may on a Critical Hit.
-   *  - Counter: the defender's Quick Strike back resolves whatever the Result was.
-   *  - Parry that Stops a Deliberate or Committed Strike: Control, and the riposte Quick Strike ⓿.
-   */
-  static #position(cfg, result) {
-    if (!result.outcome) return null;
-    const isAttack = cfg.kind === "attack";
-    const attacker = isAttack ? cfg.actor : (cfg.attacker ?? null);
-    const defender = isAttack ? (cfg.defender ?? null) : cfg.actor;
-    const kind = SW.STRIKE_KINDS[cfg.strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
-    const outcome = result.outcome.key;
-    const defense = cfg.defense ?? null;
-    const reaction = cfg.reaction ?? null;
-    const rigid = isAttack ? (cfg.defenderRigid ?? null) : (cfg.actor.rigidImplement ?? null);
-
-    const pos = {
-      zones: Object.entries(SW.ZONES).map(([key, z]) => ({ key, label: z.label })),
-      attackerUuid: attacker?.uuid ?? "",
-      defenderUuid: defender?.uuid ?? "",
-      attackerName: (isAttack ? (cfg.actor.name) : (attacker?.name ?? "")),
-      defenderName: (isAttack ? (cfg.targetName || defender?.name || "") : cfg.actor.name),
-      attackerTokenUuid: isAttack ? (cfg.attackerTokenUuid ?? "") : (cfg.targetUuid ?? ""),
-      defenderTokenUuid: isAttack ? (cfg.targetUuid ?? "") : (cfg.defenderTokenUuid ?? ""),
-      exposeAttacker: false,
-      exposeDefender: false,
-      bind: null,
-      bindNote: null,
-      ground: null,
-      riposte: false,
-      counter: reaction === "counter",
-      stopped: ["miss", "graze"].includes(outcome)
-    };
-
-    if (pos.stopped) {
-      // A Miss Exposes the attacker for every Strike the kinds table says it does (all three in
-      // PHB v4.10, The Result); a Weighted Strike is Exposed by any Stop. The table is the one
-      // place to say otherwise.
-      pos.exposeAttacker = ((outcome === "miss") && kind.exposeOnMiss) || kind.weighted;
-      // Only a melee weapon or natural attack can be bound (PHB v4.10, The Bind, "What cannot
-      // Bind"): nothing Flexible or Unparryable, and nothing that left the hand. A Defense roll
-      // does not know the attack, so its offer stands and the table decides.
-      const attackFlags = cfg.item?.system?.flags ?? {};
-      const bindable = !isAttack
-        || !(attackFlags.flexible || attackFlags.unparryable || (cfg.slug === SW.RANGED_SLUG));
-      if ((defense === "guard") && rigid && bindable) {
-        const control = kind.controllable && ((outcome === "miss") || (reaction === "parry"));
-        pos.bind = {
-          mode: control ? "control" : "neutral",
-          implement: rigid.name ?? "",
-          // The weapon that was Stopped, so the Bind records what is held and not whatever the
-          // attacker happens to hold first: the Controlled −2 and the "uncontrolled weapon ends
-          // the Bind" rule both key on it. A Defense roll has no attacking Item; blank there.
-          // A Defense card inside the attack flow names the attack it resolved (`attackName`,
-          // 0.5.1), so the Bind records "Bite" rather than "weapon".
-          theirs: isAttack ? (cfg.item?.name ?? "") : (cfg.attackName ?? ""),
-          label: control ? "STARWROUGHT.Bind.takeControl" : "STARWROUGHT.Bind.form"
-        };
-        pos.riposte = control && (reaction === "parry");
-      } else if (isAttack && !bindable && (defense === "guard") && rigid) {
-        // The Guard would have offered a Bind; say why it does not.
-        pos.bindNote = game.i18n.format("STARWROUGHT.Bind.cannotBind", { weapon: cfg.item?.name ?? "" });
-      }
-      if (defense === "evade") {
-        pos.ground = ((outcome === "miss") || (reaction === "void"))
-          ? { mode: "step", label: "STARWROUGHT.Position.step" }
-          : { mode: "give", feet: SW.GIVE_GROUND_FEET, label: "STARWROUGHT.Position.giveGround" };
-      }
-    } else {
-      pos.exposeDefender = kind.full && ((cfg.strike === "committed") || (outcome === "critical"));
-    }
-
-    pos.any = pos.exposeAttacker || pos.exposeDefender || !!pos.bind || !!pos.bindNote || !!pos.ground
-      || pos.riposte || pos.counter;
-    return pos;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Was this a critical, on a character who can hold a Flare? The universal trigger also wants
-   * the roll to have consequences, which no die can tell us, so the button is an offer.
-   */
-  static #canFlare(result, cfg) {
-    if (!game.settings.get(SW.SYSTEM_ID, "offerFlares")) return false;
-    if (cfg.actor?.type !== "character") return false;
-    // A Defense roll's degree is written from the attacker's side, so read the defender's own.
-    // A denied critical (a Quick Strike's natural 20) was still a critical on the die.
-    let own = cfg.kind === "defense" ? SW.invertDegree(result.degree) : result.degree;
-    if (result.critDenied) own = "critSuccess";
-    return ["critSuccess", "critFail"].includes(own);
-  }
-
-  /* -------------------------------------------- */
 
   /**
    * The user's current target, if there is exactly one with an Actor behind it.

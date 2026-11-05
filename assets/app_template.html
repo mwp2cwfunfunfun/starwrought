@@ -200,7 +200,7 @@
 <script>
 let TREES = __TREES_JSON__;
 let R = __ROSTER_JSON__;
-let A = __ACTIONS_JSON__; // data/actions.xlsx by way of actions.json: authoritative for any action it names
+let A = __ACTIONS_JSON__; // the actions workbooks (data/maneuvers.xlsx today) by way of actions.json: authoritative for any action they name
 let SHEET = __SHEET_SPEC__;
 let BG = __BACKGROUNDS_JSON__;
 let LANGS = __LANGUAGES_JSON__;
@@ -1821,7 +1821,7 @@ function vWiki(){
   const tbl=(head,rows)=>`<table class="t"><tr>${head.map(x=>`<th>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</table>`;
   const link=t=>(allTreeNames().includes(t)||/^Lore \(/.test(t||""))?`<a class="tl" data-tree="${t}">${t}</a>`:(t||"");
   const P=s=>`<p style="font-size:12.5px">${s}</p>`;
-  // data/actions.xlsx is authoritative for any action it names: its rows print under their Type, in the mode
+  // An actions workbook (data/maneuvers.xlsx today) is authoritative for any action it names: its rows print under their Type, in the mode
   // the Type names (Exploration, Downtime, else Encounter), and the roster row of that name is left out wherever
   // it lived (the Maneuver groups, exploration, downtime, the Reactions table).
   const acts=(typeof A!=="undefined"&&A&&A.actions)||[];

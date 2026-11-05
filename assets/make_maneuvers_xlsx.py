@@ -168,8 +168,9 @@ def cell_value(lines):
 
 
 def taken_elsewhere():
-    """Names another actions workbook already defines (Aid, in data/actions.xlsx), read from the last
-    actions.json: the same action in two workbooks is a converter error, so those rows stay the other
+    """Names another actions workbook already defines, read from the last actions.json (Aid, in
+    data/actions.xlsx, when this scaffold ran in 0.5.1; Mike moved Aid into maneuvers.xlsx itself on
+    2026-10-03): the same action in two workbooks is a converter error, so those rows stay the other
     workbook's and are left out here. {bare lower-case name: workbook}."""
     if not os.path.exists(ACTIONS_JSON):
         return {}

@@ -1,0 +1,17 @@
+{{!-- The shield's own fields. Shared panels: physical. --}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.shield"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.guardBonus"}}</span>
+      <input type="number" name="system.bonus" value="{{system.bonus}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.hardness"}}</span>
+      <input type="number" name="system.hardness" value="{{system.hardness}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
+      <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.givesCover"}}</span>
+      <input type="checkbox" name="system.cover" {{checked system.cover}}></label>
+  </div>
+</div>
+
+{{> "systems/starwrought/templates/item/details/physical.hbs"}}

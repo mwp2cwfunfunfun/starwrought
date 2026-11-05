@@ -3874,31 +3874,9 @@ let R = {
 };
 let A = {
  "source": [
-  "actions.xlsx",
   "maneuvers.xlsx"
  ],
  "actions": [
-  {
-   "name": "Aid",
-   "type": "Basic Action",
-   "cost": "1",
-   "costMax": "",
-   "costMode": "to",
-   "reaction": false,
-   "reactionCost": "",
-   "enabled": false,
-   "traits": [],
-   "prerequisites": "",
-   "requirements": "The ally is willing to accept your aid.",
-   "trigger": "",
-   "description": "You use an action to help an ally.",
-   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br><b>Critical Success</b> If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
-   "automation": "",
-   "meta": "Automation TBD",
-   "costDefaulted": true,
-   "sheet": "Basic Actions",
-   "workbook": "actions.xlsx"
-  },
   {
    "name": "Move",
    "type": "Basic Action",
@@ -4681,6 +4659,27 @@ let A = {
    "workbook": "maneuvers.xlsx"
   },
   {
+   "name": "Aid",
+   "type": "Basic Action",
+   "cost": "1",
+   "costMax": "",
+   "costMode": "to",
+   "reaction": false,
+   "reactionCost": "",
+   "enabled": true,
+   "traits": [],
+   "prerequisites": "",
+   "requirements": "The ally is willing to accept your aid.",
+   "trigger": "",
+   "description": "You use an action to help an ally.",
+   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br><b>Critical Success </b>If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
+   "automation": "",
+   "meta": "Watching, Deceiving & Helping",
+   "costDefaulted": false,
+   "sheet": "Watching, Deceiving & Helping",
+   "workbook": "maneuvers.xlsx"
+  },
+  {
    "name": "Interact",
    "type": "Basic Action",
    "cost": "1",
@@ -4788,7 +4787,7 @@ let A = {
    "workbook": "maneuvers.xlsx"
   }
  ]
-}; // data/actions.xlsx by way of actions.json: authoritative for any action it names
+}; // the actions workbooks (data/maneuvers.xlsx today) by way of actions.json: authoritative for any action they name
 let SHEET = {
  "meta": {
   "title": "STARWROUGHT",
@@ -6713,7 +6712,7 @@ function vWiki(){
   const tbl=(head,rows)=>`<table class="t"><tr>${head.map(x=>`<th>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</table>`;
   const link=t=>(allTreeNames().includes(t)||/^Lore \(/.test(t||""))?`<a class="tl" data-tree="${t}">${t}</a>`:(t||"");
   const P=s=>`<p style="font-size:12.5px">${s}</p>`;
-  // data/actions.xlsx is authoritative for any action it names: its rows print under their Type, in the mode
+  // An actions workbook (data/maneuvers.xlsx today) is authoritative for any action it names: its rows print under their Type, in the mode
   // the Type names (Exploration, Downtime, else Encounter), and the roster row of that name is left out wherever
   // it lived (the Maneuver groups, exploration, downtime, the Reactions table).
   const acts=(typeof A!=="undefined"&&A&&A.actions)||[];

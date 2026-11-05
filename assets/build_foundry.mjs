@@ -47,11 +47,14 @@ import {
 } from "../foundry/starwrought/module/config.mjs";
 // The automation grammar (0.9.0; ruling 120) is imported from the system for the same reason: the
 // build and the client must read an Automation cell identically, so there is one parser and it is
-// the system's. grammar.mjs imports the kinds registry itself, so the registry is live here; the
-// index is also imported directly for the summary line's count of kinds. Both are free of Foundry
-// globals at module scope, as config.mjs is.
+// the system's. grammar.mjs imports the kinds registry itself, so the registry is live here (the
+// `bonus` kind since 0.10.0); the index is also imported directly for the summary line's count of
+// kinds. Both are free of Foundry globals at module scope, as config.mjs is.
 import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
+// The system's own Trait-line splitter (0.10.1), pure as the grammar is, so the build and the
+// client read a Trait cell the same way; through 0.10.0 this file carried a copy of it.
+import { splitTraits } from "../foundry/starwrought/module/data/items/weapon-traits.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -190,15 +193,6 @@ const auraOf = row => (row.aura ? {
   }
 } : {});
 
-/** Split an authored Trait line into an array. */
-function splitTraits(line) {
-  if (Array.isArray(line)) return line;
-  return String(line ?? "")
-    .split(/,(?![^(]*\))/)
-    .map(t => t.trim())
-    .filter(t => t && t !== "—" && t !== "-");
-}
-
 /* -------------------------------------------- */
 /*  The automation framework (0.9.0)            */
 /* -------------------------------------------- */
@@ -213,15 +207,16 @@ const automationTally = { rules: 0, documents: 0, kinds: new Set() };
  * the converter: nothing half-read ships, and sync_content.cmd stops before the sources are
  * written (fail() exits before writeSources() runs). What is written is the text itself, so the
  * sheet shows the cell as the author wrote it, and the parsed rules, `{ kind, line, text, ...data }`
- * each, so the client never has to parse a compendium Item to use it. With no rule kinds defined
- * yet, every non-comment line is "unknown rule kind" and fails here, which is the framework
- * working as built: the kinds are added one at a time with Mike (ruling 119). An empty cell is
- * `automation: ""` and `rules: []`, written on every Talent, Constellation and action so the
- * field is always present on a source.
+ * each, so the client never has to parse a compendium Item to use it. One kind is defined since
+ * 0.10.0, `bonus` (Humanity's; rulings 121 to 124); a line in any other word is "unknown rule
+ * kind" and fails here, which is the framework working as built: the kinds are added one at a
+ * time with Mike (ruling 119). An empty cell is `automation: ""` and `rules: []`, written on every
+ * Talent, Constellation and action so the field is always present on a source.
  * @param {string} text           The cell, or "" / undefined for none.
  * @param {object} context        For the messages: `source` is "<Constellation> / <Talent>" (or the
  *                                action's sheet and name); itemName, constellation and itemType
- *                                travel to the kinds' own parse for their messages.
+ *                                travel to the kinds' own parse for their messages, and `resolve`
+ *                                (resolveRuleTarget below) is what a kind asks about a target's name.
  * @returns {{automation: string, rules: object[]}}
  */
 function automationOf(text, context) {
@@ -337,6 +332,55 @@ const trees = read("trees.json");
 const roster = read("roster.json");
 const backgrounds = read("backgrounds.json");
 const languages = read("languages.json");
+// The action sheets are read here, before the trees loop, rather than beside the Actions section
+// below where they are used: the rule-target resolver needs every Maneuver's name while the
+// Talents are built (0.10.0), and a `const` read further down would still be in its dead zone.
+const actionsPath = path.join(ROOT, "assets", "actions.json");
+const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
+
+/**
+ * THE AUTOMATION RULES' TARGETS (0.10.0; rulings 121 and 122). What a rule's `to <Target>` or
+ * `if <Constellation>` names, for the grammar's kinds, handed to both `automationOf` calls as
+ * `resolve` in the parse context; the client's counterpart is `resolveRuleTarget` in
+ * module/helpers/content.mjs, over the registry and the compendium, so a cell and a world Item's
+ * textarea are checked alike and store the same shape.
+ *
+ * Constellations are every key of trees.json (the four Defenses are trees too), matched case
+ * blind on the name or on `slugify(name)`, disabled ones included: a cell may name a Constellation
+ * whose Root is off, and the rule is right even while the row is. Maneuvers are every sheet
+ * action's name and every roster `actions` row's `actionName`, enabled or not (a disabled Aid still
+ * resolves: the cell is right, the row is simply off, ruling 61), matched case blind on the plain
+ * name or its slug, so a glyphed "Aid ❶ (⓿↺)" and a bare "Aid" are one Maneuver. A Constellation
+ * wins over an action of the same name (none today). Null for anything else; the Lore refusal is
+ * the kind's, not this map's, which resolves the template like any Constellation.
+ */
+const ruleTargets = new Map();
+const addRuleTarget = (keys, entry) => {
+  for (const key of keys) if (key && !ruleTargets.has(key)) ruleTargets.set(key, entry);
+};
+for (const treeName of Object.keys(trees)) {
+  const slug = slugify(treeName);
+  addRuleTarget([treeName.trim().toLowerCase(), slug], { type: "constellation", slug, name: treeName });
+}
+for (const actionLabel of [
+  ...sheetActions.map(a => a.name),
+  ...Object.values(roster.actions ?? {}).flat().map(([name]) => name)
+]) {
+  const name = actionName(actionLabel);
+  addRuleTarget([name.toLowerCase(), slugify(name)], { type: "action", slug: slugify(name), name });
+}
+/**
+ * @param {string} name  As written in the cell: "Aid", "Armored Fighting", "armored-fighting".
+ * @returns {{type: "constellation"|"action", slug: string, name: string}|null}
+ */
+function resolveRuleTarget(name) {
+  const raw = String(name ?? "").trim();
+  if (!raw) return null;
+  return ruleTargets.get(raw.toLowerCase())
+    ?? ruleTargets.get(actionName(raw).toLowerCase())
+    ?? ruleTargets.get(slugify(raw))
+    ?? null;
+}
 
 const constellationIndex = [];
 const plateDir = path.join(ROOT, "assets", "constellations");
@@ -418,8 +462,11 @@ for (const [name, tree] of Object.entries(trees)) {
         freeTalent: node.freeTalent ?? "",
         ...auraOf(node),
         // The Automation cell, parsed with the system's grammar; a bad line stops the build here.
+        // `resolve` is what a kind asks about a target's name (0.10.0): a Constellation or a
+        // Maneuver the book has, else the line fails naming the word.
         ...automationOf(node.automation, {
-          itemName: node.name, constellation: name, itemType: "talent", source: `${name} / ${node.name}`
+          itemName: node.name, constellation: name, itemType: "talent", source: `${name} / ${node.name}`,
+          resolve: resolveRuleTarget
         }),
         traits: [],
         source: "STARWROUGHT Playtest v4.10"
@@ -706,21 +753,24 @@ for (const row of equipmentRows("shields")) {
 /*  Actions                                     */
 /* -------------------------------------------- */
 
-// data/actions.xlsx is authoritative for any action it names (Mike, 2026-09-26). A roster row of
-// the same name is retired, so Aid written in the sheet replaces Aid printed in the roster under
-// the same document id, and a character who already has Aid keeps a working link. Rows the sheet
-// does not carry yet stay, so nothing vanishes until the sheet has it. The sheet's Basic Actions
-// and the roster's Encounter Mode rows are flagged `basic`, which is what puts them on every
-// character's Actions tab without a copy being made.
+// An actions workbook is authoritative for any action it names (Mike, 2026-09-26; data/actions.xlsx
+// then, data/maneuvers.xlsx alone since 2026-10-03, when Mike moved Aid into it and deleted the
+// other). A roster row of the same name is retired, so Aid written in the sheet replaces Aid
+// printed in the roster under the same document id, and a character who already has Aid keeps a
+// working link. Rows the sheet does not carry yet stay, so nothing vanishes until the sheet has
+// it. The sheet's Basic Actions and the roster's Encounter Mode rows are flagged `basic`, which is
+// what puts them on every character's Actions tab without a copy being made.
 //
 // The sheet stays authoritative when its row is disabled (ruling 61): a sheet action marked anything
 // but `Enabled? = Yes` is not written, AND it still retires the roster row of the same name, so the
-// action ships nowhere until Mike enables it. The build names those rows so the gap is deliberate
-// rather than a surprise; the roster rows themselves (Encounter, Exploration, Downtime, Reactions)
-// are hand-kept JSON and always ship.
-const actionsPath = path.join(ROOT, "assets", "actions.json");
-const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
-/** The workbook that wrote a sheet action, as the Item's Source line; a pre-0.5.1 actions.json carried no stamp and was actions.xlsx alone. */
+// action ships nowhere until Mike enables it (Aid reads Yes since 2026-10-03 and is the first
+// Maneuver to ship). The build names those rows so the gap is deliberate rather than a surprise;
+// the roster rows themselves (Encounter, Exploration, Downtime, Reactions) are hand-kept JSON and
+// always ship.
+//
+// `sheetActions` itself is read at the top of the file, beside trees.json, because the rule-target
+// resolver (0.10.0) needs the Maneuvers' names before the Talents are built.
+/** The workbook that wrote a sheet action, as the Item's Source line; a pre-0.5.1 actions.json carried no stamp and was the old actions.xlsx alone. */
 const actionSource = a => a.workbook ? `data/${a.workbook}` : "data/actions.xlsx";
 const fromSheet = new Set(sheetActions.map(a => a.name.toLowerCase()));
 const disabledOnSheet = new Set(sheetActions.filter(a => !isEnabled(a)).map(a => a.name.toLowerCase()));
@@ -802,6 +852,17 @@ let actionSort = 0;
 // grouping; the `basic` flag still reads the Type. So the Maneuvers tab and the pack keep the
 // book's groups rather than one "Basic Action" heap (review, 2026-10-01).
 const actionGroup = a => a.sheet || a.type;
+/**
+ * A Maneuver whose Effect calls for a Relevant Check (0.10.0; ruling 123): its check is enabled
+ * with no Constellation named, which SwItem#use reads as the picker, carrying the Maneuver, so
+ * Aid's roll is Aid's and a `bonus ... to Aid` applies to it (ruling 122). Aid is the one row that
+ * says so, and it is not enabled (ruling 61), so no shipped document changes today; the day its
+ * row reads Yes it ships ready. No sheet action names a check otherwise, so every other row leaves
+ * the field to the model's default, disabled, as before.
+ */
+const relevantCheckOf = a => /relevant\s+check/i.test(String(a.effect ?? ""))
+  ? { check: { enabled: true, constellation: "", defense: "" } }
+  : {};
 for (const group of [...new Set(shippedSheetActions.map(actionGroup))]) {
   actionFolders[group] = folder("actions", group, { sort: actionSort++, color: "#5a4a1e" });
 }
@@ -827,12 +888,14 @@ for (const a of shippedSheetActions) {
       effect: paragraphs(a.effect),
       // The sheet's Automation column is the same column as a Talent's now (0.9.0), no longer
       // prose: parsed with the system's grammar, and a bad line stops the build naming the
-      // workbook, the sheet and the action.
+      // workbook, the sheet and the action. The same `resolve` as a Talent's (0.10.0).
       ...automationOf(a.automation, {
         itemName: a.name, constellation: actionGroup(a), itemType: "action",
-        source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`
+        source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`,
+        resolve: resolveRuleTarget
       }),
       ...auraOf(a),
+      ...relevantCheckOf(a),
       source: actionSource(a)
     }
   });
@@ -1167,9 +1230,15 @@ const MACROS = [
     name: "Recenter",
     img: "icons/svg/shield.svg",
     command: `// Recenter: clear every Exposed Zone on the selected tokens (a Posture's stays) and end any Bind.
+// The Maneuver is the entry point (0.10.1): each selected actor uses the Recenter Item from the
+// Actions pack, and while its row is not enabled in data/maneuvers.xlsx the actor's method runs
+// directly, which is the same behaviour.
 const actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);
-if ( !actors.length ) ui.notifications.warn("Select a token first.");
-for ( const actor of actors ) await actor.recenter();`
+if ( !actors.length ) return ui.notifications.warn("Select a token first.");
+const pack = game.packs.get("starwrought.actions");
+const entry = pack?.index.find(e => e.name === "Recenter");
+const item = entry ? await pack.getDocument(entry._id) : null;
+for ( const actor of actors ) await (item ? item.use({ actor }) : actor.recenter());`
   },
   {
     name: "Recovery Check",
@@ -1416,15 +1485,17 @@ console.log(`  equipment: ${ratio("equipment")} enabled`
   + (equipment ? " (data/equipment.xlsx)" : " (roster fallback: assets/equipment.json is absent)"));
 // The Automation cells (0.9.0): what parsed, over how many documents, in how many kinds. With no
 // kinds registered the framework can carry no rule, and the line says so rather than printing a
-// bare zero; with kinds defined but no cell using them, it says that instead.
+// bare zero; with kinds defined but no cell using them (0.10.0 until Mike pastes Humanity's cell),
+// it says that instead, naming the count.
 const kinds = knownKinds();
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 if (automationTally.rules) {
-  console.log(`  automation: ${automationTally.rules} rules on ${automationTally.documents} documents `
-    + `(${automationTally.kinds.size} kinds in use)`);
+  console.log(`  automation: ${plural(automationTally.rules, "rule")} on ${plural(automationTally.documents, "document")} `
+    + `(${plural(automationTally.kinds.size, "kind")} in use)`);
 } else if (!kinds.length) {
   console.log("  automation: no rules (no rule kinds are defined yet)");
 } else {
-  console.log(`  automation: no rules (${kinds.length} kinds defined, none in use)`);
+  console.log(`  automation: no rules (${plural(kinds.length, "kind")} defined, none in use)`);
 }
 
 // --no-compile is the content loop's way in (build_all.mjs --content): the sources and the index

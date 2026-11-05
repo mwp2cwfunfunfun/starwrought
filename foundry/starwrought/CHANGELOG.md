@@ -7,6 +7,875 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.10.1 (2026-11-04): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, `data/SYNC.json` is untouched, and
+no data moved, so the pipeline's outputs stand as 0.10.0 left them. The release is **the first
+four architecture recommendations** from an outside review of the system, which Mike is bringing
+one at a time on the condition that each is validated as warranted before any code moves and that
+a change serve maintainability and keep a reader, human or AI, from changing the wrong code
+(Mike, 2026-11-04). All four are splits of a file that had grown by accretion, all four were
+done mechanically (every line sliced out by range with a coverage assertion, then the old and the
+new compared), and none changes what a player does, save one control on the Item sheet that
+now does what it says; the sections below carry the recommendations that followed in the same
+release, the twelfth last: **the stylesheet**, `styles/starwrought.css`,
+one file of 2,947 lines through 0.10.0, is eleven files, one per window, and the split fixed the
+three places where the one file's order, not its authors, decided how a rule read; **the Item
+data models**, `module/data/item.mjs`, 873 lines, are one file per type under
+`module/data/items/` with the shared pieces beside them one concern per file, which also put the
+weapon Trait parser where the build can import it; and **the rules constants**,
+`module/config.mjs`, 1,166 lines and the most-changed file in the system, are one file per
+concept under `module/config/` with the old path a barrel, which refiled the constants that sat
+under the wrong heading and put the version stamp in a file named for it; and **the Item sheet's
+details tab**, `templates/item/details.hbs`, 386 lines branching eight ways, is one partial per
+type under `templates/item/details/` with the three shared panels beside them, which removed a
+panel written out twice. A patch bump; two pills and three card accents now look as they were
+written, a carry-state select stands where a checkbox on a derived value stood, and nothing else
+on screen or in the data moves.
+`Starwrought_Players_Handbook_v4.16.docx` is still on the shelf, untracked and unsynced, as 0.9.0
+and 0.10.0 said.
+
+### Added: the action counter on the Token HUD, and a token-bar sweep
+
+The fifteenth recommendation (Mike, 2026-11-04: "When a player selects their token during combat,
+you could show a small action counter in the Token HUD, such as 4/6, rather than a full token
+bar"). Validated: nothing on the token showed actions; the HUD carried the stance and ring
+buttons, the token bars Vigor only, and `actions.value` was offered as a trackable value nobody
+had put a bar on. An addition, then, not a replacement.
+
+- **The counter** (`actionsCounter` in `module/apps/token-hud.mjs`): first in the HUD's right
+  column, above the stance button, the actions free to spend now over the round's count ("4/6")
+  with the sheet's three-state pips beneath (`actionPips`, the one computation the sheet and the
+  tracker share), the legend as its tooltip, red at zero as the tracker is. A readout, not a
+  button. Shown only while the actor is in an encounter, to owners and the GM, on characters and
+  adversaries alike. The HUD re-renders when the actor it shows changes `system.actions`
+  (`updateActor`, as the tracker row does), so the number moves as the player spends with the HUD
+  open. Styles in `hud.css`.
+- **A defect found on the way, fixed by a migration step.** Hrolda's token still pointed its
+  first bar at `hp`, which 0.6.0 renamed to Vigor on the actors and not on the tokens, so the bar
+  drew nothing. The 0.10.1 step of `migrateWorld` points every prototype and scene token bar on
+  `hp` at `vigor`, once, reported as the other steps are (`STARWROUGHT.Migration.tokenBars`). A
+  world that already opened under a pre-release 0.10.1 build has its stamp past the step; setting
+  the world setting `systemVersion` to `0.10.0` once and reloading runs it.
+- **Checked** live: with the stamp set back, the reload retargeted four bars (two prototype, two
+  scene) and left none on `hp`; outside an encounter the HUD had the stance button and no
+  counter; in one it read "6/6" first in the column, "4/6" after two actions spent without
+  reopening it, and "1/6" with free, reserved, reserved, spent, spent, spent after a three-action
+  Maneuver was Prepared, the tooltip ending in the legend each time.
+
+### Added: more than six actions a round, for a character too
+
+The fourteenth recommendation (Mike, 2026-11-04: "Ensure the system supports situations where
+more than 6 actions are allowed (e.g., maybe some NPCs, or a haste spell)"). Validated: the book
+allows it ("some creatures have more or fewer"), an adversary already carried its own number
+(`actionsPerRound`, 1 to 12) and every reader honoured it, but a character was six in the actor's
+getter and six again in `resetActions`, with no field or condition that could raise it; and above
+six the sheet's pips printed ❻ for every later pip, the glyph table ending there.
+
+- **`bonuses.actions`** on the character, an **Actions a round** field on the Overview's
+  Adjustments panel beside the Vigor bonus, with a hint. `prepareActions` in
+  `module/data/character/actions.mjs` (a new pass, after Vigor) derives `system.actionsPerRound`
+  as six plus it, clamped to 0 and the ceiling, so the field reads on both Actor types and an
+  Active Effect targeting `system.bonuses.actions` is how a haste spell lands later, with no
+  spell system today. Negative for the reverse. Slowed still comes off at the start of each round.
+- **One getter.** `SwActor#actionsPerRound` reads `system.actionsPerRound` on both types; the
+  reset, the sheet's pips (`actionPips`), the tracker, the ruler's budget, the spend cards and
+  the Prepared refund all go through it. The duplicate six in `resetActions` is gone.
+- **`ACTIONS_MAX`**, twelve, in `config/actions.mjs` and the barrel: the schema maxima of
+  `actions.value`, `actions.reserved` and the adversary's field (12 by literal through 0.10.0),
+  the adversary sheet's input, the tracker's slice and the derived clamp all read it.
+- **Glyphs ❼ to ⓬** for the seventh to twelfth pip, and six more ruler colours for the seventh
+  to twelfth Move, none repeating an earlier hue.
+- **No Quickened condition** (Mike's choice): the book has no such word, and it can come with the
+  first spell that needs it, as a handbook proposal.
+- **Checked** live: the field at +2 derived 8 and the getter agreed; +9 clamped to 12 and −8 to
+  0; a round started with "8 of 8", the sheet drew eight numerals to ❽ in three states, the
+  tracker "4/8" with eight pips and the legend; Slowed 1 started the next round at "7 of 8"; the
+  adversary's own field held at 9 with its input capped at 12. The self-test and the barrel check
+  pass; everything restored afterwards.
+
+### Changed: reserved actions read as reserved, on the sheet and in the tracker
+
+The thirteenth recommendation (Mike, 2026-11-04: "Use a more illustrative display in Combat
+Tracker and Character Sheet to take Reserved actions into account", with a mock of three pip
+states, available, reserved and spent). Validated: the sheet already drew the three states, but
+in the Attribute colour for Agility and with the states named only in a tooltip; the combat
+tracker lit a pip only while free, built from its own arithmetic, so an action reserved for a
+Prepared Maneuver looked spent there and existed only as the text "+2 reserved".
+
+- **One computation.** `actionPips(actor)` in `module/helpers/actor-context.mjs` derives the
+  state of every slot (free, reserved, spent), the three counts and a legend ("2 available, 2
+  reserved, 2 spent."; `STARWROUGHT.Actions.legend`). The sheet's `actionsContext` and the
+  tracker's `actionsReadout` both read it, so the two displays cannot disagree about a Prepared
+  Maneuver again.
+- **One colour.** A new token, `--sw-reserved` (violet, `#9b6bd6`), on `.starwrought` in
+  `starwrought.css`; the sheet's reserved pip and its caption use it in place of `--sw-agility`
+  (`character.css`); the tracker's pips carry `sw-free`, `sw-reserved` or `sw-spent` in place of
+  the one `sw-lit`, a reserved pip filled in the token's colour (`hud.css`, with the token's value
+  as the fallback, since the tracker is core's element outside `.starwrought`).
+- **The legend** is appended to both tooltips: the sheet's block and the tracker's line.
+- **The big number** in the tracker stays the free count, what a player can act on now; the
+  mock's "4/6" counted the reserve in. Mike chose the free count ("Do it" on that reading). The
+  pips and the legend carry the reserve, and the "+N reserved" text stays beside the number.
+- **Checked** live: in an encounter, one action spent and a three-action Maneuver Prepared,
+  the tracker read "2/6" with pips free, free, reserved, reserved, spent, spent in gold, violet
+  and hollow, and the sheet's six numerals the same states in the same colours, both tooltips
+  ending in the legend; abandoning the Maneuver returned the two pips to free on both.
+
+### Changed: the Actor's verbs, the round's cards and the chat cards, one file each
+
+The twelfth recommendation, the four files of `module/documents/` the review named, all four done
+(Mike: "Do all four"). Nothing a player does changes; no method moved off `actor.<name>()`, no
+card reads differently, and no socket message changed shape.
+
+- **`documents/actions.mjs` is `documents/movement.mjs`.** The file charged a token drag against
+  the six actions and offered the Intercept, and nothing else; its name read as the actions
+  workbook or the Actions pack. `registerActionTracking` is `registerMovementTracking`, and
+  `starwrought.mjs` and `canvas/ruler.mjs` import the new path.
+- **`documents/combat.mjs`** (1,192 lines) keeps the two documents, `SwCombatant` and `SwCombat`,
+  and the hooks that move the round (612 lines). Out of it: **`helpers/cards.mjs`** (`cardHtml`,
+  `postCard`, `ownersOf`, `tableFor`, `requireOwner`, `actorFromUuid`, the `cardActions` map and
+  `registerCardButtons`, which binds every `data-sw-combat` button on render; the card idiom six
+  modules import, which imported it from the Combat's file through 0.10.0);
+  **`helpers/authority.mjs`** (`isElected`, `responsibleFor`: who counts and who writes when
+  every client hears a hook); **`helpers/settings.mjs`** (`setting`, the read that may run before
+  the settings are registered; the attack coordinator keeps its private copy, left whole by
+  Mike's ruling); **`documents/cards/round.mjs`** (the Recovery, Wind, Persistent Damage and
+  Prepared cards, the Pass-while-Preparing note, `persistentDamageOf`, and the seven button
+  handlers, registered by `registerRoundCards`, which `registerCombatTracking` calls); and
+  **`apps/combat-tracker.mjs`** (the actions readout, the Pass button and the pass streak on
+  core's rows, `registerTrackerReadout`, registered by `starwrought.mjs` itself, since the module
+  imports `SwCombat` and a registration from `combat.mjs` would close a circle).
+  `movement.mjs`, `party-socket.mjs`, `helpers/party.mjs`, `helpers/content-sync.mjs` and
+  `canvas/ruler.mjs` import from the new homes; `styles/README.md` names the tracker module.
+- **`documents/chat.mjs`** (899 lines) keeps the three entry points: `onRenderChatMessage`, the
+  `onCardButton` dispatch, and `onChatSocket`, now a router that validates the address and the
+  server's stamp once and hands `damage:*`, `reroll:*` and `expose:*` to the family that answers
+  it (195 lines; the three resolvers re-exported under their old names). The handlers live by card
+  family in **`documents/cards/`**: `shared.mjs` (`resolveActor`, `resolveTokenDoc`, `ownedActor`,
+  `zoneFrom`, `resolveTargets`, the socket name and `replyTo`, the one emit the three families
+  answer with; imports only the config, so no family closes a circle through it), `damage.mjs`
+  (roll, Apply, the relay and `onDamageSocket`, the applied card), `reroll.mjs` (the dialog, the
+  sibling set, the Hero Point, `onRerollSocket`), `flare.mjs`, `position.mjs` (Expose with its
+  relay and `onExposeSocket`, the Bind, Give ground, Step, Counter and riposte, charging a
+  Reaction, Recenter) and `attack.mjs` (the Threshold prune and the attack card's buttons). The
+  `onDamageSocket` alias of `onChatSocket`, kept since 0.5.3's first cut for an importer that
+  never existed in the repository, is gone; the name is the damage family's handler now.
+- **`documents/actor.mjs`** (2,471 lines, 24 commits, the most-changed file) is the composition,
+  the lookups (`resolveActor`, `rulesOfKind`, `tokenOnScene`) and the lifecycle hooks (160
+  lines), over thirteen mixins in **`documents/actor/`**, one section each, in the original's
+  order: `conditions` (105), `wounds` (the body, Wounds, Dying, Recovery, refusing death,
+  treating a Wound; 353), `checks` (the roll data, a check, the Relevant Check picker; 157),
+  `defense` (the Defense roll, the stance, the Threshold an answer presents, with the stance words
+  and the Posture bonus; 348), `attack` (the Strike, a Maneuver's attack, the declared targets,
+  Support, the Grab line, the weapon rank, damage, with `attackFlowOn`; 489), `points` (a Hero
+  Point, a Deferred Talent Point; 62), `actions` (six a round; 335), `carrying` (49), `position`
+  (Recenter, Expose, Give ground, Step; 125), `auras` (78), `bind` (this actor's side of it; 155;
+  the pair-keeper stays `documents/bind.mjs`), `flares` (112) and `rest` (41). Every method body
+  is verbatim. A `#private` member is scoped to the class that declares it, so the generator
+  asserted that each is called only from its own section, which held for all nine; the one
+  static private, the conditions' write queue, is a module-level Map, and the Bind's two calls of
+  the static `SwActor.resolveActor` read the pair-keeper's resolver directly, which is what the
+  static does. `sameName`, used by the attack and the carry state, is `SW.sameName` in
+  `config/names.mjs` and the barrel. `SECTIONS` in `actor.mjs` is the order of layering and
+  carries no meaning: no section overrides another's method, and `super` reaches Actor.
+- **Checked:** `node --check` and a free-identifier check (every name a file uses that any of
+  the split files declares must be declared or imported in that file) on all 28 files; the
+  self-test (59 checks) and the style check; a clean world load with no console error. The
+  Combat and chat halves by driving one button of each kind in a short encounter before and after
+  the split: the tracker's readout, Pass button and streak; the Persistent Damage, Recovery,
+  Prepared and ten minutes' rest cards and their buttons; Expose and Recenter through the
+  dispatch; a damage card applied to the named target; a Defense card rerolled by the GM with the
+  old card superseded; a critical's Flare button opening the picker; a declared Strike's card
+  cancelled from its GM control. The Actor by the method surface (the same 59 names and three
+  statics on the prototype chain, now fourteen deep) and 785 read-only answers on the world's four
+  actors, identical before and after, then every write path once: a condition set and cleared, a
+  carry state moved and back, a Hero Point spent, a custom aura added and removed, a Zone Exposed
+  and Recentered, a Posture's Zone surviving Recenter and clearing at the round's end, a Bind
+  formed with its mirror picked up and ended on both sides, the stance, an encounter joined, two
+  actions spent, a Maneuver Prepared and abandoned with its reservation, a Pass stamped, a Flare
+  lit and put out, a Hit at 0 Vigor opening a Wound and `adjustWounds` closing it, Dying begun,
+  raised and ended, and a night's rest. The test actors, tokens, Combat and messages were
+  restored afterwards.
+
+### Changed: the check engine's parts, one module each
+
+The eleventh recommendation: `module/dice/check.mjs`, 1,206 lines and the second most-changed
+module, split along the review's own groups, which were the file's. `SwCheck` stays the facade,
+so every caller still says `SwCheck.roll`, `resolveAgainst`, `previewTotal`, `strikeCanCrit`,
+`chargeReaction`, `rangeNoteFor`, `rerollCard` and the target helpers; about 30 call sites in
+nine files are untouched.
+
+- **`module/dice/check/`** (new): `modifiers.mjs` (`assemble`, `baseModifiers`: the base terms,
+  the Automation rules' `modifiers` hook call, the caller's own; 152 lines), `dialog.mjs`
+  (`prompt`: the pre-roll dialog; 156), `card.mjs` (`toMessage`, `cardContext`, `cardFlags`,
+  `canFlare`: the one renderer every result ends in; 194), `position.mjs` (`position`: Settle
+  Position; 100) and `strike.mjs` (`strikeCanCrit`, the one rule the engine, the dialog, the card
+  and the damage roll all ask; 22). `check.mjs` keeps `roll` and `resolveAgainst`, the order of a
+  roll, and the public statics, and is 642 lines. The private methods shared no state and passed
+  `cfg`, `parts` and `result` to each other, so each is the same code as a function.
+- The docs that named `SwCheck.#baseModifiers` as the `modifiers` hook's first call site (the
+  rules README, `engine.mjs`, `FEATURES.md`, `CLAUDE.md`) name `baseModifiers` in
+  `dice/check/modifiers.mjs`.
+- **Checked** with the die pinned (`CONFIG.Dice.randomUniform` held constant) so every roll is
+  deterministic: before and after, `previewTotal` for every Constellation, Defense and
+  Initiative on Hrolda; the rendered HTML of the check, Defense and Relevant Check dialogs; and
+  the cards and flags of a check, a Defense roll, a check with typed modifiers against a
+  Threshold, a resolved attack pairing with a Parry, a resolved Defense pairing with a Posture, a
+  Quick Strike's denied critical, a reroll and the card it superseded, normalised and diffed,
+  with the test messages deleted after each run. Plus `node --check`, the rules self-test and a
+  clean load.
+
+### Changed: the character model's passes, one module each
+
+The tenth recommendation asked for `module/data/item.mjs` split by type (done above as the
+second) and `module/data/actor.mjs` split into character-specific and shared calculations. The
+shared layer already existed (`SwActorData`, 208 lines); the character's derived data did not.
+
+- **`module/data/character/`** (new) holds `SwCharacterData`'s derived-data passes as exported
+  functions over the model, one module each and in the order the pipeline runs them:
+  `constellations.mjs` (134 lines), `attributes.mjs` (36), `armor.mjs` (73), `defenses.mjs` (163,
+  the Defenses and the stance), `wind.mjs` (38), `vigor.mjs` (34), `offense.mjs` (133: Familiarity,
+  Melee and Ranged, weapon dice, Initiative, reach, the attack modifiers, movement, the Reactions),
+  and `shared.mjs` for the first Arms Wound's penalty and the Evade availability, which the
+  adversary's model uses too. Each module opens with what it reads and what it writes, so the
+  implicit contract between passes is written down; `SwCharacterData#prepareDerivedData` is the
+  one place the order lives, and the class keeps its schema, `prepareBaseData` and its public
+  methods (`armorOnZone`, `strikeAttributeFor`, `proficiency`). `actor.mjs` is 833 lines from
+  1,384. Every handbook sync since 0.6.0 landed in one or two of these passes (Vigor and Load
+  Strain in v4.11, Wind in v4.12 and v4.13, Counter at Expert, the rules index), which is the
+  case for the split: the next one lands in a file named for the rule.
+- The passes were private methods sharing no private state, so each is the same code with `data`
+  for `this`; nothing was reordered and no value changed. The docs that named
+  `SwCharacterData.#prepareDefenses` as the `modifiers` hook's second call site (the rules README,
+  `engine.mjs`, `check.mjs`, `FEATURES.md`, `CLAUDE.md`) name `prepareDefenses` in
+  `data/character/defenses.mjs`.
+- **Checked** by recording, in the running world before and after, the full derived data of every
+  Actor and of the scene's synthetic token actor, the getters, and the answers of the public
+  methods (`zoneProtection`, `armorOnZone`, `woundCapacity`, `proficiency`, `strikeAttributeFor`,
+  the resistances) for every Actor, then diffing; a write and its re-prepare run clean; the rules
+  self-test and the style check pass.
+
+### Changed: a Maneuver the system implements is an Action first
+
+The eighth recommendation (Mike, 2026-11-04): "Actions like Recenter should be an Action first,
+and a Macro second." Recenter's behaviour, `SwActor#recenter`, was reachable from the Overview's
+button, the adversary sheet's, a chat card's and the compendium Macro, while the Recenter Maneuver
+Item, the face a player will meet on the Maneuvers tab once its row is enabled, posted its card
+and did nothing. Raise a Shield had the same shape: the shield's own `raise()`, and a Maneuver
+Item that only talked.
+
+- **`module/documents/maneuvers.mjs`** (new) is the table of Maneuvers the system implements,
+  keyed by the slug of the plain name as the `bonus` kind matches a Maneuver ("to Aid"):
+  `recenter` runs the actor's method; `raise-a-shield` raises the shield in hand through the
+  shield's method, the first of two if two are held, and warns when none is
+  (`STARWROUGHT.Actions.noShieldHeld`, new). `SwItem#use` asks the table first for an action
+  Item and hands over the actor, the Item and the options; the behaviour pays its own action and
+  posts its own card, as it always did. A row renamed in the workbook stops matching and falls
+  back to the card, visibly, rather than running the wrong thing. The module imports nothing of
+  the system's, so it closes no circle with `documents/item.mjs`.
+- **The Recenter Macro is a wrapper.** It finds the Recenter Item in the Actions pack and uses it
+  for each selected token's actor; while the row is not enabled in `data/maneuvers.xlsx` (it is
+  not, today) the actor's method runs directly, the same behaviour. `assets/build_foundry.mjs`
+  carries the new command and the macros pack source changed with it.
+- The sheet buttons and the card button stay: they are other doors to the same method. Nothing
+  else learned what Recenter is. Enabling the Recenter and Raise a Shield rows is Mike's, as every
+  `Enabled?` cell is; the dispatch is what makes enabling them safe.
+- **Checked live** with temporary world Items named as the rows are: Recenter used from the Item
+  on Hrolda with two Zones Exposed and a Bind formed closed both Zones, ended the Bind on both
+  sides and posted one card; Raise a Shield used from the Item raised her held shield, used again
+  lowered it, and with the shield stowed warned and did nothing; a near-miss name ("Recentre")
+  posted its card as before; the Macro's rebuilt command, run on her token with the row absent
+  from the pack, took the fallback and recentered her. The test Items were deleted and her shield
+  and actions restored.
+
+### Changed: the automation framework, four fixes from its review
+
+The seventh recommendation was an outside review of the framework. It was written against 0.9.0,
+so its largest finding, an unspecified hook contract, had closed in 0.10.0 (`modifiers`, ruling
+124), and most of the rest are design notes for the first state-changing kind, which ruling 119
+defers to that kind. Four findings were confirmed and cheap, and they land here.
+
+- **The self-test's unknown-kind word is reserved.** `assets/test_rules.mjs` used `aura` as its
+  example of a word no kind answers to, in a dozen checks, and the aura is the next kind to ship:
+  registering it would have failed every one of them for nothing. The checks use
+  `not-a-real-kind` now, a constant with a check of its own that no kind ever registers it, and
+  the README's recipe says so.
+- **The import circle is gone, not managed.** 0.10.0 moved `RuleSyntaxError` out of the grammar
+  so the `bonus` kind would not import it, but `splitArgs` and `keyValues` stayed behind and the
+  README's contract still imported all three from the grammar, so the next kind to use a helper
+  would have closed the circle again. The three are `module/rules/syntax.mjs` now (`errors.mjs`
+  renamed and grown), which imports nothing; the grammar re-exports them, so `test_rules.mjs`
+  and any other reader keep their import; the rule for a kind file is one line, import from
+  `syntax.mjs` and the config, never the grammar or the registry; and the self-test proves it by
+  importing the `bonus` file first and the grammar after.
+- **A rule is checked as plain data before it is stored.** The grammar accepted any object from a
+  kind's `parse`, so NaN, a function, a Date or a cycle would have gone onto the Item and failed
+  later in a write, a hash or a Sync. `plainData` in `grammar.mjs` walks the result: null,
+  booleans, finite numbers, strings, arrays and plain objects pass; anything else is the kind's
+  bug, reported on the line with the path (`the "aura" kind returned data that cannot be stored
+  (range is NaN)`); an undefined property is left out as JSON leaves it, so a stored rule always
+  equals its own JSON image. Seven shapes are refused and the undefined idiom accepted in the
+  self-test, and the `bonus` kind's data is checked to round-trip.
+- **Two policies written into `module/rules/README.md`.** "Calculated and triggered": the two
+  categories of hook point, calculated ones answering with data on any client with failures
+  isolated to the kind, triggered ones defined, when the first comes, with the one executing
+  client, the event's identity for deduplication and what a failure does to the operation,
+  on the pattern the attack coordinator and the loot relay already use. And "When a kind changes
+  what it stores": no version number on a rule, the text is the version, the build, the copies
+  refresh and the next edit re-derive a stale parse, and a kind that changes its shape either
+  reads both shapes for a release or re-parses in the world migration.
+- Not done, by the same review's own ordering and ruling 119: the triggered contract itself,
+  multiplayer deduplication, a general applicability context and ordering between operations
+  other than modifiers all wait for the first kind that needs them. The "overlapping lists of
+  Item types" point stands as a convention (a schema cannot be composed from a list) until a
+  fourth type carries rules.
+
+### Changed: the Bind's pair-keeper
+
+The sixth recommendation read `canvas/bind.mjs`, which drew the chains and kept the two-sided
+record whole, and suggested the second half might belong under `documents/` if it grew. It
+belonged there already: it was the one module under `canvas/` that writes documents, and two of
+its pieces existed twice.
+
+- **`module/documents/bind.mjs`** (new) is the protocol: the mirror table (`MIRROR`), the uuid
+  resolver (`resolveActor`), the pickup that writes or clears the partner's side when the writer
+  could not (`pickUpMirror`), the elected-writer rule (the active GM, else the connected owner
+  with the lowest id), the sweep at ready and at each canvas (`keepPaired`), and
+  `registerBindSync`, called from `starwrought.mjs` beside `registerBind`. The code is the
+  0.5.1 code, moved whole; the header explains the `swBind` option and the id tombstone where the
+  writer and the reader of them now sit together.
+- **`canvas/bind.mjs`** draws and nothing else (298 lines from 393): its `updateActor` hook
+  redraws, and it imports the mirror table and the resolver from the protocol.
+- **Two duplications gone.** `SwActor#formBind` carried its own copy of the mirror table and
+  `SwActor.resolveActor` its own copy of the resolver (without the `try` the canvas copy had);
+  both now come from `documents/bind.mjs`, the static resolver delegating so its 48 callers are
+  unchanged. No import cycle: `documents/bind.mjs` imports nothing of the system's.
+- **Checked live** with Hrolda and the adversary on the GM's client, where the pickup never fires
+  on its own because the GM owns both sides, so the writes a player's client would make were
+  made by hand: Hrolda's side written and stamped unpaired (`swBind.paired` false) was mirrored
+  onto the adversary by the hook with the same id, the states crossed (controlling to controlled)
+  and the Controlled status set; her side emptied and stamped unpaired with the partner named
+  cleared the adversary's side and status; a side written while nobody could mirror it (stamped
+  paired, so the hook stayed quiet) was mirrored by the sweep; a partner's side emptied behind
+  the sweep's back made the other half a tombstone the sweep cleared; the ordinary two-sided
+  form and end left nothing behind; the chain on the map was counted at each step; the resolver
+  answers the same by either name. (A first attempt used `pair: false`, which marks a write as
+  already paired by design and so proves nothing about the pickup; the changelog says so in case
+  someone tries the same.)
+
+### Changed: three of the apps
+
+The fifth recommendation reviewed six app modules. Three are split here; `chargen.mjs` is not (its
+step logic is already small named methods and the complexity is the point-slot engine, bound to
+the wizard's state, which is a redesign and not a split); `combat-prompt.mjs` and `item-sheet.mjs`
+are left, as the review said. Each move is verbatim code with its imports repointed.
+
+- **The actor sheets' shared context is `module/helpers/actor-context.mjs`.** The seven builders
+  for the header's live state and the tooltips (`actionsContext`, `bindContext`, `rulesPageOf`,
+  `vigorContext`, `zoneWounds`, `lockedTips`, `windTip`; 260 lines) were exports of
+  `apps/actor-sheet.mjs`, and the adversary sheet and the party sheet imported the character
+  sheet's module to render. They sit beside `helpers/stance.mjs` now, which already plays that
+  role for the stance chips; the three sheets import them from there, and `actor-sheet.mjs` is
+  1,061 lines of the character sheet alone. The 45 action handlers stay: each is a few lines
+  delegating to an actor method.
+- **The synchronisation is `module/helpers/content-sync.mjs`; the window stays
+  `apps/content-sync.mjs`.** Fetching the index, planning the diff, applying it, refreshing the
+  copies and posting the card (`fetchContentIndex`, `planContentSync`, `applyContentSync` and
+  their helpers; 650 lines) move whole; the window (338 lines) imports what it calls, `shortHash`
+  and the two setting keys exported for it, and re-exports the three entry points and
+  `formatWhen`, so a macro's 0.8.0 import path still works. `starwrought.mjs` imports the window
+  from the app and the plan functions from the helper.
+- **The party sheet's per-tab context is `module/apps/party/`.** The five private methods that
+  built each tab's context (the roster row, the Skills grid, the road with Downtime and the
+  Investigate options, the loot; 540 lines) are plain exported functions over the party and its
+  members, one module per tab (`roster.mjs`, `skills.mjs`, `road.mjs`, `loot.mjs`), with no
+  `this`: `prepareRoad`, `prepareDowntime` and `prepareLoot` take the party, the rest took what
+  they take. `_prepareContext` calls them, the pick-activity handler imports
+  `constellationOptions` from `road.mjs`, and the 27 handlers stay with the sheet, which is 1,251
+  lines. Each module imports only what its code uses (`signed` went with the grid; eleven
+  `helpers/party.mjs` names left the sheet's import with the context). The feature behaviour was
+  never here: it is `helpers/party.mjs`, as 0.7.0 built it.
+- **Checked** by rendering the character, the adversary and a party sheet with loot, and the Sync
+  content window, before and after, capturing every tab's HTML with whitespace collapsed, and
+  diffing: identical. The world loads with no error; the three sync entry points are the same
+  functions by either import path.
+
+### Changed: the Item sheet's details tab
+
+- **`templates/item/details.hbs` is a dispatcher** (7 lines): the tab's section, and one include
+  of the partial named for the Item's type, `templates/item/details/<type>.hbs`, through Foundry's
+  `concat` helper. The eight type partials hold what the eight `{{#if isType}}` branches held, in
+  the same order (`constellation` 27 lines, `talent` 92, `chassis` 29, `weapon` 32, `armor` 20,
+  `shield` 17, `gear` 3, `action` 80), each opening with a comment naming the shared panels it
+  includes. The three shared panels are partials of their own: `details/aura.hbs` (the Talent's
+  and the action's, which were two verbatim copies of twenty lines through 0.10.0),
+  `details/automation.hbs` (the three types whose models carry rules; the include sites are the
+  list now, so `SwItemSheet.RULE_TYPES` and the `hasRulesPanel` flag are gone and the partial's
+  comment says where it may be included) and `details/physical.hbs` (the four types you can
+  carry; its `isPhysical` guard is gone for the same reason). All twelve are registered in
+  `preloadTemplates`, which the dispatcher's comment says a new type must be added to. The
+  `isType` flags stay in the context for the two places that still read them (the physical
+  panel's Load field; `module/apps/item-sheet.mjs` elsewhere).
+- **The carry state is a select.** The physical panel had a checkbox "Worn or wielded" bound to
+  `system.equipped`, which is not a schema field but a value `prepareCarry` derives from `state`.
+  It was not inert, as the review of it guessed: writing `equipped` tripped the 0.4-era
+  `migrateCarryState` on every update, which read the old boolean and wrote `state` from it, so
+  the box worked by accident, through a migration, and could only say held-or-not. The control is
+  now a select on `system.state` itself (In hand, Worn, Packed; `choices.states` from
+  `SW.CARRY_STATES`, label `STARWROUGHT.Field.carryState`, "Where it is"; `Field.equipped` is
+  gone from `lang/en.json`), the same three states the character sheet's draw, stow, wear and
+  take-off links write. Exercised live: the select changes the Item's state through the form and
+  the sheet's derived `equipped` follows.
+- **Checked** by rendering one Item of each of the eight types before and after and diffing the
+  details tab's HTML with whitespace collapsed: identical for the four types without the physical
+  panel, and for the four with it the one difference is the select in place of the checkbox. The
+  world loads with no error and `check_style` passes.
+
+### Changed: the rules constants
+
+- **`module/config.mjs` is a barrel** (83 lines) over `module/config/`, twenty files, one concept
+  each: `system` (the id, the version stamp, the content paths), `attributes`, `proficiency`,
+  `constellations` (the categories, the Defenses, the parent slugs, the moved Talents, and the
+  runtime registry with `getConstellation`, `slugify`'s companion `isLoreSlug` among them),
+  `exchange` (Threats, Strikes, Reactions, root Postures, and the flat attack and Bind numbers,
+  Off-Guard and Unwieldy included), `degrees`, `zones` (Zones, Wounds, damage types, materials),
+  `sizes` (sizes, cover, detection), `weapons`, `load` (Load Strain relief, the Endure Vigor
+  bonus, where Strain lands, the Wind round, the Fatigued cap, the helm penalties), `recovery`,
+  `advancement`, `party` (the party type, the road, the travel figures), `actions` (six a round,
+  the glyphs, the costs, the cost parser and renderer), `movement`, `auras`, `items` (type icons,
+  feature and physical types, carry states), `conditions`, `modifiers` and `names` (`slugify`,
+  `plainName`). Every file opens with a header that says what it holds, that it is pure at module
+  scope and why, and which Foundry prototype extension its functions use inside a body
+  (`Math.clamp`, `String#titleCase`, `Number.isNumeric`). The barrel re-exports all 108 names
+  explicitly, grouped by file, so it reads as the index of where each constant lives and
+  `import * as SW from "./config.mjs"` names the whole vocabulary as before: the 38 namespace
+  importers, the party model, the build and the self-test are untouched.
+- **The refiling.** The split followed concepts, not the old banners, because the banners had
+  drifted: the Exchange vocabulary and the version stamp sat under "Constellations", Load Strain
+  relief and the Endure Vigor bonus under "Weapons", the Wind round, the Fatigued cap and the helm
+  penalties under "Movement", the Item type icons and carry states under "Auras", the Off-Guard
+  and Unwieldy penalties under "Conditions", and the travel figures under "Movement". Each now
+  sits in the file a reader of the rule would open. Nothing was renamed and no value changed.
+- **No import cycle.** Two concept files import another concept file (`exchange` reads
+  `MELEE_SLUG` from `constellations`; `conditions` reads `SYSTEM_ID` from `system`); none imports
+  the barrel, and the barrel imports nothing but them.
+- **The version stamp is in `module/config/system.mjs`**, and the stamp check in `build_all.mjs`
+  and `package_system.mjs`, the message that names it, `CLAUDE.md` and `styles/README.md` say so.
+- **`build_all.mjs` holds the barrel exact**, in every mode: it imports the barrel and every file
+  under `module/config/` in plain Node (which also proves each stays pure) and fails on a name a
+  file exports that the barrel does not re-export, a name the barrel re-exports that no file
+  provides, a name two files export, or a file that will not import. Tested negative by hand.
+- **Four rules constants nothing reads yet** stay where the rule puts them, with a note: `COVER`
+  and `DETECTION` in `sizes`, `PHYSICAL_DAMAGE` in `zones`, `CATEGORY_ALIASES` in
+  `constellations`. They are the book's tables awaiting a feature, not dead code.
+- **Checked** in plain Node by dumping every export of the old module and of the new barrel (the
+  108 names, 89 constants as JSON, 19 functions as source, and a table of calls on the pure
+  functions with Foundry's three prototype extensions shimmed) and diffing: the names and the
+  constants are identical, the calls are identical, and the function sources differ only in the
+  line endings the old file carried. Then in the running world: every Item type's schema, the
+  derived data of 38 sample Items and of the four Actors, and the registered status effects,
+  recorded before and after and diffed; the world loads with no error.
+
+### Changed: the Item data models
+
+- **`module/data/item.mjs` is a barrel** (27 lines): it re-exports the eight models, the two
+  Trait functions and the helm penalty from `module/data/items/`, so `starwrought.mjs`'s
+  registration import names the same things from the same path. The models are one file per type,
+  `constellation.mjs`, `talent.mjs`, `chassis.mjs`, `weapon.mjs`, `armor.mjs`, `shield.mjs`,
+  `gear.mjs` and `action.mjs` (31 to 114 lines each), every one opening with a header that names
+  the shared pieces it uses; no type file imports another. The shared pieces are one concern per
+  file rather than the review's one `shared-fields.mjs`, since each comes as a trio of fields,
+  migration and prepare that belongs together and apart from the others, in the idiom of the rule
+  kinds: `base.mjs` (`SwItemData` and `describedFields`), `cost.mjs` (`costFields`, `migrateCost`,
+  `prepareCost`), `aura.mjs`, `rules.mjs` (the automation framework's two fields and the sheet's
+  "As read" view, with the grammar imports), `physical.mjs` (quantity, price, load and the carry
+  state) and `weapon-traits.mjs`. The helper functions are exported now, since other files import
+  them; nothing else in them changed.
+- **`weapon-traits.mjs` is pure**, no Foundry global at module scope or inside, only `config.mjs`,
+  so the build imports it as it imports the automation grammar: `assets/build_foundry.mjs` now
+  takes `splitTraits` from the system and drops the copy of it that it carried through 0.10.0
+  (the same function, so the pack sources are byte-identical). The client never called
+  `splitTraits`; it exists for the build, and the file's header says to keep it pure so a
+  build-time check of the Traits column, the Aura column's equivalent, can use `parseWeaponTraits`
+  without a second parser.
+- **The Speed migration moved out of the Item models.** `migrateSpeed` and `LEGACY_SPEED_FLOOR`
+  are the one-time world migration's conversions, called from the migration block in
+  `starwrought.mjs` alone and nothing an Item reads; they are `module/data/legacy.mjs` now, and
+  `starwrought.mjs` imports them from there.
+- **`helmPenaltyFor` lives with armor** (`items/armor.mjs`), which derives a Head piece's penalty
+  from it; `module/data/actor.mjs` imports it from there instead of from the barrel.
+- The comments in `module/apps/item-sheet.mjs` and the paragraph in `CLAUDE.md` that named
+  `module/data/item.mjs` for `rulesFields`, `prepareRules` and `attackAttribute` name the new
+  files. The sync reports and older changelog entries keep the old path, as records of their time.
+- **Checked** by recording, in the running world before and after, every Item type's schema (field
+  classes and options, nested) and the full derived data of 38 sample Items across the world and
+  the five Item packs (the source, every prepared value, `chatDescription`, and three
+  `damageFormula` calls per weapon), then diffing: identical. `node --check` on every module,
+  `test_rules` (56 checks), `build_foundry --no-compile` rebuilding the pack sources without a
+  byte's difference, and the world loaded with no error.
+
+### Changed: the stylesheet
+
+- **One stylesheet is eleven** (`foundry/starwrought/styles/`, the map in `styles/README.md`),
+  loaded in the order `system.json` lists them: `starwrought.css` (the foundation: the stamp, the
+  scrollbars, the `--sw-*` tokens, form controls, the two generic buttons, the rules-link idiom,
+  `sw-hidden`), `sheet.css` (the chrome every Actor and Item sheet shares), `item.css` (the Item
+  sheet's own pieces and the Automation panel), `character.css` (the character and adversary
+  sheets), `chargen.css` (the wizard), `hud.css` (the combat tracker, targeting marks and the
+  token HUD's stance button, core's elements), `auras.css` (the ring button, the palette, the ring
+  toggles, the Ranges line), `chat.css` (the cards and the roll dialogs), `attack.css` (the Combat
+  Prompt and the attack card), `party.css` (the party sheet, its dialogs and cards) and
+  `content-sync.css` (the Sync content window and its card). Each file opens with a header that
+  says what it owns, which templates it serves, which files it builds on and the rules of the
+  road, so a reader who opens one cold has them. The rules: a file may rely on the files listed
+  before it and never on one after; no selector list is declared twice anywhere in `styles/`
+  (`:root` excepted, where the stamps live), so the order never decides; every `.css` in the
+  folder is listed in `system.json`. The cross-cutting 0.5.1 block (the player-facing sheet, T1
+  to T16) is distributed to its owners with a note on each piece. Foundry's manifest `styles`
+  array takes any number of files, loaded as separate links in order; no bundling, no cascade
+  layer (the scrollbars' unlayered `*` rule depends on staying unlayered).
+- **The stale-copy stamp is per file.** Each stylesheet sets `--sw-css-version-<file name>` on
+  `:root` (`--sw-css-version-chat`, and so on; `--sw-css-version-starwrought` where
+  `--sw-css-version` was), and `checkForStaleAssets` (`starwrought.mjs`) reads the list off
+  `game.system.styles` and compares every stamp with the server's version, so a proxy holding one
+  old file among eleven fresh ones is caught and the warning names the file
+  (`styles/chat.css 0.10.0`). One stamp in one file would have certified that file alone.
+  `STARWROUGHT.Notify.staleStyles` is gone from `lang/en.json`; the path says it.
+- **`assets/build_all.mjs` holds the split together.** Its stamp check reads the stylesheet list
+  from `system.json` rather than naming one file, and does two more things in every mode,
+  `--check` included: it fails on a `.css` in `styles/` that `system.json` does not list (such a
+  file loads nowhere and its rules silently never apply), and on a selector list declared twice,
+  in one file or across two, naming both (`".starwrought .sw-panel" is declared in both
+  styles/sheet.css and styles/content-sync.css; merge them, or make the later one more specific,
+  so the load order never decides`). `assets/package_system.mjs` reads the same list for its
+  stamp check. Both checks were tested negative by hand in this build.
+- **The defects the split exposed, fixed.** Through 0.10.0 six selector lists were declared twice
+  in the one file, and in four of them the later declaration silently won:
+  - **The Strike pills.** 0.5.1's padding and gap for the pill (T1, sized to the enlarged glyph)
+    were in a rule declared before the pill's base rule, which overrode both; the glyph sizing,
+    more specific, survived. One rule now (`character.css`), with 0.5.1's values: a pill is a hair
+    wider and flatter than it rendered through 0.10.0 (padding 0 0.5rem 0 0.3rem for 0.05rem
+    0.4rem, gap 0.25rem for 0.2rem).
+  - **`sw-choice` named two components.** The check dialog's options (the three Strikes, the
+    Reactions, an offered modifier) and the wizard's choice cards shared the class, so the
+    wizard's later rule dressed the dialog's options (edge border, 0.5rem padding, gradient) and
+    the dialog's earlier rule sized the wizard's cards (0.78rem, line height 1.3). The options are
+    `sw-dialog-option` now (`templates/dice/check-dialog.hbs`, `chat.css`) and wear the look their
+    rule always said, the one the Combat Prompt's options copied in 0.5.0: a thin white border, a
+    flat background, 0.35rem by 0.5rem padding. The wizard's cards keep the 0.78rem size they have
+    shown since 0.4.0, now written in `chargen.css` on purpose with a note saying so; drop two
+    lines and the card's name reads at the sheet's 14px.
+  - **`.sw-defense` twice**: the base, and `position: relative` for the stance tag, declared with
+    the stance; one rule.
+  - **Three card accents were dead.** The stance card's gold left border, the wound card's blood
+    one and the bind card's dim gold were declared before the base card rule, whose `border`
+    shorthand overrode them; the cards rendered with a plain edge border. In `chat.css` the
+    accents follow the base and show, as the Exposed, hero, audit and party cards' always did (one
+    class more specific, or declared after). The stance card keeps its italic.
+  - **`.sw-free-mark`**, used by no template or module, dropped.
+- **`FEATURES.md`** section 6's stale-copy paragraph names the eleven files and the per-file
+  warning; **`CLAUDE.md`**'s pipeline paragraph names the stamps, the two new checks and the
+  README; `module/config.mjs`'s comment on `SYSTEM_VERSION` names the stamps.
+- The version stamps read 0.10.1 in `system.json`, `SYSTEM_VERSION` in `config.mjs` and every
+  stylesheet. No migration step: nothing stored changes.
+
+### Notes
+
+- **How it was checked.** The split is a script's work: every original line placed by range,
+  with an assertion that each non-blank line landed once or was named as replaced or dropped. The
+  rule sets of the old file and the eleven new ones were compared (928 rules against 935; the
+  only differences are the eleven stamp blocks and the edits above). Then the live test: nine
+  windows open on the old file (the character, the adversary, a party, two Items, the wizard, the
+  check dialog, the aura palette, Sync content), the computed style of 2,313 elements recorded,
+  the system reloaded on the eleven files with the same windows reopened, and the two recordings
+  diffed. Nothing was added or lost; the differences were the Strike pills and the table cells
+  around them, and the wizard's card size, which is why that size is now written down. The card
+  accents were probed directly (`.sw-stance-card` reads a 3px gold left border, `.sw-wound-card`
+  blood, `.sw-bind-card` dim gold). No stale-copy warning on load; eleven stylesheets served.
+- **Still Mike's.** Whether the wizard's card name should return to the inherited 14px (the size
+  it had before 0.4.0's shared rule shrank it), two lines in `chargen.css`. Whether the system
+  should put its styles in a Foundry cascade layer (v13 allows it per file); not done, and the
+  scrollbar block says why it would have to be partial.
+- No ruling: nothing here touches a rule of the game. The count stands at 124.
+
+---
+
+## 0.10.0 (2026-10-03): Player's Handbook v4.15
+
+Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and
+the handbook's loose ends stand where 0.9.0 left them. The release is **the first rule kind**, and
+with it the first thing the automation framework does in play (Mike, 2026-10-03: "okay, first
+automation kind we will create is the Human Ancestry one. The Effect is: 'You gain a +1 Condition
+bonus on checks to Aid. If you are Expert in Human, this becomes a +2 Condition bonus. If you are
+Master, +3. If you are Legendary, +4.' So we need Automation for something like ... IF
+(Constellation Proficiency = VALUE) where VALUE = Untrained, Trained, Expert, Master, Legendary,
+Grant [X Value (+1, +2, -1, -2, etc.)]; [Y type (Condition, Situation, Gear, etc.)]; [Z Check
+(Constellation or Maneuver Roll)]. In this case, it would use a Maneuver called Aid."). The kind is
+`bonus`, Mike's sketch made concrete as one line, `bonus: <value> <Type> to <Target> [if
+<Constellation> is <Rank>]`, and Humanity's Effect is four of them, one per sentence. With it comes
+the one engine seam a bonus needs, the `modifiers` hook point: the check engine and the Defense
+pass each ask every registered kind once for the modifiers its rules put on this roll, so a
+Constellation-targeted bonus lands on the roll, the roll dialog's list, the card, the sheet's
+Defense Threshold and the Skills grid alike, and a Maneuver-targeted bonus lands on the Maneuver's
+own roll and is offered unticked on any other check. Still the standing rule (ruling 119): one kind
+in this release, one hook point, no survey of the other Talents, and the aura for Torchbearer is
+still the next kind. A minor bump, because a rule now changes a number in play. The decisions are
+rulings 121 to 124, continuing the 0.9.0 entry's 120 (see Notes). Humanity's own cell was not
+written in this release (Excel held `data/ancestries.xlsx` open; the four lines are in Notes for
+Mike to paste), so no cell in the book uses the kind yet. `Starwrought_Players_Handbook_v4.16.docx`
+is still on the shelf, untracked and unsynced, as 0.9.0 said; `build_all.mjs` reports the drift
+until that sync, which is a later release's, and in content mode goes on (ruling 115).
+
+### Added
+
+- **The `bonus` kind** (`module/rules/kinds/bonus.mjs`, new; ruling 121). The word `bonus`, no
+  aliases. One rule: `bonus: <value> <Type> to <Target> [if <Constellation> is <Rank>]`. The value
+  is a signed integer (`+1`, `-2`; a bare `1` reads as `+1`; `0` is refused, "a bonus of 0 does
+  nothing"). The Type is `Situation`, `Condition` or `Gear`, case blind, the book's three since
+  v3.3; the retired words `circumstance`, `status` and `item` are refused by name ("write
+  Condition, not status: the book renamed the types in v3.3"), and `untyped` is refused too ("no
+  Talent bonus is untyped; name Situation, Condition or Gear"). `to` is required and names the
+  Constellation or the Maneuver the bonus applies to, as the trees and the action sheets print it,
+  case blind; the slug form (`armored-fighting`) also reads, and the glyphs in a Maneuver's name
+  are ignored. `if <Constellation> is <Rank>` is optional: the five rank words (`Untrained`,
+  `Trained`, `Expert`, `Master`, `Legendary`, case blind), a bad one refused with the list, `=` in
+  place of `is` refused with the shape ("write `if Human is Expert`"), and the test is equality,
+  as Mike wrote it. Anything else prints the shape: `bonus: +1 Condition to Aid if Human is
+  Expert`. The stored rule is `{ kind: "bonus", line, text, value, type, to: { name, slug, type },
+  when: { constellation, name, rank } | null }`, with `to.type` "constellation" or "action" when
+  the caller gave the grammar a resolver and `null` when none did (the self-test; the hook then
+  matches on slug alone). With a resolver a target that names nothing is refused (`"Aidd" names no
+  Constellation or Maneuver`), an `if` Constellation that is a Maneuver or nothing is refused
+  (`"Aid" is not a Constellation`), and the Lore template is refused as a target ("a Lore is the
+  character's own; a bonus cannot name it"). The summary line reads `+1 Condition bonus to Aid
+  while Human is Expert`, `penalty` for a negative value, no `while` without an `if`.
+- **The `modifiers` hook point** (`module/rules/engine.mjs`, `ruleModifiers(actor, context)`;
+  ruling 124). A kind that affects a roll declares `hooks.modifiers(entries, context, actor)`,
+  where `entries` are its own rules on this actor from the index (`rulesOfKind`), `context` is
+  `{ kind: "check" | "attack" | "defense" | "initiative", slug, item }` (the roll's kind, the
+  Constellation supplying the Proficiency Bonus, and the Maneuver, weapon or Talent behind the roll
+  when there is one), and each answer is `{ label, value, type, offer?, key?, hint? }`. The
+  dispatcher walks the registry, skips a kind without the hook or with no rules on this actor,
+  calls the hook inside a try/catch (a kind's throw is logged as that kind's failure and
+  contributes nothing; a roll never dies over a rule), drops a modifier whose value is not a
+  non-zero number, and returns `{ applied, offered }`: a modifier without `offer` is applied to
+  the roll, one with `offer: true` is offered unticked in the roll dialog, its `key` defaulted to
+  `<kind>-<n>` (counting that kind's offers on the roll) when the kind gave none, and a key two
+  offers share suffixed so the dialog's checkboxes never collide. That is the whole of what the engine
+  knows: a second kind that wants the same moment names `modifiers` in its `hooks` and adds no
+  engine code. Pure over the documents, so the self-test drives it from Node with a fake actor.
+- **The `bonus` kind's hook.** For each of its rules on the actor: a rule with an `if` clause
+  reads `actor.system.proficiency(<constellation>).rank` and fires only when it equals the rank
+  named (an adversary has no `proficiency`, so a conditioned rule never fires for one). A
+  Constellation target applies when the roll's slug is the target's. A Maneuver target applies
+  when the roll's Item is an action of that name (glyphs ignored); when it is not and the roll is a
+  check, it is offered instead, with the key `bonus-<item id>-<line>` and the hint "<Talent>: this
+  bonus applies to checks to <Target>. Tick it if this roll is one." (ruling 122); it is never
+  offered on an attack, a Defense or an Initiative. An applied modifier is labelled with the
+  Talent's plain name, so the card's line reads "Humanity +1"; an offered one reads "<Talent>:
+  <Target>". Typed stacking is the engine's: two Humanity lines never both fire (one rank at a
+  time), and overlapping lines of one type give the highest, by the book's rule.
+- **The check engine asks** (`module/dice/check.mjs`). `SwCheck.#baseModifiers`, in its
+  non-Defense branch, ends by calling `ruleModifiers` with the roll's kind, slug and Item, pushes
+  the applied modifiers onto the base terms and keeps the offered ones on the config; `#prompt`
+  lists each offer under the Load Strain offer as an unticked checkbox with its hint, and a ticked
+  offer joins the roll through the same loop that carries the Climb-or-Swim toggle, so
+  `result.extras` records it and a kept road roll re-counts it (0.7.3). An Initiative rolled with a
+  Constellation comes through the same branch, so a Constellation-targeted bonus reaches an Avoid
+  Notice Initiative as every modifier of the Constellation's check does (ruling 111). The Defense
+  branch is untouched, because the Defense pass (next) has already folded the rules into the
+  Defense's own modifiers; a Defense roll, an Initiative rolled with Awareness and a Defense rolled
+  as a check all carry a bonus once and never twice. Adversaries still roll flat: the npc early
+  return stands, and the rules do not reach them in 0.10.0.
+- **The Defense pass asks** (`module/data/actor.mjs`, `SwCharacterData.#prepareDefenses`). Inside
+  the per-Defense loop, before `SW.resolveModifiers`, the applied modifiers of
+  `ruleModifiers(actor, { kind: "defense", slug })` join the Defense's list. The rule index and the
+  Constellation ranks are both final by then, so `bonus: +1 Gear to Guard if Human is Expert` moves
+  the Guard Threshold on the sheet, the Guard roll and the Skills grid cell alike, as Frightened
+  does. Offers are ignored here; a Threshold is not a dialog.
+- **A Relevant Check Maneuver** (`module/documents/item.mjs`, `SwItem#use`; ruling 123). A
+  Maneuver whose check is enabled with no Constellation named is a Relevant Check: `use()` opens
+  the Relevant Check picker through `actor.rollRelevantCheck` with the Maneuver as the roll's
+  `item`, the Maneuver's plain name as the label and its glyph and category as the subtitle, so
+  Aid's roll is Aid's and a `bonus ... to Aid` is applied to it rather than offered. A Maneuver
+  with a named check (Search's Awareness) already passed itself to `SwCheck.roll` and is matched as
+  it stands. `SwActor#rollRelevantCheck` lets a caller's `label` stand (`module/documents/actor.mjs`).
+  The build (`assets/build_foundry.mjs`) sets `check: { enabled: true, constellation: "", defense:
+  "" }` on a sheet action whose Effect says "relevant check" (case blind) and names no check; Aid's
+  row reads Yes since Mike moved it into `data/maneuvers.xlsx` during this build (see Changed), so
+  `packs/_source/actions/aid_30d830c3ca03647e.json` ships with it set, the first Maneuver document
+  to ship. The Item sheet's "Rolls a check" panel gains a note (`templates/item/details.hbs`;
+  `STARWROUGHT.Hint.relevantCheck`): "With no Constellation chosen, the check is a Relevant Check:
+  the roller picks the Constellation and says why." No new schema field.
+- **The resolvers.** The grammar's parse context now carries an optional `resolve(name)`, which
+  the kind uses to settle a target's kind and spelling; the grammar itself is unchanged, since it
+  passes the caller's context through to `parse`. The build (`assets/build_foundry.mjs`) builds one
+  resolver before the trees loop and hands it to both `automationOf` calls: every Constellation in
+  `trees.json` by name or slug, case blind, then every sheet action and every roster `actions` row,
+  enabled or not (a disabled action still resolves: the cell is right, the row is simply off; Aid
+  was one until Mike enabled it during this build), by plain name; a Constellation wins over an
+  action of the same name (none today). The client
+  (`module/helpers/content.mjs`, `resolveRuleTarget(name)`, new) answers the same question for
+  `SwItem._preUpdate` when a GM edits a world Item's textarea: `SW.constellations` first, then the
+  Actions pack's index, then world Items of type action; synchronous, and null while `game` is
+  not ready.
+- **The self-test's "The bonus kind" section** (`assets/test_rules.mjs`; `SHIPPED_KINDS` is
+  `["bonus"]`). Every accepted form (signed and bare values, each type word in mixed case, with
+  and without `if`, a slug target, a glyphed Maneuver name), every refusal with its message (0, the
+  retired type words, `untyped`, a missing `to`, a bad rank, `=` for `is`, a target the resolver
+  does not know, an `if` Constellation that is a Maneuver, a Lore target), the stored shape with
+  and without a resolver, the summaries, and `ruleModifiers` over a fake actor: a Constellation
+  target applied on its slug and absent on another, the rank gate (the Trained line at Trained, the
+  Expert line at Expert, neither at Untrained), a Maneuver target applied when the roll's Item is
+  that action and offered with a stable key on a check without it, never offered on an attack, a
+  Defense or an Initiative, a throwing hook contributing nothing and not throwing, and zero-value
+  modifiers dropped. The two checks that assumed an empty registry now expect `known kinds: bonus`.
+
+### Changed
+
+- **Aid is authored in `data/maneuvers.xlsx` and enabled, and `data/actions.xlsx` is deleted**
+  (Mike, 2026-10-03, during this build; data that moved with the release). Aid had been the one
+  row of `actions.xlsx`, Mike's untracked working file, not enabled, so it shipped nowhere (ruling
+  61) and a fresh clone kept it only through the converter's carry-over of the last
+  `actions.json`. He moved it onto the "Watching, Deceiving & Helping" sheet (row 9) with
+  `Enabled? = Yes` and deleted the old workbook. The converter reported the move ("'Aid' was
+  actions.xlsx's and is now defined in maneuvers.xlsx, which wins"); `assets/actions.json` lists
+  40 actions from one workbook, Aid the one enabled; and the build writes
+  `packs/_source/actions/aid_30d830c3ca03647e.json`, so **Aid ships for the first time**, the
+  roster's Aid row retired under the same document id as before, with `check: { enabled: true,
+  constellation: "", defense: "" }` set from its Effect ("Attempt a Relevant Check"): using it
+  opens the Relevant Check picker carrying the Maneuver and a `bonus ... to Aid` is applied to
+  that roll. The Maneuvers tab's Basic panel carries Aid under Watching, Deceiving & Helping, its
+  first row. Aid is not in the workbook's `_Tree Index`, so the converter types it from its Type
+  cell with a warning, Mike's to tidy. The sheet's Aid is still the single action ❶ with a
+  Relevant Check against Threshold 15, against the book's Prepare plus Reaction; the sheet wins
+  (`CLAUDE.md`, Known outstanding work). The carry-over rule stays, with nothing to carry.
+- **The registry registers one kind** (`module/rules/kinds/index.mjs`): the import and
+  `registerKind(bonus)` at the foot, in place of the "None" block; the header comment says one
+  kind ships and the aura for Torchbearer is still next, one at a time.
+- **The engine's header** (`module/rules/engine.mjs`) no longer says nothing reads the index: the
+  `modifiers` hook point reads it, called from the check engine and the Defense pass.
+- **`STARWROUGHT.Rules.none`** reads "No rules." (`lang/en.json`); the "no rule kinds yet" clause
+  was true for one release.
+- **The build's summary line** (`assets/build_foundry.mjs`) counts its plurals (`1 rule on 1
+  document (1 kind in use)`), and reads `automation: no rules (1 kind defined, none in use)` while
+  no cell uses the kind, which is today.
+- **`module/rules/README.md`** gains the `bonus` kind (syntax, stored shape, summary), a "Hook
+  points" section with `modifiers` (when the engine calls it, from where, what it is handed, what
+  it may return, applied against offered, the try/catch), the `resolve` context entry under what a
+  kind may rely on, and step 5 of "Adding a rule kind" rewritten for generic dispatch: a kind names
+  the hook point in its `hooks`; the engine's call sites exist once per hook point and a new kind
+  adds none; a new hook point is still defined with the first kind that needs it.
+- **`data/README.txt`** names the kind and its syntax under the Automation column's entry, in the
+  Aura entry's voice, with Humanity as the example; the action sheets' note and the ADDING CONTENT
+  note lose their "no rule kinds yet" clauses.
+- **`FEATURES.md`** section 7 is "Automation: the framework and the `bonus` kind", with what the
+  kind does on screen and the hook point; `CLAUDE.md`'s standing paragraph names the kind, the hook
+  point and its two call sites; `automation-plan.md` gains a 0.10.0 section with decision 1
+  resolved and the backlog moved on.
+- The version stamps read 0.10.0 in all three places: `system.json`, `SYSTEM_VERSION` in
+  `config.mjs` and `--sw-css-version` in the stylesheet. No migration step: the stored rule shape
+  is new data on a field that already existed, and a cell written before 0.10.0 holds no rule.
+
+### Notes
+
+- **The rulings, 121 to 124**, numbered on from the 0.9.0 entry's 120.
+  - **121. The `bonus` kind's syntax.** Mike's sketch made concrete as `bonus: <value> <Type> to
+    <Target> [if <Constellation> is <Rank>]`: the value signed, never 0; the three type words only,
+    the retired words refused by name so a cell cannot quietly carry a v3.3 type; the target a
+    Constellation or a Maneuver by the name the book prints; the rank condition equality, as he
+    wrote it ("Constellation Proficiency = VALUE"), so a Talent that scales by rank writes one line
+    per rank, and Humanity's Effect is four lines, one per sentence. Nothing in the syntax says
+    "or higher"; a Talent that wants that form says so when it comes.
+  - **122. A Maneuver roll is a roll made from the Maneuver's Item.** Where a check is made without
+    one, a Maneuver-targeted bonus is offered unticked in the roll dialog and never applied unasked,
+    so the judgement "is this roll an Aid?" sits with the player at the edge, as the Load Strain
+    Climb-or-Swim toggle does (PHB v4.11, ruling R2); it is never offered on an attack, a Defense
+    or an Initiative, which are not checks to anything.
+  - **123. A Maneuver whose check is enabled with no Constellation named is a Relevant Check**, and
+    opens the picker carrying the Maneuver, so Aid's roll is Aid's and its bonus is applied, not
+    offered. The build sets it from an Effect that says "Relevant Check"; Aid, enabled by Mike
+    during this build, ships with it set (verified live: the card reads "Aid", "Humanity +1
+    condition").
+  - **124. The hook point `modifiers` is generic.** The engine asks every registered kind at two
+    moments (the check assembly, the Defense pass) and a kind answers for its own rules; a later
+    kind that wants the same moment adds no engine code, and a new moment is still defined with the
+    first kind that needs it (ruling 119 stands). Mike's question of the day, whether the
+    automations are modular enough to tinker with one without touching the rest, is answered by
+    construction: a kind is one file, and the dispatch knows no kind's name.
+- **Humanity's cell was not written; the four lines are Mike's to paste.** Excel held
+  `data/ancestries.xlsx` open, and the Human sheet has no Automation column yet. Add a column
+  headed `Automation` (order free; the first word of the header wins) and paste into Humanity's
+  cell, one line each:
+  `bonus: +1 Condition to Aid if Human is Trained`,
+  `bonus: +2 Condition to Aid if Human is Expert`,
+  `bonus: +3 Condition to Aid if Human is Master`,
+  `bonus: +4 Condition to Aid if Human is Legendary`.
+  Then `sync_content.cmd` and Sync content in the open world. Until then no cell in the book uses
+  the kind, every `system.rules` is still `[]`, and the build's summary says so (`automation: no
+  rules (1 kind defined, none in use)`). "Expert in Human" is the Origin's rank: the three
+  Ancestry Roots pool one rank, which `proficiency("human").rank` already returns.
+- **What a cell may hold now.** Blank, `#` comments, and `bonus` lines. Any other kind word fails
+  the build with `unknown rule kind "<word>" (known kinds: bonus)`, naming the Constellation, the
+  Talent and the line, and the loop stops before the sources are written; a `bonus` line the kind
+  refuses fails it with the kind's own message. The same lines typed into a world Item's textarea
+  save, show their summary or their red row, and reach the actor's index on the next prepare.
+- **Adversaries are untouched.** The npc branch of the check engine returns the GM's flat bonus
+  as before, and `SwNpcData`'s Defenses are the Thresholds the GM typed, with no modifier pass to
+  fold a rule into; a `bonus` rule on an adversary's action is indexed and read by nothing. The
+  players own the dice in STARWROUGHT, and an adversary Threshold is the GM's to type.
+- **Thresholds move with the Defense pass.** A bonus to a Defense is folded into the Defense's
+  own modifiers at prepare, so the number on the sheet, the Skills grid's cell, a Defense roll and
+  an Initiative rolled with Awareness all read it once. A bonus to a Skill Constellation reaches
+  the roll, the roll dialog's list, the card, the Skills grid cell and the Relevant Check picker's
+  numbers through `SwCheck.previewTotal`, and an Initiative rolled with that Constellation (ruling
+  111). A Maneuver-targeted bonus reaches the Maneuver's own roll, and the dialog of any other
+  check as an offer; it has no Threshold to move.
+- **Verified**, in the open test world on the GM's client after `build_all.mjs --content` and Sync
+  content: the self-test's 56 checks; a throwaway workbook's `bonus: +2 Situation to Stealth if
+  Sync Test is Trained` built onto its Talent (`automation: 1 rule on 1 document (1 kind in use)`),
+  carried by Sync content, indexed on Hrolda under `bonus`, her Stealth preview up by 2 and the roll
+  dialog listing "Measured Step +2" beside Load Strain; the four Humanity lines typed into her
+  copy's textarea parsed through the client resolver to `to.type "action"` with no error, the sheet
+  panel reading them back, `rulesOfKind("bonus")` five entries; a plain Stealth check offering
+  "Humanity: Aid +1" unticked with its hint and applying nothing; Aid from the pack opening the
+  Relevant Check picker with Athletics at +5 (Humanity in it), rolling as "Aid" with "Humanity +1
+  condition" among the card's modifiers and nothing offered, the card's flags carrying no offers;
+  `bonus: +1 Condition to Guard if Human is Trained` moving Guard from 14 to 15 on the sheet and in
+  `previewTotal` for a Defense roll and a Defense-as-check alike, the Expert line silent at Trained,
+  and Frightened 1 bringing it back to 14 with both Condition entries listed; `-1 Gear to Athletics`
+  taking the Athletics preview from 4 to 3; the error path printing every message as written
+  (`write Condition, not status`, `a bonus of 0 does nothing`, `"Aidd" names no Constellation or
+  Maneuver`, `"Aid" is not a Constellation`, the `if ... is` shape, the Lore refusal) while `-2 gear
+  to stealth` and `+1 Condition to Spear & Polearm Fighting if Melee is Trained` parsed beside
+  them; clearing the cell clearing everything; then the throwaway content removed, the loop rerun
+  clean, the world resynced (the test Constellation and its Talents gone, Aid in the pack), and the
+  web app's smoke test SMOKE CLEAN.
+- **What the release touched, and what it left.** New: `module/rules/kinds/bonus.mjs`, and
+  `packs/_source/actions/aid_30d830c3ca03647e.json`, Aid's first shipped source, there because
+  Mike enabled the row and not because a cell uses the kind. Changed:
+  `module/rules/kinds/index.mjs`, `module/rules/engine.mjs`, `module/rules/README.md`,
+  `module/dice/check.mjs`, `module/data/actor.mjs`, `module/documents/item.mjs`,
+  `module/documents/actor.mjs`, `module/helpers/content.mjs`, `templates/item/details.hbs`,
+  `lang/en.json`, `assets/build_foundry.mjs`, `assets/test_rules.mjs`, the three stamps, this
+  file, `FEATURES.md`, `CLAUDE.md`, `data/README.txt` and `automation-plan.md`; by Mike's hand,
+  `data/maneuvers.xlsx` (Aid's row) and `assets/actions.json` with it, and `data/actions.xlsx`
+  deleted. Untouched: the grammar module, the converter's logic (its comments now describe one
+  actions workbook), every spreadsheet cell but Aid's row (Humanity's included), the web app's
+  code (its Aid text is unchanged, since the sheet's Aid moved as it was), the Constellation
+  Compendium docx, the roster, the attack flow, the damage pipeline, conditions, movement, the
+  auras on the map, the handbook and `data/SYNC.json`. No document id moves; the shipped pack
+  sources that change are Aid's, new, and the four Encounter Mode folders' `sort` (Watching,
+  Deceiving & Helping now ships a row, so the sheet folders are numbered from it), and nothing
+  else changes until a cell uses the kind.
+- The handbook's v4.10 loose ends stand in v4.15 as 0.6.3 listed them; `CLAUDE.md` carries the
+  list. `Starwrought_Players_Handbook_v4.16.docx` is on the shelf, untracked and unsynced, as the
+  0.7.2 entry says, and `build_all.mjs` reports the drift until that sync, which is a later
+  release's; in content mode it is a warning and the run goes on.
+
+---
+
 ## 0.9.0 (2026-10-03): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, so `data/SYNC.json` is untouched and

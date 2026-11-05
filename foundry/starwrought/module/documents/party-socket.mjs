@@ -32,7 +32,7 @@
  */
 
 import * as SW from "../config.mjs";
-import { cardHtml, postCard } from "./combat.mjs";
+import { cardHtml, postCard } from "../helpers/cards.mjs";
 
 const SOCKET = `system.${SW.SYSTEM_ID}`;
 const L = key => game.i18n.localize(key);

@@ -31,8 +31,9 @@ ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   node assets/build_all.mjs (the two paths are set out at the bottom of this file). Since 0.9.0
   the loop also reads the Automation column (Tree columns, below): a line the framework does not
   know STOPS the build, naming the Constellation, the Talent and the line, before the sources are
-  written. There are no rule kinds yet, so leave the cell blank or a "#" comment; the framework
-  does nothing in play until the first kind lands, one at a time with Mike.
+  written. One kind reads since 0.10.0, "bonus" (Humanity's +1 Condition to Aid is the example);
+  the rest of a cell is blank lines or "#" comments. Kinds land one at a time with Mike, and each
+  is named under Tree columns with its syntax when it ships.
 
 Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Triggers | Meta note | Parent
   Parent (v4.10): names the parent Constellation whose rank this tree's Talents also count toward.
@@ -74,15 +75,40 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         line beginning with "#" a comment. The converter copies the cell through as text and parses
         nothing; build_foundry.mjs parses it, and a line it does not know is an ERROR that stops the
         build (and so sync_content.cmd) naming the Constellation, the Talent and the line, before
-        the sources are written, as a bad Aura cell stops the converter. THERE ARE NO RULE KINDS
-        YET (Mike, 2026-10-03: "do NOT survey the talents yet or build ANY of the automation hooks.
-        just build the framework. we will build automation syntax hooks one at a time"): every rule
-        line reads as "unknown rule kind" today, so a cell may hold only a blank or "#" comments
-        until the first kind lands, and the framework does nothing in play until then. Kinds are
-        added one at a time, with Mike, and each is named here with its syntax when it ships; the
-        first will be an aura (for Torchbearer), written to serve every aura in the book. The same
-        line typed into a world Item's textarea in Foundry saves and is marked on the Item sheet
-        rather than refused. The action sheets take the same column.
+        the sources are written, as a bad Aura cell stops the converter. Kinds are added one at a
+        time, with Mike (2026-10-03: "we will build automation syntax hooks one at a time"), each
+        written to serve every talent that uses its word, and each is named here with its syntax
+        when it ships; a kind word not listed below is an ERROR ("unknown rule kind", with the
+        known kinds named). The same line typed into a world Item's textarea in Foundry saves and
+        is marked on the Item sheet rather than refused. The action sheets take the same column.
+        The kinds:
+        bonus (0.10.0): a typed bonus or penalty on a roll. Two forms:
+              "bonus: <value> <Type> to <Target>"
+              "bonus: <value> <Type> to <Target> if <Constellation> is <Rank>"
+              <value> is signed: "+1", "+2", "-1", "-2" (a bare "1" reads as "+1"; "0" is an
+              ERROR, since a bonus of 0 does nothing). <Type> is Situation, Condition or Gear, any
+              case, the book's three types since v3.3; the old words circumstance, status and item
+              are an ERROR naming the current word, and "untyped" is an ERROR (no talent bonus is
+              untyped). "to <Target>" is required: a Constellation or a Maneuver, by the name the
+              trees and the action sheets print ("Stealth", "Guard", "Aid"; the slug form
+              "armored-fighting" also reads; a Maneuver's glyphs are ignored). A name that is
+              neither is an ERROR, and so is a Lore. "if <Constellation> is <Rank>" is optional:
+              <Rank> is Untrained, Trained, Expert, Master or Legendary, any case, the word between
+              is "is" (not "="), and the test is EQUALITY: the line applies while the character's
+              rank in that Constellation is exactly that rank, so a talent that scales by rank
+              writes one line per rank. Anything else is an ERROR printing the shape. Humanity, the
+              Human root, is the example (one line per sentence of its Effect):
+                bonus: +1 Condition to Aid if Human is Trained
+                bonus: +2 Condition to Aid if Human is Expert
+                bonus: +3 Condition to Aid if Human is Master
+                bonus: +4 Condition to Aid if Human is Legendary
+              In play a bonus to a Constellation lands on every roll in it, on its Defense
+              Threshold and on the Skills grid; a bonus to a Maneuver lands on a roll made from the
+              Maneuver (its row on the Maneuvers tab) and is OFFERED, unticked, in the dialog of
+              any other check, since only the player knows whether a roll is an Aid; never on an
+              attack, a Defense or an Initiative, and never on an adversary. Same type does not
+              stack (the highest of each type counts), so two lines of one talent that both apply
+              give the higher.
   Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
         anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
         column means the sheet has not been curated yet, not that it is all off. A constellation
@@ -122,7 +148,7 @@ BACKGROUNDS (backgrounds.xlsx)
   to assets/backgrounds.json with its flag. The converter WARNS when an enabled Background grants
   a Skill whose constellation root is disabled, since that Training point has nowhere to land.
 
-ACTIONS WORKBOOKS (actions.xlsx, maneuvers.xlsx)
+ACTIONS WORKBOOKS (maneuvers.xlsx; the only one since 2026-10-03)
   Recognised by a _Tree Index carrying  Name | Type | Meta note  instead of Tree | Category. Any
   number of them are read; the same action in two of them is an ERROR, and a sheet named "About"
   is skipped as notes for the author (as in the equipment workbook). Every other sheet holds one
@@ -134,14 +160,19 @@ ACTIONS WORKBOOKS (actions.xlsx, maneuvers.xlsx)
     with "Basic" puts the action on every character's Maneuvers tab in Foundry.
   Cost takes glyphs or words: ❶, ❷, ❸ (up to ❻), ⓿ (free), ↺ beside a cost for a Reaction
     ("❶↺", "⓿↺"), "❶ to ❸", "❶ or ❸", "❶ (⓿↺)" for a Maneuver whose Reaction half has a cost of
-    its own (Aid), "1 or 3", "reaction", "free". The v3 forms ◆, ◆◆◆, ◇ and "◆ to ◆◆◆" still
+    its own (the book's Aid; the sheet's Aid costs ❶), "1 or 3", "reaction", "free". The v3 forms
+    ◆, ◆◆◆, ◇ and "◆ to ◆◆◆" still
     read. Without a Cost column the glyphs in the Action name are read, as for talents; with
     neither, the action costs one action ❶ and the converter names the ones it defaulted. Effect
     is required; a cell reading "None" counts as blank.
   Description is the flavour line; Effect is the rules, rich text welcome. Automation (0.9.0) is
     the same column as on a tree sheet, no longer prose: one rule per line, "kind: arguments", a
-    "#" line a comment, parsed by build_foundry.mjs, which stops on a line it does not know; there
-    are no rule kinds yet, so leave it blank or a comment (Tree columns, above).
+    "#" line a comment, parsed by build_foundry.mjs, which stops on a line it does not know; the
+    kinds and their syntax are under Tree columns, above (one today, "bonus"). An action's name is
+    also what a talent's "bonus ... to <Maneuver>" line is matched against, so a roll made from the
+    action's row carries the bonus. An action whose Effect says "Relevant Check" and names no
+    check opens the Relevant Check picker when it is used, carrying the action, so Aid's roll is
+    Aid's (0.10.0).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.
@@ -153,8 +184,8 @@ ACTIONS WORKBOOKS (actions.xlsx, maneuvers.xlsx)
   Enabled? works as on a tree sheet: "Yes" ships the action to Foundry, anything else keeps it
     out, and a sheet without the column ships every row. Every action is still written to
     actions.json with its flag. A disabled action STILL retires the roster row of the same name
-    (the sheet is authoritative for any action it names), so until Aid reads Yes it ships nowhere
-    in Foundry.
+    (the sheet is authoritative for any action it names), so a blank Maneuver row ships nowhere in
+    Foundry and keeps the roster's row out too. Aid reads Yes (Mike, 2026-10-03) and ships.
   maneuvers.xlsx (Mike, 2026-10-01, T17) holds the Encounter Mode Maneuvers: one sheet per group
     of the handbook's Chapter 2 tables (Motion; Attack; Defense & Recovery; Watching, Deceiving &
     Helping; Handling Things; Special). It was scaffolded ONCE from the roster's Maneuver tables by
@@ -164,13 +195,19 @@ ACTIONS WORKBOOKS (actions.xlsx, maneuvers.xlsx)
     Blank is the point: naming a roster row retires it, so the roster's Maneuvers ship nowhere in
     Foundry until a row reads Yes, one at a time as Mike curates them. The file is a SOURCE now:
     edit it, never regenerate it (the script refuses to overwrite it; --force does, and loses every
-    edit made since). Aid is not in it because actions.xlsx already defines Aid.
-  actions.xlsx is Mike's untracked working file (Aid). A checkout without it keeps what it last
-    wrote: the converter carries over, as found, the actions of any workbook actions.json names
-    that is missing from data/, and WARNS, so a fresh clone (maneuvers.xlsx present, actions.xlsx
-    not) still retires the roster rows the absent workbook retired. An action a present workbook
+    edit made since). Aid was left out of the scaffold because actions.xlsx, Mike's untracked
+    working file, then defined it; on 2026-10-03 he moved Aid onto the "Watching, Deceiving &
+    Helping" sheet (row 9) with Enabled? = Yes and deleted actions.xlsx, so maneuvers.xlsx is the
+    one actions workbook and Aid ships for the first time, under the roster row's old document id.
+    Aid is not in the _Tree Index yet, so the converter types it from its Type cell and WARNS every
+    run until the row is added.
+  A workbook that goes missing keeps what it last wrote: the converter carries over, as found, the
+    actions of any workbook actions.json names that is missing from data/, and WARNS, so a checkout
+    without that workbook still retires the roster rows it retired. An action a present workbook
     now defines is that workbook's, and the run says the two will collide when the absent one is
-    back.
+    back (which is how Aid's move was reported: "'Aid' was actions.xlsx's and is now defined in
+    maneuvers.xlsx, which wins"). With one workbook in data/ and nothing absent, the rule has
+    nothing to carry today.
 
 EQUIPMENT WORKBOOK (equipment.xlsx)
   Authoritative for weapons, armor and shields (Mike, 2026-10-01; v4.10 sync report ruling 64),

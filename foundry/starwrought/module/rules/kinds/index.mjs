@@ -10,14 +10,18 @@
  * about a kind, and it is the point: the aura that will serve Torchbearer serves every aura in the
  * book without this file learning anything about auras (ruling 119).
  *
- * NOTHING IS REGISTERED YET. Mike, 2026-10-03: "do NOT survey the talents yet or build ANY of the
- * automation hooks. just build the framework. we will build automation syntax hooks one at a
- * time." The first kind to come is an aura, for Torchbearer's fifteen-foot circle, and it is not
- * here: when it lands it is `./aura.mjs`, imported below and registered with one line, its engine
- * hooks defined with it and not before. Until then every non-comment line in a cell is an unknown
- * rule kind, which the build refuses (naming the Constellation, the Talent and the line) and the
- * Item sheet marks in red. `assets/test_rules.mjs` asserts the list of shipped kinds, so a kind
- * registered here without its test fails the pipeline.
+ * ONE KIND SHIPS: `bonus` (./bonus.mjs; 0.10.0; rulings 121 to 124), Mike's first, for Humanity's
+ * "+1 Condition bonus on checks to Aid" and its three rank sentences. It is registered at the foot
+ * of this file with one line, and its one engine hook point, `modifiers`, was defined with it
+ * (../engine.mjs, `ruleModifiers`). The framework was built empty on purpose (Mike, 2026-10-03:
+ * "do NOT survey the talents yet or build ANY of the automation hooks. just build the framework. we
+ * will build automation syntax hooks one at a time"), and the kinds still come one at a time, with
+ * him: the aura, for Torchbearer's fifteen-foot circle, is the one he named first and is still
+ * next; when it lands it is `./aura.mjs`, imported and registered beside `bonus`, any new hook
+ * point defined with it and not before. A non-comment line in a cell that names no registered
+ * kind is an unknown rule kind, which the build refuses (naming the Constellation, the Talent and
+ * the line) and the Item sheet marks in red. `assets/test_rules.mjs` asserts the list of shipped
+ * kinds, so a kind registered here without its test fails the pipeline.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE. `assets/build_foundry.mjs` imports the
  * grammar, and through it this registry, from plain Node, so the build and the client parse a cell
@@ -38,7 +42,7 @@ export const KIND_WORD = /^[a-z][a-z-]*$/;
  * @property {string[]} aliases                                  Other words accepted before the colon.
  * @property {(args: string, context: object) => (object|void)} parse   The text after the colon, trimmed, to the rule's data.
  * @property {(rule: object) => string} summary                  One short line for the Item sheet.
- * @property {Object<string, Function>} hooks                    The engine hook points the kind speaks at; empty in 0.9.0.
+ * @property {Object<string, Function>} hooks                    The engine hook points the kind speaks at (`modifiers` since 0.10.0; see ../engine.mjs).
  */
 
 /**
@@ -125,10 +129,14 @@ export function knownKinds() {
 /*  The kinds                                   */
 /* -------------------------------------------- */
 
-// None. The first is the aura, for Torchbearer, and it is built with Mike, one kind at a time
-// (ruling 119). When it lands this is where it is registered:
-//
-//   import aura from "./aura.mjs";
-//   registerKind(aura);
-//
-// and `assets/test_rules.mjs` names it in SHIPPED_KINDS, or the pipeline fails at test_rules.
+// One kind at a time, with Mike (ruling 119). Each is two lines here, the import and the
+// registration, and its id in SHIPPED_KINDS in `assets/test_rules.mjs`, or the pipeline fails at
+// test_rules. The imports sit at the foot so the list of kinds reads as one block; an ES import
+// is hoisted wherever it is written, and the circle (a kind file imports the grammar, which
+// imports this file) is harmless because a kind uses its imports only inside `parse`, `summary`
+// and its hooks, never at module scope (../README.md).
+
+import bonus from "./bonus.mjs";
+registerKind(bonus);
+
+// Next: the aura, for Torchbearer, as `./aura.mjs`, its syntax Mike's to settle first.

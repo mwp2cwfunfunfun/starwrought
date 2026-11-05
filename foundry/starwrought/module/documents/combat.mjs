@@ -1,5 +1,6 @@
 /**
- * Encounter Mode, as the Combat document runs it.
+ * Encounter Mode, as the Combat document runs it: the two documents (`SwCombatant`, `SwCombat`)
+ * and the hooks that move the round.
  *
  * PHB v4.10 rewrote the turn. Every combatant receives six actions at the start of each round, and
  * unspent actions expire at its end. Initiative order is fixed and play cycles through it; each
@@ -16,10 +17,27 @@
  *
  * Initiative is unchanged in spirit: "whatever you were already doing", Awareness by default, and
  * adversaries carry a Threshold instead of rolling. There is no level term in v4.10.
+ *
+ * What left this file in 0.10.1, and where it went:
+ *  - the cards the round posts (Recovery, Wind, Persistent Damage, a Prepared Maneuver) and their
+ *    buttons: `documents/cards/round.mjs`;
+ *  - the card builder, the whisper lists and the `data-sw-combat` button binding every system card
+ *    shares: `helpers/cards.mjs`;
+ *  - the election (`isElected`, `responsibleFor`): `helpers/authority.mjs`; the safe settings read
+ *    (`setting`): `helpers/settings.mjs`;
+ *  - the tracker's readout and Pass button: `apps/combat-tracker.mjs`.
+ * This file reads the first three and is read by the fourth.
  */
 
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
+import { isElected, responsibleFor } from "../helpers/authority.mjs";
+import { setting } from "../helpers/settings.mjs";
+import { registerCardButtons } from "../helpers/cards.mjs";
+import {
+  registerRoundCards, postRecoveryReminder, postWindReminder, postPersistentReminder, postPreparedCard,
+  announcePassWhilePreparing, persistentDamageOf, endureThresholdOf
+} from "./cards/round.mjs";
 
 /** The Combat flag holding how many Passes in a row the table has made this round. */
 const FLAG_STREAK = "passStreak";
@@ -32,15 +50,6 @@ const MARK_ACTED = "acted";
  * write a Combat flag, so the elected player client counts here instead and the count is its own.
  */
 const localStreaks = new Map();
-
-/**
- * Card buttons handled by this module and by `actions.mjs`, keyed by their `data-sw-combat` value.
- * A handler receives `{actor, button, root, message}`; `actor` is the document named by the card's
- * `data-actor-uuid`, already resolved. Registered here rather than in `chat.mjs` so the combat
- * cards stay one owner's business.
- * @type {Map<string, (context: {actor: Actor|null, button: HTMLButtonElement, root: HTMLElement|null, message: ChatMessage}) => Promise<unknown>>}
- */
-export const cardActions = new Map();
 
 /* -------------------------------------------- */
 /*  Combatant: initiative                       */
@@ -351,7 +360,11 @@ let registered = false;
  * Register the hooks that run the round: the pass streak, the six actions, Recovery at the start of
  * a round, Wind and Persistent Damage at its end, a Prepared Maneuver at its owner's Opportunity,
  * the tracker's Pass button and actions readout, and the buttons on the cards all of that posts.
- * Idempotent: `actions.mjs` calls it from `registerActionTracking`, and `starwrought.mjs` may too.
+ * The buttons on those cards are bound by `registerCardButtons` (helpers/cards.mjs) and handled by
+ * `registerRoundCards` (documents/cards/round.mjs); the tracker's readout is registered by
+ * `starwrought.mjs` itself (`registerTrackerReadout` in apps/combat-tracker.mjs), since that module
+ * imports `SwCombat` from here and a registration from here would close a circle.
+ * Idempotent: `movement.mjs` calls it from `registerMovementTracking`, and `starwrought.mjs` may too.
  */
 export function registerCombatTracking() {
   if (registered) return;
@@ -359,17 +372,8 @@ export function registerCombatTracking() {
 
   Hooks.on("combatTurnChange", onTurnChange);
   Hooks.on("deleteCombat", onCombatEnds);
-  Hooks.on("renderCombatTracker", onRenderTracker);
-  Hooks.on("renderChatMessageHTML", onRenderCard);
-  Hooks.on("updateActor", onActorChanged);
-
-  cardActions.set("rollRecovery", onRollRecovery);
-  cardActions.set("windCheck", onWindCheck);
-  cardActions.set("windRest", onWindRest);
-  cardActions.set("persistentRoll", onPersistentRoll);
-  cardActions.set("persistentEndure", onPersistentEndure);
-  cardActions.set("finishPrepared", onFinishPrepared);
-  cardActions.set("abandonPrepared", onAbandonPrepared);
+  registerCardButtons();
+  registerRoundCards();
 }
 
 /* -------------------------------------------- */
@@ -590,30 +594,6 @@ async function lowerShield(actor, shield) {
 }
 
 /* -------------------------------------------- */
-/*  Who does the writing                        */
-/* -------------------------------------------- */
-
-/**
- * Exactly one client counts for the Combat: the active GM when there is one, otherwise the active
- * user with the lowest id, which every client computes the same way.
- */
-export function isElected() {
-  const gm = game.users.activeGM;
-  if (gm) return gm.id === game.user.id;
-  const first = game.users.filter(u => u.active).sort((a, b) => a.id.localeCompare(b.id))[0];
-  return first?.id === game.user.id;
-}
-
-/**
- * Exactly one client writes to an Actor: the active GM when there is one, otherwise the first
- * active owner in the user list.
- */
-export function responsibleFor(actor) {
-  if (!actor) return false;
-  if (game.users.activeGM) return game.user.isActiveGM;
-  const owner = game.users.find(u => u.active && actor.testUserPermission(u, "OWNER"));
-  return owner?.id === game.user.id;
-}
 
 /** The distinct Actors in a combat, defeated included (the caller decides about those). */
 function actorsIn(combat) {
@@ -629,564 +609,4 @@ function actorsIn(combat) {
     out.push(actor);
   }
   return out;
-}
-
-/** A setting that may not be registered yet, read without throwing. */
-export function setting(key, fallback) {
-  try {
-    return game.settings.get(SW.SYSTEM_ID, key);
-  } catch {
-    return fallback;
-  }
-}
-
-/* -------------------------------------------- */
-/*  Cards                                       */
-/* -------------------------------------------- */
-
-const { escapeHTML } = foundry.utils;
-const localize = key => game.i18n.localize(key);
-const format = (key, data) => game.i18n.format(key, data);
-
-/**
- * Build one of this module's cards. Every button carries `data-sw-combat`, which the
- * renderChatMessageHTML hook below binds to `cardActions`, and the root carries the actor the
- * buttons act for.
- * @param {object} spec
- * @param {string} spec.root            The card's own class, e.g. `sw-round-card`.
- * @param {string} [spec.actorUuid]     Who the buttons act for.
- * @param {string} [spec.glyph]         Action glyphs printed before the title.
- * @param {string} spec.title
- * @param {string[]} [spec.lines]       Body paragraphs (already escaped or trusted).
- * @param {string[]} [spec.notes]       Small print.
- * @param {Array<{action: string, label: string, icon?: string, data?: object}>} [spec.buttons]
- * @param {object} [spec.data]          Extra data attributes on the root.
- * @returns {string}
- */
-export function cardHtml({ root, actorUuid = "", glyph = "", title, lines = [], notes = [], buttons = [], data = {} }) {
-  const attr = (k, v) => ` data-${k}="${escapeHTML(String(v ?? ""))}"`;
-  const rootAttrs = Object.entries(data).map(([k, v]) => attr(k, v)).join("");
-  const body = lines.map(l => `<p>${l}</p>`).join("");
-  const small = notes.filter(Boolean).map(n => `<p class="sw-card-note">${n}</p>`).join("");
-  const row = buttons.length
-    ? `<div class="sw-card-buttons">${buttons.map(b => `<button type="button" data-sw-combat="${escapeHTML(b.action)}"${
-      Object.entries(b.data ?? {}).map(([k, v]) => attr(k, v)).join("")}>${
-      b.icon ? `<i class="${escapeHTML(b.icon)}"></i> ` : ""}${b.label}</button>`).join("")}</div>`
-    : "";
-  return `<div class="starwrought action-card ${escapeHTML(root)}"${attr("actor-uuid", actorUuid)}${rootAttrs}>
-    <h3>${glyph ? `${glyph} ` : ""}${title}</h3>${body}${small}${row}</div>`;
-}
-
-/** Every user who owns the actor, and every GM: the people a reminder about it belongs to. */
-export function ownersOf(actor) {
-  return game.users.filter(u => u.isGM || actor.testUserPermission(u, "OWNER")).map(u => u.id);
-}
-
-/**
- * Public for a player-controlled actor (a character, or anything a player owns), the GM's business
- * for an adversary: the system's usual split, and the one spendActions uses (Mike, 2026-10-01).
- */
-export function tableFor(actor) {
-  const theirs = actor.announcesSpends ?? actor.hasPlayerOwner;
-  return theirs ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id);
-}
-
-/** Post a card spoken by an actor. */
-export function postCard(actor, content, { whisper = [], rolls = [] } = {}) {
-  const data = { speaker: ChatMessage.getSpeaker({ actor }), content, whisper };
-  if (rolls.length) data.rolls = rolls;
-  return ChatMessage.create(data);
-}
-
-/* -------------------------------------------- */
-
-async function postRecoveryReminder(actor, round) {
-  const dying = Number(actor.system.dying) || 0;
-  const wounds = Number(actor.system.woundCount) || 0;
-  const threshold = SW.RECOVERY_BASE + dying + wounds;
-  const content = cardHtml({
-    root: "sw-round-card sw-recovery-card",
-    actorUuid: actor.uuid,
-    title: localize("STARWROUGHT.Roll.recovery"),
-    lines: [format("STARWROUGHT.Combat.recoveryText", {
-      name: escapeHTML(actor.name), round, dying, wounds, threshold
-    })],
-    notes: [localize("STARWROUGHT.Combat.recoveryOutcomes"), localize("STARWROUGHT.Combat.recoveryHelp")],
-    buttons: [{ action: "rollRecovery", icon: "fa-solid fa-heart-pulse", label: localize("STARWROUGHT.Combat.recoveryRoll") }]
-  });
-  return postCard(actor, content, { whisper: ownersOf(actor) });
-}
-
-/**
- * The Endure Threshold the Wind rule compares (PHB v4.12, ruling 74): the character model's own
- * reading when it has one, else the Defense as the sheet shows it, else the bare 10.
- */
-function endureThresholdOf(actor) {
-  const derived = Number(actor.system.wind?.endureThreshold);
-  if (Number.isFinite(derived)) return derived;
-  const shown = Number(actor.system.defenses?.endure?.threshold);
-  return Number.isFinite(shown) ? shown : 10;
-}
-
-async function postWindReminder(actor, strain, round, fatigued = 0) {
-  const threshold = 10 + strain;
-  // The card says why it came: the Endure Threshold that fell short of the Wind Threshold.
-  const endure = endureThresholdOf(actor);
-  // What a failure would make of them: Fatigued 1, or one more than they carry now.
-  const next = Math.min(SW.FATIGUED_MAX, fatigued + 1);
-  const content = cardHtml({
-    root: "sw-round-card sw-wind-card",
-    actorUuid: actor.uuid,
-    title: localize("STARWROUGHT.Combat.wind"),
-    lines: [format("STARWROUGHT.Combat.windText", { name: escapeHTML(actor.name), round, strain, threshold, endure, next })],
-    notes: [
-      fatigued ? format("STARWROUGHT.Combat.windCarrying", { name: escapeHTML(actor.name), value: fatigued }) : "",
-      localize("STARWROUGHT.Combat.windNote")
-    ],
-    buttons: [{
-      action: "windCheck", icon: "fa-solid fa-lungs",
-      label: format("STARWROUGHT.Combat.endureVs", { threshold })
-    }]
-  });
-  return postCard(actor, content, { whisper: ownersOf(actor) });
-}
-
-async function postPersistentReminder(actor, source, round) {
-  const type = damageLabel(source.type);
-  const lines = [format("STARWROUGHT.Combat.persistentText", {
-    name: escapeHTML(actor.name), round, formula: escapeHTML(source.formula), type
-  })];
-  const notes = [localize("STARWROUGHT.Combat.persistentNote")];
-  if (source.source === "torsoWound") notes.push(localize("STARWROUGHT.Combat.persistentWoundNote"));
-  const content = cardHtml({
-    root: "sw-round-card sw-persistent-card",
-    actorUuid: actor.uuid,
-    title: localize("STARWROUGHT.Combat.persistent"),
-    lines,
-    notes,
-    buttons: [{
-      action: "persistentRoll", icon: "fa-solid fa-droplet",
-      label: format("STARWROUGHT.Combat.persistentRoll", { formula: escapeHTML(source.formula), type }),
-      data: { formula: source.formula, type: source.type, source: source.source ?? "" }
-    }]
-  });
-  return postCard(actor, content, { whisper: ownersOf(actor) });
-}
-
-async function postPreparedCard(actor, preparing, combat) {
-  const cost = Number(preparing.cost) || SW.PREPARED_THRESHOLD;
-  const reserved = Number(actor.system.actions?.reserved) || Math.max(0, cost - 1);
-  const label = preparing.label || (preparing.strike ? localize(SW.STRIKE_KINDS[preparing.strike]?.label ?? "STARWROUGHT.Roll.strike") : localize("STARWROUGHT.Condition.preparing"));
-  const content = cardHtml({
-    root: "sw-prepared-card",
-    actorUuid: actor.uuid,
-    glyph: SW.ACTION_GLYPHS[Math.min(6, cost)] ?? "",
-    title: localize("STARWROUGHT.Condition.preparing"),
-    lines: [format("STARWROUGHT.Combat.preparedText", {
-      name: escapeHTML(actor.name), label: escapeHTML(label), cost, reserved, round: combat.round
-    })],
-    notes: [localize("STARWROUGHT.Combat.preparedNote")],
-    buttons: [
-      { action: "finishPrepared", icon: "fa-solid fa-check", label: localize("STARWROUGHT.Combat.preparedFinish") },
-      { action: "abandonPrepared", icon: "fa-solid fa-xmark", label: localize("STARWROUGHT.Combat.preparedAbandon") }
-    ]
-  });
-  // Preparation "is telegraphed by design", so the card is public; the buttons still check ownership.
-  return postCard(actor, content);
-}
-
-async function announcePassWhilePreparing(actor) {
-  const label = actor.system.actions.preparing?.label || localize("STARWROUGHT.Condition.preparing");
-  const body = format("STARWROUGHT.Combat.passWhilePreparing", { name: escapeHTML(actor.name), label: escapeHTML(label) });
-  ui.notifications.warn(body);
-  return postCard(actor, cardHtml({
-    root: "sw-overspend sw-pass-note",
-    actorUuid: actor.uuid,
-    title: `<i class="fa-solid fa-triangle-exclamation"></i> ${localize("STARWROUGHT.Actions.overTitle")}`,
-    lines: [body],
-    notes: [localize("STARWROUGHT.Actions.overNote")]
-  }), { whisper: ownersOf(actor) });
-}
-
-/** A damage type's printed name. */
-function damageLabel(type) {
-  const key = SW.DAMAGE_TYPES[type]?.label;
-  return key ? localize(key) : escapeHTML(String(type ?? ""));
-}
-
-/**
- * What is still hurting this actor, as `{type, formula, source?}` rows.
- *
- * The contract's data model carries no Persistent Damage field, so this reads, in order: an array,
- * map or string at `system.persistentDamage` (rows of `{type, formula}`, a `{type: formula}` map,
- * or "1d4 bleed"), the same shapes under `flags.starwrought.persistentDamage`, and then the one
- * source the engine itself creates: a Torso Wound. PHB v4.10's Wounds table makes the first Torso
- * Wound "Off-Guard, and 1d4 persistent bleed", every Wound short of the final one repeats it, and
- * the effect is "made lasting: it does not clear when you Recenter, only when the Wound is
- * treated". Ruling: the bleed runs at the end of every round while the Wound stands, and the
- * ordinary Endure check to end Persistent Damage does not close it; treating the Wound does.
- */
-export function persistentDamageOf(actor) {
-  const rows = [];
-  const push = (type, formula, source) => {
-    if (!formula) return;
-    rows.push({ type: String(type || "untyped"), formula: String(formula).trim(), source });
-  };
-  const read = (raw, source) => {
-    if (!raw) return;
-    if (Array.isArray(raw)) {
-      for (const row of raw) {
-        if (!row) continue;
-        if (typeof row === "string") parseRow(row, source);
-        else push(row.type, row.formula ?? row.amount ?? row.value, source);
-      }
-    } else if (typeof raw === "string") parseRow(raw, source);
-    else if (typeof raw === "object") for (const [type, formula] of Object.entries(raw)) push(type, formula, source);
-  };
-  const parseRow = (text, source) => {
-    const m = String(text).match(/^\s*([\dd+\-\s]+?)\s*(?:persistent\s+)?([a-z]+)?\s*$/i);
-    if (m) push(m[2]?.toLowerCase() ?? "untyped", m[1], source);
-  };
-
-  read(actor.system.persistentDamage, "system");
-  read(actor.getFlag?.(SW.SYSTEM_ID, "persistentDamage"), "flag");
-
-  const torso = actor.system.zones?.torso;
-  const wounds = Number(torso?.wounds) || 0;
-  if ((wounds > 0) && !rows.some(r => r.type === "bleed")) {
-    const capacity = Number(torso.capacity) || SW.WOUND_CAPACITY[actor.system.size] || 2;
-    const bleeding = Math.min(wounds, Math.max(0, capacity - 1));
-    const die = SW.TORSO_WOUND_BLEED.replace(/^\d+/, "");
-    if (bleeding > 0) push("bleed", `${bleeding}${die}`, "torsoWound");
-  }
-  return rows;
-}
-
-/* -------------------------------------------- */
-/*  Card buttons                                */
-/* -------------------------------------------- */
-
-function onRenderCard(message, html) {
-  for (const button of html.querySelectorAll("[data-sw-combat]")) {
-    button.addEventListener("click", event => onCardButton(event, message));
-  }
-}
-
-async function onCardButton(event, message) {
-  event.preventDefault();
-  event.stopPropagation();
-  const button = event.currentTarget;
-  const handler = cardActions.get(button.dataset.swCombat);
-  if (!handler) return;
-  const root = button.closest("[data-actor-uuid]");
-  const actor = await actorFromUuid(root?.dataset.actorUuid);
-  button.disabled = true;
-  try {
-    await handler({ actor, button, root, message });
-  } catch (err) {
-    console.error(`STARWROUGHT | ${button.dataset.swCombat} failed`, err);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-/** The Actor behind a uuid, whether it names the Actor or its Token. */
-export async function actorFromUuid(uuid) {
-  if (!uuid) return null;
-  const doc = await fromUuid(uuid);
-  return doc?.actor ?? doc ?? null;
-}
-
-/** A card button acts for its actor's owner only. */
-export function requireOwner(actor) {
-  if (!actor) {
-    ui.notifications.warn(localize("STARWROUGHT.Notify.noActor"));
-    return false;
-  }
-  if (!actor.isOwner) {
-    ui.notifications.warn(localize("STARWROUGHT.Notify.notOwner"));
-    return false;
-  }
-  return true;
-}
-
-async function onRollRecovery({ actor }) {
-  if (!requireOwner(actor)) return;
-  if (typeof actor.rollRecovery !== "function") return;
-  return actor.rollRecovery();
-}
-
-/**
- * Wind (PHB v4.13, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
- * and on a failure Fatigued raised by 1 to a maximum of 3: -N Condition to Evade, Guard and attack
- * rolls until ten minutes of rest. The exemption (an Endure Threshold that meets the Wind
- * Threshold, ruling 74) is applied where the card is posted, in endRound, not here: a card already
- * posted still rolls. The card names the new value and carries the "Ten minutes' rest" button that
- * ends the condition (onWindRest, ruling 81).
- */
-async function onWindCheck({ actor }) {
-  if (!requireOwner(actor)) return;
-  const strain = Number(actor.system.loadStrain) || 0;
-  const threshold = 10 + strain;
-  const result = await SwCheck.roll({
-    actor,
-    kind: "check",
-    slug: SW.DEFENSES.endure.slug,
-    label: localize("STARWROUGHT.Combat.wind"),
-    subtitle: format("STARWROUGHT.Combat.windSubtitle", { strain }),
-    threshold,
-    thresholdLabel: localize("STARWROUGHT.Combat.windThreshold")
-  });
-  if (!result) return;
-  if (["fail", "critFail"].includes(result.degree)) {
-    const current = Number(actor.conditionValue?.("fatigued")) || 0;
-    const value = Math.min(SW.FATIGUED_MAX, current + 1);
-    await actor.setCondition?.("fatigued", value);
-    await postCard(actor, cardHtml({
-      root: "sw-round-card sw-wind-card",
-      actorUuid: actor.uuid,
-      title: `${localize("STARWROUGHT.Condition.fatigued")} ${value}`,
-      lines: [format("STARWROUGHT.Combat.windFatigued", { name: escapeHTML(actor.name), value })],
-      notes: [
-        (value >= SW.FATIGUED_MAX) ? localize("STARWROUGHT.Combat.windCeiling") : "",
-        localize("STARWROUGHT.Combat.windRestNote")
-      ],
-      buttons: [{ action: "windRest", icon: "fa-solid fa-mug-hot", label: localize("STARWROUGHT.Combat.windRest") }]
-    }), { whisper: tableFor(actor) });
-  }
-}
-
-/**
- * Ten minutes' rest (PHB v4.13, Conditions: Fatigued "ends after ten minutes of rest"; ruling 81).
- * The system has no clock for ten minutes, and the end of the Combat is not one either (through
- * 0.6.1 it cleared Fatigued there, ruling 70, now superseded), so whether the ten minutes have
- * passed is the table's call: the Fatigued card carries this button for the actor's owner or the
- * GM (`requireOwner`; a GM owns everything). Fatigued comes off whole, whatever its value, and a
- * one-line card tells the same table the Fatigued card went to. A night's rest clears it too
- * (SwActor#restForTheNight). Clicked for an actor no longer Fatigued, it says so quietly and
- * writes nothing.
- */
-async function onWindRest({ actor }) {
-  if (!requireOwner(actor)) return;
-  const current = Number(actor.conditionValue?.("fatigued")) || 0;
-  if (!current) {
-    ui.notifications.info(format("STARWROUGHT.Notify.notFatigued", { name: actor.name }));
-    return;
-  }
-  await actor.setCondition?.("fatigued", false);
-  return postCard(actor, cardHtml({
-    root: "sw-round-card sw-wind-card sw-wind-rest-card",
-    actorUuid: actor.uuid,
-    title: localize("STARWROUGHT.Combat.windRest"),
-    lines: [format("STARWROUGHT.Combat.windRested", { name: escapeHTML(actor.name), value: current })]
-  }), { whisper: tableFor(actor) });
-}
-
-/**
- * Persistent Damage (PHB v4.10): roll it fresh, Protection does not apply, then Endure against
- * 10 + the amount just taken to end it. The card names the amount; applying it is the owner's, on
- * the sheet, since the engine's damage pipeline is built around a Zone and its Protection.
- */
-async function onPersistentRoll({ actor, button }) {
-  if (!requireOwner(actor)) return;
-  const formula = button.dataset.formula;
-  const type = button.dataset.type || "untyped";
-  if (!Roll.validate(formula)) {
-    ui.notifications.warn(format("STARWROUGHT.Combat.persistentBadFormula", { formula }));
-    return;
-  }
-  const roll = await new Roll(formula).evaluate();
-  const total = roll.total;
-  const fromWound = button.dataset.source === "torsoWound";
-  const threshold = 10 + total;
-  const buttons = fromWound ? [] : [{
-    action: "persistentEndure", icon: "fa-solid fa-shield-heart",
-    label: format("STARWROUGHT.Combat.endureVs", { threshold }),
-    data: { threshold, type }
-  }];
-  const content = cardHtml({
-    root: "sw-round-card sw-persistent-card",
-    actorUuid: actor.uuid,
-    title: localize("STARWROUGHT.Combat.persistent"),
-    lines: [format("STARWROUGHT.Combat.persistentTaken", { name: escapeHTML(actor.name), total, type: damageLabel(type) })],
-    notes: [
-      fromWound ? localize("STARWROUGHT.Combat.persistentWoundNote") : format("STARWROUGHT.Combat.persistentEndNote", { threshold }),
-      localize("STARWROUGHT.Combat.persistentApplyNote")
-    ],
-    buttons
-  });
-  return postCard(actor, content, { rolls: [roll], whisper: tableFor(actor) });
-}
-
-async function onPersistentEndure({ actor, button }) {
-  if (!requireOwner(actor)) return;
-  const threshold = Number(button.dataset.threshold) || 10;
-  const result = await SwCheck.roll({
-    actor,
-    kind: "check",
-    slug: SW.DEFENSES.endure.slug,
-    label: localize("STARWROUGHT.Combat.persistentEndure"),
-    subtitle: damageLabel(button.dataset.type || "untyped"),
-    threshold,
-    thresholdLabel: localize("STARWROUGHT.Combat.persistentThreshold")
-  });
-  if (!result) return;
-  if (["success", "critSuccess"].includes(result.degree)) {
-    ui.notifications.info(format("STARWROUGHT.Combat.persistentEnded", { name: actor.name, type: damageLabel(button.dataset.type || "untyped") }));
-  }
-}
-
-async function onFinishPrepared({ actor }) {
-  if (!requireOwner(actor)) return;
-  if (typeof actor.finishPrepared !== "function") {
-    ui.notifications.warn(localize("STARWROUGHT.Combat.preparedNoMethod"));
-    return;
-  }
-  return actor.finishPrepared();
-}
-
-async function onAbandonPrepared({ actor }) {
-  if (!requireOwner(actor)) return;
-  if (typeof actor.abandonPrepared !== "function") {
-    ui.notifications.warn(localize("STARWROUGHT.Combat.preparedNoMethod"));
-    return;
-  }
-  return actor.abandonPrepared();
-}
-
-/* -------------------------------------------- */
-/*  The tracker                                 */
-/* -------------------------------------------- */
-
-/**
- * Under each combatant's name, the actions it has left (and anything reserved for a Prepared
- * Maneuver); beside its controls, a Pass button for its owner, live only at its own Opportunity;
- * beside the round, the pass streak. Injected into core's rows rather than replacing its template,
- * as the targeting line is, so a Foundry update that reshapes the tracker is a one-line fix.
- */
-function onRenderTracker(app, element) {
-  const combat = app.viewed ?? game.combat;
-  if (!(combat instanceof SwCombat)) return;
-
-  if (combat.started) {
-    const title = element.querySelector(".encounter-title");
-    if (title) {
-      // A partial re-render of the rows leaves the header standing, so replace rather than skip.
-      title.querySelector(".sw-pass-streak")?.remove();
-      const span = document.createElement("span");
-      span.className = "sw-pass-streak";
-      span.dataset.tooltip = localize("STARWROUGHT.Tracker.passStreakHint");
-      span.textContent = format("STARWROUGHT.Tracker.passStreak", {
-        n: combat.passStreak, of: combat.opportunityHolders.length
-      });
-      title.append(" ", span);
-    }
-  }
-
-  for (const li of element.querySelectorAll("li.combatant[data-combatant-id]")) {
-    const combatant = combat.combatants.get(li.dataset.combatantId);
-    const actor = combatant?.actor;
-    if (!actor?.system) continue;
-    // A party is never a combatant (0.7.0, risk 1): no actions readout, no Pass button.
-    if (actor.type === SW.PARTY_TYPE) continue;
-
-    const actions = actor.system.actions;
-    if (actions && combat.started && !li.querySelector(".sw-tracker-actions")) {
-      li.querySelector(".token-name")?.append(actionsReadout(actor, actions));
-    }
-
-    if (combatant.isOwner && combat.started && !li.querySelector(".sw-pass")) {
-      const controls = li.querySelector(".combatant-controls");
-      if (!controls) continue;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "inline-control combatant-control icon fa-solid fa-hand sw-pass";
-      const live = combat.combatant?.id === combatant.id;
-      button.disabled = !live;
-      button.dataset.tooltip = live
-        ? localize("STARWROUGHT.Tracker.pass")
-        : format("STARWROUGHT.Combat.notOpportunity", { name: combatant.name });
-      button.setAttribute("aria-label", localize("STARWROUGHT.Tracker.pass"));
-      // No data-action: the row itself is core's "activate this combatant" control, and the click
-      // must not reach it.
-      button.addEventListener("click", event => {
-        event.preventDefault();
-        event.stopPropagation();
-        onPassClick(combat, combatant);
-      });
-      const effects = controls.querySelector(".token-effects");
-      if (effects) controls.insertBefore(button, effects);
-      else controls.append(button);
-    }
-  }
-}
-
-/**
- * The line under the name: actions left as a large number over the round's count, with a pip per
- * action (lit while unspent), plus what is reserved and what is Preparing. It was one small
- * circled glyph until 0.5.3 (Mike: "# actions remaining in combat tracker are very small/hard to
- * read"); the pips are the sheet's, so the two readouts agree at a glance.
- */
-function actionsReadout(actor, actions) {
-  const line = document.createElement("div");
-  line.className = "sw-tracker-actions";
-  const value = Math.max(0, Number(actions.value) || 0);
-  const per = Number(actor.system.actionsPerRound) || SW.ACTIONS_PER_ROUND;
-  line.dataset.tooltip = format("STARWROUGHT.Tracker.actionsLeft", { value, per });
-  if (!value) line.classList.add("sw-none");
-
-  const count = document.createElement("span");
-  count.className = "sw-tracker-actions-left";
-  count.textContent = String(value);
-  const of = document.createElement("span");
-  of.className = "sw-tracker-actions-of";
-  of.textContent = `/${per}`;
-  count.append(of);
-  line.append(count);
-
-  const pips = document.createElement("span");
-  pips.className = "sw-tracker-pips";
-  for (let i = 0; i < Math.min(per, 12); i++) {
-    const pip = document.createElement("i");
-    pip.className = `sw-tracker-pip${i < value ? " sw-lit" : ""}`;
-    pips.append(pip);
-  }
-  line.append(pips);
-
-  const reserved = Number(actions.reserved) || 0;
-  if (reserved) {
-    const held = document.createElement("span");
-    held.className = "sw-tracker-actions-reserved";
-    held.textContent = format("STARWROUGHT.Tracker.reserved", { n: reserved });
-    line.append(" ", held);
-  }
-  if (actions.preparing) {
-    const icon = document.createElement("i");
-    icon.className = "fa-solid fa-hourglass-half sw-tracker-preparing";
-    icon.dataset.tooltip = format("STARWROUGHT.Tracker.preparing", {
-      label: actions.preparing.label || localize("STARWROUGHT.Condition.preparing")
-    });
-    line.append(" ", icon);
-  }
-  return line;
-}
-
-/** The tracker's Pass: the Actor's own Pass when it has one (it may have things to tidy), else the Combat's. */
-async function onPassClick(combat, combatant) {
-  const actor = combatant.actor;
-  try {
-    if (typeof actor?.pass === "function") return await actor.pass();
-    return await combat.pass(combatant);
-  } catch (err) {
-    console.error("STARWROUGHT | Pass failed", err);
-    ui.notifications.error(localize("STARWROUGHT.Combat.passFailed"));
-  }
-}
-
-/** The readout is live: an actor spending actions re-renders its row. */
-function onActorChanged(actor, changes) {
-  const combat = game.combat;
-  if (!combat?.started || !combat.isView) return;
-  if (!foundry.utils.hasProperty(changes, "system.actions")) return;
-  if (combat.getCombatantsByActor(actor).length) ui.combat?.render();
 }

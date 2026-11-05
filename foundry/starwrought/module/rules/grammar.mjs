@@ -32,10 +32,15 @@
  */
 
 import { KIND_WORD, kindOf, knownKinds } from "./kinds/index.mjs";
+import { RuleSyntaxError } from "./syntax.mjs";
 
 // The registry's vocabulary, re-exported so a module that needs the grammar and the words needs
-// one import. `registerKind` stays in the index: that is where a kind is registered.
+// one import. `registerKind` stays in the index: that is where a kind is registered. The error
+// class and the two argument helpers live in ./syntax.mjs (0.10.1; the class alone since 0.10.0),
+// which imports nothing, so a kind file imports them from there and closes no circle with this
+// module; they are re-exported here for every other reader.
 export { KIND_WORD, kindOf, knownKinds } from "./kinds/index.mjs";
+export { RuleSyntaxError, splitArgs, keyValues } from "./syntax.mjs";
 
 /**
  * The words a parsed rule reserves for the framework. A kind's `parse` returns its own data and
@@ -43,27 +48,6 @@ export { KIND_WORD, kindOf, knownKinds } from "./kinds/index.mjs";
  * line; `error` marks an entry that did not parse, so no kind's data may carry it either.
  */
 export const RESERVED_WORDS = Object.freeze(["kind", "line", "text", "error"]);
-
-/* -------------------------------------------- */
-
-/**
- * A line a kind could not read, said in words a designer can act on. A kind's `parse` throws one
- * of these for a bad argument; the grammar catches it and makes an error entry of its message,
- * with the line number and the text filled in. Any other throw from a kind is caught too, but is
- * reported as the kind's failure, not the cell's, since a TypeError is a bug in the kind.
- */
-export class RuleSyntaxError extends Error {
-  /**
-   * @param {string} message             What is wrong, for the designer.
-   * @param {{line?: number|null, text?: string}} [where]  Filled in by the grammar; a kind need not.
-   */
-  constructor(message, { line = null, text = "" } = {}) {
-    super(message);
-    this.name = "RuleSyntaxError";
-    this.line = line;
-    this.text = text;
-  }
-}
 
 /* -------------------------------------------- */
 
@@ -124,9 +108,20 @@ export function parseAutomation(text, context = {}) {
       });
       return;
     }
+    // The rule is stored on the Item and travels through the pack sources, Sync content and the
+    // database as JSON, so it must BE plain data: a kind that returns NaN, a function, a Date or a
+    // cycle has a bug, and it is reported here rather than failing later in a write (0.10.1).
+    const stored = plainData(data);
+    if (stored.problem) {
+      errors.push({
+        line, text: trimmed,
+        message: `the "${kind.id}" kind returned data that cannot be stored (${stored.problem}) (a bug in the kind, not in the cell)`
+      });
+      return;
+    }
     // The reserved words are the framework's: a kind's data cannot rename the rule's kind, move it
     // to another line or, by carrying `error`, have a parsed rule filed as one that did not parse.
-    const own = { ...data };
+    const own = stored.value;
     for (const word of RESERVED_WORDS) delete own[word];
     rules.push({ ...own, kind: kind.id, line, text: trimmed });
   });
@@ -215,71 +210,58 @@ export function summarize(rule) {
 }
 
 /* -------------------------------------------- */
-/*  Helpers a kind may use                      */
+/*  Plain data                                  */
 /* -------------------------------------------- */
 
 /**
- * Split a kind's arguments on the commas outside quotes, each part trimmed, a part wholly in one
- * pair of quotes ("..." or '...') unquoted, empty parts dropped (a trailing comma is a slip, not
- * an argument). An opening quote with no closing one is a RuleSyntaxError, which the grammar
- * reports as that line's error when a kind's `parse` lets it through.
- * @param {string} text
- * @returns {string[]}
+ * The plain-data copy of what a kind's `parse` returned, or the first reason it is not plain data.
+ * Plain data is what JSON carries: null, booleans, finite numbers, strings, arrays of plain data,
+ * and objects with no prototype but Object's whose values are plain data. A property whose value
+ * is `undefined` is left out, as JSON leaves it out (`{ when: cond ? x : undefined }` is a fair
+ * idiom in a kind); NaN and Infinity, a function, a symbol, a bigint, a Date, a Map, a Set, a
+ * class instance, or a cycle is a problem, named with its path. The copy is what the grammar
+ * stores, so a stored rule always equals its own JSON image.
+ * @param {object} data
+ * @returns {{value: object, problem: null} | {value: null, problem: string}}
  */
-export function splitArgs(text) {
-  const parts = [];
-  let current = "";
-  let quote = null;
-  for (const ch of String(text ?? "")) {
-    if (quote) {
-      current += ch;
-      if (ch === quote) quote = null;
-      continue;
+function plainData(data) {
+  const seen = new Set();
+  const walk = (value, path) => {
+    if (value === null) return { value: null };
+    const type = typeof value;
+    if (type === "string" || type === "boolean") return { value };
+    if (type === "number") {
+      return Number.isFinite(value) ? { value } : { problem: `${path} is ${String(value)}` };
     }
-    if ((ch === '"') || (ch === "'")) {
-      quote = ch;
-      current += ch;
-      continue;
+    if (type === "undefined") return { skip: true };
+    if (type !== "object") return { problem: `${path} is a ${type}` };
+    if (seen.has(value)) return { problem: `${path} refers back to itself` };
+    seen.add(value);
+    try {
+      if (Array.isArray(value)) {
+        const out = [];
+        for (let i = 0; i < value.length; i++) {
+          const item = walk(value[i], `${path}[${i}]`);
+          if (item.problem) return item;
+          out.push(item.skip ? null : item.value);
+        }
+        return { value: out };
+      }
+      const proto = Object.getPrototypeOf(value);
+      if ((proto !== Object.prototype) && (proto !== null)) {
+        return { problem: `${path} is a ${value.constructor?.name ?? "non-plain object"}, not a plain object` };
+      }
+      const out = {};
+      for (const [key, inner] of Object.entries(value)) {
+        const item = walk(inner, path === "data" ? key : `${path}.${key}`);
+        if (item.problem) return item;
+        if (!item.skip) out[key] = item.value;
+      }
+      return { value: out };
+    } finally {
+      seen.delete(value);
     }
-    if (ch === ",") {
-      parts.push(current);
-      current = "";
-      continue;
-    }
-    current += ch;
-  }
-  if (quote) throw new RuleSyntaxError(`an opening ${quote} has no closing ${quote}`);
-  parts.push(current);
-  return parts.map(part => unquote(part.trim())).filter(part => part !== "");
-}
-
-/**
- * Sort parts into `key=value` pairs and the rest, in order. Keys are lower-cased; values are
- * trimmed and unquoted as `splitArgs` unquotes. A key given twice is a RuleSyntaxError, since a
- * cell that says `range=15, range=30` means one thing to its author and the kind cannot know which.
- * @param {string[]} parts
- * @returns {{pairs: Object<string, string>, rest: string[]}}
- */
-export function keyValues(parts) {
-  const pairs = {};
-  const rest = [];
-  for (const part of parts ?? []) {
-    const match = String(part).match(/^([^=\s]+)\s*=\s*([\s\S]*)$/);
-    if (!match) {
-      rest.push(part);
-      continue;
-    }
-    const key = match[1].toLowerCase();
-    if (Object.hasOwn(pairs, key)) throw new RuleSyntaxError(`"${key}" is given twice`);
-    pairs[key] = unquote(match[2].trim());
-  }
-  return { pairs, rest };
-}
-
-/** A string wholly inside one pair of matching quotes, without them; anything else as it is. */
-function unquote(text) {
-  if ((text.length >= 2) && ((text[0] === '"') || (text[0] === "'")) && (text.at(-1) === text[0])) {
-    return text.slice(1, -1);
-  }
-  return text;
+  };
+  const result = walk(data, "data");
+  return result.problem ? { value: null, problem: result.problem } : { value: result.value, problem: null };
 }

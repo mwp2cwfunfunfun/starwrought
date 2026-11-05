@@ -14,9 +14,19 @@
  */
 
 import * as SW from "../config.mjs";
-import { helmPenaltyFor } from "./item.mjs";
 import { rangesOf } from "../helpers/ranges.mjs";
 import { collectRules } from "../rules/engine.mjs";
+// The character's derived-data passes, one module each (0.10.1), called in order by
+// SwCharacterData#prepareDerivedData below; the adversary shares the Evade availability.
+import { prepareConstellations } from "./character/constellations.mjs";
+import { prepareAttributes } from "./character/attributes.mjs";
+import { prepareArmor } from "./character/armor.mjs";
+import { prepareDefenses } from "./character/defenses.mjs";
+import { prepareWind } from "./character/wind.mjs";
+import { prepareVigor } from "./character/vigor.mjs";
+import { prepareActions } from "./character/actions.mjs";
+import { prepareOffense } from "./character/offense.mjs";
+import { unavailableEvade } from "./character/shared.mjs";
 
 /** Re-exported so the canvas can import the ranges list from the model that derives it (0.5.1). */
 export { rangesOf } from "../helpers/ranges.mjs";
@@ -30,8 +40,6 @@ const fields = foundry.data.fields;
 /** The five stances a defender can hold: the two basic Defenses and the three Reactions that answer a Blow. */
 export const STANCES = Object.freeze(["evade", "guard", "void", "parry", "counter"]);
 
-/** The first Arms Wound (PHB v4.10, Wounds): -2 Situation to attacks and to Guard. */
-const ARMS_WOUND_PENALTY = -2;
 
 /* -------------------------------------------- */
 /*  Field helpers                               */
@@ -69,9 +77,9 @@ function zoneFields(extra = {}) {
 function actionFields() {
   return new fields.SchemaField({
     value: new fields.NumberField({
-      required: true, integer: true, min: 0, max: 12, initial: SW.ACTIONS_PER_ROUND
+      required: true, integer: true, min: 0, max: SW.ACTIONS_MAX, initial: SW.ACTIONS_PER_ROUND
     }),
-    reserved: new fields.NumberField({ required: true, integer: true, min: 0, max: 12, initial: 0 }),
+    reserved: new fields.NumberField({ required: true, integer: true, min: 0, max: SW.ACTIONS_MAX, initial: 0 }),
     preparing: new fields.ObjectField({ required: true, nullable: true, initial: null })
   });
 }
@@ -330,14 +338,17 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
   /**
    * The rule index (0.9.0; rulings 118 to 120): every rule on every owned Talent, action and
    * Constellation Item, collected once per prepare into `{ all, byKind, unknown }` (each entry
-   * `{ rule, item }`), so a kind's engine hook can later ask `actor.rulesOfKind("aura")` without
+   * `{ rule, item }`), so a kind's engine hook can ask `actor.rulesOfKind("bonus")` without
    * walking the Items. It runs FIRST in the derived pass of a character and an adversary alike,
-   * before the Constellations roll up, because the hooks a kind will bring want to read the index
-   * from inside the passes that follow. Today nothing reads it: no kind exists (Mike, 2026-10-03:
-   * "just build the framework. we will build automation syntax hooks one at a time"), so the index
-   * is a mirror of the Items and nothing more. Pure over the embedded documents, which Foundry
-   * prepares before the parent's derived data, so each Item's `system.rules` is final here. A
-   * party is not an SwActorData and gets no index; SwActor#rulesOfKind answers it an empty list.
+   * before the Constellations roll up, because the hooks read the index from inside the passes
+   * that follow. Since 0.10.0 one does: the `modifiers` hook point (ruleModifiers in
+   * ../rules/engine.mjs; ruling 124), asked by the check engine for every roll and by
+   * prepareDefenses (character/defenses.mjs) for every Defense, so a `bonus ... to Guard if Human is Expert` moves
+   * the Guard Threshold on the sheet and the Guard roll alike. The first kind, `bonus`, is the
+   * only speaker; the rest come one at a time with Mike (ruling 119). Pure over the embedded
+   * documents, which Foundry prepares before the parent's derived data, so each Item's
+   * `system.rules` is final here. A party is not an SwActorData and gets no index;
+   * SwActor#rulesOfKind answers it an empty list.
    */
   _prepareRules() {
     this.rules = collectRules(this.parent);
@@ -536,6 +547,8 @@ export class SwCharacterData extends SwActorData {
         speed: new fields.NumberField({ required: true, integer: true, initial: 0 }),
         vigor: new fields.NumberField({ required: true, integer: true, initial: 0 }),
         protection: new fields.NumberField({ required: true, integer: true, initial: 0 }),
+        /** Actions a round beyond six (0.10.1): what a haste-like effect targets; may be negative. */
+        actions: new fields.NumberField({ required: true, integer: true, initial: 0 }),
         defenses: new fields.SchemaField(
           Object.keys(SW.DEFENSES).reduce((obj, d) => {
             obj[d] = new fields.NumberField({ required: true, integer: true, initial: 0 });
@@ -590,17 +603,21 @@ export class SwCharacterData extends SwActorData {
 
   /** @override */
   prepareDerivedData() {
-    // The rule index first (0.9.0), so every pass below could read it once a kind gives it a reader.
+    // The rule index first (0.9.0), so every pass below can read it; prepareDefenses does (0.10.0),
+    // and it needs the Constellations' ranks final too, hence the order.
     this._prepareRules();
-    this.#prepareConstellations();
-    this.#prepareAttributes();
-    this.#prepareArmor();
+    prepareConstellations(this);
+    prepareAttributes(this);
+    prepareArmor(this);
     this._prepareWounds();
-    this.#prepareDefenses();
-    // Wind needs both Load Strain (#prepareArmor) and the Endure Threshold (#prepareDefenses) final.
-    this.#prepareWind();
-    this.#prepareVigor();
-    this.#prepareOffense();
+    prepareDefenses(this);
+    // Wind needs both Load Strain (prepareArmor) and the Endure Threshold (prepareDefenses) final.
+    // Each pass is its own module under ./character/, headed with what it reads and writes; this
+    // list is the one place the order lives.
+    prepareWind(this);
+    prepareVigor(this);
+    prepareActions(this);
+    prepareOffense(this);
     // Every ring the map can draw (0.5.1): the reach bands derived just above and the auras of
     // the Talents owned. Last, because Total Reach and Unwieldy are read from the offense pass.
     this.ranges = rangesOf(this.parent);
@@ -608,550 +625,10 @@ export class SwCharacterData extends SwActorData {
 
   /* -------------------------------------------- */
 
-  /**
-   * Roll the Talents this character owns up into Constellations. Every Talent costs 1 point, so a
-   * Constellation's spend is simply the number of its Talents you own, the Root included.
-   *
-   * Parents (PHB v4.10): Melee and Ranged are parents, and every Combat Style is a child of one
-   * of them. A child's Talents count toward the parent's rank as well as the child's, so a
-   * parent's pool is its own points plus its children's. Only rank is inherited: the parent's own
-   * Talents must still be bought for their effects, and an Attribute Point is counted once, at
-   * the Talent's own feed (see #prepareAttributes).
-   *
-   * Root first governs the inheritance (ruling, v4.10 sync): the children's points count only
-   * once the parent's own Root is owned. Read literally, "every Talent you buy in a child counts
-   * toward the parent's rank" would make Archery alone Trained in Ranged, against "buying the
-   * Root is what makes you Trained". Without the Root the parent is Untrained whatever the Combat
-   * Styles hold; `inherited` is exposed either way so the sheet can say what is waiting.
-   */
-  #prepareConstellations() {
-    const level = this.level;
-    const entries = {};
-
-    const ensure = slug => {
-      if (entries[slug]) return entries[slug];
-      const meta = SW.getConstellation(slug);
-      return (entries[slug] = {
-        slug,
-        name: meta.name,
-        category: meta.category,
-        attribute: meta.attribute,
-        parent: meta.parent ?? "",
-        img: meta.img ?? null,
-        item: null,
-        points: 0,
-        inherited: 0,
-        children: [],
-        talents: [],
-        flared: !!this.flares?.[slug]
-      });
-    };
-
-    // Constellation Items the character has opened carry the authoritative metadata.
-    for (const item of this.parent.items) {
-      if (item.type !== "constellation") continue;
-      const slug = item.system.slug || SW.slugify(item.name);
-      // v3.4's Weapons Constellation is Melee in PHB v4.10. Its Talents are refiled by the Talent
-      // model; a stale Weapons Item left on the character is ignored rather than drawn as an
-      // empty sky, and the next Melee Talent opens a proper Melee Item.
-      if (slug === SW.WEAPONS_SLUG) continue;
-      const entry = ensure(slug);
-      entry.item = item;
-      entry.name = item.name;
-      entry.category = item.system.category || entry.category;
-      entry.attribute = item.system.attribute || entry.attribute;
-      entry.parent = item.system.parentSlug || entry.parent;
-      entry.img = item.img ?? entry.img;
-    }
-
-    // Talents contribute the points.
-    for (const item of this.parent.items) {
-      if (item.type !== "talent") continue;
-      const slug = item.system.constellation;
-      if (!slug) continue;
-      const entry = ensure(slug);
-      entry.points += 1;
-      entry.talents.push(item);
-    }
-
-    // A Constellation needn't be open to Flare: an untrained critical lights ground you have
-    // never bought into, and the Milestone point that follows can buy its Root. So a Flare is
-    // reason enough to draw the sky on the sheet.
-    for (const slug of Object.keys(this.flares ?? {})) ensure(slug);
-
-    // A child's points flow up to its parent. The parent is drawn even before its own Root is
-    // bought, so the sheet can show what its Combat Styles are holding for it; the points only
-    // count toward its rank once the Root is owned (below).
-    for (const entry of Object.values(entries)) {
-      if (!entry.parent || !entry.points) continue;
-      const parent = ensure(entry.parent);
-      parent.inherited += entry.points;
-      parent.children.push(entry.slug);
-    }
-
-    // Owning a Constellation's Root: the Root Talent itself, or the Constellation Item with any
-    // Talent bought in it (an older character whose Root was not flagged).
-    const ownsRoot = entry => entry.talents.some(t => t.system.root)
-      || (!!entry.item && entry.points > 0);
-
-    // The Origin Constellation has three Roots. Ancestry, Bloodline and Culture are authored as
-    // separate skies, but they merge into one: rank counts all the points across its sources.
-    this.originPoints = Object.values(entries)
-      .filter(e => e.category === "origin")
-      .reduce((n, e) => n + e.points, 0);
-
-    // Rank, Proficiency Bonus, and what the next rank is still waiting on.
-    for (const entry of Object.values(entries)) {
-      entry.rootOwned = ownsRoot(entry);
-      const pool = entry.category === "origin"
-        ? this.originPoints
-        : entry.points + (entry.rootOwned ? entry.inherited : 0);
-      entry.pool = pool;
-      entry.isParent = entry.children.length > 0
-        || Object.values(SW.constellations).some(c => c.parent === entry.slug);
-      entry.rank = SW.rankFor(pool, level);
-      entry.bonus = SW.rankBonus(entry.rank);
-      entry.rankLabel = SW.RANKS[entry.rank].label;
-      const nextKey = SW.RANK_ORDER[SW.RANK_ORDER.indexOf(entry.rank) + 1];
-      entry.next = nextKey ? {
-        rank: nextKey,
-        label: SW.RANKS[nextKey].label,
-        points: Math.max(0, SW.RANKS[nextKey].points - pool),
-        level: Math.max(0, SW.RANKS[nextKey].level - level)
-      } : null;
-      // Every Lore files under Lore, whatever the compendium says its category is.
-      if (SW.isLoreSlug(entry.slug)) entry.category = "lore";
-      entry.categoryLabel = SW.CATEGORIES[entry.category]?.label ?? SW.CATEGORIES.general.label;
-      entry.order = SW.CATEGORIES[entry.category]?.order ?? 9;
-      entry.talents.sort((a, b) =>
-        ((SW.TIERS[a.system.tier]?.order ?? 9) - (SW.TIERS[b.system.tier]?.order ?? 9))
-        || a.name.localeCompare(b.name));
-    }
-
-    this.constellations = entries;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Attribute Points are counted per Talent bought: each point flows to that Talent's feed,
-   * defaulting to its Constellation's Key Attribute. Attribute Bonus = points divided by 4,
-   * rounded down (PHB v4.10), through SW.attributeBonus. A child Constellation's Talent feeds its
-   * own Attribute once; the parent inherits rank, never points.
-   */
-  #prepareAttributes() {
-    for (const item of this.parent.items) {
-      if (item.type !== "talent") continue;
-      const feed = item.system.attribute
-        || this.constellations[item.system.constellation]?.attribute
-        || SW.getConstellation(item.system.constellation)?.attribute;
-      if (feed && this.attributes[feed]) this.attributes[feed].points += 1;
-    }
-    for (const [key, attr] of Object.entries(this.attributes)) {
-      attr.mod = SW.attributeBonus(attr.points);
-      attr.label = SW.ATTRIBUTES[key].label;
-      attr.abbr = SW.ATTRIBUTES[key].abbr;
-      attr.glyph = SW.ATTRIBUTES[key].glyph;
-      attr.next = (attr.mod >= SW.ATTRIBUTE_MAX)
-        ? null
-        : ((attr.mod + 1) * SW.ATTRIBUTE_DIVISOR) - attr.points;
-    }
-  }
-
-  /* -------------------------------------------- */
-
-  /** Armor: which piece sits on which Zone, matched harness, Clatter, Load Strain, the helm. */
-  #prepareArmor() {
-    for (const item of this.parent.items) {
-      if (!item.system.equipped) continue;
-      if (item.type === "armor") {
-        const zone = item.system.zone;
-        if (zone in this.worn && !this.worn[zone]) this.worn[zone] = item;
-      } else if (item.type === "shield" && !this.shield) {
-        this.shield = item;
-      }
-    }
-
-    const pieces = Object.values(this.worn).filter(Boolean);
-
-    // Matched harness: all four pieces the same Material and Protection.
-    this.matchedHarness = pieces.length === 4
-      && pieces.every(p => p.system.material === pieces[0].system.material
-        && p.system.protection === pieces[0].system.protection);
-
-    // Clatter: two or more mail or plate pieces while the torso is neither.
-    const rigid = pieces.filter(p => ["mail", "plate"].includes(p.system.material)).length;
-    const torsoRigid = ["mail", "plate"].includes(this.worn.torso?.system.material);
-    this.clatter = (rigid >= 2) && !torsoRigid;
-    this.noisy = this.clatter || pieces.some(p => p.system.traits?.includes?.("Noisy"));
-
-    // Load Strain, relieved by your Endure rank once you own Endure Training: 1 at Trained, 2 at
-    // Expert, 3 at Master, 4 at Legendary (PHB v4.11), to a minimum of 0.
-    let load = pieces.reduce((n, p) => n + (p.system.load ?? 0), 0);
-    load += this.shield?.system.load ?? 0;
-    if (this.matchedHarness) load -= 1;
-    const endure = this.constellations[SW.DEFENSES.endure.slug];
-    if (endure?.points > 0) load -= SW.LOAD_RELIEF[endure.rank] ?? 0;
-    this.loadStrain = Math.max(0, load);
-
-    // Sight and hearing (PHB v4.10, Load and Load Strain): a Closed helm is -2 Situation to
-    // Awareness checks, the Awareness Threshold and Initiative; an Open helm -1. Matched by the
-    // Head piece's name, since the book has no trait for it.
-    this.helmPenalty = helmPenaltyFor(this.worn.head?.name);
-
-    // The Protection number each Zone shows, computed with no damage type in hand. `protection`
-    // is what the armor gives (and what a Quick Strike meets whatever the Zone's state);
-    // `effective` is what a Deliberate or Committed Strike meets, which is 0 on an Exposed Zone.
-    for (const zone of Object.keys(SW.ZONES)) {
-      const piece = this.worn[zone];
-      const z = this.zones[zone];
-      const bonus = (z.bonus ?? 0)
-        + (this.matchedHarness && zone === "torso" ? 1 : 0)
-        + this.bonuses.protection;
-      // The piece's own number, before any bonus: what zoneProtection starts from.
-      z.armor = piece?.system.protection ?? 0;
-      z.protection = Math.max(0, (piece?.system.protection ?? 0) + bonus);
-      z.effective = z.exposed ? 0 : z.protection;
-      z.piece = piece;
-      z.material = piece?.system.material ?? "none";
-      z.materialLabel = SW.MATERIALS[z.material].label;
-      z.weakTo = SW.MATERIALS[z.material].weakTo;
-      z.label = SW.ZONES[zone].label;
-      z.key = zone;
-    }
-  }
 
   /** @override */
   armorOnZone(zone) {
     return this.worn?.[zone] ?? null;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * The four Defenses. Each is a Constellation, so each is Attribute Bonus + Proficiency Bonus +
-   * bonuses and penalties, with no level term (PHB v4.10, Checks & Thresholds). A Threshold is
-   * that check with a 10 in place of the die.
-   *
-   * Folded in: Size (Evade and Guard, physical Attacks), Off-Guard, Frightened N, Fatigued N
-   * (Evade and Guard), the helm on Awareness, a Parry weapon's Gear bonus and a raised shield's
-   * Gear bonus on Guard (same type, so the better one stands), the first Arms Wound on Guard, and
-   * the first Torso Wound as Off-Guard. Load Strain never touches Evade (PHB v4.11: "It never
-   * comes off your Evade"; it came off until 0.6.0).
-   */
-  #prepareDefenses() {
-    const statuses = this.parent.statuses ?? new Set();
-    const offGuard = statuses.has("offGuard") ? SW.OFF_GUARD_PENALTY : 0;
-    const frightened = -(this.parent.conditionValue("frightened") ?? 0);
-    // Fatigued N (PHB v4.11, Wind): -N Condition to Evade and Guard, and to attack rolls below.
-    const fatigued = -(this.parent.conditionValue("fatigued") ?? 0);
-    const sizeMods = SW.SIZES[this.size] ?? SW.SIZES.medium;
-
-    // A Parry weapon in hand (PHB v4.10 weapon traits): +1 Gear to Guard against melee Attacks.
-    const parryWeapon = this.parent.items.find(i => (i.type === "weapon") && i.system.held && i.system.flags?.parry) ?? null;
-    // A raised shield: its Gear bonus to Guard for physical Attacks until your next Opportunity.
-    // A tower shield gives Cover instead of a number.
-    const shield = (this.shield?.system.raised && !this.shield.system.cover) ? this.shield : null;
-
-    const woundLabel = zone => game.i18n.format("STARWROUGHT.Wound.woundedZone", {
-      zone: game.i18n.localize(SW.ZONES[zone].label)
-    });
-
-    for (const [key, def] of Object.entries(SW.DEFENSES)) {
-      const con = this.constellations[def.slug];
-      const rank = con?.rank ?? "untrained";
-      const attribute = con?.attribute ?? def.attribute;
-      const physical = (key === "evade") || (key === "guard");
-      const modifiers = [
-        { label: game.i18n.localize(SW.ATTRIBUTES[attribute].label), value: this.attributes[attribute].mod },
-        { label: game.i18n.localize(SW.RANKS[rank].label), value: SW.rankBonus(rank) },
-        { label: game.i18n.localize("STARWROUGHT.Field.customBonus"), value: this.bonuses.defenses[key] }
-      ];
-      if (physical && offGuard) {
-        modifiers.push({
-          label: game.i18n.localize("STARWROUGHT.Condition.offGuard"),
-          value: offGuard, type: "situation"
-        });
-      }
-      // The first Torso Wound is Off-Guard made lasting.
-      if (physical && this.zones.torso.wounded) {
-        modifiers.push({ label: woundLabel("torso"), value: SW.OFF_GUARD_PENALTY, type: "situation" });
-      }
-      if (physical && fatigued) {
-        modifiers.push({
-          label: game.i18n.localize("STARWROUGHT.Condition.fatigued"),
-          value: fatigued, type: "condition"
-        });
-      }
-      if (frightened) {
-        modifiers.push({
-          label: game.i18n.localize("STARWROUGHT.Condition.frightened"),
-          value: frightened, type: "condition"
-        });
-      }
-      if (key === "guard") {
-        if (this.zones.arms.wounded) {
-          modifiers.push({ label: woundLabel("arms"), value: ARMS_WOUND_PENALTY, type: "situation" });
-        }
-        if (parryWeapon) {
-          modifiers.push({
-            label: game.i18n.format("STARWROUGHT.Defense.parryWeapon", { weapon: parryWeapon.name }),
-            value: SW.PARRY_GUARD_BONUS, type: "gear"
-          });
-        }
-        if (shield) {
-          modifiers.push({
-            label: game.i18n.format("STARWROUGHT.Defense.raisedShield", { shield: shield.name }),
-            value: shield.system.bonus ?? 0, type: "gear"
-          });
-        }
-      }
-      if (key === "awareness" && this.helmPenalty) {
-        modifiers.push({
-          label: game.i18n.format("STARWROUGHT.Defense.helmPenalty", { piece: this.worn.head.name }),
-          value: this.helmPenalty, type: "situation"
-        });
-      }
-
-      // Size touches only Evade and Guard, and only against physical Attacks.
-      const sizeMod = key === "evade" ? sizeMods.evade : key === "guard" ? sizeMods.guard : 0;
-      const { total, applied } = SW.resolveModifiers(modifiers);
-
-      this.defenses[key] = {
-        key,
-        slug: def.slug,
-        label: def.label,
-        hint: def.hint,
-        attribute,
-        attributeGlyph: SW.ATTRIBUTES[attribute].glyph,
-        rank,
-        rankLabel: SW.RANKS[rank].label,
-        proficiency: SW.rankBonus(rank),
-        trained: rank !== "untrained",
-        points: con?.points ?? 0,
-        mod: total,
-        sizeMod,
-        threshold: 10 + total + sizeMod,
-        modifiers: applied,
-        isStance: false,
-        unavailable: null
-      };
-    }
-    // "Evade is unavailable while you are Grabbed or Restrained. You cannot slip what is already
-    // holding you." Guard's own exceptions (unaware of the attack, or nothing in hand and no hand
-    // free) are not things the sheet can see, so they stay with the table. Recorded, not enforced.
-    this.defenses.evade.unavailable = unavailableEvade(statuses);
-    this.#prepareStance();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * The stance, read as a Defense plus an optional Reaction. Void answers with Evade, Parry with
-   * Guard; Counter has no Defense of its own and is taken here as Guard (you meet the blow to
-   * answer it). `stanceThreshold` is the basic Threshold; the Reaction's +2 Situation and its
-   * action cost are applied by the roll that resolves the attack, so they are exposed as
-   * `stanceBonus` and `stanceReaction` rather than folded in.
-   */
-  #prepareStance() {
-    const reaction = SW.REACTIONS[this.stance] ? this.stance : null;
-    // Counter has no Defense of its own: it stands on the better of the two basic Defenses that
-    // are available (ruling 43), which is what the attacker's roll meets.
-    const better = () => {
-      const evade = this.defenses.evade?.unavailable ? -Infinity : (this.defenses.evade?.threshold ?? 10);
-      const guard = this.defenses.guard?.unavailable ? -Infinity : (this.defenses.guard?.threshold ?? 10);
-      return guard >= evade ? "guard" : "evade";
-    };
-    const defense = SW.REACTIONS[this.stance]?.defense
-      ?? (this.stance === "counter" ? better() : this.stance);
-    this.stanceReaction = reaction;
-    this.stanceDefense = SW.DEFENSES[defense] ? defense : "evade";
-    this.stanceBonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : 0;
-    if (this.defenses[this.stanceDefense]) this.defenses[this.stanceDefense].isStance = true;
-    this.stanceThreshold = this.defenses[this.stanceDefense]?.threshold ?? 10;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Wind (PHB v4.13, Load and Load Strain; rulings 74, 79 and 80): "If your Load Strain is at
-   * least 1 and your Endure Threshold is less than 10 + your Load Strain, then at the end of every
-   * round while in an encounter, you must roll Endure against 10 + Load Strain. On a failure your
-   * Fatigued rises by 1." So the Wind Threshold is 10 + Load Strain, and a fighter whose Endure
-   * Threshold meets it is exempt: no check at all, however long the fight runs. The Endure
-   * Threshold is the one the sheet shows, with everything the Defense pass folds in (Frightened
-   * reaches it; Fatigued does not, so being winded never brings the next check nearer).
-   *
-   * Derived after Load Strain (#prepareArmor) and the Defenses (#prepareDefenses); that order
-   * matters. `due` is whether the round-end check comes at all: Load Strain 1 or more, and no
-   * exemption. A fighter carrying no Load has nothing to be winded by, whatever penalties sit on
-   * their Endure; the system has kept that gate since 0.6.0 and v4.13 wrote it into the book
-   * (ruling 80). The check comes from the end of round 1 (ruling 79; v4.11 and v4.12 waited for
-   * the third round). `combat.mjs` reads `exempt` at the end of the round and the sheet's Load
-   * Strain tooltip reads all of it (actor-sheet.mjs, windTip).
-   */
-  #prepareWind() {
-    const threshold = 10 + this.loadStrain;
-    const endureThreshold = this.defenses.endure?.threshold ?? 10;
-    const exempt = endureThreshold >= threshold;
-    this.wind = {
-      threshold,
-      endureThreshold,
-      exempt,
-      due: (this.loadStrain >= 1) && !exempt
-    };
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Vigor (PHB v4.11, Your Vigor): at 1st level, Ancestry Vigor + Endure Bonus + your first
-   * Calling's Opening Vigor + 10; at every level after, Ancestry Vigor + Endure Bonus again. So
-   * max = 10 + Opening Vigor + (Ancestry Vigor + Endure Bonus) x level, plus the sheet's
-   * adjustment. The Endure Bonus is the conditioning clause of Endure Training (1 at Expert, 2 at
-   * Master, 3 at Legendary), read live from the current Endure rank, so it is 0 at 1st level and
-   * grows into every level already lived (ruling R1). Only your first Calling counts. A night's
-   * rest restores level x Presence, or level if Presence is 1 or less. At 0 you are Spent.
-   */
-  #prepareVigor() {
-    const endure = this.constellations[SW.DEFENSES.endure.slug];
-    const endureBonus = SW.ENDURE_VIGOR_BONUS[endure?.rank ?? "untrained"] ?? 0;
-    const perLevel = this.details.ancestry.vigor + endureBonus;
-    this.vigor.opening = this.details.calling.vigor;
-    this.vigor.endureBonus = endureBonus;
-    this.vigor.perLevel = perLevel;
-    this.vigor.max = Math.max(1, 10 + this.vigor.opening + (perLevel * this.level) + this.bonuses.vigor);
-    this.vigor.value = Math.clamp(this.vigor.value, 0, this.vigor.max);
-    this.vigor.pct = Math.round((this.vigor.value / this.vigor.max) * 100);
-    this.vigor.rest = this.level * Math.max(1, this.attributes.presence.mod);
-    this.spent = this.vigor.value === 0;
-  }
-
-  /* -------------------------------------------- */
-
-  /** Attack-side numbers that do not depend on which weapon is in hand, and what the body can do. */
-  #prepareOffense() {
-    // Familiarity is what a Talent recorded, not a field somebody remembered to fill in. Weapon
-    // Familiarity and Drilled each ask for a Weapon Group when they are taken, and the answer
-    // lives on the Talent; the sheet's own list is kept as a manual override on top.
-    const declared = new Set(this.familiarity ?? []);
-    for (const item of this.parent.items) {
-      if (item.type !== "talent") continue;
-      const value = item.system.choice?.value;
-      if (value) declared.add(value);
-    }
-    this.familiar = declared;
-
-    // Melee for anything in your hand, Ranged for anything that leaves it (PHB v4.10). Each is a
-    // parent Constellation, so its rank may come from a Combat Style's Talents.
-    this.melee = this.#weaponProficiency(SW.MELEE_SLUG);
-    this.ranged = this.#weaponProficiency(SW.RANGED_SLUG);
-    // Weapon dice by level: two at 4th, three at 8th, four at 12th, five at 16th.
-    this.weaponDice = SW.weaponDice(this.level);
-
-    // Initiative is an Awareness check unless you were doing something else: no level, and the
-    // helm's penalty rides along inside Awareness. `helm` is broken out for a roll made in
-    // another Constellation, which the book says the helm still penalises.
-    this.initiative = {
-      mod: this.defenses.awareness.mod + this.bonuses.initiative,
-      slug: SW.DEFENSES.awareness.slug,
-      helm: this.helmPenalty
-    };
-    this.reach = SW.SIZES[this.size]?.reach ?? 2;
-    this.space = SW.SIZES[this.size]?.space ?? 3;
-
-    // Total Reach is your Natural Reach plus the weapon's, measured from the edge of your space
-    // to the edge of your target's. The longest thing in your hands is what the token ring shows.
-    const held = this.parent.items.filter(i => (i.type === "weapon") && i.system.held);
-    this.totalReach = held.reduce((longest, weapon) => {
-      const reach = weapon.system.isRanged ? 0 : (this.reach + (weapon.system.reach ?? 0));
-      return Math.max(longest, reach);
-    }, held.length ? 0 : this.reach);
-    this.reachWeapon = held
-      .filter(w => !w.system.isRanged)
-      .sort((a, b) => (b.system.reach ?? 0) - (a.system.reach ?? 0))[0] ?? null;
-
-    // Unwieldy N: a -2 Situation penalty against anything within N feet, and no attack at all
-    // while Grabbed. It is the inner edge of what a long weapon is good for.
-    this.unwieldy = this.reachWeapon?.system.flags?.unwieldy ?? 0;
-
-    // Modifiers every attack roll carries, whatever the weapon. The first Arms Wound is -2
-    // Situation to attacks (and to Guard, folded in above); Fatigued N is -N Condition to attack
-    // rolls (PHB v4.11, Wind), as it is to Evade and Guard. The check engine spreads this list
-    // into every attack, so the sheet's weapon rows and the die agree.
-    this.attackModifiers = [];
-    if (this.zones.arms.wounded) {
-      this.attackModifiers.push({
-        label: game.i18n.format("STARWROUGHT.Wound.woundedZone", {
-          zone: game.i18n.localize(SW.ZONES.arms.label)
-        }),
-        value: ARMS_WOUND_PENALTY, type: "situation"
-      });
-    }
-    const fatigued = this.parent.conditionValue("fatigued") ?? 0;
-    if (fatigued) {
-      this.attackModifiers.push({
-        label: game.i18n.localize("STARWROUGHT.Condition.fatigued"),
-        value: -fatigued, type: "condition"
-      });
-    }
-
-    // Speed, Step, Rush, Leap, after the Legs' Wounds and less Load Strain where the book says.
-    this._prepareMovement(this.details.ancestry.speed + this.bonuses.speed, this.loadStrain);
-    this.speed = this.moveSpeed;
-
-    const statuses = this.parent.statuses ?? new Set();
-    this.conscious = !statuses.has("unconscious") && !this.isDying;
-    this.reactions = this.#prepareReactions(held);
-  }
-
-  /* -------------------------------------------- */
-
-  /** Rank, Proficiency Bonus and specialization damage for Melee or Ranged. */
-  #weaponProficiency(slug) {
-    const con = this.constellations[slug];
-    const rank = con?.rank ?? "untrained";
-    return {
-      slug,
-      rank,
-      rankLabel: SW.RANKS[rank].label,
-      proficiency: SW.rankBonus(rank),
-      specialization: SW.SPECIALIZATION[rank] ?? 0,
-      points: con?.points ?? 0,
-      pool: con?.pool ?? 0,
-      trained: rank !== "untrained"
-    };
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Which Reactions this character can take (PHB v4.10, Answering an Attack). Each is granted by
-   * the Training root of a Constellation: Parry by Guard Training, Void by Evade Training,
-   * Intercept by Melee Training. Owning the root is what counts, not an inherited rank, since
-   * only rank is inherited and the parent's own Talents must be bought for their effects. Counter
-   * asks for both (ruling 63, Mike 2026-10-01: Melee Training gives one Reaction at Trained, and
-   * Counter arrives at Expert): Melee Training owned and the derived Melee rank at Expert or
-   * better. That rank is `this.melee.rank`, which already counts a Combat Style's points once the
-   * Root is owned (ruling 13); `#prepareOffense` derives it before calling here, and that order
-   * matters. Parry also needs a rigid implement in hand: a weapon without the Flexible trait, or a
-   * shield. A Head Wound's first effect is no Reactions at all.
-   * @param {Item[]} held  The weapons in hand.
-   */
-  #prepareReactions(held) {
-    const owns = slug => !!this.constellations[slug]?.rootOwned;
-    const rigid = held.some(w => w.system.rigid)
-      || this.parent.items.some(i => (i.type === "shield") && i.system.held);
-    const blocked = this.zones.head.wounded ? SW.ZONE_CRITICALS.head.first : null;
-    return {
-      parry: !blocked && owns(SW.REACTIONS.parry.talent) && rigid,
-      void: !blocked && owns(SW.REACTIONS.void.talent),
-      counter: !blocked && owns(SW.REACTIONS.counter.talent)
-        && SW.rankAtLeast(this.melee.rank, SW.REACTIONS.counter.rank),
-      intercept: !blocked && owns(SW.REACTIONS.intercept.talent),
-      rigid,
-      blocked
-    };
   }
 
   /* -------------------------------------------- */
@@ -1235,7 +712,7 @@ export class SwNpcData extends SwActorData {
 
       /** Some creatures have more or fewer than six actions a round (PHB v4.10). */
       actionsPerRound: new fields.NumberField({
-        required: true, integer: true, min: 0, max: 12, initial: SW.ACTIONS_PER_ROUND
+        required: true, integer: true, min: 0, max: SW.ACTIONS_MAX, initial: SW.ACTIONS_PER_ROUND
       }),
 
       /** Extra Wound capacity from a creature template such as Elite or Boss. */
@@ -1357,15 +834,4 @@ export class SwNpcData extends SwActorData {
     // Talent or Maneuver the adversary owns.
     this.ranges = rangesOf(this.parent);
   }
-}
-
-/* -------------------------------------------- */
-/*  Shared helpers                              */
-/* -------------------------------------------- */
-
-/** Why Evade cannot be used right now, as a condition id, or null when it can. */
-function unavailableEvade(statuses) {
-  if (statuses.has("grabbed")) return "grabbed";
-  if (statuses.has("restrained")) return "restrained";
-  return null;
 }

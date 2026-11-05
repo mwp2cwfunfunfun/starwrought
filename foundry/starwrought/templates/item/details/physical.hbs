@@ -1,0 +1,19 @@
+{{!-- Shared by weapon.hbs, armor.hbs, shield.hbs and gear.hbs: what only a thing you can carry has. --}}
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.physical"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.quantity"}}</span>
+      <input type="number" name="system.quantity" value="{{system.quantity}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.price"}}</span>
+      <input type="text" name="system.price" value="{{system.price}}"></label>
+    {{!-- The carry state is the model's field (`state`: held, worn, carried). Through 0.10.0 this was a
+         checkbox on the derived `equipped`, which only worked by tripping the v0.4 migration from the
+         old boolean on every write. --}}
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.carryState"}}</span>
+      <select name="system.state">{{selectOptions choices.states selected=system.state}}</select></label>
+    {{#if (or isWeapon isGear)}}
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
+      <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
+    {{/if}}
+  </div>
+</div>

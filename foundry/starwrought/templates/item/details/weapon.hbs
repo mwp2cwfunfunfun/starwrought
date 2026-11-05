@@ -1,0 +1,32 @@
+{{!-- The weapon's own fields. Shared panels: physical. --}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.weapon"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.handling"}}</span>
+      <select name="system.handling">{{selectOptions choices.handling selected=system.handling}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.group"}}</span>
+      <input type="text" name="system.group" value="{{system.group}}" list="sw-weapon-groups">
+      <datalist id="sw-weapon-groups">
+        {{#each choices.groups as |g|}}<option value="{{g}}"></option>{{/each}}
+      </datalist></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.damageDie"}}</span>
+      <input type="number" name="system.damage.die" value="{{system.damage.die}}" min="2" step="2"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.damageType"}}</span>
+      <select name="system.damage.type">{{selectOptions choices.damageTypes selected=system.damage.type}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.reach"}}</span>
+      <input type="number" name="system.reach" value="{{system.reach}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.twoHands"}}</span>
+      <input type="checkbox" name="system.twoHands" {{checked system.twoHands}}></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.versatileActive"}}</span>
+      <input type="checkbox" name="system.versatileActive" {{checked system.versatileActive}}></label>
+    <label class="sw-field" data-tooltip="STARWROUGHT.Field.styleHint"><span>{{localize "STARWROUGHT.Field.style"}}</span>
+      <input type="text" name="system.style" value="{{system.style}}"></label>
+  </div>
+  <p class="sw-note">{{localize "STARWROUGHT.Hint.weaponTraits"}}</p>
+  {{#if bindTraits.length}}
+  <p class="sw-note">{{localize "STARWROUGHT.Hint.bindTraits"}} <strong>{{swJoin bindTraits ", "}}</strong></p>
+  {{/if}}
+</div>
+
+{{> "systems/starwrought/templates/item/details/physical.hbs"}}

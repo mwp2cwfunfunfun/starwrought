@@ -363,7 +363,7 @@ Each with the panel's recommendation.
 11. **Where does the Exploration Activity data live?** Two columns on the roster's `explorationActions`
     block now (ids unchanged, no new workbook); a `data/maneuvers.xlsx` sheet whenever the Maneuver
     rows are being enabled anyway. A workbook with a blank Enabled? column would empty the panel on
-    day one, as the Basic Maneuvers panel stands empty today.
+    day one, as the Basic Maneuvers panel stood empty until Aid's row read Yes (2026-10-03).
 12. **Do players see every member's Thresholds on the Skills grid?** Yes; a world setting is one line
     if the table objects. Adversaries' Thresholds never appear on the party sheet in any phase.
 13. **Who may join?** Characters only, in every phase planned here. A companion row type can come

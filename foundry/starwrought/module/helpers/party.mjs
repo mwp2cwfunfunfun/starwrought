@@ -64,7 +64,7 @@
  */
 
 import * as SW from "../config.mjs";
-import { cardHtml, postCard } from "../documents/combat.mjs";
+import { cardHtml, postCard } from "./cards.mjs";
 import { COIN_IN_COPPER } from "../data/party.mjs";
 // The kept roll's Initiative-only terms (ruling 109) are the difference between two of the engine's
 // own assemblies, so the party never does the Initiative arithmetic itself.
@@ -189,7 +189,7 @@ export async function addPlayerCharacters(party) {
 /*  Cards                                       */
 /* -------------------------------------------- */
 
-/** A card spoken by the party, in the system's card idiom (cardHtml in documents/combat.mjs). */
+/** A card spoken by the party, in the system's card idiom (cardHtml in helpers/cards.mjs). */
 function postPartyCard(party, { root, icon = "", title, lines = [], notes = [] }) {
   const heading = icon ? `<i class="${escapeHTML(icon)}"></i> ${title}` : title;
   return postCard(party, cardHtml({ root: `sw-party-card ${root}`, actorUuid: party.uuid, title: heading, lines, notes }));
@@ -352,7 +352,7 @@ function snapshot(actor) {
 }
 
 /**
- * The Vigor maximum the character model would derive at a level (data/actor.mjs, #prepareVigor):
+ * The Vigor maximum the character model would derive at a level (data/character/vigor.mjs, prepareVigor):
  * 10 + Opening Vigor + (Ancestry Vigor + Endure Bonus) × level + the adjustment, with the Endure
  * Bonus read from the rank the Endure pool reaches at that level, so a level that opens Expert
  * in Endure lifts every level's share. The preview uses the difference between this at the
@@ -554,7 +554,7 @@ export async function takeBackAward(party) {
  * Spend one Deferred Talent Point (ruling 94): `deferred - 1`, never below 0, and a one-line card
  * spoken by the character. For the character's owner or the GM. Spending is what it is today, a
  * Talent dragged or bought, unpoliced: this is the count coming down, not the spend itself. The
- * character's own `spendDeferred` (documents/actor.mjs, 0.7.0) does the write and says the card,
+ * character's own `spendDeferred` (documents/actor/points.mjs, 0.7.0) does the write and says the card,
  * so the header's badge and the party's roster say it once from either; the write below is the
  * fallback for a build without it.
  * @param {Actor} actor
@@ -1246,7 +1246,7 @@ export async function rememberActivityRoll(actor, result) {
   if (!slug || !Number.isNumeric(result.total)) return null;
   // The chip is public (ruling 110), so only a public roll is remembered: a blind or whispered
   // card would otherwise show its total to every player on the party sheet. The posted card says
-  // what it was (`SwCheck.#toMessage` sets `result.message` before the hook fires); the roll mode
+  // what it was (the card's `toMessage` in dice/check/card.mjs sets `result.message` before the hook fires); the roll mode
   // is the fallback when no card was made.
   const message = result.message ?? null;
   const hidden = message
@@ -1907,7 +1907,7 @@ export function trainedAt(actor) {
  * refuses a second Train for it (decision 14: the panel warns, the card warns, the GM may rule an
  * exception). A record from an award since taken back (`takeBackAward`) matches again, which is
  * right: the Milestone it was counted from is the current one once more. The Flare card makes the
- * same comparison inline (documents/actor.mjs, `#announceFlare`), reading the record as it stood
+ * same comparison inline (documents/actor/flares.mjs, `#announceFlare`), reading the record as it stood
  * before the Train that posts it.
  * @param {Actor|null} actor
  * @returns {boolean}

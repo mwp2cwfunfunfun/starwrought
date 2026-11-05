@@ -281,6 +281,8 @@
         <input type="number" name="system.bonuses.vigor" value="{{system.bonuses.vigor}}"></label>
       <label class="sw-field"><span>{{localize "STARWROUGHT.Field.protectionBonus"}}</span>
         <input type="number" name="system.bonuses.protection" value="{{system.bonuses.protection}}"></label>
+      <label class="sw-field" data-tooltip="{{localize 'STARWROUGHT.Hint.actionsBonus'}}"><span>{{localize "STARWROUGHT.Field.actionsBonus"}}</span>
+        <input type="number" name="system.bonuses.actions" value="{{system.bonuses.actions}}"></label>
       {{#each system.bonuses.defenses as |value key|}}
       <label class="sw-field"><span>{{localize (concat "STARWROUGHT.Defense." key)}}</span>
         <input type="number" name="system.bonuses.defenses.{{key}}" value="{{value}}"></label>

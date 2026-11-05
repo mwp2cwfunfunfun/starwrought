@@ -8,7 +8,7 @@
 
 import * as SW from "../config.mjs";
 import { stanceContext } from "../helpers/stance.mjs";
-import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "./actor-sheet.mjs";
+import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "../helpers/actor-context.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
 import { auraRowsByItem, rangeFor } from "../canvas/auras.mjs";
@@ -108,6 +108,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.spent = sys.spent ?? ((sys.vigor?.value ?? 1) === 0);
     context.dyingMax = SW.DYING_MAX;
     context.actionsPerRound = sys.actionsPerRound ?? SW.ACTIONS_PER_ROUND;
+    context.actionsMax = SW.ACTIONS_MAX;
     context.woundCount = sys.woundCount ?? Object.keys(SW.ZONES).reduce((n, z) => n + (sys.zones[z]?.wounds ?? 0), 0);
 
     context.zones = Object.keys(SW.ZONES).map(key => ({

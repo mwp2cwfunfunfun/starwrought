@@ -5,6 +5,11 @@
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
+// content.mjs imports config.mjs alone at module scope (its other imports are dynamic), so this
+// closes no circle; a static import of this file from there would, and must not be added.
+import { resolveRuleTarget } from "../helpers/content.mjs";
+// The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield.
+import { BUILT_IN_MANEUVERS } from "./maneuvers.mjs";
 
 export class SwItem extends Item {
   /** @inheritdoc */
@@ -39,6 +44,18 @@ export class SwItem extends Item {
    * A Maneuver with the Reaction trait (PHB v4.10) is paid from the same six actions the moment
    * its Trigger occurs, so using one spends its cost; every other Maneuver is the table's to pay,
    * with the pips, because the system cannot see most of them being used.
+   *
+   * A Maneuver's check names its Constellation (Search's Awareness) or names none: `check.enabled`
+   * with a blank `constellation` is a Relevant Check (0.10.0; ruling 123), the book's term for a
+   * roll whose Constellation the roller picks and justifies, and Aid is written with one. Both
+   * rolls carry the Maneuver as `item`, which is what makes a roll an Aid to the Automation rules
+   * (ruling 122: a `bonus ... to Aid` applies to a roll made from Aid's Item, and is only offered
+   * on a check made without it).
+   *
+   * A Maneuver the system implements (Recenter, Raise a Shield; documents/maneuvers.mjs, by the
+   * slug of its plain name) runs that behaviour when used (0.10.1): the Action is the entry
+   * point, the sheet button and the Macro are other doors to the same method. The behaviour pays
+   * its own action and posts its own card, so nothing here does either for it.
    * @param {object} [options]
    * @param {Actor} [options.actor]   Who is using an unowned Item.
    * @param {string} [options.strike] For a weapon: quick | deliberate | committed.
@@ -51,6 +68,8 @@ export class SwItem extends Item {
         if (!this.actor) return this.toMessage({ actor });
         return this.actor.rollAttack(this.id, rest);
       case "action": {
+        const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
+        if (builtIn && actor) return builtIn(actor, this, rest);
         if (this.system.reaction && actor) {
           // A Reaction with a cost of its own (Aid ❶ (⓿↺)) pays that one; otherwise the cost printed.
           const own = this.system.reactionCost;
@@ -60,6 +79,17 @@ export class SwItem extends Item {
             // The plain name, so the glyph appended here is the only one (0.5.1, T16).
             await actor.spendActions(n, { label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() });
           }
+        }
+        if (this.system.check.enabled && actor && !this.system.check.constellation) {
+          // A Relevant Check: the picker chooses the Constellation and says why, the Maneuver
+          // rides along as the roll's Item, and the card is called by the Maneuver's name. An
+          // adversary gets rollRelevantCheck's own warning and null (it carries Thresholds).
+          return actor.rollRelevantCheck(foundry.utils.mergeObject({
+            item: this,
+            label: SW.plainName(this.name),
+            subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
+            outcomes: this.#outcomeList()
+          }, rest, { inplace: false }));
         }
         if (this.system.check.enabled && actor) {
           return SwCheck.roll(foundry.utils.mergeObject({
@@ -227,6 +257,13 @@ export class SwItem extends Item {
    * is the differential, so a sheet that submits its whole form still only reaches the parse when
    * the textarea's text is in the diff; both the expanded and the flattened spelling of the key
    * are read, since a macro may pass either.
+   *
+   * Since 0.10.0 the context carries `resolve` (helpers/content.mjs, resolveRuleTarget): the
+   * registry's Constellations, then the Actions pack's index and the world's Maneuvers, by name.
+   * It is the client's counterpart of the resolver the build hands the same grammar, so a target
+   * typed here is checked as a cell is at build time (`"Aidd" names no Constellation or Maneuver`
+   * is a red row, not a silent rule that never fires) and a rule stores the same `to.type`, slug
+   * and name either way. A kind that takes no target ignores it.
    */
   async _preUpdate(changed, options, user) {
     const allowed = await super._preUpdate(changed, options, user);
@@ -236,7 +273,8 @@ export class SwItem extends Item {
     const parsed = parseAutomation(text, {
       itemName: this.name,
       constellation: (this.type === "constellation") ? this.name : (this.system.constellationName || this.system.category || ""),
-      itemType: this.type
+      itemType: this.type,
+      resolve: resolveRuleTarget
     });
     foundry.utils.setProperty(changed, "system.rules", ruleEntries(parsed));
   }

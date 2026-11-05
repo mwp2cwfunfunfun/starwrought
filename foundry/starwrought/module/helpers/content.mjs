@@ -232,12 +232,73 @@ export function constellationEnabled(slug) {
 
 /* -------------------------------------------- */
 
+/**
+ * THE AUTOMATION RULES' TARGETS (0.10.0; rulings 121 and 122). What a rule's `to <Target>` or
+ * `if <Constellation>` names, for the grammar's kinds: the client's counterpart of the resolver
+ * `assets/build_foundry.mjs` builds over trees.json and the action sheets, handed to the same
+ * grammar by `SwItem#_preUpdate` as `resolve` in the parse context, so a line typed into a world
+ * Item's textarea is checked as a cell is at build time and stores the same shape.
+ *
+ * Constellations first, from the registry (shipped index, pack and world, disabled ones included:
+ * a rule may name a Constellation that has since been switched off, and the character who holds it
+ * still has it), by slug or by name, case blind. Then Maneuvers: the Actions pack's index (the
+ * compendium `index` is synchronous and carries `name` and `type`, so no await and no
+ * getDocuments), then world Items of type action, so a GM's own Maneuver can be named; matched on
+ * the plain name (glyphs ignored, `SW.plainName`) or its slug. A Constellation wins over a
+ * Maneuver of the same name (none today). Null for anything else, and null before `game` is
+ * ready, since the grammar must never throw for a cell's sake; the Lore refusal is the kind's, not
+ * this function's, which resolves the template like any Constellation.
+ * @param {string} name  As written in the cell: "Aid", "Armored Fighting", "armored-fighting".
+ * @returns {{type: "constellation"|"action", slug: string, name: string}|null}
+ */
+export function resolveRuleTarget(name) {
+  const raw = String(name ?? "").trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  const slug = SW.slugify(raw);
+
+  for (const con of Object.values(SW.constellations)) {
+    if (!con?.slug) continue;
+    const conName = String(con.name ?? "").trim().toLowerCase();
+    if ((con.slug === slug) || (con.slug === lower) || (conName && (conName === lower))) {
+      return { type: "constellation", slug: con.slug, name: con.name ?? con.slug };
+    }
+  }
+
+  const plain = SW.plainName(raw).toLowerCase();
+  const asAction = entry => {
+    const entryName = SW.plainName(entry?.name ?? "");
+    return { type: "action", slug: SW.slugify(entryName), name: entryName };
+  };
+  const matches = entry => {
+    if (!entry || ((entry.type ?? "action") !== "action")) return false;
+    const entryName = SW.plainName(entry.name ?? "");
+    return (entryName.toLowerCase() === plain) || (SW.slugify(entryName) === slug);
+  };
+  try {
+    const game = globalThis.game;
+    const index = game?.packs?.get?.(`${SW.SYSTEM_ID}.actions`)?.index;
+    for (const entry of index ?? []) {
+      if (matches(entry)) return asAction(entry);
+    }
+    for (const item of game?.items ?? []) {
+      if (matches(item)) return asAction(item);
+    }
+  } catch {
+    // `game` not ready, or a pack mid-sync: no answer rather than a throw inside a parse.
+  }
+  return null;
+}
+
+/* -------------------------------------------- */
+
 let basicActions = null;
 
 /**
  * The Basic Actions: everything in the Actions compendium flagged `system.basic`, which is what
- * every character can do without owning a copy. They are authored in data/actions.xlsx (and, until
- * that sheet has them all, the roster's Encounter Mode rows), so the compendium is the one source
+ * every character can do without owning a copy. They are authored in data/maneuvers.xlsx (the one
+ * actions workbook since Mike moved Aid into it on 2026-10-03; until its rows are enabled, the
+ * roster's Encounter Mode rows stand in), so the compendium is the one source
  * and the character sheet reads it rather than copying it. Loaded once per session; a world Item
  * of the same name flagged basic replaces the printed one, so a GM's rewrite wins.
  * @returns {Promise<Item[]>}  Unowned Items, sorted by category then name.

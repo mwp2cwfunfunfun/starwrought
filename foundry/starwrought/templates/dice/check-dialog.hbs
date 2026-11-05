@@ -18,7 +18,7 @@
       <strong>{{strikeGlyph}} {{strikeLabel}}</strong>
       {{else}}
       {{#each strikes as |s|}}
-      <label class="sw-choice {{#if s.active}}sw-active{{/if}}" data-tooltip="{{s.hint}}">
+      <label class="sw-dialog-option {{#if s.active}}sw-active{{/if}}" data-tooltip="{{s.hint}}">
         <input type="radio" name="strike" value="{{s.key}}" {{#if s.active}}checked{{/if}}>
         <span>{{s.glyph}} {{s.label}}{{#if s.prepared}} · {{localize "STARWROUGHT.Strike.preparedTag"}}{{/if}}</span>
       </label>
@@ -36,12 +36,12 @@
   <div class="form-group sw-reaction-choice">
     <label>{{localize "STARWROUGHT.Roll.reactionChoice"}}</label>
     <div class="form-fields">
-      <label class="sw-choice {{#unless cfg.reaction}}sw-active{{/unless}}">
+      <label class="sw-dialog-option {{#unless cfg.reaction}}sw-active{{/unless}}">
         <input type="radio" name="reaction" value="" {{#unless cfg.reaction}}checked{{/unless}}>
         <span>{{localize "STARWROUGHT.Roll.noReaction"}}</span>
       </label>
       {{#each reactions as |r|}}
-      <label class="sw-choice {{#if r.active}}sw-active{{/if}}" data-tooltip="{{r.hint}}">
+      <label class="sw-dialog-option {{#if r.active}}sw-active{{/if}}" data-tooltip="{{r.hint}}">
         <input type="radio" name="reaction" value="{{r.key}}" {{#if r.active}}checked{{/if}}>
         <span>{{r.glyph}} {{r.label}}{{#if r.defense}} · {{r.defense}}{{/if}}{{#if r.warn}} <i class="fa-solid fa-triangle-exclamation" data-tooltip="{{localize 'STARWROUGHT.Reaction.needsRigid'}}"></i>{{/if}}</span>
       </label>
@@ -64,7 +64,7 @@
   {{#each extras as |x|}}
   {{!-- A modifier the engine can name but not decide (Load Strain on a Climb or a Swim, PHB v4.11): offered unticked. --}}
   <div class="form-group sw-extra-choice">
-    <label class="sw-choice" data-tooltip="{{x.hint}}">
+    <label class="sw-dialog-option" data-tooltip="{{x.hint}}">
       <input type="checkbox" name="extra-{{x.key}}" {{#if x.checked}}checked{{/if}}>
       <span>{{x.label}}</span>
     </label>

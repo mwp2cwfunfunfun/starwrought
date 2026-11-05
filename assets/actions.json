@@ -1,30 +1,8 @@
 {
  "source": [
-  "actions.xlsx",
   "maneuvers.xlsx"
  ],
  "actions": [
-  {
-   "name": "Aid",
-   "type": "Basic Action",
-   "cost": "1",
-   "costMax": "",
-   "costMode": "to",
-   "reaction": false,
-   "reactionCost": "",
-   "enabled": false,
-   "traits": [],
-   "prerequisites": "",
-   "requirements": "The ally is willing to accept your aid.",
-   "trigger": "",
-   "description": "You use an action to help an ally.",
-   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br><b>Critical Success</b> If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
-   "automation": "",
-   "meta": "Automation TBD",
-   "costDefaulted": true,
-   "sheet": "Basic Actions",
-   "workbook": "actions.xlsx"
-  },
   {
    "name": "Move",
    "type": "Basic Action",
@@ -800,6 +778,27 @@
    "trigger": "",
    "description": "",
    "effect": "Learn something true about a creature, place, or object. Possible topics include Defense Thresholds, Protection and armor materials, Weaknesses, Resistances and Immunities, Attack Thresholds, Special Abilities, and maximum Vigor.<br>Roll a Lore or relevant Skill check against the level-based Threshold of your target.<br><b>Critical Success</b> You recall all facts about two topics. <b>Success</b> You recall all facts about one topic. <b>Failure</b> You recall nothing. <b>Critical Failure</b> You recall all (incorrect) facts about one topic.<br><b>Special</b> You may attempt this once per target per Skill, so a character with several Lores or relevant Skills may get several angles on the same problem.<br><b>❷ Study.</b> As above, except: <b>Critical Failure</b> You recall nothing.",
+   "automation": "",
+   "meta": "Watching, Deceiving & Helping",
+   "costDefaulted": false,
+   "sheet": "Watching, Deceiving & Helping",
+   "workbook": "maneuvers.xlsx"
+  },
+  {
+   "name": "Aid",
+   "type": "Basic Action",
+   "cost": "1",
+   "costMax": "",
+   "costMode": "to",
+   "reaction": false,
+   "reactionCost": "",
+   "enabled": true,
+   "traits": [],
+   "prerequisites": "",
+   "requirements": "The ally is willing to accept your aid.",
+   "trigger": "",
+   "description": "You use an action to help an ally.",
+   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br><b>Critical Success </b>If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
    "automation": "",
    "meta": "Watching, Deceiving & Helping",
    "costDefaulted": false,

@@ -1,0 +1,20 @@
+{{!-- The armor piece's own fields. Shared panels: physical. --}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.armorPiece"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.zone"}}</span>
+      <select name="system.zone">{{selectOptions choices.zones selected=system.zone}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.protection"}}</span>
+      <input type="number" name="system.protection" value="{{system.protection}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.material"}}</span>
+      <select name="system.material">{{selectOptions choices.materials selected=system.material}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
+      <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
+  </div>
+  {{#if system.weakTo}}
+  <p class="sw-note sw-warn">{{localize "STARWROUGHT.Hint.materialWeakness"}}</p>
+  {{/if}}
+</div>
+
+{{> "systems/starwrought/templates/item/details/physical.hbs"}}

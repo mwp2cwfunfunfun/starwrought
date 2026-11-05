@@ -1,31 +1,34 @@
 /**
- * Six actions a round, tracked where the system can see them spent.
+ * Movement on the grid, charged against the six actions, and the Intercept it invites.
  *
  * PHB v4.10: every combatant receives six actions at the start of each round and they expire at its
- * end. Play cycles through the initiative order; each visit is an Opportunity for one Maneuver you
- * can afford, or a Pass. The system spends actions where it can see them being spent: a Strike,
- * Raise a Shield, Recenter, drawing or stowing a weapon, and moving. Everything else the table pays
- * by hand, with the pips on the sheet and the readout in the tracker.
+ * end. The system spends actions where it can see them being spent (`SwActor#spendActions`: a
+ * Strike, Raise a Shield, Recenter, drawing or stowing a weapon) and everything else the table pays
+ * by hand, with the pips on the sheet and the readout in the tracker. This module is the one spend
+ * the system sees on the map: a token drag. (Recenter and Raise a Shield are also Maneuver Items;
+ * which ones run the system's behaviour when used is documents/maneuvers.mjs, 0.10.1.)
  *
- * Movement is the interesting one. The grid is one foot and Speed is feet per Move ❶, so dragging a
- * token is not "one square" but up to your Speed per action. A drag within half your Speed is a
- * Step ❶, which never provokes and cannot enter difficult terrain. A straight drag longer than
- * three Moves and within five times your Speed (less Load Strain) is a Rush ❸, which always
- * provokes. Anything else is one Move ❶ per Speed's worth of feet, and since you cannot chain two
- * Maneuvers in one Opportunity, two Moves is two Opportunities: the card says so. Every charge is
- * announced rather than silent, because terrain and forced movement are the GM's to adjust. A
- * Speed of 0 is the final Legs Wound, Prone and unable to Stand, and the only motion left is a
- * Crawl ❶ of three feet per action.
+ * The grid is one foot and Speed is feet per Move ❶, so dragging a token is not "one square" but up
+ * to your Speed per action. A drag within half your Speed is a Step ❶, which never provokes and
+ * cannot enter difficult terrain. A straight drag longer than three Moves and within five times
+ * your Speed (less Load Strain) is a Rush ❸, which always provokes. Anything else is one Move ❶ per
+ * Speed's worth of feet, and since you cannot chain two Maneuvers in one Opportunity, two Moves is
+ * two Opportunities: the card says so. Every charge is announced rather than silent, because
+ * terrain and forced movement are the GM's to adjust. A Speed of 0 is the final Legs Wound, Prone
+ * and unable to Stand, and the only motion left is a Crawl ❶ of three feet per action.
  *
  * Entering Measure is dangerous: a Move (never a Step or a Crawl; a Rush always) from outside a
  * foe's Total Reach to inside it lets that foe Intercept ❶↺ with a Quick Strike. The system offers
  * the card; it never blocks or delays the move.
+ *
+ * Named documents/actions.mjs through 0.10.0, which read as the actions workbook or the Actions
+ * pack; canvas/ruler.mjs reads the numbers and the classifier from here to colour a drag.
  */
 
 import * as SW from "../config.mjs";
-import {
-  registerCombatTracking, cardActions, cardHtml, postCard, ownersOf, tableFor, requireOwner, setting
-} from "./combat.mjs";
+import { registerCombatTracking } from "./combat.mjs";
+import { cardActions, cardHtml, postCard, ownersOf, tableFor, requireOwner } from "../helpers/cards.mjs";
+import { setting } from "../helpers/settings.mjs";
 import { footprint, cellGap, minGapAlongPath } from "../canvas/geometry.mjs";
 import { reachesOf } from "../canvas/reach.mjs";
 
@@ -36,8 +39,8 @@ const format = (key, data) => game.i18n.format(key, data);
 /** Movement ids already charged, so a path split by a region checkpoint is paid for once. */
 const charged = new Set();
 
-/** Register the hooks that keep the action economy honest. */
-export function registerActionTracking() {
+/** Register the hooks that charge a drag and offer the Intercept; the round's own hooks first. */
+export function registerMovementTracking() {
   registerCombatTracking();
   Hooks.on("preMoveToken", onTokenMoves);
   Hooks.on("deleteCombat", () => charged.clear());

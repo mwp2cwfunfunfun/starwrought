@@ -15,17 +15,24 @@
  * registered. The item in each entry is the Item document itself, so a hook can reach the
  * carrier's name, its Constellation and its chosen option without a second lookup.
  *
- * NOTHING READS THE INDEX YET. There are no kinds (Mike, 2026-10-03: "do NOT survey the talents yet
- * or build ANY of the automation hooks. just build the framework") and so no hooks; the first
- * kind, an aura for Torchbearer, will define the first hook point with it, and that hook will ask
- * `actor.rulesOfKind("aura")` rather than walking the Items. Until then this module collects and
- * files, and the index on every Actor is empty.
+ * ONE HOOK POINT READS THE INDEX: `modifiers` (0.10.0; ruling 124), through `ruleModifiers` below.
+ * The check engine calls it once per roll (`baseModifiers` in dice/check/modifiers.mjs, the non-Defense branch) and
+ * the character's Defense pass calls it once per Defense (`prepareDefenses` in data/character/defenses.mjs, so a
+ * bonus to Guard moves the Threshold on the sheet and the Guard roll alike, and a Defense roll,
+ * which rolls the Defense's own folded modifiers, carries it once and never twice). The dispatch
+ * is generic: the engine walks the registry and asks each kind that declares `hooks.modifiers`
+ * for the modifiers its own rules put on this roll, and knows nothing of any kind's syntax. A
+ * second kind that wants the same moment adds no engine code; a NEW moment is still defined with
+ * the first kind that needs it (ruling 119 stands). The framework was built empty by instruction
+ * (Mike, 2026-10-03: "do NOT survey the talents yet or build ANY of the automation hooks. just
+ * build the framework"); the `bonus` kind, for Humanity, is the first to read what this module
+ * files, and the aura for Torchbearer is next.
  *
  * Pure over the documents: no writes, no Foundry globals at module scope, so `assets/test_rules.mjs`
  * drives it with a plain `{ items: [...] }` from Node.
  */
 
-import { kindOf } from "./kinds/index.mjs";
+import { KINDS, kindOf } from "./kinds/index.mjs";
 
 /**
  * The Item types that may carry rules. A Constellation Item is included now, before any carries
@@ -101,4 +108,93 @@ export function rulesOfKind(actor, kind) {
   const prepared = actor?.system?.rules?.byKind;
   const byKind = (prepared && (typeof prepared === "object")) ? prepared : collectRules(actor).byKind;
   return Object.hasOwn(byKind, id) ? byKind[id] : [];
+}
+
+/* -------------------------------------------- */
+/*  The `modifiers` hook point (0.10.0)         */
+/* -------------------------------------------- */
+
+/**
+ * @typedef {object} RuleModifier
+ * @property {string} label      The card's line ("Humanity").
+ * @property {number} value      Signed, never 0.
+ * @property {string} [type]     situation | condition | gear; untyped when absent.
+ * @property {boolean} [offer]   True: offered unticked in the roll dialog rather than applied.
+ * @property {string} [key]      On an offer, the checkbox's name; unique per offer.
+ * @property {string} [hint]     On an offer, the tooltip.
+ */
+
+/**
+ * @typedef {object} RollContext
+ * @property {string} kind              "check" | "attack" | "defense" | "initiative".
+ * @property {string} slug              The Constellation slug supplying the Proficiency Bonus ("" when none).
+ * @property {object|null} item         The Item behind the roll (a Maneuver, a weapon, a Talent), when there is one.
+ * @property {boolean} [constellationFolded]  True when the caller has already taken the modifiers that
+ *                                      depend on the Constellation alone (the Defense pass folds them
+ *                                      into a Defense's own list) and asks only for what depends on the
+ *                                      Item or the roll. A kind answers a Constellation target once.
+ */
+
+/**
+ * The modifiers every registered kind's rules put on one roll, in two lists: `applied` goes on
+ * the roll as the sheet's own terms do, `offered` is shown unticked in the roll dialog for the
+ * player to claim (the Load Strain Climb-or-Swim precedent, PHB v4.11, ruling R2; `previewTotal`
+ * ignores offers). A kind takes part by declaring `hooks.modifiers(entries, context, actor)`,
+ * where `entries` are its own rules on this actor from `rulesOfKind`, and returns RuleModifiers.
+ *
+ * The engine's whole knowledge of a kind at this moment is in this function: a kind without the
+ * hook is skipped, a kind with no rules on this actor is not asked, a hook that throws is reported
+ * once to the console and contributes nothing (a roll never dies over a rule), a modifier without
+ * a numeric non-zero `value` is dropped, and an offer without a `key` gets a stable one of the
+ * engine's making (`<kind>-<n>`, counting that kind's offers on this roll; a key two offers share
+ * is suffixed, so the dialog's checkboxes never collide). Typed stacking is not done here: the
+ * caller's `SW.resolveModifiers` pass treats what comes back as it treats every other term.
+ * @param {object} actor
+ * @param {RollContext} context
+ * @returns {{applied: RuleModifier[], offered: RuleModifier[]}}
+ */
+export function ruleModifiers(actor, context = {}) {
+  const applied = [];
+  const offered = [];
+  const keys = new Set();
+
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.modifiers;
+    if (typeof hook !== "function") continue;
+    const entries = rulesOfKind(actor, kind.id);
+    if (!entries.length) continue;
+
+    let result;
+    try {
+      result = hook(entries, context, actor);
+    } catch (error) {
+      console.error(`STARWROUGHT | the "${kind.id}" kind's modifiers hook failed:`, error);
+      continue;
+    }
+    if (!Array.isArray(result)) continue;
+
+    let offers = 0;
+    for (const mod of result) {
+      if (!mod || (typeof mod !== "object")) continue;
+      const value = (typeof mod.value === "string") ? Number(mod.value.trim() || NaN) : mod.value;
+      if ((typeof value !== "number") || !Number.isFinite(value) || (value === 0)) continue;
+      const clean = { ...mod, value, label: String(mod.label ?? kind.id) };
+      if (mod.offer === true) {
+        let key = String(mod.key ?? "") || `${kind.id}-${offers}`;
+        offers += 1;
+        if (keys.has(key)) {
+          let n = 2;
+          while (keys.has(`${key}-${n}`)) n += 1;
+          key = `${key}-${n}`;
+        }
+        keys.add(key);
+        offered.push({ ...clean, offer: true, key, hint: String(mod.hint ?? "") });
+      } else {
+        delete clean.offer;
+        applied.push(clean);
+      }
+    }
+  }
+
+  return { applied, offered };
 }

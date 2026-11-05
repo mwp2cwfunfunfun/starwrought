@@ -32,7 +32,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -340,30 +340,126 @@ function reportDrift(drift, { warning = false } = {}) {
 /* -------------------------------------------- */
 
 /**
- * The three places the system's version lives have to agree: system.json, which the server reads,
- * and the two stamps the client compares it with at load (`SYSTEM_VERSION` in module/config.mjs
- * and `--sw-css-version` in styles/starwrought.css) to catch a browser holding a cached release.
- * `assets/package_system.mjs` made this check at packaging time; 0.5.2 shipped from this pipeline
- * with both stamps still on 0.5.1, so every client saw the warning the stamps exist to raise.
- * Checked here too, after every run, so a release cannot leave the repository with the stamps
- * disagreeing (0.5.3).
- * @returns {string[]}  One line per disagreement; empty when all three agree.
+ * Every place the system's version lives has to agree: system.json, which the server reads, and
+ * the stamps the client compares it with at load (`SYSTEM_VERSION` in module/config.mjs and
+ * `--sw-css-version-<name>` in each stylesheet system.json lists) to catch a browser holding a
+ * cached release. `assets/package_system.mjs` made this check at packaging time; 0.5.2 shipped
+ * from this pipeline with both stamps still on 0.5.1, so every client saw the warning the stamps
+ * exist to raise. Checked here too, after every run, so a release cannot leave the repository with
+ * the stamps disagreeing (0.5.3).
+ *
+ * Since 0.10.1 the stylesheet is eleven files, one per window (styles/README.md), and two more
+ * things are held here with the stamps, because each would fail silently otherwise: every .css
+ * file in styles/ is listed in system.json (a file left off the list loads nowhere), and no
+ * selector list is declared twice across the files, :root excepted since that is where the stamps
+ * live (two declarations of one selector make the load order decide which reads; merge them, or
+ * make the later one more specific).
+ * @returns {string[]}  One line per problem; empty when everything agrees.
  */
 function stampCheck() {
   const manifest = JSON.parse(fs.readFileSync(path.join(SYSTEM, "system.json"), "utf8"));
-  const stamps = {
-    "module/config.mjs": /export const SYSTEM_VERSION = "([^"]+)"/,
-    "styles/starwrought.css": /--sw-css-version:\s*"([^"]+)"/
-  };
   const problems = [];
-  for (const [rel, pattern] of Object.entries(stamps)) {
-    const text = fs.readFileSync(path.join(SYSTEM, rel), "utf8");
+  const stamp = (rel, pattern) => {
+    const file = path.join(SYSTEM, rel);
+    if (!fs.existsSync(file)) {
+      problems.push(`system.json lists foundry/starwrought/${rel}, which does not exist.`);
+      return null;
+    }
+    const text = fs.readFileSync(file, "utf8");
     const found = text.match(pattern)?.[1] ?? null;
     if (found !== manifest.version) {
       problems.push(`foundry/starwrought/${rel} is stamped ${found ?? "with nothing"}; system.json says ${manifest.version}.`);
     }
+    return text;
+  };
+  stamp("module/config/system.mjs", /export const SYSTEM_VERSION = "([^"]+)"/);
+
+  const listed = (manifest.styles ?? []).map(s => (typeof s === "string" ? s : s.src));
+  for (const name of fs.readdirSync(path.join(SYSTEM, "styles")).filter(f => f.endsWith(".css"))) {
+    if (!listed.includes(`styles/${name}`)) {
+      problems.push(`foundry/starwrought/styles/${name} is not in system.json's styles list, so it loads nowhere.`);
+    }
+  }
+  const declared = new Map();
+  for (const rel of listed) {
+    const stem = path.basename(rel, ".css");
+    const text = stamp(rel, new RegExp(`--sw-css-version-${stem}:\\s*"([^"]+)"`));
+    if (text === null) continue;
+    for (const selector of topLevelSelectors(text)) {
+      if (selector === ":root") continue;
+      const first = declared.get(selector);
+      if (first === undefined) declared.set(selector, rel);
+      else if (first === rel) problems.push(`"${selector}" is declared twice in foundry/starwrought/${rel}; merge the two.`);
+      else problems.push(`"${selector}" is declared in both foundry/starwrought/${first} and ${rel}; merge them, or make the later one more specific, so the load order never decides.`);
+    }
   }
   return problems;
+}
+
+/**
+ * The rules constants are one file per concept under module/config/ and `module/config.mjs` is a
+ * barrel of explicit named re-exports (0.10.1), so `import * as SW` names the whole vocabulary.
+ * A constant added to a concept's file and not to the barrel is `SW.X === undefined` at the first
+ * use and nowhere before; a name in the barrel that no file exports is a load error. Both are
+ * caught here, by importing the barrel and every file under module/config/ in this process (they
+ * are pure, which is why the build can import them at all) and comparing the export sets.
+ * @returns {Promise<string[]>}  One line per problem; empty when the barrel is complete and exact.
+ */
+async function configBarrelCheck() {
+  const problems = [];
+  const dir = path.join(SYSTEM, "module", "config");
+  let barrel;
+  try {
+    barrel = new Set(Object.keys(await import(pathToFileURL(path.join(SYSTEM, "module", "config.mjs")).href)));
+  } catch (error) {
+    return [`module/config.mjs does not import: ${error.message}`];
+  }
+  const fromFiles = new Map();
+  for (const name of fs.readdirSync(dir).filter(f => f.endsWith(".mjs")).sort()) {
+    let mod;
+    try {
+      mod = await import(pathToFileURL(path.join(dir, name)).href);
+    } catch (error) {
+      problems.push(`module/config/${name} does not import in plain Node (is a Foundry global used at module scope?): ${error.message}`);
+      continue;
+    }
+    for (const key of Object.keys(mod)) {
+      const first = fromFiles.get(key);
+      if (first) problems.push(`"${key}" is exported by both module/config/${first} and module/config/${name}.`);
+      else fromFiles.set(key, name);
+      if (!barrel.has(key)) problems.push(`module/config/${name} exports "${key}", which module/config.mjs does not re-export: add it to that file's line in the barrel.`);
+    }
+  }
+  for (const key of barrel) {
+    if (!fromFiles.has(key)) problems.push(`module/config.mjs exports "${key}", which no file under module/config/ provides.`);
+  }
+  return problems;
+}
+
+/**
+ * The selector list of every top-level rule in a stylesheet, whitespace collapsed, comments
+ * stripped, at-rules (`@keyframes`, `@supports`) skipped whole.
+ * @param {string} css
+ * @returns {string[]}
+ */
+function topLevelSelectors(css) {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const out = [];
+  let i = 0;
+  while (i < text.length) {
+    const open = text.indexOf("{", i);
+    if (open < 0) break;
+    let depth = 0;
+    let close = open;
+    for (; close < text.length; close++) {
+      if (text[close] === "{") depth++;
+      else if (text[close] === "}" && --depth === 0) break;
+    }
+    const head = text.slice(i, open).replace(/\s+/g, " ").trim();
+    if (head && !head.startsWith("@")) out.push(head);
+    i = close + 1;
+  }
+  return out;
 }
 
 /* -------------------------------------------- */
@@ -398,13 +494,13 @@ if (!checkOnly) {
   }
 }
 
-const stamps = stampCheck();
+const stamps = [...stampCheck(), ...await configBarrelCheck()];
 if (stamps.length) {
   console.log("\n" + "=".repeat(72));
   console.log("VERSION STAMPS DISAGREE: the client would warn every user of a stale copy.");
   console.log("=".repeat(72));
   for (const line of stamps) console.log(`  - ${line}`);
-  console.log("\nBump SYSTEM_VERSION in module/config.mjs and --sw-css-version in styles/starwrought.css to match system.json.\n");
+  console.log("\nBump SYSTEM_VERSION in module/config/system.mjs and --sw-css-version-<name> in every stylesheet system.json lists to match system.json.\n");
   process.exit(1);
 }
 

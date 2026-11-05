@@ -5,7 +5,7 @@
   "author": null,
   "img": "icons/svg/shield.svg",
   "scope": "global",
-  "command": "// Recenter: clear every Exposed Zone on the selected tokens (a Posture's stays) and end any Bind.\nconst actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);\nif ( !actors.length ) ui.notifications.warn(\"Select a token first.\");\nfor ( const actor of actors ) await actor.recenter();",
+  "command": "// Recenter: clear every Exposed Zone on the selected tokens (a Posture's stays) and end any Bind.\n// The Maneuver is the entry point (0.10.1): each selected actor uses the Recenter Item from the\n// Actions pack, and while its row is not enabled in data/maneuvers.xlsx the actor's method runs\n// directly, which is the same behaviour.\nconst actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a?.isOwner);\nif ( !actors.length ) return ui.notifications.warn(\"Select a token first.\");\nconst pack = game.packs.get(\"starwrought.actions\");\nconst entry = pack?.index.find(e => e.name === \"Recenter\");\nconst item = entry ? await pack.getDocument(entry._id) : null;\nfor ( const actor of actors ) await (item ? item.use({ actor }) : actor.recenter());",
   "folder": null,
   "sort": 0,
   "ownership": {
@@ -13,7 +13,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d1f83761765d6904"
+      "contentHash": "afbd5a33e437c9ad"
     }
   },
   "_stats": {

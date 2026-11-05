@@ -1,0 +1,261 @@
+/* ==========================================================================
+   STARWROUGHT: chat cards and the roll dialogs.
+   The cards the system speaks (check, damage, applied, item, action, refuse death, stance,
+   hero, audit, wound, bind, pass, prepared, Flare, exposed, reroll) and the dialogs a roll
+   opens (the check dialog, the Relevant Check picker, the Flare picker). Serves
+   templates/chat/*.hbs, templates/dice/*.hbs and the cards built in module/documents/*.mjs.
+   Builds on sheet.css for the tags and buttons. The attack card and the Combat Prompt are
+   attack.css; the party's cards are party.css; the Sync content card is content-sync.css.
+
+   A card's accent is its left border, declared after the base rule below so the accent
+   wins: through 0.10.0 the stance, wound and bind cards' accents were declared before the
+   base and lost to its `border` shorthand.
+
+   Load order is the order of the `styles` array in system.json. A file may rely on the files
+   listed before it and never on one listed after it; no selector list is declared twice
+   anywhere in styles/ (build_all.mjs checks), so the order never decides how a rule reads.
+   styles/README.md has the map of what lives where and where a new rule goes.
+   ========================================================================== */
+
+/* The stale-copy stamp: see the note in starwrought.css. */
+:root { --sw-css-version-chat: "0.10.1"; }
+
+/* --------------------------------------------------------------------------
+   Chat cards
+   -------------------------------------------------------------------------- */
+
+.starwrought.check-card,
+.starwrought.damage-card,
+.starwrought.applied-card,
+.starwrought.item-card,
+.starwrought.action-card,
+.starwrought.refuse-death,
+.starwrought.sw-stance-card {
+  --sw-ink: #e8e4f5;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+  padding: 0.5rem 0.6rem;
+}
+
+/* The stance card takes the night background with the other cards below; this is only its
+   own accent, so it reads on the light chat theme as well as the dark one. */
+.starwrought.sw-stance-card {
+  border-left: 3px solid var(--sw-gold);
+  font-style: italic;
+}
+
+.starwrought .sw-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.starwrought .sw-card-header img { width: 36px; height: 36px; border: 1px solid var(--sw-edge); border-radius: 4px; }
+.starwrought .sw-card-titles { min-width: 0; }
+.starwrought .sw-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--sw-gold);
+  border: none;
+  font-family: var(--font-h3, inherit);
+}
+.starwrought .sw-card-subtitle { font-size: 0.7rem; color: var(--sw-ink-dim); }
+
+.starwrought .sw-card-roll {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.35);
+}
+.starwrought .sw-card-total { font-size: 1.6rem; font-weight: 700; color: var(--sw-gold); line-height: 1; }
+.starwrought .sw-card-total.sw-nat20 { color: var(--sw-flare); text-shadow: 0 0 10px rgba(255, 216, 103, 0.7); }
+.starwrought .sw-card-total.sw-nat1 { color: var(--sw-blood); }
+.starwrought .sw-card-formula { font-size: 0.7rem; color: var(--sw-ink-dim); }
+
+.starwrought .sw-card-modifiers { list-style: none; margin: 0.3rem 0 0; padding: 0; font-size: 0.7rem; }
+.starwrought .sw-card-modifiers li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.05rem 0.2rem; }
+.starwrought .sw-card-modifiers li:nth-child(odd) { background: rgba(255, 255, 255, 0.04); }
+.starwrought .sw-card-modifiers .sw-total { border-top: 1px solid var(--sw-edge); margin-top: 0.15rem; color: var(--sw-gold); }
+
+.starwrought .sw-card-threshold {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-card-threshold strong { color: var(--sw-ink); }
+
+.starwrought .sw-card-outcome {
+  margin-top: 0.4rem;
+  padding: 0.25rem;
+  text-align: center;
+  border-radius: var(--sw-radius);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+.starwrought .sw-outcome-critical { background: rgba(255, 216, 103, 0.2); color: var(--sw-flare); }
+.starwrought .sw-outcome-hit { background: rgba(95, 158, 106, 0.2); color: #8fc7a4; }
+.starwrought .sw-outcome-graze { background: rgba(216, 162, 90, 0.18); color: #d8a25a; }
+.starwrought .sw-outcome-miss { background: rgba(122, 122, 140, 0.18); color: var(--sw-ink-dim); }
+
+.starwrought .sw-card-outcomes { list-style: none; margin: 0.4rem 0 0; padding: 0; font-size: 0.72rem; }
+.starwrought .sw-card-outcomes li { padding: 0.15rem 0.25rem; border-left: 2px solid var(--sw-edge); margin-bottom: 0.15rem; }
+.starwrought .sw-card-outcomes li.sw-active { border-left-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
+
+.starwrought .sw-card-flare { margin-top: 0.4rem; }
+.starwrought .sw-card-flare button {
+  width: 100%;
+  border-color: var(--sw-gold-dim);
+  color: var(--sw-flare);
+  background: linear-gradient(180deg, rgba(255, 216, 103, 0.18), rgba(255, 216, 103, 0.06));
+}
+.starwrought .sw-flare-card h3 { color: var(--sw-flare); }
+/* A Flare put out (0.6.3, ruling 86): one quiet line. The chat button's dialog lists the opened
+   Constellations and offers the rest under a checkbox (ruling 85). */
+.starwrought .sw-flare-card.sw-flare-out p { margin: 0; color: var(--sw-ink-dim); }
+.starwrought.sw-flare-dialog .sw-flare-unopened { margin-top: 0.5rem; }
+.starwrought.sw-flare-dialog .sw-flare-unopened label.checkbox { font-size: 0.8rem; }
+
+/* Rerolls (0.5.3). The button sits under the outcome, quiet; a superseded card dims, strikes its
+   total through and says so, and every control on it is disabled by the render hook. */
+.starwrought .sw-card-reroll { margin-top: 0.4rem; }
+.starwrought .sw-card-reroll button {
+  width: 100%;
+  opacity: 0.85;
+}
+.starwrought .sw-card-reroll button:hover { opacity: 1; }
+.starwrought .sw-reroll-note { font-style: italic; }
+.starwrought.sw-superseded { opacity: 0.62; }
+.starwrought.sw-superseded .sw-card-total { text-decoration: line-through; }
+.starwrought.sw-superseded .sw-superseded-note {
+  font-style: italic;
+  opacity: 1;
+  margin: 0.3rem 0;
+}
+.starwrought.sw-superseded button,
+.starwrought.sw-superseded select { pointer-events: none; opacity: 0.5; }
+
+.starwrought .sw-card-buttons { display: flex; gap: 0.3rem; margin-top: 0.4rem; }
+.starwrought .sw-card-buttons button { flex: 1; font-size: 0.75rem; white-space: nowrap; padding-inline: 0.35rem; }
+
+/* The chat sidebar is narrow, so the Apply row stacks rather than squeezing. */
+.starwrought .sw-card-apply { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; }
+.starwrought .sw-zone-select {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-zone-select select { flex: 1; font-size: 0.75rem; padding: 0.15rem 0.3rem; }
+.starwrought .sw-card-apply .sw-card-buttons { margin-top: 0; }
+
+.starwrought .sw-card-note { font-size: 0.7rem; color: var(--sw-ink-dim); margin: 0.3rem 0 0; }
+.starwrought .sw-card-note.sw-warn { color: #d8a25a; }
+.starwrought .sw-card-note.sw-danger { color: var(--sw-blood); }
+.starwrought .sw-card-note.sw-good { color: var(--sw-green); }
+.starwrought .sw-card-description { font-size: 0.78rem; margin-top: 0.4rem; line-height: 1.4; }
+.starwrought .sw-card-description p:first-child { margin-top: 0; }
+
+.starwrought.action-card h3,
+.starwrought.refuse-death h3 { margin: 0 0 0.25rem; color: var(--sw-gold); border: none; font-size: 0.95rem; }
+.starwrought.sw-overspend { border-color: var(--sw-blood); background: linear-gradient(160deg, rgba(180, 69, 63, 0.25), var(--sw-night)); }
+.starwrought.sw-overspend h3 { color: #e08a84; }
+/* The spend card and the actions-left line: the count is what the table reads, so it is large. */
+.starwrought.action-card .sw-spend-glyph { font-size: 1.5rem; line-height: 1; vertical-align: -0.15em; margin-right: 0.15rem; }
+.starwrought.action-card .sw-actions-left { display: block; margin-top: 0.3rem; font-size: 1rem; color: var(--sw-gold); }
+.starwrought.sw-overspend .sw-actions-left { color: #e08a84; }
+.starwrought.action-card p,
+.starwrought.refuse-death p { margin: 0; font-size: 0.8rem; }
+
+/* --------------------------------------------------------------------------
+   The Exchange's cards (PHB v4.10): the Reaction line, the Settle Position block, the round cards,
+   and the cards that take an accent.
+   -------------------------------------------------------------------------- */
+
+/* Chat cards of the Exchange (PHB v4.10): the Reaction line, the Settle Position block, the
+   strike and reaction choices in the roll dialog, and the round cards. */
+.starwrought .sw-card-reaction { margin-top: 0.3rem; }
+.starwrought .sw-card-position {
+  margin-top: 0.4rem; padding: 0.35rem 0.5rem; border: 1px solid rgba(227, 178, 60, 0.25); border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+}
+.starwrought .sw-card-position .sw-card-apply { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0.25rem 0; }
+.starwrought .sw-card-position .sw-zone-select { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; }
+.starwrought .sw-card-position .sw-zone-select select { width: auto; min-width: 6rem; }
+.starwrought .sw-card-buttons button.sw-primary { border-color: var(--sw-gold-dim); color: var(--sw-flare); font-weight: 600; }
+
+.starwrought.sw-wound-card h3, .starwrought.sw-bind-card h3, .starwrought.sw-pass-card h3, .starwrought.sw-prepared-card h3 { margin-bottom: 0.25rem; }
+.starwrought .sw-wound-card, .starwrought.sw-wound-card { border-left: 3px solid var(--sw-blood); }
+.starwrought .sw-bind-card, .starwrought.sw-bind-card { border-left: 3px solid var(--sw-gold-dim); }
+
+.starwrought.action-card.sw-hero-card { border-left: 3px solid var(--sw-gold); }
+.starwrought.action-card.sw-hero-card h3 .fa-star { color: var(--sw-flare); }
+
+/* The card glyph (0.5.1, T16): a Maneuver's cost in its title. */
+.starwrought .sw-card-header h3 .sw-card-glyph { font-size: 1.2rem; min-width: 0; letter-spacing: 0; vertical-align: -0.1em; }
+
+.starwrought.action-card.sw-audit-card { border-left: 3px solid var(--sw-wits); }
+.starwrought.action-card.sw-audit-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sw-ink-dim); }
+.starwrought .sw-audit-lines { margin: 0; padding: 0 0 0 1rem; font-size: 0.8rem; line-height: 1.4; }
+
+.starwrought .sw-card-flavor { font-size: 0.78rem; font-style: italic; color: var(--sw-ink-dim); margin-top: 0.35rem; }
+.starwrought .sw-card-flavor p { margin: 0; }
+
+/* The Exposed card takes the Zone's blood tint, as the bind card takes gold. */
+.starwrought .sw-exposed-card, .starwrought.sw-exposed-card { border-left: 3px solid var(--sw-blood); }
+
+/* --------------------------------------------------------------------------
+   The roll dialogs.
+   -------------------------------------------------------------------------- */
+
+/* Roll dialog */
+
+/* The dialog paints our night sky, so its text has to be ours too. Foundry colours form labels
+   and hints from theme variables, and under the light UI theme those are dark ink meant for
+   parchment: dark on dark. Set the variables the dialog will read, whatever theme the client is on. */
+.starwrought.dialog,
+.starwrought.check-dialog {
+  --color-form-label: var(--sw-ink);
+  --color-form-label-hover: var(--sw-flare);
+  --color-form-hint: var(--sw-ink-dim);
+  --color-text-primary: var(--sw-ink);
+  --color-text-secondary: var(--sw-ink-dim);
+  color-scheme: dark;
+}
+.starwrought.dialog .window-content,
+.starwrought.check-dialog .window-content {
+  background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
+  color: var(--sw-ink);
+}
+.starwrought.dialog select { width: 100%; }
+.starwrought .check-dialog-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.starwrought .check-dialog-form .form-group { display: flex; align-items: center; gap: 0.5rem; }
+.starwrought .check-dialog-form .form-group > label { flex: 0 0 10rem; font-size: 0.8rem; font-weight: normal; color: var(--sw-ink); }
+.starwrought .check-dialog-form .form-fields { flex: 1; }
+.starwrought .check-dialog-form p.hint { margin: 0; font-size: 0.75rem; line-height: 1.35; color: var(--sw-ink-dim); }
+/* A Relevant Check: the picker's own intro line, and the toolbar that opens it. */
+.starwrought .sw-relevant-intro { margin: 0 0 0.2rem; font-size: 0.8rem; color: var(--sw-ink); line-height: 1.35; }
+
+/* The dialog's options: the three Strikes, the Reactions, an offered modifier. Their own class
+   since 0.10.1; through 0.10.0 they shared `sw-choice` with the wizard's cards, whose later rule
+   dressed them. The Combat Prompt's options (attack.css) copy this look. */
+.starwrought .sw-strike-choice, .starwrought .sw-reaction-choice { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.3rem 0; }
+.starwrought .sw-dialog-option {
+  flex: 1 1 8rem; text-align: left; padding: 0.35rem 0.5rem; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04); cursor: pointer; font-size: 0.78rem; line-height: 1.3;
+}
+.starwrought .sw-dialog-option:hover { border-color: var(--sw-gold-dim); }
+.starwrought .sw-dialog-option.sw-active { border-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
+.starwrought .sw-dialog-option small { display: block; color: var(--sw-ink-dim); font-size: 0.7rem; }
+
+/* The defender's answer: stated, not offered. */
+.starwrought .sw-answering { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
+.starwrought .sw-answering strong { color: var(--sw-flare); font-size: 1rem; }
+.starwrought .sw-answering-note { font-size: 0.72rem; color: var(--sw-ink-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.starwrought .sw-answering-note .fa-triangle-exclamation { color: #d9534f; }

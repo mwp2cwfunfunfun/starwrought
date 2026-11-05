@@ -9,14 +9,17 @@
 # Enabled? (Mike, 2026-10-01, ruling 60): "Yes" ships the row to Foundry; see enabled_flag below.
 # The converter keeps every row and only flags it; build_foundry.mjs does the filtering.
 #
-# An ACTIONS workbook (data/actions.xlsx, Mike, 2026-09-26) is recognised by its _Tree Index
-# carrying Name | Type | Meta note instead of Tree | Category. Its other sheets hold one action per
-# row and write assets/actions.json; see parse_actions_workbook below for the columns. Any number of
-# them are read (data/maneuvers.xlsx joined it in 0.5.1, T17: the Encounter Mode Maneuvers, scaffolded
-# once by make_maneuvers_xlsx.py and Mike's since); the same action in two of them is an error, an
-# About sheet is skipped, and a workbook the last actions.json names that is missing from data/ has
-# its actions carried over as found, so a fresh clone (which has maneuvers.xlsx but not Mike's
-# untracked actions.xlsx) still retires every roster row the absent workbook retired.
+# An ACTIONS workbook (the format Mike's, 2026-09-26, as data/actions.xlsx; data/maneuvers.xlsx the
+# one such workbook since 2026-10-03) is recognised by its _Tree Index carrying Name | Type | Meta
+# note instead of Tree | Category. Its other sheets hold one action per row and write
+# assets/actions.json; see parse_actions_workbook below for the columns. Any number of them are
+# read (maneuvers.xlsx joined actions.xlsx in 0.5.1, T17: the Encounter Mode Maneuvers, scaffolded
+# once by make_maneuvers_xlsx.py and Mike's since; on 2026-10-03 he moved Aid, actions.xlsx's one
+# row, into it and deleted actions.xlsx); the same action in two of them is an error, an About
+# sheet is skipped, and a workbook the last actions.json names that is missing from data/ has its
+# actions carried over as found, so a checkout without that workbook still retires every roster
+# row the absent workbook retired (the rule that kept Aid retired on a fresh clone while it lived
+# in the untracked actions.xlsx; with one workbook in data/ there is nothing to carry today).
 #
 # An EQUIPMENT workbook (data/equipment.xlsx, Mike, 2026-10-01, ruling 64) has no _Tree Index and
 # is recognised by its Weapons, Armor and Shields sheets, one piece per row. It writes
@@ -366,12 +369,15 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
 
 def carry_over_absent(actions, action_files, present, defined, warnings):
     """The actions of a workbook the last actions.json names that is not in data/ this run, carried
-    over as found. data/actions.xlsx is Mike's untracked working file, so a fresh clone has
-    maneuvers.xlsx and not it; regenerating from the workbooks present alone would drop Aid and let
-    the roster's Aid ship again, which no edit asked for. This is the per-workbook form of the
-    "left as found" rule the whole file follows when no actions workbook is present at all. A name
-    a present workbook now defines is that workbook's: the carried copy is dropped, and the run says
-    the two will collide when the absent workbook returns. Returns the carried actions."""
+    over as found. Through 2026-10-03 data/actions.xlsx was Mike's untracked working file, so a
+    fresh clone had maneuvers.xlsx and not it; regenerating from the workbooks present alone would
+    have dropped Aid and let the roster's Aid ship again, which no edit asked for. Mike then moved
+    Aid into maneuvers.xlsx and deleted actions.xlsx (this function reported the move), so nothing
+    is absent today and nothing is carried; the rule stays for the next workbook that goes missing.
+    This is the per-workbook form of the "left as found" rule the whole file follows when no
+    actions workbook is present at all. A name a present workbook now defines is that workbook's:
+    the carried copy is dropped, and the run says the two will collide when the absent workbook
+    returns. Returns the carried actions."""
     if not os.path.exists(AOUT): return []
     try:
         old = json.load(open(AOUT, encoding="utf-8"))
@@ -400,8 +406,8 @@ def carry_over_absent(actions, action_files, present, defined, warnings):
         names = [a["name"] for a in carried if a["workbook"] == src]
         warnings.append(f"{src} is not in data/; the {len(names)} action(s) it last wrote to {os.path.basename(AOUT)} are "
                         f"carried over as found ({', '.join(names)}) and regenerate only when it is back"
-                        + (". data/actions.xlsx is Mike's untracked working file, so a fresh clone never has it"
-                           if src == "actions.xlsx" else ""))
+                        ". An untracked or a deleted workbook is the usual cause; if it is gone for good, author "
+                        "its actions in a present workbook, as Aid moved into maneuvers.xlsx on 2026-10-03")
     return carried
 
 # ---- Equipment (Mike, 2026-10-01; ruling 64) -------------------------------------------------
@@ -849,7 +855,7 @@ def main():
     elif os.path.exists(AOUT):
         # Printed directly: the warnings list was flushed above, so appending to it here would say nothing.
         print(f"WARNING: no actions workbook in data/; {AOUT} left as found. It is generated from the actions "
-              f"workbooks (data/actions.xlsx, data/maneuvers.xlsx), not hand-kept.")
+              f"workbooks (data/maneuvers.xlsx today), not hand-kept.")
     # Written only when an equipment workbook was read, for the same reason (ruling 64).
     if equipment_files:
         json.dump({"source": equipment_files, **equipment}, open(EOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)

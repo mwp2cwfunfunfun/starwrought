@@ -5,11 +5,11 @@
   "description": "",
   "folder": null,
   "sorting": "a",
-  "sort": 3,
-  "color": "#3b2f63",
+  "sort": 0,
+  "color": "#5a4a1e",
   "flags": {
     "starwrought": {
-      "contentHash": "596291595e90c701"
+      "contentHash": "158e5ef7ac4a3e56"
     }
   },
   "_key": "!folders!fdaa17210c6d23e8"

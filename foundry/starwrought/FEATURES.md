@@ -1,7 +1,7 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
 Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
-rule differs). System version **0.9.0**. Developed against
+rule differs). System version **0.10.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -127,9 +127,11 @@ the Constellation Compendium keep showing the whole book. Document ids never cha
 row later restores the same UUID, and a character who already owns a Talent of a now-disabled
 Constellation keeps it: `content/constellations.json` carries every Constellation with its flag so
 names, categories, attributes and parents still resolve. `game.starwrought.rules` reports the
-enabled counts beside the authored ones. Aid, the one row of `data/actions.xlsx`, is not enabled,
-and because the sheet is authoritative for any action it names, the roster's Aid row stays retired
-as well; nothing ships for Aid until the row is enabled. Since 0.6.1 the **Endure Constellation
+enabled counts beside the authored ones. Aid is the one Maneuver row enabled: Mike moved it into
+`data/maneuvers.xlsx` with `Enabled? = Yes` on 2026-10-03 (it had been the single row of his
+untracked `data/actions.xlsx`, not enabled, so nothing shipped for it through 0.9.0), and because
+the sheet is authoritative for any action it names, the roster's Aid row stays retired and the
+sheet's Aid ships under its document id. Since 0.6.1 the **Endure Constellation
 ships with its Root alone** (Mike enabled Endure Training on the Endure sheet of
 `data/defenses.xlsx`; the other four Endure Talents stay blank; sync report ruling 77), so Endure
 relief and the Endure Bonus to Vigor are reachable in play, and since 0.6.2 **Awareness ships the
@@ -431,9 +433,14 @@ and stable at 0 Vigor (so Spent), Wounds intact.
 ### The six-action round
 
 Every combatant receives **six actions at the start of each round** (an adversary receives its own
-number, `actionsPerRound`; Slowed N loses N of them), and unspent actions expire at the end of the
-round. The sheet shows them as six pips: gold while free, marked while reserved for a Prepared
-Maneuver, dim once spent. The pips appear only while an encounter is running, because outside
+number, `actionsPerRound`, 1 to 12 on its sheet; a character receives six plus the **Actions a
+round** adjustment on the Overview's Adjustments panel, 0.10.1, which is what a haste-like effect
+targets through an Active Effect and may be negative; Slowed N loses N of them at the start of
+each round), and unspent actions expire at the end of the round. Twelve is the system's ceiling
+(`ACTIONS_MAX`): the data model's fields, the adversary's field and the pips stop there, and the
+pips have glyphs to ⓬. The sheet shows them as six pips in three states: gold while free, violet while reserved
+for a Prepared Maneuver, dim once spent, with the counts of all three in the tooltip ("2
+available, 2 reserved, 2 spent"). The pips appear only while an encounter is running, because outside
 Encounter Mode nothing is counted, and they can always be clicked to correct the count by hand.
 
 **Opportunities.** Initiative order is fixed and play cycles through it; each visit is an
@@ -448,9 +455,12 @@ has not Passed for it, and any Maneuver paid at your own Opportunity resets the 
 combatant's Pass is a whole circuit and ends the round; its Next Turn or End Opportunity after a
 Maneuver is simply its next Opportunity in the same round, so its six actions and any Prepared
 Maneuver survive. With no GM connected the streak is kept in memory by one elected client. Under
-each tracker row: the actions left as a large gold number over the round's count ("5/6", red at
-zero) with a pip per action lit while unspent, the same pips the sheet shows (0.5.3; it was one
-small circled glyph), then the reserved count and an hourglass while Preparing.
+each tracker row: the actions free to spend now as a large gold number over the round's count
+("5/6", red at zero) with a pip per action in the sheet's three states, gold free, violet
+reserved, hollow spent (0.5.3 for the pips, which were one small circled glyph; 0.10.1 for the
+reserved state, which the tracker showed as spent until then), then the reserved count and an
+hourglass while Preparing. The big number is what you can act on; the pips and the tooltip's
+legend carry the reserve.
 
 **Prepared Maneuvers.** A Maneuver of three or more actions is Prepared: one action now, the rest
 reserved, and you are Preparing (a token status) until your next Opportunity. The Committed Strike
@@ -812,7 +822,11 @@ stood on. Awareness and Endure are not stances; the handbook calls for them by n
 - **On the sheet**, two chips in the header, each showing the Threshold an attacker would meet,
   one click to switch, and the chosen Defense marked in the grid. Adversaries have the same chips.
 - **On the Token HUD**, one button showing the current answer, flipping to the other Defense: the
-  fastest way to change your mind when an arrow has just been pointed at you.
+  fastest way to change your mind when an arrow has just been pointed at you. Above it, in an
+  encounter, the **action counter** (0.10.1): the actions free to spend now over the round's
+  count ("4/6") with the sheet's three-state pips beneath, gold free, violet reserved, hollow
+  spent, the legend in its tooltip, re-drawn as the actor spends while the HUD is open. A readout,
+  not a button, and the same computation as the sheet's and the tracker's pips.
 - **In the attack dialog, the answer is hidden.** The attacker sees only that the defender's stance
   meets the roll and a note that it is revealed on the card: no dropdown, because the choice is not
   theirs, and no Defense or Threshold, because knowing which would be playing the character sheet
@@ -1113,23 +1127,31 @@ Shift-click skips the dialog.
 **The Maneuvers tab** (the tab keeps its id `actions` in code). It opens with the **Basic
 Maneuvers**: what every character can do, grouped by category in the book's order and foldable,
 read straight from the Maneuvers compendium rather than copied onto the sheet, so a rewrite in
-`data/maneuvers.xlsx` (the workbook that now authors them, with its own `Enabled?` column; nothing
-ships until Mike enables a row, so the panel says so and stands empty today) reaches every
-character on the next build. Clicking a name uses it as that
+`data/maneuvers.xlsx` (the workbook that authors them, with its own `Enabled?` column; only a row
+Mike enables ships, and Aid is the one so far, since 2026-10-03, so the panel carries Aid under
+Watching, Deceiving & Helping and says so when nothing is enabled) reaches every character on the
+next build. Clicking a name uses it as that
 character: the card goes to chat with the character speaking, or, for a Maneuver that rolls a check,
 the roll dialog opens. Shift-click skips the dialog. Each row can also be sent to chat, opened, or
 copied down onto the sheet to become the character's own to edit. Below that is the list the
 character has picked up: dragged from the compendium, made on the tab, or copied down. Parry, Void,
 Counter and Intercept appear here as the book's Defense & Recovery Maneuvers do; using one without
 its Training Talent is announced, not prevented. Using a Basic Maneuver spends nothing by itself
-unless it carries the Reaction trait, in which case its cost comes off the six.
+unless it carries the Reaction trait, in which case its cost comes off the six, or unless it is one
+the system implements (0.10.1): a Maneuver named **Recenter** does what the Overview's Recenter
+button does (the action spent, every Exposed Zone but a Posture's closed, the Bind ended, the
+card), and one named **Raise a Shield** raises the shield in hand, or says there is none. The
+Action is the entry point and the compendium's Recenter Macro uses it; both rows wait on their
+`Enabled?` cells like every other.
 
 A Maneuver Item carries a **Description** (the flavour line), an **Effect** (the rules),
 Prerequisites, Requirements, a Trigger, its cost range, the Reaction trait with its own cost, and
 its **Automation** cell, which since 0.9.0 is one rule per line in the framework's grammar rather
 than notes (section 7): the Item sheet shows the text and, under it, what the system read from
-each line, and nothing acts on a rule yet, since no rule kind exists. The intent still travels with
-the Maneuver; the framework is what will read it, one kind at a time.
+each line. Since 0.10.0 one kind acts, `bonus`, and a Maneuver is also what a `bonus ... to Aid`
+is matched against: a roll made from the Maneuver's Item carries the bonus, and a check made
+without it is offered the bonus unticked (ruling 122). A Maneuver whose check is enabled with no
+Constellation named is a Relevant Check and opens the picker carrying the Maneuver (ruling 123).
 
 **Adversary sheet.** Written Threshold-first, because the players roll everything. The header has
 Vigor (current, maximum and Temporary, typed directly), Spent, actions per round, Speed in feet per
@@ -1154,7 +1176,9 @@ the traits that decide what it can do in a Bind. A Talent or
 Maneuver carries its **Aura** (range in feet, who it concerns, Visible by default), editable by the
 GM on the Details tab. A Talent, Maneuver or Constellation carries its **Automation** panel
 (0.9.0; section 7): the cell's text, editable by the GM, and an As read list of what the framework
-made of each line, which with no rule kinds defined says so and lists nothing.
+made of each line, a `bonus` line summarised in words ("+1 Condition bonus to Aid while Human is
+Trained") and an empty cell reading "No rules." A Maneuver's "Rolls a check" panel says that a
+check with no Constellation chosen is a Relevant Check (0.10.0).
 
 **What a player may change** (Mike, 2026-10-01). The sheet is the character's record, and some of
 it is the GM's to write. For a player, Ancestry, Bloodline, Culture, Background, Calling, Ancestry
@@ -1744,67 +1768,127 @@ opens the tool section 8 describes. Behind it two hidden world settings, `conten
 entry in Configure Settings, and the offer at load compares the first with the index on disk.
 
 **A stale-copy warning.** At load the system compares the server's version with a stamp carried in
-its own code and another in its stylesheet. If either disagrees, the browser is running a cached
-copy of an older release (a caching proxy such as Cloudflare in its default configuration will do
-this after every update), and a persistent warning names what is stale and says to hard-reload.
+its own code and one in each of its stylesheets (eleven since 0.10.1, one per window: the sheets'
+shared chrome, the character, the Item, the wizard, the tracker and HUD, the auras, the chat cards
+and roll dialogs, the attack flow, the party, Sync content, and the foundation they build on; the
+map is `styles/README.md`). If any disagrees, the browser is running a cached copy of an older
+release (a caching proxy such as Cloudflare in its default configuration will do this after every
+update), and a persistent warning names what is stale, the file included, and says to hard-reload.
 Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework
+## 7. Automation: the framework and the `bonus` kind
 
-**What it is, and what it is not** (0.9.0; rulings 118 to 120). Since 0.9.0 every Talent sheet in
-`data/*.xlsx` may carry an **Automation** column, as the action sheets already did, and the system
-has a framework for reading it. **The framework does nothing in play yet.** It parses the column,
-stores what it read on the Item, indexes it on the Actor and shows it on the Item sheet, and that
-is the whole of it: no roll, no Strike, no damage, no condition, no movement and no aura reads a
-rule, because no rule kind exists. Mike's instruction (2026-10-03): "do NOT survey the talents yet
-or build ANY of the automation hooks. just build the framework. we will build automation syntax
-hooks one at a time." Kinds are added one at a time with Mike, each with its engine hook, its
-test, its line in `data/README.txt` and its docs; the first will be an aura, for Torchbearer
-Human's 15 feet, and it will serve every aura in the book without more code. Until then a Talent's
-Effect is prose the sheet displays (section 9), and the design record is `automation-plan.md` in
-the project root.
+**What it is, and what it is not** (0.9.0 and 0.10.0; rulings 118 to 124). Since 0.9.0 every
+Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets already did,
+and the system has a framework for reading it: the column is parsed, stored on the Item, indexed
+on the Actor and shown on the Item sheet. **Since 0.10.0 the framework does one thing in play.**
+The `bonus` kind, the first (Mike, 2026-10-03: "okay, first automation kind we will create is the
+Human Ancestry one"), puts a typed bonus or penalty on a roll, read from the cell. Nothing else
+reads a rule: no Strike's commitment, no damage step, no condition, no movement and no aura on the
+map, because no kind for them exists, and Mike's instruction stands ("we will build automation
+syntax hooks one at a time"). Kinds are added one at a time with Mike, each with its engine hook,
+its test, its line in `data/README.txt` and its docs; the next is the aura, for Torchbearer Human's
+15 feet, which will serve every aura in the book without more code. A Talent's Effect is prose the
+sheet displays (section 9) until a kind reads it; Humanity's is the first a kind can, and its cell
+is Mike's to paste (the 0.10.0 changelog entry prints the four lines). The design record is
+`automation-plan.md` in the project root.
 
 **The cell.** One rule per line, `kind: arguments` (the colon optional when there are no
 arguments), blank lines ignored, a line beginning with `#` a comment. The kind word is the word
-before the colon, and the arguments are the kind's own to define and check. With no kinds defined,
-the only cell that builds is a blank one or one of comments; any other line is "unknown rule
-kind", and the build says so by name.
+before the colon, and the arguments are the kind's own to define and check. One kind word reads
+today, `bonus`; any other is "unknown rule kind", and the build says so by name, listing the kinds
+it knows.
+
+**The `bonus` kind** (0.10.0; ruling 121). One line: `bonus: <value> <Type> to <Target>`, with an
+optional `if <Constellation> is <Rank>` after it. The value is signed (`+1`, `-2`; a bare `1` is
+`+1`; `0` is refused, since a bonus of 0 does nothing). The Type is one of the book's three,
+Situation, Condition or Gear, in any case; the retired words circumstance, status and item are
+refused with the current word named, and untyped is refused, since no Talent bonus is untyped.
+`to` names the Constellation or the Maneuver the bonus applies to, as the book prints it (the slug
+form reads too, and a Maneuver's glyphs are ignored). The `if` clause is equality: the rule applies
+while the character's rank in that Constellation is exactly Untrained, Trained, Expert, Master or
+Legendary, so a Talent that scales by rank writes one line per rank, and Humanity's Effect is four
+lines, one per sentence: `bonus: +1 Condition to Aid if Human is Trained`, `bonus: +2 Condition to
+Aid if Human is Expert`, `bonus: +3 Condition to Aid if Human is Master`, `bonus: +4 Condition to
+Aid if Human is Legendary`. A line that does not fit is refused with the shape printed (`bonus: +1
+Condition to Aid if Human is Expert`); a target that names no Constellation or Maneuver, an `if`
+that names a Maneuver, and a Lore as a target are refused by name. Same type does not stack, by the
+book: two Humanity lines never both apply (one rank at a time), and overlapping lines of one type
+give the highest.
+
+**Where the number shows.** A bonus to a Constellation (`bonus: +1 Situation to Stealth`) is
+applied wherever that Constellation's modifier is assembled: the roll dialog's list of terms and
+its total, the card's modifier lines (labelled with the Talent's name, "Humanity +1"), the Skills
+grid's cell, the number beside the Constellation in the Relevant Check picker, and an Initiative
+rolled with it (ruling 111). A bonus to a Defense (`bonus: +1 Gear to Guard`) is folded into the
+Defense at prepare, so the Threshold on the sheet and in the grid, the Defense roll and an
+Initiative rolled with Awareness all move together, once, as Frightened moves them. A bonus to a
+Maneuver (`to Aid`) is applied when the roll is made from that Maneuver's Item: its row on the
+Maneuvers tab, or the Relevant Check picker a Relevant Check Maneuver opens (below). On any other
+check the roll dialog **offers** it instead, an unticked checkbox under the Load Strain offer,
+labelled "Humanity: Aid" with the hint "Humanity: this bonus applies to checks to Aid. Tick it if
+this roll is one.", because whether a roll is an Aid is the player's to say and not the engine's
+(ruling 122; the Climb-or-Swim precedent). A ticked offer joins the roll as a typed extra, is
+printed on the card, and is remembered with a road roll (0.7.3). It is never offered on an attack,
+a Defense or an Initiative. Adversaries roll flat, and nothing of this reaches them.
+
+**The Relevant Check Maneuver** (0.10.0; ruling 123). A Maneuver whose check is enabled with no
+Constellation chosen is a Relevant Check: using it opens the Relevant Check picker with the
+Maneuver's name as the roll's label and the Maneuver itself behind the roll, so Aid's roll is Aid's
+and a `bonus ... to Aid` is applied to it rather than offered. The build sets this on a sheet
+action whose Effect says "Relevant Check" and names no check, and Aid ships with it set since Mike
+enabled its row in `data/maneuvers.xlsx` on 2026-10-03, so an Aid used from the Maneuvers tab opens
+the picker and the roll's card reads "Aid". The Item sheet's "Rolls a check" panel says so under
+its fields.
+
+**The hook point** (0.10.0; ruling 124). A kind that affects a roll names `modifiers` in its
+`hooks`. The engine asks every registered kind at two moments, the check assembly
+(`baseModifiers` in `module/dice/check/modifiers.mjs`, every roll but a Defense's) and the Defense pass
+(`prepareDefenses`, the character's Defense pass in `module/data/character/defenses.mjs`), through one dispatcher (`ruleModifiers` in
+`module/rules/engine.mjs`): each kind is handed its own rules on the actor and the roll's kind,
+Constellation and Item, and answers with modifiers, applied or offered; a kind that throws is
+logged and contributes nothing, so a roll never dies over a rule. A second kind that wants the
+same moment adds no engine code; a new moment is defined with the first kind that needs it, as
+this one was.
 
 **The build** (ruling 118). `build_foundry.mjs` parses every Talent's and every Maneuver's cell with
 the system's own grammar module (`module/rules/grammar.mjs`, pure enough for Node to import, so
-the build and the client read a cell identically; ruling 120). A line it does not know fails the
-build with `automation: <Constellation> / <Talent>, line <n>: <message> ("<text>")`, so
-`sync_content.cmd` stops naming the cell before the sources are written, exactly as a bad Aura
-cell stops the converter. A clean cell writes `system.automation` (the text) and `system.rules`
-(the parsed rules) on the document; the run's summary counts them, and today reads "automation: no
-rules (no rule kinds are defined yet)". The content hash covers the rules, so a changed cell
-reaches an open world through Sync content as any field does, and the copies refresh overwrites an
-owned copy's rules from the source, since the cell is the author (ruling 120).
+the build and the client read a cell identically; ruling 120), handing it a resolver of
+Constellation and Maneuver names so a `bonus` target is checked against the book at build time. A
+line it does not know fails the build with `automation: <Constellation> / <Talent>, line <n>:
+<message> ("<text>")`, so `sync_content.cmd` stops naming the cell before the sources are written,
+exactly as a bad Aura cell stops the converter. A clean cell writes `system.automation` (the text)
+and `system.rules` (the parsed rules) on the document; the run's summary counts them ("automation:
+4 rules on 1 document (1 kind in use)"), and until a cell uses the kind reads "automation: no
+rules (1 kind defined, none in use)". The content hash covers the rules, so a changed cell reaches
+an open world through Sync content as any field does, and the copies refresh overwrites an owned
+copy's rules from the source, since the cell is the author (ruling 120).
 
 **The Item sheet.** The Automation panel on a Talent, a Maneuver and a Constellation shows the
 textarea and, under it, **As read**: one row per rule with its kind word in a tag and the kind's
-one-line summary, or a red row with the message for a line that did not parse or a kind the system
-does not know. With nothing stored it says "No rules (the framework has no rule kinds yet; they are
-added one at a time)". A GM who edits the textarea on a world Item or an owned copy sees the text
-save and the list mark each line: the Item parses on update and stores the error entries beside
-the rules, and never refuses the edit (ruling 118). The text is the GM's to type; what the system
-makes of it is shown, not enforced.
+one-line summary ("+1 Condition bonus to Aid while Human is Trained"), or a red row with the
+message for a line that did not parse or a kind the system does not know. With nothing stored it
+says "No rules." A GM who edits the textarea on a world Item or an owned copy sees the text save
+and the list mark each line: the Item parses on update, resolving a `bonus` target against the
+Constellations and the Maneuvers the world knows, and stores the error entries beside the rules,
+and never refuses the edit (ruling 118). The text is the GM's to type; what the system makes of it
+is shown, and since 0.10.0 a `bonus` line is also acted on.
 
 **The Actor.** At prepare, a character or adversary collects every owned Talent's, Maneuver's and
-Constellation's rules into `system.rules { all, byKind, unknown }`, and `actor.rulesOfKind("aura")`
-answers from the index without walking the Items. Today every list is empty, a line of an unknown
-kind lands in `unknown`, and the call returns `[]`; this is where a kind's engine hook will look
-when there is one.
+Constellation's rules into `system.rules { all, byKind, unknown }`, and `actor.rulesOfKind("bonus")`
+answers from the index without walking the Items. A line of an unknown kind lands in `unknown` and
+nothing reads it; the `bonus` entries are what the hook point reads.
 
 **Kinds are plug-ins** (ruling 119). A kind is one file in `module/rules/kinds/` with one contract:
 its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
 can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
-defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which today
-registers nothing and says in a comment which kind comes first. `module/rules/README.md` is the
-recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every step-running mode (`--check` builds nothing)
-of `build_all.mjs` before the Foundry build.
+defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which
+registers `bonus` and says in a comment which kind comes next. `module/rules/README.md` is the
+recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every
+step-running mode (`--check` builds nothing) of `build_all.mjs` before the Foundry build; it asserts
+the list of shipped kinds, so a kind cannot ship unannounced.
 
 ---
 
@@ -1949,18 +2033,21 @@ before; the sources and the index are.
   sources and nothing else: it never touches a world compendium of the GM's own, a stale system
   document is deleted by name only after the plan has shown it, and a GM's content belongs in the
   world. The copies refresh is a checkbox, and a copy whose source cannot be found is left alone.
-  Since 0.9.0 the loop parses the Automation column and stops on a line it does not know; nothing
-  acts on a Talent's Effect or on a parsed rule, because no rule kind exists yet (section 7).
-- **The automation framework does nothing in play** (0.9.0; rulings 118 to 120). It parses the
-  Automation column, stores the rules on the Item, indexes them on the Actor and shows them on the
-  Item sheet, and no roll, Strike, damage step, condition, movement or aura reads one, because the
-  registry of rule kinds is empty by Mike's instruction ("do NOT survey the talents yet or build
-  ANY of the automation hooks. just build the framework. we will build automation syntax hooks one
-  at a time"). Every rule line in a cell is "unknown rule kind" today and stops the build by name;
-  the same line on a world Item saves and is marked, never refused. Kinds are added one at a time
-  with Mike, each with its hook, its test, its README line and its docs; the first is the aura, for
-  Torchbearer. Nothing generates code from a cell: the cell is data, and the engine is the only
-  code.
+  Since 0.9.0 the loop parses the Automation column and stops on a line it does not know; since
+  0.10.0 a parsed `bonus` rule reaches the open world through the same sync and acts there, and
+  nothing acts on a Talent's Effect itself (section 7).
+- **The automation framework does one thing in play** (0.9.0 and 0.10.0; rulings 118 to 124). It
+  parses the Automation column, stores the rules on the Item, indexes them on the Actor, shows them
+  on the Item sheet, and since 0.10.0 puts a `bonus` rule's number on a roll, a Defense Threshold
+  or a roll dialog's offer (section 7). No Strike's commitment, damage step, condition, movement or
+  aura reads a rule, because no kind for them exists: kinds are added one at a time with Mike by his
+  instruction ("do NOT survey the talents yet or build ANY of the automation hooks. just build the
+  framework. we will build automation syntax hooks one at a time"), each with its hook, its test,
+  its README line and its docs, and the next is the aura, for Torchbearer. A rule line of a kind
+  the registry lacks stops the build by name; the same line on a world Item saves and is marked,
+  never refused. A Maneuver-targeted bonus is offered, never applied, on a check made without the
+  Maneuver (ruling 122), and nothing of the framework reaches an adversary. Nothing generates code
+  from a cell: the cell is data, and the engine is the only code.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.
@@ -1998,9 +2085,10 @@ before; the sources and the index are.
   line between two tokens, which is the standing risk the working agreement names.
 - **Levelling is manual.** Change the level field; everything recomputes. There is no level-up
   wizard yet.
-- **Talent effects are prose the sheet displays**, not rules the system acts on. The framework
-  that will read them shipped in 0.9.0 (section 7) with no rule kinds, so it changes nothing in
-  play; the rules will be authored in the spreadsheets' Automation column, one kind at a time with
-  Mike, never as code written per Talent.
+- **Talent effects are prose the sheet displays**, not rules the system acts on, except where a
+  Talent's Automation cell says otherwise in a kind the framework knows: one kind in 0.10.0,
+  `bonus` (section 7), and no cell in the book uses it until Mike pastes Humanity's. The rules are
+  authored in the spreadsheets' Automation column, one kind at a time with Mike, never as code
+  written per Talent; a Talent with no cell, which is every Talent today, is prose still.
 - **No equipment shopping**, in the wizard or out of it.
 - **No magic**, because the playtest has none.

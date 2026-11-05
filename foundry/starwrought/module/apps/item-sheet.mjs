@@ -63,14 +63,6 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
    */
   static READ_ONLY_FOR_PLAYERS = Object.freeze(["talent", "constellation", "chassis"]);
 
-  /**
-   * Item types that carry the Automation panel (0.9.0): the three the engine collects rules from
-   * (module/rules/engine.mjs, collectRules) and whose data models carry `automation` and `rules`
-   * (rulesFields in module/data/item.mjs). The two lists must agree, or a type would show a
-   * textarea with no field behind it or carry rules no sheet can show.
-   */
-  static RULE_TYPES = Object.freeze(["talent", "constellation", "action"]);
-
   /** Is this sheet read-only for this user only because of what the Item is, not who owns it? */
   get lockedForPlayer() {
     return !game.user.isGM && SwItemSheet.READ_ONLY_FOR_PLAYERS.includes(this.document.type);
@@ -127,10 +119,11 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       isGear: item.type === "gear",
       isAction: item.type === "action",
       isPhysical: SW.PHYSICAL_TYPES.includes(item.type),
-      // The Automation panel (0.9.0; ruling 118): whether this type has one, and the data model's
-      // view of the stored rules for its "As read" list (prepareRules in module/data/item.mjs),
-      // passed by name so the template does not reach through `system` for a derived value.
-      hasRulesPanel: SwItemSheet.RULE_TYPES.includes(item.type),
+      // The Automation panel (0.9.0; ruling 118): the data model's view of the stored rules for its
+      // "As read" list (prepareRules in module/data/items/rules.mjs), passed by name so the template
+      // does not reach through `system` for a derived value. Which types show the panel is decided
+      // by which details/<type>.hbs includes details/automation.hbs (0.10.1): the three whose models
+      // carry `automation` and `rules`, and the engine collects from the same three.
       ruleLines: item.system.ruleLines ?? []
     });
 
@@ -150,6 +143,8 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       materials: this.#choices(SW.MATERIALS),
       damageTypes: this.#choices(SW.DAMAGE_TYPES),
       handling: this.#choices(SW.HANDLING),
+      // Where a thing you can carry is (held, worn, carried): the physical panel's select (0.10.1).
+      states: this.#choices(SW.CARRY_STATES),
       // passive, then ⓿ through ❻, each labelled with its glyph (PHB v4.10, Symbols).
       costs,
       // A Reaction's own cost: the same keys, minus passive, since a Reaction is something you do.

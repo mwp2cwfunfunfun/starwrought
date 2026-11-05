@@ -1,0 +1,27 @@
+{{!-- The Constellation's own fields. Shared panels: automation. --}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.constellation"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.slug"}}</span>
+      <input type="text" name="system.slug" value="{{system.slug}}"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.category"}}</span>
+      <select name="system.category">{{selectOptions choices.categories selected=system.category}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.keyAttribute"}}</span>
+      <select name="system.attribute">{{selectOptions choices.attributes selected=system.attribute}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.identity"}}</span>
+      <input type="checkbox" name="system.identity" {{checked system.identity}}></label>
+    {{!-- `parentSlug`, not `parent`: on a data model `parent` is the owning Item and read only. --}}
+    <label class="sw-field sw-wide" data-tooltip="STARWROUGHT.Field.parentHint"><span>{{localize "STARWROUGHT.Field.parent"}}</span>
+      <select name="system.parentSlug">{{selectOptions choices.parents selected=system.parentSlug blank=(localize "STARWROUGHT.Field.parentNone")}}</select></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.meta"}}</span>
+      <input type="text" name="system.meta" value="{{system.meta}}"></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.flareTrigger"}}</span>
+      <input type="text" name="system.flareTrigger" value="{{system.flareTrigger}}"></label>
+  </div>
+  {{#if parentName}}
+  <p class="sw-note">{{localize "STARWROUGHT.Hint.parentConstellation" name=parentName}}</p>
+  {{/if}}
+</div>
+
+{{> "systems/starwrought/templates/item/details/automation.hbs"}}

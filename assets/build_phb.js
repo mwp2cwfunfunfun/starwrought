@@ -167,8 +167,9 @@ try { bgTable = JSON.parse(fs.readFileSync("assets/backgrounds.json", "utf8")); 
 const R = JSON.parse(fs.readFileSync("assets/roster.json", "utf8"));
 let LANGS = [];
 try { LANGS = JSON.parse(fs.readFileSync("assets/languages.json", "utf8")); } catch (e) {}
-// data/actions.xlsx, by way of actions.json: authoritative for any action it names, so a roster
-// row of the same name is left out of the appendix rather than printed twice.
+// The actions workbooks (data/maneuvers.xlsx today), by way of actions.json: authoritative for any
+// action they name, so a roster row of the same name is left out of the appendix rather than
+// printed twice.
 let ACTS = { actions: [] };
 try { ACTS = JSON.parse(fs.readFileSync("assets/actions.json", "utf8")); } catch (e) {}
 const actionsFromSheet = new Set((ACTS.actions || []).map(a => stripCost(a.name).toLowerCase()));
