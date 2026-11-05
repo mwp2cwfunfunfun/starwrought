@@ -321,7 +321,7 @@ export class SwCheck {
       ? this.rangeNoteFor({ attacker, weapon, attackItem, attackerDoc, defenderDoc, thrown, ranged })
       : null;
 
-    // The answer behind the Defense, named as answeringDefense names it: "Guard (Parry)", or
+    // The answer behind the Defense, named as defenseThresholdFor names it: "Guard (Parry)", or
     // the Posture's own name.
     // Plain (0.5.1, T16): the card appends the ⓿↺ itself, so the data's glyph would print twice.
     const postureName = posture

@@ -32,9 +32,10 @@ export const AttackMixin = Base => class extends Base {
    * @param {string} [options.targetUuid]  A Token or Actor uuid to strike, instead of the user's target.
    * @param {string} [options.targetTokenId]  A canvas Token id to strike (the Intercept card passes one).
    * @param {string} [options.reaction]    The Reaction this Strike is: "intercept" pays Intercept's
-   *                                       ❶↺ instead of the Strike's cost; "counter" and "riposte"
-   *                                       were paid by the Reaction that granted them. All three
-   *                                       are Quick Strikes.
+   *                                       ❶↺ instead of the Strike's cost; "riposte" was paid by
+   *                                       the Parry that granted it. Both are Quick Strikes, and
+   *                                       both declare like any Blow, answered by a basic Defense
+   *                                       alone (0.12.0, ruling 161).
    * @param {boolean} [options.blind]      The attack flow's roll (0.5.0 brief): everything is
    *                                       assembled as usual (Handling, Support, Unwieldy, the
    *                                       range note, the spend) but the defender is not read at
@@ -63,9 +64,9 @@ export const AttackMixin = Base => class extends Base {
     }
 
     // A Strike made as a Reaction (Intercept, the Riposte after a Parry) is always a Quick Strike
-    // (PHB v4.21). Only Intercept pays here; the Riposte's Parry was paid when the attack it
-    // answered resolved, and the Riposte itself costs nothing more. (Counter, 0.4.2 to 0.10.1, is
-    // gone from the book.)
+    // (PHB v4.21). Only Intercept pays; the Riposte's Parry was paid when the attack it answered
+    // resolved, and the Riposte itself costs nothing more. (Counter, 0.4.2 to 0.10.1, is gone from
+    // the book.)
     const reactionStrike = ["intercept", "riposte"].includes(asReaction) ? asReaction : null;
     const strike = reactionStrike ? "quick" : (SW.STRIKE_KINDS[askedStrike] ? askedStrike : SW.DEFAULT_STRIKE);
     const free = askedFree || (reactionStrike === "riposte");
@@ -83,12 +84,13 @@ export const AttackMixin = Base => class extends Base {
       if (only?.actor) targetToken = only;
     }
 
-    // Declaring (brief, Entry points): this Strike is a Maneuver of the attacker's own (not an
-    // Intercept or the riposte, which answer a Blow already declared), and it is not the flow's
-    // own blind roll. The targets are snapshotted now: every token the user has targeted, or the
-    // one the caller named. With several, the first stands in as the reference for reach and the
-    // thrown inference below.
-    const declaring = !blind && !reactionStrike;
+    // Declaring (brief, Entry points): every Strike at a target declares, a Reaction Strike (an
+    // Intercept, the Riposte) included since 0.12.0 (ruling 161: the defender names a basic
+    // Defense in the prompt rather than having one read for them); only the flow's own blind roll
+    // does not. The targets are snapshotted now: every token the user has targeted, or the one the
+    // caller named. With several, the first stands in as the reference for reach and the thrown
+    // inference below.
+    const declaring = !blind;
     const targets = declaring ? this.#declaredTargets({ targetTokenId, targetUuid: askedTarget }) : [];
     if (declaring && targets.length && !targetToken) targetToken = targets[0];
 
@@ -117,8 +119,18 @@ export const AttackMixin = Base => class extends Base {
     // Strike paid when it was Prepared, a Reaction's Strike was paid by the Reaction, and a Blow
     // the GM cancels before any die returns the cost (AttackCoordinator).
     const declareStrike = async kindKey => {
-      const pub = await AttackCoordinator.declare({ attacker: this, weaponId, strike: kindKey, targets, prepared, free, thrown });
-      if (pub && !paid) {
+      const pub = await AttackCoordinator.declare({
+        attacker: this, weaponId, strike: kindKey, targets, prepared, free, thrown, reaction: reactionStrike
+      });
+      if (!pub || paid) return pub;
+      if (reactionStrike === "intercept") {
+        // Intercept ❶↺: the Reaction's own cost, in place of the Strike's, paid as the Blow is
+        // declared and returned by the coordinator if the Blow is cancelled before the die.
+        const r = SW.REACTIONS.intercept;
+        await this.spendActions(r.cost, {
+          label: `${game.i18n.localize(r.label)} ${SW.ACTION_GLYPHS[r.cost]}${SW.REACTION_GLYPH}: ${weapon.name}`
+        });
+      } else {
         const k = SW.STRIKE_KINDS[kindKey] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
         await this.spendActions(k.cost, {
           label: `${game.i18n.localize(k.label)} ${SW.ACTION_GLYPHS[k.cost]}: ${weapon.name}`
@@ -153,10 +165,8 @@ export const AttackMixin = Base => class extends Base {
 
     // No Defense is read here (0.12.0, ruling 159). The defender's answer is theirs: committed in
     // the Combat Prompt, revealed by the coordinator and read there against this die on the flow's
-    // blind roll, which the dialog says in so many words. A Strike that reaches the die here with a
-    // defender and no flow is a Reaction Strike until step 4 lands it in the flow too; it meets the
-    // basic Defense the defender names in the prompt from then on. With no target there is no
-    // defender, and the dialog's typed Threshold stands.
+    // blind roll, which the dialog says in so many words. With no target there is no defender, and
+    // the dialog's typed Threshold stands.
     const targetDefense = targetActor
       ? { key: null, label: "", threshold: null, unavailable: null, hidden: true }
       : null;
@@ -257,8 +267,9 @@ export const AttackMixin = Base => class extends Base {
           await declareStrike(cfg.strike);
           return false;
         }
-        if (reactionStrike === "intercept") {
-          // Intercept ❶↺: the Reaction's own cost, in place of the Strike's.
+        if ((reactionStrike === "intercept") && !blind) {
+          // Intercept ❶↺ with no target to declare at: the Reaction's own cost, in place of the
+          // Strike's. (The flow's blind roll paid at the declaration.)
           const r = SW.REACTIONS.intercept;
           await this.spendActions(r.cost, {
             label: `${game.i18n.localize(r.label)} ${SW.ACTION_GLYPHS[r.cost]}${SW.REACTION_GLYPH}: ${weapon.name}`

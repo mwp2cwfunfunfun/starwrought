@@ -19,7 +19,9 @@
  *
  * Entering Measure is dangerous: a Move (never a Step or a Crawl; a Rush always) from outside a
  * foe's Total Reach to inside it lets that foe Intercept ❶↺ with a Quick Strike. The system offers
- * the card; it never blocks or delays the move.
+ * the card; it never blocks or delays the move. Taken, the Intercept declares into the attack flow
+ * like any Blow (0.12.0, ruling 161): the mover commits a basic Defense in the Combat Prompt (a
+ * Reaction never triggers a Reaction), and nothing is read for them.
  *
  * Named documents/actions.mjs through 0.10.0, which read as the actions workbook or the Actions
  * pack; canvas/ruler.mjs reads the numbers and the classifier from here to colour a drag.
@@ -31,6 +33,7 @@ import { cardActions, cardHtml, postCard, ownersOf, tableFor, requireOwner } fro
 import { setting } from "../helpers/settings.mjs";
 import { footprint, cellGap, minGapAlongPath } from "../canvas/geometry.mjs";
 import { reachesOf } from "../canvas/reach.mjs";
+import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 
 const { escapeHTML } = foundry.utils;
 const localize = key => game.i18n.localize(key);
@@ -45,7 +48,6 @@ export function registerMovementTracking() {
   Hooks.on("preMoveToken", onTokenMoves);
   Hooks.on("deleteCombat", () => charged.clear());
   cardActions.set("intercept", onIntercept);
-  cardActions.set("interceptDefense", onInterceptDefense);
 }
 
 /* -------------------------------------------- */
@@ -403,12 +405,15 @@ function postInterceptCard({ foe, mover, actor, move, reach }) {
 }
 
 /**
- * The foe takes the Intercept. A character makes a Quick Strike with the weapon that reached; the
- * Strike's own cost ❶ is the Reaction's. An adversary's Intercept is answered the way every
- * adversary attack is in STARWROUGHT: the players roll, so the mover gets a card with a Defense
- * roll against the attack's Threshold, and the adversary pays its action.
+ * The foe takes the Intercept: a Quick Strike declared into the attack flow (0.12.0, ruling 161),
+ * answered by the mover's basic Defense alone, committed in the Combat Prompt. A character
+ * declares with the weapon that reached (rollAttack pays Intercept's ❶↺ as the Blow is declared);
+ * an adversary declares its longest attack row and pays its action, and the mover, if a player's,
+ * rolls Defense against the row's Threshold once the answer is revealed, as for every adversary
+ * attack in STARWROUGHT. Nothing is read for the mover, and no card asks them for a roll outside
+ * the flow.
  */
-async function onIntercept({ actor: foe, button, root }) {
+async function onIntercept({ actor: foe, button }) {
   if (!requireOwner(foe)) return;
   const targetTokenId = button.dataset.target;
   const moverToken = canvas.tokens?.get(targetTokenId) ?? null;
@@ -419,68 +424,12 @@ async function onIntercept({ actor: foe, button, root }) {
   }
 
   if (button.dataset.attackId) {
-    const attack = (foe.system.attacks ?? []).find(a => a.id === button.dataset.attackId);
-    const threshold = Number(button.dataset.threshold) || Number(attack?.threshold ?? attack?.thresholds?.[0]) || 10;
-    await foe.spendActions?.(SW.REACTIONS.intercept.cost, { label: localize("STARWROUGHT.Reaction.intercept") });
-    const mover = moverToken?.actor ?? null;
-    const names = { foe: escapeHTML(foe.name), mover: escapeHTML(moverToken?.name ?? "?"), attack: escapeHTML(attack?.name ?? "") };
-    const rushed = root?.dataset.kind === "rush";
-    const notes = [localize("STARWROUGHT.Intercept.quickStrikeNote")];
-    if (rushed) notes.push(format("STARWROUGHT.Intercept.rushNote", names));
-    const content = cardHtml({
-      root: "sw-intercept-card sw-intercept-answer",
-      actorUuid: moverToken?.document.uuid ?? "",
-      glyph: `${SW.ACTION_GLYPHS[1]}${SW.REACTION_GLYPH}`,
-      title: localize("STARWROUGHT.Reaction.intercept"),
-      lines: [format("STARWROUGHT.Intercept.answerText", { ...names, threshold })],
-      notes,
-      // The button carries who is attacking, so the Defense card names the interceptor and its
-      // Position offers act on it, whatever the mover's player happens to have targeted.
-      buttons: mover ? [{
-        action: "interceptDefense", icon: "fa-solid fa-shield-halved",
-        label: format("STARWROUGHT.Intercept.buttonDefense", { threshold }),
-        data: { threshold, "attacker-token": foe.tokenOnScene?.()?.id ?? "", "attacker-uuid": foe.uuid }
-      }] : []
+    if (!moverToken?.actor) return ui.notifications.warn(localize("STARWROUGHT.Notify.noTarget"));
+    const pub = await AttackCoordinator.declare({
+      attacker: foe, attackId: button.dataset.attackId, strike: "quick", targets: [moverToken], reaction: "intercept"
     });
-    return postCard(foe, content);
-  }
-}
-
-/**
- * The mover answers an adversary's Intercept with the Defense its stance names (and the stance's
- * Reaction, which the engine charges), against the attack's Threshold, with the interceptor as the
- * attacker. rollDefense takes a Token placeable or an Actor; the token is preferred while it is on
- * the scene, the Actor stands in once it has left.
- */
-async function onInterceptDefense({ actor: mover, button }) {
-  if (!requireOwner(mover)) return;
-  if (typeof mover.rollDefense !== "function") return;
-  const threshold = Number(button.dataset.threshold) || 10;
-  const attacker = interceptorFrom(button.dataset);
-  // The mover answers an Intercept with the basic Defense alone: a Reaction never triggers a
-  // Reaction (PHB v4.21, Answering an Attack), so no Reaction Talent is offered and the mover's
-  // stance is left standing. answeringDefense() names that basic Defense (Grabbed swap applied).
-  const answering = typeof mover.answeringDefense === "function" ? mover.answeringDefense() : null;
-  const key = answering?.key ?? ((mover.system.stance in SW.DEFENSES) ? mover.system.stance : "evade");
-  return mover.rollDefense(key, {
-    threshold,
-    thresholdLabel: format("STARWROUGHT.Intercept.thresholdLabel", { threshold }),
-    attacker,
-    reaction: null,
-    basicOnly: true,
-    defenseNote: localize("STARWROUGHT.Reaction.basicOnly")
-  });
-}
-
-/** The interceptor an answer card's button names: its Token on the canvas, else its Actor, else null. */
-function interceptorFrom(dataset) {
-  const token = dataset.attackerToken ? canvas.tokens?.get(dataset.attackerToken) : null;
-  if (token) return token;
-  if (!dataset.attackerUuid) return null;
-  try {
-    const doc = fromUuidSync(dataset.attackerUuid);
-    return doc?.actor ?? doc ?? null;
-  } catch {
-    return null;
+    if (!pub) return null;
+    await foe.spendActions?.(SW.REACTIONS.intercept.cost, { label: localize("STARWROUGHT.Reaction.intercept") });
+    return pub;
   }
 }

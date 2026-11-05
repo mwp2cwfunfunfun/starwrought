@@ -43,7 +43,10 @@ export function position(cfg, result) {
   const reaction = cfg.reaction ?? null;
   const rule = reaction ? (SW.REACTIONS[reaction] ?? null) : null;
   const rigid = isAttack ? (cfg.defenderRigid ?? null) : (cfg.actor.rigidImplement ?? null);
-  const ownsRiposte = !!(defender?.system?.reactions?.owned && ("riposte" in defender.system.reactions.owned));
+  // Riposte is a character's: an adversary owns every Reaction by rule but has no weapon Item to
+  // strike back with, so the button would only warn (0.12.0).
+  const ownsRiposte = (defender?.type === "character")
+    && !!(defender?.system?.reactions?.owned && ("riposte" in defender.system.reactions.owned));
 
   const pos = {
     zones: Object.entries(SW.ZONES).map(([key, z]) => ({ key, label: z.label })),
@@ -59,7 +62,6 @@ export function position(cfg, result) {
     bindNote: null,
     ground: null,
     riposte: false,
-    counter: false,
     stopped: ["miss", "graze"].includes(outcome)
   };
 
@@ -108,6 +110,6 @@ export function position(cfg, result) {
   }
 
   pos.any = pos.exposeAttacker || pos.exposeDefender || !!pos.bind || !!pos.bindNote || !!pos.ground
-    || pos.riposte || pos.counter;
+    || pos.riposte;
   return pos;
 }

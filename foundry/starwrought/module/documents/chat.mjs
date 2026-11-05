@@ -125,8 +125,7 @@ async function onCardButton(event, message, flags) {
       case "formBind": return await formBindFromCard(message, flags, button);
       case "giveGround": return await giveGroundFromCard(button);
       case "step": return await stepFromCard(button);
-      case "counterStrike":
-      case "riposte": return await reactionStrikeFromCard(button, action === "riposte" ? "riposte" : "counter");
+      case "riposte": return await reactionStrikeFromCard(button, "riposte");
       case "chargeReaction": return await chargeReactionFromCard(message, button);
       case "finishPrepared": return await ownedActor(button)?.finishPrepared();
       case "abandonPrepared": return await ownedActor(button)?.abandonPrepared();

@@ -132,9 +132,10 @@ export async function stepFromCard(button) {
 }
 
 /**
- * The defender's Quick Strike back: Counter (its ❶↺ was charged when the attack resolved) or the
- * riposte after a Parry took Control (⓿). The weapon is the melee weapon in hand that sets the
- * defender's Total Reach; with none in hand there is nothing to strike with.
+ * The defender's Quick Strike back: the Riposte after a Parry Stopped the Strike (⓿; PHB v4.21, a
+ * Guard Talent). It declares into the attack flow like any Blow (0.12.0, ruling 161), answered by
+ * the original attacker's basic Defense alone. The weapon is the melee weapon in hand that sets
+ * the defender's Total Reach; with none in hand there is nothing to strike with.
  */
 export async function reactionStrikeFromCard(button, reaction) {
   const actor = ownedActor(button);
@@ -151,7 +152,7 @@ export async function reactionStrikeFromCard(button, reaction) {
 
 /**
  * Charge the defender's Reaction from the card, when the attacker's client could not: the ❶↺
- * comes off the defender's six and their stance falls back to its basic Defense.
+ * comes off the defender's six.
  */
 export async function chargeReactionFromCard(message, button) {
   const actor = ownedActor(button);

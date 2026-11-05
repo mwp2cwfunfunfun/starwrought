@@ -402,20 +402,30 @@ export class AttackCoordinator {
 
   /**
    * Declare a Maneuver (brief, "Entry points"): `SwActor#rollAttack` calls this instead of rolling
-   * when the attack flow is on and there is a target; an adversary's `attackWith` likewise.
-   * Targets are snapshotted now; changing Foundry targets afterwards changes nothing.
+   * when there is a target; an adversary's `attackWith` likewise; `SwActor#castSpell` for a spell
+   * (0.12.0); the Intercept and Riposte entries for a Reaction Strike. Targets are snapshotted
+   * now; changing Foundry targets afterwards changes nothing. What the attack is (the Threat, the
+   * permitted Defenses, the cost) is read by the coordinator from the attacker's own Items
+   * (attack-source.mjs), never from this payload.
    * @param {object} spec
    * @param {Actor} spec.attacker
    * @param {string|null} [spec.weaponId]   The weapon Item, for a character's Strike.
    * @param {string|null} [spec.attackId]   The attack row's action Item, for an adversary's.
-   * @param {string} spec.strike            quick | deliberate | committed.
+   * @param {string|null} [spec.talentId]   The spell Talent, for a Cast (0.12.0).
+   * @param {string} [spec.strike]          quick | deliberate | committed (a Strike).
+   * @param {string} [spec.cast]            quick | focused | committed (a Cast).
+   * @param {string|null} [spec.reaction]   "intercept" or "riposte": a Reaction Strike, answered by
+   *                                        a basic Defense alone (ruling 161).
    * @param {Token[]} spec.targets          Token placeables (or TokenDocuments) with actors.
-   * @param {boolean} [spec.prepared]       A Prepared Committed Strike being finished: already paid.
+   * @param {boolean} [spec.prepared]       A Prepared Maneuver being finished: already paid.
    * @param {boolean} [spec.free]           A Strike a Reaction paid for.
    * @param {boolean} [spec.thrown]         Throw it; inferred from distance when omitted.
    * @returns {Promise<object|null>} the public state, or null when nothing was declared
    */
-  static async declare({ attacker, weaponId = null, attackId = null, strike, targets = [], prepared = false, free = false, thrown } = {}) {
+  static async declare({
+    attacker, weaponId = null, attackId = null, talentId = null, strike, cast = null, reaction = null,
+    targets = [], prepared = false, free = false, thrown
+  } = {}) {
     if (!attacker) return null;
     if (!attacker.isOwner) {
       ui.notifications.warn(localize("STARWROUGHT.Notify.notOwner"));
@@ -431,7 +441,10 @@ export class AttackCoordinator {
       attackerTokenUuid: attacker.tokenOnScene?.()?.uuid ?? "",
       weaponId: weaponId || null,
       attackId: attackId || null,
+      talentId: talentId || null,
       strike: SW.STRIKE_KINDS[strike] ? strike : SW.DEFAULT_STRIKE,
+      cast: SW.CAST_KINDS[cast] ? cast : null,
+      reaction: ["intercept", "riposte"].includes(reaction) ? reaction : null,
       prepared: !!prepared,
       free: !!free,
       thrown: (thrown === undefined || thrown === null) ? null : !!thrown,
@@ -713,9 +726,15 @@ export class AttackCoordinator {
     // One Blow at a time (0.5.3; Mike: "my partner clicked attack twice, and it popped up two
     // defense boxes"). A Blow of this attacker's that nobody has answered yet is replaced by the
     // new declaration, since a second click means one attack; one that is further along is kept
-    // and the new one refused, because a defender has committed or a die may be in flight.
+    // and the new one refused, because a defender has committed or a die may be in flight. A
+    // Reaction Strike (Intercept, the Riposte; 0.12.0) answers a Blow already in play and is never
+    // counted here, in either direction: it neither replaces the attacker's own live Blow nor is
+    // replaced by it.
+    const isReaction = ["intercept", "riposte"].includes(payload.reaction);
     for (const live of [...AttackCoordinator.#workflows.values()]) {
+      if (isReaction) break;
       if (TERMINAL_PHASES.includes(live.phase) || (live.attacker?.actorUuid !== attacker.uuid)) continue;
+      if (live.maneuver?.reaction) continue;
       const untouched = (live.phase === "defending") && !live.targets.some(t => t.committed);
       if (!untouched) {
         return {
