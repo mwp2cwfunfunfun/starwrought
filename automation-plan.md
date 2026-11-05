@@ -110,18 +110,24 @@ The recipe, in full, is `module/rules/README.md`. In outline, and every step wit
 
 1. **The first kind was `bonus`, for Humanity** (0.10.0; the section at the end). Mike named it on
    2026-10-03, ahead of the aura, and its syntax came from his own sketch.
-2. **The aura, for Torchbearer Human.** The 15 feet the `Aura` column (0.5.1) already draws on the
-   map; what the kind adds is the effect inside the ring, written so that every aura in the book is
-   served by the same word. The syntax is Mike's to settle first. It is the next kind.
+2. **The aura, for Torchbearer Human.** Shipped in 0.13.0 as two lines on one Talent: `aura: 15ft,
+   allies, VISIBLE` draws the ring (the `aura` kind, the Aura column's successor) and `bonus: +1,
+   Situation, Defenses, FOR(allies, 15ft), FIRST(round)` is the effect inside it, read by the
+   `bonus` kind through the operator grammar. Every aura in the book is the same two words.
 3. **Then one at a time.** Each kind from the Talent that wants it, by the recipe above, with its
-   hook, its test, its README line and its docs. No order is fixed beyond the next.
+   hook, its test, its section in `AUTOMATION_GRAMMAR.md` and its docs. 0.13.0 added `grant`,
+   `aura` and `prevent` beside the rewritten `bonus`, enough for the level-1 Human; the grammar
+   they share is `AUTOMATION_GRAMMAR.md` (the operators `IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`,
+   `ONCE`, `DIFFERENT`, `VISIBLE`), and the second hook point, `prevent`, is triggered
+   (`module/rules/README.md` has its three answers). No order is fixed beyond the next Talent.
 
 ## Decisions that are Mike's
 
-1. **The first kind's syntax.** Settled in 0.10.0 (ruling 121): `bonus: <value> <Type> to <Target>
-   [if <Constellation> is <Rank>]`, Mike's sketch made concrete, equality on the rank as he wrote
-   it. What `aura:` takes, and what the engine does inside the ring (the bonus, who it reaches, when
-   it is read), is the next decision of the same shape, and nothing in 0.10.0 presumes an answer.
+1. **The first kind's syntax.** Settled in 0.10.0 (ruling 121) as prose, and in 0.13.0 (ruling 164)
+   as the operator grammar at Mike's direction ("logical operands like IF(Origin=Trained) and
+   grammatical shortcuts like Bonus: +1, Condition, Aid"): `bonus: <±N>, <Type>, <Target>
+   [, operators]`, the prose form retired. The grammar is his document, `AUTOMATION_GRAMMAR.md`,
+   and every change to the code changes it in the same commit.
 2. **Whether the web app and the Constellation Compendium docx should print the cell.** Neither
    does today; both are the authoring views of the whole book, and the cell is addressed to the
    engine. Printing it would show an author what the system will do with a Talent beside what the

@@ -28,7 +28,7 @@ will not let you past a step that still has a choice unmade or a point unspent.
 
 | Step | What it does |
 |---|---|
-| Ancestry | Sets Vigor per level, Size, Speed (feet per Move) and Senses; grants the Ancestry Root |
+| Ancestry | Sets Vigor per level, Size, Speed (feet per Move) and Senses; grants the Ancestry Root. Under the cards, a Lore panel (0.13.0) prints the `<Ancestry> Lore` sheet's sections (Summary, About, You Might..., Names, ...) for the card under the pointer, the chosen one otherwise |
 | Bloodline | Offers only the Bloodlines inside your Ancestry's Constellation; grants that Root. A step with nothing enabled says so and lets you continue |
 | Culture | Grants the Culture Root and adds its languages |
 | Background | Three directed points: Trained in two named Skills, and in a Lore of its own |
@@ -65,9 +65,10 @@ What the wizard enforces, all of it read from the compendium rather than hard-co
   Trainings at once; choosing a Calling buys its signature technique. Automatic spends are marked
   and locked, because there is nothing to take them back to. Where a real choice exists the wizard
   still asks, which is exactly the already-open case above.
-- **Granted points.** A Talent with a Grants clause pushes its point onto the step where you took
-  the Talent, and blocks Next until it is spent. Opening points offer only Roots of Constellations
-  you have not started; `one` and `different` grant modes are honoured.
+- **Granted points.** A Talent with a `grant:` line in its Automation (the Grants column through
+  0.12.0; `grant: 1, Calling`, `grant: 1, Opening`, `grant: 2, Skill, DIFFERENT`) pushes its point
+  onto the step where you took the Talent, and blocks Next until it is spent. Opening points offer
+  only Roots of Constellations you have not started; `DIFFERENT` is honoured.
 - **Free Talents.** A Talent with a Free Talent clause hands that Talent over outright, with no
   point spent, wherever in the book it lives. Weaponmaster's Drilled gives you Weapon Familiarity
   this way, and the free Talent then asks its own question.
@@ -154,8 +155,14 @@ anything it depends on changes.
 ### Character mechanics
 
 - **One formula for every check.** d20 + Attribute Bonus + Proficiency Bonus + Situation, Condition
-  and Gear bonuses and penalties. A Threshold is 10 + the same modifier. **There is no level term
-  anywhere.** Level opens the door to higher ranks and pays out Talent Points; it never touches the
+  and Gear bonuses and penalties. A Threshold is 10 + the same modifier, so **any bonus or penalty
+  to a check applies equally to the Threshold that check presents**: a Talent's +1 to Guard moves
+  the Guard Threshold on the sheet, in the prompt and on the card with the Guard roll (PHB v4.21,
+  Checks and Thresholds; the Key Terms sentence is proposed in
+  `Starwrought_Players_Handbook_v4.21_thresholds_proposal.docx`). A bonus that depends on where the
+  tokens stand, on the Threat answered or on the round is read where those are known (the roll,
+  the Combat Prompt's preview, the attack card) and not on the sheet, whose Threshold tooltip says
+  so (0.13.0). **There is no level term anywhere.** Level opens the door to higher ranks and pays out Talent Points; it never touches the
   die. Every check, Defense Threshold, Attack Threshold and Initiative roll in the system dropped
   its level term in 0.4.0. An adversary's Thresholds are typed by the GM and were never derived.
 - **Attribute Points** counted per Talent owned, each flowing to that Talent's own feed and falling
@@ -171,7 +178,7 @@ anything it depends on changes.
 - **The Origin is pooled.** Ancestry, Bloodline and Culture are authored as separate skies but
   progress as one Constellation, so their points share a rank. Since 0.11.0 the Origin is a
   Constellation the engine can name (`origin`): `proficiency("origin")` answers the shared rank,
-  and an Automation line may test it (`if Origin is Expert`, Humanity's cell).
+  and an Automation line may test it (`IF(Origin=Expert)`, Humanity's cell).
 - **Groups wear their parent's rank** (PHB v4.21, Constellations and shared ranks). Every Combat
   Style is a group within Melee or Ranged (Two-Weapon, Shield, Brawling, Dueling, Great Weapon,
   Spear & Polearm and Armored Fighting under Melee; Archery, Crossbow Fighting and Missile
@@ -1167,7 +1174,7 @@ the Bind or for Exposed in the STARWROUGHT Reference journal.
 ## 3. Sheets
 
 **Character sheet.** Six tabs. The header carries the **Vigor bar** (current, maximum and
-Temporary, with a Spent badge at 0), the **five stance chips**, the **six action pips** with the
+Temporary, with a Spent badge at 0), the **six action pips** with the
 reserved marker, the Pass, End Opportunity and reset controls and, while Preparing, a line naming the
 Maneuver with Finish and Abandon buttons (the pips only show in an encounter), then Hero Points, the
 Wounds carried and Dying, and, when you are in one, the **Bind line**: neutral, Controlling or
@@ -1194,6 +1201,15 @@ Zone's Wounds beside its Protection; a party's Item dragged onto the sheet moves
 loot rather than copying, the whole stack (0.7.1; ruling 98; see The party): the player's drag is
 a Take over the relay to the GM's client, the GM's the same move made locally. Also Maneuvers,
 Effects and Biography.
+
+**A chassis window** (an Ancestry, Bloodline, Culture, Background or Calling in the compendium;
+0.13.0, ruling 169). An Ancestry's Description tab prints its **Lore** under the Description: the
+`<Ancestry> Lore` sheet's sections in the author's order (Summary, About, If you want..., You
+Might..., Others Probably..., Physical Description, Society, Beliefs, Popular Edicts, Popular
+Anathemas, Names for the Human), shown and not edited, since the sheet is the author and the
+content loop refreshes it. An Ancestry has no Special Ability panel (its effects are its Talents');
+a Bloodline, Culture, Background and Calling keep theirs. Languages show on a Culture's Details tab
+alone, since nothing else grants a language.
 
 **Weapon rows.** Each held weapon shows the Strike Attribute that won (glyph and attack modifier,
 with the standing attack modifiers such as an Arms Wound's −2 folded in so it agrees with the roll
@@ -1856,64 +1872,95 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework and the `bonus` kind
+## 7. Automation: the framework, the grammar and the four kinds
 
-**What it is, and what it is not** (0.9.0 and 0.10.0; rulings 118 to 124). Since 0.9.0 every
-Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets already did,
-and the system has a framework for reading it: the column is parsed, stored on the Item, indexed
-on the Actor and shown on the Item sheet. **Since 0.10.0 the framework does one thing in play.**
-The `bonus` kind, the first (Mike, 2026-10-03: "okay, first automation kind we will create is the
-Human Ancestry one"), puts a typed bonus or penalty on a roll, read from the cell. Nothing else
-reads a rule: no Strike's commitment, no damage step, no condition, no movement and no aura on the
-map, because no kind for them exists, and Mike's instruction stands ("we will build automation
-syntax hooks one at a time"). Kinds are added one at a time with Mike, each with its engine hook,
-its test, its line in `data/README.txt` and its docs; the next is the aura, for Torchbearer Human's
-15 feet, which will serve every aura in the book without more code. A Talent's Effect is prose the
-sheet displays (section 9) until a kind reads it; Humanity's is the first a kind does, its cell
-written in 0.11.0 against the Origin (`if Origin is <Rank>`, since PHB v4.21 names the shared
-Origin Proficiency). The design record is `automation-plan.md` in the project root.
+**What it is, and what it is not** (0.9.0 to 0.13.0; rulings 118 to 124, 164 to 168). Since 0.9.0
+every Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets
+already did, and the system has a framework for reading it: the column is parsed, stored on the
+Item, indexed on the Actor and shown on the Item sheet. Four kinds read it in play: `bonus` (0.10.0,
+rewritten in 0.13.0), `grant`, `aura` and `prevent` (0.13.0), enough for every Talent of a level-1
+Human. Nothing else reads a rule: no Strike's commitment, no damage step, no movement, because no
+kind for them exists, and Mike's instruction stands ("we will build automation syntax hooks one at
+a time"). Kinds are added one at a time with Mike, each with its engine hook, its test, its section
+in `AUTOMATION_GRAMMAR.md` and its docs. A Talent's Effect is prose the sheet displays (section 9)
+until a kind reads it. The design record is `automation-plan.md` in the project root; **the
+grammar's reference is `AUTOMATION_GRAMMAR.md`**, written for the person typing in the cell and kept
+current with every change to the code (the build fails when a kind or an operator it knows is not
+named there).
 
-**The cell.** One rule per line, `kind: arguments` (the colon optional when there are no
-arguments), blank lines ignored, a line beginning with `#` a comment. The kind word is the word
-before the colon, and the arguments are the kind's own to define and check. One kind word reads
-today, `bonus`; any other is "unknown rule kind", and the build says so by name, listing the kinds
-it knows.
+**The cell** (ruling 164). One rule per line: `<kind>: <arg>, <arg>, ... [, <OPERATOR>(...)]`, the
+kind's positional arguments comma-separated, then any operators in capitals with their contents in
+parentheses; blank lines ignored, a `#` line a comment, case never mattering, one trailing period
+tolerated. The operators mean the same thing in every kind, and a kind refuses one it has no use
+for by name: `IF(<Constellation>=<Rank>)` (the owner's rank; `>=` and `<=` read too; `Origin` the
+pooled rank; `IF(Rank=Untrained)` the roll's own rank, Handling included), `FOR(<Who>[, <N>ft])`
+(who receives it: `self`, `allies`, `enemies`, `all`, `self+allies`, within a range of the owner),
+`WHILE(<Who><op><N>[, <N>ft])` (how many stand around the owner), `AGAINST(<Threat>)` (only when
+answering a Blow, Blast, Blight or Beguilement, or a `Melee` / `Ranged` Blow), `FIRST(round)`,
+`ONCE(encounter)`, `DIFFERENT`, `VISIBLE`. The level-1 Human, written in it:
 
-**The `bonus` kind** (0.10.0; ruling 121). One line: `bonus: <value> <Type> to <Target>`, with an
-optional `if <Constellation> is <Rank>` after it. The value is signed (`+1`, `-2`; a bare `1` is
-`+1`; `0` is refused, since a bonus of 0 does nothing). The Type is one of the book's three,
-Situation, Condition or Gear, in any case; the retired words circumstance, status and item are
-refused with the current word named, and untyped is refused, since no Talent bonus is untyped.
-`to` names the Constellation or the Maneuver the bonus applies to, as the book prints it (the slug
-form reads too, and a Maneuver's glyphs are ignored). The `if` clause is equality: the rule applies
-while the character's rank in that Constellation is exactly Untrained, Trained, Expert, Master or
-Legendary, so a Talent that scales by rank writes one line per rank, and Humanity's Effect is four
-lines, one per sentence: `bonus: +1 Condition to Aid if Origin is Trained`, `bonus: +2 Condition to
-Aid if Origin is Expert`, `bonus: +3 Condition to Aid if Origin is Master`, `bonus: +4 Condition to
-Aid if Origin is Legendary` (`Origin` is the pooled Ancestry, Bloodline and Culture rank; the
-Ancestry's own name reads the same pool). A line that does not fit is refused with the shape
-printed (`bonus: +1 Condition to Aid if Origin is Expert`); a target that names no Constellation or
-Maneuver, an `if` that names a Maneuver or a group (a Combat Style, a specialty: it has no rank of
-its own), and a Lore as a target are refused by name. Stacking is v4.21's: bonuses add across and
-within types, and one Talent's lines on one target are one circumstance (tagged with the Talent as
-their `source`), so two Humanity lines never both apply (one rank at a time) and overlapping lines
-of one Talent give the highest.
+```
+Humanity            bonus: +1, Condition, Aid, IF(Origin=Trained)      (+2 Expert, +3 Master, +4 Legendary)
+Driven              grant: 1, Calling
+Quick Study         grant: 1, Skill
+Stubborn Footing    prevent: Prone, ONCE(encounter)
+Close Ranks         bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)
+Versatile Human     grant: 1, Opening
+Jack of Trades      bonus: +1, Situation, Checks, IF(Rank=Untrained)
+Torchbearer Human   aura: 15ft, allies, VISIBLE
+                    bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)
+Steady the Line ❶↺  prevent: Expose, FOR(allies, 0ft)
+```
 
-**Where the number shows.** A bonus to a Constellation (`bonus: +1 Situation to Stealth`) is
-applied wherever that Constellation's modifier is assembled: the roll dialog's list of terms and
-its total, the card's modifier lines (labelled with the Talent's name, "Humanity +1"), the Skills
-grid's cell, the number beside the Constellation in the Relevant Check picker, and an Initiative
-rolled with it (ruling 111). A bonus to a Defense (`bonus: +1 Gear to Guard`) is folded into the
-Defense at prepare, so the Threshold on the sheet and in the grid, the Defense roll and an
-Initiative rolled with Awareness all move together, once, as Frightened moves them. A bonus to a
-Maneuver (`to Aid`) is applied when the roll is made from that Maneuver's Item: its row on the
-Maneuvers tab, or the Relevant Check picker a Relevant Check Maneuver opens (below). On any other
-check the roll dialog **offers** it instead, an unticked checkbox under the Load Strain offer,
-labelled "Humanity: Aid" with the hint "Humanity: this bonus applies to checks to Aid. Tick it if
-this roll is one.", because whether a roll is an Aid is the player's to say and not the engine's
-(ruling 122; the Climb-or-Swim precedent). A ticked offer joins the roll as a typed extra, is
-printed on the card, and is remembered with a road roll (0.7.3). It is never offered on an attack,
-a Defense or an Initiative. Adversaries roll flat, and nothing of this reaches them.
+**The `bonus` kind** (0.10.0; rulings 121 and 164). `bonus: <±N>, <Type>, <Target>`: the value
+signed (`0` refused), the Type Situation, Condition or Gear (the retired words and untyped refused
+by name), the Target a Constellation or a Maneuver as the book prints it, or one of the words
+`Defenses` (all four), `Checks` (every check that is not an attack or a Defense, an Initiative
+rolled with a Constellation among them), `Attacks`, `Initiative`; a Lore is refused. The 0.10.0
+form (`+1 Condition to Aid if Human is Expert`) is retired and refused with the new shape; an
+owned copy still carrying a 0.10.0 rule is read as it was. Stacking is v4.21's: one Talent's lines
+on one target are one circumstance (`source`), two Talents' add.
+
+**Where the number shows.** A bonus to a Constellation is applied wherever that Constellation's
+modifier is assembled: the roll dialog's terms and total, the card's modifier lines (labelled with
+the Talent's name, "Humanity +1", and with the owner's when it is another token's Talent,
+"Torchbearer Human (Tess)"), the Skills grid, the Relevant Check picker, an Initiative rolled with
+it (ruling 111). A bonus to a Defense is folded into the Defense at prepare when it depends on
+nothing but the character, so the sheet's Threshold, the grid, the Defense roll and an Awareness
+Initiative move together, once; a bonus that depends on **where the tokens stand, on the Threat
+answered or on the round** (`FOR` reaching others, `WHILE`, `AGAINST`, `FIRST`, `ONCE`) is read
+where those are known and nowhere else (ruling 167): the roll, the Combat Prompt's preview, the
+coordinator's reveal and resolution, so Close Ranks' +1 Guard against a Blow with an ally adjacent
+and Torchbearer's +1 on an ally's first Defense of the round land on the prompt and the card and
+not on the sheet, whose Threshold tooltip says so. `FIRST(round)` and `ONCE(encounter)` are
+remembered on the recipient (`flags.starwrought.rules`) by the client that resolved the roll, never
+by a preview; outside an encounter they apply every time. Allies and enemies are by token
+disposition as Support counts them; ranges edge to edge, `0ft` adjacency. A bonus to a Maneuver is
+applied when the roll is made from that Maneuver's Item and otherwise **offered** unticked in the
+roll dialog ("Humanity: Aid"; ruling 122), never on an attack, a Defense or an Initiative.
+Adversaries roll flat, and nothing of this reaches them.
+
+**The `grant` kind** (0.13.0; ruling 168). `grant: <N>, <Scope> [, DIFFERENT]`: Talent Points at
+creation, the Scope Opening (a Root of a Constellation not yet opened), Calling, Skill, Lore,
+Defense, Combat Style or Comet (anywhere you qualify), `DIFFERENT` putting several in different
+Constellations. The wizard reads it as it read the Grants column (section 1, Granted points); the
+column is retired, read one release with a warning.
+
+**The `aura` kind** (0.13.0; ruling 168). `aura: <N>ft, <Who> [, VISIBLE]`: the ring on the map
+the Aura column drew (section 2, Auras), about allies, enemies or all, pinned by default with
+`VISIBLE`. A drawing and nothing more: what happens inside it is the Talent's other lines. The
+column is retired; a sheet that still has it keeps working, and a row with both is a converter
+error.
+
+**The `prevent` kind** (0.13.0; ruling 165). `prevent: <Effect>`: a Condition by name, or `Expose`,
+does not land, on you by default and on others with `FOR`. A Talent without ↺ acts by itself: when
+a Condition would be set on the body (a Posture's Prone at the reveal, the final Legs Wound, the
+token palette, the Effects tab) the system skips the write and posts one card naming the Talent
+("Stubborn Footing: Tess is not Prone"), once an encounter for Stubborn Footing. A Talent with ↺ is
+offered as that Reaction where the effect would land: the Exchange card's Expose widget lists every
+Reaction Talent on the scene that reaches the body a Stop would Expose ("Steady the Line ❶↺
+(Wren)"), the Talent's owner presses it, pays its cost from their six, and the card says "It
+Exposes nothing" and offers the Expose no more; a Zone already chosen is not undone.
 
 **The Relevant Check Maneuver** (0.10.0; ruling 123). A Maneuver whose check is enabled with no
 Constellation chosen is a Relevant Check: using it opens the Relevant Check picker with the
@@ -1924,15 +1971,17 @@ enabled its row in `data/maneuvers.xlsx` on 2026-10-03, so an Aid used from the 
 the picker and the roll's card reads "Aid". The Item sheet's "Rolls a check" panel says so under
 its fields.
 
-**The hook point** (0.10.0; ruling 124). A kind that affects a roll names `modifiers` in its
-`hooks`. The engine asks every registered kind at two moments, the check assembly
-(`baseModifiers` in `module/dice/check/modifiers.mjs`, every roll but a Defense's) and the Defense pass
-(`prepareDefenses`, the character's Defense pass in `module/data/character/defenses.mjs`), through one dispatcher (`ruleModifiers` in
-`module/rules/engine.mjs`): each kind is handed its own rules on the actor and the roll's kind,
-Constellation and Item, and answers with modifiers, applied or offered; a kind that throws is
-logged and contributes nothing, so a roll never dies over a rule. A second kind that wants the
-same moment adds no engine code; a new moment is defined with the first kind that needs it, as
-this one was.
+**The hook points** (0.10.0 and 0.13.0; rulings 124 and 165). A kind that affects a roll names
+`modifiers` in its `hooks`: the engine asks every registered kind at the check assembly, the
+Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the rules
+that need the map, the Threat or the round), through one dispatcher (`ruleModifiers` in
+`module/rules/engine.mjs`), handing each kind its own rules and the other tokens' rules whose `FOR`
+reaches the actor, with the roll's kind, Constellation, Item, rank, Threat, scene and encounter;
+a kind answers with modifiers, applied or offered, and the marks to remember. A kind that stops an
+effect names `prevent`: asked by `setCondition` and the token palette's path and by the Expose
+offer (`rulePreventers`). A kind that throws is logged and contributes nothing, so a roll never
+dies over a rule. A second kind that wants either moment adds no engine code; a new moment is
+defined with the first kind that needs it, as both were.
 
 **The build** (ruling 118). `build_foundry.mjs` parses every Talent's and every Maneuver's cell with
 the system's own grammar module (`module/rules/grammar.mjs`, pure enough for Node to import, so
@@ -1942,14 +1991,17 @@ line it does not know fails the build with `automation: <Constellation> / <Talen
 <message> ("<text>")`, so `sync_content.cmd` stops naming the cell before the sources are written,
 exactly as a bad Aura cell stops the converter. A clean cell writes `system.automation` (the text)
 and `system.rules` (the parsed rules) on the document; the run's summary counts them ("automation:
-4 rules on 1 document (1 kind in use)"), and until a cell uses the kind reads "automation: no
-rules (1 kind defined, none in use)". The content hash covers the rules, so a changed cell reaches
+13 rules on 9 documents (4 kinds in use)"). An `aura` rule fills `system.aura` and a `grant` rule
+`system.grant`, the fields the canvas and the wizard always read, and the Talent model derives both
+again from the rules at prepare, so a GM's edit of a world Item's textarea takes effect at once.
+The content hash covers the rules, so a changed cell reaches
 an open world through Sync content as any field does, and the copies refresh overwrites an owned
 copy's rules from the source, since the cell is the author (ruling 120).
 
 **The Item sheet.** The Automation panel on a Talent, a Maneuver and a Constellation shows the
 textarea and, under it, **As read**: one row per rule with its kind word in a tag and the kind's
-one-line summary ("+1 Condition bonus to Aid while Human is Trained"), or a red row with the
+one-line summary ("+1 Condition bonus to Aid, while Origin is Trained"; "Expose does not land, for
+allies within 0 ft"), or a red row with the
 message for a line that did not parse or a kind the system does not know. With nothing stored it
 says "No rules." A GM who edits the textarea on a world Item or an owned copy sees the text save
 and the list mark each line: the Item parses on update, resolving a `bonus` target against the
@@ -1966,7 +2018,7 @@ nothing reads it; the `bonus` entries are what the hook point reads.
 its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
 can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
 defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which
-registers `bonus` and says in a comment which kind comes next. `module/rules/README.md` is the
+registers the four. `module/rules/README.md` is the
 recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every
 step-running mode (`--check` builds nothing) of `build_all.mjs` before the Foundry build; it asserts
 the list of shipped kinds, so a kind cannot ship unannounced.

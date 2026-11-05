@@ -7,6 +7,113 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.13.0 (2026-11-05): the level-1 Human, whole; the operator grammar
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; no handbook moved;
+a v4.22 Mike is editing sits on the shelf unsynced, so the full pipeline reports drift and the
+content loop warns). Mike, 2026-11-05, after the 0.12.0 push: his renamed columns in
+`data/ancestries.xlsx` (`Feeds` to `Primary Attribute` on the index, `Attribute` on the Human sheet,
+"no Attribute cell should ever be blank"; the `Requires` column emptied, "the Prerequisites column
+is the one that should have been used in the first place"; `Grants` and `Aura` removed; every Human
+Talent enabled), the rewritten `Human Lore` sheet to show in Character Creation and on the
+Ancestry's compendium window, Languages off an Ancestry, the question whether a check's bonus moves
+its Threshold, and the list of automations a level-1 Human needs. His decisions by question: **one
+comprehensive, intuitive grammar**, shown as a plan first and then as a human-readable document
+(`AUTOMATION_GRAMMAR.md`, the first commit, "make sure to update it with any automation code
+changes"); **logical operands and comma shortcuts, no prose connectives** ("IF(Origin=Trained)",
+"Bonus: +1, Condition, Aid"); **prevent and protect one kind**, the recipient `self` by default;
+**Talent Point grants move into Automation**; **one release**, a commit per kind. Planned in
+`eager-wobbling-possum.md` (the plans folder) and built in nine commits. The rulings:
+
+- **164. The operator grammar.** A rule is `<kind>: <arg>, <arg>, ... [, <OPERATOR>(...)]`: the
+  kind's positional arguments, comma-separated, then any operators in capitals with their contents
+  in parentheses, the same operator meaning the same thing in every kind and refused by name where
+  a kind has no use for it. `IF(<Constellation>=<Rank>)` (also `>=` and `<=`; `Origin` the pooled
+  rank; `IF(Rank=Untrained)` the roll's own rank, Handling included), `FOR(<Who>[, <N>ft])`,
+  `WHILE(<Who><op><N>[, <N>ft])`, `AGAINST(<Threat>)` (a Threat word, or `Melee` / `Ranged` for a
+  Blow by its reach), `FIRST(round)`, `ONCE(encounter)`, `DIFFERENT`, `VISIBLE`
+  (`module/rules/operators.mjs`, pure, read once for every kind). Four kinds: `bonus` rewritten to
+  it (`bonus: <±N>, <Type>, <Target>`; the Target a Constellation, a Maneuver, or `Defenses`,
+  `Checks`, `Attacks`, `Initiative`; the 0.10.0 prose form refused with the new shape printed, and
+  a 0.10.0 rule stored on an owned copy still read), `grant: <N>, <Scope> [, DIFFERENT]` (the
+  Grants column's successor; `toGrantField` is the wizard's `{ n, mode, scope }`), `aura: <N>ft,
+  <Who> [, VISIBLE]` (the Aura column's successor; `toAuraField` is `system.aura`), `prevent:
+  <Effect>` (below). `AUTOMATION_GRAMMAR.md` is the reference, kept current in the same commit as
+  any change to a kind, an operator or a vocabulary, and `build_all.mjs` fails when a registered
+  kind has no section there or an operator is not in its table. The level-1 Human's nine Talents are
+  written in it in `data/ancestries.xlsx` (13 rules on 9 documents): Humanity's four lines against
+  the Origin, Driven, Quick Study and Versatile Human's grants, Stubborn Footing, Close Ranks, Jack
+  of Trades, Torchbearer Human's ring and its first-Defense bonus, Steady the Line.
+- **165. `prevent`, the first triggered kind.** A Condition by name, or `Expose`, does not land:
+  on the owner by default, on others within range with `FOR`. A carrier without ↺ acts by itself:
+  `SwActor#setCondition` asks the `prevent` hook point before a Condition goes on (never off, never a
+  Zone's Exposed mirror), skips the write, posts one card naming the Talent ("Stubborn Footing: Tess
+  is not Prone") and writes the FIRST/ONCE mark, and the token palette's path asks the same in
+  `preCreateActiveEffect`; the client that would have written the Condition is the one that acts,
+  the write names the event, and a rule that cannot be read lets the Condition land. A carrier with
+  ↺ is offered as that Reaction where the effect would land: the Expose widget on the Exchange card
+  lists every Reaction Talent on the scene that reaches the body a Stop would Expose ("Steady the
+  Line ❶↺ (Wren)"), its owner presses it, pays the Talent's cost, the card is flagged `prevented`,
+  the widget goes and the card says "It Exposes nothing"; a Zone already chosen is not undone, the
+  Reaction being answered before the Zone is picked. Outside an encounter a `FIRST(round)` or
+  `ONCE(encounter)` applies every time, and the card says so.
+- **166. Prerequisites is the requirement when Requires is empty.** A talent sheet with no
+  `Requires` column, or an empty one, reads `Prerequisites` as the requirement: each comma- or
+  "or"-separated piece that names a Talent of the same sheet becomes `requires`, and the rest stays
+  prose that still prints, so "Expert in Melee" on another sheet is untouched. The Human sheet's
+  seven dependent Talents require Humanity, Versatile Human or Torchbearer Human through it.
+- **167. The sheet's Threshold is position-blind; the roll and the attack flow read the map.** A
+  rule that needs the map (`FOR` reaching others, `WHILE`), the Threat (`AGAINST`) or the round
+  (`FIRST`, `ONCE`) cannot be read by the character's Defense pass, which has no token and answers
+  no Threat; `prepareDefenses` asks for the static rules alone (`staticOnly`) and the Defense roll,
+  the Combat Prompt's preview and the coordinator's reveal and resolution ask for the rest
+  (`momentOnly`, with the scene, the Threat from the attack's record and the encounter), so Close
+  Ranks and Torchbearer land on the card and the preview and nothing is counted twice; the field's
+  tooltip says what it leaves out. The marks a `FIRST` or `ONCE` leaves on the recipient
+  (`flags.starwrought.rules.round` / `.encounter`, keyed by Talent and line) are written by the
+  client that resolved the roll (the roller's own in `SwCheck.roll`, the coordinator's for a
+  Threshold read), never by a preview; at a table with no GM an adversary's mark may not be written.
+  Another token's rule that reaches this actor is labelled with the owner's name ("Torchbearer Human
+  (Tess)"). Allies and enemies are by token disposition, as Support counts them (never a party
+  token, a hidden token or a Dying, unconscious or dead body); ranges are edge to edge in feet.
+- **168. The `Grants` and `Aura` columns are retired.** An `aura:` line and a `grant:` line in
+  Automation are the authoring; a sheet that still has an `Aura` column keeps working, a row with
+  both is a converter error, a filled `Grants` cell is read this release with a warning and must
+  agree with the line or the build fails. `Primary Attribute` reads as the index's tree-level
+  attribute and `Attribute` as the talent-level one, a blank cell on a sheet headed `Attribute` an
+  error, a sheet still headed `Feeds` keeping the inherit rule; an unknown header on any sheet is
+  warned about by name, so a renamed column is never silently dropped again (the renamed index
+  column read as `""` for a build).
+- **169. The Lore sheet.** A `<Tree> Lore` sheet beside a tree's sheet (`label | text` rows, no
+  header, the author's order) is read as `lore` on the tree and on the Ancestry's chassis record,
+  written as `system.lore` on the chassis Item, shown on the Ancestry's Description tab under the
+  Description and, in Character Creation, under the card grid for the highlighted card (hover or
+  focus; the chosen card otherwise; no re-render). An Ancestry shows no Special Ability panel (its
+  effects are its Talents'); Languages show only on a Culture (Mike: "Ancestry doesn't grant a
+  language"). The web app and the compendium docx are unchanged.
+
+**The Threshold question** (Mike's item 7): the system has always applied a check's bonuses to its
+Threshold (a Defense's is 10 + the same stack its roll uses; every Skill Threshold shown is 10 + the
+check's modifier), and the book says so once, in Checks and Thresholds ("including any bonuses and
+penalties that apply"). Its Key Terms entry does not repeat the clause, so one sentence is proposed
+there as a tracked change in `Starwrought_Players_Handbook_v4.21_thresholds_proposal.docx`
+(`assets/phb_propose.py`, `PROPOSALS["thresholds"]`), Mike's to accept; FEATURES.md says the same.
+
+**Also**: the five caster Callings (Spellshaper, Blood Mage, Necromancer, Summoner, Spellblade) left
+the pack sources with this release because `data/callings.xlsx` as Mike saved it has their
+`Enabled?` cells blank; setting the rows to Yes restores them under the same ids.
+
+**Not done, recorded in CLAUDE.md:** a `prevent` of a Condition on an ally as a Reaction (no Talent
+asks for it); Torchbearer's "while they can see or hear you" (no operator reads sight); an
+adversary's rolls (flat, as before); the web app and the compendium docx printing the Lore or the
+cell.
+
+Checked by the self-test (90 checks: the operator reader, every kind's forms, refusals and summary,
+the hooks on fake actors and a fake scene), the converter (zero errors on the renamed workbook), the
+content loop, and live (below).
+
+---
+
 ## 0.12.0 (2026-11-05): no Defense is ever chosen by the system
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; no handbook moved).

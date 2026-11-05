@@ -667,7 +667,36 @@ Proficiency), so the build's summary reads `automation: 4 rules on 1 document (1
 stacking, and an `if` that names a group is refused. The
 rule stands: one kind at a time, with Mike; the hook point generic, so a later kind that wants the
 same moment adds no engine code, and a new moment is defined with the first kind that needs it
-(ruling 124; ruling 119 stands); the next kind is the aura, for Torchbearer.
+(ruling 124; ruling 119 stands).
+
+**The operator grammar and the four kinds (0.13.0; rulings 164 to 169).** Mike, 2026-11-05, on
+the second draft of a grammar for every automation a level-1 Human needs: "I am OK using logical
+operands like IF(Origin=Trained) and grammatical shortcuts like Bonus: +1, Condition, Aid ... create
+Human-readable Automation Grammar/Syntax document; make sure to update it with any automation code
+changes." So: **`AUTOMATION_GRAMMAR.md` in the project root is the grammar's reference, written for
+the person typing in the cell, and every change to a rule kind, an operator or a vocabulary updates
+it in the same commit** (standing rule); `build_all.mjs` fails when a registered kind has no
+`### \`<kind>\`` section there or an operator in `module/rules/operators.mjs` is not in its table.
+A line is `<kind>: <arg>, <arg>, ... [, <OPERATOR>(...)]`: positional arguments, then operators in
+capitals, the same in every kind (`IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`, `ONCE`, `DIFFERENT`,
+`VISIBLE`; `operators.mjs`, pure, `readLine`), and a kind refuses one it has no use for by name.
+The 0.10.0 prose form is retired and refused with the new shape. Four kinds: `bonus: <±N>, <Type>,
+<Target>` (the Target also `Defenses`, `Checks`, `Attacks`, `Initiative`; `IF(Rank=Untrained)` the
+roll's own rank), `grant: <N>, <Scope> [, DIFFERENT]` (the Grants column retired; `toGrantField`
+is the wizard's field), `aura: <N>ft, <Who> [, VISIBLE]` (the Aura column retired; `toAuraField`
+is `system.aura`, re-derived by the Talent and action models at prepare), `prevent: <Effect>` (a
+Condition or `Expose`; the first triggered kind and the second hook point, `prevent`: `setCondition`
+and the token palette's `preCreateActiveEffect` ask before a Condition goes on and post one card; a
+↺ carrier is offered as a Reaction in the Expose widget, `preventExposeFromCard`, "It Exposes
+nothing"). **The sheet's Defense Threshold is position-blind** (ruling 167): a rule that needs the
+map (`FOR` reaching others, `WHILE`), the Threat (`AGAINST`) or the round (`FIRST`, `ONCE`) is
+answered with `momentOnly` by the Defense roll and `defenseThresholdFor` (the prompt's preview, the
+coordinator's reveal and resolution), which pass `module/rules/scene.mjs`'s scene, encounter and
+Threat; `prepareDefenses` asks `staticOnly`; `ruleModifiers` also hands a kind the other tokens'
+`FOR` rules and returns the FIRST/ONCE marks, which `SwCheck.roll` and the coordinator write on the
+recipient (`flags.starwrought.rules.round` / `.encounter`; `writeRuleMarks`), never a preview.
+The level-1 Human's nine Talents are written in the grammar in `data/ancestries.xlsx` (13 rules on
+9 documents). Next kinds come one at a time, from the Talent that wants each (ruling 119 stands).
 
 ## Where the source of truth lives
 
@@ -717,21 +746,24 @@ same moment adds no engine code, and a new moment is defined with the first kind
   level; every consumer indexes `[2]`. The Ancestry's Vigor stays per level.
 - `* Lore` sheets in `ancestries.xlsx` are authoring notes for player-facing text. The converter
   ignores them by design.
-- Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect, Feeds,
-  Grants, **Choice**, **Free Talent**, **Enabled?**, **Aura** (0.5.1: the Effect's "within N feet"
-  drawn on the map around the carrier: `N ft`, `N ft allies`, `N ft enemies`, with `visible`
-  appended to pin it by default once an encounter starts, or `none` when the circle is centred
-  elsewhere, as Rebounding Toss's is; the converter errors on anything else and warns when an
-  Effect says "within N feet" and the cell is blank or disagrees; reach and adjacency get no
-  cell), **Automation** (0.9.0: one rule per line, `kind: arguments`, a `#` line a comment, copied
-  through as text by the converter and parsed by `build_foundry.mjs`, which fails on a line it does
-  not know; one kind since 0.10.0, `bonus: <value> <Type> to <Target> [if <Constellation> is
-  <Rank>]`, and `data/README.txt` names each kind's syntax as it ships). Column order does
+- Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect,
+  **Attribute** (0.13.0; `Feeds` through 0.12.0: on a sheet headed `Attribute` a blank cell is an
+  error, Mike's "no Attribute cell should ever be blank"; a sheet still headed `Feeds` inherits the
+  tree's), **Choice**, **Free Talent**, **Enabled?**, **Automation** (0.9.0; the operator grammar
+  since 0.13.0, `AUTOMATION_GRAMMAR.md`: one rule per line, copied through as text by the converter
+  and parsed by `build_foundry.mjs`, which fails on a line it does not know). **Retired in 0.13.0,
+  still read where a sheet has them:** `Aura` (an `aura:` line is the authoring; both on a row is
+  an error) and `Grants` (a `grant:` line; a filled cell warns and must agree with the line). A
+  sheet with no `Requires` column, or an empty one, reads `Prerequisites` as the requirement (the
+  pieces naming a Talent of the same sheet; ruling 166). An unknown header is warned about by name.
+  A `<Tree> Lore` sheet (label | text rows) is the tree's player-facing text, `lore` on the tree
+  and the ancestry record (ruling 169). Column order does
   not matter; the first word of the header does. `Root` = `x` for a constellation root, `h` for a bloodline root. The `_Tree Index` may carry
   a **Parent** column (v4.10; any tree since v4.21): a tree that names one is a **group** within it
   (a Combat Style within Melee or Ranged, a magical specialty within its discipline), written as
   `group: true`, and the converter errors on a Parent that names no tree or has a parent of its
-  own. **The spell columns** (v4.21; `data/magic.xlsx`): `Threat`, `Delivery`, `Range`, `Die`,
+  own. The index's `Feeds` column is **`Primary Attribute`** since 0.13.0 (both read). **The spell
+  columns** (v4.21; `data/magic.xlsx`): `Threat`, `Delivery`, `Range`, `Die`,
   `Damage`, `Targets`, `Quick`, `Focused`, `Committed`, `Defenses`; a row with a Threat is a spell,
   validated against the vocabulary in `data/README.txt` and written as `node.spell`, which
   `build_foundry.mjs` puts on the Talent as `system.spell`. Action glyphs ride in the Talent name in the
@@ -917,20 +949,43 @@ same moment adds no engine code, and a new moment is defined with the first kind
   does not know is offered only as a generic Posture; an adversary is offered no Riposte (0.12.0),
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
-- **The aura, for Torchbearer, is the next kind** (`automation-plan.md`). Mike's own example ("the
-  Torchbearer 15' aura ... the syntax that will work for OTHER auras, too, without additional
-  coding"): the `Aura` column (0.5.1) already draws the ring, and the kind adds the effect inside
-  it. Its syntax is Mike's to settle first; then one file in `module/rules/kinds/`, its hook point
-  (`modifiers` if that serves it, else a new one defined with it; ruling 119), its checks in
-  `assets/test_rules.mjs`, its line in `data/README.txt`, its CHANGELOG and FEATURES prose, by the
-  recipe in `module/rules/README.md`. Then one kind at a time, each from the Talent that wants it;
-  no survey of the Talents until Mike asks for one. Also his: whether the web app and the
-  compendium docx should print the cell (neither does), and whether an edited copy's Automation
-  should survive the copies refresh (today it does not; the cell is the author, ruling 120). A
-  Talent's Effect stays prose the sheet displays (`FEATURES.md`, section 9) until a kind reads it;
-  `bonus` reads Humanity's since 0.11.0. The spell rows' structured columns are data the engine
-  reads directly (the Aura precedent), not a kind; a spell's text effects are candidates for kinds
-  later.
+- **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
+  Four kinds ship (0.13.0): `bonus`, `grant`, `aura`, `prevent`, and the level-1 Human is written
+  whole. What the grammar does not yet read: Torchbearer's "while they can see or hear you" (no
+  operator reads sight); a `prevent` of a Condition on an ally as a Reaction (no Talent asks for
+  it; the Expose Reaction is built); adversaries' rolls (flat). Each new kind, by the recipe in
+  `module/rules/README.md`: its file, its hook point (`modifiers` or `prevent` if either serves
+  it, else a new one defined with it; ruling 119), its checks in `assets/test_rules.mjs`, its
+  section in `AUTOMATION_GRAMMAR.md`, its CHANGELOG and FEATURES prose. No survey of the Talents
+  until Mike asks for one. Also his: whether the web app and the compendium docx should print the
+  cell or the Lore (neither does), and whether an edited copy's Automation should survive the
+  copies refresh (today it does not; the cell is the author, ruling 120). A Talent's Effect stays
+  prose the sheet displays (`FEATURES.md`, section 9) until a kind reads it. The spell rows'
+  structured columns are data the engine reads directly (the Aura precedent), not a kind; a
+  spell's text effects are candidates for kinds later.
+- **The five caster Callings are disabled in `data/callings.xlsx`** as Mike saved it on 2026-11-05
+  (their `Enabled?` cells blank), so Spellshaper, Blood Mage, Necromancer, Summoner and Spellblade
+  and their Talents left the pack sources in 0.13.0; setting the rows to Yes restores them under
+  the same ids. Whether that was meant is his to say.
+- **PHB v4.22 is on the shelf, unsynced** (Mike's edit in progress, 2026-11-05): the full pipeline
+  exits 1 at the drift gate and the content loop warns, until the sync.
+
+Cleared 2026-11-05 (the level-1 Human, whole, system 0.13.0; rulings 164 to 169 in the 0.13.0
+changelog entry; planned in `eager-wobbling-possum.md`, Mike's decisions by question: one grammar
+shown as a plan first, logical operands and comma shortcuts, prevent and protect one kind, grants
+into Automation, one release): Mike's renamed columns read (`Primary Attribute`, `Attribute` with a
+blank cell an error, Prerequisites as the requirement when Requires is empty, unknown headers
+warned); the `Human Lore` sheet read and shown on the Ancestry's Description tab and under the
+highlighted card in Character Creation, Special Ability off an Ancestry, Languages only on a
+Culture; `AUTOMATION_GRAMMAR.md` written first and the build holding the code to it; the operator
+grammar (`operators.mjs`) with `bonus` rewritten to it, `grant` and `aura` replacing the retired
+columns, and `prevent` as the first triggered kind with the `prevent` hook point (`setCondition`,
+the token palette's `preCreateActiveEffect`, the Expose widget's Reaction button); the engine
+reading other tokens' `FOR` rules through `scene.mjs` and remembering `FIRST`/`ONCE` marks; the
+sheet's Threshold position-blind and the prompt, the card and every roll reading the map, the
+Threat and the round; the nine Human Talents' cells written (13 rules on 9 documents); the Key
+Terms Threshold sentence proposed in `Starwrought_Players_Handbook_v4.21_thresholds_proposal.docx`.
+No handbook moved and `data/SYNC.json` is untouched.
 
 Cleared 2026-11-05 (no Defense is ever chosen by the system, system 0.12.0; rulings 159 to 163 in
 the 0.12.0 changelog entry; planned first in `eager-wobbling-possum.md`, Mike: "Plan it... BUT no

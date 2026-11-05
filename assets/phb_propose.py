@@ -456,6 +456,32 @@ PROPOSALS["downtime"] = {
     "insert_after": [],
 }
 
+PROPOSALS["thresholds"] = {
+    # Thresholds (Mike, 2026-11-05, with the 0.13.0 automation work): "Should the Player's Handbook
+    # (and the FoundryVTT module) clearly state that any bonus or penalty to a check also applies to
+    # its respective Threshold?" The system has always done so: a Defense's Threshold is 10 + the
+    # same modifier stack its roll uses, and every Skill Threshold shown is 10 + the check's own
+    # modifier, so a Talent's bonus to Guard moves the Guard Threshold with the Guard roll. The book
+    # says it once, in Checks and Thresholds ("A Threshold equals 10 + the total modifier of the
+    # check it replaces, including any bonuses and penalties that apply"), and its Key Terms entry
+    # for Threshold does not repeat the clause, which is where a reader looks a word up. One
+    # sentence appended to that entry, in its own run formatting; no edition changes, so
+    # data/SYNC.json stands. FEATURES.md says the same under Character mechanics.
+    "from": "4.21",
+    "replace": [],
+    "rewrite": [],
+    "cell": [],
+    "row": [],
+    "append": [
+        (
+            "Threshold. The number a check is measured against.",
+            " Any bonus or penalty to a check applies equally to the Threshold that check presents, since the"
+            " Threshold is that check with a 10 in place of the die."
+        ),
+    ],
+    "insert_after": [],
+}
+
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
 ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
 CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)
