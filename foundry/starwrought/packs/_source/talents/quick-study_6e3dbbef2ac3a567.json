@@ -16,7 +16,7 @@
     "prerequisites": "",
     "attribute": "",
     "effect": "You gain a Skill Talent Point.",
-    "description": "<p>Your adaptability shows in how fast you pick up useful skills.</p>",
+    "description": "<p><i>You have a knack for turning a little instruction into a useful new skill.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -54,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e1dfd222300bc19c"
+      "contentHash": "6f0f8cfda09e0f23"
     }
   },
   "effects": [],

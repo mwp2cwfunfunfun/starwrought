@@ -88,7 +88,8 @@ export function onRenderChatMessage(message, html) {
     for (const el of html.querySelectorAll("[data-sw-action='chargeReaction']")) el.remove();
   }
 
-  // An Expose a `prevent` Reaction stopped (0.13.0): the widget goes and the card says so.
+  // An Expose a `prevent` Reaction stopped (0.13.0): the widget goes and the card says so; since
+  // 0.14.0 also which Zone was closed again when the Reaction came after the pick (ruling 172).
   if (flags.prevented) {
     let anchor = null;
     for (const el of html.querySelectorAll("[data-sw-widget='expose']")) {
@@ -97,10 +98,27 @@ export function onRenderChatMessage(message, html) {
     }
     const note = document.createElement("p");
     note.className = "sw-card-note sw-prevented-note";
-    note.textContent = game.i18n.format("STARWROUGHT.Position.prevented", { owner: flags.prevented.owner ?? "", talent: flags.prevented.talent ?? "" });
+    const data = { owner: flags.prevented.owner ?? "", talent: flags.prevented.talent ?? "", zone: flags.prevented.closed ?? "" };
+    note.textContent = game.i18n.format(flags.prevented.closed ? "STARWROUGHT.Position.preventedClosed" : "STARWROUGHT.Position.prevented", data);
     const position = html.querySelector(".sw-card-position");
     if (position) position.querySelector(".sw-card-note")?.after(note);
     else (anchor ?? html).prepend(note);
+  } else if (Array.isArray(flags.exposed) && flags.exposed.length) {
+    // A Zone already picked from this card (0.14.0): the select and the Expose button give way to
+    // the record, and the `prevent` Reaction buttons stay, since pressed now they close it again.
+    for (const widget of html.querySelectorAll("[data-sw-widget='expose']")) {
+      const expose = widget.querySelector("[data-sw-action='exposeZone']");
+      const entry = flags.exposed.find(e => e?.uuid && (e.uuid === expose?.dataset.actorUuid));
+      if (!entry) continue;
+      const body = fromUuidSync(entry.uuid);
+      const label = SW.ZONES[entry.zone]?.label ? game.i18n.localize(SW.ZONES[entry.zone].label) : String(entry.zone ?? "");
+      const note = document.createElement("span");
+      note.className = "sw-card-note sw-exposed-note";
+      note.textContent = game.i18n.format("STARWROUGHT.Position.exposedNote", { name: body?.name ?? "", zone: label });
+      widget.querySelector(".sw-zone-select")?.replaceWith(note);
+      expose?.remove();
+      if (!widget.querySelector("[data-sw-action]")) widget.remove();
+    }
   }
 
   // The GM controls (the attack card's Cancel, Reset defenses and Resend prompts) are the GM's,

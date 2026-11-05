@@ -1,6 +1,6 @@
 {
-  "_id": "38e839c7eca85156",
-  "name": "Jack of Trades",
+  "_id": "be4f62436146da6b",
+  "name": "Jack of All Trades",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -16,7 +16,7 @@
     "prerequisites": "",
     "attribute": "wits",
     "effect": "You gain a +1 Situation bonus to your Untrained checks.",
-    "description": "<p>You have done a little of everything, and it shows.</p>",
+    "description": "<p><i>You have tried your hand at enough things to find a familiar thread in almost any task.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -52,6 +52,7 @@
         "for": null,
         "while": null,
         "against": null,
+        "seen": false,
         "limit": null,
         "kind": "bonus",
         "line": 1,
@@ -68,12 +69,12 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "8d96d87e045144a4"
+      "contentHash": "ebcdac0b98bcf311"
     }
   },
   "effects": [],
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!38e839c7eca85156"
+  "_key": "!items!be4f62436146da6b"
 }

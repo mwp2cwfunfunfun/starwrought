@@ -16,7 +16,7 @@
     "prerequisites": "",
     "attribute": "",
     "effect": "The first time each encounter you would be knocked prone, you are not.",
-    "description": "",
+    "description": "<p><i>Even when a blow catches you off balance, sheer stubbornness keeps you on your feet.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -40,6 +40,7 @@
         "for": null,
         "while": null,
         "against": null,
+        "seen": false,
         "limit": {
           "per": "encounter"
         },
@@ -58,7 +59,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f49cf199b29de3d8"
+      "contentHash": "64b23f2d8cedfa4f"
     }
   },
   "effects": [],

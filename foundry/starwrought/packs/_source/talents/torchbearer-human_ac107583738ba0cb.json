@@ -13,8 +13,8 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
-    "description": "",
+    "effect": "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
+    "description": "<p><i>Others take heart from your presence, drawing courage from you and the example you set.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -60,6 +60,7 @@
         },
         "while": null,
         "against": null,
+        "seen": false,
         "limit": {
           "per": "round"
         },
@@ -78,7 +79,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "bb54ae64b68e9bd6"
+      "contentHash": "c222df8f65ae1f3c"
     }
   },
   "effects": [],

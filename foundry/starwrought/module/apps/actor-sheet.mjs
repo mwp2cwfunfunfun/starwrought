@@ -11,7 +11,7 @@ import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
 import { loadBasicActions, enabledConstellations } from "../helpers/content.mjs";
 // The header's live state and the tooltips, shared with the adversary and party sheets (0.10.1).
-import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, windTip } from "../helpers/actor-context.mjs";
+import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip } from "../helpers/actor-context.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // THE PARTY'S LOOT (0.7.1): a party Item dropped on this sheet is a Take over the relay, not a copy.
 import { requestTake } from "../documents/party-socket.mjs";
@@ -164,6 +164,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }));
     context.bind = bindContext(actor);
     context.lockedTips = lockedTips(actor);
+    context.traitChips = traitChips(actor);
     // Wind (PHB v4.12, ruling 74): the Load Strain field says whether this fighter is exempt, with
     // the numbers, to the GM and the player alike.
     context.loadStrainTip = windTip(actor);

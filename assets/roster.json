@@ -9,21 +9,24 @@
    "speed": "6 ft",
    "senses": "—",
    "tree": "Human",
-   "blurb": "Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.",
+   "blurb": "Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.",
    "bloodlines": [
+    [
+     "Torchbearer Human",
+     "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check."
+    ],
     [
      "Versatile Human",
      "You gain 1 Opening Talent Point."
-    ],
-    [
-     "Torchbearer Human",
-     "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you."
     ]
+   ],
+   "traits": [
+    "Human"
    ],
    "lore": [
     {
      "label": "Summary",
-     "text": "Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright."
+     "text": "Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another."
     },
     {
      "label": "About",

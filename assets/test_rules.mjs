@@ -26,7 +26,7 @@ import {
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
-import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment } from "../foundry/starwrought/module/rules/operators.mjs";
+import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey } from "../foundry/starwrought/module/rules/operators.mjs";
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
@@ -614,7 +614,7 @@ check("bonus: every accepted form, without a resolver", () => {
     value: 1, type: "condition",
     to: { name: "Aid", slug: "aid", type: null },
     when: [{ constellation: "human", name: "Human", op: "=", rank: "trained" }],
-    for: null, while: null, against: null, limit: null,
+    for: null, while: null, against: null, seen: false, limit: null,
     kind: "bonus", line: 1, text: "bonus: +1, Condition, Aid, IF(Human=Trained)"
   }, "the full form");
 
@@ -648,9 +648,28 @@ check("bonus: every accepted form, without a resolver", () => {
 
   const closeRanks = bonusRule("bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)");
   same([closeRanks.for, closeRanks.while, closeRanks.against], [{ who: "self+allies", range: 0 }, { who: "allies", op: ">=", count: 1, range: 0 }, { threat: "blow", reach: null }], "Close Ranks' operators");
-  const torch = bonusRule("bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)");
-  same([torch.for, torch.limit], [{ who: "allies", range: 15 }, { per: "round" }], "Torchbearer's operators");
-  same(bonusRule("bonus: +1, Situation, Checks, IF(Rank=Untrained)").when, [{ roll: true, op: "=", rank: "untrained" }], "Jack of Trades' condition");
+  const torch = bonusRule("bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)");
+  same([torch.for, torch.seen, torch.when, torch.limit], [{ who: "allies", range: 15 }, true, [{ trait: "fear", name: "Fear" }], { per: "round" }], "Torchbearer's operators (the Rally Aura, 0.14.0)");
+  same(bonusRule("bonus: +1, Situation, Checks, IF(Rank=Untrained)").when, [{ roll: true, op: "=", rank: "untrained" }], "Jack of All Trades' condition");
+  must(bonusRule("bonus: +1, Situation, Guard").seen === false, "no SEEN is false");
+});
+
+check("operators: SEEN and IF(Trait=...) (0.14.0)", () => {
+  same(readLine("x, seen", { allow: ["SEEN"], kind: "x" }).ops.seen, true, "SEEN, case blind");
+  same(readLine("x, SEEN()", { allow: ["SEEN"], kind: "x" }).ops.seen, true, "SEEN with empty parentheses");
+  throws(() => readLine("x, SEEN(allies)", { allow: ["SEEN"], kind: "x" }), /SEEN takes nothing in parentheses/, "SEEN with contents");
+  throws(() => readLine("x, SEEN", { allow: ["FOR"], kind: "aura" }), /^aura does not take SEEN$/, "a kind without SEEN");
+  same(readLine("x, IF(Trait=Fear)", { allow: ["IF"], kind: "x" }).ops.when, [{ trait: "fear", name: "Fear" }], "a trait condition");
+  same(readLine("x, IF(trait = Thrown 20 ft)", { allow: ["IF"], kind: "x" }).ops.when, [{ trait: "thrown", name: "Thrown 20 ft" }], "the key is the first word");
+  throws(() => readLine("x, IF(Trait>=Fear)", { allow: ["IF"], kind: "x" }), /IF\(Trait=<Trait>\) names the trait with = only/, "a trait with >=");
+  throws(() => readLine("x, IF(Trait=)", { allow: ["IF"], kind: "x" }), /IF is written/, "an empty trait");
+  must(hasTrait(["Finesse", "Thrown 20 ft"], "thrown") && !hasTrait(["Finesse"], "fear") && !hasTrait(null, "fear") && !hasTrait(["Fear"], ""), "hasTrait by first word");
+  must(traitKey("Thrown 20 ft") === "thrown" && traitKey(" Fear ") === "fear" && traitKey("Deadly d8") === "deadly" && traitKey("Unwieldy [2]") === "unwieldy", "traitKey");
+  must(needsMoment({ seen: true }) && needsMoment({ when: [{ trait: "fear" }] }) && !needsMoment({ when: [{ constellation: "human", rank: "expert" }] }), "SEEN and a trait condition need the moment");
+  // The rule as the parser stores it reads back in the summary.
+  must(summarize(bonusRule("bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)"))
+    === "+1 Situation bonus to Defenses, against an attack with the Fear trait, for allies within 15 ft who can see you, the first time each round", "the Rally Aura's summary");
+  must(summarize(bonusRule("bonus: +1, Situation, Guard, SEEN")) === "+1 Situation bonus to Guard, who can see you", "SEEN alone");
 });
 
 check("bonus: Humanity's four lines parse to four rules, one rank each", () => {
@@ -929,7 +948,7 @@ check("aura: the refusals", () => {
 
 check("prevent: the forms and the summary", () => {
   const stubborn = bonusRule("prevent: Prone, ONCE(encounter)");
-  same(stubborn, { effect: "prone", when: null, for: null, while: null, against: null, limit: { per: "encounter" }, kind: "prevent", line: 1, text: "prevent: Prone, ONCE(encounter)" }, "Stubborn Footing");
+  same(stubborn, { effect: "prone", when: null, for: null, while: null, against: null, seen: false, limit: { per: "encounter" }, kind: "prevent", line: 1, text: "prevent: Prone, ONCE(encounter)" }, "Stubborn Footing");
   const steady = bonusRule("prevent: Expose, FOR(allies, 0ft)");
   same([steady.effect, steady.for], ["expose", { who: "allies", range: 0 }], "Steady the Line");
   same(bonusRule("prevent: off-guard").effect, "offGuard", "a two-word Condition, hyphen and case blind");
@@ -1089,11 +1108,14 @@ check("bonus hook: a scope target applies by the roll's kind, and IF(Rank=...) r
 });
 
 /** A fake scene: tokens by id with a disposition and a position on a one-foot line, so the gap is the distance less one. */
-function fakeScene(selfId, tokens) {
+function fakeScene(selfId, tokens, { blind = [] } = {}) {
   const byId = Object.fromEntries(tokens.map(t => [t.id, t]));
   const gap = (a, b) => Math.max(0, Math.abs(byId[a.id].x - byId[b.id].x) - 1);
   const relation = (a, b) => (a.id === b.id) ? "self" : (byId[a.id].d === byId[b.id].d) ? "ally" : "enemy";
-  return { token: byId[selfId], tokens: tokens.map(t => ({ actor: t.actor, token: t })), relation, gap };
+  // Sight (0.14.0): a token sees itself; `blind` names the tokens that see nobody; a token marked
+  // `unseen` is seen by nobody; the rest see each other.
+  const sees = (a, b) => (a.id === b.id) || (!blind.includes(a.id) && !byId[b.id].unseen);
+  return { token: byId[selfId], tokens: tokens.map(t => ({ actor: t.actor, token: t })), relation, gap, sees };
 }
 
 check("bonus hook: FOR(self+allies) with WHILE(allies>=1, 0ft) and AGAINST(Blow): Close Ranks on both tokens", () => {
@@ -1148,6 +1170,46 @@ check("bonus hook: FOR(allies, 15ft) with FIRST(round): Torchbearer's +1 on an a
   same(ruleModifiers(far, { kind: "defense", slug: "evade", item: null, scene: fakeScene("f", tokens), encounter, momentOnly: true }).applied, [], "30 ft away is out of 15 ft");
   same(ruleModifiers(torch, { kind: "defense", slug: "evade", item: null, scene: fakeScene("t", tokens), encounter, momentOnly: true }).applied, [], "allies only, not the Torchbearer");
   same(ruleModifiers(ally, { kind: "check", slug: "stealth", item: null, scene: fakeScene("a", tokens), encounter, momentOnly: true }).applied, [], "Defenses only");
+});
+
+check("bonus hook: the Rally Aura (0.14.0): SEEN and IF(Trait=Fear) on an ally's Defense against a Fear attack, once a round", () => {
+  const rally = talentWith("Torchbearer Human", "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)");
+  const wren = rulesActor([rally]);
+  wren.name = "Wren";
+  const tess = rulesActor([]);
+  const tokens = [{ id: "w", x: 0, d: 1, actor: wren }, { id: "t", x: 10, d: 1, actor: tess }];
+  const encounter = { combat: "c1", round: 1 };
+  const fear = { threat: "beguilement", melee: false, traits: ["Fear", "Mental"] };
+  const roll = (threat, scene) => ruleModifiers(tess, { kind: "defense", slug: "awareness", item: null, threat, scene, encounter, momentOnly: true });
+  const lit = roll(fear, fakeScene("t", tokens));
+  same(lit.applied.map(m => [m.label, m.value, m.type]), [["Torchbearer Human (Wren)", 1, "situation"]], "a Fear attack, Wren in sight and in range");
+  same(lit.marks, [{ key: "Torchbearer Human:2", per: "round" }], "marked on the second line");
+  same(roll({ threat: "blow", melee: true, traits: ["Finesse"] }, fakeScene("t", tokens)).applied, [], "a sword is not Fear");
+  same(roll({ threat: "blow", melee: true }, fakeScene("t", tokens)).applied, [], "an attack with no traits recorded");
+  same(roll(null, fakeScene("t", tokens)).applied, [], "no attack known: a Defense rolled for its own sake");
+  same(roll(fear, fakeScene("t", tokens, { blind: ["t"] })).applied, [], "Tess Blinded: she does not see Wren");
+  same(roll(fear, fakeScene("t", [{ id: "w", x: 0, d: 1, actor: wren, unseen: true }, { id: "t", x: 10, d: 1, actor: tess }])).applied, [], "Wren hidden: nobody sees her");
+  same(roll(fear, fakeScene("t", [{ id: "w", x: 0, d: 1, actor: wren }, { id: "t", x: 30, d: 1, actor: tess }])).applied, [], "30 ft: out of the ring");
+  same(ruleModifiers(wren, { kind: "defense", slug: "awareness", item: null, threat: fear, scene: fakeScene("w", tokens), encounter, momentOnly: true }).applied, [], "allies only: not Wren's own Defense");
+  same(ruleModifiers(tess, { kind: "defense", slug: "awareness", item: null, threat: fear, scene: fakeScene("t", tokens), encounter, staticOnly: true }).applied, [], "the sheet's pass leaves it out");
+  // A scene without a sight test (an older fake) reads as unseen: the operator is never assumed.
+  const blindScene = fakeScene("t", tokens);
+  delete blindScene.sees;
+  same(roll(fear, blindScene).applied, [], "no sight test on the scene: SEEN cannot be read");
+});
+
+check("prevent hook: SEEN and IF(Trait=...) read on a prevent too (0.14.0)", () => {
+  const ward = { ...talentWith("Steadying Word ❶↺", "prevent: Expose, FOR(allies, 15ft), SEEN, IF(Trait=Fear)"), id: "word0001" };
+  ward.system.reaction = true;
+  const wren = rulesActor([ward]);
+  wren.name = "Wren";
+  const tess = rulesActor([]);
+  const tokens = [{ id: "w", x: 0, d: 1, actor: wren }, { id: "t", x: 5, d: 1, actor: tess }];
+  const fear = { threat: "blow", melee: true, traits: ["Fear"] };
+  same(rulePreventers(tess, { effect: "expose", threat: fear, scene: fakeScene("t", tokens) }).map(p => p.item.id), ["word0001"], "offered: Fear, seen, in range");
+  same(rulePreventers(tess, { effect: "expose", threat: { threat: "blow", melee: true, traits: [] }, scene: fakeScene("t", tokens) }), [], "not Fear");
+  same(rulePreventers(tess, { effect: "expose", threat: fear, scene: fakeScene("t", tokens, { blind: ["t"] }) }), [], "Tess does not see Wren");
+  same(rulePreventers(tess, { effect: "expose", scene: fakeScene("t", tokens) }), [], "no attack known");
 });
 
 check("bonus hook: ONCE(encounter) is remembered by Combat alone", () => {

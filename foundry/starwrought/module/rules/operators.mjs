@@ -17,7 +17,8 @@
  *   IF(<Constellation><op><Rank>)   when: [{ constellation, name, op, rank }]; `Origin` is the pooled
  *                                   Origin rank; `IF(Rank=<Rank>)` is the roll's own rank:
  *                                   { roll: true, op, rank }. <op> is =, >= or <=. Several IFs on one
- *                                   line must all hold.
+ *                                   line must all hold. `IF(Trait=<Trait>)` (0.14.0) is the attack
+ *                                   answered carrying the trait: { trait: "fear", name: "Fear" }.
  *   FOR(<Who>[, <N>ft])             for: { who, range }   who: self | allies | enemies | all | self+allies
  *   WHILE(<Who><op><N>[, <N>ft])    while: { who, op, count, range }   who: allies | enemies | all
  *   AGAINST(<Threat>)               against: { threat, reach }   threat: blow | blast | blight | beguilement
@@ -26,12 +27,13 @@
  *   ONCE(encounter)                 limit: { per: "encounter" }
  *   DIFFERENT                       different: true
  *   VISIBLE                         visible: true
+ *   SEEN                            seen: true  (0.14.0: only for a recipient who can see the owner)
  *
  * Also here, for the hooks: `rankMeets(actual, op, wanted)` over SW.RANKS' order, `whoMatches(who,
- * relation)` over the scene's relation words, and `needsMoment(rule)`, true when a rule can only be
- * read where the map, the Threat or the round is known (a FOR that reaches others, a WHILE, an
- * AGAINST, a FIRST or ONCE), which is how the Defense pass on the sheet and the roll tell their
- * halves apart.
+ * relation)` over the scene's relation words, `hasTrait(traits, word)` over an attack's traits, and
+ * `needsMoment(rule)`, true when a rule can only be read where the map, the Threat or the round is
+ * known (a FOR that reaches others, a WHILE, a SEEN, an AGAINST, an IF on a Trait, a FIRST or
+ * ONCE), which is how the Defense pass on the sheet and the roll tell their halves apart.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE. The build imports the kinds from
  * plain Node, and a kind imports this. It imports `syntax.mjs` (which imports nothing) and
@@ -42,7 +44,7 @@ import { RuleSyntaxError } from "./syntax.mjs";
 import { RANKS, THREATS, isLoreSlug } from "../config.mjs";
 
 /** The operator names, in the order the grammar document lists them. The build checks each is named there. */
-export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "FIRST", "ONCE", "DIFFERENT", "VISIBLE"]);
+export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "DIFFERENT", "VISIBLE"]);
 
 /** The subjects a FOR may name. */
 export const WHO_FOR = Object.freeze(["self", "allies", "enemies", "all", "self+allies"]);
@@ -137,12 +139,12 @@ function operatorName(part) {
  * @param {string[]} options.allow           The operator names this kind takes.
  * @param {string} options.kind              The kind's id, for messages.
  * @param {object} [options.context]         The grammar's context; `resolve` is read from it for IF.
- * @returns {{args: string[], ops: {when: object[]|null, for: object|null, while: object|null, against: object|null, limit: object|null, different: boolean, visible: boolean}}}
+ * @returns {{args: string[], ops: {when: object[]|null, for: object|null, while: object|null, against: object|null, limit: object|null, different: boolean, visible: boolean, seen: boolean}}}
  */
 export function readLine(text, { allow = [], kind = "rule", context = {} } = {}) {
   const parts = splitOperands(String(text ?? "").trim().replace(/\.$/, ""));
   const args = [];
-  const ops = { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false };
+  const ops = { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false };
   let seenOperator = false;
 
   for (const part of parts) {
@@ -211,6 +213,11 @@ function readOperator(name, inside, ops, context) {
       ops.visible = true;
       return;
     }
+    case "SEEN": {
+      if (inside) throw new RuleSyntaxError("SEEN takes nothing in parentheses; who must see you is who FOR names");
+      ops.seen = true;
+      return;
+    }
     default:
       throw new RuleSyntaxError(`unknown operator ${name}`);
   }
@@ -265,13 +272,22 @@ function splitComparison(text) {
  * scales by rank writes one line per rank), `>=` and `<=` also read. `Origin` is the pooled rank
  * of Ancestry, Bloodline and Culture (SW.ORIGIN_SLUG), which the resolver answers as a
  * Constellation. `Rank` is the reserved word for the roll's own rank (`IF(Rank=Untrained)`, Jack
- * of Trades). With a resolver the name must resolve to a Constellation that is not a group (a group
- * wears its parent's rank, so the parent is named); a Lore is refused with or without one.
+ * of All Trades). `Trait` (0.14.0) is the reserved word for the attack's traits: `IF(Trait=Fear)`
+ * holds when the attack a Defense answers carries Fear, read with `=` alone and matched on the
+ * trait's first word (`hasTrait`); the build warns, never fails, on a trait nothing carries yet.
+ * With a resolver the name must resolve to a Constellation that is not a group (a group wears its
+ * parent's rank, so the parent is named); a Lore is refused with or without one.
  */
 function readIf(inside, context) {
   const cmp = splitComparison(inside);
   if (!cmp || !cmp.left || !cmp.right || ![ "=", ">=", "<=" ].includes(cmp.op)) {
     throw new RuleSyntaxError("IF is written `IF(<Constellation>=<Rank>)` (also >= and <=), as in `IF(Origin=Trained)`");
+  }
+  if (cmp.left.toLowerCase() === "trait") {
+    if (cmp.op !== "=") throw new RuleSyntaxError("IF(Trait=<Trait>) names the trait with = only");
+    const name = cmp.right.replace(/\s+/g, " ");
+    if (!/^[A-Za-z][A-Za-z0-9 '-]*$/.test(name)) throw new RuleSyntaxError(`"${cmp.right}" is not a trait word (letters, as the Traits columns print it)`);
+    return { trait: traitKey(name), name };
   }
   const rank = readRank(cmp.right);
   if (cmp.left.toLowerCase() === "rank") return { roll: true, op: cmp.op, rank };
@@ -365,6 +381,28 @@ export function whoMatches(who, relation) {
   }
 }
 
+/**
+ * A trait's key: its first word, lower-cased, so `Thrown 20 ft`, `thrown` and `Thrown X` are one
+ * trait, as the weapon trait parser reads them.
+ * @param {string} trait
+ * @returns {string}
+ */
+export function traitKey(trait) {
+  return String(trait ?? "").trim().toLowerCase().split(/[\s[(]/)[0] ?? "";
+}
+
+/**
+ * Does an attack's trait list carry a trait? `IF(Trait=Fear)` asks this of the attack record's
+ * traits (a weapon's, an adversary attack Item's or a spell Talent's `system.traits`).
+ * @param {string[]|null|undefined} traits
+ * @param {string} word  The trait's key, from `traitKey`.
+ * @returns {boolean}
+ */
+export function hasTrait(traits, word) {
+  if (!Array.isArray(traits) || !word) return false;
+  return traits.some(t => traitKey(t) === word);
+}
+
 /** Does a comparison hold? `=` equality; the rest as written. */
 export function compare(left, op, right) {
   switch (op) {
@@ -378,16 +416,18 @@ export function compare(left, op, right) {
 
 /**
  * Can this rule only be read where the map, the Threat or the round is known? True for a FOR that
- * reaches anyone but the owner, a WHILE, an AGAINST, a FIRST or an ONCE. The character's Defense
- * pass on the sheet asks for the rest (`staticOnly`); a roll and a Threshold read in the attack
- * flow ask for these (`momentOnly`) on top of what the sheet folded in.
+ * reaches anyone but the owner, a WHILE, a SEEN, an AGAINST, an IF on a Trait, a FIRST or an ONCE.
+ * The character's Defense pass on the sheet asks for the rest (`staticOnly`); a roll and a
+ * Threshold read in the attack flow ask for these (`momentOnly`) on top of what the sheet folded in.
  * @param {object} rule
  * @returns {boolean}
  */
 export function needsMoment(rule) {
   if (!rule) return false;
   if (rule.for && (rule.for.who !== "self")) return true;
-  return !!(rule.while || rule.against || rule.limit);
+  const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
+  if (whens.some(w => w?.trait)) return true;
+  return !!(rule.while || rule.against || rule.limit || rule.seen);
 }
 
 /** The operators' part of a summary: "while Origin is Expert, for allies within 15 ft, against a Blow, first each round". */
@@ -395,13 +435,16 @@ export function summarizeOperators(rule) {
   const bits = [];
   const whens = Array.isArray(rule?.when) ? rule.when : (rule?.when ? [rule.when] : []);
   for (const w of whens) {
+    if (w.trait) { bits.push(`against an attack with the ${w.name ?? titled(w.trait)} trait`); continue; }
     const op = w.op === ">=" ? "at least" : w.op === "<=" ? "at most" : "";
     const subject = w.roll ? "the roll's rank" : (w.name ?? w.constellation ?? "");
     bits.push(`while ${subject} is ${op ? `${op} ` : ""}${titled(w.rank)}`);
   }
   if (rule?.for && (rule.for.who !== "self")) {
     const who = rule.for.who === "self+allies" ? "you and your allies" : rule.for.who;
-    bits.push(`for ${who}${rule.for.range !== null && rule.for.range !== undefined ? ` within ${rule.for.range} ft` : ""}`);
+    bits.push(`for ${who}${rule.for.range !== null && rule.for.range !== undefined ? ` within ${rule.for.range} ft` : ""}${rule.seen ? " who can see you" : ""}`);
+  } else if (rule?.seen) {
+    bits.push("who can see you");
   }
   if (rule?.while) {
     const w = rule.while;

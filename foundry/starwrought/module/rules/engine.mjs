@@ -130,11 +130,13 @@ export function rulesOfKind(actor, kind) {
  * @property {string} slug              The Constellation slug supplying the Proficiency Bonus ("" when none).
  * @property {object|null} item         The Item behind the roll (a Maneuver, a weapon, a Talent), when there is one.
  * @property {string} [rank]            The roll's own rank, Handling included (`IF(Rank=Untrained)` reads it; 0.13.0).
- * @property {{threat: string, melee: boolean}|null} [threat]  The Threat a Defense answers in the attack
- *                                      flow (`AGAINST`), null when the roll answers nothing or nobody knows.
- * @property {object|null} [scene]      Where the tokens stand (`FOR`, `WHILE`): { token, tokens: [{ actor,
- *                                      token }], relation(a, b), gap(a, b) }, built by module/rules/scene.mjs
- *                                      on a client with a canvas, or a fake in a test; null when unknown.
+ * @property {{threat: string, melee: boolean, traits: string[]}|null} [threat]  The Threat a Defense answers
+ *                                      in the attack flow (`AGAINST`) with the attack's traits (`IF(Trait=...)`,
+ *                                      0.14.0), null when the roll answers nothing or nobody knows.
+ * @property {object|null} [scene]      Where the tokens stand (`FOR`, `WHILE`, `SEEN`): { token, tokens: [{ actor,
+ *                                      token }], relation(a, b), gap(a, b), sees(a, b) }, built by
+ *                                      module/rules/scene.mjs on a client with a canvas, or a fake in a test;
+ *                                      null when unknown.
  * @property {{combat: string|null, round: number}|null} [encounter]  The Combat and round (`FIRST`, `ONCE`).
  * @property {boolean} [staticOnly]     Answer only the rules that need none of the above (the sheet's
  *                                      Defense pass, which has no token and no Threat).

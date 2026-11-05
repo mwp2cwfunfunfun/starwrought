@@ -13,13 +13,13 @@
  *   bonus: +1, Condition, Aid, IF(Origin=Trained)                                              Humanity
  *   bonus: +1, Situation, Checks, IF(Rank=Untrained)                                           Jack of Trades
  *   bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)   Close Ranks
- *   bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)                            Torchbearer Human
+ *   bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)      Torchbearer Human
  *
  * `<±N>` is a signed integer (a bare `1` reads as `+1`; `0` is refused). `<Type>` is Situation,
  * Condition or Gear (the retired words refused by name, `untyped` refused). `<Target>` is a
  * Constellation or a Maneuver by the book's name, or one of the words Defenses (all four), Checks
  * (every check that is not an attack, an Initiative included), Attacks, Initiative. The operators
- * are the grammar's (../operators.mjs): IF, FOR, WHILE, AGAINST, FIRST, ONCE. The 0.10.0 prose
+ * are the grammar's (../operators.mjs): IF, FOR, WHILE, AGAINST, SEEN, FIRST, ONCE. The 0.10.0 prose
  * form (`+1 Condition to Aid if Human is Expert`) is retired and refused with the new shape.
  *
  * The stored rule:
@@ -28,16 +28,19 @@
  *     value: 1, type: "condition",
  *     to:   { name: "Aid", slug: "aid", type: "action" },     // "constellation" | "action" | "scope" | null
  *     when: [{ constellation: "origin", name: "Origin", op: "=", rank: "trained" }] | null,
+ *           // or { roll: true, op, rank } for IF(Rank=...), or { trait, name } for IF(Trait=...)
  *     for: { who, range } | null, while: { who, op, count, range } | null,
- *     against: { threat, reach } | null, limit: { per } | null }
+ *     against: { threat, reach } | null, seen: boolean, limit: { per } | null }
  *
  * THE HOOK, `hooks.modifiers(entries, context, actor)` (ruling 124; the engine's ../engine.mjs).
  * `entries` are this kind's rules that may reach `actor`: the actor's own, and since 0.13.0 the
  * rules of other tokens on the scene whose FOR names others (each entry carries `owner` and
- * `ownerToken`). For each rule: every IF must hold for the OWNER (the roll's own rank for `Rank`);
- * FOR must reach the recipient (self for the owner's own roll, else the scene's relation and gap
- * between the two tokens); WHILE counts the tokens around the owner; AGAINST needs the Threat the
- * roll answers; FIRST/ONCE reads the recipient's mark and asks for one to be written. A rule that
+ * `ownerToken`). For each rule: every IF must hold for the OWNER (the roll's own rank for `Rank`,
+ * the attack's traits in `context.threat.traits` for `Trait`); FOR must reach the recipient (self
+ * for the owner's own roll, else the scene's relation and gap between the two tokens), and SEEN
+ * asks the scene whether the recipient's token sees the owner's (`scene.sees`); WHILE counts the
+ * tokens around the owner; AGAINST needs the Threat the roll answers; FIRST/ONCE reads the
+ * recipient's mark and asks for one to be written. A rule that
  * needs the scene, the Threat or the round is answered only where they are known (`momentOnly`),
  * and the sheet's Defense pass asks for the rest (`staticOnly`); see ../engine.mjs. Then the
  * target: a Constellation applies on its slug; a scope word on the roll's kind; a Maneuver when the
@@ -51,12 +54,12 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, needsMoment, summarizeOperators, titled } from "../operators.mjs";
+import { readLine, rankMeets, whoMatches, compare, hasTrait, needsMoment, summarizeOperators, titled } from "../operators.mjs";
 import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug } from "../../config.mjs";
 
 const SHAPE = "bonus: <±N>, <Type>, <Target> [, operators]";
 const EXAMPLE = "bonus: +1, Condition, Aid, IF(Origin=Trained)";
-const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "FIRST", "ONCE"]);
+const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE"]);
 
 /** The three type words of PHB v3.3, lower-cased. */
 const TYPES = Object.freeze(["situation", "condition", "gear"]);
@@ -139,7 +142,7 @@ export default {
     const type = readType(typeWord);
     const to = readTarget(targetText, context?.resolve);
 
-    return { value, type, to, when: ops.when, for: ops.for, while: ops.while, against: ops.against, limit: ops.limit };
+    return { value, type, to, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit };
   },
 
   /** `+1 Condition bonus to Aid while Origin is Trained`; `penalty` when negative. */
@@ -176,10 +179,15 @@ export default {
         if (context?.staticOnly && moment) continue;
         if (context?.momentOnly && !moment) continue;
 
-        // IF: every condition holds for the OWNER, the roll's own rank for `Rank`.
+        // IF: every condition holds for the OWNER, the roll's own rank for `Rank`, the attack
+        // answered for `Trait` (0.14.0; no attack known, no match).
         const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
         let holds = true;
         for (const w of whens) {
+          if (w.trait) {
+            if (!hasTrait(context?.threat?.traits, w.trait)) { holds = false; break; }
+            continue;
+          }
           if (w.roll) {
             if (context?.rank === undefined || context?.rank === null) { holds = false; break; }
             if (!rankMeets(context.rank, w.op ?? "=", w.rank)) { holds = false; break; }
@@ -203,6 +211,8 @@ export default {
           if (!whoMatches(who, relation)) continue;
           const range = rule.for?.range;
           if ((range !== null) && (range !== undefined) && (scene.gap(entry.ownerToken, scene.token) > range)) continue;
+          // SEEN (0.14.0): the recipient must see the owner; the owner always sees themself.
+          if (rule.seen && !((typeof scene.sees === "function") && scene.sees(scene.token, entry.ownerToken))) continue;
         }
 
         // WHILE: the count around the owner.

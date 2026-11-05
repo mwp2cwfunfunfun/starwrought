@@ -11,11 +11,11 @@
       "size": "medium",
       "speed": 6,
       "senses": "",
-      "description": "<p>Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.</p>",
+      "description": "<p>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</p>",
       "lore": [
         {
           "label": "Summary",
-          "text": "<p>Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright.</p>"
+          "text": "<p>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</p>"
         },
         {
           "label": "About",
@@ -62,6 +62,22 @@
           "text": "<p>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Jonna, Kestrel, Liesl, Marek, Nadia, Osric, Petra, Rowan, Sable, Tomas, Verity, Wynne</p>"
         }
       ],
+      "traits": [
+        "Human"
+      ],
+      "source": "STARWROUGHT Playtest v4.21"
+    }
+  },
+  {
+    "name": "Torchbearer Human",
+    "img": "systems/starwrought/assets/icons/chassis.svg",
+    "enabled": true,
+    "system": {
+      "kind": "bloodline",
+      "constellation": "human",
+      "attribute": "presence",
+      "specialAbility": "<p>You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.</p>",
+      "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
       "traits": [],
       "source": "STARWROUGHT Playtest v4.21"
     }
@@ -75,20 +91,6 @@
       "constellation": "human",
       "attribute": "presence",
       "specialAbility": "<p>You gain 1 Opening Talent Point.</p>",
-      "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
-      "traits": [],
-      "source": "STARWROUGHT Playtest v4.21"
-    }
-  },
-  {
-    "name": "Torchbearer Human",
-    "img": "systems/starwrought/assets/icons/chassis.svg",
-    "enabled": true,
-    "system": {
-      "kind": "bloodline",
-      "constellation": "human",
-      "attribute": "presence",
-      "specialAbility": "<p>Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.</p>",
       "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
       "traits": [],
       "source": "STARWROUGHT Playtest v4.21"

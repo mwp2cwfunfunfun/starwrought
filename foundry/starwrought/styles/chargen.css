@@ -12,7 +12,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-chargen: "0.13.0"; }
+:root { --sw-css-version-chargen: "0.14.0"; }
 
 /* --------------------------------------------------------------------------
    Character creation
@@ -68,9 +68,16 @@
   gap: 0.6rem;
   padding: 0.6rem;
   overflow: auto;
-  align-items: start;
+  /* The main column stretches to the body's height (0.14.0; Mike: "why not use all of the
+     vertical space"), so a step with a Lore panel can give it the room below the cards. The
+     rail keeps its own height at the top. */
+  align-items: stretch;
+  min-height: 0;
 }
-.starwrought .sw-chargen-main { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.starwrought .sw-chargen-main { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; min-height: 0; }
+/* The card step's panel is a flex column, so its Lore panel (the only flex: 1 child) takes what
+   the window leaves; the other steps' panels have no such child and sit at their content height. */
+.starwrought .sw-chargen-main > .sw-panel:has(.sw-lore-detail) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
 .starwrought .sw-choice-grid {
   display: grid;
@@ -108,14 +115,17 @@
 
 /* The Ancestry step's Lore panel (0.13.0): under the card grid, inside the step's panel, the
    highlighted card's sections in a scrolling box of its own, so twelve sections never push the
-   Next button off the window. One block per Ancestry is in the DOM; the lit one shows. */
+   Next button off the window. One block per Ancestry is in the DOM; the lit one shows. Since
+   0.14.0 it fills the height the window leaves below the cards (flex: 1 in the panel's column)
+   instead of stopping at 260px with the rest of the window empty. */
 .starwrought .sw-lore-detail {
   margin-top: 0.6rem;
   padding: 0.5rem 0.6rem 0.2rem;
   border: 1px solid var(--sw-edge);
   border-radius: var(--sw-radius);
   background: rgba(0, 0, 0, 0.25);
-  max-height: 260px;
+  flex: 1;
+  min-height: 8rem;
   overflow: auto;
 }
 .starwrought .sw-lore-detail-title {
@@ -236,6 +246,7 @@
 .starwrought .sw-chargen-rail {
   position: sticky;
   top: 0;
+  align-self: start; /* the body's rows stretch since 0.14.0; the rail keeps its own height */
   border: 1px solid var(--sw-edge);
   border-radius: var(--sw-radius);
   background: rgba(0, 0, 0, 0.3);

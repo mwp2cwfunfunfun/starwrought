@@ -210,6 +210,32 @@ export function zoneWounds(actor, key) {
  * @param {Actor} actor
  * @returns {Record<string, string>}
  */
+/**
+ * The creature traits the character's chassis confer (0.14.0; the `_Tree Index`'s Traits column,
+ * Mike's): the Ancestry's, Bloodline's and Culture's `system.traits`, read off the chassis by the
+ * names the sheet stores, de-duplicated, in that order. Derived at render and never stored, so a
+ * change to the sheet reaches every character through Sync content (ruling 173). Empty before the
+ * chassis index has loaded.
+ * @param {Actor} actor
+ * @returns {string[]}
+ */
+export function traitChips(actor) {
+  const details = actor?.system?.details ?? {};
+  const out = [];
+  const seen = new Set();
+  for (const kind of ["ancestry", "bloodline", "culture"]) {
+    const chassis = chassisByName(details[kind]?.name ?? "");
+    for (const trait of chassis?.system?.traits ?? []) {
+      const text = String(trait ?? "").trim();
+      const key = text.toLowerCase();
+      if (!text || seen.has(key)) continue;
+      seen.add(key);
+      out.push(text);
+    }
+  }
+  return out;
+}
+
 export function lockedTips(actor) {
   const L = key => game.i18n.localize(key);
   const F = (key, data) => game.i18n.format(key, data);

@@ -69,11 +69,11 @@ A bonus to a Constellation moves that Constellation's **Threshold as well as its
 bonus: +1, Condition, Aid, IF(Origin=Trained)                           Humanity
 bonus: +1, Situation, Checks, IF(Rank=Untrained)                        Jack of Trades
 bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)   Close Ranks
-bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)         Torchbearer Human
+bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)   Torchbearer Human
 bonus: -2, Situation, Stealth                                           a penalty
 ```
 
-Operators `bonus` takes: `IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`, `ONCE`.
+Operators `bonus` takes: `IF`, `FOR`, `WHILE`, `AGAINST`, `SEEN`, `FIRST`, `ONCE`.
 
 ### `grant`: Talent Points at creation
 
@@ -144,7 +144,7 @@ prevent: Prone, ONCE(encounter)       Stubborn Footing
 prevent: Expose, FOR(allies, 0ft)     Steady the Line ❶↺
 ```
 
-Operators `prevent` takes: `IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`, `ONCE`.
+Operators `prevent` takes: `IF`, `FOR`, `WHILE`, `AGAINST`, `SEEN`, `FIRST`, `ONCE`.
 
 ## 4. The operators
 
@@ -152,9 +152,11 @@ Operators `prevent` takes: `IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`, `ONCE`.
 |---|---|---|
 | `IF(<Constellation>=<Rank>)` | the owner's rank in that Constellation is that rank. `=` is equality (a Talent that scales by rank writes one line per rank); `>=` and `<=` read too. `Origin` is the pooled Ancestry, Bloodline and Culture rank. A group (a Combat Style, a magical specialty) has no rank of its own and is refused naming its parent | every kind |
 | `IF(Rank=<Rank>)` | the roll being made is at that rank, Handling included (`Rank` is the reserved word for the roll's own rank) | bonus |
+| `IF(Trait=<Trait>)` | the attack being answered carries that trait (`Trait` is the reserved word for the attack's traits): a weapon's, an adversary attack's or a spell Talent's, matched on the trait's first word, case blind (`Thrown 20 ft` carries Thrown). Only read where an attack is known: a Defense roll in the attack flow and the Threshold it is read against; a Defense rolled from the sheet for its own sake answers no attack, so the rule stays out of it. No closed list of traits exists; the build warns when nothing shipping carries the one named (0.14.0) | bonus, prevent |
 | `FOR(<Who>[, <N>ft])` | who receives it: `self` (the default when there is no FOR), `allies`, `enemies`, `all`, or `self+allies`, within that range of the owner. `FOR(self)` needs no range | bonus, prevent |
 | `WHILE(<Who><op><N>[, <N>ft])` | the owner's own condition: how many of `allies`, `enemies` or `all` stand within the range. `<op>` is `>=`, `<=`, `=`, `>` or `<`. `WHILE(allies>=1, 0ft)` is "while an ally is adjacent" | bonus, prevent |
 | `AGAINST(<Threat>)` | only when answering that Threat: `Blow`, `Blast`, `Blight`, `Beguilement`; or `Melee` / `Ranged`, a Blow by how it reached | bonus, prevent |
+| `SEEN` | only for a recipient who can see you: a straight line from their token's centre to yours crosses no sight-blocking wall, they are not Blinded, and your token is not hidden nor you Hidden or Undetected. Nothing finer is read (no light, no sight range, no hearing; ruling 170). Read where the map is known, as `FOR` is; the owner always sees themself | bonus, prevent |
 | `FIRST(round)` | the first time it would apply to each recipient in a round, and not again until the next round. Outside an encounter there are no rounds, so it applies every time, and the card says so | bonus, prevent |
 | `ONCE(encounter)` | the first time it would apply in an encounter, and not again until the next encounter. Outside an encounter it applies every time, said on the card | bonus, prevent |
 | `DIFFERENT` | the points go to different Constellations | grant |
@@ -167,21 +169,23 @@ edge in feet; `0ft` is adjacency.
 
 **Rank.** `Untrained`, `Trained`, `Expert`, `Master`, `Legendary`.
 
+**Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack
+Item's Traits, or the spell Talent's `Traits` column on its tree sheet (0.14.0). `Fear` is carried
+by nothing in the data yet, so a rule naming it reads correctly and fires when the first Fear
+attack is authored.
+
 ## 5. The level-1 Human, written in the grammar
 
 ```
 Humanity            bonus: +1, Condition, Aid, IF(Origin=Trained)
-                    bonus: +2, Condition, Aid, IF(Origin=Expert)
-                    bonus: +3, Condition, Aid, IF(Origin=Master)
-                    bonus: +4, Condition, Aid, IF(Origin=Legendary)
 Driven              grant: 1, Calling
 Quick Study         grant: 1, Skill
 Stubborn Footing    prevent: Prone, ONCE(encounter)
 Close Ranks         bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)
 Versatile Human     grant: 1, Opening
-Jack of Trades      bonus: +1, Situation, Checks, IF(Rank=Untrained)
+Jack of All Trades  bonus: +1, Situation, Checks, IF(Rank=Untrained)
 Torchbearer Human   aura: 15ft, allies, VISIBLE
-                    bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)
+                    bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)
 Steady the Line ❶↺  prevent: Expose, FOR(allies, 0ft)
 ```
 
@@ -189,13 +193,26 @@ Close Ranks in words: `FOR(self+allies, 0ft)` is who gets the bonus; `WHILE(alli
 owner's condition. An ally receives it only while within 0ft of the owner, which is the same
 adjacency, so one line serves both halves of "both of you".
 
+Torchbearer Human in words (the Rally Aura, Mike's text of 2026-11-05: "The first time each round
+an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a
++1 Situation bonus to that Defense check"): the first line draws the ring; the second gives every
+Defense (`Defenses`) of an ally within 15 ft (`FOR`) who can see the owner (`SEEN`) a +1 against an
+attack carrying Fear (`IF(Trait=Fear)`), once a round per ally (`FIRST(round)`). Humanity is one
+line since Mike flattened its Effect to a +1 (2026-11-05); a Talent that scales by rank still
+writes one line per rank.
+
 ## 6. What a rule does in play, and what it does not
 
 - **A bonus to a Constellation moves its Threshold.** A Defense's Threshold is 10 plus the same
   modifiers its roll uses, so `bonus: +1, Situation, Guard` raises the Guard Threshold on the sheet,
   in the Combat Prompt's preview and on the attack card, and the Guard roll alike. A Skill's
   Threshold, wherever one is shown (the party's Skills grid, the Relevant Check picker), is 10 plus
-  the check's own modifier, so it moves too.
+  the check's own modifier, so it moves too. **Both of the player's paths are covered:** a player
+  defending against an adversary's attack rolls their Defense, and the roll carries the bonus (and
+  writes the FIRST/ONCE mark); a player attacking a player rolls once against the defender's
+  Threshold, and the Threshold the coordinator reads carries it. A rule that needs the attack
+  (`AGAINST`, `IF(Trait=...)`), the map (`FOR` reaching others, `WHILE`, `SEEN`) or the round
+  (`FIRST`, `ONCE`) is read at both of those moments and nowhere the attack is unknown.
 - **Position is read where a token is known.** A rule with `FOR(..., Nft)` or `WHILE(...)` needs
   to know where the tokens stand. The sheet's Defense Threshold is computed without the map, so it
   does **not** include such bonuses (its tooltip says so); the Combat Prompt's preview, the attack
@@ -215,10 +232,17 @@ adjacency, so one line serves both halves of "both of you".
   card saying which Talent prevented it. **A `prevent` of `Expose`** is answered on the resolution
   card: the Expose widget shows the Reaction's button for each ally whose Talent reaches the
   attacker; pressed, the ally's cost is paid, the card says "It Exposes nothing", and the Expose
-  widget is gone. A Zone already chosen is not undone.
+  widget is gone. **Pressed after the Zone was picked** (the order at most tables: the GM says "you
+  are Exposed", then the ally answers; Mike, 2026-11-05) it closes the Zone this card Exposed, and
+  the card says so ("The Arms Zone is closed again"; ruling 172, 0.14.0). The card remembers the Zone it Exposed (a flag written by
+  the GM's client, or the card's author); a player who owns both sides at a table with no GM
+  connected cannot write it, and the Reaction pressed afterwards then undoes nothing, said in a
+  notice. A Zone Exposed by anything but this card is never touched.
+- **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
+  sight-blocking walls plus three statuses (Blinded on the seer, hidden or Hidden or Undetected on
+  the seen); light, sight range and hearing are the table's (ruling 170).
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
-  "while they can see or hear you" (Torchbearer) is the table's, as is every clause with no
-  operator for it.
+  every clause with no operator for it is the table's.
 - **Adversaries.** A rule on an adversary's Item is indexed but no adversary roll asks for
   modifiers (adversaries roll flat), and no adversary casts. A `prevent` on an adversary works,
   since Conditions are set on adversaries as on characters.
@@ -237,6 +261,9 @@ adjacency, so one line serves both halves of "both of you".
 | `"<name>" names no Constellation or Maneuver` | the target is misspelt, or the Maneuver's row is not on an action sheet yet (a disabled row still resolves) |
 | `"<name>" is a group and has no rank of its own; test <parent> instead` | `IF(Dueling=Expert)`: write the parent, `IF(Melee=Expert)` |
 | `"<word>" is not a rank: write Untrained, Trained, Expert, Master or Legendary` | the rank in `IF` |
+| `IF(Trait=<Trait>) names the trait with = only` | `IF(Trait>=Fear)` makes no sense; write `IF(Trait=Fear)` |
+| `SEEN takes nothing in parentheses` | `SEEN()` or `SEEN(allies)`: it is a bare word; who must see you is who `FOR` names |
+| `WARNING: ... IF(Trait=<Trait>): no shipping weapon, attack or Talent carries the trait "<Trait>"` | not a failure: the rule reads and fires when something is authored with that trait. Check the spelling against the Traits columns |
 | `<kind> does not take <OPERATOR>` | the operator is one that kind has no use for; see section 4's last column |
 | `<OPERATOR> is written \`<shape>\`` | the contents of the parentheses did not read; the shape is printed |
 | `a who is written self, allies, enemies, all or self+allies` | the `FOR` or `WHILE` subject |
@@ -254,3 +281,7 @@ adjacency, so one line serves both halves of "both of you".
   the old form is refused with the new shape printed); `grant` (the `Grants` column retired),
   `aura` (the `Aura` column retired), `prevent`; the operators `IF`, `FOR`, `WHILE`, `AGAINST`,
   `FIRST`, `ONCE`, `DIFFERENT`, `VISIBLE`.
+- **0.14.0** (2026-11-05): `SEEN` (the recipient can see you) and `IF(Trait=<Trait>)` (the attack
+  answered carries the trait), for the Torchbearer Human's Rally Aura; a `Traits` column on tree
+  sheets, so a spell Talent can carry one; a `prevent` of `Expose` pressed after the Zone pick
+  closes the Zone the card Exposed.

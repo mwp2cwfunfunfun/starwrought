@@ -12,6 +12,9 @@
  * party token, a hidden token, or a Dying, unconscious or dead body. Relation is by disposition
  * against the owner's token: the same disposition is an ally, the opposite an enemy, anything else
  * neutral. Ranges are edge to edge in feet (canvas/geometry.mjs, `gapBetween`); 0 ft is adjacency.
+ * Sight (`SEEN`, 0.14.0; ruling 170) is `canSeeToken` below: line of sight between the two tokens'
+ * centres against the scene's sight-blocking walls, the seer not Blinded, the seen token not hidden
+ * and its actor neither Hidden nor Undetected. Nothing finer (light, sight range, hearing).
  */
 
 import * as SW from "../config.mjs";
@@ -41,13 +44,49 @@ function relation(a, b) {
   return "neutral";
 }
 
+/** A token's centre in scene pixels, from the placeable when it is drawn, else from the document. */
+function centerOf(doc) {
+  const drawn = doc?.object?.center;
+  if (drawn) return { x: drawn.x, y: drawn.y };
+  const grid = canvas.grid;
+  return { x: doc.x + ((doc.width ?? 1) * grid.sizeX) / 2, y: doc.y + ((doc.height ?? 1) * grid.sizeY) / 2 };
+}
+
+/**
+ * Can the first token see the second (the `SEEN` operator; ruling 170)? A token always sees
+ * itself. Otherwise: the seer's actor is not Blinded; the seen token is not hidden and its actor
+ * is neither Hidden nor Undetected; and the straight line between the two centres meets no
+ * sight-blocking wall (Foundry's sight polygon backend, `mode: "any"`). When the backend is not
+ * there to ask, walls are not read and the statuses alone decide.
+ * @param {TokenDocument} seer
+ * @param {TokenDocument} seen
+ * @returns {boolean}
+ */
+export function canSeeToken(seer, seen) {
+  if (!seer || !seen) return false;
+  if (seer.id === seen.id) return true;
+  if (seer.actor?.statuses?.has("blinded")) return false;
+  if (seen.hidden) return false;
+  const statuses = seen.actor?.statuses ?? new Set();
+  if (statuses.has("hidden") || statuses.has("undetected")) return false;
+  const backend = globalThis.CONFIG?.Canvas?.polygonBackends?.sight;
+  if (typeof backend?.testCollision !== "function") return true;
+  try {
+    return !backend.testCollision(centerOf(seer), centerOf(seen), { type: "sight", mode: "any" });
+  } catch (error) {
+    console.warn("STARWROUGHT | sight test failed; reading the tokens as in sight:", error);
+    return true;
+  }
+}
+
 /**
  * The scene as the rules read it, for one recipient: its token (the one given, else the actor's
- * on the viewed scene), every eligible token with its actor, and the two measures. Null when there
- * is no canvas or the recipient has no token there, in which case every positional rule is skipped.
+ * on the viewed scene), every eligible token with its actor, and the measures (relation, gap and,
+ * since 0.14.0, sight). Null when there is no canvas or the recipient has no token there, in which
+ * case every positional rule is skipped.
  * @param {Actor} actor
  * @param {TokenDocument|Token|null} [token]
- * @returns {{token: TokenDocument, tokens: Array<{actor: Actor, token: TokenDocument}>, relation: Function, gap: Function}|null}
+ * @returns {{token: TokenDocument, tokens: Array<{actor: Actor, token: TokenDocument}>, relation: Function, gap: Function, sees: Function}|null}
  */
 export function sceneContextFor(actor, token = null) {
   if (!globalThis.canvas?.ready || !globalThis.canvas.scene) return null;
@@ -58,7 +97,7 @@ export function sceneContextFor(actor, token = null) {
     if (!eligible(placeable)) continue;
     tokens.push({ actor: placeable.actor, token: placeable.document });
   }
-  return { token: doc, tokens, relation, gap: (a, b) => gapBetween(a, b) };
+  return { token: doc, tokens, relation, gap: (a, b) => gapBetween(a, b), sees: (a, b) => canSeeToken(a, b) };
 }
 
 /**
@@ -73,13 +112,18 @@ export function encounterContext() {
 
 /**
  * The Threat a Defense answers, from the attack flow's Maneuver record (attack-workflow.mjs):
- * its Threat word and whether the Blow reached in melee. Null for no record.
+ * its Threat word, whether the Blow reached in melee, and (0.14.0) the attack's traits for
+ * `IF(Trait=...)`. Null for no record.
  * @param {object|null} maneuver
- * @returns {{threat: string, melee: boolean}|null}
+ * @returns {{threat: string, melee: boolean, traits: string[]}|null}
  */
 export function threatContext(maneuver) {
   if (!maneuver) return null;
-  return { threat: maneuver.threat ?? "blow", melee: !maneuver.ranged && (maneuver.source !== "spell") };
+  return {
+    threat: maneuver.threat ?? "blow",
+    melee: !maneuver.ranged && (maneuver.source !== "spell"),
+    traits: Array.isArray(maneuver.traits) ? maneuver.traits.map(t => String(t)) : []
+  };
 }
 
 /**

@@ -13,8 +13,8 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
-    "description": "<p>Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright.</p>",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
+    "description": "<p><i>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -30,7 +30,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)\nbonus: +2, Condition, Aid, IF(Origin=Expert)\nbonus: +3, Condition, Aid, IF(Origin=Master)\nbonus: +4, Condition, Aid, IF(Origin=Legendary)",
+    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)",
     "rules": [
       {
         "value": 1,
@@ -51,82 +51,11 @@
         "for": null,
         "while": null,
         "against": null,
+        "seen": false,
         "limit": null,
         "kind": "bonus",
         "line": 1,
         "text": "bonus: +1, Condition, Aid, IF(Origin=Trained)"
-      },
-      {
-        "value": 2,
-        "type": "condition",
-        "to": {
-          "name": "Aid",
-          "slug": "aid",
-          "type": "action"
-        },
-        "when": [
-          {
-            "constellation": "origin",
-            "name": "Origin",
-            "op": "=",
-            "rank": "expert"
-          }
-        ],
-        "for": null,
-        "while": null,
-        "against": null,
-        "limit": null,
-        "kind": "bonus",
-        "line": 2,
-        "text": "bonus: +2, Condition, Aid, IF(Origin=Expert)"
-      },
-      {
-        "value": 3,
-        "type": "condition",
-        "to": {
-          "name": "Aid",
-          "slug": "aid",
-          "type": "action"
-        },
-        "when": [
-          {
-            "constellation": "origin",
-            "name": "Origin",
-            "op": "=",
-            "rank": "master"
-          }
-        ],
-        "for": null,
-        "while": null,
-        "against": null,
-        "limit": null,
-        "kind": "bonus",
-        "line": 3,
-        "text": "bonus: +3, Condition, Aid, IF(Origin=Master)"
-      },
-      {
-        "value": 4,
-        "type": "condition",
-        "to": {
-          "name": "Aid",
-          "slug": "aid",
-          "type": "action"
-        },
-        "when": [
-          {
-            "constellation": "origin",
-            "name": "Origin",
-            "op": "=",
-            "rank": "legendary"
-          }
-        ],
-        "for": null,
-        "while": null,
-        "against": null,
-        "limit": null,
-        "kind": "bonus",
-        "line": 4,
-        "text": "bonus: +4, Condition, Aid, IF(Origin=Legendary)"
       }
     ],
     "traits": [],
@@ -139,7 +68,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "42c554a59fffbf40"
+      "contentHash": "4012252ab1d00657"
     }
   },
   "effects": [],

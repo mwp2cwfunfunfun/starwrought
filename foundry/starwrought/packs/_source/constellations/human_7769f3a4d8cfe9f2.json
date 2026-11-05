@@ -9,10 +9,10 @@
     "attribute": "presence",
     "parentSlug": "",
     "group": false,
-    "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)",
-    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft)",
+    "flareTrigger": "",
     "identity": true,
-    "description": "<p>Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)</p>",
+    "description": "<p>Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft)</p>",
     "traits": [],
     "automation": "",
     "rules": [],
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6c922230e5598b1c"
+      "contentHash": "c374eba3e67f750d"
     }
   },
   "effects": [],

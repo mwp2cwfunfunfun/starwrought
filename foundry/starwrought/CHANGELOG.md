@@ -7,6 +7,72 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.14.0 (2026-11-05): the Rally Aura, Traits, and the Lore panel
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 still on the
+shelf unsynced). Mike, 2026-11-05, after the 0.13.0 push, with nine points on `data/ancestries.xlsx`
+and the wizard: the `Requires` column deleted (Prerequisites is the requirement since ruling 166),
+the `_Tree Index`'s `Flare Triggers`, `Meta note` and `Summary` deleted and a `Traits` column added
+("we will need to find a good place on the Character Sheet for Traits"), Humanity's Effect
+flattened to a +1 to Aid, Jack of Trades renamed **Jack of All Trades**, the Torchbearer Human
+rewritten as the **Rally Aura** ("The first time each round an ally within 15 feet who can see you
+defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense
+check"; "the automation should make sure that it only applies to allies that can SEE the token"),
+the Ancestry step's Lore panel to use the window's height, and the question what Steady the Line's
+automation does when the Reaction is announced after the GM says "you are Exposed". Planned in
+`eager-wobbling-possum.md` (the plans folder, the second plan in it). The rulings:
+
+- **170. `SEEN` is line of sight, nothing finer.** A new flag operator for `bonus` and `prevent`:
+  the rule applies only to a recipient who can see the owner. Sight is a straight line between the
+  two tokens' centres meeting no sight-blocking wall (Foundry's sight polygon backend), the seer not
+  Blinded, and the seen token not hidden nor its actor Hidden or Undetected (`canSeeToken` in
+  `module/rules/scene.mjs`, handed to the kinds as `scene.sees`). Light, sight range and hearing
+  are not read; the owner always sees themself; a scene with no sight test reads as unseen, so the
+  operator is never assumed. The book's v4.15 "see or hear" clause is gone from Mike's text, and
+  so is the grammar document's line that said sight was the table's.
+- **171. `IF(Trait=<Trait>)` reads the attack, and an unknown trait is a warning.** `Trait` joins
+  `Rank` as a reserved word in `IF`: the attack being answered carries that trait. The attack
+  record (`maneuverFrom`, `AttackWorkflow.create`) now carries `traits` (the weapon Item's, the
+  adversary attack Item's or the spell Talent's `system.traits`), `threatContext` hands them to the
+  kinds, and the match is on the trait's first word, case blind (`Thrown 20 ft` carries Thrown).
+  Only a Defense in the attack flow knows the attack, so a Defense rolled from the sheet for its own
+  sake stays out. There is no closed list of traits: the build collects every trait a shipping
+  weapon, action or Talent carries and **warns** on one nothing carries, since the rule reads and
+  fires when the first such attack is authored. Today that is Fear: nothing in the data carries it.
+  Tree sheets gain an optional `Traits` column, written as `system.traits` on the Talent, so a spell
+  Talent can carry one. The Rally Aura's line is `bonus: +1, Situation, Defenses, FOR(allies, 15ft),
+  SEEN, IF(Trait=Fear), FIRST(round)`, and it moves the ally's Defense roll against an adversary
+  and the Threshold a player attacker rolls against alike, as 0.13.0's position rules did.
+- **172. A `prevent` of `Expose` answered after the Zone pick closes the Zone.** Steady the Line's
+  button sat in the Expose widget to be pressed before the Zone was picked; pressed after, it paid
+  and said "It Exposes nothing" and the Exposed stood. Now the card remembers which Zone it Exposed
+  on whom (`flags.starwrought.exposed`, written by the GM's client on the relay path or the card's
+  author), its widget shows "Exposed in the Arms" in place of the select with the Reaction buttons
+  still there, and the Reaction pressed then closes exactly that Zone (the body's owner locally,
+  another player through the GM's client over the `expose:*` socket with the same live reading of
+  the Talent's reach, and with no GM connected the Exposed stands, said in a notice) and the card
+  says "The Arms Zone is closed again". A Zone Exposed by anything but that card is never touched.
+- **173. A character's traits are its chassis's, read live.** The `_Tree Index`'s new `Traits`
+  column ("Human") goes onto the Ancestry record, the Ancestry chassis Item (`system.traits`,
+  carried by `content/chassis.json`), the web app's Ancestry card and the compendium docx's
+  Ancestry table, and the character sheet's header gets a read-only **Traits** field beside the
+  five chassis names: the chips of the Ancestry's, Bloodline's and Culture's traits, found by the
+  names the sheet stores (`traitChips` in `helpers/actor-context.mjs`), never written on the
+  character, so a change to the sheet reaches every character through Sync content and the GM
+  edits the chassis, not the sheet.
+
+Also: the ancestry blurb (the app card, the docx's italic line, the chassis description) is the
+Lore sheet's Summary row (Mike: the deleted column "was a copy of Summary row in the Ancestry's
+Lore tab. So just use that instead"); the Ancestry step's Lore panel fills the height the window
+leaves below the cards and scrolls inside itself (`chargen.css`; it stopped at 260px with the rest
+of the window empty); Humanity's cell is one line, as its Effect is; the grammar document names
+`SEEN`, `IF(Trait=...)`, the Traits column and the Expose undo, with a 0.14.0 history line; the
+self-test has 93 checks. **Not done:** Torchbearer's new cell could not be written while Excel
+held `data/ancestries.xlsx` open (the line is in `AUTOMATION_GRAMMAR.md`, section 5, for Mike to
+paste, or for the next run once the file is closed); the Jack of All Trades rename gives the
+Talent a new document id, so a character who owned "Jack of Trades" keeps that copy beside the
+new one after Sync content (the test world's Tess).
+
 ## 0.13.0 (2026-11-05): the level-1 Human, whole; the operator grammar
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; no handbook moved;

@@ -16,8 +16,11 @@
  * When the carrier is a Reaction Talent (↺ in its name) the prevention is OFFERED as that Reaction
  * where the effect would land, and the owner pays the Talent's cost; without ↺ it is automatic.
  *
- * The stored rule: `{ kind: "prevent", line, text, effect, when, for, while, against, limit }`,
- * `effect` a condition id ("prone", "offGuard") or "expose".
+ * The stored rule: `{ kind: "prevent", line, text, effect, when, for, while, against, seen, limit }`,
+ * `effect` a condition id ("prone", "offGuard") or "expose". `seen` (0.14.0) asks that the
+ * recipient see the owner; an `IF(Trait=...)` in `when` asks that the attack behind the effect
+ * carry the trait (`context.threat.traits`), which an Expose on a card has and a Condition write
+ * from the palette has not.
  *
  * THE HOOK, `hooks.prevent(entries, context, actor)` on the `prevent` hook point (../engine.mjs,
  * `rulePreventers`): "which rules prevent `context.effect` on `actor` now?" The entries are the
@@ -33,12 +36,12 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, summarizeOperators } from "../operators.mjs";
+import { readLine, rankMeets, whoMatches, compare, hasTrait, summarizeOperators } from "../operators.mjs";
 import { CONDITIONS } from "../../config.mjs";
 
 const SHAPE = "prevent: <Effect> [, operators]";
 const EXAMPLE = "prevent: Prone, ONCE(encounter)";
-const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "FIRST", "ONCE"]);
+const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE"]);
 
 /** The word for the Expose effect, and the condition ids by their lower-cased, squeezed names. */
 export const EXPOSE = "expose";
@@ -81,7 +84,7 @@ export default {
       throw new RuleSyntaxError(`a prevent is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} arguments given, 1 wanted)`);
     }
     const effect = readEffect(parts[0]);
-    return { effect, when: ops.when, for: ops.for, while: ops.while, against: ops.against, limit: ops.limit };
+    return { effect, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit };
   },
 
   /** `Prone does not land, once each encounter`; `Expose does not land, for allies within 0 ft`. */
@@ -113,6 +116,10 @@ export default {
         const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
         let holds = true;
         for (const w of whens) {
+          if (w.trait) {
+            if (!hasTrait(context?.threat?.traits, w.trait)) { holds = false; break; }
+            continue;
+          }
           if (w.roll) { holds = false; break; }
           if (typeof owner?.system?.proficiency !== "function") { holds = false; break; }
           if (!rankMeets(owner.system.proficiency(w.constellation)?.rank ?? "untrained", w.op ?? "=", w.rank)) { holds = false; break; }
@@ -129,6 +136,7 @@ export default {
           if (!whoMatches(who, scene.relation(entry.ownerToken, scene.token))) continue;
           const range = rule.for?.range;
           if ((range !== null) && (range !== undefined) && (scene.gap(entry.ownerToken, scene.token) > range)) continue;
+          if (rule.seen && !((typeof scene.sees === "function") && scene.sees(scene.token, entry.ownerToken))) continue;
         }
 
         if (rule.while) {

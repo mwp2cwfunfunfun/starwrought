@@ -4,8 +4,9 @@
 #                                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation |
 #                                Aura (optional since 0.13.0; "aura:" in Automation is the authoring) |
 #                                Grants (retired 0.13.0; "grant:" in Automation; read one release, warned)
-# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Skills | Parent
-#   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary
+# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Skills | Parent | Traits
+#   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary (optional since 0.14.0;
+#   the blurb is the Lore sheet's Summary row)
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
 #   A "<Tree> Lore" sheet (label | text rows) is the tree's player-facing text: lore on the tree
 #   and on its ancestry record (0.13.0). An unknown header is warned about by name.
@@ -745,9 +746,15 @@ def main():
         # "Vigor" is the v4.10 name for the per-level chassis number; "HP" still reads. "Primary
         # Attribute" is the 0.13.0 name of the tree-level Feeds (Mike renamed it on the ancestries
         # index); both read, and an unknown header is warned about by name.
+        # Traits (0.14.0; Mike added the column to the ancestries index): the creature traits the
+        # tree's chassis carries ("Human"), comma separated, shown on the character sheet's header.
+        # Flare Triggers, Meta note and Summary are optional, and Mike deleted them from the
+        # ancestries index on 2026-11-05: the meta line is derived when blank, and the blurb now
+        # comes from the Lore sheet's Summary row (below).
         im = header_map(idx, {"tree": "tree", "cat": "categ", "feeds": ("feeds", "primary"), "sparks": "flare",
                               "meta": "meta", "skills": "skills", "hp": "hp", "vigor": "vigor", "size": "size",
-                              "speed": "speed", "senses": "senses", "summary": "summary", "parent": "parent"},
+                              "speed": "speed", "senses": "senses", "summary": "summary", "parent": "parent",
+                              "traits": "trait"},
                         unknown=warnings, where=f"{fname} / _Tree Index")
         if "vigor" in im and "hp" not in im: im["hp"] = im["vigor"]
         if "tree" not in im or "cat" not in im:
@@ -779,10 +786,13 @@ def main():
             # "Attribute" (0.13.0) is the talent-level Feeds under its current name: on a sheet headed
             # so, a blank cell is an ERROR (Mike: "no Attribute cell should ever be blank"); a sheet
             # still headed "Feeds" keeps the inherit-from-the-tree rule until it is renamed too.
+            # Traits (0.14.0): an optional column on a tree sheet, comma separated as the action
+            # sheets' is, so a spell Talent can carry a trait an Automation rule names
+            # (`IF(Trait=Fear)`); written as `traits` on the node and `system.traits` on the Talent.
             cm = header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "req": "requires",
                                  "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": ("feeds", "attribute"),
                                  "grants": "grants", "choice": "choice", "freetalent": "free", "aura": "aura",
-                                 "automation": "automation", "enabled": "enabled", **SPELL_HEADERS},
+                                 "automation": "automation", "enabled": "enabled", "traits": "trait", **SPELL_HEADERS},
                             unknown=warnings, where=f"{fname} / {name}")
             if "name" not in cm or "tier" not in cm or "effect" not in cm:
                 errors.append(f"{fname} / {name}: sheet needs Talent, Tier and Effect columns"); continue
@@ -845,6 +855,8 @@ def main():
                 # the only one in the book so far: it gives you Weapon Familiarity outright.
                 ft = pv("freetalent")
                 if ft: node["freeTalent"] = ft
+                node_traits = split_traits(pv("traits"))
+                if node_traits: node["traits"] = node_traits
                 # The Automation cell (0.9.0; rulings 118 and 120): one rule per line in the grammar
                 # the Foundry system owns (module/rules/grammar.mjs; AUTOMATION_GRAMMAR.md for the
                 # author). It is copied through as text, exactly as the action sheets' column is, and
@@ -925,6 +937,14 @@ def main():
             if f"{name} Lore" in wb.sheetnames:
                 indexed.add(f"{name} Lore")
                 if not lore: warnings.append(f"{fname} / {name} Lore: the Lore sheet is empty")
+            # The blurb (0.14.0): the Lore sheet's Summary row, plain. The index's Summary column was
+            # only a copy of it (Mike, 2026-11-05: "all the Summary column was, was a copy of Summary
+            # row in the Ancestry's Lore tab. So just use that instead"); a sheet that still has the
+            # column is read where the Lore sheet has no Summary row.
+            lore_summary = next((re.sub(r"<[^>]+>", " ", s["text"].replace("<br>", " ")).strip()
+                                 for s in lore if s["label"].strip().lower() == "summary"), "")
+            blurb = re.sub(r"\s+", " ", lore_summary) or g("summary")
+            tree_traits = split_traits(g("traits"))
             if category == "Ancestry" and ("hp" in im or "size" in im):
                 hp = g("hp")
                 hers = [[n["name"], n["effect"]] for n in nodes if n.get("hroot")]
@@ -937,7 +957,7 @@ def main():
                     # `enabled` is the tree's (ruling 60), so chargen can offer only the shipped ancestries.
                     chassis.append({"name": name, "enabled": tree_enabled, "vigor": int(hp), "hp": int(hp), "size": g("size") or "Medium",
                                     "speed": g("speed") or "6 ft", "senses": g("senses") or "—",
-                                    "tree": name, "blurb": g("summary"), "bloodlines": hers,
+                                    "tree": name, "blurb": blurb, "bloodlines": hers, "traits": tree_traits,
                                     **({"lore": lore} if lore else {})})
                     if not meta_extra:  # derive the display line when the sheet leaves it blank
                         bits = [g("size"), f"Vigor {hp}", g("speed")] + ([g("senses").lower()] if g("senses") not in ("", "—") else [])
@@ -952,6 +972,7 @@ def main():
             out[name] = {"category": category, "enabled": tree_enabled, "feeds": feeds, **({"skills": cskills} if cskills else {}),
                          **({"parent": parent, "group": True} if parent else {}),
                          **({"lore": lore} if lore else {}),
+                         **({"traits": tree_traits} if tree_traits else {}),
                          "meta": f"{label} • {feeds or '—'}" + (f" ({meta_extra})" if meta_extra else ""),
                          "sparks": g("sparks"), "nodes": nodes}
         if "Backgrounds" in wb.sheetnames:

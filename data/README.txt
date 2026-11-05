@@ -32,12 +32,19 @@ ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   the loop also reads the Automation column (Tree columns, below): a line the framework does not
   know STOPS the build, naming the Constellation, the Talent and the line, before the sources are
   written. The grammar is AUTOMATION_GRAMMAR.md in the project root (0.13.0: bonus, grant, aura
-  and prevent, with the operators IF, FOR, WHILE, AGAINST, FIRST, ONCE, DIFFERENT, VISIBLE).
+  and prevent, with the operators IF, FOR, WHILE, AGAINST, FIRST, ONCE, DIFFERENT, VISIBLE; 0.14.0:
+  SEEN and IF(Trait=<Trait>)).
 
 Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence; "Feeds" still reads) |
-                Flare Triggers | Meta note | Parent
+                Flare Triggers | Meta note | Parent | Traits
   An unknown header on any sheet is WARNED about by name (0.13.0), so a renamed column is never
-  silently dropped.
+  silently dropped. Flare Triggers and Meta note are optional (Flares are one universal rule, and
+  the meta line is derived from the chassis columns when blank); Mike deleted both from the
+  ancestries index on 2026-11-05.
+  Traits (0.14.0; Mike's column): the creature traits the tree's chassis confers ("Human"), comma
+  separated. They print on the web app's Ancestry card and the compendium docx's Ancestry table,
+  and in Foundry on the Ancestry chassis (system.traits) and the character sheet's header, read off
+  the Ancestry, Bloodline and Culture by name at render and never stored on the character.
   Parent (v4.10; a GROUP since PHB v4.21): names the Constellation this tree is a group of Talents
   within. A Combat Style names Melee or Ranged; a magical specialty (Flamecraft, Stormcraft, ...)
   names its discipline (Elementalism, ...). A tree with a Parent has NO rank of its own: every
@@ -50,9 +57,11 @@ Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence
   magic.xlsx). The v1.8 spellings Save and Heritage still convert, as aliases
   for Defense and Bloodline (CATALIAS in xlsx_to_trees.py), and are normalised on the way in.
   Skill / Defense / Weapon / Combat Style / Armor / Magic trees REQUIRE a tree-level Feeds (untrained fallback).
-  Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary; those generate
-  the "ancestries" block of roster.json, so the chassis is authored once, here. Speed is feet per
-  Move (a Human's is 6).
+  Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses; those generate the
+  "ancestries" block of roster.json, so the chassis is authored once, here. Speed is feet per
+  Move (a Human's is 6). The one-line blurb the app card, the compendium docx and the Ancestry
+  chassis print is the Lore sheet's Summary row (0.14.0; the index's Summary column was a copy
+  of it and is gone; a sheet that still has one is read where the Lore sheet has no Summary row).
   Calling rows may carry Skills: the Training the Calling grants at creation. A Calling's Vigor is
   NOT authored here: it is the third column of the hand-kept callings block of assets/roster.json,
   and since PHB v4.11 that column is the Calling's Opening Vigor (paid once, at 1st level, by your
@@ -69,7 +78,7 @@ Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence
   under the highlighted card in Character Creation. A Lore sheet for a name not in the index WARNS.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |
-                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation
+                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation | Traits
                 and, on the magic sheets only, the SPELL columns:
                 Threat | Delivery | Range | Die | Damage | Targets | Quick | Focused | Committed | Defenses
                 Retired (0.13.0), still read where a sheet has them: Aura (write "aura: 15ft,
@@ -77,6 +86,11 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
                 "grant: 1, Calling"; the converter WARNS on a filled Grants cell, and a cell that
                 disagrees with the line fails the build).
   Column ORDER does not matter; the first word of the header does.
+  Traits (0.14.0, optional): the Talent's traits, comma separated as the action sheets' column is,
+        written as system.traits on the Talent. Its one use so far: a spell Talent carrying a trait
+        a defender's Automation rule names ("Fear" for the Torchbearer Human's Rally Aura,
+        IF(Trait=Fear)). Nothing in the data carries Fear yet; the build WARNS, and the rule fires
+        when the first Fear spell or adversary attack is authored.
   Attribute (0.13.0; "Feeds" through 0.12.0): the Attribute this Talent's point feeds. On a sheet
         headed "Attribute" a BLANK cell is an ERROR ("no Attribute cell should ever be blank",
         Mike, 2026-11-05); on a sheet still headed "Feeds" a blank inherits the tree's Primary

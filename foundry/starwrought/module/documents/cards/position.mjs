@@ -29,13 +29,17 @@ export async function exposeFromCard(message, flags, button) {
   if (!targets.length) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
   const chooser = resolveActor(button.closest("[data-owner-uuid]")?.dataset.ownerUuid);
   for (const actor of targets) {
-    if (actor.isOwner) await exposeAndSay(actor, zone);
+    if (actor.isOwner) await exposeAndSay(actor, zone, message);
     else await relayExpose(message, { actor, chooser, zone });
   }
 }
 
-/** Open a Zone and say so: the Exposed card, whose title opens the rules page (0.5.1, T6). */
-async function exposeAndSay(actor, zone) {
+/**
+ * Open a Zone and say so: the Exposed card, whose title opens the rules page (0.5.1, T6). With the
+ * card the choice was made from, the Zone is recorded on it (0.14.0), so a `prevent` Reaction
+ * pressed afterwards can close exactly that Zone (ruling 172).
+ */
+async function exposeAndSay(actor, zone, message = null) {
   await actor.setExposed(zone, true, { announced: true });
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
@@ -45,6 +49,40 @@ async function exposeAndSay(actor, zone) {
         name: actor.name, zone: game.i18n.localize(SW.ZONES[zone].label)
       })}</p></div>`
   });
+  await recordExposed(message, actor, zone);
+}
+
+/**
+ * Remember on the card which Zone it Exposed on whom: `flags.starwrought.exposed`, a list of
+ * `{ uuid, zone }`, one entry per body. Written by the card's author or the GM (the GM's client on
+ * the relay path, which is the usual one); another client writes nothing, and the Reaction pressed
+ * afterwards then has nothing to undo, which the grammar document says.
+ */
+async function recordExposed(message, actor, zone) {
+  if (!message || !(message.isAuthor || game.user.isGM)) return;
+  const current = (message.flags?.[SW.SYSTEM_ID]?.exposed ?? []).filter(e => e?.uuid && (e.uuid !== actor.uuid));
+  await message.update({ [`flags.${SW.SYSTEM_ID}.exposed`]: [...current, { uuid: actor.uuid, zone }] });
+}
+
+/** The Zone this card Exposed on a body, if it recorded one and the Zone is still open. */
+function recordedOpenZone(message, body) {
+  const entry = (message?.flags?.[SW.SYSTEM_ID]?.exposed ?? []).find(e => e?.uuid === body?.uuid) ?? null;
+  if (!entry || !(entry.zone in SW.ZONES)) return null;
+  return body.system?.zones?.[entry.zone]?.exposed ? entry.zone : null;
+}
+
+/**
+ * Close the Zone a card Exposed, because a `prevent` Reaction was answered after the pick (0.14.0;
+ * ruling 172), and mark the card `prevented` with the Zone closed. Run by a client that may write
+ * the body: its owner, or the GM's client over the relay.
+ */
+async function closeExposed(body, zone, message, { talent, owner }) {
+  await body.setExposed(zone, false, { announced: true });
+  if (message && (message.isAuthor || game.user.isGM)) {
+    await message.update({ [`flags.${SW.SYSTEM_ID}.prevented`]: {
+      bodyUuid: body.uuid, talent, owner, closed: game.i18n.localize(SW.ZONES[zone].label)
+    } });
+  }
 }
 
 /**
@@ -107,7 +145,7 @@ export async function formBindFromCard(message, flags, button) {
     rejectClose: false
   });
   if (!zone || !(zone in SW.ZONES)) return;
-  if (partner.isOwner) await exposeAndSay(partner, zone);
+  if (partner.isOwner) await exposeAndSay(partner, zone, message);
   else await relayExpose(message, { actor: partner, chooser: defender, zone });
 }
 
@@ -172,8 +210,13 @@ export async function chargeReactionFromCard(message, button) {
  * Line ❶↺, "It Exposes nothing"). The Talent's owner, or the GM, presses it: the owner pays the
  * Talent's cost from their six, the FIRST or ONCE mark (if any) is written on the body by whoever
  * may write it, the card is flagged `prevented` (so its Expose widgets draw no Expose button on
- * the next render; the message's author or the GM writes the flag) and the card says so. A Zone
- * already chosen and Exposed is not undone: the Reaction is answered before the Zone is picked.
+ * the next render; the message's author or the GM writes the flag) and the card says so.
+ *
+ * Pressed AFTER the Zone was picked (0.14.0; ruling 172; Mike: at the table the GM says "you are
+ * Exposed" and then the ally answers), it closes the Zone this card recorded Exposing on the body
+ * (`recordExposed`) and nothing else: the body's owner closes it here, another player's client
+ * asks the GM's over the `expose:*` socket (`expose:apply` with `close`), and with no GM connected
+ * the Exposed stands, said in a notice.
  */
 export async function preventExposeFromCard(message, flags, button) {
   const preventer = resolveActor(button.dataset.preventerUuid);
@@ -189,11 +232,34 @@ export async function preventExposeFromCard(message, flags, button) {
     .find(p => (p.item?.id === item.id) && (p.owner === preventer)) ?? null;
   if (!live) return ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.preventOutOfReach", { talent: SW.plainName(item.name), name: body.name }));
   const cost = Number(button.dataset.cost) || 0;
-  if (cost) await preventer.spendActions(cost, { label: `${SW.plainName(item.name)} ${SW.ACTION_GLYPHS[cost] ?? ""}${SW.REACTION_GLYPH}` });
+  const talent = SW.plainName(item.name);
+  if (cost) await preventer.spendActions(cost, { label: `${talent} ${SW.ACTION_GLYPHS[cost] ?? ""}${SW.REACTION_GLYPH}` });
   await sayPrevented(body, live, game.i18n.localize("STARWROUGHT.Condition.exposed"));
   if (live.mark) await writeRuleMarks(body, [live.mark]);
+
+  // The Zone already picked from this card, if any, is closed again (0.14.0; ruling 172).
+  const open = recordedOpenZone(message, body);
+  if (open) {
+    if (body.isOwner) {
+      await closeExposed(body, open, message, { talent, owner: preventer.name });
+      if (!(message.isAuthor || game.user.isGM)) button.closest("[data-sw-widget='expose']")?.remove();
+      return;
+    }
+    const gm = game.users.activeGM;
+    if (!gm) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.preventNoGmToClose", { name: body.name, zone: game.i18n.localize(SW.ZONES[open].label) }));
+    } else {
+      // The GM's client closes the Zone and marks the card; this client's part is done.
+      game.socket.emit(SOCKET, {
+        type: "expose:apply", to: gm.id, messageId: message.id, close: true,
+        actorUuid: body.uuid, preventerUuid: preventer.uuid, itemId: item.id, zone: open
+      }, { recipients: [gm.id] });
+      button.closest("[data-sw-widget='expose']")?.remove();
+      return;
+    }
+  }
   if (message.isAuthor || game.user.isGM) {
-    await message.update({ [`flags.${SW.SYSTEM_ID}.prevented`]: { bodyUuid: body.uuid, talent: SW.plainName(item.name), owner: preventer.name } });
+    await message.update({ [`flags.${SW.SYSTEM_ID}.prevented`]: { bodyUuid: body.uuid, talent, owner: preventer.name } });
   } else {
     button.closest("[data-sw-widget='expose']")?.remove();
   }
@@ -231,6 +297,9 @@ export async function onExposeSocket(message, sender) {
     case "expose:done":
       ui.notifications.info(game.i18n.format("STARWROUGHT.Position.exposeDone", { name: message.name ?? "", zone: message.zone ?? "" }));
       return;
+    case "expose:closed":
+      ui.notifications.info(game.i18n.format("STARWROUGHT.Position.closeDone", { name: message.name ?? "", zone: message.zone ?? "" }));
+      return;
     case "expose:refused":
       ui.notifications.warn(game.i18n.localize(EXPOSE_REFUSALS[message.reason] ?? "STARWROUGHT.Position.exposeRefused"));
       return;
@@ -248,6 +317,7 @@ async function exposeForUser(request, userId) {
   const chat = game.messages.get(request.messageId);
   const flags = chat?.flags?.[SW.SYSTEM_ID];
   if (!chat || !flags) return { type: "expose:refused", reason: "noCard" };
+  if (request.close) return closeForUser(request, userId, chat);
   const user = game.users.get(userId);
   const body = resolveActor(request.actorUuid);
   const chooser = resolveActor(request.chooserUuid);
@@ -258,6 +328,30 @@ async function exposeForUser(request, userId) {
   if (!body.isOwner) return { type: "expose:refused", reason: "noCard" };
   const asked = String(request.zone ?? "");
   const zone = (asked in SW.ZONES) ? asked : SW.DEFAULT_ZONE;
-  await exposeAndSay(body, zone);
+  await exposeAndSay(body, zone, chat);
   return { type: "expose:done", name: body.name, zone: game.i18n.localize(SW.ZONES[zone].label) };
+}
+
+/**
+ * Close, for another user, the Zone a card Exposed (0.14.0; ruling 172), on the GM's client. The
+ * card must have recorded Exposing that Zone on the body and the Zone must still be open; the
+ * asker must own the preventer, whose Talent must still reach the body as the tokens stand (the
+ * same live reading `preventExposeFromCard` made). Nothing else in the request is trusted.
+ */
+async function closeForUser(request, userId, chat) {
+  const user = game.users.get(userId);
+  const body = resolveActor(request.actorUuid);
+  const preventer = resolveActor(request.preventerUuid);
+  const item = preventer?.items.get(String(request.itemId ?? ""));
+  if (!user || !body || !preventer || !item) return { type: "expose:refused", reason: "notYours" };
+  if (!preventer.testUserPermission(user, "OWNER")) return { type: "expose:refused", reason: "notYours" };
+  const { preventersFor } = await import("../../rules/prevent.mjs");
+  const live = preventersFor(body, "expose", { token: body.tokenOnScene?.() ?? null }).reactions
+    .find(p => (p.item?.id === item.id) && (p.owner === preventer)) ?? null;
+  if (!live) return { type: "expose:refused", reason: "notYours" };
+  const open = recordedOpenZone(chat, body);
+  if (!open || (open !== String(request.zone ?? ""))) return { type: "expose:refused", reason: "noCard" };
+  if (!body.isOwner) return { type: "expose:refused", reason: "noCard" };
+  await closeExposed(body, open, chat, { talent: SW.plainName(item.name), owner: preventer.name });
+  return { type: "expose:closed", name: body.name, zone: game.i18n.localize(SW.ZONES[open].label) };
 }

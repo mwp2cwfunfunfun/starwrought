@@ -22,8 +22,8 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 |---|---|
 | `grammar.mjs` | The line structure of a cell and nothing else: `parseAutomation`, `summarize`, `ruleEntries`, and the plain-data check on what a kind returns. Re-exports the registry's words and `syntax.mjs`. |
 | `syntax.mjs` | What a kind file imports: `RuleSyntaxError`, `splitArgs`, `keyValues`. Imports nothing, so a kind never imports the grammar and no circle exists (0.10.1; the class alone as `errors.mjs` in 0.10.0). |
-| `operators.mjs` | The operator grammar (0.13.0; AUTOMATION_GRAMMAR.md section 4): `readLine(args, { allow, kind, context })` splits a line into its positional arguments and its operators (`IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`, `ONCE`, `DIFFERENT`, `VISIBLE`), refusing one the kind did not allow by name; `splitOperands`, `readRank`, `readRange`; and for the hooks `rankMeets`, `whoMatches`, `compare`, `needsMoment`, `summarizeOperators`. Pure. |
-| `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation` and `gap`), `encounterContext()`, `threatContext(maneuver)`, `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
+| `operators.mjs` | The operator grammar (0.13.0; AUTOMATION_GRAMMAR.md section 4): `readLine(args, { allow, kind, context })` splits a line into its positional arguments and its operators (`IF`, `FOR`, `WHILE`, `AGAINST`, `SEEN`, `FIRST`, `ONCE`, `DIFFERENT`, `VISIBLE`), refusing one the kind did not allow by name; `splitOperands`, `readRank`, `readRange`; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `needsMoment`, `summarizeOperators`. `IF(Trait=<Trait>)` and `SEEN` since 0.14.0. Pure. |
+| `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
 | `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers `bonus`. |
 | `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative), with the operators. |
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation; `toGrantField` is the wizard's field. No hook. |
@@ -151,10 +151,14 @@ operators after a comma in words (`for allies within 15 ft, the first time each 
 
 **The hook** (`hooks.modifiers`), for each rule that reaches the recipient: every `IF` holds for
 the OWNER of the Talent (`rankMeets` over SW.RANKS' order; `Rank` reads `context.rank`, the roll's
-own rank Handling included, and never fires when the caller gave none); `FOR` reaches the
+own rank Handling included, and never fires when the caller gave none; `Trait` reads
+`context.threat.traits` through `hasTrait`, the attack's traits by first word, and never fires
+when no attack is known); `FOR` reaches the
 recipient (no FOR or `self`: the owner's own roll only; `allies`, `enemies`, `all`: another token's
 roll, by `scene.relation(ownerToken, recipientToken)` and `scene.gap` against the range;
-`self+allies`: either); `WHILE` counts the scene's tokens around the owner's token within the
+`self+allies`: either), and `SEEN` then asks `scene.sees(recipientToken, ownerToken)` (0.14.0; a
+scene without `sees` reads as unseen, so the operator is never assumed); `WHILE` counts the
+scene's tokens around the owner's token within the
 range; `AGAINST` needs `context.threat` and matches its Threat word or its reach; `FIRST`/`ONCE`
 reads the recipient's `flags.starwrought.rules.<per>[<item>:<line>]` against `context.encounter`
 and, when it applies in an encounter, puts `mark: { key, per }` on the modifier for the engine to
@@ -314,7 +318,8 @@ Calculated. `hooks.modifiers(entries, context, actor) -> Modifier[]`, dispatched
   "defense" | "initiative", slug, item, rank, threat, scene, encounter, staticOnly, momentOnly }`
   (the typedef in engine.mjs): the roll's kind, the Constellation slug supplying the Proficiency
   Bonus (`""` when none), the Item behind the roll or null, the roll's own rank, the Threat it
-  answers or null, the scene (`{ token, tokens: [{ actor, token }], relation(a, b), gap(a, b) }`
+  answers or null (`{ threat, melee, traits }`, the traits the attack's for `IF(Trait=...)`), the
+  scene (`{ token, tokens: [{ actor, token }], relation(a, b), gap(a, b), sees(a, b) }`
   from `scene.mjs`, a fake in a test, null when unknown), the Combat and round, and which half of
   the rules is wanted. `actor`: the recipient, whose `system.proficiency(slug).rank` and
   `flags.starwrought.rules` a kind may read.

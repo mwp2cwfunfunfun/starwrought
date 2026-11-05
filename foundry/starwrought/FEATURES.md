@@ -28,7 +28,7 @@ will not let you past a step that still has a choice unmade or a point unspent.
 
 | Step | What it does |
 |---|---|
-| Ancestry | Sets Vigor per level, Size, Speed (feet per Move) and Senses; grants the Ancestry Root. Under the cards, a Lore panel (0.13.0) prints the `<Ancestry> Lore` sheet's sections (Summary, About, You Might..., Names, ...) for the card under the pointer, the chosen one otherwise |
+| Ancestry | Sets Vigor per level, Size, Speed (feet per Move), Senses and Traits; grants the Ancestry Root. Under the cards, a Lore panel (0.13.0) prints the `<Ancestry> Lore` sheet's sections (Summary, About, You Might..., Names, ...) for the card under the pointer, the chosen one otherwise; since 0.14.0 it fills whatever height the window leaves below the cards and scrolls inside itself |
 | Bloodline | Offers only the Bloodlines inside your Ancestry's Constellation; grants that Root. A step with nothing enabled says so and lets you continue |
 | Culture | Grants the Culture Root and adds its languages |
 | Background | Three directed points: Trained in two named Skills, and in a Lore of its own |
@@ -1285,7 +1285,12 @@ ancestry's line, then Humanity; Soldier: the story, then what it trains), and a 
 it comes from and what it feeds. The sheet reads the chassis from the compendium, and behind it
 from `content/chassis.json`, which `build_foundry.mjs` writes for every authored chassis whether
 or not Enabled? let it into the pack, so a Background or Calling switched off after a character
-chose it still has its text. Level is a badge with three star pips
+chose it still has its text. Beside those five names a **Traits** field (0.14.0; the `_Tree
+Index`'s Traits column, Mike's) prints the creature traits the Ancestry, Bloodline and Culture
+confer ("Human") as chips, read off those chassis by name at render and never stored on the
+character, so a change to the sheet reaches every character through Sync content and the GM edits
+the chassis, not the sheet (ruling 173); it is read-only for everyone and absent when no chassis
+carries a trait. Level is a badge with three star pips
 beneath it for the Milestones reached (the fourth is the level) and, since 0.7.0, a **Comets**
 badge beside them while the character holds a Comet (PHB v4.21's name for the Deferred Talent
 Point of 0.7.0), with a **Spent** control for the owner or the GM that lowers the count by one and
@@ -1874,7 +1879,7 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ## 7. Automation: the framework, the grammar and the four kinds
 
-**What it is, and what it is not** (0.9.0 to 0.13.0; rulings 118 to 124, 164 to 168). Since 0.9.0
+**What it is, and what it is not** (0.9.0 to 0.14.0; rulings 118 to 124, 164 to 172). Since 0.9.0
 every Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets
 already did, and the system has a framework for reading it: the column is parsed, stored on the
 Item, indexed on the Actor and shown on the Item sheet. Four kinds read it in play: `bonus` (0.10.0,
@@ -1897,20 +1902,32 @@ pooled rank; `IF(Rank=Untrained)` the roll's own rank, Handling included), `FOR(
 (who receives it: `self`, `allies`, `enemies`, `all`, `self+allies`, within a range of the owner),
 `WHILE(<Who><op><N>[, <N>ft])` (how many stand around the owner), `AGAINST(<Threat>)` (only when
 answering a Blow, Blast, Blight or Beguilement, or a `Melee` / `Ranged` Blow), `FIRST(round)`,
-`ONCE(encounter)`, `DIFFERENT`, `VISIBLE`. The level-1 Human, written in it:
+`ONCE(encounter)`, `DIFFERENT`, `VISIBLE`, and since 0.14.0 `SEEN` (only for a recipient who can
+see you: line of sight between the token centres against sight-blocking walls, the seer not
+Blinded, your token not hidden nor you Hidden or Undetected; ruling 170) and `IF(Trait=<Trait>)`
+(the attack answered carries that trait, a weapon's, an adversary attack's or a spell Talent's,
+matched on its first word; no closed list, and the build warns on a trait nothing shipping carries,
+ruling 171). The level-1 Human, written in it:
 
 ```
-Humanity            bonus: +1, Condition, Aid, IF(Origin=Trained)      (+2 Expert, +3 Master, +4 Legendary)
+Humanity            bonus: +1, Condition, Aid, IF(Origin=Trained)
 Driven              grant: 1, Calling
 Quick Study         grant: 1, Skill
 Stubborn Footing    prevent: Prone, ONCE(encounter)
 Close Ranks         bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)
 Versatile Human     grant: 1, Opening
-Jack of Trades      bonus: +1, Situation, Checks, IF(Rank=Untrained)
+Jack of All Trades  bonus: +1, Situation, Checks, IF(Rank=Untrained)
 Torchbearer Human   aura: 15ft, allies, VISIBLE
-                    bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)
+                    bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)
 Steady the Line ❶↺  prevent: Expose, FOR(allies, 0ft)
 ```
+
+Torchbearer Human's second line is the Rally Aura of Mike's 2026-11-05 text ("The first time each
+round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they
+gain a +1 Situation bonus to that Defense check"): every Defense of an ally within 15 ft who can
+see the Torchbearer, against an attack carrying Fear, once a round per ally, on the Defense roll
+the ally makes against an adversary and on the Threshold a player attacker rolls against alike.
+Nothing in the data carries Fear yet, so it fires when the first Fear spell or attack is authored.
 
 **The `bonus` kind** (0.10.0; rulings 121 and 164). `bonus: <±N>, <Type>, <Target>`: the value
 signed (`0` refused), the Type Situation, Condition or Gear (the retired words and untyped refused
@@ -1960,7 +1977,13 @@ token palette, the Effects tab) the system skips the write and posts one card na
 offered as that Reaction where the effect would land: the Exchange card's Expose widget lists every
 Reaction Talent on the scene that reaches the body a Stop would Expose ("Steady the Line ❶↺
 (Wren)"), the Talent's owner presses it, pays its cost from their six, and the card says "It
-Exposes nothing" and offers the Expose no more; a Zone already chosen is not undone.
+Exposes nothing" and offers the Expose no more. Pressed **after** the defender picked the Zone (the
+order at most tables; Mike, 2026-11-05), it closes the Zone this card Exposed and the card says so
+("The Arms Zone is closed again"; 0.14.0, ruling 172): the card remembers which Zone it Exposed on whom
+(the GM's client writes that on the relay path, the card's author otherwise), the body's owner
+closes it or asks the GM's client to, and with no GM connected the Exposed stands, said in a
+notice. A Zone Exposed by anything but that card is never touched; the widget shows "Exposed in
+the Arms" in place of the select once a Zone is picked, with the Reaction buttons still there.
 
 **The Relevant Check Maneuver** (0.10.0; ruling 123). A Maneuver whose check is enabled with no
 Constellation chosen is a Relevant Check: using it opens the Relevant Check picker with the
@@ -1976,7 +1999,8 @@ its fields.
 Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the rules
 that need the map, the Threat or the round), through one dispatcher (`ruleModifiers` in
 `module/rules/engine.mjs`), handing each kind its own rules and the other tokens' rules whose `FOR`
-reaches the actor, with the roll's kind, Constellation, Item, rank, Threat, scene and encounter;
+reaches the actor, with the roll's kind, Constellation, Item, rank, Threat (with the attack's
+traits since 0.14.0), scene (with a sight test since 0.14.0) and encounter;
 a kind answers with modifiers, applied or offered, and the marks to remember. A kind that stops an
 effect names `prevent`: asked by `setCondition` and the token palette's path and by the Expose
 offer (`rulePreventers`). A kind that throws is logged and contributes nothing, so a roll never

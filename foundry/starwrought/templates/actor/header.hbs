@@ -78,6 +78,15 @@
         {{#if isGM}}<input type="text" name="system.details.calling.name" value="{{system.details.calling.name}}">
         {{else}}<strong class="sw-locked-value">{{system.details.calling.name}}</strong>{{/if}}
       </label>
+      {{!-- Traits (0.14.0; the index's Traits column, Mike's): the creature traits the chassis
+            confer, read off them by name at render and never stored, so a change to the sheet
+            reaches every character through Sync content (ruling 173). Read-only for everyone. --}}
+      {{#if traitChips.length}}
+      <div class="sw-field sw-locked sw-traits-field" data-tooltip="STARWROUGHT.Field.traitsHint" data-tooltip-direction="DOWN">
+        <span>{{localize "STARWROUGHT.Field.traits"}}</span>
+        <span class="sw-trait-list sw-locked-value">{{#each traitChips as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}</span>
+      </div>
+      {{/if}}
     </div>
 
     <div class="sw-vitals">

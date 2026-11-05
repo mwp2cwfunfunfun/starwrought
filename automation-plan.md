@@ -113,7 +113,12 @@ The recipe, in full, is `module/rules/README.md`. In outline, and every step wit
 2. **The aura, for Torchbearer Human.** Shipped in 0.13.0 as two lines on one Talent: `aura: 15ft,
    allies, VISIBLE` draws the ring (the `aura` kind, the Aura column's successor) and `bonus: +1,
    Situation, Defenses, FOR(allies, 15ft), FIRST(round)` is the effect inside it, read by the
-   `bonus` kind through the operator grammar. Every aura in the book is the same two words.
+   `bonus` kind through the operator grammar. Every aura in the book is the same two words. Mike
+   rewrote the Talent as the Rally Aura on 2026-11-05 (an ally who can see you, against an attack
+   with the Fear trait), and 0.14.0 added the two readings it needed to the operators every kind
+   shares rather than a kind: `SEEN` (line of sight, `scene.sees`) and `IF(Trait=<Trait>)` (the
+   attack record's traits, `threatContext`), so the line is now `bonus: +1, Situation, Defenses,
+   FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)`. No kind was added; the grammar grew.
 3. **Then one at a time.** Each kind from the Talent that wants it, by the recipe above, with its
    hook, its test, its section in `AUTOMATION_GRAMMAR.md` and its docs. 0.13.0 added `grant`,
    `aura` and `prevent` beside the rewritten `bonus`, enough for the level-1 Human; the grammar

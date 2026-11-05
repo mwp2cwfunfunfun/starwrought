@@ -257,9 +257,9 @@ kids.push(para([run("Checks. ", { bold: true }), run("One formula for everything
 
 kids.push(h1("Ancestries & Bloodlines"));
 kids.push(para("Your Ancestry is the body you were born in. It forms the trunk of your Origin Constellation and sets your Vigor per level, Size, Speed (in feet per Move ❶), and one special ability. Your Bloodline is the lineage inside it, and adds a branch. Both roots are Origin Talent Points granted by the choices themselves."));
-kids.push(stripedTable(["Ancestry", "Vigor/lvl", "Size", "Speed", "Senses", "Key Attribute"],
+kids.push(stripedTable(["Ancestry", "Vigor/lvl", "Size", "Speed", "Senses", "Traits", "Key Attribute"],
   (R.ancestries || []).map(a => [{ text: a.name, bold: true }, String(vigorOf(a)), a.size || "Medium", a.speed,
-    a.senses || "—", (trees[a.tree] || {}).feeds || "—"]), [2000, 1000, 1400, 1300, 2200, 1460]));
+    a.senses || "—", (a.traits || []).join(", ") || "—", (trees[a.tree] || {}).feeds || "—"]), [2000, 1000, 1200, 1200, 1700, 1200, 1060]));
 for (const a of (R.ancestries || [])) {
   const t = trees[a.tree]; if (!t) continue;
   kids.push(h3(a.name + ": Vigor " + vigorOf(a) + " • " + (a.size || "Medium") + " • " + a.speed));

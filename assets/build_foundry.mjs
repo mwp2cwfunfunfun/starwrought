@@ -56,6 +56,7 @@ import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
+import { traitKey } from "../foundry/starwrought/module/rules/operators.mjs";
 // The system's own Trait-line splitter (0.10.1), pure as the grammar is, so the build and the
 // client read a Trait cell the same way; through 0.10.0 this file carried a copy of it.
 import { splitTraits } from "../foundry/starwrought/module/data/items/weapon-traits.mjs";
@@ -235,7 +236,7 @@ function grantOf(row, rules, source) {
 /* -------------------------------------------- */
 
 /** What the Automation cells added up to, for the summary line: rules, documents carrying any, kinds used. */
-const automationTally = { rules: 0, documents: 0, kinds: new Set() };
+const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map() };
 
 /**
  * An Item's `automation` and `rules` from the cell the converter copied through (0.9.0; rulings
@@ -266,7 +267,16 @@ function automationOf(text, context) {
   if (rules.length) {
     automationTally.rules += rules.length;
     automationTally.documents += 1;
-    for (const rule of rules) automationTally.kinds.add(rule.kind);
+    for (const rule of rules) {
+      automationTally.kinds.add(rule.kind);
+      // `IF(Trait=<Trait>)` (0.14.0): remembered, and checked at the end against every trait a
+      // shipping weapon, action or Talent carries; a trait nothing carries is a WARNING, not a
+      // failure (ruling 171), since the rule reads and fires when the first such attack is authored.
+      const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
+      for (const w of whens) {
+        if (w?.trait) (automationTally.traitsAsked.get(w.trait) ?? automationTally.traitsAsked.set(w.trait, []).get(w.trait)).push(`${context.source} (${w.name})`);
+      }
+    }
   }
   return { automation, rules };
 }
@@ -551,7 +561,9 @@ for (const [name, tree] of Object.entries(trees)) {
         ...auraOf(node, automation.rules),
         ...spellOf(node),
         ...automation,
-        traits: [],
+        // The sheet's Traits column (0.14.0), so a spell Talent can carry the trait a defender's
+        // `IF(Trait=...)` asks about.
+        traits: Array.isArray(node.traits) ? node.traits.map(String) : [],
         source: "STARWROUGHT Playtest v4.21"
       }
     });
@@ -619,7 +631,9 @@ for (const ancestry of roster.ancestries ?? []) {
       // shown on the Description tab and under the highlighted card in Character Creation. The
       // converter carries rich text as the Effect column's; each section is one paragraph here.
       lore: (ancestry.lore ?? []).map(({ label, text }) => ({ label, text: `<p>${text}</p>` })),
-      traits: [],
+      // The index's Traits column (0.14.0): the creature traits the Ancestry confers ("Human"),
+      // which the character sheet's header reads off the chassis by name.
+      traits: Array.isArray(ancestry.traits) ? ancestry.traits.map(String) : [],
       source: "STARWROUGHT Playtest v4.21"
     }
   });
@@ -1588,6 +1602,21 @@ if (automationTally.rules) {
   console.log("  automation: no rules (no rule kinds are defined yet)");
 } else {
   console.log(`  automation: no rules (${plural(kinds.length, "kind")} defined, none in use)`);
+}
+
+// The trait census (0.14.0; ruling 171): every trait a shipping weapon, action or Talent carries,
+// by its first word, against the traits the rules' `IF(Trait=...)` ask about. A trait nothing
+// carries is a warning: the rule reads and fires once an attack with that trait is authored.
+if (automationTally.traitsAsked.size) {
+  const carried = new Set();
+  for (const weapon of equipment?.weapons ?? []) for (const t of splitTraits(weapon.traits)) carried.add(traitKey(t));
+  for (const action of sheetActions) for (const t of action.traits ?? []) carried.add(traitKey(t));
+  for (const tree of Object.values(trees)) for (const node of tree.nodes ?? []) for (const t of node.traits ?? []) carried.add(traitKey(t));
+  for (const [trait, askers] of automationTally.traitsAsked) {
+    if (carried.has(trait)) continue;
+    console.warn(`  WARNING: IF(Trait=${askers[0].match(/\(([^)]*)\)$/)?.[1] ?? trait}): no shipping weapon, attack or Talent carries the trait "${trait}" yet `
+      + `(asked by ${askers.map(a => a.replace(/ \([^)]*\)$/, "")).join(", ")}); the rule fires when one is authored`);
+  }
 }
 
 // --no-compile is the content loop's way in (build_all.mjs --content): the sources and the index

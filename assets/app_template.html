@@ -1233,6 +1233,8 @@ function talentPicker(treeNames, selected, dataKey, max, creationCh){
 }
 function ancTrees(){ return allTreeNames().filter(n=>{const t=treeOf(n);return t.category==="Ancestry"&&!t.stub;}); }
 function ancChassis(name){ return R.ancestries.find(x=>x.name===name||x.tree===name)||{name:name, vigor:8, speed:"6 ft", senses:"—", tree:name, blurb:"", bloodlines:[]}; }
+/* The creature traits the Ancestry confers (0.14.0; the index's Traits column), as a tail on the card's tag line. */
+function ancTraits(a){ const t=(a&&a.traits)||[]; return t.length?" • "+t.join(", "):""; }
 function ancTreeName(){ const ch=ancChassis(wiz.ch.ancestry); return ancTrees().includes(wiz.ch.ancestry)?wiz.ch.ancestry:ch.tree; }
 function grantIdentityRoots(c){
   // v4.21: the first Calling grants one combat root, Melee Training or Ranged Training for a martial
@@ -1269,10 +1271,10 @@ function wAncestry(){
   let h;
   if(dts.length){
     h=`<div class="cards">`+dts.map(n=>{const ch=ancChassis(n), tr=treeOf(n), rt=tr.nodes.find(x=>x.root);
-      return `<div class="card ${wiz.ch.ancestry===n?"sel":""}" data-anc="${n}"><h4>${n}</h4><span class="tag">Vigor ${ancVigor(ch)} • ${ch.size||"Medium"} • Speed ${feet(ch.speed)} ft • ${ch.senses}</span><p>${rt&&rt.desc?stripT(rt.desc):(rt?stripT(rt.effect):"")}</p></div>`;}).join("")+`</div>`;
+      return `<div class="card ${wiz.ch.ancestry===n?"sel":""}" data-anc="${n}"><h4>${n}</h4><span class="tag">Vigor ${ancVigor(ch)} • ${ch.size||"Medium"} • Speed ${feet(ch.speed)} ft • ${ch.senses}${ancTraits(ch)}</span><p>${rt&&rt.desc?stripT(rt.desc):(rt?stripT(rt.effect):"")}</p></div>`;}).join("")+`</div>`;
   } else {
     h=`<div class="cards">`+R.ancestries.map(x=>`<div class="card ${wiz.ch.ancestry===x.name?"sel":""}" data-anc="${x.name}">
-      <h4>${x.name}</h4><span class="tag">Vigor ${ancVigor(x)} • ${x.size||"Medium"} • Speed ${feet(x.speed)} ft • ${x.senses}</span><p>${x.blurb}</p></div>`).join("")+`</div>`;
+      <h4>${x.name}</h4><span class="tag">Vigor ${ancVigor(x)} • ${x.size||"Medium"} • Speed ${feet(x.speed)} ft • ${x.senses}${ancTraits(x)}</span><p>${x.blurb}</p></div>`).join("")+`</div>`;
   }
   if(wiz.ch.ancestry){
     const a=ancChassis(wiz.ch.ancestry);
@@ -1989,7 +1991,7 @@ function vWiki(){
     ${P("Fifteen gold does not buy a complete plate harness: a Full Helm, Plate Cuirass, Plate Arms, and Plate Legs are Load 8 (Load Strain 7 with the Fitted harness) and 62 gp. <b>Everyone starts the game with gaps in their armor, and deciding where those gaps go is your first real equipment decision.</b>")}`;
 
   if(wikiSec==="Ancestries") h+=`<div class="callout">Your Ancestry is the body you were born in: it forms the trunk of your Origin, and sets your Vigor per level, Size, Speed, and one special ability. Its root is an Origin Talent Point granted by the choice. Your <b>Bloodline</b> is the lineage inside it, and adds a branch.</div>`
-    +tbl(["Ancestry","Vigor/lvl","Size","Speed (ft per Move)","Senses","Key attribute"],R.ancestries.map(a=>[link(a.tree),ancVigor(a),a.size||"Medium",feet(a.speed)+" ft",a.senses||"—",treeOf(a.tree).feeds||"—"]))
+    +tbl(["Ancestry","Vigor/lvl","Size","Speed (ft per Move)","Senses","Traits","Key attribute"],R.ancestries.map(a=>[link(a.tree),ancVigor(a),a.size||"Medium",feet(a.speed)+" ft",a.senses||"—",(a.traits||[]).join(", ")||"—",treeOf(a.tree).feeds||"—"]))
     +R.ancestries.map(a=>{
       const tr=treeOf(a.tree), hs=(tr.nodes||[]).filter(n=>n.hroot);
       const rows=hs.length?hs.map(n=>[`✧ ${n.name}${n.feeds?` <span class="muted">(${n.feeds})</span>`:""}`, n.effect]):(a.bloodlines||a.heritages||[]);

@@ -163,8 +163,24 @@ export function maneuverFrom(source, payload = {}) {
     basicOnly: !!source.basicOnly,
     threat: source.threat,
     defenses: [...source.defenses],
-    spell: source.spell ? { ...source.spell } : null
+    spell: source.spell ? { ...source.spell } : null,
+    traits: traitsOf(source)
   };
+}
+
+/**
+ * The traits the attack carries (0.14.0), for a defender's `IF(Trait=...)` rules: a spell Talent's
+ * `system.traits`, a weapon's, an adversary attack Item's, or the attack row's copy of them.
+ * @param {object} source  From `resolveSource`.
+ * @returns {string[]}
+ */
+export function traitsOf(source) {
+  const list = source?.talent?.system?.traits
+    ?? source?.weapon?.system?.traits
+    ?? source?.attackItem?.system?.traits
+    ?? source?.attackRow?.traits
+    ?? [];
+  return Array.isArray(list) ? list.map(t => String(t)).filter(Boolean) : [];
 }
 
 /* -------------------------------------------- */

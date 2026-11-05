@@ -698,6 +698,26 @@ recipient (`flags.starwrought.rules.round` / `.encounter`; `writeRuleMarks`), ne
 The level-1 Human's nine Talents are written in the grammar in `data/ancestries.xlsx` (13 rules on
 9 documents). Next kinds come one at a time, from the Talent that wants each (ruling 119 stands).
 
+**0.14.0 (Mike, 2026-11-05; rulings 170 to 173): the Rally Aura, Traits, the Lore panel.** Mike
+rewrote the Torchbearer Human ("The first time each round an ally within 15 feet who can see you
+defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense
+check") and the grammar grew two readings rather than a kind: **`SEEN`** (a flag operator for
+`bonus` and `prevent`: the recipient can see the owner; line of sight between token centres against
+sight-blocking walls, the seer not Blinded, the seen not hidden, Hidden or Undetected; nothing
+finer, ruling 170; `canSeeToken` in `module/rules/scene.mjs`, `scene.sees`) and
+**`IF(Trait=<Trait>)`** (the attack answered carries the trait, matched on its first word; the
+attack record carries `traits` from the weapon, the adversary attack Item or the spell Talent, and
+`threatContext` hands them on; no closed list, the build WARNS on a trait nothing shipping carries,
+ruling 171). Tree sheets have an optional **`Traits`** column (`system.traits` on the Talent) and
+the `_Tree Index` a **`Traits`** column (the chassis's creature traits, "Human": on the Ancestry
+chassis, the app card, the docx table, and the character header's read-only Traits field, read off
+the Ancestry, Bloodline and Culture by name at render, never stored; ruling 173). A `prevent` of
+`Expose` pressed after the Zone pick closes the Zone the card recorded Exposing (ruling 172;
+`flags.starwrought.exposed` on the card, the GM's client over the `expose:*` socket for another
+player's body). The ancestry blurb is the Lore sheet's Summary row (the index's Summary column
+gone, with Flare Triggers and Meta note, all optional). **Fear is carried by nothing in the data
+yet**, so the Rally Aura fires once a Fear spell or attack is authored.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -738,9 +758,12 @@ The level-1 Human's nine Talents are written in the grammar in `data/ancestries.
   `trees.json` and `roster.json`. That is content that must track the data exactly.
 - `data/*.xlsx` holds all game content. One `_Tree Index` sheet per workbook.
 - Ancestry rows in `data/ancestries.xlsx` `_Tree Index` also carry Vigor (the header may still read
-  HP), Size, Speed (feet per Move; a Human's is 6), Senses, Summary. The pipeline reads those and
+  HP), Size, Speed (feet per Move; a Human's is 6), Senses and, since 0.14.0, Traits (the creature
+  traits the chassis confers). The pipeline reads those and
   generates the `ancestries` block of `roster.json` (keys `vigor`, and `hp` for one release), so
-  ancestry chassis is authored once, in the sheet. A Calling's Vigor is not in a sheet: it is the
+  ancestry chassis is authored once, in the sheet. The blurb is the `<Tree> Lore` sheet's Summary
+  row (the index's Summary, Flare Triggers and Meta note columns are optional; Mike deleted all
+  three on 2026-11-05). A Calling's Vigor is not in a sheet: it is the
   third column of the hand-kept `callings` block of `roster.json`, and since PHB v4.11 that column
   is the Calling's **Opening Vigor** (paid once, at 1st level, by the first Calling), not Vigor per
   level; every consumer indexes `[2]`. The Ancestry's Vigor stays per level.
@@ -751,7 +774,9 @@ The level-1 Human's nine Talents are written in the grammar in `data/ancestries.
   error, Mike's "no Attribute cell should ever be blank"; a sheet still headed `Feeds` inherits the
   tree's), **Choice**, **Free Talent**, **Enabled?**, **Automation** (0.9.0; the operator grammar
   since 0.13.0, `AUTOMATION_GRAMMAR.md`: one rule per line, copied through as text by the converter
-  and parsed by `build_foundry.mjs`, which fails on a line it does not know). **Retired in 0.13.0,
+  and parsed by `build_foundry.mjs`, which fails on a line it does not know), **Traits** (0.14.0,
+  optional, comma separated: `system.traits` on the Talent, so a spell can carry the trait a
+  defender's `IF(Trait=...)` names). **Retired in 0.13.0,
   still read where a sheet has them:** `Aura` (an `aura:` line is the authoring; both on a row is
   an error) and `Grants` (a `grant:` line; a filled cell warns and must agree with the line). A
   sheet with no `Requires` column, or an empty one, reads `Prerequisites` as the requirement (the
@@ -951,9 +976,16 @@ The level-1 Human's nine Talents are written in the grammar in `data/ancestries.
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
   Four kinds ship (0.13.0): `bonus`, `grant`, `aura`, `prevent`, and the level-1 Human is written
-  whole. What the grammar does not yet read: Torchbearer's "while they can see or hear you" (no
-  operator reads sight); a `prevent` of a Condition on an ally as a Reaction (no Talent asks for
-  it; the Expose Reaction is built); adversaries' rolls (flat). Each new kind, by the recipe in
+  whole; 0.14.0 added the operators `SEEN` and `IF(Trait=...)` for the Rally Aura. What the grammar
+  does not yet read: a `prevent` of a Condition on an ally as a Reaction (no Talent asks for it;
+  the Expose Reaction is built); adversaries' rolls (flat); hearing, light and sight range (`SEEN`
+  is line of sight and three statuses). **Fear is carried by nothing in the data** (no weapon,
+  attack or spell Talent has the trait), so the Rally Aura reads and fires on nothing until one is
+  authored; the build warns. **Torchbearer's new cell is to be written once Excel releases
+  `data/ancestries.xlsx`** (the line is in `AUTOMATION_GRAMMAR.md`, section 5); until then the
+  shipped Talent carries the 0.13.0 rule (every Defense, no sight, no trait). The Jack of All
+  Trades rename gives the Talent a new document id; a character who owned "Jack of Trades" keeps
+  the stale copy beside the new one after Sync content. Each new kind, by the recipe in
   `module/rules/README.md`: its file, its hook point (`modifiers` or `prevent` if either serves
   it, else a new one defined with it; ruling 119), its checks in `assets/test_rules.mjs`, its
   section in `AUTOMATION_GRAMMAR.md`, its CHANGELOG and FEATURES prose. No survey of the Talents

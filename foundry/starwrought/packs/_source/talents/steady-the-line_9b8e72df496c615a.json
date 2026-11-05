@@ -1,6 +1,6 @@
 {
   "_id": "9b8e72df496c615a",
-  "name": "Steady the Line ❶↺",
+  "name": "Steady the Line",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -16,11 +16,11 @@
     "prerequisites": "",
     "attribute": "",
     "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
-    "description": "<p>Your voice finds the one who is faltering.</p>",
-    "cost": "1",
+    "description": "<p><i>You cut through the clash, steadying a companion’s defense before it can falter.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
-    "reaction": true,
+    "reaction": false,
     "reactionCost": "",
     "grant": {
       "n": 0,
@@ -43,6 +43,7 @@
         },
         "while": null,
         "against": null,
+        "seen": false,
         "limit": null,
         "kind": "prevent",
         "line": 1,
@@ -59,7 +60,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "5000bf165f7680fb"
+      "contentHash": "a64c8795734d070c"
     }
   },
   "effects": [],

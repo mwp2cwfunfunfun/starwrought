@@ -174,7 +174,10 @@ export class AttackWorkflow {
         basicOnly: !!reaction || !!maneuver?.basicOnly,
         threat,
         defenses,
-        spell
+        spell,
+        // The attack's traits (0.14.0): the weapon's, the attack Item's or the spell Talent's, as
+        // declared, for the Automation rules' `IF(Trait=...)` on the defender's side.
+        traits: Array.isArray(maneuver?.traits) ? maneuver.traits.map(t => String(t)) : []
       },
       targets: targets.map((target, index) => {
         const snapshot = {

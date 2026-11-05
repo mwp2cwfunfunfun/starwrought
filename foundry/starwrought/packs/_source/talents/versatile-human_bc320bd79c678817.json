@@ -14,7 +14,7 @@
     "prerequisites": "",
     "attribute": "wits",
     "effect": "You gain 1 Opening Talent Point.",
-    "description": "<p>Some humans refuse to be one thing; you are a whole toolbox wearing boots.</p>",
+    "description": "<p><i>Your interests lead in many directions, and you rarely let an opportunity to learn something new pass unexplored.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -52,7 +52,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "bde60b955c45e7e3"
+      "contentHash": "e61e83690ad7724c"
     }
   },
   "effects": [],

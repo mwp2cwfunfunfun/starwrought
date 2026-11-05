@@ -62,7 +62,7 @@ let TREES = {
   "lore": [
    {
     "label": "Summary",
-    "text": "Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright."
+    "text": "Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another."
    },
    {
     "label": "About",
@@ -109,17 +109,20 @@ let TREES = {
     "text": "Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Jonna, Kestrel, Liesl, Marek, Nadia, Osric, Petra, Rowan, Sable, Tomas, Verity, Wynne"
    }
   ],
-  "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "traits": [
+   "Human"
+  ],
+  "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft)",
+  "sparks": "",
   "nodes": [
    {
     "name": "Humanity",
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
-    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)\nbonus: +2, Condition, Aid, IF(Origin=Expert)\nbonus: +3, Condition, Aid, IF(Origin=Master)\nbonus: +4, Condition, Aid, IF(Origin=Legendary)",
-    "desc": "Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright.",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
+    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)",
+    "desc": "<i>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</i>",
     "root": true
    },
    {
@@ -129,7 +132,7 @@ let TREES = {
     "enabled": true,
     "effect": "You gain a Calling Talent Point.",
     "automation": "grant: 1, Calling",
-    "desc": "You were raised to reach, and you have not stopped reaching since.",
+    "desc": "<i>Once you find your purpose, you pursue it with a determination that rarely lets you rest.</i>",
     "requires": [
      "Humanity"
     ]
@@ -141,7 +144,7 @@ let TREES = {
     "enabled": true,
     "effect": "You gain a Skill Talent Point.",
     "automation": "grant: 1, Skill",
-    "desc": "Your adaptability shows in how fast you pick up useful skills.",
+    "desc": "<i>You have a knack for turning a little instruction into a useful new skill.</i>",
     "requires": [
      "Humanity"
     ]
@@ -153,6 +156,7 @@ let TREES = {
     "enabled": true,
     "effect": "The first time each encounter you would be knocked prone, you are not.",
     "automation": "prevent: Prone, ONCE(encounter)",
+    "desc": "<i>Even when a blow catches you off balance, sheer stubbornness keeps you on your feet.</i>",
     "requires": [
      "Humanity"
     ]
@@ -162,10 +166,33 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against physical Attacks.",
+    "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against Blows.",
     "automation": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)",
+    "desc": "<i>Shoulder to shoulder, you and your companions instinctively cover one another’s openings.</i>",
     "requires": [
      "Humanity"
+    ]
+   },
+   {
+    "name": "Torchbearer Human",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
+    "automation": "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
+    "desc": "<i>Others take heart from your presence, drawing courage from you and the example you set.</i>",
+    "hroot": true
+   },
+   {
+    "name": "Steady the Line",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
+    "automation": "prevent: Expose, FOR(allies, 0ft)",
+    "desc": "<i>You cut through the clash, steadying a companion’s defense before it can falter.</i>",
+    "requires": [
+     "Torchbearer Human"
     ]
    },
    {
@@ -175,42 +202,21 @@ let TREES = {
     "enabled": true,
     "effect": "You gain 1 Opening Talent Point.",
     "automation": "grant: 1, Opening",
-    "desc": "Some humans refuse to be one thing; you are a whole toolbox wearing boots.",
+    "desc": "<i>Your interests lead in many directions, and you rarely let an opportunity to learn something new pass unexplored.</i>",
     "feeds": "Wits",
     "hroot": true
    },
    {
-    "name": "Jack of Trades",
+    "name": "Jack of All Trades",
     "tier": "T",
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +1 Situation bonus to your Untrained checks.",
     "automation": "bonus: +1, Situation, Checks, IF(Rank=Untrained)",
-    "desc": "You have done a little of everything, and it shows.",
+    "desc": "<i>You have tried your hand at enough things to find a familiar thread in almost any task.</i>",
     "feeds": "Wits",
     "requires": [
      "Versatile Human"
-    ]
-   },
-   {
-    "name": "Torchbearer Human",
-    "tier": "T",
-    "cost": 1,
-    "enabled": true,
-    "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
-    "automation": "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
-    "hroot": true
-   },
-   {
-    "name": "Steady the Line ❶↺",
-    "tier": "T",
-    "cost": 1,
-    "enabled": true,
-    "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
-    "automation": "prevent: Expose, FOR(allies, 0ft)",
-    "desc": "Your voice finds the one who is faltering.",
-    "requires": [
-     "Torchbearer Human"
     ]
    }
   ]
