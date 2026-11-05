@@ -251,21 +251,18 @@ export class AttackCoordinator {
         } catch (err) {
           console.error(`STARWROUGHT | attack workflow ${workflow.id} could not be taken up`, err);
         }
-      } else if (!connected && user.isGM && !game.users.activeGM && (elected === game.user.id)
-        && (workflow.phase === "defending")) {
-        // The last GM left while this client coordinates: the adversaries nobody can now declare
-        // for answer with their standing stances at once, as they would have at the declaration
-        // (review, 2026-10-01).
+      } else if (user.isGM && (elected === game.user.id) && (workflow.phase === "defending")
+        && AttackWorkflow.waitingForGm(workflow, { gmActive: false }).length) {
+        // A GM came or went while this client coordinates a Blow with an adversary still to
+        // answer (0.12.0, ruling 162): nothing answers in its place. The card is written again so
+        // its "waiting for a GM" line is true, and the prompt goes out so a GM who just connected
+        // is asked at once.
         try {
-          const before = workflow.revision;
-          await AttackCoordinator.#commitUnanswerable(workflow);
-          if (workflow.revision !== before) {
-            await AttackCoordinator.#persist(workflow);
-            await AttackCoordinator.#broadcast(workflow, "state");
-            await AttackCoordinator.#advanceIfReady(workflow);
-          }
+          AttackCoordinator.#bump(workflow);
+          await AttackCoordinator.#persist(workflow);
+          await AttackCoordinator.#broadcast(workflow, "prompt");
         } catch (err) {
-          console.error(`STARWROUGHT | attack workflow ${workflow.id}: adversaries could not answer`, err);
+          console.error(`STARWROUGHT | attack workflow ${workflow.id}: the waiting line could not be refreshed`, err);
         }
       } else if (!connected || (elected !== game.user.id)) {
         Hooks.callAll(HOOK, { type: "state", workflow: AttackCoordinator.get(workflow.id) });
@@ -307,7 +304,6 @@ export class AttackCoordinator {
 
     if (changed) {
       AttackCoordinator.#bump(workflow, { phase: true });
-      await AttackCoordinator.#commitUnanswerable(workflow);
       await AttackCoordinator.#persist(workflow);
     }
     await AttackCoordinator.#broadcast(workflow, "prompt");
@@ -458,7 +454,7 @@ export class AttackCoordinator {
    * `{ type: "attack", requestId, workflowId, expectedRevision, action, payload, userId }`). A
    * client that is the coordinator handles it directly. A rejection is shown to the requester.
    * @param {string} action   declare | commitDefense | submitRoll | cancel | resetDefenses |
-   *                          resendPrompts | useStances | requestState
+   *                          resendPrompts | requestState
    * @param {object} options
    * @param {string|null} options.workflowId
    * @param {number|null} options.expectedRevision
@@ -659,7 +655,6 @@ export class AttackCoordinator {
         case "cancel":
         case "resetDefenses":
         case "resendPrompts":
-        case "useStances":
           return { ...base, ...(await AttackCoordinator.#gmControl(workflow, message.action, user)) };
         case "requestState":
           return {
@@ -759,9 +754,10 @@ export class AttackCoordinator {
     AttackCoordinator.#meta.set(workflow.id, { phaseRevision: 0 });
 
     // Declared, and straight into the defense phase: the card is the first thing anyone sees.
+    // Nothing is committed for anyone (0.12.0, ruling 159): with no GM connected an adversary
+    // defender waits for one, and the card says so.
     AttackWorkflow.transition(workflow, "defending");
     AttackCoordinator.#bump(workflow, { phase: true });
-    await AttackCoordinator.#commitUnanswerable(workflow);
     await AttackCoordinator.#persist(workflow);
     await AttackCoordinator.#broadcast(workflow, "prompt");
     await AttackCoordinator.#advanceIfReady(workflow);
@@ -778,7 +774,7 @@ export class AttackCoordinator {
   static async #commitDefense(workflow, payload, user) {
     const target = AttackWorkflow.targetOf(workflow, payload.targetId);
     if (!target) return { ok: false, reason: "wrongPhase" };
-    // Already answered: a second prompt, or the GM's standing stances got there first.
+    // Already answered: a second prompt, or the GM answered for an absent player first (0.12.0).
     if (target.committed) return { ok: false, reason: "stale", revision: workflow.revision };
     const actor = resolveActor(target.actorUuid);
     if (!actor) return { ok: false, reason: "noActor" };
@@ -939,10 +935,10 @@ export class AttackCoordinator {
   }
 
   /**
-   * The GM controls (brief, "Coordination" and "The absent player"), each logged on the card:
-   * cancel; resetDefenses (every commitment cleared, back to `defending`); resendPrompts; and
-   * useStances, which answers every uncommitted defender with its standing stance, as the live
-   * stance read did before 0.5.0, so an absent player never blocks the attacker.
+   * The GM controls (brief, "Coordination"), each logged on the card: cancel; resetDefenses (every
+   * commitment cleared, back to `defending`); resendPrompts. An absent player is answered for from
+   * the GM's own prompt (0.12.0, `gmDefendAbsent`), explicitly and per defender; nothing here
+   * commits a Defense for anyone.
    */
   static async #gmControl(workflow, action, user) {
     if (!AttackCoordinator.#mayControl(user, workflow)) return { ok: false, reason: "gmOnly" };
@@ -958,7 +954,6 @@ export class AttackCoordinator {
         workflow.log.push(localize("STARWROUGHT.Attack.reset"));
         AttackCoordinator.#bump(workflow, { phase: true });
         await AttackCoordinator.#savePrivate();
-        await AttackCoordinator.#commitUnanswerable(workflow);
         await AttackCoordinator.#persist(workflow);
         await AttackCoordinator.#broadcast(workflow, "prompt");
         await AttackCoordinator.#advanceIfReady(workflow);
@@ -969,24 +964,6 @@ export class AttackCoordinator {
         AttackCoordinator.#bump(workflow);
         await AttackCoordinator.#persist(workflow);
         await AttackCoordinator.#broadcast(workflow, "prompt");
-        break;
-      }
-      case "useStances": {
-        const names = [];
-        for (const target of workflow.targets) {
-          if (target.committed) continue;
-          const actor = resolveActor(target.actorUuid);
-          if (!actor) continue;
-          AttackCoordinator.#commitWithStance(workflow, target, actor, user.id);
-          names.push(target.name);
-        }
-        if (!names.length) return { ok: false, reason: "wrongPhase", revision: workflow.revision };
-        workflow.log.push(`${localize("STARWROUGHT.Attack.usedStances")}: ${names.join(", ")}`);
-        AttackCoordinator.#bump(workflow);
-        await AttackCoordinator.#savePrivate();
-        await AttackCoordinator.#persist(workflow);
-        await AttackCoordinator.#broadcast(workflow, "state");
-        await AttackCoordinator.#advanceIfReady(workflow);
         break;
       }
       default:
@@ -1057,46 +1034,6 @@ export class AttackCoordinator {
       target.resolutionMessageId = null;
     }
     workflow.attackRoll = null;
-  }
-
-  /**
-   * Commit a defender with its standing stance: the `answeringDefense()` reading, the basic
-   * Defense alone (PHB v4.21: no Reaction stands ready; one is chosen per Blow in the prompt), so
-   * never a Reaction and never a Posture. The reading already applies the swap for an
-   * unavailable Defense, so it is legal by construction.
-   */
-  static #commitWithStance(workflow, target, actor, userId) {
-    const reading = actor.answeringDefense?.({ ranged: !!workflow.maneuver?.ranged, gap: AttackCoordinator.#gapFor(workflow, target) })
-      ?? { key: "evade", reaction: null };
-    const store = AttackCoordinator.#storeFor(workflow.id);
-    store[target.id] = {
-      defense: ["evade", "guard"].includes(reading.key) ? reading.key : "evade",
-      reaction: null,
-      posture: null,
-      userId
-    };
-    target.committed = true;
-  }
-
-  /**
-   * At a table with no GM connected, an adversary defender has nobody to declare for it, so it
-   * answers with its standing stance at once rather than stalling the Blow; the card says so.
-   */
-  static async #commitUnanswerable(workflow) {
-    if (game.users.activeGM) return;
-    let any = false;
-    for (const target of workflow.targets) {
-      if (target.committed || target.isPlayer) continue;
-      const actor = resolveActor(target.actorUuid);
-      if (!actor) continue;
-      AttackCoordinator.#commitWithStance(workflow, target, actor, game.user.id);
-      workflow.log.push(format("STARWROUGHT.Attack.autoStance", { name: target.name }));
-      any = true;
-    }
-    if (any) {
-      await AttackCoordinator.#savePrivate();
-      AttackCoordinator.#bump(workflow);
-    }
   }
 
   /* -------------------------------------------- */
@@ -1210,8 +1147,7 @@ export class AttackCoordinator {
    * A defender's Threshold with the committed answer folded in, from actor data on this client
    * (brief, "Thresholds": never trusted from a client). `SwActor#defenseThresholdFor` is the
    * authority; the arithmetic below stands in only if it is missing, folding the +2 into the
-   * Defense's Situation stack exactly as `answeringDefense` does, so a Reaction and a Situation
-   * bonus already on the Defense do not stack.
+   * Defense's own stack, where v4.21's stacking adds it.
    * @returns {{key: string, threshold: number, note: string|null}|null}
    */
   static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null) {

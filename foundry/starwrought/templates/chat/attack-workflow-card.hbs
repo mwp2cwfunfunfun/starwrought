@@ -76,15 +76,10 @@
   </ul>
   {{/if}}
 
-  {{!-- The GM's recovery controls (brief, "Coordination": cancel, resetDefenses, resendPrompts;
-       "The absent player": useStances). --}}
+  {{!-- The GM's recovery controls (brief, "Coordination": cancel, resetDefenses, resendPrompts).
+       An absent player is answered for from the GM's own prompt (0.12.0), never by a default here. --}}
   {{#if gm}}
   <div class="sw-card-buttons sw-attack-gm" data-gm-only>
-    {{#if gm.useStances}}
-    <button type="button" data-sw-action="attackUseStances" data-workflow-id="{{workflowId}}">
-      <i class="fa-solid fa-shield-halved"></i> {{gm.useStancesLabel}}
-    </button>
-    {{/if}}
     {{#if gm.reset}}
     <button type="button" data-sw-action="attackReset" data-workflow-id="{{workflowId}}">
       <i class="fa-solid fa-rotate-left"></i> {{gm.resetLabel}}

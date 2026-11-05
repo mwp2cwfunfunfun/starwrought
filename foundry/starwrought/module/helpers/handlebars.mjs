@@ -84,7 +84,7 @@ export function registerHandlebarsHelpers() {
 /**
  * Preload the partials so a sheet's first render is not a waterfall of fetches. Every path here
  * is also registered as a partial under that path, which is how the two actor headers share the
- * stance chips, the action pips, the Bind line and the Wound pips.
+ * action pips, the Bind line and the Wound pips.
  */
 export function preloadTemplates() {
   return loadTemplates([
@@ -104,7 +104,6 @@ export function preloadTemplates() {
     "systems/starwrought/templates/actor/party-loot.hbs",
     "systems/starwrought/templates/actor/party-road.hbs",
     "systems/starwrought/templates/actor/party-notes.hbs",
-    "systems/starwrought/templates/actor/stance-chips.hbs",
     "systems/starwrought/templates/actor/action-pips.hbs",
     "systems/starwrought/templates/actor/bind-line.hbs",
     "systems/starwrought/templates/actor/wounds.hbs",

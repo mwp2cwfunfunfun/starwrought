@@ -6,12 +6,15 @@
  * user has nothing left to do. The attack card in chat reopens it.
  *
  * Modes, one section per task:
- *  - defend: the Defense (Evade or Guard, the two that answer a Blow; PHB v4.10, The Four
- *    Threats), the answers legal on it (nothing, a Reaction, a Posture ⓿↺; PHB v4.10, Answering an
- *    Attack), a Zone when a Posture is picked, a Threshold preview for a player-controlled
- *    defender, and Commit. The defender's standing stance is the pre-selection, so a present
- *    player commits with one click; the stance itself is not changed.
+ *  - defend: the Defense (the two the Threat permits: Evade or Guard for a Blow, a spell's pair;
+ *    PHB v4.21, The Four Threats), the answers legal on it once one is chosen (nothing, a Reaction,
+ *    a Posture ⓿↺; PHB v4.21, Answering an Attack; a basic Defense alone against a Reaction
+ *    Strike), a Zone when a Posture is picked, a Threshold preview for a player-controlled
+ *    defender, and Commit. NOTHING IS PRE-SELECTED (0.12.0, ruling 159): no Defense is ever chosen
+ *    by the system, so Commit waits until the defender picks one.
  *  - gm: the same for an adversary target, which is the GM's to declare.
+ *  - absent (0.12.0): the same for a player's character whose player has not answered, listed for
+ *    the GM last, under its own heading, so an absent player is answered for explicitly.
  *  - locked: this defender has committed; "{n} of {total} defenders ready" and who is awaited.
  *  - rollAttack / rollDefense: one button, AttackCoordinator.rollFor.
  *  - choose: a generic option list for later follow-ups (built, not yet wired).
@@ -27,7 +30,8 @@
 import * as SW from "../config.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 import { AttackWorkflow } from "../combat/attack-workflow.mjs";
-import { legalAnswers, describeAnswer, postureNeedsZone, BLOW_DEFENSES } from "../helpers/answers.mjs";
+import { legalAnswers, describeAnswer, postureNeedsZone } from "../helpers/answers.mjs";
+import { describe, meleeAnswers } from "../combat/attack-source.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -39,7 +43,8 @@ const TEMPLATE = "systems/starwrought/templates/apps/combat-prompt.hbs";
 const ENDED = new Set(["complete", "cancelled"]);
 /** outstandingFor kinds, mapped onto the prompt's modes. */
 const MODES = Object.freeze({
-  defend: "defend", gmDefend: "gm", gm: "gm", rollAttack: "rollAttack", rollDefense: "rollDefense", choose: "choose"
+  defend: "defend", gmDefend: "gm", gm: "gm", gmDefendAbsent: "absent", absent: "absent",
+  rollAttack: "rollAttack", rollDefense: "rollDefense", choose: "choose"
 });
 
 /* -------------------------------------------- */
@@ -286,7 +291,7 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
         const mode = MODES[o.kind] ?? o.kind;
         // Committed here at this very revision: the reply is back but the state broadcast is not.
         // Show the lock at once rather than the form again (and never void that commitment).
-        if (((mode === "defend") || (mode === "gm")) && this.#committedHere(wf, o.targetId)) {
+        if (((mode === "defend") || (mode === "gm") || (mode === "absent")) && this.#committedHere(wf, o.targetId)) {
           const target = (wf.targets ?? []).find(t => t.id === o.targetId);
           if (target) {
             tasks.push(this.#lockedTask(wf, target));
@@ -307,6 +312,12 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
     for (const task of this.#local.values()) tasks.push(this.#chooseTask(task));
+    // The GM's rows for absent players' characters come last, under one heading (0.12.0).
+    const absent = tasks.filter(t => t.absent);
+    if (absent.length) {
+      tasks.splice(0, tasks.length, ...tasks.filter(t => !t.absent), ...absent);
+      absent[0].absentFirst = true;
+    }
     tasks.forEach((task, index) => {
       task.index = index;
       task.focus = !!this.#focusWorkflowId && (task.workflowId === this.#focusWorkflowId);
@@ -340,6 +351,7 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     switch (mode) {
       case "defend": return this.#defendTask(wf, o, target, false);
       case "gm": return this.#defendTask(wf, o, target, true);
+      case "absent": return this.#defendTask(wf, o, target, true, { absent: true });
       case "rollAttack":
       case "rollDefense": return this.#rollTask(wf, o, target, mode);
       case "choose": return this.#chooseTask({ ...o, key: taskKey(wf.id, "choose", o.targetId), revision: wf.revision });
@@ -347,15 +359,9 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  /** "{attacker} uses {maneuver} against {defender}." with the Maneuver's glyph and weapon. */
+  /** "{attacker} uses {maneuver} against {defender}." with the Maneuver named by what it is (attack-source.mjs). */
   #maneuverText(wf) {
-    const m = wf.maneuver ?? {};
-    const kind = SW.STRIKE_KINDS[m.strike];
-    const glyph = m.glyph ?? (kind ? SW.ACTION_GLYPHS[kind.cost] : "");
-    let label = m.label ?? (kind ? game.i18n.localize(kind.label) : "");
-    if (glyph && !label.includes(glyph)) label = `${glyph} ${label}`.trim();
-    if (m.weaponName && !label.includes(m.weaponName)) label = `${label} (${m.weaponName})`;
-    return label;
+    return describe(wf.maneuver ?? {}).text;
   }
 
   #defendText(wf, defenderName) {
@@ -365,30 +371,22 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /**
-   * The draft for a defend task, seeded from the defender's standing stance (brief: the stance
-   * chips are the DEFAULT pre-selection): its Defense, and its Reaction when that Reaction is a
-   * legal answer on that Defense right now. The seed never changes the stance.
+   * The draft for a defend task: nothing chosen (0.12.0, ruling 159). No Defense is ever chosen by
+   * the system, so the Defense starts empty and Commit waits for the defender's pick; the answer
+   * starts at "none" and the Zone at none.
    */
-  #draft(key, actor) {
+  #draft(key) {
     let draft = this.#drafts.get(key);
     if (draft) return draft;
-    let defense = BLOW_DEFENSES[0];
-    let reaction = null;
-    try {
-      const standing = actor.answeringDefense?.() ?? {};
-      if (BLOW_DEFENSES.includes(standing.key)) defense = standing.key;
-      reaction = standing.reaction ?? null;
-    } catch (err) {
-      console.warn("STARWROUGHT | the standing stance could not be read", err);
-    }
-    const legal = legalAnswers(actor, defense);
-    draft = {
-      defense,
-      answer: (reaction && legal.reactions.includes(reaction)) ? `reaction:${reaction}` : "none",
-      zone: ""
-    };
+    draft = { defense: null, answer: "none", zone: "" };
     this.#drafts.set(key, draft);
     return draft;
+  }
+
+  /** What this Maneuver may be answered with: the permitted Defenses, basic-only, melee (attack-workflow.mjs, attack-source.mjs). */
+  static #answerOptions(wf) {
+    const profile = AttackWorkflow.profileFor(wf?.maneuver ?? {});
+    return { permitted: profile.defenses, basicOnly: profile.basicOnly, melee: meleeAnswers(wf?.maneuver ?? {}) };
   }
 
   /** Split a draft's answer into the commit payload's reaction and posture. */
@@ -400,10 +398,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /** The Threshold preview through the one helper that folds an answer in (actor.defenseThresholdFor). */
-  #preview(actor, defense, reaction, posture) {
+  #preview(actor, defense, reaction, posture, permitted) {
     if (typeof actor.defenseThresholdFor !== "function") return null;
     try {
-      const read = actor.defenseThresholdFor({ defense, reaction, posture });
+      const read = actor.defenseThresholdFor({ defense, reaction, posture, permitted });
       if (!read || !Number.isFinite(read.threshold)) return null;
       return {
         threshold: read.threshold,
@@ -417,10 +415,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /** The basic Threshold of a Defense, for the radio: the same helper, no answer folded in. */
-  #basicThreshold(actor, defense) {
+  #basicThreshold(actor, defense, permitted) {
     if (typeof actor.defenseThresholdFor === "function") {
       try {
-        const read = actor.defenseThresholdFor({ defense });
+        const read = actor.defenseThresholdFor({ defense, permitted });
         if (Number.isFinite(read?.threshold)) return read.threshold;
       } catch { /* fall through to the data model */ }
     }
@@ -428,15 +426,19 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     return Number.isFinite(threshold) ? threshold : null;
   }
 
-  /** The defend and gm modes. */
-  #defendTask(wf, o, target, gm) {
-    const key = taskKey(wf.id, gm ? "gm" : "defend", o.targetId);
+  /** The defend, gm and absent modes. */
+  #defendTask(wf, o, target, gm, { absent = false } = {}) {
+    const mode = gm ? (absent ? "absent" : "gm") : "defend";
+    const key = taskKey(wf.id, mode, o.targetId);
     const name = target?.name ?? "";
     const base = {
-      key, kind: gm ? "gm" : "defend", isDefend: true,
+      key, kind: mode, isDefend: true, absent,
       workflowId: wf.id, targetId: o.targetId, revision: wf.revision,
-      title: gm ? game.i18n.format("STARWROUGHT.Prompt.gmDefend", { name }) : game.i18n.localize("STARWROUGHT.Prompt.defendTitle"),
-      text: this.#defendText(wf, name)
+      title: absent ? game.i18n.format("STARWROUGHT.Prompt.absentTitle", { name })
+        : gm ? game.i18n.format("STARWROUGHT.Prompt.gmDefend", { name })
+        : game.i18n.localize("STARWROUGHT.Prompt.defendTitle"),
+      text: this.#defendText(wf, name),
+      absentHint: absent ? game.i18n.localize("STARWROUGHT.Prompt.absentHint") : null
     };
     const actor = actorFrom(target?.actorUuid) ?? actorFrom(target?.tokenUuid);
     if (!actor) return { ...base, error: game.i18n.localize("STARWROUGHT.Notify.noActor"), disabled: true };
@@ -447,13 +449,19 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     const mine = this.#mine.get(`${wf.id}|${o.targetId}`);
     if (mine && (wf.revision > mine.revision)) this.#mine.delete(`${wf.id}|${o.targetId}`);
 
-    const draft = this.#draft(key, actor);
-    const legal = legalAnswers(actor, draft.defense);
-    // The Zone and the preview are shown to a player for their own character only (brief:
-    // "a Threshold preview for a player-controlled defender, none for an adversary").
-    const showThresholds = !gm && (target?.isPlayer !== false) && (actor.type === "character");
+    const draft = this.#draft(key);
+    const options = SwCombatPrompt.#answerOptions(wf);
+    const permitted = options.permitted;
+    // A Defense no longer permitted (the record changed under a draft) is no choice.
+    if (draft.defense && !permitted.includes(draft.defense)) draft.defense = null;
+    const chosen = !!draft.defense;
+    const legal = chosen ? legalAnswers(actor, draft.defense, options) : { none: true, reactions: [], postures: [] };
+    // The Zone and the preview are shown to a player for their own character, and to the GM
+    // answering for an absent player (brief: "a Threshold preview for a player-controlled
+    // defender, none for an adversary").
+    const showThresholds = (!gm || absent) && (target?.isPlayer !== false) && (actor.type === "character");
 
-    const defenses = BLOW_DEFENSES.map(d => {
+    const defenses = permitted.map(d => {
       const def = SW.DEFENSES[d];
       const row = actor.system?.defenses?.[d] ?? {};
       const blocked = row.unavailable ? game.i18n.localize(SW.CONDITIONS[row.unavailable]?.name ?? row.unavailable) : null;
@@ -461,13 +469,19 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
         key: d,
         label: game.i18n.localize(def.label),
         hint: blocked
-          ? game.i18n.format("STARWROUGHT.Stance.unavailableNote", { reason: blocked })
+          ? game.i18n.format("STARWROUGHT.Defense.unavailableNote", { reason: blocked })
           : game.i18n.localize(def.hint),
-        threshold: showThresholds ? this.#basicThreshold(actor, d) : null,
+        threshold: showThresholds ? this.#basicThreshold(actor, d, permitted) : null,
         active: d === draft.defense,
         unavailable: blocked
       };
     });
+    // A spell's Threat names a pair other than Evade and Guard: say which, and why.
+    const threat = wf.maneuver?.threat && (wf.maneuver.threat !== "blow") ? SW.THREATS[wf.maneuver.threat] : null;
+    const threatLine = threat ? game.i18n.format("STARWROUGHT.Prompt.threatLine", {
+      threat: game.i18n.localize(threat.label),
+      defenses: permitted.map(d => game.i18n.localize(SW.DEFENSES[d].label)).join(" / ")
+    }) : null;
 
     const answers = [{
       value: "none",
@@ -521,19 +535,25 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     return {
       ...base,
       defenses,
-      answers,
+      defenseChosen: chosen,
+      chooseFirst: chosen ? null : game.i18n.localize("STARWROUGHT.Prompt.chooseDefenseFirst"),
+      threatLine,
+      // A Reaction Strike (Intercept, the Riposte): the basic Defense alone answers (PHB v4.21).
+      basicOnlyNote: (chosen && options.basicOnly) ? game.i18n.localize("STARWROUGHT.Reaction.basicOnly") : null,
+      answers: chosen ? answers : [],
       zones,
       zone: draft.zone,
-      headWound: actor.system?.reactions?.blocked ? game.i18n.localize("STARWROUGHT.Prompt.headWound") : null,
+      headWound: (chosen && actor.system?.reactions?.blocked) ? game.i18n.localize("STARWROUGHT.Prompt.headWound") : null,
       meleeHint: legal.reactions.some(r => SW.REACTIONS[r]?.melee)
         ? game.i18n.format("STARWROUGHT.Prompt.meleeOnlyNote", {
           names: legal.reactions.filter(r => SW.REACTIONS[r]?.melee).map(r => game.i18n.localize(SW.REACTIONS[r].label)).join(", ")
         })
         : null,
-      preview: showThresholds ? this.#preview(actor, draft.defense, reaction, posture) : null,
-      // A Posture Exposes "a Zone of the defender's choice" (PHB v4.21): the choice is theirs to make, so
-      // nothing is pre-picked and Commit waits for it; a Posture that names its Zone or none waits for nothing.
-      disabled: needsZone && !draft.zone
+      preview: (showThresholds && chosen) ? this.#preview(actor, draft.defense, reaction, posture, permitted) : null,
+      // Nothing is pre-selected (0.12.0): Commit waits for a Defense. A Posture Exposes "a Zone of
+      // the defender's choice" (PHB v4.21): the choice is theirs to make, so nothing is pre-picked
+      // and Commit waits for it too; a Posture that names its Zone or none waits for nothing.
+      disabled: !chosen || (needsZone && !draft.zone)
     };
   }
 
@@ -722,11 +742,12 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
 
     if (field === "defense") {
       draft.defense = value;
-      // An answer that is not legal on the new Defense (a Void under Guard) falls back to nothing.
+      // An answer that is not legal on the new Defense (a Parry under Evade) falls back to nothing.
       const task = this.#tasks.get(key);
       const actor = task ? this.#actorForTask(task) : null;
       if (actor) {
-        const legal = legalAnswers(actor, value);
+        const wf = this.#workflows().find(w => w.id === task.workflowId);
+        const legal = legalAnswers(actor, value, SwCombatPrompt.#answerOptions(wf));
         const { reaction, posture } = SwCombatPrompt.#answerParts(draft);
         const stillLegal = reaction ? legal.reactions.includes(reaction)
           : posture ? legal.postures.some(p => p.talentId === posture.talentId)
@@ -785,6 +806,8 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!task?.isDefend || this.#busy.has(task.key)) return;
     const draft = this.#drafts.get(task.key);
     if (!draft) return;
+    // No Defense is ever chosen by the system (0.12.0): a Commit with none picked does nothing.
+    if (!draft.defense) return;
     const { reaction, posture } = SwCombatPrompt.#answerParts(draft);
     if (posture && !posture.zone) return;
 

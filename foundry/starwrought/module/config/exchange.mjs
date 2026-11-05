@@ -173,14 +173,6 @@ export const ROOT_REACTIONS = Object.freeze({
 });
 
 /**
- * The stances of 0.4.2 to 0.10.1 that stood a Reaction ready (Void, Parry, Counter), and the basic
- * Defense each stood on. Since PHB v4.21 a Reaction is chosen per Blow in the Combat Prompt and
- * the standing stance is Evade or Guard alone; a stored Reaction stance reads as its Defense
- * (Counter as Guard: you met the blow to answer it).
- */
-export const LEGACY_STANCES = Object.freeze({ void: "evade", parry: "guard", counter: "guard" });
-
-/**
  * The Situation bonus of a ⓿↺ Reaction Talent in Evade or Guard that the table above does not
  * know (the general Posture rule, PHB v4.10 to v4.21: "+2 Situation to that Defense, a Zone of
  * your choice Exposed until the end of the round"). A row above wins when the name matches.

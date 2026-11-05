@@ -42,7 +42,7 @@ import { registerTargeting, refresh as refreshTargets } from "./module/canvas/ta
 import { registerBind } from "./module/canvas/bind.mjs";
 // THE BIND'S PAIR (0.10.1): the two-sided record kept whole, a document concern, beside its drawing.
 import { registerBindSync } from "./module/documents/bind.mjs";
-import { registerStanceHud } from "./module/apps/token-hud.mjs";
+import { registerTokenHud } from "./module/apps/token-hud.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
 import { SwPartySheet } from "./module/apps/party-sheet.mjs";
@@ -188,7 +188,7 @@ Hooks.once("init", async () => {
   registerBind();
   registerBindSync();
   registerExposedStatuses();
-  registerStanceHud();
+  registerTokenHud();
   registerHandlebarsHelpers();
   await loadConstellationIndex();
   await preloadTemplates();
@@ -343,17 +343,22 @@ const LEGACY_CALLING_VIGOR = Object.freeze({
  * 0.10.1: token bars left on `hp` by the 0.6.0 rename point at `vigor`.
  *
  * 0.11.0 (PHB v4.21): what `migrateData` reads across on every load is written down once, so the
- * stored documents say what the models say: a stance stood as Void, Parry or Counter becomes the
- * Defense it stood on (SW.LEGACY_STANCES); a `deferred` count becomes `comets`; a Scale armor
+ * stored documents say what the models say: a `deferred` count becomes `comets`; a Scale armor
  * piece becomes Lamellar and a weapon's Combat Style field goes; an adversary Zone's material
  * goes. Counted and said once.
+ *
+ * 0.12.0 (ruling 159): the standing stance is gone. The `stance` field every actor carried from
+ * 0.4.2 is deleted from the stored documents (the model already drops it on read), since no
+ * Defense is ever chosen by the system: every one is committed in the Combat Prompt. (The 0.4.1
+ * step that moved a Reaction stance to its Defense, and the 0.11.0 step's stance line, went with
+ * the field.)
  */
 async function migrateWorld() {
   if (!game.user.isGM) return;
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0")) {
+  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -386,21 +391,6 @@ async function migrateWorld() {
       if (next === null) continue;
       await item.update({ "system.speed": next });
       count++;
-    }
-  }
-
-  // 0.4.1: Counter needs Expert rank in Melee (ruling 63). A character saved holding a Reaction
-  // stance it no longer qualifies for falls back to the basic Defense that stance was built on, so
-  // the sheet and the HUD stop showing a stance the roll would set aside anyway.
-  let stances = 0;
-  if (needs("0.4.1")) {
-    for (const actor of game.actors) {
-      if (actor.type !== "character") continue;
-      const stance = actor.system.stance;
-      if (!(stance in SW.REACTIONS) || (actor.system.reactions?.[stance] !== false)) continue;
-      const fallback = SW.REACTIONS[stance].defense ?? actor.answeringDefense?.().key ?? "evade";
-      await actor.update({ "system.stance": fallback });
-      stances++;
     }
   }
 
@@ -523,7 +513,6 @@ async function migrateWorld() {
       if (actor.type === SW.PARTY_TYPE) continue;
       const src = actor._source.system ?? {};
       const changes = {};
-      if (src.stance in SW.LEGACY_STANCES) changes["system.stance"] = SW.LEGACY_STANCES[src.stance];
       if (src.deferred !== undefined) {
         changes["system.comets"] = Number(src.comets ?? src.deferred) || 0;
         changes["system.-=deferred"] = null;
@@ -560,7 +549,24 @@ async function migrateWorld() {
     }
   }
 
+  // 0.12.0 (ruling 159): the `stance` field goes from every stored actor. The model drops it on
+  // read, so `_source` never shows it; the deletion is sent for every non-party actor and is a
+  // no-op where the database already lacks it.
+  let stanceless = 0;
+  if (needs("0.12.0")) {
+    for (const actor of game.actors) {
+      if (actor.type === SW.PARTY_TYPE) continue;
+      await actor.update({ "system.-=stance": null });
+      stanceless++;
+    }
+  }
+
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (stanceless > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.stanceRemoved", { version: game.system.version, count: stanceless });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (v421 > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.v421", { version: game.system.version, count: v421 });
     console.log(`STARWROUGHT | ${message}`);
@@ -588,11 +594,6 @@ async function migrateWorld() {
   }
   if (count > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.speed", { version: game.system.version, count });
-    console.log(`STARWROUGHT | ${message}`);
-    ui.notifications.info(message);
-  }
-  if (stances > 0) {
-    const message = game.i18n.format("STARWROUGHT.Migration.stance", { version: game.system.version, count: stances });
     console.log(`STARWROUGHT | ${message}`);
     ui.notifications.info(message);
   }
@@ -934,18 +935,11 @@ function registerSettings() {
   // reminders, the end-of-round Persistent Damage card, Intercept offers) is registered here, so
   // that every setting the system owns is in this one function. Add them below this line.
 
-  // THE ATTACK FLOW (0.5.0; PHB v4.10, The Exchange). On, a Strike at a target declares first:
-  // every defender commits a Defense and an answer in private, all reveal at once, then the
-  // players roll and each pairing resolves. Off, a Strike rolls at once against the defender's
-  // standing stance, exactly as 0.4.2 did; with no target it does so whatever this says.
-  game.settings.register(SW.SYSTEM_ID, "attackFlow", {
-    name: "STARWROUGHT.Settings.attackFlow",
-    hint: "STARWROUGHT.Settings.attackFlowHint",
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true
-  });
+  // THE ATTACK FLOW (0.5.0; PHB v4.10, The Exchange) is not a setting since 0.12.0 (Mike: "The
+  // Attack Flow should not be an option to turn off... it is critical to the functioning of the
+  // system"; ruling 160). A Strike or a Cast at a target declares; every defender commits a Defense
+  // and an answer in private; all reveal at once; the players roll; each pairing resolves. The
+  // `attackFlow` world setting of 0.5.0 to 0.11.0 is no longer registered; a stored value is ignored.
 
   // A presentation policy, not a rule (brief, "Visibility"): a character's Defense Threshold is
   // the defender's and the GM's to see always; this lets the attacking player see it on the card

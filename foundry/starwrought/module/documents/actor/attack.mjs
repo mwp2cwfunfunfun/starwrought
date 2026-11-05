@@ -1,7 +1,8 @@
 /**
- * SwActor: the attack. A Strike declared into the attack flow (0.5.0) or rolled at once (0.4.2's
- * path, the world setting off), a Maneuver's attack, the declared targets, Support (an ally in
- * reach), the Grab announcement, the rank a weapon is wielded at, and damage for a Result.
+ * SwActor: the attack. A Strike at a target declared into the attack flow (0.5.0; the flow is
+ * not optional since 0.12.0, ruling 160), a Strike with no target rolled against a typed
+ * Threshold, a Maneuver's attack, the declared targets, Support (an ally in reach), the Grab
+ * announcement, the rank a weapon is wielded at, and damage for a Result.
  */
 
 import * as SW from "../../config.mjs";
@@ -9,19 +10,6 @@ import { SwCheck } from "../../dice/check.mjs";
 import { SwDamage } from "../../dice/damage.mjs";
 import { gapBetween } from "../../canvas/geometry.mjs";
 import { AttackCoordinator } from "../../combat/attack-coordinator.mjs";
-
-/**
- * Is the attack flow on? The world setting is registered by starwrought.mjs (default on); read
- * defensively so a build without it, or a read before init, Strikes at once exactly as 0.4.2 did.
- * @returns {boolean}
- */
-function attackFlowOn() {
-  try {
-    return !!game.settings.get(SW.SYSTEM_ID, "attackFlow");
-  } catch {
-    return false;
-  }
-}
 
 /** @param {typeof Actor} Base */
 export const AttackMixin = Base => class extends Base {
@@ -47,7 +35,6 @@ export const AttackMixin = Base => class extends Base {
    *                                       ❶↺ instead of the Strike's cost; "counter" and "riposte"
    *                                       were paid by the Reaction that granted them. All three
    *                                       are Quick Strikes.
-   * @param {string} [options.defense]     Force the Defense answering (a Talent that targets Awareness).
    * @param {boolean} [options.blind]      The attack flow's roll (0.5.0 brief): everything is
    *                                       assembled as usual (Handling, Support, Unwieldy, the
    *                                       range note, the spend) but the defender is not read at
@@ -55,10 +42,11 @@ export const AttackMixin = Base => class extends Base {
    *                                       nothing posts; the result comes back for the coordinator
    *                                       to resolve against each defender.
    *
-   * With the world setting `attackFlow` on and at least one target with an actor, a Strike that
-   * is not itself a Reaction and not about to Prepare does not roll: it is DECLARED through the
-   * AttackCoordinator, and the die is thrown at the roll step once every defender has committed
-   * (brief, Entry points). With the setting off, or no target, the Strike rolls at once as 0.4.2.
+   * With at least one target with an actor, a Strike that is not about to Prepare does not roll:
+   * it is DECLARED through the AttackCoordinator, and the die is thrown at the roll step once
+   * every defender has committed (brief, Entry points). No Defense is ever chosen by the system
+   * (0.12.0, ruling 159), and the flow is not optional (ruling 160). With no target there is no
+   * defender: the Strike rolls at once against the Threshold typed in the dialog.
    */
   async rollAttack(weaponId, options = {}) {
     const weapon = this.items.get(weaponId);
@@ -95,12 +83,12 @@ export const AttackMixin = Base => class extends Base {
       if (only?.actor) targetToken = only;
     }
 
-    // Declaring (brief, Entry points): the flow is on, this Strike is a Maneuver of the attacker's
-    // own (not a Counter, an Intercept or the riposte, which answer a Blow already declared), and
-    // it is not the flow's own blind roll. The targets are snapshotted now: every token the user
-    // has targeted, or the one the caller named. With several, the first stands in as the
-    // reference for reach and the thrown inference below.
-    const declaring = attackFlowOn() && !blind && !reactionStrike;
+    // Declaring (brief, Entry points): this Strike is a Maneuver of the attacker's own (not an
+    // Intercept or the riposte, which answer a Blow already declared), and it is not the flow's
+    // own blind roll. The targets are snapshotted now: every token the user has targeted, or the
+    // one the caller named. With several, the first stands in as the reference for reach and the
+    // thrown inference below.
+    const declaring = !blind && !reactionStrike;
     const targets = declaring ? this.#declaredTargets({ targetTokenId, targetUuid: askedTarget }) : [];
     if (declaring && targets.length && !targetToken) targetToken = targets[0];
 
@@ -163,39 +151,15 @@ export const AttackMixin = Base => class extends Base {
       ?? { attribute: thrown ? "might" : weapon.system.attackAttribute, source: "weapon" };
     const maneuverChoices = blind ? [] : (this.system.maneuverChoicesFor?.(weapon, { thrown }) ?? []);
 
-    // The defender decides how to answer. Their stance is that decision, made in advance and
-    // changeable until the die leaves the hand, so the roll reads it rather than asking the
-    // attacker: the dialog shows it and offers no choice. A caller may still force a Defense (a
-    // Talent that targets Awareness, say); otherwise the defender's answer is read again at the
-    // moment of the roll, Reaction included. The answer is read against this threat: a Counter
-    // stance answers only a melee Blow from within Reach, so it is told whether the Blow is
-    // ranged and how far it came.
-    //
-    // A Reaction never triggers another Reaction (PHB v4.10, Answering an Attack): a Counter,
-    // an Intercept or the riposte meets the target's basic Defense only, with nothing behind
-    // it and nothing charged to them. answeringDefense() already names that basic Defense
-    // (Parry -> Guard, Void -> Evade, Counter -> the better of the two, Grabbed swap applied);
-    // SwCheck.thresholdOf reads it without the Reaction's +2, and treating it as forced keeps
-    // the roll-time re-read, the charge and the Counter offer all out of it.
-    //
-    // The flow's blind roll reads nothing of the defender (brief): the commitments are the
-    // coordinator's, revealed and read there. The dialog still names the target and says the
-    // answer is theirs to reveal, which is exactly true.
-    const forced = options.defense !== undefined || !!reactionStrike;
-    const answering = (blind ? null : targetActor?.answeringDefense?.({ ranged, gap })) ?? null;
-    const defense = options.defense ?? answering?.key ?? "evade";
-    const target = (!blind && targetToken) ? SwCheck.thresholdOf(targetToken, defense) : null;
-    const targetDefense = !targetActor ? null
-      : blind ? { key: null, label: "", threshold: null, unavailable: null, hidden: true }
-      : forced
-        ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null }
-        : answering;
-    // Why the Defense met is not the stance: swapped by a condition (Evade while Grabbed), or a
-    // Reaction set aside because this Strike is itself a Reaction. A caller who forced the
-    // Defense has its own reason and gets no note.
-    const defenseNote = ((options.defense !== undefined) || blind) ? null
-      : (answering?.unavailable
-        ?? ((reactionStrike && answering?.reaction) ? game.i18n.localize("STARWROUGHT.Reaction.basicOnly") : null));
+    // No Defense is read here (0.12.0, ruling 159). The defender's answer is theirs: committed in
+    // the Combat Prompt, revealed by the coordinator and read there against this die on the flow's
+    // blind roll, which the dialog says in so many words. A Strike that reaches the die here with a
+    // defender and no flow is a Reaction Strike until step 4 lands it in the flow too; it meets the
+    // basic Defense the defender names in the prompt from then on. With no target there is no
+    // defender, and the dialog's typed Threshold stands.
+    const targetDefense = targetActor
+      ? { key: null, label: "", threshold: null, unavailable: null, hidden: true }
+      : null;
 
     const modifiers = [...(givenModifiers ?? [])];
 
@@ -264,18 +228,17 @@ export const AttackMixin = Base => class extends Base {
       prepared,
       asReaction: reactionStrike,
       modifiers,
-      threshold: target?.threshold ?? null,
-      thresholdLabel: target?.label ?? "",
-      // The blind roll passes no target to the engine: #readDefender has nothing to read.
-      targetUuid: blind ? "" : (target?.uuid ?? ""),
+      // No Threshold is known here: the coordinator reads the committed Defense's (ruling 159),
+      // or the dialog takes one typed for a Strike with no defender.
+      threshold: null,
+      thresholdLabel: "",
+      targetUuid: blind ? "" : (targetToken?.document?.uuid ?? ""),
       targetDefense,
-      defenseForced: forced,
-      defenseNote,
-      // What the defender is answering, for the roll-time re-read of their stance.
-      threat: { ranged, gap },
+      defenseForced: true,
+      defenseNote: null,
       rangeNote,
-      reaction: forced ? null : (answering?.reaction ?? null),
-      reactionNote: forced ? null : (answering?.note ?? null),
+      reaction: null,
+      reactionNote: null,
       defender: blind ? null : targetActor,
       defenderRigid: blind ? null : (targetActor?.rigidImplement ?? null),
       attackerTokenUuid: attackerToken?.uuid ?? "",
@@ -320,15 +283,11 @@ export const AttackMixin = Base => class extends Base {
         return true;
       },
 
-      // The blow has resolved. The defender's Reaction is paid now (their stance falls back to
-      // its basic Defense), a Bind between the two ends, and a Controller struck by a third party
-      // loses the line. Writes land only where this client owns the actor; the card offers the
-      // rest to whoever does.
-      afterRoll: async result => {
-        const cfg = result.config;
-        if (cfg.reaction && cfg.defender) {
-          cfg.reactionCharged = await SwCheck.chargeReaction(cfg.defender, cfg.reaction);
-        }
+      // The blow has resolved: a Bind between the two ends, and a Controller struck by a third
+      // party loses the line. (A committed Reaction's ❶ is charged by the coordinator's
+      // resolution, never here.) Writes land only where this client owns the actor; the card
+      // offers the rest to whoever does.
+      afterRoll: async () => {
         if (!targetActor) return;
         const mine = this.system.bind;
         if (mine?.state && (mine.partnerUuid === targetActor.uuid)) await this.endBind();

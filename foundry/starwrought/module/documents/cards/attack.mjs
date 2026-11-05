@@ -61,7 +61,7 @@ export async function rollFromAttackCard(button) {
 }
 
 /**
- * A GM control: cancel, resetDefenses, resendPrompts or useStances, sent through the coordinator
+ * A GM control: cancel, resetDefenses or resendPrompts, sent through the coordinator
  * like every other mutation. The expected revision is the live one when this client knows it
  * (the card's flags can lag a step behind the coordinator's memory), else the card's; a stale
  * request is refused visibly by the coordinator, never silently.

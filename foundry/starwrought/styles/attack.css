@@ -104,7 +104,7 @@
 .starwrought .sw-prompt-option > span { flex: 1 1 auto; }
 .starwrought .sw-prompt-option:hover { border-color: var(--sw-gold-dim); }
 .starwrought .sw-prompt-option.sw-active { border-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
-/* A Reaction: paid ❶ when the Blow resolves, coloured as the stance chips colour it. */
+/* A Reaction: paid ❶ when the Blow resolves, in the Agility green. */
 .starwrought .sw-prompt-option.sw-prompt-reaction { border-color: #3a6b62; }
 .starwrought .sw-prompt-option.sw-prompt-reaction.sw-active { border-color: var(--sw-agility); box-shadow: 0 0 8px rgba(111, 194, 176, 0.3); }
 /* A Posture ⓿↺: free, and a Zone Exposed for it. */
@@ -148,7 +148,20 @@
 }
 .starwrought .sw-prompt-preview strong { font-size: 1rem; color: var(--sw-flare); }
 .starwrought .sw-prompt-preview .sw-note { margin: 0; }
-.starwrought .sw-prompt-stance-hint { margin: 0; font-size: 0.68rem; }
+/* The small notes under a task: a Reaction Strike's basic-Defense rule, a spell's Threat line,
+   "choose a Defense first" (0.12.0: nothing is pre-selected). */
+.starwrought .sw-prompt-hint { margin: 0; font-size: 0.68rem; }
+/* The warning mark on a Defense the rules say is unavailable right now (the table decides). */
+.starwrought .sw-prompt-warn { color: #d9534f; font-size: 0.7rem; }
+/* The GM's rows for absent players' characters (0.12.0): explicit answers, secondary in the list. */
+.starwrought .sw-prompt-absent-heading {
+  margin: 0.6rem 0 0.2rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-prompt-task-absent { opacity: 0.92; border-style: dashed; }
 
 /* Locked: committed and waiting on the rest. */
 .starwrought .sw-prompt-waiting { display: flex; flex-direction: column; gap: 0.2rem; }

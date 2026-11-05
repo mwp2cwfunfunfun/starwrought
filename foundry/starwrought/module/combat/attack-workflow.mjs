@@ -71,12 +71,17 @@ export const ACTIONS = Object.freeze({
   // charged before the Defense roll), only Cancel remains (review, 2026-10-01).
   resetDefenses: Object.freeze({ phases: Object.freeze(["defending", "revealed"]), gm: true }),
   resendPrompts: Object.freeze({ phases: LIVE_PHASES, gm: true }),
-  useStances: Object.freeze({ phases: Object.freeze(["defending"]), gm: true }),
+  // No `useStances` since 0.12.0 (ruling 159): nothing answers for a defender but a commitment,
+  // the defender's own or the GM's explicit one for them (`gmDefendAbsent`).
   requestState: Object.freeze({ phases: PHASES, gm: false })
 });
 
-/** The kinds of outstanding action `outstandingFor` reports (brief, "Outstanding actions"). */
-export const OUTSTANDING_KINDS = Object.freeze(["defend", "rollAttack", "rollDefense", "gmDefend"]);
+/**
+ * The kinds of outstanding action `outstandingFor` reports (brief, "Outstanding actions").
+ * `gmDefendAbsent` (0.12.0): a player-controlled defender who has not committed, listed for the
+ * GM so an absent player's character can be answered for, explicitly and per defender.
+ */
+export const OUTSTANDING_KINDS = Object.freeze(["defend", "rollAttack", "rollDefense", "gmDefend", "gmDefendAbsent"]);
 
 /* -------------------------------------------- */
 /*  Helpers                                     */
@@ -90,9 +95,8 @@ function clone(value) {
 
 /**
  * Does this user control the actor a snapshot describes? For a player-controlled actor the
- * controlling players alone (the GM has `useStances` and the card's owner-gated buttons rather
- * than a prompt row for every character); a character nobody but the GM owns, and every
- * adversary, is the GM's.
+ * controlling players alone (the GM gets a `gmDefendAbsent` row for them, secondary, rather than
+ * the same prompt row); a character nobody but the GM owns, and every adversary, is the GM's.
  */
 function controls(user, snapshot) {
   if (!user || !snapshot) return false;
@@ -335,7 +339,9 @@ export class AttackWorkflow {
    * What this user still has to do on a workflow (brief, "Outstanding actions"): the prompt lists
    * these, the card shows the viewer's one, and Resend prompts re-emits them.
    *  - `defending`: `defend` for each uncommitted player-controlled defender this user controls;
-   *    `gmDefend` for each uncommitted adversary defender, the GM's to declare.
+   *    `gmDefend` for each uncommitted adversary defender, the GM's to declare; `gmDefendAbsent`
+   *    (0.12.0) for the GM on each uncommitted player-controlled defender the GM does not control,
+   *    so an absent player's character is answered for explicitly, never by a default.
    *  - `rolling`: `rollAttack`, once, while any pairing waits on the attacker's die (one roll fills
    *    every pairing the attacker rolls); `rollDefense` for each pairing whose defender rolls.
    *  - Any other phase: nothing. The coordinator does the resolving.
@@ -353,6 +359,7 @@ export class AttackWorkflow {
         if (target.committed) continue;
         if (target.isPlayer) {
           if (controls(user, target)) out.push({ workflowId, kind: "defend", targetId: target.id });
+          else if (user.isGM) out.push({ workflowId, kind: "gmDefendAbsent", targetId: target.id });
         } else if (user.isGM) {
           out.push({ workflowId, kind: "gmDefend", targetId: target.id });
         }
@@ -377,6 +384,19 @@ export class AttackWorkflow {
       }
     }
     return out;
+  }
+
+  /**
+   * The defenders nobody connected can answer for (0.12.0, ruling 162): with no GM connected, an
+   * uncommitted adversary waits for one; nothing answers in its place. The caller passes whether
+   * a GM is active, since this module reads no Foundry global.
+   * @param {object} workflow
+   * @param {{gmActive: boolean}} options
+   * @returns {object[]} the waiting target rows
+   */
+  static waitingForGm(workflow, { gmActive } = {}) {
+    if (gmActive || (workflow?.phase !== "defending")) return [];
+    return (workflow.targets ?? []).filter(t => !t.committed && !t.isPlayer);
   }
 
   /* -------------------------------------------- */

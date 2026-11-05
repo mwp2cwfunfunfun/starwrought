@@ -1,11 +1,12 @@
 /**
- * The four Defenses, every modifier folded in, the Automation rules asked, and the stance (Evade or Guard) read on top.
+ * The four Defenses, every modifier folded in, the Automation rules asked.
  *
  * One pass of the character's derived data (module/data/actor.mjs, SwCharacterData, whose
  * prepareDerivedData is the ordered pipeline; through 0.10.1 these were its private methods). A
  * plain function over the data model: `data` is the SwCharacterData instance, `data.parent` the
- * Actor. Reads: data.constellations, data.attributes, data.bonuses, data.zones, data.shield, data.worn, data.visorPenalty, data.size, data.stance, the Actor's statuses and conditions, the rules index.
- * Writes: data.defenses, data.stanceReaction, data.stanceDefense, data.stanceBonus, data.stanceThreshold.
+ * Actor. Reads: data.constellations, data.attributes, data.bonuses, data.zones, data.shield, data.worn, data.visorPenalty, data.size, the Actor's statuses and conditions, the rules index.
+ * Writes: data.defenses. (No stance since 0.12.0: the Defense that answers an attack is chosen in
+ * the Combat Prompt, never stood ready.)
  */
 
 import * as SW from "../../config.mjs";
@@ -137,7 +138,6 @@ export function prepareDefenses(data) {
       sizeMod,
       threshold: 10 + total + sizeMod,
       modifiers: applied,
-      isStance: false,
       unavailable: null
     };
   }
@@ -145,21 +145,4 @@ export function prepareDefenses(data) {
   // holding you." Guard's own exceptions (unaware of the attack, or nothing in hand and no hand
   // free) are not things the sheet can see, so they stay with the table. Recorded, not enforced.
   data.defenses.evade.unavailable = unavailableEvade(statuses);
-  prepareStance(data);
-}
-
-/**
- * The stance, read as the basic Defense the character stands ready with: Evade or Guard (PHB
- * v4.21: a Reaction is chosen per Blow in the Combat Prompt, never stood ready). A stance stored
- * as Void, Parry or Counter by a release before 0.11.0 reads as the Defense it stood on
- * (SW.LEGACY_STANCES; the migration rewrites the field too). `stanceReaction` and `stanceBonus`
- * stay on the shape, null and 0, for the readers that asked.
- */
-export function prepareStance(data) {
-  const defense = SW.LEGACY_STANCES[data.stance] ?? data.stance;
-  data.stanceReaction = null;
-  data.stanceDefense = SW.DEFENSES[defense] ? defense : "evade";
-  data.stanceBonus = 0;
-  if (data.defenses[data.stanceDefense]) data.defenses[data.stanceDefense].isStance = true;
-  data.stanceThreshold = data.defenses[data.stanceDefense]?.threshold ?? 10;
 }

@@ -2,9 +2,9 @@
    STARWROUGHT: the combat tracker and the token HUD.
    Rules on core's own elements, so none of them is scoped under .starwrought and none can
    read the tokens: the tracker's actions readout and Pass control (#combat), the targeting
-   marks on a combatant, and the stance button on the token HUD. Serves module/documents/
-   combat.mjs, module/canvas/targeting.mjs and the HUD hooks in starwrought.mjs. The HUD's
-   ring button is the auras' and lives in auras.css.
+   marks on a combatant, and the action counter on the token HUD. Serves module/documents/
+   combat.mjs, module/canvas/targeting.mjs and module/apps/token-hud.mjs. The HUD's ring
+   button is the auras' and lives in auras.css.
 
    Load order is the order of the `styles` array in system.json. A file may rely on the files
    listed before it and never on one listed after it; no selector list is declared twice
@@ -71,15 +71,6 @@ li.combatant.sw-in-crosshairs {
   box-shadow: inset 3px 0 0 #b4453f;
   background: linear-gradient(90deg, rgba(180, 69, 63, 0.22), transparent 65%);
 }
-#token-hud .sw-hud-stance[data-stance="evade"] { color: #7fb3c8; }
-#token-hud .sw-hud-stance[data-stance="guard"] { color: #e3b23c; }
-#token-hud .sw-hud-stance[data-stance="void"] { color: #6fc2b0; }
-#token-hud .sw-hud-stance[data-stance="parry"] { color: #ffd867; }
-#token-hud .sw-hud-stance[data-stance="counter"] { color: #d8734a; }
-#token-hud .sw-hud-stance.reaction { box-shadow: inset 0 0 0 1px rgba(111, 194, 176, 0.7); border-radius: 4px; }
-#token-hud .sw-hud-stance.unavailable { box-shadow: inset 0 0 0 2px #d9534f; border-radius: 4px; }
-#token-hud .sw-hud-stance:disabled { opacity: 0.6; cursor: default; }
-
 /* The action counter on the Token HUD (0.10.1): the free count over the round's count and the
    sheet's three-state pips beneath it, a readout and not a button, in an encounter only. */
 #token-hud .sw-hud-actions {

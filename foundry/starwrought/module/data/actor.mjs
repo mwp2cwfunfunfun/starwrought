@@ -38,10 +38,6 @@ const fields = foundry.data.fields;
 /*  Local rules constants                       */
 /* -------------------------------------------- */
 
-/** The five stances a defender can hold: the two basic Defenses and the three Reactions that answer a Blow. */
-export const STANCES = Object.freeze(["evade", "guard", "void", "parry", "counter"]);
-
-
 /* -------------------------------------------- */
 /*  Field helpers                               */
 /* -------------------------------------------- */
@@ -113,14 +109,9 @@ function commonActorFields() {
     level: new fields.NumberField({ required: true, integer: true, min: 0, max: 30, initial: 1 }),
     dying: new fields.NumberField({ required: true, integer: true, min: 0, max: SW.DYING_MAX, initial: 0 }),
     size: new fields.StringField({ required: true, choices: Object.keys(SW.SIZES), initial: "medium" }),
-    /**
-     * How the next Blow is answered. "The defender decides", so the decision is stored on the
-     * defender and read by the attacker's roll at the moment the die is cast. Evade and Guard are
-     * the basic Defenses; Void, Parry and Counter are Reactions that cost an action when an attack
-     * lands and are only offered when the Talent that grants them is owned (and, for Counter, the
-     * rank it needs is reached; see `reactions`).
-     */
-    stance: new fields.StringField({ required: true, choices: STANCES, initial: "evade" }),
+    // No `stance` since 0.12.0 (ruling 159): "The defender chooses one of the two Defenses that
+    // answer it" is a choice made per attack in the Combat Prompt, never stored and never read
+    // as a default. `migrateActorSource` drops the old field.
     actions: actionFields(),
     bind: bindFields(),
     /**
@@ -196,10 +187,10 @@ function migrateActorSource(source) {
     source.bonuses.vigor ??= source.bonuses.hp;
     delete source.bonuses.hp;
   }
-  // PHB v4.21: a Reaction is chosen per Blow in the Combat Prompt and the standing stance is
-  // Evade or Guard alone; a stance stored as Void, Parry or Counter (0.4.2 to 0.10.1) becomes the
-  // Defense it stood on.
-  if (source.stance in SW.LEGACY_STANCES) source.stance = SW.LEGACY_STANCES[source.stance];
+  // 0.12.0: the standing stance is gone (ruling 159: every Defense is chosen in the Combat Prompt,
+  // never stored). The field a document from 0.4.2 to 0.11.0 carries is dropped on read, so a
+  // compendium or an import loads clean; the 0.12.0 world migration deletes it from the database.
+  if (source.stance !== undefined) delete source.stance;
   // PHB v4.21: the Deferred Talent Point (v4.15, Table 4) became the Comet, a Talent Point with no
   // strings attached (ruling 145). The count carries over under the new name.
   if (source.deferred !== undefined) {
@@ -879,23 +870,14 @@ export class SwNpcData extends SwActorData {
         attribute: def.attribute,
         threshold: this.thresholds[key],
         mod: this.thresholds[key] - 10,
-        isStance: false,
         unavailable: null
       };
     }
     const statuses = this.parent.statuses ?? new Set();
     this.defenses.evade.unavailable = unavailableEvade(statuses);
 
-    // Stance: the same reading as a character's, Evade or Guard (PHB v4.21: a Reaction is chosen
-    // per Blow; a stance stored as one by an earlier release reads as the Defense it stood on).
     // An adversary's Reactions are the GM's to declare, so every answer stands available unless
-    // a Head Wound forbids them.
-    const defense = SW.LEGACY_STANCES[this.stance] ?? this.stance;
-    this.stanceReaction = null;
-    this.stanceDefense = SW.DEFENSES[defense] ? defense : "evade";
-    this.stanceBonus = 0;
-    this.defenses[this.stanceDefense].isStance = true;
-    this.stanceThreshold = this.defenses[this.stanceDefense]?.threshold ?? 10;
+    // a Head Wound forbids them. No stance since 0.12.0: the GM chooses its Defense per attack.
     const blocked = this.zones.head.wounded ? SW.ZONE_CRITICALS.head.first : null;
     const owned = blocked ? {} : ownedReactions(this.parent);
     this.reactions = { owned, rigid: true, blocked };

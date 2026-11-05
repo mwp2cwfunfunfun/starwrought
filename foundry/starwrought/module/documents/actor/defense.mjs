@@ -1,9 +1,9 @@
 /**
- * SwActor: answering a blow. The Defense roll with its Reaction or Posture, which Defense a
- * defender stands ready with (the stance), the Threshold a given answer presents, and setting the
- * stance. Every Reaction is a Talent since PHB v4.21 and the table of the ones the system
- * implements is SW.REACTIONS; the words here are the two basic Defenses and the fold of an
- * answer's bonus into one of them.
+ * SwActor: answering a blow. The Defense roll with its Reaction or Posture, and the Threshold a
+ * given answer presents. Every Reaction is a Talent since PHB v4.21 and the table of the ones the
+ * system implements is SW.REACTIONS; the words here are the fold of an answer's bonus into the
+ * Defense it stands on. No Defense stands ready (0.12.0, ruling 159): the one that answers an
+ * attack is committed in the Combat Prompt, per attack, by the defender or by the GM for them.
  */
 
 import * as SW from "../../config.mjs";
@@ -12,7 +12,7 @@ import {
   postureName as postureNameOf, postureBonus, postureZone, postureNeedsZone, postureRule
 } from "../../helpers/answers.mjs";
 
-/** The two basic Defenses that answer a Blow (PHB v4.21, The Four Threats), and the two stances. */
+/** The two basic Defenses that answer a Blow (PHB v4.21, The Four Threats): the default `permitted` list. */
 const BLOW_DEFENSES = Object.freeze(["evade", "guard"]);
 
 /** Is this key a Reaction ❶↺ that answers a Blow on the actor's own Defense (SW.REACTIONS, kind "reaction")? */
@@ -127,37 +127,11 @@ export const DefenseMixin = Base => class extends Base {
   }
 
   /**
-   * The Defense that answers a physical Attack on this actor right now: the stance, unless the
-   * rules make its Defense unavailable (Evade while Grabbed or Restrained), in which case the
-   * other basic Defense. Read live, so a stance changed a moment ago is what the attacker's roll
-   * meets. No Reaction rides on a stance since PHB v4.21: one is chosen per Blow in the prompt.
-   * @param {object} [_threat]  What is being answered; kept for the callers that pass it.
-   * @returns {{key: string, stance: string, reaction: null, bonus: number, label: string,
-   *            threshold: number, unavailable: string|null, note: string|null}}
-   */
-  answeringDefense(_threat = {}) {
-    const sys = this.system;
-    const stance = SW.LEGACY_STANCES[sys.stance] ?? sys.stance;
-    const stanceDefense = BLOW_DEFENSES.includes(sys.stanceDefense) ? sys.stanceDefense
-      : (BLOW_DEFENSES.includes(stance) ? stance : "evade");
-    const read = this.defenseThresholdFor({ defense: stanceDefense });
-    return {
-      key: read.key,
-      stance: stanceDefense,
-      reaction: null,
-      bonus: read.bonus,
-      label: read.label,
-      threshold: read.threshold,
-      unavailable: read.unavailable,
-      note: read.note
-    };
-  }
-
-  /**
    * The Threshold a Defense presents with an answer folded in (0.5.0 brief, Thresholds): the one
-   * rules function behind both the standing stance (`answeringDefense`) and a commitment made in
-   * the attack flow's prompt, so the sheet, the prompt's preview and the coordinator's
-   * resolution all read the same number. Pure: nothing is written.
+   * rules function behind a commitment made in the attack flow's prompt, so the prompt's preview
+   * and the coordinator's resolution read the same number. Pure: nothing is written. No Defense
+   * is ever chosen by the system (0.12.0, ruling 159): the `defense` is always the one a
+   * defender, or the GM for them, committed.
    *
    * PHB v4.21, Answering an Attack. A Reaction stands on its own Defense (SW.REACTIONS) with its
    * bonus; a Posture ⓿↺ stands on its Defense with its bonus (the table's, or the general rule's
@@ -215,7 +189,7 @@ export const DefenseMixin = Base => class extends Base {
     // A Reaction the character does not own falls back to the basic Defense: a Talent since
     // removed. The roll has to read what is true now; an adversary owns them all (the GM's call).
     if (reaction && (this.type === "character") && !(reaction in (sys.reactions?.owned ?? {}))) {
-      note = game.i18n.format("STARWROUGHT.Stance.needsTalent", {
+      note = game.i18n.format("STARWROUGHT.Reaction.needsTalent", {
         reaction: game.i18n.localize(SW.REACTIONS[reaction].label),
         talent: game.i18n.localize(SW.REACTIONS[reaction].label)
       });
@@ -258,49 +232,12 @@ export const DefenseMixin = Base => class extends Base {
       posture: posture ? { talentId: posture.talentId, name: postureName, zone: postureZone(this, posture) } : null,
       note,
       unavailable: blocked
-        ? game.i18n.format("STARWROUGHT.Stance.answeringInstead", {
-            stance: game.i18n.localize(SW.DEFENSES[named].label),
+        ? game.i18n.format("STARWROUGHT.Defense.answeringInstead", {
+            named: game.i18n.localize(SW.DEFENSES[named].label),
             reason: game.i18n.localize(SW.CONDITIONS[blocked]?.name ?? blocked),
             defense: defenseLabel
           })
         : null
     };
-  }
-
-  /**
-   * Choose how the next physical Attack is answered: Evade or Guard as the basic Defense (PHB
-   * v4.21; a Reaction is chosen per Blow in the Combat Prompt, never stood ready). The defender's
-   * call, so it lives here, and the attacker's roll reads it. A legacy Reaction stance (void,
-   * parry, counter) is taken as the Defense it stood on.
-   * @param {"evade"|"guard"} key
-   * @param {object} [options]
-   * @param {boolean} [options.announce=true]
-   */
-  async setStance(key, { announce = true } = {}) {
-    key = SW.LEGACY_STANCES[key] ?? key;
-    if (!BLOW_DEFENSES.includes(key)) return;
-    if (this.system.stance === key) return;
-    await this.update({ "system.stance": key });
-    const answer = this.answeringDefense();
-    // A Defense the rules say you cannot use right now is still yours to choose; the system says
-    // so and leaves the ruling to the table.
-    const notes = [answer.unavailable, answer.note].filter(Boolean);
-    for (const note of notes) ui.notifications.warn(note);
-
-    // Which Defense meets an Attack is the defender's to reveal, and the roll's card reveals it.
-    // So nothing goes to the table here. A player's change is whispered to the GM, who is running
-    // the thing about to swing and would otherwise have to ask; a GM's own change goes nowhere.
-    if (!announce || !this.inEncounter || !this.hasPlayerOwner) return;
-    const gms = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
-    if (!gms.length) return;
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: this }),
-      whisper: gms,
-      content: `<div class="starwrought sw-stance-card">${game.i18n.format("STARWROUGHT.Stance.set", {
-        name: this.name,
-        defense: answer.label,
-        threshold: answer.threshold
-      })}${notes.length ? " " + notes.join(" ") : ""}</div>`
-    });
   }
 };

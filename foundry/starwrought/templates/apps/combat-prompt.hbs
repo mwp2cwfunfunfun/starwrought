@@ -11,33 +11,41 @@
   {{else}}
 
   {{#each tasks as |task|}}
+  {{#if task.absentFirst}}
+  {{!-- The GM's rows for absent players' characters (0.12.0): explicit answers, never a default. --}}
+  <h4 class="sw-prompt-absent-heading">{{localize "STARWROUGHT.Prompt.absentHeading"}}</h4>
+  {{/if}}
   <section class="sw-prompt-task sw-prompt-task-{{task.kind}} {{#if task.focus}}sw-prompt-focus{{/if}}"
            data-task="{{task.key}}" data-workflow-id="{{task.workflowId}}" data-target-id="{{task.targetId}}">
 
     <header class="sw-prompt-head">
       <h3>{{task.title}}</h3>
       {{#if task.text}}<p class="sw-prompt-text">{{{task.text}}}</p>{{/if}}
+      {{#if task.absentHint}}<p class="sw-note sw-prompt-hint">{{task.absentHint}}</p>{{/if}}
     </header>
 
     {{#if task.error}}<p class="sw-note sw-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{task.error}}</p>{{/if}}
     {{#if task.stale}}<p class="sw-prompt-stale"><i class="fa-solid fa-clock-rotate-left"></i> {{task.stale}}</p>{{/if}}
 
     {{#if task.isDefend}}
-    {{!-- Evade or Guard: the two Defenses that answer a Blow (PHB v4.10, The Four Threats). An
-          unavailable Defense (Evade while Grabbed) is shown and never enforced; the table decides. --}}
+    {{!-- The two Defenses the Threat permits (PHB v4.21, The Four Threats: Evade or Guard for a
+          Blow, a spell's own pair). Nothing is pre-selected (0.12.0): the choice is the defender's.
+          An unavailable Defense (Evade while Grabbed) is shown and never enforced; the table decides. --}}
     <div class="sw-prompt-defenses" role="radiogroup" aria-label="{{localize 'STARWROUGHT.Prompt.defense'}}">
       <span class="sw-prompt-label">{{localize "STARWROUGHT.Prompt.defense"}}</span>
       <div class="sw-prompt-options">
         {{#each task.defenses as |d|}}
         <label class="sw-prompt-option {{#if d.active}}sw-active{{/if}} {{#if d.unavailable}}sw-unavailable{{/if}}" data-tooltip="{{d.hint}}">
           <input type="radio" name="defense-{{task.index}}" data-field="defense" value="{{d.key}}" {{#if d.active}}checked{{/if}}>
-          <span>{{d.label}}{{#if d.unavailable}} <i class="fa-solid fa-triangle-exclamation sw-stance-warn"></i>{{/if}}</span>
+          <span>{{d.label}}{{#if d.unavailable}} <i class="fa-solid fa-triangle-exclamation sw-prompt-warn"></i>{{/if}}</span>
           {{#if d.threshold}}<em>{{d.threshold}}</em>{{/if}}
         </label>
         {{/each}}
       </div>
+      {{#if task.threatLine}}<p class="sw-note sw-prompt-hint">{{task.threatLine}}</p>{{/if}}
     </div>
 
+    {{#if task.defenseChosen}}
     {{!-- The answer built on the Defense (PHB v4.21, Answering an Attack): nothing, a Reaction
           Talent the defender owns, or a Posture ⓿↺. One or the other, never both. --}}
     <div class="sw-prompt-answers" role="radiogroup" aria-label="{{localize 'STARWROUGHT.Prompt.answer'}}">
@@ -51,9 +59,13 @@
         </label>
         {{/each}}
       </div>
+      {{#if task.basicOnlyNote}}<p class="sw-note sw-prompt-hint">{{task.basicOnlyNote}}</p>{{/if}}
       {{#if task.headWound}}<p class="sw-note sw-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{task.headWound}}</p>{{/if}}
       {{#if task.meleeHint}}<p class="sw-note">{{task.meleeHint}}</p>{{/if}}
     </div>
+    {{else}}
+    <p class="sw-note sw-prompt-hint">{{task.chooseFirst}}</p>
+    {{/if}}
 
     {{#if task.zones}}
     {{!-- A Posture Exposes a Zone of the defender's choice until the end of the round, whether or
@@ -80,8 +92,6 @@
       {{#each task.preview.notes as |note|}}<p class="sw-note sw-warn">{{note}}</p>{{/each}}
     </div>
     {{/if}}
-
-    <p class="sw-note sw-prompt-stance-hint">{{localize "STARWROUGHT.Prompt.stanceHint"}}</p>
 
     <div class="sw-prompt-buttons">
       <button type="button" class="sw-primary" data-action="commit" data-tooltip="{{@root.keysHint}}" {{#if task.disabled}}disabled{{/if}}>

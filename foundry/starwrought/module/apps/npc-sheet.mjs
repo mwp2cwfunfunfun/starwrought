@@ -7,7 +7,6 @@
  */
 
 import * as SW from "../config.mjs";
-import { stanceContext } from "../helpers/stance.mjs";
 import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "../helpers/actor-context.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
@@ -25,7 +24,6 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     form: { submitOnChange: true, closeOnSubmit: false },
     actions: {
       editImage: SwNpcSheet.#onEditImage,
-      setStance: SwNpcSheet.#onSetStance,
       attackWith: SwNpcSheet.#onAttackWith,
       itemUse: SwNpcSheet.#onItemUse,
       itemChat: SwNpcSheet.#onItemChat,
@@ -101,7 +99,6 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       label: game.i18n.localize(def.label),
       hint: game.i18n.localize(def.hint)
     }));
-    context.stance = stanceContext(actor);
     context.bind = bindContext(actor);
     context.actions = actionsContext(actor);
     context.vigor = vigorContext(actor);
@@ -125,10 +122,10 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       threshold: atk.threshold ?? atk.thresholds?.[0] ?? ""
     }));
 
-    // The Reactions it has: its own abilities that carry the Reaction trait. The Talent-granted
-    // four (Parry, Void, Counter, Intercept) are the GM's to declare for any adversary, so they
-    // live on the stance chips and the Intercept card rather than in the profile, which the book
-    // says lists the Reactions the creature has. Skipped entirely when there are none.
+    // The Reactions it has: its own abilities that carry the Reaction trait. The table's Reactions
+    // (SW.REACTIONS) are the GM's to declare for any adversary, so they live in the Combat Prompt
+    // and the Intercept card rather than in the profile, which the book says lists the Reactions
+    // the creature has. Skipped entirely when there are none.
     const abilities = actor.items.filter(i => (i.type === "action") && i.system.reaction);
     context.reactions = {
       granted: [],
@@ -163,10 +160,6 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /* -------------------------------------------- */
-
-  static async #onSetStance(event, target) {
-    return this.document.setStance(target.dataset.stance);
-  }
 
   static async #onEditImage() {
     if (!this.isEditable) return;

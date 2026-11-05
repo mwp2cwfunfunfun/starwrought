@@ -88,9 +88,9 @@ export function onRenderChatMessage(message, html) {
     for (const el of html.querySelectorAll("[data-sw-action='chargeReaction']")) el.remove();
   }
 
-  // The GM controls (the attack card's Cancel, Reset defenses, Resend prompts and Answer with
-  // standing stances) are the GM's, or the coordinator's at a table with no GM connected. The
-  // content is the same on every client; the row is not.
+  // The GM controls (the attack card's Cancel, Reset defenses and Resend prompts) are the GM's,
+  // or the coordinator's at a table with no GM connected. The content is the same on every
+  // client; the row is not.
   if (!mayControl(game.user, flags.attackWorkflow)) {
     for (const el of html.querySelectorAll("[data-gm-only]")) el.remove();
   }
@@ -138,7 +138,6 @@ async function onCardButton(event, message, flags) {
       case "attackCancel": return await gmAttackRequest(flags, button, "cancel");
       case "attackReset": return await gmAttackRequest(flags, button, "resetDefenses");
       case "attackResend": return await gmAttackRequest(flags, button, "resendPrompts");
-      case "attackUseStances": return await gmAttackRequest(flags, button, "useStances");
       // The party's Ask everyone card (0.7.1): the member's owner, or the GM, rolls as the member.
       case "partyAsk": return await rollAskedCheck(message, flags, button);
       default: return;

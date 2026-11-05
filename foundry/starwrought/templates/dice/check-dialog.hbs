@@ -87,18 +87,18 @@
   {{/each}}
 
   {{#if targetDefense}}
-  {{!-- The defender's choice meets this roll, but it is theirs to reveal: the card shows it. --}}
+  {{!-- The defender committed a Defense in the Combat Prompt; it is revealed on the card, never here. --}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.targetDefense"}}{{#if targetName}} · {{targetName}}{{/if}}</label>
     <div class="form-fields sw-answering">
-      {{#if defenseForced}}
+      {{#if targetDefense.label}}
       <strong>{{targetDefense.label}}</strong>
       {{else}}
-      <span class="sw-answering-note"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Stance.hidden"}}</span>
+      <span class="sw-answering-note"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Roll.defenseCommitted"}}</span>
       {{/if}}
     </div>
   </div>
-  <p class="hint">{{localize "STARWROUGHT.Stance.dialogHint"}}</p>
+  <p class="hint">{{localize "STARWROUGHT.Roll.defenseCommittedHint"}}</p>
   {{else if thresholdWithheld}}
   {{!-- The attack flow's Defense roll: the Attack Threshold is the coordinator's, read on the card. --}}
   <p class="hint"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Roll.thresholdWithheld"}}</p>

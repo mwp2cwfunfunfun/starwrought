@@ -9,7 +9,6 @@ import * as SW from "../config.mjs";
 import { MILESTONES_PER_LEVEL } from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
-import { stanceContext } from "../helpers/stance.mjs";
 import { loadBasicActions, enabledConstellations } from "../helpers/content.mjs";
 // The header's live state and the tooltips, shared with the adversary and party sheets (0.10.1).
 import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, windTip } from "../helpers/actor-context.mjs";
@@ -90,7 +89,6 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       endOpportunity: SwCharacterSheet.#onEndOpportunity,
       finishPrepared: SwCharacterSheet.#onFinishPrepared,
       abandonPrepared: SwCharacterSheet.#onAbandonPrepared,
-      setStance: SwCharacterSheet.#onSetStance,
       toggleCollapse: SwCharacterSheet.#onToggleCollapse,
       adjust: SwCharacterSheet.#onAdjust,
       effectCreate: SwCharacterSheet.#onEffectCreate,
@@ -164,7 +162,6 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       hint: game.i18n.localize(def.hint),
       rankLabel: game.i18n.localize(def.rankLabel)
     }));
-    context.stance = stanceContext(actor);
     context.bind = bindContext(actor);
     context.lockedTips = lockedTips(actor);
     // Wind (PHB v4.12, ruling 74): the Load Strain field says whether this fighter is exempt, with
@@ -1040,10 +1037,6 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const current = this.document.system.actions.value;
     // Clicking the pip you are already on spends it, which is the common case.
     return this.document.update({ "system.actions.value": value === current ? value - 1 : value });
-  }
-
-  static async #onSetStance(event, target) {
-    return this.document.setStance(target.dataset.stance);
   }
 
   /** The reset arrow: a hand adjustment, so the audit announces it (0.5.1, T10). */

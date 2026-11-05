@@ -531,76 +531,10 @@
 .starwrought .sw-action-row .sw-item-name { cursor: pointer; }
 .starwrought .sw-action-row .sw-item-name:hover { color: var(--sw-gold); }
 
-/* --------------------------------------------------------------------------
-   Stance: which Defense answers the next blow. The defender's call, so it sits
-   in the header where it is always one click away, and marks its Defense in
-   the grid below.
-   -------------------------------------------------------------------------- */
-.starwrought .sw-stance { display: flex; flex-direction: column; gap: 0.25rem; }
-.starwrought .sw-stance-label {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--sw-ink-dim);
-}
-.starwrought .sw-stance-chips { display: flex; gap: 0.3rem; }
-.starwrought .sw-stance-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--sw-edge);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.25);
-  font-size: 0.78rem;
-  color: var(--sw-ink-dim);
-  cursor: pointer;
-}
-.starwrought .sw-stance-chip:hover { border-color: var(--sw-gold-dim); color: var(--sw-ink); }
-.starwrought .sw-stance-chip.active {
-  border-color: var(--sw-gold);
-  color: var(--sw-flare);
-  background: linear-gradient(160deg, rgba(255, 216, 103, 0.22), rgba(255, 216, 103, 0.06));
-  box-shadow: 0 0 8px rgba(227, 178, 60, 0.3);
-}
-.starwrought .sw-stance-chip em {
-  font-style: normal;
-  font-size: 0.7rem;
-  padding: 0 0.35rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-}
-.starwrought .sw-stance-chip.active em { color: var(--sw-flare); }
-.starwrought .sw-stance-chip small { font-size: 0.65rem; color: var(--sw-agility); }
-/* A Reaction stance: paid ❶ when the attack lands. */
-.starwrought .sw-stance-chip.sw-stance-reaction { border-color: #3a6b62; }
-.starwrought .sw-stance-chip.sw-stance-reaction.active { border-color: var(--sw-agility); box-shadow: 0 0 8px rgba(111, 194, 176, 0.3); }
-/* A Defense the rules say you cannot use right now. Still a choice; the table decides. */
-.starwrought .sw-stance-chip.unavailable { border-style: dashed; opacity: 0.8; }
-/* A Reaction the actor has no Talent for. Not a choice at all; the chip says what would buy it. */
-.starwrought .sw-stance-chip.disabled { opacity: 0.4; cursor: not-allowed; border-style: dotted; }
-.starwrought .sw-stance-chip.disabled:hover { border-color: var(--sw-edge); color: var(--sw-ink-dim); }
-.starwrought .sw-stance-warn { color: #d9534f; font-size: 0.7rem; }
-/* A Defense still Untrained: its Attribute alone answers. */
+/* A Defense still Untrained: its Attribute alone answers. (The stance chips that sat here through
+   0.11.0 are gone: no Defense stands ready since 0.12.0; it is chosen in the Combat Prompt.) */
 .starwrought .sw-defense.sw-untrained .sw-defense-mod { color: var(--sw-ink-dim); }
 
-
-.starwrought .sw-defense.sw-stance-active {
-  border-color: var(--sw-gold);
-  box-shadow: inset 0 0 0 1px rgba(227, 178, 60, 0.35), 0 0 10px rgba(227, 178, 60, 0.18);
-}
-.starwrought .sw-stance-tag {
-  position: absolute;
-  top: -0.55rem;
-  right: 0.5rem;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background: var(--sw-gold);
-  color: var(--sw-night);
-}
 
 /* Rules links (starwrought.css) on this sheet: the bind line's state label keeps its small caps;
    only the underline says it opens something. */

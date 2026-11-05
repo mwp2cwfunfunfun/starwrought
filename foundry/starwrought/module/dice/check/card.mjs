@@ -112,13 +112,13 @@ export async function cardContext(result, position) {
     strikeLabel: strikeKind ? game.i18n.localize(strikeKind.label) : (castKind ? game.i18n.localize(castKind.label) : ""),
     strikeGlyph: strikeKind ? SW.ACTION_GLYPHS[strikeKind.cost] : (castKind ? SW.ACTION_GLYPHS[castKind.cost] : ""),
     critDenied: result.critDenied,
-    // Why the defender answered with a Defense other than their stance, if they did. The card is
-    // where the answer is revealed, so this is where the reason belongs.
+    // Why the defender answered with a Defense other than the one they named (Evade while
+    // Grabbed), if they did. The card is where the answer is revealed, so the reason belongs here.
     defenseNote: cfg.defenseNote ?? "",
     rangeNote: cfg.rangeNote ?? "",
-    // The Reaction behind the Defense: the roller's own on a Defense card, the defender's stance
-    // on an attack card. The ❶ is charged to the defender when the attack resolves; when the
-    // rolling client does not own them, the card offers the button to whoever does.
+    // The Reaction behind the Defense: the roller's own on a Defense card, the defender's
+    // committed one on an attack card. The ❶ is charged to the defender when the attack resolves;
+    // when the rolling client does not own them, the card offers the button to whoever does.
     reaction: cfg.reaction ?? "",
     reactionLabel: reaction
       ? `${game.i18n.localize(reaction.label)} ${SW.ACTION_GLYPHS[reaction.cost]}${SW.REACTION_GLYPH}`

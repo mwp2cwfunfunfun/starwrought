@@ -44,11 +44,9 @@ import { strikeCanCrit } from "./check/strike.mjs";
  *                                            dialog, `{ key, label, value, type, hint }` each.
  * @property {string} [strike]                quick | deliberate | committed. An attack's commitment,
  *                                            or the commitment behind the blow a Defense answers.
- * @property {string|null} [reaction]         parry | void | counter | null. On a Defense roll, the
- *                                            roller's Reaction; on an attack, the defender's stance.
- * @property {{ranged: boolean, gap: number|null}} [threat]  On an attack, what the defender is
- *                                            answering: a ranged Blow, and the gap in feet, so a
- *                                            Counter stance is read against it at roll time.
+ * @property {string|null} [reaction]         A key of SW.REACTIONS of kind "reaction", or null. On
+ *                                            a Defense roll, the roller's Reaction; on a resolved
+ *                                            attack, the defender's committed one.
  * @property {boolean} [lockStrike]           The dialog shows the Strike kind but cannot change it.
  * @property {Function} [beforeRoll]          async (cfg) => boolean|void. Runs once the dialog has
  *                                            settled and before the die is thrown; `false` aborts.
@@ -154,9 +152,9 @@ export class SwCheck {
       if (go === false) return null;
     }
 
-    // The defender's answer is read the moment the die is thrown, not when the dialog opened: the
-    // whole point of a stance is that they may change it while the attacker is deciding.
-    if (cfg.kind === "attack") this.#readDefender(cfg);
+    // No Defense is read here (0.12.0, ruling 159): an attack at a defender goes through the
+    // attack flow, where the defender commits the Defense and the coordinator resolves against
+    // it; an attack with no defender rolls against the Threshold the dialog was given.
 
     const { total: modTotal, applied } = SW.resolveModifiers(parts);
     const formula = ["1d20", ...applied.map(m => (m.value < 0 ? `- ${Math.abs(m.value)}` : `+ ${m.value}`))].join(" ");
@@ -455,32 +453,6 @@ export class SwCheck {
   }
 
   /* -------------------------------------------- */
-
-  /**
-   * Read the defender's answer for an attack: which Defense, at what Threshold, with which Reaction
-   * behind it. Done at the moment of the roll. A caller may still force a Defense (a Talent that
-   * targets Awareness, say), in which case the defender's stance is not consulted.
-   */
-  static #readDefender(cfg) {
-    if (cfg.defenseForced) return;
-    const defender = cfg.defender ?? (cfg.targetUuid ? fromUuidSync(cfg.targetUuid)?.actor : null);
-    if (!defender?.answeringDefense) return;
-    // A party token targeted by mistake has no Defenses to read (0.7.0, risk 1): the Threshold
-    // stays unknown rather than reading as a bare 10.
-    if (defender.type === SW.PARTY_TYPE) return;
-    // The standing stance is a basic Defense alone (PHB v4.21); the threat is passed through for
-    // a reader that still wants it.
-    const now = defender.answeringDefense(cfg.threat ?? {});
-    cfg.defender = defender;
-    cfg.threshold = now.threshold;
-    cfg.thresholdLabel = `${cfg.targetName || defender.name} ${now.label}`;
-    cfg.defense = now.key;
-    cfg.reaction = now.reaction ?? null;
-    cfg.defenseNote = now.unavailable ?? null;
-    cfg.reactionNote = now.note ?? null;
-    cfg.defenderRigid = defender.rigidImplement ?? null;
-  }
-
 
   /**
    * The out-of-reach or out-of-range note for a Strike, or null when the target is within what

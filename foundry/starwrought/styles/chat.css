@@ -1,15 +1,15 @@
 /* ==========================================================================
    STARWROUGHT: chat cards and the roll dialogs.
-   The cards the system speaks (check, damage, applied, item, action, refuse death, stance,
-   hero, audit, wound, bind, pass, prepared, Flare, exposed, reroll) and the dialogs a roll
+   The cards the system speaks (check, damage, applied, item, action, refuse death, hero,
+   audit, wound, bind, pass, prepared, Flare, exposed, reroll) and the dialogs a roll
    opens (the check dialog, the Relevant Check picker, the Flare picker). Serves
    templates/chat/*.hbs, templates/dice/*.hbs and the cards built in module/documents/*.mjs.
    Builds on sheet.css for the tags and buttons. The attack card and the Combat Prompt are
    attack.css; the party's cards are party.css; the Sync content card is content-sync.css.
 
    A card's accent is its left border, declared after the base rule below so the accent
-   wins: through 0.10.0 the stance, wound and bind cards' accents were declared before the
-   base and lost to its `border` shorthand.
+   wins: through 0.10.0 the wound and bind cards' accents were declared before the base and
+   lost to its `border` shorthand.
 
    Load order is the order of the `styles` array in system.json. A file may rely on the files
    listed before it and never on one listed after it; no selector list is declared twice
@@ -29,21 +29,13 @@
 .starwrought.applied-card,
 .starwrought.item-card,
 .starwrought.action-card,
-.starwrought.refuse-death,
-.starwrought.sw-stance-card {
+.starwrought.refuse-death {
   --sw-ink: #e8e4f5;
   border: 1px solid var(--sw-edge);
   border-radius: var(--sw-radius);
   background: linear-gradient(160deg, var(--sw-night-2), var(--sw-night));
   color: var(--sw-ink);
   padding: 0.5rem 0.6rem;
-}
-
-/* The stance card takes the night background with the other cards below; this is only its
-   own accent, so it reads on the light chat theme as well as the dark one. */
-.starwrought.sw-stance-card {
-  border-left: 3px solid var(--sw-gold);
-  font-style: italic;
 }
 
 .starwrought .sw-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }

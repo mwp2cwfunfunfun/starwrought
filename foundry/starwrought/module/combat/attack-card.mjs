@@ -121,8 +121,8 @@ export function canActFor(user, actorUuid) {
 }
 
 /**
- * May this user use the GM controls on a workflow (Cancel, Reset defenses, Resend prompts, Answer
- * with standing stances)? The GM always; at a table with no GM connected, the workflow's
+ * May this user use the GM controls on a workflow (Cancel, Reset defenses, Resend prompts)? The
+ * GM always; at a table with no GM connected, the workflow's
  * coordinator (the attacker's client), so an absent defender never holds the table. The card, the
  * click handler and the coordinator's own check all read this one definition (review,
  * 2026-10-01). Reads `game` at call time only: this module stays free of Foundry globals at module
@@ -226,7 +226,16 @@ function statusLine(state) {
       return L("STARWROUGHT.Attack.waitingDefenses");
     case "defending": {
       const n = targets.filter(t => t.committed).length;
-      return n ? F("STARWROUGHT.Attack.readyCount", { n, total: targets.length }) : L("STARWROUGHT.Attack.waitingDefenses");
+      const line = n ? F("STARWROUGHT.Attack.readyCount", { n, total: targets.length }) : L("STARWROUGHT.Attack.waitingDefenses");
+      // With no GM connected an adversary has nobody to answer for it (0.12.0, ruling 162): the
+      // Blow waits, and the card says so. Nothing commits in its place.
+      let gmActive = true;
+      try { gmActive = !!game.users?.activeGM; } catch { gmActive = true; }
+      const waiting = targets.filter(t => !t.committed && !t.isPlayer);
+      if (!gmActive && waiting.length) {
+        return `${line}. ${F("STARWROUGHT.Attack.waitingGm", { names: waiting.map(t => t.name).join(", ") })}`;
+      }
+      return line;
     }
     case "revealed":
       return L("STARWROUGHT.Attack.revealed");
@@ -300,9 +309,9 @@ function attackerButton(state) {
 }
 
 /**
- * The GM controls offered in this phase (brief, "Coordination" and "The absent player"). Cancel
- * and Resend prompts while the workflow lives; Reset defenses once there are commitments to clear;
- * Answer with standing stances while defenders are still committing.
+ * The GM controls offered in this phase (brief, "Coordination"). Cancel and Resend prompts while
+ * the workflow lives; Reset defenses once there are commitments to clear. An absent player is
+ * answered for from the GM's own prompt (0.12.0, `gmDefendAbsent`), never by a default here.
  */
 function gmControls(state) {
   if (!isLive(state)) return null;
@@ -310,9 +319,7 @@ function gmControls(state) {
   return {
     cancel: true, cancelLabel: L("STARWROUGHT.Attack.cancel"),
     resend: true, resendLabel: L("STARWROUGHT.Attack.resend"),
-    reset: ["defending", "revealed"].includes(state.phase), resetLabel: L("STARWROUGHT.Attack.resetDefenses"),
-    useStances: DEFENDING_PHASES.includes(state.phase) && state.targets.some(t => !t.committed),
-    useStancesLabel: L("STARWROUGHT.Attack.useStances")
+    reset: ["defending", "revealed"].includes(state.phase), resetLabel: L("STARWROUGHT.Attack.resetDefenses")
   };
 }
 
