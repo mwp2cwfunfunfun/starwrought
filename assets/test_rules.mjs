@@ -26,7 +26,12 @@ import {
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
-import { slugify, plainName, resolveModifiers } from "../foundry/starwrought/module/config.mjs";
+import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
+// The attack flow's pure parts (0.12.0): the record's shape and the legal answers, both free of
+// Foundry globals at module scope, so the rule "no Defense is ever chosen by the system" has
+// checks the build runs.
+import { AttackWorkflow, ACTIONS, OUTSTANDING_KINDS } from "../foundry/starwrought/module/combat/attack-workflow.mjs";
+import { legalAnswers, isLegalAnswer } from "../foundry/starwrought/module/helpers/answers.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -874,6 +879,115 @@ check("bonus hook: one Talent's lines on one target share a source, two Talents 
   const { applied } = ruleModifiers(rulesActor([twice, other]), { kind: "check", slug: "diplomacy", item: aidItem });
   same(applied.map(m => m.source), ["rule:Twice:aid", "rule:Twice:aid", "rule:Other:aid"], "the sources");
   must(resolveModifiers(applied).total === 4, "+3 (the higher of Twice's) +1 (Other's) is 4");
+});
+
+/* -------------------------------------------- */
+/*  The attack flow's pure parts (0.12.0)       */
+/* -------------------------------------------- */
+
+const flowSpec = (maneuver, targets) => ({
+  id: "wf1", coordinatorUserId: "gm", initiatingUserId: "p1",
+  attacker: { actorUuid: "Actor.a", tokenUuid: "", name: "Hrolda", isPlayer: true, controllerUserIds: ["p1"] },
+  maneuver,
+  targets: targets ?? [{ actorUuid: "Actor.b", tokenUuid: "", name: "Bandit", isPlayer: false, controllerUserIds: [] }]
+});
+
+check("AttackWorkflow.create: a weapon Blow reads as a Blow (source, threat, the two Defenses, no Reaction, no spell)", () => {
+  const wf = AttackWorkflow.create(flowSpec({ weaponId: "w1", weaponName: "Longsword", strike: "deliberate", ranged: false }));
+  same([wf.maneuver.source, wf.maneuver.threat, wf.maneuver.defenses, wf.maneuver.reaction, wf.maneuver.basicOnly, wf.maneuver.spell, wf.maneuver.strike],
+    ["weapon", "blow", ["evade", "guard"], null, false, null, "deliberate"], "the Blow's record");
+  const old = AttackWorkflow.create(flowSpec({ attackId: "row1", weaponName: "Bite", strike: "quick" }));
+  same([old.maneuver.source, old.maneuver.defenses], ["attack", ["evade", "guard"]], "a 0.11.0-shaped attack-row record reads as a Blow");
+});
+
+check("AttackWorkflow.create: a spell has no Strike, the Cast's glyph, its Threat's two Defenses, and is never melee", () => {
+  const wf = AttackWorkflow.create(flowSpec({
+    source: "spell", weaponName: "Flame Seed", strike: "deliberate", threat: "blast", defenses: ["evade", "endure"],
+    spell: { talentId: "t1", cast: "focused", threat: "blast", delivery: "pervasive", die: 6, name: "Flame Seed" }
+  }));
+  same([wf.maneuver.strike, wf.maneuver.glyph, wf.maneuver.defenses, wf.maneuver.ranged, wf.maneuver.spell.cast],
+    [null, ACTION_GLYPHS[3], ["evade", "endure"], true, "focused"], "the spell's record");
+  const profile = AttackWorkflow.profileFor(wf.maneuver);
+  same([profile.defenses, profile.basicOnly, profile.melee, profile.canPosition, profile.source],
+    [["evade", "endure"], false, false, false, "spell"], "its profile");
+});
+
+check("AttackWorkflow.create: a Reaction Strike is a Quick Strike answered by a basic Defense alone; a Riposte is free", () => {
+  const intercept = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "deliberate", reaction: "intercept" }));
+  same([intercept.maneuver.reaction, intercept.maneuver.basicOnly, intercept.maneuver.free], ["intercept", true, false], "Intercept");
+  const riposte = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "quick", reaction: "riposte" }));
+  same([riposte.maneuver.reaction, riposte.maneuver.basicOnly, riposte.maneuver.free], ["riposte", true, true], "Riposte");
+  must(AttackWorkflow.profileFor(intercept.maneuver).basicOnly === true, "the profile says basic only");
+  const bogus = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "quick", reaction: "counter" }));
+  same([bogus.maneuver.reaction, bogus.maneuver.basicOnly], [null, false], "an unknown Reaction word is no Reaction");
+});
+
+check("AttackWorkflow.profileFor: a record from before 0.12.0 (no defenses, no source) reads as a Blow", () => {
+  const profile = AttackWorkflow.profileFor({ weaponId: "w1", strike: "quick", ranged: true });
+  same([profile.defenses, profile.basicOnly, profile.melee, profile.canPosition], [["evade", "guard"], false, false, true], "the Blow profile");
+  same(AttackWorkflow.profileFor(undefined).defenses, ["evade", "guard"], "and nothing at all");
+});
+
+check("no `useStances` action, and `gmDefendAbsent` is an outstanding kind (ruling 159)", () => {
+  must(!("useStances" in ACTIONS), "useStances is gone from the actions");
+  must(OUTSTANDING_KINDS.includes("gmDefendAbsent"), "gmDefendAbsent is listed");
+});
+
+check("outstandingFor: the GM gets an explicit row for an absent player's defender and for an adversary; the player gets their own", () => {
+  const wf = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "quick" }, [
+    { actorUuid: "Actor.c", tokenUuid: "", name: "Wren", isPlayer: true, controllerUserIds: ["p2"] },
+    { actorUuid: "Actor.b", tokenUuid: "", name: "Bandit", isPlayer: false, controllerUserIds: [] }
+  ]));
+  AttackWorkflow.transition(wf, "defending");
+  same(AttackWorkflow.outstandingFor(wf, { id: "gm", isGM: true }).map(o => o.kind), ["gmDefendAbsent", "gmDefend"], "the GM's rows");
+  same(AttackWorkflow.outstandingFor(wf, { id: "p2", isGM: false }).map(o => o.kind), ["defend"], "Wren's player's row");
+  same(AttackWorkflow.outstandingFor(wf, { id: "p1", isGM: false }), [], "the attacker's player has nothing to answer");
+  wf.targets[0].committed = true;
+  same(AttackWorkflow.outstandingFor(wf, { id: "gm", isGM: true }).map(o => o.kind), ["gmDefend"], "a committed defender drops off the GM's list");
+});
+
+check("waitingForGm: with no GM connected an uncommitted adversary waits; with one, or past defending, nothing does (ruling 162)", () => {
+  const wf = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "quick" }, [
+    { actorUuid: "Actor.c", tokenUuid: "", name: "Wren", isPlayer: true, controllerUserIds: ["p2"] },
+    { actorUuid: "Actor.b", tokenUuid: "", name: "Bandit", isPlayer: false, controllerUserIds: [] }
+  ]));
+  AttackWorkflow.transition(wf, "defending");
+  same(AttackWorkflow.waitingForGm(wf, { gmActive: false }).map(t => t.name), ["Bandit"], "the adversary waits");
+  same(AttackWorkflow.waitingForGm(wf, { gmActive: true }), [], "a GM is there");
+  wf.targets[1].committed = true;
+  same(AttackWorkflow.waitingForGm(wf, { gmActive: false }), [], "committed, nothing waits");
+});
+
+check("rollerFor is unchanged: a player attacker rolls once; a player defender of an adversary's Blow rolls Defense", () => {
+  same(AttackWorkflow.rollerFor({ attacker: { isPlayer: true }, defender: { isPlayer: false } }).roller, "attacker", "player attacker");
+  same(AttackWorkflow.rollerFor({ attacker: { isPlayer: false }, defender: { isPlayer: true } }).rollType, "defense", "player defender");
+  same(AttackWorkflow.rollerFor({ attacker: { isPlayer: false }, defender: { isPlayer: false } }).isolated, true, "adversary against adversary");
+});
+
+const answerer = () => ({
+  type: "character",
+  items: [],
+  system: { reactions: { owned: { parry: "i1", sidestep: "i2", "give-ground": "r1" }, blocked: false } }
+});
+
+check("legalAnswers: the permitted Defenses, the melee-only Reactions and a basic-only answer are the Maneuver's to say", () => {
+  same(legalAnswers(answerer(), "guard").reactions, ["parry"], "Parry on Guard against a melee Blow");
+  same(legalAnswers(answerer(), "guard", { melee: false }).reactions, [], "and not against an arrow or a spell");
+  same(legalAnswers(answerer(), "evade", { melee: false }).reactions, ["sidestep"], "Sidestep answers anything met with Evade");
+  same(legalAnswers(answerer(), "evade").postures.map(p => p.key), ["give-ground"], "the root Posture on Evade");
+  same(legalAnswers(answerer(), "evade", { basicOnly: true }), { none: true, reactions: [], postures: [] }, "a Reaction Strike: the basic Defense alone");
+  same(legalAnswers(answerer(), "endure").none && legalAnswers(answerer(), "endure").reactions.length, 0, "Endure answers no Blow");
+  same(legalAnswers(answerer(), "endure", { permitted: ["evade", "endure"] }).none, true, "but a Blast");
+});
+
+check("isLegalAnswer: a Defense outside the permitted pair, an answer under basicOnly, and a melee Reaction against an arrow are all refused", () => {
+  must(isLegalAnswer(answerer(), "guard", { reaction: "parry" }), "Parry on Guard, a melee Blow");
+  must(!isLegalAnswer(answerer(), "endure", {}), "Endure does not answer a Blow");
+  must(isLegalAnswer(answerer(), "endure", {}, { permitted: ["evade", "endure"] }), "Endure answers a Blast");
+  must(!isLegalAnswer(answerer(), "guard", { reaction: "parry" }, { basicOnly: true }), "nothing but the basic Defense answers a Reaction Strike");
+  must(isLegalAnswer(answerer(), "guard", {}, { basicOnly: true }), "the basic Defense does");
+  must(!isLegalAnswer(answerer(), "guard", { reaction: "parry" }, { melee: false }), "Parry never answers an arrow");
+  must(!isLegalAnswer(answerer(), "evade", { reaction: "sidestep", posture: { talentId: "r1", zone: "arms" } }), "never both");
 });
 
 /* -------------------------------------------- */

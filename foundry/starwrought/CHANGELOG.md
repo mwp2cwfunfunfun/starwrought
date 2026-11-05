@@ -7,6 +7,88 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.12.0 (2026-11-05): no Defense is ever chosen by the system
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; no handbook moved).
+Mike, 2026-11-05, on the sheet's Standing stance chips: "do we still need this ... since every
+Exchange asks what Defense they want to use?" and then "no applying a default, ever: The Attack
+Flow should not be an option to turn off... it is critical to the functioning of the system."
+Planned first (`eager-wobbling-possum.md` in the plans folder) and built in six steps, one commit
+each. The rulings, continuing the v4.21 sync report's numbering:
+
+- **159. No Defense is ever chosen by the system.** "The defender chooses one of the two Defenses
+  that answer it" is a choice made per attack in the Combat Prompt, by the defender's controller
+  or, explicitly and per defender, by the GM. The standing stance (`system.stance`, the header's
+  two chips, the Token HUD's stance button, the whispered stance card, `helpers/stance.mjs`,
+  `SwActor#setStance` and `answeringDefense`, `SwCheck.#readDefender`, `SW.LEGACY_STANCES`) is
+  gone; the prompt opens with **no Defense selected and Commit disabled** until one is picked, and
+  the answers it allows appear once it is; the coordinator's silent `{ defense: "evade" }`
+  fallbacks at the reveal, the resolution and the roll are errors now; `rollAttack`'s forced
+  `defense` option went with them. The 0.12.0 world migration deletes the field from every actor
+  (`Migration.stanceRemoved`), and the model drops it on read.
+- **160. The attack flow is not optional.** The `attackFlow` world setting (0.5.0) and its
+  roll-at-once path are gone; a stored value is ignored. Every attack at a target declares; with
+  no target there is no defender, and a Strike or a Cast rolls against the Threshold typed in the
+  dialog.
+- **161. A Reaction Strike declares and is answered by a basic Defense alone.** Intercept (a
+  character's with the weapon that reached, an adversary's with its longest attack row, both from
+  the Intercept card) and the Riposte declare into the flow with `reaction` on the record and
+  `basicOnly` on its profile: the prompt offers the two Defenses and no Reaction or Posture (a
+  Reaction never triggers a Reaction), the coordinator refuses any answer under it, Intercept's
+  ❶↺ is paid at the declaration and returned if the Blow is cancelled before the die, the Riposte
+  is free, and a Reaction Blow is never counted by "one Blow at a time" in either direction. The
+  adversary's Intercept answer card (the mover's Defense roll outside the flow) and the dead
+  Counter button on the check card are gone; an adversary is offered no Riposte, having no weapon
+  Item to strike back with.
+- **162. With no GM connected an adversary's Defense waits for one** (Mike's choice over the
+  attacker answering for the foe). Nothing auto-commits: the Blow stays at "Waiting for defenses"
+  with the card naming who waits for a GM, and the coordinator re-sends the prompt when one
+  connects. The GM's "Answer with standing stances" control is replaced by **explicit rows for
+  absent players**: the GM's prompt lists every uncommitted player character whose player has not
+  answered, last, under an "Absent players" heading, with the same controls and the Threshold
+  shown (`gmDefendAbsent` in `outstandingFor`); a later commit from the player is refused as
+  stale, as before.
+- **163. A Cast declares, and the prompt offers the Threat's two Defenses.** A spell Talent's
+  Cast with targets declares with the Talent, the Cast kind, the Threat, the Delivery and the two
+  permitted Defenses on the record (`maneuver.source: "spell"`, `maneuver.spell`,
+  `maneuver.defenses`); the prompt offers those two (Evade / Endure for a Blast, with a line naming
+  the Threat) and the Reactions and Postures legal on each (ruling 132; the melee-only ones never);
+  the caster's one die is read against every target's Threshold (ruling 155); `SwCheck.resolveAgainst`
+  takes a spell source (`source`, `talent`, `cast`, `outcomes`) and resolves with no Strike, the
+  spell's three Cast texts as the outcome rows, its subtitle and its damage buttons, and `rerollCard`
+  keeps a spell card a spell card; a Focused or Committed Cast in an encounter Prepares with every
+  target remembered (`preparing.targetUuids`) and declares against them all when Finished; a Cast
+  with no target rolls against a typed Threshold. An adversary still casts nothing (`Cast.npc`).
+  0.11.0's higher-Threshold reading, the last Defense the system chose, is gone.
+
+**The coordinator split** promised in CLAUDE.md at the first non-Blow Threat: `attack-socket.mjs`
+(the transport: delivery to one user with `recipients`, the reply's correlation, the timeout, the
+dispatch of an incoming message with the server's sender stamp; it reads none of the revision,
+ownership or election, which stay in the coordinator; the damage, reroll and party relays stay on
+their own emits for now, `reroll:*` the first candidate) and `attack-source.mjs` (what the attack
+is: `resolveSource` reads a weapon, an attack row or a spell Talent off the attacker's own Items,
+so the Threat, the Defenses and the cost are never the declaring client's to say; `maneuverFrom`,
+`costOf` for the refund, `attackThreshold`, `meleeAnswers`, `describe` for the card and the
+prompt, `castOutcomes`, `resolveArgs` for the resolver, `rollBlind` for the roller's die), with
+`attack-coordinator.mjs` keeping how the table agrees. `AttackWorkflow` gains `profileFor`
+(the permitted Defenses, basic-only, melee, whether Position applies), `waitingForGm`, the
+`gmDefendAbsent` outstanding kind and the record's `source`, `reaction`, `basicOnly`, `threat`,
+`defenses` and `spell`, a pre-0.12.0 card reading as the Blow it was; `legalAnswers` and
+`isLegalAnswer` take `{ permitted, basicOnly, melee }` (the melee refusal moved in from the
+coordinator, so the prompt, the check and the coordinator share one reading); `defenseThresholdFor`
+takes `permitted`, so an unavailable Defense falls to the other the Threat allows.
+
+**Checked** by `node assets/test_rules.mjs` (74 checks: ten new over the pure parts, the record's
+defaults for a Blow, a spell and a Reaction Strike, `profileFor` on an old record, the GM's absent
+rows, `waitingForGm`, `isLegalAnswer` refusing a Defense outside the pair, an answer under
+`basicOnly` and a melee Reaction against an arrow), `node assets/build_all.mjs --content`, and
+live in the test world (the 0.12.0 changelog's live list is in `CLAUDE.md`'s cleared entry).
+
+**Not done.** Cover the Angle and the size clauses stay the table's; an adversary casts nothing;
+a spell's range prints no note; sleeping in armor is unapplied (section 9 of `FEATURES.md`).
+
+---
+
 ## 0.11.0 (2026-11-04): Player's Handbook v4.21
 
 Built from **Player's Handbook v4.21** (`Starwrought_Players_Handbook_v4.21.docx`, Mike's

@@ -278,20 +278,41 @@ none by default, and the card says "via <Maneuver>". The v4.14 Combat Style subs
 weapon's `system.style` field and the Composite trait are gone (a group has no Attribute of its own
 to lend; `migrateData` deletes the field).
 
-**The attack flow (Mike, 2026-10-01; system 0.5.0, sync report ruling 65).** A Strike at a target
-declares first and locks; every defender commits a Defense (Evade or Guard) and an answer (nothing,
-an owned Reaction, or a ⓿↺ Posture Talent with the Zone it Exposes) in private; all reveal at once;
-then the players roll: a player-controlled attacker rolls Attack once against every defender's
-Threshold, a player-controlled defender of an adversary's Blow rolls Defense against the Attack
-Threshold, and player against player is never an opposed roll. The coordinator (the GM's client
-when one is connected, else the attacker's) is the only writer of the attack card and the only
-holder of commitments before the reveal; every change is a socket request with a revision number
-and an ownership check, with the asking user read from the server's stamp on the socket message
-and the state taken from the card's flags, never from a broadcast. Decisions are made in the Combat
-Prompt window, chat is the record and the recovery, the sheet is the reference. Inside the flow
-adversary Thresholds are never shown to players (a Reaction Strike still rolls at once and prints
-the number, as 0.4.2 did). The world setting `attackFlow` off restores the 0.4.2 behaviour for
-characters' Strikes; an adversary's attack row always declares. Since 0.5.3 the same system socket
+**The attack flow (Mike, 2026-10-01; system 0.5.0, sync report ruling 65; not optional and the
+only path since 0.12.0, rulings 159 to 163).** Every attack at a target declares first and locks:
+a Strike from the weapon row, an adversary's attack row, a spell's Cast ❷ ❸ ❹, a Reaction Strike
+(Intercept, the Riposte); every defender commits one of the two Defenses the Threat permits (Evade
+or Guard for a Blow; a Blast Evade or Endure, a Blight Endure or Awareness, a Beguilement Awareness
+or Guard, or the sheet's `Defenses` column) and an answer (nothing, an owned Reaction, or a ⓿↺
+Posture Talent with the Zone it Exposes; against a Reaction Strike the basic Defense alone) in
+private; all reveal at once; then the players roll: a player-controlled attacker rolls Attack once
+against every defender's Threshold, a player-controlled defender of an adversary's Blow rolls
+Defense against the Attack Threshold, and player against player is never an opposed roll. **No
+Defense is ever chosen by the system** (Mike, 2026-11-05: "no applying a default, ever"; ruling
+159): there is no standing stance (0.12.0 removed `system.stance`, the chips, the HUD button and
+every reader; the migration deletes the field), the prompt opens with nothing selected and Commit
+disabled, the coordinator refuses to reveal or resolve a pairing with no commitment, and with no
+GM connected an adversary's Blow waits for one (ruling 162; the card says who waits). The GM answers
+for an absent player from explicit rows in their own prompt (`gmDefendAbsent`), never by a default.
+**The flow is not optional** (Mike: "critical to the functioning of the system"; ruling 160): the
+`attackFlow` setting is gone; a Strike or Cast with no target rolls against a typed Threshold
+because there is no defender. The coordinator (the GM's client when one is connected, else the
+attacker's) is the only writer of the attack card and the only holder of commitments before the
+reveal; every change is a socket request with a revision number and an ownership check, with the
+asking user read from the server's stamp on the socket message and the state taken from the card's
+flags, never from a broadcast. Since 0.12.0 the coordinator is three files: `attack-socket.mjs`
+(the wire: delivery to one user, the reply's correlation, the timeout, the dispatch with the
+server's sender; it reads no revision, ownership or election), `attack-source.mjs` (what the attack
+is: `resolveSource` reads a weapon, an attack row or a spell Talent off the attacker's own Items,
+so the Threat, the permitted Defenses and the cost are never the declaring client's; `maneuverFrom`,
+`costOf`, `describe`, `castOutcomes`, `resolveArgs`, `rollBlind`) and `attack-coordinator.mjs`
+(how the table agrees). The record (`attack-workflow.mjs`, pure) carries `maneuver.source`,
+`reaction`, `basicOnly`, `threat`, `defenses` and `spell`, with `AttackWorkflow.profileFor` the one
+reading of what a defender may answer with and `waitingForGm` the no-GM rule; `legalAnswers`,
+`isLegalAnswer` and `defenseThresholdFor` take the permitted pair, basic-only and melee. Decisions
+are made in the Combat Prompt window, chat is the record and the recovery, the sheet is the
+reference. Inside the flow adversary Thresholds are never shown to players, a Reaction Strike's
+and a Cast's included. Since 0.5.3 the same system socket
 also carries `damage:*` and `reroll:*` requests to the active GM's client (`chat.mjs`,
 `onChatSocket`, since 0.10.1 a router over the card families in `documents/cards/`): a player's
 Apply on a creature they cannot write, and a die thrown again on the roller's client but read
@@ -302,13 +323,15 @@ from or Give to the party's loot, run on the active GM's client in arrival order
 written before the source, the asker from the server's stamp and the payload trusted for nothing
 but ids and a count. The router in `starwrought.mjs` is one line per listener:
 `/^(damage|reroll|expose):/` to `onChatSocket`, `/^party:/` to `onPartySocket`, everything else to
-the attack coordinator. **A Cast is outside the flow in 0.11.0** (PHB v4.21's spells; rulings 135
-and 136): `SwActor#castSpell` (`documents/actor/cast.mjs`) rolls the discipline's Proficiency and
-Key Attribute at once against the higher of the two Defenses the Threat permits on the target (a
-Blow Evade or Guard, a Blast Evade or Endure, a Blight Endure or Awareness, a Beguilement Awareness
-or Guard; the sheet's `Defenses` column may override), as a Reaction Strike rolls; nothing is
-committed or revealed. The coordinator still declares weapon Blows only; the first non-Blow Threat
-in it is the next piece of work (Known outstanding work, below).
+the attack coordinator. **A Cast is in the flow since 0.12.0** (ruling 163; PHB v4.21's spells,
+rulings 135 and 136): `SwActor#castSpell` (`documents/actor/cast.mjs`) Prepares a Focused or
+Committed Cast in an encounter (every target remembered in `preparing.targetUuids`), declares a
+Cast with targets through `AttackCoordinator.declare({ talentId, cast, targets })`, pays the Cast's
+actions as the declaration stands, and rolls the discipline's Proficiency and Key Attribute blind
+at the roll step; `SwCheck.resolveAgainst` with `source: "spell"` resolves each pairing with no
+Strike, the spell's three Cast texts as the outcome rows and its damage buttons, and `rerollCard`
+keeps a spell card a spell card. An adversary casts nothing through the system (`Cast.npc`). The
+0.11.0 reading of the higher of the two Thresholds, the last Defense the system chose, is gone.
 
 **Six actions a round (PHB v4.10).** Every combatant gets six actions at the start of each round,
 spent across Opportunities (one Maneuver per Opportunity, or Pass; a full circuit of Passes ends the
@@ -323,7 +346,7 @@ character owns one by owning the Talent or the Training root that grants it (`RO
 Evade Training Give Ground, Guard Training Set Your Feet, Melee Training Intercept), an adversary
 owns them all; `ownedReactions` and `legalAnswers` in `helpers/answers.mjs` are the one reading.
 One answer per attack, a ❶↺ Reaction or a ⓿↺ Posture; Void and Counter are gone from the book, and
-a stance is Evade or Guard only (`LEGACY_STANCES` maps the three old ones). Movement: Rush ❷ for
+no stance exists since 0.12.0 (the Defense is committed per attack, ruling 159). Movement: Rush ❷ for
 three Speeds (`RUSH_COST`, `RUSH_MULTIPLIER`), Leap ❶ to ❸ at ½, 1 and 1½ Speed less Strain
 (`LEAP_STEPS`), Crawl at half the Speed you had before the final Legs Wound (`CRAWL_DIVISOR`;
 ruling 138); Support to +4 (`SUPPORT_MAX`); a Quick Strike's Miss Exposes nothing
@@ -879,24 +902,21 @@ same moment adds no engine code, and a new moment is defined with the first kind
   and never refuses, and Retrain and Provision have no control (0.7.5).
 - **The Result table's Hit row lacks the Quick qualifier** (v4.14; not rechecked in v4.21). The
   system holds a Quick Hit to the Torso. Two words in one cell, Mike's.
-- **Spells in the attack flow are the next piece of work** (0.11.0 left them outside it; the plan's
-  area 5 first cut). A Cast rolls at once from `SwActor#castSpell` against the higher of the
-  Threat's two Defenses: no commitment, no reveal, no Reaction or Posture offered to the defender,
-  and an adversary's Threshold printed. Bringing it in is the split the coordinator bullet promised
-  (Mike, 2026-11-04, on the ninth architecture recommendation): a declaration with a `source`
-  (weapon, attack row or spell Talent), a `threat`, a `delivery` and the two Defenses, a resolution
-  profile by source (`profileFor` in the pure `attack-workflow.mjs`; the spell's three Cast texts as
-  outcomes), the Combat Prompt offering the Threat's Defenses and the Reactions legal on each
-  (ruling 132), the socket transport split out first (`attack-socket.mjs`, possibly shared with the
-  damage, reroll and loot relays), along the seam "what the attack is" from "how the table agrees".
-  Spell effects beyond the die (areas on the map, pushes, conditions on a Hit, summons, Temporary
-  Vigor pools, healing, a second damage type) stay the Talent's text until a rule kind reads them.
+- **A spell's effects beyond the die are the table's** (0.11.0; the Cast is in the flow since
+  0.12.0). Areas on the map, pushes, conditions on a Hit, summons, Temporary Vigor pools, healing
+  and a second damage type stay the Talent's text until a rule kind reads them; a spell's range
+  prints no note on the card. **An adversary casts nothing through the system** (`Cast.npc`; its
+  attack rows are Blows): an adversary's spell is the GM's narration and a character's Defense
+  answers it from the sheet, until adversaries get spell rows or Talents. The damage, reroll and
+  party relays stay on their own emits (`documents/cards/shared.mjs`, `party-socket.mjs`);
+  `reroll:*` is the first to move onto `attack-socket.mjs` when one wants a correlated reply.
 - **Reactions the engine leaves to the table** (0.11.0; ruling 130): Cover the Angle (an adjacent
   ally's melee Blow against your Guard) is offered nowhere; Kneel Behind the Shield's rooted Speed,
   the "no more than one size larger" clauses of Parry and Deflecting Palms, and Deflecting Palms'
   damage reduction are notes on the card; a ⓿↺ or ❶↺ Reaction Talent under a name `SW.REACTIONS`
-  does not know is offered only as a generic Posture. A new Reaction in the book is one row in the
-  table (`config/exchange.mjs`) and its i18n strings.
+  does not know is offered only as a generic Posture; an adversary is offered no Riposte (0.12.0),
+  having no weapon Item to strike back with. A new Reaction in the book is one row in the table
+  (`config/exchange.mjs`) and its i18n strings.
 - **The aura, for Torchbearer, is the next kind** (`automation-plan.md`). Mike's own example ("the
   Torchbearer 15' aura ... the syntax that will work for OTHER auras, too, without additional
   coding"): the `Aura` column (0.5.1) already draws the ring, and the kind adds the effect inside
@@ -911,6 +931,31 @@ same moment adds no engine code, and a new moment is defined with the first kind
   `bonus` reads Humanity's since 0.11.0. The spell rows' structured columns are data the engine
   reads directly (the Aura precedent), not a kind; a spell's text effects are candidates for kinds
   later.
+
+Cleared 2026-11-05 (no Defense is ever chosen by the system, system 0.12.0; rulings 159 to 163 in
+the 0.12.0 changelog entry; planned first in `eager-wobbling-possum.md`, Mike: "Plan it... BUT no
+applying a default, ever: The Attack Flow should not be an option to turn off... it is critical to
+the functioning of the system", and by question: with no GM an adversary's Blow waits, and spells
+come into the flow in the same change): the standing stance (0.4.2 to 0.11.0: `system.stance`, the
+header chips, the HUD button, the whispered card, `helpers/stance.mjs`, `setStance`,
+`answeringDefense`, `SwCheck.#readDefender`, `LEGACY_STANCES`, the GM's "Answer with standing
+stances", the no-GM auto-commit, the silent Evade fallbacks) gone with a migration step deleting
+the field; the `attackFlow` setting gone; the prompt opening with nothing selected and the GM's
+explicit rows for absent players; Intercept (a character's and an adversary's) and the Riposte
+declaring as Reaction Strikes answered by a basic Defense alone, the Intercept answer card and the
+dead Counter button gone; a Cast declaring with the Threat's two Defenses offered, resolved with
+no Strike and rerolled as a spell card, a Prepared Cast keeping every target; and the coordinator
+split into `attack-socket.mjs`, `attack-source.mjs` and the coordinator, with `profileFor`,
+`waitingForGm` and the record's `source`, `reaction`, `basicOnly`, `threat`, `defenses`, `spell`.
+Checked by ten new self-test checks (74 pass), the content loop, and live (the GM tab and a
+player tab: the migration notice and no `stance` left on any actor; no chips and no HUD button;
+a Strike's prompt with nothing selected and Commit disabled until a pick; the GM's absent-player
+row; the no-GM wait and the prompt on the GM's return; a character's and an adversary's Intercept
+and a Riposte as Reaction Blows with two Defenses and no answers; a Quick Cast's prompt offering
+Evade and Endure, a Focused Cast Prepared and Finished against two targets with one die and two
+cards, the spell's damage buttons and a reroll). No handbook moved and `data/SYNC.json` is
+untouched; the rulings are system decisions, recorded in the changelog as the 0.10.x entries'
+were not, because these change what a player is asked.
 
 Cleared 2026-11-04 (the v4.21 handbook sync, system 0.11.0; `v4.21-sync-report.md`, rulings 125 to
 158; Mike: "going forward --- let's plan before making changes", so the plan went through plan

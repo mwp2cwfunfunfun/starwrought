@@ -2,7 +2,8 @@
 
 Rules content built from **Player's Handbook v4.21** (Mike's reorganised edition of 4 November
 2026, formatted by `assets/phb_format.py` with the text unchanged; `v4.21-sync-report.md` in the
-project root has the rulings, 125 to 158). System version **0.11.0**. Developed against
+project root has the rulings, 125 to 158; the 0.12.0 changelog entry has 159 to 163). System
+version **0.12.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -242,13 +243,15 @@ sheet can see, so they stay with the table.
 
 ### Attacks and Defense rolls: the Exchange
 
-- **Player-facing.** A Strike at a target is played as declare, commit, reveal, roll and resolve
-  (see **The attack flow** below): the defender commits how the Blow is met before the die is
-  thrown, and a player always rolls. With the world setting `attackFlow` off, or with no target,
-  an attack instead reads the target's stance off the targeted token at the moment of the roll, as
-  0.4.2 did. Either way the roll is measured against that Defense's Threshold, and a Defense roll
-  runs the same comparison from the other side, so beating an Attack Threshold by 10 is a Miss and
-  missing it by 10 is a Critical Hit.
+- **Player-facing.** Every attack at a target is played as declare, commit, reveal, roll and
+  resolve (see **The attack flow** below): the defender commits how it is met before the die is
+  thrown, and a player always rolls. **No Defense is ever chosen by the system** (0.12.0, ruling
+  159): there is no standing stance, no default and no switch that turns the flow off (ruling
+  160); the one choice the system makes for nobody is the defender's, or the GM's for an absent
+  player, every time. With no target there is no defender, and a Strike or a Cast rolls against the
+  Threshold typed in the dialog. The roll is measured against the committed Defense's Threshold,
+  and a Defense roll runs the same comparison from the other side, so beating an Attack Threshold
+  by 10 is a Miss and missing it by 10 is a Critical Hit.
 - **Melee or Ranged.** A weapon in hand rolls your Melee Proficiency; a weapon that leaves it rolls
   Ranged. A Thrown weapon is thrown when its target is beyond your Total Reach with it (or when the
   caller says so), and then rolls Ranged. **Weapon Handling** still applies on top: Intuitive uses
@@ -878,94 +881,92 @@ target comes into reach, or exactly where they leave it, before the move is paid
 else's arrows stay on the token's last committed square and catch up when the drop lands, because
 the drag clone exists only on the dragging client; they see Foundry's own drag ruler meanwhile.
 
-### Stance: the defender answers
+### The defender answers
 
 "The defender chooses one of the two Defenses that answer it, and decides whether to spend an
-action on a Reaction." Each actor, character or adversary, carries a **stance**: the basic Defense
-the next physical Attack is met with, **Evade** or **Guard** (0.5.3; Mike: "Standing Stance should
-only include Evade or Guard"). The Reactions are Talents since PHB v4.21 (Sidestep, Slip the Line,
-Parry, Deflecting Palms ❶↺; the Postures Give Ground, Set Your Feet, Drop Flat, Kneel Behind the
-Shield ⓿↺), cost their ❶ from the six when an attack lands on you, are only yours when you own the
-Talent or the Training root that grants one, and are chosen blow by blow in the Combat Prompt
-rather than held as a stance. A stance a character set to Void, Parry or Counter before 0.11.0
-reads as the Defense it stood on, and the migration writes it. Awareness and Endure are not
-stances; the handbook calls for them by name.
+action on a Reaction." Since 0.12.0 that sentence is the whole design (Mike, 2026-11-05: "no
+applying a default, ever"; rulings 159 and 160). The two Defenses are the ones the Threat permits
+(Evade or Guard for a Blow; a spell's pair by its Threat); the Reactions are Talents since PHB
+v4.21 (Sidestep, Slip the Line, Parry, Deflecting Palms ❶↺; the Postures Give Ground, Set Your
+Feet, Drop Flat, Kneel Behind the Shield ⓿↺), cost their ❶ from the six when an attack lands on
+you, are only yours when you own the Talent or the Training root that grants one, and are chosen
+blow by blow in the Combat Prompt. Nothing stands ready to be read instead: the **standing stance**
+of 0.4.2 to 0.11.0 (the header's two chips, the Token HUD's button, the stance card whispered to
+the GM, the `attackFlow` setting's roll-at-once path) is gone, and the 0.12.0 migration deletes
+the field. Awareness and Endure answer a Blast, a Blight or a Beguilement by name.
 
-- **On the sheet**, two chips in the header, each showing the Threshold an attacker would meet,
-  one click to switch, and the chosen Defense marked in the grid. Adversaries have the same chips.
-- **On the Token HUD**, one button showing the current answer, flipping to the other Defense: the
-  fastest way to change your mind when an arrow has just been pointed at you. Above it, in an
-  encounter, the **action counter** (0.10.1): the actions free to spend now over the round's
-  count ("4/6") with the sheet's three-state pips beneath, gold free, violet reserved, hollow
-  spent, the legend in its tooltip, re-drawn as the actor spends while the HUD is open. A readout,
-  not a button, and the same computation as the sheet's and the tracker's pips.
-- **In the attack dialog, the answer is hidden.** The attacker sees only that the defender's stance
-  meets the roll and a note that it is revealed on the card: no dropdown, because the choice is not
-  theirs, and no Defense or Threshold, because knowing which would be playing the character sheet
-  rather than the character. The answer is **read when the die is rolled**, not when the dialog
-  opened, so a defender who switches while the dialog is up is answered with the stance they
-  switched to, and the Threshold is read live at the same moment since conditions move it too. The
-  card then names the Defense, the Reaction behind it and the Threshold, and says why if the
-  defender was answered with something other than their stance. Code can still force a Defense
-  (`rollAttack(id, { defense: "awareness" })`) for a Talent that calls for one specifically; the
-  dialog then shows the forced Defense by name, since the attacker chose it, and the stance is not
-  consulted.
+- **On the Token HUD**, in an encounter, the **action counter** (0.10.1): the actions free to
+  spend now over the round's count ("4/6") with the sheet's three-state pips beneath, gold free,
+  violet reserved, hollow spent, the legend in its tooltip, re-drawn as the actor spends while the
+  HUD is open. A readout, not a button, and the same computation as the sheet's and the tracker's
+  pips.
+- **In the attack dialog, the answer is hidden.** The attacker sees only that the defender's
+  committed Defense meets the roll and a note that it is revealed on the card: no dropdown,
+  because the choice is not theirs, and no Defense or Threshold, because knowing which would be
+  playing the character sheet rather than the character. The card then names the Defense, the
+  Reaction behind it and the Threshold, and says why if the defender was answered with something
+  other than the Defense they named (Evade while Grabbed). Nothing forces a Defense from code any
+  more: `rollAttack`'s `defense` option went with the stance, since a Defense the attacker picks is
+  exactly what the rule forbids.
 - **A Reaction is spent when it is used.** The ❶ comes off the defender's six as the attack
-  resolves; the stance itself is never a Reaction, so there is nothing to fall back from.
-- **Not announced to the table.** A player's change of stance mid-encounter is whispered to the
-  GM, who is running the thing about to swing; a GM's change goes nowhere. Everyone else learns
-  what a defender answered with when the roll's card posts, and not before.
+  resolves.
 - **Unavailable Defenses are shown, not enforced.** "Evade is unavailable while you are Grabbed or
-  Restrained." A Grabbed defender's Evade chip goes dashed with a warning mark and the HUD button
-  gets a red ring; an Attack on them is answered with Guard (and an Evade Reaction or Posture falls
-  away with it), and the card says "Evade is unavailable while Grabbed; answered with Guard". Choosing
-  Evade anyway on the sheet posts a note saying so, to the owner. Guard's own exceptions are not
-  things the sheet can see, so they stay with the table.
+  Restrained." A Grabbed defender's Evade radio in the prompt carries a warning mark; committed
+  anyway, the attack is answered with the other permitted Defense (and an Evade Reaction or
+  Posture falls away with it), and the card says "Evade is unavailable while Grabbed; answered with
+  Guard". Guard's own exceptions are not things the sheet can see, so they stay with the table.
 
-The stance is what you *have decided*; since 0.5.0 the attack flow below asks you to confirm it,
-blow by blow, in a prompt that arrives with the attack. The stance is the prompt's pre-selection,
-so a present player commits with one click, and the GM can answer for an absent player with their
-standing stance in one click too, which is what kept the 0.4.0 design from prompting at all. With
-the attack flow switched off the stance is read at the die exactly as before. Postures, the ⓿↺
-answers (PHB v4.21, the Posture trait), are offered by the prompt from the Reactions table: the
-Posture each Defense's Training root grants in its own text, **Give Ground ⓿↺** with Evade Training
-and **Set Your Feet ⓿↺** with Guard Training (0.5.3; Mike: "Where can I choose my Posture, like
-Give Ground or Set Your Feet?"; they ride on the root Talent, since they are no Talent of their
-own), **Drop Flat ⓿↺** and **Kneel Behind the Shield ⓿↺** when owned, and any other ⓿↺ Reaction
-Talent you own in the Defense's Constellation by the general rule. A Zone is asked only of a
-Posture that Exposes one of your choice: Kneel names your Arms, Drop Flat none and drops you Prone
-at the reveal. The Exposed toggle on the sheet marks a Posture's Zone so Recenter leaves it alone
-and the round's end clears it. Since 0.5.1 the chips are labelled **Standing stance**, which is
-what they are: the default the prompt pre-selects, not the answer itself.
+Postures, the ⓿↺ answers (PHB v4.21, the Posture trait), are offered by the prompt from the
+Reactions table: the Posture each Defense's Training root grants in its own text, **Give Ground
+⓿↺** with Evade Training and **Set Your Feet ⓿↺** with Guard Training (0.5.3; Mike: "Where can I
+choose my Posture, like Give Ground or Set Your Feet?"; they ride on the root Talent, since they
+are no Talent of their own), **Drop Flat ⓿↺** and **Kneel Behind the Shield ⓿↺** when owned, and
+any other ⓿↺ Reaction Talent you own in the Defense's Constellation by the general rule. A Zone is
+asked only of a Posture that Exposes one of your choice: Kneel names your Arms, Drop Flat none and
+drops you Prone at the reveal. The Exposed toggle on the sheet marks a Posture's Zone so Recenter
+leaves it alone and the round's end clears it.
 
 ### The attack flow
 
-**Declare → commit → reveal → roll → resolve.** A Strike at one or more targeted tokens, from the
-weapon row's ❶ ❷ ❸ or from an adversary's attack row, does not roll at once. It declares: the
-Maneuver (weapon or attack, Strike kind) and the targets lock, and one **attack card** appears in
-chat. A Committed Strike in an encounter still Prepares first and declares when it is Finished.
-Counter, Intercept and the riposte are already answers to a declared Blow and roll at once, as
-before. With no target the Strike rolls at once too. **The declaration is the Maneuver** (0.5.3;
+**Declare → commit → reveal → roll → resolve.** An attack at one or more targeted tokens, from
+the weapon row's ❶ ❷ ❸, from an adversary's attack row, from a spell's Cast ❷ ❸ ❹ (0.12.0,
+ruling 163) or as a Reaction Strike (Intercept, the Riposte; 0.12.0, ruling 161), does not roll
+at once. It declares: the Maneuver (what the attack is, read by the coordinator from the
+attacker's own Items in `attack-source.mjs`: a weapon and its Strike kind, an attack row, or a
+spell Talent with its Cast, its Threat and the two Defenses that answer it) and the targets lock,
+and one **attack card** appears in chat. A Committed Strike, and a Focused or Committed Cast, in
+an encounter still Prepare first and declare when Finished. With no target there is no defender,
+and the Strike or Cast rolls at once against a Threshold typed in the dialog. **The declaration
+is the Maneuver** (0.5.3;
 Mike: "I used a deliberate strike, but I don't think it reduced my actions by 2"): a character's
 Strike pays its actions when it declares, as an adversary's always did, and the roll step pays
 nothing; a Blow the GM cancels before any die was thrown returns them, with a card. **One Blow at
 a time** (Mike: "my partner clicked attack twice, and it popped up two defense boxes"): a second
 declaration by the same attacker replaces a Blow nobody has answered yet, so a double click is one
 attack and one prompt, and is refused once a defender has committed or a die is in flight, with a
-notice naming the Blow in play.
+notice naming the Blow in play. A Reaction Strike is never counted here, in either direction: it
+answers a Blow already in play and neither replaces the attacker's own live Blow nor is replaced
+by it.
 
 **Commit.** Every defender's controller gets the **Combat Prompt**: a small window, bottom-right,
-that never blocks Foundry. For a defender it offers the Defense (Evade or Guard) with the standing
-stance pre-selected, then the answers legal for that Defense right now (nothing; the ❶↺ Reaction
-Talents owned on that Defense, Sidestep and Slip the Line on Evade, Parry with a rigid implement
-and Deflecting Palms on Guard, the melee-only ones left out against an arrow with a line saying
-so; the ⓿↺ Postures, with the Zone one will Expose where it is your choice), a preview of the
-resulting Threshold for a character, and Commit. Changing the Defense re-lists the answers, and an answer the new Defense
-does not allow falls back to nothing. The choice is
-sent as choices, never as a number, and the coordinator revalidates it against the rules. An
-adversary's answer is the GM's to declare: the GM gets one prompt row per adversary target. Until
-every defender has committed, the card shows only "Committed" or "Waiting" per target; no one,
-the attacker included, sees a choice. The commitments live only with the coordinator.
+that never blocks Foundry. For a defender it offers the two Defenses the Threat permits (Evade or
+Guard for a Blow; a spell's pair, with a line naming the Threat), **nothing pre-selected and
+Commit disabled until one is picked** (0.12.0, ruling 159), then the answers legal for that
+Defense right now (nothing; the ❶↺ Reaction Talents owned on that Defense, Sidestep and Slip the
+Line on Evade, Parry with a rigid implement and Deflecting Palms on Guard, the melee-only ones left
+out against an arrow or a spell with a line saying so; the ⓿↺ Postures, with the Zone one will
+Expose where it is your choice; against a Reaction Strike the basic Defense alone, since a Reaction
+never triggers a Reaction), a preview of the resulting Threshold for a character, and Commit.
+Changing the Defense re-lists the answers, and an answer the new Defense does not allow falls back
+to nothing. The choice is sent as choices, never as a number, and the coordinator revalidates it
+against the rules (a Defense outside the Threat's pair, an answer under a Reaction Strike and a
+melee Reaction against an arrow are each refused by name). An adversary's answer is the GM's to
+declare: the GM gets one prompt row per adversary target. **An absent player** is answered for the
+same way: the GM's prompt lists every uncommitted player character whose player has not answered,
+last, under an "Absent players" heading, each with the same controls and the Threshold shown, and
+a later commit from the player is refused as stale. Until every defender has committed, the card
+shows only "Committed" or "Waiting" per target; no one, the attacker included, sees a choice. The
+commitments live only with the coordinator.
 
 **Reveal.** When the last defender commits, every choice reveals at once on the card, a Posture's
 Zone is Exposed, and the roll step begins.
@@ -979,8 +980,10 @@ Threshold answers. Adversary against adversary is the GM rolling the attacker fl
 defender's Threshold. The prompt carries the Roll button; the card carries it too, for recovery.
 
 **Resolve.** Each pairing gets the same resolution card an attack produces today: the Defense and
-answer, the outcome, Position offers (Expose, Bind, give ground, Step, Counter, riposte), the
-damage buttons for the attacker, and the Reaction's ❶ charged or offered. The attack card records
+answer, the outcome, Position offers (Expose, Bind, give ground, Step, the Riposte; none for a
+spell), the damage buttons for the attacker (a weapon's dice, or the spell's), and the Reaction's
+❶ charged or offered. A spell's card carries its three Cast texts as the outcome rows, the one
+rolled lit, and a reroll of it keeps it a spell card. The attack card records
 every outcome and completes. Follow-up choices stay on the resolution cards; the prompt framework
 can carry such choices later. One resolution card serves every viewer, so it prints a character's
 Threshold only when `attackShowPcThresholds` is on; the attack card is where that player and the
@@ -994,7 +997,7 @@ defender's commit or roll in the meantime does not make yours stale, since your 
 applies. Only an actor's owner may commit for it or roll for it, and the prompt and the card each
 show a viewer only their own buttons (the GM sees them all); only the GM (or, with no GM
 connected, the coordinating attacker) may Cancel, Reset defenses (everyone chooses again, nothing
-is revealed), Resend prompts or Answer with standing stances. Reset is offered only while the
+is revealed) or Resend prompts. Reset is offered only while the
 defenders are choosing: once a die has been paid for (a Strike's actions, a Reaction's ❶ charged
 before a Defense roll) only Cancel remains, and a reset closes again any Zone a revealed Posture
 had Exposed. Cancel keeps the attacker's spent actions: the declaration is the Maneuver. A closed
@@ -1009,25 +1012,29 @@ and an Expose on a body the chooser cannot write (`damage:*`, `reroll:*` and `ex
 in `chat.mjs` by `onChatSocket`; see Chat) and, since 0.7.1, a party Take or Give (`party:*`,
 `onPartySocket` in `party-socket.mjs`; see The party, under Sheets), each addressed to the active
 GM's client, which reads the asker from the server's stamp and answers the asker alone; the router
-in `starwrought.mjs` sorts the three by the prefix of the message type. With no GM connected the
-attacker's client coordinates and holds the GM controls, and an adversary target answers with its standing
-stance at once, since nobody can declare for it, as it does if the last GM leaves mid-defense. At
-such a table the attacker's own client is the one holding the defenders' commitments until the
-reveal, which asks the players to trust one another; the GM is the arbiter the design assumes. A
-card the GM authored cannot be written by a player, so such an attack waits, refusing requests,
-until a GM returns and adopts it; an adoption before the reveal resets the defense phase, because
-the private commitments went with the lost coordinator.
+in `starwrought.mjs` sorts the three by the prefix of the message type; since 0.12.0 the attack
+flow's own wire is `attack-socket.mjs` (delivery to one user, the reply's correlation, the timeout),
+and the coordinator keeps the election, the revisions and the ownership checks. With no GM
+connected the attacker's client coordinates and holds the GM controls, and **an adversary target
+waits for a GM** (0.12.0, ruling 162): nobody connected can choose for it and nothing chooses in
+its place, so the Blow stays at "Waiting for defenses" with the card naming who waits, and the
+prompt reaches the GM the moment one connects. At such a table the attacker's own client is the
+one holding the defenders' commitments until the reveal, which asks the players to trust one
+another; the GM is the arbiter the design assumes. A card the GM authored cannot be written by a
+player, so such an attack waits, refusing requests, until a GM returns and adopts it; an adoption
+before the reveal resets the defense phase, because the private commitments went with the lost
+coordinator.
 
 **What players see.** Inside the flow an adversary's Thresholds are never printed for players, on
 the card or in its data; the card shows the outcome. A character's Threshold is shown to that
 player and the GM, and to the attacker only when the world setting `attackShowPcThresholds` is on.
 The card prints "vs 14" only beside a defender the attacker rolls against; where the defender
 rolls, the number their die meets is the adversary's Attack Threshold, withheld, and the Defense
-dialog says so in place of its Threshold box. Two Strikes still roll at once and print the
-Threshold on their card as 0.4.2 did: a Reaction Strike (Counter, Intercept, the riposte), which
-answers a Blow already declared, and every character's Strike while the world setting
-`attackFlow` is off. That setting governs characters' Strikes; an adversary's attack row always
-declares, since adversaries do not roll.
+dialog says so in place of its Threshold box. Nothing with a defender rolls outside the flow since
+0.12.0: a Reaction Strike and a Cast declare like a Strike, so an adversary's Threshold is hidden
+from players on those too, where 0.11.0 printed it. An adversary's attack row always declares,
+since adversaries do not roll; an adversary casts no spell through the system (its magic is the
+GM's narration).
 
 ### The drag ruler, coloured by Moves
 
@@ -1274,11 +1281,10 @@ Constellation or Chassis opens read-only (a lock badge in the header, the plain 
 controls), while a weapon or a piece of gear stays theirs to rename. The GM keeps every field. A
 night's rest no longer hands out a Hero Point. Names print plain beside their one gold cost glyph
 (the data keeps "Bull Rush ❷", the sheet shows "Bull Rush" and ❷ once), and a Talent's image opens
-it rather than sending it to chat, which the chat control already does. The header's stance chips
-are the **Standing stance**: the Combat Prompt pre-selects it, the GM's "Answer with standing
-stances" commits it for an absent player, a Reaction Strike reads it, and with the attack flow off
-it is the whole answer. The Biography and Notes editors lay out and save again (their edit button
-was hidden and their box collapsed to nothing).
+it rather than sending it to chat, which the chat control already does. The header's **Standing
+stance** chips of 0.5.1 to 0.11.0 are gone (0.12.0): the Defense that answers an attack is chosen
+in the Combat Prompt, never stood ready. The Biography and Notes editors lay out and save again
+(their edit button was hidden and their box collapsed to nothing).
 
 **Adjustments are said aloud.** Whatever a player changes by hand on their character goes to
 everyone's chat as one "Adjusted" card per edit: actions left, Temporary Vigor, Dying, Hero Points,
@@ -1697,8 +1703,8 @@ the outcome band. An attack card names the Strike kind in its subtitle, the Defe
 defender answered with (and a Charge button when the attacker's client could not spend the
 defender's ❶), a note when a Quick Strike's 20 was denied its Critical Hit, the Critical / Hit /
 Graze damage buttons, and the **Position block**: Expose the attacker or the defender (a Zone
-picker), Form Bind or Take Control, the riposte, Give ground 3 ft or Step, and the Counter's Quick
-Strike back, each shown only to the side it belongs to. An Expose is one side's choice on the other
+picker), Form Bind or Take Control, the Riposte, Give ground 3 ft or Step, each shown only to the
+side it belongs to. An Expose is one side's choice on the other
 side's body, so when the chooser cannot write that actor (a player's Committed Hit on another
 player, or on an adversary) the GM's client marks the Zone, asked over the system socket with the
 card's id, the Zone and the two sides; it checks that the asker owns the choosing side and that
@@ -1826,7 +1832,6 @@ are markers for the table.
 | Show Total Reach on the map | on | Draw the reach bands around the token you control or hover over. Per client |
 | Colour the drag ruler by Moves | on | Colour the squares a drag crosses by which action pays for them: a Step, each Move, a Rush, or past what you have left. Per client |
 | Draw targeting arrows on the map | on | An arrow from each token to what it targets, in the targeting player's colour: every arrow for the GM, only their own for a player. Per client |
-| The attack flow | on | A character's Strike at a target declares first; defenders commit a Defense and an answer in private, all reveal at once, then the player rolls. Off, a character's Strike rolls at once against the standing stance, as 0.4.2 did; an adversary's attack row always declares |
 | Show a character's Threshold to the attacker | off | After the reveal, print the defending character's Threshold on the attack card and the resolution card for the attacking player. Inside the flow an adversary's Thresholds are never printed for players |
 | Show pinned auras | on | Draw every combatant's Visible ranges on the map while an encounter runs. Off, only the hover preview draws. Per client |
 | Range ring contrast | Normal | How boldly the reach and aura rings are drawn. Every ring has a dark halo under its outline so it reads on a pale floor; Strong thickens the lines and deepens the fills. Per client |
@@ -2063,21 +2068,24 @@ before; the sources and the index are.
   finds no Flared Constellation raise it, the Spent control on the badge lowers it, and the Flare
   card reminds you while it is above 0. Nothing stops a Talent drag, the count does not fall when
   one lands, and whether the point was spent where the book says is the table's to see.
-- **A Cast rolls outside the attack flow** (0.11.0). A spell is rolled at once, as a Reaction
-  Strike is, against the higher of the two Defenses its Threat permits on the target: the defender
-  does not commit, nothing is revealed, and an adversary's number prints as 0.4.2 printed it. The
-  first non-Blow Threat in the coordinator (a declaration with a source, a Threat and a Delivery,
-  the Combat Prompt offering the Threat's two Defenses) is the split `CLAUDE.md` names and the next
-  piece of work. Spell effects beyond the die (areas, pushes, conditions on a Hit, summons,
-  Temporary Vigor pools, healing, a second damage type) are the Talent's text on the card.
+- **A spell's effects beyond the die are the table's** (0.11.0; the Cast is in the attack flow
+  since 0.12.0). Areas, pushes, conditions on a Hit, summons, Temporary Vigor pools, healing and a
+  second damage type are the Talent's text on the card; a spell's range is the Talent's text too
+  (no range note on the card). An adversary casts no spell through the system: its magic is the
+  GM's narration, and a character's Defense answers it from the sheet.
+- **Nothing answers for a defender but a commitment** (0.12.0, rulings 159 and 162). With no GM
+  connected an adversary's Blow waits for one; an absent player's character waits for the GM's
+  explicit answer; a Strike or Cast with no target rolls against a typed Threshold because there is
+  no defender, not because one was chosen.
 - **Some Reactions are the table's** (0.11.0). Cover the Angle (an ally's Blow against your Guard)
   is offered nowhere; Kneel Behind the Shield's rooted Speed, the "no more than one size larger"
   clauses of Parry and Deflecting Palms, and Deflecting Palms' damage reduction are the card's
   notes; a Reaction Talent under a name the table does not know is offered only as a ⓿↺ Posture by
-  the general rule. Sleeping in armor without Comfort (Fatigued equal to Load Strain, maximum 3) is
-  not applied; the party's rest dialog names who did.
+  the general rule; an adversary is offered no Riposte, since it has no weapon Item to strike back
+  with. Sleeping in armor without Comfort (Fatigued equal to Load Strain, maximum 3) is not
+  applied; the party's rest dialog names who did.
 - **A party is never a combatant** (0.7.0; the plan's risk 1). The `party` Actor has no Zones,
-  Wounds, Vigor, stance or actions, and Support's ally count (`supportFor`), `actorsIn`, `canAct`,
+  Wounds, Vigor or actions, and Support's ally count (`supportFor`), `actorsIn`, `canAct`,
   the Combat Tracker's readout and the check engine skip or refuse it by type. A party token
   dropped into a Combat survives a round with no card
   addressed to it, no readout under its row and no Support line for it on a member's Strike;
