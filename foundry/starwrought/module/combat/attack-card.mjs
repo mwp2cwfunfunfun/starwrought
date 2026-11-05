@@ -25,6 +25,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { describe } from "./attack-source.mjs";
 
 /** The template every render of the card goes through. */
 export const ATTACK_CARD_TEMPLATE = "systems/starwrought/templates/chat/attack-workflow-card.hbs";
@@ -336,12 +337,13 @@ export function attackCardContext(state, { forUser = null } = {}) {
   const L = key => game.i18n.localize(key);
   const F = (key, data) => game.i18n.format(key, data);
 
-  const strike = SW.STRIKE_KINDS[state.maneuver?.strike] ?? null;
-  const glyph = strike ? (SW.ACTION_GLYPHS[strike.cost] ?? "") : (state.maneuver?.glyph ?? "");
-  const kindLabel = strike ? L(strike.label) : (state.maneuver?.label ?? "");
-  const kind = `${kindLabel} ${L("STARWROUGHT.Strike.kind")}`.trim();
-  const weapon = state.maneuver?.weaponName ?? "";
-  const maneuverText = `${kind} ${glyph}${weapon ? ` (${weapon})` : ""}`.trim();
+  // The Maneuver named by what it is (attack-source.mjs, 0.12.0): "Deliberate Strike ❷ (Longsword)",
+  // "Intercept ❶↺: Quick Strike (Spear)", "Focused Cast ❸ (Flame Seed), Blast".
+  const named = describe(state.maneuver ?? {});
+  const glyph = named.glyph;
+  const kind = named.kindLabel;
+  const weapon = named.name;
+  const maneuverText = named.text;
   const attackerName = state.attacker?.name ?? "";
   const attackerUuid = state.attacker?.actorUuid ?? "";
   const attackerActor = actorFor(attackerUuid);

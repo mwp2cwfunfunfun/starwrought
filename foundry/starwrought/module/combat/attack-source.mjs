@@ -51,7 +51,9 @@ export function resolveSource(attacker, payload = {}, { attackerToken = null, ta
 
   if (payload.talentId) {
     const talent = attacker.items.get(payload.talentId);
-    if (!talent || (talent.type !== "talent") || !talent.system?.isSpell) return { error: "noSpell" };
+    if (!talent || (talent.type !== "talent") || !talent.system?.isSpell) {
+      return { error: "noSpell", errorData: { name: talent?.name ?? payload.talentId } };
+    }
     // Adversaries do not Cast in 0.12.0: their magic is the GM's narration (CLAUDE.md, Known outstanding work).
     if (attacker.type === "npc") return { error: "npcCast" };
     const cast = SW.CAST_KINDS[payload.cast] ? payload.cast : SW.DEFAULT_CAST;

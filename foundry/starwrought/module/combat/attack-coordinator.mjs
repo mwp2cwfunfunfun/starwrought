@@ -758,7 +758,7 @@ export class AttackCoordinator {
     // Threat, the permitted Defenses and the cost are never the declaring client's to say.
     const attackerToken = resolveTokenDoc(payload.attackerTokenUuid) ?? attacker.tokenOnScene?.() ?? null;
     const source = resolveSource(attacker, payload, { attackerToken, targetDoc: targets[0].tokenDoc ?? null });
-    if (source.error) return { ok: false, reason: source.error };
+    if (source.error) return { ok: false, reason: source.error, reasonData: source.errorData };
     const maneuver = maneuverFrom(source, payload);
 
     const workflow = AttackWorkflow.create({

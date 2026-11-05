@@ -1,23 +1,26 @@
 /**
- * SwActor: the Cast Maneuver (PHB v4.21, Spellwork; 0.11.0). A spell Talent (`system.isSpell`) is
- * cast Quick ❷, Focused ❸ or Committed ❹ (SW.CAST_KINDS): the roll is the discipline's Proficiency
- * (the Talent's Constellation, or its parent when the Talent is a specialty's) with the
- * discipline's Key Attribute, against the better of the two Defenses the spell's Threat permits
- * on the target, and the card offers the spell's damage (SwDamage.rollSpell: the discipline's
- * rank in dice, one for a Quick Cast, no Might, delivered as the spell says).
+ * SwActor: the Cast Maneuver (PHB v4.21, Spellwork; 0.11.0, in the attack flow since 0.12.0). A
+ * spell Talent (`system.isSpell`) is cast Quick ❷, Focused ❸ or Committed ❹ (SW.CAST_KINDS): the
+ * roll is the discipline's Proficiency (the Talent's Constellation, or its parent when the Talent
+ * is a specialty's) with the discipline's Key Attribute, against one of the two Defenses the
+ * spell's Threat permits on the target, and the card offers the spell's damage
+ * (SwDamage.rollSpell: the discipline's rank in dice, one for a Quick Cast, no Might, delivered as
+ * the spell says).
  *
- * First cut: a Cast rolls at once, as a Reaction Strike does, outside the attack flow's declare,
- * commit and reveal (the coordinator declares weapon Blows and adversary attack rows only; the
- * first non-Blow Threat in the flow is the split CLAUDE.md names, and it is not in 0.11.0). The
- * defender's choice between the two Defenses is read as the higher Threshold, which is what a
- * defender choosing would choose, and the card names it; a Focused or Committed Cast in an
- * encounter is Prepared under the three-action rule and resolves at the next Opportunity, as a
- * Committed Strike does. Areas, pushes, conditions on a Hit, summons, Temporary Vigor pools and
- * healing are the Talent's text on the card, the table's to apply.
+ * No Defense is ever chosen by the system (0.12.0, rulings 159 and 163). A Cast with a target
+ * DECLARES through the AttackCoordinator like any Blow: every defender commits one of the Threat's
+ * two Defenses and an answer in the Combat Prompt, all reveal, and the caster's one die is read
+ * against every target's Threshold (ruling 155). A Focused or Committed Cast in an encounter is
+ * Prepared under the three-action rule first and declares when it is Finished, as a Committed
+ * Strike does; a Quick Cast declares at once. With no target there is no defender, and the Cast
+ * rolls against the Threshold typed in the dialog. Areas, pushes, conditions on a Hit, summons,
+ * Temporary Vigor pools and healing are the Talent's text on the card, the table's to apply.
  */
 
 import * as SW from "../../config.mjs";
 import { SwCheck } from "../../dice/check.mjs";
+import { AttackCoordinator } from "../../combat/attack-coordinator.mjs";
+import { castOutcomes } from "../../combat/attack-source.mjs";
 
 /** @param {typeof Actor} Base */
 export const CastMixin = Base => class extends Base {
@@ -41,8 +44,12 @@ export const CastMixin = Base => class extends Base {
    * @param {string} talentId
    * @param {object} [options]
    * @param {"quick"|"focused"|"committed"} [options.cast]  The commitment; Focused by default.
-   * @param {string} [options.targetUuid]   A Token or Actor uuid, instead of the user's target.
-   * @param {boolean} [options.prepared]    A finished preparation: the actions were paid when it began.
+   * @param {string} [options.targetUuid]     A Token or Actor uuid, instead of the user's targets.
+   * @param {string[]} [options.targetUuids]  Several, from a finished preparation.
+   * @param {boolean} [options.prepared]      A finished preparation: the actions were paid when it began.
+   * @param {boolean} [options.blind]         The attack flow's roll (0.5.0 brief): the die for the
+   *                                          coordinator to read against every target, nothing of
+   *                                          the defender read, nothing posted, nothing paid.
    * @returns {Promise<object|null>}
    */
   async castSpell(talentId, options = {}) {
@@ -55,38 +62,51 @@ export const CastMixin = Base => class extends Base {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Cast.npc"));
       return null;
     }
-    const { cast: askedCast, targetUuid: askedTarget, prepared = false, ...rest } = options;
+    const {
+      cast: askedCast, targetUuid: askedTarget = "", targetUuids: askedTargets = [],
+      prepared = false, blind = false, ...rest
+    } = options;
     const cast = SW.CAST_KINDS[askedCast] ? askedCast : SW.DEFAULT_CAST;
     const kind = SW.CAST_KINDS[cast];
     const spell = talent.system.spell;
     const discipline = this.spellDisciplineFor(talent);
+    const castLabel = `${game.i18n.localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost]}`;
+    const name = SW.plainName(talent.name);
 
-    // The target: the one named, else the user's one target.
-    let targetToken = askedTarget ? this.#tokenForUuid(askedTarget) : null;
-    if (!targetToken) targetToken = SwCheck.currentTarget();
+    // The targets: the ones a finished preparation remembered, else the one named, else the user's
+    // targets, else the one this token is remembered as having (SwActor#declaredTargets).
+    const remembered = (askedTargets ?? []).map(uuid => this.#tokenForUuid(uuid)).filter(t => t?.actor);
+    const targets = remembered.length ? remembered : this.declaredTargets({ targetUuid: askedTarget });
+    const targetToken = targets[0] ?? null;
     const targetActor = targetToken?.actor ?? null;
 
-    // The Defense met: the higher of the two the Threat permits on this target (the defender's
-    // choice, read as the choice a defender makes), named on the card. An adversary's number is
-    // printed as a Reaction Strike's is (the immediate path, 0.4.2's).
-    const permitted = talent.system.spellDefenses?.length ? talent.system.spellDefenses : (SW.THREATS[spell.threat]?.defenses ?? []);
-    let target = null;
-    let defense = permitted[0] ?? "evade";
-    if (targetToken && (targetActor?.type !== SW.PARTY_TYPE)) {
-      for (const key of permitted) {
-        const read = SwCheck.thresholdOf(targetToken, key);
-        if (read && (!target || read.threshold > target.threshold)) {
-          target = read;
-          defense = key;
-        }
-      }
+    // Prepare first (PHB v4.21: a Focused or Committed Cast is Prepared under the three-action
+    // rule in an encounter) and resolve at the next Opportunity; a finished preparation paid already.
+    if (!blind && !prepared && kind.prepared && this.inEncounter) {
+      return this.prepare({
+        kind: "cast",
+        label: `${name}: ${castLabel}`,
+        cost: kind.cost,
+        talentId: talent.id,
+        cast,
+        targetUuid: targetToken?.document?.uuid ?? "",
+        targetUuids: targets.map(t => t.document?.uuid ?? "").filter(Boolean)
+      });
     }
 
-    const castLabel = `${game.i18n.localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost]}`;
+    // DECLARE rather than roll (0.12.0): a Cast at a target enters the attack flow, and pays its
+    // actions as the declaration stands, as a Strike does. The coordinator reads the Threat and
+    // its two Defenses off the Talent; the defenders choose.
+    if (!blind && targets.length) {
+      const pub = await AttackCoordinator.declare({ attacker: this, talentId: talent.id, cast, targets, prepared });
+      if (pub && !prepared) await this.spendActions(kind.cost, { label: `${castLabel}: ${name}` });
+      return pub;
+    }
+
+    // The flow's blind roll, or a Cast with no defender against a typed Threshold.
     const threatLabel = game.i18n.localize(SW.THREATS[spell.threat]?.label ?? "STARWROUGHT.Threat.label");
     const deliveryLabel = talent.system.spellDelivery ? game.i18n.localize(SW.DELIVERIES[talent.system.spellDelivery].label) : "";
     const subtitle = [castLabel, threatLabel, deliveryLabel, discipline.name].filter(Boolean).join(" · ");
-
     const config = foundry.utils.mergeObject({
       actor: this,
       item: talent,
@@ -96,57 +116,34 @@ export const CastMixin = Base => class extends Base {
       cast,
       slug: discipline.slug,
       attribute: discipline.attribute,
-      label: SW.plainName(talent.name),
+      label: name,
       subtitle,
       strike: null,
       lockStrike: true,
-      defense,
+      // No Defense is read here (ruling 159): the coordinator holds the committed one, or there is
+      // no defender at all.
+      defense: null,
       defenseForced: true,
-      threshold: target?.threshold ?? null,
-      thresholdLabel: target?.label ?? "",
-      targetUuid: targetToken?.document?.uuid ?? "",
+      threshold: null,
+      thresholdLabel: "",
+      targetUuid: blind ? "" : (targetToken?.document?.uuid ?? ""),
       targetName: targetToken?.name ?? "",
-      targetDefense: targetActor ? { key: defense, label: game.i18n.localize(SW.DEFENSES[defense].label), threshold: target?.threshold ?? 10, unavailable: null } : null,
-      defender: targetActor,
+      targetDefense: (blind && targetActor) ? { key: null, label: "", threshold: null, unavailable: null, hidden: true } : null,
+      defender: blind ? null : targetActor,
       attackerTokenUuid: this.tokenOnScene()?.uuid ?? "",
-      outcomes: this.#castOutcomes(talent, cast),
-      // Pay for it, or Prepare it (PHB v4.21: a Focused or Committed Cast is Prepared under the
-      // three-action rule) and resolve at the next Opportunity. A finished preparation paid already.
+      outcomes: castOutcomes(talent, cast),
+      // A Cast with no defender pays here; the flow's blind roll paid at the declaration, and a
+      // finished preparation when it began.
       beforeRoll: async () => {
-        if (prepared) return true;
-        if (kind.prepared && this.inEncounter) {
-          await this.prepare({
-            kind: "cast",
-            label: `${SW.plainName(talent.name)}: ${castLabel}`,
-            cost: kind.cost,
-            talentId: talent.id,
-            cast,
-            targetUuid: targetToken?.document?.uuid ?? ""
-          });
-          return false;
-        }
-        await this.spendActions(kind.cost, { label: `${castLabel}: ${SW.plainName(talent.name)}` });
+        if (prepared || blind) return true;
+        await this.spendActions(kind.cost, { label: `${castLabel}: ${name}` });
         return true;
       }
     }, rest, { inplace: false });
+    // The blind roll never posts, whatever a caller's passthrough says: the coordinator's
+    // resolution cards are the record.
+    if (blind) config.postCard = false;
     return SwCheck.roll(config);
-  }
-
-  /** The three Cast texts as the card's outcome rows, keyed by degree so the one rolled is lit. */
-  #castOutcomes(talent, cast) {
-    const effects = talent.system.spell.effects ?? {};
-    const text = effects[cast] || effects.focused || effects.quick || "";
-    if (!text) return null;
-    const kind = SW.CAST_KINDS[cast];
-    const graze = kind.grazeDie
-      ? game.i18n.localize("STARWROUGHT.Cast.grazeDie")
-      : game.i18n.localize("STARWROUGHT.Cast.grazeNothing");
-    return [
-      { key: "critSuccess", label: "STARWROUGHT.Outcome.critical", text: `${text} ${game.i18n.localize("STARWROUGHT.Cast.criticalNote")}` },
-      { key: "success", label: "STARWROUGHT.Outcome.hit", text },
-      { key: "fail", label: "STARWROUGHT.Outcome.graze", text: graze },
-      { key: "critFail", label: "STARWROUGHT.Outcome.miss", text: game.i18n.localize("STARWROUGHT.Cast.missNothing") }
-    ];
   }
 
   /** A Token placeable for a Token or Actor uuid, on the viewed scene. */

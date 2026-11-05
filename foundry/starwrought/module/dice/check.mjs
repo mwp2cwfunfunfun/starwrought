@@ -25,6 +25,9 @@ import { assemble } from "./check/modifiers.mjs";
 import { prompt } from "./check/dialog.mjs";
 import { toMessage } from "./check/card.mjs";
 import { strikeCanCrit } from "./check/strike.mjs";
+// A rerolled spell card rebuilds its outcome rows from the Talent (0.12.0); the module imports
+// this one only dynamically, so there is no cycle.
+import { castOutcomes } from "../combat/attack-source.mjs";
 
 
 
@@ -250,6 +253,9 @@ export class SwCheck {
     weapon = null, attackId = null, strike = SW.DEFAULT_STRIKE, rollData, modifiers = null,
     kind = "attack", defense = null, reaction = null, posture = null,
     threshold = null, showThreshold = true, speakerActor = null, slug = null, thrown = false,
+    // A spell's Cast (0.12.0, ruling 163): the Talent, the commitment and the three Cast texts as
+    // the card's outcome rows; `strike` is null, since a Cast is no Strike.
+    source = null, talent = null, cast = null, outcomes = null,
     // The legacy key, which the card's toMessage maps to the configured mode: CONST.DICE_ROLL_MODES is a
     // deprecation shim in v14 and gone in v16 (review, 2026-10-01).
     rollMode = "publicroll",
@@ -269,7 +275,9 @@ export class SwCheck {
     kind = isAttack ? "attack" : "defense";
     const roller = isAttack ? attacker : defender;
     if (!roller) throw new Error("STARWROUGHT | resolveAgainst needs the roller: the attacker on an Attack roll, the defender on a Defense roll.");
-    if (!SW.STRIKE_KINDS[strike]) strike = SW.DEFAULT_STRIKE;
+    const isSpell = isAttack && (source === "spell") && !!talent;
+    if (isSpell) strike = null;
+    else if (!SW.STRIKE_KINDS[strike]) strike = SW.DEFAULT_STRIKE;
     reaction = (SW.REACTIONS[reaction]?.kind === "reaction") ? reaction : null;
     posture = posture?.talentId ? posture : null;
     // A commitment is a Reaction or a Posture, never both (brief; one answer per attack, PHB v4.21).
@@ -302,12 +310,17 @@ export class SwCheck {
     const attackerName = attackerDoc?.name ?? attacker?.name ?? "";
     const defenderName = defenderDoc?.name ?? defender?.name ?? "";
 
-    const strikeKind = SW.STRIKE_KINDS[strike];
-    const strikeText = `${game.i18n.localize(strikeKind.label)} ${SW.ACTION_GLYPHS[strikeKind.cost]}`;
+    const strikeKind = isSpell ? null : SW.STRIKE_KINDS[strike];
+    const castKind = isSpell ? (SW.CAST_KINDS[cast] ?? SW.CAST_KINDS[SW.DEFAULT_CAST]) : null;
+    const strikeText = isSpell
+      ? `${game.i18n.localize(castKind.label)} ${SW.ACTION_GLYPHS[castKind.cost]}`
+      : `${game.i18n.localize(strikeKind.label)} ${SW.ACTION_GLYPHS[strikeKind.cost]}`;
     const attackItem = attackId ? (attacker?.items?.get(attackId) ?? null) : null;
-    const attackName = weapon?.name ?? attackItem?.name ?? "";
-    slug ??= isAttack
-      ? (thrown ? SW.RANGED_SLUG : (weapon?.system?.strikeSlug ?? SW.MELEE_SLUG))
+    const attackName = isSpell ? SW.plainName(talent.name) : (weapon?.name ?? attackItem?.name ?? "");
+    // A spell rolls its discipline (the Talent's Constellation, or the parent of a specialty's).
+    const discipline = isSpell && (typeof attacker?.spellDisciplineFor === "function") ? attacker.spellDisciplineFor(talent) : null;
+    slug ??= isSpell ? (discipline?.slug ?? null)
+      : isAttack ? (thrown ? SW.RANGED_SLUG : (weapon?.system?.strikeSlug ?? SW.MELEE_SLUG))
       : SW.DEFENSES[defense].slug;
     const ranged = slug === SW.RANGED_SLUG;
 
@@ -316,10 +329,17 @@ export class SwCheck {
     // the die; a card resolved here (the attack flow, a reroll) had `rangeNote: null` written
     // into it and so never said so (Mike, 2026-10-01: "he was within my range, but I wasn't
     // within his range. It should have put the warning into chat"). The same reading as
-    // rollAttack's, per pairing, from the two tokens as they stand when the Blow resolves.
-    const rangeNote = (attackerDoc && defenderDoc && canvas?.ready)
+    // rollAttack's, per pairing, from the two tokens as they stand when the Blow resolves. A
+    // spell's range is the Talent's text on the card; the table reads it.
+    const rangeNote = (!isSpell && attackerDoc && defenderDoc && canvas?.ready)
       ? this.rangeNoteFor({ attacker, weapon, attackItem, attackerDoc, defenderDoc, thrown, ranged })
       : null;
+    const spellSubtitle = isSpell ? [
+      strikeText,
+      game.i18n.localize(SW.THREATS[talent.system.spellThreat]?.label ?? "STARWROUGHT.Threat.label"),
+      talent.system.spellDelivery ? game.i18n.localize(SW.DELIVERIES[talent.system.spellDelivery]?.label ?? "") : "",
+      discipline?.name ?? ""
+    ].filter(Boolean).join(" · ") : "";
 
     // The answer behind the Defense, named as defenseThresholdFor names it: "Guard (Parry)", or
     // the Posture's own name.
@@ -341,16 +361,23 @@ export class SwCheck {
 
     const cfg = {
       actor: roller,
-      item: isAttack ? weapon : null,
-      weaponId: isAttack ? (weapon?.id ?? "") : "",
+      item: isAttack ? (isSpell ? talent : weapon) : null,
+      weaponId: (isAttack && !isSpell) ? (weapon?.id ?? "") : "",
+      // A spell's card (0.12.0): the source, the Talent and the Cast ride into the flags, so the
+      // damage buttons roll the spell's dice and a reroll keeps a spell card a spell card.
+      source: isSpell ? "spell" : null,
+      spellId: isSpell ? talent.id : null,
+      cast: isSpell ? cast : null,
+      attribute: isSpell ? (discipline?.attribute ?? null) : undefined,
       // The attack by name on either card, so a Defense card's Bind records what was Stopped (0.5.1).
       attackName,
       kind,
       slug,
       label: isAttack ? (attackName || roller.name) : defenseLabel,
-      subtitle: isAttack
-        ? `${strikeText} · ${game.i18n.localize(ranged ? "STARWROUGHT.Roll.rangedStrike" : "STARWROUGHT.Roll.meleeStrike")}`
-        : (attackName ? `${strikeText} · ${attackName}` : game.i18n.localize(SW.DEFENSES[defense].hint)),
+      subtitle: isSpell ? spellSubtitle
+        : isAttack
+          ? `${strikeText} · ${game.i18n.localize(ranged ? "STARWROUGHT.Roll.rangedStrike" : "STARWROUGHT.Roll.meleeStrike")}`
+          : (attackName ? `${strikeText} · ${attackName}` : game.i18n.localize(SW.DEFENSES[defense].hint)),
       strike,
       reaction,
       posture: posture ? { talentId: posture.talentId, name: postureName, zone: posture.zone ?? null } : null,
@@ -376,7 +403,8 @@ export class SwCheck {
       thrown: !!thrown,
       rollMode,
       speakerActor,
-      outcomes: null,
+      // A spell's three Cast texts as the outcome rows (attack-source.mjs `castOutcomes`).
+      outcomes: isSpell ? (outcomes ?? null) : null,
       // An adversary's attack row, so a reroll of a Defense card can read the Attack Threshold again.
       attackId: attackId ?? null,
       rerollOf: rerollOf ?? null,
@@ -540,13 +568,21 @@ export class SwCheck {
     const targetDoc = tokenOf(flags.targetUuid);
     const own = actor => actor?.tokenOnScene?.() ?? (actor ? tokenOf(actor.uuid) : null);
 
+    // A spell's card stays a spell card (0.12.0): its Talent, Cast and outcome rows come back from
+    // the flags, and no Strike kind is read into it.
+    const isSpell = (flags.source === "spell") && !!flags.spellId;
+    const talent = (isSpell && attacker) ? (attacker.items.get(flags.spellId) ?? null) : null;
     const result = await this.resolveAgainst({
       attacker, defender,
       attackerToken: isAttack ? own(attacker) : targetDoc,
       defenderToken: isAttack ? targetDoc : own(defender),
       weapon: (flags.weaponId && attacker) ? (attacker.items.get(flags.weaponId) ?? null) : null,
       attackId: flags.attackId ?? null,
-      strike: flags.strike ?? SW.DEFAULT_STRIKE,
+      strike: isSpell ? null : (flags.strike ?? SW.DEFAULT_STRIKE),
+      source: isSpell ? "spell" : null,
+      talent,
+      cast: isSpell ? (flags.cast ?? SW.DEFAULT_CAST) : null,
+      outcomes: talent ? castOutcomes(talent, flags.cast ?? SW.DEFAULT_CAST) : null,
       rollData,
       modifiers: Array.isArray(flags.modifiers) ? flags.modifiers : null,
       kind: flags.kind,

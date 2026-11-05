@@ -91,7 +91,7 @@ export const AttackMixin = Base => class extends Base {
     // caller named. With several, the first stands in as the reference for reach and the thrown
     // inference below.
     const declaring = !blind;
-    const targets = declaring ? this.#declaredTargets({ targetTokenId, targetUuid: askedTarget }) : [];
+    const targets = declaring ? this.declaredTargets({ targetTokenId, targetUuid: askedTarget }) : [];
     if (declaring && targets.length && !targetToken) targetToken = targets[0];
 
     const targetActor = targetToken?.actor ?? null;
@@ -350,13 +350,14 @@ export const AttackMixin = Base => class extends Base {
   /**
    * The targets a declaration snapshots (brief): the token the caller named, else every token this
    * user has targeted that has an actor behind it, else the one target this actor's token is
-   * remembered as having. Changing Foundry targets afterwards changes nothing.
+   * remembered as having. Changing Foundry targets afterwards changes nothing. A Strike's and a
+   * Cast's alike (0.12.0; `castSpell` reads it too).
    * @param {object} [options]
    * @param {string} [options.targetTokenId]
    * @param {string} [options.targetUuid]
    * @returns {Token[]}
    */
-  #declaredTargets({ targetTokenId = "", targetUuid = "" } = {}) {
+  declaredTargets({ targetTokenId = "", targetUuid = "" } = {}) {
     const named = targetTokenId ? (canvas.tokens?.get(targetTokenId) ?? null) : null;
     if (named?.actor) return [named];
     const asked = targetUuid ? this.#tokenFor(targetUuid) : null;

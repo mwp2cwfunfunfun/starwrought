@@ -189,9 +189,16 @@ export const ActionsMixin = Base => class extends Base {
    * @param {string} [config.targetTokenId]
    * @param {string} [config.targetUuid]
    * @param {string} [config.strike]       "committed" for a Strike.
+   * @param {string} [config.talentId]     The spell Talent, for a Cast.
+   * @param {string} [config.cast]         "focused" or "committed" for a Cast.
+   * @param {string[]} [config.targetUuids]  Every target a Cast was aimed at (0.12.0), so the
+   *                                       finished preparation declares against them all.
    * @returns {Promise<object|null>} what is being prepared
    */
-  async prepare({ kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "", strike = "", talentId = "", cast = "" } = {}) {
+  async prepare({
+    kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "",
+    strike = "", talentId = "", cast = "", targetUuids = []
+  } = {}) {
     if (!this.inEncounter || !this.system.actions) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.outsideEncounter"));
       return null;
@@ -206,7 +213,10 @@ export const ActionsMixin = Base => class extends Base {
     // A Cast's preparation (PHB v4.21: a Focused or Committed Cast is Prepared under the
     // three-action rule) remembers the spell Talent and the commitment as a Strike's remembers
     // the weapon and the Strike.
-    const preparing = { kind, label, weaponId, targetTokenId, targetUuid, cost, strike, talentId, cast };
+    const preparing = {
+      kind, label, weaponId, targetTokenId, targetUuid, cost, strike, talentId, cast,
+      targetUuids: Array.isArray(targetUuids) ? targetUuids.filter(Boolean) : []
+    };
     await this.update({
       "system.actions.value": Math.max(0, left - cost),
       "system.actions.reserved": reserve,
@@ -261,10 +271,13 @@ export const ActionsMixin = Base => class extends Base {
       });
     }
     if (prep.kind === "cast" && prep.talentId && (typeof this.castSpell === "function")) {
+      // The Cast declares against every target it was aimed at (0.12.0); a target gone from the
+      // scene falls back to the user's targets, else the Cast rolls at once with no defender.
       return this.castSpell(prep.talentId, {
         cast: SW.CAST_KINDS[prep.cast] ? prep.cast : SW.DEFAULT_CAST,
         prepared: true,
-        targetUuid: prep.targetUuid || ""
+        targetUuid: prep.targetUuid || "",
+        targetUuids: Array.isArray(prep.targetUuids) ? prep.targetUuids : []
       });
     }
     await ChatMessage.create({
