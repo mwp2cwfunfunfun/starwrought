@@ -1,26 +1,24 @@
 {
-  "_id": "cbd908f1d56c2231",
-  "name": "Scar Ward ❶↺",
+  "_id": "bc320bd79c678817",
+  "name": "Versatile Human",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "blood-mage",
-    "constellationName": "Blood Mage",
+    "constellation": "human",
+    "constellationName": "Human",
     "tier": "T",
     "root": false,
-    "bloodlineRoot": false,
+    "bloodlineRoot": true,
     "capstone": false,
-    "requires": [
-      "Blood Price"
-    ],
+    "requires": [],
     "prerequisites": "",
-    "attribute": "",
-    "effect": "Trigger: You take damage from a Blast or Blight that you can perceive. Lose 2 Vigor (remaining at 1 or more); reduce that instance of incoming damage by 3 after other mitigation. Once per round. Vigor paid for this Talent is not reduced by its effect.",
-    "description": "",
-    "cost": "1",
+    "attribute": "wits",
+    "effect": "You gain 1 Opening Talent Point.",
+    "description": "<p>Some humans refuse to be one thing; you are a whole toolbox wearing boots.</p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
-    "reaction": true,
+    "reaction": false,
     "reactionCost": "",
     "grant": {
       "n": 0,
@@ -37,19 +35,19 @@
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
-  "folder": "ff98d604b0d6eadf",
+  "folder": "42704b4e7190f5c8",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "cd74ced32ed2e226"
+      "contentHash": "040865002e51e8d3"
     }
   },
   "effects": [],
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!cbd908f1d56c2231"
+  "_key": "!items!bc320bd79c678817"
 }

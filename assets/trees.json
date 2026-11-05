@@ -3,6 +3,56 @@
   "category": "Ancestry",
   "enabled": true,
   "feeds": "Presence",
+  "lore": [
+   {
+    "label": "Summary",
+    "text": "Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright."
+   },
+   {
+    "label": "About",
+    "text": "Humans are everywhere, and everywhere they are different. No other people spreads so far, argues so loudly, or reinvents itself so often. A human border town can change its laws, its faith, and its skyline inside a single generation; an elf who naps through a decade returns to find the maps redrawn. What humans lack in long memory they repay in momentum, and the other peoples watch them with a mix of admiration and alarm.<br><br>That restlessness is personal as much as cultural. A human feels the shortness of their years and answers it with ambition: one more field cleared, one more deal struck, one more mountain nobody sensible would climb. At their best, humans bind strangers into companies and companies into causes. At their worst, they burn through places, promises, and people the way they burn through years."
+   },
+   {
+    "label": "If you want...",
+    "text": "If you want a character who can come from anywhere, get along with anyone, and refuse to stay in any lane, you should play a human."
+   },
+   {
+    "label": "You Might...",
+    "text": "• Chase a goal so hard that rest starts to feel like theft.<br>• Collect skills, contacts, and causes the way others collect coins.<br>• Assume any problem can be solved if you just find the right people for it."
+   },
+   {
+    "label": "Others Probably...",
+    "text": "• Envy how quickly you learn, adapt, and move on.<br>• Wonder what you are running from, or racing toward.<br>• Trust your knack for finding common ground, even between old enemies."
+   },
+   {
+    "label": "Physical Description (at a glance)",
+    "text": "Humans are middling in most measures and wildly varied in all of them. They stand roughly five to six and a half feet tall, in every build from wiry to broad, with skin, hair, and eyes spanning every shade their homelands offer. What marks a human crowd is not a shared look but a shared motion: quick eyes, busy hands, and clothing that borrows freely from every neighbor they have ever traded with."
+   },
+   {
+    "label": "Physical Description (life cycle)",
+    "text": "Humans reach physical adulthood around 15 years and are usually granted a place at the adults' table by 18, though every town draws that line differently. A human who avoids war, plague, and their own ambition can expect sixty to ninety years, and a rare few see a century. Their short season is the quiet engine of their character; humans plant orchards whose shade they will never sit in, and they know it."
+   },
+   {
+    "label": "Society",
+    "text": "Human society is less a single design than a permanent argument about what the design should be. Kingdoms, leagues, free towns, wandering companies: humans have tried them all, usually at the same time, usually within a week's ride of each other. Their gift is the joining of strangers. A human market will seat a dwarven smith beside an elven dyer and a gnomish clockmaker, and by closing time the three will share a ledger and a grudge against the harbormaster.<br><br>Because they invent themselves so freely, humans put enormous weight on names, oaths, and reputations, the few things that outlive them. A human's word, once given before witnesses, is a load-bearing wall; whole towns stand on webs of such promises. Breaking one is not just a sin but a kind of vandalism.<br><br>Humans honor their dead by continuing their projects. Workshops, farms, feuds, and half-built bridges pass from hand to hand like torches, and a human family can often recite what each generation added to the house even when they have forgotten the builders' faces."
+   },
+   {
+    "label": "Beliefs",
+    "text": "Human belief runs hot and plural. One village keeps six shrines and hedges its bets at all of them; the next follows a single creed with terrifying focus. What is consistent is the human conviction that effort matters, that the world is unfinished, and that somebody, probably them, ought to get on with finishing it. Their prayers tend to be practical: strength for the harvest, luck for the crossing, courage for the morning."
+   },
+   {
+    "label": "Popular Edicts",
+    "text": "• Leave every place better than you found it.<br>• Keep your word once witnesses have heard it.<br>• Lift the newcomer; you were one once."
+   },
+   {
+    "label": "Popular Anathemas",
+    "text": "• Waste a year owed to the people who raised you.<br>• Break a promise made before witnesses.<br>• Let fear of failing keep you from beginning."
+   },
+   {
+    "label": "Names",
+    "text": "Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Jonna, Kestrel, Liesl, Marek, Nadia, Osric, Petra, Rowan, Sable, Tomas, Verity, Wynne"
+   }
+  ],
   "meta": "Ancestry constellation • Presence (Medium • Vigor 8 • 6 ft • bonus to Aid)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -11,48 +61,37 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br>Bonus to Aid. You gain a +1 Condition bonus on checks to Aid. If your Origin Proficiency is Expert, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.",
-    "automation": "bonus: +1 Condition to Aid if Origin is Trained\nbonus: +2 Condition to Aid if Origin is Expert\nbonus: +3 Condition to Aid if Origin is Master\nbonus: +4 Condition to Aid if Origin is Legendary",
-    "desc": "Short lives teach humans to close ranks and pull together.",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
+    "desc": "Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright.",
     "root": true
    },
    {
     "name": "Driven",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain a Calling Talent Point.",
-    "grant": {
-     "n": 1,
-     "mode": "any",
-     "scope": "Calling"
-    },
+    "desc": "You were raised to reach, and you have not stopped reaching since.",
     "requires": [
      "Humanity"
-    ],
-    "desc": "You were raised to reach, and you have not stopped reaching since."
+    ]
    },
    {
     "name": "Quick Study",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain a Skill Talent Point.",
-    "grant": {
-     "n": 1,
-     "mode": "any",
-     "scope": "Skill"
-    },
+    "desc": "Your adaptability shows in how fast you pick up useful skills.",
     "requires": [
      "Humanity"
-    ],
-    "desc": "Your adaptability shows in how fast you pick up useful skills."
+    ]
    },
    {
     "name": "Stubborn Footing",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "The first time each encounter you would be knocked prone, you are not.",
     "requires": [
      "Humanity"
@@ -62,7 +101,7 @@
     "name": "Close Ranks",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against physical Attacks.",
     "requires": [
      "Humanity"
@@ -72,13 +111,8 @@
     "name": "Versatile Human",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain 1 Opening Talent Point.",
-    "grant": {
-     "n": 1,
-     "mode": "open",
-     "scope": "anywhere"
-    },
     "desc": "Some humans refuse to be one thing; you are a whole toolbox wearing boots.",
     "feeds": "Wits",
     "hroot": true
@@ -87,13 +121,13 @@
     "name": "Jack of Trades",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain a +1 Situation bonus to your Untrained checks.",
+    "desc": "You have done a little of everything, and it shows.",
+    "feeds": "Wits",
     "requires": [
      "Versatile Human"
-    ],
-    "desc": "You have done a little of everything, and it shows.",
-    "feeds": "Wits"
+    ]
    },
    {
     "name": "Torchbearer Human",
@@ -101,23 +135,18 @@
     "cost": 1,
     "enabled": true,
     "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
-    "aura": {
-     "range": 15,
-     "affects": "all",
-     "visible": false
-    },
     "hroot": true
    },
    {
     "name": "Steady the Line ❶↺",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
+    "desc": "Your voice finds the one who is faltering.",
     "requires": [
      "Torchbearer Human"
-    ],
-    "desc": "Your voice finds the one who is faltering."
+    ]
    }
   ]
  },
@@ -481,7 +510,7 @@
  },
  "Spellshaper": {
   "category": "Calling",
-  "enabled": true,
+  "enabled": false,
   "feeds": "Wits",
   "skills": [
    "Guile"
@@ -493,7 +522,7 @@
     "name": "Spellshaping",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "You become Trained in Guile. Once per round, when declaring a Cast you know, you may add ❶ to its action cost to apply one alteration: extend the spell’s range by 5 feet; or, for an area spell, move one affected 1-foot square to an adjacent square outside the area, keeping the final affected space contiguous and the number of affected squares unchanged. Declare the alteration and any Prepared area before the first action is spent. Spell damage, Damage Dice, Threat, and Delivery do not change.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
     "root": true
    },
@@ -501,7 +530,7 @@
     "name": "Selective Pattern",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When using Spellshaping with a Cast that affects an area, you may instead choose one ally you can see to be unaffected by that casting. Declare the ally before results are rolled. The added ❶ cost still applies.",
     "requires": [
      "Spellshaping"
@@ -511,7 +540,7 @@
     "name": "Far Reaching",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When Spellshaping increases range, increase it by 10 feet rather than 5 feet. This does not increase the radius or number of targets of an area spell.",
     "requires": [
      "Spellshaping"
@@ -521,7 +550,7 @@
     "name": "Hidden Pattern",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When using Spellshaping, you may obscure the precise target or area indicated by your gestures from observers more than 6 feet away. Speech and magical manifestations remain perceptible; this does not make preparation itself invisible.",
     "requires": [
      "Spellshaping"
@@ -531,7 +560,7 @@
     "name": "Lingering Form",
     "tier": "E",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When using Spellshaping on a spell with a duration ending at your next Opportunity, you may instead extend it until the end of that Opportunity. The spell does not gain additional attacks or repeated damage from this extension, and cannot be extended again by this Talent.",
     "requires": [
      "Spellshaping"
@@ -541,7 +570,7 @@
  },
  "Blood Mage": {
   "category": "Calling",
-  "enabled": true,
+  "enabled": false,
   "feeds": "Might",
   "skills": [
    "Athletics"
@@ -553,7 +582,7 @@
     "name": "Blood Price",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "You become Trained in Athletics. Once per round when declaring a damaging Cast from a magical parent in which you are Trained, you may lose Vigor equal to 1 + that parent’s Damage Dice. You must have enough Vigor to remain at 1 or more after paying. This loss cannot be prevented, redirected to Temporary Vigor, or reduced by Protection or Resistance. If the Cast Hits, add the same amount as bonus damage to ONE creature Hit. Pay before the roll; a Graze or Miss does not refund it. This is Vigor loss, not an Attack or a Wound.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
     "root": true
    },
@@ -561,7 +590,7 @@
     "name": "Crimson Focus",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Once per encounter, when a Wound would automatically abandon your Prepared Cast, you may lose 2 additional Vigor (remaining at 1 or more) to retain the preparation. You suffer the Wound and its normal effects.",
     "requires": [
      "Blood Price"
@@ -571,7 +600,7 @@
     "name": "Scar Ward ❶↺",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Trigger: You take damage from a Blast or Blight that you can perceive. Lose 2 Vigor (remaining at 1 or more); reduce that instance of incoming damage by 3 after other mitigation. Once per round. Vigor paid for this Talent is not reduced by its effect.",
     "requires": [
      "Blood Price"
@@ -581,7 +610,7 @@
     "name": "Sanguine Reach",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When you use Blood Price on a single-target Cast, you may increase that spell’s range by 5 feet instead of adding Blood Price bonus damage. The Vigor cost is still paid, and this choice is made when the Cast is declared.",
     "requires": [
      "Blood Price"
@@ -591,7 +620,7 @@
     "name": "Deeper Offering",
     "tier": "E",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When declaring Blood Price, you may lose 2 additional Vigor to increase its bonus damage by 2 against its one chosen target on a Hit. You must remain at 1 or more Vigor after all costs. No additional damage applies on a Graze or Miss.",
     "requires": [
      "Blood Price"
@@ -601,7 +630,7 @@
  },
  "Necromancer": {
   "category": "Calling",
-  "enabled": true,
+  "enabled": false,
   "feeds": "Presence",
   "skills": [
    "Awareness"
@@ -613,7 +642,7 @@
     "name": "Death Echo",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "You become Trained in Awareness. Once per round, when a living creature you can perceive within 15 feet takes a Wound or becomes Spent, you may capture a Death Echo (maximum one held; it fades at encounter end). Before rolling one of your own Strikes or damaging Casts, you may expend the Echo: if that Attack Hits, add +2 damage to one creature Hit. This cannot trigger from summoned manifestations or from your own voluntary Vigor loss.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
     "aura": {
      "range": 15,
@@ -626,7 +655,7 @@
     "name": "Read the Veil",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "As ❶, examine a creature you can Observe within 6 feet. Learn whether it is Spent, visibly Wounded, or dead; supernatural disguises may require a separate Awareness check at GM discretion. This reveals neither hidden exact Vigor nor unobserved causes of death.",
     "aura": {
      "range": 6,
@@ -641,7 +670,7 @@
     "name": "Grave Pressure",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "When you expend a Death Echo and Hit, you may instead reduce one affected target’s Speed by 1 foot until the end of its next Opportunity. No bonus damage is added by Death Echo when you choose this effect.",
     "requires": [
      "Death Echo"
@@ -651,7 +680,7 @@
     "name": "Borrowed Resolve ❶↺",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Trigger: An ally within 6 feet suffers damage that would reduce them to 0 Vigor. Expend your Death Echo to reduce that instance of damage by 2, possibly preventing them from becoming Spent. The ally must be able to perceive you; once per round.",
     "aura": {
      "range": 6,
@@ -666,7 +695,7 @@
     "name": "Harvest the Fallen",
     "tier": "E",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Once per encounter, as ❶, capture a Death Echo from a corpse within 3 feet that died within the past minute. No creature may supply more than one Echo in this way. This does not animate or control the corpse.",
     "aura": {
      "range": 3,
@@ -681,7 +710,7 @@
  },
  "Summoner": {
   "category": "Calling",
-  "enabled": true,
+  "enabled": false,
   "feeds": "Wits",
   "skills": [
    "Awareness"
@@ -693,7 +722,7 @@
     "name": "Call Manifestation ❷",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "You become Trained in Awareness. Create one 1-foot manifestation in an unoccupied square within 6 feet; it lasts until encounter end, you are Unconscious, or it is dismissed. You may have only one. It has Speed 6 feet and no independent actions. Command ❶ on your Opportunity to make it either Move up to its Speed or Strike an adjacent creature (Zoned Blow, 1d4 damage, using the chosen parent’s attack bonus). It uses your Evade or Guard when attacked and vanishes on a Hit; Graze does not dismiss it. It cannot use Reactions, Bind, Intercept, provide Support, or inflict Wounds. It never rolls Damage Dice for its Strike. Its form is cosmetic unless a Talent specifies otherwise.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
     "aura": {
      "range": 6,
@@ -706,7 +735,7 @@
     "name": "Long Leash",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "You may summon your manifestation within 10 feet instead of 6 feet. You may Command it while it is within 30 feet of you; otherwise it remains in place until you come into range or dismiss it.",
     "aura": {
      "range": 10,
@@ -721,7 +750,7 @@
     "name": "Fighting Together",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Once per round, when you use Command ❶ to have your manifestation Strike and it Hits, you may Step 1 foot as a free effect. This Step does not provoke an Intercept from the creature it struck.",
     "requires": [
      "Call Manifestation"
@@ -731,7 +760,7 @@
     "name": "Interposing Form ❶↺",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Trigger: You or an ally within 3 feet of your manifestation would take damage from a Zoned Attack. Dismiss the manifestation and reduce that instance of damage by 2 after Protection. This is physical interception, not Resistance. Once per round.",
     "requires": [
      "Call Manifestation"
@@ -741,7 +770,7 @@
     "name": "Hardened Manifestation",
     "tier": "E",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "The first Hit that would dismiss your manifestation each encounter instead leaves it active; the next Hit dismisses it. This has no effect on Critical Hits, which still dismiss it immediately.",
     "requires": [
      "Call Manifestation"
@@ -751,7 +780,7 @@
  },
  "Spellblade": {
   "category": "Calling",
-  "enabled": true,
+  "enabled": false,
   "feeds": "Might",
   "skills": [
    "Athletics"
@@ -763,7 +792,7 @@
     "name": "Spellbound Edge ❶",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "You become Trained in Athletics. Requirements: Trained in Melee and one magical parent, and you know a damaging spell from that parent. Choose one damage type dealt by that spell. Your next Deliberate Melee Strike begun before the end of your next Opportunity may deal the chosen type instead of its usual type. It remains a Zoned Blow, uses Melee proficiency and weapon dice, and gains no spell Damage Dice or other spell effects.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>Special You must already be Trained in either Melee or Ranged (or, if you take this at character creation, you must use one become Trained in Melee or Ranged before the end of the character creation process.<br><br>NEEDS Expert/Master/Legendary increases.",
     "root": true
    },
@@ -771,7 +800,7 @@
     "name": "Guarded Conduit",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "While preparing a Focused or Committed Cast and wielding a melee weapon, gain +1 Situation to Guard against Blows. This does not permit Guard against Blasts and ends when preparation ends.",
     "requires": [
      "Spellbound Edge"
@@ -781,7 +810,7 @@
     "name": "Flicker Step",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Once per round after a Melee Strike enhanced by Spellbound Edge Hits, you may Step 1 foot as a free effect without provoking an Intercept from the creature you struck.",
     "requires": [
      "Spellbound Edge"
@@ -791,7 +820,7 @@
     "name": "Attuned Edge",
     "tier": "T",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Spellbound Edge may also enhance a Committed Melee Strike if you begin preparing it before the end of your next Opportunity. The chosen damage type persists until that Prepared Strike resolves or is abandoned. It still adds no spell dice or riders.",
     "requires": [
      "Spellbound Edge"
@@ -801,7 +830,7 @@
     "name": "Spellstrike ❹",
     "tier": "E",
     "cost": 1,
-    "enabled": true,
+    "enabled": false,
     "effect": "Requirements: Trained in Melee and one magical parent; know a damaging Cast from that parent. Declare a Prepared melee Attack against one target in Reach and choose one known damaging spell. On a Hit, deal normal Deliberate Melee Strike damage plus ONE base damage die from the spell, with both parts treated as a single Zoned Blow against the same Zone (Protection applies once). On a Graze, use Deliberate Strike Graze damage with no spell die. On a Critical Hit, double the weapon damage after Protection as for Deliberate Strike, then add one undoubled spell die. No other effects of the spell apply. Roll using Melee, not magical proficiency.",
     "requires": [
      "Spellbound Edge"

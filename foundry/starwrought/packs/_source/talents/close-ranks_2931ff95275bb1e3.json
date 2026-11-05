@@ -1,21 +1,21 @@
 {
-  "_id": "b26b6d459de71eb7",
-  "name": "Read the Veil",
+  "_id": "2931ff95275bb1e3",
+  "name": "Close Ranks",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "necromancer",
-    "constellationName": "Necromancer",
+    "constellation": "human",
+    "constellationName": "Human",
     "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Death Echo"
+      "Humanity"
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "As ❶, examine a creature you can Observe within 6 feet. Learn whether it is Spent, visibly Wounded, or dead; supernatural disguises may require a separate Awareness check at GM discretion. This reveals neither hidden exact Vigor nor unobserved causes of death.",
+    "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against physical Attacks.",
     "description": "",
     "cost": "passive",
     "costMax": "",
@@ -32,29 +32,24 @@
       "value": ""
     },
     "freeTalent": "",
-    "aura": {
-      "range": 6,
-      "affects": "all",
-      "visible": false
-    },
     "automation": "",
     "rules": [],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
-  "folder": "d58805ce57630e80",
+  "folder": "42704b4e7190f5c8",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "daefb0a7bc1f6c58"
+      "contentHash": "ccc23c0fd99da36e"
     }
   },
   "effects": [],
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!b26b6d459de71eb7"
+  "_key": "!items!2931ff95275bb1e3"
 }

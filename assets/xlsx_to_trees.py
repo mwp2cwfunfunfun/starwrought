@@ -1,10 +1,16 @@
 # STARWROUGHT data pipeline: data/*.xlsx -> assets/trees.json
 # Header-driven: column ORDER doesn't matter; column NAMES do (first word wins).
-# Recognized tree-sheet columns: Talent | Tier | Root | Requires | Prerequisites | Description | Effect | Feeds
-#                                Grants | Choice | Free Talent | Aura | Enabled?
-# Recognized index columns:      Tree | Category | Feeds | Flare (triggers) | Meta | Skills
+# Recognized tree-sheet columns: Talent | Tier | Root | Requires | Prerequisites | Description | Effect |
+#                                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation |
+#                                Aura (optional since 0.13.0; "aura:" in Automation is the authoring) |
+#                                Grants (retired 0.13.0; "grant:" in Automation; read one release, warned)
+# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Skills | Parent
 #   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
+#   A "<Tree> Lore" sheet (label | text rows) is the tree's player-facing text: lore on the tree
+#   and on its ancestry record (0.13.0). An unknown header is warned about by name.
+# A talent sheet with no Requires column (or an empty one) reads Prerequisites as the requirement:
+#   the pieces naming a Talent of the same sheet become `requires`, the rest stays prose (0.13.0).
 # Rich text in Description/Effect cells (b/i/u/strike/color) becomes HTML and mirrors everywhere.
 # Enabled? (Mike, 2026-10-01, ruling 60): "Yes" ships the row to Foundry; see enabled_flag below.
 # The converter keeps every row and only flags it; build_foundry.mjs does the filtering.
@@ -146,15 +152,29 @@ def plain(cell):
     if v is None: return ""
     return re.sub(r"<[^>]+>", "", str(v)).strip()
 
-def header_map(ws, wanted):
-    """wanted: {key: first-word-of-header (lowercase)} -> {key: col_index0} using row 1."""
+def header_map(ws, wanted, unknown=None, where=""):
+    """wanted: {key: first-word-of-header (lowercase), or a tuple of such words} -> {key: col_index0}
+    using row 1. With `unknown` (a list) every non-empty header that matches no word is appended
+    to it as "<where>: unknown column '<header>' (ignored)", so a renamed column is said rather
+    than silently dropped (0.13.0: 'Feeds' to 'Primary Attribute' went unnoticed for a build)."""
     m = {}
     for j in range(1, ws.max_column + 1):
-        h = plain(ws.cell(1, j)).lower()
-        for key, word in wanted.items():
-            if key not in m and h.startswith(word):
-                m[key] = j - 1
+        full = plain(ws.cell(1, j))
+        h = full.lower()
+        hit = False
+        for key, words in wanted.items():
+            if any(h.startswith(w) for w in ((words,) if isinstance(words, str) else words)):
+                hit = True
+                if key not in m: m[key] = j - 1
+        if full and not hit and unknown is not None:
+            unknown.append(f"{where}: unknown column '{full}' (ignored)")
     return m
+
+def header_word(ws, key_col, *words):
+    """Which of `words` the header of column key_col (0-based) starts with, lower-cased; None if
+    none. How a sheet headed 'Attribute' (strict) is told from one still headed 'Feeds'."""
+    h = plain(ws.cell(1, key_col + 1)).lower()
+    return next((w for w in words if h.startswith(w)), None)
 
 # ---- The Enabled? column (Mike, 2026-10-01; ruling 60) ---------------------------------------
 # Recognised by its first word like every other header. A cell reading "Yes" (any case, trimmed)
@@ -195,24 +215,60 @@ def parse_aura(text):
     if not m: return False
     return {"range": int(m.group(1)), "affects": m.group(2) or "all", "visible": bool(m.group(3))}
 
-def aura_for(cell, has_column, effect, where, warnings, errors):
+# Since 0.13.0 the Aura column is OPTIONAL: an "aura:" line in the Automation cell is the authoring
+# ("aura: 15ft, allies, VISIBLE", AUTOMATION_GRAMMAR.md), parsed by build_foundry.mjs like every
+# rule, and the column survives for the sheets that still carry it. A row with both is an ERROR, so
+# a ring is never said twice. The converter does not parse the line (Python holds no second
+# grammar); it only looks for the kind word at the start of a line, which is all the drift check
+# needs. The same goes for "grant:" and the retired Grants column, below.
+def automation_has(auto, kind):
+    """True when a line of the Automation cell starts with `<kind>:` or is the bare word."""
+    return any(re.match(rf"^\s*{kind}\s*(:|$)", ln, re.I) for ln in (auto or "").splitlines())
+
+def aura_for(cell, has_column, effect, where, warnings, errors, in_automation=False):
     """A row's Aura cell, read against its Effect. Returns the aura to store or None, appending the
-    error for a value that does not parse and the drift warnings described above."""
+    error for a value that does not parse and the drift warnings described above. `in_automation`
+    says the Automation cell carries an "aura:" line, which then owns the ring."""
     aura = parse_aura(plain(cell)) if has_column else None
     said = AURA_IN_EFFECT.search(re.sub(r"<[^>]+>", " ", effect or ""))
     if aura is False:
         errors.append(f"{where}: Aura '{plain(cell)}' not understood ('15 ft', '15 feet', '15 ft allies', "
                       f"'15 ft enemies', add 'visible' to pin it by default, or 'none')")
         return None
+    if in_automation:
+        if aura is not None:
+            errors.append(f"{where}: the Aura cell and an 'aura:' line in Automation both set the ring; "
+                          f"keep the Automation line and clear the cell (AUTOMATION_GRAMMAR.md)")
+        return None
     if aura == "none": return None
     if said and aura is None:
-        warnings.append(f"{where}: Effect says 'within {said.group(1)} feet' but the Aura cell is "
-                        + ("blank" if has_column else "missing (the sheet has no Aura column)")
-                        + f"; set it ('{said.group(1)} ft', with 'allies' or 'enemies' and 'visible' as the "
-                        f"rule reads) or 'none' if the circle is centred somewhere other than the carrier")
+        warnings.append(f"{where}: Effect says 'within {said.group(1)} feet' but no ring is set: write "
+                        f"'aura: {said.group(1)}ft, all' (or allies, enemies; add VISIBLE to pin it) in Automation"
+                        + (", or fill the Aura cell" if has_column else "")
+                        + ", or 'none' in the Aura cell if the circle is centred somewhere other than the carrier")
     elif said and aura and int(said.group(1)) != aura["range"]:
         warnings.append(f"{where}: Effect says 'within {said.group(1)} feet' but the Aura cell says {aura['range']} ft")
     return aura or None
+
+# ---- The Lore sheets (0.13.0) -----------------------------------------------------------------
+# "<Tree> Lore" beside a tree's own sheet holds the player-facing text of an Ancestry (or any tree)
+# as label | text rows, no header row ("Summary", "About", "You Might...", "Names" and so on, in the
+# author's order). Through 0.12.0 the converter ignored them by design (they were authoring notes);
+# since Mike rewrote the Human Lore sheet for the character-creation wizard and the compendium
+# window they are read: lore: [{label, text}] on the tree and on the ancestry's chassis record,
+# rich text carried as the Effect column's is. A first row headed "Label"/"Field" is skipped.
+LORE_SHEET = re.compile(r"^(.+?)\s+Lore$")
+
+def parse_lore_sheet(ws):
+    out = []
+    for r in ws.iter_rows(min_row=1, max_col=2):
+        label = plain(r[0]) if len(r) > 0 else ""
+        text = cell_html(r[1]) if len(r) > 1 else ""
+        if not label and not text: continue
+        if not out and label.lower() in ("label", "field", "heading") and plain(r[1]).lower() in ("text", "value", "body"):
+            continue
+        out.append({"label": label, "text": text})
+    return out
 
 # Requires-matching strips the cost glyphs off a name: the v4.10 ⓿❶❷❸❹❺❻ and ↺ (with a bracketed
 # Reaction cost such as "Aid ❶ (⓿↺)"), the v3 ◆ and ◇, and the capstone star.
@@ -363,7 +419,8 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
                             "meta": (meta or {}).get("meta", ""), "costDefaulted": defaulted,
                             "sheet": ws.title, "workbook": fname})
             # The aura (0.5.1), carried only when the cell is set, as on the talent sheets.
-            aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{fname} / {ws.title} / {name}", warnings, errors)
+            aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{fname} / {ws.title} / {name}", warnings, errors,
+                            in_automation=automation_has(pv("automation"), "aura"))
             if aura: actions[-1]["aura"] = aura
     for k in typed:
         if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
@@ -685,10 +742,13 @@ def main():
                 warnings.append(f"{fname}: no '_Tree Index' sheet; file skipped")
             continue
         idx = wb["_Tree Index"]
-        # "Vigor" is the v4.10 name for the per-level chassis number; "HP" still reads.
-        im = header_map(idx, {"tree": "tree", "cat": "categ", "feeds": "feeds", "sparks": "flare",
+        # "Vigor" is the v4.10 name for the per-level chassis number; "HP" still reads. "Primary
+        # Attribute" is the 0.13.0 name of the tree-level Feeds (Mike renamed it on the ancestries
+        # index); both read, and an unknown header is warned about by name.
+        im = header_map(idx, {"tree": "tree", "cat": "categ", "feeds": ("feeds", "primary"), "sparks": "flare",
                               "meta": "meta", "skills": "skills", "hp": "hp", "vigor": "vigor", "size": "size",
-                              "speed": "speed", "senses": "senses", "summary": "summary", "parent": "parent"})
+                              "speed": "speed", "senses": "senses", "summary": "summary", "parent": "parent"},
+                        unknown=warnings, where=f"{fname} / _Tree Index")
         if "vigor" in im and "hp" not in im: im["hp"] = im["vigor"]
         if "tree" not in im or "cat" not in im:
             warnings.append(f"{fname}: _Tree Index needs at least 'Tree' and 'Category' columns; file skipped"); continue
@@ -716,14 +776,31 @@ def main():
                 continue
             indexed.add(name); sources[name] = fname
             ws = wb[name]
+            # "Attribute" (0.13.0) is the talent-level Feeds under its current name: on a sheet headed
+            # so, a blank cell is an ERROR (Mike: "no Attribute cell should ever be blank"); a sheet
+            # still headed "Feeds" keeps the inherit-from-the-tree rule until it is renamed too.
             cm = header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "req": "requires",
-                                 "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": "feeds", "grants": "grants",
-                                 "choice": "choice", "freetalent": "free", "aura": "aura", "automation": "automation",
-                                 "enabled": "enabled", **SPELL_HEADERS})
+                                 "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": ("feeds", "attribute"),
+                                 "grants": "grants", "choice": "choice", "freetalent": "free", "aura": "aura",
+                                 "automation": "automation", "enabled": "enabled", **SPELL_HEADERS},
+                            unknown=warnings, where=f"{fname} / {name}")
             if "name" not in cm or "tier" not in cm or "effect" not in cm:
                 errors.append(f"{fname} / {name}: sheet needs Talent, Tier and Effect columns"); continue
+            strict_attr = "feeds" in cm and header_word(ws, cm["feeds"], "attribute") is not None
+            rows = list(ws.iter_rows(min_row=2))
+            # Requires (0.13.0): a sheet with no Requires column, or one whose cells are all blank
+            # (Mike emptied the Human sheet's: "the Prerequisites column is the one that should have
+            # been used in the first place"), reads Prerequisites as the requirement. Each comma- or
+            # "or"-separated piece that names a Talent of the same sheet becomes `requires`; the rest
+            # stays `prereqs` prose, so "Expert in Melee" on another sheet still prints. Resolved
+            # after the rows are read, when the sheet's names are known.
+            req_from_prereqs = "req" not in cm or not any(plain(r[cm["req"]]) for r in rows if len(r) > cm["req"])
+            if "grants" in cm and any(plain(r[cm["grants"]]) for r in rows if len(r) > cm["grants"]):
+                warnings.append(f"{fname} / {name}: the Grants column is retired (0.13.0); write the point as an "
+                                f"Automation line instead ('grant: 1, Calling'; 'grant: 2, Skill, DIFFERENT'; "
+                                f"AUTOMATION_GRAMMAR.md). Its cells are read this release and must agree with the line")
             nodes, root_count, root_name = [], 0, None
-            for r in ws.iter_rows(min_row=2):
+            for r in rows:
                 cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
                 pv = lambda k: plain(cellv(k))
                 nname = pv("name")
@@ -768,20 +845,23 @@ def main():
                 # the only one in the book so far: it gives you Weapon Familiarity outright.
                 ft = pv("freetalent")
                 if ft: node["freeTalent"] = ft
-                # "Within N feet" of the carrier, drawn on the map (0.5.1). The cell is checked
-                # against the Effect, so a new tier cannot ship without its ring; see aura_for.
-                aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{name} / {nname}", warnings, errors)
-                if aura: node["aura"] = aura
                 # The Automation cell (0.9.0; rulings 118 and 120): one rule per line in the grammar
-                # the Foundry system owns (module/rules/grammar.mjs). It is copied through as text,
-                # exactly as the action sheets' column is, and never parsed here: build_foundry.mjs
-                # parses it with that grammar and stops on a line it does not know, naming the cell,
-                # and the client parses it again with the same module. Python holds no second parser,
-                # so the two can never disagree. Line breaks inside the cell are the rule boundaries,
-                # and plain() keeps them. A cell reading "None" or a dash is an empty cell, as the
-                # action parser reads it.
+                # the Foundry system owns (module/rules/grammar.mjs; AUTOMATION_GRAMMAR.md for the
+                # author). It is copied through as text, exactly as the action sheets' column is, and
+                # never parsed here: build_foundry.mjs parses it with that grammar and stops on a line
+                # it does not know, naming the cell, and the client parses it again with the same
+                # module. Python holds no second parser, so the two can never disagree. Line breaks
+                # inside the cell are the rule boundaries, and plain() keeps them. A cell reading
+                # "None" or a dash is an empty cell, as the action parser reads it.
                 auto = blank_none(plain(cellv("automation")))
                 if auto: node["automation"] = auto
+                # "Within N feet" of the carrier, drawn on the map (0.5.1). Since 0.13.0 the ring is
+                # authored as an "aura:" line in Automation; the cell still reads where a sheet has
+                # it, both is an error, and the Effect is checked against whichever is set, so a new
+                # tier cannot ship without its ring; see aura_for.
+                aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{name} / {nname}", warnings, errors,
+                                in_automation=automation_has(auto, "aura"))
+                if aura: node["aura"] = aura
                 # The spell columns (PHB v4.21, the magic workbook): a row with a Threat is a spell,
                 # and the structure the Cast Maneuver needs rides beside the Effect prose; see spell_for.
                 spell = spell_for(cellv, cm, f"{name} / {nname}", warnings, errors)
@@ -789,11 +869,15 @@ def main():
                 if requires: node["requires"] = requires
                 if desc and desc.upper() != "TBD": node["desc"] = desc
                 if prereqs and norm(prereqs) != norm(nname): node["prereqs"] = prereqs
+                attr_word = "Attribute" if strict_attr else "Feeds"
                 if feeds_o and feeds_o.upper() != "TBD":
-                    if feeds_o not in ATTRS: errors.append(f"{name} / {nname}: bad Feeds '{feeds_o}'")
+                    if feeds_o not in ATTRS: errors.append(f"{name} / {nname}: bad {attr_word} '{feeds_o}'")
                     elif feeds_o != feeds: node["feeds"] = feeds_o
                 elif feeds_o.upper() == "TBD":
-                    warnings.append(f"{name} / {nname}: Feeds 'TBD'; the point feeds no attribute until set")
+                    warnings.append(f"{name} / {nname}: {attr_word} 'TBD'; the point feeds no attribute until set")
+                elif strict_attr:
+                    errors.append(f"{name} / {nname}: blank Attribute cell (no Attribute cell should ever be blank; "
+                                  f"one of {', '.join(ATTRS)})")
                 if is_root:
                     node["root"] = True; root_count += 1; root_name = nname
                 elif is_hroot:
@@ -818,6 +902,15 @@ def main():
                 warnings.extend(f"{name} / {n['name']}: enabled, but the constellation's root is not; "
                                 f"Foundry has no Root to reach it from" for n in nodes if n["enabled"])
             by_norm = {norm(n["name"]): n for n in nodes}
+            if req_from_prereqs:
+                for n in nodes:
+                    pieces = [s.strip() for s in re.split(r",| or ", n.get("prereqs", "")) if s.strip()]
+                    named = [p for p in pieces if norm(p) in by_norm]
+                    if named:
+                        n["requires"] = named
+                        # Every piece a Talent of the sheet: the prose said nothing else, so it is
+                        # not kept as prose; otherwise the whole text still prints as written.
+                        if len(named) == len(pieces): n.pop("prereqs", None)
             for n in nodes:
                 for rq in n.get("requires", []):
                     if norm(rq) not in by_norm: errors.append(f"{name} / {n['name']}: requires unknown '{rq}'")
@@ -827,6 +920,11 @@ def main():
             label = category + (" constellation" if category in ("Skill", "Defense", "Armor", "Ancestry", "Culture", "Bloodline", "Background") else "")
             meta_extra = g("meta")
             cskills = [x.strip() for x in re.split(r",|•", g("skills")) if x.strip()]
+            # The tree's Lore sheet (0.13.0), "<Tree> Lore", read when it exists; see parse_lore_sheet.
+            lore = parse_lore_sheet(wb[f"{name} Lore"]) if f"{name} Lore" in wb.sheetnames else []
+            if f"{name} Lore" in wb.sheetnames:
+                indexed.add(f"{name} Lore")
+                if not lore: warnings.append(f"{fname} / {name} Lore: the Lore sheet is empty")
             if category == "Ancestry" and ("hp" in im or "size" in im):
                 hp = g("hp")
                 hers = [[n["name"], n["effect"]] for n in nodes if n.get("hroot")]
@@ -839,7 +937,8 @@ def main():
                     # `enabled` is the tree's (ruling 60), so chargen can offer only the shipped ancestries.
                     chassis.append({"name": name, "enabled": tree_enabled, "vigor": int(hp), "hp": int(hp), "size": g("size") or "Medium",
                                     "speed": g("speed") or "6 ft", "senses": g("senses") or "—",
-                                    "tree": name, "blurb": g("summary"), "bloodlines": hers})
+                                    "tree": name, "blurb": g("summary"), "bloodlines": hers,
+                                    **({"lore": lore} if lore else {})})
                     if not meta_extra:  # derive the display line when the sheet leaves it blank
                         bits = [g("size"), f"Vigor {hp}", g("speed")] + ([g("senses").lower()] if g("senses") not in ("", "—") else [])
                         meta_extra = " • ".join(b for b in bits if b)
@@ -852,6 +951,7 @@ def main():
             parent = g("parent")
             out[name] = {"category": category, "enabled": tree_enabled, "feeds": feeds, **({"skills": cskills} if cskills else {}),
                          **({"parent": parent, "group": True} if parent else {}),
+                         **({"lore": lore} if lore else {}),
                          "meta": f"{label} • {feeds or '—'}" + (f" ({meta_extra})" if meta_extra else ""),
                          "sparks": g("sparks"), "nodes": nodes}
         if "Backgrounds" in wb.sheetnames:
@@ -859,6 +959,12 @@ def main():
         if "Languages" in wb.sheetnames:
             parse_lang_sheet(wb["Languages"], langs, warnings, fname); indexed.add("Languages")
         extra = [sn for sn in wb.sheetnames if sn != "_Tree Index" and sn not in indexed]
+        for sn in extra:
+            m_lore = LORE_SHEET.match(sn)
+            if m_lore:
+                warnings.append(f"{fname} / {sn}: a Lore sheet for '{m_lore.group(1)}', which is not a tree in this "
+                                f"workbook's _Tree Index (ignored)")
+        extra = [sn for sn in extra if not LORE_SHEET.match(sn)]
         if extra: warnings.append(f"{fname}: sheets not in its _Tree Index (ignored): {', '.join(extra)}")
         print(f"  {fname}: {len(out) - n_before} trees")
     # A Free Talent may live in another constellation (Drilled hands over Weapon Familiarity, which

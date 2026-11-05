@@ -87,7 +87,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/blood-mage.png",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "bravo",
@@ -357,7 +357,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/necromancer.png",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "oaths",
@@ -427,7 +427,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/spellblade.png",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "spellshaper",
@@ -437,7 +437,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/spellshaper.png",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "spiritcraft",
@@ -477,7 +477,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/summoner.png",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "two-weapon-fighting",

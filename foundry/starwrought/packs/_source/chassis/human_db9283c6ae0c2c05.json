@@ -12,6 +12,56 @@
     "speed": 6,
     "senses": "",
     "description": "<p>Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>Humans are everywhere, and everywhere they are different. No other people spreads so far, argues so loudly, or reinvents itself so often. A human border town can change its laws, its faith, and its skyline inside a single generation; an elf who naps through a decade returns to find the maps redrawn. What humans lack in long memory they repay in momentum, and the other peoples watch them with a mix of admiration and alarm.<br><br>That restlessness is personal as much as cultural. A human feels the shortness of their years and answers it with ambition: one more field cleared, one more deal struck, one more mountain nobody sensible would climb. At their best, humans bind strangers into companies and companies into causes. At their worst, they burn through places, promises, and people the way they burn through years.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who can come from anywhere, get along with anyone, and refuse to stay in any lane, you should play a human.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Chase a goal so hard that rest starts to feel like theft.<br>• Collect skills, contacts, and causes the way others collect coins.<br>• Assume any problem can be solved if you just find the right people for it.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Envy how quickly you learn, adapt, and move on.<br>• Wonder what you are running from, or racing toward.<br>• Trust your knack for finding common ground, even between old enemies.</p>"
+      },
+      {
+        "label": "Physical Description (at a glance)",
+        "text": "<p>Humans are middling in most measures and wildly varied in all of them. They stand roughly five to six and a half feet tall, in every build from wiry to broad, with skin, hair, and eyes spanning every shade their homelands offer. What marks a human crowd is not a shared look but a shared motion: quick eyes, busy hands, and clothing that borrows freely from every neighbor they have ever traded with.</p>"
+      },
+      {
+        "label": "Physical Description (life cycle)",
+        "text": "<p>Humans reach physical adulthood around 15 years and are usually granted a place at the adults' table by 18, though every town draws that line differently. A human who avoids war, plague, and their own ambition can expect sixty to ninety years, and a rare few see a century. Their short season is the quiet engine of their character; humans plant orchards whose shade they will never sit in, and they know it.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Human society is less a single design than a permanent argument about what the design should be. Kingdoms, leagues, free towns, wandering companies: humans have tried them all, usually at the same time, usually within a week's ride of each other. Their gift is the joining of strangers. A human market will seat a dwarven smith beside an elven dyer and a gnomish clockmaker, and by closing time the three will share a ledger and a grudge against the harbormaster.<br><br>Because they invent themselves so freely, humans put enormous weight on names, oaths, and reputations, the few things that outlive them. A human's word, once given before witnesses, is a load-bearing wall; whole towns stand on webs of such promises. Breaking one is not just a sin but a kind of vandalism.<br><br>Humans honor their dead by continuing their projects. Workshops, farms, feuds, and half-built bridges pass from hand to hand like torches, and a human family can often recite what each generation added to the house even when they have forgotten the builders' faces.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Human belief runs hot and plural. One village keeps six shrines and hedges its bets at all of them; the next follows a single creed with terrifying focus. What is consistent is the human conviction that effort matters, that the world is unfinished, and that somebody, probably them, ought to get on with finishing it. Their prayers tend to be practical: strength for the harvest, luck for the crossing, courage for the morning.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Leave every place better than you found it.<br>• Keep your word once witnesses have heard it.<br>• Lift the newcomer; you were one once.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Waste a year owed to the people who raised you.<br>• Break a promise made before witnesses.<br>• Let fear of failing keep you from beginning.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Jonna, Kestrel, Liesl, Marek, Nadia, Osric, Petra, Rowan, Sable, Tomas, Verity, Wynne</p>"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -22,7 +72,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f97b726fb3bfb6f6"
+      "contentHash": "40dff73b6c8c9fd5"
     }
   },
   "effects": [],

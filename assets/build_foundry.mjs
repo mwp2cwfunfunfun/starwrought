@@ -185,13 +185,50 @@ function actionName(name) {
  * around the carrier, who it concerns, and whether it is Visible by default. Only a row with the
  * cell set carries one; the Item model supplies "none" for every other, so the sources stay small.
  */
-const auraOf = row => (row.aura ? {
-  aura: {
-    range: Number.isInteger(row.aura.range) ? row.aura.range : null,
-    affects: row.aura.affects ?? "all",
-    visible: !!row.aura.visible
+/**
+ * The ring on the map (0.5.1). Since 0.13.0 an `aura:` rule in the Automation cell is the authoring
+ * ("aura: 15ft, allies, VISIBLE"; AUTOMATION_GRAMMAR.md), parsed by the grammar like every rule and
+ * carrying `{ range, affects, visible }`; the Aura column still reads on the sheets that have it,
+ * and the converter refuses a row with both. One `aura` rule per document (a second is the kind's
+ * own refusal). The field written is the same `system.aura`, so `rangesOf` and the canvas read
+ * nothing new.
+ */
+const auraOf = (row, rules = []) => {
+  const rule = rules.find(r => r.kind === "aura");
+  const aura = rule ?? row.aura;
+  return aura ? {
+    aura: {
+      range: Number.isInteger(aura.range) ? aura.range : null,
+      affects: aura.affects ?? "all",
+      visible: !!aura.visible
+    }
+  } : {};
+};
+
+/**
+ * The restricted Talent Point a Talent hands out (the wizard's slot). Since 0.13.0 a `grant:` rule
+ * ("grant: 1, Calling"; "grant: 2, Skill, DIFFERENT") is the authoring and the Grants column is
+ * retired: the converter still reads a column cell this release and warns, and when both exist
+ * they must agree or the build fails. The stored shape is the one `chargen.mjs` has read since
+ * 0.4 ({ n, mode, scope }, GRANT_SCOPES there): the grammar's `Opening` is mode "open" anywhere
+ * (a Root in a Constellation not yet opened), `Comet` is any Constellation you qualify for, and
+ * every other Scope is its category, "different" when the flag is set.
+ */
+function grantOf(row, rules, source) {
+  const rule = rules.find(r => r.kind === "grant");
+  const fromRule = rule ? (
+    rule.scope === "Opening" ? { n: rule.n, mode: "open", scope: "anywhere" }
+      : rule.scope === "Comet" ? { n: rule.n, mode: "any", scope: "anywhere" }
+        : { n: rule.n, mode: rule.different ? "different" : "any", scope: rule.scope }
+  ) : null;
+  const fromColumn = row.grant ? { n: row.grant.n, mode: row.grant.mode, scope: row.grant.scope } : null;
+  if (fromRule && fromColumn && JSON.stringify(fromRule) !== JSON.stringify(fromColumn)) {
+    fail(`grant: ${source}: the Grants column (${JSON.stringify(fromColumn)}) and the 'grant:' line `
+      + `(${JSON.stringify(fromRule)}) disagree; the column is retired, so clear it`);
   }
-} : {});
+  const grant = fromRule ?? fromColumn;
+  return { grant: { n: grant?.n ?? 0, mode: grant?.mode ?? "", scope: grant?.scope ?? "" } };
+}
 
 /* -------------------------------------------- */
 /*  The automation framework (0.9.0)            */
@@ -428,7 +465,11 @@ const plates = fs.existsSync(plateDir) ? new Set(fs.readdirSync(plateDir)) : new
 for (const [name, tree] of Object.entries(trees)) {
   const slug = slugify(name);
   const category = CATEGORY_ALIASES[tree.category] ?? "general";
-  const attribute = String(tree.feeds ?? "Might").toLowerCase();
+  // The tree-level Primary Attribute (the index's `Feeds` through 0.12.0). The converter requires
+  // one on every tree that rolls Untrained; an identity tree may leave it blank, and "" slipped
+  // past `??` for a build when the column was renamed (0.13.0), so a blank is said and read as Might.
+  if (!tree.feeds) console.warn(`  WARNING: ${name}: no Primary Attribute on the _Tree Index; Might assumed`);
+  const attribute = String(tree.feeds || "Might").toLowerCase();
   const plate = plates.has(`${slug}.png`) ? `systems/starwrought/assets/constellations/${slug}.png` : null;
   // A tree with a Parent is a GROUP of that Constellation's Talents (PHB v4.21: a fighting style
   // within Melee or Ranged, a specialty within a magical discipline): it has no rank of its own, and
@@ -477,6 +518,14 @@ for (const [name, tree] of Object.entries(trees)) {
 
   for (const node of shipped) {
     const bare = stripGlyphs(node.name);
+    // The Automation cell, parsed with the system's grammar; a bad line stops the build here.
+    // `resolve` is what a kind asks about a target's name (0.10.0): a Constellation or a Maneuver
+    // the book has, else the line fails naming the word. Parsed before the document is shaped,
+    // since the `aura` and `grant` rules fill `system.aura` and `system.grant` (0.13.0).
+    const source = `${name} / ${node.name}`;
+    const automation = automationOf(node.automation, {
+      itemName: node.name, constellation: name, itemType: "talent", source, resolve: resolveRuleTarget
+    });
     item("talents", {
       key: `talent:${slug}:${slugify(bare)}`,
       name: node.name,
@@ -496,22 +545,12 @@ for (const [name, tree] of Object.entries(trees)) {
         effect: node.effect ?? "",
         description: node.desc ? `<p>${node.desc}</p>` : "",
         ...parseActionCost(node.name),
-        grant: {
-          n: node.grant?.n ?? 0,
-          mode: node.grant?.mode ?? "",
-          scope: node.grant?.scope ?? ""
-        },
+        ...grantOf(node, automation.rules, source),
         choice: { prompt: node.choice ?? "", value: "" },
         freeTalent: node.freeTalent ?? "",
-        ...auraOf(node),
+        ...auraOf(node, automation.rules),
         ...spellOf(node),
-        // The Automation cell, parsed with the system's grammar; a bad line stops the build here.
-        // `resolve` is what a kind asks about a target's name (0.10.0): a Constellation or a
-        // Maneuver the book has, else the line fails naming the word.
-        ...automationOf(node.automation, {
-          itemName: node.name, constellation: name, itemType: "talent", source: `${name} / ${node.name}`,
-          resolve: resolveRuleTarget
-        }),
+        ...automation,
         traits: [],
         source: "STARWROUGHT Playtest v4.21"
       }
@@ -570,12 +609,16 @@ for (const ancestry of roster.ancestries ?? []) {
     system: {
       kind: "ancestry",
       constellation: treeSlug,
-      attribute: String(trees[ancestry.tree]?.feeds ?? "Presence").toLowerCase(),
+      attribute: String(trees[ancestry.tree]?.feeds || "Presence").toLowerCase(),
       vigor: ancestry.vigor ?? ancestry.hp ?? 0,
       size: String(ancestry.size ?? "Medium").toLowerCase(),
       speed: parseReach(ancestry.speed),
       senses: ancestry.senses === "—" ? "" : (ancestry.senses ?? ""),
       description: `<p>${ancestry.blurb ?? ""}</p>`,
+      // The "<Ancestry> Lore" sheet (0.13.0): the player-facing sections in the author's order,
+      // shown on the Description tab and under the highlighted card in Character Creation. The
+      // converter carries rich text as the Effect column's; each section is one paragraph here.
+      lore: (ancestry.lore ?? []).map(({ label, text }) => ({ label, text: `<p>${text}</p>` })),
       traits: [],
       source: "STARWROUGHT Playtest v4.21"
     }
@@ -590,7 +633,7 @@ for (const ancestry of roster.ancestries ?? []) {
       system: {
         kind: "bloodline",
         constellation: treeSlug,
-        attribute: String(trees[ancestry.tree]?.feeds ?? "Presence").toLowerCase(),
+        attribute: String(trees[ancestry.tree]?.feeds || "Presence").toLowerCase(),
         specialAbility: `<p>${effect}</p>`,
         description: `<p>A bloodline of the ${ancestry.name} ancestry. Its Root Talent is granted free by the character-creation choice.</p>`,
         traits: [],
@@ -910,6 +953,7 @@ const relevantCheckOf = a => /relevant\s+check/i.test(String(a.effect ?? ""))
 for (const group of [...new Set(shippedSheetActions.map(actionGroup))]) {
   actionFolders[group] = folder("actions", group, { sort: actionSort++, color: "#5a4a1e" });
 }
+let actionAutomation;
 for (const a of shippedSheetActions) {
   item("actions", {
     key: rosterKey.get(a.name.toLowerCase()) ?? `action:${slugify(a.name)}`,
@@ -933,12 +977,13 @@ for (const a of shippedSheetActions) {
       // The sheet's Automation column is the same column as a Talent's now (0.9.0), no longer
       // prose: parsed with the system's grammar, and a bad line stops the build naming the
       // workbook, the sheet and the action. The same `resolve` as a Talent's (0.10.0).
-      ...automationOf(a.automation, {
+      ...(actionAutomation = automationOf(a.automation, {
         itemName: a.name, constellation: actionGroup(a), itemType: "action",
         source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`,
         resolve: resolveRuleTarget
-      }),
-      ...auraOf(a),
+      })),
+      // An action's ring may be an `aura:` line too (0.13.0), as a Talent's.
+      ...auraOf(a, actionAutomation.rules),
       ...relevantCheckOf(a),
       source: actionSource(a)
     }

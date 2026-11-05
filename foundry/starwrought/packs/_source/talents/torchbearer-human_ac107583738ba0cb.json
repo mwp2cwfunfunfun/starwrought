@@ -30,11 +30,6 @@
       "value": ""
     },
     "freeTalent": "",
-    "aura": {
-      "range": 15,
-      "affects": "all",
-      "visible": false
-    },
     "automation": "",
     "rules": [],
     "traits": [],
@@ -47,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "caa6a5b27a950c21"
+      "contentHash": "a1ad1f23f4a2e827"
     }
   },
   "effects": [],

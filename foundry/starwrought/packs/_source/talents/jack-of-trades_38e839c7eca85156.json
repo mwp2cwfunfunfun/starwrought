@@ -1,22 +1,22 @@
 {
-  "_id": "0df41f8982ad7b9c",
-  "name": "Flicker Step",
+  "_id": "38e839c7eca85156",
+  "name": "Jack of Trades",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "spellblade",
-    "constellationName": "Spellblade",
+    "constellation": "human",
+    "constellationName": "Human",
     "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Spellbound Edge"
+      "Versatile Human"
     ],
     "prerequisites": "",
-    "attribute": "",
-    "effect": "Once per round after a Melee Strike enhanced by Spellbound Edge Hits, you may Step 1 foot as a free effect without provoking an Intercept from the creature you struck.",
-    "description": "",
+    "attribute": "wits",
+    "effect": "You gain a +1 Situation bonus to your Untrained checks.",
+    "description": "<p>You have done a little of everything, and it shows.</p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -37,19 +37,19 @@
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
-  "folder": "c0896ce7ffd8e58c",
+  "folder": "42704b4e7190f5c8",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d92d8b0ba2ec1373"
+      "contentHash": "9c53975b34b401d0"
     }
   },
   "effects": [],
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!0df41f8982ad7b9c"
+  "_key": "!items!38e839c7eca85156"
 }

@@ -1,21 +1,21 @@
 {
-  "_id": "d18447093b6357f3",
-  "name": "Harvest the Fallen",
+  "_id": "1a89a784a365375c",
+  "name": "Stubborn Footing",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
-    "constellation": "necromancer",
-    "constellationName": "Necromancer",
-    "tier": "E",
+    "constellation": "human",
+    "constellationName": "Human",
+    "tier": "T",
     "root": false,
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [
-      "Death Echo"
+      "Humanity"
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Once per encounter, as ❶, capture a Death Echo from a corpse within 3 feet that died within the past minute. No creature may supply more than one Echo in this way. This does not animate or control the corpse.",
+    "effect": "The first time each encounter you would be knocked prone, you are not.",
     "description": "",
     "cost": "passive",
     "costMax": "",
@@ -32,29 +32,24 @@
       "value": ""
     },
     "freeTalent": "",
-    "aura": {
-      "range": 3,
-      "affects": "all",
-      "visible": false
-    },
     "automation": "",
     "rules": [],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
-  "folder": "d58805ce57630e80",
+  "folder": "42704b4e7190f5c8",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7a75f0bc833183f7"
+      "contentHash": "baebeff347466050"
     }
   },
   "effects": [],
   "_stats": {
     "systemId": "starwrought"
   },
-  "_key": "!items!d18447093b6357f3"
+  "_key": "!items!1a89a784a365375c"
 }
