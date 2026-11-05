@@ -786,6 +786,17 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       ].filter(Boolean),
       description: a.description
     }));
+    // The Lore panel under the cards (0.13.0; Mike: the Lore sheet's fields "in the Character
+    // Creation page, when an ancestry is highlighted, at the bottom part of the window"). Every
+    // Ancestry's sections are rendered once and one is shown: the pointed-at card's while the
+    // pointer is on a card, else the chosen one's, else the first's (_onRender switches them; a
+    // hover is not a re-render). Rich text as the sheet carries it.
+    context.loreDetails = SwContent.chassis.ancestry.map(a => ({
+      key: a.name,
+      name: a.name,
+      sections: (a.lore ?? []).filter(s => s.label || s.text)
+    }));
+    context.loreDefault = this.picks.ancestry ?? context.loreDetails[0]?.key ?? "";
   }
 
   async _context_bloodline(context) {
@@ -1155,6 +1166,29 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     // The parts are rebuilt on every render, so the scroll listener is too.
     body.addEventListener("scroll", () => this.#updateScrollCue(), { passive: true });
     this.#updateScrollCue();
+
+    // The Ancestry step's Lore panel follows the pointer (0.13.0): the card under it shows its
+    // sections, and leaving the grid shows the chosen card's again. Focus counts as pointing, for
+    // the keyboard. No render: every Ancestry's sections are in the DOM and one is lit.
+    const detail = body.querySelector(".sw-lore-detail");
+    if (detail) {
+      const show = key => {
+        for (const block of detail.querySelectorAll(".sw-lore-block")) {
+          block.classList.toggle("active", block.dataset.key === key);
+        }
+      };
+      const grid = body.querySelector(".sw-choice-grid");
+      grid?.addEventListener("mouseover", event => {
+        const card = event.target.closest?.(".sw-choice[data-key]");
+        if (card) show(card.dataset.key);
+      });
+      grid?.addEventListener("focusin", event => {
+        const card = event.target.closest?.(".sw-choice[data-key]");
+        if (card) show(card.dataset.key);
+      });
+      grid?.addEventListener("mouseleave", () => show(detail.dataset.default));
+      show(detail.dataset.default);
+    }
   }
 
   /**

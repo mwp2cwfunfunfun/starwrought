@@ -207,6 +207,14 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     context.enrichedSpecial = await TextEditor.enrichHTML(item.system.specialAbility ?? "", {
       relativeTo: item, rollData: item.getRollData()
     });
+    // The Lore sheet's sections on a chassis (0.13.0), enriched like the description so a link in
+    // the author's text works; an empty list leaves the panel off.
+    context.loreSections = item.type === "chassis"
+      ? await Promise.all((item.system.lore ?? []).filter(s => s.label || s.text).map(async s => ({
+        label: s.label,
+        text: await TextEditor.enrichHTML(s.text ?? "", { relativeTo: item, rollData: item.getRollData() })
+      })))
+      : [];
 
     // The parent's name, for the Constellation subline and the "counts toward" note. The field is
     // `parentSlug` (`parent` on a data model is the owning Item); the model derives `parentName`.

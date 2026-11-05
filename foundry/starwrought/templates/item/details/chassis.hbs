@@ -21,8 +21,11 @@
       <input type="number" name="system.speed" value="{{system.speed}}" min="0"></label>
     <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.senses"}}</span>
       <input type="text" name="system.senses" value="{{system.senses}}"></label>
+    {{!-- Only a Culture grants a language, so only a Culture shows the field (0.13.0). --}}
+    {{#if system.hasLanguages}}
     <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.languages"}}</span>
       <input type="text" name="system.languages" value="{{system.languages}}"></label>
+    {{/if}}
     <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.constellation"}}</span>
       <select name="system.constellation">{{selectOptions choices.constellations selected=system.constellation blank=""}}</select></label>
   </div>

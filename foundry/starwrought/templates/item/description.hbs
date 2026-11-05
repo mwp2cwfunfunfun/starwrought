@@ -17,7 +17,9 @@
   </div>
   {{/if}}
 
-  {{#if isChassis}}
+  {{!-- A Bloodline's, Culture's, Background's or Calling's own ability. An Ancestry has none of its
+        own (its effects are its Talents'), so the panel is left off it (0.13.0). --}}
+  {{#if (and isChassis system.hasSpecialAbility)}}
   <div class="sw-panel">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.specialAbility"}}</h3>
     <prose-mirror name="system.specialAbility" value="{{system.specialAbility}}"
@@ -30,6 +32,20 @@
     <prose-mirror name="system.description" value="{{system.description}}"
                   {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedDescription}}}</prose-mirror>
   </div>
+
+  {{!-- The Lore sheet's sections (0.13.0), the spreadsheet's text in the author's order. Shown, not
+        edited: the "<Ancestry> Lore" sheet is the author, and the content loop refreshes it. --}}
+  {{#if loreSections.length}}
+  <div class="sw-panel sw-lore">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.lore"}}</h3>
+    {{#each loreSections as |section|}}
+    <section class="sw-lore-section">
+      <h4>{{section.label}}</h4>
+      <div class="sw-lore-text">{{{section.text}}}</div>
+    </section>
+    {{/each}}
+  </div>
+  {{/if}}
 
   <div class="sw-panel trait-editor">
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.traits"}}</h3>

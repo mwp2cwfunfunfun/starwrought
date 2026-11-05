@@ -106,6 +106,28 @@
 .starwrought .sw-choice-text { font-size: 0.72rem; color: var(--sw-ink-dim); line-height: 1.35; }
 .starwrought .sw-choice-text p { margin: 0 0 0.3rem; }
 
+/* The Ancestry step's Lore panel (0.13.0): under the card grid, inside the step's panel, the
+   highlighted card's sections in a scrolling box of its own, so twelve sections never push the
+   Next button off the window. One block per Ancestry is in the DOM; the lit one shows. */
+.starwrought .sw-lore-detail {
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.6rem 0.2rem;
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  background: rgba(0, 0, 0, 0.25);
+  max-height: 260px;
+  overflow: auto;
+}
+.starwrought .sw-lore-detail-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  margin: 0 0 0.4rem; padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--sw-edge);
+  font-size: 0.78rem; color: var(--sw-ink-dim);
+}
+.starwrought .sw-lore-block { display: none; }
+.starwrought .sw-lore-block.active { display: block; }
+.starwrought .sw-lore-block h5 { margin: 0 0 0.4rem; font-size: 0.95rem; color: var(--sw-gold); border: none; }
+
 .starwrought .sw-slot { border-color: var(--sw-gold-dim); }
 .starwrought .sw-slot-done { border-color: var(--sw-edge); opacity: 0.85; }
 .starwrought .sw-slot-done .sw-panel-title { color: var(--sw-green); }

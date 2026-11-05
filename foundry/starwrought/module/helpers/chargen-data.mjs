@@ -21,7 +21,7 @@ const TALENT_FIELDS = [
 const CHASSIS_FIELDS = [
   "system.kind", "system.constellation", "system.attribute", "system.vigor", "system.hp",
   "system.size", "system.speed", "system.senses", "system.languages", "system.grants",
-  "system.specialAbility", "system.description"
+  "system.specialAbility", "system.description", "system.lore"
 ];
 
 /** @type {{talents: object, chassis: object, loaded: boolean}} */

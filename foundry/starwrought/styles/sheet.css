@@ -230,6 +230,21 @@
 .starwrought .sw-empty { color: var(--sw-ink-dim); font-style: italic; padding: 0.3rem 0; }
 .starwrought .sw-empty-panel { text-align: center; }
 
+/* The Lore sections (0.13.0): an Ancestry's "<Ancestry> Lore" sheet, as the chassis Item's
+   Description tab and the wizard's Ancestry step both print it, one labelled section per row of
+   the sheet. The wizard's panel around them is chargen.css's. */
+.starwrought .sw-lore-section { margin: 0 0 0.5rem; }
+.starwrought .sw-lore-section h4 {
+  margin: 0 0 0.15rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sw-gold-dim);
+  border: none;
+}
+.starwrought .sw-lore-text { font-size: 0.8rem; line-height: 1.4; color: var(--sw-ink); }
+.starwrought .sw-lore-text p { margin: 0 0 0.3rem; }
+
 .starwrought .sw-body-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

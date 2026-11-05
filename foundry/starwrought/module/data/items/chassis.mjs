@@ -37,7 +37,17 @@ export class SwChassisData extends SwItemData {
       languages: new fields.StringField({ initial: "" }),
       /** The Skills or Constellations this choice grants Training in. */
       grants: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: () => [] }),
-      specialAbility: new fields.HTMLField({ initial: "" })
+      specialAbility: new fields.HTMLField({ initial: "" }),
+      /**
+       * The player-facing text of an Ancestry (0.13.0): the "<Ancestry> Lore" sheet's sections in
+       * the author's order (Summary, About, You Might..., Names, ...), written by the build and shown
+       * on the Description tab and under the highlighted card in Character Creation. Any kind may
+       * carry them; only the Ancestries are authored so far.
+       */
+      lore: new fields.ArrayField(new fields.SchemaField({
+        label: new fields.StringField({ initial: "" }),
+        text: new fields.HTMLField({ initial: "" })
+      }), { initial: () => [] })
     });
   }
 
@@ -56,6 +66,10 @@ export class SwChassisData extends SwItemData {
 
   prepareDerivedData() {
     this.kindLabel = `STARWROUGHT.Chassis.${this.kind}`;
+    /** Which kinds have a Special Ability of their own: an Ancestry's effects are its Talents'. */
+    this.hasSpecialAbility = this.kind !== "ancestry";
+    /** Only a Culture grants a language (Mike, 2026-11-05: Languages do not belong on an Ancestry). */
+    this.hasLanguages = this.kind === "culture";
   }
 
   get chatDescription() {

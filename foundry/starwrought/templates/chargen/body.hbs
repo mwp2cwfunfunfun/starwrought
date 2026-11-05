@@ -32,6 +32,29 @@
       {{#if (eq stepId "training")}}
       <p class="sw-note">{{localize "STARWROUGHT.Chargen.trainingFooter"}}</p>
       {{/if}}
+      {{#if loreDetails.length}}
+      {{!-- The Lore sheet's sections for the highlighted Ancestry (0.13.0): every card's block is
+            rendered, the pointed-at one shown, the chosen one by default (see _onRender). --}}
+      <div class="sw-lore-detail" data-default="{{loreDefault}}">
+        <h4 class="sw-lore-detail-title">
+          {{localize "STARWROUGHT.Chargen.loreDetail"}}
+          <span class="sw-points" data-tooltip="{{localize 'STARWROUGHT.Chargen.loreDetailHint'}}"><i class="fa-solid fa-circle-info"></i></span>
+        </h4>
+        {{#each loreDetails as |d|}}
+        <div class="sw-lore-block" data-key="{{d.key}}">
+          <h5>{{d.name}}</h5>
+          {{#each d.sections as |section|}}
+          <section class="sw-lore-section">
+            <h4>{{section.label}}</h4>
+            <div class="sw-lore-text">{{{section.text}}}</div>
+          </section>
+          {{else}}
+          <p class="sw-note">{{localize "STARWROUGHT.Chargen.noLore"}}</p>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
       {{else}}
       {{!-- Nothing the spreadsheets enable reaches this step (ruling 62). There is no card to
             choose, so the step says so and Next goes through without a pick. --}}
