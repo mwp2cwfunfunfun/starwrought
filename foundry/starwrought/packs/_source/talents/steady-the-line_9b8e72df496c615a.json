@@ -32,8 +32,23 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "prevent: Expose, FOR(allies, 0ft)",
+    "rules": [
+      {
+        "effect": "expose",
+        "when": null,
+        "for": {
+          "who": "allies",
+          "range": 0
+        },
+        "while": null,
+        "against": null,
+        "limit": null,
+        "kind": "prevent",
+        "line": 1,
+        "text": "prevent: Expose, FOR(allies, 0ft)"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -44,7 +59,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "b8404efb8dc76d30"
+      "contentHash": "5000bf165f7680fb"
     }
   },
   "effects": [],

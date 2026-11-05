@@ -8,6 +8,9 @@
  */
 
 import * as SW from "./module/config.mjs";
+// The `prevent` rules on the token palette's path (0.13.0): asked in preCreateActiveEffect below.
+import { preventersFor, sayPrevented } from "./module/rules/prevent.mjs";
+import { writeRuleMarks } from "./module/rules/scene.mjs";
 import { SwCharacterData, SwNpcData } from "./module/data/actor.mjs";
 // THE PARTY (0.7.0): a third Actor type, GM-owned with Observer players, extending TypeDataModel
 // directly so the combat machinery never sees one (party-sheet-plan.md, phase 1).
@@ -707,6 +710,30 @@ function registerExposedStatuses() {
   };
   Hooks.on("createActiveEffect", (effect, options, userId) => carryToZone(effect, true, userId));
   Hooks.on("deleteActiveEffect", (effect, options, userId) => carryToZone(effect, false, userId));
+
+  // The `prevent` rules on the token palette's path (0.13.0): a status toggled from the token or
+  // the Effects tab is an ActiveEffect created without SwActor#setCondition, so the same question
+  // is asked here, on the creating client, before the document exists. A create that setCondition
+  // already checked carries `swChecked`; a create that is not a single Condition is not asked.
+  // The hook cannot wait, so the answer is read synchronously from the rules and the card and the
+  // mark follow; `preventersFor` reads the index and the scene and writes nothing.
+  Hooks.on("preCreateActiveEffect", (effect, data, options, userId) => {
+    if (options?.swChecked || (userId !== game.user.id)) return;
+    const actor = effect.parent;
+    if (!(actor instanceof Actor) || (actor.type === SW.PARTY_TYPE)) return;
+    const statuses = [...(effect.statuses ?? [])];
+    if (statuses.length !== 1) return;
+    const id = statuses[0];
+    const config = SW.CONDITIONS[id];
+    if (!config || config.zone || actor.statuses?.has(id)) return;
+    const { automatic } = preventersFor(actor, id);
+    const preventer = automatic[0];
+    if (!preventer) return;
+    sayPrevented(actor, preventer, game.i18n.localize(config.name))
+      .then(() => (preventer.mark ? writeRuleMarks(actor, [preventer.mark]) : null))
+      .catch(err => console.error(`STARWROUGHT | ${actor.name}: the prevented ${id} could not be said`, err));
+    return false;
+  });
 
   Hooks.on("updateActor", (actor, changes, options, userId) => {
     if (userId !== game.user.id) return;

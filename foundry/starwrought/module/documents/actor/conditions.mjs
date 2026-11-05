@@ -4,6 +4,7 @@
  */
 
 import * as SW from "../../config.mjs";
+import { conditionPrevented } from "../../rules/prevent.mjs";
 
 /** Actor uuid -> the condition write in flight on this client, so they queue (see setCondition). */
 const conditionWrites = new Map();
@@ -42,11 +43,25 @@ export const ConditionsMixin = Base => class extends Base {
    * @param {number|boolean} [value]  A number for numeric conditions, true/false otherwise.
    * @param {object} [data]  Effect data to carry on it (name, description, origin, flags); applied
    *                         on creation and to an effect already there.
-   * @returns {Promise<ActiveEffect|null>}  The effect carrying the condition, or null when off.
+   * @param {object} [options]
+   * @param {boolean} [options.force]  Write it whatever the Automation rules say (0.13.0): a
+   *                         `prevent` rule on the body or on an ally in reach (Stubborn Footing's
+   *                         Prone, once each encounter) otherwise stops a Condition going ON, with a
+   *                         card saying which Talent did; off is never prevented, and a Zone's
+   *                         Exposed mirror is the Zone's, answered at the Expose offer instead.
+   * @returns {Promise<ActiveEffect|null>}  The effect carrying the condition, or null when off or prevented.
    */
-  async setCondition(id, value = true, data = {}) {
+  async setCondition(id, value = true, data = {}, { force = false } = {}) {
     const config = SW.CONDITIONS[id];
     if (!config) return null;
+    const turningOn = !((value === false) || (config.numeric && Number(value) <= 0));
+    if (turningOn && !force && !config.zone && !this.statuses?.has(id)) {
+      const prevented = await conditionPrevented(this, id).catch(err => {
+        console.error(`STARWROUGHT | ${this.name}: the prevent rules could not be read for ${id}`, err);
+        return null;
+      });
+      if (prevented) return null;
+    }
     const prior = conditionWrites.get(this.uuid) ?? Promise.resolve();
     const run = prior.catch(() => null).then(() => this.#writeCondition(id, value, data));
     conditionWrites.set(this.uuid, run);
@@ -93,7 +108,9 @@ export const ConditionsMixin = Base => class extends Base {
       _id: staticId, name: game.i18n.localize(config.name), img: config.img, statuses: [id]
     }, update);
     try {
-      const [created] = await this.createEmbeddedDocuments("ActiveEffect", [source], { keepId: true });
+      // `swChecked`: the prevent rules were asked above, so the preCreateActiveEffect hook that
+      // asks for the token palette's path (starwrought.mjs) does not ask again.
+      const [created] = await this.createEmbeddedDocuments("ActiveEffect", [source], { keepId: true, swChecked: true });
       return created ?? this.effects.get(staticId) ?? null;
     } catch (err) {
       // Another client got there first under the same id: that effect is the one to keep.

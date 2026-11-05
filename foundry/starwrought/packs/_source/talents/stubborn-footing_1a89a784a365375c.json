@@ -32,8 +32,22 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "prevent: Prone, ONCE(encounter)",
+    "rules": [
+      {
+        "effect": "prone",
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "limit": {
+          "per": "encounter"
+        },
+        "kind": "prevent",
+        "line": 1,
+        "text": "prevent: Prone, ONCE(encounter)"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -44,7 +58,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "baebeff347466050"
+      "contentHash": "f49cf199b29de3d8"
     }
   },
   "effects": [],

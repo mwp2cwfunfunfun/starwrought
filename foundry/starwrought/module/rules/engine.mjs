@@ -229,3 +229,64 @@ export function ruleModifiers(actor, context = {}) {
 
   return { applied, offered, marks };
 }
+
+/* -------------------------------------------- */
+/*  The `prevent` hook point (0.13.0)           */
+/* -------------------------------------------- */
+
+/**
+ * @typedef {object} Preventer
+ * @property {object} item           The Talent carrying the rule.
+ * @property {object} owner          Whose Talent it is (the recipient for their own).
+ * @property {object|null} ownerToken
+ * @property {boolean} reaction      The carrier is a ↺ Talent: offered as that Reaction, not applied.
+ * @property {{key: string, per: string}|null} mark  A FIRST or ONCE to remember on the recipient.
+ */
+
+/**
+ * The rules that would stop an effect landing on an actor now (the `prevent` hook point, defined
+ * with the `prevent` kind). Triggered in category (../README.md): the hook itself answers with
+ * data and writes nothing, and the caller that asked, in module/rules/prevent.mjs, is the one
+ * client that acts on the answer (refusing the Condition write and posting the card, or offering
+ * the Expose button). The dispatch is `ruleModifiers`' twin: every kind with `hooks.prevent`, its
+ * own rules and the other tokens' FOR rules, try/catch, the answer validated.
+ * @param {object} actor
+ * @param {{effect: string, threat?: object|null, scene?: object|null, encounter?: object|null}} context
+ * @returns {Preventer[]}
+ */
+export function rulePreventers(actor, context = {}) {
+  const out = [];
+  const scene = context?.scene ?? null;
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.prevent;
+    if (typeof hook !== "function") continue;
+    const entries = rulesOfKind(actor, kind.id).map(e => ({ ...e, owner: actor, ownerToken: scene?.token ?? null }));
+    if (scene?.tokens) {
+      for (const other of scene.tokens) {
+        if (!other?.actor || (other.actor === actor) || (other.token && scene.token && (other.token.id === scene.token.id))) continue;
+        for (const e of rulesOfKind(other.actor, kind.id)) {
+          const who = e.rule?.for?.who;
+          if (who && (who !== "self")) entries.push({ ...e, owner: other.actor, ownerToken: other.token ?? null });
+        }
+      }
+    }
+    if (!entries.length) continue;
+    let result;
+    try {
+      result = hook(entries, context, actor);
+    } catch (error) {
+      console.error(`STARWROUGHT | the "${kind.id}" kind's prevent hook failed:`, error);
+      continue;
+    }
+    if (!Array.isArray(result)) continue;
+    for (const p of result) {
+      if (!p || (typeof p !== "object") || !p.item) continue;
+      out.push({
+        item: p.item, owner: p.owner ?? actor, ownerToken: p.ownerToken ?? null,
+        reaction: p.reaction === true,
+        mark: (p.mark && p.mark.key && p.mark.per) ? { key: String(p.mark.key), per: String(p.mark.per) } : null
+      });
+    }
+  }
+  return out;
+}

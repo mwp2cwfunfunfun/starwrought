@@ -145,3 +145,5 @@ import grant from "./grant.mjs";
 registerKind(grant);
 import aura from "./aura.mjs";
 registerKind(aura);
+import prevent from "./prevent.mjs";
+registerKind(prevent);

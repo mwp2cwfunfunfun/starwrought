@@ -201,6 +201,9 @@
 
 /* The Exposed card takes the Zone's blood tint, as the bind card takes gold. */
 .starwrought .sw-exposed-card, .starwrought.sw-exposed-card { border-left: 3px solid var(--sw-blood); }
+/* A `prevent` rule's card (0.13.0): the effect that did not land, and the note on the Exchange card. */
+.starwrought .sw-prevented-card, .starwrought.sw-prevented-card { border-left: 3px solid var(--sw-green); }
+.starwrought .sw-prevented-note { color: var(--sw-green); }
 
 /* --------------------------------------------------------------------------
    The roll dialogs.

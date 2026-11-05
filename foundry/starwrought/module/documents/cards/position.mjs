@@ -167,6 +167,38 @@ export async function chargeReactionFromCard(message, button) {
   }
 }
 
+/**
+ * A Reaction Talent stops the Expose a Stop would land (0.13.0, the `prevent` kind: Steady the
+ * Line ❶↺, "It Exposes nothing"). The Talent's owner, or the GM, presses it: the owner pays the
+ * Talent's cost from their six, the FIRST or ONCE mark (if any) is written on the body by whoever
+ * may write it, the card is flagged `prevented` (so its Expose widgets draw no Expose button on
+ * the next render; the message's author or the GM writes the flag) and the card says so. A Zone
+ * already chosen and Exposed is not undone: the Reaction is answered before the Zone is picked.
+ */
+export async function preventExposeFromCard(message, flags, button) {
+  const preventer = resolveActor(button.dataset.preventerUuid);
+  if (!preventer) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noActor"));
+  if (!(preventer.isOwner || game.user.isGM)) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Position.preventNotYours"));
+  const body = resolveActor(button.dataset.bodyUuid);
+  const item = preventer.items.get(button.dataset.itemId ?? "");
+  if (!body || !item) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
+  const { preventersFor, sayPrevented } = await import("../../rules/prevent.mjs");
+  const { writeRuleMarks } = await import("../../rules/scene.mjs");
+  // Read again now, as the tokens stand: the owner may have moved since the card was posted.
+  const live = preventersFor(body, "expose", { token: body.tokenOnScene?.() ?? null }).reactions
+    .find(p => (p.item?.id === item.id) && (p.owner === preventer)) ?? null;
+  if (!live) return ui.notifications.warn(game.i18n.format("STARWROUGHT.Position.preventOutOfReach", { talent: SW.plainName(item.name), name: body.name }));
+  const cost = Number(button.dataset.cost) || 0;
+  if (cost) await preventer.spendActions(cost, { label: `${SW.plainName(item.name)} ${SW.ACTION_GLYPHS[cost] ?? ""}${SW.REACTION_GLYPH}` });
+  await sayPrevented(body, live, game.i18n.localize("STARWROUGHT.Condition.exposed"));
+  if (live.mark) await writeRuleMarks(body, [live.mark]);
+  if (message.isAuthor || game.user.isGM) {
+    await message.update({ [`flags.${SW.SYSTEM_ID}.prevented`]: { bodyUuid: body.uuid, talent: SW.plainName(item.name), owner: preventer.name } });
+  } else {
+    button.closest("[data-sw-widget='expose']")?.remove();
+  }
+}
+
 /** Recenter from a card. */
 export async function recenterFromCard(button) {
   const named = resolveActor(button.dataset.actorUuid);

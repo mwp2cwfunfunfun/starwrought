@@ -96,6 +96,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "The first time each encounter you would be knocked prone, you are not.",
+    "automation": "prevent: Prone, ONCE(encounter)",
     "requires": [
      "Humanity"
     ]
@@ -150,6 +151,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
+    "automation": "prevent: Expose, FOR(allies, 0ft)",
     "desc": "Your voice finds the one who is faltering.",
     "requires": [
      "Torchbearer Human"

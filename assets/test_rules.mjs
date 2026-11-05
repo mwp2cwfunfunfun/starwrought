@@ -25,7 +25,7 @@ import {
   KIND_WORD, kindOf, knownKinds
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { collectRules, rulesOfKind, ruleModifiers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
 import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment } from "../foundry/starwrought/module/rules/operators.mjs";
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
@@ -46,7 +46,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["aura", "bonus", "grant"];
+const SHIPPED_KINDS = ["aura", "bonus", "grant", "prevent"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -921,6 +921,64 @@ check("aura: the refusals", () => {
   must(/a ring is about allies, enemies or all, not "friends"/.test(bonusError("aura: 15ft, friends")), "a bad who");
   must(/^aura does not take FOR$/.test(bonusError("aura: 15ft, allies, FOR(allies)")), "an operator it lacks");
   must(/^aura does not take IF$/.test(bonusError("aura: 15ft, allies, IF(Origin=Expert)")), "IF too");
+});
+
+/* -------------------------------------------- */
+/*  The prevent kind (0.13.0)                   */
+/* -------------------------------------------- */
+
+check("prevent: the forms and the summary", () => {
+  const stubborn = bonusRule("prevent: Prone, ONCE(encounter)");
+  same(stubborn, { effect: "prone", when: null, for: null, while: null, against: null, limit: { per: "encounter" }, kind: "prevent", line: 1, text: "prevent: Prone, ONCE(encounter)" }, "Stubborn Footing");
+  const steady = bonusRule("prevent: Expose, FOR(allies, 0ft)");
+  same([steady.effect, steady.for], ["expose", { who: "allies", range: 0 }], "Steady the Line");
+  same(bonusRule("prevent: off-guard").effect, "offGuard", "a two-word Condition, hyphen and case blind");
+  same(bonusRule("prevent: OffGuard").effect, "offGuard", "by its id");
+  same(bonusRule("prevent: Exposed").effect, "expose", "Exposed reads as Expose");
+  same(bonusRule("prevent: Frightened, IF(Origin>=Expert), AGAINST(Beguilement)").against, { threat: "beguilement", reach: null }, "AGAINST");
+  must(summarize(stubborn) === "Prone does not land, once each encounter", "the summary");
+  must(summarize(steady) === "Expose does not land, for allies within 0 ft", "FOR in the summary");
+  must(typeof kindOf("prevent").hooks.prevent === "function", "the prevent hook");
+});
+
+check("prevent: the refusals", () => {
+  must(/"Sleepy" is not a Condition or Expose/.test(bonusError("prevent: Sleepy")), "a word that is no Condition");
+  must(/1 wanted/.test(bonusError("prevent: Prone, Grabbed")), "two arguments");
+  must(/a prevent is written/.test(bonusError("prevent:")), "nothing");
+  must(/"Exposed Head" is not a Condition or Expose/.test(bonusError("prevent: Exposed Head")), "a Zone's mirror status is not an effect");
+  must(/^prevent does not take VISIBLE$/.test(bonusError("prevent: Prone, VISIBLE")), "an operator it lacks");
+});
+
+check("rulePreventers: Stubborn Footing stops Prone once an encounter on its owner, and nothing else", () => {
+  const stubborn = talentWith("Stubborn Footing", "prevent: Prone, ONCE(encounter)");
+  const tess = rulesActor([stubborn]);
+  const encounter = { combat: "c1", round: 1 };
+  const first = rulePreventers(tess, { effect: "prone", encounter });
+  same(first.map(p => [p.item.name, p.reaction, p.mark]), [["Stubborn Footing", false, { key: "Stubborn Footing:1", per: "encounter" }]], "the first time");
+  tess.flags = { starwrought: { rules: { encounter: { "Stubborn Footing:1": { combat: "c1" } } } } };
+  same(rulePreventers(tess, { effect: "prone", encounter }), [], "spent for the encounter");
+  same(rulePreventers(tess, { effect: "prone", encounter: { combat: "c2", round: 1 } }).length, 1, "the next encounter");
+  same(rulePreventers(tess, { effect: "grabbed", encounter }), [], "not Grabbed");
+  const other = rulesActor([]);
+  same(rulePreventers(other, { effect: "prone", encounter, scene: fakeScene("o", [{ id: "t", x: 0, d: 1, actor: tess }, { id: "o", x: 1, d: 1, actor: other }]) }), [], "nobody else's Prone: no FOR");
+  same(rulePreventers(tess, { effect: "prone", encounter: { combat: null, round: 0 } }).map(p => p.mark), [null], "outside an encounter, every time and no mark");
+});
+
+check("rulePreventers: Steady the Line is an adjacent ally's Reaction against an Expose, never the owner's own", () => {
+  const steady = { ...talentWith("Steady the Line ❶↺", "prevent: Expose, FOR(allies, 0ft)"), id: "stl00001" };
+  steady.system.reaction = true;
+  const wren = rulesActor([steady]);
+  wren.name = "Wren";
+  const tess = rulesActor([]);
+  const bandit = rulesActor([]);
+  const place = (wrenX) => [{ id: "t", x: 0, d: 1, actor: tess }, { id: "w", x: wrenX, d: 1, actor: wren }, { id: "b", x: 1, d: -1, actor: bandit }];
+  const near = rulePreventers(tess, { effect: "expose", scene: fakeScene("t", place(1)) });
+  same(near.map(p => [p.item.id, p.owner.name, p.reaction, p.mark]), [["stl00001", "Wren", true, null]], "adjacent: offered as Wren's Reaction");
+  same(rulePreventers(tess, { effect: "expose", scene: fakeScene("t", place(4)) }), [], "three squares off: out of 0 ft");
+  same(rulePreventers(bandit, { effect: "expose", scene: fakeScene("b", place(1)) }), [], "an enemy adjacent to Wren gets nothing");
+  same(rulePreventers(wren, { effect: "expose", scene: fakeScene("w", place(1)) }), [], "not Wren's own Expose: allies only");
+  same(rulePreventers(tess, { effect: "expose" }), [], "no scene: a positional rule cannot be read");
+  same(rulePreventers(tess, { effect: "prone", scene: fakeScene("t", place(1)) }), [], "Expose, not Prone");
 });
 
 /* -------------------------------------------- */

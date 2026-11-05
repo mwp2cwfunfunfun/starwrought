@@ -26,6 +26,10 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation` and `gap`), `encounterContext()`, `threatContext(maneuver)`, `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
 | `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers `bonus`. |
 | `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative), with the operators. |
+| `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation; `toGrantField` is the wizard's field. No hook. |
+| `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map; `toAuraField` is `system.aura`. No hook. |
+| `kinds/prevent.mjs` | The `prevent` kind (0.13.0): a Condition or an Expose does not land; the `prevent` hook. |
+| `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. |
 | `kinds/<kind>.mjs` | One file per kind, each exporting the definition below. |
 | `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. |
 
@@ -229,7 +233,7 @@ A hook point is a moment in the engine where every registered kind is asked one 
 its own rules on an Actor. The engine's call sites exist once per hook point; a kind takes part by
 naming the point in its `hooks`, and a new kind that wants an existing moment adds no engine code
 (ruling 124). A new moment is still defined with the first kind that needs it (ruling 119). There
-is one.
+are two: `modifiers` (0.10.0, calculated) and `prevent` (0.13.0, triggered).
 
 ### Calculated and triggered
 
@@ -258,6 +262,34 @@ below, and a kind's hook keeps to it.
 
 A kind may speak at both: an aura is calculated while it adjusts a Defense and triggered if it
 ever restores Vigor. The two are two hook points, not one with a flag.
+
+### `prevent` (0.13.0)
+
+Triggered. `hooks.prevent(entries, context, actor) -> Preventer[]`, dispatched by
+`rulePreventers(actor, context)` in `engine.mjs`, `context` `{ effect, threat?, scene?, encounter? }`
+(`effect` a condition id or `"expose"`), each answer `{ item, owner, ownerToken, reaction, mark }`.
+The hook answers with data and writes nothing; the three answers a triggered point owes:
+
+- **Which client executes.** The client that would have written the effect. For a Condition that
+  is `SwActor#setCondition` on whichever client called it (the owner's for a Drop Flat's Prone at
+  the reveal, the GM's for a final Legs Wound applied from a damage card) and, for a status toggled
+  from the token palette or the Effects tab, the `preCreateActiveEffect` hook on the creating
+  client (`starwrought.mjs`), which answers synchronously from the index and returns `false`.
+  For an Expose it is the owner of the Reaction Talent, pressing the widget's button
+  (`preventExposeFromCard`), or the GM for them.
+- **What names the event.** The write itself: a Condition is prevented once because the write that
+  would have made it happens once (a create that `setCondition` already checked carries
+  `swChecked`, so the hook does not ask twice); an Expose is the card's, flagged `prevented` on the
+  message so the widget draws no second button.
+- **What a failure does.** `conditionPrevented` is inside a try/catch in `setCondition`: a rule that
+  cannot be read lets the Condition land (the system prevents nothing it cannot read); a card or a
+  mark that fails to write is logged and the prevention stands.
+
+`module/rules/prevent.mjs` is the Foundry side: `preventersFor(actor, effect)` (automatic ones and
+Reactions apart), `conditionPrevented(actor, id)` (the card and the mark), `exposePreventers(actor,
+token)` for the Expose widget, `sayPrevented`. Only an automatic preventer (a Talent without ↺)
+acts on a Condition write; a ↺ one would be a Reaction the owner chooses, which no Condition write
+offers yet because no Talent asks for it.
 
 ### `modifiers` (0.10.0)
 

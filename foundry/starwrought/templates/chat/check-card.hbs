@@ -118,6 +118,14 @@
         <button type="button" data-sw-action="exposeZone" data-actor-uuid="{{position.attackerUuid}}">
           <i class="fa-solid fa-bullseye"></i> {{localize "STARWROUGHT.Condition.exposed"}}
         </button>
+        {{!-- A Reaction Talent that would stop the Expose (0.13.0, the prevent kind): its owner's button. --}}
+        {{#each position.preventAttacker as |p|}}
+        <button type="button" data-sw-action="preventExpose" data-body-uuid="{{@root.position.attackerUuid}}"
+                data-preventer-uuid="{{p.ownerUuid}}" data-item-id="{{p.itemId}}" data-cost="{{p.cost}}"
+                data-tooltip="{{localize 'STARWROUGHT.Position.preventExposeHint' talent=p.itemName owner=p.ownerName}}">
+          <i class="fa-solid fa-shield-halved"></i> {{p.itemName}} ({{p.ownerName}})
+        </button>
+        {{/each}}
       </div>
     </div>
     {{/if}}{{/if}}
@@ -136,6 +144,13 @@
         <button type="button" data-sw-action="exposeZone" data-actor-uuid="{{position.defenderUuid}}">
           <i class="fa-solid fa-bullseye"></i> {{localize "STARWROUGHT.Condition.exposed"}}
         </button>
+        {{#each position.preventDefender as |p|}}
+        <button type="button" data-sw-action="preventExpose" data-body-uuid="{{@root.position.defenderUuid}}"
+                data-preventer-uuid="{{p.ownerUuid}}" data-item-id="{{p.itemId}}" data-cost="{{p.cost}}"
+                data-tooltip="{{localize 'STARWROUGHT.Position.preventExposeHint' talent=p.itemName owner=p.ownerName}}">
+          <i class="fa-solid fa-shield-halved"></i> {{p.itemName}} ({{p.ownerName}})
+        </button>
+        {{/each}}
       </div>
     </div>
     {{/if}}{{/if}}

@@ -8,6 +8,7 @@
  */
 
 import * as SW from "../../config.mjs";
+import { exposePreventers } from "../../rules/prevent.mjs";
 
 /**
  * Settle Position (PHB v4.10, The Exchange, step 5): what the card offers once the Result is
@@ -29,6 +30,16 @@ import * as SW from "../../config.mjs";
  *  - Parry that Stops a Deliberate or Committed Strike: Control, and the riposte Quick Strike
  *    when the defender owns Riposte (PHB v4.21: a Talent of its own).
  */
+/** The Expose preventers of a body, or none when the rules cannot be read (a card never dies over a rule). */
+function safePreventers(actor, tokenDoc) {
+  try {
+    return exposePreventers(actor, tokenDoc);
+  } catch (error) {
+    console.error("STARWROUGHT | the prevent rules could not be read for the Expose offer:", error);
+    return [];
+  }
+}
+
 export function position(cfg, result) {
   if (!result.outcome) return null;
   // A spell's Cast (PHB v4.21) is no Strike: nothing to Bind, no Zone to Expose by the Strike
@@ -108,6 +119,15 @@ export function position(cfg, result) {
   } else {
     pos.exposeDefender = kind.full && ((cfg.strike === "committed") || (outcome === "critical"));
   }
+
+  // The `prevent` rules (0.13.0): the Reaction Talents on the scene that could stop the Expose on
+  // the body it would land on (Steady the Line ❶↺, an adjacent ally's "It Exposes nothing"), each a
+  // button in the widget beside the Expose, pressed by the Talent's owner. Read here, on the
+  // card-posting client with the canvas; nothing is written until the button is pressed.
+  const attackerDoc = pos.attackerTokenUuid ? (fromUuidSync(pos.attackerTokenUuid) ?? null) : null;
+  const defenderDoc = pos.defenderTokenUuid ? (fromUuidSync(pos.defenderTokenUuid) ?? null) : null;
+  pos.preventAttacker = pos.exposeAttacker ? safePreventers(attacker, attackerDoc) : [];
+  pos.preventDefender = pos.exposeDefender ? safePreventers(defender, defenderDoc) : [];
 
   pos.any = pos.exposeAttacker || pos.exposeDefender || !!pos.bind || !!pos.bindNote || !!pos.ground
     || pos.riposte;

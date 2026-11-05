@@ -33,7 +33,7 @@ import { rerollFromCard, onRerollSocket } from "./cards/reroll.mjs";
 import { flareFromCard } from "./cards/flare.mjs";
 import {
   exposeFromCard, formBindFromCard, giveGroundFromCard, stepFromCard, reactionStrikeFromCard,
-  chargeReactionFromCard, recenterFromCard, onExposeSocket
+  chargeReactionFromCard, recenterFromCard, onExposeSocket, preventExposeFromCard
 } from "./cards/position.mjs";
 import { pruneAttackThresholds, openAttackPrompt, rollFromAttackCard, gmAttackRequest } from "./cards/attack.mjs";
 
@@ -88,6 +88,21 @@ export function onRenderChatMessage(message, html) {
     for (const el of html.querySelectorAll("[data-sw-action='chargeReaction']")) el.remove();
   }
 
+  // An Expose a `prevent` Reaction stopped (0.13.0): the widget goes and the card says so.
+  if (flags.prevented) {
+    let anchor = null;
+    for (const el of html.querySelectorAll("[data-sw-widget='expose']")) {
+      anchor ??= el.parentElement;
+      el.remove();
+    }
+    const note = document.createElement("p");
+    note.className = "sw-card-note sw-prevented-note";
+    note.textContent = game.i18n.format("STARWROUGHT.Position.prevented", { owner: flags.prevented.owner ?? "", talent: flags.prevented.talent ?? "" });
+    const position = html.querySelector(".sw-card-position");
+    if (position) position.querySelector(".sw-card-note")?.after(note);
+    else (anchor ?? html).prepend(note);
+  }
+
   // The GM controls (the attack card's Cancel, Reset defenses and Resend prompts) are the GM's,
   // or the coordinator's at a table with no GM connected. The content is the same on every
   // client; the row is not.
@@ -122,6 +137,7 @@ async function onCardButton(event, message, flags) {
       case "reroll": return await rerollFromCard(message, flags);
       case "expose":
       case "exposeZone": return await exposeFromCard(message, flags, button);
+      case "preventExpose": return await preventExposeFromCard(message, flags, button);
       case "formBind": return await formBindFromCard(message, flags, button);
       case "giveGround": return await giveGroundFromCard(button);
       case "step": return await stepFromCard(button);
