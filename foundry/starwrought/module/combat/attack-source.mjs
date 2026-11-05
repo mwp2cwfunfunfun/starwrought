@@ -212,7 +212,8 @@ export function describe(maneuver) {
   if (m.source === "spell") {
     const castKind = SW.CAST_KINDS[m.spell?.cast] ?? SW.CAST_KINDS[SW.DEFAULT_CAST];
     const glyph = SW.ACTION_GLYPHS[castKind.cost] ?? "";
-    const kindLabel = `${localize(castKind.label)} ${localize("STARWROUGHT.Cast.kind")}`.trim();
+    // "Quick Cast", "Focused Cast": the Cast labels already carry the word.
+    const kindLabel = localize(castKind.label);
     const threatLabel = localize(SW.THREATS[m.threat]?.label ?? "STARWROUGHT.Threat.label");
     return { kindLabel, glyph, name, threatLabel, text: `${kindLabel} ${glyph}${name ? ` (${name})` : ""}, ${threatLabel}`.trim() };
   }
