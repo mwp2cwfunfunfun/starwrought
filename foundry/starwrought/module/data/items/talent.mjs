@@ -6,8 +6,10 @@
 import * as SW from "../../config.mjs";
 import { SwItemData, describedFields } from "./base.mjs";
 import { costFields, migrateCost, prepareCost } from "./cost.mjs";
-import { auraFields, prepareAura } from "./aura.mjs";
+import { auraFields, prepareAura, applyAuraRule } from "./aura.mjs";
 import { rulesFields, prepareRules } from "./rules.mjs";
+// The `grant` rule kind (0.13.0): the Grants column's successor; the kind file is pure.
+import { toGrantField } from "../../rules/kinds/grant.mjs";
 
 const fields = foundry.data.fields;
 
@@ -117,6 +119,12 @@ export class SwTalentData extends SwItemData {
     if (!this.constellation && this.constellationName) {
       this.constellation = SW.slugify(this.constellationName);
     }
+    // The `aura` and `grant` rules in the Automation cell are the authoring (0.13.0): the field is
+    // re-derived from the rule here, as the build wrote it, so a GM's edit of the textarea on a
+    // world Item takes effect at once and the wizard and the canvas read the fields they always did.
+    applyAuraRule(this);
+    const grantRule = (this.rules ?? []).find(r => (r?.kind === "grant") && !r.error);
+    if (grantRule) this.grant = toGrantField(grantRule);
     prepareAura(this);
     prepareRules(this);
     prepareSpell(this);

@@ -30,8 +30,21 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
+    "aura": {
+      "range": 15,
+      "affects": "allies",
+      "visible": true
+    },
+    "automation": "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
     "rules": [
+      {
+        "range": 15,
+        "affects": "allies",
+        "visible": true,
+        "kind": "aura",
+        "line": 1,
+        "text": "aura: 15ft, allies, VISIBLE"
+      },
       {
         "value": 1,
         "type": "situation",
@@ -51,7 +64,7 @@
           "per": "round"
         },
         "kind": "bonus",
-        "line": 1,
+        "line": 2,
         "text": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)"
       }
     ],
@@ -65,7 +78,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "b3e22831fa86ed00"
+      "contentHash": "bb54ae64b68e9bd6"
     }
   },
   "effects": [],

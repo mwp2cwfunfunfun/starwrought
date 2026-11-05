@@ -7,7 +7,7 @@
 import * as SW from "../../config.mjs";
 import { SwItemData, describedFields } from "./base.mjs";
 import { costFields, migrateCost, prepareCost } from "./cost.mjs";
-import { auraFields, prepareAura } from "./aura.mjs";
+import { auraFields, prepareAura, applyAuraRule } from "./aura.mjs";
 import { rulesFields, prepareRules } from "./rules.mjs";
 
 const fields = foundry.data.fields;
@@ -101,6 +101,7 @@ export class SwActionData extends SwItemData {
     prepareCost(this);
     /** A Maneuver of three or more actions is Prepared: one now, the rest at your next Opportunity. */
     this.prepared = this.costValue >= SW.PREPARED_THRESHOLD;
+    applyAuraRule(this);
     prepareAura(this);
     // The road (0.7.2, ruling 104): the Activity's Travel Speed multiplier, 1 for anything that is
     // not an Activity (a Maneuver's `travel` is ""), and whether this is an Exploration Mode

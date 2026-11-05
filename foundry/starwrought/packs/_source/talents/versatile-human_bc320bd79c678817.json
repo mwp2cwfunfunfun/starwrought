@@ -21,17 +21,27 @@
     "reaction": false,
     "reactionCost": "",
     "grant": {
-      "n": 0,
-      "mode": "",
-      "scope": ""
+      "n": 1,
+      "mode": "open",
+      "scope": "anywhere"
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "grant: 1, Opening",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Opening",
+        "different": false,
+        "when": null,
+        "kind": "grant",
+        "line": 1,
+        "text": "grant: 1, Opening"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -42,7 +52,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "040865002e51e8d3"
+      "contentHash": "bde60b955c45e7e3"
     }
   },
   "effects": [],

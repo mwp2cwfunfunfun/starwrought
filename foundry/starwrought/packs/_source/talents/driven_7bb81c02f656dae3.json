@@ -23,17 +23,27 @@
     "reaction": false,
     "reactionCost": "",
     "grant": {
-      "n": 0,
-      "mode": "",
-      "scope": ""
+      "n": 1,
+      "mode": "any",
+      "scope": "Calling"
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "grant: 1, Calling",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Calling",
+        "different": false,
+        "when": null,
+        "kind": "grant",
+        "line": 1,
+        "text": "grant: 1, Calling"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -44,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "be3cc828df34afef"
+      "contentHash": "179e50c027f3f844"
     }
   },
   "effects": [],

@@ -23,17 +23,27 @@
     "reaction": false,
     "reactionCost": "",
     "grant": {
-      "n": 0,
-      "mode": "",
-      "scope": ""
+      "n": 1,
+      "mode": "any",
+      "scope": "Skill"
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "grant: 1, Skill",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Skill",
+        "different": false,
+        "when": null,
+        "kind": "grant",
+        "line": 1,
+        "text": "grant: 1, Skill"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -44,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "33cb7c62d53c62e2"
+      "contentHash": "e1dfd222300bc19c"
     }
   },
   "effects": [],

@@ -4,6 +4,9 @@
  */
 
 import * as SW from "../../config.mjs";
+// The `aura` rule kind (0.13.0): an "aura:" line in the Automation cell is the ring's authoring
+// since the Aura column retired, and the kind file is pure, as rules.mjs's imports are.
+import { toAuraField } from "../../rules/kinds/aura.mjs";
 
 const fields = foundry.data.fields;
 
@@ -25,6 +28,16 @@ export function auraFields() {
       visible: new fields.BooleanField({ initial: false })
     })
   };
+}
+
+/**
+ * An `aura` rule in the Item's stored rules overrides the field (0.13.0): the build writes the
+ * field from the rule, and this re-derives it at prepare so a world Item whose Automation textarea
+ * a GM edits draws the ring the line says without a second write. Called before prepareAura.
+ */
+export function applyAuraRule(system) {
+  const rule = (system.rules ?? []).find(r => (r?.kind === "aura") && !r.error);
+  if (rule) system.aura = toAuraField(rule);
 }
 
 /** Whether the ability has an aura at all, its colour, and the short line the sheet prints for it. */

@@ -51,6 +51,10 @@ import {
 // `bonus` kind since 0.10.0); the index is also imported directly for the summary line's count of
 // kinds. Both are free of Foundry globals at module scope, as config.mjs is.
 import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
+// The two kinds whose rules fill a field the system has read since before them (0.13.0): the
+// mapping lives in the kind file, so the build and the Talent model derive the same field.
+import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
+import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 // The system's own Trait-line splitter (0.10.1), pure as the grammar is, so the build and the
 // client read a Trait cell the same way; through 0.10.0 this file carried a copy of it.
@@ -195,12 +199,12 @@ function actionName(name) {
  */
 const auraOf = (row, rules = []) => {
   const rule = rules.find(r => r.kind === "aura");
-  const aura = rule ?? row.aura;
-  return aura ? {
+  if (rule) return { aura: toAuraField(rule) };
+  return row.aura ? {
     aura: {
-      range: Number.isInteger(aura.range) ? aura.range : null,
-      affects: aura.affects ?? "all",
-      visible: !!aura.visible
+      range: Number.isInteger(row.aura.range) ? row.aura.range : null,
+      affects: row.aura.affects ?? "all",
+      visible: !!row.aura.visible
     }
   } : {};
 };
@@ -216,11 +220,7 @@ const auraOf = (row, rules = []) => {
  */
 function grantOf(row, rules, source) {
   const rule = rules.find(r => r.kind === "grant");
-  const fromRule = rule ? (
-    rule.scope === "Opening" ? { n: rule.n, mode: "open", scope: "anywhere" }
-      : rule.scope === "Comet" ? { n: rule.n, mode: "any", scope: "anywhere" }
-        : { n: rule.n, mode: rule.different ? "different" : "any", scope: rule.scope }
-  ) : null;
+  const fromRule = rule ? toGrantField(rule) : null;
   const fromColumn = row.grant ? { n: row.grant.n, mode: row.grant.mode, scope: row.grant.scope } : null;
   if (fromRule && fromColumn && JSON.stringify(fromRule) !== JSON.stringify(fromColumn)) {
     fail(`grant: ${source}: the Grants column (${JSON.stringify(fromColumn)}) and the 'grant:' line `

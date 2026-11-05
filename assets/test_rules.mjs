@@ -27,6 +27,8 @@ import {
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
 import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment } from "../foundry/starwrought/module/rules/operators.mjs";
+import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
+import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
 // The attack flow's pure parts (0.12.0): the record's shape and the legal answers, both free of
 // Foundry globals at module scope, so the rule "no Defense is ever chosen by the system" has
@@ -44,7 +46,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["bonus"];
+const SHIPPED_KINDS = ["aura", "bonus", "grant"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -375,7 +377,7 @@ check("ruleEntries merges rules and errors in line order with errors as { error,
   const parsed = parseAutomation(`test-only: a\n${UNKNOWN_KIND}: 15 ft\ntest-only: times=x\ntest-only: b`);
   const entries = ruleEntries(parsed);
   same(entries.map(e => e.line), [1, 2, 3, 4], "line order");
-  same(entries[1], { error: `unknown rule kind "${UNKNOWN_KIND}" (known kinds: bonus, misbehaving, quiet, sly, test-only)`, line: 2, text: `${UNKNOWN_KIND}: 15 ft` }, "an unknown-kind entry");
+  same(entries[1], { error: `unknown rule kind "${UNKNOWN_KIND}" (known kinds: ${[...SHIPPED_KINDS, "misbehaving", "quiet", "sly", "test-only"].sort().join(", ")})`, line: 2, text: `${UNKNOWN_KIND}: 15 ft` }, "an unknown-kind entry");
   must(entries[2].error === "say what is being tested, before any key=value", "a kind's refusal becomes an error entry");
   must(entries[0].kind === "test-only" && entries[3].kind === "test-only", "parsed rules pass through unchanged");
   same(ruleEntries(null), [], "nothing in, nothing out");
@@ -868,6 +870,57 @@ check("ruleModifiers: zero, non-numeric and malformed modifiers are dropped; a k
     ["offer three", "sloppy-0-2", ""]
   ], "offered: keys defaulted per kind and a shared key suffixed");
   must(offered.every(o => o.offer === true), "every offer is marked");
+});
+
+/* -------------------------------------------- */
+/*  The grant kind (0.13.0)                     */
+/* -------------------------------------------- */
+
+check("grant: the forms, the field the wizard reads, the summary", () => {
+  const driven = bonusRule("grant: 1, Calling");
+  same(driven, { n: 1, scope: "Calling", different: false, when: null, kind: "grant", line: 1, text: "grant: 1, Calling" }, "Driven");
+  same(toGrantField(driven), { n: 1, mode: "any", scope: "Calling" }, "the wizard's field");
+  same(toGrantField(bonusRule("grant: 1, Opening")), { n: 1, mode: "open", scope: "anywhere" }, "Opening is a Root anywhere");
+  same(toGrantField(bonusRule("grant: 1, Comet")), { n: 1, mode: "any", scope: "anywhere" }, "a Comet goes anywhere");
+  same(toGrantField(bonusRule("grant: 2, Skills, DIFFERENT")), { n: 2, mode: "different", scope: "Skill" }, "DIFFERENT, and a plural reads");
+  same(bonusRule("grant: 1, combat style").scope, "Combat Style", "a two-word scope, case blind");
+  same(bonusRule("grant: 1, Skill, IF(Origin=Expert)").when, [{ constellation: "origin", name: "Origin", op: "=", rank: "expert" }], "IF is stored");
+  must(summarize(bonusRule("grant: 1, Calling")) === "1 Calling Talent Point", "the summary");
+  must(summarize(bonusRule("grant: 2, Skill, DIFFERENT")) === "2 Skill Talent Points, each in a different Constellation", "the plural and DIFFERENT");
+  must(kindOf("grant").hooks && Object.keys(kindOf("grant").hooks).length === 0, "no hook: the wizard consumes it");
+});
+
+check("grant: the refusals", () => {
+  must(/2 wanted/.test(bonusError("grant: 1")), "one argument");
+  must(/a grant is a whole number of points, 1 or more, not "0"/.test(bonusError("grant: 0, Skill")), "zero");
+  must(/not "one"/.test(bonusError("grant: one, Skill")), "a word");
+  must(/"Weapon" is not a grant scope: write Opening, Calling, Skill, Lore, Defense, Combat Style or Comet/.test(bonusError("grant: 1, Weapon")), "a bad scope");
+  must(/DIFFERENT needs 2 or more points/.test(bonusError("grant: 1, Skill, DIFFERENT")), "DIFFERENT on one point");
+  must(/^grant does not take FOR$/.test(bonusError("grant: 1, Skill, FOR(allies)")), "an operator it lacks");
+});
+
+/* -------------------------------------------- */
+/*  The aura kind (0.13.0)                      */
+/* -------------------------------------------- */
+
+check("aura: the forms, the field the canvas reads, the summary", () => {
+  const torch = bonusRule("aura: 15ft, allies, VISIBLE");
+  same(torch, { range: 15, affects: "allies", visible: true, kind: "aura", line: 1, text: "aura: 15ft, allies, VISIBLE" }, "Torchbearer");
+  same(toAuraField(torch), { range: 15, affects: "allies", visible: true }, "system.aura");
+  same(toAuraField(bonusRule("aura: 30 feet, ALL")), { range: 30, affects: "all", visible: false }, "feet spelled out, case blind, not pinned");
+  same(bonusRule("aura: 6 ft, enemies").affects, "enemies", "enemies");
+  must(summarize(torch) === "a 15 ft ring about allies, pinned by default", "the summary");
+  must(summarize(bonusRule("aura: 30ft, all")) === "a 30 ft ring about all", "unpinned");
+  must(Object.keys(kindOf("aura").hooks).length === 0, "no hook: the ring is a drawing");
+});
+
+check("aura: the refusals", () => {
+  must(/2 wanted/.test(bonusError("aura: 15ft")), "one argument");
+  must(/a range is written <N>ft, as in 15ft/.test(bonusError("aura: far, allies")), "a bad range");
+  must(/1 ft or more/.test(bonusError("aura: 0ft, allies")), "zero feet");
+  must(/a ring is about allies, enemies or all, not "friends"/.test(bonusError("aura: 15ft, friends")), "a bad who");
+  must(/^aura does not take FOR$/.test(bonusError("aura: 15ft, allies, FOR(allies)")), "an operator it lacks");
+  must(/^aura does not take IF$/.test(bonusError("aura: 15ft, allies, IF(Origin=Expert)")), "IF too");
 });
 
 /* -------------------------------------------- */

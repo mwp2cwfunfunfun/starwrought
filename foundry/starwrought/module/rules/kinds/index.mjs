@@ -10,15 +10,16 @@
  * about a kind, and it is the point: the aura that will serve Torchbearer serves every aura in the
  * book without this file learning anything about auras (ruling 119).
  *
- * ONE KIND SHIPS: `bonus` (./bonus.mjs; 0.10.0; rulings 121 to 124), Mike's first, for Humanity's
- * "+1 Condition bonus on checks to Aid" and its three rank sentences. It is registered at the foot
- * of this file with one line, and its one engine hook point, `modifiers`, was defined with it
+ * THE KINDS: `bonus` (./bonus.mjs; 0.10.0; rulings 121 to 124), Mike's first, for Humanity's
+ * "+1 Condition bonus on checks to Aid", rewritten to the operator grammar in 0.13.0; `grant`
+ * (./grant.mjs; 0.13.0), the Grants column's successor; `aura` (./aura.mjs; 0.13.0), the Aura
+ * column's successor and the ring Mike named first. Each is registered at the foot of this file
+ * with two lines, and the one engine hook point, `modifiers`, was defined with `bonus`
  * (../engine.mjs, `ruleModifiers`). The framework was built empty on purpose (Mike, 2026-10-03:
  * "do NOT survey the talents yet or build ANY of the automation hooks. just build the framework. we
  * will build automation syntax hooks one at a time"), and the kinds still come one at a time, with
- * him: the aura, for Torchbearer's fifteen-foot circle, is the one he named first and is still
- * next; when it lands it is `./aura.mjs`, imported and registered beside `bonus`, any new hook
- * point defined with it and not before. A non-comment line in a cell that names no registered
+ * him, any new hook point defined with the kind that needs it and not before; the grammar they
+ * share is AUTOMATION_GRAMMAR.md. A non-comment line in a cell that names no registered
  * kind is an unknown rule kind, which the build refuses (naming the Constellation, the Talent and
  * the line) and the Item sheet marks in red. `assets/test_rules.mjs` asserts the list of shipped
  * kinds, so a kind registered here without its test fails the pipeline.
@@ -139,4 +140,8 @@ export function knownKinds() {
 import bonus from "./bonus.mjs";
 registerKind(bonus);
 
-// Next: the aura, for Torchbearer, as `./aura.mjs`, its syntax Mike's to settle first.
+// 0.13.0: the Grants column's successor, the Aura column's successor, and the first triggered kind.
+import grant from "./grant.mjs";
+registerKind(grant);
+import aura from "./aura.mjs";
+registerKind(aura);

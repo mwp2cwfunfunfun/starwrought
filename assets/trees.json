@@ -72,6 +72,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a Calling Talent Point.",
+    "automation": "grant: 1, Calling",
     "desc": "You were raised to reach, and you have not stopped reaching since.",
     "requires": [
      "Humanity"
@@ -83,6 +84,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a Skill Talent Point.",
+    "automation": "grant: 1, Skill",
     "desc": "Your adaptability shows in how fast you pick up useful skills.",
     "requires": [
      "Humanity"
@@ -115,6 +117,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain 1 Opening Talent Point.",
+    "automation": "grant: 1, Opening",
     "desc": "Some humans refuse to be one thing; you are a whole toolbox wearing boots.",
     "feeds": "Wits",
     "hroot": true
@@ -138,7 +141,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
-    "automation": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
+    "automation": "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
     "hroot": true
    },
    {
