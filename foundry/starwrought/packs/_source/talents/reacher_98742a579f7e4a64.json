@@ -1,0 +1,76 @@
+{
+  "_id": "98742a579f7e4a64",
+  "name": "Reacher",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kestrel-reach",
+    "constellationName": "Kestrel Reach",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "description": "<p><i>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "toward someone who shares your Culture"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d11b952536b11224",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "83a9cc2cf1921b53"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!98742a579f7e4a64"
+}

@@ -147,3 +147,13 @@ import aura from "./aura.mjs";
 registerKind(aura);
 import prevent from "./prevent.mjs";
 registerKind(prevent);
+
+// 0.15.0: the two Cultures' Talents. `mark` (Oathbound) defines the `use` hook point, `reroll`
+// (Quick Tongue) the `card` hook point; `ignore` (Riverfoot) has no hook point: the Difficult
+// terrain region behavior asks its `ignoresTerrain` directly, at Foundry's own moment.
+import mark from "./mark.mjs";
+registerKind(mark);
+import reroll from "./reroll.mjs";
+registerKind(reroll);
+import ignore from "./ignore.mjs";
+registerKind(ignore);

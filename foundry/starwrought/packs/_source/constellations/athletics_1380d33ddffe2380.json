@@ -10,7 +10,7 @@
     "parentSlug": "",
     "group": false,
     "meta": "Skill constellation • Might",
-    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "flareTrigger": "",
     "identity": false,
     "description": "<p>Skill constellation • Might</p>",
     "traits": [],
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "9f1ee6547ad2413c"
+      "contentHash": "7dc99fa69ab6a63b"
     }
   },
   "effects": [],

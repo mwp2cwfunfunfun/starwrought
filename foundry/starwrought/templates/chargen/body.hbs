@@ -25,6 +25,8 @@
             {{#each card.lines as |line|}}<span class="sw-item-tag">{{line}}</span>{{/each}}
           </div>
           {{/if}}
+          {{!-- The Talent's Description (0.15.0), in italics above its Effect. --}}
+          {{#if card.lead}}<div class="sw-choice-lead">{{{card.lead}}}</div>{{/if}}
           <div class="sw-choice-text">{{{card.description}}}</div>
         </a>
         {{/each}}
@@ -33,12 +35,12 @@
       <p class="sw-note">{{localize "STARWROUGHT.Chargen.trainingFooter"}}</p>
       {{/if}}
       {{#if loreDetails.length}}
-      {{!-- The Lore sheet's sections for the highlighted Ancestry (0.13.0): every card's block is
-            rendered, the pointed-at one shown, the chosen one by default (see _onRender). --}}
+      {{!-- The Lore sheet's sections for the highlighted Ancestry (0.13.0) or Culture (0.15.0): every
+            card's block is rendered, the pointed-at one shown, the chosen one by default (see _onRender). --}}
       <div class="sw-lore-detail" data-default="{{loreDefault}}">
         <h4 class="sw-lore-detail-title">
-          {{localize "STARWROUGHT.Chargen.loreDetail"}}
-          <span class="sw-points" data-tooltip="{{localize 'STARWROUGHT.Chargen.loreDetailHint'}}"><i class="fa-solid fa-circle-info"></i></span>
+          {{localize "STARWROUGHT.Chargen.loreDetail" kind=loreKind}}
+          <span class="sw-points" data-tooltip="{{localize 'STARWROUGHT.Chargen.loreDetailHint' kind=loreKind}}"><i class="fa-solid fa-circle-info"></i></span>
         </h4>
         {{#each loreDetails as |d|}}
         <div class="sw-lore-block" data-key="{{d.key}}">
@@ -49,7 +51,7 @@
             <div class="sw-lore-text">{{{section.text}}}</div>
           </section>
           {{else}}
-          <p class="sw-note">{{localize "STARWROUGHT.Chargen.noLore"}}</p>
+          <p class="sw-note">{{localize "STARWROUGHT.Chargen.noLore" kind=@root.loreKind}}</p>
           {{/each}}
         </div>
         {{/each}}

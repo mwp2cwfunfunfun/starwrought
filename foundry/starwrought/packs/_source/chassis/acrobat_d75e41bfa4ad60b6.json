@@ -6,13 +6,9 @@
   "system": {
     "kind": "background",
     "attribute": "wits",
-    "grants": [
-      "Athletics",
-      "Acrobatics",
-      "Lore (Circus)"
-    ],
-    "specialAbility": "<p>You become Trained in Athletics and in Acrobatics, and you become Trained in Lore (Circus).</p>",
-    "description": "<p>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</p>",
+    "grants": [],
+    "specialAbility": "<p>You become Trained in <i>Athletics</i> and in <i>Acrobatics</i>, and you become Trained in a relevant <i>Lore</i> of your choice.</p>",
+    "description": "<p><i>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</i></p>",
     "traits": [
       "Common"
     ],
@@ -25,7 +21,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "cd9623b4960bb76f"
+      "contentHash": "a05f592ebe668791"
     }
   },
   "effects": [],

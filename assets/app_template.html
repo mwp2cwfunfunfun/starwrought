@@ -1301,17 +1301,24 @@ function wHeritage(){
   if(wiz.picks.her) h+=`<div class="callout">Your Bloodline's root is <b>granted free</b>.</div>`+grantPickersHTML(2);
   return h;
 }
+/* The Culture's record in the roster's generated cultures block (0.15.0: name, enabled, attribute,
+   languages, blurb, lore, traits, tree), as ancChassis finds an Ancestry's. */
+function culChassis(name){ return (R.cultures||[]).find(x=>x.name===name||x.tree===name)||{name:name, attribute:"", languages:"", blurb:"", tree:name}; }
+/* The card's tag line: the languages, then the Key Attribute, bulleted as the Ancestry card's chassis line is. */
+function culTag(cu, feeds){ const bits=(cu.languages||"").split(/,|•/).map(s=>s.trim()).filter(Boolean); if(feeds) bits.push(feeds); return bits.length?bits.join(" • "):"Culture constellation · root free"; }
 function wCulture(){
   const cultTrees = allTreeNames().filter(n=>treeOf(n).category==="Culture" && !treeOf(n).stub);
   if(cultTrees.length){
     let h=`<div class="callout">Culture is deliberately separate from Ancestry: an orc raised in the Kestrel Reach is simply both. Choosing a Culture grants its root <b>free</b>, and that root is always a language plus a scaled bonus to Diplomacy toward those who share it. You can embrace or reject your Culture, but you cannot unlearn its language.</div>`;
-    h+=`<div class="cards">`+cultTrees.map(cu=>{const tr=treeOf(cu); const root=tr.nodes.find(n=>n.root);
-      return `<div class="card ${wiz.picks.culName===cu?"sel":""}" data-cul="${cu}"><h4>${cu}${tr.feeds?attrIcon(tr.feeds):""}</h4><span class="tag">Culture constellation · root free</span><p>${root?stripT(root.effect):""}</p></div>`;}).join("")+`</div>`;
+    h+=`<div class="cards">`+cultTrees.map(cu=>{const tr=treeOf(cu), ch=culChassis(cu), root=tr.nodes.find(n=>n.root);
+      // The root's Description in italics, unless it is the blurb again (the Serrovanian row's is the Lore Summary word for word).
+      const rd=root&&root.desc?stripT(root.desc).trim():"", showDesc=rd&&rd!==stripT(ch.blurb||"").trim();
+      return `<div class="card ${wiz.picks.culName===cu?"sel":""}" data-cul="${cu}"><h4>${cu}${tr.feeds?attrIcon(tr.feeds):""}</h4><span class="tag">${culTag(ch, tr.feeds)}</span>${ch.blurb?`<p>${ch.blurb}</p>`:""}<p>${showDesc?`<em>${rd}</em> · `:""}${root?stripT(root.effect):""}</p></div>`;}).join("")+`</div>`;
     if(wiz.picks.culName) h+=grantPickersHTML(3);
     return h;
   }
-  let h=`<div class="cards">`+R.cultures.map(cu=>`<div class="card ${wiz.picks.culName===cu[0]?"sel":""}" data-cul="${cu[0]}">
-    <h4>${cu[0]}</h4><span class="tag">${cu[1]}</span><p>${cu[3]||cu[2]}</p></div>`).join("")+`</div>`;
+  let h=`<div class="cards">`+(R.cultures||[]).map(cu=>`<div class="card ${wiz.picks.culName===cu.name?"sel":""}" data-cul="${cu.name}">
+    <h4>${cu.name}</h4><span class="tag">${culTag(cu, cu.attribute)}</span><p>${cu.blurb||cu.attribute||""}</p></div>`).join("")+`</div>`;
   if(wiz.picks.culName) h+=grantPickersHTML(3);
   return h;
 }
@@ -1424,8 +1431,8 @@ function langs(){
     // "You know Reachspeak and Common." — take every known language the root names
     known.forEach(l=>{ if(new RegExp("\\b"+l+"\\b").test(txt)) base.push(l); });
   } else {
-    const cu=R.cultures.find(c=>c[0]===cn);
-    if(cu) (cu[1]||"").split("•").forEach(x=>{ const t=x.trim(); if(t) base.push(t); });
+    const cu=(R.cultures||[]).find(c=>c.name===cn);
+    if(cu) (cu.languages||"").split(/,|•/).forEach(x=>{ const t=x.trim(); if(t) base.push(t); });
   }
   if(!base.length) base.push("Common");
   if(!base.includes("Common")) base.unshift("Common");
@@ -2001,8 +2008,12 @@ function vWiki(){
       <p class="muted">Ancestry Constellation: ${link(a.tree)}</p>`;}).join("");
 
   if(wikiSec==="Cultures") h+=`<div class="callout">Culture is deliberately separate from Ancestry: an orc raised among Serrovanians is simply both. Choosing a Culture grants its root free, and that root is always a language plus a scaled bonus to Diplomacy toward those who share it. You can embrace or reject your Culture, but you can't unlearn its language.</div>`
-    +tbl(["Culture","Language(s)","Key attribute","About"],R.cultures.map(c=>[link(c[0]),c[1],c[2],c[3]||""]))
+    +tbl(["Culture","Language(s)","Key attribute","About"],(R.cultures||[]).map(c=>[link(c.tree||c.name),c.languages||"—",c.attribute||(treeOf(c.tree||c.name).feeds||"—"),c.blurb||""]))
     +P("The Diplomacy bonus scales with your Origin Constellation: +1 while Trained, +2 at Expert, +3 at Master, +4 at Legendary.")
+    +(R.cultures||[]).map(c=>`<h3>${c.name}</h3>
+      <p style="font-size:12px;font-style:italic;color:#4a5c66">${c.blurb||""}</p>
+      <p class="muted">Languages: ${c.languages||"—"}</p>
+      <p class="muted">Culture Constellation: ${link(c.tree||c.name)}</p>`).join("")
     +(typeof LANGS!=="undefined"&&LANGS&&LANGS.length?`<h3>Languages</h3>`+tbl(["Language","Rarity","About"],LANGS.map(l=>[l.name,l.rarity,l.desc||"—"])):"");
 
   if(wikiSec==="Backgrounds") h+=`<div class="callout">Your life before the road: each Background gives you Training in <b>two</b> Skills that its trade leans on, and <b>1 Relevant Lore</b>. That is 2 Skill Talent Points and 1 Lore Talent Point, three of the thirteen you get at creation. The Lore is the player's pick, one relevant to the life the Background describes; the table shows each Background's usual one, which the wizard offers by default.</div>`

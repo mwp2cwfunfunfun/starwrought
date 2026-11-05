@@ -1,0 +1,100 @@
+{
+  "_id": "fb714246112f6b12",
+  "name": "Broker's Eye",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kestrel-reach",
+    "constellationName": "Kestrel Reach",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Reacher"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain +2 Situation to Diplomacy and Guile checks when trading.",
+    "description": "<p><i>You recognize a fair price at a glance and know when there is room to bargain.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "bonus: +2, Situation, Diplomacy, CLAIM(when trading)\nbonus: +2, Situation, Guile, CLAIM(when trading)",
+    "rules": [
+      {
+        "value": 2,
+        "type": "situation",
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "when trading"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +2, Situation, Diplomacy, CLAIM(when trading)"
+      },
+      {
+        "value": 2,
+        "type": "situation",
+        "to": {
+          "name": "Guile",
+          "slug": "guile",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "when trading"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "bonus: +2, Situation, Guile, CLAIM(when trading)"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d11b952536b11224",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a9018c20740138bd"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fb714246112f6b12"
+}

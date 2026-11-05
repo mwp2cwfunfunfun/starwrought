@@ -29,6 +29,10 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation; `toGrantField` is the wizard's field. No hook. |
 | `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map; `toAuraField` is `system.aura`. No hook. |
 | `kinds/prevent.mjs` | The `prevent` kind (0.13.0): a Condition or an Expose does not land; the `prevent` hook. |
+| `kinds/mark.mjs` | The `mark` kind (0.15.0): using the Talent names one creature; the `use` hook. Read back by `MARKED` (`markedHolds` in operators.mjs). |
+| `kinds/reroll.mjs` | The `reroll` kind (0.15.0): a button on the matching check card throws the die again; the `card` hook. |
+| `kinds/ignore.mjs` | The `ignore` kind (0.15.0): difficult terrain of named kinds costs nothing; no hook point. `ignoresTerrain(actor, kind)` is asked by the Difficult terrain region behavior (data/region-behaviors/difficult-terrain.mjs). |
+| `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |
 | `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. |
 | `kinds/<kind>.mjs` | One file per kind, each exporting the definition below. |
 | `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. |
@@ -237,7 +241,8 @@ A hook point is a moment in the engine where every registered kind is asked one 
 its own rules on an Actor. The engine's call sites exist once per hook point; a kind takes part by
 naming the point in its `hooks`, and a new kind that wants an existing moment adds no engine code
 (ruling 124). A new moment is still defined with the first kind that needs it (ruling 119). There
-are two: `modifiers` (0.10.0, calculated) and `prevent` (0.13.0, triggered).
+are four: `modifiers` (0.10.0, calculated), `prevent` (0.13.0, triggered), `use` and `card` (0.15.0,
+both triggered).
 
 ### Calculated and triggered
 
@@ -295,10 +300,51 @@ token)` for the Expose widget, `sayPrevented`. Only an automatic preventer (a Ta
 acts on a Condition write; a ↺ one would be a Reaction the owner chooses, which no Condition write
 offers yet because no Talent asks for it.
 
+### `use` (0.15.0)
+
+Triggered. `hooks.use(entries, context, actor) -> RuleUse[]`, dispatched by `ruleUses(actor, item,
+context)` in `engine.mjs` with the rules ON THE USED ITEM alone, `context` `{ item, target: {
+actor, uuid, tokenUuid, name, relation } | null, encounter }`, each answer `{ item, write?, say?,
+refuse? }`. Defined with the `mark` kind (ruling 176). The three answers a triggered point owes:
+
+- **Which client executes.** The owner's, in `SwItem#use` (documents/item.mjs, `#useTalent`): it
+  asks the kinds first, stops on a refusal with a notice and pays nothing, else pays the cost in
+  the Talent's name in an encounter, applies the writes to the owner and posts the Talent's card
+  with the kinds' lines under it. A Talent is used from its row's Use control, which the sheet shows
+  for a Talent with a cost or with a rule of a use-kind (`usableByRule`).
+- **What names the event.** The use itself: one press, one card, one write; a second press is a
+  second use (a mark remade is the same creature named again).
+- **What a failure does.** A refusal stops the whole use before anything is paid; a hook that
+  throws is logged by the dispatcher and contributes nothing, so the Talent is still paid and
+  posted; a write that fails is logged and the card still goes out.
+
+### `card` (0.15.0)
+
+Triggered. `hooks.card(entries, context, actor) -> RuleCardOffer[]`, dispatched by
+`ruleCardOffers(actor, flags, extra)` in `engine.mjs`, `context` the posted card's
+`flags.starwrought` (`kind`, `slug`, `degree`, `itemUuid`, `threshold`, ...) plus `encounter`, each
+answer `{ item, label, action }`. Defined with the `reroll` kind (ruling 177).
+
+- **Which client executes.** The hook only names buttons; the chat render pass
+  (documents/chat.mjs) draws them on every client for the roller's owner and the GM, from the flags,
+  so a reload draws the same. The presser's client acts (`rerollByRule` in
+  documents/cards/reroll.mjs): it pays the cost in an encounter, throws the die, posts the new card
+  and marks the first superseded when it may.
+- **What names the event.** The message id: a superseded card draws no button, and the new card
+  names the one it replaced.
+- **What a failure does.** A hook that throws is logged and offers nothing; a press that cannot
+  reroll (the Talent gone, no die on the card) is a notice and the first card stands; a press by a
+  client that cannot mark the first card superseded still posts the new one and says so.
+
 ### `modifiers` (0.10.0)
 
 Calculated. `hooks.modifiers(entries, context, actor) -> Modifier[]`, dispatched by
-`ruleModifiers(actor, context)` in `engine.mjs`, which returns `{ applied, offered }`.
+`ruleModifiers(actor, context)` in `engine.mjs`, which returns `{ applied, offered, marks }`. Since
+0.15.0 the context also carries `other` (the roll's other party: the attacker a Defense answers or
+a Threshold is read against, the defender a Strike's pairing resolves against, the roller whose
+check reads a Threshold; `MARKED`), `pairingOnly` (a Strike's pairing: only the rules about the
+other party) and `read` (a Threshold read with no dialog: a claim applies only when armed), and an
+offer may come back `ticked` with a `mark` the dialog files when the box stays ticked.
 
 - **When the engine calls it.** Twice in the system, once per roll each: in `baseModifiers`
   (`module/dice/check/modifiers.mjs`, the check engine's)

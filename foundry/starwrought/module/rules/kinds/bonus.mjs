@@ -54,26 +54,31 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, hasTrait, needsMoment, summarizeOperators, titled } from "../operators.mjs";
+import { readLine, rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled } from "../operators.mjs";
 import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug } from "../../config.mjs";
 
 const SHAPE = "bonus: <±N>, <Type>, <Target> [, operators]";
 const EXAMPLE = "bonus: +1, Condition, Aid, IF(Origin=Trained)";
-const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE"]);
+const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "CLAIM", "MARKED"]);
 
 /** The three type words of PHB v3.3, lower-cased. */
 const TYPES = Object.freeze(["situation", "condition", "gear"]);
 
 /**
  * The target words that are not a Constellation or a Maneuver: a scope of rolls. Keyed by the
- * slug the word makes; the value is the roll kinds it applies to.
+ * slug the word makes; the value is the roll kinds it applies to. `Speed` (0.15.0) is feet on a
+ * Move, asked by the movement tracker and the ruler with `kind: "move"`.
  */
-const SCOPES = Object.freeze({
+export const SCOPES = Object.freeze({
   defenses: { name: "Defenses", kinds: ["defense"] },
   checks: { name: "Checks", kinds: ["check", "initiative"] },
   attacks: { name: "Attacks", kinds: ["attack"] },
-  initiative: { name: "Initiative", kinds: ["initiative"] }
+  initiative: { name: "Initiative", kinds: ["initiative"] },
+  speed: { name: "Speed", kinds: ["move"] }
 });
+
+/** The flag path of an armed claim on an owner (0.15.0; module/rules/claims.mjs writes it). */
+export const ARMED_FLAG = "rules.armed";
 
 /** A signed integer as the book prints it. */
 function signed(value) {
@@ -141,8 +146,12 @@ export default {
 
     const type = readType(typeWord);
     const to = readTarget(targetText, context?.resolve);
+    refuseOutcome(ops);
 
-    return { value, type, to, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit };
+    return {
+      value, type, to, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit,
+      claim: ops.claim, marked: ops.marked
+    };
   },
 
   /** `+1 Condition bonus to Aid while Origin is Trained`; `penalty` when negative. */
@@ -157,7 +166,12 @@ export default {
     /**
      * The modifiers this kind's rules put on a roll (the header, THE HOOK).
      * @param {Array<{rule: object, item: object, owner?: object, ownerToken?: object}>} entries
-     * @param {object} context  { kind, slug, item, rank, threat, scene, encounter, staticOnly, momentOnly }
+     * @param {object} context  { kind, slug, item, rank, threat, other, scene, encounter, staticOnly, momentOnly, pairingOnly, read }
+     *                          `other` (0.15.0) is the roll's other party, `{ actor, uuid, tokenUuid, name }`
+     *                          or null; `pairingOnly` asks for the rules about the other party alone (a
+     *                          Strike's pairing as it resolves, the blind die having had the rest);
+     *                          `read` says this is a Threshold read with no dialog, where a claim is
+     *                          applied only when armed.
      * @param {object} actor    The recipient: whose roll or Threshold this is.
      */
     modifiers(entries, context = {}, actor = null) {
@@ -178,6 +192,11 @@ export default {
         const moment = needsMoment(rule);
         if (context?.staticOnly && moment) continue;
         if (context?.momentOnly && !moment) continue;
+        // A pairing asks for the rules about the other party alone (0.15.0, ruling 175): the one
+        // blind die already carried everything else, and a claim was the dialog's.
+        if (context?.pairingOnly && !rule.marked) continue;
+        // MARKED (0.15.0): the other party must be the creature this Talent marked.
+        if (!markedHolds(rule, { item: carrier, owner }, context)) continue;
 
         // IF: every condition holds for the OWNER, the roll's own rank for `Rank`, the attack
         // answered for `Trait` (0.14.0; no attack known, no match).
@@ -230,14 +249,9 @@ export default {
           if (!compare(count, rule.while.op, rule.while.count)) continue;
         }
 
-        // AGAINST: the Threat being answered.
-        if (rule.against) {
-          const threat = context?.threat;
-          if (!threat?.threat) continue;
-          if (rule.against.threat && (rule.against.threat !== threat.threat)) continue;
-          if (rule.against.reach === "melee" && threat.melee !== true) continue;
-          if (rule.against.reach === "ranged" && threat.melee !== false) continue;
-        }
+        // AGAINST: the Threat being answered, or (0.15.0) the Constellation of the check read
+        // against this Defense.
+        if (!againstHolds(rule, context?.threat)) continue;
 
         // FIRST / ONCE: the recipient's mark for this encounter.
         let mark = null;
@@ -256,32 +270,61 @@ export default {
 
         const target = rule.to;
         const label = ownRoll ? plainName(carrier?.name ?? "") : `${plainName(carrier?.name ?? "")} (${owner?.name ?? ""})`;
-        const source = `rule:${carrier?.id ?? carrier?.name ?? "rule"}:${target.slug}`;
+        const carrierKey = carrier?.id ?? carrier?.name ?? "rule";
+        const source = `rule:${carrierKey}:${target.slug}`;
         const modifier = { label, value: rule.value, type: rule.type, source, ...(mark ? { mark } : {}) };
 
+        // The target: a scope word on the roll's kind; a Constellation on its slug; a Maneuver when
+        // the roll carries that Maneuver's Item, else OFFERED on a check (ruling 122).
+        let matched = false;
+        let maneuverOffer = false;
         if (target.type === "scope") {
-          if (SCOPES[target.slug]?.kinds.includes(rollKind)) out.push(modifier);
+          matched = !!SCOPES[target.slug]?.kinds.includes(rollKind);
+        } else {
+          const asConstellation = (target.type === "constellation") || (target.type == null);
+          const asManeuver = (target.type === "action") || (target.type == null);
+          if (asConstellation && rollSlug && (rollSlug === target.slug)) matched = true;
+          else if (asManeuver) {
+            if (rollManeuver !== null) matched = rollManeuver === target.slug;
+            else if ((rollKind === "check") && (target.type != null)) maneuverOffer = true;
+          }
+        }
+        if (!matched && !maneuverOffer) continue;
+
+        if (maneuverOffer) {
+          out.push({
+            ...modifier,
+            label: `${label}: ${target.name}`,
+            offer: true,
+            key: `bonus-${carrierKey}-${rule.line ?? 0}`,
+            hint: `${label}: this bonus applies to checks to ${target.name}. Tick it if this roll is one.`
+          });
           continue;
         }
-        const asConstellation = (target.type === "constellation") || (target.type == null);
-        const asManeuver = (target.type === "action") || (target.type == null);
-        if (asConstellation && rollSlug && (rollSlug === target.slug)) {
-          out.push(modifier);
+
+        // CLAIM (0.15.0, ruling 174): the player's decision. Offered in the dialog, ticked when the
+        // Talent is armed; on a Threshold read (no dialog) applied only when armed; either way an
+        // armed claim carries the mark that spends it once the roll or the read resolves.
+        if (rule.claim) {
+          const armed = !!owner?.flags?.starwrought?.rules?.armed?.[carrierKey];
+          const spend = { key: String(carrierKey), per: "claim" };
+          if (context?.read) {
+            if (armed) out.push({ ...modifier, mark: spend });
+            continue;
+          }
+          const value = rule.value > 0 ? `+${rule.value}` : String(rule.value);
+          out.push({
+            ...modifier,
+            offer: true,
+            ticked: armed,
+            key: `claim-${carrierKey}-${rule.line ?? 0}`,
+            hint: `${label}: ${value} ${titled(rule.type)} ${rule.value < 0 ? "penalty" : "bonus"} ${rule.claim.text}. Tick it if this roll is one.`,
+            ...(armed ? { mark: spend } : {})
+          });
           continue;
         }
-        if (!asManeuver) continue;
-        if (rollManeuver !== null) {
-          if (rollManeuver === target.slug) out.push(modifier);
-          continue;
-        }
-        if ((rollKind !== "check") || (target.type == null)) continue;
-        out.push({
-          ...modifier,
-          label: `${label}: ${target.name}`,
-          offer: true,
-          key: `bonus-${carrier?.id ?? carrier?.name ?? "rule"}-${rule.line ?? 0}`,
-          hint: `${label}: this bonus applies to checks to ${target.name}. Tick it if this roll is one.`
-        });
+
+        out.push(modifier);
       }
       return out;
     }

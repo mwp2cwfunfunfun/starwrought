@@ -70,7 +70,7 @@ export function registerMoveRuler() {
       return { ...base, color };
     }
 
-    /** Say what the move costs in actions, next to what it costs in feet. */
+    /** Say what the move costs in actions, next to what it costs in feet, and what terrain it crossed. */
     _getWaypointLabelContext(waypoint, state) {
       const context = super._getWaypointLabelContext(waypoint, state);
       if (!context?.cost) return context;
@@ -79,7 +79,12 @@ export function registerMoveRuler() {
       // Core prints "{total} {units}"; the units go before our glyphs, so the label reads
       // "12 ft ❶×2" and not "12 ❶×2 ft" (0.5.3).
       const units = context.cost.units ?? "";
-      context.cost.total = `${context.cost.total}${units ? ` ${units}` : ""} ${labelFor(move, this.#capped(move))}`;
+      // The kinds of difficult terrain this drag crossed (0.15.0, SwTerrainData), named on the label.
+      const kinds = terrainKinds(waypoint);
+      const terrain = kinds.length
+        ? ` · ${game.i18n.format("STARWROUGHT.Terrain.rulerLabel", { kinds: kinds.map(k => game.i18n.localize(SW.TERRAIN_KINDS[k]?.label ?? k)).join(", ") })}`
+        : "";
+      context.cost.total = `${context.cost.total}${units ? ` ${units}` : ""} ${labelFor(move, this.#capped(move))}${terrain}`;
       context.cost.units = "";
       return context;
     }
@@ -156,6 +161,22 @@ function dragStart(waypoint) {
     w = w.previous;
   }
   return w;
+}
+
+/**
+ * The kinds of difficult terrain crossed since the drag began (0.15.0): every waypoint back to the
+ * start carries the terrain data of the segment that reached it (SwTerrainData, with `kinds`).
+ */
+function terrainKinds(waypoint) {
+  const kinds = [];
+  const start = dragStart(waypoint);
+  let w = waypoint;
+  while (w) {
+    for (const k of w.terrain?.kinds ?? []) if (!kinds.includes(k)) kinds.push(k);
+    if (w === start) break;
+    w = w.previous;
+  }
+  return kinds.sort();
 }
 
 /** Is the path from the drag's start to this waypoint one straight line? Exact diagonals are straight. */

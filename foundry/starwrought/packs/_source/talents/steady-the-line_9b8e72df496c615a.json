@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
+    "effect": "You gain the <b>Steady the Line ❶↺ </b>Maneuver:<b><br>Trigger</b> An adjacent ally would become Exposed.<br><b>Effect</b> The adjacent ally does not become Exposed.",
     "description": "<p><i>You cut through the clash, steadying a companion’s defense before it can falter.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -45,6 +45,7 @@
         "against": null,
         "seen": false,
         "limit": null,
+        "marked": false,
         "kind": "prevent",
         "line": 1,
         "text": "prevent: Expose, FOR(allies, 0ft)"
@@ -60,7 +61,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "a64c8795734d070c"
+      "contentHash": "60234f283c9af683"
     }
   },
   "effects": [],

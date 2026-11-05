@@ -1,0 +1,81 @@
+{
+  "_id": "74f827e856cc5dbe",
+  "name": "Kestrel Reach",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
+  "system": {
+    "kind": "culture",
+    "constellation": "kestrel-reach",
+    "attribute": "wits",
+    "languages": "Reachspeak, Common",
+    "description": "<p>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>Kestrel Reach spreads across a wide river delta, where channels divide around crowded islands and trade-towns rise above the floodwater. Six languages may be spoken along a single dock, with three more heard by evening. Boats bring unfamiliar goods, travelers bring unfamiliar customs, and someone is always looking for a person who understands both.<br><br>Reachers grow accustomed to difference early. An elven shipwright, a dwarven grain factor, and a human ferryman may share a neighborhood, a business venture, and a running argument about harbor fees. Local knowledge means knowing how people prefer to be approached, which courtesies matter to them, and whom they trust to make an introduction. A good broker can accomplish with an afternoon’s conversation what an armed company might spend a season making worse.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who is comfortable among unfamiliar faces, always listening for an opportunity, and rarely without someone they could ask for help, choose Kestrel Reach.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>Learn a few useful words whenever you encounter a new language.<br>Introduce yourself by naming someone the other person already knows.<br>Look for what each side needs before deciding that a dispute cannot be settled.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>Expect you to know a useful contact in almost any port.<br>Wonder whether your friendly questions are leading toward a proposal.<br>Rely on you to notice the custom, omission, or hidden cost they overlooked.</p>"
+      },
+      {
+        "label": "Dress and Bearing",
+        "text": "<p>Reach clothing reflects crowded docks, changeable weather, and goods arriving from distant places. Practical layers, secure pockets, broad hats, and garments kept clear of ropes are common. Fabrics and ornaments travel freely between communities, adapted to each wearer’s build and family traditions.<br><br>Reachers often display a token of their trade, vessel, or trading house where an acquaintance can recognize it. Greeting gestures vary between neighborhoods, and knowing which one to offer can make a warmer introduction than expensive clothes.</p>"
+      },
+      {
+        "label": "Upbringing and Milestones",
+        "text": "<p>Young Reachers learn by carrying messages, helping with household business, and accompanying experienced relatives through markets and landing places. They are taught to notice who has spoken, who has been overlooked, and whether everyone understands the same terms.<br><br>A first independently completed bargain or entrusted journey often marks growing responsibility. Its importance lies in returning with the agreement fulfilled and the other party willing to deal with the household again. These milestones follow readiness and circumstance across the Reach’s many ancestries.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>The delta depends on cooperation that extends beyond individual towns. Ferrymen need maintained channels, merchants need dependable warehouses, and everyone needs the flood banks to hold. Neighborhood associations, trading houses, craft guilds, and harbor officials overlap in a web of favors and competing responsibilities.<br><br>Reputation moves quickly along the waterways. A generous settlement can bring business from three towns away; a cheated customer can arrive ahead of you wherever you hoped to trade next. Brokers earn their standing by remembering details, protecting confidences, and finding terms that people will actually honor.<br><br>The Reach’s friendliness can conceal hard boundaries. Established houses sometimes keep profitable routes among themselves, and an introduction may matter more than an excellent offer. Reachers admire people who open opportunities for others, but they also know how easily a well-connected few can decide who gets a place at the table.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Reach shrines welcome travelers, returning crews, and families whose traditions came from elsewhere. River spirits, ancestral patrons, and gods of craft, fortune, and safe passage all receive offerings.<br><br>Many Reachers regard hospitality as an obligation that travels. Someone shelters a stranger today because another household may shelter their own kin tomorrow. Gifts, favors, and acts of kindness create relationships whose value cannot always be entered into an account.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>Learn how to greet people on their own terms.<br>Give the other party a reason to trade with you again.<br>Share a useful introduction when it costs you little.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>Abuse the protection offered to a guest.<br>Conceal a danger that makes an agreement impossible to fulfill.<br>Betray a confidence entrusted to you as a broker.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br><b>Common given names</b> Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br><b>Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br><b>Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank.</p>"
+      }
+    ],
+    "specialAbility": "<p>You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "ae2a6da93bc423e9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "21c0679b820b283b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!74f827e856cc5dbe"
+}

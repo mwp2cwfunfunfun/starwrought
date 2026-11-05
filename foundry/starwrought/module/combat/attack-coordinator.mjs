@@ -36,7 +36,8 @@ import { isLegalAnswer, postureName, postureBonus, postureZone, postureRule } fr
 import { gapBetween } from "../canvas/geometry.mjs";
 import { AttackSocket, SOCKET } from "./attack-socket.mjs";
 import { resolveSource, maneuverFrom, costOf, meleeAnswers, attackThreshold, describe, resolveArgs, rollBlind } from "./attack-source.mjs";
-import { threatContext, writeRuleMarks } from "../rules/scene.mjs";
+import { threatContext, writeRuleMarks, sceneContextFor, encounterContext } from "../rules/scene.mjs";
+import { ruleModifiers } from "../rules/engine.mjs";
 
 /** The socket channel, defined by the transport (attack-socket.mjs) and re-exported for callers. */
 export { SOCKET };
@@ -1103,7 +1104,8 @@ export class AttackCoordinator {
       // every defender has committed, so a missing commitment is a programming error.
       if (!commitment?.defense) throw new Error(`STARWROUGHT | attack workflow ${workflow.id}: no commitment for ${target.name}`);
       const actor = resolveActor(target.actorUuid);
-      const reading = AttackCoordinator.#thresholdFor(actor, commitment, permitted, threatContext(workflow.maneuver));
+      const reading = AttackCoordinator.#thresholdFor(actor, commitment, permitted, threatContext(workflow.maneuver),
+        resolveTokenDoc(workflow.attacker?.tokenUuid) ?? resolveActor(workflow.attacker?.actorUuid));
       target.revealed = {
         defense: reading?.key ?? commitment.defense,
         reaction: commitment.reaction ?? null,
@@ -1173,11 +1175,12 @@ export class AttackCoordinator {
    * coordinator once the pairing resolves (never at the reveal, which may be read again).
    * @returns {{key: string, threshold: number, note: string|null, marks: Array}|null}
    */
-  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null) {
+  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null, attacker = null) {
     if (!actor) return null;
     const allowed = (Array.isArray(permitted) && permitted.length) ? permitted : [...SW.THREATS.blow.defenses];
     if (typeof actor.defenseThresholdFor === "function") {
-      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed, threat });
+      // `attacker` (0.15.0): the other party, for a rule about who is attacking (`MARKED`).
+      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed, threat, attacker });
       if (reading && Number.isFinite(Number(reading.threshold))) {
         return {
           key: reading.key ?? defense, threshold: Number(reading.threshold),
@@ -1216,6 +1219,37 @@ export class AttackCoordinator {
   }
 
   /**
+   * The attacker's rules about one defender (0.15.0, ruling 175): asked with `pairingOnly`, so
+   * only a rule that needs the other party (`MARKED`) answers; the blind die carried the rest. A
+   * character's rules only: an adversary rolls flat. The Item and the slug are the attack's, as
+   * `resolveArgs` reads them, so a `bonus ... Attacks, MARKED` and a Constellation-targeted one
+   * both match as they would on the die.
+   * @returns {{applied: Array, marks: Array}}
+   */
+  static #pairingModifiers(attacker, attackerToken, defender, defenderToken, maneuver) {
+    const none = { applied: [], marks: [] };
+    if (!attacker || (attacker.type !== "character") || !defender) return none;
+    try {
+      const args = resolveArgs(attacker, maneuver);
+      const item = args.weapon ?? args.talent ?? null;
+      const slug = args.slug ?? (maneuver?.ranged ? SW.RANGED_SLUG : SW.MELEE_SLUG);
+      const other = {
+        actor: defender, uuid: defender.uuid, tokenUuid: defenderToken?.uuid ?? null,
+        name: String(defenderToken?.name ?? defender.name ?? "")
+      };
+      const result = ruleModifiers(attacker, {
+        kind: "attack", slug, item, rank: attacker.system?.proficiency?.(slug)?.rank ?? "untrained",
+        threat: null, other, scene: sceneContextFor(attacker, attackerToken ?? null), encounter: encounterContext(),
+        pairingOnly: true
+      });
+      return { applied: result.applied ?? [], marks: result.marks ?? [] };
+    } catch (err) {
+      console.error("STARWROUGHT | the pairing's rules could not be read", err);
+      return none;
+    }
+  }
+
+  /**
    * The Threshold a resolved card's die was read against, computed again from actor data for a
    * reroll (0.5.3) of a card that hid it: the defender's Defense with the revealed answer folded
    * in for an attack card, the adversary's Attack Threshold for a Defense card. Null when the
@@ -1230,7 +1264,7 @@ export class AttackCoordinator {
       // The card's Defense is the one the die met; every Defense is permitted for a reread.
       const reading = AttackCoordinator.#thresholdFor(defender, {
         defense: flags.defense, reaction: flags.reaction ?? null, posture: flags.posture ?? null
-      }, Object.keys(SW.DEFENSES));
+      }, Object.keys(SW.DEFENSES), null, resolveActor(flags.actorUuid));
       return Number.isFinite(reading?.threshold) ? reading.threshold : null;
     }
     if (flags.kind === "defense") {
@@ -1385,9 +1419,10 @@ export class AttackCoordinator {
     if (!rollData?.roll) throw new Error("the pairing has no roll");
 
     let kind, threshold, showThreshold, speakerActor;
+    let pairingModifiers = [];
     if (target.roller === "attacker") {
       kind = "attack";
-      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threatContext(maneuver));
+      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threatContext(maneuver), attackerToken ?? attacker);
       threshold = reading?.threshold ?? target.threshold ?? 10;
       target.threshold = threshold;
       showThreshold = !!target.isPlayer && showPcThresholds;
@@ -1398,6 +1433,14 @@ export class AttackCoordinator {
       // it does not own, and then the mark is not written (AUTOMATION_GRAMMAR.md, section 6).
       if (reading?.marks?.length) {
         await writeRuleMarks(defender, reading.marks).catch(err => console.error("STARWROUGHT | the rule marks could not be written", err));
+      }
+      // The attacker's rules about THIS defender (0.15.0, ruling 175; `MARKED`): the one blind
+      // die knew nobody, so they are read per pairing here and added to the pairing's total,
+      // listed on its card and kept in its flags for a reroll.
+      const pairing = AttackCoordinator.#pairingModifiers(attacker, attackerToken, defender, defenderToken, maneuver);
+      pairingModifiers = pairing.applied;
+      if (pairing.marks.length) {
+        await writeRuleMarks(attacker, pairing.marks).catch(err => console.error("STARWROUGHT | the rule marks could not be written", err));
       }
     } else {
       kind = "defense";
@@ -1424,7 +1467,8 @@ export class AttackCoordinator {
       posture: revealed.posture ?? null,
       threshold,
       showThreshold,
-      speakerActor
+      speakerActor,
+      pairingModifiers
     });
 
     const outcome = result?.outcome;

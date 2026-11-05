@@ -11,10 +11,10 @@
     "bloodlineRoot": false,
     "capstone": false,
     "requires": [],
-    "prerequisites": "Raised in Serrovane",
+    "prerequisites": "",
     "attribute": "",
-    "effect": "You know Common and Serrovine.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
-    "description": "",
+    "effect": "You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "description": "<p><i>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -30,8 +30,31 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "toward someone who shares your Culture"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -42,7 +65,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "8029a8123c57b207"
+      "contentHash": "7a4217e1b4fd6294"
     }
   },
   "effects": [],

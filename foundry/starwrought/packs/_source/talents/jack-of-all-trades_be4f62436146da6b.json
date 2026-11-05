@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "wits",
-    "effect": "You gain a +1 Situation bonus to your Untrained checks.",
+    "effect": "You gain a +1 Condition bonus to your Untrained checks.",
     "description": "<p><i>You have tried your hand at enough things to find a familiar thread in almost any task.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -54,6 +54,8 @@
         "against": null,
         "seen": false,
         "limit": null,
+        "claim": null,
+        "marked": false,
         "kind": "bonus",
         "line": 1,
         "text": "bonus: +1, Situation, Checks, IF(Rank=Untrained)"
@@ -69,7 +71,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ebcdac0b98bcf311"
+      "contentHash": "83376250238298db"
     }
   },
   "effects": [],

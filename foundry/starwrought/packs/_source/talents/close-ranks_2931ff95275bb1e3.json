@@ -55,10 +55,14 @@
         },
         "against": {
           "threat": "blow",
-          "reach": null
+          "reach": null,
+          "check": null,
+          "name": null
         },
         "seen": false,
         "limit": null,
+        "claim": null,
+        "marked": false,
         "kind": "bonus",
         "line": 1,
         "text": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)"
@@ -74,7 +78,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "89ee6e0867498ead"
+      "contentHash": "e0bfdd2edd43b7e8"
     }
   },
   "effects": [],

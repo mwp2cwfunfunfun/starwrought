@@ -250,7 +250,7 @@ let TREES = {
    },
    {
     "label": "Names",
-    "text": "Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Jonna, Kestrel, Liesl, Marek, Nadia, Osric, Petra, Rowan, Sable, Tomas, Verity, Wynne"
+    "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br><b>Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br><b>Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br><b>Example names</b> Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
    }
   ],
   "traits": [
@@ -332,7 +332,7 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "<b>Trigger</b> An adjacent ally's Strike is Stopped and would Expose them.<br><b>Effect</b> It Exposes nothing.",
+    "effect": "You gain the <b>Steady the Line ❶↺ </b>Maneuver:<b><br>Trigger</b> An adjacent ally would become Exposed.<br><b>Effect</b> The adjacent ally does not become Exposed.",
     "automation": "prevent: Expose, FOR(allies, 0ft)",
     "desc": "<i>You cut through the clash, steadying a companion’s defense before it can falter.</i>",
     "requires": [
@@ -355,7 +355,7 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain a +1 Situation bonus to your Untrained checks.",
+    "effect": "You gain a +1 Condition bonus to your Untrained checks.",
     "automation": "bonus: +1, Situation, Checks, IF(Rank=Untrained)",
     "desc": "<i>You have tried your hand at enough things to find a familiar thread in almost any task.</i>",
     "feeds": "Wits",
@@ -372,15 +372,16 @@ let TREES = {
   "skills": [
    "Stealth"
   ],
-  "meta": "Calling • Agility (8 Opening Vigor • Sneak Attack)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Agility",
+  "sparks": "",
   "nodes": [
    {
     "name": "Ambusher Calling",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You become Trained in Stealth.<br><br>You gain Sneak Attack:<br>+1d6 precision damage vs. Off-Guard foes. Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Melee or Ranged.",
+    "effect": "You become Trained in Stealth.<br><br>You gain the Sneak Attack Maneuver:<br>+1d6 precision damage vs. Off-Guard foes. Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Melee or Ranged.",
+    "desc": "<i>You stalk the edges of a fight, striking where attention falters and defenses leave an opening.</i>",
     "root": true
    },
    {
@@ -389,6 +390,7 @@ let TREES = {
     "cost": 1,
     "enabled": false,
     "effect": "In the first round, foes that haven't acted yet are Wrong-Footed to you.",
+    "desc": "<i>You move while your enemies are still grasping the danger, catching them before they can gather themselves.</i>",
     "requires": [
      "Ambusher Calling"
     ]
@@ -398,7 +400,8 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Trigger</b> An ally Hits a creature within your reach.<br><b>Effect</b> Strike that creature. It is Off-Guard to this Strike.",
+    "effect": "<b>Opportunist ❶↺<br><br>Trigger</b> An ally Hits a creature within your reach.<br><b>Effect</b> Strike that creature. It is Off-Guard to this Strike.",
+    "desc": "<i>An ally’s attack creates a moment of distraction, and you are ready to make it costly.</i>",
     "requires": [
      "Ambusher Calling"
     ]
@@ -409,6 +412,7 @@ let TREES = {
     "cost": 1,
     "enabled": false,
     "effect": "Once per round, when your Sneak Attack damage applies to a Hit, the Zone it landed on becomes Exposed.",
+    "desc": "<i>You turn a precise strike into an opening in your enemy’s guard, leaving a vulnerable spot exposed.</i>",
     "requires": [
      "Ambusher Calling"
     ]
@@ -419,6 +423,7 @@ let TREES = {
     "cost": 1,
     "enabled": false,
     "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
+    "desc": "<i>You place your strikes where the bleeding is hardest to stop.</i>",
     "requires": [
      "Ambusher Calling"
     ]
@@ -429,6 +434,7 @@ let TREES = {
     "cost": 1,
     "enabled": false,
     "effect": "Whenever your Strike is a critical hit and deals damage, the target is Wrong-Footed against your attacks until the end of the next round.",
+    "desc": "<i>A well-placed strike disrupts your enemy’s stance, leaving them scrambling to recover their guard.</i>",
     "requires": [
      "Ambusher Calling"
     ]
@@ -442,8 +448,8 @@ let TREES = {
   "skills": [
    "Athletics"
   ],
-  "meta": "Calling • Might (12 Opening Vigor • Rage)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Might",
+  "sparks": "",
   "nodes": [
    {
     "name": "Berserker Calling",
@@ -499,10 +505,10 @@ let TREES = {
     "cost": 1,
     "enabled": false,
     "effect": "<b>Frequency</b> once per encounter<br>You push back your rage for a moment in order to think clearly. Until the end of this round, you lose your Heedless condition.",
+    "feeds": "Presence",
     "requires": [
      "Berserker Calling"
-    ],
-    "feeds": "Presence"
+    ]
    }
   ]
  },
@@ -513,8 +519,8 @@ let TREES = {
   "skills": [
    "Acrobatics"
   ],
-  "meta": "Calling • Presence (10 Opening Vigor • Panache)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Presence",
+  "sparks": "",
   "nodes": [
    {
     "name": "Bravo Calling",
@@ -593,8 +599,8 @@ let TREES = {
   "skills": [
    "Awareness"
   ],
-  "meta": "Calling • Wits (10 Opening Vigor • Mark Prey)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Wits",
+  "sparks": "",
   "nodes": [
    {
     "name": "Hunter Calling",
@@ -668,8 +674,8 @@ let TREES = {
   "skills": [
    "Athletics"
   ],
-  "meta": "Calling • Might (10 Opening Vigor • Drilled)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Might",
+  "sparks": "",
   "nodes": [
    {
     "name": "Weaponmaster Calling",
@@ -730,8 +736,8 @@ let TREES = {
   "skills": [
    "Guile"
   ],
-  "meta": "Calling • Wits (6 Opening Vigor • Spellshaping)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Wits",
+  "sparks": "",
   "nodes": [
    {
     "name": "Spellshaping",
@@ -790,8 +796,8 @@ let TREES = {
   "skills": [
    "Athletics"
   ],
-  "meta": "Calling • Might (8 Opening Vigor • Blood Price)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Might",
+  "sparks": "",
   "nodes": [
    {
     "name": "Blood Price",
@@ -850,8 +856,8 @@ let TREES = {
   "skills": [
    "Awareness"
   ],
-  "meta": "Calling • Presence (6 Opening Vigor • Death Echo)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Presence",
+  "sparks": "",
   "nodes": [
    {
     "name": "Death Echo",
@@ -930,8 +936,8 @@ let TREES = {
   "skills": [
    "Awareness"
   ],
-  "meta": "Calling • Wits (6 Opening Vigor • Call Manifestation)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Wits",
+  "sparks": "",
   "nodes": [
    {
     "name": "Call Manifestation ❷",
@@ -1000,8 +1006,8 @@ let TREES = {
   "skills": [
    "Athletics"
   ],
-  "meta": "Calling • Might (8 Opening Vigor • Spellbound Edge)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "meta": "Calling • Might",
+  "sparks": "",
   "nodes": [
    {
     "name": "Spellbound Edge ❶",
@@ -1770,24 +1776,77 @@ let TREES = {
   "category": "Culture",
   "enabled": true,
   "feeds": "Presence",
-  "meta": "Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "lore": [
+   {
+    "label": "Summary",
+    "text": "Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word."
+   },
+   {
+    "label": "About",
+    "text": "Serrovane is a lowland order-state of cultivated fields, raised roads, and towns gathered around registry halls. Its ledgers are kept in triplicate, its agreements carry witnesses, and its disputes follow forms that everyone is expected to respect. A promise spoken casually may be forgotten. A promise entered into the record becomes something other people can build their lives upon.<br><br>People of many ancestries belong to this order. An elven witness, a dwarven magistrate, and a human challenger may disagree bitterly while trusting the same record. Serrovanians learn how to state a grievance, acknowledge an obligation, and offer a concession without surrendering their standing. They can be formidable negotiators: they know exactly what they have promised, and they expect you to know the same."
+   },
+   {
+    "label": "If you want...",
+    "text": "If you want a character who takes promises seriously, understands the power of public reputation, and can turn a few carefully chosen words into a lasting obligation, choose Serrovane."
+   },
+   {
+    "label": "You Might...",
+    "text": "• Ask who witnessed an agreement before asking whether it was a good one.<br>• Carry copies of important promises, judgments, or introductions among your belongings.<br>• Insist on settling the terms of a contest before anyone draws a weapon."
+   },
+   {
+    "label": "Others Probably...",
+    "text": "• Trust you to remember an obligation long after everyone else has forgotten it.<br>• Find your careful questions reassuring, exhausting, or faintly threatening.<br>• Worry that an innocent remark might become a commitment in your hearing."
+   },
+   {
+    "label": "Dress and Bearing",
+    "text": "Serrovanian clothing favors orderly layers, durable fabrics, and visible signs of affiliation. Household colors, office badges, and witness cords help others recognize whom a person represents. Garments vary with ancestry, occupation, and means, but people generally take care that closures are secure and identifying marks remain legible.<br><br>Formal bearing matters as much as fine clothing. Standing to acknowledge a witness, leaving another speaker room to finish, and presenting a document with clean hands all communicate respect."
+   },
+   {
+    "label": "Upbringing and Milestones",
+    "text": "Children learn promises through ordinary responsibilities: returning borrowed tools, delivering messages accurately, and admitting when a task remains unfinished. Many households preserve a young person’s first independently witnessed obligation.<br><br>Public responsibility follows demonstrated judgment, with its timing shaped by ancestry and family custom. Taking an office, joining a household, completing an apprenticeship, and retiring from service are commonly marked by a formal acknowledgment of the duties being accepted or released."
+   },
+   {
+    "label": "Society",
+    "text": "Serrovanian institutions depend on recorded responsibilities. Officials swear to the limits of their offices, guilds preserve the terms of their charters, and households keep accounts of debts, inheritances, and obligations. Public scribes and witnesses are familiar figures in markets and village squares.<br><br>Formal challenge gives disputes an accepted shape. The grievance, the contest, and the consequences are declared before witnesses. Some challenges involve arms; others test skill, testimony, or the ability to substantiate a claim. Violence within accepted terms can be lawful. Breaking those terms threatens the trust that made the challenge possible.<br><br>This order has its cruelties. Wealth buys patient advocates, old records can preserve old injustices, and a precisely worded agreement can conceal an ugly intention. Serrovanians argue fiercely over whether justice lies in honoring the record or correcting what should never have been written into it."
+   },
+   {
+    "label": "Beliefs",
+    "text": "Serrovanians follow many faiths, but promises, testimony, and remembrance occupy an honored place across them. Shrines often witness marriages, reconciliations, and vows of service. An ancestor may be remembered through an obligation their descendants continue to uphold.<br><br>Mercy also has a recognized dignity. Publicly releasing someone from an oath can be an act of generosity remembered as long as the oath itself."
+   },
+   {
+    "label": "Popular Edicts",
+    "text": "• Keep your word when doing so becomes inconvenient.<br>• State your terms before the contest begins.<br>• Stand witness when another needs the truth recorded."
+   },
+   {
+    "label": "Popular Anathemas",
+    "text": "• Knowingly swear an oath you intend to break.<br>• Falsify a record entrusted to your care.<br>• Inflict punishment beyond the terms of an accepted challenge."
+   },
+   {
+    "label": "Names",
+    "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br><b>Common given names</b> Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br><b>Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br><b>Example name</b>s Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
+   }
+  ],
+  "meta": "Culture constellation • Presence",
+  "sparks": "",
   "nodes": [
    {
     "name": "Serrovanian",
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You know Common and Serrovine.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
-    "prereqs": "Raised in Serrovane",
+    "effect": "You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "desc": "<i>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</i>",
     "root": true
    },
    {
     "name": "Oathbound",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
-    "effect": "Name one creature that has broken a bargain, a truce, or a formal challenge with you. You gain a +1 Situation bonus to Attack rolls and Defense rolls against that creature until the encounter ends. You may have only one Oathbound creature at a time.",
+    "enabled": true,
+    "effect": "You gain the <b>Oathbound</b> ❶ Maneuver:<br><b>Effect</b> Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.",
+    "automation": "mark: enemies, encounter\nbonus: +1, Condition, Attacks, MARKED\nbonus: +1, Condition, Defenses, MARKED",
+    "desc": "<i>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</i>",
     "requires": [
      "Serrovanian"
     ]
@@ -1796,8 +1855,10 @@ let TREES = {
     "name": "Contract Literate",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
-    "effect": "Read legal; and infernal; contracts at a glance.<br><br>+2 Situation to notice hidden clauses, traps, and altered terms in any agreement.",
+    "enabled": true,
+    "effect": "You gain a +2 Condition bonus to notice hidden clauses, traps, and altered terms in any agreement.",
+    "automation": "bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
+    "desc": "<i>You read what an agreement conceals as carefully as what it promises.</i>",
     "requires": [
      "Serrovanian"
     ]
@@ -1806,37 +1867,91 @@ let TREES = {
     "name": "Iron Etiquette",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
-    "effect": "+1 Situation to checks against Intimidation and social manipulation.",
+    "enabled": true,
+    "effect": "You gain a +1 Condition bonus to checks against Intimidation and other social manipulations.",
+    "automation": "bonus: +1, Condition, Defenses, AGAINST(Intimidation)\nbonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)",
+    "desc": "<i>Court manners are armor, and yours hold firm under threats, flattery, and calculated insult.</i>",
     "requires": [
      "Serrovanian"
-    ],
-    "desc": "Court manners are armor."
+    ]
    }
   ]
  },
  "Kestrel Reach": {
   "category": "Culture",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Wits",
-  "meta": "Culture constellation • Wits (Reachspeak + Common; delta trade-towns where a good broker beats a good sword)",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "lore": [
+   {
+    "label": "Summary",
+    "text": "Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again."
+   },
+   {
+    "label": "About",
+    "text": "Kestrel Reach spreads across a wide river delta, where channels divide around crowded islands and trade-towns rise above the floodwater. Six languages may be spoken along a single dock, with three more heard by evening. Boats bring unfamiliar goods, travelers bring unfamiliar customs, and someone is always looking for a person who understands both.<br><br>Reachers grow accustomed to difference early. An elven shipwright, a dwarven grain factor, and a human ferryman may share a neighborhood, a business venture, and a running argument about harbor fees. Local knowledge means knowing how people prefer to be approached, which courtesies matter to them, and whom they trust to make an introduction. A good broker can accomplish with an afternoon’s conversation what an armed company might spend a season making worse."
+   },
+   {
+    "label": "If you want...",
+    "text": "If you want a character who is comfortable among unfamiliar faces, always listening for an opportunity, and rarely without someone they could ask for help, choose Kestrel Reach."
+   },
+   {
+    "label": "You Might...",
+    "text": "Learn a few useful words whenever you encounter a new language.<br>Introduce yourself by naming someone the other person already knows.<br>Look for what each side needs before deciding that a dispute cannot be settled."
+   },
+   {
+    "label": "Others Probably...",
+    "text": "Expect you to know a useful contact in almost any port.<br>Wonder whether your friendly questions are leading toward a proposal.<br>Rely on you to notice the custom, omission, or hidden cost they overlooked."
+   },
+   {
+    "label": "Dress and Bearing",
+    "text": "Reach clothing reflects crowded docks, changeable weather, and goods arriving from distant places. Practical layers, secure pockets, broad hats, and garments kept clear of ropes are common. Fabrics and ornaments travel freely between communities, adapted to each wearer’s build and family traditions.<br><br>Reachers often display a token of their trade, vessel, or trading house where an acquaintance can recognize it. Greeting gestures vary between neighborhoods, and knowing which one to offer can make a warmer introduction than expensive clothes."
+   },
+   {
+    "label": "Upbringing and Milestones",
+    "text": "Young Reachers learn by carrying messages, helping with household business, and accompanying experienced relatives through markets and landing places. They are taught to notice who has spoken, who has been overlooked, and whether everyone understands the same terms.<br><br>A first independently completed bargain or entrusted journey often marks growing responsibility. Its importance lies in returning with the agreement fulfilled and the other party willing to deal with the household again. These milestones follow readiness and circumstance across the Reach’s many ancestries."
+   },
+   {
+    "label": "Society",
+    "text": "The delta depends on cooperation that extends beyond individual towns. Ferrymen need maintained channels, merchants need dependable warehouses, and everyone needs the flood banks to hold. Neighborhood associations, trading houses, craft guilds, and harbor officials overlap in a web of favors and competing responsibilities.<br><br>Reputation moves quickly along the waterways. A generous settlement can bring business from three towns away; a cheated customer can arrive ahead of you wherever you hoped to trade next. Brokers earn their standing by remembering details, protecting confidences, and finding terms that people will actually honor.<br><br>The Reach’s friendliness can conceal hard boundaries. Established houses sometimes keep profitable routes among themselves, and an introduction may matter more than an excellent offer. Reachers admire people who open opportunities for others, but they also know how easily a well-connected few can decide who gets a place at the table."
+   },
+   {
+    "label": "Beliefs",
+    "text": "Reach shrines welcome travelers, returning crews, and families whose traditions came from elsewhere. River spirits, ancestral patrons, and gods of craft, fortune, and safe passage all receive offerings.<br><br>Many Reachers regard hospitality as an obligation that travels. Someone shelters a stranger today because another household may shelter their own kin tomorrow. Gifts, favors, and acts of kindness create relationships whose value cannot always be entered into an account."
+   },
+   {
+    "label": "Popular Edicts",
+    "text": "Learn how to greet people on their own terms.<br>Give the other party a reason to trade with you again.<br>Share a useful introduction when it costs you little."
+   },
+   {
+    "label": "Popular Anathemas",
+    "text": "Abuse the protection offered to a guest.<br>Conceal a danger that makes an agreement impossible to fulfill.<br>Betray a confidence entrusted to you as a broker."
+   },
+   {
+    "label": "Names",
+    "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br><b>Common given names</b> Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br><b>Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br><b>Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
+   }
+  ],
+  "meta": "Culture constellation • Wits",
+  "sparks": "",
   "nodes": [
    {
     "name": "Reacher",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
-    "effect": "You know Common and Reachspeak.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
-    "prereqs": "Raised in the Kestrel Reach",
+    "enabled": true,
+    "effect": "You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "desc": "<i>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</i>",
     "root": true
    },
    {
-    "name": "Quick Tongue ⓿",
+    "name": "Quick Tongue",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
-    "effect": "You gain the Quick Tongue action:<br><b>Quick Tongue ⓿<br>Trigger</b> You critically fail a Diplomacy check.<br><b>Requirements</b> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.<br>Reroll the triggering Diplomacy check, using the second result.",
+    "enabled": true,
+    "effect": "You gain the <b>Quick Tongue </b>❶↺ Maneuver:<br><b>Quick Tongue </b>❶↺<b><br>Trigger </b>You critically fail a Diplomacy check.<b><br>Requirements </b>You’re in a settlement or community, and you haven’t used Quick Tongue ❶ in this settlement or community within the past month.<b><br>Effect </b>Reroll the triggering Diplomacy check, using the second result.",
+    "automation": "reroll: Diplomacy, IF(Outcome=Critical Failure)",
+    "desc": "<i>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</i>",
     "requires": [
      "Reacher"
     ]
@@ -1845,8 +1960,10 @@ let TREES = {
     "name": "Riverfoot",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
+    "automation": "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water\nbonus: +1, Situation, Speed, ONCE(encounter)",
+    "desc": "<i>Years among slick docks and shifting banks have taught you where to place your next step.</i>",
     "requires": [
      "Reacher"
     ]
@@ -1855,8 +1972,10 @@ let TREES = {
     "name": "Broker's Eye",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
-    "effect": "You always know an item's fair price, and gain +2 Situation to Diplomacy and Guile checks when trading.",
+    "enabled": true,
+    "effect": "You gain +2 Situation to Diplomacy and Guile checks when trading.",
+    "automation": "bonus: +2, Situation, Diplomacy, CLAIM(when trading)\nbonus: +2, Situation, Guile, CLAIM(when trading)",
+    "desc": "<i>You recognize a fair price at a glance and know when there is room to bargain.</i>",
     "requires": [
      "Reacher"
     ]
@@ -2741,7 +2860,7 @@ let TREES = {
   "enabled": true,
   "feeds": "Agility",
   "meta": "Skill constellation • Agility",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "sparks": "",
   "nodes": [
    {
     "name": "Acrobatics Training",
@@ -2818,7 +2937,7 @@ let TREES = {
   "enabled": true,
   "feeds": "Might",
   "meta": "Skill constellation • Might",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "sparks": "",
   "nodes": [
    {
     "name": "Athletics Training",
@@ -2865,7 +2984,7 @@ let TREES = {
   "enabled": false,
   "feeds": "Presence",
   "meta": "Skill constellation • Presence",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "sparks": "",
   "nodes": [
    {
     "name": "Diplomacy Training",
@@ -2927,7 +3046,7 @@ let TREES = {
   "enabled": false,
   "feeds": "Wits",
   "meta": "Skill constellation • Wits",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "sparks": "",
   "nodes": [
    {
     "name": "Guile Training",
@@ -2984,7 +3103,7 @@ let TREES = {
   "enabled": false,
   "feeds": "Presence",
   "meta": "Skill constellation • Presence",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "sparks": "",
   "nodes": [
    {
     "name": "Intimidation Training",
@@ -3046,7 +3165,7 @@ let TREES = {
   "enabled": false,
   "feeds": "Agility",
   "meta": "Skill constellation • Agility",
-  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "sparks": "",
   "nodes": [
    {
     "name": "Stealth Training",
@@ -3326,24 +3445,130 @@ let R = {
     },
     {
      "label": "Names",
-     "text": "Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Jonna, Kestrel, Liesl, Marek, Nadia, Osric, Petra, Rowan, Sable, Tomas, Verity, Wynne"
+     "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br><b>Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br><b>Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br><b>Example names</b> Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
     }
    ]
   }
  ],
  "cultures": [
-  [
-   "Serrovane",
-   "Serrovine • Common",
-   "Presence",
-   "A lowland order-state where nothing is real until it is written and witnessed. Serrovane settles its disputes by formal challenge, keeps its ledgers in triplicate, and considers a broken oath a more serious crime than the violence that follows it."
-  ],
-  [
-   "Kestrel Reach",
-   "Reachspeak • Common",
-   "Wits",
-   "The trade-towns of a wide river delta, where six languages meet at every dock and a good broker is worth more than a good sword. Reach folk talk first, and are very good at it."
-  ]
+  {
+   "name": "Serrovane",
+   "enabled": true,
+   "attribute": "Presence",
+   "languages": "Serrovine, Common",
+   "blurb": "Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.",
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word."
+    },
+    {
+     "label": "About",
+     "text": "Serrovane is a lowland order-state of cultivated fields, raised roads, and towns gathered around registry halls. Its ledgers are kept in triplicate, its agreements carry witnesses, and its disputes follow forms that everyone is expected to respect. A promise spoken casually may be forgotten. A promise entered into the record becomes something other people can build their lives upon.<br><br>People of many ancestries belong to this order. An elven witness, a dwarven magistrate, and a human challenger may disagree bitterly while trusting the same record. Serrovanians learn how to state a grievance, acknowledge an obligation, and offer a concession without surrendering their standing. They can be formidable negotiators: they know exactly what they have promised, and they expect you to know the same."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character who takes promises seriously, understands the power of public reputation, and can turn a few carefully chosen words into a lasting obligation, choose Serrovane."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Ask who witnessed an agreement before asking whether it was a good one.<br>• Carry copies of important promises, judgments, or introductions among your belongings.<br>• Insist on settling the terms of a contest before anyone draws a weapon."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Trust you to remember an obligation long after everyone else has forgotten it.<br>• Find your careful questions reassuring, exhausting, or faintly threatening.<br>• Worry that an innocent remark might become a commitment in your hearing."
+    },
+    {
+     "label": "Dress and Bearing",
+     "text": "Serrovanian clothing favors orderly layers, durable fabrics, and visible signs of affiliation. Household colors, office badges, and witness cords help others recognize whom a person represents. Garments vary with ancestry, occupation, and means, but people generally take care that closures are secure and identifying marks remain legible.<br><br>Formal bearing matters as much as fine clothing. Standing to acknowledge a witness, leaving another speaker room to finish, and presenting a document with clean hands all communicate respect."
+    },
+    {
+     "label": "Upbringing and Milestones",
+     "text": "Children learn promises through ordinary responsibilities: returning borrowed tools, delivering messages accurately, and admitting when a task remains unfinished. Many households preserve a young person’s first independently witnessed obligation.<br><br>Public responsibility follows demonstrated judgment, with its timing shaped by ancestry and family custom. Taking an office, joining a household, completing an apprenticeship, and retiring from service are commonly marked by a formal acknowledgment of the duties being accepted or released."
+    },
+    {
+     "label": "Society",
+     "text": "Serrovanian institutions depend on recorded responsibilities. Officials swear to the limits of their offices, guilds preserve the terms of their charters, and households keep accounts of debts, inheritances, and obligations. Public scribes and witnesses are familiar figures in markets and village squares.<br><br>Formal challenge gives disputes an accepted shape. The grievance, the contest, and the consequences are declared before witnesses. Some challenges involve arms; others test skill, testimony, or the ability to substantiate a claim. Violence within accepted terms can be lawful. Breaking those terms threatens the trust that made the challenge possible.<br><br>This order has its cruelties. Wealth buys patient advocates, old records can preserve old injustices, and a precisely worded agreement can conceal an ugly intention. Serrovanians argue fiercely over whether justice lies in honoring the record or correcting what should never have been written into it."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Serrovanians follow many faiths, but promises, testimony, and remembrance occupy an honored place across them. Shrines often witness marriages, reconciliations, and vows of service. An ancestor may be remembered through an obligation their descendants continue to uphold.<br><br>Mercy also has a recognized dignity. Publicly releasing someone from an oath can be an act of generosity remembered as long as the oath itself."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Keep your word when doing so becomes inconvenient.<br>• State your terms before the contest begins.<br>• Stand witness when another needs the truth recorded."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Knowingly swear an oath you intend to break.<br>• Falsify a record entrusted to your care.<br>• Inflict punishment beyond the terms of an accepted challenge."
+    },
+    {
+     "label": "Names",
+     "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br><b>Common given names</b> Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br><b>Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br><b>Example name</b>s Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
+    }
+   ],
+   "traits": [],
+   "tree": "Serrovane"
+  },
+  {
+   "name": "Kestrel Reach",
+   "enabled": true,
+   "attribute": "Wits",
+   "languages": "Reachspeak, Common",
+   "blurb": "Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.",
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again."
+    },
+    {
+     "label": "About",
+     "text": "Kestrel Reach spreads across a wide river delta, where channels divide around crowded islands and trade-towns rise above the floodwater. Six languages may be spoken along a single dock, with three more heard by evening. Boats bring unfamiliar goods, travelers bring unfamiliar customs, and someone is always looking for a person who understands both.<br><br>Reachers grow accustomed to difference early. An elven shipwright, a dwarven grain factor, and a human ferryman may share a neighborhood, a business venture, and a running argument about harbor fees. Local knowledge means knowing how people prefer to be approached, which courtesies matter to them, and whom they trust to make an introduction. A good broker can accomplish with an afternoon’s conversation what an armed company might spend a season making worse."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character who is comfortable among unfamiliar faces, always listening for an opportunity, and rarely without someone they could ask for help, choose Kestrel Reach."
+    },
+    {
+     "label": "You Might...",
+     "text": "Learn a few useful words whenever you encounter a new language.<br>Introduce yourself by naming someone the other person already knows.<br>Look for what each side needs before deciding that a dispute cannot be settled."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "Expect you to know a useful contact in almost any port.<br>Wonder whether your friendly questions are leading toward a proposal.<br>Rely on you to notice the custom, omission, or hidden cost they overlooked."
+    },
+    {
+     "label": "Dress and Bearing",
+     "text": "Reach clothing reflects crowded docks, changeable weather, and goods arriving from distant places. Practical layers, secure pockets, broad hats, and garments kept clear of ropes are common. Fabrics and ornaments travel freely between communities, adapted to each wearer’s build and family traditions.<br><br>Reachers often display a token of their trade, vessel, or trading house where an acquaintance can recognize it. Greeting gestures vary between neighborhoods, and knowing which one to offer can make a warmer introduction than expensive clothes."
+    },
+    {
+     "label": "Upbringing and Milestones",
+     "text": "Young Reachers learn by carrying messages, helping with household business, and accompanying experienced relatives through markets and landing places. They are taught to notice who has spoken, who has been overlooked, and whether everyone understands the same terms.<br><br>A first independently completed bargain or entrusted journey often marks growing responsibility. Its importance lies in returning with the agreement fulfilled and the other party willing to deal with the household again. These milestones follow readiness and circumstance across the Reach’s many ancestries."
+    },
+    {
+     "label": "Society",
+     "text": "The delta depends on cooperation that extends beyond individual towns. Ferrymen need maintained channels, merchants need dependable warehouses, and everyone needs the flood banks to hold. Neighborhood associations, trading houses, craft guilds, and harbor officials overlap in a web of favors and competing responsibilities.<br><br>Reputation moves quickly along the waterways. A generous settlement can bring business from three towns away; a cheated customer can arrive ahead of you wherever you hoped to trade next. Brokers earn their standing by remembering details, protecting confidences, and finding terms that people will actually honor.<br><br>The Reach’s friendliness can conceal hard boundaries. Established houses sometimes keep profitable routes among themselves, and an introduction may matter more than an excellent offer. Reachers admire people who open opportunities for others, but they also know how easily a well-connected few can decide who gets a place at the table."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Reach shrines welcome travelers, returning crews, and families whose traditions came from elsewhere. River spirits, ancestral patrons, and gods of craft, fortune, and safe passage all receive offerings.<br><br>Many Reachers regard hospitality as an obligation that travels. Someone shelters a stranger today because another household may shelter their own kin tomorrow. Gifts, favors, and acts of kindness create relationships whose value cannot always be entered into an account."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "Learn how to greet people on their own terms.<br>Give the other party a reason to trade with you again.<br>Share a useful introduction when it costs you little."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "Abuse the protection offered to a guest.<br>Conceal a danger that makes an agreement impossible to fulfill.<br>Betray a confidence entrusted to you as a broker."
+    },
+    {
+     "label": "Names",
+     "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br><b>Common given names</b> Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br><b>Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br><b>Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
+    }
+   ],
+   "traits": [],
+   "tree": "Kestrel Reach"
+  }
  ],
  "backgrounds": [
   [
@@ -6289,37 +6514,64 @@ let BG = [
   "name": "Acrobat",
   "rarity": "Common",
   "enabled": true,
-  "desc": "In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.",
-  "effect": "You become Trained in Athletics and in Acrobatics, and you become Trained in Lore (Circus).",
-  "skills": [
-   "Athletics",
-   "Acrobatics"
-  ],
-  "lore": "Lore (Circus)"
+  "desc": "<i>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</i>",
+  "effect": "You become Trained in <i>Athletics</i> and in <i>Acrobatics</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
+  "grants": [
+   {
+    "options": [
+     "Athletics and in Acrobatics"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
  },
  {
   "name": "Soldier",
   "rarity": "Common",
-  "enabled": false,
-  "desc": "You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.",
-  "effect": "You become Trained in Athletics and in Intimidation, and you become Trained in Lore (Warfare).",
-  "skills": [
-   "Athletics",
-   "Intimidation"
-  ],
-  "lore": "Lore (Warfare)"
+  "enabled": true,
+  "desc": "<i>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</i>",
+  "effect": "You become Trained in <i>Athletics</i> and in <i>Intimidation</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
+  "grants": [
+   {
+    "options": [
+     "Athletics and in Intimidation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
  },
  {
   "name": "Criminal",
   "rarity": "Common",
-  "enabled": false,
-  "desc": "You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to.",
-  "effect": "You become Trained in Guile and in Stealth, and you become Trained in Lore (Underworld).",
-  "skills": [
-   "Guile",
-   "Stealth"
-  ],
-  "lore": "Lore (Underworld)"
+  "enabled": true,
+  "desc": "<i>You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to.</i>",
+  "effect": "You become Trained in <i>Guile</i> and in <i>Stealth</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
+  "grants": [
+   {
+    "options": [
+     "Guile and in Stealth"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
  }
 ];
 let LANGS = [
@@ -7436,17 +7688,24 @@ function wHeritage(){
   if(wiz.picks.her) h+=`<div class="callout">Your Bloodline's root is <b>granted free</b>.</div>`+grantPickersHTML(2);
   return h;
 }
+/* The Culture's record in the roster's generated cultures block (0.15.0: name, enabled, attribute,
+   languages, blurb, lore, traits, tree), as ancChassis finds an Ancestry's. */
+function culChassis(name){ return (R.cultures||[]).find(x=>x.name===name||x.tree===name)||{name:name, attribute:"", languages:"", blurb:"", tree:name}; }
+/* The card's tag line: the languages, then the Key Attribute, bulleted as the Ancestry card's chassis line is. */
+function culTag(cu, feeds){ const bits=(cu.languages||"").split(/,|•/).map(s=>s.trim()).filter(Boolean); if(feeds) bits.push(feeds); return bits.length?bits.join(" • "):"Culture constellation · root free"; }
 function wCulture(){
   const cultTrees = allTreeNames().filter(n=>treeOf(n).category==="Culture" && !treeOf(n).stub);
   if(cultTrees.length){
     let h=`<div class="callout">Culture is deliberately separate from Ancestry: an orc raised in the Kestrel Reach is simply both. Choosing a Culture grants its root <b>free</b>, and that root is always a language plus a scaled bonus to Diplomacy toward those who share it. You can embrace or reject your Culture, but you cannot unlearn its language.</div>`;
-    h+=`<div class="cards">`+cultTrees.map(cu=>{const tr=treeOf(cu); const root=tr.nodes.find(n=>n.root);
-      return `<div class="card ${wiz.picks.culName===cu?"sel":""}" data-cul="${cu}"><h4>${cu}${tr.feeds?attrIcon(tr.feeds):""}</h4><span class="tag">Culture constellation · root free</span><p>${root?stripT(root.effect):""}</p></div>`;}).join("")+`</div>`;
+    h+=`<div class="cards">`+cultTrees.map(cu=>{const tr=treeOf(cu), ch=culChassis(cu), root=tr.nodes.find(n=>n.root);
+      // The root's Description in italics, unless it is the blurb again (the Serrovanian row's is the Lore Summary word for word).
+      const rd=root&&root.desc?stripT(root.desc).trim():"", showDesc=rd&&rd!==stripT(ch.blurb||"").trim();
+      return `<div class="card ${wiz.picks.culName===cu?"sel":""}" data-cul="${cu}"><h4>${cu}${tr.feeds?attrIcon(tr.feeds):""}</h4><span class="tag">${culTag(ch, tr.feeds)}</span>${ch.blurb?`<p>${ch.blurb}</p>`:""}<p>${showDesc?`<em>${rd}</em> · `:""}${root?stripT(root.effect):""}</p></div>`;}).join("")+`</div>`;
     if(wiz.picks.culName) h+=grantPickersHTML(3);
     return h;
   }
-  let h=`<div class="cards">`+R.cultures.map(cu=>`<div class="card ${wiz.picks.culName===cu[0]?"sel":""}" data-cul="${cu[0]}">
-    <h4>${cu[0]}</h4><span class="tag">${cu[1]}</span><p>${cu[3]||cu[2]}</p></div>`).join("")+`</div>`;
+  let h=`<div class="cards">`+(R.cultures||[]).map(cu=>`<div class="card ${wiz.picks.culName===cu.name?"sel":""}" data-cul="${cu.name}">
+    <h4>${cu.name}</h4><span class="tag">${culTag(cu, cu.attribute)}</span><p>${cu.blurb||cu.attribute||""}</p></div>`).join("")+`</div>`;
   if(wiz.picks.culName) h+=grantPickersHTML(3);
   return h;
 }
@@ -7559,8 +7818,8 @@ function langs(){
     // "You know Reachspeak and Common." — take every known language the root names
     known.forEach(l=>{ if(new RegExp("\\b"+l+"\\b").test(txt)) base.push(l); });
   } else {
-    const cu=R.cultures.find(c=>c[0]===cn);
-    if(cu) (cu[1]||"").split("•").forEach(x=>{ const t=x.trim(); if(t) base.push(t); });
+    const cu=(R.cultures||[]).find(c=>c.name===cn);
+    if(cu) (cu.languages||"").split(/,|•/).forEach(x=>{ const t=x.trim(); if(t) base.push(t); });
   }
   if(!base.length) base.push("Common");
   if(!base.includes("Common")) base.unshift("Common");
@@ -8136,8 +8395,12 @@ function vWiki(){
       <p class="muted">Ancestry Constellation: ${link(a.tree)}</p>`;}).join("");
 
   if(wikiSec==="Cultures") h+=`<div class="callout">Culture is deliberately separate from Ancestry: an orc raised among Serrovanians is simply both. Choosing a Culture grants its root free, and that root is always a language plus a scaled bonus to Diplomacy toward those who share it. You can embrace or reject your Culture, but you can't unlearn its language.</div>`
-    +tbl(["Culture","Language(s)","Key attribute","About"],R.cultures.map(c=>[link(c[0]),c[1],c[2],c[3]||""]))
+    +tbl(["Culture","Language(s)","Key attribute","About"],(R.cultures||[]).map(c=>[link(c.tree||c.name),c.languages||"—",c.attribute||(treeOf(c.tree||c.name).feeds||"—"),c.blurb||""]))
     +P("The Diplomacy bonus scales with your Origin Constellation: +1 while Trained, +2 at Expert, +3 at Master, +4 at Legendary.")
+    +(R.cultures||[]).map(c=>`<h3>${c.name}</h3>
+      <p style="font-size:12px;font-style:italic;color:#4a5c66">${c.blurb||""}</p>
+      <p class="muted">Languages: ${c.languages||"—"}</p>
+      <p class="muted">Culture Constellation: ${link(c.tree||c.name)}</p>`).join("")
     +(typeof LANGS!=="undefined"&&LANGS&&LANGS.length?`<h3>Languages</h3>`+tbl(["Language","Rarity","About"],LANGS.map(l=>[l.name,l.rarity,l.desc||"—"])):"");
 
   if(wikiSec==="Backgrounds") h+=`<div class="callout">Your life before the road: each Background gives you Training in <b>two</b> Skills that its trade leans on, and <b>1 Relevant Lore</b>. That is 2 Skill Talent Points and 1 Lore Talent Point, three of the thirteen you get at creation. The Lore is the player's pick, one relevant to the life the Background describes; the table shows each Background's usual one, which the wizard offers by default.</div>`

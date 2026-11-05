@@ -36,12 +36,12 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, hasTrait, summarizeOperators } from "../operators.mjs";
+import { readLine, rankMeets, whoMatches, compare, hasTrait, againstHolds, markedHolds, refuseOutcome, summarizeOperators } from "../operators.mjs";
 import { CONDITIONS } from "../../config.mjs";
 
 const SHAPE = "prevent: <Effect> [, operators]";
 const EXAMPLE = "prevent: Prone, ONCE(encounter)";
-const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE"]);
+const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "MARKED"]);
 
 /** The word for the Expose effect, and the condition ids by their lower-cased, squeezed names. */
 export const EXPOSE = "expose";
@@ -84,7 +84,8 @@ export default {
       throw new RuleSyntaxError(`a prevent is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} arguments given, 1 wanted)`);
     }
     const effect = readEffect(parts[0]);
-    return { effect, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit };
+    refuseOutcome(ops);
+    return { effect, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit, marked: ops.marked };
   },
 
   /** `Prone does not land, once each encounter`; `Expose does not land, for allies within 0 ft`. */
@@ -112,6 +113,8 @@ export default {
         if (!rule || (rule.effect !== effect)) continue;
         const owner = entry.owner ?? actor;
         const ownRoll = owner === actor;
+        // MARKED (0.15.0): the effect's source must be the creature this Talent marked.
+        if (!markedHolds(rule, { item: carrier, owner }, context)) continue;
 
         const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
         let holds = true;
@@ -153,13 +156,7 @@ export default {
           if (!compare(count, rule.while.op, rule.while.count)) continue;
         }
 
-        if (rule.against) {
-          const threat = context?.threat;
-          if (!threat?.threat) continue;
-          if (rule.against.threat && (rule.against.threat !== threat.threat)) continue;
-          if (rule.against.reach === "melee" && threat.melee !== true) continue;
-          if (rule.against.reach === "ranged" && threat.melee !== false) continue;
-        }
+        if (!againstHolds(rule, context?.threat)) continue;
 
         let mark = null;
         if (rule.limit) {

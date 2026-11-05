@@ -29,7 +29,10 @@ import { CARD_KIND as ATTACK_CARD_KIND, mayControl } from "../combat/attack-card
 import { rollAskedCheck } from "../helpers/party.mjs";
 import { resolveActor, ownedActor } from "./cards/shared.mjs";
 import { rollDamageFromCard, applyDamageFromCard, onDamageSocket } from "./cards/damage.mjs";
-import { rerollFromCard, onRerollSocket } from "./cards/reroll.mjs";
+import { rerollFromCard, rerollByRule, onRerollSocket } from "./cards/reroll.mjs";
+// The kinds' offers on a check card (0.15.0, the `card` hook point): a `reroll` rule's button.
+import { ruleCardOffers } from "../rules/engine.mjs";
+import { encounterContext } from "../rules/scene.mjs";
 import { flareFromCard } from "./cards/flare.mjs";
 import {
   exposeFromCard, formBindFromCard, giveGroundFromCard, stepFromCard, reactionStrikeFromCard,
@@ -121,6 +124,34 @@ export function onRenderChatMessage(message, html) {
     }
   }
 
+  // The kinds' offers on a check card (0.15.0, the `card` hook point; ruling 177): a `reroll`
+  // rule's button, drawn from the card's flags for the roller's owner and the GM, never on a
+  // superseded card. Built here rather than by the card's template so a reload draws the same
+  // buttons from the same record.
+  if ((flags.kind === "check") && !flags.superseded && flags.actorUuid) {
+    const roller = resolveActor(flags.actorUuid);
+    if (roller && (roller.isOwner || game.user.isGM)) {
+      const offers = ruleCardOffers(roller, flags, { encounter: encounterContext() });
+      if (offers.length) {
+        const row = document.createElement("div");
+        row.className = "sw-card-reroll sw-card-rule-offers";
+        for (const o of offers) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.swAction = o.action;
+          button.dataset.itemId = o.item.id;
+          button.dataset.actorUuid = roller.uuid;
+          button.innerHTML = `<i class="fa-solid fa-rotate-right"></i> ${foundry.utils.escapeHTML(o.label)}`;
+          row.append(button);
+        }
+        const card = html.querySelector(".starwrought") ?? html;
+        const anchor = card.querySelector(".sw-card-outcome") ?? card.querySelector(".sw-card-modifiers");
+        if (anchor) anchor.after(row);
+        else card.append(row);
+      }
+    }
+  }
+
   // The GM controls (the attack card's Cancel, Reset defenses and Resend prompts) are the GM's,
   // or the coordinator's at a table with no GM connected. The content is the same on every
   // client; the row is not.
@@ -153,6 +184,7 @@ async function onCardButton(event, message, flags) {
       case "applyDamage": return await applyDamageFromCard(message, flags, button, event);
       case "flare": return await flareFromCard(message, flags, button);
       case "reroll": return await rerollFromCard(message, flags);
+      case "ruleReroll": return await rerollByRule(message, flags, button);
       case "expose":
       case "exposeZone": return await exposeFromCard(message, flags, button);
       case "preventExpose": return await preventExposeFromCard(message, flags, button);

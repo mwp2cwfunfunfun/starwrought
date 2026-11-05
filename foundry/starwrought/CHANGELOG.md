@@ -7,6 +7,132 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.15.0 (2026-11-05): the Cultures, their Talents' automation, and difficult terrain on the map
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on
+the shelf unsynced). Mike, 2026-11-05, after the 0.14.0 push, three points: the Bloodline card
+should carry the Talent's Description as the Ancestry card carries the Human blurb; he restructured
+`data/cultures.xlsx` as he had the ancestries and wrote a `Serrovane Lore` and a `Kestrel Reach
+Lore` sheet, wanting the Cultures given the Ancestry's treatment in the compendium and the wizard;
+and he rewrote the eight Culture Talents and asked for their Automation, asking how a roleplay-only
+bonus ("+2 to notice hidden clauses") should be automated ("should we have some sort of 'apply'
+button on the Maneuver that applies the bonus to the next roll, similar to FantasyGrounds PF2e
+effect automation?"). His decisions by question: **both** a checkbox in the roll dialog and an arm
+button on the Talent row; Iron Etiquette's Intimidation fully automated and its "other social
+manipulations" by the roleplay path; and for Riverfoot's difficult terrain, "Let's build Difficult
+terrain INTO the maps! using a region or some sort of method! so this can be automated. and players
+can toggle layers to see what is difficult etc." Planned in `eager-wobbling-possum.md` (the plans
+folder, the third plan in it). The grammar grew three operators, three kinds and two hook points,
+one Talent at a time as ruling 119 says; `AUTOMATION_GRAMMAR.md` carries all of it. The rulings:
+
+- **174. A claim is the player's decision, at the roll.** `CLAIM(<text>)` on a `bonus` line: the
+  bonus is offered in the roll dialog as an unticked checkbox whose hint is the Talent, the bonus
+  and the text ("Serrovanian: +1 Condition bonus toward someone who shares your Culture. Tick it if
+  this roll is one."), on any roll that shows a dialog; ticked, it joins the roll and prints on the
+  card by the Talent's name. The Talent's row on the Constellations tab carries a pin: armed, the
+  claim comes to the next roll's dialog ticked and to the next Threshold read (which has no dialog)
+  applied, and the pin goes out when either resolves (`flags.starwrought.rules.armed`;
+  `module/rules/claims.mjs`). Nothing is applied unasked and nothing is remembered past that one
+  roll. Serrovanian, Reacher, Contract Literate, Broker's Eye and Iron Etiquette's second line are
+  claims; the sheet's Threshold tooltip lists them with every other rule the position-blind number
+  leaves out.
+- **175. The other party is read per pairing.** The rules now know who is on the other side of a
+  roll (`other` on the roll context): the attacker a Defense roll answers and a Threshold read is
+  made against, the roller whose check reads a Threshold, and, for a Strike, each defender as the
+  pairing resolves, since the one blind die knows nobody. A rule about the defender (`MARKED`) is
+  therefore read by the coordinator per pairing with `pairingOnly` and added to that pairing's total,
+  listed on its card and kept in its flags (`pairingModifiers`) so a reroll adds it again; the die
+  itself is unchanged. The Combat Prompt's previews pass the attacker too.
+- **176. A mark names one creature.** The `mark` kind (`mark: [<Who>] [, <Until>]`, `enemies` or
+  `all`, `encounter`): using the Talent names the player's one targeted token as the creature it
+  marks (`flags.starwrought.rules.marks.<talent>`: the token, its name, the Combat), refused with a
+  notice when nothing or the wrong relation is targeted, said on the Talent's card. The mark holds
+  while that Combat is the viewed one; made outside an encounter, while none runs. Nothing clears
+  it, as FIRST and ONCE marks are compared and never cleared. The **`use` hook point** is defined
+  with it (triggered: the owner's client executes, the Item's use names the event, a refusal stops
+  everything and a failed write is logged): `SwItem#use` on a Talent with a cost in its name, or
+  with a rule of a kind that acts on use, pays the cost in an encounter, applies the kinds' writes
+  and posts the card; the Talent row has the Use control for it. Oathbound's three lines are the
+  mark and two `bonus ... MARKED` lines, Attacks and Defenses.
+- **177. A reroll pays once, in an encounter.** The `reroll` kind (`reroll: <Target> [,
+  IF(Outcome=<Degree>)]`, the Target a Constellation or `Checks`) puts a button on the matching
+  check card of the owner's roll ("Quick Tongue: reroll"), drawn from the card's flags for the owner
+  and the GM by the **`card` hook point**, defined with it (triggered: the presser's client
+  executes, the message id names the event, a failed reroll leaves the first card standing). Pressed,
+  it pays the Talent's cost through the owner's actions when a Combat runs and nothing outside one,
+  throws the same die again with the first card's modifiers (every check card now carries them in
+  its flags), marks the first card superseded and posts the new one naming the Talent and saying its
+  Requirements are the table's. A roll against no Threshold has no degree and is never offered;
+  Attack and Defense cards keep the 0.5.3 Reroll button. `IF(Outcome=...)` is read by this kind alone
+  and refused by the rest by name.
+- **178. Difficult terrain is a region behavior with a kind.** A `difficultTerrain` Region behavior
+  (`system.json`, `module/data/region-behaviors/difficult-terrain.mjs`) carries a kind (`Mud`,
+  `Shallow Water`, `Decking`, `Loose Stone`, `Rubble`, `Undergrowth`, `Snow`, `Ice`, `Sand`, `Other`;
+  `SW.TERRAIN_KINDS` in `module/config/terrain.mjs`) and a cost multiplier (2 by default, the book's
+  difficult terrain); Foundry charges the cost along every token's path, splits the ruler at the
+  edge and slows the animation, and the movement tracker reads the cost as it always has. The
+  system's terrain data (`SwTerrainData`, `CONFIG.Token.movement.TerrainData`) keeps the kinds
+  crossed, so the ruler's label says "difficult: mud". A token whose actor ignores the kind (the
+  `ignore` kind, `ignore: Terrain [, <Kind>, ...]`, no kind meaning all) gets no effect from the
+  behavior at all and is never split, charged, slowed or labelled: the decision sits in the
+  behavior's `_getTerrainEffects`, the one place Foundry hands it the token (Foundry's own
+  `resolveTerrainEffects` never sees it). Overlapping difficulties multiply as core multiplies them.
+  A hidden region carries no terrain for anyone (Foundry skips hidden regions), so a terrain region
+  is never hidden to keep it secret; instead every client has its own overlay (`canvas/terrain.mjs`,
+  a fill in the kind's colour with the kind and the cost named, drawn as the auras are) and a toggle
+  in the token controls backed by the client setting `showTerrain`. Riverfoot's two lines are the
+  `ignore` and `bonus: +1, Situation, Speed, ONCE(encounter)`.
+- **179. A check against a target's Threshold reads it live.** A Maneuver whose check names a
+  Defense (Demoralize against Guard), used with exactly one target, reads that target's Threshold
+  through `defenseThresholdFor` with the check's Constellation as the Threat (`check` on the Threat
+  context) and the roller as the other party, so `AGAINST(<Constellation>)` (the operator's new
+  reading, beside the Threat words: only when the check read against this Defense rolls that
+  Constellation) and `MARKED` apply; the number prints for a character target or a GM roller and is
+  withheld for an adversary as the attack flow withholds it, the degree read all the same, and the
+  read's FIRST/ONCE marks are written on the target when the client may. Through 0.14.0 the player
+  typed the Threshold. Iron Etiquette's first line is `AGAINST(Intimidation)`; the Maneuvers that
+  would read it (Demoralize, Feint, Talk Them Down) are rows Mike has not enabled yet, so it fires
+  on a world Item until then.
+- **180. A Culture's languages come from the index.** `roster.cultures` is generated from
+  `data/cultures.xlsx` as `roster.ancestries` is from `ancestries.xlsx` (`{ name, enabled,
+  attribute, languages, blurb, lore, traits, tree }`; the Lore sheet's Summary row the blurb), the
+  `_Tree Index` carrying an optional `Languages` column (written this release: "Serrovine, Common",
+  "Reachspeak, Common"); while a workbook has none the converter carries the languages from the
+  previous roster row with a warning naming the column. The Culture chassis Item gets the blurb, the
+  Lore rows, the languages, the traits and the root Talent's Effect as its Special Ability; the web
+  app and the compendium docx print a per-Culture section as the ancestries have.
+- **181. A Speed bonus moves the Move and nothing else.** `Speed` is a `bonus` scope word: feet
+  added to a Move, read by the movement tracker and the ruler with `kind: "move"`; Step, Rush, Leap
+  and Crawl stay on the Speed itself, since the book's word is "Move". A FIRST or ONCE on it is
+  marked when a Move is charged, so a Step or a Rush first leaves Riverfoot's foot unspent. The
+  move's card says where the extra foot came from.
+
+Also in 0.15.0: the wizard's cards print the root Talent's **Description** in italics above its
+Effect on every step that stands on a Root (Bloodline, Culture, Calling, Combat Training), and the
+Culture step has the Lore panel the Ancestry step got in 0.13.0, from the `Serrovane Lore` and
+`Kestrel Reach Lore` sheets; the Culture card's chips are its languages and Key Attribute, and a
+root Description that is the blurb word for word (both Culture roots today) is not printed twice.
+Every check card carries its modifiers in its flags. `system.json` declares the `RegionBehavior`
+type. Checked by 24 new self-test checks (100 pass), the content loop (`automation: 23 rules on 17
+documents (7 kinds in use)`), the smoke test and the style check, and live in `starwrought-test`
+(Foundry 14 restarted; the GM tab): the Diplomacy dialog's claim unticked, ticked and armed, the pin
+spent after the roll; Oathbound used with the Bandit targeted, the mark written and said, Tess's
+Guard read 16 bare, 17 against Wren and 18 against the Bandit, and a Deliberate Strike through the
+attack flow resolving with "Oathbound +1" on the pairing's card; a Demoralize world Item against
+Tess reading her Guard at 17 (15 on the sheet, Wren's Torchbearer and Iron Etiquette) with the
+Threshold tooltip naming both; Quick Tongue's button on a Diplomacy critical failure and the new
+card superseding the first; a Mud region costing Tess 12 for 8 ft and Wren 8, the ruler's path
+split for Tess alone, the overlay toggling off and on; Wren's first Move of 7 ft charged as one Move
+with the mark written; the Culture chassis with twelve Lore rows; the wizard's Bloodline leads and
+Culture step. **Not done:** the two Talents whose names carry no cost glyph (Oathbound, Quick
+Tongue: the sheet's Talent column reads "Oathbound" and the ❶ is in the Effect) pay nothing when
+used or rerolled, since the cost is read from the name; Torchbearer's Rally Aura cell waits for
+Excel to release `data/ancestries.xlsx`; the player-tab paths (an adversary's Threshold withheld
+from a player's Demoralize) were exercised in code only; and the token's landing after a charged
+Move was not re-verified in the pane (Foundry's movement animation does not complete there).
+
+---
+
 ## 0.14.0 (2026-11-05): the Rally Aura, Traits, and the Lore panel
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 still on the

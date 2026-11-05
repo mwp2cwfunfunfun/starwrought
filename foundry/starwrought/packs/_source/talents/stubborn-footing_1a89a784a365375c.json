@@ -44,6 +44,7 @@
         "limit": {
           "per": "encounter"
         },
+        "marked": false,
         "kind": "prevent",
         "line": 1,
         "text": "prevent: Prone, ONCE(encounter)"
@@ -59,7 +60,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "64b23f2d8cedfa4f"
+      "contentHash": "d6e774db7823db86"
     }
   },
   "effects": [],

@@ -13,7 +13,10 @@ const TALENT_FIELDS = [
   "system.constellation", "system.constellationName", "system.tier", "system.root",
   "system.bloodlineRoot", "system.capstone", "system.requires", "system.grant",
   "system.effect", "system.attribute", "system.cost", "system.costMax", "system.costMode",
-  "system.reaction", "system.reactionCost", "system.choice", "system.freeTalent"
+  "system.reaction", "system.reactionCost", "system.choice", "system.freeTalent",
+  // The Talent's Description (0.15.0; Mike: the Bloodline card "should include the Description
+  // of the Talent"), printed in italics above the Effect on the cards that stand on a Root.
+  "system.description"
 ];
 
 // `system.vigor` is the v4.10 chassis field. `system.hp` is still asked for so a compendium built
@@ -63,6 +66,7 @@ export async function loadChargenContent({ force = false } = {}) {
         requires: entry.system.requires ?? [],
         grant: entry.system.grant ?? null,
         effect: entry.system.effect ?? "",
+        description: entry.system.description ?? "",
         attribute: entry.system.attribute || "",
         choice: entry.system.choice?.prompt ?? "",
         freeTalent: entry.system.freeTalent ?? ""

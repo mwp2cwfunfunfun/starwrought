@@ -1,0 +1,104 @@
+{
+  "_id": "27352afc203c70e7",
+  "name": "Oathbound",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "serrovane",
+    "constellationName": "Serrovane",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Serrovanian"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the <b>Oathbound</b> ❶ Maneuver:<br><b>Effect</b> Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.",
+    "description": "<p><i>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "mark: enemies, encounter\nbonus: +1, Condition, Attacks, MARKED\nbonus: +1, Condition, Defenses, MARKED",
+    "rules": [
+      {
+        "who": "enemies",
+        "until": "encounter",
+        "when": null,
+        "kind": "mark",
+        "line": 1,
+        "text": "mark: enemies, encounter"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Attacks",
+          "slug": "attacks",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": true,
+        "kind": "bonus",
+        "line": 2,
+        "text": "bonus: +1, Condition, Attacks, MARKED"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Defenses",
+          "slug": "defenses",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": true,
+        "kind": "bonus",
+        "line": 3,
+        "text": "bonus: +1, Condition, Defenses, MARKED"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "09d1d52e7c8e761e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "764ee94cb4529f5c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!27352afc203c70e7"
+}

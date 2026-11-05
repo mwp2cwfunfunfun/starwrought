@@ -1,0 +1,72 @@
+{
+  "_id": "742682e9d76a35fc",
+  "name": "Quick Tongue",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kestrel-reach",
+    "constellationName": "Kestrel Reach",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Reacher"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the <b>Quick Tongue </b>❶↺ Maneuver:<br><b>Quick Tongue </b>❶↺<b><br>Trigger </b>You critically fail a Diplomacy check.<b><br>Requirements </b>You’re in a settlement or community, and you haven’t used Quick Tongue ❶ in this settlement or community within the past month.<b><br>Effect </b>Reroll the triggering Diplomacy check, using the second result.",
+    "description": "<p><i>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "reroll: Diplomacy, IF(Outcome=Critical Failure)",
+    "rules": [
+      {
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": [
+          {
+            "outcome": "critFail",
+            "name": "Critical Failure"
+          }
+        ],
+        "kind": "reroll",
+        "line": 1,
+        "text": "reroll: Diplomacy, IF(Outcome=Critical Failure)"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d11b952536b11224",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4d5f1203730f9758"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!742682e9d76a35fc"
+}

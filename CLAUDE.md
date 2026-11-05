@@ -718,6 +718,46 @@ player's body). The ancestry blurb is the Lore sheet's Summary row (the index's 
 gone, with Flare Triggers and Meta note, all optional). **Fear is carried by nothing in the data
 yet**, so the Rally Aura fires once a Fear spell or attack is authored.
 
+**0.15.0 (Mike, 2026-11-05; rulings 174 to 181): the Cultures, their Talents' automation, and
+difficult terrain on the map.** Mike restructured `data/cultures.xlsx` as he had the ancestries,
+wrote a Lore sheet per Culture and rewrote the eight Culture Talents, asking how a roleplay-only
+bonus should be automated; his answers: **both** a checkbox in the roll dialog and an arm button
+on the Talent row, Iron Etiquette's Intimidation fully automated and the rest by the roleplay path,
+and "build Difficult terrain INTO the maps ... players can toggle layers to see what is difficult".
+The grammar grew **three operators** (`CLAIM(<text>)`: the bonus is a checkbox in the roll dialog
+with the Talent's hint, and the pin on the Talent's row arms it for the next roll or Threshold read,
+spent by whichever resolves, `flags.starwrought.rules.armed`, `module/rules/claims.mjs`, ruling 174;
+`MARKED`: the roll's other party is the creature this Talent's mark named; `IF(Outcome=<Degree>)`,
+read by `reroll` alone), **a new reading of `AGAINST`** (a Constellation: only when the check read
+against this Defense rolls it; the check-against-a-target's-Threshold path exists since 0.15.0,
+ruling 179: a Maneuver with a Defense named, used with one target, reads it live through
+`defenseThresholdFor`, withheld for an adversary), **`Speed` as a `bonus` scope** (feet on a Move,
+`kind: "move"`, ruling 181), and **three kinds**: `mark` (names the targeted token on use, holds
+while its Combat is the viewed one, never cleared; the **`use` hook point** defined with it,
+`ruleUses`, run by `SwItem#use` on a Talent with a cost or a use-kind rule, the Use control on the
+row; ruling 176), `reroll` (a button on the matching check card of the owner's roll, the **`card`
+hook point**, `ruleCardOffers`, drawn by the chat render pass and run by `rerollByRule` in
+`documents/cards/reroll.mjs`, paying the cost in an encounter; every check card carries its
+modifiers in its flags now; ruling 177), `ignore` (`ignore: Terrain [, <Kind>, ...]`, no hook
+point: the Difficult terrain region behavior asks `ignoresTerrain` at Foundry's own moment). **The
+engine knows the other party** (`other` on the roll context, set by `rollDefense`,
+`defenseThresholdFor`'s new `attacker` option, the Combat Prompt's previews, and the coordinator's
+`#pairingModifiers`, which reads a Strike's defender-dependent rules per pairing with `pairingOnly`
+and hands them to `resolveAgainst` as `pairingModifiers`, added to the total and kept in the flags;
+ruling 175). **Terrain on the map** (ruling 178): a `difficultTerrain` Region behavior
+(`system.json`, `module/data/region-behaviors/difficult-terrain.mjs`; `kind` from
+`SW.TERRAIN_KINDS` in `config/terrain.mjs`, `difficulty` 2 by default) whose `_getTerrainEffects`
+answers nothing for a token whose actor ignores the kind; `SwTerrainData`
+(`CONFIG.Token.movement.TerrainData`) keeping the kinds crossed for the ruler's "difficult: mud";
+the player's overlay (`canvas/terrain.mjs`, the `swShowTerrain` token-control toggle, the client
+setting `showTerrain`); a hidden region carries no terrain for anyone. **The Cultures as the
+Ancestries** (ruling 180): `roster.cultures` generated from `cultures.xlsx` (objects; the index's
+optional `Languages` column, written this release; the Lore Summary the blurb), the Culture chassis
+with `lore`, `languages`, `traits` and the root's Effect as Special Ability, the app and the docx
+printing a per-Culture section, the wizard's Culture step with the Lore panel and every Root-based
+card printing the Talent's Description above its Effect. The eight cells are written in
+`data/cultures.xlsx` and in `AUTOMATION_GRAMMAR.md` section 5.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -767,8 +807,15 @@ yet**, so the Rally Aura fires once a Fear spell or attack is authored.
   third column of the hand-kept `callings` block of `roster.json`, and since PHB v4.11 that column
   is the Calling's **Opening Vigor** (paid once, at 1st level, by the first Calling), not Vigor per
   level; every consumer indexes `[2]`. The Ancestry's Vigor stays per level.
-- `* Lore` sheets in `ancestries.xlsx` are authoring notes for player-facing text. The converter
-  ignores them by design.
+- Culture rows in `data/cultures.xlsx` `_Tree Index` generate the `cultures` block of `roster.json`
+  since 0.15.0 (objects: name, enabled, attribute, languages, blurb, lore, traits, tree; ruling
+  180): the optional **`Languages`** column (comma separated; written 2026-11-05) and `Traits`, the
+  Lore sheet's Summary row as the blurb; while a workbook has no `Languages` column the converter
+  carries the languages from the previous roster row with a warning. The root Talent's Effect is
+  the Culture chassis's Special Ability.
+- `<Tree> Lore` sheets are the tree's player-facing text, read by the converter for every tree
+  (`lore` on the tree) and carried to the Ancestry and Culture chassis, the wizard's Lore panel and
+  the chassis Item's Description tab; the web app and the docx do not print them (Mike's call).
 - Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect,
   **Attribute** (0.13.0; `Feeds` through 0.12.0: on a sheet headed `Attribute` a blank cell is an
   error, Mike's "no Attribute cell should ever be blank"; a sheet still headed `Feeds` inherits the
@@ -975,19 +1022,27 @@ yet**, so the Rally Aura fires once a Fear spell or attack is authored.
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Four kinds ship (0.13.0): `bonus`, `grant`, `aura`, `prevent`, and the level-1 Human is written
-  whole; 0.14.0 added the operators `SEEN` and `IF(Trait=...)` for the Rally Aura. What the grammar
-  does not yet read: a `prevent` of a Condition on an ally as a Reaction (no Talent asks for it;
-  the Expose Reaction is built); adversaries' rolls (flat); hearing, light and sight range (`SEEN`
-  is line of sight and three statuses). **Fear is carried by nothing in the data** (no weapon,
-  attack or spell Talent has the trait), so the Rally Aura reads and fires on nothing until one is
-  authored; the build warns. **Torchbearer's new cell is to be written once Excel releases
-  `data/ancestries.xlsx`** (the line is in `AUTOMATION_GRAMMAR.md`, section 5); until then the
-  shipped Talent carries the 0.13.0 rule (every Defense, no sight, no trait). The Jack of All
+  Seven kinds ship (0.15.0): `bonus`, `grant`, `aura`, `prevent`, `mark`, `reroll`, `ignore`; the
+  level-1 Human and the two Cultures are written whole. What the grammar does not yet read: a
+  `prevent` of a Condition on an ally as a Reaction (no Talent asks for it; the Expose Reaction is
+  built); adversaries' rolls (flat); hearing, light and sight range (`SEEN` is line of sight and
+  three statuses); a `reroll` on an Attack or Defense card (those keep the 0.5.3 button). **Fear is
+  carried by nothing in the data** (no weapon, attack or spell Talent has the trait), so the Rally
+  Aura reads and fires on nothing until one is authored; the build warns. **Torchbearer's new cell
+  is to be written once Excel releases `data/ancestries.xlsx`** (the line is in
+  `AUTOMATION_GRAMMAR.md`, section 5; Excel held the file through the 0.14.0 and 0.15.0 sessions);
+  until then the shipped Talent carries the 0.13.0 rule (every Defense, no sight, no trait). **Two
+  Culture Talents carry no cost in their names** (0.15.0): the sheet's Talent column reads
+  "Oathbound" and "Quick Tongue" with the ❶ and ❶↺ in the Effect prose, so the Items' cost is
+  passive and Use and the reroll button pay nothing; the Human sheet's "Steady the Line ❶↺" is the
+  form the pipeline reads. Mike's to rename, or the converter's to read the glyph out of "You gain
+  the X ❶ Maneuver". **Iron Etiquette's Intimidation line fires on nothing shipped** until the
+  Demoralize row (or Feint, Talk Them Down) is enabled in `data/maneuvers.xlsx`; a world Item with
+  a Defense named reads it today. The Jack of All
   Trades rename gives the Talent a new document id; a character who owned "Jack of Trades" keeps
   the stale copy beside the new one after Sync content. Each new kind, by the recipe in
-  `module/rules/README.md`: its file, its hook point (`modifiers` or `prevent` if either serves
-  it, else a new one defined with it; ruling 119), its checks in `assets/test_rules.mjs`, its
+  `module/rules/README.md`: its file, its hook point (`modifiers`, `prevent`, `use` or `card` if
+  one serves it, else a new one defined with it; ruling 119), its checks in `assets/test_rules.mjs`, its
   section in `AUTOMATION_GRAMMAR.md`, its CHANGELOG and FEATURES prose. No survey of the Talents
   until Mike asks for one. Also his: whether the web app and the compendium docx should print the
   cell or the Lore (neither does), and whether an edited copy's Automation should survive the
@@ -999,8 +1054,29 @@ yet**, so the Rally Aura fires once a Fear spell or attack is authored.
   (their `Enabled?` cells blank), so Spellshaper, Blood Mage, Necromancer, Summoner and Spellblade
   and their Talents left the pack sources in 0.13.0; setting the rows to Yes restores them under
   the same ids. Whether that was meant is his to say.
-- **PHB v4.22 is on the shelf, unsynced** (Mike's edit in progress, 2026-11-05): the full pipeline
-  exits 1 at the drift gate and the content loop warns, until the sync.
+- **PHB v4.22 and v4.23 are on the shelf, unsynced** (Mike's edits in progress, 2026-11-05): the
+  full pipeline exits 1 at the drift gate and the content loop warns, until the sync.
+- **The test world carries 0.15.0's fixtures**: a "Test Mud" region with the Difficult terrain
+  behavior east of Tess, a world "Demoralize ❶" action Item on Wren with its check against Guard,
+  Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
+  Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
+  Combat was deleted. Nothing in the repository depends on them.
+
+Cleared 2026-11-05 (the two Cultures, system 0.15.0; rulings 174 to 181 in the 0.15.0 changelog
+entry; planned in `eager-wobbling-possum.md`, the third plan, Mike's decisions by question: both the
+checkbox and the arm button, Intimidation automated and the rest claimed, difficult terrain built
+into the maps as regions): the Bloodline card and every Root-based card printing the Talent's
+Description; the Cultures given the Ancestry's treatment (the generated `cultures` block with the
+index's `Languages` column, the chassis's Lore, the app's and docx's per-Culture sections, the
+wizard's Culture Lore panel); the eight cells written in `data/cultures.xlsx`; `CLAIM` with the pin,
+`MARKED` with `mark` and the `use` hook point, `reroll` with `IF(Outcome=...)` and the `card` hook
+point, `AGAINST(<Constellation>)` with the check that reads a target's Threshold live, `Speed`, and
+`ignore: Terrain` with the Difficult terrain region behavior, the terrain data, the ruler's label
+and the player's overlay; the engine's `other` party per Defense roll, Threshold read and Strike
+pairing; the Defense tooltip listing the rules the sheet's number leaves out. Checked by 100
+self-test checks, the content loop (`automation: 23 rules on 17 documents (7 kinds in use)`), the
+smoke test, the style check and live (the 0.15.0 changelog entry lists what). No handbook moved and
+`data/SYNC.json` is untouched.
 
 Cleared 2026-11-05 (the level-1 Human, whole, system 0.13.0; rulings 164 to 169 in the 0.13.0
 changelog entry; planned in `eager-wobbling-possum.md`, Mike's decisions by question: one grammar

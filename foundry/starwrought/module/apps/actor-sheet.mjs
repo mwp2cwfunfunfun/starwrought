@@ -17,6 +17,28 @@ import { openRulesPage } from "../documents/chat.mjs";
 import { requestTake } from "../documents/party-socket.mjs";
 // AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
 import { auraRowsByItem, reachRangeRows, rangeFor } from "../canvas/auras.mjs";
+// CLAIMS (0.15.0, ruling 174): the pin on a Talent row that arms its claims for the next roll.
+import { claimsOf, armClaim } from "../rules/claims.mjs";
+// The Threshold tooltip's conditional rules (0.15.0): the As read line of each rule the sheet's number leaves out.
+import { needsMoment } from "../rules/operators.mjs";
+import { summarize } from "../rules/grammar.mjs";
+import { usableByRule } from "../rules/engine.mjs";
+
+/**
+ * The `bonus` rules on a character that touch a Defense but need the moment to be read (0.15.0):
+ * each as `{ slug, talent, summary }`, `slug` the Defense's or "defenses" for the scope word.
+ */
+function conditionalDefenseRules(actor) {
+  const out = [];
+  if (typeof actor?.rulesOfKind !== "function") return out;
+  for (const { rule, item } of actor.rulesOfKind("bonus")) {
+    if (!rule?.to?.slug || !needsMoment(rule)) continue;
+    const slug = rule.to.slug;
+    if ((slug !== "defenses") && !Object.values(SW.DEFENSES).some(d => d.slug === slug)) continue;
+    out.push({ slug, talent: SW.plainName(item?.name ?? ""), summary: summarize(rule) });
+  }
+  return out;
+}
 
 /** The Cast ❷ ❸ ❹ a spell Talent's row carries (PHB v4.21, the Cast Maneuver). */
 function castButtons() {
@@ -96,7 +118,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       effectDelete: SwCharacterSheet.#onEffectDelete,
       effectToggle: SwCharacterSheet.#onEffectToggle,
       // AURAS (0.5.1)
-      toggleAura: SwCharacterSheet.#onToggleAura
+      toggleAura: SwCharacterSheet.#onToggleAura,
+      // CLAIMS (0.15.0)
+      armClaim: SwCharacterSheet.#onArmClaim
     }
   };
 
@@ -156,11 +180,19 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       key, ...attr, label: game.i18n.localize(attr.label)
     }));
 
+    // The Threshold's tooltip (0.15.0): the sheet's number is position-blind, so the rules it
+    // leaves out (a FOR reaching others, an AGAINST, a MARKED, a claim) are listed under it by
+    // their As read line, for the GM narrating an adversary's Demoralize by hand.
+    const conditional = conditionalDefenseRules(actor);
     context.defenses = Object.values(sys.defenses).map(def => ({
       ...def,
       label: game.i18n.localize(def.label),
       hint: game.i18n.localize(def.hint),
-      rankLabel: game.i18n.localize(def.rankLabel)
+      rankLabel: game.i18n.localize(def.rankLabel),
+      thresholdTip: [
+        game.i18n.localize("STARWROUGHT.Field.thresholdHint"),
+        ...conditional.filter(r => (r.slug === def.slug) || (r.slug === "defenses")).map(r => `${r.talent}: ${r.summary}`)
+      ].join("\n")
     }));
     context.bind = bindContext(actor);
     context.lockedTips = lockedTips(actor);
@@ -413,6 +445,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       constellations: []
     });
     const parentNameOf = slug => (slug ? (all[slug]?.name ?? SW.getConstellation(slug)?.name ?? slug) : null);
+    // The Talents carrying a claim, with their arming (0.15.0), for the pin on the row.
+    const claims = claimsOf(this.document);
 
     for (const entry of Object.values(all)) {
       const group = groupFor(entry.category ?? "general");
@@ -444,7 +478,15 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           root: t.system.root || t.system.bloodlineRoot,
           effect: t.system.effect,
           // A spell Talent (PHB v4.21) carries the Cast ❷ ❸ ❹ on its row.
-          spell: t.system.isSpell ? { casts: castButtons() } : null
+          spell: t.system.isSpell ? { casts: castButtons() } : null,
+          // A Talent with a cost in its name is used from its row (0.15.0, ruling 176).
+          usable: !t.system.isSpell && (((t.system.cost !== "passive") && !!t.system.glyph) || usableByRule(t)),
+          useHint: game.i18n.format("STARWROUGHT.Sheet.useTalent", { name: SW.plainName(t.name), glyph: t.system.glyph ?? "" }),
+          // A Talent with a claim has the pin (0.15.0, ruling 174).
+          claim: claims.has(t.id) ? {
+            armed: claims.get(t.id).armed,
+            hint: game.i18n.format(claims.get(t.id).armed ? "STARWROUGHT.Sheet.claimArmed" : "STARWROUGHT.Sheet.claimArm", { texts: claims.get(t.id).texts.join("; ") })
+          } : null
         }))
       });
     }
@@ -944,6 +986,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onItemUse(event, target) {
     const item = this.#getItem(target);
     return item?.use({ dialog: !event.shiftKey });
+  }
+
+  /** The pin on a Talent row (0.15.0): arm or disarm its claims for the next roll. */
+  static async #onArmClaim(event, target) {
+    const item = this.#getItem(target);
+    if (!item) return null;
+    return armClaim(this.document, item.id);
   }
 
   /** The Cast Maneuver on a spell Talent's row (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed. */

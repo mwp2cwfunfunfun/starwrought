@@ -34,6 +34,9 @@ import { setting } from "../helpers/settings.mjs";
 import { footprint, cellGap, minGapAlongPath } from "../canvas/geometry.mjs";
 import { reachesOf } from "../canvas/reach.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
+// A bonus to Speed (0.15.0, ruling 181): the Automation rules' `Speed` target, feet on a Move.
+import { ruleModifiers } from "../rules/engine.mjs";
+import { sceneContextFor, encounterContext, writeRuleMarks } from "../rules/scene.mjs";
 
 const { escapeHTML } = foundry.utils;
 const localize = key => game.i18n.localize(key);
@@ -58,8 +61,13 @@ export function registerMovementTracking() {
  * The actor's movement numbers in feet (PHB v4.21, Motion): Speed per Move, Step = half Speed,
  * Rush = three times Speed less Load Strain, Crawl = half the Speed the legs had. The data model
  * derives `step`, `rush` and `crawl`; if a build lacks them the constants say the same thing.
+ * Since 0.15.0 (ruling 181) `move` is the Move's own reach: the Speed plus whatever the Automation
+ * rules' `Speed` target adds (Riverfoot's first Move a foot longer), read with `kind: "move"`; a
+ * Step, a Rush and a Crawl stay on the Speed itself, since the book's words are "Move". The marks
+ * a FIRST or ONCE rule asks for ride on `moveMarks`, and `chargeMovement` writes them when the
+ * charged Maneuver is a Move.
  * @param {Actor} actor
- * @returns {{speed: number, step: number, rush: number, crawl: number, loadStrain: number}}
+ * @returns {{speed: number, move: number, step: number, rush: number, crawl: number, loadStrain: number, moveMarks: Array}}
  */
 export function movementNumbers(actor) {
   const sys = actor?.system ?? {};
@@ -76,7 +84,27 @@ export function movementNumbers(actor) {
   // without the derived number halves the stored Speed.
   const fallbackCrawl = Math.floor(Math.max(speed, Number(sys.speed) || 0) / SW.CRAWL_DIVISOR);
   const crawl = Number.isFinite(sys.crawl) ? sys.crawl : fallbackCrawl;
-  return { speed, step: Math.max(0, step), rush: Math.max(0, rush), crawl: Math.max(1, crawl), loadStrain };
+  const { bonus, marks } = speedBonus(actor);
+  return {
+    speed, move: Math.max(0, speed + ((speed > 0) ? bonus : 0)),
+    step: Math.max(0, step), rush: Math.max(0, rush), crawl: Math.max(1, crawl), loadStrain, moveMarks: marks
+  };
+}
+
+/** The `Speed` bonuses the rules put on a Move (0.15.0), as feet, with the marks they ask for. */
+function speedBonus(actor) {
+  if (!actor?.system?.rules || (actor.type === "npc")) return { bonus: 0, marks: [] };
+  try {
+    const { applied, marks } = ruleModifiers(actor, {
+      kind: "move", slug: "", item: null, rank: "untrained", threat: null, other: null,
+      scene: sceneContextFor(actor), encounter: encounterContext()
+    });
+    const total = applied.length ? SW.resolveModifiers(applied).total : 0;
+    return { bonus: Number.isFinite(total) ? total : 0, marks: marks ?? [] };
+  } catch (err) {
+    console.error("STARWROUGHT | the Speed rules could not be read", err);
+    return { bonus: 0, marks: [] };
+  }
 }
 
 /**
@@ -94,7 +122,7 @@ export function movementNumbers(actor) {
  * @param {boolean} [options.straight=true]   Is the path a single straight line?
  * @returns {{kind: "crawl"|"step"|"move"|"rush", actions: number, moves: number, rushInstead: boolean}}
  */
-export function classifyMove(feet, { speed, step, rush, crawl = 3 }, { terrain = false, straight = true } = {}) {
+export function classifyMove(feet, { speed, move = null, step, rush, crawl = 3 }, { terrain = false, straight = true } = {}) {
   const eps = 1e-6;
   // Prone and unable to Stand, you cannot Step, Move or Rush; Crawl ❶ is "while prone, Move up
   // to half your Speed", one action per that many feet of the path's cost. Checked first so a
@@ -105,7 +133,9 @@ export function classifyMove(feet, { speed, step, rush, crawl = 3 }, { terrain =
     return { kind: "crawl", actions: crawls, moves: crawls, rushInstead: false };
   }
   if ((feet <= step + eps) && !terrain) return { kind: "step", actions: 1, moves: 1, rushInstead: false };
-  const moves = Math.max(1, Math.ceil((feet / speed) - eps));
+  // A Move reaches `move` feet (the Speed plus a rule's bonus, 0.15.0); a Rush stays on the Speed.
+  const perMove = (Number.isFinite(move) && (move > 0)) ? move : speed;
+  const moves = Math.max(1, Math.ceil((feet / perMove) - eps));
   const rushable = (feet > (SW.RUSH_COST * speed) + eps) && (feet <= rush + eps);
   if (rushable && straight) return { kind: "rush", actions: SW.RUSH_COST, moves, rushInstead: false };
   return { kind: "move", actions: moves, moves, rushInstead: rushable && !straight };
@@ -206,6 +236,12 @@ async function chargeMovement({ token, movement, actor, combatant, move, feet, n
     await announceMove(actor, move, feet.cost, numbers);
   }
 
+  // A FIRST or ONCE `Speed` rule that lengthened this Move is remembered now (0.15.0, ruling 181):
+  // a Step or a Rush first leaves the foot unspent, since the book's word is "Move".
+  if ((move.kind === "move") && numbers.moveMarks?.length) {
+    await writeRuleMarks(actor, numbers.moveMarks).catch(err => console.error("STARWROUGHT | the Speed rule marks could not be written", err));
+  }
+
   // A Step never provokes an Intercept, and neither does a Crawl. A Move may; a Rush always does.
   // The offer is a rules prompt, not a spend, so it does not depend on the tracking setting.
   if ((move.kind === "move") || (move.kind === "rush")) offerIntercepts(token, movement, actor, move);
@@ -287,6 +323,10 @@ function announceMove(actor, move, feet, numbers) {
         ? format("STARWROUGHT.Actions.moveTitleMany", { n: move.moves })
         : localize("STARWROUGHT.Actions.moveTitle");
       text = format("STARWROUGHT.Actions.moveText", { name, feet: rounded, speed: numbers.speed, moves: move.moves, cost: move.actions });
+      // A Move longer than the Speed (0.15.0, a `Speed` rule such as Riverfoot's): say where the feet came from.
+      if (Number.isFinite(numbers.move) && (numbers.move !== numbers.speed)) {
+        notes.push(format("STARWROUGHT.Actions.moveReachNote", { move: numbers.move, speed: numbers.speed, bonus: numbers.move - numbers.speed > 0 ? `+${numbers.move - numbers.speed}` : String(numbers.move - numbers.speed) }));
+      }
       if (move.moves > 1) notes.push(localize("STARWROUGHT.Actions.moveChainNote"));
       if (move.rushInstead) notes.push(format("STARWROUGHT.Actions.rushInsteadNote", { rush: numbers.rush }));
       break;

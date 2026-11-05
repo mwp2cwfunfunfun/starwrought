@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.14.0"; }
+:root { --sw-css-version-character: "0.15.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -554,6 +554,14 @@
 .starwrought .sw-cast-buttons { display: inline-flex; gap: 0.15rem; margin-right: 0.3rem; }
 .starwrought .sw-cast-button { color: var(--sw-gold); opacity: 0.75; font-size: 0.95em; }
 .starwrought .sw-cast-button:hover { opacity: 1; text-shadow: 0 0 6px var(--sw-gold); }
+
+/* A Talent used from its row (0.15.0): the play control in the gold, as the Cast buttons are. */
+.starwrought .sw-talent-use { color: var(--sw-gold); opacity: 0.75; margin-right: 0.3rem; }
+.starwrought .sw-talent-use:hover { opacity: 1; text-shadow: 0 0 6px var(--sw-gold); }
+/* The claim pin (0.15.0, ruling 174): dim until armed, then lit in the gold. */
+.starwrought .sw-claim-arm { color: var(--sw-ink-dim); opacity: 0.5; margin-right: 0.3rem; }
+.starwrought .sw-claim-arm:hover { opacity: 1; }
+.starwrought .sw-claim-arm.sw-claim-on { color: var(--sw-gold); opacity: 1; text-shadow: 0 0 6px var(--sw-gold); }
 
 /* The visor and the Fitted tick on a worn piece (Equipment tab): dim until on. */
 .starwrought .sw-visor-toggle, .starwrought .sw-adjusted-toggle { color: var(--sw-ink-dim); opacity: 0.55; }

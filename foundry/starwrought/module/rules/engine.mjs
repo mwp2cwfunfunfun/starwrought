@@ -138,10 +138,17 @@ export function rulesOfKind(actor, kind) {
  *                                      module/rules/scene.mjs on a client with a canvas, or a fake in a test;
  *                                      null when unknown.
  * @property {{combat: string|null, round: number}|null} [encounter]  The Combat and round (`FIRST`, `ONCE`).
+ * @property {{actor: object|null, uuid: string|null, tokenUuid: string|null, name: string}|null} [other]
+ *                                      The roll's other party (0.15.0, `MARKED`): the attacker a Defense
+ *                                      answers, the defender a Strike's pairing resolves against, the roller
+ *                                      whose check reads this Threshold; null when nobody is known.
  * @property {boolean} [staticOnly]     Answer only the rules that need none of the above (the sheet's
  *                                      Defense pass, which has no token and no Threat).
  * @property {boolean} [momentOnly]     Answer only the rules that do (a Defense roll or a Threshold read in
  *                                      the attack flow, whose static rules the sheet already folded in).
+ * @property {boolean} [pairingOnly]    Answer only the rules about the other party (a Strike's pairing as it
+ *                                      resolves; the blind die had everything else).
+ * @property {boolean} [read]           A Threshold read with no dialog: a claim applies only when armed.
  */
 
 /**
@@ -208,9 +215,8 @@ export function ruleModifiers(actor, context = {}) {
       const value = (typeof mod.value === "string") ? Number(mod.value.trim() || NaN) : mod.value;
       if ((typeof value !== "number") || !Number.isFinite(value) || (value === 0)) continue;
       const clean = { ...mod, value, label: String(mod.label ?? kind.id) };
-      if (clean.mark && (typeof clean.mark === "object") && clean.mark.key && clean.mark.per) {
-        if (mod.offer !== true) marks.push({ key: String(clean.mark.key), per: String(clean.mark.per) });
-      }
+      const validMark = (clean.mark && (typeof clean.mark === "object") && clean.mark.key && clean.mark.per)
+        ? { key: String(clean.mark.key), per: String(clean.mark.per) } : null;
       delete clean.mark;
       if (mod.offer === true) {
         let key = String(mod.key ?? "") || `${kind.id}-${offers}`;
@@ -221,9 +227,13 @@ export function ruleModifiers(actor, context = {}) {
           key = `${key}-${n}`;
         }
         keys.add(key);
-        offered.push({ ...clean, offer: true, key, hint: String(mod.hint ?? "") });
+        // An offer keeps its mark for the dialog (0.15.0): an armed claim is spent only when the
+        // player leaves its box ticked, so the dialog, not the engine, files that mark.
+        offered.push({ ...clean, offer: true, key, hint: String(mod.hint ?? ""), ticked: mod.ticked === true, ...(validMark ? { mark: validMark } : {}) });
       } else {
+        if (validMark) marks.push(validMark);
         delete clean.offer;
+        delete clean.ticked;
         applied.push(clean);
       }
     }
@@ -288,6 +298,114 @@ export function rulePreventers(actor, context = {}) {
         reaction: p.reaction === true,
         mark: (p.mark && p.mark.key && p.mark.per) ? { key: String(p.mark.key), per: String(p.mark.per) } : null
       });
+    }
+  }
+  return out;
+}
+
+/* -------------------------------------------- */
+/*  The `use` hook point (0.15.0)               */
+/* -------------------------------------------- */
+
+/**
+ * @typedef {object} RuleUse
+ * @property {object} item            The Talent used.
+ * @property {object} [write]         An update to apply to the owner (`{ [path]: value }`).
+ * @property {string} [say]           A line for the card.
+ * @property {string} [refuse]        Why nothing happens (a notice; nothing is written or paid).
+ */
+
+/**
+ * What the kinds do when the owner USES a Talent (the `use` hook point, defined with the `mark`
+ * kind; ruling 176). Triggered in category (../README.md): the hook answers with data, and the one
+ * client that used the Talent (its owner's, in `SwItem#use`) pays the cost, applies the writes and
+ * posts the card. Only the rules ON THE USED ITEM are handed to a kind: a Talent's use is its
+ * own business, never another Talent's. The dispatch is `ruleModifiers`' twin: every kind with
+ * `hooks.use`, try/catch, the answer validated.
+ * @param {object} actor
+ * @param {object} item
+ * @param {{target?: object|null, encounter?: object|null}} context
+ * @returns {RuleUse[]}
+ */
+/**
+ * Does this Item carry a rule of a kind that acts when the Item is used (`mark`)? The sheet shows
+ * the Use control for it even when the Talent's name carries no cost glyph (a row whose Effect
+ * says "You gain the Oathbound ❶ Maneuver" with a plain name pays nothing and still marks).
+ * @param {object} item
+ * @returns {boolean}
+ */
+export function usableByRule(item) {
+  const rules = item?.system?.rules;
+  if (!Array.isArray(rules)) return false;
+  return rules.some(r => r?.kind && (typeof kindOf(r.kind)?.hooks?.use === "function"));
+}
+
+export function ruleUses(actor, item, context = {}) {
+  const out = [];
+  if (!actor || !item) return out;
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.use;
+    if (typeof hook !== "function") continue;
+    const entries = rulesOfKind(actor, kind.id).filter(e => e?.item === item).map(e => ({ ...e, owner: actor }));
+    if (!entries.length) continue;
+    let result;
+    try {
+      result = hook(entries, { ...context, item }, actor);
+    } catch (error) {
+      console.error(`STARWROUGHT | the "${kind.id}" kind's use hook failed:`, error);
+      continue;
+    }
+    if (!Array.isArray(result)) continue;
+    for (const u of result) {
+      if (!u || (typeof u !== "object") || !u.item) continue;
+      const write = (u.write && (typeof u.write === "object") && !Array.isArray(u.write)) ? u.write : null;
+      out.push({ item: u.item, write, say: u.say ? String(u.say) : "", refuse: u.refuse ? String(u.refuse) : "" });
+    }
+  }
+  return out;
+}
+
+/* -------------------------------------------- */
+/*  The `card` hook point (0.15.0)              */
+/* -------------------------------------------- */
+
+/**
+ * @typedef {object} RuleCardOffer
+ * @property {object} item      The Talent offering.
+ * @property {string} label     The button's text ("Quick Tongue ❶↺: reroll").
+ * @property {string} action    The button's `data-action`, which the chat dispatch knows ("ruleReroll").
+ */
+
+/**
+ * What the kinds offer on a posted card of the actor's roll (the `card` hook point, defined with
+ * the `reroll` kind; ruling 177). Triggered in category: the hook answers with data, the chat
+ * render pass (documents/chat.mjs) draws the buttons for the owner or the GM, and the presser's
+ * client acts (documents/cards/reroll.mjs). The context is the card's flags, so a reload rebuilds
+ * the same buttons from the same record.
+ * @param {object} actor
+ * @param {object} flags  The card's `flags.starwrought`.
+ * @param {{encounter?: object|null}} [extra]
+ * @returns {RuleCardOffer[]}
+ */
+export function ruleCardOffers(actor, flags, extra = {}) {
+  const out = [];
+  if (!actor || !flags) return out;
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.card;
+    if (typeof hook !== "function") continue;
+    const entries = rulesOfKind(actor, kind.id).map(e => ({ ...e, owner: actor }));
+    if (!entries.length) continue;
+    let result;
+    try {
+      result = hook(entries, { ...flags, ...extra }, actor);
+    } catch (error) {
+      console.error(`STARWROUGHT | the "${kind.id}" kind's card hook failed:`, error);
+      continue;
+    }
+    if (!Array.isArray(result)) continue;
+    for (const o of result) {
+      if (!o || (typeof o !== "object") || !o.item || !o.action) continue;
+      out.push({ item: o.item, label: String(o.label ?? o.item.name ?? kind.id), action: String(o.action) });
     }
   }
   return out;

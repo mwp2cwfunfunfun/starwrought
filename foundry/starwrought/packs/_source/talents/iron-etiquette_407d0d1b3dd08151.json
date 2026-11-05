@@ -1,0 +1,103 @@
+{
+  "_id": "407d0d1b3dd08151",
+  "name": "Iron Etiquette",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "serrovane",
+    "constellationName": "Serrovane",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Serrovanian"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +1 Condition bonus to checks against Intimidation and other social manipulations.",
+    "description": "<p><i>Court manners are armor, and yours hold firm under threats, flattery, and calculated insult.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "bonus: +1, Condition, Defenses, AGAINST(Intimidation)\nbonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Defenses",
+          "slug": "defenses",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": {
+          "threat": null,
+          "reach": null,
+          "check": "intimidation",
+          "name": "Intimidation"
+        },
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1, Condition, Defenses, AGAINST(Intimidation)"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Defenses",
+          "slug": "defenses",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "against a social manipulation other than Intimidation"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "bonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "09d1d52e7c8e761e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "09cf82677b922454"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!407d0d1b3dd08151"
+}

@@ -21,19 +21,28 @@
  *                                   answered carrying the trait: { trait: "fear", name: "Fear" }.
  *   FOR(<Who>[, <N>ft])             for: { who, range }   who: self | allies | enemies | all | self+allies
  *   WHILE(<Who><op><N>[, <N>ft])    while: { who, op, count, range }   who: allies | enemies | all
- *   AGAINST(<Threat>)               against: { threat, reach }   threat: blow | blast | blight | beguilement
- *                                   | null; reach: melee | ranged | null
+ *   AGAINST(<Threat>)               against: { threat, reach, check, name }   threat: blow | blast | blight
+ *                                   | beguilement | null; reach: melee | ranged | null; check (0.15.0): the
+ *                                   slug of a Constellation whose check is read against this Defense
+ *                                   (`AGAINST(Intimidation)`), else null
  *   FIRST(round)                    limit: { per: "round" }
  *   ONCE(encounter)                 limit: { per: "encounter" }
  *   DIFFERENT                       different: true
  *   VISIBLE                         visible: true
  *   SEEN                            seen: true  (0.14.0: only for a recipient who can see the owner)
+ *   CLAIM(<text>)                   claim: { text }  (0.15.0: offered in the roll dialog, the player decides)
+ *   MARKED                          marked: true  (0.15.0: the roll's other party is the creature this
+ *                                   Talent's `mark` named)
+ *   IF(Outcome=<Degree>)            when: [{ outcome: "critFail", name: "Critical Failure" }]  (0.15.0: the
+ *                                   roll's degree; only a kind that acts after the die reads it, `reroll`)
  *
  * Also here, for the hooks: `rankMeets(actual, op, wanted)` over SW.RANKS' order, `whoMatches(who,
- * relation)` over the scene's relation words, `hasTrait(traits, word)` over an attack's traits, and
- * `needsMoment(rule)`, true when a rule can only be read where the map, the Threat or the round is
- * known (a FOR that reaches others, a WHILE, a SEEN, an AGAINST, an IF on a Trait, a FIRST or
- * ONCE), which is how the Defense pass on the sheet and the roll tell their halves apart.
+ * relation)` over the scene's relation words, `hasTrait(traits, word)` over an attack's traits,
+ * `againstHolds(rule, threat)` and `markedHolds(rule, entry, context)` (0.15.0), the shared readings
+ * of AGAINST and MARKED, and `needsMoment(rule)`, true when a rule can only be read where the map,
+ * the Threat, the round or the other party is known (a FOR that reaches others, a WHILE, a SEEN, an
+ * AGAINST, an IF on a Trait, a FIRST or ONCE, a CLAIM, a MARKED), which is how the Defense pass on
+ * the sheet and the roll tell their halves apart.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE. The build imports the kinds from
  * plain Node, and a kind imports this. It imports `syntax.mjs` (which imports nothing) and
@@ -41,10 +50,20 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { RANKS, THREATS, isLoreSlug } from "../config.mjs";
+import { RANKS, THREATS, DEGREES, isLoreSlug } from "../config.mjs";
 
 /** The operator names, in the order the grammar document lists them. The build checks each is named there. */
-export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "DIFFERENT", "VISIBLE"]);
+export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "DIFFERENT", "VISIBLE", "CLAIM", "MARKED"]);
+
+/** The degree words `IF(Outcome=...)` reads, squeezed of spaces and lower-cased, to the keys of SW.DEGREES. */
+const DEGREE_WORDS = Object.freeze({
+  criticalsuccess: "critSuccess", critsuccess: "critSuccess",
+  success: "success",
+  failure: "fail", fail: "fail",
+  criticalfailure: "critFail", critfailure: "critFail", critfail: "critFail"
+});
+/** The degree names as the Result table prints them, for messages and summaries. */
+export const DEGREE_NAMES = Object.freeze({ critSuccess: "Critical Success", success: "Success", fail: "Failure", critFail: "Critical Failure" });
 
 /** The subjects a FOR may name. */
 export const WHO_FOR = Object.freeze(["self", "allies", "enemies", "all", "self+allies"]);
@@ -139,12 +158,12 @@ function operatorName(part) {
  * @param {string[]} options.allow           The operator names this kind takes.
  * @param {string} options.kind              The kind's id, for messages.
  * @param {object} [options.context]         The grammar's context; `resolve` is read from it for IF.
- * @returns {{args: string[], ops: {when: object[]|null, for: object|null, while: object|null, against: object|null, limit: object|null, different: boolean, visible: boolean, seen: boolean}}}
+ * @returns {{args: string[], ops: {when: object[]|null, for: object|null, while: object|null, against: object|null, limit: object|null, different: boolean, visible: boolean, seen: boolean, claim: object|null, marked: boolean}}}
  */
 export function readLine(text, { allow = [], kind = "rule", context = {} } = {}) {
   const parts = splitOperands(String(text ?? "").trim().replace(/\.$/, ""));
   const args = [];
-  const ops = { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false };
+  const ops = { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false, claim: null, marked: false };
   let seenOperator = false;
 
   for (const part of parts) {
@@ -188,7 +207,19 @@ function readOperator(name, inside, ops, context) {
     case "AGAINST": {
       if (ops.against) throw new RuleSyntaxError("AGAINST is given twice");
       if (inside == null) throw new RuleSyntaxError("AGAINST is written `AGAINST(<Threat>)`, as in `AGAINST(Blow)`");
-      ops.against = readAgainst(inside);
+      ops.against = readAgainst(inside, context);
+      return;
+    }
+    case "CLAIM": {
+      if (ops.claim) throw new RuleSyntaxError("CLAIM is given twice");
+      const words = String(inside ?? "").trim().replace(/^["']|["']$/g, "").trim();
+      if (!words) throw new RuleSyntaxError("CLAIM is written `CLAIM(<text>)`, the words the player is asked, as in `CLAIM(when trading)`");
+      ops.claim = { text: words };
+      return;
+    }
+    case "MARKED": {
+      if (inside) throw new RuleSyntaxError("MARKED takes nothing in parentheses; who may be marked is the mark line's business");
+      ops.marked = true;
       return;
     }
     case "FIRST": {
@@ -289,6 +320,12 @@ function readIf(inside, context) {
     if (!/^[A-Za-z][A-Za-z0-9 '-]*$/.test(name)) throw new RuleSyntaxError(`"${cmp.right}" is not a trait word (letters, as the Traits columns print it)`);
     return { trait: traitKey(name), name };
   }
+  // `Outcome` (0.15.0): the roll's degree, for a kind that acts after the die (reroll).
+  if (cmp.left.toLowerCase() === "outcome") {
+    if (cmp.op !== "=") throw new RuleSyntaxError("IF(Outcome=<Degree>) names the degree with = only");
+    const outcome = readDegree(cmp.right);
+    return { outcome, name: DEGREE_NAMES[outcome] };
+  }
   const rank = readRank(cmp.right);
   if (cmp.left.toLowerCase() === "rank") return { roll: true, op: cmp.op, rank };
   const resolve = context?.resolve;
@@ -329,13 +366,59 @@ function readWhile(inside) {
   return { who, op: cmp.op, count: Number(cmp.right), range };
 }
 
-/** `AGAINST(<Threat>)`: a Threat word, or `Melee` / `Ranged` for a Blow by how it reached. */
-function readAgainst(inside) {
-  const word = String(inside ?? "").trim().toLowerCase();
-  if (Object.hasOwn(THREATS, word)) return { threat: word, reach: null };
-  if (REACH_WORDS.includes(word)) return { threat: "blow", reach: word };
-  const names = [...Object.keys(THREATS).map(titled), ...REACH_WORDS.map(titled)];
-  throw new RuleSyntaxError(`"${String(inside ?? "").trim()}" is not a Threat: write ${names.slice(0, -1).join(", ")} or ${names.at(-1)}`);
+/**
+ * `AGAINST(<Threat>)`: a Threat word, or `Melee` / `Ranged` for a Blow by how it reached, or
+ * (0.15.0) a Constellation by name: only when the check read against this Defense rolls it
+ * (`AGAINST(Intimidation)`, Iron Etiquette). With a resolver the name must be a Constellation that
+ * is not a group (a group's Talents roll the parent, so the parent is named); without one the slug
+ * is made here. A Lore is refused: nothing rolls a Lore against a Defense.
+ */
+function readAgainst(inside, context = {}) {
+  const written = String(inside ?? "").trim();
+  const word = written.toLowerCase();
+  if (Object.hasOwn(THREATS, word)) return { threat: word, reach: null, check: null, name: null };
+  if (REACH_WORDS.includes(word)) return { threat: "blow", reach: word, check: null, name: null };
+  const resolve = context?.resolve;
+  let check;
+  let name;
+  if (typeof resolve === "function") {
+    const found = resolve(written);
+    if (!found || (found.type !== "constellation") || !found.slug) {
+      const names = [...Object.keys(THREATS).map(titled), ...REACH_WORDS.map(titled)];
+      throw new RuleSyntaxError(`"${written}" is not a Threat (${names.join(", ")}) or a Constellation`);
+    }
+    if (found.group) {
+      const parent = found.parent ? ` write ${found.parent} instead` : " write its parent instead";
+      throw new RuleSyntaxError(`"${found.name ?? written}" is a group and its Talents roll the parent;${parent}`);
+    }
+    check = String(found.slug);
+    name = String(found.name ?? written);
+  } else {
+    check = slugOf(written);
+    name = written;
+    if (!check) throw new RuleSyntaxError("AGAINST is written `AGAINST(<Threat>)` or `AGAINST(<Constellation>)`, as in `AGAINST(Blow)`");
+  }
+  if (isLoreSlug(check)) throw new RuleSyntaxError("a Lore is the character's own; nothing rolls it against a Defense");
+  return { threat: null, reach: null, check, name };
+}
+
+/** The degree word of `IF(Outcome=...)`, to a key of SW.DEGREES. */
+export function readDegree(word) {
+  const key = String(word ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+  if (Object.hasOwn(DEGREE_WORDS, key) && Object.hasOwn(DEGREES, DEGREE_WORDS[key])) return DEGREE_WORDS[key];
+  const names = Object.values(DEGREE_NAMES);
+  throw new RuleSyntaxError(`"${String(word ?? "").trim()}" is not a Degree: write ${names.slice(0, -1).join(", ")} or ${names.at(-1)}`);
+}
+
+/**
+ * A kind that acts before the die has no use for `IF(Outcome=...)`: refuse it by name. Called by
+ * every kind's parse but `reroll`'s.
+ * @param {object} ops  readLine's operators.
+ */
+export function refuseOutcome(ops) {
+  if (Array.isArray(ops?.when) && ops.when.some(w => w?.outcome)) {
+    throw new RuleSyntaxError("IF(Outcome=...) is only read by a kind that acts after the die (reroll)");
+  }
 }
 
 /** A slug made here, for a parse with no resolver: lower-case, hyphens, glyphs out. */
@@ -403,6 +486,52 @@ export function hasTrait(traits, word) {
   return traits.some(t => traitKey(t) === word);
 }
 
+/**
+ * Does a rule's AGAINST hold for the Threat context of a roll or a Threshold read? A Threat word
+ * on the Threat answered, a reach word on how the Blow reached, a Constellation (0.15.0) on the
+ * `check` the context carries: the slug of the check read against this Defense, which a Demoralize
+ * against Guard passes and an attack does not. A rule without AGAINST holds.
+ * @param {object} rule
+ * @param {{threat?: string, melee?: boolean, check?: string|null}|null} threat
+ * @returns {boolean}
+ */
+export function againstHolds(rule, threat) {
+  const against = rule?.against;
+  if (!against) return true;
+  if (against.check) return !!threat && (threat.check === against.check);
+  if (!threat?.threat) return false;
+  if (against.threat && (against.threat !== threat.threat)) return false;
+  if (against.reach === "melee" && threat.melee !== true) return false;
+  if (against.reach === "ranged" && threat.melee !== false) return false;
+  return true;
+}
+
+/**
+ * Does a rule's MARKED hold (0.15.0; ruling 176)? The owner's `mark` for this Talent
+ * (`flags.starwrought.rules.marks.<itemId>`, `{ uuid, tokenUuid, name, combat }`) must name the
+ * roll's other party (`context.other`, `{ uuid, tokenUuid }`), and must still hold: made in an
+ * encounter, while that Combat is the viewed one; made outside, while none runs. A rule without
+ * MARKED holds; one with it and no other party known does not.
+ * @param {object} rule
+ * @param {{item: object, owner?: object}} entry
+ * @param {{other?: object|null, encounter?: {combat: string|null}|null}} context
+ * @returns {boolean}
+ */
+export function markedHolds(rule, entry, context) {
+  if (!rule?.marked) return true;
+  const other = context?.other;
+  if (!other || (!other.uuid && !other.tokenUuid)) return false;
+  const carrier = entry?.item;
+  const owner = entry?.owner;
+  const key = String(carrier?.id ?? carrier?.name ?? "").replace(/\./g, "-");
+  const mark = key ? (owner?.flags?.starwrought?.rules?.marks?.[key] ?? null) : null;
+  if (!mark) return false;
+  if ((mark.combat ?? null) !== (context?.encounter?.combat ?? null)) return false;
+  if (mark.uuid && other.uuid && (mark.uuid === other.uuid)) return true;
+  if (mark.tokenUuid && other.tokenUuid && (mark.tokenUuid === other.tokenUuid)) return true;
+  return false;
+}
+
 /** Does a comparison hold? `=` equality; the rest as written. */
 export function compare(left, op, right) {
   switch (op) {
@@ -426,8 +555,8 @@ export function needsMoment(rule) {
   if (!rule) return false;
   if (rule.for && (rule.for.who !== "self")) return true;
   const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
-  if (whens.some(w => w?.trait)) return true;
-  return !!(rule.while || rule.against || rule.limit || rule.seen);
+  if (whens.some(w => w?.trait || w?.outcome)) return true;
+  return !!(rule.while || rule.against || rule.limit || rule.seen || rule.claim || rule.marked);
 }
 
 /** The operators' part of a summary: "while Origin is Expert, for allies within 15 ft, against a Blow, first each round". */
@@ -436,6 +565,7 @@ export function summarizeOperators(rule) {
   const whens = Array.isArray(rule?.when) ? rule.when : (rule?.when ? [rule.when] : []);
   for (const w of whens) {
     if (w.trait) { bits.push(`against an attack with the ${w.name ?? titled(w.trait)} trait`); continue; }
+    if (w.outcome) { bits.push(`on a ${w.name ?? DEGREE_NAMES[w.outcome] ?? w.outcome}`); continue; }
     const op = w.op === ">=" ? "at least" : w.op === "<=" ? "at most" : "";
     const subject = w.roll ? "the roll's rank" : (w.name ?? w.constellation ?? "");
     bits.push(`while ${subject} is ${op ? `${op} ` : ""}${titled(w.rank)}`);
@@ -451,8 +581,11 @@ export function summarizeOperators(rule) {
     bits.push(`while ${w.op === "=" ? "" : `${w.op} `}${w.count} ${w.who} ${w.range !== null && w.range !== undefined ? `within ${w.range} ft` : "on the scene"}`.replace(/\s+/g, " "));
   }
   if (rule?.against) {
-    bits.push(rule.against.reach ? `against a ${rule.against.reach} Blow` : `against a ${titled(rule.against.threat)}`);
+    if (rule.against.check) bits.push(`against ${/^[aeiou]/i.test(rule.against.name ?? "") ? "an" : "a"} ${rule.against.name ?? rule.against.check} check`);
+    else bits.push(rule.against.reach ? `against a ${rule.against.reach} Blow` : `against a ${titled(rule.against.threat)}`);
   }
+  if (rule?.marked) bits.push("against the creature you marked");
   if (rule?.limit) bits.push(rule.limit.per === "round" ? "the first time each round" : "once each encounter");
+  if (rule?.claim) bits.push(`when you claim it (${rule.claim.text})`);
   return bits.join(", ");
 }

@@ -1083,6 +1083,25 @@ new setting's default. A Crawl is labelled as such; its squares are the Move col
 The ruler extends whatever ruler class is configured rather than a fixed one, so it composes with a
 module that has already replaced it instead of quietly discarding that module's work.
 
+### Terrain on the map
+
+**Difficult terrain is a region** (0.15.0; ruling 178; Mike: "Let's build Difficult terrain INTO the
+maps! using a region or some sort of method! so this can be automated. and players can toggle
+layers to see what is difficult etc."). The GM draws a Region with Foundry's own tools and adds the
+system's **Difficult terrain** behavior to it, naming what the ground is made of (Mud, Shallow
+Water, Decking, Loose Stone, Rubble, Undergrowth, Snow, Ice, Sand, Other) and what a foot of it
+costs (2 by default, the book's difficult terrain). Foundry then charges the cost along every
+token's path, splits the ruler at the region's edge and slows the token's animation inside it; the
+drag ruler's label names the kinds crossed ("12 ft ❶×2 · difficult: mud"), a Step cannot enter it
+and a Move pays for the cost, as the movement tracker has always read terrain. Overlapping regions
+multiply. **A Talent that ignores a kind** (`ignore: Terrain, Mud, ...`; Riverfoot) makes the region
+answer nothing for that token: not split, not charged, not slowed, not labelled, and a Step into
+it is a Step. **Every player has an overlay**: the token controls' toggle (and the client setting
+"Show difficult terrain on the map") fills every Difficult terrain region on the scene in its
+kind's colour with the kind and the cost named, on this client only. A region the GM hides carries
+no terrain for anyone in Foundry, so a terrain region is never hidden to keep it secret; the
+overlay is the players' to switch off.
+
 ### Reach while dragging
 
 **The reach bands follow a token while it is being dragged**, before the move is committed, so you can
@@ -1877,16 +1896,76 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar and the four kinds
+## 7. Automation: the framework, the grammar and the seven kinds
 
-**What it is, and what it is not** (0.9.0 to 0.14.0; rulings 118 to 124, 164 to 172). Since 0.9.0
+**What it is, and what it is not** (0.9.0 to 0.15.0; rulings 118 to 124, 164 to 181). Since 0.9.0
 every Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets
 already did, and the system has a framework for reading it: the column is parsed, stored on the
-Item, indexed on the Actor and shown on the Item sheet. Four kinds read it in play: `bonus` (0.10.0,
+Item, indexed on the Actor and shown on the Item sheet. Seven kinds read it in play: `bonus` (0.10.0,
 rewritten in 0.13.0), `grant`, `aura` and `prevent` (0.13.0), enough for every Talent of a level-1
-Human. Nothing else reads a rule: no Strike's commitment, no damage step, no movement, because no
-kind for them exists, and Mike's instruction stands ("we will build automation syntax hooks one at
-a time"). Kinds are added one at a time with Mike, each with its engine hook, its test, its section
+Human, and `mark`, `reroll` and `ignore` (0.15.0), enough for the two Cultures. Nothing else reads
+a rule: no Strike's commitment, no damage step, because no kind for them exists, and Mike's
+instruction stands ("we will build automation syntax hooks one at a time").
+
+**The two Cultures** (0.15.0; rulings 174 to 181). Mike rewrote the eight Culture Talents and asked
+how a roleplay-only bonus should be automated; the cells, as `AUTOMATION_GRAMMAR.md` section 5
+prints them:
+
+```
+Serrovanian        bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)
+Oathbound          mark: enemies, encounter
+                   bonus: +1, Condition, Attacks, MARKED
+                   bonus: +1, Condition, Defenses, MARKED
+Contract Literate  bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)
+Iron Etiquette     bonus: +1, Condition, Defenses, AGAINST(Intimidation)
+                   bonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)
+Reacher            bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)
+Quick Tongue       reroll: Diplomacy, IF(Outcome=Critical Failure)
+Riverfoot          ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water
+                   bonus: +1, Situation, Speed, ONCE(encounter)
+Broker's Eye       bonus: +2, Situation, Diplomacy, CLAIM(when trading)
+                   bonus: +2, Situation, Guile, CLAIM(when trading)
+```
+
+- **A claim** (`CLAIM(<text>)`; ruling 174; Mike: "both") is a checkbox in the roll dialog, unticked,
+  with the Talent's hint ("Serrovanian: +1 Condition bonus toward someone who shares your Culture.
+  Tick it if this roll is one."), on any roll that shows a dialog; ticked, it joins the roll and the
+  card names the Talent. The Talent's row on the Constellations tab has a **pin**: armed, the box
+  comes ticked in the next roll's dialog, or the bonus is applied to the next Threshold read against
+  you (a player attacking you, a Demoralize against your Guard), and the pin goes out when either
+  resolves. Nothing is applied unasked and nothing is remembered past one roll. The sheet's
+  Threshold tooltip lists the claims and every other rule the position-blind number leaves out.
+- **A mark** (`mark`, `MARKED`; rulings 175 and 176). Oathbound's row has a **Use** control: with
+  one enemy targeted it names that creature (said on the Talent's card, "Tess marks Bandit:
+  Oathbound"), refused with a notice otherwise, and pays the Talent's cost in an encounter. The mark
+  holds while that encounter runs (made outside one, until the next starts). Oathbound's two
+  `MARKED` lines then raise the owner's Attack against that creature and the owner's Defenses
+  against it: on a Defense roll and the Threshold read the attacker is known; on a Strike the one
+  blind die is rolled for every target, so the +1 is added as each pairing resolves, on that
+  pairing's card ("Oathbound +1"), and a reroll of the card keeps it.
+- **A reroll** (`reroll`, `IF(Outcome=...)`; ruling 177). Quick Tongue's card is any Diplomacy check
+  of the owner's that came up a Critical Failure: it carries a button ("Quick Tongue: reroll") for
+  the owner and the GM, which pays the Talent's cost in an encounter, throws the same die again with
+  the same modifiers, supersedes the first card and posts the new one saying what rerolled it and
+  that its Requirements (a settlement, once a month) are the table's. Attack and Defense cards keep
+  their own Reroll button.
+- **A check against a Threshold** (`AGAINST(<Constellation>)`; ruling 179). Iron Etiquette's first
+  line reads when the check read against the owner's Defense is an Intimidation check: a Maneuver
+  whose check names a Defense (Demoralize against Guard), used with one target, now reads that
+  target's live Threshold (the number printed for a character target or a GM roller, withheld for an
+  adversary as the attack flow withholds it) instead of asking the player to type it, and the
+  target's `AGAINST`, `MARKED` and armed claims fold in. Demoralize, Feint and Talk Them Down are
+  rows Mike has not enabled, so a world Item exercises it today.
+- **Terrain** (`ignore: Terrain`, `Speed`; rulings 178 and 181): section 2, Terrain on the map.
+  Riverfoot's first Move each encounter reaches 7 feet on a Speed of 6, said on the move's card.
+
+**The Culture step and the cards** (0.15.0). Every wizard card that stands on a Root Talent
+(Bloodline, Culture, Calling, Combat Training) prints that Talent's **Description** in italics
+above its Effect ("Others take heart from your presence, drawing courage from you and the example
+you set." over the Rally Aura), and the Culture step has the Lore panel the Ancestry step got in
+0.13.0, from the `Serrovane Lore` and `Kestrel Reach Lore` sheets, its cards chipped with the
+Culture's languages and Key Attribute. The Culture chassis Item carries the Lore on its Description
+tab, its languages, its traits and the root Talent's Effect as its Special Ability (ruling 180). Kinds are added one at a time with Mike, each with its engine hook, its test, its section
 in `AUTOMATION_GRAMMAR.md` and its docs. A Talent's Effect is prose the sheet displays (section 9)
 until a kind reads it. The design record is `automation-plan.md` in the project root; **the
 grammar's reference is `AUTOMATION_GRAMMAR.md`**, written for the person typing in the cell and kept

@@ -166,8 +166,15 @@ export const DefenseMixin = Base => class extends Base {
    *            marks: Array<{key: string, per: string}>}}
    * @throws {Error} when both a Reaction and a Posture are given.
    */
-  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null } = {}) {
+  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null, attacker = null } = {}) {
     const sys = this.system;
+    // The other party (0.15.0, `MARKED`): the attacker whose Blow this Threshold answers, or the
+    // roller whose check reads it; an Actor, a Token or a TokenDocument, as the caller has it.
+    const attackerDoc = attacker?.document ?? (attacker?.documentName === "Token" ? attacker : null);
+    const attackerActor = attacker?.actor ?? (attacker?.documentName === "Actor" ? attacker : null) ?? attackerDoc?.actor ?? null;
+    const other = (attackerActor || attackerDoc)
+      ? { actor: attackerActor, uuid: attackerActor?.uuid ?? null, tokenUuid: attackerDoc?.uuid ?? attackerActor?.tokenOnScene?.()?.uuid ?? null, name: String(attackerDoc?.name ?? attackerActor?.name ?? "") }
+      : null;
     reaction = answeringReaction(reaction) ? reaction : null;
     posture = (posture && (typeof posture === "object") && posture.talentId) ? posture : null;
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
@@ -228,9 +235,10 @@ export const DefenseMixin = Base => class extends Base {
     let marks = [];
     let momentMods = [];
     if (Array.isArray(def?.modifiers) && (this.type === "character")) {
+      // `read` (0.15.0): a Threshold read has no dialog, so a claim applies only when armed.
       const moment = ruleModifiers(this, {
         kind: "defense", slug: SW.DEFENSES[key].slug, item: null, rank: def.rank ?? "untrained",
-        threat, scene: sceneContextFor(this), encounter: encounterContext(), momentOnly: true
+        threat, other, scene: sceneContextFor(this), encounter: encounterContext(), momentOnly: true, read: true
       });
       momentMods = moment.applied;
       marks = moment.marks;

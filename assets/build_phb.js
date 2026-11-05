@@ -271,8 +271,17 @@ for (const a of (R.ancestries || [])) {
 
 kids.push(h1("Cultures"));
 kids.push(para("Culture is deliberately separate from Ancestry: an orc raised in the Kestrel Reach is a Reacher as much as he is an orc. Choosing a Culture grants its root Talent, and that root is always a language plus a scaled bonus to Diplomacy toward those who share it. The bonus rises with your Origin rank: +1 Trained, +2 Expert, +3 Master, +4 Legendary."));
+// The roster's cultures block is generated from data/cultures.xlsx since 0.15.0, one object per
+// Culture (name, enabled, attribute, languages, blurb, lore, traits, tree), as the ancestries block
+// is. The Lore rows are not printed here, as the Ancestries' are not.
 kids.push(stripedTable(["Culture", "Language(s)", "Key Attribute", "About"],
-  (R.cultures || []).map(c => [{ text: c[0], bold: true }, c[1], c[2], c[3] || ""]), [1600, 1700, 1300, 4760]));
+  (R.cultures || []).map(c => [{ text: c.name, bold: true }, c.languages || "—",
+    c.attribute || (trees[c.tree || c.name] || {}).feeds || "—", c.blurb || ""]), [1600, 1700, 1300, 4760]));
+for (const c of (R.cultures || [])) {
+  kids.push(h3(c.name));
+  if (c.blurb) kids.push(para([run(c.blurb, { italics: true, color: TEAL })]));
+  kids.push(para([run("Languages: ", { bold: true }), run(c.languages || "—")]));
+}
 if (LANGS.length) {
   kids.push(h2("Languages"));
   kids.push(stripedTable(["Language", "Rarity", "About"],

@@ -9,10 +9,10 @@
     "attribute": "might",
     "parentSlug": "",
     "group": false,
-    "meta": "Calling • Might (10 Opening Vigor • Drilled)",
-    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "meta": "Calling • Might",
+    "flareTrigger": "",
     "identity": false,
-    "description": "<p>Calling • Might (10 Opening Vigor • Drilled)</p>",
+    "description": "<p>Calling • Might</p>",
     "traits": [],
     "automation": "",
     "rules": [],
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "de8c1bf67346f425"
+      "contentHash": "57654fd6a4b5afe5"
     }
   },
   "effects": [],

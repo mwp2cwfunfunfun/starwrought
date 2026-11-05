@@ -181,12 +181,21 @@ export class SwCheck {
       outcome = SW.ATTACK_OUTCOMES[degree];
     }
 
+    // A check read against a target's Threshold the roller may not see (0.15.0, ruling 179: an
+    // adversary's, as the attack flow withholds it): the degree is read above, the number is not
+    // printed, and the marks the read asked for are written on the target when this client may.
+    const withheld = cfg.withholdThreshold === true;
+    if (cfg.targetMarks?.length && cfg.targetActor) {
+      const { writeRuleMarks } = await import("../rules/scene.mjs");
+      await writeRuleMarks(cfg.targetActor, cfg.targetMarks).catch(err => console.error("STARWROUGHT | the target's rule marks could not be written", err));
+    }
+
     const result = {
       roll,
       natural,
       total: roll.total,
-      threshold: cfg.threshold,
-      thresholdLabel: cfg.thresholdLabel,
+      threshold: withheld ? null : cfg.threshold,
+      thresholdLabel: withheld ? "" : cfg.thresholdLabel,
       degree,
       outcome,
       critDenied,
@@ -271,7 +280,11 @@ export class SwCheck {
     // here skips the charge and prints the Reaction as already paid. Null means "charge as usual".
     reactionCharged: alreadyCharged = null,
     // A reroll names the card it replaces and why (0.5.3); both ride into the flags and the card.
-    rerollOf = null, rerollReason = ""
+    rerollOf = null, rerollReason = "",
+    // The attacker's rules about this defender (0.15.0, ruling 175; `MARKED`), read per pairing
+    // by the coordinator and added to the die's total here; listed on the card and kept in the
+    // flags so a reroll adds them again.
+    pairingModifiers = null
   } = {}) {
     if (!rollData) throw new Error("STARWROUGHT | resolveAgainst needs the roll's data.");
     // The roller may have sent its whole submission rather than the bare Roll data.
@@ -296,7 +309,11 @@ export class SwCheck {
 
     const roll = Roll.fromData(rollData);
     const natural = roll.dice[0]?.results?.[0]?.result ?? null;
-    const total = roll.total;
+    const pairing = (Array.isArray(pairingModifiers) ? pairingModifiers : [])
+      .filter(m => Number.isNumeric(m?.value) && (Number(m.value) !== 0))
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null, ...(m.source ? { source: m.source } : {}) }));
+    const pairingTotal = pairing.length ? SW.resolveModifiers(pairing).total : 0;
+    const total = roll.total + pairingTotal;
 
     let degree = null;
     let outcome = null;
@@ -416,10 +433,11 @@ export class SwCheck {
       // An adversary's attack row, so a reroll of a Defense card can read the Attack Threshold again.
       attackId: attackId ?? null,
       rerollOf: rerollOf ?? null,
-      rerollReason: rerollReason ?? ""
+      rerollReason: rerollReason ?? "",
+      pairingModifiers: pairing
     };
 
-    const applied = Array.isArray(modifiers) ? modifiers : [];
+    const applied = [...(Array.isArray(modifiers) ? modifiers : []), ...pairing];
     const result = {
       roll,
       natural,
@@ -440,6 +458,19 @@ export class SwCheck {
   }
 
   /* -------------------------------------------- */
+
+  /**
+   * Post a result already made as a check card (0.15.0): the `reroll` rule's second throw of a
+   * check's die (documents/cards/reroll.mjs, `rerollCheck`) builds the result from the first
+   * card's flags and posts it through the one renderer every card goes through. The
+   * `starwrought.check` hook fires as it does for a fresh roll.
+   * @param {object} result  The shape `roll()` builds: roll, natural, total, threshold, degree, outcome, modifiers, config.
+   */
+  static async postResult(result) {
+    await toMessage(result);
+    Hooks.callAll("starwrought.check", result);
+    return result;
+  }
 
   /**
    * The modifier a check would open its dialog with, before the player adds anything: the base
@@ -593,6 +624,7 @@ export class SwCheck {
       outcomes: talent ? castOutcomes(talent, flags.cast ?? SW.DEFAULT_CAST) : null,
       rollData,
       modifiers: Array.isArray(flags.modifiers) ? flags.modifiers : null,
+      pairingModifiers: Array.isArray(flags.pairingModifiers) ? flags.pairingModifiers : null,
       kind: flags.kind,
       defense: flags.defense ?? null,
       reaction: flags.reaction ?? null,

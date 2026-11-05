@@ -25,8 +25,10 @@ import {
   KIND_WORD, kindOf, knownKinds
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
-import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey } from "../foundry/starwrought/module/rules/operators.mjs";
+import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds } from "../foundry/starwrought/module/rules/operators.mjs";
+import { ignoresTerrain } from "../foundry/starwrought/module/rules/kinds/ignore.mjs";
+import { terrainKindOf, terrainKindName } from "../foundry/starwrought/module/config.mjs";
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
@@ -46,7 +48,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["aura", "bonus", "grant", "prevent"];
+const SHIPPED_KINDS = ["aura", "bonus", "grant", "ignore", "mark", "prevent", "reroll"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -544,6 +546,11 @@ const KNOWN = {
   stealth: { type: "constellation", slug: "stealth", name: "Stealth" },
   "armored-fighting": { type: "constellation", slug: "armored-fighting", name: "Armored Fighting" },
   lore: { type: "constellation", slug: "lore", name: "Lore" },
+  // 0.15.0: the Cultures' targets.
+  diplomacy: { type: "constellation", slug: "diplomacy", name: "Diplomacy" },
+  guile: { type: "constellation", slug: "guile", name: "Guile" },
+  intimidation: { type: "constellation", slug: "intimidation", name: "Intimidation" },
+  origin: { type: "constellation", slug: "origin", name: "Origin" },
   aid: { type: "action", slug: "aid", name: "Aid" },
   search: { type: "action", slug: "search", name: "Search" }
 };
@@ -571,13 +578,13 @@ check("operators: readLine sorts arguments from operators and refuses what a kin
   same(read.args, ["+1", "Situation", "Guard"], "the arguments");
   same(read.ops.for, { who: "self+allies", range: 0 }, "FOR");
   same(read.ops.while, { who: "allies", op: ">=", count: 1, range: 0 }, "WHILE, spaces free");
-  same(read.ops.against, { threat: "blow", reach: null }, "AGAINST, case blind");
+  same(read.ops.against, { threat: "blow", reach: null, check: null, name: null }, "AGAINST, case blind");
   same(read.ops.limit, { per: "round" }, "FIRST");
   same(readLine("Prone, ONCE(encounter)", { allow: ["ONCE"], kind: "prevent" }).ops.limit, { per: "encounter" }, "ONCE");
   same(readLine("15ft, allies, VISIBLE", { allow: ["VISIBLE"], kind: "aura" }).ops.visible, true, "a bare flag");
   same(readLine("2, Skill, DIFFERENT()", { allow: ["DIFFERENT"], kind: "grant" }).ops.different, true, "a flag with empty parentheses");
   same(readLine("Melee", { allow: ["AGAINST"], kind: "x" }).ops.against ?? null, null, "no operator, nothing set");
-  same(readLine("x, AGAINST(Melee)", { allow: ["AGAINST"], kind: "x" }).ops.against, { threat: "blow", reach: "melee" }, "a reach word is a Blow by reach");
+  same(readLine("x, AGAINST(Melee)", { allow: ["AGAINST"], kind: "x" }).ops.against, { threat: "blow", reach: "melee", check: null, name: null }, "a reach word is a Blow by reach");
   must(readLine("x, IF(Origin>=Expert)", { allow: ["IF"], kind: "x" }).ops.when[0].op === ">=", ">= reads");
   same(readLine("x, IF(Rank=Untrained)", { allow: ["IF"], kind: "x" }).ops.when, [{ roll: true, op: "=", rank: "untrained" }], "Rank is the roll's own");
   must(readLine("x, IF(Human=Trained), IF(Origin<=Expert)", { allow: ["IF"], kind: "x" }).ops.when.length === 2, "two IFs");
@@ -590,7 +597,8 @@ check("operators: readLine sorts arguments from operators and refuses what a kin
   throws(() => readLine("a, FOR(friends)", { allow: ["FOR"], kind: "x" }), /a who is written self, allies, enemies, all or self\+allies/, "a bad who");
   throws(() => readLine("a, FOR(allies, near)", { allow: ["FOR"], kind: "x" }), /a range is written <N>ft, as in 15ft/, "a bad range");
   throws(() => readLine("a, WHILE(allies, 0ft)", { allow: ["WHILE"], kind: "x" }), /WHILE is written/, "WHILE without a comparison");
-  throws(() => readLine("a, AGAINST(Arrows)", { allow: ["AGAINST"], kind: "x" }), /"Arrows" is not a Threat: write Blow, Blast, Blight, Beguilement, Melee or Ranged/, "a bad Threat");
+  // Since 0.15.0 a word that is no Threat may be a Constellation, so only a resolver can refuse it.
+  throws(() => readLine("a, AGAINST(Arrows)", { allow: ["AGAINST"], kind: "x", context: { resolve } }), /"Arrows" is not a Threat \(Blow, Blast, Blight, Beguilement, Melee, Ranged\) or a Constellation/, "a bad Threat");
   throws(() => readLine("a, FIRST(encounter)", { allow: ["FIRST"], kind: "x" }), /FIRST is written `FIRST\(round\)`/, "FIRST's word");
   throws(() => readLine("a, IF(Human is Expert)", { allow: ["IF"], kind: "x" }), /IF is written `IF\(<Constellation>=<Rank>\)`/, "IF without =");
   throws(() => readLine("a, IF(Human=Grand)", { allow: ["IF"], kind: "x" }), /"Grand" is not a rank: write Untrained, Trained, Expert, Master or Legendary/, "a bad rank");
@@ -614,7 +622,7 @@ check("bonus: every accepted form, without a resolver", () => {
     value: 1, type: "condition",
     to: { name: "Aid", slug: "aid", type: null },
     when: [{ constellation: "human", name: "Human", op: "=", rank: "trained" }],
-    for: null, while: null, against: null, seen: false, limit: null,
+    for: null, while: null, against: null, seen: false, limit: null, claim: null, marked: false,
     kind: "bonus", line: 1, text: "bonus: +1, Condition, Aid, IF(Human=Trained)"
   }, "the full form");
 
@@ -647,7 +655,7 @@ check("bonus: every accepted form, without a resolver", () => {
   must(bonusRule("bonus +1, Condition, Aid").value === 1, "the colon is optional, as the grammar says");
 
   const closeRanks = bonusRule("bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)");
-  same([closeRanks.for, closeRanks.while, closeRanks.against], [{ who: "self+allies", range: 0 }, { who: "allies", op: ">=", count: 1, range: 0 }, { threat: "blow", reach: null }], "Close Ranks' operators");
+  same([closeRanks.for, closeRanks.while, closeRanks.against], [{ who: "self+allies", range: 0 }, { who: "allies", op: ">=", count: 1, range: 0 }, { threat: "blow", reach: null, check: null, name: null }], "Close Ranks' operators");
   const torch = bonusRule("bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)");
   same([torch.for, torch.seen, torch.when, torch.limit], [{ who: "allies", range: 15 }, true, [{ trait: "fear", name: "Fear" }], { per: "round" }], "Torchbearer's operators (the Rally Aura, 0.14.0)");
   same(bonusRule("bonus: +1, Situation, Checks, IF(Rank=Untrained)").when, [{ roll: true, op: "=", rank: "untrained" }], "Jack of All Trades' condition");
@@ -803,7 +811,8 @@ check("ruleModifiers: a Maneuver target is offered unticked on a check made with
   same(offer, {
     label: "Humanity: Aid", value: 2, type: "condition", source: "rule:Humanity:aid", offer: true,
     key: "bonus-Humanity-2",
-    hint: "Humanity: this bonus applies to checks to Aid. Tick it if this roll is one."
+    hint: "Humanity: this bonus applies to checks to Aid. Tick it if this roll is one.",
+    ticked: false
   }, "the offer");
   const second = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null });
   must(second.offered[0].key === offer.key, "the key is the same on the next roll");
@@ -948,13 +957,13 @@ check("aura: the refusals", () => {
 
 check("prevent: the forms and the summary", () => {
   const stubborn = bonusRule("prevent: Prone, ONCE(encounter)");
-  same(stubborn, { effect: "prone", when: null, for: null, while: null, against: null, seen: false, limit: { per: "encounter" }, kind: "prevent", line: 1, text: "prevent: Prone, ONCE(encounter)" }, "Stubborn Footing");
+  same(stubborn, { effect: "prone", when: null, for: null, while: null, against: null, seen: false, limit: { per: "encounter" }, marked: false, kind: "prevent", line: 1, text: "prevent: Prone, ONCE(encounter)" }, "Stubborn Footing");
   const steady = bonusRule("prevent: Expose, FOR(allies, 0ft)");
   same([steady.effect, steady.for], ["expose", { who: "allies", range: 0 }], "Steady the Line");
   same(bonusRule("prevent: off-guard").effect, "offGuard", "a two-word Condition, hyphen and case blind");
   same(bonusRule("prevent: OffGuard").effect, "offGuard", "by its id");
   same(bonusRule("prevent: Exposed").effect, "expose", "Exposed reads as Expose");
-  same(bonusRule("prevent: Frightened, IF(Origin>=Expert), AGAINST(Beguilement)").against, { threat: "beguilement", reach: null }, "AGAINST");
+  same(bonusRule("prevent: Frightened, IF(Origin>=Expert), AGAINST(Beguilement)").against, { threat: "beguilement", reach: null, check: null, name: null }, "AGAINST");
   must(summarize(stubborn) === "Prone does not land, once each encounter", "the summary");
   must(summarize(steady) === "Expose does not land, for allies within 0 ft", "FOR in the summary");
   must(typeof kindOf("prevent").hooks.prevent === "function", "the prevent hook");
@@ -1330,6 +1339,160 @@ check("isLegalAnswer: a Defense outside the permitted pair, an answer under basi
   must(isLegalAnswer(answerer(), "guard", {}, { basicOnly: true }), "the basic Defense does");
   must(!isLegalAnswer(answerer(), "guard", { reaction: "parry" }, { melee: false }), "Parry never answers an arrow");
   must(!isLegalAnswer(answerer(), "evade", { reaction: "sidestep", posture: { talentId: "r1", zone: "arms" } }), "never both");
+});
+
+/* -------------------------------------------- */
+/*  0.15.0: the Cultures' kinds and operators     */
+/* -------------------------------------------- */
+
+check("operators: CLAIM, MARKED, IF(Outcome=...) and AGAINST(<Constellation>) (0.15.0)", () => {
+  same(readLine("x, CLAIM(when trading)", { allow: ["CLAIM"], kind: "x" }).ops.claim, { text: "when trading" }, "CLAIM's text");
+  same(readLine("x, claim(noticing hidden clauses, traps or altered terms in an agreement)", { allow: ["CLAIM"], kind: "x" }).ops.claim, { text: "noticing hidden clauses, traps or altered terms in an agreement" }, "commas inside CLAIM belong to it");
+  throws(() => readLine("x, CLAIM", { allow: ["CLAIM"], kind: "x" }), /CLAIM is written/, "a bare CLAIM");
+  throws(() => readLine("x, CLAIM()", { allow: ["CLAIM"], kind: "x" }), /CLAIM is written/, "an empty CLAIM");
+  throws(() => readLine("x, CLAIM(a)", { allow: ["IF"], kind: "prevent" }), /^prevent does not take CLAIM$/, "a kind without CLAIM");
+  same(readLine("x, MARKED", { allow: ["MARKED"], kind: "x" }).ops.marked, true, "MARKED");
+  throws(() => readLine("x, MARKED(enemies)", { allow: ["MARKED"], kind: "x" }), /MARKED takes nothing in parentheses/, "MARKED with contents");
+  same(readLine("x, IF(Outcome=Critical Failure)", { allow: ["IF"], kind: "x" }).ops.when, [{ outcome: "critFail", name: "Critical Failure" }], "a degree condition");
+  same(readLine("x, IF(outcome = success)", { allow: ["IF"], kind: "x" }).ops.when, [{ outcome: "success", name: "Success" }], "case and spaces free");
+  same(readLine("x, IF(Outcome=CriticalSuccess)", { allow: ["IF"], kind: "x" }).ops.when[0].outcome, "critSuccess", "squeezed");
+  throws(() => readLine("x, IF(Outcome=Grand)", { allow: ["IF"], kind: "x" }), /"Grand" is not a Degree: write Critical Success, Success, Failure or Critical Failure/, "a bad degree");
+  throws(() => readLine("x, IF(Outcome>=Success)", { allow: ["IF"], kind: "x" }), /IF\(Outcome=<Degree>\) names the degree with = only/, "a degree with >=");
+  same(readLine("x, AGAINST(Intimidation)", { allow: ["AGAINST"], kind: "x", context: { resolve } }).ops.against, { threat: null, reach: null, check: "intimidation", name: "Intimidation" }, "a Constellation in AGAINST, resolved");
+  same(readLine("x, AGAINST(Intimidation)", { allow: ["AGAINST"], kind: "x" }).ops.against, { threat: null, reach: null, check: "intimidation", name: "Intimidation" }, "a Constellation in AGAINST, no resolver");
+  same(readLine("x, AGAINST(Blow)", { allow: ["AGAINST"], kind: "x", context: { resolve } }).ops.against, { threat: "blow", reach: null, check: null, name: null }, "a Threat still reads");
+  throws(() => readLine("x, AGAINST(Aid)", { allow: ["AGAINST"], kind: "x", context: { resolve } }), /"Aid" is not a Threat .* or a Constellation/, "a Maneuver is neither");
+  throws(() => readLine("x, AGAINST(Lore)", { allow: ["AGAINST"], kind: "x", context: { resolve } }), /a Lore is the character's own/, "a Lore");
+  must(againstHolds({ against: { check: "intimidation" } }, { threat: "check", melee: false, check: "intimidation" }) && !againstHolds({ against: { check: "intimidation" } }, { threat: "check", check: "guile" }) && !againstHolds({ against: { check: "intimidation" } }, { threat: "blow", melee: true }) && againstHolds({ against: null }, null) && againstHolds({ against: { threat: "blow", reach: "melee" } }, { threat: "blow", melee: true }), "againstHolds");
+  must(needsMoment({ claim: { text: "x" } }) && needsMoment({ marked: true }) && needsMoment({ when: [{ outcome: "critFail" }] }), "a claim, a mark and a degree need the moment");
+});
+
+check("bonus: CLAIM is offered, armed comes ticked, and on a Threshold read applies only when armed", () => {
+  const serro = talentWith("Serrovanian", "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)", { resolve });
+  const actor = rulesActor([serro]);
+  const check1 = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained" });
+  same(check1.applied, [], "nothing applied unasked");
+  same(check1.offered.map(o => [o.label, o.value, o.type, o.ticked, o.key, o.hint]), [["Serrovanian", 1, "condition", false, `claim-${serro.name}-1`, "Serrovanian: +1 Condition bonus toward someone who shares your Culture. Tick it if this roll is one."]], "offered unticked with the hint");
+  must(!("mark" in check1.offered[0]), "an unarmed claim carries no mark");
+  same(ruleModifiers(actor, { kind: "check", slug: "guile", item: null, rank: "trained" }).offered, [], "Diplomacy only");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, read: true, momentOnly: true }).applied, [], "a Threshold read, unarmed: nothing");
+  // Armed: ticked in the dialog, applied on a read, and the mark that spends it rides along.
+  actor.flags = { starwrought: { rules: { armed: { [serro.name]: { at: 1 } } } } };
+  const armed = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained" });
+  same(armed.offered.map(o => [o.ticked, o.mark]), [[true, { key: serro.name, per: "claim" }]], "armed: ticked, with the spend mark");
+  same(armed.marks, [], "an offer's mark is the dialog's to file, not the engine's");
+  const read = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained", read: true });
+  same(read.applied.map(m => [m.label, m.value]), [["Serrovanian", 1]], "a read with the claim armed: applied");
+  same(read.marks, [{ key: serro.name, per: "claim" }], "and spent once the read resolves");
+  same(ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained", staticOnly: true }).offered, [], "the sheet's pass never offers");
+  must(summarize(bonusRule("bonus: +2, Situation, Guile, CLAIM(when trading)")) === "+2 Situation bonus to Guile, when you claim it (when trading)", "the summary");
+});
+
+check("bonus: MARKED applies against the marked creature alone, on a Defense and on a pairing", () => {
+  const oath = talentWith("Oathbound ❶", "mark: enemies, encounter\nbonus: +1, Condition, Attacks, MARKED\nbonus: +1, Condition, Defenses, MARKED", { resolve });
+  const actor = rulesActor([oath]);
+  const bandit = { uuid: "Actor.bandit", tokenUuid: "Scene.s.Token.b", name: "Bandit" };
+  const wolf = { uuid: "Actor.wolf", tokenUuid: "Scene.s.Token.w", name: "Wolf" };
+  const encounter = { combat: "c1", round: 1 };
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: bandit, encounter, momentOnly: true }).applied, [], "no mark yet");
+  actor.flags = { starwrought: { rules: { marks: { [oath.name]: { uuid: "Actor.bandit", tokenUuid: "Scene.s.Token.b", name: "Bandit", combat: "c1" } } } } };
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: bandit, encounter, momentOnly: true }).applied.map(m => [m.label, m.value, m.type]), [["Oathbound", 1, "condition"]], "a Defense against the Bandit");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: wolf, encounter, momentOnly: true }).applied, [], "not against the Wolf");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: null, encounter, momentOnly: true }).applied, [], "nobody known: nothing");
+  same(ruleModifiers(actor, { kind: "attack", slug: "melee", item: null, other: null, encounter }).applied, [], "the blind die knows nobody");
+  same(ruleModifiers(actor, { kind: "attack", slug: "melee", item: null, other: bandit, encounter, pairingOnly: true }).applied.map(m => m.label), ["Oathbound"], "the pairing against the Bandit");
+  same(ruleModifiers(actor, { kind: "attack", slug: "melee", item: null, other: wolf, encounter, pairingOnly: true }).applied, [], "the pairing against the Wolf");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: bandit, encounter: { combat: "c2", round: 1 }, momentOnly: true }).applied, [], "another encounter: the mark is stale");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: { uuid: null, tokenUuid: "Scene.s.Token.b" }, encounter, momentOnly: true }).applied.length, 1, "the token alone matches");
+  // A mark made outside an encounter holds while none runs, and no longer once one starts.
+  actor.flags.starwrought.rules.marks[oath.name].combat = null;
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: bandit, encounter: { combat: null, round: 0 }, momentOnly: true }).applied.length, 1, "outside, still held");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, other: bandit, encounter, momentOnly: true }).applied, [], "an encounter began: gone");
+  must(markedHolds({ marked: false }, {}, {}), "a rule without MARKED holds");
+  must(summarize(bonusRule("bonus: +1, Condition, Attacks, MARKED")) === "+1 Condition bonus to Attacks, against the creature you marked", "the summary");
+  throws(() => bonusRule("bonus: +1, Condition, Aid, IF(Outcome=Success)"), /IF\(Outcome=\.\.\.\) is only read by a kind that acts after the die/, "a bonus refuses a degree");
+  must(/IF\(Outcome=\.\.\.\) is only read/.test(bonusError("prevent: Prone, IF(Outcome=Success)")), "so does a prevent");
+});
+
+check("bonus: Speed is a scope read with kind move, and Iron Etiquette's AGAINST(Intimidation)", () => {
+  const river = talentWith("Riverfoot", "bonus: +1, Situation, Speed, ONCE(encounter)", { resolve });
+  const actor = rulesActor([river]);
+  const encounter = { combat: "c1", round: 1 };
+  same(bonusRule("bonus: +1, Situation, Speed").to, { name: "Speed", slug: "speed", type: "scope" }, "the scope word");
+  const move = ruleModifiers(actor, { kind: "move", slug: "", item: null, encounter });
+  same(move.applied.map(m => [m.label, m.value]), [["Riverfoot", 1]], "a foot on the Move");
+  same(move.marks, [{ key: "Riverfoot:1", per: "encounter" }], "once each encounter");
+  same(ruleModifiers(actor, { kind: "check", slug: "athletics", item: null, encounter }).applied, [], "Speed is no check");
+  actor.flags = { starwrought: { rules: { encounter: { "Riverfoot:1": { combat: "c1" } } } } };
+  same(ruleModifiers(actor, { kind: "move", slug: "", item: null, encounter }).applied, [], "spent this encounter");
+  const iron = talentWith("Iron Etiquette", "bonus: +1, Condition, Defenses, AGAINST(Intimidation)", { resolve });
+  const serro = rulesActor([iron]);
+  const demoralize = { threat: "check", melee: false, traits: [], check: "intimidation" };
+  same(ruleModifiers(serro, { kind: "defense", slug: "guard", item: null, threat: demoralize, momentOnly: true }).applied.map(m => m.label), ["Iron Etiquette"], "Guard read by an Intimidation check");
+  same(ruleModifiers(serro, { kind: "defense", slug: "guard", item: null, threat: { ...demoralize, check: "guile" }, momentOnly: true }).applied, [], "not a Guile check");
+  same(ruleModifiers(serro, { kind: "defense", slug: "guard", item: null, threat: { threat: "blow", melee: true, traits: [] }, momentOnly: true }).applied, [], "not a Blow");
+  same(ruleModifiers(serro, { kind: "defense", slug: "guard", item: null, threat: demoralize, staticOnly: true }).applied, [], "the sheet's pass leaves it out");
+  must(summarize(iron.system.rules[0]) === "+1 Condition bonus to Defenses, against an Intimidation check", "the summary");
+});
+
+check("mark: the forms, the refusals, the summary and the use hook", () => {
+  same(bonusRule("mark: enemies, encounter"), { who: "enemies", until: "encounter", when: null, kind: "mark", line: 1, text: "mark: enemies, encounter" }, "Oathbound's line");
+  same([bonusRule("mark").who, bonusRule("mark").until], ["all", "encounter"], "the defaults");
+  same(bonusRule("mark: encounter, all").who, "all", "either order");
+  must(/a mark is written/.test(bonusError("mark: friends")), "a bad word");
+  must(/at most 2/.test(bonusError("mark: enemies, encounter, more")), "too many");
+  must(/^mark does not take FOR$/.test(bonusError("mark: enemies, FOR(allies)")), "an operator it lacks");
+  must(summarize(bonusRule("mark: enemies")) === "marks one enemy until the encounter ends", "the summary");
+  must(summarize(bonusRule("mark")) === "marks one creature until the encounter ends", "the summary, any creature");
+  must(typeof kindOf("mark").hooks.use === "function", "the use hook");
+  const oath = talentWith("Oathbound ❶", "mark: enemies, encounter");
+  const actor = rulesActor([oath]);
+  actor.name = "Tess";
+  const bandit = { uuid: "Actor.bandit", tokenUuid: "Scene.s.Token.b", name: "Bandit", relation: "enemy" };
+  const used = ruleUses(actor, oath, { target: bandit, encounter: { combat: "c1", round: 1 } });
+  same(used.map(u => [u.refuse, u.say, u.write]), [["", "Tess marks Bandit: Oathbound.", { [`flags.starwrought.rules.marks.${oath.name}`]: { uuid: "Actor.bandit", tokenUuid: "Scene.s.Token.b", name: "Bandit", combat: "c1" } }]], "the write and the line");
+  same(ruleUses(actor, oath, { target: null }).map(u => u.refuse), ["Oathbound: target exactly one creature first."], "no target");
+  same(ruleUses(actor, oath, { target: { ...bandit, relation: "ally" } }).map(u => u.refuse), ["Oathbound names an enemy; Bandit is not one."], "an ally when enemies are named");
+  same(ruleUses(actor, talentWith("Other", "bonus: +1, Situation, Guard"), { target: bandit }), [], "a Talent with no use rules does nothing here");
+});
+
+check("reroll: the forms, the refusals, the summary and the card hook", () => {
+  const quick = bonusRule("reroll: Diplomacy, IF(Outcome=Critical Failure)", { resolve });
+  same(quick, { to: { name: "Diplomacy", slug: "diplomacy", type: "constellation" }, when: [{ outcome: "critFail", name: "Critical Failure" }], kind: "reroll", line: 1, text: "reroll: Diplomacy, IF(Outcome=Critical Failure)" }, "Quick Tongue's line");
+  same(bonusRule("reroll: Checks").to, { name: "Checks", slug: "checks", type: "scope" }, "any check");
+  must(/names no Constellation/.test(bonusError("reroll: Aid", { resolve })), "a Maneuver");
+  must(/1 wanted/.test(bonusError("reroll: Diplomacy, Guile")), "two targets");
+  must(/^reroll does not take FOR$/.test(bonusError("reroll: Diplomacy, FOR(allies)")), "an operator it lacks");
+  must(summarize(quick) === "reroll a Diplomacy check, on a Critical Failure", "the summary");
+  must(summarize(bonusRule("reroll: Checks")) === "reroll any check", "the summary, any check");
+  must(typeof kindOf("reroll").hooks.card === "function", "the card hook");
+  const talent = talentWith("Quick Tongue ❶↺", "reroll: Diplomacy, IF(Outcome=Critical Failure)", { resolve });
+  talent.system.glyph = "❶↺";
+  const actor = rulesActor([talent]);
+  same(ruleCardOffers(actor, { kind: "check", slug: "diplomacy", degree: "critFail" }).map(o => [o.label, o.action, o.item === talent]), [["Quick Tongue ❶↺: reroll", "ruleReroll", true]], "offered on the critical failure");
+  same(ruleCardOffers(actor, { kind: "check", slug: "diplomacy", degree: "fail" }), [], "not on a failure");
+  same(ruleCardOffers(actor, { kind: "check", slug: "diplomacy", degree: null }), [], "no Threshold, no degree, no offer");
+  same(ruleCardOffers(actor, { kind: "check", slug: "guile", degree: "critFail" }), [], "not a Guile check");
+  same(ruleCardOffers(actor, { kind: "attack", slug: "melee", degree: "critFail" }), [], "never an attack card");
+  same(ruleCardOffers(rulesActor([talentWith("Lucky", "reroll: Checks")]), { kind: "check", slug: "guile", degree: "success" }).length, 1, "Checks, any outcome");
+});
+
+check("ignore: the forms, the refusals, the summary and ignoresTerrain", () => {
+  same(bonusRule("ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water"), { what: "terrain", kinds: ["mud", "decking", "loose-stone", "shallow-water"], when: null, kind: "ignore", line: 1, text: "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water" }, "Riverfoot's line");
+  same(bonusRule("ignore: terrain").kinds, [], "every kind");
+  same(bonusRule("ignore: Terrain, shallow-water, ShallowWater").kinds, ["shallow-water"], "the slug and the squeezed form, once");
+  must(/"Lava" is not a terrain kind: write Mud, Shallow Water, .* or Other/.test(bonusError("ignore: Terrain, Lava")), "a kind the map does not know");
+  must(/an ignore is written/.test(bonusError("ignore: Walls")), "not Terrain");
+  must(/an ignore is written/.test(bonusError("ignore:")), "nothing");
+  must(summarize(bonusRule("ignore: Terrain, Mud, Ice")) === "ignores difficult terrain (Mud, Ice)", "the summary");
+  must(summarize(bonusRule("ignore: Terrain")) === "ignores all difficult terrain", "the summary, all");
+  const river = rulesActor([talentWith("Riverfoot", "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water")]);
+  must(ignoresTerrain(river, "mud") && ignoresTerrain(river, "shallow-water") && !ignoresTerrain(river, "snow") && !ignoresTerrain(null, "mud") && !ignoresTerrain(river, ""), "the kinds named");
+  must(ignoresTerrain(rulesActor([talentWith("Sure", "ignore: Terrain")]), "snow"), "every kind");
+  must(!ignoresTerrain(rulesActor([talentWith("Veteran", "ignore: Terrain, IF(Origin=Expert)")]), "mud"), "an IF that does not hold");
+  must(ignoresTerrain(rulesActor([talentWith("Veteran", "ignore: Terrain, IF(Origin=Expert)")], { origin: "expert" }), "mud"), "an IF that holds");
+  same(terrainKindOf("Shallow Water"), "shallow-water", "terrainKindOf");
+  same(terrainKindName("loose-stone"), "Loose Stone", "terrainKindName");
 });
 
 /* -------------------------------------------- */

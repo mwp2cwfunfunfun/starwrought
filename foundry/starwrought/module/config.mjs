@@ -74,6 +74,8 @@ export { DEFAULT_SPEED, STEP_DIVISOR, RUSH_MULTIPLIER, RUSH_COST, LEAP_STEPS, CR
 
 export { AURA_AUDIENCES, AURA_COLORS, REACH_COLORS } from "./config/auras.mjs";
 
+export { TERRAIN_KINDS, DEFAULT_TERRAIN_DIFFICULTY, terrainKindOf, terrainKindName } from "./config/terrain.mjs";
+
 export { TYPE_ICONS, FEATURE_TYPES, PHYSICAL_TYPES, CARRY_STATES, ACTIVE_STATE } from "./config/items.mjs";
 
 export { CONDITIONS, ZONE_CONDITIONS, statusEffectId } from "./config/conditions.mjs";

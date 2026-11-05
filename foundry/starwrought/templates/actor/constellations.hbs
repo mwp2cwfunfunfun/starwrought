@@ -116,6 +116,14 @@
              data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
           {{/with}}
           <div class="sw-talent-controls">
+            {{!-- CLAIMS (0.15.0): the pin arms this Talent's claims for the next roll or Threshold read. --}}
+            {{#if talent.claim}}
+            <a class="sw-claim-arm {{#if talent.claim.armed}}sw-claim-on{{/if}}" data-action="armClaim" data-tooltip="{{talent.claim.hint}}"><i class="fa-solid fa-thumbtack"></i></a>
+            {{/if}}
+            {{!-- A Talent with a cost is used from its row (0.15.0): the cost is paid and the kinds act. --}}
+            {{#if talent.usable}}
+            <a class="sw-talent-use" data-action="itemUse" data-tooltip="{{talent.useHint}}"><i class="fa-solid fa-play"></i></a>
+            {{/if}}
             {{#if talent.spell}}
             {{!-- The Cast Maneuver (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed, on a spell Talent. --}}
             <span class="sw-cast-buttons">

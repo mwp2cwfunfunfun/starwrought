@@ -64,6 +64,8 @@
         "limit": {
           "per": "round"
         },
+        "claim": null,
+        "marked": false,
         "kind": "bonus",
         "line": 2,
         "text": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)"
@@ -79,7 +81,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c222df8f65ae1f3c"
+      "contentHash": "fc431240cef63108"
     }
   },
   "effects": [],

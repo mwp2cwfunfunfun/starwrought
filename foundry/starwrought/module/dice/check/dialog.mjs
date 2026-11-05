@@ -47,8 +47,10 @@ export async function prompt(cfg, parts) {
   // the same checkbox, unticked, with the Talent and the Maneuver named on it. baseModifiers
   // left them on `cfg.ruleOffers` with a key unique per offer; a ticked one joins the roll below
   // as any extra does, and `result.extras` records it, so a kept road roll re-counts it (0.7.3).
+  // A claim the player armed on the Talent's row (0.15.0, ruling 174) comes ticked, and carries
+  // the mark that spends the arming once the roll goes through with the box still ticked.
   for (const o of cfg.ruleOffers ?? []) {
-    extras.push({ key: o.key, label: o.label, hint: o.hint ?? "", value: o.value, type: o.type, checked: false });
+    extras.push({ key: o.key, label: o.label, hint: o.hint ?? "", value: o.value, type: o.type, source: o.source ?? null, checked: o.ticked === true, mark: o.mark ?? null });
   }
 
   // The three Strikes, with Committed marked as the one that waits for the next Opportunity.
@@ -136,12 +138,18 @@ export async function prompt(cfg, parts) {
   const extra = [];
   const bonus = Number(answer.bonus) || 0;
   if (bonus) extra.push({ label: game.i18n.localize("STARWROUGHT.Roll.situational"), value: bonus, type: "situation" });
-  // The offers the player ticked. A checkbox comes back as a boolean under its own name.
+  // The offers the player ticked. A checkbox comes back as a boolean under its own name. The
+  // `source` rides along (0.15.0) so two ticked claims of one Talent are one circumstance under
+  // v4.21's stacking, and a ticked offer's mark (an armed claim) is filed for the roll to write.
+  const claimMarks = [];
   for (const offer of extras) {
-    if (answer[`extra-${offer.key}`] === true) extra.push({ label: offer.label, value: offer.value, type: offer.type });
+    if (answer[`extra-${offer.key}`] !== true) continue;
+    extra.push({ label: offer.label, value: offer.value, type: offer.type, ...(offer.source ? { source: offer.source } : {}) });
+    if (offer.mark?.key && offer.mark?.per) claimMarks.push({ key: offer.mark.key, per: offer.mark.per });
   }
 
   const config = { rollMode: answer.rollMode ?? cfg.rollMode };
+  if (claimMarks.length) config.ruleMarks = [...(cfg.ruleMarks ?? []), ...claimMarks];
   let rebuild = false;
 
   if (!cfg.targetDefense && !isDefense && Number.isNumeric(answer.threshold)) {

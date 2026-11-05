@@ -399,10 +399,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /** The Threshold preview through the one helper that folds an answer in (actor.defenseThresholdFor). */
-  #preview(actor, defense, reaction, posture, permitted, threat = null) {
+  #preview(actor, defense, reaction, posture, permitted, threat = null, attacker = null) {
     if (typeof actor.defenseThresholdFor !== "function") return null;
     try {
-      const read = actor.defenseThresholdFor({ defense, reaction, posture, permitted, threat });
+      const read = actor.defenseThresholdFor({ defense, reaction, posture, permitted, threat, attacker });
       if (!read || !Number.isFinite(read.threshold)) return null;
       return {
         threshold: read.threshold,
@@ -416,10 +416,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /** The basic Threshold of a Defense, for the radio: the same helper, no answer folded in. */
-  #basicThreshold(actor, defense, permitted, threat = null) {
+  #basicThreshold(actor, defense, permitted, threat = null, attacker = null) {
     if (typeof actor.defenseThresholdFor === "function") {
       try {
-        const read = actor.defenseThresholdFor({ defense, permitted, threat });
+        const read = actor.defenseThresholdFor({ defense, permitted, threat, attacker });
         if (Number.isFinite(read?.threshold)) return read.threshold;
       } catch { /* fall through to the data model */ }
     }
@@ -464,6 +464,8 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     // The Threat answered (0.13.0): the Automation rules' AGAINST reads it in the preview, and the
     // rules that need the map (Close Ranks' adjacent ally) are folded in by defenseThresholdFor.
     const answered = threatContext(wf?.maneuver ?? null);
+    // The attacker (0.15.0): the other party, for a rule about who is attacking (`MARKED`).
+    const attackerRef = (wf?.attacker?.tokenUuid ? fromUuidSync(wf.attacker.tokenUuid) : null) ?? actorFrom(wf?.attacker?.actorUuid) ?? null;
 
     const defenses = permitted.map(d => {
       const def = SW.DEFENSES[d];
@@ -475,7 +477,7 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
         hint: blocked
           ? game.i18n.format("STARWROUGHT.Defense.unavailableNote", { reason: blocked })
           : game.i18n.localize(def.hint),
-        threshold: showThresholds ? this.#basicThreshold(actor, d, permitted, answered) : null,
+        threshold: showThresholds ? this.#basicThreshold(actor, d, permitted, answered, attackerRef) : null,
         active: d === draft.defense,
         unavailable: blocked
       };
@@ -553,7 +555,7 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
           names: legal.reactions.filter(r => SW.REACTIONS[r]?.melee).map(r => game.i18n.localize(SW.REACTIONS[r].label)).join(", ")
         })
         : null,
-      preview: (showThresholds && chosen) ? this.#preview(actor, draft.defense, reaction, posture, permitted, answered) : null,
+      preview: (showThresholds && chosen) ? this.#preview(actor, draft.defense, reaction, posture, permitted, answered, attackerRef) : null,
       // Nothing is pre-selected (0.12.0): Commit waits for a Defense. A Posture Exposes "a Zone of
       // the defender's choice" (PHB v4.21): the choice is theirs to make, so nothing is pre-picked
       // and Commit waits for it too; a Posture that names its Zone or none waits for nothing.

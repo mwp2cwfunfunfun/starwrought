@@ -4,12 +4,14 @@
 #                                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation |
 #                                Aura (optional since 0.13.0; "aura:" in Automation is the authoring) |
 #                                Grants (retired 0.13.0; "grant:" in Automation; read one release, warned)
-# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Skills | Parent | Traits
+# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Skills | Parent | Traits | Languages
 #   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary (optional since 0.14.0;
 #   the blurb is the Lore sheet's Summary row)
 #   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
+#   Culture rows may carry Languages (comma separated); every Culture tree generates a record of the
+#   "cultures" block of roster.json (0.15.0), so the sheet owns that chassis too.
 #   A "<Tree> Lore" sheet (label | text rows) is the tree's player-facing text: lore on the tree
-#   and on its ancestry record (0.13.0). An unknown header is warned about by name.
+#   and on its ancestry or culture record (0.13.0). An unknown header is warned about by name.
 # A talent sheet with no Requires column (or an empty one) reads Prerequisites as the requirement:
 #   the pieces naming a Talent of the same sheet become `requires`, the rest stays prose (0.13.0).
 # Rich text in Description/Effect cells (b/i/u/strike/color) becomes HTML and mirrors everywhere.
@@ -270,6 +272,25 @@ def parse_lore_sheet(ws):
             continue
         out.append({"label": label, "text": text})
     return out
+
+# ---- The Cultures' languages (0.15.0) ----------------------------------------------------------
+# The roster's cultures block is generated from cultures.xlsx as the ancestries block is from
+# ancestries.xlsx. Its languages come from an optional Languages column on the _Tree Index, comma
+# or " • " separated, written as ", "-joined text. While the workbook has no such column, the
+# previous roster row of the same name lends its languages: the hand-kept block of 0.14.0 and
+# before was positional ([name, "Serrovine • Common", attribute, blurb]), the generated one is an
+# object with `languages`. Both read, so the first run after the change loses nothing.
+def normalise_languages(text):
+    return ", ".join(t for t in (blank_none(x) for x in re.split(r",|•", text or "")) if t)
+
+def prior_languages(roster, name):
+    for row in roster.get("cultures", []) or []:
+        if isinstance(row, dict):
+            if row.get("name") == name or row.get("tree") == name:
+                return normalise_languages(row.get("languages", ""))
+        elif isinstance(row, (list, tuple)) and len(row) > 1 and row[0] == name:
+            return normalise_languages(row[1])
+    return ""
 
 # Requires-matching strips the cost glyphs off a name: the v4.10 ⓿❶❷❸❹❺❻ and ↺ (with a bracketed
 # Reaction cost such as "Aid ❶ (⓿↺)"), the v3 ◆ and ◇, and the capstone star.
@@ -705,8 +726,11 @@ def main():
         if hasattr(s, "reconfigure"): s.reconfigure(encoding="utf-8", errors="replace")
     files = [f for f in sorted(glob.glob(os.path.join(DATA, "*.xlsx"))) if not os.path.basename(f).startswith("~$")]
     if not files: sys.exit(f"no .xlsx files found in {DATA}")
-    out, errors, warnings, sources, bgs, langs, chassis = {}, [], [], {}, [], [], []
+    out, errors, warnings, sources, bgs, langs, chassis, cultures = {}, [], [], {}, [], [], [], []
     actions, action_files, defined_actions = [], [], {}
+    # The roster as it stands, read once: the cultures block (0.15.0) carries a Culture's languages
+    # from the previous row while cultures.xlsx has no Languages column of its own (see prior_languages).
+    prior_roster = json.load(open(ROSTER, encoding="utf-8")) if os.path.exists(ROSTER) else {}
     equipment, equipment_files, defined_equipment = {"weapons": [], "armor": [], "shields": []}, [], {}
     for path in files:
         fname = os.path.basename(path)
@@ -751,11 +775,15 @@ def main():
         # Flare Triggers, Meta note and Summary are optional, and Mike deleted them from the
         # ancestries index on 2026-11-05: the meta line is derived when blank, and the blurb now
         # comes from the Lore sheet's Summary row (below).
+        # Languages (0.15.0): a Culture's languages, comma separated, on the cultures index. While the
+        # column is absent the languages are carried from the roster's previous row (one warning
+        # naming the column to add), so the generated block never loses what the hand-kept one had.
         im = header_map(idx, {"tree": "tree", "cat": "categ", "feeds": ("feeds", "primary"), "sparks": "flare",
                               "meta": "meta", "skills": "skills", "hp": "hp", "vigor": "vigor", "size": "size",
                               "speed": "speed", "senses": "senses", "summary": "summary", "parent": "parent",
-                              "traits": "trait"},
+                              "traits": "trait", "languages": "language"},
                         unknown=warnings, where=f"{fname} / _Tree Index")
+        carried_langs, blank_langs = [], []
         if "vigor" in im and "hp" not in im: im["hp"] = im["vigor"]
         if "tree" not in im or "cat" not in im:
             warnings.append(f"{fname}: _Tree Index needs at least 'Tree' and 'Category' columns; file skipped"); continue
@@ -962,6 +990,18 @@ def main():
                     if not meta_extra:  # derive the display line when the sheet leaves it blank
                         bits = [g("size"), f"Vigor {hp}", g("speed")] + ([g("senses").lower()] if g("senses") not in ("", "—") else [])
                         meta_extra = " • ".join(b for b in bits if b)
+            # A Culture's record (0.15.0): the roster's cultures block is generated from here, as the
+            # ancestries block is, every row with its flag. Nothing parses the Effect prose: the
+            # languages come from the index's Languages column, or from the previous roster row while
+            # the column is missing (prior_languages), or are blank, each said once.
+            if category == "Culture":
+                if "languages" in im:
+                    languages = normalise_languages(g("languages"))
+                else:
+                    languages = prior_languages(prior_roster, name)
+                    (carried_langs if languages else blank_langs).append(name)
+                cultures.append({"name": name, "enabled": tree_enabled, "attribute": feeds, "languages": languages,
+                                 "blurb": blurb, "lore": lore, "traits": tree_traits, "tree": name})
             # A parent Constellation (v4.10): every Talent bought here also counts toward the
             # parent's rank. Melee and Ranged are the parents; the Combat Styles name one of them.
             # Since PHB v4.21 a tree with a Parent is a GROUP of that parent's Talents (a fighting style
@@ -987,6 +1027,13 @@ def main():
                                 f"workbook's _Tree Index (ignored)")
         extra = [sn for sn in extra if not LORE_SHEET.match(sn)]
         if extra: warnings.append(f"{fname}: sheets not in its _Tree Index (ignored): {', '.join(extra)}")
+        if carried_langs:
+            warnings.append(f"{fname}: no 'Languages' column on _Tree Index; "
+                            + ", ".join(f"{n}'s" for n in carried_langs) + " languages carried from the roster "
+                            "(add the column, comma separated: 'Serrovine, Common')")
+        for n in blank_langs:
+            warnings.append(f"{fname} / {n}: no 'Languages' column on _Tree Index and no roster row to carry from; "
+                            "languages left blank")
         print(f"  {fname}: {len(out) - n_before} trees")
     # A Free Talent may live in another constellation (Drilled hands over Weapon Familiarity, which
     # is authored in Weapons), so it can only be checked once every sheet has been read.
@@ -1064,20 +1111,23 @@ def main():
               f"{len(equipment['armor'])} armor, {len(equipment['shields'])} shields from {', '.join(equipment_files)}")
     elif os.path.exists(EOUT):
         print(f"WARNING: no equipment workbook in data/; {EOUT} left as found. It is generated from data/equipment.xlsx, not hand-kept.")
-    # Patch ONLY the generated blocks of roster.json: ancestries here, the four equipment blocks
-    # below. Cultures, conditions, materials, handling and the trait tables stay hand-kept.
-    # Guarded: an empty parse (chassis columns removed from ancestries.xlsx, or no ancestries workbook
-    # in data/ at all) leaves the file alone rather than blanking chargen. A workbook open in Excel is
-    # no longer a case here: it is read from its last saved copy above.
-    if chassis and os.path.exists(ROSTER):
+    # Patch ONLY the generated blocks of roster.json: ancestries and cultures (0.15.0) here, the four
+    # equipment blocks below. Conditions, materials, handling, callings and the trait tables stay
+    # hand-kept. Guarded: an empty parse (chassis columns removed from ancestries.xlsx, no Culture
+    # tree read, or no such workbook in data/ at all) leaves that block alone rather than blanking
+    # chargen. A workbook open in Excel is no longer a case here: it is read from its last saved copy
+    # above.
+    if (chassis or cultures) and os.path.exists(ROSTER):
         roster = json.load(open(ROSTER, encoding="utf-8"))
-        before = len(roster.get("ancestries", []))
-        if len(chassis) < before:
-            print(f"WARNING: roster.json had {before} ancestries, the sheets define {len(chassis)}; "
-                  f"the sheets win, so confirm nothing was dropped by accident")
-        roster["ancestries"] = chassis   # key keeps its original position in the file
+        for key, block, label in (("ancestries", chassis, "ancestry chassis"), ("cultures", cultures, "culture records")):
+            if not block: continue
+            before = len(roster.get(key, []))
+            if len(block) < before:
+                print(f"WARNING: roster.json had {before} {key}, the sheets define {len(block)}; "
+                      f"the sheets win, so confirm nothing was dropped by accident")
+            roster[key] = block   # key keeps its original position in the file
+            print(f"wrote {ROSTER}: {len(block)} {label} from the sheet")
         json.dump(roster, open(ROSTER, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-        print(f"wrote {ROSTER}: {len(chassis)} ancestry chassis from the sheet")
     # The roster's weaponsMelee, weaponsRanged, armorPieces and shields blocks are generated from the
     # equipment workbook (ruling 64), as the ancestries block is from ancestries.xlsx: EVERY row,
     # enabled or not, in the positional shapes the web app, the compendium docx and build_foundry.mjs

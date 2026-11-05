@@ -2,7 +2,7 @@
   "id": "starwrought",
   "title": "STARWROUGHT",
   "description": "<p>STARWROUGHT is a classless d20 roleplaying game of tactical combat and earned growth. Characters are built from Talent Constellations rather than classes, Attributes emerge from the Talents in which you invest, and the table's critical moments Flare the Constellations that you grow from.</p>",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
@@ -53,6 +53,9 @@
       "shield": {},
       "gear": {},
       "action": {}
+    },
+    "RegionBehavior": {
+      "difficultTerrain": {}
     }
   },
   "packFolders": [

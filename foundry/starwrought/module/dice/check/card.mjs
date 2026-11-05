@@ -179,15 +179,25 @@ export function cardFlags(result, position) {
   }
   // Rerolls (0.5.3) throw the same die again from the card alone, so the card keeps what a
   // reroll needs and the contract above does not carry: the applied modifiers by name (the
-  // new card lists them), the adversary's attack row behind a Defense card (its Threshold is
-  // read again, on the GM's client), and which card this one replaced, and why.
+  // new card lists them; since 0.15.0 on every card, since a `reroll` rule throws a check's die
+  // again too), the adversary's attack row behind a Defense card (its Threshold is read again, on
+  // the GM's client), the pairing's own modifiers (0.15.0, ruling 175), and which card this one
+  // replaced, and why.
+  flags.modifiers = (result.modifiers ?? []).map(m => ({ label: m.label, value: m.value, type: m.type ?? null, ...(m.source ? { source: m.source } : {}) }));
+  if (cfg.rerollOf) {
+    flags.rerollOf = cfg.rerollOf;
+    flags.rerollReason = cfg.rerollReason ?? "";
+  }
   if (isExchange) {
-    flags.modifiers = (result.modifiers ?? []).map(m => ({ label: m.label, value: m.value, type: m.type ?? null }));
     flags.attackId = cfg.attackId ?? null;
-    if (cfg.rerollOf) {
-      flags.rerollOf = cfg.rerollOf;
-      flags.rerollReason = cfg.rerollReason ?? "";
-    }
+    if (Array.isArray(cfg.pairingModifiers) && cfg.pairingModifiers.length) flags.pairingModifiers = cfg.pairingModifiers;
+  }
+  // A check's own extras and the Threshold it was withheld (0.15.0): a reroll of the check keeps
+  // its formula and reads the Threshold again from the target when the card could not print it.
+  if (!isExchange) {
+    if (cfg.withholdThreshold === true) flags.withheldThreshold = true;
+    if (cfg.targetDefenseKey) flags.targetDefense = cfg.targetDefenseKey;
+    if (cfg.rerollOf) flags.rerollRule = cfg.rerollRule ?? null;
   }
   return flags;
 }

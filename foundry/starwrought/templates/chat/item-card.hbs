@@ -39,4 +39,9 @@
     {{/each}}
   </ul>
   {{/if}}
+
+  {{!-- What using the Talent did (0.15.0): the kinds' lines, a mark named and the like. --}}
+  {{#each lines as |line|}}
+  <p class="sw-card-note sw-use-note"><i class="fa-solid fa-bolt"></i> {{line}}</p>
+  {{/each}}
 </div>

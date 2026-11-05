@@ -347,3 +347,27 @@ Relevant Check `check`, the summary's plurals), `assets/test_rules.mjs`, `module
 cell (Humanity's included), `assets/roster.json`, the web app, the Constellation Compendium docx,
 the handbook, `data/SYNC.json`, the attack flow, the damage pipeline, conditions, movement and the
 auras on the map.
+
+## 0.15.0: the two Cultures (2026-11-05)
+
+The eight Culture Talents Mike rewrote, written in the grammar one Talent at a time (ruling 119);
+the full record is the 0.15.0 changelog entry (rulings 174 to 181) and `AUTOMATION_GRAMMAR.md`.
+What the grammar gained, and why each is an operator or a kind:
+
+- **`CLAIM(<text>)`**, an operator on `bonus`: a roleplay-only bonus ("toward someone who shares
+  your Culture", "when trading", "noticing hidden clauses") is a decision only the player can make,
+  so it is a checkbox in the roll dialog, and (Mike: "both") a pin on the Talent row that arms it for
+  the next roll or Threshold read. The judgement sits at the edge, as the Aid offer's does.
+- **`MARKED`** with the **`mark`** kind (Oathbound): naming one creature is an act (the `use` hook
+  point, the third, triggered); the bonus against it is a `bonus` line, so the engine learned the
+  roll's other party (`other`) and the attack flow reads a defender-dependent rule per pairing.
+- **`reroll`** with **`IF(Outcome=...)`** (Quick Tongue): acts after the die, so the fourth hook
+  point, `card`, asks the kinds what to offer on a posted card; the press pays and rerolls.
+- **`AGAINST(<Constellation>)`** (Iron Etiquette): a Defense read by a named check; it needed the
+  check-against-a-target's-Threshold path, which the system had not had (ruling 179).
+- **`Speed`** as a `bonus` scope and **`ignore: Terrain`** (Riverfoot): Mike's direction was to
+  build difficult terrain into the maps, so the kind has no hook point; the Difficult terrain region
+  behavior asks it at Foundry's own moment.
+
+Deliberately not done: a cost for a Talent whose name carries no glyph (the sheet's data), the
+survey, adversaries' rolls, and anything a Culture Talent's Effect says that no line above reads.

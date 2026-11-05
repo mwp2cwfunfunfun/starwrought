@@ -12,7 +12,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-chargen: "0.14.0"; }
+:root { --sw-css-version-chargen: "0.15.0"; }
 
 /* --------------------------------------------------------------------------
    Character creation
@@ -112,6 +112,10 @@
 .starwrought .sw-choice-lines { display: flex; flex-wrap: wrap; gap: 0.2rem; }
 .starwrought .sw-choice-text { font-size: 0.72rem; color: var(--sw-ink-dim); line-height: 1.35; }
 .starwrought .sw-choice-text p { margin: 0 0 0.3rem; }
+/* The Talent's Description above its Effect (0.15.0): the Bloodline's "Others take heart from
+   your presence", the Culture root's line, in italics and the card's dim ink. */
+.starwrought .sw-choice-lead { font-size: 0.72rem; font-style: italic; color: var(--sw-ink-dim); line-height: 1.35; margin: 0 0 0.3rem; }
+.starwrought .sw-choice-lead p { display: inline; margin: 0; }
 
 /* The Ancestry step's Lore panel (0.13.0): under the card grid, inside the step's panel, the
    highlighted card's sections in a scrolling box of its own, so twelve sections never push the

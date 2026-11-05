@@ -768,6 +768,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
           attribute ? `${attribute.glyph} ${game.i18n.localize(attribute.label)}` : "",
           root?.name ?? game.i18n.localize("STARWROUGHT.Chargen.trainingNoRoot")
         ].filter(Boolean),
+        lead: SwChargen.#lead(root),
         description: `${root?.effect ?? ""}${childrenNote}`
       };
     });
@@ -791,12 +792,40 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     // Ancestry's sections are rendered once and one is shown: the pointed-at card's while the
     // pointer is on a card, else the chosen one's, else the first's (_onRender switches them; a
     // hover is not a re-render). Rich text as the sheet carries it.
-    context.loreDetails = SwContent.chassis.ancestry.map(a => ({
+    this.#lorePanel(context, SwContent.chassis.ancestry, this.picks.ancestry, "STARWROUGHT.Chargen.step.ancestry");
+  }
+
+  /**
+   * The Lore panel under a card step's grid (0.13.0 for the Ancestry; the Culture since 0.15.0,
+   * Mike's "similar ... Character Creation wizard UI/UX treatment as Ancestry"): every card's
+   * sections rendered once, the pointed-at one shown, the chosen one by default (_onRender).
+   * @param {object} context
+   * @param {object[]} chassis   The step's chassis entries, each with `lore`.
+   * @param {string|undefined} pick  The step's pick.
+   * @param {string} kindKey     The i18n key of the step's word ("Ancestry", "Culture").
+   */
+  #lorePanel(context, chassis, pick, kindKey) {
+    context.loreDetails = chassis.map(a => ({
       key: a.name,
       name: a.name,
       sections: (a.lore ?? []).filter(s => s.label || s.text)
     }));
-    context.loreDefault = this.picks.ancestry ?? context.loreDetails[0]?.key ?? "";
+    // No Lore anywhere on the step: no panel, as before the sheets were written.
+    if (!context.loreDetails.some(d => d.sections.length)) {
+      context.loreDetails = [];
+      return;
+    }
+    context.loreDefault = pick ?? context.loreDetails[0]?.key ?? "";
+    context.loreKind = game.i18n.localize(kindKey);
+  }
+
+  /**
+   * The Talent's Description in italics above the card's text (0.15.0; Mike, of the Torchbearer
+   * card: it "should include the Description of the Talent"). Blank when the Talent has none.
+   */
+  static #lead(talent) {
+    const text = String(talent?.description ?? "").trim();
+    return text ? text : "";
   }
 
   async _context_bloodline(context) {
@@ -808,20 +837,31 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       img: t.img,
       chosen: this.picks.bloodline === t.name,
       lines: [],
+      lead: SwChargen.#lead(t),
       description: t.effect
     })) : [];
     context.parentName = ancestry?.name ?? "";
   }
 
   async _context_culture(context) {
-    context.cards = SwContent.chassis.culture.map(c => ({
-      key: c.name,
-      name: c.name,
-      img: c.img,
-      chosen: this.picks.culture === c.name,
-      lines: [c.languages].filter(Boolean),
-      description: `${c.description ?? ""}${c.specialAbility ?? ""}`
-    }));
+    context.cards = SwContent.chassis.culture.map(c => {
+      const root = rootOf(c.constellation);
+      // The root Talent's Description is the lead unless it is the blurb word for word (the two
+      // Culture roots' Descriptions are their Lore Summaries today), so a sentence never prints twice.
+      const lead = SwChargen.#lead(root);
+      const blurb = String(c.description ?? "");
+      const same = lead && (blurb.replace(/<[^>]+>/g, "").trim() === lead.replace(/<[^>]+>/g, "").trim());
+      return {
+        key: c.name,
+        name: c.name,
+        img: c.img,
+        chosen: this.picks.culture === c.name,
+        lines: [c.languages, c.attribute ? game.i18n.localize(SW.ATTRIBUTES[c.attribute]?.label ?? "") : ""].filter(Boolean),
+        lead: same ? "" : lead,
+        description: `${blurb}${c.specialAbility ?? ""}`
+      };
+    });
+    this.#lorePanel(context, SwContent.chassis.culture, this.picks.culture, "STARWROUGHT.Chargen.step.culture");
   }
 
   async _context_background(context) {
@@ -846,6 +886,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         `${c.vigor} ${game.i18n.localize("STARWROUGHT.Field.openingVigor")}`,
         ...(c.grants ?? [])
       ],
+      lead: SwChargen.#lead(rootOf(c.constellation)),
       description: `${c.specialAbility ?? ""}${c.description ?? ""}`
     }));
   }

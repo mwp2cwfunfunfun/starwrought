@@ -1,0 +1,36 @@
+{
+  "_id": "1bd9a25ab240df2d",
+  "name": "Kestrel Reach",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
+  "system": {
+    "slug": "kestrel-reach",
+    "category": "origin",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Culture constellation • Wits",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Culture constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d38403840883bac9"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1bd9a25ab240df2d"
+}

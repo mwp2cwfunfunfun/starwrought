@@ -657,8 +657,15 @@ for (const ancestry of roster.ancestries ?? []) {
   }
 }
 
-for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
-  chassis(isEnabled(trees[name]), {
+// The roster's cultures block is generated from data/cultures.xlsx since 0.15.0, one object per
+// Culture tree (name, enabled, attribute, languages, blurb, lore, traits, tree), as the ancestries
+// block is from ancestries.xlsx. The Special Ability is the Culture's Root Talent's own Effect,
+// read off the tree, in place of the boilerplate sentence the positional block carried.
+for (const culture of roster.cultures ?? []) {
+  const name = culture.name;
+  const tree = trees[culture.tree ?? name];
+  const root = (tree?.nodes ?? []).find(n => n.root);
+  chassis(isEnabled(culture) && isEnabled(tree), {
     key: `chassis:culture:${slugify(name)}`,
     name,
     type: "chassis",
@@ -669,11 +676,13 @@ for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
     system: {
       kind: "culture",
       constellation: slugify(name),
-      attribute: String(attribute).toLowerCase(),
-      languages: String(langs).replace(/\s*•\s*/g, ", "),
-      description: `<p>${blurb}</p>`,
-      specialAbility: "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
-      traits: [],
+      attribute: String(culture.attribute || tree?.feeds || "Presence").toLowerCase(),
+      languages: String(culture.languages ?? ""),
+      description: culture.blurb ? `<p>${culture.blurb}</p>` : "",
+      // The "<Culture> Lore" sheet, mapped as the Ancestry's is: one paragraph per section.
+      lore: (culture.lore ?? []).map(({ label, text }) => ({ label, text: `<p>${text}</p>` })),
+      specialAbility: root ? `<p>${root.effect}</p>` : "",
+      traits: Array.isArray(culture.traits) ? culture.traits.map(String) : [],
       source: "STARWROUGHT Playtest v4.21"
     }
   });

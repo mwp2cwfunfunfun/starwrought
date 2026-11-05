@@ -1,0 +1,78 @@
+{
+  "_id": "9bd383af88d7fcd7",
+  "name": "Contract Literate",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "serrovane",
+    "constellationName": "Serrovane",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Serrovanian"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +2 Condition bonus to notice hidden clauses, traps, and altered terms in any agreement.",
+    "description": "<p><i>You read what an agreement conceals as carefully as what it promises.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
+    "rules": [
+      {
+        "value": 2,
+        "type": "condition",
+        "to": {
+          "name": "Checks",
+          "slug": "checks",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "noticing hidden clauses, traps or altered terms in an agreement"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "09d1d52e7c8e761e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e9fce1623df14c50"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9bd383af88d7fcd7"
+}

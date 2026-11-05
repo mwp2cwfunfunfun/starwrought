@@ -84,6 +84,122 @@ export async function rerollFromCard(message, flags) {
 }
 
 /**
+ * A `reroll` rule's button on a check card (0.15.0; ruling 177; module/rules/kinds/reroll.mjs).
+ * The roller's owner or the GM presses it; the Talent's cost is paid through the roller's actions
+ * when a Combat runs and charges nothing outside one; the same die is thrown again with the first
+ * card's formula; the Threshold is the card's where it showed one, else read again from the target
+ * it was withheld for (an adversary's Guard under a Demoralize) when this client may read it; the
+ * old card is marked superseded and the new one names the Talent. A plain `check` card only: an
+ * Attack or Defense card keeps the 0.5.3 Reroll button, and an Initiative touches the tracker.
+ */
+export async function rerollByRule(message, flags, button) {
+  if (flags.superseded) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.already"));
+  if (flags.kind !== "check") return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.ruleCheckOnly"));
+  const roller = resolveActor(flags.actorUuid);
+  if (!roller) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noActor"));
+  if (!(roller.isOwner || game.user.isGM)) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+  const item = roller.items.get(button.dataset.itemId ?? "");
+  if (!item) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.ruleNoTalent"));
+  const original = message.rolls?.[0];
+  if (!original?.formula) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noRoll"));
+
+  // The cost in the Talent's name (the Reaction half's own when it has one), paid in an encounter.
+  const own = item.system.reactionCost;
+  const key = (item.system.reaction && own !== undefined && own !== null && own !== "") ? own : item.system.cost;
+  const n = SW.actionCostValue(key);
+  if (n && roller.inEncounter && (typeof roller.spendActions === "function")) {
+    await roller.spendActions(n, { label: `${SW.plainName(item.name)} ${item.system.glyph ?? ""}`.trim() });
+  }
+
+  const roll = await new Roll(original.formula).evaluate();
+  try { await game.dice3d?.showForRoll?.(roll, game.user, true); } catch { /* the dice module's business */ }
+  const reason = game.i18n.format("STARWROUGHT.Reroll.ruleReason", { talent: `${SW.plainName(item.name)} ${item.system.glyph ?? ""}`.trim() });
+  const result = await rerollCheck(message, flags, { roll, reason, rule: { itemId: item.id, name: SW.plainName(item.name) } });
+  if (!result) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noRoll"));
+  if (!message.isAuthor && !game.user.isGM) ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.notMarked"));
+  return notifyReroll(outcomeLabel(result));
+}
+
+/**
+ * Throw a check card's die again (0.15.0). The card's own modifiers (its flags carry them since
+ * 0.15.0), label, Constellation and Item come back from the flags; the Threshold is the card's, or
+ * read again from the target it was withheld for when the card names one and this client may read
+ * the target. The new card is posted through the check card's own renderer and says what rerolled
+ * it; the old one is marked superseded when this client may write it.
+ */
+export async function rerollCheck(message, flags, { roll, reason = "", rule = null } = {}) {
+  const roller = resolveActor(flags.actorUuid);
+  if (!roller || !roll) return null;
+  const item = flags.itemUuid ? (fromUuidSync(flags.itemUuid) ?? null) : null;
+  const modifiers = Array.isArray(flags.modifiers) ? flags.modifiers : [];
+  const natural = roll.dice[0]?.results?.[0]?.result ?? null;
+
+  let threshold = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : null;
+  let thresholdLabel = "";
+  let withhold = false;
+  if ((threshold === null) && flags.withheldThreshold && flags.targetDefense && flags.targetUuid) {
+    const target = fromUuidSync(flags.targetUuid);
+    const actor = target?.actor ?? null;
+    if (actor && (typeof actor.defenseThresholdFor === "function")) {
+      try {
+        const read = actor.defenseThresholdFor({
+          defense: flags.targetDefense, permitted: Object.keys(SW.DEFENSES),
+          threat: { threat: "check", melee: false, traits: item?.system?.traits ?? [], check: flags.slug ?? null },
+          attacker: roller.tokenOnScene?.() ?? roller
+        });
+        if (Number.isFinite(Number(read?.threshold))) {
+          threshold = Number(read.threshold);
+          withhold = (actor.type !== "character") && !game.user.isGM;
+          thresholdLabel = `${target.name ?? actor.name} ${game.i18n.localize(SW.DEFENSES[read.key ?? flags.targetDefense].label)}`;
+        }
+      } catch (err) {
+        console.warn("STARWROUGHT | the target's Threshold could not be read again", err);
+      }
+    }
+  }
+
+  let degree = null;
+  let outcome = null;
+  if (Number.isNumeric(threshold)) {
+    degree = SW.degreeOf(roll.total, threshold, natural);
+    outcome = SW.ATTACK_OUTCOMES[degree];
+  }
+  const label = message.content?.match(/<h3>([^<]*)<\/h3>/)?.[1] ?? (item ? SW.plainName(item.name) : roller.name);
+  const cfg = {
+    actor: roller,
+    item,
+    kind: "check",
+    slug: flags.slug ?? "",
+    rank: flags.rank ?? null,
+    label: foundry.utils.unescapeHTML?.(label) ?? label,
+    subtitle: "",
+    threshold: withhold ? null : threshold,
+    thresholdLabel: withhold ? "" : thresholdLabel,
+    withholdThreshold: withhold,
+    targetDefenseKey: flags.targetDefense ?? null,
+    targetUuid: flags.targetUuid ?? "",
+    rollMode: message.whisper?.length ? "gmroll" : "publicroll",
+    speakerActor: ChatMessage.getSpeakerActor(message.speaker) ?? roller,
+    rerollOf: message.id,
+    rerollReason: reason,
+    rerollRule: rule
+  };
+  const result = {
+    roll, natural, total: roll.total,
+    threshold: cfg.threshold, thresholdLabel: cfg.thresholdLabel,
+    degree, outcome, critDenied: false,
+    modifiers, extras: [], modTotal: modifiers.reduce((n, m) => n + (Number(m.value) || 0), 0),
+    config: cfg
+  };
+  await SwCheck.postResult(result);
+  if (message.isAuthor || game.user.isGM) {
+    await message.update({ [`flags.${SW.SYSTEM_ID}.superseded`]: { by: result?.message?.id ?? null, reason } });
+  }
+  Hooks.callAll("starwrought.reroll", { oldId: message.id, result, reason });
+  return result;
+}
+
+/**
  * Reroll a set of resolution cards with one die, on a client that may read every Threshold and
  * mark every card (the GM's). Each card's Threshold is its own where it showed one, else read
  * again from actor data. A card already superseded is left alone. Returns the clicked card's

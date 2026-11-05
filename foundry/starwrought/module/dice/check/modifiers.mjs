@@ -19,6 +19,21 @@ export function assemble(actor, cfg) {
 }
 
 /**
+ * The roll's other party for the rules (0.15.0, `MARKED`): the attacker a Defense answers
+ * (`cfg.attacker`), the defender an immediate attack names (`cfg.defender`), with the token the
+ * card calls the target (`cfg.targetUuid`). Null when nobody is known, as on the attack flow's
+ * blind die, whose pairings ask again as each resolves.
+ * @param {object} cfg
+ * @returns {{actor: object|null, uuid: string|null, tokenUuid: string|null, name: string}|null}
+ */
+export function otherOf(cfg) {
+  const actor = cfg?.attacker ?? cfg?.defender ?? null;
+  const tokenUuid = cfg?.targetUuid || null;
+  if (!actor && !tokenUuid) return null;
+  return { actor, uuid: actor?.uuid ?? null, tokenUuid, name: String(cfg?.targetName ?? actor?.name ?? "") };
+}
+
+/**
  * Attribute Bonus and Proficiency Bonus, the two terms every check in the game has (PHB v4.10:
  * there is no level term), the conditions the sheet can see for itself, and, since 0.10.0, the
  * bonuses the Automation rules on the character's Items grant to this roll (the `modifiers` hook
@@ -69,7 +84,7 @@ export function baseModifiers(actor, cfg) {
     // `momentOnly`, so the static ones the Defense already folded in are never counted twice.
     const moment = ruleModifiers(actor, {
       kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, rank: cfg.rank ?? "untrained",
-      threat: cfg.threat ?? null, scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext(),
+      threat: cfg.threat ?? null, other: otherOf(cfg), scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext(),
       momentOnly: true
     });
     parts.push(...moment.applied);
@@ -168,7 +183,7 @@ export function baseModifiers(actor, cfg) {
   // once the die has landed (a preview writes none).
   const { applied, offered, marks } = ruleModifiers(actor, {
     kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, rank: cfg.rank ?? "untrained",
-    threat: cfg.threat ?? null, scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext()
+    threat: cfg.threat ?? null, other: otherOf(cfg), scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext()
   });
   parts.push(...applied);
   cfg.ruleOffers = offered;

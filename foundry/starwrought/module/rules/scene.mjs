@@ -32,7 +32,7 @@ function eligible(token) {
 }
 
 /** ally | enemy | neutral | self, by disposition against the first token's. */
-function relation(a, b) {
+export function relation(a, b) {
   if (!a || !b) return "neutral";
   if (a.id === b.id) return "self";
   const da = a.disposition;
@@ -137,13 +137,19 @@ export function threatContext(maneuver) {
  * @param {{combat: string|null, round: number}} [encounter]
  */
 export async function writeRuleMarks(actor, marks, encounter = encounterContext()) {
-  if (!actor || !Array.isArray(marks) || !marks.length || !encounter?.combat) return;
+  if (!actor || !Array.isArray(marks) || !marks.length) return;
   if (!(actor.isOwner || globalThis.game?.user?.isGM)) return;
   const update = {};
   for (const { key, per } of marks) {
-    if (!key || !["round", "encounter"].includes(per)) continue;
+    if (!key) continue;
     // A flag key is a path: the colon of "<item>:<line>" is fine, a dot would not be.
     const safe = String(key).replace(/\./g, "-");
+    // A claim's mark spends an armed claim (0.15.0, ruling 174): the pin goes out.
+    if (per === "claim") {
+      if (actor.flags?.starwrought?.rules?.armed?.[safe] !== undefined) update[`flags.starwrought.rules.armed.-=${safe}`] = null;
+      continue;
+    }
+    if (!["round", "encounter"].includes(per) || !encounter?.combat) continue;
     update[`flags.starwrought.rules.${per}.${safe}`] = per === "round"
       ? { combat: encounter.combat, round: encounter.round ?? 0 }
       : { combat: encounter.combat };

@@ -1,0 +1,91 @@
+{
+  "_id": "87bb4de692922f07",
+  "name": "Riverfoot",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kestrel-reach",
+    "constellationName": "Kestrel Reach",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Reacher"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
+    "description": "<p><i>Years among slick docks and shifting banks have taught you where to place your next step.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water\nbonus: +1, Situation, Speed, ONCE(encounter)",
+    "rules": [
+      {
+        "what": "terrain",
+        "kinds": [
+          "mud",
+          "decking",
+          "loose-stone",
+          "shallow-water"
+        ],
+        "when": null,
+        "kind": "ignore",
+        "line": 1,
+        "text": "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water"
+      },
+      {
+        "value": 1,
+        "type": "situation",
+        "to": {
+          "name": "Speed",
+          "slug": "speed",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": {
+          "per": "encounter"
+        },
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "bonus: +1, Situation, Speed, ONCE(encounter)"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d11b952536b11224",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "1ff7f433d2f9862b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!87bb4de692922f07"
+}

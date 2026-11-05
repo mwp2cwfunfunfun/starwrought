@@ -10,6 +10,15 @@ import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
 import { resolveRuleTarget } from "../helpers/content.mjs";
 // The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield.
 import { BUILT_IN_MANEUVERS } from "./maneuvers.mjs";
+import { relation as tokenRelation } from "../rules/scene.mjs";
+import { usableByRule } from "../rules/engine.mjs";
+
+/** The target's relation to the user's actor, for a `mark` (0.15.0): by the two tokens' dispositions. */
+function relationTo(actor, targetToken) {
+  const own = actor?.tokenOnScene?.() ?? null;
+  if (!own || !targetToken?.document) return null;
+  return tokenRelation(own, targetToken.document);
+}
 
 export class SwItem extends Item {
   /** @inheritdoc */
@@ -92,6 +101,13 @@ export class SwItem extends Item {
           }, rest, { inplace: false }));
         }
         if (this.system.check.enabled && actor) {
+          // A check against a target's Threshold (0.15.0, ruling 179): a Maneuver whose check names
+          // a Defense (Demoralize against Guard), used with exactly one target, reads that target's
+          // live Threshold through the fold the attack flow uses (`defenseThresholdFor`, with the
+          // check's Constellation as the Threat and the roller as the other party, so
+          // `AGAINST(Intimidation)` and `MARKED` apply); the number prints for a character target
+          // or a GM roller and is withheld for an adversary as the flow withholds it.
+          const read = this.#targetThreshold(actor);
           return SwCheck.roll(foundry.utils.mergeObject({
             actor,
             item: this,
@@ -99,7 +115,8 @@ export class SwItem extends Item {
             slug: this.system.check.constellation,
             label: SW.plainName(this.name),
             subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
-            outcomes: this.#outcomeList()
+            outcomes: this.#outcomeList(),
+            ...(read ?? {})
           }, rest, { inplace: false }));
         }
         return this.toMessage({ actor });
@@ -108,14 +125,94 @@ export class SwItem extends Item {
         return this.raise();
       case "talent":
         // A spell Talent is cast (PHB v4.21, the Cast Maneuver; `cast` picks ❷ ❸ ❹, Focused by
-        // default); any other Talent goes to chat as before.
+        // default); a Talent with a cost in its name is USED (0.15.0, ruling 176: the Use button
+        // on its row pays the cost in an encounter and runs the kinds' `use` hook, so Oathbound ❶
+        // marks its target); any other Talent goes to chat as before.
         if (this.system.isSpell && this.actor && (typeof this.actor.castSpell === "function")) {
           return this.actor.castSpell(this.id, rest);
         }
+        if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) return this.#useTalent(actor);
         return this.toMessage({ actor });
       default:
         return this.toMessage({ actor });
     }
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Use a Talent that carries a cost (0.15.0, ruling 176). The kinds' `use` hook answers first
+   * (module/rules/engine.mjs, `ruleUses`): a refusal (Oathbound with no target) is a notice and
+   * nothing is paid; otherwise the cost in the Talent's name is paid in an encounter (the Reaction
+   * half's own when it has one), the writes land on the owner, and the Talent's card goes out with
+   * the kinds' lines under it. A Talent with no `use` rules still pays and posts: Quick Tongue's
+   * row Use pays its ❶↺ by hand when the table wants that.
+   */
+  async #useTalent(actor) {
+    const { ruleUses } = await import("../rules/engine.mjs");
+    const { encounterContext } = await import("../rules/scene.mjs");
+    const targetToken = SwCheck.currentTarget();
+    const target = targetToken ? {
+      actor: targetToken.actor, uuid: targetToken.actor?.uuid ?? null, tokenUuid: targetToken.document.uuid,
+      name: targetToken.name, relation: relationTo(actor, targetToken)
+    } : null;
+    const uses = ruleUses(actor, this, { target, encounter: encounterContext() });
+    const refused = uses.find(u => u.refuse);
+    if (refused) return void ui.notifications.warn(refused.refuse);
+
+    const own = this.system.reactionCost;
+    const key = (this.system.reaction && own !== undefined && own !== null && own !== "") ? own : this.system.cost;
+    const n = SW.actionCostValue(key);
+    if (n && actor.inEncounter && (typeof actor.spendActions === "function")) {
+      await actor.spendActions(n, { label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() });
+    }
+    const update = {};
+    const lines = [];
+    for (const u of uses) {
+      if (u.write) Object.assign(update, u.write);
+      if (u.say) lines.push(u.say);
+    }
+    if (Object.keys(update).length && (actor.isOwner || game.user.isGM)) await actor.update(update, { swAnnounced: true });
+    return this.toMessage({ actor, lines });
+  }
+
+  /**
+   * The target's Threshold a check Maneuver reads (0.15.0, ruling 179), as roll config: the
+   * Threshold, its label, `targetDefense` for the dialog, `withholdThreshold` for an adversary's
+   * number when the roller is not the GM, and the read's marks to write on the target. Null when
+   * the Maneuver names no Defense or there is not exactly one target with an Actor.
+   */
+  #targetThreshold(actor) {
+    const defense = this.system.check?.defense;
+    if (!defense || !SW.DEFENSES[defense]) return null;
+    const token = SwCheck.currentTarget();
+    const target = token?.actor;
+    if (!target || (typeof target.defenseThresholdFor !== "function")) return null;
+    let read;
+    try {
+      read = target.defenseThresholdFor({
+        defense, permitted: Object.keys(SW.DEFENSES),
+        threat: { threat: "check", melee: false, traits: this.system.traits ?? [], check: this.system.check.constellation || null },
+        attacker: actor.tokenOnScene?.() ?? actor
+      });
+    } catch (err) {
+      console.warn("STARWROUGHT | the target's Threshold could not be read", err);
+      return null;
+    }
+    if (!Number.isFinite(Number(read?.threshold))) return null;
+    const withhold = (target.type !== "character") && !game.user.isGM;
+    const label = `${token.name} ${game.i18n.localize(SW.DEFENSES[read.key ?? defense].label)}`;
+    return {
+      threshold: Number(read.threshold),
+      thresholdLabel: label,
+      targetDefense: { key: read.key ?? defense, label: withhold ? "" : `${label} ${read.threshold}`, threshold: withhold ? null : Number(read.threshold), unavailable: read.unavailable ?? null, hidden: withhold },
+      targetDefenseKey: read.key ?? defense,
+      targetUuid: token.document.uuid,
+      targetName: token.name,
+      targetActor: target,
+      targetMarks: read.marks ?? [],
+      withholdThreshold: withhold
+    };
   }
 
   /* -------------------------------------------- */
@@ -191,8 +288,9 @@ export class SwItem extends Item {
    * Put the Item on the table as a card, with no roll.
    * @param {object} [options]
    * @param {Actor} [options.actor]  Who speaks, when the Item is not owned (a Basic Maneuver).
+   * @param {string[]} [options.lines]  Lines said under the card (0.15.0: what a Use did).
    */
-  async toMessage({ actor = null } = {}) {
+  async toMessage({ actor = null, lines = [] } = {}) {
     const speaker = this.actor ?? actor;
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
     const enrich = html => TextEditor.enrichHTML(html ?? "", { rollData: this.getRollData(), relativeTo: this });
@@ -208,7 +306,8 @@ export class SwItem extends Item {
       flavor,
       subtitle: this.#subtitle(),
       traits: this.system.traits ?? [],
-      outcomes: this.#outcomeList()
+      outcomes: this.#outcomeList(),
+      lines: Array.isArray(lines) ? lines.filter(Boolean) : []
     });
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: speaker }),

@@ -8,8 +8,58 @@
     "constellation": "serrovane",
     "attribute": "presence",
     "languages": "Serrovine, Common",
-    "description": "<p>A lowland order-state where nothing is real until it is written and witnessed. Serrovane settles its disputes by formal challenge, keeps its ledgers in triplicate, and considers a broken oath a more serious crime than the violence that follows it.</p>",
-    "specialAbility": "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
+    "description": "<p>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>Serrovane is a lowland order-state of cultivated fields, raised roads, and towns gathered around registry halls. Its ledgers are kept in triplicate, its agreements carry witnesses, and its disputes follow forms that everyone is expected to respect. A promise spoken casually may be forgotten. A promise entered into the record becomes something other people can build their lives upon.<br><br>People of many ancestries belong to this order. An elven witness, a dwarven magistrate, and a human challenger may disagree bitterly while trusting the same record. Serrovanians learn how to state a grievance, acknowledge an obligation, and offer a concession without surrendering their standing. They can be formidable negotiators: they know exactly what they have promised, and they expect you to know the same.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who takes promises seriously, understands the power of public reputation, and can turn a few carefully chosen words into a lasting obligation, choose Serrovane.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Ask who witnessed an agreement before asking whether it was a good one.<br>• Carry copies of important promises, judgments, or introductions among your belongings.<br>• Insist on settling the terms of a contest before anyone draws a weapon.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Trust you to remember an obligation long after everyone else has forgotten it.<br>• Find your careful questions reassuring, exhausting, or faintly threatening.<br>• Worry that an innocent remark might become a commitment in your hearing.</p>"
+      },
+      {
+        "label": "Dress and Bearing",
+        "text": "<p>Serrovanian clothing favors orderly layers, durable fabrics, and visible signs of affiliation. Household colors, office badges, and witness cords help others recognize whom a person represents. Garments vary with ancestry, occupation, and means, but people generally take care that closures are secure and identifying marks remain legible.<br><br>Formal bearing matters as much as fine clothing. Standing to acknowledge a witness, leaving another speaker room to finish, and presenting a document with clean hands all communicate respect.</p>"
+      },
+      {
+        "label": "Upbringing and Milestones",
+        "text": "<p>Children learn promises through ordinary responsibilities: returning borrowed tools, delivering messages accurately, and admitting when a task remains unfinished. Many households preserve a young person’s first independently witnessed obligation.<br><br>Public responsibility follows demonstrated judgment, with its timing shaped by ancestry and family custom. Taking an office, joining a household, completing an apprenticeship, and retiring from service are commonly marked by a formal acknowledgment of the duties being accepted or released.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Serrovanian institutions depend on recorded responsibilities. Officials swear to the limits of their offices, guilds preserve the terms of their charters, and households keep accounts of debts, inheritances, and obligations. Public scribes and witnesses are familiar figures in markets and village squares.<br><br>Formal challenge gives disputes an accepted shape. The grievance, the contest, and the consequences are declared before witnesses. Some challenges involve arms; others test skill, testimony, or the ability to substantiate a claim. Violence within accepted terms can be lawful. Breaking those terms threatens the trust that made the challenge possible.<br><br>This order has its cruelties. Wealth buys patient advocates, old records can preserve old injustices, and a precisely worded agreement can conceal an ugly intention. Serrovanians argue fiercely over whether justice lies in honoring the record or correcting what should never have been written into it.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Serrovanians follow many faiths, but promises, testimony, and remembrance occupy an honored place across them. Shrines often witness marriages, reconciliations, and vows of service. An ancestor may be remembered through an obligation their descendants continue to uphold.<br><br>Mercy also has a recognized dignity. Publicly releasing someone from an oath can be an act of generosity remembered as long as the oath itself.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Keep your word when doing so becomes inconvenient.<br>• State your terms before the contest begins.<br>• Stand witness when another needs the truth recorded.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Knowingly swear an oath you intend to break.<br>• Falsify a record entrusted to your care.<br>• Inflict punishment beyond the terms of an accepted challenge.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br><b>Common given names</b> Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br><b>Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br><b>Example name</b>s Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith.</p>"
+      }
+    ],
+    "specialAbility": "<p>You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -20,7 +70,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "8cc10d87ae10afb5"
+      "contentHash": "6c322046bb61aa70"
     }
   },
   "effects": [],

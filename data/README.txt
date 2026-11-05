@@ -70,6 +70,16 @@ Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence
   Vigor per level. The Ancestry's Vigor stays per level; the two meet in Vigor = 10 + Opening
   Vigor + Ancestry Vigor × level (v4.21; the Endure Bonus to Vigor of v4.11 to v4.15 is gone).
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
+  Culture rows (0.15.0) generate the "cultures" block of assets/roster.json, as Ancestry rows
+  generate the ancestries block: one record per Culture tree, every row with its enabled flag
+  (name, attribute, languages, blurb, lore, traits, tree), so hand edits to that block are
+  pointless. The _Tree Index of cultures.xlsx may carry Languages (comma separated, "Serrovine,
+  Common"; " • " also reads) and Traits (the creature traits the Culture confers, as on an
+  Ancestry). While it has no Languages column the converter carries each Culture's languages from
+  the previous roster row and WARNS once naming the column to add; with no row to carry from the
+  languages are blank and it says so. The blurb the app card, the compendium docx and the Culture
+  chassis print is the "<Tree> Lore" sheet's Summary row, and the Culture chassis's Special
+  Ability in Foundry is its Root Talent's Effect; nothing parses the Effect prose for languages.
   A sheet named "<Tree> Lore" beside a tree's sheet (0.13.0) is the tree's player-facing text:
   label | text rows, no header row, in the order you want them read (Summary, About, If you
   want..., You Might..., Others Probably..., Physical Description, Society, Beliefs, Popular
@@ -120,6 +130,10 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               grant: 1, Calling                                          a Talent Point at creation
               aura: 15ft, allies, VISIBLE                                the ring on the map
               prevent: Prone, ONCE(encounter)                            an effect does not land
+              mark: enemies, encounter                                   name one creature on use (0.15.0)
+              reroll: Diplomacy, IF(Outcome=Critical Failure)            throw a check's die again (0.15.0)
+              ignore: Terrain, Mud, Shallow Water                        difficult terrain costs nothing (0.15.0)
+              bonus: +1, Condition, Diplomacy, CLAIM(when trading)       the player's checkbox (0.15.0)
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
         trailing period is tolerated. The converter copies the cell through as text and parses
         nothing; build_foundry.mjs parses it, and a line it does not know is an ERROR that stops
@@ -190,7 +204,7 @@ ACTIONS WORKBOOKS (maneuvers.xlsx; the only one since 2026-10-03)
   Description is the flavour line; Effect is the rules, rich text welcome. Automation (0.9.0) is
     the same column as on a tree sheet, no longer prose: one rule per line, "kind: arguments", a
     "#" line a comment, parsed by build_foundry.mjs, which stops on a line it does not know; the
-    kinds and their syntax are under Tree columns, above (one today, "bonus"). An action's name is
+    kinds and their syntax are under Tree columns, above (seven since 0.15.0). An action's name is
     also what a talent's "bonus ... to <Maneuver>" line is matched against, so a roll made from the
     action's row carries the bonus. An action whose Effect says "Relevant Check" and names no
     check opens the Relevant Check picker when it is used, carrying the action, so Aid's roll is
@@ -329,8 +343,8 @@ To sync after editing, from the project root, one of two paths:
   The steps one at a time, if you want one of them alone:
   python assets/xlsx_to_trees.py             -> assets/trees.json + backgrounds.json + languages.json
                                                 + actions.json + equipment.json, and the ancestries,
-                                                weaponsMelee, weaponsRanged, armorPieces and shields
-                                                blocks of roster.json
+                                                cultures, weaponsMelee, weaponsRanged, armorPieces and
+                                                shields blocks of roster.json
   python assets/inject.py                    -> Starwrought_App.html + the constellation viewer
   python assets/render_constellations.py     -> assets/constellations/*.png (--changed: only what moved)
   python assets/sheet_gen.py                 -> the fillable and Mira character sheets

@@ -10,7 +10,7 @@
     "parentSlug": "",
     "group": false,
     "meta": "Skill constellation • Agility",
-    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "flareTrigger": "",
     "identity": false,
     "description": "<p>Skill constellation • Agility</p>",
     "traits": [],
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "58eef0431197fa6a"
+      "contentHash": "7dc3fc80db720f7c"
     }
   },
   "effects": [],

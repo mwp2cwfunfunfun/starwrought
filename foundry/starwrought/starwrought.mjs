@@ -41,6 +41,11 @@ import {
   registerAuras, refresh as refreshAuras, aurasSuppressed, setAurasSuppressed, clearAuraMarks
 } from "./module/canvas/auras.mjs";
 import { registerStrideRuler } from "./module/canvas/ruler.mjs";
+// TERRAIN ON THE MAP (0.15.0, ruling 178): the Difficult terrain region behavior, the terrain data
+// that keeps its kinds, and the player's overlay with its toggle.
+import { registerDifficultTerrain } from "./module/data/region-behaviors/difficult-terrain.mjs";
+import { SwTerrainData } from "./module/data/terrain-data.mjs";
+import { registerTerrain, refresh as refreshTerrain, terrainShown, setTerrainShown } from "./module/canvas/terrain.mjs";
 import { registerTargeting, refresh as refreshTargets } from "./module/canvas/targeting.mjs";
 import { registerBind } from "./module/canvas/bind.mjs";
 // THE BIND'S PAIR (0.10.1): the two-sided record kept whole, a document concern, beside its drawing.
@@ -186,6 +191,11 @@ Hooks.once("init", async () => {
   registerAudit();
   registerReachRings();
   registerAuras(); // AURAS (0.5.1)
+  // TERRAIN ON THE MAP (0.15.0): before the Token schema is built, since core embeds the terrain
+  // data in a token's movement history.
+  CONFIG.Token.movement.TerrainData = SwTerrainData;
+  registerDifficultTerrain();
+  registerTerrain();
   registerStrideRuler();
   registerTargeting();
   registerBind();
@@ -757,9 +767,20 @@ function registerExposedStatuses() {
  * the toggle reads its state from the flag then; auras.mjs rebuilds them when the flag changes.
  */
 Hooks.on("getSceneControlButtons", controls => {
-  if (!game.user?.isGM) return;
   const tools = controls.tokens?.tools;
   if (!tools) return;
+  // TERRAIN ON THE MAP (0.15.0): every player's own switch for the Difficult terrain overlay
+  // (Mike: "players can toggle layers to see what is difficult"); the client setting behind it.
+  tools.swShowTerrain = {
+    name: "swShowTerrain",
+    title: "STARWROUGHT.Terrain.toggle",
+    icon: "fa-solid fa-water",
+    order: Object.keys(tools).length,
+    toggle: true,
+    active: terrainShown(),
+    onChange: (event, active) => setTerrainShown(active)
+  };
+  if (!game.user?.isGM) return;
   const order = Object.keys(tools).length;
   tools.swSuppressAuras = {
     name: "swSuppressAuras",
@@ -873,6 +894,17 @@ function registerSettings() {
     type: Boolean,
     default: true,
     onChange: () => { refreshAuras(); refreshReach(); }
+  });
+
+  // TERRAIN ON THE MAP (0.15.0): the player's overlay of the Difficult terrain regions, this client's.
+  game.settings.register(SW.SYSTEM_ID, "showTerrain", {
+    name: "STARWROUGHT.Settings.showTerrain.name",
+    hint: "STARWROUGHT.Settings.showTerrain.hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => { refreshTerrain(); ui.controls?.render({ reset: true }); }
   });
 
   // How boldly the rings are drawn (0.5.3; Mike: "sometimes the Ranges are hard to see, depending

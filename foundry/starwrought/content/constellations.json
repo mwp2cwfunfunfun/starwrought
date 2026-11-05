@@ -297,7 +297,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "kinetics",
