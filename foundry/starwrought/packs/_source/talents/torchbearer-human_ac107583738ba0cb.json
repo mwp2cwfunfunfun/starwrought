@@ -23,7 +23,8 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
@@ -35,7 +36,7 @@
       "affects": "allies",
       "visible": true
     },
-    "automation": "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
+    "automation": "[AURA 15 allies visible]\nDEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round",
     "rules": [
       {
         "range": 15,
@@ -43,7 +44,7 @@
         "visible": true,
         "kind": "aura",
         "line": 1,
-        "text": "aura: 15ft, allies, VISIBLE"
+        "text": "[AURA 15 allies visible]"
       },
       {
         "value": 1,
@@ -53,14 +54,19 @@
           "slug": "defenses",
           "type": "scope"
         },
-        "when": null,
+        "when": [
+          {
+            "trait": "fear",
+            "name": "Fear"
+          }
+        ],
         "for": {
           "who": "allies",
           "range": 15
         },
         "while": null,
         "against": null,
-        "seen": false,
+        "seen": true,
         "limit": {
           "per": "round"
         },
@@ -68,7 +74,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)"
+        "text": "DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round"
       }
     ],
     "traits": [],
@@ -81,7 +87,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "fc431240cef63108"
+      "contentHash": "6194fe72ca917432"
     }
   },
   "effects": [],

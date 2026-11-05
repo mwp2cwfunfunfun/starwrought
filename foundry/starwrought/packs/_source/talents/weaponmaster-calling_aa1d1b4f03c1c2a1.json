@@ -21,17 +21,50 @@
     "reaction": false,
     "reactionCost": "",
     "grant": {
-      "n": 0,
-      "mode": "",
-      "scope": ""
+      "n": 1,
+      "mode": "any",
+      "scope": "Skill",
+      "constellation": "athletics"
     },
     "choice": {
       "prompt": "Weapon Group",
       "value": ""
     },
     "freeTalent": "Weapon Familiarity",
-    "automation": "",
-    "rules": [],
+    "automation": "[Athletics trained][CHOICE Weapon Group][TALENT Weapon Familiarity][VIGOR opening 10]",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Skill",
+        "constellation": "athletics",
+        "constellationName": "Athletics",
+        "different": false,
+        "when": null,
+        "trained": true,
+        "kind": "grant",
+        "line": 1,
+        "text": "[Athletics trained]"
+      },
+      {
+        "prompt": "Weapon Group",
+        "kind": "choice",
+        "line": 1,
+        "text": "[CHOICE Weapon Group]"
+      },
+      {
+        "name": "Weapon Familiarity",
+        "kind": "talent",
+        "line": 1,
+        "text": "[TALENT Weapon Familiarity]"
+      },
+      {
+        "value": 10,
+        "scope": "opening",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR opening 10]"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -42,7 +75,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "02e7b53c5732aa66"
+      "contentHash": "614e6422f4c5e451"
     }
   },
   "effects": [],

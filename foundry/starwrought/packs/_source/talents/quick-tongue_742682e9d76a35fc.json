@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the <b>Quick Tongue </b>❶↺ Maneuver:<br><b>Quick Tongue </b>❶↺<b><br>Trigger </b>You critically fail a Diplomacy check.<b><br>Requirements </b>You’re in a settlement or community, and you haven’t used Quick Tongue ❶ in this settlement or community within the past month.<b><br>Effect </b>Reroll the triggering Diplomacy check, using the second result.",
+    "effect": "You gain the Quick Tongue Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Quick Tongue ❶↺</strong></p><p><strong>Trigger</strong> You critically fail a Diplomacy check.</p><p><strong>Requirements</strong> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.</p><p>Reroll the triggering Diplomacy check, using the second result.</p></div>",
     "description": "<p><i>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -25,30 +25,23 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "reroll: Diplomacy, IF(Outcome=Critical Failure)",
+    "automation": "[MANEUVER Quick Tongue]",
     "rules": [
       {
-        "to": {
-          "name": "Diplomacy",
-          "slug": "diplomacy",
-          "type": "constellation"
-        },
-        "when": [
-          {
-            "outcome": "critFail",
-            "name": "Critical Failure"
-          }
-        ],
-        "kind": "reroll",
+        "name": "Quick Tongue",
+        "slug": "quick-tongue",
+        "enabled": true,
+        "kind": "maneuver",
         "line": 1,
-        "text": "reroll: Diplomacy, IF(Outcome=Critical Failure)"
+        "text": "[MANEUVER Quick Tongue]"
       }
     ],
     "traits": [],
@@ -61,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "4d5f1203730f9758"
+      "contentHash": "82da25f6371f4a6a"
     }
   },
   "effects": [],

@@ -25,14 +25,15 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Condition, Defenses, AGAINST(Intimidation)\nbonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)",
+    "automation": "DEF: 1 condition; IFT: CHECK(intimidation)\nDEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)",
     "rules": [
       {
         "value": 1,
@@ -57,7 +58,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "bonus: +1, Condition, Defenses, AGAINST(Intimidation)"
+        "text": "DEF: 1 condition; IFT: CHECK(intimidation)"
       },
       {
         "value": 1,
@@ -79,7 +80,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "bonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)"
+        "text": "DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)"
       }
     ],
     "traits": [],
@@ -92,7 +93,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "09cf82677b922454"
+      "contentHash": "9d2879692426019c"
     }
   },
   "effects": [],

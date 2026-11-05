@@ -223,16 +223,19 @@ export function traitChips(actor) {
   const details = actor?.system?.details ?? {};
   const out = [];
   const seen = new Set();
+  const add = trait => {
+    const text = String(trait ?? "").trim();
+    const key = text.toLowerCase();
+    if (!text || seen.has(key)) return;
+    seen.add(key);
+    out.push(text);
+  };
   for (const kind of ["ancestry", "bloodline", "culture"]) {
     const chassis = chassisByName(details[kind]?.name ?? "");
-    for (const trait of chassis?.system?.traits ?? []) {
-      const text = String(trait ?? "").trim();
-      const key = text.toLowerCase();
-      if (!text || seen.has(key)) continue;
-      seen.add(key);
-      out.push(text);
-    }
+    for (const trait of chassis?.system?.traits ?? []) add(trait);
   }
+  // The Talents' `[TRAIT X]` lines (0.16.0), read live from the rule index.
+  for (const trait of actor?.system?.features?.traits ?? []) add(trait);
   return out;
 }
 

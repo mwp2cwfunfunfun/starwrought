@@ -51,6 +51,9 @@ import {
 // `bonus` kind since 0.10.0); the index is also imported directly for the summary line's count of
 // kinds. Both are free of Foundry globals at module scope, as config.mjs is.
 import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
+// The rule targets' resolver (0.16.0): one module, imported here and by assets/parse_rules.mjs, so
+// the step that parses every cell and this build's fallback parse answer a name identically.
+import { buildResolver } from "./lib/rule_targets.mjs";
 // The two kinds whose rules fill a field the system has read since before them (0.13.0): the
 // mapping lives in the kind file, so the build and the Talent model derive the same field.
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
@@ -222,13 +225,45 @@ const auraOf = (row, rules = []) => {
 function grantOf(row, rules, source) {
   const rule = rules.find(r => r.kind === "grant");
   const fromRule = rule ? toGrantField(rule) : null;
-  const fromColumn = row.grant ? { n: row.grant.n, mode: row.grant.mode, scope: row.grant.scope } : null;
+  // The column never directed a point at a Constellation, so its `constellation` is "" (0.16.0).
+  const fromColumn = row.grant ? { n: row.grant.n, mode: row.grant.mode, scope: row.grant.scope, constellation: "" } : null;
   if (fromRule && fromColumn && JSON.stringify(fromRule) !== JSON.stringify(fromColumn)) {
     fail(`grant: ${source}: the Grants column (${JSON.stringify(fromColumn)}) and the 'grant:' line `
       + `(${JSON.stringify(fromRule)}) disagree; the column is retired, so clear it`);
   }
   const grant = fromRule ?? fromColumn;
-  return { grant: { n: grant?.n ?? 0, mode: grant?.mode ?? "", scope: grant?.scope ?? "" } };
+  return { grant: { n: grant?.n ?? 0, mode: grant?.mode ?? "", scope: grant?.scope ?? "", constellation: grant?.constellation ?? "" } };
+}
+
+/**
+ * The build-time pick a Talent demands (0.16.0): `[CHOICE Weapon Group]` in the cell is the
+ * authoring and the Choice column is retired; a filled cell still reads this release, and when
+ * both are present they must agree or the build fails, as the Grants column's disagreement does.
+ */
+function choiceOf(row, rules, source) {
+  const rule = rules.find(r => r.kind === "choice");
+  const fromRule = rule?.prompt ? String(rule.prompt).trim() : "";
+  const fromColumn = String(row.choice ?? "").trim();
+  if (fromRule && fromColumn && (fromRule.toLowerCase() !== fromColumn.toLowerCase())) {
+    fail(`choice: ${source}: the Choice column ("${fromColumn}") and the [CHOICE] line ("${fromRule}") disagree; `
+      + "the column is retired, so clear it");
+  }
+  return { choice: { prompt: fromRule || fromColumn, value: "" } };
+}
+
+/**
+ * The Talent handed over free (0.16.0): `[TALENT Weapon Familiarity]` is the authoring and the
+ * Free Talent column is retired; read, warned and checked as the Choice column is.
+ */
+function freeTalentOf(row, rules, source) {
+  const rule = rules.find(r => r.kind === "talent");
+  const fromRule = rule?.name ? String(rule.name).trim() : "";
+  const fromColumn = String(row.freeTalent ?? "").trim();
+  if (fromRule && fromColumn && (stripGlyphs(fromRule).toLowerCase() !== stripGlyphs(fromColumn).toLowerCase())) {
+    fail(`talent: ${source}: the Free Talent column ("${fromColumn}") and the [TALENT] line ("${fromRule}") disagree; `
+      + "the column is retired, so clear it");
+  }
+  return { freeTalent: fromRule || fromColumn };
 }
 
 /* -------------------------------------------- */
@@ -250,19 +285,31 @@ const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked:
  * kind" and fails here, which is the framework working as built: the kinds are added one at a
  * time with Mike (ruling 119). An empty cell is `automation: ""` and `rules: []`, written on every
  * Talent, Constellation and action so the field is always present on a source.
+ *
+ * Since 0.16.0 the parse is assets/parse_rules.mjs's, the pipeline step before inject, which
+ * writes `rules` beside every cell in the JSON for every consumer; this build reads them when the
+ * carrier has them and parses only a cell no step pre-parsed (a JSON written by hand, or the
+ * converter run alone), with the same grammar and the same resolver, so the outcome is one.
  * @param {string} text           The cell, or "" / undefined for none.
  * @param {object} context        For the messages: `source` is "<Constellation> / <Talent>" (or the
  *                                action's sheet and name); itemName, constellation and itemType
  *                                travel to the kinds' own parse for their messages, and `resolve`
  *                                (resolveRuleTarget below) is what a kind asks about a target's name.
+ * @param {object[]} [preparsed]  The carrier's `rules` from the JSON, when parse_rules wrote them.
  * @returns {{automation: string, rules: object[]}}
  */
-function automationOf(text, context) {
+function automationOf(text, context, preparsed) {
   const automation = String(text ?? "");
   if (!automation.trim()) return { automation: "", rules: [] };
-  const { rules, errors } = parseAutomation(automation, context);
-  if (errors.length) {
-    fail(errors.map(e => `automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`).join("\n  "));
+  let rules;
+  if (Array.isArray(preparsed)) {
+    rules = preparsed;
+  } else {
+    const parsed = parseAutomation(automation, context);
+    if (parsed.errors.length) {
+      fail(parsed.errors.map(e => `automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`).join("\n  "));
+    }
+    rules = parsed.rules;
   }
   if (rules.length) {
     automationTally.rules += rules.length;
@@ -389,56 +436,16 @@ const actionsPath = path.join(ROOT, "assets", "actions.json");
 const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
 
 /**
- * THE AUTOMATION RULES' TARGETS (0.10.0; rulings 121 and 122). What a rule's `to <Target>` or
- * `if <Constellation>` names, for the grammar's kinds, handed to both `automationOf` calls as
- * `resolve` in the parse context; the client's counterpart is `resolveRuleTarget` in
- * module/helpers/content.mjs, over the registry and the compendium, so a cell and a world Item's
- * textarea are checked alike and store the same shape.
- *
- * Constellations are every key of trees.json (the four Defenses are trees too), matched case
- * blind on the name or on `slugify(name)`, disabled ones included: a cell may name a Constellation
- * whose Root is off, and the rule is right even while the row is. Maneuvers are every sheet
- * action's name and every roster `actions` row's `actionName`, enabled or not (a disabled Aid still
- * resolves: the cell is right, the row is simply off, ruling 61), matched case blind on the plain
- * name or its slug, so a glyphed "Aid ❶ (⓿↺)" and a bare "Aid" are one Maneuver. A Constellation
- * wins over an action of the same name (none today). Null for anything else; the Lore refusal is
- * the kind's, not this map's, which resolves the template like any Constellation.
+ * THE AUTOMATION RULES' TARGETS (0.10.0; rulings 121 and 122). What a rule's target or condition
+ * names, for the grammar's kinds, handed to both `automationOf` calls as `resolve` in the parse
+ * context. Since 0.16.0 the map is built by assets/lib/rule_targets.mjs, which assets/parse_rules.mjs
+ * (the one parse of every cell) imports too, so the step and this build's fallback parse never
+ * answer a name differently; the client's counterpart is `resolveRuleTarget` in
+ * module/helpers/content.mjs, over the registry and the compendium. The shape and the rules of the
+ * match (every tree, disabled ones included, Origin, every sheet action and roster row by plain
+ * name or slug, a Constellation winning over an action) are documented in that module.
  */
-const ruleTargets = new Map();
-const addRuleTarget = (keys, entry) => {
-  for (const key of keys) if (key && !ruleTargets.has(key)) ruleTargets.set(key, entry);
-};
-for (const treeName of Object.keys(trees)) {
-  const slug = slugify(treeName);
-  // A group (PHB v4.21: a tree with a Parent) has no rank of its own; the kinds refuse "if
-  // <group> is <Rank>" naming the parent, so the answer carries both.
-  const parentName = trees[treeName].parent ?? "";
-  addRuleTarget([treeName.trim().toLowerCase(), slug], {
-    type: "constellation", slug, name: treeName, group: !!trees[treeName].group || !!parentName, parent: parentName
-  });
-}
-// Origin (PHB v4.21): Ancestry, Bloodline and Culture share one Origin rank, and a rule may name it
-// ("bonus: +2 Condition to Aid if Origin is Expert"). A virtual Constellation: no tree, no Items.
-addRuleTarget(["origin"], { type: "constellation", slug: "origin", name: "Origin", group: false, parent: "" });
-for (const actionLabel of [
-  ...sheetActions.map(a => a.name),
-  ...Object.values(roster.actions ?? {}).flat().map(([name]) => name)
-]) {
-  const name = actionName(actionLabel);
-  addRuleTarget([name.toLowerCase(), slugify(name)], { type: "action", slug: slugify(name), name });
-}
-/**
- * @param {string} name  As written in the cell: "Aid", "Armored Fighting", "armored-fighting".
- * @returns {{type: "constellation"|"action", slug: string, name: string}|null}
- */
-function resolveRuleTarget(name) {
-  const raw = String(name ?? "").trim();
-  if (!raw) return null;
-  return ruleTargets.get(raw.toLowerCase())
-    ?? ruleTargets.get(actionName(raw).toLowerCase())
-    ?? ruleTargets.get(slugify(raw))
-    ?? null;
-}
+const resolveRuleTarget = buildResolver({ trees, sheetActions, roster });
 
 /**
  * THE SPELL (PHB v4.21; the magic workbook's spell columns, read by the converter into `node.spell`,
@@ -535,7 +542,7 @@ for (const [name, tree] of Object.entries(trees)) {
     const source = `${name} / ${node.name}`;
     const automation = automationOf(node.automation, {
       itemName: node.name, constellation: name, itemType: "talent", source, resolve: resolveRuleTarget
-    });
+    }, node.rules);
     item("talents", {
       key: `talent:${slug}:${slugify(bare)}`,
       name: node.name,
@@ -556,8 +563,10 @@ for (const [name, tree] of Object.entries(trees)) {
         description: node.desc ? `<p>${node.desc}</p>` : "",
         ...parseActionCost(node.name),
         ...grantOf(node, automation.rules, source),
-        choice: { prompt: node.choice ?? "", value: "" },
-        freeTalent: node.freeTalent ?? "",
+        // `[CHOICE ...]` and `[TALENT ...]` in the cell are the authoring (0.16.0); the columns
+        // are read one release and must agree.
+        ...choiceOf(node, automation.rules, source),
+        ...freeTalentOf(node, automation.rules, source),
         ...auraOf(node, automation.rules),
         ...spellOf(node),
         ...automation,
@@ -688,6 +697,27 @@ for (const culture of roster.cultures ?? []) {
   });
 }
 
+/**
+ * A Background's Training (0.16.0): its `[<Skill> trained]` lines (the `grant` rules that name a
+ * Constellation; a Lore reads as "Lore") when its Automation cell has any, else the retired Skills
+ * and Lore columns' list. The rules were parsed by assets/parse_rules.mjs; a background JSON
+ * written without that step carries the cell as text alone and is parsed here, the Talents' way.
+ */
+function backgroundGrants(background) {
+  let rules = background.rules;
+  if (!Array.isArray(rules) && String(background.automation ?? "").trim()) {
+    rules = automationOf(background.automation, {
+      itemName: background.name, constellation: "Backgrounds", itemType: "background",
+      source: `Backgrounds / ${background.name}`, resolve: resolveRuleTarget
+    }).rules;
+  }
+  const directed = (rules ?? []).filter(r => (r.kind === "grant") && r.constellation);
+  if (directed.length) {
+    return directed.map(r => (r.constellation === "lore" ? "Lore" : String(r.constellationName ?? r.constellation)));
+  }
+  return [...(background.skills ?? []), background.lore].filter(Boolean);
+}
+
 for (const background of backgrounds) {
   chassis(isEnabled(background), {
     key: `chassis:background:${slugify(background.name)}`,
@@ -697,7 +727,7 @@ for (const background of backgrounds) {
     system: {
       kind: "background",
       attribute: "wits",
-      grants: [...(background.skills ?? []), background.lore].filter(Boolean),
+      grants: backgroundGrants(background),
       specialAbility: `<p>${background.effect ?? ""}</p>`,
       description: `<p>${background.desc ?? ""}</p>`,
       traits: background.rarity ? [background.rarity] : [],
@@ -706,7 +736,16 @@ for (const background of backgrounds) {
   });
 }
 
-for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
+// The roster's hand-kept callings rows: [name, training, openingVigor, attribute, ability]. The
+// Opening Vigor is the row's, which assets/parse_rules.mjs has already overwritten from the Root's
+// `[VIGOR opening N]` when the Root states one; the Training is the Root's `[<Skill> trained]`
+// line when it has one (0.16.0), else the row's word, else the index's retired Skills column.
+for (const [name, rowTraining, hp, attribute, ability] of roster.callings ?? []) {
+  const root = (trees[name]?.nodes ?? []).find(n => n.root);
+  const trained = (root?.rules ?? []).find(r => (r.kind === "grant") && r.constellation && r.trained);
+  const training = trained
+    ? (trained.constellation === "lore" ? "Lore" : String(trained.constellationName ?? trained.constellation))
+    : (rowTraining || trees[name]?.skills?.[0] || "");
   chassis(isEnabled(trees[name]), {
     key: `chassis:calling:${slugify(name)}`,
     name,
@@ -720,7 +759,7 @@ for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
       constellation: slugify(name),
       attribute: String(attribute).toLowerCase(),
       vigor: hp,
-      grants: [training],
+      grants: training ? [training] : [],
       specialAbility: `<p>${ability}</p>`,
       description: `<p>Grants Training in ${training}, and ${hp} Opening Vigor, added once if it is your first Calling.</p>`,
       traits: [],
@@ -1004,7 +1043,7 @@ for (const a of shippedSheetActions) {
         itemName: a.name, constellation: actionGroup(a), itemType: "action",
         source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`,
         resolve: resolveRuleTarget
-      })),
+      }, a.rules)),
       // An action's ring may be an `aura:` line too (0.13.0), as a Talent's.
       ...auraOf(a, actionAutomation.rules),
       ...relevantCheckOf(a),

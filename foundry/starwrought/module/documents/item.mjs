@@ -79,6 +79,9 @@ export class SwItem extends Item {
       case "action": {
         const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
         if (builtIn && actor) return builtIn(actor, this, rest);
+        // A Maneuver whose rules act when it is used (0.16.0: Oathbound's `MARK`, granted by a
+        // Talent's `[MANEUVER Oathbound]`): paid and run as a Talent with such rules is.
+        if (actor && this.actor && usableByRule(this)) return this.#useWithRules(actor);
         if (this.system.reaction && actor) {
           // A Reaction with a cost of its own (Aid ❶ (⓿↺)) pays that one; otherwise the cost printed.
           const own = this.system.reactionCost;
@@ -131,7 +134,7 @@ export class SwItem extends Item {
         if (this.system.isSpell && this.actor && (typeof this.actor.castSpell === "function")) {
           return this.actor.castSpell(this.id, rest);
         }
-        if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) return this.#useTalent(actor);
+        if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) return this.#useWithRules(actor);
         return this.toMessage({ actor });
       default:
         return this.toMessage({ actor });
@@ -141,14 +144,14 @@ export class SwItem extends Item {
   /* -------------------------------------------- */
 
   /**
-   * Use a Talent that carries a cost (0.15.0, ruling 176). The kinds' `use` hook answers first
-   * (module/rules/engine.mjs, `ruleUses`): a refusal (Oathbound with no target) is a notice and
-   * nothing is paid; otherwise the cost in the Talent's name is paid in an encounter (the Reaction
-   * half's own when it has one), the writes land on the owner, and the Talent's card goes out with
-   * the kinds' lines under it. A Talent with no `use` rules still pays and posts: Quick Tongue's
-   * row Use pays its ❶↺ by hand when the table wants that.
+   * Use a Talent or a Maneuver that carries a cost or a rule that acts on use (0.15.0, ruling 176;
+   * a Maneuver since 0.16.0). The kinds' `use` hook answers first (module/rules/engine.mjs,
+   * `ruleUses`): a refusal (Oathbound with no target) is a notice and nothing is paid; otherwise
+   * the cost in the Item's name is paid in an encounter (the Reaction half's own when it has one),
+   * the writes land on the owner, and the Item's card goes out with the kinds' lines under it. An
+   * Item with no `use` rules still pays and posts.
    */
-  async #useTalent(actor) {
+  async #useWithRules(actor) {
     const { ruleUses } = await import("../rules/engine.mjs");
     const { encounterContext } = await import("../rules/scene.mjs");
     const targetToken = SwCheck.currentTarget();
@@ -466,6 +469,72 @@ export class SwItem extends Item {
     const [created] = await actor.createEmbeddedDocuments("Item", [data], { swAuto: settled });
     ui.notifications.info(game.i18n.format("STARWROUGHT.Chargen.freeTalentGranted", { name: doc.name }));
     return created ?? null;
+  }
+
+  /**
+   * TALENT MANEUVERS (0.16.0; the plan's Part 3; Mike: the Talent "only adding the Maneuver", the
+   * Maneuver's own row in maneuvers.xlsx carrying its Cost and Automation). A Talent whose rules
+   * carry `[MANEUVER <Name>]` puts the Maneuver on the character as an owned action Item copied
+   * from the Actions pack, flagged `grantedBy` with the Talent's id, `basic` off, so it shows under
+   * "From your Talents" on the Actions tab, is used from there, and its rules are indexed on the
+   * actor as any owned Item's are (`collectRules` walks owned Items; a compendium Maneuver is
+   * never indexed). One already owned, by any route, is left alone. Called when a Talent lands
+   * (the createItem hook, the wizard's #addTalent) and by `grantMissingManeuvers` at ready for
+   * Talents that gained the rule through Sync content, which fires no createItem.
+   * @param {Actor} actor
+   * @param {Item} talent
+   * @returns {Promise<Item[]>}  The actions created.
+   */
+  static async grantManeuvers(actor, talent) {
+    if (!actor || !talent || (talent.type !== "talent")) return [];
+    const wanted = (talent.system.rules ?? []).filter(r => (r?.kind === "maneuver") && !r.error && r.slug);
+    if (!wanted.length) return [];
+    const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
+    if (!pack) return [];
+    const index = await pack.getIndex({ fields: ["system.category"] });
+    const slugOf = name => SW.slugify(SW.plainName(name ?? ""));
+    const owned = new Set(actor.items.filter(i => i.type === "action").map(i => slugOf(i.name)));
+    const data = [];
+    for (const rule of wanted) {
+      if (owned.has(rule.slug)) continue;
+      const entry = index.find(e => slugOf(e.name) === rule.slug) ?? null;
+      if (!entry) {
+        ui.notifications.warn(game.i18n.format("STARWROUGHT.Chargen.maneuverMissing", { name: rule.name ?? rule.slug, talent: SW.plainName(talent.name) }));
+        continue;
+      }
+      const doc = await pack.getDocument(entry._id);
+      const object = doc.toObject();
+      object.system.basic = false;
+      foundry.utils.setProperty(object, `flags.${SW.SYSTEM_ID}.grantedBy`, talent.id);
+      data.push(object);
+      owned.add(rule.slug);
+    }
+    if (!data.length) return [];
+    return actor.createEmbeddedDocuments("Item", data, { swAuto: true });
+  }
+
+  /** The Maneuvers a deleted Talent granted go with it (0.16.0). */
+  static async removeGrantedManeuvers(actor, talentId) {
+    if (!actor || !talentId) return;
+    const ids = actor.items.filter(i => (i.type === "action") && (i.getFlag(SW.SYSTEM_ID, "grantedBy") === talentId)).map(i => i.id);
+    if (ids.length) await actor.deleteEmbeddedDocuments("Item", ids, { swAuto: true });
+  }
+
+  /**
+   * Every character's Talents that name a Maneuver not yet on the character: granted now. Run on
+   * the GM's client at ready (0.16.0), since Sync content refreshes a Talent's rules without a
+   * createItem, and a world built before 0.16.0 has the Talents and none of their Maneuvers.
+   */
+  static async grantMissingManeuvers() {
+    let granted = 0;
+    for (const actor of game.actors.filter(a => a.type === "character")) {
+      for (const talent of actor.items.filter(i => i.type === "talent")) {
+        const made = await this.grantManeuvers(actor, talent);
+        granted += made.length;
+      }
+    }
+    if (granted) console.log(`STARWROUGHT | ${granted} Talent Maneuver(s) granted to characters whose Talents name them`);
+    return granted;
   }
 
   /**

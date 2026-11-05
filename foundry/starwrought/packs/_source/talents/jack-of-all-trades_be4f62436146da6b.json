@@ -25,14 +25,15 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Situation, Checks, IF(Rank=Untrained)",
+    "automation": "CHECK: 1 situation; IF: RANK(roll = untrained)",
     "rules": [
       {
         "value": 1,
@@ -58,7 +59,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "bonus: +1, Situation, Checks, IF(Rank=Untrained)"
+        "text": "CHECK: 1 situation; IF: RANK(roll = untrained)"
       }
     ],
     "traits": [],
@@ -71,7 +72,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "83376250238298db"
+      "contentHash": "ad11c769611c0516"
     }
   },
   "effects": [],

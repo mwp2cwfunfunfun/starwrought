@@ -27,7 +27,7 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, summarizeOperators } from "../operators.mjs";
+import { readLine, rankMeets, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { slugify, plainName, isLoreSlug } from "../../config.mjs";
 
 const SHAPE = "reroll: <Target> [, IF(Outcome=<Degree>)]";
@@ -56,6 +56,16 @@ export default {
   aliases: [],
 
   parse(args, context = {}) {
+    if (context?.form === "feature") throw new RuleSyntaxError("a reroll is an effect line, not a bracketed feature: `REROLL: diplomacy; IF: RESULT(critical failure)`");
+    // `REROLL: diplomacy; IF: RESULT(critical failure)` (0.16.0), or the 0.13.0 `reroll: Diplomacy,
+    // IF(Outcome=Critical Failure)`; with no descriptor, any check.
+    if (context?.form === "effect") {
+      const e = context.effect;
+      if (e.descriptors.length > 1) throw new RuleSyntaxError(`REROLL takes one descriptor, a Constellation, or none for any check (${e.descriptors.length} given)`);
+      refuseComponents(e.ops, "REROLL", ["when"]);
+      const to = e.descriptors.length ? readTarget(e.descriptors[0], context?.resolve) : { name: "Checks", slug: "checks", type: "scope" };
+      return { to, when: e.ops.when };
+    }
     const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "reroll", context });
     if (parts.length !== 1) throw new RuleSyntaxError(`a reroll is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} argument${parts.length === 1 ? "" : "s"} given, 1 wanted)`);
     const to = readTarget(parts[0], context?.resolve);

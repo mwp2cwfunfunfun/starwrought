@@ -101,7 +101,8 @@ const VIGOR_BASE = 10;
 
 /** The grant DSL in the spreadsheets, mapped onto the slot scopes the rules module understands. */
 const GRANT_SCOPES = {
-  Skill: { scope: "category", category: "skill" },
+  // A Skill point may buy a Lore (the slot engine's "skill" case; 0.16.0, the plan's Part 4).
+  Skill: { scope: "skill" },
   Lore: { scope: "lore" },
   Calling: { scope: "category", category: "calling" },
   "Combat Style": { scope: "category", category: "combatStyle" },
@@ -289,6 +290,14 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       if (freeId) ids.push(freeId);
     }
 
+    // TALENT MANEUVERS (0.16.0): a `[MANEUVER X]` rule puts the Maneuver on the character, recorded
+    // with the Talent so Back removes both.
+    if (created[0]) {
+      const { SwItem } = await import("../documents/item.mjs");
+      const maneuvers = await SwItem.grantManeuvers(this.actor, created[0]);
+      ids.push(...maneuvers.map(m => m.id));
+    }
+
     await this.#record({ items: ids });
     return created[0]?.id ?? null;
   }
@@ -443,7 +452,14 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       const grant = item.system.grant;
       if (!grant?.n) continue;
       if (this.#stepOfItem(item.id) !== step) continue;
-      slots.push(grantSlot(item, grant));
+      const slot = grantSlot(item, grant);
+      // A Calling's free Training is authored once, on its Root (`[Athletics trained]`, 0.16.0),
+      // and the build writes the Calling chassis's `grants` from that same block, so the Root
+      // Talent's directed point and the step's own slot for it are one point. The step's slot
+      // stands (its hint is the Calling's) and the Talent's duplicate is skipped.
+      const directed = (slot.scope === "constellation") && (slot.slugs?.length === 1) && (slot.n === 1);
+      if (directed && slots.some(s => (s.scope === "constellation") && (s.n === 1) && (s.slugs?.length === 1) && (s.slugs[0] === slot.slugs[0]))) continue;
+      slots.push(slot);
     }
 
     return slots;
@@ -1561,6 +1577,14 @@ function grantSlot(item, grant) {
   if (grant.mode === "open") {
     slot.scope = "open";
     if (grant.scope === "non-Skill") slot.exclude = "skill";
+  }
+  // A Trained Root (0.16.0, `[Acrobatics trained]`): the point is directed at one Constellation,
+  // the shape the Background slots have always had, which auto-buys the Root when it is unopened.
+  if (grant.constellation) {
+    slot.scope = "constellation";
+    slot.slugs = [grant.constellation];
+    slot.label = game.i18n.format("STARWROUGHT.Chargen.trainedInFrom", { name: item.name, constellation: SW.getConstellation(grant.constellation)?.name ?? grant.constellation });
+    if (grant.constellation === "lore") { slot.scope = "lore"; delete slot.slugs; }
   }
   return slot;
 }

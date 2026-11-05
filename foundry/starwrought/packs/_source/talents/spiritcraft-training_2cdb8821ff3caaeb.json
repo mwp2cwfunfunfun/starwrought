@@ -23,7 +23,8 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
@@ -60,7 +61,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ab318aec2cb4f3e3"
+      "contentHash": "47a185cb0f642a95"
     }
   },
   "effects": [],

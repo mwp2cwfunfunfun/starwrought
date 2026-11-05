@@ -23,6 +23,9 @@ import { claimsOf, armClaim } from "../rules/claims.mjs";
 import { needsMoment } from "../rules/operators.mjs";
 import { summarize } from "../rules/grammar.mjs";
 import { usableByRule } from "../rules/engine.mjs";
+// CHARACTER EFFECTS (0.16.0): the Overview's Effects panel, its state switch and its custom rows.
+import { effectsContext } from "../helpers/effects.mjs";
+import { cycleRuleState, addEffect, removeEffect } from "../rules/effects-state.mjs";
 
 /**
  * The `bonus` rules on a character that touch a Defense but need the moment to be read (0.15.0):
@@ -120,7 +123,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // AURAS (0.5.1)
       toggleAura: SwCharacterSheet.#onToggleAura,
       // CLAIMS (0.15.0)
-      armClaim: SwCharacterSheet.#onArmClaim
+      armClaim: SwCharacterSheet.#onArmClaim,
+      // CHARACTER EFFECTS (0.16.0)
+      cycleEffectState: SwCharacterSheet.#onCycleEffectState,
+      addEffect: SwCharacterSheet.#onAddEffect,
+      removeEffect: SwCharacterSheet.#onRemoveEffect
     }
   };
 
@@ -200,6 +207,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     // Wind (PHB v4.12, ruling 74): the Load Strain field says whether this fighter is exempt, with
     // the numbers, to the GM and the player alike.
     context.loadStrainTip = windTip(actor);
+    context.effectsPanel = effectsContext(actor); // CHARACTER EFFECTS (0.16.0)
 
     context.zones = Object.keys(SW.ZONES).map(key => {
       const z = sys.zones[key];
@@ -228,8 +236,14 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.showUnopened = SwCharacterSheet.showUnopened();
     context.inventory = this.#prepareInventory();
     context.strikes = this.#prepareStrikes();
-    context.actionItems = actor.items.filter(i => i.type === "action")
-      .sort((a, b) => a.name.localeCompare(b.name));
+    // TALENT MANEUVERS (0.16.0): the Maneuvers a Talent granted (`flags.starwrought.grantedBy`)
+    // sit under their own heading, named for the Talent; the rest are the character's own.
+    const actions = actor.items.filter(i => i.type === "action").sort((a, b) => a.name.localeCompare(b.name));
+    const grantedBy = item => item.getFlag(SW.SYSTEM_ID, "grantedBy");
+    context.actionItems = actions.filter(i => !grantedBy(i));
+    context.talentActions = actions.filter(i => grantedBy(i)).map(i => ({
+      item: i, talentName: SW.plainName(actor.items.get(grantedBy(i))?.name ?? "")
+    }));
     context.basicActions = await this.#prepareBasicActions();
     context.effects = actor.effects.map(e => ({
       id: e.id, name: e.name, img: e.img, disabled: e.disabled,
@@ -993,6 +1007,29 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const item = this.#getItem(target);
     if (!item) return null;
     return armClaim(this.document, item.id);
+  }
+
+  /* -------------------------------------------- */
+  /*  Character Effects (0.16.0)                  */
+  /* -------------------------------------------- */
+
+  /** The state switch on an effect line: On to Skip to Off to On (module/rules/effects-state.mjs). */
+  static async #onCycleEffectState(event, target) {
+    const key = target.dataset.key;
+    if (!key) return null;
+    return cycleRuleState(this.document, key);
+  }
+
+  /** A new custom effect row, blank, for the owner to fill in. */
+  static async #onAddEffect() {
+    return addEffect(this.document);
+  }
+
+  /** Remove the custom effect of the row the control sits in. */
+  static async #onRemoveEffect(event, target) {
+    const id = target.closest("[data-effect-id]")?.dataset.effectId;
+    if (!id) return false;
+    return removeEffect(this.document, id);
   }
 
   /** The Cast Maneuver on a spell Talent's row (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed. */

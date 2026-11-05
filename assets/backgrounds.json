@@ -5,6 +5,7 @@
   "enabled": true,
   "desc": "<i>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</i>",
   "effect": "You become Trained in <i>Athletics</i> and in <i>Acrobatics</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
+  "automation": "[Acrobatics trained][Athletics trained][Lore trained]",
   "grants": [
    {
     "options": [
@@ -18,6 +19,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Acrobatics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -26,6 +65,7 @@
   "enabled": true,
   "desc": "<i>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</i>",
   "effect": "You become Trained in <i>Athletics</i> and in <i>Intimidation</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
+  "automation": "[Athletics trained][Intimidation trained][Lore trained]",
   "grants": [
    {
     "options": [
@@ -39,6 +79,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Intimidation trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -47,6 +125,7 @@
   "enabled": true,
   "desc": "<i>You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to.</i>",
   "effect": "You become Trained in <i>Guile</i> and in <i>Stealth</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
+  "automation": "[Guile trained][Stealth trained][Lore trained]",
   "grants": [
    {
     "options": [
@@ -59,6 +138,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  }

@@ -40,7 +40,9 @@ export class SwTalentData extends SwItemData {
       grant: new fields.SchemaField({
         n: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
         mode: new fields.StringField({ initial: "" }),
-        scope: new fields.StringField({ initial: "" })
+        scope: new fields.StringField({ initial: "" }),
+        /** The Constellation a Trained Root is directed at (0.16.0, `[Acrobatics trained]`); "" for a point by scope. */
+        constellation: new fields.StringField({ initial: "" })
       }),
       /**
        * A build-time pick the Talent's effect demands, and what the player picked. Weapon
@@ -125,6 +127,13 @@ export class SwTalentData extends SwItemData {
     applyAuraRule(this);
     const grantRule = (this.rules ?? []).find(r => (r?.kind === "grant") && !r.error);
     if (grantRule) this.grant = toGrantField(grantRule);
+    // The feature lines (0.16.0): `[CHOICE Weapon Group]` and `[TALENT Weapon Familiarity]` are the
+    // Choice and Free Talent columns' successors, so the fields read from the rules when blank.
+    const choiceRule = (this.rules ?? []).find(r => (r?.kind === "choice") && !r.error && r.prompt);
+    if (choiceRule && !this.choice.prompt) this.choice.prompt = String(choiceRule.prompt);
+    const talentRule = (this.rules ?? []).find(r => (r?.kind === "talent") && !r.error && r.name);
+    if (talentRule && !this.freeTalent) this.freeTalent = String(talentRule.name);
+    this.needsChoice = !!this.choice.prompt && !this.choice.value;
     prepareAura(this);
     prepareRules(this);
     prepareSpell(this);

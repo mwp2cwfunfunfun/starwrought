@@ -6,7 +6,11 @@
   "system": {
     "kind": "background",
     "attribute": "wits",
-    "grants": [],
+    "grants": [
+      "Athletics",
+      "Intimidation",
+      "Lore"
+    ],
     "specialAbility": "<p>You become Trained in <i>Athletics</i> and in <i>Intimidation</i>, and you become Trained in a relevant <i>Lore</i> of your choice.</p>",
     "description": "<p><i>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</i></p>",
     "traits": [
@@ -21,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "fc191cba26bede0b"
+      "contentHash": "2d9ccd16e8396298"
     }
   },
   "effects": [],

@@ -17,7 +17,8 @@
  * Exit 1 on any failing step, or on unresolved handbook drift.
  *
  * --content (Mike, 2026-10-03; rulings 115 to 117) is its own mode and takes no other flag. It runs
- * xlsx_to_trees, inject, render_constellations --changed (only the plates whose Constellation moved
+ * xlsx_to_trees, parse_rules (0.16.0: every Automation cell parsed once, for every consumer),
+ * inject, render_constellations --changed (only the plates whose Constellation moved
  * or is new), test_rules (the automation grammar's self-test, 0.9.0), build_foundry --no-compile
  * (the pack sources and packs/_source/index.json, never the LevelDB compendia, which a running
  * Foundry holds open) and check_style; it skips the sheets, the
@@ -198,6 +199,12 @@ const PY = checkOnly ? null : resolvePython();
  */
 const STEPS = [
   { name: "xlsx_to_trees", py: true, args: ["assets/xlsx_to_trees.py"] },
+  // The one parse of every Automation cell (0.16.0): the system's grammar over the converter's
+  // JSON, `rules` written beside each cell, the chassis facts the Roots' feature lines state
+  // written onto the roster's records, and the @Maneuver[Name] markers expanded, before anything
+  // downstream reads the files. A line the grammar does not know stops the pipeline here, naming
+  // the cell, as build_foundry did through 0.15.0; a 0.13.0-form cell is a warning for one release.
+  { name: "parse_rules", cmd: "node", args: ["assets/parse_rules.mjs"] },
   { name: "inject", py: true, args: ["assets/inject.py"] },
   { name: "render_constellations", py: true, args: ["assets/render_constellations.py"], slow: true,
     content: ["assets/render_constellations.py", "--changed"] },
@@ -512,9 +519,23 @@ async function grammarDocCheck() {
     for (const kind of knownKinds()) {
       if (!doc.includes(`### \`${kind}\``)) problems.push(`AUTOMATION_GRAMMAR.md has no section for the "${kind}" kind (a heading \`### \\\`${kind}\\\`\` under 3. The kinds).`);
     }
+    // 0.16.0: the tags, components and conditions of an effect line and the keywords of a feature
+    // line must each head a row of a table (`| \`WORD`); the 0.13.0 operators keep their rows in
+    // the legacy map (section 9) while the form still reads.
+    const effects = await import(pathToFileURL(path.join(SYSTEM, "module", "rules", "effects.mjs")).href);
+    const features = await import(pathToFileURL(path.join(SYSTEM, "module", "rules", "features.mjs")).href);
+    const rows = [
+      ...Object.keys(effects.EFFECT_TAGS).map(t => [t.toUpperCase(), "effect tag", "3. Effect lines"]),
+      ...effects.COMPONENTS.map(c => [c, "component", "3. Effect lines"]),
+      ...effects.CONDITIONS.map(c => [c, "condition", "3. Effect lines"]),
+      ...features.FEATURE_KEYWORD_LIST.map(k => [k, "feature keyword", "2. Feature lines"]),
+    ];
+    for (const [word, what, section] of rows) {
+      if (!new RegExp(`\\| \`(\\[)?${word}\\b`).test(doc)) problems.push(`AUTOMATION_GRAMMAR.md does not list the ${word} ${what} in its table (${section}).`);
+    }
     const { OPERATORS } = await import(pathToFileURL(path.join(SYSTEM, "module", "rules", "operators.mjs")).href);
     for (const op of OPERATORS) {
-      if (!new RegExp(`\\| \`${op}\\b`).test(doc)) problems.push(`AUTOMATION_GRAMMAR.md does not list the ${op} operator in its operators table (section 4).`);
+      if (!new RegExp(`\\| \`${op}\\b`).test(doc)) problems.push(`AUTOMATION_GRAMMAR.md does not list the ${op} operator in its legacy table (section 9).`);
     }
   } catch (error) {
     problems.push(`the rules modules do not import in plain Node: ${error.message}`);

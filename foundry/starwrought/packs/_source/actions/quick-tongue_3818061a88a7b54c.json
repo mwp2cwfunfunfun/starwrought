@@ -1,0 +1,56 @@
+{
+  "_id": "3818061a88a7b54c",
+  "name": "Quick Tongue",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Talent Maneuvers",
+    "basic": false,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.",
+    "trigger": "You critically fail a Diplomacy check.",
+    "description": "<p>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</p>",
+    "effect": "<p>Reroll the triggering Diplomacy check, using the second result.</p>",
+    "automation": "REROLL: diplomacy; IF: RESULT(critical failure)",
+    "rules": [
+      {
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": [
+          {
+            "outcome": "critFail",
+            "name": "Critical Failure"
+          }
+        ],
+        "kind": "reroll",
+        "line": 1,
+        "text": "REROLL: diplomacy; IF: RESULT(critical failure)"
+      }
+    ],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "678f65cc481b1fe1",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "837352547043a541"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3818061a88a7b54c"
+}

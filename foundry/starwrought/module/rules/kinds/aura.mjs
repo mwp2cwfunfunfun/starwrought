@@ -49,6 +49,21 @@ export default {
   aliases: [],
 
   parse(args, context = {}) {
+    // The 0.16.0 shape: a feature block, `[AURA 15 allies visible]`.
+    if (context?.form === "feature") {
+      const tokens = String(args ?? "").trim().split(/[\s,]+/).filter(Boolean);
+      const visible = tokens.length && ["visible", "pinned"].includes(tokens.at(-1).toLowerCase());
+      if (visible) tokens.pop();
+      // `15 ft allies` reads as well as `15ft allies`.
+      if ((tokens.length === 3) && /^(ft\.?|feet)$/i.test(tokens[1])) tokens.splice(1, 1);
+      if (tokens.length !== 2) throw new RuleSyntaxError("AURA is written `[AURA <N> <who> [visible]]`, as in `[AURA 15 allies visible]`");
+      const range = readRange(tokens[0]);
+      if (range < 1) throw new RuleSyntaxError("a ring needs a range of 1 ft or more; adjacency is the reach band, not an aura");
+      const who = tokens[1].toLowerCase();
+      if (!WHO.includes(who)) throw new RuleSyntaxError(`a ring is about allies, enemies or all, not "${tokens[1]}"`);
+      return { range, affects: who, visible: !!visible };
+    }
+    if (context?.form === "effect") throw new RuleSyntaxError("an aura is a bracketed feature: `[AURA 15 allies visible]`");
     const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "aura", context });
     if (parts.length !== 2) {
       throw new RuleSyntaxError(`an aura is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} argument${parts.length === 1 ? "" : "s"} given, 2 wanted)`);

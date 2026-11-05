@@ -19,6 +19,8 @@
 
 import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
+// CHARACTER EFFECTS (0.16.0): the two marks the state switch and a one-roll custom effect ask for.
+import { markUpdates } from "./effects-state.mjs";
 
 /** Is this token one the rules count? */
 function eligible(token) {
@@ -132,12 +134,38 @@ export function threatContext(maneuver) {
  * `flags.starwrought.rules.encounter[<key>] = { combat }`. Written by the client that resolved the
  * roll, when it may write the actor (the owner, or the GM); nothing else is written, and a table
  * with no such client sees the rule apply again, noted in AUTOMATION_GRAMMAR.md.
+ *
+ * Since 0.16.0 two more kinds of mark (module/rules/engine.mjs, the dispatchers; the writes in
+ * module/rules/effects-state.mjs, `markUpdates`): `per: "state"` clears a Skip line's state
+ * (`flags.starwrought.rules.state.<key>` deleted, so the line is On again), and `per: "effect"`
+ * spends a one-roll custom effect (its row removed from `system.effects`). A mark may name another
+ * actor as `owner` (a Skip on another token's FOR rule, which is that owner's state): it is
+ * written there when this client may write that actor, else dropped.
  * @param {Actor} actor
- * @param {Array<{key: string, per: string}>} marks
+ * @param {Array<{key: string, per: string, owner?: string}>} marks
  * @param {{combat: string|null, round: number}} [encounter]
  */
 export async function writeRuleMarks(actor, marks, encounter = encounterContext()) {
   if (!actor || !Array.isArray(marks) || !marks.length) return;
+  const own = marks.filter(m => !m?.owner || (m.owner === actor.uuid));
+  const others = marks.filter(m => m?.owner && (m.owner !== actor.uuid));
+  await writeMarksOn(actor, own, encounter);
+  // Another owner's state marks, grouped by owner (0.16.0).
+  const byOwner = new Map();
+  for (const mark of others) (byOwner.get(mark.owner) ?? byOwner.set(mark.owner, []).get(mark.owner)).push(mark);
+  for (const [uuid, list] of byOwner) {
+    let target = null;
+    try {
+      const doc = globalThis.fromUuidSync?.(uuid) ?? null;
+      target = doc?.documentName === "Token" ? doc.actor : doc;
+    } catch { target = null; }
+    if (target) await writeMarksOn(target, list, encounter);
+  }
+}
+
+/** The marks for one actor, written in one update when this client may write it. */
+async function writeMarksOn(actor, marks, encounter) {
+  if (!actor || !marks.length) return;
   if (!(actor.isOwner || globalThis.game?.user?.isGM)) return;
   const update = {};
   for (const { key, per } of marks) {
@@ -149,10 +177,13 @@ export async function writeRuleMarks(actor, marks, encounter = encounterContext(
       if (actor.flags?.starwrought?.rules?.armed?.[safe] !== undefined) update[`flags.starwrought.rules.armed.-=${safe}`] = null;
       continue;
     }
+    // A Skip spent or a one-roll effect used (0.16.0): effects-state.mjs knows the two writes.
+    if ((per === "state") || (per === "effect")) continue;
     if (!["round", "encounter"].includes(per) || !encounter?.combat) continue;
     update[`flags.starwrought.rules.${per}.${safe}`] = per === "round"
       ? { combat: encounter.combat, round: encounter.round ?? 0 }
       : { combat: encounter.combat };
   }
+  Object.assign(update, markUpdates(actor, marks));
   if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
 }

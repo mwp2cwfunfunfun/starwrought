@@ -25,14 +25,15 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "prevent: Prone, ONCE(encounter)",
+    "automation": "IMMUNE: prone; LIMIT: encounter",
     "rules": [
       {
         "effect": "prone",
@@ -47,7 +48,7 @@
         "marked": false,
         "kind": "prevent",
         "line": 1,
-        "text": "prevent: Prone, ONCE(encounter)"
+        "text": "IMMUNE: prone; LIMIT: encounter"
       }
     ],
     "traits": [],
@@ -60,7 +61,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d6e774db7823db86"
+      "contentHash": "b90c616b1625233a"
     }
   },
   "effects": [],

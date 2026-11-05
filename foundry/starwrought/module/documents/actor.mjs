@@ -35,6 +35,8 @@ import { BindMixin } from "./actor/bind.mjs";
 import { FlaresMixin } from "./actor/flares.mjs";
 import { RestMixin } from "./actor/rest.mjs";
 import { CastMixin } from "./actor/cast.mjs";
+// CHARACTER EFFECTS (0.16.0): a custom effect's text is parsed on write, as a Talent's cell is.
+import { prepareEffectsUpdate } from "../rules/effects-state.mjs";
 
 /**
  * The sections, in the order they are layered over Foundry's Actor. The order carries no meaning
@@ -158,5 +160,9 @@ export class SwActor extends Composed {
       foundry.utils.setProperty(changes, "prototypeToken.width", space);
       foundry.utils.setProperty(changes, "prototypeToken.height", space);
     }
+    // CHARACTER EFFECTS (0.16.0): every custom effect row's `rules` is rewritten from its `text`
+    // whenever the rows are written, the way SwItem#_preUpdate parses an Automation textarea;
+    // the text always saves and an unparsed line is an error entry the sheet shows (ruling 118).
+    if (this.type === "character") prepareEffectsUpdate(this, changes);
   }
 }

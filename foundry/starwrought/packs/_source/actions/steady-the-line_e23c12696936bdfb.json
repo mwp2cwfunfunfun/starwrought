@@ -1,0 +1,56 @@
+{
+  "_id": "e23c12696936bdfb",
+  "name": "Steady the Line",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Talent Maneuvers",
+    "basic": false,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "An adjacent ally's Strike is Stopped and would Expose them.",
+    "description": "<p>You take the blow's momentum on your own guard, and your ally keeps their footing.</p>",
+    "effect": "<p>It Exposes nothing.</p>",
+    "automation": "IMMUNE: expose; FOR: allies 0",
+    "rules": [
+      {
+        "effect": "expose",
+        "when": null,
+        "for": {
+          "who": "allies",
+          "range": 0
+        },
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "marked": false,
+        "kind": "prevent",
+        "line": 1,
+        "text": "IMMUNE: expose; FOR: allies 0"
+      }
+    ],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "678f65cc481b1fe1",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d14c1d4161a13abd"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e23c12696936bdfb"
+}

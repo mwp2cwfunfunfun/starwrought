@@ -350,6 +350,18 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
    */
   _prepareRules() {
     this.rules = collectRules(this.parent);
+    // The feature lines any owned Talent carries (0.16.0): a Speed adjustment, traits, languages
+    // and senses added to the chassis's. The chassis's own facts travel through the chassis Item
+    // and the wizard's writes as before; these are the Talents' additions, read live.
+    const byKind = this.rules?.byKind ?? {};
+    const texts = kind => (byKind[kind] ?? []).map(e => e.rule).filter(Boolean);
+    const uniq = list => [...new Set(list.map(s => String(s ?? "").trim()).filter(Boolean))];
+    this.features = {
+      speed: texts("speed").filter(r => r.mode === "add").reduce((n, r) => n + (Number(r.feet) || 0), 0),
+      traits: uniq(texts("trait").map(r => r.name)),
+      languages: uniq(texts("language").flatMap(r => r.languages ?? [])),
+      senses: uniq(texts("sense").map(r => r.name))
+    };
   }
 
   /* -------------------------------------------- */
@@ -544,6 +556,27 @@ export class SwCharacterData extends SwActorData {
 
       /** Which Constellations are currently Flared, keyed by slug. A flag, not a counter. */
       flares: new fields.ObjectField({ initial: {} }),
+
+      /**
+       * CHARACTER EFFECTS (0.16.0): the custom effects a player or the GM types in the grammar,
+       * in the spirit of Fantasy Grounds' Character Effects field (Mike's ask). Each row is a
+       * label, the effect line or lines (`text`, one rule per line, as an Automation cell), how
+       * long it lasts (`always` until removed, `roll` spent by the next roll it touches, `encounter`
+       * gone with the Combat) and `rules`, the parse of `text`, rewritten on every write by
+       * `prepareEffectsUpdate` (module/rules/effects-state.mjs, from SwActor#_preUpdate) as a
+       * Talent's `system.rules` is by SwItem#_preUpdate, with a line that does not parse stored as
+       * an error entry and shown in red, never refused (ruling 118). `collectRules` indexes each row
+       * as a pseudo-Item (`effectCarrier` in module/rules/engine.mjs), so every kind and hook point
+       * reads it as a Talent's line. `initial` as a function on both ArrayFields, never a literal
+       * array (the identity trap noted in data/items/rules.mjs). New with defaults, so no migration.
+       */
+      effects: new fields.ArrayField(new fields.SchemaField({
+        id: new fields.StringField({ required: true, blank: false, initial: () => foundry.utils.randomID() }),
+        label: new fields.StringField({ initial: "" }),
+        text: new fields.StringField({ initial: "" }),
+        duration: new fields.StringField({ required: true, choices: ["always", "roll", "encounter"], initial: "always" }),
+        rules: new fields.ArrayField(new fields.ObjectField(), { initial: () => [] })
+      }), { initial: () => [] }),
 
       /** Manual adjustments, for anything the system cannot see for itself. All untyped. */
       bonuses: new fields.SchemaField({

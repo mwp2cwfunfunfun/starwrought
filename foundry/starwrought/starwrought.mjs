@@ -32,6 +32,7 @@ import { onPartySocket } from "./module/documents/party-socket.mjs";
 // THE ROAD (0.7.2 and 0.7.3): the Activities cache, and the one hook that remembers a member's
 // Activity roll on their character (ruling 108).
 import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
+import { registerEffectsHooks } from "./module/rules/effects-state.mjs";
 import { registerMovementTracking } from "./module/documents/movement.mjs";
 import { registerTrackerReadout } from "./module/apps/combat-tracker.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
@@ -221,11 +222,17 @@ Hooks.once("ready", async () => {
     // Not stamped, so it runs again next load; the rest of ready still happens.
     console.error("STARWROUGHT | world migration failed", err);
   }
+  // TALENT MANEUVERS (0.16.0): a Talent whose rules name a Maneuver the character does not own yet
+  // (a Sync content refresh fires no createItem; a world built before 0.16.0) is granted now.
+  if (game.user.isGM) {
+    SwItem.grantMissingManeuvers().catch(err => console.error("STARWROUGHT | Talent Maneuvers could not be granted", err));
+  }
   await checkContent();
   Hooks.on('canvasReady', checkSceneGrid);
   checkSceneGrid();
   checkForStaleAssets();
   Hooks.on("createItem", onCreateItem);
+  Hooks.on("deleteItem", onDeleteItem);
 
   // The attack flow's channel (system.json declares `"socket": true`). Every mutation of a
   // declared Blow is a request to its coordinator (the active GM, else the attacker's user) and
@@ -272,6 +279,7 @@ Hooks.once("ready", async () => {
   // offered to the party helpers, which keep the one that is the roller's Activity's roll on the
   // roller's own character. Registered here, once, beside the cache it reads.
   registerRoadHooks();
+  registerEffectsHooks();   // CHARACTER EFFECTS (0.16.0): an encounter-long custom effect ends with its Combat.
 
   // THE CONTENT LOOP (0.8.0): with the migration done and everything above in place, offer the GM
   // a Sync when the sources on disk are newer than what this world last synced. Not awaited: the
@@ -828,6 +836,17 @@ async function onCreateItem(item, options, userId) {
       inherit: item.system.choice?.value
     });
   }
+
+  // TALENT MANEUVERS (0.16.0): a Talent whose rules say `[MANEUVER X]` puts that Maneuver on the
+  // character, from the Actions pack, flagged with the Talent that granted it.
+  await SwItem.grantManeuvers(item.parent, item);
+}
+
+/** A deleted Talent takes the Maneuvers it granted with it (0.16.0). */
+async function onDeleteItem(item, options, userId) {
+  if (game.user.id !== userId) return;
+  if ((item.type !== "talent") || !item.parent) return;
+  await SwItem.removeGrantedManeuvers(item.parent, item.id);
 }
 
 /* -------------------------------------------- */

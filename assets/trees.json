@@ -65,9 +65,64 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
-    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)",
+    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\nCHECK: 1 condition, aid; IF: RANK(Origin >= trained)",
     "desc": "<i>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</i>",
-    "root": true
+    "root": true,
+    "rules": [
+     {
+      "name": "Human",
+      "kind": "trait",
+      "line": 1,
+      "text": "[TRAIT Human]"
+     },
+     {
+      "size": "medium",
+      "kind": "size",
+      "line": 1,
+      "text": "[SIZE Medium]"
+     },
+     {
+      "feet": 6,
+      "mode": "set",
+      "kind": "speed",
+      "line": 1,
+      "text": "[SPEED 6]"
+     },
+     {
+      "value": 8,
+      "scope": "level",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR 8]"
+     },
+     {
+      "value": 1,
+      "type": "condition",
+      "to": {
+       "name": "Aid",
+       "slug": "aid",
+       "type": "action"
+      },
+      "when": [
+       {
+        "constellation": "origin",
+        "name": "Origin",
+        "op": ">=",
+        "rank": "trained"
+       }
+      ],
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": null,
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)"
+     }
+    ]
    },
    {
     "name": "Driven",
@@ -75,10 +130,21 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a Calling Talent Point.",
-    "automation": "grant: 1, Calling",
+    "automation": "[POINT Calling]",
     "desc": "<i>Once you find your purpose, you pursue it with a determination that rarely lets you rest.</i>",
     "requires": [
      "Humanity"
+    ],
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Calling",
+      "different": false,
+      "when": null,
+      "kind": "grant",
+      "line": 1,
+      "text": "[POINT Calling]"
+     }
     ]
    },
    {
@@ -87,10 +153,21 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a Skill Talent Point.",
-    "automation": "grant: 1, Skill",
+    "automation": "[POINT Skill]",
     "desc": "<i>You have a knack for turning a little instruction into a useful new skill.</i>",
     "requires": [
      "Humanity"
+    ],
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "different": false,
+      "when": null,
+      "kind": "grant",
+      "line": 1,
+      "text": "[POINT Skill]"
+     }
     ]
    },
    {
@@ -99,10 +176,27 @@
     "cost": 1,
     "enabled": true,
     "effect": "The first time each encounter you would be knocked prone, you are not.",
-    "automation": "prevent: Prone, ONCE(encounter)",
+    "automation": "IMMUNE: prone; LIMIT: encounter",
     "desc": "<i>Even when a blow catches you off balance, sheer stubbornness keeps you on your feet.</i>",
     "requires": [
      "Humanity"
+    ],
+    "rules": [
+     {
+      "effect": "prone",
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": {
+       "per": "encounter"
+      },
+      "marked": false,
+      "kind": "prevent",
+      "line": 1,
+      "text": "IMMUNE: prone; LIMIT: encounter"
+     }
     ]
    },
    {
@@ -111,10 +205,45 @@
     "cost": 1,
     "enabled": true,
     "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against Blows.",
-    "automation": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)",
+    "automation": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)",
     "desc": "<i>Shoulder to shoulder, you and your companions instinctively cover one another’s openings.</i>",
     "requires": [
      "Humanity"
+    ],
+    "rules": [
+     {
+      "value": 1,
+      "type": "situation",
+      "to": {
+       "name": "Guard",
+       "slug": "guard",
+       "type": "constellation"
+      },
+      "when": null,
+      "for": {
+       "who": "self+allies",
+       "range": 0
+      },
+      "while": {
+       "who": "allies",
+       "op": ">=",
+       "count": 1,
+       "range": 0
+      },
+      "against": {
+       "threat": "blow",
+       "reach": null,
+       "check": null,
+       "name": null
+      },
+      "seen": false,
+      "limit": null,
+      "claim": null,
+      "marked": false,
+      "kind": "bonus",
+      "line": 1,
+      "text": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)"
+     }
     ]
    },
    {
@@ -123,21 +252,72 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
-    "automation": "aura: 15ft, allies, VISIBLE\nbonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
+    "automation": "[AURA 15 allies visible]\nDEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round",
     "desc": "<i>Others take heart from your presence, drawing courage from you and the example you set.</i>",
-    "hroot": true
+    "hroot": true,
+    "rules": [
+     {
+      "range": 15,
+      "affects": "allies",
+      "visible": true,
+      "kind": "aura",
+      "line": 1,
+      "text": "[AURA 15 allies visible]"
+     },
+     {
+      "value": 1,
+      "type": "situation",
+      "to": {
+       "name": "Defenses",
+       "slug": "defenses",
+       "type": "scope"
+      },
+      "when": [
+       {
+        "trait": "fear",
+        "name": "Fear"
+       }
+      ],
+      "for": {
+       "who": "allies",
+       "range": 15
+      },
+      "while": null,
+      "against": null,
+      "seen": true,
+      "limit": {
+       "per": "round"
+      },
+      "claim": null,
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round"
+     }
+    ]
    },
    {
     "name": "Steady the Line",
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain the <b>Steady the Line ❶↺ </b>Maneuver:<b><br>Trigger</b> An adjacent ally would become Exposed.<br><b>Effect</b> The adjacent ally does not become Exposed.",
-    "automation": "prevent: Expose, FOR(allies, 0ft)",
+    "effect": "You gain the Steady the Line Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Steady the Line ❶↺</strong></p><p><strong>Trigger</strong> An adjacent ally's Strike is Stopped and would Expose them.</p><p>It Exposes nothing.</p></div>",
+    "automation": "[MANEUVER Steady the Line]",
     "desc": "<i>You cut through the clash, steadying a companion’s defense before it can falter.</i>",
     "requires": [
      "Torchbearer Human"
-    ]
+    ],
+    "rules": [
+     {
+      "name": "Steady the Line",
+      "slug": "steady-the-line",
+      "enabled": true,
+      "kind": "maneuver",
+      "line": 1,
+      "text": "[MANEUVER Steady the Line]"
+     }
+    ],
+    "effectSource": "You gain the Steady the Line Maneuver.<br><br>@Maneuver[Steady the Line]"
    },
    {
     "name": "Versatile Human",
@@ -145,10 +325,21 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain 1 Opening Talent Point.",
-    "automation": "grant: 1, Opening",
+    "automation": "[POINT Opening]",
     "desc": "<i>Your interests lead in many directions, and you rarely let an opportunity to learn something new pass unexplored.</i>",
     "feeds": "Wits",
-    "hroot": true
+    "hroot": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Opening",
+      "different": false,
+      "when": null,
+      "kind": "grant",
+      "line": 1,
+      "text": "[POINT Opening]"
+     }
+    ]
    },
    {
     "name": "Jack of All Trades",
@@ -156,11 +347,39 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +1 Condition bonus to your Untrained checks.",
-    "automation": "bonus: +1, Situation, Checks, IF(Rank=Untrained)",
+    "automation": "CHECK: 1 situation; IF: RANK(roll = untrained)",
     "desc": "<i>You have tried your hand at enough things to find a familiar thread in almost any task.</i>",
     "feeds": "Wits",
     "requires": [
      "Versatile Human"
+    ],
+    "rules": [
+     {
+      "value": 1,
+      "type": "situation",
+      "to": {
+       "name": "Checks",
+       "slug": "checks",
+       "type": "scope"
+      },
+      "when": [
+       {
+        "roll": true,
+        "op": "=",
+        "rank": "untrained"
+       }
+      ],
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": null,
+      "marked": false,
+      "kind": "bonus",
+      "line": 1,
+      "text": "CHECK: 1 situation; IF: RANK(roll = untrained)"
+     }
     ]
    }
   ]
@@ -181,8 +400,30 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Stealth.<br><br>You gain the Sneak Attack Maneuver:<br>+1d6 precision damage vs. Off-Guard foes. Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Melee or Ranged.",
+    "automation": "[Stealth trained][VIGOR opening 8]",
     "desc": "<i>You stalk the edges of a fight, striking where attention falters and defenses leave an opening.</i>",
-    "root": true
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "stealth",
+      "constellationName": "Stealth",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Stealth trained]"
+     },
+     {
+      "value": 8,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 8]"
+     }
+    ]
    },
    {
     "name": "Surprise Attacker",
@@ -257,7 +498,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Athletics.<br><br>You gain the Rage action:<br>Rage ❶<br>Duration 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, increase your Fatigued by 1 until you spend three actions to catch your breath.<br>You may end your Rage as a free action, increasing your Fatigued by 1 as though it had run its course.<br><br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.<br><br>If this is your first Calling, you also gain 12 Vigor and Training in Melee or Ranged.",
-    "root": true
+    "automation": "[Athletics trained][VIGOR opening 12]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "athletics",
+      "constellationName": "Athletics",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Athletics trained]"
+     },
+     {
+      "value": 12,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 12]"
+     }
+    ]
    },
    {
     "name": "Sudden Charge ❷",
@@ -328,7 +591,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Acrobatics.<br><br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br><br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br><br>While you have Panache you gain a +1 Situation bonus to Evade and a +1-foot Situation bonus to your Speeds. At Expert rank, Speed bonus increases to 2 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 3 feet.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
-    "root": true
+    "automation": "[Acrobatics trained][VIGOR opening 10]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "acrobatics",
+      "constellationName": "Acrobatics",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Acrobatics trained]"
+     },
+     {
+      "value": 10,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 10]"
+     }
+    ]
    },
    {
     "name": "Finisher ❶",
@@ -408,12 +693,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Awareness.<br><br>(Concentrate) Choose one creature you can see. It is your prey until you Mark another or the encounter ends.<br><br>The first time each round that you Hit your prey, add 1d8 precision damage. You also always know roughly where your prey is while it is within 60 feet, even while it is Hidden or Undetected. The extra precision damage rises to 2d8 at Expert rank, 3d8 at Master, and 4d8 at Legendary.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
-    "aura": {
-     "range": 60,
-     "affects": "all",
-     "visible": false
-    },
-    "root": true
+    "automation": "[Awareness trained][VIGOR opening 10]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Defense",
+      "constellation": "awareness",
+      "constellationName": "Awareness",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Awareness trained]"
+     },
+     {
+      "value": 10,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 10]"
+     }
+    ]
    },
    {
     "name": "Running Mark",
@@ -483,9 +785,41 @@
     "cost": 1,
     "enabled": true,
     "effect": "You become Trained in Athletics.<br><br>You gain the Weapon Familiarity Talent for free.<br><br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br><br>You may take the Reactive Strike Talent, even if you are not Expert in Melee. However, you may still only use Reactive Strike with weapons in which you are at least Expert Proficiency Rank.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
-    "choice": "Weapon Group",
-    "freeTalent": "Weapon Familiarity",
-    "root": true
+    "automation": "[Athletics trained][CHOICE Weapon Group][TALENT Weapon Familiarity][VIGOR opening 10]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "athletics",
+      "constellationName": "Athletics",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Athletics trained]"
+     },
+     {
+      "prompt": "Weapon Group",
+      "kind": "choice",
+      "line": 1,
+      "text": "[CHOICE Weapon Group]"
+     },
+     {
+      "name": "Weapon Familiarity",
+      "kind": "talent",
+      "line": 1,
+      "text": "[TALENT Weapon Familiarity]"
+     },
+     {
+      "value": 10,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 10]"
+     }
+    ]
    },
    {
     "name": "Hold the Line",
@@ -545,7 +879,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Guile. Once per round, when declaring a Cast you know, you may add ❶ to its action cost to apply one alteration: extend the spell’s range by 5 feet; or, for an area spell, move one affected 1-foot square to an adjacent square outside the area, keeping the final affected space contiguous and the number of affected squares unchanged. Declare the alteration and any Prepared area before the first action is spent. Spell damage, Damage Dice, Threat, and Delivery do not change.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
-    "root": true
+    "automation": "[Guile trained][VIGOR opening 6]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "guile",
+      "constellationName": "Guile",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Guile trained]"
+     },
+     {
+      "value": 6,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 6]"
+     }
+    ]
    },
    {
     "name": "Selective Pattern",
@@ -605,7 +961,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Athletics. Once per round when declaring a damaging Cast from a magical parent in which you are Trained, you may lose Vigor equal to 1 + that parent’s Damage Dice. You must have enough Vigor to remain at 1 or more after paying. This loss cannot be prevented, redirected to Temporary Vigor, or reduced by Protection or Resistance. If the Cast Hits, add the same amount as bonus damage to ONE creature Hit. Pay before the roll; a Graze or Miss does not refund it. This is Vigor loss, not an Attack or a Wound.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
-    "root": true
+    "automation": "[Athletics trained][VIGOR opening 8]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "athletics",
+      "constellationName": "Athletics",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Athletics trained]"
+     },
+     {
+      "value": 8,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 8]"
+     }
+    ]
    },
    {
     "name": "Crimson Focus",
@@ -665,12 +1043,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Awareness. Once per round, when a living creature you can perceive within 15 feet takes a Wound or becomes Spent, you may capture a Death Echo (maximum one held; it fades at encounter end). Before rolling one of your own Strikes or damaging Casts, you may expend the Echo: if that Attack Hits, add +2 damage to one creature Hit. This cannot trigger from summoned manifestations or from your own voluntary Vigor loss.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
-    "aura": {
-     "range": 15,
-     "affects": "all",
-     "visible": false
-    },
-    "root": true
+    "automation": "[Awareness trained][VIGOR opening 6]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Defense",
+      "constellation": "awareness",
+      "constellationName": "Awareness",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Awareness trained]"
+     },
+     {
+      "value": 6,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 6]"
+     }
+    ]
    },
    {
     "name": "Read the Veil",
@@ -678,11 +1073,6 @@
     "cost": 1,
     "enabled": false,
     "effect": "As ❶, examine a creature you can Observe within 6 feet. Learn whether it is Spent, visibly Wounded, or dead; supernatural disguises may require a separate Awareness check at GM discretion. This reveals neither hidden exact Vigor nor unobserved causes of death.",
-    "aura": {
-     "range": 6,
-     "affects": "all",
-     "visible": false
-    },
     "requires": [
      "Death Echo"
     ]
@@ -703,11 +1093,6 @@
     "cost": 1,
     "enabled": false,
     "effect": "Trigger: An ally within 6 feet suffers damage that would reduce them to 0 Vigor. Expend your Death Echo to reduce that instance of damage by 2, possibly preventing them from becoming Spent. The ally must be able to perceive you; once per round.",
-    "aura": {
-     "range": 6,
-     "affects": "allies",
-     "visible": false
-    },
     "requires": [
      "Death Echo"
     ]
@@ -718,11 +1103,6 @@
     "cost": 1,
     "enabled": false,
     "effect": "Once per encounter, as ❶, capture a Death Echo from a corpse within 3 feet that died within the past minute. No creature may supply more than one Echo in this way. This does not animate or control the corpse.",
-    "aura": {
-     "range": 3,
-     "affects": "all",
-     "visible": false
-    },
     "requires": [
      "Death Echo"
     ]
@@ -745,12 +1125,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Awareness. Create one 1-foot manifestation in an unoccupied square within 6 feet; it lasts until encounter end, you are Unconscious, or it is dismissed. You may have only one. It has Speed 6 feet and no independent actions. Command ❶ on your Opportunity to make it either Move up to its Speed or Strike an adjacent creature (Zoned Blow, 1d4 damage, using the chosen parent’s attack bonus). It uses your Evade or Guard when attacked and vanishes on a Hit; Graze does not dismiss it. It cannot use Reactions, Bind, Intercept, provide Support, or inflict Wounds. It never rolls Damage Dice for its Strike. Its form is cosmetic unless a Talent specifies otherwise.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
-    "aura": {
-     "range": 6,
-     "affects": "all",
-     "visible": false
-    },
-    "root": true
+    "automation": "[Awareness trained][VIGOR opening 6]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Defense",
+      "constellation": "awareness",
+      "constellationName": "Awareness",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Awareness trained]"
+     },
+     {
+      "value": 6,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 6]"
+     }
+    ]
    },
    {
     "name": "Long Leash",
@@ -758,11 +1155,6 @@
     "cost": 1,
     "enabled": false,
     "effect": "You may summon your manifestation within 10 feet instead of 6 feet. You may Command it while it is within 30 feet of you; otherwise it remains in place until you come into range or dismiss it.",
-    "aura": {
-     "range": 10,
-     "affects": "all",
-     "visible": false
-    },
     "requires": [
      "Call Manifestation"
     ]
@@ -815,7 +1207,29 @@
     "cost": 1,
     "enabled": false,
     "effect": "You become Trained in Athletics. Requirements: Trained in Melee and one magical parent, and you know a damaging spell from that parent. Choose one damage type dealt by that spell. Your next Deliberate Melee Strike begun before the end of your next Opportunity may deal the chosen type instead of its usual type. It remains a Zoned Blow, uses Melee proficiency and weapon dice, and gains no spell Damage Dice or other spell effects.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>Special You must already be Trained in either Melee or Ranged (or, if you take this at character creation, you must use one become Trained in Melee or Ranged before the end of the character creation process.<br><br>NEEDS Expert/Master/Legendary increases.",
-    "root": true
+    "automation": "[Athletics trained][VIGOR opening 8]",
+    "root": true,
+    "rules": [
+     {
+      "n": 1,
+      "scope": "Skill",
+      "constellation": "athletics",
+      "constellationName": "Athletics",
+      "different": false,
+      "when": null,
+      "trained": true,
+      "kind": "grant",
+      "line": 1,
+      "text": "[Athletics trained]"
+     },
+     {
+      "value": 8,
+      "scope": "opening",
+      "kind": "vigor",
+      "line": 1,
+      "text": "[VIGOR opening 8]"
+     }
+    ]
    },
    {
     "name": "Guarded Conduit",
@@ -1635,21 +2049,65 @@
     "cost": 1,
     "enabled": true,
     "effect": "You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
-    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "automation": "[LANGUAGE Common, Serrovine]\nCHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
     "desc": "<i>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</i>",
-    "root": true
+    "root": true,
+    "rules": [
+     {
+      "languages": [
+       "Common",
+       "Serrovine"
+      ],
+      "kind": "language",
+      "line": 1,
+      "text": "[LANGUAGE Common, Serrovine]"
+     },
+     {
+      "value": 1,
+      "type": "condition",
+      "to": {
+       "name": "Diplomacy",
+       "slug": "diplomacy",
+       "type": "constellation"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": {
+       "text": "toward someone who shares your Culture"
+      },
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)"
+     }
+    ]
    },
    {
     "name": "Oathbound",
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain the <b>Oathbound</b> ❶ Maneuver:<br><b>Effect</b> Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.",
-    "automation": "mark: enemies, encounter\nbonus: +1, Condition, Attacks, MARKED\nbonus: +1, Condition, Defenses, MARKED",
+    "effect": "You gain the Oathbound Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Oathbound ❶</strong></p><p>Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.</p></div>",
+    "automation": "[MANEUVER Oathbound]",
     "desc": "<i>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</i>",
     "requires": [
      "Serrovanian"
-    ]
+    ],
+    "rules": [
+     {
+      "name": "Oathbound",
+      "slug": "oathbound",
+      "enabled": true,
+      "kind": "maneuver",
+      "line": 1,
+      "text": "[MANEUVER Oathbound]"
+     }
+    ],
+    "effectSource": "You gain the Oathbound Maneuver.<br><br>@Maneuver[Oathbound]"
    },
    {
     "name": "Contract Literate",
@@ -1657,10 +2115,34 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +2 Condition bonus to notice hidden clauses, traps, and altered terms in any agreement.",
-    "automation": "bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
+    "automation": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
     "desc": "<i>You read what an agreement conceals as carefully as what it promises.</i>",
     "requires": [
      "Serrovanian"
+    ],
+    "rules": [
+     {
+      "value": 2,
+      "type": "condition",
+      "to": {
+       "name": "Checks",
+       "slug": "checks",
+       "type": "scope"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": {
+       "text": "noticing hidden clauses, traps or altered terms in an agreement"
+      },
+      "marked": false,
+      "kind": "bonus",
+      "line": 1,
+      "text": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)"
+     }
     ]
    },
    {
@@ -1669,10 +2151,59 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +1 Condition bonus to checks against Intimidation and other social manipulations.",
-    "automation": "bonus: +1, Condition, Defenses, AGAINST(Intimidation)\nbonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)",
+    "automation": "DEF: 1 condition; IFT: CHECK(intimidation)\nDEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)",
     "desc": "<i>Court manners are armor, and yours hold firm under threats, flattery, and calculated insult.</i>",
     "requires": [
      "Serrovanian"
+    ],
+    "rules": [
+     {
+      "value": 1,
+      "type": "condition",
+      "to": {
+       "name": "Defenses",
+       "slug": "defenses",
+       "type": "scope"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": {
+       "threat": null,
+       "reach": null,
+       "check": "intimidation",
+       "name": "Intimidation"
+      },
+      "seen": false,
+      "limit": null,
+      "claim": null,
+      "marked": false,
+      "kind": "bonus",
+      "line": 1,
+      "text": "DEF: 1 condition; IFT: CHECK(intimidation)"
+     },
+     {
+      "value": 1,
+      "type": "condition",
+      "to": {
+       "name": "Defenses",
+       "slug": "defenses",
+       "type": "scope"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": {
+       "text": "against a social manipulation other than Intimidation"
+      },
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)"
+     }
     ]
    }
   ]
@@ -1740,21 +2271,65 @@
     "cost": 1,
     "enabled": true,
     "effect": "You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
-    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "automation": "[LANGUAGE Common, Reachspeak]\nCHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
     "desc": "<i>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</i>",
-    "root": true
+    "root": true,
+    "rules": [
+     {
+      "languages": [
+       "Common",
+       "Reachspeak"
+      ],
+      "kind": "language",
+      "line": 1,
+      "text": "[LANGUAGE Common, Reachspeak]"
+     },
+     {
+      "value": 1,
+      "type": "condition",
+      "to": {
+       "name": "Diplomacy",
+       "slug": "diplomacy",
+       "type": "constellation"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": {
+       "text": "toward someone who shares your Culture"
+      },
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)"
+     }
+    ]
    },
    {
     "name": "Quick Tongue",
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain the <b>Quick Tongue </b>❶↺ Maneuver:<br><b>Quick Tongue </b>❶↺<b><br>Trigger </b>You critically fail a Diplomacy check.<b><br>Requirements </b>You’re in a settlement or community, and you haven’t used Quick Tongue ❶ in this settlement or community within the past month.<b><br>Effect </b>Reroll the triggering Diplomacy check, using the second result.",
-    "automation": "reroll: Diplomacy, IF(Outcome=Critical Failure)",
+    "effect": "You gain the Quick Tongue Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Quick Tongue ❶↺</strong></p><p><strong>Trigger</strong> You critically fail a Diplomacy check.</p><p><strong>Requirements</strong> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.</p><p>Reroll the triggering Diplomacy check, using the second result.</p></div>",
+    "automation": "[MANEUVER Quick Tongue]",
     "desc": "<i>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</i>",
     "requires": [
      "Reacher"
-    ]
+    ],
+    "rules": [
+     {
+      "name": "Quick Tongue",
+      "slug": "quick-tongue",
+      "enabled": true,
+      "kind": "maneuver",
+      "line": 1,
+      "text": "[MANEUVER Quick Tongue]"
+     }
+    ],
+    "effectSource": "You gain the Quick Tongue Maneuver.<br><br>@Maneuver[Quick Tongue]"
    },
    {
     "name": "Riverfoot",
@@ -1762,10 +2337,47 @@
     "cost": 1,
     "enabled": true,
     "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
-    "automation": "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water\nbonus: +1, Situation, Speed, ONCE(encounter)",
+    "automation": "IGNORE: terrain, mud, decking, loose stone, shallow water\nSPEED: 1 situation; LIMIT: encounter",
     "desc": "<i>Years among slick docks and shifting banks have taught you where to place your next step.</i>",
     "requires": [
      "Reacher"
+    ],
+    "rules": [
+     {
+      "what": "terrain",
+      "kinds": [
+       "mud",
+       "decking",
+       "loose-stone",
+       "shallow-water"
+      ],
+      "when": null,
+      "kind": "ignore",
+      "line": 1,
+      "text": "IGNORE: terrain, mud, decking, loose stone, shallow water"
+     },
+     {
+      "value": 1,
+      "type": "situation",
+      "to": {
+       "name": "Speed",
+       "slug": "speed",
+       "type": "scope"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": {
+       "per": "encounter"
+      },
+      "claim": null,
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "SPEED: 1 situation; LIMIT: encounter"
+     }
     ]
    },
    {
@@ -1774,10 +2386,56 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain +2 Situation to Diplomacy and Guile checks when trading.",
-    "automation": "bonus: +2, Situation, Diplomacy, CLAIM(when trading)\nbonus: +2, Situation, Guile, CLAIM(when trading)",
+    "automation": "CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)\nCHECK: 2 situation, guile; IF: CLAIM(when trading)",
     "desc": "<i>You recognize a fair price at a glance and know when there is room to bargain.</i>",
     "requires": [
      "Reacher"
+    ],
+    "rules": [
+     {
+      "value": 2,
+      "type": "situation",
+      "to": {
+       "name": "Diplomacy",
+       "slug": "diplomacy",
+       "type": "constellation"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": {
+       "text": "when trading"
+      },
+      "marked": false,
+      "kind": "bonus",
+      "line": 1,
+      "text": "CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)"
+     },
+     {
+      "value": 2,
+      "type": "situation",
+      "to": {
+       "name": "Guile",
+       "slug": "guile",
+       "type": "constellation"
+      },
+      "when": null,
+      "for": null,
+      "while": null,
+      "against": null,
+      "seen": false,
+      "limit": null,
+      "claim": {
+       "text": "when trading"
+      },
+      "marked": false,
+      "kind": "bonus",
+      "line": 2,
+      "text": "CHECK: 2 situation, guile; IF: CLAIM(when trading)"
+     }
     ]
    }
   ]

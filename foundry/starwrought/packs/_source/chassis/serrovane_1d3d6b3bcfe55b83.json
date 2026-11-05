@@ -7,7 +7,7 @@
     "kind": "culture",
     "constellation": "serrovane",
     "attribute": "presence",
-    "languages": "Serrovine, Common",
+    "languages": "Common, Serrovine",
     "description": "<p>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</p>",
     "lore": [
       {
@@ -70,7 +70,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6c322046bb61aa70"
+      "contentHash": "b1460fad0e86c9c3"
     }
   },
   "effects": [],

@@ -276,7 +276,10 @@ export function resolveRuleTarget(name) {
       return {
         type: "constellation", slug: con.slug, name: con.name ?? con.slug,
         group: !!con.group || !!parent,
-        parent: parent ? (SW.getConstellation(parent)?.name ?? parent) : ""
+        parent: parent ? (SW.getConstellation(parent)?.name ?? parent) : "",
+        // The category (0.16.0): a `[<Constellation> trained]` point's scope word comes from it. The
+        // system's key ("skill", "combatStyle"), which the kind reads beside the index's word.
+        category: String(con.category ?? "")
       };
     }
   }

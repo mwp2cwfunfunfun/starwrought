@@ -25,14 +25,15 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water\nbonus: +1, Situation, Speed, ONCE(encounter)",
+    "automation": "IGNORE: terrain, mud, decking, loose stone, shallow water\nSPEED: 1 situation; LIMIT: encounter",
     "rules": [
       {
         "what": "terrain",
@@ -45,7 +46,7 @@
         "when": null,
         "kind": "ignore",
         "line": 1,
-        "text": "ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water"
+        "text": "IGNORE: terrain, mud, decking, loose stone, shallow water"
       },
       {
         "value": 1,
@@ -67,7 +68,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "bonus: +1, Situation, Speed, ONCE(encounter)"
+        "text": "SPEED: 1 situation; LIMIT: encounter"
       }
     ],
     "traits": [],
@@ -80,7 +81,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "1ff7f433d2f9862b"
+      "contentHash": "4b6a726c14e7d8d7"
     }
   },
   "effects": [],

@@ -142,6 +142,26 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         Foundry saves and is marked on the Item sheet rather than refused. The action sheets take
         the same column. The 0.10.0 prose form ("bonus: +1 Condition to Aid if Human is Expert")
         is retired and refused with the new shape printed.
+        THE ONE PARSE (0.16.0): node assets/parse_rules.mjs runs right after the converter, in
+        every pipeline mode, and parses every Automation cell once (tree sheets, action sheets,
+        the Backgrounds sheet) with the system's grammar, writing the parsed `rules` beside
+        `automation` in trees.json, actions.json and backgrounds.json for every consumer; a line
+        it does not know is the ERROR described above, raised there, and a cell still in the
+        0.13.0 shape ("bonus: +1, Condition, Aid, IF(Origin=Trained)") reads for this one release
+        with a WARNING naming the cell. The same step reads the Root Talent's feature lines
+        ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES Low-light vision], [TRAIT Human],
+        [LANGUAGE Common, Serrovine]; a Calling's [VIGOR opening 12]) onto the roster's ancestry,
+        culture and callings records, where they WIN: the _Tree Index columns Vigor (or HP), Size,
+        Speed, Senses, Traits, Languages and Skills, and the tree sheets' Choice and Free Talent
+        columns, are RETIRED, read this release with one warning per workbook or sheet, and a
+        column that disagrees with the Root's line is an ERROR naming the column (the Grants
+        column's precedent; a column reading the converter's own default, Medium, 6 ft or no
+        Senses, is taken as saying nothing). It also expands @Maneuver[Name] in any Talent's or
+        Background's Effect into the named Maneuver's block (name and cost glyphs, Trigger and
+        Requirements when the row has them, then its Effect) from the matching row of the actions
+        workbook, keeping the text as written as `effectSource`; a name that is no row is an ERROR.
+        Its last line counts what it did: "rules: N rules on M cells (K kinds in use), L legacy
+        cells warned; chassis: facts from X roots; markers: Y expanded".
   Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
         anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
         column means the sheet has not been curated yet, not that it is all off. A constellation
@@ -177,9 +197,11 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
 
 BACKGROUNDS (backgrounds.xlsx)
   The "Backgrounds" sheet holds one Background per row. Columns (first word wins, order free):
-    Background | Rarity | Description | Effect | Skills | Lore | Enabled?
-  Skills names the constellations the Background grants Training in, comma-separated; Lore names
-  its Lore. Enabled? works as on a tree sheet: "Yes" ships the Background to Foundry, anything
+    Background | Description | Effect | Enabled? | Automation | Rarity | Skills | Lore
+  Automation (0.16.0) is the tree sheets' column: the Background's Training is its
+  "[Athletics trained][Acrobatics trained][Lore trained]" lines, which the Foundry chassis reads as
+  its grants. Skills (comma-separated constellations) and Lore are the retired way of saying the
+  same and still read where a sheet has them. Enabled? works as on a tree sheet: "Yes" ships the Background to Foundry, anything
   else keeps it out, and a sheet without the column ships every row. Every row is still written
   to assets/backgrounds.json with its flag. The converter WARNS when an enabled Background grants
   a Skill whose constellation root is disabled, since that Training point has nowhere to land.
@@ -320,6 +342,8 @@ To sync after editing, from the project root, one of two paths:
   sync_content.cmd   or   node assets/build_all.mjs --content
     -> assets/trees.json + backgrounds.json + languages.json + actions.json + equipment.json, and
        the generated blocks of roster.json                       (xlsx_to_trees.py)
+    -> the same JSON with every Automation cell parsed once into `rules`, the Roots' feature lines
+       on the roster records, the @Maneuver markers expanded    (parse_rules.mjs, 0.16.0)
     -> Starwrought_App.html + the constellation viewer           (inject.py)
     -> assets/constellations/*.png, only the plates whose Constellation changed or is new; the
        sidecar .plates.json beside them remembers the rest        (render_constellations.py --changed)
@@ -345,6 +369,8 @@ To sync after editing, from the project root, one of two paths:
                                                 + actions.json + equipment.json, and the ancestries,
                                                 cultures, weaponsMelee, weaponsRanged, armorPieces and
                                                 shields blocks of roster.json
+  node   assets/parse_rules.mjs              -> the same files with `rules` beside every Automation cell,
+                                                the chassis facts and the @Maneuver markers (0.16.0)
   python assets/inject.py                    -> Starwrought_App.html + the constellation viewer
   python assets/render_constellations.py     -> assets/constellations/*.png (--changed: only what moved)
   python assets/sheet_gen.py                 -> the fillable and Mira character sheets

@@ -36,7 +36,7 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, hasTrait, againstHolds, markedHolds, refuseOutcome, summarizeOperators } from "../operators.mjs";
+import { readLine, rankMeets, whoMatches, compare, hasTrait, againstHolds, markedHolds, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { CONDITIONS } from "../../config.mjs";
 
 const SHAPE = "prevent: <Effect> [, operators]";
@@ -79,6 +79,16 @@ export default {
   aliases: [],
 
   parse(args, context = {}) {
+    // The 0.16.0 shape: `IMMUNE: prone; LIMIT: encounter` (FG's own `IMMUNE: [condition]`).
+    if (context?.form === "effect") {
+      const e = context.effect;
+      if (e.descriptors.length !== 1) throw new RuleSyntaxError(`IMMUNE is written \`IMMUNE: <Condition or expose>\`, as in \`IMMUNE: prone\` (${e.descriptors.length} descriptors given, 1 wanted)`);
+      refuseComponents(e.ops, "IMMUNE", ["when", "for", "while", "against", "seen", "limit", "marked"]);
+      const effect = readEffect(e.descriptors[0]);
+      refuseOutcome(e.ops);
+      return { effect, when: e.ops.when, for: e.ops.for, while: e.ops.while, against: e.ops.against, seen: e.ops.seen, limit: e.ops.limit, marked: e.ops.marked };
+    }
+    if (context?.form === "feature") throw new RuleSyntaxError("a prevention is an effect line, not a bracketed feature: `IMMUNE: prone`");
     const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "prevent", context });
     if (parts.length !== 1) {
       throw new RuleSyntaxError(`a prevent is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} arguments given, 1 wanted)`);

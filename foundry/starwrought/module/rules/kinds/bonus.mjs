@@ -55,10 +55,10 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { readLine, rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled } from "../operators.mjs";
-import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug } from "../../config.mjs";
+import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug, DEFENSES } from "../../config.mjs";
 
 const SHAPE = "bonus: <±N>, <Type>, <Target> [, operators]";
-const EXAMPLE = "bonus: +1, Condition, Aid, IF(Origin=Trained)";
+const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
 const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "CLAIM", "MARKED"]);
 
 /** The three type words of PHB v3.3, lower-cased. */
@@ -94,8 +94,8 @@ function readType(word) {
   if (Object.hasOwn(LEGACY_BONUS_TYPES, lower)) {
     throw new RuleSyntaxError(`write ${titled(LEGACY_BONUS_TYPES[lower])}, not ${lower}: the book renamed the types in v3.3`);
   }
-  if (lower === "untyped") throw new RuleSyntaxError("no Talent bonus is untyped; name Situation, Condition or Gear");
-  throw new RuleSyntaxError(`"${word}" is not a bonus type: write Situation, Condition or Gear`);
+  if (lower === "untyped") throw new RuleSyntaxError("no Talent bonus is untyped; name situation, condition or gear after the value");
+  throw new RuleSyntaxError(`"${word}" is not a bonus type: write situation, condition or gear`);
 }
 
 /**
@@ -129,6 +129,46 @@ export default {
    * @param {object} context   The grammar's context; `resolve` is read from it when present.
    */
   parse(args, context = {}) {
+    // The 0.16.0 shape (AUTOMATION_GRAMMAR.md section 3): a tag names the target's kind, the
+    // reader (../effects.mjs) has split the value, the type and the descriptors; one descriptor
+    // narrows CHECK to a Constellation or a Maneuver and DEF to one Defense.
+    if (context?.form === "effect") {
+      const e = context.effect;
+      const TAG = e.tag.toUpperCase();
+      const type = readType(e.type ?? "untyped");
+      let to;
+      if (e.tag === "check") {
+        if (e.descriptors.length > 1) throw new RuleSyntaxError(`CHECK takes one descriptor, a Constellation or a Maneuver, not ${e.descriptors.length}: \`CHECK: ${e.value} ${type}, diplomacy\``);
+        if (e.descriptors.length) {
+          to = readTarget(e.descriptors[0], context.resolve);
+          if (to.type === "scope") throw new RuleSyntaxError(`"${e.descriptors[0]}" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every check`);
+        } else {
+          to = { name: SCOPES.checks.name, slug: "checks", type: "scope" };
+        }
+      } else if (e.tag === "def") {
+        if (e.descriptors.length > 1) throw new RuleSyntaxError(`DEF takes one descriptor, a Defense, not ${e.descriptors.length}: \`DEF: ${e.value} ${type}, guard\``);
+        if (e.descriptors.length) {
+          const slug = slugify(e.descriptors[0]);
+          if (!Object.values(DEFENSES).some(d => d.slug === slug)) throw new RuleSyntaxError(`"${e.descriptors[0]}" is not a Defense: DEF takes evade, guard, endure or awareness, or none for all four`);
+          const found = (typeof context.resolve === "function") ? context.resolve(e.descriptors[0]) : null;
+          to = { name: String(found?.name ?? titled(slug)), slug, type: "constellation" };
+        } else {
+          to = { name: SCOPES.defenses.name, slug: "defenses", type: "scope" };
+        }
+      } else {
+        if (e.descriptors.length) throw new RuleSyntaxError(`${TAG} takes no descriptor: \`${TAG}: ${e.value} ${type}\``);
+        const slug = { atk: "attacks", init: "initiative", speed: "speed" }[e.tag];
+        to = { name: SCOPES[slug].name, slug, type: "scope" };
+      }
+      refuseOutcome(e.ops);
+      return {
+        value: e.value, type, to, when: e.ops.when, for: e.ops.for, while: e.ops.while, against: e.ops.against, seen: e.ops.seen, limit: e.ops.limit,
+        claim: e.ops.claim, marked: e.ops.marked
+      };
+    }
+    if (context?.form === "feature") throw new RuleSyntaxError("a bonus is an effect line, not a bracketed feature: `CHECK: 1 condition, aid`");
+
+    // The 0.13.0 form, read for one more release (the grammar flags it legacy and the build warns).
     const text = String(args ?? "").trim();
     // The 0.10.0 prose form, retired: a line with no comma and the word `to` in it.
     if (!text.includes(",") && /\s+to\s+/i.test(text)) {

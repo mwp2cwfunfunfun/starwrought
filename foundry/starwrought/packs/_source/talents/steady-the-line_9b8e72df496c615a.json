@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the <b>Steady the Line ❶↺ </b>Maneuver:<b><br>Trigger</b> An adjacent ally would become Exposed.<br><b>Effect</b> The adjacent ally does not become Exposed.",
+    "effect": "You gain the Steady the Line Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Steady the Line ❶↺</strong></p><p><strong>Trigger</strong> An adjacent ally's Strike is Stopped and would Expose them.</p><p>It Exposes nothing.</p></div>",
     "description": "<p><i>You cut through the clash, steadying a companion’s defense before it can falter.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -25,30 +25,23 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "prevent: Expose, FOR(allies, 0ft)",
+    "automation": "[MANEUVER Steady the Line]",
     "rules": [
       {
-        "effect": "expose",
-        "when": null,
-        "for": {
-          "who": "allies",
-          "range": 0
-        },
-        "while": null,
-        "against": null,
-        "seen": false,
-        "limit": null,
-        "marked": false,
-        "kind": "prevent",
+        "name": "Steady the Line",
+        "slug": "steady-the-line",
+        "enabled": true,
+        "kind": "maneuver",
         "line": 1,
-        "text": "prevent: Expose, FOR(allies, 0ft)"
+        "text": "[MANEUVER Steady the Line]"
       }
     ],
     "traits": [],
@@ -61,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "60234f283c9af683"
+      "contentHash": "ee5128de31d02e2e"
     }
   },
   "effects": [],

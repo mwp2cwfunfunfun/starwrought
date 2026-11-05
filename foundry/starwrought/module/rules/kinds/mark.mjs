@@ -30,7 +30,7 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, refuseOutcome, summarizeOperators } from "../operators.mjs";
+import { readLine, rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { plainName } from "../../config.mjs";
 
 const SHAPE = "mark: [<Who>] [, <Until>]";
@@ -47,7 +47,12 @@ export default {
   aliases: [],
 
   parse(args, context = {}) {
-    const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "mark", context });
+    if (context?.form === "feature") throw new RuleSyntaxError("a mark is an effect line, not a bracketed feature: `MARK: enemies`");
+    // `MARK: enemies` reads the same in the 0.16.0 shape and the 0.13.0 one; the descriptors are
+    // the words either way, and the components (IF only) come from the effect reader.
+    const { args: parts, ops } = (context?.form === "effect")
+      ? { args: context.effect.descriptors, ops: refuseComponents(context.effect.ops, "MARK", ["when"]) }
+      : readLine(args, { allow: OPERATORS_TAKEN, kind: "mark", context });
     if (parts.length > 2) throw new RuleSyntaxError(`a mark is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} arguments given, at most 2)`);
     let who = "all";
     let until = "encounter";

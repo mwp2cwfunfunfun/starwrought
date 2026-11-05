@@ -157,3 +157,8 @@ import reroll from "./reroll.mjs";
 registerKind(reroll);
 import ignore from "./ignore.mjs";
 registerKind(ignore);
+
+// 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
+// `[KEYWORD data]` block (../features.mjs); none has an engine hook.
+import { FEATURE_KINDS } from "./features.mjs";
+for (const kind of FEATURE_KINDS) registerKind(kind);

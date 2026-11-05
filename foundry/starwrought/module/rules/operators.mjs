@@ -52,8 +52,18 @@
 import { RuleSyntaxError } from "./syntax.mjs";
 import { RANKS, THREATS, DEGREES, isLoreSlug } from "../config.mjs";
 
-/** The operator names, in the order the grammar document lists them. The build checks each is named there. */
+/**
+ * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), read for one more release by
+ * `readLine` below and flagged legacy by the grammar (0.16.0; the Fantasy Grounds shape in
+ * effects.mjs and features.mjs is the grammar now). The build checks each is named in the
+ * grammar document's legacy section.
+ */
 export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "DIFFERENT", "VISIBLE", "CLAIM", "MARKED"]);
+
+/** A fresh operator record, the shape every reader fills (the legacy `readLine`, the effect reader's components). */
+export function emptyOps() {
+  return { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false, claim: null, marked: false };
+}
 
 /** The degree words `IF(Outcome=...)` reads, squeezed of spaces and lower-cased, to the keys of SW.DEGREES. */
 const DEGREE_WORDS = Object.freeze({
@@ -163,7 +173,7 @@ function operatorName(part) {
 export function readLine(text, { allow = [], kind = "rule", context = {} } = {}) {
   const parts = splitOperands(String(text ?? "").trim().replace(/\.$/, ""));
   const args = [];
-  const ops = { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false, claim: null, marked: false };
+  const ops = emptyOps();
   let seenOperator = false;
 
   for (const part of parts) {
@@ -283,14 +293,14 @@ export function readRange(word) {
 }
 
 /** The subject word of a FOR or a WHILE, lower-cased and checked against the list given. */
-function readWho(word, allowed) {
+export function readWho(word, allowed) {
   const lower = String(word ?? "").trim().toLowerCase().replace(/\s+/g, "");
   if (allowed.includes(lower)) return lower;
   throw new RuleSyntaxError(`a who is written ${allowed.slice(0, -1).join(", ")} or ${allowed.at(-1)}, not "${String(word ?? "").trim()}"`);
 }
 
 /** `<left><op><right>` with the comparison words, longest first. Null when no comparison is in it. */
-function splitComparison(text) {
+export function splitComparison(text) {
   for (const op of COMPARISONS) {
     const at = text.indexOf(op);
     if (at > 0) return { left: text.slice(0, at).trim(), op: op === "==" ? "=" : op, right: text.slice(at + op.length).trim() };
@@ -309,7 +319,7 @@ function splitComparison(text) {
  * With a resolver the name must resolve to a Constellation that is not a group (a group wears its
  * parent's rank, so the parent is named); a Lore is refused with or without one.
  */
-function readIf(inside, context) {
+export function readIf(inside, context) {
   const cmp = splitComparison(inside);
   if (!cmp || !cmp.left || !cmp.right || ![ "=", ">=", "<=" ].includes(cmp.op)) {
     throw new RuleSyntaxError("IF is written `IF(<Constellation>=<Rank>)` (also >= and <=), as in `IF(Origin=Trained)`");
@@ -346,7 +356,7 @@ function readIf(inside, context) {
 }
 
 /** `FOR(<Who>[, <N>ft])`. `FOR(self)` takes no range: the owner is always within reach of themself. */
-function readFor(inside) {
+export function readFor(inside) {
   const parts = splitOperands(inside);
   if (!parts.length || (parts.length > 2)) throw new RuleSyntaxError("FOR is written `FOR(<Who>[, <N>ft])`, as in `FOR(allies, 15ft)`");
   const who = readWho(parts[0], WHO_FOR);
@@ -356,7 +366,7 @@ function readFor(inside) {
 }
 
 /** `WHILE(<Who><op><N>[, <N>ft])`: a count of tokens around the owner. No range means anywhere on the scene. */
-function readWhile(inside) {
+export function readWhile(inside) {
   const parts = splitOperands(inside);
   if (!parts.length || (parts.length > 2)) throw new RuleSyntaxError("WHILE is written `WHILE(<Who><op><N>[, <N>ft])`, as in `WHILE(allies>=1, 0ft)`");
   const cmp = splitComparison(parts[0]);
@@ -373,7 +383,7 @@ function readWhile(inside) {
  * is not a group (a group's Talents roll the parent, so the parent is named); without one the slug
  * is made here. A Lore is refused: nothing rolls a Lore against a Defense.
  */
-function readAgainst(inside, context = {}) {
+export function readAgainst(inside, context = {}) {
   const written = String(inside ?? "").trim();
   const word = written.toLowerCase();
   if (Object.hasOwn(THREATS, word)) return { threat: word, reach: null, check: null, name: null };
@@ -408,6 +418,25 @@ export function readDegree(word) {
   if (Object.hasOwn(DEGREE_WORDS, key) && Object.hasOwn(DEGREES, DEGREE_WORDS[key])) return DEGREE_WORDS[key];
   const names = Object.values(DEGREE_NAMES);
   throw new RuleSyntaxError(`"${String(word ?? "").trim()}" is not a Degree: write ${names.slice(0, -1).join(", ")} or ${names.at(-1)}`);
+}
+
+/**
+ * Refuse the components an effect line gave that a kind has no use for (0.16.0): every field of
+ * the ops record outside `allowed` must be at its empty value. The names are the document's
+ * (`IF:`, `IFT:`, `FOR:`, `LIMIT:`), not the record's keys.
+ * @param {object} ops          The effect reader's ops.
+ * @param {string} tag          The tag, for the message.
+ * @param {string[]} allowed    The ops keys the kind reads: "when", "for", "while", "against", "seen", "limit", "claim", "marked".
+ * @returns {object}            The same ops.
+ */
+export function refuseComponents(ops, tag, allowed) {
+  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED" };
+  const empty = emptyOps();
+  for (const [key, value] of Object.entries(ops ?? {})) {
+    if (allowed.includes(key)) continue;
+    if (JSON.stringify(value) !== JSON.stringify(empty[key])) throw new RuleSyntaxError(`${tag} does not take ${names[key] ?? key}`);
+  }
+  return ops;
 }
 
 /**

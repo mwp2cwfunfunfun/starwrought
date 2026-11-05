@@ -33,6 +33,23 @@
 
 import { KIND_WORD, kindOf, knownKinds } from "./kinds/index.mjs";
 import { RuleSyntaxError } from "./syntax.mjs";
+// 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
+import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
+import { effectTagOf, readEffectLine, EFFECT_TAGS } from "./effects.mjs";
+
+/**
+ * The kind words of the 0.13.0 form (`kind: arg, arg, OP(...)`) that have no tag of their own in
+ * the 0.16.0 shape: a line beginning with one is read by the kind's legacy branch and flagged
+ * `legacy: true`, which the build warns about once per cell; 0.17.0 refuses it. `mark:`, `reroll:`
+ * and `ignore:` read the same in both shapes unless an operator call follows (see `looksLegacy`).
+ */
+export const LEGACY_WORDS = Object.freeze(["bonus", "grant", "aura", "prevent"]);
+const LEGACY_OPERATOR = /(?:^|,)\s*(?:IF|FOR|WHILE|AGAINST|FIRST|ONCE|CLAIM)\s*\(|(?:^|,)\s*(?:SEEN|MARKED|VISIBLE|DIFFERENT)\s*(?:,|$)/i;
+
+/** Does a `mark:`, `reroll:` or `ignore:` line carry the 0.13.0 operators (`, IF(...)`, `, SEEN`) rather than components? */
+function looksLegacy(args) {
+  return !String(args ?? "").includes(";") && LEGACY_OPERATOR.test(String(args ?? ""));
+}
 
 // The registry's vocabulary, re-exported so a module that needs the grammar and the words needs
 // one import. `registerKind` stays in the index: that is where a kind is registered. The error
@@ -48,6 +65,11 @@ export { RuleSyntaxError, splitArgs, keyValues } from "./syntax.mjs";
  * line; `error` marks an entry that did not parse, so no kind's data may carry it either.
  */
 export const RESERVED_WORDS = Object.freeze(["kind", "line", "text", "error"]);
+
+/** Did any rule of a parse come from the 0.13.0 form? The build warns once per cell (0.16.0). */
+export function hasLegacy(parsed) {
+  return (parsed?.rules ?? []).some(r => r?.legacy === true);
+}
 
 /* -------------------------------------------- */
 
@@ -82,9 +104,89 @@ export function parseAutomation(text, context = {}) {
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("#")) return;
 
+    // One parsed block or line into the lists: the kind's data checked, the reserved words written.
+    const store = (kind, data, text, extra = {}) => {
+      if (data == null) data = {};
+      if ((typeof data !== "object") || Array.isArray(data)) {
+        errors.push({
+          line, text,
+          message: `the "${kind.id}" kind returned ${Array.isArray(data) ? "an array" : `a ${typeof data}`} for this line, not an object (a bug in the kind, not in the cell)`
+        });
+        return;
+      }
+      // The rule is stored on the Item and travels through the pack sources, Sync content and the
+      // database as JSON, so it must BE plain data: a kind that returns NaN, a function, a Date or
+      // a cycle has a bug, and it is reported here rather than failing later in a write (0.10.1).
+      const stored = plainData(data);
+      if (stored.problem) {
+        errors.push({
+          line, text,
+          message: `the "${kind.id}" kind returned data that cannot be stored (${stored.problem}) (a bug in the kind, not in the cell)`
+        });
+        return;
+      }
+      // The reserved words are the framework's: a kind's data cannot rename the rule's kind, move
+      // it to another line or, by carrying `error`, have a parsed rule filed as one that did not parse.
+      const own = stored.value;
+      for (const word of RESERVED_WORDS) delete own[word];
+      delete own.legacy;
+      rules.push({ ...own, ...extra, kind: kind.id, line, text });
+    };
+
+    // A feature line (0.16.0): blocks in brackets, each its own rule under the block's text.
+    if (isFeatureLine(trimmed)) {
+      let blocks;
+      try {
+        blocks = readFeatureLine(trimmed);
+      } catch (error) {
+        errors.push({ line, text: trimmed, message: kindFailure(null, error) });
+        return;
+      }
+      for (const block of blocks) {
+        const kind = kindOf(block.kind);
+        if (!kind) {
+          errors.push({ line, text: block.text, message: `the "${block.kind}" kind is not registered (a bug in the kinds, not in the cell)` });
+          continue;
+        }
+        let data;
+        try {
+          data = kind.parse(block.data, { ...context, line, text: block.text, kind: kind.id, form: "feature", block });
+        } catch (error) {
+          errors.push({ line, text: block.text, message: kindFailure(kind, error) });
+          continue;
+        }
+        store(kind, data, block.text);
+      }
+      return;
+    }
+
+    // An effect line (0.16.0): a tag, then components; unless the tag's arguments carry the
+    // 0.13.0 operators, which is the legacy form below.
     const { word, args } = splitLine(trimmed);
+    const tag = effectTagOf(trimmed);
+    if (tag && !looksLegacy(args)) {
+      let effect;
+      try {
+        effect = readEffectLine(trimmed, { context });
+      } catch (error) {
+        errors.push({ line, text: trimmed, message: kindFailure(null, error) });
+        return;
+      }
+      const kind = kindOf(effect.kind);
+      let data;
+      try {
+        data = kind.parse(args, { ...context, line, text: trimmed, kind: kind.id, form: "effect", effect });
+      } catch (error) {
+        errors.push({ line, text: trimmed, message: kindFailure(kind, error) });
+        return;
+      }
+      store(kind, data, trimmed);
+      return;
+    }
+
+    // The 0.13.0 form, read for one more release and flagged; or a word nothing answers to.
     if (!word) {
-      errors.push({ line, text: trimmed, message: "this line has no kind word: a rule is written `kind: arguments`" });
+      errors.push({ line, text: trimmed, message: "this line has no tag: an effect is written `TAG: value type, descriptors; IF: ...` and a feature `[KEYWORD data]`" });
       return;
     }
     const kind = kindOf(word);
@@ -92,38 +194,15 @@ export function parseAutomation(text, context = {}) {
       errors.push({ line, text: trimmed, message: unknownKindMessage(word) });
       return;
     }
-
     let data;
     try {
-      data = kind.parse(args, { ...context, line, text: trimmed, kind: kind.id });
+      data = kind.parse(args, { ...context, line, text: trimmed, kind: kind.id, form: "legacy" });
     } catch (error) {
       errors.push({ line, text: trimmed, message: kindFailure(kind, error) });
       return;
     }
-    if (data == null) data = {};
-    if ((typeof data !== "object") || Array.isArray(data)) {
-      errors.push({
-        line, text: trimmed,
-        message: `the "${kind.id}" kind returned ${Array.isArray(data) ? "an array" : `a ${typeof data}`} for this line, not an object (a bug in the kind, not in the cell)`
-      });
-      return;
-    }
-    // The rule is stored on the Item and travels through the pack sources, Sync content and the
-    // database as JSON, so it must BE plain data: a kind that returns NaN, a function, a Date or a
-    // cycle has a bug, and it is reported here rather than failing later in a write (0.10.1).
-    const stored = plainData(data);
-    if (stored.problem) {
-      errors.push({
-        line, text: trimmed,
-        message: `the "${kind.id}" kind returned data that cannot be stored (${stored.problem}) (a bug in the kind, not in the cell)`
-      });
-      return;
-    }
-    // The reserved words are the framework's: a kind's data cannot rename the rule's kind, move it
-    // to another line or, by carrying `error`, have a parsed rule filed as one that did not parse.
-    const own = stored.value;
-    for (const word of RESERVED_WORDS) delete own[word];
-    rules.push({ ...own, kind: kind.id, line, text: trimmed });
+    const legacy = LEGACY_WORDS.includes(word) || looksLegacy(args);
+    store(kind, data, trimmed, legacy ? { legacy: true } : {});
   });
 
   return { rules, errors };
@@ -150,24 +229,29 @@ function splitLine(trimmed) {
  */
 function unknownKindMessage(word) {
   const known = knownKinds();
-  const tail = known.length ? `known kinds: ${known.join(", ")}` : "no rule kinds are defined yet";
-  let message = `unknown rule kind "${word}" (${tail})`;
-  if (!KIND_WORD.test(word)) message += "; a rule begins with its kind word, lower-case letters and hyphens, then a colon";
+  const tags = Object.keys(EFFECT_TAGS).map(t => t.toUpperCase()).join(", ");
+  const keywords = FEATURE_KEYWORD_LIST.join(", ");
+  let message = `unknown rule kind "${word}" (an effect begins with a tag: ${tags}; a feature is a bracketed block: ${keywords}, or [<Constellation> trained]`;
+  message += known.length ? `; the 0.13.0 kind words still read: ${known.filter(k => LEGACY_WORDS.includes(k) || ["mark", "reroll", "ignore"].includes(k)).join(", ")})` : ")";
+  if (!KIND_WORD.test(word) && !/^[A-Za-z]+$/.test(word)) message += "; a line begins with its tag or kind word, letters only, then a colon";
   return message;
 }
 
 /**
  * A kind's throw as an error message. A RuleSyntaxError is the designer's: its message stands as
  * written. Anything else is the kind's own failure and is labelled as such, so the line in the
- * build log points at the file to fix rather than at the cell.
- * @param {import("./kinds/index.mjs").RuleKind} kind
+ * build log points at the file to fix rather than at the cell. With no kind (the line readers
+ * threw before a kind was named) a non-syntax error is the grammar's own.
+ * @param {import("./kinds/index.mjs").RuleKind|null} kind
  * @param {unknown} error
  * @returns {string}
  */
 function kindFailure(kind, error) {
   if ((error instanceof RuleSyntaxError) || (error?.name === "RuleSyntaxError")) return String(error.message);
   const detail = (error && (typeof error === "object") && ("message" in error)) ? error.message : String(error);
-  return `the "${kind.id}" kind could not read this line: ${detail} (a bug in the kind, not in the cell)`;
+  return kind
+    ? `the "${kind.id}" kind could not read this line: ${detail} (a bug in the kind, not in the cell)`
+    : `the grammar could not read this line: ${detail} (a bug in the grammar, not in the cell)`;
 }
 
 /* -------------------------------------------- */

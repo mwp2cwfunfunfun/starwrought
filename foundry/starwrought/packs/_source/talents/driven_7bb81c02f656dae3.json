@@ -25,14 +25,15 @@
     "grant": {
       "n": 1,
       "mode": "any",
-      "scope": "Calling"
+      "scope": "Calling",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "grant: 1, Calling",
+    "automation": "[POINT Calling]",
     "rules": [
       {
         "n": 1,
@@ -41,7 +42,7 @@
         "when": null,
         "kind": "grant",
         "line": 1,
-        "text": "grant: 1, Calling"
+        "text": "[POINT Calling]"
       }
     ],
     "traits": [],
@@ -54,7 +55,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "36a8d58fde763fa6"
+      "contentHash": "352a6fb8340307a7"
     }
   },
   "effects": [],

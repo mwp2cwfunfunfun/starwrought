@@ -65,14 +65,22 @@ What the wizard enforces, all of it read from the compendium rather than hard-co
   Trainings at once; choosing a Calling buys its signature technique. Automatic spends are marked
   and locked, because there is nothing to take them back to. Where a real choice exists the wizard
   still asks, which is exactly the already-open case above.
-- **Granted points.** A Talent with a `grant:` line in its Automation (the Grants column through
-  0.12.0; `grant: 1, Calling`, `grant: 1, Opening`, `grant: 2, Skill, DIFFERENT`) pushes its point
-  onto the step where you took the Talent, and blocks Next until it is spent. Opening points offer
-  only Roots of Constellations you have not started; `DIFFERENT` is honoured.
-- **Free Talents.** A Talent with a Free Talent clause hands that Talent over outright, with no
-  point spent, wherever in the book it lives. Weaponmaster's Drilled gives you Weapon Familiarity
-  this way, and the free Talent then asks its own question.
-- **Build-time choices.** A Talent with a Choice clause asks as it lands and records the answer on
+- **Granted points.** A Talent with a `[POINT ...]` block in its Automation (the Grants column
+  through 0.12.0, a `grant:` line through 0.15.0; `[POINT Calling]`, `[POINT Opening]`, `[POINT 2
+  Skill different]`) pushes its point onto the step where you took the Talent, and blocks Next
+  until it is spent. Opening points offer only Roots of Constellations you have not started;
+  `different` is honoured. **A Trained Root** (0.16.0; ruling 186) is the directed form:
+  `[Acrobatics trained]` on a Background or a Calling Root is the one-point slot that settles
+  itself as above, and `[Lore trained]` the Lore slot you name; the Backgrounds' Skills column and
+  the Callings' index column that said the same are retired.
+- **Free Talents.** A Talent with a `[TALENT X]` block (the Free Talent column through 0.15.0)
+  hands that Talent over outright, with no point spent, wherever in the book it lives.
+  Weaponmaster's Drilled gives you Weapon Familiarity this way, and the free Talent then asks its
+  own question.
+- **Talent Maneuvers** (0.16.0; ruling 184). A Talent with a `[MANEUVER X]` block puts the
+  Maneuver on the character as the Talent lands, and Back takes it away with the Talent; its card
+  prints the Maneuver's own block where the Effect carries `@Maneuver[X]`.
+- **Build-time choices.** A Talent with a `[CHOICE ...]` block (the Choice column through 0.15.0) asks as it lands and records the answer on
   the Talent. Weapon Familiarity offers every Weapon Group plus every Technical weapon; Drilled
   offers the Groups. This is load-bearing rather than flavour: your Familiarity is derived from
   these answers, so a Practiced battleaxe rolls at your full Melee Proficiency once you are
@@ -1896,36 +1904,74 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar and the seven kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the sixteen kinds
 
-**What it is, and what it is not** (0.9.0 to 0.15.0; rulings 118 to 124, 164 to 181). Since 0.9.0
+**What it is, and what it is not** (0.9.0 to 0.16.0; rulings 118 to 124, 164 to 188). Since 0.9.0
 every Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets
 already did, and the system has a framework for reading it: the column is parsed, stored on the
-Item, indexed on the Actor and shown on the Item sheet. Seven kinds read it in play: `bonus` (0.10.0,
-rewritten in 0.13.0), `grant`, `aura` and `prevent` (0.13.0), enough for every Talent of a level-1
-Human, and `mark`, `reroll` and `ignore` (0.15.0), enough for the two Cultures. Nothing else reads
-a rule: no Strike's commitment, no damage step, because no kind for them exists, and Mike's
+Item, indexed on the Actor and shown on the Item sheet. Sixteen kinds read it: five effect kinds
+that act in play (`bonus`, `prevent`, `mark`, `reroll`, `ignore`), two creation kinds (`grant`,
+`aura`) and nine feature kinds (`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`,
+`talent`, `choice`) that say what owning the Talent does to the character. Nothing else reads a
+rule: no Strike's commitment, no damage step, because no kind for them exists, and Mike's
 instruction stands ("we will build automation syntax hooks one at a time").
+
+**The shape is Fantasy Grounds'** (0.16.0; ruling 182; Mike: "I REALLY, REALLY like the
+FantasyGrounds effects automation ... can we use syntax substantially similar to this"). Two
+layers, as FG has: **feature lines**, blocks in square brackets for what owning the Talent does
+(`[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]`, `[LANGUAGE Common, Serrovine]`, `[Acrobatics
+trained]`, `[POINT Skill]`, `[MANEUVER Steady the Line]`, `[TALENT Weapon Familiarity]`, `[CHOICE
+Weapon Group]`, `[AURA 15 allies visible]`, `[VIGOR opening 12]`, `[SENSES Low-light vision]`), and
+**effect lines**, a tag then components separated by semicolons (`CHECK: 1 condition, aid; IF:
+RANK(Origin >= trained)`; `DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1,
+0)`; `IMMUNE: prone; LIMIT: encounter`; `MARK: enemies`; `REROLL: diplomacy; IF: RESULT(critical
+failure)`; `IGNORE: terrain, mud, decking`). `CHECK`, `ATK`, `DEF`, `INIT` and `SPEED` take a signed
+value and the bonus type (situation, condition, gear) and at most one descriptor; `IF:` is about
+the owner or the roll (`RANK(...)`, `SEEN`, `ALLIES(>=1, 0)`, `CLAIM(...)`, `RESULT(...)`), `IFT:`
+about the other party or the attack (`TRAIT(Fear)`, `MARKED`, `BLOW`, `MELEE`, `CHECK(intimidation)`),
+`FOR:` the recipients and `LIMIT:` the once-a-round or once-an-encounter. The stored rules are the
+ones the kinds have had since 0.13.0, so the engine's four hook points are untouched; the 0.13.0
+operator form reads one more release with a build warning naming the cell, and 0.17.0 refuses it.
+`AUTOMATION_GRAMMAR.md` is the reference, its section 9 the map from each old operator.
 
 **The two Cultures** (0.15.0; rulings 174 to 181). Mike rewrote the eight Culture Talents and asked
 how a roleplay-only bonus should be automated; the cells, as `AUTOMATION_GRAMMAR.md` section 5
 prints them:
 
 ```
-Serrovanian        bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)
-Oathbound          mark: enemies, encounter
-                   bonus: +1, Condition, Attacks, MARKED
-                   bonus: +1, Condition, Defenses, MARKED
-Contract Literate  bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)
-Iron Etiquette     bonus: +1, Condition, Defenses, AGAINST(Intimidation)
-                   bonus: +1, Condition, Defenses, CLAIM(against a social manipulation other than Intimidation)
-Reacher            bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)
-Quick Tongue       reroll: Diplomacy, IF(Outcome=Critical Failure)
-Riverfoot          ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water
-                   bonus: +1, Situation, Speed, ONCE(encounter)
-Broker's Eye       bonus: +2, Situation, Diplomacy, CLAIM(when trading)
-                   bonus: +2, Situation, Guile, CLAIM(when trading)
+Serrovanian        [LANGUAGE Common, Serrovine]
+                   CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)
+Oathbound          [MANEUVER Oathbound]              (the row: MARK: enemies / ATK: 1 condition; IFT: MARKED / DEF: 1 condition; IFT: MARKED)
+Contract Literate  CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)
+Iron Etiquette     DEF: 1 condition; IFT: CHECK(intimidation)
+                   DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)
+Reacher            [LANGUAGE Common, Reachspeak]
+                   CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)
+Quick Tongue       [MANEUVER Quick Tongue]           (the row: REROLL: diplomacy; IF: RESULT(critical failure))
+Riverfoot          IGNORE: terrain, mud, decking, loose stone, shallow water
+                   SPEED: 1 situation; LIMIT: encounter
+Broker's Eye       CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)
+                   CHECK: 2 situation, guile; IF: CLAIM(when trading)
+Acrobat            [Acrobatics trained][Athletics trained][Lore trained]
+Weaponmaster       [Athletics trained][CHOICE Weapon Group][TALENT Weapon Familiarity][VIGOR opening 10]
 ```
+
+**A Trained Root** (0.16.0; ruling 186). `[Acrobatics trained]`, FG's own form for a proficiency, is
+one Talent Point directed at that Constellation: the wizard shows it as the slot the Background
+grants have always been, auto-buys the Root when the Constellation is unopened and offers a deeper
+Talent when it is open; `[Lore trained]` is a Lore slot the player names. A Skill point may buy a
+Lore.
+
+**Character Effects** (0.16.0; ruling 187; Mike: FG's "Character Effects field ... automated and
+shown on the Tracker, or on the Character sheet"). The Overview tab's **Effects** panel lists every
+effect line the character carries, from Talents, Maneuvers and the custom effects, each with its As
+read summary and FG's three-state switch **On / Skip / Off**: Skip lets the next application pass
+and returns to On, Off silences the line until it is turned back on. **Custom effects** are lines
+the owner or the GM type in the grammar on the sheet ("ATK: 2 situation; LIMIT: round", "DEF: 1
+situation, guard; IF: CLAIM(behind the cart)"), parsed as they are typed (an error shows red and
+is skipped, never refused) and acting exactly as a Talent's lines do, with a duration: until
+removed, the next roll, or the end of the encounter. The combat tracker shows a badge with the
+count of a combatant's active effects and their summaries on hover.
 
 - **A claim** (`CLAIM(<text>)`; ruling 174; Mike: "both") is a checkbox in the roll dialog, unticked,
   with the Talent's hint ("Serrovanian: +1 Condition bonus toward someone who shares your Culture.
@@ -1989,17 +2035,44 @@ matched on its first word; no closed list, and the build warns on a trait nothin
 ruling 171). The level-1 Human, written in it:
 
 ```
-Humanity            bonus: +1, Condition, Aid, IF(Origin=Trained)
-Driven              grant: 1, Calling
-Quick Study         grant: 1, Skill
-Stubborn Footing    prevent: Prone, ONCE(encounter)
-Close Ranks         bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)
-Versatile Human     grant: 1, Opening
-Jack of All Trades  bonus: +1, Situation, Checks, IF(Rank=Untrained)
-Torchbearer Human   aura: 15ft, allies, VISIBLE
-                    bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)
-Steady the Line ❶↺  prevent: Expose, FOR(allies, 0ft)
+Humanity            [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]
+                    CHECK: 1 condition, aid; IF: RANK(Origin >= trained)
+Driven              [POINT Calling]
+Quick Study         [POINT Skill]
+Stubborn Footing    IMMUNE: prone; LIMIT: encounter
+Close Ranks         DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)
+Versatile Human     [POINT Opening]
+Jack of All Trades  CHECK: 1 situation; IF: RANK(roll = untrained)
+Torchbearer Human   [AURA 15 allies visible]
+                    DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round
+Steady the Line     [MANEUVER Steady the Line]         (its Effect: @Maneuver[Steady the Line])
 ```
+
+**The chassis is written on the Root** (0.16.0; ruling 183). Humanity's `[TRAIT Human][SIZE
+Medium][SPEED 6][VIGOR 8]` and the Serrovanian's `[LANGUAGE Common, Serrovine]` are where the
+Ancestry's and the Culture's facts live now; a Calling's `[VIGOR opening N]` is its Opening Vigor
+and `[Athletics trained]` its free Training. The `_Tree Index` columns that carried them (Vigor,
+Size, Speed, Senses, Traits, Languages, the Callings' Skills) and the tree sheets' Choice and Free
+Talent columns are retired: read this release with one warning per workbook, and a disagreement
+with the Root's block fails the build. The pipeline's new step, `assets/parse_rules.mjs`, parses
+every cell once and carries the Root's blocks into the records the web app, the compendium docx
+and this system's chassis Items read, so every consumer sees one source and the converter still
+holds no grammar. On the character, any owned Talent's feature lines are read live: a `[SPEED +1]`
+lengthens the Move, a `[TRAIT X]` joins the header's chips, `[LANGUAGE X]` and `[SENSES X]` join
+the lists, so a Talent that adds a trait or a language works without the wizard.
+
+**Talent Maneuvers** (0.16.0; rulings 184 and 185; Mike: the Talent "only adding the Maneuver").
+A Talent that says "You gain the X Maneuver" carries `[MANEUVER X]`, and X is a row of the new
+"Talent Maneuvers" sheet of `data/maneuvers.xlsx` with its own Cost and Automation (Steady the Line
+❶↺ `IMMUNE: expose; FOR: allies 0`; Oathbound ❶ `MARK: enemies` with its two `IFT: MARKED` lines;
+Quick Tongue ❶↺ `REROLL: diplomacy; IF: RESULT(critical failure)`). When the Talent lands on a
+character (dragged onto the sheet, picked in the wizard, or refreshed by Sync content, after which
+the GM's client grants at the next load) the Maneuver is copied from the Actions compendium onto
+the character, flagged with the Talent, and listed on the Actions tab under **From your Talents**,
+used from there with its own cost; it leaves with the Talent. The Talent's Effect carries
+`@Maneuver[X]`, which every reader (the web app, the docx, the Talent Item, the wizard's card)
+replaces with the Maneuver's block: name and cost, Trigger, Requirements, Effect. The Expose widget
+now offers Steady the Line from the Maneuver, which the passive Talent of 0.15.0 never reached.
 
 Torchbearer Human's second line is the Rally Aura of Mike's 2026-11-05 text ("The first time each
 round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they
@@ -2086,13 +2159,16 @@ offer (`rulePreventers`). A kind that throws is logged and contributes nothing, 
 dies over a rule. A second kind that wants either moment adds no engine code; a new moment is
 defined with the first kind that needs it, as both were.
 
-**The build** (ruling 118). `build_foundry.mjs` parses every Talent's and every Maneuver's cell with
-the system's own grammar module (`module/rules/grammar.mjs`, pure enough for Node to import, so
-the build and the client read a cell identically; ruling 120), handing it a resolver of
-Constellation and Maneuver names so a `bonus` target is checked against the book at build time. A
-line it does not know fails the build with `automation: <Constellation> / <Talent>, line <n>:
-<message> ("<text>")`, so `sync_content.cmd` stops naming the cell before the sources are written,
-exactly as a bad Aura cell stops the converter. A clean cell writes `system.automation` (the text)
+**The build** (ruling 118; the pipeline step since 0.16.0, ruling 183). `assets/parse_rules.mjs`
+parses every Talent's, Maneuver's and Background's cell with the system's own grammar module
+(`module/rules/grammar.mjs`, pure enough for Node to import, so the pipeline and the client read a
+cell identically; ruling 120), handing it a resolver of Constellation and Maneuver names so a
+target is checked against the book at build time, writes the rules into the JSON the web app and
+the docx read, carries the Root's chassis blocks into the roster records and expands
+`@Maneuver[...]`; `build_foundry.mjs` reads those rules onto the documents. A line nobody knows
+fails the build with `automation: <Constellation> / <Talent>, line <n>: <message> ("<text>")`, so
+`sync_content.cmd` stops naming the cell before the sources are written, exactly as a bad Aura
+cell stops the converter; a cell still in the 0.13.0 form builds with a warning naming it. A clean cell writes `system.automation` (the text)
 and `system.rules` (the parsed rules) on the document; the run's summary counts them ("automation:
 13 rules on 9 documents (4 kinds in use)"). An `aura` rule fills `system.aura` and a `grant` rule
 `system.grant`, the fields the canvas and the wizard always read, and the Talent model derives both
@@ -2139,7 +2215,10 @@ the open world take the sync.
 
 **The command.** `node assets/build_all.mjs --content` from the project root, or a double-click on
 `sync_content.cmd` beside it (the same command in a window that pauses so it can be read). It
-converts the spreadsheets, rebuilds the web app and the Constellation viewer, renders only the
+converts the spreadsheets, parses every Automation cell once (`assets/parse_rules.mjs`, 0.16.0:
+the rules written into the JSON, the Root's chassis blocks onto the roster records, every
+`@Maneuver[...]` expanded, a line nobody knows failing the run naming the cell and a cell in the
+0.13.0 form warned), rebuilds the web app and the Constellation viewer, renders only the
 plates whose Constellation changed or is new (a sidecar of tree hashes beside the plates says
 which), writes the Foundry pack sources under `packs/_source/` with a content hash on every
 document and an index of them all, and runs the style check. It skips the character sheets, the

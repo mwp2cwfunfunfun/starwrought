@@ -25,14 +25,15 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
+    "automation": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
     "rules": [
       {
         "value": 2,
@@ -54,7 +55,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "bonus: +2, Condition, Checks, CLAIM(noticing hidden clauses, traps or altered terms in an agreement)"
+        "text": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)"
       }
     ],
     "traits": [],
@@ -67,7 +68,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e9fce1623df14c50"
+      "contentHash": "946cd9284b2ebfb2"
     }
   },
   "effects": [],

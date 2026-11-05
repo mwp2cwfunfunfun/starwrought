@@ -238,7 +238,7 @@ export async function planContentSync(index) {
         if (!e?._id || !e.file) continue;
         const row = { _id: e._id, name: String(e.name ?? e._id), type: e.type ?? "", file: e.file, hash: e.hash ?? null };
         plan.indexById.set(e._id, { pack: name, entry: row });
-        const byName = `${row.type}|${row.name.trim().toLowerCase()}`;
+        const byName = nameKey(row.type, row.name);
         if (!plan.byTypeName.has(byName)) plan.byTypeName.set(byName, { pack: name, entry: row });
       }
     }
@@ -253,7 +253,9 @@ export async function planContentSync(index) {
  * older `flags.core.sourceId`) when it names one of this system's packs and the index still has
  * the id; a copy recorded as coming from any other compendium is somebody else's and is left
  * alone; a copy with no record at all is matched by type and name, case-insensitive, in any pack
- * (ruling 117), as the 0.5.1 aura migration matched.
+ * (ruling 117), as the 0.5.1 aura migration matched. Since 0.16.0 the name is compared without its
+ * action glyphs, so a Talent whose cost moved onto a Maneuver row (Steady the Line, 0.16.0) still
+ * finds its copies named "Steady the Line ❶↺"; the document id already ignored the glyphs.
  * @param {Item} item
  * @param {object} plan
  * @returns {{pack: string, entry: object}|null}
@@ -266,7 +268,12 @@ function sourceOf(item, plan) {
     const found = plan.indexById.get(match[3]);
     return (found && (found.pack === match[2])) ? found : null;
   }
-  return plan.byTypeName.get(`${item.type}|${String(item.name ?? "").trim().toLowerCase()}`) ?? null;
+  return plan.byTypeName.get(nameKey(item.type, item.name)) ?? null;
+}
+
+/** The by-name key of a copy or an index row: the type and the glyph-free, case-folded name. */
+function nameKey(type, name) {
+  return `${type}|${SW.plainName(String(name ?? "")).trim().toLowerCase()}`;
 }
 
 /**

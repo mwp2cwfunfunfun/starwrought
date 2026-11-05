@@ -23,14 +23,15 @@
     "grant": {
       "n": 1,
       "mode": "open",
-      "scope": "anywhere"
+      "scope": "anywhere",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "grant: 1, Opening",
+    "automation": "[POINT Opening]",
     "rules": [
       {
         "n": 1,
@@ -39,7 +40,7 @@
         "when": null,
         "kind": "grant",
         "line": 1,
-        "text": "grant: 1, Opening"
+        "text": "[POINT Opening]"
       }
     ],
     "traits": [],
@@ -52,7 +53,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e61e83690ad7724c"
+      "contentHash": "df4602c741c27ec8"
     }
   },
   "effects": [],

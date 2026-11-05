@@ -7,7 +7,7 @@
     "kind": "culture",
     "constellation": "kestrel-reach",
     "attribute": "wits",
-    "languages": "Reachspeak, Common",
+    "languages": "Common, Reachspeak",
     "description": "<p>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</p>",
     "lore": [
       {
@@ -70,7 +70,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "21c0679b820b283b"
+      "contentHash": "5697d8acf1673eb6"
     }
   },
   "effects": [],

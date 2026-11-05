@@ -1,15 +1,22 @@
 # STARWROUGHT data pipeline: data/*.xlsx -> assets/trees.json
 # Header-driven: column ORDER doesn't matter; column NAMES do (first word wins).
 # Recognized tree-sheet columns: Talent | Tier | Root | Requires | Prerequisites | Description | Effect |
-#                                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation |
+#                                Attribute (or Feeds) | Enabled? | Automation |
+#                                Choice | Free Talent (retired 0.16.0; [CHOICE ...] and [TALENT ...] in Automation; read one release, warned) |
 #                                Aura (optional since 0.13.0; "aura:" in Automation is the authoring) |
 #                                Grants (retired 0.13.0; "grant:" in Automation; read one release, warned)
-# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Skills | Parent | Traits | Languages
-#   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary (optional since 0.14.0;
-#   the blurb is the Lore sheet's Summary row)
-#   -> those generate the "ancestries" block of roster.json, so the sheet owns the chassis.
-#   Culture rows may carry Languages (comma separated); every Culture tree generates a record of the
-#   "cultures" block of roster.json (0.15.0), so the sheet owns that chassis too.
+# Recognized index columns:      Tree | Category | Primary Attribute (or Feeds) | Flare (triggers) | Meta | Parent
+#   RETIRED (0.16.0), read one release with one warning per workbook: Skills | Traits | Languages |
+#   Vigor (or HP) | Size | Speed | Senses | Summary. The Root Talent's feature lines in Automation
+#   ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES ...], [TRAIT Human], [LANGUAGE ...], [VIGOR opening 12],
+#   [<Skill> trained]) are the authoring; assets/parse_rules.mjs reads them onto the roster's records
+#   after this converter has written the columns' values, and fails when the two disagree.
+#   Ancestry rows generate the "ancestries" block of roster.json, so the sheet owns the chassis
+#   (the blurb is the Lore sheet's Summary row).
+#   Every Culture tree generates a record of the "cultures" block of roster.json (0.15.0), so the
+#   sheet owns that chassis too.
+#   The Automation cell itself is copied through as TEXT on every talent, action and Background:
+#   Python holds no parser of the grammar (ruling 120); assets/parse_rules.mjs parses it once.
 #   A "<Tree> Lore" sheet (label | text rows) is the tree's player-facing text: lore on the tree
 #   and on its ancestry or culture record (0.13.0). An unknown header is warned about by name.
 # A talent sheet with no Requires column (or an empty one) reads Prerequisites as the requirement:
@@ -48,8 +55,13 @@ AOUT = os.path.join(HERE, "actions.json")
 EOUT = os.path.join(HERE, "equipment.json")
 
 def parse_bg_sheet(bws, bgs, warnings, fname):
+    # Automation (0.16.0): the same column as on a tree sheet, copied through as text and parsed
+    # by assets/parse_rules.mjs (Python holds no parser, ruling 120); a Background's Training is
+    # its `[<Skill> trained]` lines, which build_foundry.mjs reads from the rules. The retired
+    # Skills, Rarity and Lore columns still read where a sheet has them.
     bm = header_map(bws, {"name": "background", "rarity": "rarity", "desc": "desc", "effect": "effect", "skills": "skills", "lore": "lore",
-                          "enabled": "enabled"})
+                          "enabled": "enabled", "automation": "automation"},
+                    unknown=warnings, where=f"{fname} / Backgrounds")
     if "name" not in bm or "effect" not in bm:
         warnings.append(f"{fname}: Backgrounds sheet needs Background and Effect columns"); return
     for r in bws.iter_rows(min_row=2):
@@ -64,6 +76,8 @@ def parse_bg_sheet(bws, bgs, warnings, fname):
         if skills: entry["skills"] = skills
         lore = plain(gv("lore"))
         if lore: entry["lore"] = lore
+        auto = blank_none(plain(gv("automation")))
+        if auto: entry["automation"] = auto
         if not skills:  # legacy fallback: parse grants from effect text
             entry["grants"] = parse_grants(re.sub(r"<[^>]+>", "", eff))
         bgs.append(entry)
@@ -225,8 +239,11 @@ def parse_aura(text):
 # grammar); it only looks for the kind word at the start of a line, which is all the drift check
 # needs. The same goes for "grant:" and the retired Grants column, below.
 def automation_has(auto, kind):
-    """True when a line of the Automation cell starts with `<kind>:` or is the bare word."""
-    return any(re.match(rf"^\s*{kind}\s*(:|$)", ln, re.I) for ln in (auto or "").splitlines())
+    """True when a line of the Automation cell starts with `<kind>:` or is the bare word, or (0.16.0)
+    a feature line carries a `[<KIND> ...]` block ("[AURA 15 allies visible]"). A keyword scan, not
+    a parse: the drift check needs to know the ring is authored, not what it says."""
+    return any(re.match(rf"^\s*{kind}\s*(:|$)", ln, re.I) or re.search(rf"\[\s*{kind}\b", ln, re.I)
+               for ln in (auto or "").splitlines())
 
 def aura_for(cell, has_column, effect, where, warnings, errors, in_automation=False):
     """A row's Aura cell, read against its Effect. Returns the aura to store or None, appending the
@@ -784,6 +801,19 @@ def main():
                               "traits": "trait", "languages": "language"},
                         unknown=warnings, where=f"{fname} / _Tree Index")
         carried_langs, blank_langs = [], []
+        # The chassis columns are RETIRED (0.16.0): the Root's feature lines in Automation are the
+        # authoring ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES Low-light vision], [TRAIT Human],
+        # [LANGUAGE Common, Serrovine], a Calling's [VIGOR opening 12] and [<Skill> trained]), read by
+        # assets/parse_rules.mjs onto the roster's records. The columns are read one more release,
+        # with one warning per workbook naming them; a column that disagrees with the Root's line
+        # fails that step, as the Grants column's disagreement did.
+        retired = sorted({im[k] for k in ("hp", "vigor", "size", "speed", "senses", "traits", "languages", "skills") if k in im})
+        if retired:
+            names = ", ".join(plain(idx.cell(1, j + 1)) for j in retired)
+            warnings.append(f"{fname}: the _Tree Index columns {names} are retired (0.16.0); the Root's feature lines "
+                            f"([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES ...], [TRAIT Human], [LANGUAGE ...], "
+                            f"[VIGOR opening 12], [<Skill> trained]) are the authoring now (AUTOMATION_GRAMMAR.md). "
+                            f"The columns are read this release and must agree with the lines")
         if "vigor" in im and "hp" not in im: im["hp"] = im["vigor"]
         if "tree" not in im or "cat" not in im:
             warnings.append(f"{fname}: _Tree Index needs at least 'Tree' and 'Category' columns; file skipped"); continue
@@ -837,6 +867,15 @@ def main():
                 warnings.append(f"{fname} / {name}: the Grants column is retired (0.13.0); write the point as an "
                                 f"Automation line instead ('grant: 1, Calling'; 'grant: 2, Skill, DIFFERENT'; "
                                 f"AUTOMATION_GRAMMAR.md). Its cells are read this release and must agree with the line")
+            # Choice and Free Talent are retired the same way (0.16.0): [CHOICE Weapon Group] and
+            # [TALENT Weapon Familiarity] in Automation are the authoring; a filled cell is read this
+            # release, warned once per sheet, and must agree with the line (build_foundry.mjs checks).
+            retired_cols = [plain(ws.cell(1, cm[k] + 1)) for k in ("choice", "freetalent")
+                            if k in cm and any(plain(r[cm[k]]) for r in rows if len(r) > cm[k])]
+            if retired_cols:
+                warnings.append(f"{fname} / {name}: the {' and '.join(retired_cols)} column{'s are' if len(retired_cols) > 1 else ' is'} "
+                                f"retired (0.16.0); write [CHOICE Weapon Group] and [TALENT Weapon Familiarity] in Automation "
+                                f"(AUTOMATION_GRAMMAR.md). The cells are read this release and must agree with the line")
             nodes, root_count, root_name = [], 0, None
             for r in rows:
                 cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)

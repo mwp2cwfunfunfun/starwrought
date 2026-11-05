@@ -371,3 +371,34 @@ What the grammar gained, and why each is an operator or a kind:
 
 Deliberately not done: a cost for a Talent whose name carries no glyph (the sheet's data), the
 survey, adversaries' rolls, and anything a Culture Talent's Effect says that no line above reads.
+
+## 0.16.0: the grammar in Fantasy Grounds' shape (2026-11-05)
+
+Mike, after the 0.15.0 push: "I REALLY, REALLY like the FantasyGrounds effects automation ... can
+we use syntax substantially similar to this, instead of syntax we are currently using?", and with
+it: the Human's trait, Size, Speed and Vigor and the Cultures' languages should be Automation
+rather than columns the converter parses; Steady the Line's prevention belongs on the Maneuver in
+`maneuvers.xlsx`, the Talent only adding it; and FG's Character Effects field. His decisions by
+question: both FG layers in FG's shape; the chassis facts as feature lines with the index columns
+retired; Talent Maneuvers as rows I add, with a marker in the Effect that reproduces the Maneuver's
+text; Stubborn Footing and Close Ranks unchanged, plus the Character Effects panel.
+
+The design in one line: **the surface syntax changed, the stored rules and the four hook points did
+not.** `features.mjs` reads `[KEYWORD data]` blocks into the feature kinds (`trait`, `size`,
+`speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`, and `grant`/`aura` from
+their blocks); `effects.mjs` reads `TAG: value type, descriptors; IF: ...; IFT: ...; FOR: ...;
+LIMIT: ...` into the same `ops` record the 0.13.0 reader filled, so `bonus`, `prevent`, `mark`,
+`reroll` and `ignore` keep their shapes and their hooks. The 0.13.0 form reads one more release,
+flagged `legacy`, since a cell may still carry it. The pipeline gained `assets/parse_rules.mjs`,
+one parse of every cell that writes `rules` into the JSON, carries the Root's chassis blocks into
+the roster records and expands `@Maneuver[Name]`, so the web app and the docx read structured data
+without Python holding a grammar (ruling 120 kept). A Talent Maneuver is an owned action Item
+copied from the pack when the Talent lands (`SwItem.grantManeuvers`), flagged with its Talent,
+listed under "From your Talents", gone with the Talent; a Trained Root (`[Acrobatics trained]`) is
+the Background slot the wizard always had, directed by `grant.constellation`. Character Effects:
+the Overview panel with On / Skip / Off per line and custom lines in the grammar on the actor.
+
+Deliberately not done: Rally ❶ and Battle Cry ⓿↺ rows (their Constellations are not enabled);
+durations in rounds on a custom effect; dice values on a modifier; adversaries' rolls; the
+`weapons.xlsx` Melee sheet's retired Choice column (Weapon Familiarity's "Weapon Group or Technical
+Weapon"), warned and read, Mike's to move into a `[CHOICE ...]` block when he next edits it.

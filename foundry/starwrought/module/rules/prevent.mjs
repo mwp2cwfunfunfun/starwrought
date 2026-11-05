@@ -35,6 +35,9 @@ export function preventersFor(actor, effect, { token = null, threat = null } = {
   const all = rulePreventers(actor, {
     effect, threat, scene: sceneContextFor(actor, token), encounter: encounterContext()
   });
+  // CHARACTER EFFECTS (0.16.0): a line on Skip answered nothing this once; the dispatcher left the
+  // mark that returns it to On on the array, and the asking spends it.
+  if (all.marks?.length) writeRuleMarks(actor, all.marks).catch(err => console.error("STARWROUGHT | the skip marks could not be written", err));
   return { automatic: all.filter(p => !p.reaction), reactions: all.filter(p => p.reaction) };
 }
 

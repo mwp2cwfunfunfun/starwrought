@@ -44,6 +44,35 @@
     {{/each}}
   </div>
 
+  {{!-- TALENT MANEUVERS (0.16.0): the Maneuvers your Talents granted, each a row of
+        data/maneuvers.xlsx copied onto the character with the Talent that granted it; used from
+        here, and gone when the Talent goes. --}}
+  {{#if talentActions.length}}
+  <div class="sw-panel sw-talent-actions">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.talentActions"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.talentActions"}}</p>
+    <ol class="sw-item-list">
+      {{#each talentActions as |row|}}
+      <li class="sw-item-row sw-action-row" data-item-id="{{row.item.id}}">
+        <img src="{{row.item.img}}" alt="{{row.item.name}}">
+        <span class="sw-action-glyph" data-tooltip="{{row.item.system.costLabel}}">{{row.item.system.glyph}}</span>
+        <a class="sw-item-name" data-action="itemUse">{{swPlainName row.item.name}}</a>
+        {{#if row.talentName}}<span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Hint.grantedByTalent'}}">{{row.talentName}}</span>{{/if}}
+        {{#each row.item.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+        {{#with (lookup @root.auraByItem row.item.id) as |aura|}}
+        <a class="sw-aura-toggle {{#if aura.visible}}sw-aura-on{{/if}}" data-action="toggleAura" data-key="{{aura.key}}"
+           data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
+        {{/with}}
+        <div class="sw-item-controls">
+          <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
+          <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.view"><i class="fa-solid fa-eye"></i></a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+  {{/if}}
+
   <div class="sw-panel">
     <h3 class="sw-panel-title">
       {{localize "STARWROUGHT.Section.actions"}}

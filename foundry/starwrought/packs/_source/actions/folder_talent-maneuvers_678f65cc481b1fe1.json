@@ -1,0 +1,16 @@
+{
+  "_id": "678f65cc481b1fe1",
+  "name": "Talent Maneuvers",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 1,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "f1cdf2400d018ee2"
+    }
+  },
+  "_key": "!folders!678f65cc481b1fe1"
+}

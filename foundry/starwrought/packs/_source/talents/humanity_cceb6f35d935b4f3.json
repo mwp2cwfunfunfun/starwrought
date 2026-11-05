@@ -23,15 +23,42 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)",
+    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\nCHECK: 1 condition, aid; IF: RANK(Origin >= trained)",
     "rules": [
+      {
+        "name": "Human",
+        "kind": "trait",
+        "line": 1,
+        "text": "[TRAIT Human]"
+      },
+      {
+        "size": "medium",
+        "kind": "size",
+        "line": 1,
+        "text": "[SIZE Medium]"
+      },
+      {
+        "feet": 6,
+        "mode": "set",
+        "kind": "speed",
+        "line": 1,
+        "text": "[SPEED 6]"
+      },
+      {
+        "value": 8,
+        "scope": "level",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR 8]"
+      },
       {
         "value": 1,
         "type": "condition",
@@ -44,7 +71,7 @@
           {
             "constellation": "origin",
             "name": "Origin",
-            "op": "=",
+            "op": ">=",
             "rank": "trained"
           }
         ],
@@ -56,8 +83,8 @@
         "claim": null,
         "marked": false,
         "kind": "bonus",
-        "line": 1,
-        "text": "bonus: +1, Condition, Aid, IF(Origin=Trained)"
+        "line": 2,
+        "text": "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)"
       }
     ],
     "traits": [],
@@ -70,7 +97,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "bc25503e41be015e"
+      "contentHash": "817bb07658e4c3cd"
     }
   },
   "effects": [],

@@ -1,0 +1,88 @@
+{
+  "_id": "834a51a52057fe6f",
+  "name": "Oathbound",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Talent Maneuvers",
+    "basic": false,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "description": "<p>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</p>",
+    "effect": "<p>Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.</p>",
+    "automation": "MARK: enemies\nATK: 1 condition; IFT: MARKED\nDEF: 1 condition; IFT: MARKED",
+    "rules": [
+      {
+        "who": "enemies",
+        "until": "encounter",
+        "when": null,
+        "kind": "mark",
+        "line": 1,
+        "text": "MARK: enemies"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Attacks",
+          "slug": "attacks",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": true,
+        "kind": "bonus",
+        "line": 2,
+        "text": "ATK: 1 condition; IFT: MARKED"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Defenses",
+          "slug": "defenses",
+          "type": "scope"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": true,
+        "kind": "bonus",
+        "line": 3,
+        "text": "DEF: 1 condition; IFT: MARKED"
+      }
+    ],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "678f65cc481b1fe1",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f50d4542e9161fe4"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!834a51a52057fe6f"
+}

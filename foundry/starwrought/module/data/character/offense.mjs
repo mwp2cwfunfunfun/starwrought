@@ -82,7 +82,8 @@ export function prepareOffense(data) {
   }
 
   // Speed, Step, Rush, Leap, after the Legs' Wounds and less Load Strain where the book says.
-  data._prepareMovement(data.details.ancestry.speed + data.bonuses.speed, data.loadStrain);
+  // The Talents' `[SPEED +N]` lines (0.16.0) add to the chassis's Speed and the sheet's adjustment.
+  data._prepareMovement(data.details.ancestry.speed + data.bonuses.speed + (data.features?.speed ?? 0), data.loadStrain);
   data.speed = data.moveSpeed;
 
   const statuses = data.parent.statuses ?? new Set();

@@ -28,6 +28,17 @@
  * build the framework"); the `bonus` kind, for Humanity, is the first to read what this module
  * files, and the aura for Torchbearer is next.
  *
+ * CHARACTER EFFECTS (0.16.0; the sheet's Effects panel, in the spirit of Fantasy Grounds' Character
+ * Effects, Mike's ask). Two additions, both read here and written nowhere in this file: a STATE
+ * per rule line on its owner (`flags.starwrought.rules.state.<carrier>:<line>`, `"skip"` or
+ * `"off"`, absent meaning on), applied by `rulesOfKind` so an Off line reaches no hook point and
+ * a Skip line is dropped by the dispatchers once and then cleared through a `per: "state"` mark;
+ * and CUSTOM EFFECTS, the rows of a character's `system.effects`, each indexed by `collectRules`
+ * through a pseudo-Item (`effectCarrier`) so every kind reads them as a Talent's lines, a one-roll
+ * effect spent through a `per: "effect"` mark. The marks are written by `writeRuleMarks`
+ * (module/rules/scene.mjs) where the callers already write FIRST and ONCE; the state and the rows
+ * are written by module/rules/effects-state.mjs.
+ *
  * Pure over the documents: no writes, no Foundry globals at module scope, so `assets/test_rules.mjs`
  * drives it with a plain `{ items: [...] }` from Node.
  */
@@ -44,10 +55,68 @@ import { KINDS, kindOf } from "./kinds/index.mjs";
 export const RULE_ITEM_TYPES = Object.freeze(["talent", "action", "constellation"]);
 
 /**
+ * CHARACTER EFFECTS (0.16.0): the pseudo-Item type of a custom effect's carrier. A character's
+ * `system.effects` rows (a label, a line or two in the grammar, a duration) are indexed by
+ * `collectRules` as if each were a Talent with that cell, through `effectCarrier` below, so every
+ * hook point reads them as it reads a Talent's lines and no kind learns what a custom effect is.
+ */
+export const EFFECT_CARRIER_TYPE = "effect";
+
+/** The three durations a custom effect may have (the `duration` field of a `system.effects` row). */
+export const EFFECT_DURATIONS = Object.freeze(["always", "roll", "encounter"]);
+
+/**
+ * The carrier of one custom effect: the shape a kind's hook reads off a Talent (`id`, `name`,
+ * `type`, `system.rules`, and the two fields the `prevent` and `reroll` kinds look at, `reaction`
+ * and `glyph`, both the passive answer), with the row itself under `effect`. Its id is
+ * `effect:<row id>`, which no Item id can be, so a rule's `source`, its FIRST/ONCE mark and its
+ * state key are its own. Pure.
+ * @param {{id: string, label?: string, text?: string, duration?: string, rules?: object[]}} effect
+ * @returns {object}
+ */
+export function effectCarrier(effect) {
+  const id = String(effect?.id ?? "");
+  return {
+    id: `effect:${id}`,
+    name: String(effect?.label ?? "").trim() || "Custom effect",
+    type: EFFECT_CARRIER_TYPE,
+    effect: { id, label: effect?.label ?? "", text: effect?.text ?? "", duration: effect?.duration ?? "always" },
+    system: { rules: Array.isArray(effect?.rules) ? effect.rules : [], automation: effect?.text ?? "", reaction: false, glyph: "", cost: "passive" }
+  };
+}
+
+/**
+ * The state key of one rule line on its carrier (0.16.0): `<carrier id>:<line>`, dots replaced,
+ * since the key is a path under `flags.starwrought.rules.state`. The same shape the FIRST/ONCE
+ * marks use, so a line is one thing wherever the flags name it.
+ * @param {object} item  The carrier (an Item or an effect carrier).
+ * @param {object} rule  The stored rule.
+ * @returns {string}
+ */
+export function ruleStateKey(item, rule) {
+  return `${item?.id ?? item?.name ?? "rule"}:${rule?.line ?? 0}`.replace(/\./g, "-");
+}
+
+/**
+ * The state of every rule line on an actor, by state key (0.16.0): `"skip"` or `"off"`; a line
+ * absent from the map is on. Read off `flags.starwrought.rules.state`; written by
+ * module/rules/effects-state.mjs (the sheet's switch) and cleared by `writeRuleMarks` (a skip
+ * spent). A plain object in a test, so the engine reads it the same from Node.
+ * @param {object} actor
+ * @returns {Object<string, string>}
+ */
+export function ruleStates(actor) {
+  const state = actor?.flags?.starwrought?.rules?.state;
+  return (state && (typeof state === "object")) ? state : {};
+}
+
+/**
  * @typedef {object} RuleEntry
  * @property {object} rule   An entry of the Item's `system.rules`.
- * @property {object} item   The Item that carries it.
+ * @property {object} item   The Item that carries it (or an effect carrier, `effectCarrier`).
  * @property {string} [reason]  On an `unknown` entry: why the engine skips it.
+ * @property {boolean} [skip]   From `rulesOfKind`: the line's state is Skip (0.16.0): the next
+ *                              roll it would touch goes without it, then the state clears.
  */
 
 /**
@@ -66,8 +135,20 @@ export function collectRules(actor) {
   // ("constructor" passes KIND_WORD) files its rules instead of landing on a function (review).
   const byKind = Object.create(null);
 
+  // The carriers: every Item of a rule-bearing type, then (0.16.0) a carrier per custom effect on
+  // the character's `system.effects`, each read as a Talent with that cell would be.
+  const carriers = [];
   for (const item of actor?.items ?? []) {
-    if (!RULE_ITEM_TYPES.includes(item?.type)) continue;
+    if (RULE_ITEM_TYPES.includes(item?.type)) carriers.push(item);
+  }
+  const effects = actor?.system?.effects;
+  if (Array.isArray(effects)) {
+    for (const effect of effects) {
+      if (effect && (typeof effect === "object") && effect.id) carriers.push(effectCarrier(effect));
+    }
+  }
+
+  for (const item of carriers) {
     const rules = item.system?.rules;
     if (!Array.isArray(rules)) continue;
 
@@ -98,6 +179,12 @@ export function collectRules(actor) {
  * prepared when there is one (`actor.system.rules.byKind`), else collects on the spot, so the
  * answer is the same from a prepared document and from a plain object in a test. Always an array,
  * so a hook can iterate without a guard; `SwActor#rulesOfKind` is this with `this`.
+ *
+ * THE STATE SWITCH (0.16.0; Fantasy Grounds' Active State, Mike's ask): each line has a state on
+ * its owner, On, Skip or Off (`ruleStates`). An Off line is dropped here, so no hook point ever
+ * sees it; a Skip line comes back with `skip: true`, and the dispatchers below drop what it would
+ * have contributed and ask the caller to clear the state once the roll resolves. The index itself
+ * holds every line (the sheet lists them all); the filter is at the one reading every hook uses.
  * @param {object} actor
  * @param {string} kind
  * @returns {RuleEntry[]}
@@ -107,7 +194,93 @@ export function rulesOfKind(actor, kind) {
   if (!id) return [];
   const prepared = actor?.system?.rules?.byKind;
   const byKind = (prepared && (typeof prepared === "object")) ? prepared : collectRules(actor).byKind;
-  return Object.hasOwn(byKind, id) ? byKind[id] : [];
+  const entries = Object.hasOwn(byKind, id) ? byKind[id] : [];
+  const states = ruleStates(actor);
+  if (!Object.keys(states).length) return entries;
+  const out = [];
+  for (const entry of entries) {
+    const state = states[ruleStateKey(entry.item, entry.rule)];
+    if (state === "off") continue;
+    out.push(state === "skip" ? { ...entry, skip: true } : entry);
+  }
+  return out;
+}
+
+/* -------------------------------------------- */
+/*  Tracing an entry's contribution (0.16.0)    */
+/* -------------------------------------------- */
+
+/**
+ * Does the dispatcher need to know which entry a hook's answer came from? Yes for a Skip line
+ * (its answer is dropped and its state cleared) and for a custom effect that lasts one roll (its
+ * answer is applied and the effect removed). A kind's hook takes a list of entries and returns a
+ * flat list of answers with no pointer back, and the kinds are not changed for this (they come one
+ * at a time, with Mike); so when any entry on this actor needs tracing the dispatcher calls the
+ * hook ONCE PER ENTRY and reads the answer by the call, and otherwise once with every entry as
+ * before. The kinds' hooks are independent per entry (each loops its entries and answers for each
+ * alone), which is what makes the two calls equal. Other tokens' entries are traced too: the mark
+ * then names their owner, and `writeRuleMarks` writes it there.
+ */
+function needsTrace(entry) {
+  return (entry?.skip === true) || (entry?.item?.effect?.duration === "roll");
+}
+
+/**
+ * The marks an entry's answer asks for beyond the kind's own: a Skip line's state cleared
+ * (`per: "state"`), a one-roll custom effect spent (`per: "effect"`), each naming the owner when
+ * the entry is another token's.
+ */
+function traceMarks(entry, actor) {
+  const marks = [];
+  const owner = (entry.owner && (entry.owner !== actor) && entry.owner.uuid) ? { owner: String(entry.owner.uuid) } : {};
+  if (entry.skip === true) marks.push({ key: ruleStateKey(entry.item, entry.rule), per: "state", ...owner });
+  if (entry.item?.effect?.duration === "roll") marks.push({ key: String(entry.item.effect.id ?? ""), per: "effect", ...owner });
+  return marks;
+}
+
+/** Push a mark once: two lines of one Skip carrier, or two answers of one line, ask for one write. */
+function addMark(marks, mark) {
+  if (!mark?.key || !mark?.per) return;
+  if (marks.some(m => (m.key === mark.key) && (m.per === mark.per) && (m.owner === mark.owner))) return;
+  marks.push(mark);
+}
+
+/**
+ * Call a kind's hook for the entries, by the call shape `needsTrace` wants: one call with every
+ * entry when none is traced, else one per entry. Returns `[{ entry, result, touched }]`: `entry`
+ * null for the untraced batch; `result` what to take; `touched` whether the entry's rule reached
+ * this roll at all, which for a traced entry under a `momentOnly` ask is read with the half-split
+ * lifted (a static Skip line on a Defense roll was dropped by the sheet's pass and must still clear
+ * here; a one-roll DEF effect folded into the Threshold must still be spent by the Defense roll),
+ * while `result` keeps the split so nothing is counted twice. A hook that throws is reported once
+ * and contributes nothing (a roll never dies over a rule).
+ */
+function callHook(kind, point, hook, entries, context, actor) {
+  const run = (batch, ctx) => {
+    try {
+      const result = hook(batch, ctx, actor);
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      console.error(`STARWROUGHT | the "${kind.id}" kind's ${point} hook failed:`, error);
+      return null;
+    }
+  };
+  if (!entries.some(needsTrace)) {
+    const result = run(entries, context);
+    return result ? [{ entry: null, result, touched: result.length > 0 }] : [];
+  }
+  const out = [];
+  for (const entry of entries) {
+    const result = run([entry], context);
+    if (!result) continue;
+    let touched = result.length > 0;
+    if (needsTrace(entry) && context?.momentOnly && !touched) {
+      const whole = run([entry], { ...context, momentOnly: false, staticOnly: false });
+      touched = !!whole && (whole.length > 0);
+    }
+    out.push({ entry, result: entry.skip === true ? [] : result, touched });
+  }
+  return out;
 }
 
 /* -------------------------------------------- */
@@ -200,41 +373,44 @@ export function ruleModifiers(actor, context = {}) {
     }
     if (!entries.length) continue;
 
-    let result;
-    try {
-      result = hook(entries, context, actor);
-    } catch (error) {
-      console.error(`STARWROUGHT | the "${kind.id}" kind's modifiers hook failed:`, error);
-      continue;
-    }
-    if (!Array.isArray(result)) continue;
-
     let offers = 0;
-    for (const mod of result) {
-      if (!mod || (typeof mod !== "object")) continue;
-      const value = (typeof mod.value === "string") ? Number(mod.value.trim() || NaN) : mod.value;
-      if ((typeof value !== "number") || !Number.isFinite(value) || (value === 0)) continue;
-      const clean = { ...mod, value, label: String(mod.label ?? kind.id) };
-      const validMark = (clean.mark && (typeof clean.mark === "object") && clean.mark.key && clean.mark.per)
-        ? { key: String(clean.mark.key), per: String(clean.mark.per) } : null;
-      delete clean.mark;
-      if (mod.offer === true) {
-        let key = String(mod.key ?? "") || `${kind.id}-${offers}`;
-        offers += 1;
-        if (keys.has(key)) {
-          let n = 2;
-          while (keys.has(`${key}-${n}`)) n += 1;
-          key = `${key}-${n}`;
+    // One call, or one per entry when a Skip line or a one-roll effect must be traced (0.16.0,
+    // `callHook`): a traced entry whose rule reached this roll asks for its marks, and a Skip's
+    // answer is already dropped.
+    for (const { entry, result, touched } of callHook(kind, "modifiers", hook, entries, context, actor)) {
+      const extra = (entry && touched) ? traceMarks(entry, actor) : [];
+      // A one-roll effect's mark rides on its offer when the kind gave none, so a ticked box
+      // spends it as a claim's would; a Skip's state clears whether or not a box is ticked.
+      for (const m of extra) {
+        if ((m.per === "state") || !result.some(mod => mod?.offer === true)) addMark(marks, m);
+      }
+      for (const mod of result) {
+        if (!mod || (typeof mod !== "object")) continue;
+        const value = (typeof mod.value === "string") ? Number(mod.value.trim() || NaN) : mod.value;
+        if ((typeof value !== "number") || !Number.isFinite(value) || (value === 0)) continue;
+        const clean = { ...mod, value, label: String(mod.label ?? kind.id) };
+        let validMark = (clean.mark && (typeof clean.mark === "object") && clean.mark.key && clean.mark.per)
+          ? { key: String(clean.mark.key), per: String(clean.mark.per) } : null;
+        delete clean.mark;
+        if (mod.offer === true) {
+          let key = String(mod.key ?? "") || `${kind.id}-${offers}`;
+          offers += 1;
+          if (keys.has(key)) {
+            let n = 2;
+            while (keys.has(`${key}-${n}`)) n += 1;
+            key = `${key}-${n}`;
+          }
+          keys.add(key);
+          if (!validMark) validMark = extra.find(m => m.per === "effect") ?? null;
+          // An offer keeps its mark for the dialog (0.15.0): an armed claim is spent only when the
+          // player leaves its box ticked, so the dialog, not the engine, files that mark.
+          offered.push({ ...clean, offer: true, key, hint: String(mod.hint ?? ""), ticked: mod.ticked === true, ...(validMark ? { mark: validMark } : {}) });
+        } else {
+          if (validMark) addMark(marks, validMark);
+          delete clean.offer;
+          delete clean.ticked;
+          applied.push(clean);
         }
-        keys.add(key);
-        // An offer keeps its mark for the dialog (0.15.0): an armed claim is spent only when the
-        // player leaves its box ticked, so the dialog, not the engine, files that mark.
-        offered.push({ ...clean, offer: true, key, hint: String(mod.hint ?? ""), ticked: mod.ticked === true, ...(validMark ? { mark: validMark } : {}) });
-      } else {
-        if (validMark) marks.push(validMark);
-        delete clean.offer;
-        delete clean.ticked;
-        applied.push(clean);
       }
     }
   }
@@ -268,6 +444,7 @@ export function ruleModifiers(actor, context = {}) {
  */
 export function rulePreventers(actor, context = {}) {
   const out = [];
+  const skipped = [];
   const scene = context?.scene ?? null;
   for (const kind of KINDS.values()) {
     const hook = kind.hooks?.prevent;
@@ -283,23 +460,28 @@ export function rulePreventers(actor, context = {}) {
       }
     }
     if (!entries.length) continue;
-    let result;
-    try {
-      result = hook(entries, context, actor);
-    } catch (error) {
-      console.error(`STARWROUGHT | the "${kind.id}" kind's prevent hook failed:`, error);
-      continue;
-    }
-    if (!Array.isArray(result)) continue;
-    for (const p of result) {
-      if (!p || (typeof p !== "object") || !p.item) continue;
-      out.push({
-        item: p.item, owner: p.owner ?? actor, ownerToken: p.ownerToken ?? null,
-        reaction: p.reaction === true,
-        mark: (p.mark && p.mark.key && p.mark.per) ? { key: String(p.mark.key), per: String(p.mark.per) } : null
-      });
+    for (const { entry, result, touched } of callHook(kind, "prevent", hook, entries, context, actor)) {
+      // A Skip line that would have prevented this effect is dropped and asks to clear (0.16.0).
+      // The answer is a list of preventers with no slot for a mark of nobody's, so the marks ride
+      // on the returned array as `marks`, for the one client that acts (module/rules/prevent.mjs)
+      // to write beside the preventer's own. A one-roll custom effect is never a preventer's
+      // concern here: it is spent by a roll, and a prevention is not one.
+      if (entry && touched && (entry.skip === true)) {
+        for (const m of traceMarks(entry, actor)) {
+          if (m.per === "state") addMark(skipped, m);
+        }
+      }
+      for (const p of result) {
+        if (!p || (typeof p !== "object") || !p.item) continue;
+        out.push({
+          item: p.item, owner: p.owner ?? actor, ownerToken: p.ownerToken ?? null,
+          reaction: p.reaction === true,
+          mark: (p.mark && p.mark.key && p.mark.per) ? { key: String(p.mark.key), per: String(p.mark.per) } : null
+        });
+      }
     }
   }
+  out.marks = skipped;
   return out;
 }
 
@@ -346,7 +528,9 @@ export function ruleUses(actor, item, context = {}) {
   for (const kind of KINDS.values()) {
     const hook = kind.hooks?.use;
     if (typeof hook !== "function") continue;
-    const entries = rulesOfKind(actor, kind.id).filter(e => e?.item === item).map(e => ({ ...e, owner: actor }));
+    // An Off line is already gone (`rulesOfKind`); a Skip line is read as On here, since a Use is
+    // deliberate and a custom effect's carrier is no Item to use (0.16.0).
+    const entries = rulesOfKind(actor, kind.id).filter(e => (e?.item === item) && (e.item?.type !== EFFECT_CARRIER_TYPE)).map(e => ({ ...e, owner: actor, skip: false }));
     if (!entries.length) continue;
     let result;
     try {
@@ -393,7 +577,9 @@ export function ruleCardOffers(actor, flags, extra = {}) {
   for (const kind of KINDS.values()) {
     const hook = kind.hooks?.card;
     if (typeof hook !== "function") continue;
-    const entries = rulesOfKind(actor, kind.id).map(e => ({ ...e, owner: actor }));
+    // As in `ruleUses`: Off dropped, Skip read as On (a button is pressed on purpose), and a custom
+    // effect's carrier offers no button, having no Item to pay or to name on the card (0.16.0).
+    const entries = rulesOfKind(actor, kind.id).filter(e => e.item?.type !== EFFECT_CARRIER_TYPE).map(e => ({ ...e, owner: actor, skip: false }));
     if (!entries.length) continue;
     let result;
     try {

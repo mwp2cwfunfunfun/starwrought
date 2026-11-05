@@ -1,4 +1,13 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0)
+
+**0.16.0 (2026-11-05).** The grammar has two layers in the shape of Fantasy Grounds' PF2 automation,
+at Mike's direction: feature lines in square brackets (what owning the Talent does to the
+character: `[TRAIT Human][SPEED 6]`, `[Acrobatics trained]`, `[MANEUVER Steady the Line]`) and
+effect lines of a tag and components (`CHECK: 1 condition, aid; IF: RANK(Origin >= trained)`).
+`grammar.mjs` tells the two apart (a `[` opens a feature line; a known tag an effect line; a
+0.13.0 kind word the legacy form, read one release and flagged `legacy: true`); `features.mjs` and
+`effects.mjs` are the readers; the kinds keep their ids and stored shapes, so every hook reads what
+it always read. `AUTOMATION_GRAMMAR.md` is the reference; its section 9 maps the old operators.
 
 Mike, 2026-10-03: "I'd like an Automation field in the data .xlsx files. And based on what is in
 there, when I run sync_content.cmd (or when you run it as part of a build), it will create the
@@ -22,12 +31,15 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 |---|---|
 | `grammar.mjs` | The line structure of a cell and nothing else: `parseAutomation`, `summarize`, `ruleEntries`, and the plain-data check on what a kind returns. Re-exports the registry's words and `syntax.mjs`. |
 | `syntax.mjs` | What a kind file imports: `RuleSyntaxError`, `splitArgs`, `keyValues`. Imports nothing, so a kind never imports the grammar and no circle exists (0.10.1; the class alone as `errors.mjs` in 0.10.0). |
-| `operators.mjs` | The operator grammar (0.13.0; AUTOMATION_GRAMMAR.md section 4): `readLine(args, { allow, kind, context })` splits a line into its positional arguments and its operators (`IF`, `FOR`, `WHILE`, `AGAINST`, `SEEN`, `FIRST`, `ONCE`, `DIFFERENT`, `VISIBLE`), refusing one the kind did not allow by name; `splitOperands`, `readRank`, `readRange`; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `needsMoment`, `summarizeOperators`. `IF(Trait=<Trait>)` and `SEEN` since 0.14.0. Pure. |
+| `features.mjs` | The feature line (0.16.0; AUTOMATION_GRAMMAR.md section 2): `isFeatureLine`, `readFeatureLine(text)` splitting `[KEYWORD data]` blocks and naming each block's kind (`FEATURE_KEYWORDS`; `[<Constellation> trained]` to `grant`). Pure. |
+| `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). Pure. |
+| `operators.mjs` | The shared vocabularies and the 0.13.0 reader, kept one release (section 9): `readLine(args, { allow, kind, context })` for the old `kind: arg, OP(...)` form; `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. Pure. |
 | `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
-| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers `bonus`. |
-| `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative), with the operators. |
-| `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation; `toGrantField` is the wizard's field. No hook. |
-| `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map; `toAuraField` is `system.aura`. No hook. |
+| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the sixteen kinds. |
+| `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` (0.16.0) and the 0.13.0 `bonus:` line. |
+| `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
+| `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map, `[AURA ...]`; `toAuraField` is `system.aura`. No hook. |
+| `kinds/features.mjs` | The feature kinds (0.16.0): `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`, each read from its block; no hooks. The build and the pipeline step carry the chassis facts, the wizard the choice and the free Talent, `SwItem.grantManeuvers` the Maneuver, and the character's `_prepareRules` the Talents' additions (`system.features`). |
 | `kinds/prevent.mjs` | The `prevent` kind (0.13.0): a Condition or an Expose does not land; the `prevent` hook. |
 | `kinds/mark.mjs` | The `mark` kind (0.15.0): using the Talent names one creature; the `use` hook. Read back by `MARKED` (`markedHolds` in operators.mjs). |
 | `kinds/reroll.mjs` | The `reroll` kind (0.15.0): a button on the matching check card throws the die again; the `card` hook. |

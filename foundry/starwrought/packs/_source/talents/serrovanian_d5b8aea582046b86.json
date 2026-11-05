@@ -23,15 +23,25 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)",
+    "automation": "[LANGUAGE Common, Serrovine]\nCHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
     "rules": [
+      {
+        "languages": [
+          "Common",
+          "Serrovine"
+        ],
+        "kind": "language",
+        "line": 1,
+        "text": "[LANGUAGE Common, Serrovine]"
+      },
       {
         "value": 1,
         "type": "condition",
@@ -51,8 +61,8 @@
         },
         "marked": false,
         "kind": "bonus",
-        "line": 1,
-        "text": "bonus: +1, Condition, Diplomacy, CLAIM(toward someone who shares your Culture)"
+        "line": 2,
+        "text": "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)"
       }
     ],
     "traits": [],
@@ -65,7 +75,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7a4217e1b4fd6294"
+      "contentHash": "e5a7ab271b06d857"
     }
   },
   "effects": [],

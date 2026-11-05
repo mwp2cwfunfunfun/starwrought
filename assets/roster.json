@@ -80,7 +80,7 @@
    "name": "Serrovane",
    "enabled": true,
    "attribute": "Presence",
-   "languages": "Serrovine, Common",
+   "languages": "Common, Serrovine",
    "blurb": "Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.",
    "lore": [
     {
@@ -139,7 +139,7 @@
    "name": "Kestrel Reach",
    "enabled": true,
    "attribute": "Wits",
-   "languages": "Reachspeak, Common",
+   "languages": "Common, Reachspeak",
    "blurb": "Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.",
    "lore": [
     {

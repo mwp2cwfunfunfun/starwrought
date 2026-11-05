@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.15.0"; }
+:root { --sw-css-version-character: "0.16.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -571,3 +571,85 @@
 .starwrought .sw-comet-badge { border-color: var(--sw-gold); background: linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(212, 175, 55, 0.05)); }
 .starwrought .sw-comet-badge i, .starwrought .sw-comet-badge strong { color: var(--sw-gold); }
 .starwrought .sw-comet-badge .sw-deferred-spend { border-color: var(--sw-gold); color: var(--sw-gold); }
+
+/* --------------------------------------------------------------------------
+   CHARACTER EFFECTS (0.16.0): the Overview's Effects panel. Every rule line the engine acts on,
+   grouped by its carrier, each with its three-state switch (On in the gold, Skip in amber, Off
+   dimmed); then the custom effects, a row of fields each with its lines read back under it, an
+   unparsed line in red. helpers/effects.mjs builds the rows; module/rules/effects-state.mjs writes.
+   -------------------------------------------------------------------------- */
+.starwrought .sw-effects-panel .sw-panel-buttons { align-items: center; }
+.starwrought .sw-effects-group { margin: 0 0 0.35rem; }
+.starwrought .sw-effects-source {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sw-gold-dim);
+  margin: 0.2rem 0 0.1rem;
+}
+.starwrought .sw-effects-list { list-style: none; margin: 0; padding: 0; }
+.starwrought .sw-effect-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.12rem 0.25rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+.starwrought .sw-effect-line:hover { background: rgba(255, 255, 255, 0.05); }
+.starwrought .sw-effect-kind {
+  flex: 0 0 auto;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sw-ink-dim);
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  padding: 0 0.35rem;
+  min-width: 3.2rem;
+  text-align: center;
+}
+.starwrought .sw-effect-kind.sw-effect-kind-error { color: var(--sw-blood); border-color: var(--sw-blood); min-width: 0; }
+.starwrought .sw-effect-summary { flex: 1 1 8rem; }
+/* The switch: a small pill that names the state. On is the gold, Skip amber, Off dimmed, and the
+   whole line dims with Off so the eye skips it as the engine does. */
+.starwrought .sw-effect-state {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--sw-edge);
+  border-radius: 999px;
+  padding: 0.02rem 0.45rem;
+  color: var(--sw-ink-dim);
+  white-space: nowrap;
+}
+.starwrought .sw-effect-state:hover { border-color: var(--sw-gold); color: var(--sw-gold); }
+.starwrought .sw-effect-state.sw-effect-state-on { color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+.starwrought .sw-effect-state.sw-effect-state-skip { color: #d8a25a; border-color: #d8a25a; background: rgba(216, 162, 90, 0.12); }
+.starwrought .sw-effect-state.sw-effect-state-off { color: var(--sw-ink-dim); border-color: var(--sw-edge); }
+.starwrought .sw-effect-line.sw-effect-off .sw-effect-kind,
+.starwrought .sw-effect-line.sw-effect-off .sw-effect-summary { opacity: 0.45; }
+.starwrought .sw-effect-line.sw-effect-skip .sw-effect-summary { color: #d8a25a; }
+.starwrought .sw-effect-line.sw-effect-error .sw-effect-summary { color: var(--sw-blood); }
+
+/* The custom effects: the subtitle carries the Add button; each row is its fields on one line
+   (label, the effect text, the duration, the bin) and its As read lines beneath. */
+.starwrought .sw-effects-custom-title { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.starwrought .sw-effects-custom { list-style: none; margin: 0; padding: 0; }
+.starwrought .sw-custom-effect { padding: 0.25rem 0.25rem 0.3rem; border-radius: 3px; border-left: 2px solid var(--sw-gold-dim); margin: 0 0 0.3rem; background: rgba(0, 0, 0, 0.15); }
+.starwrought .sw-custom-effect.sw-custom-error { border-left-color: var(--sw-blood); }
+.starwrought .sw-custom-fields { display: flex; align-items: center; gap: 0.35rem; }
+.starwrought .sw-custom-fields .sw-custom-label { flex: 0 1 9rem; font-size: 0.8rem; }
+.starwrought .sw-custom-fields .sw-custom-text {
+  flex: 1 1 12rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  min-height: 1.7rem;
+  resize: vertical;
+  line-height: 1.3;
+}
+.starwrought .sw-custom-fields .sw-custom-duration { flex: 0 0 auto; width: auto; font-size: 0.75rem; }
+.starwrought .sw-custom-remove { flex: 0 0 auto; color: var(--sw-ink-dim); opacity: 0.6; font-size: 0.75rem; }
+.starwrought .sw-custom-remove:hover { color: var(--sw-blood); opacity: 1; }
+.starwrought .sw-custom-lines { margin-top: 0.15rem; padding-left: 0.3rem; }

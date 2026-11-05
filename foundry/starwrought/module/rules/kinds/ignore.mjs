@@ -26,7 +26,7 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, refuseOutcome, summarizeOperators } from "../operators.mjs";
+import { readLine, rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { TERRAIN_KINDS, terrainKindOf, terrainKindName } from "../../config.mjs";
 import { rulesOfKind } from "../engine.mjs";
 
@@ -39,7 +39,11 @@ export default {
   aliases: [],
 
   parse(args, context = {}) {
-    const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "ignore", context });
+    if (context?.form === "feature") throw new RuleSyntaxError("an ignore is an effect line, not a bracketed feature: `IGNORE: terrain, mud`");
+    // `IGNORE: terrain, mud, decking` reads the same in both shapes.
+    const { args: parts, ops } = (context?.form === "effect")
+      ? { args: context.effect.descriptors, ops: refuseComponents(context.effect.ops, "IGNORE", ["when"]) }
+      : readLine(args, { allow: OPERATORS_TAKEN, kind: "ignore", context });
     if (!parts.length || (parts[0].toLowerCase().replace(/\s+/g, "") !== "terrain")) {
       throw new RuleSyntaxError(`an ignore is written \`${SHAPE}\`, as in \`${EXAMPLE}\``);
     }

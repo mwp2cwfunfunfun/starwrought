@@ -6,7 +6,11 @@
   "system": {
     "kind": "background",
     "attribute": "wits",
-    "grants": [],
+    "grants": [
+      "Guile",
+      "Stealth",
+      "Lore"
+    ],
     "specialAbility": "<p>You become Trained in <i>Guile</i> and in <i>Stealth</i>, and you become Trained in a relevant <i>Lore</i> of your choice.</p>",
     "description": "<p><i>You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to.</i></p>",
     "traits": [
@@ -21,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "85c550babe8a03ba"
+      "contentHash": "5a76e3a0b5882cd8"
     }
   },
   "effects": [],

@@ -11,6 +11,8 @@
 import * as SW from "../config.mjs";
 import { SwCombat } from "../documents/combat.mjs";
 import { actionPips } from "../helpers/actor-context.mjs";
+// CHARACTER EFFECTS (0.16.0): the badge beside the actions readout.
+import { effectsBadge } from "../helpers/effects.mjs";
 
 const localize = key => game.i18n.localize(key);
 const format = (key, data) => game.i18n.format(key, data);
@@ -23,6 +25,8 @@ export function registerTrackerReadout() {
   registered = true;
   Hooks.on("renderCombatTracker", onRenderTracker);
   Hooks.on("updateActor", onActorChanged);
+  // The effects badge (0.16.0) follows the Items that carry the lines.
+  for (const hook of ["createItem", "updateItem", "deleteItem"]) Hooks.on(hook, onItemChanged);
 }
 
 /* -------------------------------------------- */
@@ -62,6 +66,12 @@ function onRenderTracker(app, element) {
     const actions = actor.system.actions;
     if (actions && combat.started && !li.querySelector(".sw-tracker-actions")) {
       li.querySelector(".token-name")?.append(actionsReadout(actor, actions));
+    }
+    // CHARACTER EFFECTS (0.16.0): the count of live effect lines, the lines in the tooltip, on
+    // the actions line when there is one (beside the pips), else under the name.
+    if (!li.querySelector(".sw-tracker-effects")) {
+      const badge = effectsReadout(actor);
+      if (badge) (li.querySelector(".sw-tracker-actions") ?? li.querySelector(".token-name"))?.append(badge);
     }
 
     if (combatant.isOwner && combat.started && !li.querySelector(".sw-pass")) {
@@ -142,6 +152,27 @@ function actionsReadout(actor, actions) {
   return line;
 }
 
+/**
+ * The effects badge (0.16.0; the sheet's Effects panel count, `effectsBadge` in helpers/effects.mjs):
+ * a small wand with the number of effect lines live on the actor (a Talent's rule not switched Off,
+ * a custom effect), and every line in the tooltip, so the GM reads what a combatant carries without
+ * opening the sheet. Nothing when there is none.
+ */
+function effectsReadout(actor) {
+  const badge = effectsBadge(actor);
+  if (!badge) return null;
+  const span = document.createElement("span");
+  span.className = "sw-tracker-effects";
+  const title = badge.count === 1 ? localize("STARWROUGHT.Effects.badgeOne") : format("STARWROUGHT.Effects.badge", { n: badge.count });
+  const escape = foundry.utils.escapeHTML;
+  // The tooltip is HTML (the Wind tooltip's precedent): one line per effect.
+  span.dataset.tooltip = `<strong>${escape(title)}</strong><br>${badge.lines.map(l => escape(l)).join("<br>")}`;
+  const icon = document.createElement("i");
+  icon.className = "fa-solid fa-wand-sparkles";
+  span.append(icon, ` ${badge.count}`);
+  return span;
+}
+
 /** The tracker's Pass: the Actor's own Pass when it has one (it may have things to tidy), else the Combat's. */
 async function onPassClick(combat, combatant) {
   const actor = combatant.actor;
@@ -157,7 +188,22 @@ async function onPassClick(combat, combatant) {
 /** The readout is live: an actor spending actions re-renders its row. */
 function onActorChanged(actor, changes) {
   const combat = game.combat;
-  if (!combat?.started || !combat.isView) return;
-  if (!foundry.utils.hasProperty(changes, "system.actions")) return;
+  if (!combat?.isView) return;
+  // The actions readout in a started encounter; the effects badge (0.16.0) whenever a line's
+  // state or a custom effect changes.
+  const actions = combat.started && foundry.utils.hasProperty(changes, "system.actions");
+  const effects = foundry.utils.hasProperty(changes, "system.effects") || foundry.utils.hasProperty(changes, "flags.starwrought.rules");
+  if (!actions && !effects) return;
+  if (combat.getCombatantsByActor(actor).length) ui.combat?.render();
+}
+
+/**
+ * An Item that may carry rules came, went or changed on a combatant: the effects badge follows
+ * (0.16.0). The three hooks pass different second arguments, so nothing finer than the type is read.
+ */
+function onItemChanged(item) {
+  const actor = item?.parent;
+  const combat = game.combat;
+  if (!actor || !combat?.isView || !["talent", "action", "constellation"].includes(item.type)) return;
   if (combat.getCombatantsByActor(actor).length) ui.combat?.render();
 }

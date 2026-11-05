@@ -25,14 +25,15 @@
     "grant": {
       "n": 0,
       "mode": "",
-      "scope": ""
+      "scope": "",
+      "constellation": ""
     },
     "choice": {
       "prompt": "",
       "value": ""
     },
     "freeTalent": "",
-    "automation": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)",
+    "automation": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)",
     "rules": [
       {
         "value": 1,
@@ -65,7 +66,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)"
+        "text": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)"
       }
     ],
     "traits": [],
@@ -78,7 +79,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e0bfdd2edd43b7e8"
+      "contentHash": "c2bc5581cfec6c2e"
     }
   },
   "effects": [],

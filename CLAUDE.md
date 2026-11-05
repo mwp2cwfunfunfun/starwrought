@@ -16,7 +16,7 @@ are sources and which are output, and leave the repo building.**
 
 | Edit this | Never hand-edit this |
 |---|---|
-| `data/*.xlsx` | `assets/trees.json`, `backgrounds.json`, `languages.json`, `actions.json` |
+| `data/*.xlsx` | `assets/trees.json`, `backgrounds.json`, `languages.json`, `actions.json` (the converter writes them; `assets/parse_rules.mjs` then writes `rules` into them, 0.16.0) |
 | `assets/roster.json` (hand-kept blocks) and `sheet_spec.json` | the `ancestries` block of `roster.json` (the converter overwrites it from `ancestries.xlsx`), and its `weaponsMelee`, `weaponsRanged`, `armorPieces` and `shields` blocks (overwritten from `equipment.xlsx`); `assets/equipment.json` |
 | `assets/app_template.html`, `constellation_template.html` | `Starwrought_App.html`, `Starwrought_Talent_Constellations.html` |
 | `assets/*.py`, `assets/build_phb.js` | `assets/constellations/*.png` and the `.plates.json` sidecar beside them, the PDFs, the compendium |
@@ -66,6 +66,7 @@ The individual steps, from the project root, in this order. They need `openpyxl`
 
 ```
 python assets/xlsx_to_trees.py        # data/*.xlsx -> trees/backgrounds/languages/actions/equipment JSON and the roster's generated blocks. Refuses to write on errors.
+node   assets/parse_rules.mjs         # (0.16.0) every Automation cell parsed once with the system's grammar: `rules` into the JSON, the Root's chassis blocks into the roster records, `@Maneuver[...]` expanded. Exit 1 on a line it cannot read.
 python assets/inject.py               # templates + JSON -> the two root HTML files
 python assets/render_constellations.py # -> assets/constellations/*.png
 python assets/sheet_gen.py            # -> the fillable and Mira character sheets
@@ -758,6 +759,56 @@ printing a per-Culture section, the wizard's Culture step with the Lore panel an
 card printing the Talent's Description above its Effect. The eight cells are written in
 `data/cultures.xlsx` and in `AUTOMATION_GRAMMAR.md` section 5.
 
+**0.16.0 (Mike, 2026-11-05; rulings 182 to 188): the grammar in Fantasy Grounds' shape, Talent
+Maneuvers, the chassis as automation, Character Effects.** Mike: "I REALLY, REALLY like the
+FantasyGrounds effects automation ... can we use syntax substantially similar to this"; shouldn't
+ALL of a Talent's effects (the Human's trait, Size, Speed, Vigor; the Cultures' languages) be
+Automation; Steady the Line's prevention belongs on the Maneuver, the Talent only adding it. **The
+grammar has two layers** (`AUTOMATION_GRAMMAR.md`, rewritten; ruling 182): **feature lines**, blocks
+in brackets for what owning the Talent does (`[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]`,
+`[LANGUAGE Common, Serrovine]`, `[Acrobatics trained]`, `[POINT Skill]`, `[MANEUVER Steady the
+Line]`, `[TALENT Weapon Familiarity]`, `[CHOICE Weapon Group]`, `[AURA 15 allies visible]`, `[VIGOR
+opening 12]`, `[SENSES ...]`; `module/rules/features.mjs`), and **effect lines**, a tag then
+components after semicolons (`CHECK: 1 condition, aid; IF: RANK(Origin >= trained)`, `DEF: 1
+situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)`, `IMMUNE: prone; LIMIT:
+encounter`, `MARK: enemies`, `REROLL: diplomacy; IF: RESULT(critical failure)`, `IGNORE: terrain,
+mud`; `module/rules/effects.mjs`; `IF:` the owner or the roll, `IFT:` the other party or the
+attack, both prefixes reading every condition). **The stored rule shapes and the four hook points
+did not change**: the readers fill the same `ops` record, so `bonus`, `prevent`, `mark`, `reroll`
+and `ignore` keep their hooks; nine feature kinds (`module/rules/kinds/features.mjs`: `trait`,
+`size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) have none. **The
+0.13.0 form reads one more release** (`grammar.mjs`: a `bonus:`, `grant:`, `aura:` or `prevent:`
+line, or a `mark:`/`reroll:`/`ignore:` line carrying `IF(...)`-style operators, is read by the
+kind's legacy branch and flagged `legacy: true`; the build and the pipeline step WARN once per
+cell; 0.17.0 refuses it; `operators.mjs` keeps `readLine` for it and the shared vocabularies).
+**The chassis is written on the Root** (ruling 183): the index columns Vigor/HP, Size, Speed,
+Senses, Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, and the
+roster's Opening Vigor column are retired, read this release with one warning per workbook, a
+disagreement with the Root's block an error; **`assets/parse_rules.mjs`** (between the converter
+and `inject`, every mode) parses every cell once, writes `rules` into the JSON, carries the Root's
+blocks into the roster's `ancestries`, `cultures` and `callings` records and expands
+`@Maneuver[Name]` in an Effect into the Maneuver's block (ruling 185); `build_foundry.mjs` reads
+the `rules` rather than parsing again, fills `choice` and `freeTalent` from them, the Background's
+and the Calling's `grants` from `[X trained]` rules; the character reads any owned Talent's
+feature lines at prepare (`system.features`, `_prepareRules` in `data/actor.mjs`: a `[SPEED +1]`
+into the Move, `[TRAIT]` into the header chips, `[LANGUAGE]`, `[SENSES]`). **Talent Maneuvers**
+(ruling 184): `[MANEUVER X]` names a row of the new "Talent Maneuvers" sheet of
+`data/maneuvers.xlsx` (Type `Talent Maneuver`, never basic; its Cost and Automation the
+Maneuver's); `SwItem.grantManeuvers(actor, talent)` copies it from the Actions pack onto the
+character flagged `grantedBy` when the Talent lands (the `createItem` hook, the wizard's
+`#addTalent`, `grantMissingManeuvers` on the GM's client at ready), `removeGrantedManeuvers` on
+`deleteItem`, the Actions tab's "From your Talents" panel, and `SwItem#use` on an action with
+use-kind rules pays and runs them (`#useWithRules`). Steady the Line ❶↺, Oathbound ❶ and Quick
+Tongue ❶↺ are the first rows. **A Trained Root** (ruling 186): `[Acrobatics trained]` stores a
+`grant` with `constellation`, `toGrantField` carries it, the Talent schema has it, and `grantSlot`
+in `chargen.mjs` makes the directed slot the Background grants always had; `GRANT_SCOPES.Skill`
+includes Lore. **Character Effects** (ruling 187): the Overview tab's Effects panel with On / Skip /
+Off per line, custom effect lines in the grammar on the actor (`system.effects`, parsed on write,
+indexed as a carrier, durations until removed / the next roll / the end of the encounter), and the
+tracker's badge. Every cell of the Human, the Cultures, the Backgrounds, the Callings and the
+three Maneuver rows is written in the new shape (`AUTOMATION_GRAMMAR.md` section 5); Excel had
+released `ancestries.xlsx`, so Torchbearer's Rally Aura cell is finally in the sheet.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -819,13 +870,16 @@ card printing the Talent's Description above its Effect. The eight cells are wri
 - Tree sheet columns: Talent, Tier, Root, Requires, Prerequisites, Description, Effect,
   **Attribute** (0.13.0; `Feeds` through 0.12.0: on a sheet headed `Attribute` a blank cell is an
   error, Mike's "no Attribute cell should ever be blank"; a sheet still headed `Feeds` inherits the
-  tree's), **Choice**, **Free Talent**, **Enabled?**, **Automation** (0.9.0; the operator grammar
-  since 0.13.0, `AUTOMATION_GRAMMAR.md`: one rule per line, copied through as text by the converter
-  and parsed by `build_foundry.mjs`, which fails on a line it does not know), **Traits** (0.14.0,
-  optional, comma separated: `system.traits` on the Talent, so a spell can carry the trait a
-  defender's `IF(Trait=...)` names). **Retired in 0.13.0,
-  still read where a sheet has them:** `Aura` (an `aura:` line is the authoring; both on a row is
-  an error) and `Grants` (a `grant:` line; a filled cell warns and must agree with the line). A
+  tree's), **Enabled?**, **Automation** (0.9.0; since 0.16.0 the two layers of
+  `AUTOMATION_GRAMMAR.md`: feature lines in brackets and effect lines of a tag and components, one
+  line per rule, copied through as text by the converter and parsed by `assets/parse_rules.mjs` and
+  `build_foundry.mjs`, which fail on a line they do not know; an Effect cell may carry
+  `@Maneuver[Name]`, expanded by the step), **Traits** (0.14.0, optional, comma separated:
+  `system.traits` on the Talent, so a spell can carry the trait a defender's `IFT: TRAIT(...)`
+  names). **Retired, still read where a sheet has them:** `Aura` (0.13.0; an `[AURA ...]` block is
+  the authoring; both on a row is an error), `Grants` (0.13.0; a `[POINT ...]` block), `Choice` and
+  `Free Talent` (0.16.0; `[CHOICE ...]` and `[TALENT ...]` blocks; a filled cell warns and must
+  agree with the block). A
   sheet with no `Requires` column, or an empty one, reads `Prerequisites` as the requirement (the
   pieces naming a Talent of the same sheet; ruling 166). An unknown header is warned about by name.
   A `<Tree> Lore` sheet (label | text rows) is the tree's player-facing text, `lore` on the tree
@@ -1022,23 +1076,28 @@ card printing the Talent's Description above its Effect. The eight cells are wri
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Seven kinds ship (0.15.0): `bonus`, `grant`, `aura`, `prevent`, `mark`, `reroll`, `ignore`; the
-  level-1 Human and the two Cultures are written whole. What the grammar does not yet read: a
-  `prevent` of a Condition on an ally as a Reaction (no Talent asks for it; the Expose Reaction is
-  built); adversaries' rolls (flat); hearing, light and sight range (`SEEN` is line of sight and
-  three statuses); a `reroll` on an Attack or Defense card (those keep the 0.5.3 button). **Fear is
-  carried by nothing in the data** (no weapon, attack or spell Talent has the trait), so the Rally
-  Aura reads and fires on nothing until one is authored; the build warns. **Torchbearer's new cell
-  is to be written once Excel releases `data/ancestries.xlsx`** (the line is in
-  `AUTOMATION_GRAMMAR.md`, section 5; Excel held the file through the 0.14.0 and 0.15.0 sessions);
-  until then the shipped Talent carries the 0.13.0 rule (every Defense, no sight, no trait). **Two
-  Culture Talents carry no cost in their names** (0.15.0): the sheet's Talent column reads
-  "Oathbound" and "Quick Tongue" with the ❶ and ❶↺ in the Effect prose, so the Items' cost is
-  passive and Use and the reroll button pay nothing; the Human sheet's "Steady the Line ❶↺" is the
-  form the pipeline reads. Mike's to rename, or the converter's to read the glyph out of "You gain
-  the X ❶ Maneuver". **Iron Etiquette's Intimidation line fires on nothing shipped** until the
-  Demoralize row (or Feint, Talk Them Down) is enabled in `data/maneuvers.xlsx`; a world Item with
-  a Defense named reads it today. The Jack of All
+  Sixteen kinds ship (0.16.0): the effect kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, the
+  creation kinds `grant` and `aura`, and the feature kinds `trait`, `size`, `speed`, `vigor`,
+  `sense`, `language`, `maneuver`, `talent`, `choice`; the level-1 Human, the two Cultures, the
+  three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
+  Fantasy Grounds shape. What the grammar does not yet read: a `prevent` of a Condition on an ally
+  as a Reaction (no Talent asks for it; the Expose Reaction is built); adversaries' rolls (flat);
+  hearing, light and sight range (`SEEN` is line of sight and three statuses); a `reroll` on an
+  Attack or Defense card (those keep the 0.5.3 button); durations in rounds and dice values on a
+  modifier (FG has them; no Talent wants them yet). **The 0.13.0 form reads this release only**: a
+  cell still in it builds with a warning naming the line, and 0.17.0 refuses it; the only cells
+  known to carry it are none in the repository's workbooks (every Automation cell was rewritten),
+  but a GM's world Item may. **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
+  Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, the roster's
+  Opening Vigor) are read this release with a warning and refused next; `weapons.xlsx`'s Melee
+  sheet still carries Weapon Familiarity's Choice "Weapon Group or Technical Weapon" in the column
+  and no Automation column, Mike's to move into `[CHOICE Weapon Group or Technical Weapon]`. **Fear
+  is carried by nothing in the data** (no weapon, attack or spell Talent has the trait), so the
+  Rally Aura reads and fires on nothing until one is authored; the build warns. **Iron Etiquette's
+  Intimidation line fires on nothing shipped** until the Demoralize row (or Feint, Talk Them Down)
+  is enabled in `data/maneuvers.xlsx`; a world Item with a Defense named reads it today. **Rally ❶
+  and Battle Cry ⓿↺** are Talents that grant Maneuvers in Constellations not enabled; their rows
+  on the Talent Maneuvers sheet come when they are. The Jack of All
   Trades rename gives the Talent a new document id; a character who owned "Jack of Trades" keeps
   the stale copy beside the new one after Sync content. Each new kind, by the recipe in
   `module/rules/README.md`: its file, its hook point (`modifiers`, `prevent`, `use` or `card` if
@@ -1061,6 +1120,29 @@ card printing the Talent's Description above its Effect. The eight cells are wri
   Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
   Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
   Combat was deleted. Nothing in the repository depends on them.
+
+Cleared 2026-11-05 (the grammar in Fantasy Grounds' shape, system 0.16.0; rulings 182 to 188 in
+the 0.16.0 changelog entry; planned in `eager-wobbling-possum.md`, the fourth plan, Mike's decisions
+by question: both FG layers in FG's shape, the chassis as feature lines with the columns retired,
+Talent Maneuvers as rows with an Effect marker that reproduces the Maneuver, FG's Character Effects
+field): the 0.13.0 operator grammar, now feature lines in brackets and effect lines of a tag and
+components (`features.mjs`, `effects.mjs`; the stored shapes and the four hook points unchanged;
+the old form read one release with a warning); the chassis columns and the Choice and Free Talent
+columns, now the Root's blocks, parsed once by `assets/parse_rules.mjs` for every consumer; the
+Steady the Line, Oathbound and Quick Tongue Talents, now `[MANEUVER X]` over rows of the new Talent
+Maneuvers sheet, granted and removed with the Talent, used from the Actions tab's From your Talents
+panel with the row's cost, and printed into the Talent's Effect by `@Maneuver[X]`; `[X trained]` as
+the wizard's directed point; the Overview tab's Effects panel with On / Skip / Off, custom effect
+lines with three durations, and the tracker's badge; the grammar-document gate over every tag,
+component, condition and keyword. Four defects found live and fixed before the tag: the client's
+category key unread by `grant` (a Sync content re-parse had made every Trained Root an Opening
+point), the copies refresh blind to a name whose glyphs left (now `nameKey`, glyph-free), the
+Weaponmaster step's doubled free Training, and a duplicate `Chargen.trainedIn` i18n key. Checked by
+103 self-test checks, the content loop (`rules: 63 rules on 33 cells (15 kinds in use)`;
+`automation: 36 rules on 21 documents`), the smoke test, the style check and live (the 0.16.0
+changelog entry lists what). Foundry was restarted for the manifest; the test world keeps its
+0.15.0 fixtures and now has the three Maneuvers on Tess and Wren. No handbook moved and
+`data/SYNC.json` is untouched.
 
 Cleared 2026-11-05 (the two Cultures, system 0.15.0; rulings 174 to 181 in the 0.15.0 changelog
 entry; planned in `eager-wobbling-possum.md`, the third plan, Mike's decisions by question: both the
