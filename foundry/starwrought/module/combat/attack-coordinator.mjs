@@ -1,6 +1,9 @@
 /**
  * The attack coordinator (0.5.0 brief, "Coordination"): the one client that runs a declared Blow
- * from declaration to resolution, and the socket protocol every other client talks to it with.
+ * from declaration to resolution, and the protocol every other client talks to it with. Since
+ * 0.12.0 the wire itself is attack-socket.mjs (delivery, correlation, timeout) and what an attack
+ * is comes from attack-source.mjs; this file is how the table agrees: election, the phases, the
+ * private commitments, the reveal and the resolution.
  *
  * The table's steps (PHB v4.10, The Exchange, as the brief words them):
  *  1. The attacker declares a Maneuver at one or more targets; once declared it is locked.
@@ -31,15 +34,13 @@ import { renderAttackCard, updateAttackCard, mayControl } from "./attack-card.mj
 import { SwCheck } from "../dice/check.mjs";
 import { isLegalAnswer, postureName, postureBonus, postureZone, postureRule } from "../helpers/answers.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
+import { AttackSocket, SOCKET } from "./attack-socket.mjs";
 
-/** The socket channel system.json declares (`"socket": true`). */
-export const SOCKET = `system.${SW.SYSTEM_ID}`;
+/** The socket channel, defined by the transport (attack-socket.mjs) and re-exported for callers. */
+export { SOCKET };
 
 /** The custom hook every client fires after a state broadcast; the prompt listens. */
 export const HOOK = "starwrought.attack";
-
-/** How long a request waits for the coordinator before it is given up as unanswered. */
-const REQUEST_TIMEOUT = 15000;
 
 /** How long a card update waits for the matching socket broadcast before it stands in for it. */
 const SYNC_GRACE = 1500;
@@ -154,9 +155,6 @@ export class AttackCoordinator {
 
   /** Coordinator only, memory only: the revision at which the current phase (or a reset) began. */
   static #meta = new Map();
-
-  /** Requests this client is waiting on, by request id. */
-  static #pending = new Map();
 
   /** Posture Exposures this client has applied, keyed on workflow, target and reveal revision. */
   static #applied = new Set();
@@ -476,37 +474,14 @@ export class AttackCoordinator {
       reply = { type: "attack:reply", requestId, ok: false, reason: "noCoordinator", workflowId };
     } else {
       message.to = to;
+      // The transport (attack-socket.mjs) delivers to the coordinator alone and waits for its
+      // reply; a client that is the coordinator handles the request directly.
       reply = (to === game.user.id)
         ? await AttackCoordinator.#handle(message)
-        : await AttackCoordinator.#send(message);
+        : await AttackSocket.send(message);
     }
     AttackCoordinator.#notifyRejection(reply);
     return reply;
-  }
-
-  /**
-   * Emit a request and wait for the coordinator's reply, or a timeout. The request is delivered to
-   * the coordinator alone (`recipients`): Foundry's server honours that option on a system socket
-   * and emits to no one else, so a defender's commitment never passes through another player's
-   * browser on its way to the coordinator (review, 2026-10-01). A coordinator that does not answer
-   * in time is reported as such, not as gone.
-   */
-  static #send(message) {
-    return new Promise(resolve => {
-      const timer = setTimeout(() => {
-        AttackCoordinator.#pending.delete(message.requestId);
-        resolve({ type: "attack:reply", requestId: message.requestId, ok: false, reason: "timeout", workflowId: message.workflowId });
-      }, REQUEST_TIMEOUT);
-      AttackCoordinator.#pending.set(message.requestId, { resolve, timer, to: message.to });
-      try {
-        game.socket.emit(SOCKET, message, { recipients: [message.to] });
-      } catch (err) {
-        clearTimeout(timer);
-        AttackCoordinator.#pending.delete(message.requestId);
-        console.error("STARWROUGHT | attack request could not be sent", err);
-        resolve({ type: "attack:reply", requestId: message.requestId, ok: false, reason: "timeout", workflowId: message.workflowId });
-      }
-    });
   }
 
   /** Rejections are visible, never silent (brief, "Coordination"). */
@@ -518,50 +493,18 @@ export class AttackCoordinator {
   }
 
   /**
-   * The socket handler: starwrought.mjs registers it at `ready`. Requests and replies carry `to`,
-   * the user they are for, and are emitted with `recipients` so the server delivers them to that
-   * user alone; state broadcasts are for everyone. Written against the class name rather than
-   * `this` so it may be passed unbound.
-   *
-   * Who is asking is the second argument: Foundry's server appends the emitting user's id to every
-   * relayed `system.<id>` event (`handleCustomSocket`: `emit(event, data, userId)`), bound from the
-   * session, so it is the one thing on the wire a client cannot write. The payload's `userId` is
-   * informational; a request without a server-supplied sender is refused outright, and a reply is
-   * accepted only from the coordinator it was sent to (review, 2026-10-01).
+   * The socket handler: starwrought.mjs registers it at `ready`. The transport
+   * (attack-socket.mjs) routes a request for this user to `#handle` with the server-vouched sender
+   * as its `userId`, settles a reply against its request, and hands a state broadcast to
+   * `#onState`. Written against the class name rather than `this` so it may be passed unbound.
    * @param {object} message
    * @param {string} [senderId]  The emitting user's id, supplied by the server.
    */
   static onSocket(message, senderId) {
-    if (!message || (typeof message !== "object")) return;
-    const sender = (typeof senderId === "string") ? senderId : null;
-    switch (message.type) {
-      case "attack":
-        if (message.to !== game.user.id) return;
-        if (!sender || !game.users.has(sender)) return;
-        AttackCoordinator.#handle({ ...message, userId: sender })
-          .then(reply => { if (reply) game.socket.emit(SOCKET, reply, { recipients: [reply.to] }); })
-          .catch(err => console.error("STARWROUGHT | attack request failed", err));
-        return;
-      case "attack:reply":
-        if (message.to !== game.user.id) return;
-        AttackCoordinator.#onReply(message, sender);
-        return;
-      case "attack:state":
-        AttackCoordinator.#onState(message, sender);
-        return;
-      default:
-        return;
-    }
-  }
-
-  /** A reply to one of this client's requests, from the coordinator the request went to. */
-  static #onReply(reply, sender) {
-    const pending = AttackCoordinator.#pending.get(reply.requestId);
-    if (!pending) return;
-    if (pending.to && sender && (sender !== pending.to)) return;
-    clearTimeout(pending.timer);
-    AttackCoordinator.#pending.delete(reply.requestId);
-    pending.resolve(reply);
+    AttackSocket.dispatch(message, senderId, {
+      onRequest: request => AttackCoordinator.#handle(request),
+      onState: (state, sender) => AttackCoordinator.#onState(state, sender)
+    });
   }
 
   /**
@@ -662,11 +605,7 @@ export class AttackCoordinator {
       event,
       public: AttackCoordinator.#public(workflow)
     };
-    try {
-      game.socket.emit(SOCKET, message);
-    } catch (err) {
-      console.error("STARWROUGHT | attack state could not be broadcast", err);
-    }
+    AttackSocket.broadcast(message);
     AttackCoordinator.#onState(message);
   }
 
