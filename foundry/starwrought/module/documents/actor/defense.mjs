@@ -11,6 +11,8 @@ import { SwCheck } from "../../dice/check.mjs";
 import {
   postureName as postureNameOf, postureBonus, postureZone, postureNeedsZone, postureRule
 } from "../../helpers/answers.mjs";
+import { ruleModifiers } from "../../rules/engine.mjs";
+import { sceneContextFor, encounterContext } from "../../rules/scene.mjs";
 
 /** The two basic Defenses that answer a Blow (PHB v4.21, The Four Threats): the default `permitted` list. */
 const BLOW_DEFENSES = Object.freeze(["evade", "guard"]);
@@ -46,9 +48,12 @@ export const DefenseMixin = Base => class extends Base {
    *                                       committed in the prompt: its Situation bonus to the
    *                                       Defense, its Zone Exposed before the die (or its
    *                                       drawback applied). Never beside a Reaction.
+   * @param {{threat: string, melee: boolean}|null} [options.threat]  The Threat answered (0.13.0),
+   *                                       for the Automation rules' `AGAINST`; rides into the roll
+   *                                       as `cfg.threat`.
    */
   async rollDefense(key, options = {}) {
-    const { reaction: askedReaction, attacker: givenAttacker, workflow = null, posture: askedPosture = null, ...rest } = options;
+    const { reaction: askedReaction, attacker: givenAttacker, workflow = null, posture: askedPosture = null, threat = null, ...rest } = options;
     const reaction = answeringReaction(askedReaction) ? askedReaction : null;
     // A Reaction stands on its own Defense (Sidestep on Evade, Parry on Guard), whichever button was pressed.
     if (reaction && SW.REACTIONS[reaction].defense) key = SW.REACTIONS[reaction].defense;
@@ -101,6 +106,7 @@ export const DefenseMixin = Base => class extends Base {
       targetUuid: attackerToken?.document?.uuid ?? "",
       targetName: attackerToken?.name ?? attacker?.name ?? "",
       defenderTokenUuid: this.tokenOnScene()?.uuid ?? "",
+      threat,
       modifiers,
       // A Posture Exposes its Zone whether or not it works (brief), so the Zone opens before the
       // die, marked as a Posture's so Recenter leaves it and the end of the round clears it; Drop
@@ -150,11 +156,17 @@ export const DefenseMixin = Base => class extends Base {
    * @param {string[]} [answer.permitted]         The Defenses the Threat allows (0.12.0): when the
    *                                              one named is unavailable, the other of these
    *                                              answers. A Blow's two by default.
+   * @param {{threat: string, melee: boolean}|null} [answer.threat]  The Threat answered (0.13.0), for
+   *                                              the Automation rules' `AGAINST`; with it, and the
+   *                                              defender's token on the scene, the rules that need
+   *                                              the map or the round are folded in here, which the
+   *                                              sheet's own Threshold leaves out.
    * @returns {{key: string, threshold: number, bonus: number, label: string, reaction: string|null,
-   *            posture: object|null, note: string|null, unavailable: string|null}}
+   *            posture: object|null, note: string|null, unavailable: string|null,
+   *            marks: Array<{key: string, per: string}>}}
    * @throws {Error} when both a Reaction and a Posture are given.
    */
-  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES } = {}) {
+  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null } = {}) {
     const sys = this.system;
     reaction = answeringReaction(reaction) ? reaction : null;
     posture = (posture && (typeof posture === "object") && posture.talentId) ? posture : null;
@@ -210,11 +222,25 @@ export const DefenseMixin = Base => class extends Base {
     const def = sys.defenses?.[key];
     let threshold = def?.threshold ?? 10;
     const bonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : (posture ? postureBonus(this, posture) : 0);
-    if (bonus) {
+    // The Automation rules the sheet's pass could not read (0.13.0): those that need the map, the
+    // Threat or the round, asked with `momentOnly` so nothing is counted twice. An adversary has
+    // no modifier stack and its rules do not reach its Defenses (adversaries roll flat).
+    let marks = [];
+    let momentMods = [];
+    if (Array.isArray(def?.modifiers) && (this.type === "character")) {
+      const moment = ruleModifiers(this, {
+        kind: "defense", slug: SW.DEFENSES[key].slug, item: null, rank: def.rank ?? "untrained",
+        threat, scene: sceneContextFor(this), encounter: encounterContext(), momentOnly: true
+      });
+      momentMods = moment.applied;
+      marks = moment.marks;
+    }
+    if (bonus || momentMods.length) {
       if (Array.isArray(def?.modifiers)) {
         const { total } = SW.resolveModifiers([
           ...def.modifiers,
-          { label: answerLabel, value: bonus, type: "situation" }
+          ...momentMods,
+          ...(bonus ? [{ label: answerLabel, value: bonus, type: "situation" }] : [])
         ]);
         threshold = 10 + total + (def.sizeMod ?? 0);
       } else {
@@ -231,6 +257,7 @@ export const DefenseMixin = Base => class extends Base {
       reaction,
       posture: posture ? { talentId: posture.talentId, name: postureName, zone: postureZone(this, posture) } : null,
       note,
+      marks,
       unavailable: blocked
         ? game.i18n.format("STARWROUGHT.Defense.answeringInstead", {
             named: game.i18n.localize(SW.DEFENSES[named].label),

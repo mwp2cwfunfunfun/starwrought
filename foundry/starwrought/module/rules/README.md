@@ -22,10 +22,12 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 |---|---|
 | `grammar.mjs` | The line structure of a cell and nothing else: `parseAutomation`, `summarize`, `ruleEntries`, and the plain-data check on what a kind returns. Re-exports the registry's words and `syntax.mjs`. |
 | `syntax.mjs` | What a kind file imports: `RuleSyntaxError`, `splitArgs`, `keyValues`. Imports nothing, so a kind never imports the grammar and no circle exists (0.10.1; the class alone as `errors.mjs` in 0.10.0). |
+| `operators.mjs` | The operator grammar (0.13.0; AUTOMATION_GRAMMAR.md section 4): `readLine(args, { allow, kind, context })` splits a line into its positional arguments and its operators (`IF`, `FOR`, `WHILE`, `AGAINST`, `FIRST`, `ONCE`, `DIFFERENT`, `VISIBLE`), refusing one the kind did not allow by name; `splitOperands`, `readRank`, `readRange`; and for the hooks `rankMeets`, `whoMatches`, `compare`, `needsMoment`, `summarizeOperators`. Pure. |
+| `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation` and `gap`), `encounterContext()`, `threatContext(maneuver)`, `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
 | `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers `bonus`. |
-| `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's checks or a Maneuver's roll, gated on a rank. |
+| `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative), with the operators. |
 | `kinds/<kind>.mjs` | One file per kind, each exporting the definition below. |
-| `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher. |
+| `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. |
 
 Every one of them stays free of Foundry globals at module scope, because `assets/build_foundry.mjs`
 and `assets/test_rules.mjs` import them from plain Node. The build and the client parse a cell with
@@ -34,16 +36,26 @@ through as `automation` and knows no grammar, so Python and JavaScript never hol
 
 ## The grammar
 
-One rule per line. The word before the colon names a kind; everything after it is that kind's.
+**The reference for the person typing in the cell is `AUTOMATION_GRAMMAR.md` in the project
+root** (0.13.0), kept current with every change to a kind, an operator or a vocabulary in the
+same commit; `build_all.mjs` fails when a registered kind has no section there or an operator in
+`operators.mjs` is not in its table. This file is the engineering side: how the modules fit.
+
+One rule per line. The word before the colon names a kind; everything after it is that kind's:
+its positional arguments, comma-separated, then any operators, each `NAME(...)` in capitals.
 
 ```
 # a line beginning with # is a comment; a blank line is nothing
-bonus: +1 Condition to Aid if Human is Trained
-bonus +2 Condition to Aid if Human is Expert          (the colon is optional)
+bonus: +1, Condition, Aid, IF(Origin=Trained)
+bonus +2, Condition, Aid, IF(Origin=Expert)          (the colon is optional)
+bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)
 ```
 
 The kind word is everything up to the first `:` or whitespace, lower-cased. A word no kind answers
-to is an error, `unknown rule kind "<word>" (known kinds: bonus)`. At build time any error **fails
+to is an error, `unknown rule kind "<word>" (known kinds: bonus)`. The operators are read by
+`operators.mjs` for every kind (`readLine`), so a kind's `parse` is its arguments' count and types
+and the list of operators it allows; the 0.10.0 prose form (`+1 Condition to Aid if Human is
+Expert`) is retired and refused with the new shape. At build time any error **fails
 the build**, naming the Constellation, the Talent and the line, as a bad Aura cell stops the
 converter's write; at runtime, when a GM edits a world Item's textarea, the same error is saved as
 an entry the Item sheet shows in red and the engine skips. Nothing is ever thrown for a cell's sake
@@ -95,70 +107,61 @@ migration re-parses `system.automation` on every Item of `RULE_ITEM_TYPES` that 
 that kind (the migration block in `starwrought.mjs`, which already walks the world's documents
 once per version). Which, is decided with the change; neither has been needed.
 
-## The `bonus` kind (0.10.0; rulings 121 to 124)
+## The `bonus` kind (0.10.0; rulings 121 to 124; the operator grammar since 0.13.0, ruling 164)
 
 Mike's ask, for Humanity, the Root of the Human Ancestry: "You gain a +1 Condition bonus on checks
 to Aid. If you are Expert in Human, this becomes a +2 Condition bonus. If you are Master, +3. If you
 are Legendary, +4." His sketch, "IF (Constellation Proficiency = VALUE) ... Grant [X Value]; [Y
-type]; [Z Check (Constellation or Maneuver Roll)]", made concrete (ruling 121):
+type]; [Z Check (Constellation or Maneuver Roll)]", first made concrete as prose (0.10.0), then,
+on his second-draft direction ("logical operands like IF(Origin=Trained) and grammatical shortcuts
+like Bonus: +1, Condition, Aid"), as the operator grammar:
 
 ```
-bonus: <value> <Type> to <Target> [if <Constellation> is <Rank>]
+bonus: <±N>, <Type>, <Target> [, operators]
 
-bonus: +1 Condition to Aid if Human is Trained
-bonus: +2 Condition to Aid if Human is Expert
-bonus: +3 Condition to Aid if Human is Master
-bonus: +4 Condition to Aid if Human is Legendary
-bonus: -2 Situation to Stealth
+bonus: +1, Condition, Aid, IF(Origin=Trained)                                              Humanity
+bonus: +1, Situation, Checks, IF(Rank=Untrained)                                           Jack of Trades
+bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)   Close Ranks
+bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)                            Torchbearer Human
+bonus: -2, Situation, Stealth
 ```
 
-- `<value>`: a signed integer; a bare `1` reads as `+1`. `0` is refused ("a bonus of 0 does
-  nothing").
-- `<Type>`: `Situation`, `Condition` or `Gear`, case blind (the book's three since v3.3). The
-  retired words are refused by name ("write Condition, not status: the book renamed the types in
-  v3.3"); `untyped` is refused ("no Talent bonus is untyped").
-- `to <Target>`: required. A Constellation or a Maneuver, by the name the trees and the action
-  sheets print, case blind; the slug form (`armored-fighting`) reads too, and a Maneuver's cost
-  glyphs are ignored (`slugify(plainName(name))`). A Lore is refused: it is the character's own.
-- `if <Constellation> is <Rank>`: optional. `<Rank>` is `Untrained`, `Trained`, `Expert`, `Master`
-  or `Legendary`, case blind. The condition is **equality**, as Mike wrote it: the rule applies
-  while the character's rank in that Constellation is exactly that rank, which is why Humanity is
-  four lines, one per sentence, and never two at once. The word between is `is`, not `=`, and the
-  error says so ("write `if Human is Expert`"). A line that matches none of this prints the shape.
-
-The stored rule:
+The arguments and the operators are AUTOMATION_GRAMMAR.md's; the stored rule:
 
 ```js
 { kind: "bonus", line, text,
-  value: 1,                                              // signed integer, never 0
-  type: "condition",                                     // "situation" | "condition" | "gear"
-  to:   { name: "Aid", slug: "aid", type: "action" },    // type: "constellation" | "action" | null
-  when: { constellation: "human", name: "Human", rank: "expert" } }   // or null
+  value: 1, type: "condition",
+  to:   { name: "Aid", slug: "aid", type: "action" },    // "constellation" | "action" | "scope" | null
+  when: [{ constellation: "origin", name: "Origin", op: "=", rank: "trained" }] | null,   // or { roll: true, op, rank }
+  for: { who, range } | null, while: { who, op, count, range } | null,
+  against: { threat, reach } | null, limit: { per: "round" | "encounter" } | null }
 ```
 
-`to.type` and the resolved names come from `context.resolve` (below). With a resolver, a target it
-returns null for is an error (`"Aidd" names no Constellation or Maneuver`), and so is an `if`
-Constellation that resolves to a Maneuver or to nothing (`"Aid" is not a Constellation`). With no
-resolver (the self-test, a caller that has none) `to.type` is `null`, `to.slug` is
-`slugify(plainName(name))`, `to.name` is the name as written, the `when` Constellation is
-`slugify(name)`, and the hook matches on slug alone, trying both readings of the target.
+A scope target (`Defenses`, `Checks`, `Attacks`, `Initiative`) is `type: "scope"` with the word's
+slug; a Constellation's or a Maneuver's `type` comes from `context.resolve` as before, null with no
+resolver. A 0.10.0 rule stored on an owned copy (`when` as one object, no `op`) still reads as
+equality, so a copy a GM did not refresh keeps working.
 
-The summary, for the Item sheet's As read list: `+1 Condition bonus to Aid while Human is Expert`;
-a negative value says `penalty` (`-2 Situation penalty to Stealth`); no clause, no `while`.
+The summary: `+1 Condition bonus to Aid, while Origin is Trained`; `penalty` when negative; the
+operators after a comma in words (`for allies within 15 ft, the first time each round`).
 
-What the hook does, on the `modifiers` hook point (below): a conditioned rule is skipped unless
-`actor.system.proficiency(constellation).rank` is the named rank (an adversary has no
-`proficiency`, so a conditioned rule never fires for one; an unconditioned one still can where the
-engine asks). A Constellation target is **applied** when the roll's slug is the target's, a check
-and an Initiative rolled with that Constellation alike (ruling 111), and, through the Defense pass,
-on a Defense's Threshold and roll. A Maneuver target is **applied** when the roll carries that
-Maneuver's Item (ruling 123: a Maneuver's roll is a roll made from its Item; Aid's Relevant Check
-carries Aid), and when a check is made with no Maneuver behind it the bonus is **offered** unticked
-in the roll dialog instead, labelled `Humanity: Aid`, so the judgement "is this roll an Aid?" sits
-with the player (ruling 122). It is never offered on an attack, a Defense or an Initiative, and not
-on a check made from another Maneuver's Item (a Search is not an Aid). The applied modifier is
-`{ label: "Humanity", value, type }`, so the card reads "Humanity +1"; typed stacking is the
-engine's.
+**The hook** (`hooks.modifiers`), for each rule that reaches the recipient: every `IF` holds for
+the OWNER of the Talent (`rankMeets` over SW.RANKS' order; `Rank` reads `context.rank`, the roll's
+own rank Handling included, and never fires when the caller gave none); `FOR` reaches the
+recipient (no FOR or `self`: the owner's own roll only; `allies`, `enemies`, `all`: another token's
+roll, by `scene.relation(ownerToken, recipientToken)` and `scene.gap` against the range;
+`self+allies`: either); `WHILE` counts the scene's tokens around the owner's token within the
+range; `AGAINST` needs `context.threat` and matches its Threat word or its reach; `FIRST`/`ONCE`
+reads the recipient's `flags.starwrought.rules.<per>[<item>:<line>]` against `context.encounter`
+and, when it applies in an encounter, puts `mark: { key, per }` on the modifier for the engine to
+lift. `needsMoment(rule)` sorts the rules into the two halves the callers ask for: the sheet's
+Defense pass (`staticOnly`) takes the rules that need none of the scene, the Threat or the round,
+and a Defense roll or a Threshold read in the attack flow (`momentOnly`) takes the rest, so no
+rule is counted twice. Then the target: a scope applies by the roll's kind; a Constellation on its
+slug; a Maneuver when the roll carries its Item, and is **offered** unticked on a check made
+without one (ruling 122), never on an attack, a Defense or an Initiative. The label is the
+carrier's plain name, with the owner's name in parentheses when it is another token's Talent
+("Torchbearer Human (Tess)"); one Talent's lines on one target share `source: rule:<item>:<target>`.
 
 ## The contract of a kind
 
@@ -202,11 +205,10 @@ What a kind may rely on:
 - `throw new RuleSyntaxError("...")` is the designer's error and is printed as written. Any other
   throw is reported as the kind's failure ("a bug in the kind, not in the cell") so the build log
   points at the file. Either way the grammar never crashes.
-- `splitArgs(text)` splits on the commas outside quotes, trims, unquotes a part wholly in quotes,
-  drops empty parts, and throws RuleSyntaxError on an unclosed quote. `keyValues(parts)` sorts
-  `key=value` pairs (keys lower-cased) from the rest and throws on a key given twice. Nothing more
-  until a kind needs it; a helper two kinds share moves into `syntax.mjs` then. (`bonus` reads its
-  line with one regular expression and uses neither.)
+- `readLine(text, { allow, kind, context })` in `operators.mjs` is how a kind reads its line
+  (0.13.0): the positional arguments and the operators it allowed, every refusal already worded.
+  `splitArgs(text)` and `keyValues(parts)` in `syntax.mjs` remain for a kind with a different
+  shape; `splitOperands` is the parenthesis-aware split the operators need.
 - `summary(rule)` gets the stored entry. A summary that throws falls back to the rule's text.
 - **A kind file imports from `../syntax.mjs` and `../../config/*` and never from `../grammar.mjs`
   or `./index.mjs`.** The grammar imports the registry and the registry imports every kind, so a
@@ -272,16 +274,33 @@ Calculated. `hooks.modifiers(entries, context, actor) -> Modifier[]`, dispatched
   folded modifiers and does not ask again, so a Defense roll, an Initiative rolled with Awareness
   and a Defense rolled as a check all carry a bonus once and never twice. The npc early return
   stands: adversaries roll flat, and rules do not reach them in 0.10.0.
-- **What it is handed.** `entries`: this kind's rules on this actor, `[{ rule, item }]`, from
-  `rulesOfKind` (never the whole index). `context`: `{ kind: "check" | "attack" | "defense" |
-  "initiative", slug, item }`, the roll's kind, the Constellation slug supplying the Proficiency
-  Bonus (`""` when none), and the Item behind the roll (a Maneuver, a weapon, a Talent) or null.
-  `actor`: the Actor, whose `system.proficiency(slug).rank` a kind may read.
-- **What it may return.** An array of `{ label, value, type?, offer?, key?, hint? }`. A modifier
-  without `offer` is **applied** to the roll as the sheet's own terms are. One with `offer: true`
-  is **offered** unticked in the roll dialog (the Load Strain Climb-or-Swim precedent, PHB v4.11,
-  ruling R2), `key` the checkbox's name, unique per offer, `hint` its tooltip; `previewTotal`
-  ignores offers, and the Defense pass does too.
+- **What it is handed.** `entries`: this kind's rules on this actor, `[{ rule, item, owner,
+  ownerToken }]`, from `rulesOfKind` (never the whole index), and since 0.13.0, when the caller
+  gave a `scene`, the rules of every other eligible token on it whose `rule.for.who` is not `self`
+  (the operator's shape is the engine's to know; the relation and the range are the kind's to
+  check), each with its `owner` and `ownerToken`. `context`: `{ kind: "check" | "attack" |
+  "defense" | "initiative", slug, item, rank, threat, scene, encounter, staticOnly, momentOnly }`
+  (the typedef in engine.mjs): the roll's kind, the Constellation slug supplying the Proficiency
+  Bonus (`""` when none), the Item behind the roll or null, the roll's own rank, the Threat it
+  answers or null, the scene (`{ token, tokens: [{ actor, token }], relation(a, b), gap(a, b) }`
+  from `scene.mjs`, a fake in a test, null when unknown), the Combat and round, and which half of
+  the rules is wanted. `actor`: the recipient, whose `system.proficiency(slug).rank` and
+  `flags.starwrought.rules` a kind may read.
+- **What it may return.** An array of `{ label, value, type?, source?, offer?, key?, hint?,
+  mark? }`. A modifier without `offer` is **applied** to the roll as the sheet's own terms are.
+  One with `offer: true` is **offered** unticked in the roll dialog (the Load Strain Climb-or-Swim
+  precedent, PHB v4.11, ruling R2), `key` the checkbox's name, unique per offer, `hint` its
+  tooltip; `previewTotal` ignores offers, and the Defense pass does too. `mark: { key, per }` on
+  an applied modifier is a FIRST or ONCE the recipient should remember: the dispatcher lifts it
+  into the third list it returns, `marks`, and the caller writes them once the roll resolves
+  (`writeRuleMarks` in scene.mjs: `SwCheck.roll` for the roller's own, the attack coordinator for
+  a Threshold read), never from a preview.
+- **Who calls it with what** (0.13.0). `baseModifiers`' non-Defense branch asks for everything
+  with the scene, the Threat (`cfg.threat`, set by `rollDefense` from the attack flow's Maneuver)
+  and the encounter; its Defense branch and `SwActor#defenseThresholdFor` (the Combat Prompt's
+  preview, the coordinator's reveal and resolution) ask `momentOnly`, since `prepareDefenses`
+  folded the static rules into the Defense's own modifiers with `staticOnly`. The sheet's
+  Threshold is therefore the position-blind number, and its tooltip says so.
 - **What the dispatcher does.** Walks `KINDS`; skips a kind without the hook and a kind with no
   entries on this actor; calls the hook inside try/catch, a throw reported once as
   `STARWROUGHT | the "<id>" kind's modifiers hook failed:` and contributing nothing, so a roll never
@@ -309,9 +328,11 @@ Torchbearer, and its syntax is his to settle. Each kind lands as one change with
    its `summary`, and its hooks through the dispatcher with a fake actor (`rulesActor` in the
    `bonus` section is the model). `node assets/test_rules.mjs` must pass; `build_all.mjs` runs it
    in every mode as the step `test_rules`, right before `build_foundry`.
-4. **The syntax line in `data/README.txt`.** Under the Automation column's entry, one line naming
-   the kind and the forms its arguments take, in the voice the Aura column's entry uses. That file
-   is what a designer reads with the workbook open.
+4. **The grammar document.** `AUTOMATION_GRAMMAR.md` in the project root: the kind's section under
+   "3. The kinds" (its shape, its arguments table, its examples, the operators it takes), any new
+   operator in the table of section 4, any new vocabulary, its messages in section 7, and a line
+   in section 8's history, in the same commit (Mike, 2026-11-05; the build fails without the
+   section). `data/README.txt` points at the document and repeats no syntax.
 5. **The hook.** A kind names the hook point(s) it speaks at in `hooks`, and the engine's call
    sites exist once per hook point, so a kind that wants a moment the engine already asks about
    (`modifiers`) adds no engine code: `bonus` is wired by its `hooks.modifiers` alone. A kind that

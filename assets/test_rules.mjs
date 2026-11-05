@@ -26,6 +26,7 @@ import {
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { splitOperands, readLine, rankMeets, whoMatches, compare, needsMoment } from "../foundry/starwrought/module/rules/operators.mjs";
 import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
 // The attack flow's pure parts (0.12.0): the record's shape and the legal answers, both free of
 // Foundry globals at module scope, so the rule "no Defense is ever chosen by the system" has
@@ -405,7 +406,7 @@ check("a kind whose parse returns data that is not plain is an error line naming
 });
 
 check("the bonus kind's data is plain data (its rules travel through the pack sources and Sync content)", () => {
-  const { rules, errors } = parseAutomation("bonus: +1 Condition to Aid if Human is Trained");
+  const { rules, errors } = parseAutomation("bonus: +1, Condition, Aid, IF(Human=Trained), FOR(allies, 15ft), WHILE(allies>=1, 0ft), AGAINST(Blow), FIRST(round)");
   same(errors, [], "errors");
   same(JSON.parse(JSON.stringify(rules[0])), rules[0], "equals its JSON image");
 });
@@ -554,91 +555,157 @@ check("the bonus kind is registered with its modifiers hook and no aliases", () 
   must(kindOf("BONUS") === kind, "the word is case blind through the grammar's lookup");
 });
 
+/* The operator grammar (0.13.0; AUTOMATION_GRAMMAR.md): the shared operator reader every kind uses. */
+
+check("operators: splitOperands splits on the commas outside parentheses and quotes", () => {
+  same(splitOperands("+1, Situation, Guard, FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)"), ["+1", "Situation", "Guard", "FOR(self+allies, 0ft)", "WHILE(allies>=1, 0ft)"], "operator commas stay inside");
+  same(splitOperands(" a ,, 'b, c' "), ["a", "'b, c'"], "empties dropped, quotes kept whole");
+  throws(() => splitOperands("FOR(allies"), /has no closing \)/, "unclosed paren");
+  throws(() => splitOperands("a) b"), /has no \( before it/, "stray close");
+});
+
+check("operators: readLine sorts arguments from operators and refuses what a kind does not take", () => {
+  const read = readLine("+1, Situation, Guard, against(Blow), FOR(self+allies, 0ft), WHILE(allies >= 1, 0 ft), FIRST(round)", { allow: ["IF", "FOR", "WHILE", "AGAINST", "FIRST", "ONCE"], kind: "bonus" });
+  same(read.args, ["+1", "Situation", "Guard"], "the arguments");
+  same(read.ops.for, { who: "self+allies", range: 0 }, "FOR");
+  same(read.ops.while, { who: "allies", op: ">=", count: 1, range: 0 }, "WHILE, spaces free");
+  same(read.ops.against, { threat: "blow", reach: null }, "AGAINST, case blind");
+  same(read.ops.limit, { per: "round" }, "FIRST");
+  same(readLine("Prone, ONCE(encounter)", { allow: ["ONCE"], kind: "prevent" }).ops.limit, { per: "encounter" }, "ONCE");
+  same(readLine("15ft, allies, VISIBLE", { allow: ["VISIBLE"], kind: "aura" }).ops.visible, true, "a bare flag");
+  same(readLine("2, Skill, DIFFERENT()", { allow: ["DIFFERENT"], kind: "grant" }).ops.different, true, "a flag with empty parentheses");
+  same(readLine("Melee", { allow: ["AGAINST"], kind: "x" }).ops.against ?? null, null, "no operator, nothing set");
+  same(readLine("x, AGAINST(Melee)", { allow: ["AGAINST"], kind: "x" }).ops.against, { threat: "blow", reach: "melee" }, "a reach word is a Blow by reach");
+  must(readLine("x, IF(Origin>=Expert)", { allow: ["IF"], kind: "x" }).ops.when[0].op === ">=", ">= reads");
+  same(readLine("x, IF(Rank=Untrained)", { allow: ["IF"], kind: "x" }).ops.when, [{ roll: true, op: "=", rank: "untrained" }], "Rank is the roll's own");
+  must(readLine("x, IF(Human=Trained), IF(Origin<=Expert)", { allow: ["IF"], kind: "x" }).ops.when.length === 2, "two IFs");
+  throws(() => readLine("Prone, AGAINST(Blow)", { allow: ["IF"], kind: "prevent" }), /^prevent does not take AGAINST$/, "an operator the kind lacks");
+  throws(() => readLine("a, FOR(allies), b", { allow: ["FOR"], kind: "x" }), /comes after an operator/, "an argument after an operator");
+  throws(() => readLine("a, FOR(allies), FOR(enemies)", { allow: ["FOR"], kind: "x" }), /FOR is given twice/, "FOR twice");
+  throws(() => readLine("a, FIRST(round), ONCE(encounter)", { allow: ["FIRST", "ONCE"], kind: "x" }), /one limit/, "FIRST and ONCE together");
+  throws(() => readLine("a, FOR", { allow: ["FOR"], kind: "x" }), /FOR is written `FOR\(<Who>\[, <N>ft\]\)`/, "a bare call operator prints its shape");
+  throws(() => readLine("a, FOR(self, 5ft)", { allow: ["FOR"], kind: "x" }), /FOR\(self\) takes no range/, "self with a range");
+  throws(() => readLine("a, FOR(friends)", { allow: ["FOR"], kind: "x" }), /a who is written self, allies, enemies, all or self\+allies/, "a bad who");
+  throws(() => readLine("a, FOR(allies, near)", { allow: ["FOR"], kind: "x" }), /a range is written <N>ft, as in 15ft/, "a bad range");
+  throws(() => readLine("a, WHILE(allies, 0ft)", { allow: ["WHILE"], kind: "x" }), /WHILE is written/, "WHILE without a comparison");
+  throws(() => readLine("a, AGAINST(Arrows)", { allow: ["AGAINST"], kind: "x" }), /"Arrows" is not a Threat: write Blow, Blast, Blight, Beguilement, Melee or Ranged/, "a bad Threat");
+  throws(() => readLine("a, FIRST(encounter)", { allow: ["FIRST"], kind: "x" }), /FIRST is written `FIRST\(round\)`/, "FIRST's word");
+  throws(() => readLine("a, IF(Human is Expert)", { allow: ["IF"], kind: "x" }), /IF is written `IF\(<Constellation>=<Rank>\)`/, "IF without =");
+  throws(() => readLine("a, IF(Human=Grand)", { allow: ["IF"], kind: "x" }), /"Grand" is not a rank: write Untrained, Trained, Expert, Master or Legendary/, "a bad rank");
+  throws(() => readLine("a, IF(Lore=Expert)", { allow: ["IF"], kind: "x" }), /a Lore is the character's own/, "a Lore in IF");
+  throws(() => readLine("a, VISIBLE(yes)", { allow: ["VISIBLE"], kind: "x" }), /VISIBLE takes nothing/, "a flag with contents");
+});
+
+check("operators: rankMeets, whoMatches, compare and needsMoment", () => {
+  must(rankMeets("expert", "=", "expert") && !rankMeets("master", "=", "expert"), "equality");
+  must(rankMeets("master", ">=", "expert") && !rankMeets("trained", ">=", "expert"), ">=");
+  must(rankMeets("trained", "<=", "expert") && !rankMeets("master", "<=", "expert"), "<=");
+  must(rankMeets("nonsense", "=", "untrained"), "an unknown rank is Untrained");
+  must(whoMatches("allies", "ally") && !whoMatches("allies", "enemy") && whoMatches("all", "enemy") && !whoMatches("all", "self") && whoMatches("self+allies", "self") && whoMatches("self+allies", "ally"), "who words");
+  must(compare(2, ">=", 1) && compare(1, "=", 1) && !compare(0, ">", 0) && compare(0, "<", 1) && compare(1, "<=", 1), "comparisons");
+  must(!needsMoment({ for: { who: "self", range: null } }) && needsMoment({ for: { who: "allies", range: 15 } }) && needsMoment({ while: {} }) && needsMoment({ against: {} }) && needsMoment({ limit: {} }) && !needsMoment({ when: [{}] }), "what needs the moment");
+});
+
 check("bonus: every accepted form, without a resolver", () => {
-  const full = bonusRule("bonus: +1 Condition to Aid if Human is Trained");
+  const full = bonusRule("bonus: +1, Condition, Aid, IF(Human=Trained)");
   same(full, {
     value: 1, type: "condition",
     to: { name: "Aid", slug: "aid", type: null },
-    when: { constellation: "human", name: "Human", rank: "trained" },
-    kind: "bonus", line: 1, text: "bonus: +1 Condition to Aid if Human is Trained"
+    when: [{ constellation: "human", name: "Human", op: "=", rank: "trained" }],
+    for: null, while: null, against: null, limit: null,
+    kind: "bonus", line: 1, text: "bonus: +1, Condition, Aid, IF(Human=Trained)"
   }, "the full form");
 
-  const bare = bonusRule("bonus: 1 condition to aid");
+  const bare = bonusRule("bonus: 1, condition, aid");
   must(bare.value === 1, "a bare 1 reads as +1");
   must(bare.type === "condition", "the type word is case blind");
   same(bare.to, { name: "aid", slug: "aid", type: null }, "the target as written, slug made, type unknown");
-  must(bare.when === null, "no clause is null");
+  must(bare.when === null, "no IF is null");
 
-  must(bonusRule("bonus: -2 GEAR to Stealth").value === -2, "a negative value");
-  must(bonusRule("bonus: -2 GEAR to Stealth").type === "gear", "GEAR");
-  must(bonusRule("bonus: +3 situation to Armored Fighting").type === "situation", "situation");
-  same(bonusRule("bonus: +3 Situation to armored-fighting").to, { name: "armored-fighting", slug: "armored-fighting", type: null }, "the slug form of a target");
-  same(bonusRule("bonus: +3 Situation to Armored Fighting").to.slug, "armored-fighting", "a two-word name slugs the same");
+  must(bonusRule("bonus: -2, GEAR, Stealth").value === -2, "a negative value");
+  must(bonusRule("bonus: -2, GEAR, Stealth").type === "gear", "GEAR");
+  must(bonusRule("bonus: +3, situation, Armored Fighting").type === "situation", "situation");
+  same(bonusRule("bonus: +3, Situation, armored-fighting").to, { name: "armored-fighting", slug: "armored-fighting", type: null }, "the slug form of a target");
+  same(bonusRule("bonus: +3, Situation, Armored Fighting").to.slug, "armored-fighting", "a two-word name slugs the same");
+  same(bonusRule("bonus: +1, Situation, Defenses").to, { name: "Defenses", slug: "defenses", type: "scope" }, "a scope word");
+  same(bonusRule("bonus: +1, Situation, checks").to, { name: "Checks", slug: "checks", type: "scope" }, "a scope word, case blind");
+  same(bonusRule("bonus: +1, Situation, Attacks").to.slug, "attacks", "Attacks");
+  same(bonusRule("bonus: +1, Situation, Initiative").to.slug, "initiative", "Initiative");
 
-  const glyphed = bonusRule("bonus: +1 Condition to Aid ❶ (⓿↺)");
+  const glyphed = bonusRule("bonus: +1, Condition, Aid ❶ (⓿↺)");
   must(glyphed.to.slug === "aid", `a Maneuver's glyphs never reach the slug, got "${glyphed.to.slug}"`);
 
-  const mixed = bonusRule("Bonus: +1 CONDITION To Aid IF Human IS Expert");
-  same(mixed.when, { constellation: "human", name: "Human", rank: "expert" }, "if, is and to are case blind");
+  const mixed = bonusRule("Bonus: +1,CONDITION,Aid,if(Human=Expert).");
+  same(mixed.when, [{ constellation: "human", name: "Human", op: "=", rank: "expert" }], "spaces free, operator case blind, a trailing period tolerated");
   must(mixed.kind === "bonus", "the kind word is case blind");
 
   for (const rank of ["Untrained", "Trained", "Expert", "Master", "Legendary", "legendary"]) {
-    must(bonusRule(`bonus: +1 Condition to Aid if Human is ${rank}`).when.rank === rank.toLowerCase(), `rank ${rank}`);
+    must(bonusRule(`bonus: +1, Condition, Aid, IF(Human=${rank})`).when[0].rank === rank.toLowerCase(), `rank ${rank}`);
   }
-  must(bonusRule("bonus +1 Condition to Aid").value === 1, "the colon is optional, as the grammar says");
+  must(bonusRule("bonus +1, Condition, Aid").value === 1, "the colon is optional, as the grammar says");
+
+  const closeRanks = bonusRule("bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)");
+  same([closeRanks.for, closeRanks.while, closeRanks.against], [{ who: "self+allies", range: 0 }, { who: "allies", op: ">=", count: 1, range: 0 }, { threat: "blow", reach: null }], "Close Ranks' operators");
+  const torch = bonusRule("bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)");
+  same([torch.for, torch.limit], [{ who: "allies", range: 15 }, { per: "round" }], "Torchbearer's operators");
+  same(bonusRule("bonus: +1, Situation, Checks, IF(Rank=Untrained)").when, [{ roll: true, op: "=", rank: "untrained" }], "Jack of Trades' condition");
 });
 
 check("bonus: Humanity's four lines parse to four rules, one rank each", () => {
   const cell = [
-    "bonus: +1 Condition to Aid if Human is Trained",
-    "bonus: +2 Condition to Aid if Human is Expert",
-    "bonus: +3 Condition to Aid if Human is Master",
-    "bonus: +4 Condition to Aid if Human is Legendary"
+    "bonus: +1, Condition, Aid, IF(Human=Trained)",
+    "bonus: +2, Condition, Aid, IF(Human=Expert)",
+    "bonus: +3, Condition, Aid, IF(Human=Master)",
+    "bonus: +4, Condition, Aid, IF(Human=Legendary)"
   ].join("\n");
   const { rules, errors } = parseAutomation(cell, { resolve, itemName: "Humanity", constellation: "Human", itemType: "talent" });
   same(errors, [], "errors");
-  same(rules.map(r => [r.value, r.when.rank, r.to.type, r.line]), [[1, "trained", "action", 1], [2, "expert", "action", 2], [3, "master", "action", 3], [4, "legendary", "action", 4]], "the rules");
+  same(rules.map(r => [r.value, r.when[0].rank, r.to.type, r.line]), [[1, "trained", "action", 1], [2, "expert", "action", 2], [3, "master", "action", 3], [4, "legendary", "action", 4]], "the rules");
 });
 
-check("bonus: with a resolver the target and the clause carry the resolved type, slug and name", () => {
-  const rule = bonusRule("bonus: +1 Condition to aid ❶ if human is Expert", { resolve });
+check("bonus: with a resolver the target and the condition carry the resolved type, slug and name", () => {
+  const rule = bonusRule("bonus: +1, Condition, aid ❶, IF(human=Expert)", { resolve });
   same(rule.to, { name: "Aid", slug: "aid", type: "action" }, "a Maneuver target");
-  same(rule.when, { constellation: "human", name: "Human", rank: "expert" }, "the clause's Constellation");
-  same(bonusRule("bonus: +2 Situation to STEALTH", { resolve }).to, { name: "Stealth", slug: "stealth", type: "constellation" }, "a Constellation target");
-  same(bonusRule("bonus: +1 Gear to armored-fighting", { resolve }).to, { name: "Armored Fighting", slug: "armored-fighting", type: "constellation" }, "a Constellation by slug");
+  same(rule.when, [{ constellation: "human", name: "Human", op: "=", rank: "expert" }], "the condition's Constellation");
+  same(bonusRule("bonus: +2, Situation, STEALTH", { resolve }).to, { name: "Stealth", slug: "stealth", type: "constellation" }, "a Constellation target");
+  same(bonusRule("bonus: +1, Gear, armored-fighting", { resolve }).to, { name: "Armored Fighting", slug: "armored-fighting", type: "constellation" }, "a Constellation by slug");
 });
 
 check("bonus: the refusals, each with a message the designer can act on", () => {
-  must(/a bonus of 0 does nothing/.test(bonusError("bonus: 0 Condition to Aid")), "zero");
-  must(/a bonus of 0 does nothing/.test(bonusError("bonus: +0 Condition to Aid")), "plus zero");
-  must(/write Condition, not status: the book renamed the types in v3\.3/.test(bonusError("bonus: +1 status to Aid")), "status");
-  must(/write Situation, not circumstance/.test(bonusError("bonus: +1 Circumstance to Aid")), "circumstance");
-  must(/write Gear, not item/.test(bonusError("bonus: +1 item to Aid")), "item");
-  must(/no Talent bonus is untyped; name Situation, Condition or Gear/.test(bonusError("bonus: +1 untyped to Aid")), "untyped");
-  must(/"Fancy" is not a bonus type: write Situation, Condition or Gear/.test(bonusError("bonus: +1 Fancy to Aid")), "an unknown type word");
-  const shape = bonusError("bonus: +1 Condition Aid");
-  must(/to <Target>/.test(shape) && /bonus: \+1 Condition to Aid if Human is Expert/.test(shape), `a missing \`to\` prints the shape: "${shape}"`);
-  must(/to <Target>/.test(bonusError("bonus:")), "an empty line prints the shape");
-  must(/to <Target>/.test(bonusError("bonus: Condition to Aid")), "a missing value prints the shape");
-  must(/"Grand" is not a rank: write Untrained, Trained, Expert, Master or Legendary/.test(bonusError("bonus: +1 Condition to Aid if Human is Grand")), "a bad rank word");
-  must(/write `if Human is Expert`/.test(bonusError("bonus: +1 Condition to Aid if Human = Expert")), "= instead of is");
-  must(/write `if Human is Expert`/.test(bonusError("bonus: +1 Condition to Aid if Human Expert")), "a clause with no is");
-  must(/write `if Human is Expert`/.test(bonusError("bonus: +1 Condition to Aid if Human is Expert and more")), "a clause with a tail");
+  must(/a bonus of 0 does nothing/.test(bonusError("bonus: 0, Condition, Aid")), "zero");
+  must(/a bonus of 0 does nothing/.test(bonusError("bonus: +0, Condition, Aid")), "plus zero");
+  must(/write Condition, not status: the book renamed the types in v3\.3/.test(bonusError("bonus: +1, status, Aid")), "status");
+  must(/write Situation, not circumstance/.test(bonusError("bonus: +1, Circumstance, Aid")), "circumstance");
+  must(/write Gear, not item/.test(bonusError("bonus: +1, item, Aid")), "item");
+  must(/no Talent bonus is untyped; name Situation, Condition or Gear/.test(bonusError("bonus: +1, untyped, Aid")), "untyped");
+  must(/"Fancy" is not a bonus type: write Situation, Condition or Gear/.test(bonusError("bonus: +1, Fancy, Aid")), "an unknown type word");
+  const shape = bonusError("bonus: +1, Condition");
+  must(/<±N>, <Type>, <Target>/.test(shape) && /2 arguments given, 3 wanted/.test(shape), `two arguments print the shape: "${shape}"`);
+  must(/<±N>, <Type>, <Target>/.test(bonusError("bonus:")), "an empty line prints the shape");
+  must(/4 arguments given/.test(bonusError("bonus: +1, Condition, Aid, extra")), "a fourth argument");
+  must(/a bonus is a whole number such as \+1 or -2, not "one"/.test(bonusError("bonus: one, Condition, Aid")), "a non-number");
+  must(/the 0\.10\.0 form .* is retired; write `bonus: \+1, Condition, Aid, IF\(Origin=Trained\)`/.test(bonusError("bonus: +1 Condition to Aid if Human is Expert")), "the prose form is refused with the new shape");
+  must(/"Grand" is not a rank/.test(bonusError("bonus: +1, Condition, Aid, IF(Human=Grand)")), "a bad rank word");
+  must(/^bonus does not take VISIBLE$/.test(bonusError("bonus: +1, Condition, Aid, VISIBLE")), "an operator bonus lacks");
+  must(/^bonus does not take DIFFERENT$/.test(bonusError("bonus: +1, Condition, Aid, DIFFERENT")), "DIFFERENT too");
 });
 
 check("bonus: the refusals a resolver makes possible", () => {
-  must(bonusError("bonus: +1 Condition to Aidd", { resolve }) === '"Aidd" names no Constellation or Maneuver', "an unknown target");
-  must(bonusError("bonus: +1 Condition to Guard if Aid is Expert", { resolve }) === '"Aid" is not a Constellation', "a Maneuver in the clause");
-  must(bonusError("bonus: +1 Condition to Guard if Nobody is Expert", { resolve }) === '"Nobody" is not a Constellation', "nothing in the clause");
-  must(bonusError("bonus: +1 Condition to Lore", { resolve }) === "a Lore is the character's own; a bonus cannot name it", "the Lore template");
-  must(bonusError("bonus: +1 Condition to Lore") === "a Lore is the character's own; a bonus cannot name it", "the Lore template, without a resolver");
-  must(bonusError("bonus: +1 Condition to Lore (Serrovane)") === "a Lore is the character's own; a bonus cannot name it", "a Lore instance");
+  must(bonusError("bonus: +1, Condition, Aidd", { resolve }) === '"Aidd" names no Constellation or Maneuver', "an unknown target");
+  must(bonusError("bonus: +1, Condition, Guard, IF(Aid=Expert)", { resolve }) === '"Aid" is not a Constellation', "a Maneuver in the condition");
+  must(bonusError("bonus: +1, Condition, Guard, IF(Nobody=Expert)", { resolve }) === '"Nobody" is not a Constellation', "nothing in the condition");
+  must(bonusError("bonus: +1, Condition, Lore", { resolve }) === "a Lore is the character's own; a bonus cannot name it", "the Lore template");
+  must(bonusError("bonus: +1, Condition, Lore") === "a Lore is the character's own; a bonus cannot name it", "the Lore template, without a resolver");
+  must(bonusError("bonus: +1, Condition, Lore (Serrovane)") === "a Lore is the character's own; a bonus cannot name it", "a Lore instance");
 });
 
 check("bonus: the summary", () => {
-  must(summarize(bonusRule("bonus: +1 Condition to Aid if Human is Expert", { resolve })) === "+1 Condition bonus to Aid while Human is Expert", "the full form");
-  must(summarize(bonusRule("bonus: -2 condition to Stealth")) === "-2 Condition penalty to Stealth", "a penalty, no clause");
-  must(summarize(bonusRule("bonus: 3 gear to Guard", { resolve })) === "+3 Gear bonus to Guard", "a bare value prints signed");
+  must(summarize(bonusRule("bonus: +1, Condition, Aid, IF(Human=Expert)", { resolve })) === "+1 Condition bonus to Aid, while Human is Expert", "the full form");
+  must(summarize(bonusRule("bonus: -2, condition, Stealth")) === "-2 Condition penalty to Stealth", "a penalty, no operators");
+  must(summarize(bonusRule("bonus: 3, gear, Guard", { resolve })) === "+3 Gear bonus to Guard", "a bare value prints signed");
+  must(summarize(bonusRule("bonus: +1, Situation, Checks, IF(Rank=Untrained)")) === "+1 Situation bonus to Checks, while the roll's rank is Untrained", "the roll's rank");
+  must(summarize(bonusRule("bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)")) === "+1 Situation bonus to Defenses, for allies within 15 ft, the first time each round", "FOR and FIRST");
+  must(summarize(bonusRule("bonus: +1, Situation, Guard, AGAINST(Melee), IF(Origin>=Expert)")) === "+1 Situation bonus to Guard, while Origin is at least Expert, against a melee Blow", ">= and a reach");
 });
 
 /* The hook, through the dispatcher. */
@@ -659,13 +726,13 @@ function talentWith(name, cell, context = { resolve }) {
 }
 
 const humanity = talentWith("Humanity", [
-  "bonus: +1 Condition to Aid if Human is Trained",
-  "bonus: +2 Condition to Aid if Human is Expert",
-  "bonus: +3 Condition to Aid if Human is Master",
-  "bonus: +4 Condition to Aid if Human is Legendary"
+  "bonus: +1, Condition, Aid, IF(Human=Trained)",
+  "bonus: +2, Condition, Aid, IF(Human=Expert)",
+  "bonus: +3, Condition, Aid, IF(Human=Master)",
+  "bonus: +4, Condition, Aid, IF(Human=Legendary)"
 ].join("\n"));
-const sneaky = talentWith("Sneaky ❶", "bonus: +2 Situation to Stealth");
-const braced = talentWith("Braced", "bonus: +1 Gear to Guard if Human is Expert");
+const sneaky = talentWith("Sneaky ❶", "bonus: +2, Situation, Stealth");
+const braced = talentWith("Braced", "bonus: +1, Gear, Guard, IF(Human=Expert)");
 const aidItem = { type: "action", name: "Aid ❶ (⓿↺)", id: "aid0001" };
 const searchItem = { type: "action", name: "Search ❶", id: "srch0001" };
 
@@ -713,7 +780,7 @@ check("ruleModifiers: a Maneuver target is offered unticked on a check made with
   must(first.offered.length === 1, `one offer, got ${first.offered.length}`);
   const [offer] = first.offered;
   same(offer, {
-    label: "Humanity: Aid", value: 2, type: "condition", offer: true,
+    label: "Humanity: Aid", value: 2, type: "condition", source: "rule:Humanity:aid", offer: true,
     key: "bonus-Humanity-2",
     hint: "Humanity: this bonus applies to checks to Aid. Tick it if this roll is one."
   }, "the offer");
@@ -741,10 +808,10 @@ check("ruleModifiers: a Defense is a Constellation target, so the Defense pass c
   same(ruleModifiers(rulesActor([braced], { human: "expert" }), { kind: "defense", slug: "evade", item: null }).applied, [], "not on Evade");
 });
 
-check("ruleModifiers: no rules, no kinds with the hook, or nothing at all is two empty lists", () => {
-  same(ruleModifiers(rulesActor([]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [] }, "no rules");
-  same(ruleModifiers(rulesActor([talentA]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [] }, "a kind without the hook is skipped");
-  same(ruleModifiers(null, { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [] }, "null actor");
+check("ruleModifiers: no rules, no kinds with the hook, or nothing at all is three empty lists", () => {
+  same(ruleModifiers(rulesActor([]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [], marks: [] }, "no rules");
+  same(ruleModifiers(rulesActor([talentA]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [], marks: [] }, "a kind without the hook is skipped");
+  same(ruleModifiers(null, { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [], marks: [] }, "null actor");
   same(ruleModifiers({ items: [sneaky] }, { kind: "check", slug: "stealth", item: null }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "an actor with no prepared index is collected on the spot");
 });
 
@@ -852,33 +919,135 @@ check("resolveModifiers: disabled, zero and non-numeric entries are dropped; the
   same(resolveModifiers([]), { total: 0, applied: [], suppressed: [] }, "nothing in, nothing out");
 });
 
-check("bonus: `if Origin is <Rank>` reads the shared Origin rank, and a group is refused naming its parent (PHB v4.21)", () => {
+check("bonus: `IF(Origin=<Rank>)` reads the shared Origin rank, and a group is refused naming its parent (PHB v4.21)", () => {
   const resolver = name => {
     const lower = String(name).trim().toLowerCase();
     if (lower === "origin") return { type: "constellation", slug: "origin", name: "Origin", group: false, parent: "" };
     if (lower === "archery") return { type: "constellation", slug: "archery", name: "Archery", group: true, parent: "Ranged" };
     if (lower === "ranged") return { type: "constellation", slug: "ranged", name: "Ranged", group: false, parent: "" };
     if (lower === "aid") return { type: "action", slug: "aid", name: "Aid" };
+    if (lower === "guard") return { type: "constellation", slug: "guard", name: "Guard", group: false, parent: "" };
     return null;
   };
-  const rule = bonusRule("bonus: +2 Condition to Aid if Origin is Expert", { resolve: resolver });
-  same(rule.when, { constellation: "origin", name: "Origin", rank: "expert" }, "the Origin clause");
-  throws(() => bonusRule("bonus: +1 Situation to Aid if Archery is Expert", { resolve: resolver }), /is a group and has no rank of its own; test Ranged instead/, "a group is refused");
-  must(bonusRule("bonus: +1 Situation to Archery", { resolve: resolver }).to.slug === "archery", "a group is still a fine target for a bonus");
+  const rule = bonusRule("bonus: +2, Condition, Aid, IF(Origin=Expert)", { resolve: resolver });
+  same(rule.when, [{ constellation: "origin", name: "Origin", op: "=", rank: "expert" }], "the Origin condition");
+  throws(() => bonusRule("bonus: +1, Situation, Aid, IF(Archery=Expert)", { resolve: resolver }), /is a group and has no rank of its own; test Ranged instead/, "a group is refused");
+  must(bonusRule("bonus: +1, Situation, Archery", { resolve: resolver }).to.slug === "archery", "a group is still a fine target for a bonus");
   // The hook reads the rank through `proficiency("origin")`, which the character model answers
   // from the virtual Origin; the fake actor answers it like any slug.
-  const humanityOrigin = talentWith("Humanity", "bonus: +2 Condition to Aid if Origin is Expert", { resolve: resolver });
+  const humanityOrigin = talentWith("Humanity", "bonus: +2, Condition, Aid, IF(Origin=Expert)", { resolve: resolver });
   const roll = { kind: "check", slug: "diplomacy", item: aidItem };
   same(ruleModifiers(rulesActor([humanityOrigin], { origin: "expert" }), roll).applied.map(m => m.value), [2], "fires at Origin Expert");
   same(ruleModifiers(rulesActor([humanityOrigin], { origin: "trained", human: "expert" }), roll).applied, [], "and not from the Human sky's own rank");
+  const atLeast = talentWith("Steady", "bonus: +1, Situation, Guard, IF(Origin>=Expert)", { resolve: resolver });
+  const guard = { kind: "defense", slug: "guard", item: null };
+  same(ruleModifiers(rulesActor([atLeast], { origin: "legendary" }), guard).applied.map(m => m.value), [1], ">= fires above the rank");
+  same(ruleModifiers(rulesActor([atLeast], { origin: "trained" }), guard).applied, [], "and not below it");
 });
 
 check("bonus hook: one Talent's lines on one target share a source, two Talents do not", () => {
-  const twice = talentWith("Twice", "bonus: +1 Condition to Aid\nbonus: +3 Condition to Aid");
-  const other = talentWith("Other", "bonus: +1 Condition to Aid");
+  const twice = talentWith("Twice", "bonus: +1, Condition, Aid\nbonus: +3, Condition, Aid");
+  const other = talentWith("Other", "bonus: +1, Condition, Aid");
   const { applied } = ruleModifiers(rulesActor([twice, other]), { kind: "check", slug: "diplomacy", item: aidItem });
   same(applied.map(m => m.source), ["rule:Twice:aid", "rule:Twice:aid", "rule:Other:aid"], "the sources");
   must(resolveModifiers(applied).total === 4, "+3 (the higher of Twice's) +1 (Other's) is 4");
+});
+
+check("bonus hook: a 0.10.0 rule stored on an owned copy (when as one object) still reads", () => {
+  const old = { type: "talent", name: "Humanity", system: { rules: [{ kind: "bonus", line: 1, text: "old", value: 1, type: "condition", to: { name: "Aid", slug: "aid", type: "action" }, when: { constellation: "human", name: "Human", rank: "trained" } }] } };
+  same(ruleModifiers(rulesActor([old], { human: "trained" }), { kind: "check", slug: "diplomacy", item: aidItem }).applied.map(m => m.value), [1], "equality assumed");
+});
+
+/* The operators in play (0.13.0): scope targets, the roll's rank, the scene, the Threat, the marks. */
+
+const jack = talentWith("Jack of Trades", "bonus: +1, Situation, Checks, IF(Rank=Untrained)");
+const closeRanks = talentWith("Close Ranks", "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)", { resolve });
+const torchbearer = talentWith("Torchbearer Human", "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)");
+const allDefenses = talentWith("Stout", "bonus: +1, Gear, Defenses");
+
+check("bonus hook: a scope target applies by the roll's kind, and IF(Rank=...) reads the roll's own rank", () => {
+  const actor = rulesActor([jack, allDefenses]);
+  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: null, rank: "untrained" }).applied.map(m => m.label), ["Jack of Trades"], "an Untrained check");
+  same(ruleModifiers(actor, { kind: "initiative", slug: "stealth", item: null, rank: "untrained" }).applied.map(m => m.label), ["Jack of Trades"], "Checks includes an Initiative rolled as a check");
+  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: null, rank: "trained" }).applied, [], "not a Trained check");
+  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: null }).applied, [], "no rank known, no answer");
+  same(ruleModifiers(actor, { kind: "attack", slug: "melee", item: null, rank: "untrained" }).applied, [], "Checks is not Attacks");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, rank: "untrained" }).applied.map(m => m.label), ["Stout"], "Defenses on a Defense");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, staticOnly: true }).applied.map(m => m.label), ["Stout"], "a plain Defenses bonus is static: the sheet folds it");
+  same(ruleModifiers(actor, { kind: "defense", slug: "guard", item: null, momentOnly: true }).applied, [], "and the roll does not count it again");
+});
+
+/** A fake scene: tokens by id with a disposition and a position on a one-foot line, so the gap is the distance less one. */
+function fakeScene(selfId, tokens) {
+  const byId = Object.fromEntries(tokens.map(t => [t.id, t]));
+  const gap = (a, b) => Math.max(0, Math.abs(byId[a.id].x - byId[b.id].x) - 1);
+  const relation = (a, b) => (a.id === b.id) ? "self" : (byId[a.id].d === byId[b.id].d) ? "ally" : "enemy";
+  return { token: byId[selfId], tokens: tokens.map(t => ({ actor: t.actor, token: t })), relation, gap };
+}
+
+check("bonus hook: FOR(self+allies) with WHILE(allies>=1, 0ft) and AGAINST(Blow): Close Ranks on both tokens", () => {
+  const tess = rulesActor([closeRanks]);
+  tess.name = "Tess";
+  const wren = rulesActor([]);
+  const bandit = rulesActor([]);
+  const place = (tessX, wrenX) => [
+    { id: "t", x: tessX, d: 1, actor: tess }, { id: "w", x: wrenX, d: 1, actor: wren }, { id: "b", x: 10, d: -1, actor: bandit }
+  ];
+  const blow = { threat: "blow", melee: true };
+  // Adjacent: Tess's own roll, and Wren's through Tess's rule.
+  let tokens = place(0, 1);
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, threat: blow, scene: fakeScene("t", tokens), momentOnly: true }).applied.map(m => m.label), ["Close Ranks"], "Tess, an ally adjacent");
+  same(ruleModifiers(wren, { kind: "defense", slug: "guard", item: null, threat: blow, scene: fakeScene("w", tokens), momentOnly: true }).applied.map(m => m.label), ["Close Ranks (Tess)"], "Wren, from Tess's Talent");
+  // Apart: neither.
+  tokens = place(0, 5);
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, threat: blow, scene: fakeScene("t", tokens), momentOnly: true }).applied, [], "Tess alone");
+  same(ruleModifiers(wren, { kind: "defense", slug: "guard", item: null, threat: blow, scene: fakeScene("w", tokens), momentOnly: true }).applied, [], "Wren out of reach");
+  // The bandit adjacent is not an ally.
+  tokens = [{ id: "t", x: 0, d: 1, actor: tess }, { id: "w", x: 5, d: 1, actor: wren }, { id: "b", x: 1, d: -1, actor: bandit }];
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, threat: blow, scene: fakeScene("t", tokens), momentOnly: true }).applied, [], "an enemy adjacent counts for nothing");
+  // Not a Blow, not on Evade, no scene, no Threat.
+  tokens = place(0, 1);
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, threat: { threat: "blast", melee: false }, scene: fakeScene("t", tokens) }).applied, [], "a Blast is not a Blow");
+  same(ruleModifiers(tess, { kind: "defense", slug: "evade", item: null, threat: blow, scene: fakeScene("t", tokens) }).applied, [], "Guard only");
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, threat: blow }).applied, [], "no scene: a positional rule cannot be read");
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, scene: fakeScene("t", tokens) }).applied, [], "no Threat: AGAINST cannot be read");
+  same(ruleModifiers(tess, { kind: "defense", slug: "guard", item: null, threat: blow, scene: fakeScene("t", tokens), staticOnly: true }).applied, [], "the sheet's pass leaves it out");
+});
+
+check("bonus hook: FOR(allies, 15ft) with FIRST(round): Torchbearer's +1 on an ally's first Defense each round, marked", () => {
+  const torch = rulesActor([torchbearer]);
+  torch.name = "Tess";
+  const ally = rulesActor([]);
+  const far = rulesActor([]);
+  const tokens = [{ id: "t", x: 0, d: 1, actor: torch }, { id: "a", x: 10, d: 1, actor: ally }, { id: "f", x: 30, d: 1, actor: far }];
+  const encounter = { combat: "c1", round: 2 };
+  const first = ruleModifiers(ally, { kind: "defense", slug: "evade", item: null, scene: fakeScene("a", tokens), encounter, momentOnly: true });
+  same(first.applied.map(m => [m.label, m.value, m.type]), [["Torchbearer Human (Tess)", 1, "situation"]], "the ally's first Defense of the round");
+  same(first.marks, [{ key: "Torchbearer Human:1", per: "round" }], "and the mark to write");
+  must(!("mark" in first.applied[0]), "the mark is lifted off the modifier");
+  // Marked for this round: not again; a new round: again; a different Combat: again.
+  ally.flags = { starwrought: { rules: { round: { "Torchbearer Human:1": { combat: "c1", round: 2 } } } } };
+  same(ruleModifiers(ally, { kind: "defense", slug: "evade", item: null, scene: fakeScene("a", tokens), encounter, momentOnly: true }).applied, [], "not twice in a round");
+  same(ruleModifiers(ally, { kind: "defense", slug: "evade", item: null, scene: fakeScene("a", tokens), encounter: { combat: "c1", round: 3 }, momentOnly: true }).applied.length, 1, "the next round");
+  same(ruleModifiers(ally, { kind: "defense", slug: "evade", item: null, scene: fakeScene("a", tokens), encounter: { combat: "c2", round: 2 }, momentOnly: true }).applied.length, 1, "another Combat");
+  // Outside an encounter it applies every time and asks for no mark.
+  const outside = ruleModifiers(ally, { kind: "defense", slug: "evade", item: null, scene: fakeScene("a", tokens), encounter: { combat: null, round: 0 }, momentOnly: true });
+  same([outside.applied.length, outside.marks], [1, []], "no encounter, no mark");
+  // Out of range, the owner's own roll, a check rather than a Defense.
+  same(ruleModifiers(far, { kind: "defense", slug: "evade", item: null, scene: fakeScene("f", tokens), encounter, momentOnly: true }).applied, [], "30 ft away is out of 15 ft");
+  same(ruleModifiers(torch, { kind: "defense", slug: "evade", item: null, scene: fakeScene("t", tokens), encounter, momentOnly: true }).applied, [], "allies only, not the Torchbearer");
+  same(ruleModifiers(ally, { kind: "check", slug: "stealth", item: null, scene: fakeScene("a", tokens), encounter, momentOnly: true }).applied, [], "Defenses only");
+});
+
+check("bonus hook: ONCE(encounter) is remembered by Combat alone", () => {
+  const once = talentWith("Second Wind", "bonus: +2, Situation, Checks, ONCE(encounter)");
+  const actor = rulesActor([once]);
+  const encounter = { combat: "c1", round: 4 };
+  const first = ruleModifiers(actor, { kind: "check", slug: "athletics", item: null, encounter });
+  same(first.marks, [{ key: "Second Wind:1", per: "encounter" }], "the mark");
+  actor.flags = { starwrought: { rules: { encounter: { "Second Wind:1": { combat: "c1" } } } } };
+  same(ruleModifiers(actor, { kind: "check", slug: "athletics", item: null, encounter: { combat: "c1", round: 9 } }).applied, [], "spent for the encounter");
+  same(ruleModifiers(actor, { kind: "check", slug: "athletics", item: null, encounter: { combat: "c2", round: 1 } }).applied.length, 1, "the next encounter");
 });
 
 /* -------------------------------------------- */

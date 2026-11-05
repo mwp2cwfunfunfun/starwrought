@@ -494,7 +494,35 @@ if (!checkOnly) {
   }
 }
 
-const stamps = [...stampCheck(), ...await configBarrelCheck()];
+/**
+ * The grammar document names every kind and operator the system knows (0.13.0; Mike: "create a
+ * Human-readable Automation Grammar/Syntax document; make sure to update it with any automation
+ * code changes"). The cheapest honest check: AUTOMATION_GRAMMAR.md must contain a heading for each
+ * registered kind (`### \`<kind>\``) and the name of each operator in operators.mjs. A kind or an
+ * operator added without its paragraph fails the build here, before any step runs.
+ * @returns {Promise<string[]>}  One line per problem.
+ */
+async function grammarDocCheck() {
+  const problems = [];
+  const docPath = path.join(ROOT, "AUTOMATION_GRAMMAR.md");
+  if (!fs.existsSync(docPath)) return ["AUTOMATION_GRAMMAR.md is missing from the project root."];
+  const doc = fs.readFileSync(docPath, "utf8");
+  try {
+    const { knownKinds } = await import(pathToFileURL(path.join(SYSTEM, "module", "rules", "kinds", "index.mjs")).href);
+    for (const kind of knownKinds()) {
+      if (!doc.includes(`### \`${kind}\``)) problems.push(`AUTOMATION_GRAMMAR.md has no section for the "${kind}" kind (a heading \`### \\\`${kind}\\\`\` under 3. The kinds).`);
+    }
+    const { OPERATORS } = await import(pathToFileURL(path.join(SYSTEM, "module", "rules", "operators.mjs")).href);
+    for (const op of OPERATORS) {
+      if (!new RegExp(`\\| \`${op}\\b`).test(doc)) problems.push(`AUTOMATION_GRAMMAR.md does not list the ${op} operator in its operators table (section 4).`);
+    }
+  } catch (error) {
+    problems.push(`the rules modules do not import in plain Node: ${error.message}`);
+  }
+  return problems;
+}
+
+const stamps = [...stampCheck(), ...await configBarrelCheck(), ...await grammarDocCheck()];
 if (stamps.length) {
   console.log("\n" + "=".repeat(72));
   console.log("VERSION STAMPS DISAGREE: the client would warn every user of a stale copy.");

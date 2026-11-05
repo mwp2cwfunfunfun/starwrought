@@ -61,7 +61,7 @@ bonus: <±N>, <Type>, <Target> [, operators]
 |---|---|
 | `<±N>` | a whole number with its sign: `+1`, `-2`. A bare `1` reads as `+1`; `0` is refused ("a bonus of 0 does nothing") |
 | `<Type>` | `Situation`, `Condition` or `Gear`, the book's three (PHB v3.3). The retired words `circumstance`, `status` and `item` are refused naming the current word; `untyped` is refused, since no Talent bonus is untyped |
-| `<Target>` | what the bonus applies to: a **Constellation** by name (every check, Defense roll, Initiative and Threshold of that Constellation), a **Maneuver** by name (the roll made from that Maneuver's Item; on any other check it is offered unticked in the roll dialog for the player to claim), or one of the words `Defenses` (all four), `Checks` (every check that is not an attack), `Attacks` (every Strike and Cast), `Initiative`. A Lore is refused: it is the character's own |
+| `<Target>` | what the bonus applies to: a **Constellation** by name (every check, Defense roll, Initiative and Threshold of that Constellation), a **Maneuver** by name (the roll made from that Maneuver's Item; on any other check it is offered unticked in the roll dialog for the player to claim), or one of the words `Defenses` (all four, their Thresholds and rolls), `Checks` (every check that is not an attack or a Defense; an Initiative rolled with a Constellation is a check in it, ruling 111, so it counts), `Attacks` (every Strike and Cast), `Initiative`. A Lore is refused: it is the character's own |
 
 A bonus to a Constellation moves that Constellation's **Threshold as well as its roll** (section 6).
 
@@ -200,10 +200,16 @@ adjacency, so one line serves both halves of "both of you".
   to know where the tokens stand. The sheet's Defense Threshold is computed without the map, so it
   does **not** include such bonuses (its tooltip says so); the Combat Prompt's preview, the attack
   card's Threshold and every roll made with a token on the scene do include them.
-- **`FIRST(round)` and `ONCE(encounter)` are remembered on the recipient** (a flag on the Actor
-  naming the Combat and the round). The client that resolves the roll writes the mark: the GM's
-  client for an attack read against a Threshold, the roller's for a Defense roll. At a table with
-  no GM connected the mark may not be written for an adversary, and the bonus may apply again.
+- **`FIRST(round)` and `ONCE(encounter)` are remembered on the recipient** (a flag on the Actor,
+  `flags.starwrought.rules.round` or `.encounter`, keyed by the Talent and the line, naming the
+  Combat and the round). The client that resolves the roll writes the mark: the coordinator's
+  client (the GM's when one is connected) for an attack read against a Threshold, the roller's for
+  a Defense roll or a check; a preview writes nothing. At a table with no GM connected the mark
+  may not be written for an adversary, and the bonus may apply again. The Item sheet's **As read**
+  line prints the limit ("the first time each round").
+- **The Item sheet's As read line** is the rule in words: `+1 Situation bonus to Guard, for you and
+  your allies within 0 ft, while >= 1 allies within 0 ft, against a Blow`. Read it after typing a
+  line to see what the system made of it.
 - **A `prevent` of a Condition** refuses the write wherever the system sets the Condition
   (Drop Flat at the reveal, the final Legs Wound, the token palette, the Effects tab) and posts one
   card saying which Talent prevented it. **A `prevent` of `Expose`** is answered on the resolution
@@ -222,7 +228,11 @@ adjacency, so one line serves both halves of "both of you".
 | message | what to do |
 |---|---|
 | `unknown rule kind "<word>" (known kinds: aura, bonus, grant, prevent)` | the word before the colon is not a kind; check the spelling, or the line is prose that belongs in the Effect column |
-| `a bonus is written \`bonus: <±N>, <Type>, <Target> [, operators]\`` | the arguments are not three; count the commas, and check that every operator is `NAME(...)` |
+| `a bonus is written \`bonus: <±N>, <Type>, <Target> [, operators]\` (N arguments given, 3 wanted)` | the arguments are not three; count the commas, and check that every operator is `NAME(...)` |
+| `the 0.10.0 form "bonus: +1 Condition to Aid if Human is Expert" is retired; write ...` | a cell in the prose form of 0.10.0 to 0.12.0: commas between the arguments, `IF(...)` for the condition |
+| `"<part>" comes after an operator; the arguments go first, then the operators` | an argument was written after `IF(...)` or another operator |
+| `<OPERATOR> is given twice` / `FIRST and ONCE are one limit; write one of them` | one line, one of each |
+| `FOR(self) takes no range` | the owner is always within reach of themself |
 | `"<word>" is not a bonus type: write Situation, Condition or Gear` | the second argument |
 | `"<name>" names no Constellation or Maneuver` | the target is misspelt, or the Maneuver's row is not on an action sheet yet (a disabled row still resolves) |
 | `"<name>" is a group and has no rank of its own; test <parent> instead` | `IF(Dueling=Expert)`: write the parent, `IF(Melee=Expert)` |

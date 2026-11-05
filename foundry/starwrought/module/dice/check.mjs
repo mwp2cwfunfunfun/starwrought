@@ -198,6 +198,14 @@ export class SwCheck {
 
     if (cfg.afterRoll) await cfg.afterRoll(result);
 
+    // A FIRST(round) or ONCE(encounter) rule that applied is remembered on the roller now that the
+    // die has landed (0.13.0; module/rules/scene.mjs): the roller's own client writes it, as it
+    // owns the actor; the attack flow's Threshold reads write theirs on the coordinator.
+    if (cfg.ruleMarks?.length) {
+      const { writeRuleMarks } = await import("../rules/scene.mjs");
+      await writeRuleMarks(actor, cfg.ruleMarks).catch(err => console.error("STARWROUGHT | the rule marks could not be written", err));
+    }
+
     // A blind roll (the attack flow's roller) stops here: no card, and the `starwrought.check`
     // hook keeps its meaning of "a card was posted". The coordinator posts one card per defender
     // from this result through resolveAgainst.

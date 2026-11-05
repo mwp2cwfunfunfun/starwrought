@@ -30,8 +30,105 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)\nbonus: +2, Condition, Aid, IF(Origin=Expert)\nbonus: +3, Condition, Aid, IF(Origin=Master)\nbonus: +4, Condition, Aid, IF(Origin=Legendary)",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": [
+          {
+            "constellation": "origin",
+            "name": "Origin",
+            "op": "=",
+            "rank": "trained"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "limit": null,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1, Condition, Aid, IF(Origin=Trained)"
+      },
+      {
+        "value": 2,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": [
+          {
+            "constellation": "origin",
+            "name": "Origin",
+            "op": "=",
+            "rank": "expert"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "limit": null,
+        "kind": "bonus",
+        "line": 2,
+        "text": "bonus: +2, Condition, Aid, IF(Origin=Expert)"
+      },
+      {
+        "value": 3,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": [
+          {
+            "constellation": "origin",
+            "name": "Origin",
+            "op": "=",
+            "rank": "master"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "limit": null,
+        "kind": "bonus",
+        "line": 3,
+        "text": "bonus: +3, Condition, Aid, IF(Origin=Master)"
+      },
+      {
+        "value": 4,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": [
+          {
+            "constellation": "origin",
+            "name": "Origin",
+            "op": "=",
+            "rank": "legendary"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "limit": null,
+        "kind": "bonus",
+        "line": 4,
+        "text": "bonus: +4, Condition, Aid, IF(Origin=Legendary)"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -42,7 +139,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "a27d761cb65d5b30"
+      "contentHash": "42c554a59fffbf40"
     }
   },
   "effects": [],

@@ -9,6 +9,7 @@
 
 import * as SW from "../../config.mjs";
 import { ruleModifiers } from "../../rules/engine.mjs";
+import { sceneContextFor, encounterContext } from "../../rules/scene.mjs";
 
 /** The base terms plus the caller's own modifiers. */
 export function assemble(actor, cfg) {
@@ -63,6 +64,17 @@ export function baseModifiers(actor, cfg) {
     if ((cfg.kind === "initiative") && sys.bonuses?.initiative) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Field.initiativeBonus"), value: sys.bonuses.initiative });
     }
+    // The rules the sheet's pass could not read (0.13.0): those that need the map (`FOR` reaching
+    // others, `WHILE`), the Threat (`AGAINST`) or the round (`FIRST`, `ONCE`). Asked here with
+    // `momentOnly`, so the static ones the Defense already folded in are never counted twice.
+    const moment = ruleModifiers(actor, {
+      kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, rank: cfg.rank ?? "untrained",
+      threat: cfg.threat ?? null, scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext(),
+      momentOnly: true
+    });
+    parts.push(...moment.applied);
+    cfg.ruleOffers = moment.offered;
+    cfg.ruleMarks = moment.marks;
     return parts;
   }
 
@@ -150,9 +162,17 @@ export function baseModifiers(actor, cfg) {
   // without that Maneuver's Item) waits on `cfg.ruleOffers` for the dialog, unticked, and is
   // never applied unasked. A kind that throws contributes nothing and the roll goes on; the
   // dispatcher in ../rules/engine.mjs holds that fence, not this file.
-  const { applied, offered } = ruleModifiers(actor, { kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null });
+  // Since 0.13.0 the context also carries the roll's own rank (`IF(Rank=Untrained)`), the Threat it
+  // answers when it does, where the tokens stand and which round it is, so every operator can be
+  // read; the marks a FIRST or ONCE asks for wait on `cfg.ruleMarks` for SwCheck.roll to write
+  // once the die has landed (a preview writes none).
+  const { applied, offered, marks } = ruleModifiers(actor, {
+    kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, rank: cfg.rank ?? "untrained",
+    threat: cfg.threat ?? null, scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext()
+  });
   parts.push(...applied);
   cfg.ruleOffers = offered;
+  cfg.ruleMarks = marks;
 
   return parts;
 }

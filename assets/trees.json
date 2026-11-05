@@ -62,6 +62,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
+    "automation": "bonus: +1, Condition, Aid, IF(Origin=Trained)\nbonus: +2, Condition, Aid, IF(Origin=Expert)\nbonus: +3, Condition, Aid, IF(Origin=Master)\nbonus: +4, Condition, Aid, IF(Origin=Legendary)",
     "desc": "Humans are restless, adaptable, and ambitious, a young people whose short lives burn twice as bright.",
     "root": true
    },
@@ -103,6 +104,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against physical Attacks.",
+    "automation": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)",
     "requires": [
      "Humanity"
     ]
@@ -123,6 +125,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +1 Situation bonus to your Untrained checks.",
+    "automation": "bonus: +1, Situation, Checks, IF(Rank=Untrained)",
     "desc": "You have done a little of everything, and it shows.",
     "feeds": "Wits",
     "requires": [
@@ -135,6 +138,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.",
+    "automation": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
     "hroot": true
    },
    {

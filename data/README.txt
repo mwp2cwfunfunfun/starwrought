@@ -31,11 +31,13 @@ ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   node assets/build_all.mjs (the two paths are set out at the bottom of this file). Since 0.9.0
   the loop also reads the Automation column (Tree columns, below): a line the framework does not
   know STOPS the build, naming the Constellation, the Talent and the line, before the sources are
-  written. One kind reads since 0.10.0, "bonus" (Humanity's +1 Condition to Aid is the example);
-  the rest of a cell is blank lines or "#" comments. Kinds land one at a time with Mike, and each
-  is named under Tree columns with its syntax when it ships.
+  written. The grammar is AUTOMATION_GRAMMAR.md in the project root (0.13.0: bonus, grant, aura
+  and prevent, with the operators IF, FOR, WHILE, AGAINST, FIRST, ONCE, DIFFERENT, VISIBLE).
 
-Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Triggers | Meta note | Parent
+Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence; "Feeds" still reads) |
+                Flare Triggers | Meta note | Parent
+  An unknown header on any sheet is WARNED about by name (0.13.0), so a renamed column is never
+  silently dropped.
   Parent (v4.10; a GROUP since PHB v4.21): names the Constellation this tree is a group of Talents
   within. A Combat Style names Melee or Ranged; a magical specialty (Flamecraft, Stormcraft, ...)
   names its discipline (Elementalism, ...). A tree with a Parent has NO rank of its own: every
@@ -59,13 +61,26 @@ Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Tr
   Vigor per level. The Ancestry's Vigor stays per level; the two meet in Vigor = 10 + Opening
   Vigor + Ancestry Vigor × level (v4.21; the Endure Bonus to Vigor of v4.11 to v4.15 is gone).
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
+  A sheet named "<Tree> Lore" beside a tree's sheet (0.13.0) is the tree's player-facing text:
+  label | text rows, no header row, in the order you want them read (Summary, About, If you
+  want..., You Might..., Others Probably..., Physical Description, Society, Beliefs, Popular
+  Edicts, Popular Anathemas, Names, as the Human Lore sheet has them). Rich text carries as the
+  Effect column's does. An Ancestry's Lore shows on its compendium window's Description tab and
+  under the highlighted card in Character Creation. A Lore sheet for a name not in the index WARNS.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |
-                Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled? | Aura |
-                Automation
+                Attribute (or Feeds) | Choice | Free Talent | Enabled? | Automation
                 and, on the magic sheets only, the SPELL columns:
                 Threat | Delivery | Range | Die | Damage | Targets | Quick | Focused | Committed | Defenses
+                Retired (0.13.0), still read where a sheet has them: Aura (write "aura: 15ft,
+                allies" in Automation instead; both on one row is an ERROR) and Grants (write
+                "grant: 1, Calling"; the converter WARNS on a filled Grants cell, and a cell that
+                disagrees with the line fails the build).
   Column ORDER does not matter; the first word of the header does.
+  Attribute (0.13.0; "Feeds" through 0.12.0): the Attribute this Talent's point feeds. On a sheet
+        headed "Attribute" a BLANK cell is an ERROR ("no Attribute cell should ever be blank",
+        Mike, 2026-11-05); on a sheet still headed "Feeds" a blank inherits the tree's Primary
+        Attribute, until that sheet is renamed too. "TBD" WARNS on either.
   Spell columns (PHB v4.21, Spellwork): a row with a Threat is a spell, and the Foundry system
         gives its Talent the Cast ❷ / ❸ / ❹ buttons; a row without one is an ordinary Talent
         whatever else the sheet says. Threat is Blow, Blast, Blight or Beguilement (ERROR
@@ -79,61 +94,26 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         ("Evade or Endure"); blank, the Threat decides; a word that is no Defense is an ERROR.
         Nothing else is validated: an area, a push, a condition on a Hit, a summons or a healing
         line stays prose the card prints, as a Talent's Effect does.
-  Aura (0.5.1): the Effect's "within N feet", drawn on the map around the carrier. Accepted:
-        "N ft" or "N feet" (everyone), "N ft allies", "N ft enemies", "all" spelled out for
-        everyone, "visible" appended to pin the ring by default once an encounter starts
-        ("15 ft allies visible"), "none" when the circle is centred somewhere other than the
-        carrier (Rebounding Toss), blank for no aura. Anything else is a VALIDATION ERROR and
-        nothing is written. The converter WARNS when an Effect says "within N feet" and the cell
-        is blank, the sheet has no Aura column, or the cell names a different N. "Within reach"
-        and "adjacent" get no cell: the reach bands draw those. The action sheets take the same
-        grammar.
-  Automation (0.9.0): what the Foundry system should DO with the talent, one rule per line, in a
-        small grammar the system owns (foundry/starwrought/module/rules/grammar.mjs):
-        "kind: arguments" (the colon optional when there are no arguments), blank lines ignored, a
-        line beginning with "#" a comment. The converter copies the cell through as text and parses
-        nothing; build_foundry.mjs parses it, and a line it does not know is an ERROR that stops the
-        build (and so sync_content.cmd) naming the Constellation, the Talent and the line, before
-        the sources are written, as a bad Aura cell stops the converter. Kinds are added one at a
-        time, with Mike (2026-10-03: "we will build automation syntax hooks one at a time"), each
-        written to serve every talent that uses its word, and each is named here with its syntax
-        when it ships; a kind word not listed below is an ERROR ("unknown rule kind", with the
-        known kinds named). The same line typed into a world Item's textarea in Foundry saves and
-        is marked on the Item sheet rather than refused. The action sheets take the same column.
-        The kinds:
-        bonus (0.10.0): a typed bonus or penalty on a roll. Two forms:
-              "bonus: <value> <Type> to <Target>"
-              "bonus: <value> <Type> to <Target> if <Constellation> is <Rank>"
-              <value> is signed: "+1", "+2", "-1", "-2" (a bare "1" reads as "+1"; "0" is an
-              ERROR, since a bonus of 0 does nothing). <Type> is Situation, Condition or Gear, any
-              case, the book's three types since v3.3; the old words circumstance, status and item
-              are an ERROR naming the current word, and "untyped" is an ERROR (no talent bonus is
-              untyped). "to <Target>" is required: a Constellation or a Maneuver, by the name the
-              trees and the action sheets print ("Stealth", "Guard", "Aid"; the slug form
-              "armored-fighting" also reads; a Maneuver's glyphs are ignored). A name that is
-              neither is an ERROR, and so is a Lore. "if <Constellation> is <Rank>" is optional:
-              <Rank> is Untrained, Trained, Expert, Master or Legendary, any case, the word between
-              is "is" (not "="), and the test is EQUALITY: the line applies while the character's
-              rank in that Constellation is exactly that rank, so a talent that scales by rank
-              writes one line per rank. "Origin" names the shared Origin rank (PHB v4.21: your
-              Ancestry, Culture and Bloodline are one Constellation for rank), so an Ancestry
-              Talent that scales "if you are Expert in your Origin" tests Origin, not Human. A
-              group (a Combat Style, a magical specialty) has no rank of its own, so "if Archery
-              is Expert" is an ERROR naming the parent to test instead. Anything else is an ERROR
-              printing the shape. Humanity, the Human root, is the example (one line per
-              sentence of its Effect):
-                bonus: +1 Condition to Aid if Origin is Trained
-                bonus: +2 Condition to Aid if Origin is Expert
-                bonus: +3 Condition to Aid if Origin is Master
-                bonus: +4 Condition to Aid if Origin is Legendary
-              In play a bonus to a Constellation lands on every roll in it, on its Defense
-              Threshold and on the Skills grid; a bonus to a Maneuver lands on a roll made from the
-              Maneuver (its row on the Maneuvers tab) and is OFFERED, unticked, in the dialog of
-              any other check, since only the player knows whether a roll is an Aid; never on an
-              attack, a Defense or an Initiative, and never on an adversary. Since PHB v4.21
-              bonuses of one type ADD, and a circumstance is counted once: the lines of one talent
-              on one target are one circumstance, so two of them that both apply give the higher,
-              while two different talents' bonuses add.
+  Automation (0.9.0; the operator grammar since 0.13.0): what the Foundry system should DO with
+        the talent, one rule per line, in the grammar the system owns. THE REFERENCE IS
+        AUTOMATION_GRAMMAR.md IN THE PROJECT ROOT: the shape of a line, every kind with its
+        arguments, every operator, the vocabularies, the level-1 Human written out, what a rule
+        does and does not do in play, and the build's messages. It is kept current with every
+        change to the code, and the build fails when a kind or an operator it knows is not named
+        there. In short:
+              <kind>: <argument>, <argument>, ... [, <OPERATOR>(...)] ...
+              bonus: +1, Condition, Aid, IF(Origin=Trained)             a typed bonus to a roll
+              grant: 1, Calling                                          a Talent Point at creation
+              aura: 15ft, allies, VISIBLE                                the ring on the map
+              prevent: Prone, ONCE(encounter)                            an effect does not land
+        Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
+        trailing period is tolerated. The converter copies the cell through as text and parses
+        nothing; build_foundry.mjs parses it, and a line it does not know is an ERROR that stops
+        the build (and so sync_content.cmd) naming the Constellation, the Talent and the line,
+        before the sources are written. The same line typed into a world Item's textarea in
+        Foundry saves and is marked on the Item sheet rather than refused. The action sheets take
+        the same column. The 0.10.0 prose form ("bonus: +1 Condition to Aid if Human is Expert")
+        is retired and refused with the new shape printed.
   Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
         anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
         column means the sheet has not been curated yet, not that it is all off. A constellation
@@ -154,10 +134,13 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         EVERY tree needs exactly one "x", identity trees included, even though their roots are
         granted by the chargen choice rather than bought.
   Requires: comma- or "or"-separated talent names, which must exist in the SAME sheet.
-  Prerequisites: free prose for narrative gates ("Raised in Serrovane"). Not validated.
-  Grants: restricted talent points this talent hands out. Parsed forms only:
-        "<n> in one|any|different <Skill|Calling|Combat Style|Armor|Save|Weapon|opened|anywhere>"
-        "<n> open <non-Skill|anywhere>"
+  Prerequisites: free prose for narrative gates ("Raised in Serrovane"), not validated; and, on
+        a sheet with NO Requires column or an EMPTY one (the Human sheet since 0.13.0; Mike: "the
+        Prerequisites column is the one that should have been used in the first place"), the
+        requirement too: each comma- or "or"-separated piece that names a Talent of the same
+        sheet becomes a Requires, and the rest stays prose that still prints.
+  Grants (retired 0.13.0): write "grant: <N>, <Scope>" in Automation (AUTOMATION_GRAMMAR.md). A
+        filled cell still reads this release, WARNS, and must agree with the line.
   Action glyphs go in the Talent NAME, not the Effect, in the v4.10 symbols: ❶ ❷ ❸ (one to three
   actions, up to ❻), ⓿ (free), ↺ beside a cost for a Reaction: "Second Wind ❶", "Battle Cry ⓿↺",
   "Parry ❶↺", "Double Slice ❷". A range is "Strike ❶ to ❸" or "Disarm ❶ or ❸". The v3 glyphs
@@ -290,7 +273,8 @@ Newlines in a cell become <br>.
 
 Rules the converter enforces as ERRORS: exactly one root per tree; capstones (★) must be tier L;
 Requires must name real talents in the same tree; tier must be T/E/M/L; Effect can't be empty;
-Ancestry Vigor (or HP) must be a whole number. Every talent costs 1.
+Ancestry Vigor (or HP) must be a whole number; a blank Attribute cell on a sheet headed Attribute;
+an Aura cell beside an "aura:" Automation line. Every talent costs 1.
 
 It WARNS (does not block) on the Root Rule: every root should hang on something that gets ROLLED
 and should IMPROVE at Expert/Master/Legendary. The culture roots pass (their Diplomacy bonus

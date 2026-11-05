@@ -36,6 +36,7 @@ import { isLegalAnswer, postureName, postureBonus, postureZone, postureRule } fr
 import { gapBetween } from "../canvas/geometry.mjs";
 import { AttackSocket, SOCKET } from "./attack-socket.mjs";
 import { resolveSource, maneuverFrom, costOf, meleeAnswers, attackThreshold, describe, resolveArgs, rollBlind } from "./attack-source.mjs";
+import { threatContext, writeRuleMarks } from "../rules/scene.mjs";
 
 /** The socket channel, defined by the transport (attack-socket.mjs) and re-exported for callers. */
 export { SOCKET };
@@ -1102,7 +1103,7 @@ export class AttackCoordinator {
       // every defender has committed, so a missing commitment is a programming error.
       if (!commitment?.defense) throw new Error(`STARWROUGHT | attack workflow ${workflow.id}: no commitment for ${target.name}`);
       const actor = resolveActor(target.actorUuid);
-      const reading = AttackCoordinator.#thresholdFor(actor, commitment, permitted);
+      const reading = AttackCoordinator.#thresholdFor(actor, commitment, permitted, threatContext(workflow.maneuver));
       target.revealed = {
         defense: reading?.key ?? commitment.defense,
         reaction: commitment.reaction ?? null,
@@ -1167,15 +1168,21 @@ export class AttackCoordinator {
    * (brief, "Thresholds": never trusted from a client). `SwActor#defenseThresholdFor` is the
    * authority; the arithmetic below stands in only if it is missing, folding the +2 into the
    * Defense's own stack, where v4.21's stacking adds it.
-   * @returns {{key: string, threshold: number, note: string|null}|null}
+   * `threat` (0.13.0) is the Maneuver's Threat and reach for the Automation rules' `AGAINST`; the
+   * reading's `marks` are what a FIRST or ONCE rule asks the recipient to remember, written by the
+   * coordinator once the pairing resolves (never at the reveal, which may be read again).
+   * @returns {{key: string, threshold: number, note: string|null, marks: Array}|null}
    */
-  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null) {
+  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null) {
     if (!actor) return null;
     const allowed = (Array.isArray(permitted) && permitted.length) ? permitted : [...SW.THREATS.blow.defenses];
     if (typeof actor.defenseThresholdFor === "function") {
-      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed });
+      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed, threat });
       if (reading && Number.isFinite(Number(reading.threshold))) {
-        return { key: reading.key ?? defense, threshold: Number(reading.threshold), note: reading.note ?? reading.unavailable ?? null };
+        return {
+          key: reading.key ?? defense, threshold: Number(reading.threshold),
+          note: reading.note ?? reading.unavailable ?? null, marks: reading.marks ?? []
+        };
       }
     }
     const defenses = actor.system?.defenses ?? {};
@@ -1200,7 +1207,7 @@ export class AttackCoordinator {
         threshold += SW.resolveModifiers(extra).total;
       }
     }
-    return { key, threshold, note };
+    return { key, threshold, note, marks: [] };
   }
 
   /** An adversary's Attack Threshold: the attack row's own number (attack-source.mjs). */
@@ -1380,11 +1387,18 @@ export class AttackCoordinator {
     let kind, threshold, showThreshold, speakerActor;
     if (target.roller === "attacker") {
       kind = "attack";
-      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses);
+      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threatContext(maneuver));
       threshold = reading?.threshold ?? target.threshold ?? 10;
       target.threshold = threshold;
       showThreshold = !!target.isPlayer && showPcThresholds;
       speakerActor = attacker;
+      // A FIRST(round) or ONCE(encounter) rule that moved this Threshold is remembered on the
+      // defender now (0.13.0): the coordinator is the GM's client when one is connected, which
+      // may write any actor; the attacker's client otherwise, which may not write an adversary
+      // it does not own, and then the mark is not written (AUTOMATION_GRAMMAR.md, section 6).
+      if (reading?.marks?.length) {
+        await writeRuleMarks(defender, reading.marks).catch(err => console.error("STARWROUGHT | the rule marks could not be written", err));
+      }
     } else {
       kind = "defense";
       threshold = AttackCoordinator.#attackThreshold(attacker, maneuver);
@@ -1527,6 +1541,8 @@ export class AttackCoordinator {
         reaction: revealed.reaction ?? null,
         posture: revealed.posture ?? null,
         strike: maneuver.strike,
+        // The Threat answered (0.13.0), for the Automation rules' AGAINST.
+        threat: threatContext(maneuver),
         attacker: attackerToken?.object ?? attacker ?? undefined,
         postCard: false,
         dialog: true

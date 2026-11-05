@@ -129,10 +129,17 @@ export function rulesOfKind(actor, kind) {
  * @property {string} kind              "check" | "attack" | "defense" | "initiative".
  * @property {string} slug              The Constellation slug supplying the Proficiency Bonus ("" when none).
  * @property {object|null} item         The Item behind the roll (a Maneuver, a weapon, a Talent), when there is one.
- * @property {boolean} [constellationFolded]  True when the caller has already taken the modifiers that
- *                                      depend on the Constellation alone (the Defense pass folds them
- *                                      into a Defense's own list) and asks only for what depends on the
- *                                      Item or the roll. A kind answers a Constellation target once.
+ * @property {string} [rank]            The roll's own rank, Handling included (`IF(Rank=Untrained)` reads it; 0.13.0).
+ * @property {{threat: string, melee: boolean}|null} [threat]  The Threat a Defense answers in the attack
+ *                                      flow (`AGAINST`), null when the roll answers nothing or nobody knows.
+ * @property {object|null} [scene]      Where the tokens stand (`FOR`, `WHILE`): { token, tokens: [{ actor,
+ *                                      token }], relation(a, b), gap(a, b) }, built by module/rules/scene.mjs
+ *                                      on a client with a canvas, or a fake in a test; null when unknown.
+ * @property {{combat: string|null, round: number}|null} [encounter]  The Combat and round (`FIRST`, `ONCE`).
+ * @property {boolean} [staticOnly]     Answer only the rules that need none of the above (the sheet's
+ *                                      Defense pass, which has no token and no Threat).
+ * @property {boolean} [momentOnly]     Answer only the rules that do (a Defense roll or a Threshold read in
+ *                                      the attack flow, whose static rules the sheet already folded in).
  */
 
 /**
@@ -149,19 +156,39 @@ export function rulesOfKind(actor, kind) {
  * engine's making (`<kind>-<n>`, counting that kind's offers on this roll; a key two offers share
  * is suffixed, so the dialog's checkboxes never collide). Typed stacking is not done here: the
  * caller's `SW.resolveModifiers` pass treats what comes back as it treats every other term.
+ * Since 0.13.0 the entries handed to a kind are the actor's own rules AND the rules of the other
+ * tokens on the scene whose `FOR` names someone other than the owner (Torchbearer's `FOR(allies,
+ * 15ft)` on an ally's Defense), each entry carrying `owner` and `ownerToken` (the actor's own carry
+ * the actor and `context.scene?.token`), when the caller gives a `scene`; and a modifier may carry
+ * `mark: { key, per }`, a FIRST or ONCE the recipient should remember once the roll resolves, which
+ * the dispatcher lifts into `marks` for the caller to write (module/rules/scene.mjs,
+ * `writeRuleMarks`); a preview never writes one.
  * @param {object} actor
  * @param {RollContext} context
- * @returns {{applied: RuleModifier[], offered: RuleModifier[]}}
+ * @returns {{applied: RuleModifier[], offered: RuleModifier[], marks: Array<{key: string, per: string}>}}
  */
 export function ruleModifiers(actor, context = {}) {
   const applied = [];
   const offered = [];
+  const marks = [];
   const keys = new Set();
+  const scene = context?.scene ?? null;
 
   for (const kind of KINDS.values()) {
     const hook = kind.hooks?.modifiers;
     if (typeof hook !== "function") continue;
-    const entries = rulesOfKind(actor, kind.id);
+    const entries = rulesOfKind(actor, kind.id).map(e => ({ ...e, owner: actor, ownerToken: scene?.token ?? null }));
+    // Other tokens' rules that reach this actor (0.13.0): a FOR naming anyone but the owner. The
+    // relation and the range are the kind's to check; the engine only knows the operator's shape.
+    if (scene?.tokens) {
+      for (const other of scene.tokens) {
+        if (!other?.actor || (other.actor === actor) || (other.token && scene.token && (other.token.id === scene.token.id))) continue;
+        for (const e of rulesOfKind(other.actor, kind.id)) {
+          const who = e.rule?.for?.who;
+          if (who && (who !== "self")) entries.push({ ...e, owner: other.actor, ownerToken: other.token ?? null });
+        }
+      }
+    }
     if (!entries.length) continue;
 
     let result;
@@ -179,6 +206,10 @@ export function ruleModifiers(actor, context = {}) {
       const value = (typeof mod.value === "string") ? Number(mod.value.trim() || NaN) : mod.value;
       if ((typeof value !== "number") || !Number.isFinite(value) || (value === 0)) continue;
       const clean = { ...mod, value, label: String(mod.label ?? kind.id) };
+      if (clean.mark && (typeof clean.mark === "object") && clean.mark.key && clean.mark.per) {
+        if (mod.offer !== true) marks.push({ key: String(clean.mark.key), per: String(clean.mark.per) });
+      }
+      delete clean.mark;
       if (mod.offer === true) {
         let key = String(mod.key ?? "") || `${kind.id}-${offers}`;
         offers += 1;
@@ -196,5 +227,5 @@ export function ruleModifiers(actor, context = {}) {
     }
   }
 
-  return { applied, offered };
+  return { applied, offered, marks };
 }

@@ -436,7 +436,7 @@
   "STARWROUGHT.Field.nextRankHint": "What the next Proficiency Rank is still waiting on.",
   "STARWROUGHT.Field.rank": "Proficiency",
   "STARWROUGHT.Field.threshold": "Threshold",
-  "STARWROUGHT.Field.thresholdHint": "The number someone else has to beat: 10 + the same modifier the check rolls.",
+  "STARWROUGHT.Field.thresholdHint": "The number someone else has to beat: 10 + the same modifier the check rolls. A Talent bonus that depends on where the tokens stand, on the Threat answered or on the round (Close Ranks, Torchbearer) is not in this number; the Combat Prompt's preview, the attack card and every roll include it.",
   "STARWROUGHT.Field.size": "Size",
   "STARWROUGHT.Field.ancestryHp": "Ancestry Vigor",
   "STARWROUGHT.Field.callingHp": "Calling Vigor",

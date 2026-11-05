@@ -30,8 +30,31 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)",
+    "rules": [
+      {
+        "value": 1,
+        "type": "situation",
+        "to": {
+          "name": "Defenses",
+          "slug": "defenses",
+          "type": "scope"
+        },
+        "when": null,
+        "for": {
+          "who": "allies",
+          "range": 15
+        },
+        "while": null,
+        "against": null,
+        "limit": {
+          "per": "round"
+        },
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1, Situation, Defenses, FOR(allies, 15ft), FIRST(round)"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -42,7 +65,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "a1ad1f23f4a2e827"
+      "contentHash": "b3e22831fa86ed00"
     }
   },
   "effects": [],

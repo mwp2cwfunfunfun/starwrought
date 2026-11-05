@@ -116,7 +116,10 @@ export function prepareDefenses(data) {
     // (_prepareRules) and the ranks (prepareConstellations) are both final by now, so a
     // `bonus ... to Guard if Human is Expert` is read at the rank the sheet shows. Only what a
     // kind applies is taken; an offer has no checkbox on a Threshold and is ignored here.
-    modifiers.push(...ruleModifiers(data.parent, { kind: "defense", slug: def.slug, item: null }).applied);
+    // `staticOnly` (0.13.0): the sheet has no token and answers no Threat, so a rule that needs
+    // the map, the Threat or the round (Close Ranks, Torchbearer) is left for the roll and the
+    // attack flow's Threshold read, which ask for those alone; the field's tooltip says so.
+    modifiers.push(...ruleModifiers(data.parent, { kind: "defense", slug: def.slug, item: null, staticOnly: true }).applied);
 
     // Size touches only Evade and Guard, and only against physical Attacks.
     const sizeMod = key === "evade" ? sizeMods.evade : key === "guard" ? sizeMods.guard : 0;

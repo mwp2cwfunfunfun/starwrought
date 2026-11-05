@@ -32,8 +32,37 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)",
+    "rules": [
+      {
+        "value": 1,
+        "type": "situation",
+        "to": {
+          "name": "Guard",
+          "slug": "guard",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": {
+          "who": "self+allies",
+          "range": 0
+        },
+        "while": {
+          "who": "allies",
+          "op": ">=",
+          "count": 1,
+          "range": 0
+        },
+        "against": {
+          "threat": "blow",
+          "reach": null
+        },
+        "limit": null,
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)"
+      }
+    ],
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
   },
@@ -44,7 +73,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ccc23c0fd99da36e"
+      "contentHash": "8e76f919583fbc4b"
     }
   },
   "effects": [],
