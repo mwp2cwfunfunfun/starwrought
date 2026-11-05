@@ -1,0 +1,43 @@
+{
+  "_id": "d5e50a4f94a5d1a5",
+  "name": "Riposte",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Riposte (Guard) • after a Parry",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "",
+      "defense": ""
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>After you successfully Parry, instead of Controlling the attacking weapon, you may at once make a Quick Strike against its owner.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "b93d96fd63573850",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ad982d32bd06a6c7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d5e50a4f94a5d1a5"
+}

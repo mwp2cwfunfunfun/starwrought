@@ -1,0 +1,53 @@
+{
+  "_id": "aa1d1b4f03c1c2a1",
+  "name": "Weaponmaster Calling",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "weaponmaster",
+    "constellationName": "Weaponmaster",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in Athletics.<br><br>You gain the Weapon Familiarity Talent for free.<br><br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br><br>You may take the Reactive Strike Talent, even if you are not Expert in Melee. However, you may still only use Reactive Strike with weapons in which you are at least Expert Proficiency Rank.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "Weapon Group",
+      "value": ""
+    },
+    "freeTalent": "Weapon Familiarity",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "c24b24d1fba469af",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "02e7b53c5732aa66"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!aa1d1b4f03c1c2a1"
+}

@@ -1,0 +1,43 @@
+{
+  "_id": "1c295dd27c2281b8",
+  "name": "Cover the Angle",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Cover the Angle (Guard) • your Guard for an ally",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "",
+      "defense": ""
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>Requirements You are wielding a rigid object like a weapon or a shield. Trigger An adjacent ally is Attacked in melee by a foe no more than one size larger than you. The attack is measured against your Guard instead of your ally's Defense, and any Bind that forms is with your weapon or shield.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "b93d96fd63573850",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0603ce99aeadb079"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1c295dd27c2281b8"
+}

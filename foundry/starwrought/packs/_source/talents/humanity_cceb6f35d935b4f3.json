@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain a +1 Condition bonus on checks to Aid. If you are Expert in Human, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br>Bonus to Aid. You gain a +1 Condition bonus on checks to Aid. If your Origin Proficiency is Expert, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.",
     "description": "<p>Short lives teach humans to close ranks and pull together.</p>",
     "cost": "passive",
     "costMax": "",
@@ -30,10 +30,79 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "bonus: +1 Condition to Aid if Origin is Trained\nbonus: +2 Condition to Aid if Origin is Expert\nbonus: +3 Condition to Aid if Origin is Master\nbonus: +4 Condition to Aid if Origin is Legendary",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": {
+          "constellation": "origin",
+          "name": "Origin",
+          "rank": "trained"
+        },
+        "kind": "bonus",
+        "line": 1,
+        "text": "bonus: +1 Condition to Aid if Origin is Trained"
+      },
+      {
+        "value": 2,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": {
+          "constellation": "origin",
+          "name": "Origin",
+          "rank": "expert"
+        },
+        "kind": "bonus",
+        "line": 2,
+        "text": "bonus: +2 Condition to Aid if Origin is Expert"
+      },
+      {
+        "value": 3,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": {
+          "constellation": "origin",
+          "name": "Origin",
+          "rank": "master"
+        },
+        "kind": "bonus",
+        "line": 3,
+        "text": "bonus: +3 Condition to Aid if Origin is Master"
+      },
+      {
+        "value": 4,
+        "type": "condition",
+        "to": {
+          "name": "Aid",
+          "slug": "aid",
+          "type": "action"
+        },
+        "when": {
+          "constellation": "origin",
+          "name": "Origin",
+          "rank": "legendary"
+        },
+        "kind": "bonus",
+        "line": 4,
+        "text": "bonus: +4 Condition to Aid if Origin is Legendary"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,
@@ -42,7 +111,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "2ed8bcfbef63dfd1"
+      "contentHash": "e85dec0c7ff0e72a"
     }
   },
   "effects": [],

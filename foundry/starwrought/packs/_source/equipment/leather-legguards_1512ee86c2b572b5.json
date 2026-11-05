@@ -1,0 +1,33 @@
+{
+  "_id": "1512ee86c2b572b5",
+  "name": "Leather Legguards",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "legs",
+    "protection": 2,
+    "load": 0,
+    "material": "leather",
+    "traits": [],
+    "price": "4 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2ee13d63a2d5fc06"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1512ee86c2b572b5"
+}

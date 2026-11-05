@@ -38,8 +38,8 @@
       </div>
     </div>
 
-    {{!-- The answer built on the Defense (PHB v4.10, Answering an Attack): nothing, a Reaction the
-          defender owns, or a Posture ⓿↺ from the Defense's Constellation. One or the other, never both. --}}
+    {{!-- The answer built on the Defense (PHB v4.21, Answering an Attack): nothing, a Reaction
+          Talent the defender owns, or a Posture ⓿↺. One or the other, never both. --}}
     <div class="sw-prompt-answers" role="radiogroup" aria-label="{{localize 'STARWROUGHT.Prompt.answer'}}">
       <span class="sw-prompt-label">{{localize "STARWROUGHT.Prompt.answer"}}</span>
       <div class="sw-prompt-options">
@@ -52,7 +52,7 @@
         {{/each}}
       </div>
       {{#if task.headWound}}<p class="sw-note sw-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{task.headWound}}</p>{{/if}}
-      {{#if task.counterHint}}<p class="sw-note">{{task.counterHint}}</p>{{/if}}
+      {{#if task.meleeHint}}<p class="sw-note">{{task.meleeHint}}</p>{{/if}}
     </div>
 
     {{#if task.zones}}

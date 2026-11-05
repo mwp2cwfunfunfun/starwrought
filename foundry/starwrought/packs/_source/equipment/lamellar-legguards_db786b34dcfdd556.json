@@ -1,0 +1,33 @@
+{
+  "_id": "db786b34dcfdd556",
+  "name": "Lamellar Legguards",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "legs",
+    "protection": 3,
+    "load": 2,
+    "material": "lamellar",
+    "traits": [],
+    "price": "10 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "04c778e8e9d8b129"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!db786b34dcfdd556"
+}

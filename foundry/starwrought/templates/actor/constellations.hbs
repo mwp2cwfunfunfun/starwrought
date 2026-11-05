@@ -53,7 +53,7 @@
           {{con.name}}
         </a>
 
-        <span class="sw-rank sw-rank-{{con.rank}}" data-tooltip="{{con.attributeLabel}}">
+        <span class="sw-rank sw-rank-{{con.rank}} {{#if con.rankFromName}}sw-rank-group{{/if}}" data-tooltip="{{#if con.rankHint}}{{con.rankHint}}{{else}}{{con.attributeLabel}}{{/if}}">
           {{con.rankLabel}} {{swSigned con.bonus}}
         </span>
 
@@ -75,7 +75,7 @@
         {{/if}}
 
         {{#if con.parentName}}
-        <span class="sw-parent" data-tooltip="STARWROUGHT.Field.inheritedHint">
+        <span class="sw-parent" data-tooltip="STARWROUGHT.Field.groupHint">
           <i class="fa-solid fa-arrow-turn-up"></i> {{localize "STARWROUGHT.Field.childOf" parent=con.parentName}}
         </span>
         {{/if}}
@@ -116,6 +116,14 @@
              data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
           {{/with}}
           <div class="sw-talent-controls">
+            {{#if talent.spell}}
+            {{!-- The Cast Maneuver (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed, on a spell Talent. --}}
+            <span class="sw-cast-buttons">
+              {{#each talent.spell.casts as |c|}}
+              <a class="sw-cast-button" data-action="castSpell" data-cast="{{c.key}}" data-tooltip="{{c.hint}}"><span class="sw-action-glyph">{{c.glyph}}</span></a>
+              {{/each}}
+            </span>
+            {{/if}}
             <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
             {{#if @root.isGM}}
             <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.edit"><i class="fa-solid fa-pen"></i></a>

@@ -186,7 +186,7 @@
 </head>
 <body>
 <header>
-  <span class="logo">STARWROUGHT &#10022;</span><span class="ver">COMPANION · Playtest v4.10</span>
+  <span class="logo">STARWROUGHT &#10022;</span><span class="ver">COMPANION · Playtest v4.21</span>
   <nav class="tabs">
     <button class="tab" data-t="chars">Characters</button>
     <button class="tab" data-t="wizard">Create</button>
@@ -220,13 +220,18 @@ const HUES = {"Awareness":"#E8CC5A","Evade":"#8FC978","Guard":"#8FB0DC","Endure"
   "Human":"#DCCB9E","Serrovane":"#B49AE8","Kestrel Reach":"#C9A87A",
   "Melee":"#C98F78","Ranged":"#5CB8A8","Two-Weapon Fighting":"#E87A62","Shield Fighting":"#86B4E8","Brawling":"#D68A62","Dueling":"#D6A8D6",
   "Great Weapon Fighting":"#B87A5A","Archery":"#5CC9BC","Crossbow Fighting":"#7FA8C0","Missile Skirmishing":"#93BCB4",
-  "Spear & Polearm Fighting":"#A8C97A","Armored Fighting":"#9AA8B4"};
-const UNIFLARE = "A Constellation Flares on a Critical Success or Critical Failure on a roll with consequences, directly related to a talent in that Constellation. Any roll at the table counts, yours or an enemy's against you, trained or not. No stakes, no Flare. Max one new Flare per Constellation per session, and it stays Flared until you spend into it. The Constellation needn't be open: deeds ignite stars you haven't bought yet, and the milestone point that follows can buy its root.";
+  "Spear & Polearm Fighting":"#A8C97A","Armored Fighting":"#9AA8B4",
+  "Spellshaper":"#B48CE8","Blood Mage":"#D65A6A","Necromancer":"#8FA0B4","Summoner":"#7AC4A8","Spellblade":"#C9A05A",
+  "Elementalism":"#E8905A","Flamecraft":"#F07A4E","Stormcraft":"#7FB4E8","Forceweaving":"#B4A8DC","Kinetics":"#C9A8E8","Barriers":"#9AB4D6",
+  "Vitalism":"#8FD08F","Restoration":"#A8E0A8","Decay":"#8FA878","Mindweaving":"#DCA8D6","Illusion":"#E8B4E8","Emotions":"#D68FA8",
+  "Spiritcraft":"#E8DCA8","Oaths":"#F0E0A0","Exorcism":"#C9C9A8"};
+const UNIFLARE = "A Critical Success or Critical Failure on a consequential check can produce one Flare: a record of the particular training the check demonstrated, Dueling or Flamecraft rather than all of Melee or Elementalism. You propose the training and the GM approves it, and the Flare stays until a Talent Point is spent through it. The training need not be open to you: a consequential check made Untrained can Flare a Constellation whose root you have yet to buy, and the Milestone point that follows can buy it. A Flare on a fighting style or a magical specialty makes that style's Talents eligible, not every Talent in the Constellation it shares a rank with.";
 const ATTRC={Might:"#F0685A",Agility:"#5CC9BC",Wits:"#E8CC5A",Presence:"#B49AE8"};
 const TIERC = {T:"#4A7C59",E:"#0E5F6B",M:"#C05621",L:"#B8860B"}, TIERN={T:"Trained",E:"Expert",M:"Master",L:"Legendary"};
 
 /*RULES-BEGIN*/
-// PHB v4.10 math: check = d20 + attribute + proficiency (if any) + bonuses/penalties. Level never
+// PHB v4.21 math: check = d20 + attribute + proficiency (if any) + bonuses/penalties, and independent
+// bonuses and penalties add up whatever their type (each circumstance counted once). Level never
 // touches the die: it opens the rank gates and pays out Talent Points. A Threshold is the same sum
 // with a flat 10 in place of the die, the four Defenses included, which are what an attacker's roll
 // is measured against. Armor never touches a Defense: it subtracts Protection from damage, Zone by
@@ -237,19 +242,25 @@ const DEFS=["Awareness","Evade","Guard","Endure"];
 const DEFF={Awareness:"Wits",Evade:"Agility",Guard:"Presence",Endure:"Might"};
 // The Four Threats (ch.2): each Defense answers two kinds, each kind is answered by two Defenses.
 const THREATS=[["Blow","Evade","Guard"],["Blast","Evade","Endure"],["Blight","Endure","Awareness"],["Beguilement","Awareness","Guard"]];
-// Melee and Ranged are the parent Constellations (Magic will be a third). A Combat Style names its
-// parent in trees.json; the book's own list stands in for data written before the column existed.
-const PARENTS=["Melee","Ranged"], PARENTF={Melee:"Might",Ranged:"Agility"};
+// Melee and Ranged are the martial parent Constellations, and each magical discipline is a parent too
+// (PHB v4.21, ch.2 Proficiency). A Combat Style or a magical specialty is a GROUP of Talents within its
+// parent: it shares the parent's Proficiency Rank and has no rank of its own. A group names its parent
+// in trees.json (`parent`, `group`); the book's own list stands in for data written before the column
+// existed. PARENTS is the pair the app stubs before the data lands; the magical parents come from the data.
+const MARTIAL=["Melee","Ranged"], PARENTS=MARTIAL, PARENTF={Melee:"Might",Ranged:"Agility"};
 const BOOK_PARENT={"Brawling":"Melee","Dueling":"Melee","Shield Fighting":"Melee","Two-Weapon Fighting":"Melee",
   "Spear & Polearm Fighting":"Melee","Great Weapon Fighting":"Melee","Armored Fighting":"Melee",
   "Archery":"Ranged","Crossbow Fighting":"Ranged","Missile Skirmishing":"Ranged"};
 function parentOf(t){
-  if(PARENTS.includes(t)) return null;
+  if(MARTIAL.includes(t)) return null;
   const tr=treeOf(t); if(tr.parent) return tr.parent;
   const ws=(R.weaponStyles||[]).find(s=>s[0]===t); if(ws&&ws[3]) return ws[3];
   return tr.category==="Combat Style"?(BOOK_PARENT[t]||null):null;
 }
+const isGroup=t=>!!parentOf(t);
 const childrenOf=p=>allTreeNames().filter(n=>parentOf(n)===p);
+const magicParents=()=>Object.keys(TREES).filter(n=>TREES[n].category==="Magic"&&!TREES[n].parent); // the disciplines
+const groupWord=t=>treeOf(t).category==="Magic"?"specialty":"Combat Style"; // what the book calls a group of this kind
 // Wounds are per Zone (ch.2, Vigor & Wounds): the first has the first effect, the last the final one,
 // and every Wound between repeats the first. Capacity is by Size.
 const WOUNDFX={Arms:["−2 Situation penalty to attacks and to Guard.","The arm is useless. Drop anything held in it; you cannot Guard, Bind, or attack with it."],
@@ -315,19 +326,24 @@ function allTreeNames(){
 }
 const gatesFor=c=>({T:1,E:5,M:10,L:15}); // PHB v4.10 ch.2: one gate schedule for every constellation
 function pointsIn(ch,t){ return (ch.talents[t]||[]).length; }
-// A parent's children's points, whatever the Root: the sheet shows them as what is waiting.
+// A parent's groups' points, whatever the Root: the sheet shows them as what is waiting.
 function childPts(ch,t){ let p=0; for(const c of Object.keys(ch.talents)) if(c!==t&&parentOf(c)===t) p+=pointsIn(ch,c); return p; }
 const inheritedPts=(ch,t)=>childPts(ch,t);
 const rootNameOf=t=>(treeOf(t).nodes.find(x=>x.root)||{}).name||t+" Training";
 function rootOwned(ch,t){ const rt=treeOf(t).nodes.find(x=>x.root); return !!rt&&ownsTalent(ch,t,rt.name); }
 const waitNote=(ch,t)=>rootOwned(ch,t)?"":", not counted until "+rootNameOf(t);
-// The rank pool: own points, plus the children's once the parent's Root is owned (v4.10 sync report,
-// ruling 13: without Melee Training the Melee rank is Untrained whatever the Combat Styles hold).
-// Rank only is inherited: Attribute Points are counted once, at the talent's own feed (attrPoints).
-function poolPts(ch,t,extra=0){ return pointsIn(ch,t)+extra+(rootOwned(ch,t)?childPts(ch,t):0); }
+// The rank pool: own points, plus the groups' once the parent's Root is owned (v4.10 sync report,
+// ruling 13, kept by the v4.21 sync as ruling 127: without Melee Training the Melee rank is Untrained
+// whatever the Combat Styles hold). A group has no pool of its own: it asks its parent, and a point
+// about to be spent in it reaches the parent's pool only once the parent's Root is owned.
+// Rank only is shared: Attribute Points are counted once, at the talent's own feed (attrPoints).
+function poolPts(ch,t,extra=0){
+  const par=parentOf(t); if(par) return poolPts(ch,par,rootOwned(ch,par)?extra:0);
+  return pointsIn(ch,t)+extra+(rootOwned(ch,t)?childPts(ch,t):0); }
 const ORIGINCATS=["Ancestry","Culture"];
 function originPts(ch,extra=0){ let s2=0; for(const t of Object.keys(ch.talents)) if(ORIGINCATS.includes(treeOf(t).category)) s2+=pointsIn(ch,t); return s2+extra; }
 function rankOf(ch,t,extraPts=0){
+  const par=parentOf(t); if(par) return rankOf(ch,par,rootOwned(ch,par)?extraPts:0); // a group wears its parent's rank (v4.21)
   const tr=treeOf(t), g=gatesFor(tr.category);
   const p=(ORIGINCATS.includes(tr.category)?originPts(ch,extraPts):poolPts(ch,t,extraPts)); // Origin: merged progression
   let r=null;
@@ -345,11 +361,11 @@ function attrPoints(ch,attr){
   }
   return s;
 }
-function attrBonus(p){ return Math.min(5, Math.floor(p/4)); } // v4.10: ÷4, round down (0–3 pts = +0); the +5 cap from Key Terms is kept
+function attrBonus(p){ return Math.floor(p/4); } // v4.10: ÷4, round down (0–3 pts = +0); v4.21 names no maximum, so the old +5 cap is gone (sync report ruling 158)
 function armorOf(ch){ const a=ch.armor||{}; return ZONES.map(z=>pieceOf(a[z])).filter(Boolean); }
-// PHB v3.0 ch.2: Tiny/Small are harder targets and worse walls; Large/Huge are the reverse.
-const SIZEMOD={Tiny:{Evade:2,Guard:-2},Small:{Evade:1,Guard:-1},Medium:{},
-               Large:{Evade:-1,Guard:1},Huge:{Evade:-2,Guard:2},Gargantuan:{Evade:-2,Guard:2}};
+// PHB v4.21 ch.4 (Size and Defenses): penalties only, against physical Attacks. A small fighter is a
+// worse wall; a large one is easier to find. Gargantuan keeps Huge's number (v4.21 sync, ruling 139).
+const SIZEMOD={Tiny:{Guard:-2},Small:{Guard:-1},Medium:{},Large:{Evade:-1},Huge:{Evade:-2},Gargantuan:{Evade:-2}};
 const NATREACH={Tiny:"Adjacent",Small:"1 ft",Medium:"2 ft",Large:"4 ft",Huge:"varies",Gargantuan:"varies"};
 const ancVigor=anc=>anc.vigor??anc.hp??0; // the roster carries `vigor` (and `hp` for one release)
 function derive(ch){
@@ -357,84 +373,91 @@ function derive(ch){
   const anc=R.ancestries.find(a=>a.name===ch.ancestry)||{vigor:8,speed:"6 ft",senses:"—",size:"Medium"};
   const cal=callingOf(ch.calling);
   const lvl=Math.max(1,ch.level);
-  // PHB v4.11 ch.2 (Your Vigor): the Ancestry's Vigor every level, the first Calling's Opening Vigor once,
-  // and the Endure Bonus, Endure Training's conditioning clause (1 a level at Expert rank in Endure, 2 at
-  // Master, 3 at Legendary, nothing at Trained), read from the rank as it stands, level 1 included.
-  const endR=rankOf(ch,"Endure"), endureBonus=({E:1,M:2,L:3})[endR]||0;
+  // PHB v4.21 ch.4 (Your Vigor): the Ancestry's Vigor every level and the first Calling's Opening Vigor
+  // once. The book's formula still names an "Endure Bonus", but Endure Training no longer grants one (its
+  // clause is Load Strain relief now), so it is 0 here (v4.21 sync, ruling 151).
+  const endR=rankOf(ch,"Endure"), endureBonus=0;
   const vigorOpening=cal?cal[2]:0; // the roster's third Calling column is Opening Vigor; only the first Calling counts
   const perLvl=ancVigor(anc)+endureBonus;
   const vigorMax=10+vigorOpening+perLvl*lvl;
 
-  // ---- armor: four zones, each its own Protection, Load, and material. Defenses are untouched.
+  // ---- armor: four Zones, each its own Protection, Load, Type and Traits. Defenses are untouched.
   const worn=armorOf(ch), prot={};
   ZONES.forEach(z=>{ const p=pieceOf((ch.armor||{})[z]); prot[z]=p?p[2]:0; });
+  const hasTrait=(p,t)=>new RegExp("\\b"+t+"\\b","i").test(String(p[5]||""));
   const loadArmor=worn.reduce((a,p)=>a+p[3],0);
-  // v3.0: a matched harness is same MATERIAL and same Protection, and it cuts Load Strain, not Load
-  const matched=worn.length===4&&new Set(worn.map(p=>p[2])).size===1
-                &&new Set(worn.map(p=>p[6]||"")).size===1;
-  if(matched) prot.Torso+=1;
+  // ch.5 (v4.21): a Fitted harness is Fitted pieces, adjusted to you, in at least three Zones: Load Strain −1.
+  // The app takes a Fitted piece you wear as adjusted to you (a piece off a dead man is Mike's to rule on).
+  const fittedCount=worn.filter(p=>hasTrait(p,"Fitted")).length, fitted=fittedCount>=3;
   const sh=shieldOf(ch.shield);
   const loadTotal=loadArmor+(sh?sh[3]:0);
-  // Endure Training (ch.6, v4.11): Load Strain −1 at Trained, −2 at Expert, −3 at Master, −4 at Legendary
+  // Endure Training (ch.6): Load Strain −1 at Trained, −2 at Expert, −3 at Master, −4 at Legendary
   const relief=({T:1,E:2,M:3,L:4})[endR]||0;
-  // ch.5 (v4.11): Load Strain is the Load of the armor worn and of a shield carried, less the matched-harness
-  // point and the Endure relief, minimum 0. Might does not offset it, and it never comes off Evade.
-  const strain=Math.max(0, loadTotal-relief-(matched?1:0));
-  const torso=worn.find(p=>p[1]==="Torso"), hardOn=p=>/mail|plate/i.test(p[6]||p[5]||"");
-  const clatter=worn.filter(hardOn).length>=2 && !(torso&&hardOn(torso));
-  const noisy=clatter||worn.some(p=>/noisy/i.test(p[5]||""));
-  const quietOnly=worn.length>0&&worn.every(p=>/quiet/i.test(p[5]||""));
-  const weakness={}; // the damage type each zone's material turns poorly (−1 Protection)
-  ZONES.forEach(z=>{ const p=pieceOf((ch.armor||{})[z]);
-    const m=p&&(R.materials||[]).find(x=>x[0]===(p[6]||""));
-    weakness[z]=(m&&m[1]!=="nothing")?m[1]:null; });
+  // ch.5 (v4.21): Load Strain is the Load of the armor worn and of a shield carried, less 1 for a Fitted
+  // harness and less the Endure relief, minimum 0. It never comes off Evade: it is a Condition penalty on
+  // Stealth, Acrobatics, Climb and Swim checks, and it shortens Rush and Leap in feet.
+  const strain=Math.max(0, loadTotal-relief-(fitted?1:0));
+  // Flexible (armor trait): the piece's Load counts 1 lower for Climb and Swim, and in full for the rest
+  const flexCount=worn.filter(p=>hasTrait(p,"Flexible")).length;
+  const strainMotion=Math.max(0, loadTotal-flexCount-relief-(fitted?1:0));
+  const noisyCount=worn.filter(p=>hasTrait(p,"Noisy")).length; // Noisy: −1 Gear to Stealth per piece, cumulative
+  const visored=worn.some(p=>hasTrait(p,"Visored"));            // Visored: lowered, −1 Gear to Awareness and Initiative; raised, Protection −1 instead
+  const brimmed=ZONES.filter(z=>{ const p=pieceOf((ch.armor||{})[z]); return !!p&&hasTrait(p,"Brimmed"); }); // +1 Protection against ranged attacks there
 
   // ---- Wounds, per Zone. Tracked state the sheet can resolve for free: a Torso Wound is Off-Guard,
   // an Arms Wound is −2 Situation to Guard (and to attacks), a Legs Wound halves Speed, and the Torso
-  // or Head at capacity is Dying. Same type never stacks: the worst Situation penalty stands alone.
+  // or Head at capacity is Dying. v4.21: independent penalties add up, each circumstance counted once, so
+  // Off-Guard and an Arms Wound both come off Guard, and an Arms Wound and Prone both come off attacks.
   const size=anc.size||"Medium", sz=SIZEMOD[size]||{}, cap=WOUNDCAP[size]||2;
   const W=ch.wounds||{}, wounds={}; ZONES.forEach(z=>{ wounds[z]=Math.max(0,Math.min(cap,+W[z]||0)); });
   const woundCount=ZONES.reduce((a,z)=>a+wounds[z],0), finalW=z=>wounds[z]>=cap;
   const offGuard=wounds.Torso>=1||finalW("Legs");                 // Torso Wound; Prone from a final Legs Wound
-  const helm=(ch.armor||{}).Head||"", helmPen=/closed helm/i.test(helm)?2:/open helm/i.test(helm)?1:0; // ch.5: sight and hearing
-  const sitPen={Awareness:helmPen, Evade:offGuard?2:0, Guard:Math.max(offGuard?2:0, wounds.Arms>=1?2:0), Endure:0};
-  const atkPen=Math.max(wounds.Arms>=1?2:0, finalW("Legs")?2:0); // −2 Situation to attacks: an Arms Wound, or Prone from a final Legs Wound (Conditions table)
+  const helmPen=visored?1:0; // the visor lowered, the protective default; raised, the Full Helm reads Protection 3 and no penalty (ruling 140)
+  const sitPen={Awareness:helmPen, Evade:offGuard?2:0, Guard:(offGuard?2:0)+(wounds.Arms>=1?2:0), Endure:0};
+  const atkPen=(wounds.Arms>=1?2:0)+(finalW("Legs")?2:0); // −2 Situation to attacks each: an Arms Wound, and Prone from a final Legs Wound (Conditions table)
   const noReactions=wounds.Head>=1;                                // Head Wound: "You cannot use Reactions."
 
-  // ---- the four Defenses: attribute + proficiency (+ size), no level, and no Load Strain (v4.11: it never
-  // comes off Evade). Untrained still adds its attribute.
+  // ---- the four Defenses: attribute + proficiency (+ the Size penalty), no level, and no Load Strain (it
+  // never comes off Evade). Untrained still adds its attribute. Fatigued N (−N Condition to all four since
+  // v4.21) is a condition the sheet does not track.
   const D={}, DT={}, DR={};
   for(const d of DEFS){
     const r=rankOf(ch,d); DR[d]=r;
     const v=(A[DEFF[d]]||0)+(r?RB[r]:0)+(sz[d]||0)-sitPen[d];
     D[d]=v; DT[d]=10+v; // D = what you roll and add; DT = the Threshold an attacker is measured against
   }
-  // ---- Melee and Ranged: the two parents that own every attack roll. Specialization rides their rank.
-  const SPEC={T:0,E:2,M:3,L:4}, mr=rankOf(ch,"Melee"), rr=rankOf(ch,"Ranged");
-  const speedBase=feet(anc.speed)||6; let speed=speedBase; // ft per Move ❶
-  if(finalW("Legs")) speed=0; else for(let i=0;i<wounds.Legs;i++) speed=Math.floor(speed/2); // each Legs Wound short of the final halves what is left; the final is Prone and cannot Stand
+  // ---- Melee and Ranged: the two martial parents that own every Strike. Weapon dice ride their rank
+  // (v4.21): one at Trained, two at Expert, three at Master, four at Legendary, for a Deliberate or
+  // Committed Strike; a Quick Strike and a Graze roll one. No specialization bonus: the dice are it.
+  const DICE={T:1,E:2,M:3,L:4}, mr=rankOf(ch,"Melee"), rr=rankOf(ch,"Ranged");
+  const speedBase=feet(anc.speed)||6; let speedPre=speedBase; // ft per Move ❶
+  for(let i=0;i<Math.min(wounds.Legs,cap-1);i++) speedPre=Math.floor(speedPre/2); // each Legs Wound short of the final halves what is left
+  const speed=finalW("Legs")?0:speedPre; // the final is Prone and cannot Stand; Crawl is half the Speed you had before it (ruling 138)
   const vigorCur=(ch.vigorCur==null)?vigorMax:ch.vigorCur;
-  return {A, vigorMax, vigorPerLvl:perLvl, vigorOpening, endureBonus, vigorCur, spent:vigorCur<=0, calling:cal, D, DT, DR, sitPen, atkPen, noReactions, prot, size, weakness,
-    loadArmor, loadTotal, strain, endureRelief:relief, noisy, clatter, matched, quietOnly,
-    // PHB v4.12 (Wind; ruling 74): the Wind Threshold is 10 + Load Strain, and a fighter whose Endure Threshold
-    // meets it never rolls. Endure feeds Might, so the one number carries both training and strength. Since
-    // v4.13 (ruling 79) the check comes at the end of every round, from the first; the sheet's Strain line says so.
-    wind:{threshold:10+strain, endureThreshold:DT.Endure, exempt:DT.Endure>=10+strain},
+  return {A, vigorMax, vigorPerLvl:perLvl, vigorOpening, endureBonus, vigorCur, spent:vigorCur<=0, calling:cal, D, DT, DR, sitPen, atkPen, noReactions, prot, size,
+    loadArmor, loadTotal, strain, strainMotion, endureRelief:relief, fitted, fittedCount, flexCount, noisyCount, noisy:noisyCount>0, visored, brimmed,
+    // PHB v4.21 (Wind; ruling 150): with Load Strain of at least 1 the Endure check comes at the end of every
+    // round against 10 + Load Strain, with no exemption; a failure raises Fatigued by 1, a critical failure by 2.
+    wind:{threshold:10+strain, endureThreshold:DT.Endure, due:strain>=1},
     shield:sh, shieldBonus:sh?sh[1]:0, natReach:NATREACH[size]||"2 ft",
     init:D.Awareness, helmPen, senses:anc.senses,
-    speed, speedBase, step:Math.floor(speed/2), rush:Math.max(0,speed*5-strain), leap:Math.max(0,10-strain), // ch.2 and ch.7
+    speed, speedBase, step:Math.floor(speed/2), rush:Math.max(0,speed*3-strain), // Rush ❷: three times your Speed in a straight line, less Load Strain
+    leap:{quick:Math.max(0,Math.floor(speed/2)-strain), standing:Math.max(0,speed-strain), running:Math.max(0,Math.floor(speed*1.5)-strain)}, // Leap ❶ ❷ ❸
+    crawl:Math.floor(speedPre/2),                    // Crawl ❶: half your Speed while prone
     travel:{fpm:speed*40, mph:Math.floor(speed/2), mpd:speed*4}, // Math Conventions: Speed ÷ 2 rounds down                                                    // Exploration Mode
     wounds, woundCount, woundCap:cap, finalW, dyingNow:finalW("Torso")||finalW("Head"), treatTh:10+woundCount,
-    restVigor:Math.max(lvl, lvl*(A.Presence||0)),    // a night's rest: level × Presence, minimum level
+    restVigor:vigorMax,                              // a full night's rest restores all of your Vigor (v4.21)
+    rest10:Math.max(0,lvl*(A.Presence||0)),          // ten minutes' rest: level × Presence, when that is positive (ruling 144)
     recoveryTh:10+(ch.dying||0)+woundCount,          // Recovery check: 10 + Dying + Wounds carried
-    dice:lvl>=16?5:lvl>=12?4:lvl>=8?3:lvl>=4?2:1,    // ch.5: 2 dice at 4th, 3 at 8th, 4 at 12th, 5 at 16th
-    melee:{rank:mr, prof:mr?RB[mr]:0, spec:SPEC[mr]||0}, ranged:{rank:rr, prof:rr?RB[rr]:0, spec:SPEC[rr]||0}};
+    melee:{rank:mr, prof:mr?RB[mr]:0, dice:DICE[mr]||1}, ranged:{rank:rr, prof:rr?RB[rr]:0, dice:DICE[rr]||1}};
 }
 function ownsTalent(ch,t,n){ return (ch.talents[t]||[]).includes(n); }
 function canBuy(ch,t,node,creation){
   if(ownsTalent(ch,t,node.name)) return {ok:false,why:"owned"};
   if(node.hroot) return {ok:false,why:"heritage root, granted by choosing this heritage"};
   if(node.root&&ORIGINCATS.includes(treeOf(t).category)) return {ok:false,why:"identity roots come from your chargen choices, never from points"};
+  const par=parentOf(t); // v4.21 (ruling 127): a group's Talent waits on its parent's Root, which is where its rank lives
+  if(par&&!rootOwned(ch,par)) return {ok:false,why:`a ${groupWord(t)} within ${par}: requires ${rootNameOf(par)}`};
   const root=treeOf(t).nodes.find(x=>x.root);
   if(root && !ownsTalent(ch,t,root.name) && node.name!==root.name) return {ok:false,why:"requires "+root.name};
   if(node.requires&&node.requires.length&&!node.requires.some(rq=>(ch.talents[t]||[]).some(o=>nrmG(o)===nrmG(rq))))
@@ -474,7 +497,9 @@ function migrate(c){ // older saves predate zone armor, Callings on the sheet, V
                 "Weapons":"Melee"}, // v4.10: the Weapons Constellation split into the Melee and Ranged parents
         TALENT={"Fortitude Training":"Endure Training","Reflex Training":"Evade Training",
                 "Will Training":"Guard Training","Simple Weapons Training":"Melee Training","Weapons Training":"Melee Training",
-                "SNEAK ATTACK (spine)":"Sneak Attack","RAGE ◆ (spine)":"Rage ❶","Rage":"Rage ❶",
+                // v4.21: the five Calling roots are named "<Calling> Calling"; a save written before carries the old root names
+                "SNEAK ATTACK (spine)":"Ambusher Calling","Sneak Attack":"Ambusher Calling","RAGE ◆ (spine)":"Berserker Calling","Rage":"Berserker Calling","Rage ❶":"Berserker Calling",
+                "Panache":"Bravo Calling","Mark Prey ❶":"Hunter Calling","Mark Prey":"Hunter Calling","Drilled":"Weaponmaster Calling",
                 "Human":"Humanity","Keleshite":"Reacher","Chelaxian":"Serrovanian", // style-ok: same, talent-level
                 "Skirmisher’s Step":"Skirmisher's Step"};
   for(const [was,now] of Object.entries(RENAME)){
@@ -484,7 +509,7 @@ function migrate(c){ // older saves predate zone armor, Callings on the sheet, V
     delete c.talents[was];
     if(c.sparks&&c.sparks[was]){ c.sparks[now]=true; delete c.sparks[was]; }
   }
-  for(const t of Object.keys(c.talents)) c.talents[t]=c.talents[t].map(n=>glyphs(TALENT[n]||n));
+  for(const t of Object.keys(c.talents)) c.talents[t]=c.talents[t].map(n=>{ const g=glyphs(TALENT[n]||n); return TALENT[g]||TALENT[nrmG(g)]||g; }); // the rename map is tried on the written name, the modern-glyph name and the bare name
   // v4.10: talents the book moved to another constellation (sync report, ruling 23b). The talent
   // moves with its point; matched bare so an old-glyph save still lands.
   const MOVED={"Archery":{"Loose and Move":"Ranged"}};
@@ -509,6 +534,19 @@ function migrate(c){ // older saves predate zone armor, Callings on the sheet, V
     else if(!placeholder(t)){ if(c.talents[t].length) c.log.push(`v4.10 migration: the ${t} constellation is retired; its talents (${c.talents[t].join(", ")}) are dropped.`); c.talents[t]=[]; }
     if(!c.talents[t].length){ delete c.talents[t]; if(c.sparks) delete c.sparks[t]; }
   }
+  // v4.21: the armor tables were replaced wholesale (27 pieces, by Type). A piece a save names that the
+  // tables no longer carry lands on its nearest v4.21 piece; one with no counterpart leaves the Zone bare,
+  // and both are logged, since a bare Zone is something the player should know about.
+  const ARMOR_RENAME={"leather cap":"Leather Helm","leather cuirass":"Leather Cuirass","leather bracers":"Leather Armguards","leather leggings":"Leather Legguards",
+    "scale coif":"Mail Hood","scale hauberk":"Lamellar Armor","mail coif":"Mail Hood","mail hauberk":"Mail Shirt","mail sleeves":"Mail Sleeves","mail chausses":"Mail Leggings",
+    "breastplate":"Plate Cuirass","closed helm":"Full Helm","open helm":"Open Helm","vambraces":"Plate Armguards","greaves":"Plate Legguards",
+    "gambeson":"Heavy Gambeson","padded coif":"Padded Hood","padded sleeves":"Padded Sleeves","padded leggings":"Padded Leggings"};
+  if(c.armor&&(R.armorPieces||[]).length) for(const z of Object.keys(c.armor)){
+    const was=c.armor[z]; if(!was||pieceOf(was)) continue;
+    const now=ARMOR_RENAME[String(was).toLowerCase()];
+    if(now&&pieceOf(now)){ c.armor[z]=now; c.log.push(`v4.21 migration: the ${was} is now the ${now} (the armor tables were rewritten by Type).`); }
+    else { c.armor[z]=null; c.log.push(`v4.21 migration: no piece named ${was} is in the v4.21 armor tables; your ${z} is left bare. Pick a piece from the new table.`); }
+  }
   // Infer the Calling only AFTER the renames: a v1.8 save calls the tree "Rage", and it is
   // "Berserker" that carries the Calling category now.
   if(c.calling===undefined||c.calling===null){
@@ -527,12 +565,13 @@ function newChar(){ return {id:"c"+Date.now(), name:"", level:1, milestones:0, a
   talents:{}, sparks:{}, bankedM:0, bankedF:0, armor:NOARMOR(), shield:null, exposed:{}, dying:0, wounds:{Head:0,Torso:0,Arms:0,Legs:0},
   vigorCur:null, vigorTmp:0, languages:[], gear:"", notesTxt:"", log:[], created:new Date().toISOString().slice(0,10)}; }
 
-// Sample build, legal under v4.10: Melee Training and three Origin roots granted, the ten points
-// character creation hands you (3 Skill, 1 Lore, 1 Calling, 2 Defense, 3 Comets), plus the one
-// Driven grants back. Her leathers are a matched harness, which is the point. Vigor 26 (v4.11): 10 + Ambusher Opening 8 + Human 8.
+// Sample build, legal under v4.21: three Origin roots granted by the choices, Melee Training granted by
+// her first Calling, the eleven points character creation hands you (2 Skill, 1 Lore, 1 Calling, the
+// Calling's Skill Training, 2 Defense, 3 Comets), plus the one Driven grants back and Versatile Human's
+// Opening point. Her leathers are Load 0 all round, which is the point. Vigor 26: 10 + Ambusher Opening 8 + Human 8.
 const TORVA = {id:"sample-mira", name:"Mira of the Long Road", level:1, milestones:0, ancestry:"Human", bloodline:"Versatile Human",
  culture:"Kestrel Reach", background:"Acrobat", calling:"Ambusher",
- armor:{Head:"Leather cap",Torso:"Leather cuirass",Arms:"Leather bracers",Legs:"Leather leggings"}, shield:null,
+ armor:{Head:"Leather Helm",Torso:"Leather Cuirass",Arms:"Leather Armguards",Legs:"Leather Legguards"}, shield:null,
  vigorCur:26, vigorTmp:0, bankedM:0, bankedF:0, exposed:{}, dying:0, wounds:{Head:0,Torso:0,Arms:0,Legs:0},
  talents:{"Human":["Humanity","Versatile Human","Driven"],
   "Kestrel Reach":["Reacher"],"Lore (Circus)":["Deep Knowledge"],
@@ -540,12 +579,12 @@ const TORVA = {id:"sample-mira", name:"Mira of the Long Road", level:1, mileston
   "Awareness":["Awareness Training"],"Evade":["Evade Training"],"Guard":["Guard Training"],
   "Athletics":["Athletics Training"],"Acrobatics":["Acrobatics Training","Kip Up ❶"],
   "Stealth":["Stealth Training"],
-  "Dueling":["Dueling Training"],"Ambusher":["Sneak Attack","Surprise Attacker"]},
+  "Dueling":["Dueling Training"],"Ambusher":["Ambusher Calling","Surprise Attacker"]},
  sparks:{}, languages:["Common","Reachspeak"],
  gear:"Full leather harness, cap to leggings - rapier - chalk, sash and juggling knives - circus poster of her old troupe",
- notesTxt:"Circus Lore covers troupes, rigging, and crowds. Nine gold of matched leather: every piece the same material and the same Protection, so the torso takes the extra point and the Load Strain is nothing. Dueling is a child of Melee, so its point counts toward her Melee rank.",
- created:"chargen v4.10",
- log:["Created via chargen: Human (Versatile) - Kestrel Reach - Acrobat - Ambusher. Melee Training granted, three Origin roots granted by the choices; ten points placed: background bought Athletics, Acrobatics, and Lore (Circus); the Calling point bought Sneak Attack and brought Stealth Training with it; the two Defense points opened Awareness and Evade; three Comets took Driven, Dueling Training, and Kip Up. Driven's Calling point bought Surprise Attacker, and Versatile Human's Opening Talent Point opened Guard. Endure stays Untrained: it rolls Might alone, and its Threshold is 3 lower for it. All four attributes lit."]};
+ notesTxt:"Circus Lore covers troupes, rigging, and crowds. Sixteen gold of leather, helm to legguards: Protection 2 on every Zone and Load 0 on every piece, so the Load Strain is nothing and there is no Wind check. Dueling is a Combat Style, a group within Melee: it shares her Melee rank and its point counts toward it.",
+ created:"chargen v4.21",
+ log:["Created via chargen: Human (Versatile) - Kestrel Reach - Acrobat - Ambusher. Three Origin roots granted by the choices; the Ambusher Calling, her first, granted Melee Training; eleven points placed: background bought Athletics, Acrobatics, and Lore (Circus); the Calling point bought the Ambusher Calling and its Training brought Stealth with it; the two Defense points opened Awareness and Evade; three Comets took Driven, Dueling Training, and Kip Up. Driven's Calling point bought Surprise Attacker, and Versatile Human's Opening Talent Point opened Guard. Endure stays Untrained: it rolls Might alone, and its Threshold is 3 lower for it. All four attributes lit."]};
 
 // ---------- shell ----------
 let keepY=null; // null = preserve current scroll; number = scroll there after render
@@ -587,28 +626,29 @@ function vChars(){
   return h;
 }
 function attackRows(c){
-  // v4.10 (ch.2, The Exchange): the attack roll is the parent's proficiency, Melee for a weapon in hand and
-  // Ranged for one that leaves it, plus your Strike Attribute: the higher of the weapon's own (Might; Agility
-  // if Finesse or ranged) and the Key Attribute of a Combat Style whose root you own and whose weapons you
-  // wield. A style opens exploits and lends its Attribute; it is never the bonus. Damage is by Strike:
-  // Deliberate ❷ and Committed ❸ take every die, specialization and Might; Quick ❶ is one die plus
-  // precision; a Graze is one die and nothing else, minimum 1 after Protection.
+  // v4.21 (ch.4, The Attack): a Strike rolls the parent's proficiency, Melee for a melee Strike and Ranged
+  // for a ranged one, a thrown weapon included, plus the Strike Attribute: Might, or Agility if the weapon
+  // has the Finesse trait, for a melee Strike; Agility, or Might if the weapon has the Thrown trait, for a
+  // ranged one (a Finesse dagger thrown reads Might: ruling 129). A Combat Style is a group within the parent:
+  // it opens exploits and shares the parent's rank, and a Maneuver of its own may use its Key Attribute when
+  // that is higher. Damage: a Deliberate ❷ or Committed ❸ Hit rolls the rank's weapon dice (1/2/3/4) plus
+  // Might; a Quick ❶ Hit and any Graze roll one die; Protection comes off once, and alone never takes
+  // positive damage below 1.
   const d=derive(c), rows=[];
-  const dmg=(pk,die)=>{ const m=[d[pk].spec?"+"+d[pk].spec:"", d.A.Might?"+"+d.A.Might+" Might":""].filter(Boolean).join(" ");
-    const n=d.dice, one=die?"1"+die:"one die";
-    return `❷❸ ${die?n+die:n+" weapon di"+(n>1?"ce":"e")}${m?" "+m:""} · ❶ ${one} + precision · Graze ${one} (min 1)`; };
+  const dmg=(pk,die)=>{ const n=d[pk].dice, might=d.A.Might?" + "+d.A.Might+" Might":"", one=die?"1"+die:"one die";
+    return `❷❸ ${die?n+die:n+" weapon di"+(n>1?"ce":"e")}${might} · ❶ ${one} · Graze ${one}`; };
   const rankTxt=pk=>d[pk].rank?TIERN[d[pk].rank]+" +"+d[pk].prof:"Untrained +0";
   const sg=n=>(n<0?"−":"+")+Math.abs(n); // a Wound can take an Untrained attack below zero
   const atk=(pk,attr)=>sg((d.A[attr]||0)+d[pk].prof-d.atkPen)+" ("+attr+")"+(d.atkPen?" (−"+d.atkPen+" Wound)":"");
-  rows.push(["any weapon in hand","Melee: "+rankTxt("melee"), atk("melee","Might"), dmg("melee"),
-    `Finesse weapons may use Agility (${atk("melee","Agility")}); Melee also rolls Gain Control`]);
-  rows.push(["any weapon that leaves the hand","Ranged: "+rankTxt("ranged"), atk("ranged","Agility"), dmg("ranged"),
-    `bows, crossbows, slings; thrown weapons use Might (${atk("ranged","Might")})`]);
+  rows.push(["any melee weapon","Melee: "+rankTxt("melee"), atk("melee","Might"), dmg("melee"),
+    `a Finesse weapon uses Agility (${atk("melee","Agility")}); Melee also rolls Gain Control`]);
+  rows.push(["any ranged weapon","Ranged: "+rankTxt("ranged"), atk("ranged","Agility"), dmg("ranged"),
+    `bows, crossbows, slings; a Thrown weapon uses Might (${atk("ranged","Might")}) and still rolls Ranged`]);
   const styles=Object.keys(c.talents).filter(t=>treeOf(t).category==="Combat Style"&&pointsIn(c,t));
   for(const t of styles){
-    const tr=treeOf(t), par=parentOf(t)||"Melee", pk=par.toLowerCase();
-    rows.push([t.toLowerCase()+" weapons", t+" (exploits open) · child of "+par,
-      atk(pk,tr.feeds), dmg(pk), tr.stub?"placeholder":`Strike Attribute: the higher of the weapon's own and ${tr.feeds}`]);
+    const tr=treeOf(t), par=parentOf(t)||"Melee", pk=par.toLowerCase(), nat=pk==="melee"?"Might":"Agility";
+    rows.push([t.toLowerCase()+" weapons", t+" (exploits open) · a group within "+par,
+      atk(pk,nat), dmg(pk), tr.stub?"placeholder":(tr.feeds&&tr.feeds!==nat?`its own Maneuvers may use ${tr.feeds} (${atk(pk,tr.feeds)}) when higher`:`shares ${par}'s rank`)]);
   }
   const fists=(c.talents["Brawling"]||[]).includes("Iron Fists");
   const fistAttr=d.A.Agility>d.A.Might?"Agility":"Might"; // unarmed strikes are Finesse
@@ -617,30 +657,37 @@ function attackRows(c){
   return rows;
 }
 function shSec(label,micro){ return `<div class="shsec"><span>${label}</span><span class="m">${micro||""}</span></div>`; }
-// which Training grants each Reaction on the sheet's checklist (PHB v4.10 ch.2, Answering an Attack).
-// Owning the Root grants it, never an inherited rank (sync report, ruling 46); a Head Wound blocks them all.
-// Counter is the one Reaction with a rank floor (ruling 63): Melee Training owned AND Melee at Expert or
-// better. `rank` is the floor; absent, the Root alone grants it. The rank read is the derived one, so a
-// Combat Style's points count toward it once Melee Training is owned (ruling 13), and the level gate
-// (Expert from L5) applies as it does to every rank.
-const REACT_SRC={Parry:{tree:"Guard"},Void:{tree:"Evade"},Counter:{tree:"Melee",rank:"E"},Intercept:{tree:"Melee"}};
-// One Reaction's standing for one character: `granted` is the Training (and rank floor) being there,
-// `has` is granted and no Head Wound, `title` is what the sheet's box says when hovered.
-function reactionGrant(c,d,nm){
-  const src=REACT_SRC[nrmG(nm)];
-  if(!src) return {granted:false, has:false, title:"needs a Training"};
-  const t=src.tree, root=rootNameOf(t);
-  const owned=DEFS.includes(t)?!!d.DR[t]:rootOwned(c,t);
-  const r=t==="Melee"?d.melee.rank:t==="Ranged"?d.ranged.rank:d.DR[t];
-  const rankOk=!src.rank||(!!r&&ORDER.indexOf(r)>=ORDER.indexOf(src.rank));
-  const granted=owned&&rankOk, has=granted&&!d.noReactions;
-  const floor=src.rank?TIERN[src.rank]+" rank in "+t:root;
-  const title=!owned?"needs "+root+(src.rank?", then "+floor:"")
-    :!rankOk?"needs "+floor+" ("+RANKPTS[src.rank]+" points"+(PARENTS.includes(t)?", Combat Styles count":"")+", from level "+gatesFor(t)[src.rank]+"); "+(r?TIERN[r]:"Untrained")+" now"
-    :d.noReactions?"blocked by your Head Wound"
-    :"granted by your "+floor;
-  return {granted, has, title};
+// The Reactions and Postures the sheet's checklist ticks (PHB v4.21: every Reaction lives in a Talent;
+// the roster's `postures` block is the summary the sheet and the wiki print). A row's second column names
+// the grant before the bullet: "<Tree> Training" for a Root's own Reaction (Evade Training's Give Ground,
+// Guard Training's Set Your Feet, Melee Training's Intercept) or "<Talent> (<Tree>)" for one bought on its
+// own. Owning the Talent grants it, never a shared rank (sync report, ruling 46); a Head Wound blocks them all.
+function reactSource(nm){
+  const row=(R.postures||[]).find(r=>nrmG(r[0])===nrmG(nm)); if(!row) return null;
+  const g=String(row[1]||"").split("•")[0].trim();
+  let m=g.match(/^(.+?) \(([^)]+)\)$/); if(m) return {tree:m[2].trim(), talent:m[1].trim(), row};
+  m=g.match(/^(.+) Training$/); if(m) return {tree:m[1].trim(), root:true, row};
+  return {tree:null, row};
 }
+// One Reaction's standing for one character: `granted` is the Talent being there, `has` is granted and no
+// Head Wound, `title` is what the sheet's box says when hovered.
+function reactionGrant(c,d,nm){
+  const src=reactSource(nm);
+  if(!src||!src.tree) return {granted:false, has:false, title:"granted by a Talent"};
+  const t=src.tree, need=src.root?rootNameOf(t):src.talent, where=src.root?"":" ("+t+")";
+  const owned=src.root?rootOwned(c,t):(c.talents[t]||[]).some(o=>nrmG(o)===nrmG(need));
+  const has=owned&&!d.noReactions;
+  const title=!owned?"needs "+need+where:d.noReactions?"blocked by your Head Wound":"granted by "+need+where;
+  return {granted:owned, has, title};
+}
+// The sheet's labels come from sheet_spec.json, which the printed sheets read too; these few are the v4.21
+// readings of lines the spec still carries in their v4.12 form (the spec is the sheet generator's to move).
+const SHEET_V421={version:"Playtest v4.21",
+  melee_ranged:"Melee: any melee Strike. Ranged: any ranged Strike, a thrown weapon included. Weapon dice by rank: 1 Trained, 2 Expert, 3 Master, 4 Legendary; a Quick Strike or a Graze rolls one.",
+  attacks:"atk = d20 + Strike Attribute + Melee or Ranged proficiency  |  Strike Attribute: Might, or Agility if Finesse (melee); Agility, or Might if Thrown (ranged)  |  no multiple attack penalty",
+  reactions:"tick the ones your Talents grant; each costs its printed actions, on anyone's Opportunity. One answer per attack: a Reaction, or a ⓿↺ Posture.",
+  ladder:"Strain = armor + shield Load − 1 for a Fitted harness (three Fitted pieces) − Endure relief: a Condition penalty on Stealth, Acrobatics, Climb and Swim. Wind, each round at Strain 1 or more: Endure vs 10 + Strain, or Fatigued +1 (+2 on a critical failure).",
+  milestones:"Milestone point -> spend NOW through a Flare (the particular training), or it becomes a Comet  |  level-up COMET -> spend NOW, anywhere, Flared or not"};
 function vSheet(c){
   // sheet_spec.json (v4.10) carries the labels; `hp` is still its key for the Vigor block, `vigor` is accepted too
   const d=derive(c), S=SHEET, SV=S.vigor||S.hp, SW=S.wounds||{}, anames=["Might","Agility","Wits","Presence"];
@@ -659,10 +706,10 @@ function vSheet(c){
     const t=entry;
     if(!t){ treeRows+=`<tr>${"<td></td>".repeat(S.trees.cols.length)}</tr>`; continue; }
     const tr=treeOf(t), r=rankOf(c,t), inh=inheritedPts(c,t), par=parentOf(t);
-    treeRows+=`<tr><td style="text-align:center"><span class="shflr ${c.sparks[t]?"on":""}" data-spark="${t}" title="Flared?">&#9889;</span></td>
-      <td><b><a class="tl" data-tree="${t}">${t}</a></b>${tr.feeds?attrIcon(tr.feeds,10):""}${tr.stub?' <span class="shmicro">(placeholder)</span>':""}${par?` <span class="shmicro">(child of ${par})</span>`:""}</td>
-      <td>${tr.feeds}</td><td style="text-align:center" title="${inh?`${pointsIn(c,t)} own + ${inh} from its Combat Styles: rank only${waitNote(c,t)}`:""}">${pointsIn(c,t)}${inh?`<span class="shmicro"> +${inh}</span>`:""}</td>
-      <td><span class="chip" style="background:${r?TIERC[r]:"#8AA0A8"};font-size:8.5px">${r?TIERN[r]:"—"}</span></td>
+    treeRows+=`<tr><td style="text-align:center"><span class="shflr ${c.sparks[t]?"on":""}" data-spark="${t}" title="Flared? A Flare records this particular training">&#9889;</span></td>
+      <td><b><a class="tl" data-tree="${t}">${t}</a></b>${tr.feeds?attrIcon(tr.feeds,10):""}${tr.stub?' <span class="shmicro">(placeholder)</span>':""}${par?` <span class="shmicro">(a group within ${par})</span>`:""}</td>
+      <td>${tr.feeds}</td><td style="text-align:center" title="${inh?`${pointsIn(c,t)} own + ${inh} from its groups: rank only${waitNote(c,t)}`:par?`counts toward ${par}'s rank${waitNote(c,par)}`:""}">${pointsIn(c,t)}${inh?`<span class="shmicro"> +${inh}</span>`:""}</td>
+      <td title="${par?`${par}'s rank: a group has none of its own`:""}"><span class="chip" style="background:${r?TIERC[r]:"#8AA0A8"};font-size:8.5px;${par?"opacity:.75":""}">${r?TIERN[r]:"—"}</span>${par?`<span class="shmicro"> (${par}'s)</span>`:""}</td>
       <td>${r?"+"+(RB[r]+(d.A[tr.feeds]||0)):""}</td></tr>`;
   }
   const aRows=attackRows(c); while(aRows.length<S.attacks.rows) aRows.push(["","","","",""]);
@@ -678,7 +725,7 @@ function vSheet(c){
     return `<span class="shms" data-ms="${i+1}" style="${isLvl&&c.milestones>=3?"border-color:#E2703A;box-shadow:0 0 0 1.5px #E2703A":""}">${on?"✕":""}</span><span class="shmicro" style="margin-right:8px;color:${isLvl?"#E2703A":"#0E5F6B"};font-weight:700">${lab}</span>`;
   }).join("");
   return `<div class="sheet">
-   <div class="shband"><span class="t">${S.meta.title}</span><span class="s">${S.meta.subtitle}</span><span class="v">${S.meta.version} &bull; ${S.meta.tagline}</span></div>
+   <div class="shband"><span class="t">${S.meta.title}</span><span class="s">${S.meta.subtitle}</span><span class="v">${SHEET_V421.version} &bull; ${S.meta.tagline}</span></div>
    <div class="shpad">
     <div class="shid">
       ${S.identity.map(f=>{
@@ -691,7 +738,7 @@ function vSheet(c){
     <div style="display:flex;align-items:center;gap:6px;margin:8px 0 2px"><span class="shlab" style="margin:0">${S.milestones.label}</span>&nbsp;${msBoxes}
       <span class="pill" style="margin-left:auto">points are spent on receipt: never banked</span>
       <button class="b" data-a="spend" style="padding:4px 10px;font-size:11px" ${!(c.bankedM||c.bankedF)?"disabled":""}>Spend a point</button></div>
-    <div class="shmicro">${S.milestones.micro}</div>
+    <div class="shmicro">${SHEET_V421.milestones}</div>
     <div class="shcols" style="margin-top:6px">
      <div class="shL">
       ${shSec(S.attributes.label,S.attributes.micro)}
@@ -706,8 +753,8 @@ function vSheet(c){
             <span class="shmicro" style="line-height:1.25">${formula} &bull; ${gloss}</span></span>
           <span class="shcell" style="width:38px" title="roll d20 and add this">+${d.D[k]}</span>
           <span class="shcell em" style="width:38px" title="the Threshold attackers are measured against">${d.DT[k]}</span></div>`;}).join("")}
-      <div class="shmicro" style="text-align:right">check bonus / Threshold${(Object.values(d.sitPen).some(Boolean)||d.atkPen||d.noReactions)?`<br><b>applied:</b> ${[d.helmPen?`helm −${d.helmPen} Awareness`:"",d.sitPen.Evade?"Off-Guard −2 Evade and Guard"+(d.wounds.Torso>=1?" (Torso Wound)":" (Prone, final Legs Wound)"):"",d.wounds.Arms>=1?"Arms Wound −2 Guard and attacks":"",(d.atkPen&&d.wounds.Arms<1)?"Prone −2 Situation to attacks":"",d.noReactions?"Head Wound: no Reactions":""].filter(Boolean).join("; ")}`:""}</div>
-      ${shSec(S.defense.armor_label,d.matched?"matched harness: +1 torso, −1 Load":"")}
+      <div class="shmicro" style="text-align:right">check bonus / Threshold${(Object.values(d.sitPen).some(Boolean)||d.atkPen||d.noReactions)?`<br><b>applied:</b> ${[d.helmPen?`visor lowered −${d.helmPen} Gear to Awareness and Initiative`:"",d.sitPen.Evade?"Off-Guard −2 Evade and Guard"+(d.wounds.Torso>=1?" (Torso Wound)":" (Prone, final Legs Wound)"):"",d.wounds.Arms>=1?"Arms Wound −2 Guard and attacks":"",d.finalW("Legs")?"Prone −2 Situation to attacks":"",d.noReactions?"Head Wound: no Reactions":""].filter(Boolean).join("; ")}`:""}</div>
+      ${shSec(S.defense.armor_label,d.fitted?"Fitted harness: −1 Load Strain":d.fittedCount?`${d.fittedCount} Fitted piece${d.fittedCount>1?"s":""} (three make a harness)`:"")}
       ${ZONES.map(z=>{const opts=[""].concat((R.armorPieces||[]).filter(p=>p[1]===z).map(p=>p[0]));
         const cur=(c.armor||{})[z]||"", pc=pieceOf(cur);
         const exp=(c.exposed||{})[z], n=d.wounds[z];
@@ -716,7 +763,7 @@ function vSheet(c){
           <select data-zone="${z}" data-zc="${c.id}" style="flex:1;min-width:0;padding:2px;border:1px solid #D5DCE0;font-size:10px">${opts.map(o=>`<option ${cur===o?"selected":""}>${o}</option>`).join("")}</select>
           <span class="shms" data-expose="${z}" title="Exposed? Protection counts as 0 against a Deliberate or Committed Strike until you Recenter ❶ (end of round if a Posture Exposed it)">${exp?"✕":""}</span>
           <span class="shcell" title="Protection${exp?" (Exposed: counts as 0 against a Deliberate or Committed Strike; a Quick Strike still meets it)":""}" style="${exp?"color:#B04030;text-decoration:line-through":""}">${d.prot[z]}</span>
-          <span class="shmicro" style="width:60px">${pc?"Load "+pc[3]+(d.weakness[z]?"<br>−1 vs "+d.weakness[z].slice(0,4):""):"—"}</span>
+          <span class="shmicro" style="width:60px" title="${pc?`${pc[6]||""}${pc[5]?": "+pc[5]:""}`:""}">${pc?"Load "+pc[3]+(pc[5]?"<br>"+String(pc[5]).split(",").map(x=>x.trim().slice(0,5)).join(" "):""):"—"}</span>
           <span style="display:inline-flex;gap:2px" title="Wounds">${wbox}</span></div>`;}).join("")}
       <div class="shmicro" style="text-align:right">Exposed ✕ &bull; Protection &bull; Load &bull; <span style="color:#B04030">Wounds ${(SW.cols||["W1","W2"]).join("/")}</span> (capacity ${d.woundCap}, ${d.size})</div>
       <div class="shattr"><span class="nm" style="flex:0 0 52px">SHIELD</span>
@@ -726,7 +773,7 @@ function vSheet(c){
       <div class="shattr"><span class="nm">LOAD / STRAIN</span>
         <span class="shmicro" style="width:96px;flex-shrink:0">armor ${d.loadArmor}${d.shield?" + shield "+d.shield[3]:""}; Endure −${d.endureRelief}</span>
         <span class="shcell em">${d.strain}</span></div>
-      <div class="shmicro">${S.defense.ladder_micro}${d.strain?` &bull; <b>−${d.strain} to Climb, Swim, and Stealth checks (never off Evade); Rush and Leap ${d.strain} ft shorter; ${d.wind.exempt?`no Wind check (Endure Threshold ${d.wind.endureThreshold} meets ${d.wind.threshold})`:`Wind each round: Endure vs ${d.wind.threshold}`}</b>`:""}${d.noisy?" &bull; <b>noisy</b>"+(d.clatter?" (clatter: hard pieces over a soft torso)":""):""}${d.quietOnly?" &bull; quiet: Load Strain never applies to Stealth":""}</div>
+      <div class="shmicro">${SHEET_V421.ladder}${d.strain?` &bull; <b>−${d.strain} Condition to Stealth, Acrobatics, Climb, and Swim checks${d.strainMotion!==d.strain?` (−${d.strainMotion} to Climb and Swim: Flexible pieces count 1 less)`:""} (never off Evade); Rush and Leap ${d.strain} ft shorter; Wind each round: Endure vs ${d.wind.threshold} (Endure Threshold ${d.wind.endureThreshold})</b>`:""}${d.noisyCount?` &bull; <b>noisy: −${d.noisyCount} Gear to Stealth</b> (${d.noisyCount} Noisy piece${d.noisyCount>1?"s":""})`:""}${d.visored?" &bull; Visored: visor lowered −1 Gear to Awareness and Initiative; raised, that Zone's Protection −1 and no penalty":""}${d.brimmed.length?` &bull; Brimmed: +1 Protection against ranged attacks to the ${d.brimmed.join(", ")}`:""}</div>
       <div class="shmicro">${S.defense.zone_micro}</div>
       ${shSec(SV.label,SV.micro)}
       <div style="display:flex;gap:6px;margin-top:5px;align-items:flex-end">
@@ -735,7 +782,7 @@ function vSheet(c){
         <div style="text-align:center"><div class="shlab">${SV.boxes[2]}</div><div class="shcell" style="width:52px;padding:5px 0"><input data-vtmp="${c.id}" value="${c.vigorTmp||0}"></div></div>
         ${d.spent?`<span class="pill" style="border-color:#B04030;color:#B04030;margin-bottom:6px" title="At 0 Vigor. Every Hit that lands Wounds the Zone struck; a Critical Hit inflicts two; Grazes never Wound.">SPENT</span>`:""}
       </div>
-      <div class="shmicro">Vigor is wind, focus, and luck, not meat; it comes back with sleep. At <b>0 you are Spent</b>: still on your feet, but every Hit now Wounds the Zone it strikes, a Critical Hit twice. Temporary Vigor is spent first and losing it never makes you Spent. A night's rest returns <b>${d.restVigor} Vigor</b> (level × Presence, minimum level); it heals no Wound.</div>
+      <div class="shmicro">Vigor is wind, focus, and luck, not meat; it comes back with rest. At <b>0 you are Spent</b>: still on your feet, but every Hit now Wounds the Zone it strikes, a Critical Hit twice. Temporary Vigor is spent first and losing it never makes you Spent. A full night's rest restores <b>all of it</b>; ten minutes' rest restores <b>${d.rest10} Vigor</b> (level × Presence, when that is positive). Neither heals a Wound.</div>
       ${shSec("WOUNDS CARRIED: "+d.woundCount,`treat one: 10 minutes, Endure vs ${d.treatTh} (10 + Wounds carried)`)}
       ${ZONES.filter(z=>d.wounds[z]>0).map(z=>{const n=d.wounds[z], fin=n>=d.woundCap;
         return `<div class="shmicro" style="line-height:1.3"><b style="color:#B04030">${z} ${fin?"final Wound":"Wound "+n}:</b> ${WOUNDFX[z][fin?1:0]}</div>`;}).join("")||`<div class="shmicro">none. ${SW.micro||"Wounds are per Zone: a crit on an Exposed Zone with a ❷/❸ Strike, or any Hit while Spent. Recenter and rest never clear them."}</div>`}
@@ -746,9 +793,9 @@ function vSheet(c){
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <div class="shattr" style="flex:1;margin:0"><span class="nm">${S.speed_init.speed_label}</span><span class="shcell" style="font-size:11px" title="feet per Move ❶${d.finalW("Legs")?"; Prone from the final Legs Wound, cannot Stand":d.speed!==d.speedBase?"; halved by a Legs Wound":""}">${d.speed} ft</span></div>
-        <div class="shattr" style="flex:1;margin:0"><span class="nm">${S.speed_init.init_label}</span><span class="shcell" title="Awareness${d.helmPen?", less "+d.helmPen+" for the helm":""}">${d.init<0?"":"+"}${d.init}</span></div>
+        <div class="shattr" style="flex:1;margin:0"><span class="nm">${S.speed_init.init_label}</span><span class="shcell" title="Awareness${d.helmPen?", less "+d.helmPen+" for the lowered visor":""}">${d.init<0?"":"+"}${d.init}</span></div>
       </div>
-      <div class="shmicro">Move ❶ ${d.speed} ft &bull; Step ❶ ${d.step} ft (half Speed, never provokes) &bull; Rush ❸ ${d.rush} ft straight (5 × Speed, less Load Strain) &bull; Leap ❶ ${d.leap} ft &bull; travel ${d.travel.fpm} ft/min, ${d.travel.mph} mph, ${d.travel.mpd} miles a day</div>
+      <div class="shmicro">Move ❶ ${d.speed} ft &bull; Step ❶ ${d.step} ft (half Speed, never provokes) &bull; Rush ❷ ${d.rush} ft straight (3 × Speed, less Load Strain; Off-Guard until your next Opportunity) &bull; Leap ❶ ${d.leap.quick} ft, ❷ ${d.leap.standing} ft, ❸ ${d.leap.running} ft with a run-up &bull; Crawl ❶ ${d.crawl} ft &bull; travel ${d.travel.fpm} ft/min, ${d.travel.mph} mph, ${d.travel.mpd} miles a day</div>
       <div class="shmicro">${S.speed_init.init_micro} &bull; ${d.size}, natural Reach ${d.natReach}; Total Reach = natural + weapon</div>
       <div class="shmicro" style="margin-top:6px">Senses: ${d.senses} &bull; Languages: ${(c.languages||[]).join(", ")||"—"}</div>
      </div>
@@ -756,18 +803,18 @@ function vSheet(c){
       ${shSec(S.trees.label,S.trees.micro)}
       <table class="sht"><tr>${S.trees.cols.map(x=>`<th>${x}</th>`).join("")}</tr>${treeRows}</table>
       <div class="shmicro">${S.trees.foot1}</div><div class="shmicro">${S.trees.foot2}</div>
-      ${S.melee_ranged?shSec(S.melee_ranged.melee_label+" / "+S.melee_ranged.ranged_label,S.melee_ranged.micro):""}
+      ${S.melee_ranged?shSec(S.melee_ranged.melee_label+" / "+S.melee_ranged.ranged_label,SHEET_V421.melee_ranged):""}
       ${S.melee_ranged?["melee","ranged"].map(k=>{const m=d[k], tn=k==="melee"?"Melee":"Ranged", inh=inheritedPts(c,tn);
         return `<div class="shattr"><span class="nm" style="flex:0 0 72px">${S.melee_ranged[k+"_label"]}</span>
           <span class="chip" style="background:${m.rank?TIERC[m.rank]:"#8AA0A8"};font-size:8.5px">${m.rank?TIERN[m.rank]:"UNTRAINED"}</span>
           <span class="shcell" title="${(S.melee_ranged.cols||[])[1]||"proficiency"}">+${m.prof}</span>
-          <span class="shcell" title="${(S.melee_ranged.cols||[])[2]||"specialization"}">+${m.spec}</span>
-          <span class="shmicro">${pointsIn(c,tn)} pt${pointsIn(c,tn)===1?"":"s"}${inh?` +${inh} from Combat Styles${waitNote(c,tn)}`:""} &bull; ${d.dice} weapon di${d.dice>1?"ce":"e"}</span></div>`;}).join(""):""}
-      ${shSec(S.attacks.label,S.attacks.micro)}
+          <span class="shcell" title="weapon dice on a Deliberate or Committed Strike, by rank">${m.dice}d</span>
+          <span class="shmicro">${pointsIn(c,tn)} pt${pointsIn(c,tn)===1?"":"s"}${inh?` +${inh} from Combat Styles${waitNote(c,tn)}`:""} &bull; ${m.dice} weapon di${m.dice>1?"ce":"e"} ❷❸, one ❶ or on a Graze</span></div>`;}).join(""):""}
+      ${shSec(S.attacks.label,SHEET_V421.attacks)}
       <table class="sht"><tr>${S.attacks.cols.map(x=>`<th>${x}</th>`).join("")}</tr>${atkRows}</table>
-      ${S.reactions?shSec(S.reactions.label,S.reactions.micro):""}
-      ${S.reactions?(S.reactions.items||[]).map(([nm,fx])=>{const rg=reactionGrant(c,d,nm);
-        return `<div class="shattr" style="align-items:flex-start;margin:3px 0"><span class="shms" title="${rg.title}">${rg.has?"✕":""}</span><span class="shmicro" style="flex:1;line-height:1.3"><b>${nm}</b> ${fx}</span></div>`;}).join(""):""}
+      ${S.reactions?shSec(S.reactions.label,SHEET_V421.reactions):""}
+      ${S.reactions?(R.postures||[]).map(([nm,grant,fx])=>{const rg=reactionGrant(c,d,nm);
+        return `<div class="shattr" style="align-items:flex-start;margin:3px 0"><span class="shms" title="${rg.title}">${rg.has?"✕":""}</span><span class="shmicro" style="flex:1;line-height:1.3" title="${String(fx||"").replace(/"/g,"&quot;")}"><b>${nm}</b> ${grant}</span></div>`;}).join(""):""}
       ${shSec(S.talents.label,S.talents.micro)}
       <div style="font-size:10.5px;line-height:1.75">${tl.map(x=>`<div style="border-bottom:1px solid #EDE5D4">${x}</div>`).join("")}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
@@ -800,13 +847,28 @@ function vSheet(c){
 
 // ---------- wizard ----------
 let wiz=null;
-// v4.10 chargen: 0 Melee or Ranged · 1 Ancestry · 2 Bloodline · 3 Culture · 4 Background
+// v4.21 chargen: 0 Begin · 1 Ancestry · 2 Bloodline · 3 Culture · 4 Background
 //                5 Calling · 6 Defenses · 7 Comets · 8 Review
-// Step 0 grants one root, Melee Training or Ranged Training, the player's choice. The three Origin
-// roots (Ancestry, Bloodline, Culture) are Origin Talent Points granted by the choices themselves, so
-// those steps ask for no spending. A finished 1st-level character has a minimum of 14 Talent Points:
-// 4 granted, and 10 placed (3 Skill, 1 Lore, 1 Calling, 2 Defense, 3 Comets). See PHB v4.10 ch.3.
+// Step 0 is the introduction and grants nothing (the "Trained in Melee or Ranged" sentence left the book
+// in v4.21). The three Origin roots (Ancestry, Bloodline, Culture) are Origin Talent Points granted by the
+// choices themselves, so those steps ask for no spending. The first Calling grants its combat training on
+// step 5: a martial Calling opens Melee or Ranged, a caster opens a magical discipline, the player's pick.
+// The book counts a minimum of 13 Talent Points for a finished 1st-level character (3 Origin, 2 Skill,
+// 1 Lore, 1 Calling, 1 Martial or Magical, 2 Defense, 3 Comets); every Calling's root also says "You
+// become Trained in <a Skill>", so the wizard places that point too. See PHB v4.21 ch.3.
 const rootNamed=(tree,nm)=>!!tree&&treeOf(tree).nodes.some(n=>(n.root||n.hroot)&&n.name===nm);
+// What the first Calling's combat training may open (v4.21: the root's own "If this is your first Calling"
+// clause names the Constellations; a root that names none offers Melee or Ranged).
+function combatOptions(cn){
+  if(!cn) return [];
+  const rt=treeOf(cn).nodes.find(n=>n.root), txt=stripT(rt?rt.effect:""), i=txt.indexOf("first Calling");
+  const tail=i>=0?txt.slice(i):"", m=/Training in ([^.]+)/i.exec(tail), named=m?m[1]:"";
+  const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const opts=[...MARTIAL,...magicParents()].filter(t=>new RegExp("\\b"+esc(t)+"\\b","i").test(named));
+  return opts.length?opts:[...MARTIAL];
+}
+// Spellblade's Special: Trained in Melee or Ranged as well, by the end of character creation
+const needsMartialToo=cn=>{ const rt=cn&&treeOf(cn).nodes.find(n=>n.root); return !!rt&&/Trained in either Melee or Ranged/i.test(stripT(rt.effect)); };
 function grantSourceStep(nm){
   const p=wiz.picks, has=(l,n2)=>(l||[]).some(id=>id.endsWith("||"+n2));
   const anc=wiz.ch.ancestry?ancTreeName():null;
@@ -838,7 +900,6 @@ function stepComplete(sn){
 }
 function stepGate(s){ // only IDENTITY choices gate movement (points can be spent whenever)
   const p=wiz.picks;
-  if(s===0&&!p.weapon) return "choose Melee Training or Ranged Training";
   if(s===1&&!wiz.ch.ancestry) return "choose an ancestry";
   if(s===2&&!p.her) return "choose a bloodline";
   if(s===3&&!p.culName) return "choose a culture";
@@ -872,6 +933,9 @@ function pools(){ // every talent point the wizard grants: where it may go, and 
   const cs=calSkillName();
   out.push({step:5,label:cs?`Trained in ${cs}`:"Calling's skill Training",need:1,spent:(p.calSkill||[]).length,
     where:cs?`1 point in ${cs}, granted by your Calling`:"choose a calling first",ready:!!cs});
+  const co=combatOptions(p.calName);
+  out.push({step:5,label:"Combat training",need:1,spent:p.combat?1:0,
+    where:p.calName?`your first Calling opens ${co.length>2?"a magical discipline":co.join(" or ")}: ${co.join(", ")} (the point buys its Training root)`:"choose a calling first",ready:!!p.calName});
   out.push({step:6,label:"Defense Talent Points",need:2,spent:(p.def||[]).length,
     where:"2 points, each buying the Training root of a different Defense: two of Awareness, Evade, Guard, and Endure",ready:true});
   out.push({step:7,label:"Comets",need:3,spent:p.free.length,where:"anywhere you like, even unopened skies",ready:true});
@@ -900,6 +964,11 @@ function saveBlockers(){
     out.push({step:5,msg:`your Calling's Training must be spent in ${cs}`});
   if(p.calName&&(p.calling||[]).some(id=>id.split("||")[0]!==p.calName))
     out.push({step:5,msg:`the Calling point goes in ${p.calName}`});
+  if(p.calName){ const co=combatOptions(p.calName);
+    if(!p.combat) out.push({step:5,msg:`choose the combat training your Calling grants (${co.join(" or ")})`});
+    else if(!co.includes(p.combat)) out.push({step:5,msg:`${p.calName} opens ${co.join(" or ")}, not ${p.combat}`});
+    if(needsMartialToo(p.calName)){ const gch=wizCh(null);
+      if(!MARTIAL.some(t=>rootOwned(gch,t))) out.push({step:7,msg:`${p.calName} must also be Trained in Melee or Ranged by the end of creation: spend a Comet on Melee Training or Ranged Training`}); } }
   const defT=(p.def||[]).map(id=>id.split("||")[0]);
   if(defT.some(t2=>!DEFS.includes(t2)))
     out.push({step:6,msg:"Defense Talent Points go in Awareness, Evade, Guard, or Endure"});
@@ -939,7 +1008,7 @@ function railHTML(){
   let h=`<div class="rl-h">✦ YOUR SKY SO FAR</div>`;
   const ori=[...(groups["Ancestry"]||[]),...(groups["Culture"]||[])];
   if(ori.length) h+=`<div class="rl-cat">Origin</div>`+ori.map(t2=>`<div class="rl-row rl-jump" data-skyjump="${t2}"><span>${t2}${treeOf(t2).feeds?attrIcon(treeOf(t2).feeds,10):""}</span><b>${pointsIn(c,t2)}●</b></div>`).join("")+`<div class="rl-row"><span style="color:#B8860B">merged rank</span><b>${originPts(c)}● ${TIERN[rankOf(c,ori[0])]||"—"}</b></div>`;
-  for(const g of ["Defense","Save","Weapon","Skill","Combat Style","Calling"]){ if(!groups[g])continue;
+  for(const g of ["Defense","Save","Weapon","Magic","Skill","Combat Style","Calling"]){ if(!groups[g])continue;
     h+=`<div class="rl-cat">${catLabel(g)}</div>`+groups[g].map(t2=>`<div class="rl-row rl-jump" data-skyjump="${t2}"><span>${t2}${treeOf(t2).feeds?attrIcon(treeOf(t2).feeds,10):""}</span><b>${pointsIn(c,t2)}●</b></div>`).join("");
   }
   h+=`<div class="rl-cat">Attributes</div>`+["Might","Agility","Wits","Presence"].map(a2=>
@@ -950,17 +1019,17 @@ function railHTML(){
   return h;
 }
 function wStart(){
-  const p=wiz.picks;
-  let h=`<div class="callout">STARWROUGHT is a heroic fantasy game: every character begins <b>Trained in Melee or Ranged</b>, your choice, and in <b>two of the four Defenses</b> (chosen on step 6). Your first Constellation is yourself: Ancestry, Bloodline, and Culture merge into your <b>Origin</b>, and their three roots are granted by the choices on the next three steps. <span class="pill">${p.weapon?"granted: "+p.weapon+" Training":"choose one root"}</span></div><div class="cards">`;
-  for(const tr of PARENTS){ const t=treeOf(tr), nd=t.nodes.find(n=>n.root), kids=childrenOf(tr);
-    h+=`<div class="card ${p.weapon===tr?"sel":""}" data-weapon="${tr}"><h4>✦ ${nd?nd.name:tr+" Training"}${t.feeds?attrIcon(t.feeds):""}</h4><span class="tag">${catOf(tr)} constellation · parent of ${kids.length} Combat Style${kids.length===1?"":"s"}${t.feeds?" · feeds "+t.feeds:""}</span><p>${stripT(nd?nd.effect:"")}</p><p><b>${tr==="Melee"?"Anything in your hand.":"Anything that leaves your hand: bows, crossbows, slings, and thrown weapons."}</b> Children: ${kids.join(", ")||"none in the data yet"}.</p></div>`; }
-  h+=`</div><p class="muted" style="font-size:12px">When you Strike, roll the parent that owns the weapon: <b>Melee</b> for anything in your hand, <b>Ranged</b> for anything that leaves it, a thrown dagger included. Every Talent you buy in a Combat Style counts toward its parent's Proficiency Rank as well as its own; only rank is inherited, so the parent's own Talents must still be bought for their effects, and a Talent feeds its Attribute once. Attack roll = d20 + your Strike Attribute + the parent's Proficiency Bonus.</p>
-  <p class="muted" style="font-size:12px">A finished 1st-level character has a minimum of <b>14 Talent Points</b>: this root, granted; three Origin roots, granted by your Ancestry, Bloodline, and Culture; and <b>10 you place</b>: 3 Skill (two from your Background, one from your Calling's Training), 1 Lore, 1 Calling, 2 Defense, and 3 Comets. Some choices grant more, so your total may be higher.</p>`;
+  const magic=magicParents();
+  let h=`<div class="callout">STARWROUGHT is a heroic fantasy game. Your first Constellation is yourself: Ancestry, Bloodline, and Culture merge into your <b>Origin</b>, and their three roots are granted by the choices on the next three steps. Your <b>first Calling</b> grants its combat training on step 5, <b>Melee or Ranged</b> for a martial Calling and a <b>magical discipline</b> for a caster, and you begin play <b>Trained in two of the four Defenses</b> (step 6). Nothing is chosen on this step: read, then Next.</div><div class="cards">`;
+  for(const tr of [...MARTIAL,...magic]){ const t=treeOf(tr), nd=t.nodes.find(n=>n.root), kids=childrenOf(tr), word=t.category==="Magic"?"specialt":"Combat Style";
+    h+=`<div class="card"><h4>✦ ${nd?nd.name:tr+" Training"}${t.feeds?attrIcon(t.feeds):""}</h4><span class="tag">${catOf(tr)} constellation · ${kids.length} ${word==="specialt"?(kids.length===1?"specialty":"specialties"):"Combat Style"+(kids.length===1?"":"s")} within it${t.feeds?" · feeds "+t.feeds:""}</span><p>${stripT(nd?nd.effect:"").slice(0,260)}${stripT(nd?nd.effect:"").length>260?"…":""}</p><p><b>${tr==="Melee"?"Any melee Strike.":tr==="Ranged"?"Any ranged Strike: bows, crossbows, slings, and thrown weapons.":"Its root is its first spell, at will."}</b> ${kids.length?`Groups: ${kids.join(", ")}.`:""}</p></div>`; }
+  h+=`</div><p class="muted" style="font-size:12px">A <b>Combat Style</b> or a <b>magical specialty</b> is a group of Talents within its parent Constellation: it shares the parent's Proficiency Rank and has none of its own, and every Talent you buy in it counts toward the parent's rank once the parent's root is yours. A Talent still feeds its Attribute once. Strike = d20 + your Strike Attribute (Might, or Agility with a Finesse weapon; Agility, or Might with a Thrown weapon) + Melee or Ranged proficiency. Cast = d20 + the spell's Key Attribute + its discipline's proficiency.</p>
+  <p class="muted" style="font-size:12px">The book counts a minimum of <b>13 Talent Points</b> for a finished 1st-level character: three Origin roots, granted by your Ancestry, Bloodline, and Culture; 2 Skill and 1 Lore from your Background; 1 Calling; 1 Martial or Magical, granted by your first Calling; 2 Defense; and 3 Comets. Every Calling's root also makes you Trained in a Skill, so you will place that point as well, and some choices grant more.</p>`;
   return h;
 }
 function stepChips(){
-  const steps=["Melee or Ranged","Ancestry","Bloodline","Culture","Background","Calling","Defenses","Comets","Review"];
-  const detail=[wiz.picks.weapon?wiz.picks.weapon+" Training":null, wiz.ch.ancestry, wiz.picks.her, wiz.picks.culName, wiz.picks.bg, wiz.picks.calName, null, null, null];
+  const steps=["Begin","Ancestry","Bloodline","Culture","Background","Calling","Defenses","Comets","Review"];
+  const detail=[null, wiz.ch.ancestry, wiz.picks.her, wiz.picks.culName, wiz.picks.bg, wiz.picks.calName?wiz.picks.calName+(wiz.picks.combat?" · "+wiz.picks.combat:""):null, null, null, null];
   const P=pools();
   const nmT=id=>nrmG(id.split("||")[1]);
   const chosen={1:[], 2:[], 3:[],
@@ -972,11 +1041,11 @@ function stepChips(){
   return `<div class="steps">${steps.map((st,i)=>{
     const pls=P.filter(x=>x.step===i);
     const need=pls.reduce((a,x)=>a+x.need,0), spent=pls.reduce((a,x)=>a+Math.min(x.spent,x.need),0);
-    const idOK=[6,7].includes(i)?true:!!detail[i];
+    const idOK=[0,6,7].includes(i)?true:!!detail[i];
     const done=idOK&&spent>=need&&(i<8);
     const jump=canJump(i)&&i!==wiz.step;
     const rows=[`<span class="s-h">${i}. ${st}${detail[i]?` · ${detail[i]}`:""}</span>`];
-    if(i===0) rows.push(`<span class="tps ${detail[0]?"ok":""}">one root, granted: your choice</span>`);
+    if(i===0) rows.push(`<span class="tps ok">nothing to choose here</span>`);
     else if(i>0&&i<4) rows.push(`<span class="tps ok">root free</span>`);
     else if(i<8&&need>0) rows.push(`<span class="tps ${spent>=need?"ok":""}">TPs: ${spent}/${need}</span>`);
     const ch=chosen[i]||[];
@@ -986,7 +1055,7 @@ function stepChips(){
 }
 function stepChecklist(sn){
   const items=[];
-  const idLabel={0:"Choose Melee Training or Ranged Training (granted, no point spent)",1:"Choose your Ancestry",2:"Choose your Bloodline",3:"Choose your Culture",4:"Choose your Background",5:"Choose your Calling"}[sn];
+  const idLabel={1:"Choose your Ancestry",2:"Choose your Bloodline",3:"Choose your Culture",4:"Choose your Background",5:"Choose your Calling"}[sn];
   if(idLabel) items.push({done:!stepGate(sn), label:idLabel});
   for(const pl of pools().filter(x=>x.step===sn)){
     const isGrant=pl.label.includes("grant");
@@ -1006,7 +1075,7 @@ function checklistHTML(){
     items.map((it,i)=>`<div class="wc-i ${it.done?"ok":""}"><span class="wc-box">${it.done?"✓":""}</span><span>${i+1}. ${it.label}${it.count&&!it.done?` <b class="wc-n">${it.count}</b>`:""}</span></div>`).join("")+`</aside>`;
 }
 function vWizard(){
-  if(!wiz) wiz={step:0, ch:newChar(), picks:{weapon:null,her:null,culName:null,bg:null,bgA:[],bgB:[],bgLore:[],calName:null,calling:[],calSkill:[],def:[],free:[],tg:{}}, err:"", skyFocus:{}, skyOpen:{}};
+  if(!wiz) wiz={step:0, ch:newChar(), picks:{combat:null,her:null,culName:null,bg:null,bgA:[],bgB:[],bgLore:[],calName:null,calling:[],calSkill:[],def:[],free:[],tg:{}}, err:"", skyFocus:{}, skyOpen:{}};
   let h=`<h2>Create a Character</h2>`+stepChips();
   if(wiz.err) h+=`<div class="callout" style="border-color:#B04030"><b>Hold on:</b> ${wiz.err}</div>`;
   h+=`<div class="stepflex"><div class="stepmain">`+[wStart,wAncestry,wHeritage,wCulture,wBackground,wCalling,wDefenses,wComets,wReview][wiz.step]()+`</div>`+checklistHTML()+`</div>`;
@@ -1030,6 +1099,17 @@ function attrIcon(a,sz=11){ // small color-coded attribute glyphs — reuse ever
 }
 // <br> is a line, not nothing: without the space, "…action:<br>Rage ◆" reads "…action:Rage ◆"
 const stripT=s=>(s||"").replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").replace(/[ \t]{2,}/g," ");
+// A spell Talent's block (PHB v4.21; the magic workbook's spell columns, carried by the converter as node.spell):
+// its Threat and Delivery, range, targets, die and types, the Defenses that answer it, and what each Cast does.
+const capW=s=>s?String(s)[0].toUpperCase()+String(s).slice(1):"";
+function spellHTML(sp,compact){
+  if(!sp) return "";
+  const head=[capW(sp.threat), capW(sp.delivery), sp.range||(sp.adjacent?"adjacent":""), sp.targets?"targets: "+sp.targets:""].filter(Boolean).join(" · ");
+  const dmg=sp.die?`d${sp.die}${sp.types&&sp.types.length?" "+sp.types.join(" or "):""} per Damage Die`:"";
+  const casts=[["❷ Quick Cast",sp.effects&&sp.effects.quick],["❸ Focused Cast",sp.effects&&sp.effects.focused],["❹ Committed Cast",sp.effects&&sp.effects.committed]].filter(r=>r[1]);
+  const fs=compact?"10.5px":"11.5px";
+  return `<div style="margin-top:6px;padding:6px 8px;border-left:2px solid #B49AE8;background:rgba(180,154,232,.08);font-size:${fs};line-height:1.45"><b>Spell</b> · ${head}${dmg?` · ${dmg}`:""}${sp.defenses&&sp.defenses.length?` · answered by ${sp.defenses.join(" or ")}`:""}${casts.map(([k,v])=>`<br><b>${k}</b> ${v}`).join("")}<br><span class="muted">Damage Dice by the discipline's rank: 1 Trained, 2 Expert, 3 Master, 4 Legendary; a Quick Cast rolls one.</span></div>`;
+}
 const mixW=(hex,f)=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   const m=v=>Math.round(v+(255-v)*f); return `rgb(${m(r)},${m(g)},${m(b)})`;};
 function prereqEdges(pts){
@@ -1045,7 +1125,7 @@ function showTip(tn,nn,status,ev){
   const t=treeOf(tn), n=t.nodes.find(x=>x.name===nn), tip=document.getElementById("skytip");
   if(!n||!tip) return;
   tip.innerHTML=`<div class="tt-h"><span class="chip" style="background:${TIERC[n.tier]}">${TIERN[n.tier].toUpperCase()}</span>${n.root?'<span class="chip" style="background:#B8860B">ROOT</span>':""}${n.hroot?'<span class="chip" style="background:#5E6E7A">HERITAGE</span>':""}${n.name.includes("★")?'<span class="chip" style="background:#B8860B">CAPSTONE</span>':""} <b>${n.name.replace(" ★","")}</b></div>
-    ${n.desc?`<div class="tt-d">${stripT(n.desc)}</div>`:""}<div class="tt-e">${n.effect}</div>
+    ${n.desc?`<div class="tt-d">${stripT(n.desc)}</div>`:""}<div class="tt-e">${n.effect}</div>${spellHTML(n.spell,true)}
     ${n.requires&&n.requires.length?`<div class="tt-m">Requires: ${n.requires.join(" or ")}</div>`:""}
     ${(n.feeds||t.feeds)?`<div class="tt-m">Feeds ${attrIcon(n.feeds||t.feeds)} <b style="color:${ATTRC[n.feeds||t.feeds]}">${n.feeds||t.feeds}</b>${n.feeds&&t.feeds&&n.feeds!==t.feeds?` (constellation default ${t.feeds})`:""}</div>`:""}
     ${status?`<div class="tt-s">${status}</div>`:""}`;
@@ -1136,8 +1216,8 @@ function talentPicker(treeNames, selected, dataKey, max, creationCh){
     const chip=t=>{const fd=t==="Origin"?"":treeOf(t).feeds; return `<button class="skytab ${t===f?"on":""} ${gch2&&t!=="Origin"&&pointsIn(gch2,t)>0?"opened":""}" data-skyf="${dataKey}" data-skyt="${t.replace(/"/g,"&quot;")}">${t}${fd?attrIcon(fd,10):""}${gch2&&t!=="Origin"&&pointsIn(gch2,t)>0?" ●":""}</button>`;};
     let bar;
     if(treeNames.length>8){
-      const CATL={Origin:"ORIGIN",Skill:"SKILLS",Defense:"DEFENSES",Save:"DEFENSES",Weapon:"MELEE & RANGED","Combat Style":"COMBAT STYLES",Calling:"CALLINGS",Ancestry:"ORIGIN",Bloodline:"ORIGIN",Culture:"ORIGIN",Heritage:"ORIGIN"};
-      const groups={}; const orderG=["ORIGIN","DEFENSES","MELEE & RANGED","SKILLS","COMBAT STYLES","CALLINGS"];
+      const CATL={Origin:"ORIGIN",Skill:"SKILLS",Defense:"DEFENSES",Save:"DEFENSES",Weapon:"MELEE & RANGED","Combat Style":"COMBAT STYLES",Magic:"MAGIC",Calling:"CALLINGS",Ancestry:"ORIGIN",Bloodline:"ORIGIN",Culture:"ORIGIN",Heritage:"ORIGIN"};
+      const groups={}; const orderG=["ORIGIN","DEFENSES","MELEE & RANGED","MAGIC","SKILLS","COMBAT STYLES","CALLINGS"];
       for(const t of treeNames){ const g=t==="Origin"?"ORIGIN":(CATL[treeOf(t).category]||"OTHER"); (groups[g]=groups[g]||[]).push(t); }
       bar=orderG.filter(g=>groups[g]).map(g=>`<div class="skybar skygrp"><span class="skycat">${g}</span>`+groups[g].map(chip).join("")+`</div>`).join("");
       bar+=`<div class="skybar"><span class="muted" style="font-size:11.5px">${catOf(f)}${treeOf(f).feeds?` • feeds ${attrIcon(treeOf(f).feeds)} ${treeOf(f).feeds}`:""}${treeOf(f).stub?" • placeholder":""}</span><button class="skytab tog" data-skytog="${dataKey}">${open?"hide constellation":"show constellation"}</button></div>`;
@@ -1155,9 +1235,10 @@ function ancTrees(){ return allTreeNames().filter(n=>{const t=treeOf(n);return t
 function ancChassis(name){ return R.ancestries.find(x=>x.name===name||x.tree===name)||{name:name, vigor:8, speed:"6 ft", senses:"—", tree:name, blurb:"", bloodlines:[]}; }
 function ancTreeName(){ const ch=ancChassis(wiz.ch.ancestry); return ancTrees().includes(wiz.ch.ancestry)?wiz.ch.ancestry:ch.tree; }
 function grantIdentityRoots(c){
-  // v4.10: one root is granted at creation, Melee Training or Ranged Training, the player's choice.
-  // The Defenses are no longer free: two Defense Talent Points buy two Training roots on step 6.
-  const wp=wiz&&wiz.picks.weapon;
+  // v4.21: the first Calling grants one combat root, Melee Training or Ranged Training for a martial
+  // Calling, a discipline's Training for a caster, the player's choice among what the root names.
+  // The Defenses are not free: two Defense Talent Points buy two Training roots on step 6.
+  const wp=wiz&&wiz.picks.combat;
   if(wp){ const rt=treeOf(wp).nodes.find(n=>n.root); if(rt&&!ownsTalent(c,wp,rt.name)) buy(c,wp,rt.name); }
   const tname=ancTreeName();
   if(tname){ const tr=treeOf(tname); const rt=tr.nodes&&tr.nodes.find(n=>n.root); if(rt&&!ownsTalent(c,tname,rt.name)) buy(c,tname,rt.name);
@@ -1274,11 +1355,15 @@ function wCalling(){
     return `<div class="card ${wiz.picks.calName===cn?"sel":""}" data-cal="${cn}"><h4>${cn}${tr.feeds?attrIcon(tr.feeds):""}</h4>
       <span class="tag">${row?"Opening Vigor "+row[2]:""}${sk?" · Trained in "+sk:""}</span><p>${rt?stripT(rt.effect):""}</p></div>`;}).join("")+`</div>`;
   if(wiz.picks.calName){
-    const cn=wiz.picks.calName, sk=calSkillName(), row=callingOf(cn);
-    h+=`<div class="callout">Your Calling adds <b>${row?row[2]:0} Opening Vigor</b>, once, if it is your first Calling${sk?` and grants you Training in <b>${sk}</b>`:""}. Spend your <b>Calling point</b> in ${cn}: it buys the signature talent at its root. <span class="pill">${(wiz.picks.calling||[]).length}/1</span></div>`;
+    const cn=wiz.picks.calName, sk=calSkillName(), row=callingOf(cn), co=combatOptions(cn), p=wiz.picks;
+    h+=`<div class="callout">Your Calling adds <b>${row?row[2]:0} Opening Vigor</b>, once, if it is your first Calling${sk?`, grants you Training in <b>${sk}</b>`:""}, and, as your first Calling, opens <b>${co.length>2?"a magical discipline":co.join(" or ")}</b> (below). Spend your <b>Calling point</b> in ${cn}: it buys the signature talent at its root. <span class="pill">${(wiz.picks.calling||[]).length}/1</span></div>`;
     h+=talentPicker([cn], wiz.picks.calling=wiz.picks.calling||[], "calling", 1, ()=>wizCh(null));
     if(sk){ h+=`<div class="callout" style="border-color:#4A7C59"><b>${sk}</b> Training, granted by ${cn} <span class="pill">${(wiz.picks.calSkill||[]).length}/1</span></div>`;
       h+=talentPicker([sk], wiz.picks.calSkill=wiz.picks.calSkill||[], "calSkill", 1, ()=>wizCh(null)); }
+    h+=`<div class="callout" style="border-color:#4A7C59"><b>Combat training</b>, granted by your first Calling: ${co.length>2?"choose the magical discipline it opens":"choose Melee or Ranged"}. The point buys the Training root, and that root is where a ${co.length>2?"specialty's":"Combat Style's"} rank lives. <span class="pill">${p.combat?"granted: "+rootNameOf(p.combat):"choose one"}</span>${needsMartialToo(cn)?`<br><b>${cn}</b> must also be Trained in Melee or Ranged by the end of creation: a Comet on step 7 buys that root.`:""}</div><div class="cards">`;
+    for(const tr of co){ const t=treeOf(tr), nd=t.nodes.find(n=>n.root), kids=childrenOf(tr);
+      h+=`<div class="card ${p.combat===tr?"sel":""}" data-combat="${tr}"><h4>✦ ${nd?nd.name:tr+" Training"}${t.feeds?attrIcon(t.feeds):""}</h4><span class="tag">${catOf(tr)} constellation${kids.length?` · ${kids.length} ${t.category==="Magic"?(kids.length===1?"specialty":"specialties"):"Combat Style"+(kids.length===1?"":"s")}`:""}${t.feeds?" · feeds "+t.feeds:""}</span><p>${stripT(nd?nd.effect:"").slice(0,220)}${stripT(nd?nd.effect:"").length>220?"…":""}</p>${kids.length?`<p class="muted">Groups: ${kids.join(", ")}.</p>`:""}</div>`; }
+    h+=`</div>`;
     h+=grantPickersHTML(5);
   }
   return h;
@@ -1286,7 +1371,7 @@ function wCalling(){
 function wComets(){
   const gch=wizCh(null);
   let h=`<div class="callout"><b>3 Comets</b>: talent points that answer to no constellation. Spend them anywhere, Flared or not, opened or not, as long as you meet the prerequisites. At 1st level only Trained talents are in reach. Constellations you've already opened lead the chips. <span class="pill">${wiz.picks.free.length}/3</span></div>`;
-  const order=["Skill","Defense","Save","Weapon","Combat Style","Calling"];
+  const order=["Skill","Defense","Save","Weapon","Magic","Combat Style","Calling"];
   const pool=allTreeNames().filter(n=>!ORIGINCATS.includes(treeOf(n).category)); // second identities can't be bought
   const shown=[...new Set([...(wiz.ch.ancestry?["Origin"]:[]), ...pool.sort((a,b)=>{
     const oa=pointsIn(gch,a)>0?0:1, ob=pointsIn(gch,b)>0?0:1;
@@ -1315,13 +1400,13 @@ function wReview(){
     <div class="tree-row"><b style="flex:0 0 54px">Shield</b>
       <select data-wshield style="flex:1">${[""].concat((R.shields||[]).map(s=>s[0])).map(o=>`<option ${(wiz.ch.shield||"")===o?"selected":""}>${o}</option>`).join("")}</select>
       <span class="muted" style="flex:0 0 92px;text-align:right">${d.shieldBonus?"+"+d.shieldBonus+" Guard":"—"}</span></div>
-    <p class="muted" style="font-size:11.5px">Load ${d.loadArmor}${d.shield?" (+"+d.shield[3]+" shield)":""} · Load Strain <b>${d.strain}</b>${d.strain?" off Climb, Swim, and Stealth checks and off Rush and Leap in feet, never off Evade":""}${d.endureRelief?` · Endure −${d.endureRelief}`:""}${d.matched?" · matched harness: +1 torso Protection, −1 Load Strain":""}${d.noisy?" · noisy"+(d.clatter?" (clatter)":""):""}</p>
+    <p class="muted" style="font-size:11.5px">Load ${d.loadArmor}${d.shield?" (+"+d.shield[3]+" shield)":""} · Load Strain <b>${d.strain}</b>${d.strain?" as a Condition penalty on Stealth, Acrobatics, Climb, and Swim checks and off Rush and Leap in feet, never off Evade; Wind each round against "+d.wind.threshold:""}${d.endureRelief?` · Endure −${d.endureRelief}`:""}${d.fitted?" · Fitted harness: −1 Load Strain":""}${d.noisyCount?` · noisy: −${d.noisyCount} Gear to Stealth`:""}${d.visored?" · Visored helm":""}</p>
     <div class="statgrid">
       ${["Might","Agility","Wits","Presence"].map(a=>`<div class="stat"><div class="v">+${d.A[a]}</div><div class="l">${a.toUpperCase()} (${attrPoints(c,a)} pts)</div></div>`).join("")}
       <div class="stat"><div class="v">${d.vigorMax}</div><div class="l">VIGOR (${d.vigorPerLvl}/level)</div></div>
       ${DEFS.map(x=>`<div class="stat"><div class="v">${d.DT[x]}</div><div class="l">${x.toUpperCase()} Th (roll ${d.D[x]<0?"":"+"}${d.D[x]})${d.DR[x]?"":"<br>untrained"}</div></div>`).join("")}
       <div class="stat"><div class="v">${d.init<0?"":"+"}${d.init}</div><div class="l">INIT</div></div>
-      <div class="stat"><div class="v">+${d.melee.prof} / +${d.ranged.prof}</div><div class="l">MELEE / RANGED PROF</div></div>
+      <div class="stat"><div class="v">+${d.melee.prof} / +${d.ranged.prof}</div><div class="l">MELEE / RANGED PROF · ${d.melee.dice}d / ${d.ranged.dice}d</div></div>
       <div class="stat"><div class="v">${d.speed}</div><div class="l">SPEED FT · STEP ${d.step} · RUSH ${d.rush}</div></div>
     </div></div>
     <div class="col"><h3>Talents (${Object.values(c.talents).flat().length} pts)</h3>
@@ -1357,7 +1442,7 @@ function buildFinal(){
    ...(p.calling||[]),...(p.calSkill||[]),...(p.def||[]),...p.free]
     .filter(Boolean).forEach(id=>{const[t,n]=id.split("||"); if(!ownsTalent(c,t,n)) buy(c,t,n);});
   c.languages=langs();
-  c.log=[`Created: ${c.ancestry} (${p.her}), ${p.culName}, ${p.bg}, ${p.calName}. ${p.weapon} Training and three Origin roots granted; ${Object.values(c.talents).flat().length} Talent Points at 1st level.`];
+  c.log=[`Created: ${c.ancestry} (${p.her}), ${p.culName}, ${p.bg}, ${p.calName}. Three Origin roots granted by the choices, ${p.combat?rootNameOf(p.combat):"no combat root"} granted by the first Calling; ${Object.values(c.talents).flat().length} Talent Points at 1st level.`];
   return c;
 }
 // (per-step spend-gating retired in the chargen glow-up: stepGate() moves you, saveBlockers() saves you)
@@ -1658,7 +1743,7 @@ function gateChipsSVG(cat, lvl, W, myPts){ // the two-gate verdicts, pinned top-
     s+=`<text class="tierlab" x="${W-14}" y="${y}" text-anchor="end"><tspan style="fill:#5E7686">${name}</tspan><tspan dx="10" style="fill:${ptsOK?OK:NO}">${ptsOK?"✓":"✗"} ${need} pts (you: ${myPts})</tspan><tspan dx="10" style="fill:${lvlOK?OK:NO}">${lvlOK?"✓":"✗"} L${gate}+ (you: L${lvl})</tspan></text>`; y+=18; }
   return s;
 }
-const catHue=c=>({Skill:"#8FB4E8",Defense:"#7FD8C8",Save:"#7FD8C8",Weapon:"#C98F78","Combat Style":"#E87A62",Armor:"#8FB0DC",Calling:"#F0685A",Ancestry:"#DCCB9E",Culture:"#B49AE8",Bloodline:"#DCCB9E",Heritage:"#DCCB9E",Background:"#C9B47A"}[c]||"#8FA8C8");
+const catHue=c=>({Skill:"#8FB4E8",Defense:"#7FD8C8",Save:"#7FD8C8",Weapon:"#C98F78","Combat Style":"#E87A62",Magic:"#B49AE8",Armor:"#8FB0DC",Calling:"#F0685A",Ancestry:"#DCCB9E",Culture:"#D6A8D6",Bloodline:"#DCCB9E",Heritage:"#DCCB9E",Background:"#C9B47A"}[c]||"#8FA8C8");
 let etree=localStorage.getItem("sparks-etree")||"Two-Weapon Fighting", esel=null;
 let eview={mode:0,cat:null}, ezoom="";  // Observatory zoom: 0 Firmament, 1 category sky, 2 constellation
 function vExplorer(){
@@ -1678,7 +1763,7 @@ function starsBG(seed,n,W,H){ const r0=mulberry32(djb2(seed)); let s="";
   return s; }
 function drawFirmament(){
   const groups={}; for(const n of allTreeNames()){ const c=treeOf(n).category; (groups[c]=groups[c]||[]).push(n); }
-  const cats=["Skill","Defense","Save","Weapon","Combat Style","Calling","Ancestry","Culture","Bloodline","Heritage","Background"].filter(c=>groups[c]);
+  const cats=["Skill","Defense","Save","Weapon","Combat Style","Magic","Calling","Ancestry","Culture","Bloodline","Heritage","Background"].filter(c=>groups[c]);
   const spots=[[250,190],[500,135],[750,190],[215,430],[500,465],[785,430],[110,300],[890,300]];
   let s=starsBG("firmament",180,EW,EH);
   cats.forEach((c,i)=>{
@@ -1792,18 +1877,19 @@ function drawTree(){
   const node=t.nodes.find(n=>n.name===esel);
   const par=parentOf(etree), kids=childrenOf(etree);
   let h=`<h2 style="font-size:16px">${etree}</h2><div class="muted" style="font-style:italic">${t.meta}</div>`;
-  if(par) h+=`<p class="muted" style="font-size:11px;margin-top:4px">Child of <a class="tl" data-tree="${par}">${par}</a>: every point here also counts toward ${par}'s rank. Attack rolls use ${par} proficiency; this style lends its Attribute and opens its exploits.</p>`;
-  if(kids.length) h+=`<p class="muted" style="font-size:11px;margin-top:4px">Parent Constellation. Points in ${kids.map(k=>`<a class="tl" data-tree="${k}">${k}</a>`).join(", ")} count toward its rank as well; only rank is inherited, its own Talents must still be bought.</p>`;
-  if(a){ const inh=inheritedPts(a,etree);
-    h+=`<p style="font-size:12px;margin-top:6px"><b>${a.name||"active"}</b>: ${pointsIn(a,etree)} pts${inh?` (+${inh} from its Combat Styles${rootOwned(a,etree)?`: ${poolPts(a,etree)} for rank`:waitNote(a,etree)})`:""}, ${rankOf(a,etree)?TIERN[rankOf(a,etree)]:"Untrained"} ${a.sparks[etree]?"&#9889; Flared":""}</p>`; }
+  const gw=par?(t.category==="Magic"?"specialty":"Combat Style"):"";
+  if(par) h+=`<p class="muted" style="font-size:11px;margin-top:4px">A ${gw}: a group of Talents within <a class="tl" data-tree="${par}">${par}</a>. It shares ${par}'s rank and has none of its own; every point here counts toward ${par}'s rank once ${rootNameOf(par)} is yours. ${t.category==="Magic"?`Its spells roll ${par} proficiency with their Key Attribute, and their Damage Dice follow ${par}'s rank.`:`Strikes roll ${par} proficiency; this style opens its exploits, and a Maneuver of its own may use ${t.feeds||"its Key Attribute"} when that is higher.`} A Flare here records this particular training.</p>`;
+  if(kids.length) h+=`<p class="muted" style="font-size:11px;margin-top:4px">Parent Constellation. ${kids.map(k=>`<a class="tl" data-tree="${k}">${k}</a>`).join(", ")} ${kids.length===1?"is a group":"are groups"} within it: their points count toward its rank once ${rootNameOf(etree)} is owned, and they wear its rank. Their Talents must still be bought for their effects.</p>`;
+  if(a){ const inh=inheritedPts(a,etree), r=rankOf(a,etree);
+    h+=`<p style="font-size:12px;margin-top:6px"><b>${a.name||"active"}</b>: ${pointsIn(a,etree)} pts${inh?` (+${inh} from its groups${rootOwned(a,etree)?`: ${poolPts(a,etree)} for rank`:waitNote(a,etree)})`:""}${par?` (${poolPts(a,etree)} in ${par}'s pool${waitNote(a,par)})`:""}, ${r?TIERN[r]:"Untrained"}${par?` (${par}'s rank)`:""} ${a.sparks[etree]?"&#9889; Flared":""}</p>`; }
   if(node){
     h+=`<div style="margin-top:8px"><span class="chip" style="background:${TIERC[node.tier]}">${TIERN[node.tier].toUpperCase()}</span>
       ${a&&ownsTalent(a,etree,node.name)?`<span class="chip" style="background:#D9A441">OWNED</span>`:""}
-      ${node.name.includes("★")?`<span class="chip" style="background:#B8860B">CAPSTONE</span>`:""}</div>
-      <h3>${node.name}</h3>${node.desc?`<p class="muted" style="font-style:italic;font-size:11px;line-height:1.45;margin-bottom:4px">${node.desc}</p>`:""}<p style="font-size:12.5px;line-height:1.5">${node.effect}</p>${node.prereqs?`<p class="muted" style="margin-top:4px;font-size:10.5px">Prerequisites: ${node.prereqs}</p>`:""}${node.requires?`<p class="muted" style="margin-top:4px;font-size:10.5px">Requires: ${node.requires.join(" or ")}</p>`:""}${node.feeds?`<p class="muted" style="font-size:10.5px">Feeds ${attrIcon(node.feeds)} <b style="color:${ATTRC[node.feeds]}">${node.feeds}</b>${t.feeds&&t.feeds!==node.feeds?` (constellation default: ${t.feeds})`:""}</p>`:""}`;
+      ${node.name.includes("★")?`<span class="chip" style="background:#B8860B">CAPSTONE</span>`:""}${node.spell?`<span class="chip" style="background:#7A5CB8">SPELL</span>`:""}</div>
+      <h3>${node.name}</h3>${node.desc?`<p class="muted" style="font-style:italic;font-size:11px;line-height:1.45;margin-bottom:4px">${node.desc}</p>`:""}<p style="font-size:12.5px;line-height:1.5">${node.effect}</p>${spellHTML(node.spell)}${node.prereqs?`<p class="muted" style="margin-top:4px;font-size:10.5px">Prerequisites: ${node.prereqs}</p>`:""}${node.requires?`<p class="muted" style="margin-top:4px;font-size:10.5px">Requires: ${node.requires.join(" or ")}</p>`:""}${node.feeds?`<p class="muted" style="font-size:10.5px">Feeds ${attrIcon(node.feeds)} <b style="color:${ATTRC[node.feeds]}">${node.feeds}</b>${t.feeds&&t.feeds!==node.feeds?` (constellation default: ${t.feeds})`:""}</p>`:""}`;
   }
   h+=`<h3>&#9889; Flares</h3><p class="muted" style="font-size:11px;line-height:1.45">${UNIFLARE}</p>${t.sparks?`<p class="muted" style="font-style:italic;font-size:10.5px;line-height:1.4;margin-top:3px">Examples: ${t.sparks}</p>`:""}
-    <p class="muted" style="margin-top:10px;font-size:10.5px">Gates: Expert L${g.E} • Master L${g.M} • Legendary L${g.L}. Ranks at 1/4/9/16 pts: +${RB.T}/+${RB.E}/+${RB.M}/+${RB.L}.</p>`;
+    <p class="muted" style="margin-top:10px;font-size:10.5px">Gates: Expert L${g.E} • Master L${g.M} • Legendary L${g.L}. Ranks at 1/4/9/16 pts: +${RB.T}/+${RB.E}/+${RB.M}/+${RB.L}${par?`, counted in ${par}`:""}.</p>`;
   P.innerHTML=h;
   P.querySelectorAll("[data-tree]").forEach(a2=>a2.addEventListener("click",()=>{etree=a2.dataset.tree;localStorage.setItem("sparks-etree",etree);eview={mode:2,cat:treeOf(etree).category};esel=null;ezoom="in";render();}));
 }
@@ -1842,7 +1928,7 @@ function vWiki(){
   const threatTbl=()=>tbl(["Threat","Answered by","Or by"],THREATS.map(([k,a,b])=>[`<b>${k}</b>`,link(a),link(b)]));
 
   if(wikiSec==="How to Play") h+=`
-    <div class="callout"><b>Check = d20 + Attribute Bonus + Proficiency Bonus + bonuses &amp; penalties</b> (Situation, Condition, Gear). One formula for everything. A tenth-level character is not better at everything because a number went up; they are better at the things they have actually done. Your Attribute Bonus is raw talent. Your Proficiency Bonus is what training adds on top: the bonus from your rank in whichever Constellation the task belongs to, and simply +0 if you have no rank there at all. <b>Level opens the door to higher ranks and pays out Talent Points; it never touches the die.</b> Same-type bonuses never stack; take the best.</div>
+    <div class="callout"><b>Check = d20 + Attribute Bonus + Proficiency Bonus + bonuses &amp; penalties</b> (Situation, Condition, Gear). One formula for everything. A tenth-level character is not better at everything because a number went up; they are better at the things they have actually done. Your Attribute Bonus is raw talent. Your Proficiency Bonus is what training adds on top: the bonus from your rank in whichever Constellation the task belongs to, and simply +0 if you have no rank there at all. <b>Level opens the door to higher ranks and pays out Talent Points; it never touches the die.</b> Independent bonuses and penalties add up, whatever their type; each circumstance counts once.</div>
     <div class="callout" style="border-color:#B8860B"><b>The player always rolls.</b> Instead of the GM rolling dice secretly behind a screen, the player rolls to find out whether something succeeded or failed, so creatures carry Thresholds for most of what they do: an Initiative Threshold, a Claws Strike Threshold, a Guard Threshold, an Evade Threshold, and so on. A <b>Threshold</b> is ten plus the modifier of the check it stands in for: 10 + Attribute Bonus + Proficiency Bonus, plus any bonuses and penalties that apply. A creature (a character included) whose Guard is +7 therefore has a Guard Threshold of 17. If two players are opposed (one player attacks another, say), the player initiating the Maneuver rolls.</div>
     ${P("<b>Which Constellation?</b> Usually it is obvious. When it is not, the player proposes the one that best fits what they are actually doing, and the GM has the final say.")}
     ${P("Three modes of play: <b>Encounter</b> mode when seconds matter, <b>Exploration</b> mode in minutes and hours, and <b>Downtime</b> mode over days, weeks, and months (where income, retraining, and deliberate training live).")}
@@ -1857,26 +1943,27 @@ function vWiki(){
     <h3>Ranks</h3>${tbl(["Proficiency Rank","Proficiency","Min. points in the Constellation","Min. level"],[
       ["Untrained","+0","—","—"],["Trained","+3","1","Level 1"],["Expert","+6","4","Level 5"],["Master","+9","9","Level 10"],["Legendary","+12","16","Level 15"]])}
     ${P("One ladder and one gate schedule for every Constellation. Rising in rank needs <b>both</b> the points and the level. Every Constellation begins with a root: buying it is what makes you Trained, and nothing in a Constellation can be bought before it. Many Talents are tier-gated: an Expert Talent requires Expert rank.")}
-    <div class="callout"><b>Parent Constellations.</b> ${link("Melee")} and ${link("Ranged")} are parents (Magic will be a third). Every Combat Style is a child of one of them, and every Talent you buy in a child counts toward your Proficiency Rank in its parent as well as in the child. Only rank is inherited: the parent's own Talents must still be bought for their effects, and a Talent feeds its Attribute once. When you Strike, roll the parent that owns the weapon: Melee for anything in your hand, Ranged for anything that leaves it, a thrown dagger included.</div>
+    <div class="callout"><b>Constellations and groups.</b> ${link("Melee")} and ${link("Ranged")} are separate martial Constellations, and each magical discipline (${magicParents().map(link).join(", ")||"none in the data yet"}) is a Constellation of its own. A <b>Combat Style</b> is a group of Talents within Melee or Ranged, and a <b>magical specialty</b> a group within its discipline: a group shares its Constellation's Proficiency Rank and has none of its own, and every Talent you buy in it counts toward that rank once the Constellation's root is yours. Its Talents must still be bought for their effects, and a Talent feeds its Attribute once. Your Ancestry, Bloodline, and Culture likewise contribute to one shared <b>Origin</b> rank. When you Strike, roll Melee for a melee Strike and Ranged for a ranged one, a thrown dagger included; when you Cast, roll the spell's discipline.</div>
     <h3>Attributes</h3>
     ${P("Might is muscle, endurance, and raw force. Agility is speed, balance, and precision. Wits is perception, memory, and fast thinking. Presence is raw nerve, willpower, and weight of personality. You never buy them and never roll them up: every Talent feeds one, and <b>your bonus is the points you've spent in its Talents ÷ 4, rounded down</b>, to a maximum of +5.")}
     ${tbl(["Attribute points","Bonus"],[["0–3","+0"],["4–7","+1"],["8–11","+2"],["12–15","+3"],["16–19","+4"],["20+","+5 (the maximum)"]])}
     <h3>Derived numbers</h3>
     ${tbl(["Stat","Formula"],[
-      ["Vigor","Ancestry Vigor + Endure Bonus + your first Calling's Opening Vigor + 10 at 1st level; add Ancestry Vigor + Endure Bonus again at every level after. The Endure Bonus is 1 at Expert rank in Endure, 2 at Master, 3 at Legendary."],
+      ["Vigor","Ancestry Vigor + your first Calling's Opening Vigor + 10 at 1st level; add Ancestry Vigor again at every level after. (The book's formula still names an Endure Bonus; Endure Training grants none since v4.21, so it is 0.)"],
       ["Any Defense","attribute + proficiency (if any). Its Threshold is 10 + that. An Untrained Defense still adds its attribute; its Thresholds are simply 3 lower."],
       ["Any Threshold","10 + attribute + proficiency + bonuses and penalties: a check with a 10 in place of the die"],
-      ["Attack roll","d20 + Strike Attribute + Melee (weapon in hand) or Ranged (weapon that leaves it) proficiency, against the Defense that answers it"],
-      ["Deliberate ❷ or Committed ❸ Hit","[weapon dice + specialization + Might + bonuses &amp; penalties] − Protection"],
-      ["Quick ❶ Hit","one weapon die + precision − Protection"],
-      ["Graze","one weapon die − Protection, minimum 1, and nothing else"],
+      ["Strike","d20 + Strike Attribute + Melee (a melee Strike) or Ranged (a ranged Strike, a thrown weapon included) proficiency, against the Defense that answers it. Strike Attribute: Might, or Agility with a Finesse weapon; Agility, or Might with a Thrown weapon"],
+      ["Cast","d20 + the spell's Key Attribute + its discipline's proficiency, against a Defense its Threat permits"],
+      ["Deliberate ❷ or Committed ❸ Hit","[the rank's weapon dice (1 Trained, 2 Expert, 3 Master, 4 Legendary) + Might + bonuses &amp; penalties] − Protection"],
+      ["Quick ❶ Hit","one weapon die − Protection; precision or other extras only where a Maneuver or Talent allows them"],
+      ["Graze","the damage the Maneuver prints: one weapon die for a Strike, less Protection"],
       ["Initiative","usually an Awareness check, or whatever you were actually doing (Stealth, if you were creeping)"],
-      ["Speed","feet per Move ❶; a Human's is 6. Step ❶ is half your Speed; Rush ❸ is 5 × Speed in a straight line, less Load Strain"],
-      ["Load Strain","the Load of the armor you wear and of a shield you carry, less 1 for a matched harness and less your Endure relief (1 at Trained, 2 at Expert, 3 at Master, 4 at Legendary), minimum 0. Never off Evade: it shortens Rush and Leap in feet and penalises Climb, Swim, and Stealth checks"],
-      ["A night's rest","Vigor equal to level × Presence if that is positive, else your level. Wounds do not rest away."]])}
+      ["Speed","feet per Move ❶; a Human's is 6. Step ❶ is half your Speed; Rush ❷ is 3 × Speed in a straight line, less Load Strain"],
+      ["Load Strain","the Load of the armor you wear and of a shield you carry, less 1 for a Fitted harness and less your Endure relief (1 at Trained, 2 at Expert, 3 at Master, 4 at Legendary), minimum 0. Never off Evade: a Condition penalty on Stealth, Acrobatics, Climb, and Swim checks, and it shortens Rush and Leap in feet"],
+      ["Rest","a full night's rest restores all of your Vigor; ten minutes' rest restores level × Presence when that is positive. Wounds do not rest away."]])}
     <h3>Bonuses and penalties</h3>
-    ${P("Three types, named for where the number comes from. A <b>Situation</b> bonus or penalty comes from where you stand and what is happening around you: cover, high ground, an ally's help, a foe Off-Guard. A <b>Condition</b> bonus or penalty comes from something on you: Frightened, or a stance you have taken. A <b>Gear</b> bonus or penalty comes from what you hold or wear: a raised shield. Bonuses of the same type do not stack; use the highest. Penalties of the same type do not stack; use the highest. A bonus and a penalty of the same type add together. Fractions always round down, and multipliers combine by addition: count how far past 1 each takes you, add those, and apply the result once.")}
-    ${tbl(["Example","Result"],[["+1 Situation bonus, −2 Situation penalty","−1 Situation penalty (same type: add them together)"],["+1 Gear bonus, +1 Condition bonus","+1 Gear bonus and +1 Condition bonus (different types: keep them separate)"],["−3 Condition penalty, −1 Condition penalty","−3 Condition penalty (same type: only the highest penalty)"]])}
+    ${P("Three types, named for where the number comes from. A <b>Situation</b> bonus or penalty comes from where you stand and what is happening around you: cover, high ground, an ally's help, a foe Off-Guard. A <b>Condition</b> bonus or penalty comes from something on you: Frightened, Fatigued, or a stance you have taken. A <b>Gear</b> bonus or penalty comes from what you hold or wear: a raised shield, a lowered visor. <b>Independent bonuses and penalties stack, whatever their type</b>: add every modifier that applies to find the check's total. The types name where a modifier comes from; they do not limit stacking. Count each underlying circumstance or effect only once: if two rules describe the same benefit or penalty, apply only its strongest version, and the GM resolves the uncertain cases. Fractions always round down, and multipliers combine by addition: count how far past 1 each takes you, add those, and apply the result once.")}
+    ${tbl(["Modifiers","Combined modifier"],[["+1 Situation bonus from high ground and +2 Situation bonus from an ally's separate assistance","+3"],["+1 Gear bonus from a raised shield and +1 Condition bonus from an independent defensive technique","+2"],["−3 Condition penalty from exhaustion and −1 Condition penalty from an independent fear effect","−4"],["Off-Guard from a Torso Wound, and Off-Guard again from being Prone","−2 once: one circumstance, Off-Guard, however many rules name it"]])}
     <h3>Types of Talent Point</h3>
     ${P("Every Talent costs exactly 1 Talent Point, but not every point is free to go anywhere. A point's type answers two questions: where it may be spent, and whether the Constellation must be Flared.")}
     ${tbl(["Type","May be spent on","Flare required?"],(R.talentPointTypes||[]))}
@@ -1889,17 +1976,17 @@ function vWiki(){
     ${P("<b>The player rolls.</b> The GM does not roll behind a screen; monsters carry Thresholds instead, for Initiative, for each attack, and for each Defense. If two players are opposed, the player initiating the Maneuver rolls. <b>Player knowledge is not character knowledge</b>: you may know your Awareness roll was low, but your character does not. <b>Specific beats general</b>: the general rule is that you cannot Step into Difficult Terrain, but the Skirmisher's Step Talent lets you. In all cases the GM has the final decision on the results of rolls and the interpretation of rules, at least during the session.")}`;
 
   if(wikiSec==="Creating a Character") h+=`
-    <div class="callout">Your first Constellation is yourself. Ancestry, Bloodline, and Culture merge into one sky, your <b>Origin</b>, and their three roots are granted by the choices themselves. Every character begins <b>Trained in Melee or Ranged</b>, your choice, and in <b>two of the four Defenses</b> (Awareness, Evade, Guard, and Endure).</div>
-    ${tbl(["Step","You choose…","You get…","Talent Points"],(R.chargenSteps||[]))}
-    <div class="callout" style="border-color:#B8860B"><b>Keyword: become Trained in.</b> When an effect says you become Trained in a Constellation, you gain a talent point that must be spent in that Constellation. If it isn't open yet, the point buys the Training root, and that purchase <i>is</i> becoming Trained. Already open? The point buys any talent there you qualify for: training stacks into growth, never wasted.</div>
+    <div class="callout">Your first Constellation is yourself. Ancestry, Bloodline, and Culture merge into one sky, your <b>Origin</b>, and their three roots are granted by the choices themselves. Your <b>first Calling</b> grants its listed benefits and <b>combat-related training</b>: Melee or Ranged for a martial Calling, a magical discipline for a caster. You also begin <b>Trained in two of the four Defenses</b> (Awareness, Evade, Guard, and Endure). During character creation the normal Flare requirements do not apply.</div>
+    ${tbl(["Step","You choose…","You get…","Talent Points"],(R.chargenSteps||[]).map(r=>r.map(x=>String(x).replace(/\n/g,"<br>"))))}
+    <div class="callout" style="border-color:#B8860B"><b>Keyword: become Trained in.</b> When an effect says you become Trained in a Constellation, you gain a talent point that must be spent in that Constellation. If it isn't open yet, the point buys the Training root, and that purchase <i>is</i> becoming Trained. Already open? The point buys any talent there you qualify for. If there is nothing there you qualify for, you instead become Trained in a Constellation of your choice. Talent Points are spent the moment you receive them; none is ever saved for later.</div>
     <h3>Defenses</h3>
     ${P("At 1st level you gain <b>2 Defense Talent Points</b>. Choose wisely: each Defense answers two of the four kinds of threat (Blows, Blasts, Blights, Beguilement), and each kind is answered by two Defenses. Two Trained Defenses cover three kinds; choose the pair whose gap you can live with. A Defense you leave Untrained still adds its Attribute, but every Threshold that depends on it is 3 lower.")}
     ${threatTbl()}
     <h3>What a finished 1st-level character has</h3>
-    ${P("A minimum of <b>14 Talent Points</b> spent. One is automatically granted: <b>Melee Training or Ranged Training</b>, your choice. Thirteen come from character creation: 3 Origin, 3 Skill, 1 Lore, 1 Calling, 2 Defense, and 3 Comets. Some choices grant additional Talent Points, so your total may be higher.")}
+    ${P("A minimum of <b>13 Talent Points</b> spent: 3 Origin (1 Ancestry, 1 Bloodline, 1 Culture); 2 Skill and 1 Lore from your Background; 1 Calling; 1 Martial or Magical, granted by your first Calling; 2 Defense; and 3 Comets. Some choices grant additional Talent Points, so your total may be higher: every Calling's root also makes you Trained in a Skill, and the wizard places that point too.")}
     <h3>Finishing up</h3>
-    ${P("<b>Vigor</b> at 1st level is 10 + your Calling's Opening Vigor + your Ancestry's Vigor; the Ancestry's share (plus any Endure Bonus) is added again at every level, the Opening Vigor only once. <b>Attribute Bonuses</b>: total your points per Attribute (each Constellation feeds one); Attribute Bonus = points ÷ 4, rounded down. <b>Derived stats</b>: Vigor and your Defenses as above; note your rank (almost always Trained, +3) in each Constellation you own. <b>Gear</b>: you begin with 15 gold pieces, plus a travelling kit (pack, bedroll, rope, a week's rations, torches, flint, waterskin, the tools of your trade) that costs coppers and needs no tracking.")}
-    ${P("Fifteen gold does not buy a complete plate harness: that is four pieces, Load 8 (Load Strain 7), and about 45 gp. <b>Everyone starts the game with gaps in their armor, and deciding where those gaps go is your first real equipment decision.</b>")}`;
+    ${P("<b>Vigor</b> at 1st level is 10 + your first Calling's Opening Vigor + your Ancestry's Vigor; the Ancestry's share is added again at every level, the Opening Vigor only once. <b>Attribute Bonuses</b>: total your points per Attribute (each Constellation feeds one); Attribute Bonus = points ÷ 4, rounded down. <b>Proficiency and checks</b>: note your rank (almost always Trained, +3) in each Constellation you own, and work out your Strikes and Defenses from their Attributes and Proficiency Bonuses. <b>Gear</b>: you begin with 15 gold pieces, plus a travelling kit (pack, bedroll, rope, a week's rations, torches, flint, waterskin, the tools of your trade) that costs coppers and needs no tracking. <b>Equipment adjustments</b>: record Protection by Zone, Load Strain, and your weapons, and recheck the totals they touch before play.")}
+    ${P("Fifteen gold does not buy a complete plate harness: a Full Helm, Plate Cuirass, Plate Arms, and Plate Legs are Load 8 (Load Strain 7 with the Fitted harness) and 62 gp. <b>Everyone starts the game with gaps in their armor, and deciding where those gaps go is your first real equipment decision.</b>")}`;
 
   if(wikiSec==="Ancestries") h+=`<div class="callout">Your Ancestry is the body you were born in: it forms the trunk of your Origin, and sets your Vigor per level, Size, Speed, and one special ability. Its root is an Origin Talent Point granted by the choice. Your <b>Bloodline</b> is the lineage inside it, and adds a branch.</div>`
     +tbl(["Ancestry","Vigor/lvl","Size","Speed (ft per Move)","Senses","Key attribute"],R.ancestries.map(a=>[link(a.tree),ancVigor(a),a.size||"Medium",feet(a.speed)+" ft",a.senses||"—",treeOf(a.tree).feeds||"—"]))
@@ -1916,14 +2003,14 @@ function vWiki(){
     +P("The Diplomacy bonus scales with your Origin Constellation: +1 while Trained, +2 at Expert, +3 at Master, +4 at Legendary.")
     +(typeof LANGS!=="undefined"&&LANGS&&LANGS.length?`<h3>Languages</h3>`+tbl(["Language","Rarity","About"],LANGS.map(l=>[l.name,l.rarity,l.desc||"—"])):"");
 
-  if(wikiSec==="Backgrounds") h+=`<div class="callout">Your life before the road: each Background gives you Training in <b>two</b> Skills that its trade leans on, and in a relevant <b>Lore</b>. That is 2 Skill Talent Points and 1 Lore Talent Point, three of the thirteen you get at creation.</div>`
-    +tbl(["Background","Skills (1 point each)","Lore (1 point)","You were…"],
+  if(wikiSec==="Backgrounds") h+=`<div class="callout">Your life before the road: each Background gives you Training in <b>two</b> Skills that its trade leans on, and <b>1 Relevant Lore</b>. That is 2 Skill Talent Points and 1 Lore Talent Point, three of the thirteen you get at creation. The Lore is the player's pick, one relevant to the life the Background describes; the table shows each Background's usual one, which the wizard offers by default.</div>`
+    +tbl(["Background","Skills (1 point each)","Relevant Lore (1 point; the usual pick)","You were…"],
       (bgData()||[]).map(b=>[b.name,(b.skills||[]).map(link).join(" & "),b.lore?link(b.lore):"—",stripT(b.desc)]));
 
-  if(wikiSec==="Callings") h+=`<div class="callout">Callings are what other games call classes, except the signature feature sits at the <b>root</b>, so your very first point buys the fantasy. 'Barbarian' was never a job. It was Rage plus Athletics plus a big axe. Now it's yours in any combination or permutation. Each Calling grants Training in 1 Skill or other Constellation, gives you a special ability, and adds Vigor (if it is your first Calling).</div>`
-    +tbl(["Calling","Free Training","Opening Vigor","Key attribute","Special ability"],
-      (R.callings||[]).map(c=>[link(c[0]),link(c[1]),c[2],c[3],c[4]]))
-    +P("Only your <b>first</b> Calling adds its Opening Vigor, once, at 1st level, however many you open later.");
+  if(wikiSec==="Callings") h+=`<div class="callout">Callings are what other games call classes, except the signature feature sits at the <b>root</b>, so your very first point buys the fantasy. 'Barbarian' was never a job. It was Rage plus Athletics plus a big axe. Now it's yours in any combination or permutation. Each Calling grants Training in 1 Skill or other Constellation, gives you a special ability, and adds Vigor (if it is your first Calling). Your <b>first Calling also grants its combat training</b>: a martial Calling opens Melee or Ranged, your choice; a caster opens one of the five magical disciplines; a Spellblade opens a discipline and must be Trained in Melee or Ranged as well by the end of creation.</div>`
+    +tbl(["Calling","Free Training","Opening Vigor","Key attribute","First Calling opens","Special ability"],
+      (R.callings||[]).map(c=>[link(c[0]),link(c[1]),c[2],c[3],(TREES[c[0]]?combatOptions(c[0]):MARTIAL).length>2?"a magical discipline":(TREES[c[0]]?combatOptions(c[0]):MARTIAL).join(" or "),c[4]]))
+    +P("Only your <b>first</b> Calling adds its Opening Vigor and its combat training, once, at 1st level, however many you open later. A second Calling, bought later with a Comet or through a Flare, brings its Skill Training and its special ability.");
 
   if(wikiSec==="Defenses") h+=`<div class="callout">There are a multitude of ways you can attack your foes, and they have just as many for you. There are four ways to answer them. Your four Defenses are Constellations like any other. You begin play <b>Trained in two of them</b>, your choice, and the other two are Untrained until you spend Defense Talent Points on them; an Untrained Defense still adds its Attribute, it simply has no Proficiency Bonus. Each works two ways: your check is what you roll, and your Threshold is what someone else has to beat.</div>`
     +tbl(["Defense","Key attribute","In a word","Answers","Also answers"],
@@ -1931,14 +2018,13 @@ function vWiki(){
     +`<h3>The Four Threats</h3>`
     +P("Every threat is one of four kinds, and every kind is answered by two of the four Defenses. When a rule names a single Defense, roll that one; when it names a kind of threat, or names nothing, the defender chooses either of the two.")
     +threatTbl()
-    +P("The wheel closes on the Attributes: Guard (Presence) meets Blows and holds its nerve against Beguilement; Evade (Agility) slips both Blows and Blasts; Endure (Might) stands through Blasts and Blights; Awareness (Wits) catches Blights early and sees through Beguilement. Each Defense you train covers two kinds of threat. Two Trained Defenses cover three and leave one where you roll your Attribute alone; that gap is yours to choose.")
-    +`<div class="callout" style="border-color:#B8860B"><b>When a Defense is unavailable.</b> <b>Evade</b> is unavailable while you are Grabbed or Restrained: you cannot slip what is already holding you. <b>Guard</b> is unavailable while you are unaware of the attack, or while you have nothing equipped to ward away the blow: you cannot meet what you did not see or cannot reach. Guard answers a ranged Blow only with a shield Raised: you cannot parry an arrow with a sword; you can catch it on a board. <b>Endure and Awareness are never unavailable</b>; you always have your body and your wits, for whatever they are worth against that particular threat. The GM may determine that others apply.</div>`
+    +P("The wheel closes on the Attributes: Guard (Presence) meets Blows and holds its nerve against Beguilement; Evade (Agility) slips both Blows and Blasts; Endure (Might) stands through Blasts and Blights; Awareness (Wits) catches Blights early and sees through Beguilement. Each Defense you train covers two kinds of threat. Two Trained Defenses cover three and leave one where you roll your Attribute alone; that gap is yours to choose. A ranged Blow or an attack with an area is met by Guard only with a shield Raised, and Shield Block answers only what a shield can plausibly catch.")
     +`<h3>Answering an attack: the basic roll, or a Reaction</h3>`
-    +P("You may always roll one of the two Defenses that answer the threat, regardless of how many actions you have remaining. That roll is your <b>basic defense</b>: ordinary footwork, guard position, constitution, alertness. For the potential to do better, you use a <b>Reaction ↺</b>: a Maneuver performed the moment the attack is declared, paid for from the same pool of six actions you attack with. Each Reaction is granted by a Talent; without the Talent, the basic roll is all you have. A fighter who spends five actions attacking has one left to defend with; a fighter who holds three has answers. You may React before your first Opportunity of the round, and as often in a round as you can afford. At 0 actions you still roll your basic Defense, and you may still take a Posture. <b>A Reaction never triggers another Reaction.</b>")
+    +P("You may always roll one of the two Defenses that answer the threat, regardless of how many actions you have remaining; the basic Defense costs no actions even when your pool is empty. That roll is your <b>basic defense</b>: ordinary footwork, guard position, constitution, alertness. For the potential to do better, you use a <b>Reaction ↺</b>: a Maneuver performed the moment its Trigger occurs, paid for from the same pool of six actions you attack with. Every Reaction is granted by a Talent; without the Talent, the basic roll is all you have. A fighter who spends five actions attacking has one left to defend with; a fighter who holds three has answers. You may React before your first Opportunity of the round, and as often in a round as you can afford. At 0 actions you still roll your basic Defense, and you may still use a ⓿↺ Reaction you qualify for. <b>A Reaction never triggers another Reaction</b>, and an Attack made as part of a Reaction is met with the basic Defense alone.")
     +tbl(["Reaction","Granted by • Defense","Effect"],notSheet(R.postures))
-    +P("<b>Postures</b> are Reactions ⓿↺ gained from Talents, typically from the Evade and Guard Constellations. They may only be used before you know whether the attack was successful. A Posture costs no actions, but it Exposes a Zone of your choice until the end of the round, whether or not it works, and Recenter does not clear that Exposure. Its bonus is a Situation bonus, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack.")
+    +P("<b>Postures</b> are ⓿↺ Reactions granted by Talents, commonly from the Evade and Guard Constellations. A Posture costs no actions but carries the drawback its description names, whether or not it improves the outcome: usually a Zone of your choice Exposed until the end of the round, which Recenter does not clear. You answer an attack with one Reaction, and a Posture is one, so Parry and Set Your Feet are not combined against the same blow.")
     +`<h3>Size</h3>`
-    +P("Creatures gain an innate Evade and Guard difference against physical Attacks based on size. A small fighter is a harder target and a worse wall; a large one is the reverse.")
+    +P("Creatures take an innate penalty to Evade or Guard against physical Attacks based on size. A small fighter is a worse wall; a large one is easier to find.")
     +tbl(["Size","Space / token","Natural Reach","Effect on Evade & Guard"],(R.sizes||[]));
 
   if(wikiSec==="Skills & Styles") h+=`<div class="callout">Instead of skills, classes, and feats, everything a character can do grows on Talent Constellations. Enter any one by spending 1 point on its Root Talent; total investment sets your rank; rank unlocks deeper tiers.</div>
@@ -1946,40 +2032,50 @@ function vWiki(){
     +tbl(["Skill","Key attribute","Covers"],R.skillRoster.map(s=>[link(s[0]),s[1],s[2]]))
     +P("The <b>Lore</b> Constellation is a template: every Lore you take, Lore (Circus) or Lore (Warfare) or any other, is its own copy of it, so a character can grow several Lores side by side.")
     +`<h3>Melee, Ranged, and the Combat Styles</h3>`
-    +`<div class="callout"><b>A Combat Style is a school of exploits, not your attack bonus.</b> Attacks always use your Melee or Ranged Proficiency, while the style you fight in sets the Attribute and opens that school's Talents. Every Combat Style is a child of Melee or Ranged, so every Talent you buy in it also counts toward the parent's rank; only rank is inherited, and a Talent feeds its Attribute once. Checks a Combat Style Talent calls for may use the parent's Proficiency, or the Combat Style's own.</div>`
-    +tbl(["Style","Feeds","Fights with","Child of"],R.weaponStyles.map(w=>[link(w[0]),w[1],w[2],link(parentOf(w[0])||"—")]))
-    +P(`Everyone begins Trained in ${link("Melee")} or ${link("Ranged")}, your choice. Melee represents transferable fundamentals: measure, timing, reading an opponent, footwork, maintaining guard, committing to a strike. Ranged represents what transfers between every weapon that leaves the hand: judging distance, timing a release, leading a moving target, and shooting past friends. A dagger uses Melee in your hand and Ranged in the air.`)
-    +`<div class="callout" style="border-color:#B8860B"><b>Attack roll = d20 + your Strike Attribute + the parent's Proficiency Bonus.</b> Your Strike Attribute is the higher of two numbers: the weapon's natural Attribute (Might; or Agility for a weapon with the Finesse trait, and for any ranged weapon other than a composite bow or a thrown weapon), or the Key Attribute of a Combat Style whose root you have and whose weapons you are wielding. Work it out once per weapon and write it on your sheet. Damage still adds Might where the Strike allows it.</div>`;
+    +`<div class="callout"><b>A Combat Style is a school of exploits, not your attack bonus.</b> Strikes always use your Melee or Ranged Proficiency. A Combat Style is a group of Talents within Melee or Ranged: it shares that Constellation's Proficiency Rank and has none of its own, every Talent you buy in it counts toward that rank once the Constellation's root is yours, and a Talent feeds its Attribute once. A Maneuver a Combat Style grants may use the Style's Key Attribute for its Strike when that is higher than the weapon's, provided you meet the Maneuver's Requirements. A Flare on a Combat Style records that style, and a Milestone point spent through it buys there.</div>`
+    +tbl(["Style","Key attribute","Fights with","A group within"],R.weaponStyles.map(w=>[link(w[0]),w[1],w[2].replace(/ A group of Talents within .*$/,""),link(parentOf(w[0])||"—")]))
+    +P(`A martial Calling's first-Calling grant opens ${link("Melee")} or ${link("Ranged")}, your choice. Melee represents transferable fundamentals: measure, timing, reading an opponent, footwork, maintaining guard, committing to a strike. Ranged represents what transfers between every weapon that leaves the hand: judging distance, timing a release, leading a moving target, and shooting past friends. A dagger uses Melee in your hand and Ranged in the air.`)
+    +`<div class="callout" style="border-color:#B8860B"><b>Strike = d20 + your Strike Attribute + Melee or Ranged Proficiency Bonus.</b> A melee Strike uses <b>Might, or Agility if the weapon has the Finesse trait</b>. A ranged Strike uses <b>Agility, or Might if the weapon has the Thrown trait</b>, and rolls Ranged proficiency, a thrown dagger included. A Strike made as part of another Maneuver still uses the appropriate proficiency; if that Maneuver's Key Attribute has a higher bonus than the Strike's normal Attribute, you may use it instead. Damage adds Might where the Strike allows it.</div>`
+    +`<h3>Magical Constellations</h3>`
+    +`<div class="callout" style="border-color:#7A5CB8"><b>Each magical discipline is a Constellation of its own</b>, and its Training root grants its foundational spell, at will. A <b>specialty</b> is a group of Talents within the discipline, exactly as a Combat Style is within Melee: it shares the discipline's rank and has none of its own. Every offensive spell is at will once learned through a Talent: no slots, no mana, no recharge. A caster Calling's first-Calling grant opens one discipline.</div>`
+    +tbl(["Discipline","Key attribute","About","Specialties"],magicParents().map(mp=>{const tr=treeOf(mp); return [link(mp),tr.feeds,tr.meta||"",childrenOf(mp).map(link).join(", ")||"—"];}))
+    +P("<b>Cast ❷ to ❹.</b> Cast is the Maneuver for at-will offensive spellwork. Roll the discipline's proficiency with the spell's Key Attribute against a Defense its Threat permits. The Talent sets the spell's range, targets, Delivery, damage type, and effects; there is no universal magic attack proficiency.")
+    +tbl(["Cast","What it does"],(R.castKinds||[]).map(r=>[`<b>${r[0]}</b>`,r[1]]))
+    +P("<b>Damage Dice</b> come from the discipline's rank alone: Trained 1, Expert 2, Master 3, Legendary 4. The spell names each die's size and type. A Quick Cast rolls one die whatever your rank, and no spell gains extra targets from a higher rank; its own listing controls its effects. Spell damage adds no Might and no weapon specialization.")
+    +tbl(["Rank in the discipline","Damage Dice"],(R.spellwork||[]))
+    +(()=>{ const magicTrees=allTreeNames().filter(n=>treeOf(n).category==="Magic"); let s="";
+      for(const mp of magicParents()){ const list=[mp,...childrenOf(mp)].filter(n=>magicTrees.includes(n));
+        const spells=list.flatMap(n=>treeOf(n).nodes.filter(nd=>nd.spell).map(nd=>({tree:n,node:nd})));
+        if(!spells.length) continue;
+        s+=`<h4>${link(mp)}: spells</h4>`+spells.map(({tree,node})=>`<div style="margin:4px 0 8px"><b>${node.name}</b> <span class="muted">(${tree===mp?"the discipline's root":tree}, ${TIERN[node.tier]})</span><div style="font-size:12px">${node.effect}</div>${spellHTML(node.spell)}</div>`).join(""); }
+      return s||P("No spell Talents are in the data yet."); })();
 
   if(wikiSec==="Equipment") h+=`<div class="callout"><b>What gear does, and what it doesn't.</b> Your sword does not make you accurate and your armor does not make you hard to hit. Skill does that, and skill lives in your Talents and in your Constellations. Gear decides what happens when steel finally meets you: a weapon sets the size of the wound, armor sets how much of that wound your body actually feels. This is why there are <b>no magic plusses</b> in STARWROUGHT. Quality, craftsmanship, and enchantment give a weapon <b>Traits</b>, never numbers. A masterwork blade is not a +1 sword; it is a sword that can do something an ordinary one cannot.</div>
     ${P("<b>Starting equipment.</b> You begin play with <b>15 gold pieces</b>. Spend it on the tables below, plus a travelling kit: pack, bedroll, rope, rations for a week, torches, flint, waterskin, and the tools of your trade, all of which cost coppers and none of which needs tracking.")}
     <h3>Armor</h3>`
-    +P("Armor is worn in four places: Arms, Legs, Torso, Head. Each Zone holds one piece, and each piece is bought, worn, and lost separately. There is no such thing as 'a suit of plate' on your sheet; there is a breastplate, a helm, a pair of vambraces, and greaves, and you own as many as you can afford. Each piece has <b>Protection</b> (subtracted from every instance of damage landing on that Zone, a Graze included), <b>Load</b>, and Traits. Your torso is the number that matters most, because ordinary Hits land there. The other three Zones come into play when someone has earned an opening.")
-    +`<div class="callout" style="border-color:#B8860B"><b>Load Strain</b> = the Load of all the armor you are wearing and of a shield you carry, less 1 for a matched harness and less your Endure relief, to a minimum of 0. It never comes off your <b>Evade</b>, and it is no blanket penalty on Might or Agility: a fit fighter in a fitted harness runs, rolls, and wrestles like anyone else. What it costs is breath, senses, and the margins of movement, as the three points below say. Training in ${link("Endure")} reduces Load Strain as your Proficiency Rank in it rises: by 1 at Trained, 2 at Expert, 3 at Master, and 4 at Legendary. A fighter whose Endure Threshold is at least 10 + Load Strain never rolls for Wind.</div>`
+    +P("Armor is worn in four places: Arms, Legs, Torso, Head. Each Zone holds one piece, and each piece is bought, worn, and lost separately. There is no such thing as 'a suit of plate' on your sheet; there is a Plate Cuirass, a Full Helm, Plate Arms, and Plate Legs, and you own as many as you can afford. Each piece has <b>Protection</b> (subtracted once from a Zoned Attack's damage on that Zone, a Graze included), <b>Load</b>, a <b>Type</b> (Padded, Leather, Mail, Lamellar, Brigandine, Splint, or Plate), and Traits. Your torso is the number that matters most, because ordinary Hits land there. The other three Zones come into play when someone has earned an opening.")
+    +`<div class="callout" style="border-color:#B8860B"><b>Load Strain</b> = the Load of all the armor you are wearing and of a shield you carry, less 1 for a Fitted harness and less your Endure relief, to a minimum of 0. It never comes off your <b>Evade</b>, and it is no blanket penalty on Might or Agility: a fit fighter in a fitted harness runs, rolls, and wrestles like anyone else. What it costs is breath and the margins of movement, as the two points below say. Training in ${link("Endure")} reduces Load Strain as your Proficiency Rank in it rises: by 1 at Trained, 2 at Expert, 3 at Master, and 4 at Legendary.</div>`
     +`<h4>What armor costs in a fight</h4>`
-    +P("Armor does not make you easier to hit, and it costs a fighter nothing on the roll, Guard or Evade. It costs three other things, all of them real. <b>Wind.</b> If your Load Strain is at least 1 and your Endure Threshold is less than 10 + your Load Strain, then at the end of every round while in an encounter, you must roll Endure against <b>10 + Load Strain</b>. On a failure your Fatigued rises by 1: Fatigued N is a −N Condition penalty to Evade, Guard, and attack rolls, to a maximum of 3, and it ends after ten minutes of rest (see Conditions). A fighter whose Endure Threshold meets 10 + Load Strain never rolls for Wind; Endure feeds Might, so training and strength both carry the harness. <b>Sight and hearing.</b> A closed helm gives a <b>−2 Situation penalty</b> to Awareness checks, your Awareness Threshold, and Initiative; an open helm, <b>−1</b>. <b>Speed at the margin.</b> Armor does not slow a walk; it kills a sprint and a climb. Your Rush and Leap distances are reduced by your Load Strain in feet, and Climb, Swim, and Stealth checks take your Load Strain as a penalty.")
-    +tbl(["Piece","Zone","Protection","Load","Price","Traits","Material"],(R.armorPieces||[]))
-    +`<h3>Armor of proof</h3>`
-    +P("Every piece is made of something, and every material has a blow it turns badly. Against the damage type its material turns poorly, a piece's Protection is <b>reduced by 1</b>. A Zone with no armor has no material, and so has no such weakness.")
-    +tbl(["Material","Turns poorly"],(R.materials||[]))
-    +P("The sword rules the unarmored field, the spear point defeats mail, and the mace is the answer to plate. It is why a careful fighter carries more than one weapon, and why <i>versatile</i> is worth more than it looks: a longsword that can thrust is a longsword that can fight mail.")
-    +`<h3>Two rules for mixed kit</h3>`
-    +P("<b>Matched harness.</b> If all four of your pieces have the same Material <i>and</i> the same Protection value, add +1 Protection to your torso and reduce your Load Strain by 1, to a minimum of 0. A complete kit sits and moves better than a collection.")
-    +P("<b>Clatter.</b> If two or more of your pieces are mail or plate while your torso piece is neither, your kit rattles: you are <i>Noisy</i> regardless of what the individual pieces say.")
-    +P("Putting on or taking off a single piece takes 1 minute per point of Protection it has. An Attended piece takes that long only with a second pair of hands; alone, putting it on takes twice as long, though it comes off in the usual time. Sleeping in armor increases your Fatigued value by 1 <i>unless your torso piece has Comfort</i>. A complete harness of plate with a closed helm is four pieces, Load 8, Load Strain 7 (less 1 for the matched harness, and less your Endure relief), and about 45 gp.")
+    +P("Heavier armor does not make you easier to hit, and it costs a fighter nothing on the roll, Guard or Evade. In exchange for its Protection it costs two other things, both of them real. <b>Wind.</b> If your Load Strain is at least 1, then at the end of every round while in an encounter, you must roll Endure against <b>10 + Load Strain</b>. On a failure your Fatigued rises by 1, on a critical failure by 2: Fatigued N is a −N Condition penalty to your four Defenses and your attack rolls, to a maximum of 3, and it ends after ten minutes of rest (see Conditions). There is no exemption for a high Endure Threshold; Endure feeds Might, so training and strength both carry the harness, and both make the roll easier. <b>Speed at the margin.</b> Armor does not slow a walk; it kills a sprint and a climb. Your Load Strain is a Condition penalty on Stealth, Acrobatics, Climb, and Swim checks (a Flexible piece counts its Load 1 lower for Climb and Swim), and your Rush and Leap distances are reduced by your Load Strain in feet. <b>Sight</b> is a matter of the piece, not the Load: a Visored helm lowered is a −1 Gear penalty to Awareness and Initiative, and raised, that Zone's Protection is 1 lower and nothing else; a Noisy piece is a −1 Gear penalty to Stealth, each piece counted.")
+    +tbl(["Piece","Zone","Protection","Load","Price","Traits","Type"],(R.armorPieces||[]).map(r=>[r[0],r[1],r[2],r[3],r[4],r[5]||"—",r[6]||"—"]))
+    +`<h3>Armor Types and the Fitted harness</h3>`
+    +P("Every piece has a <b>Type</b>: Padded, Leather, Mail, Lamellar, Brigandine, Splint, or Plate. The Type names what the piece is made of and is what an Armor-Piercing weapon reads; a Type has no weakness of its own, and no damage type turns a Zone's Protection down. <b>Fitted harness.</b> If you wear pieces with the Fitted trait in at least three Zones, and they have all been adjusted to you, your Load Strain is reduced by 1. A complete kit sits and moves better than a collection.")
+    +P("Putting on or taking off a single piece takes 1 minute per point of Protection it has (minimum 1 minute). An Attended piece takes twice as long without help. You cannot sleep in armor without waking up with Fatigued equal to your Load Strain (maximum 3), <i>unless it has the Comfort trait</i>. A complete harness of plate with a Full Helm is four pieces, Load 8, Load Strain 7 (less 1 for the Fitted harness, and less your Endure relief), and 62 gp.")
     +`<h3>Shields</h3>`
-    +P("A shield is not armor. It grants no Protection, because it does not cover a Zone; it is a tool you actively interpose, which is why it improves <b>Guard</b> and only while you Raise it. <b>Raise a Shield ❶</b> grants the Gear bonus to Guard for physical Attacks until your next Opportunity. A Raised shield is a <b>rigid implement</b>: you may Parry, Bind, and Gain Control with it, and a shield that Controls a foe's weapon opens a Zone for the sword in your other hand. Hardness matters only if you have the Shield Block talent: it is how much damage the shield swallows before the rest reaches you. A tower shield gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised.")
+    +P("A shield is not armor. It grants no Protection, because it does not cover a Zone; it is a tool you actively interpose, which is why it improves <b>Guard</b> and only while you Raise it. <b>Raise a Shield ❶</b> grants the Gear bonus to Guard for physical Attacks until your next Opportunity. A Raised shield is a <b>rigid implement</b>: you may Parry, Bind, and Gain Control with it, and a shield that Controls a foe's weapon opens a Zone for the sword in your other hand. Hardness matters only if you have the Shield Block talent: it is how much damage the shield swallows before the rest reaches you, and it applies to harm the shield can plausibly intercept, normally a Zoned Attack, never automatically to Pervasive gas, heat throughout an area, or a direct mental effect; a Blast stays an Evade or Endure Threat unless its own rule permits Guard with a raised shield. A tower shield gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised.")
     +tbl(["Shield","Gear bonus to Guard when Raised","Hardness","Load","Price","Note"],
       (R.shields||[]).map(s=>[s[0],s[1]?"+"+s[1]:"—",s[2],s[3],s[4],s[5]]))
     +`<h3>Weapons</h3>`
-    +P("A weapon gives you a damage die and a handful of Traits. It never touches your attack roll; that comes from your Melee or Ranged Proficiency and your Strike Attribute. <b>Damage on a Hit is your weapon's dice, plus your Might (on a Deliberate or Committed Strike), plus your weapon specialization</b> (+2 at Expert, +3 at Master, +4 at Legendary). You roll more dice as you level: <b>two at 4th, three at 8th, four at 12th, five at 16th</b>. A Quick Strike ❶ deals one die plus precision damage and nothing else. <b>Damage on a Graze is a single weapon die and nothing else</b>: no Might, no specialization, no extra dice from your level, no talent damage of any kind; then subtract the Protection of the Zone it landed on, to a minimum of 1.")
-    +`<div class="callout" style="border-color:#B8860B"><b>Traits that shape the Exchange.</b> <b>Parry</b>: a guard built for defense, +1 Gear bonus to Guard against melee Attacks while you wield it. <b>Agile</b>: light enough to bite on the way in; a Quick Strike ❶ with it may Critically Hit. <b>Flexible</b> (whips, flails): it cannot Parry, form a Bind, or be Bound, though you can still Guard with it. <b>Unwieldy [N]</b>: −2 Situation penalty to attack rolls against a target within N feet, no attacking with it while Grabbed, and a creature within N feet that you attack with it may Intercept you, as though you had entered its Reach. <b>Massive</b>: any Critical Hit Wounds, Exposed Zone or not; reserved for the largest creatures. <b>Unparryable</b>: cannot be answered with Parry and offers nothing to Bind; Guard still applies. <b>Deadly dX</b> is added after the doubling on a Critical Hit and is not itself doubled. <b>Thrown X</b> uses Might for the attack roll; <b>Ranged [N]</b> uses Agility; <b>Mechanical</b> adds no Might to damage.</div>`
+    +P("A weapon gives you a damage die and a handful of Traits. It never touches your attack roll; that comes from your Melee or Ranged Proficiency and your Strike Attribute. <b>Weapon dice follow your rank</b> in Melee or Ranged: a Deliberate or Committed Strike rolls <b>one weapon die at Trained, two at Expert, three at Master, and four at Legendary</b>, plus your Might where the Strike allows it, plus whatever the Attack or your Talents expressly add. There is no separate weapon specialization bonus; the rank progression is the dice. A Quick Strike ❶ rolls one weapon die whatever your rank. <b>A Graze deals the damage the Maneuver prints</b>: for a Deliberate or Committed Strike that is normally one weapon die rather than the rank's full dice, with precision or other extras only where a Maneuver or Talent expressly allows them; then subtract the Protection of the Zone it landed on, which alone never takes positive damage below 1.")
+    +`<div class="callout" style="border-color:#B8860B"><b>Traits that shape the Exchange.</b> <b>Parry</b>: a guard built for defense, +1 Gear bonus to Guard against melee Attacks while you wield it. <b>Agile</b>: light enough to bite on the way in; a Quick Strike ❶ with it may Critically Hit. <b>Flexible</b> (whips, flails): it cannot Parry, form a Bind, or be Bound, though you can still Guard with it. <b>Unwieldy [N]</b>: −2 Situation penalty to attack rolls against a target within N feet, no attacking with it while Grabbed, and a creature within N feet that you attack with it may Intercept you, as though you had entered its Reach. <b>Massive</b>: any Critical Hit Wounds, Exposed Zone or not; reserved for the largest creatures. <b>Unparryable</b>: cannot be answered with Parry and offers nothing to Bind; Guard still applies. <b>Deadly dX</b> is added after the doubling on a Critical Hit and is not itself doubled. <b>Armor-Piercing [Type]</b>: against a Zone protected by a listed armor Type, the struck Zone's Protection is reduced by up to the Strike's normal weapon dice, once per Strike. <b>Finesse</b> lets a melee Strike use Agility; <b>Thrown X</b> uses Might for the attack roll and Ranged proficiency; <b>Ranged [N]</b> uses Agility; <b>Mechanical</b> adds no Might to damage.</div>`
     +`<h4>Handling</h4>`
-    +P("All weapons are Intuitive, Practiced, or Technical. Intuitive weapons use your full Melee or Ranged Proficiency Bonus; Practiced and Technical weapons do not unless you are Familiar with them, which comes from the Weapon Familiarity talent (Drilled grants it free).")
+    +P("All weapons are Intuitive, Practiced, or Technical. Intuitive weapons use your full Melee or Ranged Proficiency Bonus; Practiced and Technical weapons do not unless you are Familiar with them, which comes from the Weapon Familiarity talent (the Weaponmaster Calling grants it free).")
     +tbl(["Handling","Meaning","If you lack Familiarity"],(R.handling||[]))
     +`<h4>Melee weapons</h4>`+tbl(["Weapon","Handling","Group","Damage","Reach (ft)","Traits","Price"],(R.weaponsMelee||[]))
     +`<h4>Ranged weapons</h4>`+tbl(["Weapon","Handling","Group","Damage","Range","Traits"],(R.weaponsRanged||[]))
-    +P("Reach assumes a weapon meant for a Medium-sized creature: Weapon Reach = normal Reach × the Weapon Size Factor (Tiny 1/3, Small 2/3, Medium 1, Large 1½, Huge 2, Gargantuan 3); when rounding down, treat 0 ft as Adjacent. You may wield a weapon of your Size or smaller, and a weapon retains its own damage, Reach, Traits, and hands required whoever holds it. <b>Total Reach = your Natural Reach + the weapon's Reach</b>, measured from the edge of your space to the edge of your target's.");
+    +`<h4>Weapon Size</h4>`
+    +P("Every weapon has a Size, the creature it was made for; the tables above are Medium unless stated. Reach assumes a Medium weapon: Weapon Reach = normal Reach × the Weapon Size Factor, and when rounding down, treat 0 ft as Adjacent. You may wield a weapon of your Size or smaller, never larger unless a Talent or creature ability says so, and a weapon retains its own damage, Reach, Traits, and hands required whoever holds it: a Large ogre with a Medium dagger has a Medium dagger's Reach, though the ogre's Natural Reach still lengthens its Total Reach. <b>Total Reach = your Natural Reach + the weapon's Reach</b>, measured from the edge of your space to the edge of your target's.")
+    +tbl(["Weapon Size","Weapon Size Factor"],(R.weaponSize||[]));
 
   if(wikiSec==="Traits") h+=`<div class="callout">A Trait is a word attached to an action, a Talent, an item, a spell, or another word that plugs it into a rule written somewhere else. Traits keep the game rules from repeating themselves: rather than writing "a foe answers this with a Defense, as an Exchange" on forty different things, each one simply has the Attack trait. <b>A Trait is never flavor.</b> If the word is in a Trait line, some rule cares about it.</div>
     <h3>Maneuver traits</h3>${tbl(["Trait","What it means"],(R.actionTraits||[]))}
@@ -2005,68 +2101,65 @@ function vWiki(){
     +tbl(["Activity","Duration","Effect"],notSheet(R.downtimeActions).map(r=>r.slice(0,3)));
 
   if(wikiSec==="Combat") h+=`
-    <div class="callout"><b>Every attack in Starwrought is an exchange</b>: a sword, a fireball, a poisoned cup, or a lie told to a guard. A fencing master would tell you the first question is not whether it landed but who came out of it holding the advantage. One roll answers three things at once: whether harm landed, how much, and who is out of position. The exchange runs in the same order every time: the Attack is declared, the Defense answers it, the die decides the Result, the Damage and effects land, and the Position of everyone involved is settled.</div>
+    <div class="callout"><b>Every attack in Starwrought is an exchange</b>: a sword, a fireball, a poisoned cup, or a lie told to a guard. A fencing master would tell you the first question is not whether it landed but who came out of it holding the advantage. One roll answers three things at once: whether harm landed, how much, and who is out of position. The exchange runs in the same order every time: the Attack is declared with its targets, the Defense answers it with any Reaction, the die decides the Result, the Damage and effects land, and the Position of everyone involved is settled.</div>
     ${tbl(["Step","Resolving an Exchange"],[
-      ["1. Declare the Attack","The attacker names the Maneuver, its target (which must be within the Attack's Reach or Range and legal to target), the weapon, spell, or effect involved, and how many actions are behind it, and checks any Requirements."],
-      ["2. Answer","Every threat is either a Blow, a Blast, a Blight, or a Beguilement. The defender chooses one of the two Defenses that answer it (unless the GM or a rule names one or makes one unavailable), and decides whether to spend an action on a Reaction, take a Posture, or do neither. Anything else that must be declared before the outcome is known is declared now."],
-      ["3. Roll","The player rolls: their Attack against the chosen Defense Threshold, or their chosen Defense against the creature's Attack Threshold, with all bonuses and penalties. How far the roll beat or missed the Threshold gives the Result: Critical Hit, Hit, Graze, or Miss."],
+      ["1. Declare the Attack","The attacker names the Maneuver, its target or targets (within the Attack's Reach or Range and legal to target), the weapon, spell, or effect involved, and how many actions are behind it, and checks any Requirements. A Threat and a Delivery come with the Attack: a Blow, Blast, Blight, or Beguilement; Zoned or Pervasive."],
+      ["2. Answer","The defender chooses one of the two Defenses the Threat permits (unless the GM or a rule names one), and whether to use a Reaction whose Trigger and Requirements are met, a ⓿↺ Posture among them. One answer per attack. Anything else that must be declared before the outcome is known is declared now."],
+      ["3. Roll","The player rolls: their Attack against the chosen Defense Threshold, or their chosen Defense against the creature's Attack Threshold, with every bonus and penalty that applies. How far the roll beat or missed the Threshold gives the Result: Critical Hit, Hit, Graze, or Miss."],
       ["4. Apply the Harm","Roll the damage or effect the Result calls for and apply it where the Result puts it, in the order of operations for damage, along with any conditions, Wounds, Persistent Damage, or forced movement the Attack created."],
-      ["5. Settle Position","If a Blow was Stopped, resolve the Bind, Control, ground given, and Exposure it causes."],
-      ["6. Resolve Triggered Abilities","A Reaction occurs at the moment its Trigger describes: one triggered by a Move happens before the movement, one triggered by a Hit after the Result is read."]])}
+      ["5. Settle Position","If a Blow was Stopped, resolve the Bind, Control, ground given, and Exposure it causes."]])}
+    ${P("<b>Reaction timing.</b> A Reaction occurs at the moment its Trigger describes, wherever that falls in the sequence: one triggered by a Move happens as the movement begins, one triggered by a Hit after the Result is read. Follow the Trigger's wording rather than waiting for the Exchange to end.")}
     <h3>1. The Attack</h3>
     ${P("Anything with the Attack trait is an Attack, and every Attack is answered with a Defense. A sword Strike is an Attack. So is a Grapple, a fireball, a dose of poison, and a lie. What they share is the check: <b>d20 + the Attribute the Attack uses + your Proficiency Bonus in the Constellation it belongs to + bonuses and penalties</b>, against the Threshold of the Defense that answers it. When a creature attacks, that number is its Attack Threshold, and the player rolls the Defense against it instead.")}
-    ${P("<b>Your Strike Attribute</b> is the higher of two numbers: the weapon's natural Attribute (Might; or Agility for a weapon with the Finesse trait, and for any ranged weapon other than a composite bow or a thrown weapon), or the Key Attribute of a Combat Style whose root you have and whose weapons you are wielding. Work it out once per weapon and write it on your sheet. Damage still adds Might where the Strike allows it.")}
+    ${P("<b>Strike Attribute and proficiency.</b> A melee Strike uses Might, or Agility if the weapon has the Finesse trait; a ranged Strike uses Agility, or Might if the weapon has the Thrown trait. Use Melee proficiency for melee Strikes and Ranged proficiency for ranged Strikes, thrown weapons included. A Strike made as part of another Maneuver still uses the appropriate proficiency; if that Maneuver's Key Attribute has a higher bonus than the Strike's normal Attribute, you may use it instead, provided you meet all of the Maneuver's Requirements. A character Trained in Melee (+3) with Agility +3 Strikes with a rapier at +6; a Maneuver that lets the Strike use a +4 Presence makes it +7.")}
     <h4>Strikes</h4>
-    ${P("An Attack made with a weapon, natural weapon, or unarmed blow is a Strike. A Strike is always a Blow, but not every Blow is a Strike: a Grapple, a Shove, a falling rock, and a conjured fist are Blows too. Strike names the Maneuver you take; Blow names the kind of threat the defender answers. A Strike uses the Strike Maneuver and your <b>Melee or Ranged Proficiency</b>. It can take one, two, or three of your actions, and the count is a statement about how much of yourself you are putting behind it.")}
+    ${P("An Attack made with a weapon, natural weapon, or unarmed blow is a Strike. A Strike is always a Blow, but not every Blow is a Strike: a Grapple, a Shove, a falling rock, and a conjured fist are Blows too. Strike names the Maneuver you take; Blow names the kind of threat the defender answers. The basic Strike Maneuver has three forms, and the count is a statement about how much of yourself you are putting behind it.")}
     ${tbl(["Strike","Body behind it","If it is Stopped"],[
-      ["<b>Quick ❶</b>","None. It is a probe: one weapon die plus any precision damage, and nothing else. No level dice, no specialization, no Might. It cannot Critically Hit (a natural 20 is a Hit), Protection applies to it in full even on an Exposed Zone, and it lands on the Torso.","Nothing. You recover your line at once. A Guard can bind a probe, but not Control it."],
-      ["<b>Deliberate ❷</b>","Full. All dice, specialization, and your Might. It can Critically Hit, it may be placed on an Exposed Zone, and on a Critical Hit you Expose a plausible Zone.","A Graze costs you nothing but the tempo. On a Miss, you are Exposed in a Zone of the defender's choice. A Parry that Stops it takes Control."],
-      ["<b>Committed ❸</b>","Everything. Prepared: resolves at your next Opportunity. All dice, specialization, and your Might. On any Hit, Expose a plausible Zone.","You are Exposed in a Zone of the defender's choice, Graze or Miss. A Parry that Stops it takes Control."]])}
+      ["<b>Quick ❶</b>","None. It is a probe: one weapon die whatever your rank, with precision or other extras only where a Maneuver or Talent allows them, and no Might. It cannot Critically Hit (a natural 20 is a Hit) unless the weapon is Agile, Protection applies to it in full even on an Exposed Zone, and it lands on the Torso.","Nothing. You recover your line at once. A Guard can bind a probe, but not Control it."],
+      ["<b>Deliberate ❷</b>","Full. The rank's weapon dice and your Might. It can Critically Hit, it may be placed on an Exposed Zone, and on a Critical Hit you Expose a plausible Zone.","A Graze costs you nothing but the tempo. On a Miss, you are Exposed in a Zone of the defender's choice. A Parry that Stops it may take Control."],
+      ["<b>Committed ❸</b>","Everything. Prepared: resolves at your next Opportunity. The rank's weapon dice and your Might. On any Hit, Expose a plausible Zone.","You are Exposed in a Zone of the defender's choice, Graze or Miss. A Parry that Stops it may take Control."]])}
     ${P("Only a Committed Strike has the <b>Weighted</b> trait: a Graze against it Exposes you. A Miss Exposes you regardless of commitment; you Missed outright, and everyone saw where your weapon ended up. A Parry can take Control of any Deliberate or Committed blade it Stops, because a committed blade is there to be bound. A Quick Strike is a probe: Stopped, it forms at most a neutral Bind. <b>Agile</b> weapons are light enough to bite on the way in: a Quick Strike with one may Critically Hit.")}
     ${P("<b>Other Attacks.</b> Athletics attacks (Grapple, Shove, Trip, Disarm, and Reposition) are Blows answered by Evade or Guard. They read the Result the same way; what a Hit or Graze does is written in each attack's own entry under Maneuvers. Blasts, Blights, and Beguilements come from spells, breath, traps, poisons, and deceptions. Each names its kind of threat, and its own text says what a Critical Hit, Hit, and Graze do wherever that differs from the defaults in The Result, below.")}
+    <h4>Threat and Delivery</h4>
+    ${P("Every Attack has a <b>Threat</b>, which says which two Defenses may answer it, and a damaging Attack has a <b>Delivery</b>, which says how its harm arrives. A <b>Zoned</b> Attack lands on one Zone: a struck Zone's Protection comes off its damage once, and an Exposed Zone can be chosen for it. A <b>Pervasive</b> Attack engulfs you: it ignores ordinary Protection and no Zone is struck. An Attack with no damage has no Delivery.")}
+    ${tbl(["Example","Threat and Delivery"],(R.damageDelivery||[]))}
     <h3>2. The Defense</h3>
-    ${P("Your four Defenses are Constellations like any other. You begin play Trained in two of them, your choice, and the other two are Untrained until you spend Defense Talent Points on them; an Untrained Defense still adds its Attribute, it simply has no Proficiency Bonus. Every threat is one of four kinds, and every kind is answered by two of the four Defenses. When a rule names a single Defense, roll that one; when it names a kind of threat, or names nothing, the defender chooses either of the two.")}
+    ${P("Your four Defenses are Constellations like any other. You begin play Trained in two of them, your choice, and the other two are Untrained until you spend Defense Talent Points on them; an Untrained Defense still adds its Attribute, it simply has no Proficiency Bonus. Every threat is one of four kinds, and every kind is answered by two of the four Defenses. When a rule names a single Defense, roll that one; when it names a kind of threat, or names nothing, the defender chooses either of the two. Guard meets a ranged Blow or an Attack with an area only with a shield Raised.")}
     ${threatTbl()}
-    ${P("<b>When a Defense is unavailable.</b> Evade is unavailable while you are Grabbed or Restrained. Guard is unavailable while you are unaware of the attack, or while you have nothing equipped to ward away the blow, and it answers a ranged Blow only with a shield Raised. Endure and Awareness are never unavailable. The GM may determine that others apply.")}
-    <h4>Answering an Attack</h4>
-    ${P("You may always roll one of the two Defenses that answer the threat, regardless of how many actions you have remaining. That roll is your <b>basic defense</b>: ordinary footwork, guard position, constitution, alertness. For the potential to do better, you use a <b>Reaction ↺</b>: a Maneuver performed the moment the attack is declared, paid for from the same pool of six actions you attack with. Each Reaction below is granted by a Talent, or, for Counter, by Expert rank in Melee; without it, the basic roll is all you have.")}
-    ${tbl(["Reaction ↺","Cost","Effect"],[
-      ["<b>Parry ❶↺</b>","1 action","(Guard Training) You Guard with a +2 Situation bonus. You need a rigid weapon, a shield, or a permitted natural weapon in hand. If you Stop a Deliberate or Committed Strike, you take Control of the attacking weapon rather than a neutral Bind, and you may at once make a Quick Strike ⓿ against its owner: the riposte. A Stopped Quick Strike gives only a neutral Bind."],
-      ["<b>Void ❶↺</b>","1 action","(Evade Training) You Evade with a +2 Situation bonus. If the attack is Stopped, you may Step in any direction."],
-      ["<b>Counter ❶↺</b>","1 action","(Melee Expert) Answer a melee Blow from a foe within your Reach with a Quick Strike of your own. No bonus to your Defense. Roll both; resolve both. Both can land."],
-      ["<b>Intercept ❶↺</b>","1 action","(Melee Training) When a foe Moves from outside your Total Reach to inside it, or Strikes you with an Unwieldy weapon from inside its Unwieldy distance, make a Quick Strike at the moment they enter. Once per foe per Move. A Wound stops their movement; anything less and it continues."],
-      ["<b>Posture ⓿↺</b>","A Zone","(Gained from specific Talents) A Situation bonus to the named Defense. Always results in a Zone of your choice becoming Exposed until the end of the round; Recenter does not clear it."]])}
-    ${P("Reactions are paid from the same six actions you attack with. A fighter who spends five actions attacking has one left to defend with; a fighter who holds three has answers. You may React before your first Opportunity of the round, and as often in a round as you can afford. At 0 actions you still roll your basic Defense, and you may still take a Posture. <b>A Reaction never triggers another Reaction</b>: you cannot Counter a Counter or an Intercept, and a fighter who is Countered rolls only their basic Defense against it.")}
-    ${P("<b>Postures.</b> A Posture is a Reaction ⓿↺ gained from Talents, typically from the Evade and Guard Constellations. Postures may only be used before you know whether the attack was successful. A Posture costs no actions, but it Exposes a Zone until the end of the round, whether or not the Posture works, and Recenter does not clear that Exposure. Its bonus is a Situation bonus, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack.")}
+    <h4>Answering an Attack: Reactions and Postures</h4>
+    ${P("Rolling a basic Defense costs no actions, even when your pool is empty. That roll is your <b>basic defense</b>: ordinary footwork, guard position, constitution, alertness. For the potential to do better, you use a <b>Reaction ↺</b> whose Trigger and Requirements are satisfied: a Maneuver performed the moment its Trigger occurs, paid for from the same pool of six actions you use for everything else, and usable as often in a round as you can afford. Every Reaction is granted by a Talent; without it, the basic roll is all you have. A fighter who spends five actions attacking has one left to defend with; a fighter who holds three has answers. <b>A Reaction never triggers another Reaction</b>, and when an Attack is made as part of a Reaction, its defender uses only their basic Defense.")}
+    ${tbl(["Reaction ↺","Granted by • Defense","Effect"],(R.postures||[]).map(r=>[`<b>${r[0]}</b>`,r[1],r[2]]))}
+    ${P("<b>Postures.</b> A Posture is a ⓿↺ Reaction granted by a Talent, commonly from Evade or Guard. It costs no actions but carries the drawback its description names, whether or not it improves the outcome: usually a Zone of your choice Exposed until the end of the round, which Recenter does not clear. At 0 actions you still roll your basic Defense and may still use a ⓿↺ Reaction you qualify for. You answer an attack with one Reaction, and a Posture is one.")}
     <h3>3. The Result</h3>
-    ${P("The player rolls, so the same margin is read from whichever side of the exchange the player is on. The table gives both readings and one Result.")}
+    ${P("The player rolls, so the same margin is read from whichever side of the exchange the player is on. The table gives both readings and one Result. An Attack that Grazes or Misses is <b>Stopped</b>; a Stopped Attack can still deal Graze damage or cause other effects. For a Flare, use the player's final degree of success and the training their check demonstrated.")}
     ${tbl(["Attacker's roll vs the Defense Threshold","Defender's roll vs the Attack Threshold","Result"],[
       ["Beat it by 10+","Miss it by 10+","<b>Critical Hit.</b> Double damage, or the effect's critical result, plus critical effects. For a Blow, the attacker chooses the Zone that is struck."],
       ["Meet or beat it","Miss it by less than 10","<b>Hit.</b> Full damage or effect. For a Blow, it lands on the Torso, or on an Exposed Zone the attacker chooses."],
-      ["Miss it by less than 10","Meet or beat it","<b>Graze.</b> Stopped, but partial damage: one weapon die, or one round of effect. A Blow deals one weapon die to a Zone the defender chooses; a Blast deals one of its dice; a Blight or Beguilement takes hold only until the end of the round. Position changes in the defender's favor (see 5. Position)."],
+      ["Miss it by less than 10","Meet or beat it","<b>Graze.</b> Stopped, but partial damage: apply the reduced damage or lesser effects the Attack specifies, and some Attacks have no effect on a Graze. A Strike deals one weapon die to a Zone the defender chooses; a Focused Cast deals one of its dice, a Quick Cast normally nothing. Position changes in the defender's favor (see 5. Position)."],
       ["Miss it by 10+","Beat it by 10+","<b>Miss.</b> Stopped, no damage. For a Blow, the attacker is Exposed in a Zone of the defender's choice."],
       ["Natural 20 / Natural 1","Natural 1 / Natural 20","Step the result one degree up / down."]])}
     <h4>Reading the Result for a Blow</h4>
     ${tbl(["Result","What happens"],[
-      ["<b>Critical Hit</b>","The attacker chooses the Zone. Roll all dice and add all damage modifiers, then double it. Apply the Zone's critical effect (see Position), then any critical effect of the weapon or Talent. A Critical Hit on an Exposed Zone with a Deliberate or Committed Strike Wounds it."],
+      ["<b>Critical Hit</b>","The attacker chooses the Zone. Roll all dice and add all damage modifiers, subtract the Zone's Protection, then double what is left. Apply the Zone's critical effect (see Position), then any critical effect of the weapon or Talent. A Critical Hit with a Deliberate or Committed Strike on a Zone that was already Exposed Wounds it."],
       ["<b>Hit</b>","Full damage to the Torso, or to an Exposed Zone of the attacker's choice if the Strike was Deliberate or Committed. Roll and add all damage modifiers."],
-      ["<b>Graze</b>","The defender chooses the Zone the blow skated across, and takes one weapon die of damage, less that Zone's Protection. Position changes in the defender's favor: if they Guarded with a rigid weapon or shield, the two weapons are now in a neutral Bind (Control, if they Parried a Deliberate or Committed Strike; a Quick Strike can only be bound). If they Evaded, they give 3 feet of ground directly away from the attacker (a Step of their own choosing, if they Voided). If the Strike was Committed ❸, the attacker is Exposed in a Zone of the defender's choice."],
+      ["<b>Graze</b>","The defender chooses the Zone the blow skated across, and takes one weapon die of damage, less that Zone's Protection. Position changes in the defender's favor: if they Guarded with a rigid weapon or shield, the two weapons are now in a neutral Bind (a Parry that Stopped a Deliberate or Committed Strike may at once attempt Gain Control; a Quick Strike can only be bound). If they Evaded, they give 3 feet of ground directly away from the attacker (a Step of their own choosing, if they Sidestepped). If the Strike was Committed ❸, the attacker is Exposed in a Zone of the defender's choice."],
       ["<b>Miss</b>","Stopped, no damage. The attacker is Exposed in a Zone of the defender's choice, whatever the Strike was. If the defender Guarded with a rigid weapon or shield, they take Control of the attacking weapon. If the defender Evaded, they may Step. A Miss may also trigger Reactions from certain Talents."]])}
     <h3>4. Damage and Effects</h3>
-    <div class="callout"><b>Damage = [Dice + Modifiers] − Protection.</b> Protection applies to any damage that lands on a Zone; Resistance, Weakness, and Immunity apply to everything.<br>
-      <b>Deliberate or Committed Hit = [Weapon Dice + Specialization + Might + Bonuses &amp; Penalties] − Protection</b><br>
-      <b>Quick Strike Hit = One Weapon Die + Precision − Protection</b><br>
-      <b>Graze = One Weapon Die − Protection (minimum 1)</b></div>
-    ${P("A Deliberate or Committed Strike deals its weapon dice (more of them as you gain levels: two at 4th, three at 8th, four at 12th, five at 16th), plus weapon specialization, plus your Might, plus any bonuses or penalties. A Quick Strike is a probe: on a Hit it deals one weapon die plus any precision damage, and nothing else. A Graze deals one weapon die and nothing else: no specialization, no level dice, no precision, no talent damage. Protection is subtracted from each, though against a Graze it cannot reduce the damage below 1.")}
-    ${P("<b>Precision damage</b> is extra damage that comes from where you put the blow rather than how hard you swing it. It is added to a Hit and to a Critical Hit, and doubled along with everything else on a Critical Hit. It is never added to a Graze. It is part of the same instance of damage as the Strike that carried it, so the Zone's Protection is subtracted once from the total, not once from each part. Some creatures with strange anatomy may be resistant or immune to it.")}
-    ${P("<b>Persistent damage</b> is damage that is still happening: a wound that will not close, a fire that will not go out, a venom already in the blood. It is always written as a type and an amount, such as 1d4 persistent bleed. You take it at the end of each round, rolling its dice fresh each time. Protection does not apply: armor turns a blow aside; it does nothing about a blow that already landed. Immediately after you take it, roll an Endure check against <b>10 + the amount you just took</b>; on a success it ends. An adjacent ally may spend ❶ to help (smothering the flames, packing the wound), for a +2 Situation bonus to that Endure check. Two instances of the same type do not stack; keep the higher. Different types run separately. It keeps working while you are unconscious and while you are Dying.")}
+    <div class="callout"><b>Damage = [Dice + Modifiers] − Protection, once, for a Zoned Attack.</b> Immunity, Resistance, and Weakness apply to everything; Protection to what lands on a Zone.<br>
+      <b>Deliberate or Committed Hit = [the rank's Weapon Dice + Might + Bonuses &amp; Penalties] − Protection</b><br>
+      <b>Quick Strike Hit = One Weapon Die (+ Precision where allowed) − Protection</b><br>
+      <b>Graze = the damage the Maneuver prints (one Weapon Die for a Strike) − Protection</b><br>
+      <b>Spellwork = the discipline's Damage Dice of the spell's die and type; no Might</b></div>
+    ${P("<b>Weapon dice follow your rank.</b> On a Hit with a Deliberate or Committed Strike, roll one weapon die at Trained, two at Expert, three at Master, and four at Legendary, by your Melee or Ranged rank, then add Might when applicable and any additional effects the Attack or your Talents expressly grant; the rank progression already includes the extra dice, so there is no weapon specialization bonus on top. A Quick Strike rolls one weapon die regardless of rank. On a Graze, use the damage the Maneuver prints: a Deliberate or Committed Strike normally rolls one weapon die rather than its full dice, with precision or other effects only where a Maneuver or Talent allows them; then apply Protection normally. <b>Spellwork</b> takes its Damage Dice from the spell's discipline alone (Trained 1, Expert 2, Master 3, Legendary 4), of the die and type the spell names; a Quick Cast rolls one. Every offensive spell is at will once learned. An Area Attack does not automatically double its damage on a Critical Hit; its own text says what a Critical Hit and a Graze do.")}
+    ${P("<b>Precision damage</b> comes from placing an attack accurately rather than swinging it hard. Add it only when its requirements are satisfied, and only where the Maneuver or a Talent allows it; it is part of the same instance of damage as the Strike that carried it, so the Zone's Protection is subtracted once from the total and it is doubled with the rest on a Critical Hit. Creatures with unusual anatomy may have Resistance or Immunity to it.")}
+    ${P("<b>Persistent damage</b> is damage that is still happening: a wound that will not close, a fire that will not go out, a venom already in the blood. It is always written as a type and an amount, such as 1d4 persistent bleed. You take it at the end of each round, rolling its dice fresh each time. Protection does not apply: armor turns a blow aside; it does nothing about a blow that already landed. Immediately after you take it, roll an Endure check against <b>10 + the amount you just took</b>; on a success it ends. An adjacent ally may spend ❶ to help (smothering the flames, packing the wound), for a +2 Situation bonus to that Endure check. Two instances of the same type do not stack; keep the higher. Different types run separately. It keeps working while you are unconscious and while you are Dying, and it is not a Hit: it Wounds no one, Spent or not.")}
     <h4>Protection</h4>
-    ${P("Protection is armor, and armor decides how much of a blow your body actually feels. It never makes you harder to hit. Each Zone has its own Protection, and that number subtracts from every instance of damage that lands on that Zone, a Graze included. <b>Protection alone can never reduce damage below 1.</b> Something always gets through. Resistance and Immunity can take it to 0; armor cannot.")}
-    ${tbl(["Step","Finding a Zone's Protection"],(R.protectionSteps||[]))}
-    ${P("<b>Resistance N</b> reduces each instance of damage of the named type by N, and unlike Protection can take it all the way to 0. <b>Weakness N</b> increases each instance of damage of the named type by N; a single point is enough, so one point of fire against weakness 5 (fire) deals 6. <b>Immunity</b> means that kind of damage or effect does nothing whatsoever; it is checked before Weakness and Resistance, and it overrides the rule that at least 1 damage always gets through.")}
+    ${P("Protection is armor, and armor decides how much of a blow your body actually feels. It never makes you harder to hit and never changes the Result. Each Zone has its own Protection, and that number subtracts once from a Zoned Attack's damage on that Zone, a Graze included. <b>Protection alone can never reduce positive damage below 1.</b> Something always gets through. Resistance and Immunity can take it to 0; armor cannot. A Pervasive Attack and Persistent Damage ignore it.")}
+    ${tbl(["Rule","Protection"],(R.protectionSteps||[]))}
+    ${P("<b>Resistance N</b> reduces each instance of damage of the named type by N, once per damage type per instance, and unlike Protection can take it all the way to 0. <b>Weakness N</b> increases each instance of damage of the named type by N, provided that type still deals damage after Resistance; independent sources of Weakness add up. <b>Immunity</b> means that kind of damage or effect does nothing whatsoever; it is checked first, and it overrides the rule that at least 1 damage always gets through.")}
     <h4>The order of operations</h4>
-    ${tbl(["Step","The order of operations for damage"],(R.damageOrder||[]))}
-    ${P("Work top to bottom, after rolling your damage dice but before adding them up. Weakness is added <i>before</i> Resistance is subtracted, so a creature with both weakness 5 (fire) and resistance 5 (fire) simply takes normal fire damage. A weapon's <b>Deadly</b> die lands at the same seam: it is a critical effect of the weapon, so it is added after the doubling in step 5 and before Protection is subtracted in step 6.")}
+    ${tbl(["Step","Damage resolution"],(R.damageOrder||[]))}
+    ${P("Work top to bottom: check Immunity, total each damage type, subtract Resistance, add Weakness to what still deals damage, take a Zoned Attack's Protection off once, double on a Critical Hit that calls for it, then apply what is left to Vigor. Resistance comes <i>before</i> Weakness, so fire that Resistance has taken to 0 is not raised again by a Weakness to fire. A weapon's <b>Deadly</b> die is a critical effect of the weapon, so it is added after the doubling in step 6 and is not itself doubled. Protection is subtracted before the doubling, so a Critical Hit doubles what got through the armor, not the whole roll.")}
     <h3>5. Position</h3>
     ${P("Every Blow leaves the fighters somewhere. Three things track it: which Zones are Exposed, whether two weapons are in a Bind, and who Controls it.")}
     <h4>Zones</h4>
@@ -2076,7 +2169,7 @@ function vWiki(){
     ${P("Maneuvers create openings too: if the target's Legs are already Exposed, Trip increases its degree of success by one, and Disarm does the same against Exposed Arms.")}
     <h4>The Bind</h4>
     ${P("When a rigid weapon or shield stops a melee weapon or natural attack, the two are in contact: a <b>Bind</b>. Track one relationship per implement, and name the two implements: longsword and spear, or shield over bite. A Bind is <b>neutral</b> when neither fighter has the line, or <b>Controlled</b> when one does. Only Guard can form a Bind, and only with a rigid weapon, a shield, or a natural weapon its profile allows. A bare hand or a Flexible weapon can Guard, but cannot Bind.")}
-    ${P("A Bind forms when a Guard Stops an attack, or when a Gain Control action Grazes. Control is taken when a Parry Stops a Deliberate or Committed Strike, when a Guard answers a Miss, or when Gain Control succeeds. A Quick Strike is a probe: Stopped, it can be bound but never Controlled.")}
+    ${P("A Bind forms when a rigid weapon or shield Guards against a melee Attack that Grazes or Misses, provided the implements involved can Bind, or when a Gain Control action Grazes. Control is taken when a Guard answers a Miss, or when Gain Control succeeds; a Parry that Stops a Deliberate or Committed Strike may attempt Gain Control at once, and with Riposte may make a Quick Strike instead. A Quick Strike is a probe: Stopped, it can be bound but never Controlled.")}
     ${tbl(["Gain Control ❶ (Attack)","Roll Melee against the target's Guard. Evade cannot answer a bind; slipping it is what Step is for."],[
       ["Requirements","A rigid weapon, shield, or permitted natural weapon in hand; the target's weapon or natural attack is within the longer of your two Total Reaches; the target is no more than one Size larger than you."],
       ["Critical Success","You Control the weapon, and the target is Off-Guard until its next Opportunity."],
@@ -2087,21 +2180,22 @@ function vWiki(){
     ${P("<b>A Bind ends</b> when a Strike between the two actors resolves, when either partner Moves or Steps (Close excepted), when either actor Recenters, when the Controlling actor is attacked by a third party, or when either implement is dropped or Disarmed. Controlled is not Grappled or Restrained: you are redirecting a weapon, not holding a body. The Controlled actor may still Step, Move, or attack with something else, and attacking with an uncontrolled weapon or limb ends the Bind before the roll. <b>Recenter ❶</b> clears every Exposed Zone on you (except one Exposed by a Posture) and ends any Bind you are in. Being Controlled costs you the same action that being Exposed does; that is the tempo price of a lost line, and the reason Gain Control is worth an action.")}
     ${P("<b>Size.</b> An actor one Size larger or smaller Binds normally. Two or more Sizes apart, the smaller actor gains only momentary Control: it lasts until its first benefit is used or until the end of the Controller's next Opportunity, whichever comes first, and the larger creature Moves without first breaking the Bind. You can redirect a dragon's claw, but you cannot hold it. <b>What cannot Bind:</b> Flexible weapons (whips and flails), bare hands without a Talent, areas, spells, and attacks with the Unparryable trait. Incorporeal and amorphous attackers offer nothing to bind. Measure, footwork, and commitment still apply to all of them.")}
     <h4>Allies in the Exchange</h4>
-    ${P("<b>Support.</b> Each other conscious ally whose Total Reach includes your target grants you a +1 Situation bonus to melee attacks against it, to a maximum of +2. Bodies behind a blocked passage grant nothing; only a creature that could actually reach the target counts. Support is a Situation bonus, so it does not stack with Control. <b>Third parties.</b> A Bind is between two implements. Your ally striking the opponent you Control does not break your Bind; that is the point of holding the line. An enemy striking you does.")}
+    ${P("<b>Support.</b> Each conscious ally other than you whose Total Reach includes your target grants you a +1 Situation bonus to melee Attacks against it, to a maximum Support bonus of +4. Bodies behind a blocked passage grant nothing; only a creature that could actually reach the target counts. Each ally is an independent circumstance, so Support adds to the other bonuses on the roll. <b>Third parties.</b> A Bind is between two implements. Your ally striking the opponent you Control does not break your Bind; that is the point of holding the line. An enemy striking you does.")}
     <h3>Measure, and what armor costs in a fight</h3>
     ${P("<b>Measure</b> is the gap between you and your foe: the shortest gap between the edges of your spaces, rounded up to the next foot; adjacent is 0. <b>Out of Measure</b>: neither of you can reach the other; closing costs actions, and the one who closes typically takes the risk. <b>Long Measure</b>: only the longer weapon reaches; the spearman wants to stay here. <b>Close Measure</b>: both weapons reach, and inside a weapon's Unwieldy distance it is crowded: the weapon takes its penalty and the crowded foe may Intercept every Strike made with it; the dagger wants to be here. <b>Entering Measure is dangerous.</b> When you Move from outside a foe's Total Reach to inside it, that foe may Intercept you, striking at the moment you enter. A Step never provokes an Intercept. A Rush always does, and you are Off-Guard against it. Withdrawing out of a foe's Reach provokes nothing unless a Talent says otherwise; leaving is the safe direction.")}
-    ${P("<b>Wind.</b> If your Load Strain is at least 1 and your Endure Threshold is less than 10 + your Load Strain, then at the end of every round while in an encounter, you roll Endure against <b>10 + Load Strain</b>; on a failure your Fatigued rises by 1 (a −N Condition penalty to Evade, Guard, and attack rolls, to a maximum of 3; it ends after ten minutes of rest). A fighter whose Endure Threshold meets 10 + Load Strain never rolls for Wind. <b>Sight and hearing.</b> A closed helm gives a −2 Situation penalty to Awareness checks, your Awareness Threshold, and Initiative; an open helm, −1. <b>Speed at the margin.</b> Your Rush and Leap distances are reduced by your Load Strain in feet.")}`;
+    ${P("<b>Wind.</b> If your Load Strain is at least 1, then at the end of every round while in an encounter, you roll Endure against <b>10 + Load Strain</b>; on a failure your Fatigued rises by 1, on a critical failure by 2 (Fatigued N is a −N Condition penalty to your four Defenses and your attack rolls, to a maximum of 3; it ends after ten minutes of rest). There is no exemption: a high Endure Threshold makes the roll easy, never unnecessary. <b>Sight.</b> A Visored helm lowered is a −1 Gear penalty to Awareness and Initiative; raised, that Zone's Protection is 1 lower instead. <b>Speed at the margin.</b> Your Rush and Leap distances are reduced by your Load Strain in feet, and Stealth, Acrobatics, Climb, and Swim checks take it as a Condition penalty.")}`;
 
   if(wikiSec==="Movement") h+=`
     <div class="callout"><b>Grid squares are 1 foot</b>, not the usual 5. That gives far more freedom for creatures of different sizes and weapons of different lengths. Diagonals are measured exactly: moving diagonally across a square costs about 1.4 feet, and a VTT measures it precisely.</div>
-    ${P("<b>Speed</b> is how far you move with a single Move ❶, in feet. A round is about six seconds and holds six actions, so a Speed of 6 is a brisk walk for a fighter who spends every action moving and measured footwork for one who does not. <b>A Human's Speed is 6.</b> Speed is set by your Ancestry (and some Talents). A <b>Step ❶</b> is a move up to half your Speed and does not provoke an Intercept; a <b>Rush ❸</b> covers five times your Speed in a straight line, less your Load Strain in feet, for a fighter who wants ground more than safety: no Reactions until your next Opportunity, and Off-Guard against any Intercept made during it.")}
+    ${P("<b>Speed</b> is how far you move with a single Move ❶, in feet. A round is about six seconds and holds six actions, so a Speed of 6 is a brisk walk for a fighter who spends every action moving and measured footwork for one who does not. <b>A Human's Speed is 6.</b> Speed is set by your Ancestry (and adjusted by some Talents and other abilities). A <b>Step ❶</b> is a move up to half your Speed and does not provoke an Intercept; a <b>Rush ❷</b> covers three times your Speed in a straight line, less your Load Strain in feet, for a fighter who wants ground more than safety: you are Off-Guard until your next Opportunity, and a Rush always provokes an Intercept.")}
     ${tbl(["Motion Maneuver","Distance"],[
       ["Move ❶","up to your Speed; crossing into a foe's Total Reach may provoke an Intercept"],
       ["Step ❶","up to half your Speed; never provokes; not into difficult terrain; ends any Bind (Close excepted)"],
-      ["Rush ❸","5 × Speed in a straight line, less Load Strain in feet"],
-      ["Leap ❶","10 feet horizontally (less Load Strain in feet) or 3 feet vertically, without a check; longer or higher is an Athletics check"],
-      ["Crawl ❶","3 feet, while prone"],
-      ["Climb ❶ / Swim ❶","an Athletics check: half your Speed on a success, your full Speed on a critical success; a critical failure falls or sinks"]])}
+      ["Rush ❷","3 × Speed in a straight line, less Load Strain in feet; Off-Guard until your next Opportunity"],
+      ["Leap ❶ to ❸","no check needed: ❶ Quick Jump, up to half your Speed; ❷ Standing Long Jump, up to your Speed; ❸ Running Long Jump, move at least half your Speed and leap up to 1.5 × your Speed in the same direction; each less your Load Strain in feet. Longer or higher is an Athletics check, counted as part of the Leap"],
+      ["Crawl ❶","up to half your Speed, while prone"],
+      ["Stand ❶","get up from prone"],
+      ["Climb ❶ / Swim ❶","an Athletics check against a Threshold the GM sets: half your Speed on a success, your full Speed on a critical success; a critical failure falls or sinks"]])}
     <h3>Size, space, and reach</h3>
     ${tbl(["Size","Space / token","Natural Reach","Effect on Evade & Guard"],(R.sizes||[]))}
     ${P("<b>Adjacent</b> means your space and theirs are touching, with no gap at all: 0 feet between them. Touching at a corner counts. <b>Total Reach = your Natural Reach + your weapon's Reach</b>, measured from the edge of your space to the edge of your target's. A weapon does not change Size when a differently-sized creature picks it up: a Large ogre wielding a Medium dagger is wielding a Medium dagger, though the ogre's greater Natural Reach still increases its Total Reach.")}
@@ -2140,7 +2234,7 @@ function vWiki(){
   if(wikiSec==="Going Down") h+=`
     <div class="callout"><b>Vigor is not meat.</b> It is what you have left in you: wind, focus, the strength to keep your guard where it belongs, and the sort of luck that turns a killing blow into a shallow one. Losing Vigor is not collecting Wounds. It is running out of the things that keep Wounds from happening. Wounds are the meat, and they are tracked separately, by Zone. This is why a character at 3 Vigor is not carved apart: they are winded, sloppy, and one bad moment from finished. It is also why Vigor comes back with a night's sleep, and why a tenth-level character has more of it without having thicker skin.</div>
     <h3>Your Vigor</h3>
-    ${P("At 1st level: <b>your Ancestry's Vigor + Endure Bonus + your first Calling's Opening Vigor + 10</b>. At every level thereafter: your Ancestry's Vigor + Endure Bonus. The Endure Bonus is your conditioning, from Endure Training: nothing at Trained, 1 at Expert rank in Endure, 2 at Master, 3 at Legendary, read from your rank as it stands. Only your first Calling adds its Opening Vigor, however many you open later. A full night's rest restores Vigor equal to your <b>level × your Presence</b> (if positive; otherwise Vigor equal to your level).")}
+    ${P("At 1st level: <b>your Ancestry's Vigor + your first Calling's Opening Vigor + 10</b>. At every level thereafter: your Ancestry's Vigor. (The book's formula still names an Endure Bonus; Endure Training grants none since v4.21, its clause being Load Strain relief, so it is 0.) Only your first Calling adds its Opening Vigor, however many you open later. <b>Ten minutes</b> spent relaxing and refocusing restores Vigor equal to your <b>level × your Presence</b> (if positive). <b>A full night's rest restores all of your Vigor.</b> Vigor returns quickly because it is not meat; a tenth-level character has more of it without having thicker skin.")}
     <h3>Temporary Vigor</h3>
     ${P("A buffer laid over your Vigor. Damage comes out of it first, and only what is left over reaches your real Vigor. It is not healing: anything that restores Vigor restores your own, never these. You can only have one pool at a time; if an effect would give you a second, keep whichever pool is larger and discard the other. It lasts until it is spent or until the effect that granted it ends, whichever comes first. Losing your last point of Temporary Vigor is <i>not</i> the same as being reduced to 0 Vigor: it does not make you Spent. Protection applies first, because Protection reduces the damage itself.")}
     <h3>Reaching 0 Vigor: Spent</h3>
@@ -2162,17 +2256,19 @@ function vWiki(){
   if(wikiSec==="Progression") h+=`
     <div class="callout"><b>The Flare loop:</b> ${UNIFLARE}</div>
     <h3>Milestones & levels</h3>
-    ${P("Every level is four Milestones. Milestones 1–3 grant 1 Milestone Talent Point apiece, spent <b>immediately</b> in a Flared Constellation. The 4th is the level-up: Vigor rises, new Proficiency Ranks may unlock, and you gain a <b>Comet</b>, a Talent Point that answers to no Constellation. Spend it immediately, anywhere, Flared or not, opened or not. <b>No Talent Point may ever be voluntarily banked.</b> If a Milestone point arrives with nothing Flared, it becomes a <b>Deferred Talent Point</b>, spent the instant something Flares. Level never touches the die: no roll or Threshold ticks up because you levelled, only because a rank did.")}
+    ${P("Every level is four Milestones. Milestones 1–3 grant 1 Milestone Talent Point apiece, spent <b>immediately</b> on a Talent eligible through an applicable Flare. The 4th is the level-up: Vigor rises, new Proficiency Ranks may unlock, and you gain a <b>Comet</b>, a Talent Point that answers to no Constellation. Spend it immediately, anywhere, Flared or not, opened or not, prerequisites met. <b>No Talent Point may ever be voluntarily banked.</b> <b>Milestone conversion:</b> if no Talent you qualify for is eligible through any of your Flares, the Milestone point becomes a Comet instead. Level never touches the die: no roll or Threshold ticks up because you levelled, only because a rank did.")}
+    <h3>Flares and training</h3>
+    ${P("A Flare records the <b>particular training</b> demonstrated by the event that produced it, such as Dueling or Flamecraft. A Milestone Talent Point can be spent only on a Talent relevant to that training, subject to GM approval. Sharing a Proficiency Rank does not make unrelated Talents eligible: a critical success with a Dueling technique Flares Dueling, not Shield Fighting, though a Talent bought through that Flare still counts toward your Melee rank. The relevant training need not already be open to you: a consequential check made Untrained can Flare a Constellation and let the point buy its root.")}
     <h3>Level-up checklist</h3>
-    ${P("+Vigor equal to Ancestry Vigor + Endure Bonus. Check the rank gates (Expert at level 5, Master at 10, Legendary at 15) and spend your Comet. Recompute Attributes if points moved; new weapon dice at 4th, 8th, 12th, and 16th (2 / 3 / 4 / 5 dice).")}
+    ${P("+Vigor equal to your Ancestry Vigor. Check the rank gates (Expert at level 5, Master at 10, Legendary at 15) and spend your Comet. Recompute Attributes if points moved. A new rank in Melee or Ranged is another weapon die on a Deliberate or Committed Strike (1 / 2 / 3 / 4 at Trained / Expert / Master / Legendary), and a new rank in a magical discipline another Damage Die.")}
     <h3>Also Flares</h3>
-    ${P("<b>GM awards</b> for feats no die roll captured: carrying the survivor out of the fire Flares Athletics, no check required. <b>Downtime training</b>: a week with a teacher, rival, or manual Flares that constellation. This is the deliberate path to growth you haven't stumbled into at the table.")}
+    ${P("<b>GM awards</b> for meaningful achievements no die roll captured: carrying the survivor out of the fire Flares Athletics, no check required. <b>Downtime training</b>: a week with a teacher, rival, or manual (the Train Activity) records a Flare for the training pursued. This is the deliberate path to growth you haven't stumbled into at the table.")}
     <h3>Retraining</h3>
     ${P("A <b>month</b> of Downtime moves 1 already spent Talent Point anywhere legal. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or one that would drop your Proficiency Rank. Characters are maps of what you've done, but maps get redrawn.")}`;
 
   if(wikiSec==="Thresholds") h+=`<div class="callout">A <b>Threshold</b> is the number a check is measured against: ten plus the modifier of the roll it stands in for, so <b>10 + attribute + proficiency</b>, with the same bonuses and penalties. Other games use Armor Class or Difficulty Class in a similar manner. A Guard of +7 is a Guard Threshold of 17. The GM sets them; you roll against them.</div>`
     +P("<b>Creatures carry Thresholds instead of rolling</b>: an Initiative Threshold, an Attack Threshold for each attack (the check it would have rolled, with a 10 in place of the die), and a Threshold for each Defense. When a creature attacks, the player rolls the Defense against its Attack Threshold; when the player attacks, they roll against the creature's Defense Threshold. The same margin is read from whichever side the player is on.")
-    +P("<b>Tasks with no creature behind them</b> (a lock, a cliff, a lie to a guard) take a Threshold the GM sets for the difficulty of the thing itself. Some are printed with their rules: Aid and Grab an Edge roll against 15; Rally and Command the Field against 14; Wind against 10 + Load Strain (at the end of every round, with Load Strain of at least 1; no roll at all when your Endure Threshold already meets it); Persistent Damage against 10 + the amount just taken; a Recovery check against 10 + Dying + Wounds carried; treating a Wound against 10 + Wounds carried. Level never enters a Threshold, so a task does not get harder because you got better; the things you have done get easier.")
+    +P("<b>Tasks with no creature behind them</b> (a lock, a cliff, a lie to a guard) take a Threshold the GM sets for the difficulty of the thing itself. Some are printed with their rules: Aid and Grab an Edge roll against 15; Rally and Command the Field against 14; Wind against 10 + Load Strain (at the end of every round, with Load Strain of at least 1; a critical failure is Fatigued +2); Persistent Damage against 10 + the amount just taken; a Recovery check against 10 + Dying + Wounds carried; treating a Wound against 10 + Wounds carried. Level never enters a Threshold, so a task does not get harder because you got better; the things you have done get easier.")
     +((R.thresholdTable||[]).length?tbl(["Task level","Threshold"],R.thresholdTable):"");
   return h;
 }
@@ -2182,12 +2278,13 @@ function bind(m){
   m.querySelectorAll(".wizsky svg[data-skykey]").forEach(sv=>skyNav(sv, sv.dataset.skykey));
   m.querySelectorAll("[data-a]").forEach(b=>b.addEventListener("click",()=>act(b.dataset.a)));
   m.querySelectorAll("[data-open]").forEach(c=>c.addEventListener("click",()=>{activeId=c.dataset.open;localStorage.setItem("sparks-active",activeId);render();}));
-  m.querySelectorAll("[data-weapon]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.weapon=c.dataset.weapon;wiz.err="";render();}));
+  m.querySelectorAll("[data-combat]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.combat=c.dataset.combat;wiz.err="";render();}));
   m.querySelectorAll("[data-anc]").forEach(c=>c.addEventListener("click",()=>{wiz.ch.ancestry=c.dataset.anc;wiz.picks.her=null;wiz.picks.tg={};wiz.err="";render();}));
   m.querySelectorAll("[data-her]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.her=c.dataset.her;wiz.picks.tg={};wiz.err="";render();}));
   m.querySelectorAll("[data-cul]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.culName=c.dataset.cul;wiz.err="";render();}));
   m.querySelectorAll("[data-bg]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.bg=c.dataset.bg;wiz.picks.bgA=[];wiz.picks.bgB=[];wiz.picks.bgLore=[];wiz.err="";render();}));
-  m.querySelectorAll("[data-cal]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.calName=c.dataset.cal;wiz.picks.calling=[];wiz.picks.calSkill=[];wiz.err="";render();}));
+  m.querySelectorAll("[data-cal]").forEach(c=>c.addEventListener("click",()=>{wiz.picks.calName=c.dataset.cal;wiz.picks.calling=[];wiz.picks.calSkill=[];
+    if(!combatOptions(c.dataset.cal).includes(wiz.picks.combat)) wiz.picks.combat=null; wiz.err="";render();}));
   bindTips(m);
   m.querySelectorAll("[data-skyf]").forEach(b=>b.addEventListener("click",()=>{wiz.skyFocus=wiz.skyFocus||{};wiz.skyFocus[b.dataset.skyf]=b.dataset.skyt;render();}));
   m.querySelectorAll("[data-skytog]").forEach(b=>b.addEventListener("click",()=>{wiz.skyOpen=wiz.skyOpen||{};const k=b.dataset.skytog;wiz.skyOpen[k]=!(wiz.skyOpen[k]!==false);render();}));
@@ -2226,9 +2323,11 @@ function bind(m){
     if(n===4){ if(c.milestones>=3) act("levelup"); return; }
     if(c.milestones>=n){ c.milestones=n-1; persist(); return; }
     const flared=Object.keys(c.sparks).filter(t2=>c.sparks[t2]);
-    if(!flared.length){ alert("No constellation is Flared. Flare one first (a consequential crit, a GM award, or a week's training); milestone points are spent the moment you receive them."); return; }
+    // v4.21 (ch.7, Milestone Conversion): with no Talent eligible through any Flare, the Milestone point becomes a Comet
+    if(!flared.length){ c.milestones=n; c.bankedF=1; c.log.push(`Milestone ${n}: nothing Flared, so the Milestone point becomes a Comet.`); persist();
+      spendModal(c,{src:"F",note:"Milestone point with nothing Flared: it becomes a Comet. Spend it now, anywhere (points are never banked).",onCancel:()=>{c.bankedF=0;c.milestones=n-1;c.log.push(`Milestone ${n} declined (point must be spent on receipt).`);persist();}}); return; }
     c.milestones=n; c.bankedM=1; persist();
-    spendModal(c,{src:"M",note:"Milestone point: spend it now (points are never banked).",onCancel:()=>{c.bankedM=0;c.milestones=n-1;c.log.push(`Milestone ${n} declined (point must be spent on receipt).`);persist();}});}));
+    spendModal(c,{src:"M",note:"Milestone point: spend it now through a Flare, on a Talent of the training the Flare records (points are never banked).",onCancel:()=>{c.bankedM=0;c.milestones=n-1;c.log.push(`Milestone ${n} declined (point must be spent on receipt).`);persist();}});}));
   const dy=m.querySelector("[data-dying]"); if(dy) dy.addEventListener("change",e=>{const c2=active(); if(c2){c2.dying=Math.max(0,Math.min(5,+e.target.value||0));persist();}});
   // Wounds by Zone: clicking box k marks k Wounds, or clears back to k−1 if k is already marked
   m.querySelectorAll("[data-wound]").forEach(s=>s.addEventListener("click",()=>{
@@ -2261,7 +2360,7 @@ function act(a){
     const u=URL.createObjectURL(bl), el=document.createElement("a"); el.href=u; el.download=(c.name||"character").replace(/\s+/g,"_")+".sparks.json"; el.click(); URL.revokeObjectURL(u); }
   if(a==="del"&&c&&confirm(`Delete ${c.name||"this character"}?`)){ chars=chars.filter(x=>x.id!==c.id); activeId=null; persist(); }
   if(a==="explore"&&c){ const t=Object.keys(c.talents)[0]; if(t){etree=t;} eview={mode:2,cat:treeOf(etree).category}; esel=null; ezoom="in"; tab="explorer"; render(); }
-  if(a==="levelup"&&c&&c.milestones>=3){ c.level++; c.milestones=0; c.bankedF=1; c.vigorCur=null; c.log.push(`LEVEL UP → ${c.level}. Comet received. Vigor rises; check the rank gates (Expert L5, Master L10, Legendary L15) and the weapon dice (L4/8/12/16).`); persist();
+  if(a==="levelup"&&c&&c.milestones>=3){ c.level++; c.milestones=0; c.bankedF=1; c.vigorCur=null; c.log.push(`LEVEL UP → ${c.level}. Comet received. Vigor rises; check the rank gates (Expert L5, Master L10, Legendary L15): a new rank in Melee or Ranged is another weapon die.`); persist();
     spendModal(c,{src:"F",note:"Level-up Comet: spend it now, anywhere (points are never banked).",onCancel:()=>{c.bankedF=0;c.log.push("Comet forfeited (points are never banked).");persist();}}); }
   if(a==="spend"&&c){ spendModal(c); }
   if(a==="wback"){ wiz.step--; wiz.err=""; keepY=0; render(); }
@@ -2284,7 +2383,7 @@ function spendModal(c,forced){
   const bg=document.createElement("div"); bg.className="modal-bg";
   const treeOpts=(names)=>names.map(t=>`<option>${t}</option>`).join("");
   bg.innerHTML=`<div class="modal"><h2>Spend a talent point</h2>
-    <p class="muted">${(forced&&forced.note)?forced.note+" ":""}Milestone points need a Flared constellation (consumes the Flare). Comets go anywhere, opened or not.</p>
+    <p class="muted">${(forced&&forced.note)?forced.note+" ":""}A Milestone point is spent through a Flare, on a Talent of the training the Flare records (and consumes it). Comets go anywhere, opened or not.</p>
     <p style="margin:8px 0">Source:
       <label><input type="radio" name="src" value="M" ${useM?"":"disabled"} ${useM?"checked":""}> Milestone (${c.bankedM||0})</label>
       <label style="margin-left:12px"><input type="radio" name="src" value="F" ${useF?"":"disabled"} ${!useM&&useF?"checked":""}> Comet (${c.bankedF||0})</label></p>

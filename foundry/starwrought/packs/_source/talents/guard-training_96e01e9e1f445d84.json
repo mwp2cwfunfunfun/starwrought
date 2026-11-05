@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in Guard: add this Constellation's Proficiency Bonus to your Guard checks. It is the number attack rolls are measured against when you meet a blow with weapon, shield, or braced arm, and the check you roll against fear, charm, confusion, and other assaults on your composure. Guard answers Blows and Beguilement, and answers a ranged Blow only with a shield Raised.<br>You gain the <b>Parry ❶↺</b> Reaction, and the Set Your Feet ⓿↺ Posture:<br>You gain a +2 Situation bonus to Guard for the triggering attack.<br>A Zone of your choice becomes Exposed until the end of the round, win or lose.",
+    "effect": "You are Trained in Guard. Guard answers Beguilement and Blows (see Chapter 4: Threats and Permitted Defenses). Guarding against a ranged Blow or an attack with an Area of Effect requires a Raised shield.<br><br>You gain the Set Your Feet ⓿↺ Posture:<br>Posture<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You gain a +2 Situation bonus to Guard against the triggering attack. A Zone of your choice becomes Exposed.",
     "description": "",
     "cost": "passive",
     "costMax": "",
@@ -33,7 +33,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "de321617406058a3",
   "sort": 0,
@@ -42,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "9fde7d794b9c2590"
+      "contentHash": "0a49cd7d9ab2f06c"
     }
   },
   "effects": [],

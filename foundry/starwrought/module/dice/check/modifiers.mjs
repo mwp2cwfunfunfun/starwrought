@@ -41,8 +41,8 @@ export function baseModifiers(actor, cfg) {
   // A Defense roll is the Defense's own Threshold with a die in place of the 10, so it rolls the
   // very modifiers the derived Defense already resolved: Attribute, Proficiency, the sheet's
   // adjustment, Off-Guard, Frightened N, Fatigued N, a Parry weapon or a Wounded Arm on Guard,
-  // a helm on Awareness. Load Strain is not among them (PHB v4.11: "It never comes off your
-  // Evade"). Nothing here can drift from the number on the sheet.
+  // a lowered visor on Awareness. Load Strain is not among them (PHB v4.11 and since: armor
+  // never makes you easier to hit). Nothing here can drift from the number on the sheet.
   // The Automation rules are NOT asked again on this branch: the data model's Defense pass
   // (prepareDefenses in data/character/defenses.mjs) already folded a `bonus ... to Guard` into these very
   // modifiers, so the Threshold on the sheet, a Defense roll, an Initiative rolled with
@@ -104,9 +104,15 @@ export function baseModifiers(actor, cfg) {
     if (sys.bonuses?.initiative) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Field.initiativeBonus"), value: sys.bonuses.initiative });
     }
-    // PHB v4.10, Helms: a Closed helm is −2 Situation to Initiative, an Open helm −1.
-    const helm = SW.HELM_PENALTIES[sys.worn?.head?.name] ?? 0;
-    if (helm) parts.push({ label: sys.worn.head.name, value: helm, type: "situation" });
+    // PHB v4.21, Visored: a lowered visor is -1 Gear to Initiative, whatever Constellation rolls
+    // it (Awareness carries it inside its own modifiers, on the Defense branch above).
+    const visor = Number(sys.visorPenalty) || 0;
+    if (visor) {
+      parts.push({
+        label: game.i18n.format("STARWROUGHT.Defense.visorLowered", { piece: sys.worn?.head?.name ?? "" }),
+        value: visor, type: "gear"
+      });
+    }
   }
 
   // Conditions the system can see for itself.
@@ -126,14 +132,14 @@ export function baseModifiers(actor, cfg) {
     parts.push(...sys.attackModifiers.map(m => ({ ...m })));
   }
 
-  // Load Strain (PHB v4.11, Load and Load Strain): "Climb, Swim, and Stealth checks take your
-  // Load Strain as a penalty. Nothing else does." Stealth is applied here, untyped, as the
-  // system's own flat adjustment. Climb and Swim are Athletics checks the engine cannot tell
+  // Load Strain (PHB v4.21, Speed at the margin): "Apply your Load Strain as a Condition penalty
+  // to Stealth, Acrobatics, Climb, and Swim checks." Stealth and Acrobatics are applied here,
+  // typed Condition as the book says. Climb and Swim are Athletics checks the engine cannot tell
   // from a grapple or a tumble, so the dialog offers the penalty on an Athletics check instead
   // (prompt). Until 0.6.0 every Might or Agility check took it, and Evade did too. An Initiative
   // rolled with Stealth (Avoid Notice) is a Stealth check and takes it too (ruling 111, 0.7.4).
   if (asCheck && (SW.STRAIN_CHECKS[cfg.slug] === "always") && sys.loadStrain) {
-    parts.push({ label: game.i18n.localize("STARWROUGHT.Field.loadStrain"), value: -sys.loadStrain });
+    parts.push({ label: game.i18n.localize("STARWROUGHT.Field.loadStrain"), value: -sys.loadStrain, type: SW.STRAIN_TYPE });
   }
 
   // The Automation rules (0.10.0; rulings 122 and 124): every registered kind with a `modifiers`

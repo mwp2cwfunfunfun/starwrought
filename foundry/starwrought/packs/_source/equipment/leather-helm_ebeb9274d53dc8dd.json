@@ -1,0 +1,33 @@
+{
+  "_id": "ebeb9274d53dc8dd",
+  "name": "Leather Helm",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 2,
+    "load": 0,
+    "material": "leather",
+    "traits": [],
+    "price": "3 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2a61c7e29d397145"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ebeb9274d53dc8dd"
+}

@@ -37,8 +37,6 @@ export function parseWeaponTraits(traits = []) {
     massive: false,
     /** An attack that offers nothing to bind. */
     unparryable: false,
-    /** A bow drawn with the arm (PHB v4.14, the composite bow): its natural Attribute is Might, not Agility. */
-    composite: false,
     ranged: null,
     thrown: null,
     reload: 0,
@@ -65,7 +63,8 @@ export function parseWeaponTraits(traits = []) {
     else if (lower === "flexible") flags.flexible = true;
     else if (lower === "massive") flags.massive = true;
     else if (lower === "unparryable") flags.unparryable = true;
-    else if (lower === "composite") flags.composite = true;
+    // "Composite" (PHB v4.14, 0.6.3) is no trait in v4.21: a ranged weapon is Agility and a thrown
+    // one Might, whatever it is made of, so the word is read as nothing in particular.
     else if ((m = lower.match(/^ranged\s+(\d+)/))) flags.ranged = Number(m[1]);
     else if ((m = lower.match(/^thrown\s+(\d+)/))) flags.thrown = Number(m[1]);
     else if ((m = lower.match(/^reload\s+\[?(\d+)/))) flags.reload = Number(m[1]);

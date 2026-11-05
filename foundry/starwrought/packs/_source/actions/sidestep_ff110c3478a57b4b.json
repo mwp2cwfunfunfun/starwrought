@@ -1,0 +1,43 @@
+{
+  "_id": "ff110c3478a57b4b",
+  "name": "Sidestep",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Sidestep (Evade) • Evade +2 Situation",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "evade",
+      "defense": "evade"
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. +2 Situation bonus to Evade against the triggering attack. If the attack is a Graze or Miss, you may Step.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "b93d96fd63573850",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "1e65353534022aab"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ff110c3478a57b4b"
+}

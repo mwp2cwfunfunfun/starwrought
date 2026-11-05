@@ -14,21 +14,26 @@ import * as SW from "../../config.mjs";
  * read. Everything here is an offer to the side the rule favours, never an automatic write,
  * because "a plausible Zone" and "if they Guarded with a rigid weapon" are the table's to confirm.
  *
- *  - Miss: the attacker is Exposed in a Zone of the defender's choice, whatever the Strike. A
- *    Guard with a rigid implement takes Control (a Quick Strike can only be bound). An Evade
- *    may Step.
+ *  - Miss: a Deliberate or Committed Strike Exposes the attacker in a Zone of the defender's
+ *    choice (PHB v4.21: a Quick Strike's Miss costs nothing). A Guard with a rigid implement
+ *    takes Control (a Quick Strike can only be bound). An Evade may Step.
  *  - Graze: Weighted (Committed) Exposes the attacker. A Guard with a rigid implement forms a
  *    neutral Bind, or Control if it was a Parry against a Deliberate or Committed Strike. An
- *    Evade gives 3 feet directly away, or a Step of its own choosing if it Voided.
+ *    Evade gives 3 feet directly away, or what its Reaction offers on a Stop (SW.REACTIONS
+ *    `onStop`): a Step of its own choosing after a Sidestep, a Move to any space adjacent to the
+ *    attacker after a Slip the Line.
  *  - The Bind is offered only when the attack can be bound: a melee weapon or natural attack
  *    that is neither Flexible nor Unparryable. Otherwise the card says why not.
  *  - Hit or Critical Hit: a Committed Strike may Expose a plausible Zone on any Hit; a Deliberate
  *    Strike may on a Critical Hit.
- *  - Counter: the defender's Quick Strike back resolves whatever the Result was.
- *  - Parry that Stops a Deliberate or Committed Strike: Control, and the riposte Quick Strike ⓿.
+ *  - Parry that Stops a Deliberate or Committed Strike: Control, and the riposte Quick Strike
+ *    when the defender owns Riposte (PHB v4.21: a Talent of its own).
  */
 export function position(cfg, result) {
   if (!result.outcome) return null;
+  // A spell's Cast (PHB v4.21) is no Strike: nothing to Bind, no Zone to Expose by the Strike
+  // rules; what a Hit does is the Talent's text on the card.
+  if (cfg.source === "spell") return null;
   const isAttack = cfg.kind === "attack";
   const attacker = isAttack ? cfg.actor : (cfg.attacker ?? null);
   const defender = isAttack ? (cfg.defender ?? null) : cfg.actor;
@@ -36,7 +41,9 @@ export function position(cfg, result) {
   const outcome = result.outcome.key;
   const defense = cfg.defense ?? null;
   const reaction = cfg.reaction ?? null;
+  const rule = reaction ? (SW.REACTIONS[reaction] ?? null) : null;
   const rigid = isAttack ? (cfg.defenderRigid ?? null) : (cfg.actor.rigidImplement ?? null);
+  const ownsRiposte = !!(defender?.system?.reactions?.owned && ("riposte" in defender.system.reactions.owned));
 
   const pos = {
     zones: Object.entries(SW.ZONES).map(([key, z]) => ({ key, label: z.label })),
@@ -52,14 +59,14 @@ export function position(cfg, result) {
     bindNote: null,
     ground: null,
     riposte: false,
-    counter: reaction === "counter",
+    counter: false,
     stopped: ["miss", "graze"].includes(outcome)
   };
 
   if (pos.stopped) {
-    // A Miss Exposes the attacker for every Strike the kinds table says it does (all three in
-    // PHB v4.10, The Result); a Weighted Strike is Exposed by any Stop. The table is the one
-    // place to say otherwise.
+    // A Miss Exposes the attacker for every Strike the kinds table says it does (a Deliberate or
+    // Committed one in PHB v4.21, Table 9; a Quick Strike's Miss costs nothing); a Weighted Strike
+    // is Exposed by any Stop. The table is the one place to say otherwise.
     pos.exposeAttacker = ((outcome === "miss") && kind.exposeOnMiss) || kind.weighted;
     // Only a melee weapon or natural attack can be bound (PHB v4.10, The Bind, "What cannot
     // Bind"): nothing Flexible or Unparryable, and nothing that left the hand. A Defense roll
@@ -68,7 +75,7 @@ export function position(cfg, result) {
     const bindable = !isAttack
       || !(attackFlags.flexible || attackFlags.unparryable || (cfg.slug === SW.RANGED_SLUG));
     if ((defense === "guard") && rigid && bindable) {
-      const control = kind.controllable && ((outcome === "miss") || (reaction === "parry"));
+      const control = kind.controllable && ((outcome === "miss") || (rule?.onStop === "control"));
       pos.bind = {
         mode: control ? "control" : "neutral",
         implement: rigid.name ?? "",
@@ -80,15 +87,21 @@ export function position(cfg, result) {
         theirs: isAttack ? (cfg.item?.name ?? "") : (cfg.attackName ?? ""),
         label: control ? "STARWROUGHT.Bind.takeControl" : "STARWROUGHT.Bind.form"
       };
-      pos.riposte = control && (reaction === "parry");
+      // Riposte (PHB v4.21, a Guard Talent): after a successful Parry, a Quick Strike back instead
+      // of Controlling the weapon. Offered beside Control; the defender picks one.
+      pos.riposte = control && (rule?.onStop === "control") && ownsRiposte;
     } else if (isAttack && !bindable && (defense === "guard") && rigid) {
       // The Guard would have offered a Bind; say why it does not.
       pos.bindNote = game.i18n.format("STARWROUGHT.Bind.cannotBind", { weapon: cfg.item?.name ?? "" });
     }
     if (defense === "evade") {
-      pos.ground = ((outcome === "miss") || (reaction === "void"))
-        ? { mode: "step", label: "STARWROUGHT.Position.step" }
-        : { mode: "give", feet: SW.GIVE_GROUND_FEET, label: "STARWROUGHT.Position.giveGround" };
+      if (rule?.onStop === "adjacent") {
+        pos.ground = { mode: "adjacent", label: "STARWROUGHT.Position.adjacent" };
+      } else {
+        pos.ground = ((outcome === "miss") || (rule?.onStop === "step"))
+          ? { mode: "step", label: "STARWROUGHT.Position.step" }
+          : { mode: "give", feet: SW.GIVE_GROUND_FEET, label: "STARWROUGHT.Position.giveGround" };
+      }
     }
   } else {
     pos.exposeDefender = kind.full && ((cfg.strike === "committed") || (outcome === "critical"));

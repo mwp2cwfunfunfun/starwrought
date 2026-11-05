@@ -1,0 +1,34 @@
+{
+  "_id": "047f5549f603ed4a",
+  "name": "Necromancer",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/necromancer.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "necromancer",
+    "attribute": "presence",
+    "vigor": 6,
+    "grants": [
+      "Awareness"
+    ],
+    "specialAbility": "<p>Death Echo: once per round, when a living creature within 15 feet takes a Wound or becomes Spent, hold an Echo; spend it before a Strike or damaging Cast for +2 damage on a Hit.</p>",
+    "description": "<p>Grants Training in Awareness, and 6 Opening Vigor, added once if it is your first Calling.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "5b37cd4af06a04d1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!047f5549f603ed4a"
+}

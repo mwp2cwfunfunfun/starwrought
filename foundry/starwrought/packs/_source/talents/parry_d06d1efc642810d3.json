@@ -1,0 +1,55 @@
+{
+  "_id": "d06d1efc642810d3",
+  "name": "Parry ❶↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "guard",
+    "constellationName": "Guard",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Guard Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the Parry ❶↺ Reaction:<br>Requirements You are wielding a rigid object like a weapon or a shield.<br>Trigger Your foe is no more than one size larger than you, and is Striking you with a melee weapon.<br><br>You gain a +2 Situation bonus to Guard against the triggering attack. If the Strike is a Graze or a Miss, you may immediately attempt to Gain Control of the attacking weapon.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "de321617406058a3",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a3e2a7d561274979"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d06d1efc642810d3"
+}

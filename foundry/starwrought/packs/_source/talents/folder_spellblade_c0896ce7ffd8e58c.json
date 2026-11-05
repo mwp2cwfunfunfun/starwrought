@@ -1,0 +1,16 @@
+{
+  "_id": "c0896ce7ffd8e58c",
+  "name": "Spellblade",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "af1f57db6b14c9e2"
+    }
+  },
+  "_key": "!folders!c0896ce7ffd8e58c"
+}

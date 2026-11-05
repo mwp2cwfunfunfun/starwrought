@@ -1,0 +1,35 @@
+{
+  "_id": "2a7c9ba99cae4e7d",
+  "name": "Skullcap",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 2,
+    "load": 0,
+    "material": "plate",
+    "traits": [
+      "Concealable"
+    ],
+    "price": "4 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "807fc0ebcf7fae43"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2a7c9ba99cae4e7d"
+}

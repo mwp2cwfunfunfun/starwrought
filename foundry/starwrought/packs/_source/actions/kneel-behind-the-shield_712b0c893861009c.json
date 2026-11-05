@@ -1,0 +1,43 @@
+{
+  "_id": "712b0c893861009c",
+  "name": "Kneel Behind the Shield",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Kneel Behind the Shield (Guard) • Guard +4 Situation (Posture)",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "guard",
+      "defense": "guard"
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>Requirements Your shield is Raised. Trigger You are targeted by an Attack of which you are aware. +4 Situation bonus to Guard against the triggering attack. Your Speed becomes 0 until you spend an action to rise, and your Arms become Exposed.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "b93d96fd63573850",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c553d42b9f2c545c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!712b0c893861009c"
+}

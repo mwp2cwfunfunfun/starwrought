@@ -191,7 +191,7 @@ export const ActionsMixin = Base => class extends Base {
    * @param {string} [config.strike]       "committed" for a Strike.
    * @returns {Promise<object|null>} what is being prepared
    */
-  async prepare({ kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "", strike = "" } = {}) {
+  async prepare({ kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "", strike = "", talentId = "", cast = "" } = {}) {
     if (!this.inEncounter || !this.system.actions) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.outsideEncounter"));
       return null;
@@ -203,7 +203,10 @@ export const ActionsMixin = Base => class extends Base {
     cost = Math.max(1, Math.floor(Number(cost) || SW.PREPARED_THRESHOLD));
     const reserve = cost - 1;
     const left = this.system.actions.value ?? 0;
-    const preparing = { kind, label, weaponId, targetTokenId, targetUuid, cost, strike };
+    // A Cast's preparation (PHB v4.21: a Focused or Committed Cast is Prepared under the
+    // three-action rule) remembers the spell Talent and the commitment as a Strike's remembers
+    // the weapon and the Strike.
+    const preparing = { kind, label, weaponId, targetTokenId, targetUuid, cost, strike, talentId, cast };
     await this.update({
       "system.actions.value": Math.max(0, left - cost),
       "system.actions.reserved": reserve,
@@ -255,6 +258,13 @@ export const ActionsMixin = Base => class extends Base {
         strike: SW.STRIKE_KINDS[prep.strike] ? prep.strike : "committed",
         prepared: true,
         targetUuid
+      });
+    }
+    if (prep.kind === "cast" && prep.talentId && (typeof this.castSpell === "function")) {
+      return this.castSpell(prep.talentId, {
+        cast: SW.CAST_KINDS[prep.cast] ? prep.cast : SW.DEFAULT_CAST,
+        prepared: true,
+        targetUuid: prep.targetUuid || ""
       });
     }
     await ChatMessage.create({

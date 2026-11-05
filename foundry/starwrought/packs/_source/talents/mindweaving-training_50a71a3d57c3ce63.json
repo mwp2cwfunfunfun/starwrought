@@ -1,0 +1,74 @@
+{
+  "_id": "50a71a3d57c3ce63",
+  "name": "Mindweaving Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "mindweaving",
+    "constellationName": "Mindweaving",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Mind Needle (Beguilement, Pervasive, 20 ft): Quick ❷ deals 1d4 psychic; Focused ❸ deals Damage Dice d4 psychic; Committed ❹ can instead make the target Wrong-Footed to your next attack on a Hit. The target answers with Awareness or Guard.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "beguilement",
+      "delivery": "pervasive",
+      "range": 20,
+      "adjacent": false,
+      "die": 4,
+      "types": [
+        "psychic"
+      ],
+      "targets": "one",
+      "defenses": [
+        "awareness",
+        "guard"
+      ],
+      "effects": {
+        "quick": "1d4 psychic",
+        "focused": "Damage Dice d4 psychic",
+        "committed": "On a Hit, the target is instead Wrong-Footed to your next attack"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "626bec9479f4bfb5",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "352a827d271d6757"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!50a71a3d57c3ce63"
+}

@@ -197,11 +197,11 @@ function answerText(revealed) {
   if (!revealed) return "";
   if (revealed.posture) {
     const zone = SW.ZONES[revealed.posture.zone];
-    return game.i18n.format("STARWROUGHT.Attack.answerPosture", {
-      // Plain (0.5.1, T16): the string appends ⓿↺ itself.
-      name: SW.plainName(revealed.posture.name ?? ""),
-      zone: zone ? game.i18n.localize(zone.label) : (revealed.posture.zone ?? "")
-    });
+    // Plain (0.5.1, T16): the strings append ⓿↺ themselves. A Posture that Exposes nothing (Drop
+    // Flat, PHB v4.21) is named alone.
+    const name = SW.plainName(revealed.posture.name ?? "");
+    if (!zone) return game.i18n.format("STARWROUGHT.Attack.answerReaction", { name, glyph: `${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}` });
+    return game.i18n.format("STARWROUGHT.Attack.answerPosture", { name, zone: game.i18n.localize(zone.label) });
   }
   if (revealed.reaction) return reactionAnswer(revealed.reaction);
   return game.i18n.localize("STARWROUGHT.Attack.answerNone");

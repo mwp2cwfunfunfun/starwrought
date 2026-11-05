@@ -1,6 +1,6 @@
 {
   "_id": "d1cce4059cf4831a",
-  "name": "Padded leggings",
+  "name": "Padded Leggings",
   "type": "armor",
   "img": "icons/svg/shield.svg",
   "system": {
@@ -9,8 +9,8 @@
     "load": 0,
     "material": "padded",
     "traits": [
-      "Padded",
-      "Comfort"
+      "Comfort",
+      "Flexible"
     ],
     "price": "1 gp",
     "quantity": 1,
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ce8bc6ae58bd5b7e"
+      "contentHash": "bf1948f3443c37b4"
     }
   },
   "effects": [],

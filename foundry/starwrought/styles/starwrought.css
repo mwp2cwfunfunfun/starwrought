@@ -38,7 +38,7 @@
      load (starwrought.mjs, checkForStaleAssets) to catch a browser or a proxy holding an older
      copy of any one of them. Each must match system.json; a release bumps them all, and
      build_all.mjs refuses to pass while one lags. */
-  --sw-css-version-starwrought: "0.10.1";
+  --sw-css-version-starwrought: "0.11.0";
   --sw-scroll-thumb: #a8842c;
   --sw-scroll-thumb-hover: #e3b23c;
   --sw-scroll-track: rgba(0, 0, 0, 0.5);

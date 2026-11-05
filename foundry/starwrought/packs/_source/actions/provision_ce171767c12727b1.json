@@ -15,7 +15,7 @@
     "description": "<p>Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets to find someone who has one. You sell at half price.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "b938ff7019fcd374",
   "sort": 0,
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "b3c62efbe63835dd"
+      "contentHash": "034e8f62a7300c4f"
     }
   },
   "effects": [],

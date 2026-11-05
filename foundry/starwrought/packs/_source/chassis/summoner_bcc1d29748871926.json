@@ -1,0 +1,34 @@
+{
+  "_id": "bcc1d29748871926",
+  "name": "Summoner",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/summoner.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "summoner",
+    "attribute": "wits",
+    "vigor": 6,
+    "grants": [
+      "Awareness"
+    ],
+    "specialAbility": "<p>Call Manifestation ❷: one 1-foot manifestation within 6 feet, lasting the encounter; Command ❶ it to Move or make a 1d4 Zoned Strike. It vanishes on a Hit.</p>",
+    "description": "<p>Grants Training in Awareness, and 6 Opening Vigor, added once if it is your first Calling.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "33d6034c35b39f62"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!bcc1d29748871926"
+}

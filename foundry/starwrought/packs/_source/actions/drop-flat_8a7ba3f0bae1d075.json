@@ -1,0 +1,43 @@
+{
+  "_id": "8a7ba3f0bae1d075",
+  "name": "Drop Flat",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "category": "Reaction",
+    "requirements": "Drop Flat (Evade) • Evade +4 Situation (Posture)",
+    "trigger": "You are attacked, before you know whether the attack was successful.",
+    "check": {
+      "enabled": false,
+      "constellation": "evade",
+      "defense": "evade"
+    },
+    "traits": [
+      "Reaction"
+    ],
+    "description": "<p>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. You drop Prone. +4 Situation bonus to Evade against the triggering attack.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "b93d96fd63573850",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "71aa1f6530242105"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8a7ba3f0bae1d075"
+}

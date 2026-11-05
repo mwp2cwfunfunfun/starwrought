@@ -1,0 +1,53 @@
+{
+  "_id": "d2a77864e6ca3f30",
+  "name": "Spellshaping",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spellshaper",
+    "constellationName": "Spellshaper",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in Guile. Once per round, when declaring a Cast you know, you may add ❶ to its action cost to apply one alteration: extend the spell’s range by 5 feet; or, for an area spell, move one affected 1-foot square to an adjacent square outside the area, keeping the final affected space contiguous and the number of affected squares unchanged. Declare the alteration and any Prepared area before the first action is spent. Spell damage, Damage Dice, Threat, and Delivery do not change.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "277e81d4184d4ce8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "32ff8764a19094f8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d2a77864e6ca3f30"
+}

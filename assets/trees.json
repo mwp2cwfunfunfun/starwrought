@@ -11,7 +11,8 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain a +1 Condition bonus on checks to Aid. If you are Expert in Human, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium.<br><br>Bonus to Aid. You gain a +1 Condition bonus on checks to Aid. If your Origin Proficiency is Expert, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.",
+    "automation": "bonus: +1 Condition to Aid if Origin is Trained\nbonus: +2 Condition to Aid if Origin is Expert\nbonus: +3 Condition to Aid if Origin is Master\nbonus: +4 Condition to Aid if Origin is Legendary",
     "desc": "Short lives teach humans to close ranks and pull together.",
     "root": true
    },
@@ -62,7 +63,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard for physical Attacks.",
+    "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against physical Attacks.",
     "requires": [
      "Humanity"
     ]
@@ -105,7 +106,6 @@
      "affects": "all",
      "visible": false
     },
-    "desc": "Some humans carry the light everyone else steers by.",
     "hroot": true
    },
    {
@@ -128,15 +128,15 @@
   "skills": [
    "Stealth"
   ],
-  "meta": "Calling • Agility (2 Vigor/level • Sneak Attack)",
+  "meta": "Calling • Agility (8 Opening Vigor • Sneak Attack)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
    {
-    "name": "Sneak Attack",
+    "name": "Ambusher Calling",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You become Trained in Stealth.<br>You gain Sneak Attack:<br>+1d6 precision damage vs. Off-Guard foes.<br>Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.",
+    "effect": "You become Trained in Stealth.<br><br>You gain Sneak Attack:<br>+1d6 precision damage vs. Off-Guard foes. Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Melee or Ranged.",
     "root": true
    },
    {
@@ -146,7 +146,7 @@
     "enabled": false,
     "effect": "In the first round, foes that haven't acted yet are Wrong-Footed to you.",
     "requires": [
-     "Sneak Attack"
+     "Ambusher Calling"
     ]
    },
    {
@@ -156,7 +156,7 @@
     "enabled": false,
     "effect": "<b>Trigger</b> An ally Hits a creature within your reach.<br><b>Effect</b> Strike that creature. It is Off-Guard to this Strike.",
     "requires": [
-     "Sneak Attack"
+     "Ambusher Calling"
     ]
    },
    {
@@ -166,7 +166,7 @@
     "enabled": false,
     "effect": "Once per round, when your Sneak Attack damage applies to a Hit, the Zone it landed on becomes Exposed.",
     "requires": [
-     "Sneak Attack"
+     "Ambusher Calling"
     ]
    },
    {
@@ -176,7 +176,7 @@
     "enabled": false,
     "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
     "requires": [
-     "Sneak Attack"
+     "Ambusher Calling"
     ]
    },
    {
@@ -186,7 +186,7 @@
     "enabled": false,
     "effect": "Whenever your Strike is a critical hit and deals damage, the target is Wrong-Footed against your attacks until the end of the next round.",
     "requires": [
-     "Sneak Attack"
+     "Ambusher Calling"
     ]
    }
   ]
@@ -198,15 +198,15 @@
   "skills": [
    "Athletics"
   ],
-  "meta": "Calling • Might (4 Vigor/level • Rage)",
+  "meta": "Calling • Might (12 Opening Vigor • Rage)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
    {
-    "name": "Rage ❶",
+    "name": "Berserker Calling",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You become Trained in Athletics.<br>You gain the Rage action:<br><b>Rage ❶<br>Duration</b> 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, increase your Fatigued by 1 until you spend three actions to catch your breath.<br>You may end your Rage as a free action, increasing your Fatigued by 1 as though it had run its course.<br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.",
+    "effect": "You become Trained in Athletics.<br><br>You gain the Rage action:<br>Rage ❶<br>Duration 10 rounds<br>You gain Temporary Vigor = level + Might, +2 melee damage, −1 Evade. While raging, you are Heedless.<br>Afterward, increase your Fatigued by 1 until you spend three actions to catch your breath.<br>You may end your Rage as a free action, increasing your Fatigued by 1 as though it had run its course.<br><br>Damage bonus rises to +4 melee damage at Expert rank, +6 at Master, +8 at Legendary.<br><br>If this is your first Calling, you also gain 12 Vigor and Training in Melee or Ranged.",
     "root": true
    },
    {
@@ -216,7 +216,7 @@
     "enabled": false,
     "effect": "You gain Sudden Charge:<br><b>Sudden Charge ❷</b><br>Move twice, then Quick Strike. Your Moves may provoke Intercepts as normal.",
     "requires": [
-     "Rage"
+     "Berserker Calling"
     ]
    },
    {
@@ -226,7 +226,7 @@
     "enabled": false,
     "effect": "While you are Raging, every Zone on you has +1 Protection, including Zones with no armor at all. An Exposed Zone still counts as 0.",
     "requires": [
-     "Rage"
+     "Berserker Calling"
     ]
    },
    {
@@ -236,7 +236,7 @@
     "enabled": false,
     "effect": "When your Strike drops a creature while you are Raging, your Rage's remaining duration resets to 10 rounds.",
     "requires": [
-     "Rage"
+     "Berserker Calling"
     ]
    },
    {
@@ -246,7 +246,7 @@
     "enabled": false,
     "effect": "You ignore the Fatigued condition while Raging, and when your Rage ends you need to spend only 1 action to catch your breath rather than 3.",
     "requires": [
-     "Rage"
+     "Berserker Calling"
     ]
    },
    {
@@ -256,7 +256,7 @@
     "enabled": false,
     "effect": "<b>Frequency</b> once per encounter<br>You push back your rage for a moment in order to think clearly. Until the end of this round, you lose your Heedless condition.",
     "requires": [
-     "Rage"
+     "Berserker Calling"
     ],
     "feeds": "Presence"
    }
@@ -269,15 +269,15 @@
   "skills": [
    "Acrobatics"
   ],
-  "meta": "Calling • Presence (3 Vigor/level • Panache)",
+  "meta": "Calling • Presence (10 Opening Vigor • Panache)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
    {
-    "name": "Panache",
+    "name": "Bravo Calling",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You become Trained in Acrobatics.<br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br>While you have Panache you gain a +1 Situation bonus to Evade and a +1-foot Situation bonus to your Speeds. At Expert rank, Speed bonus increases to 2 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 3 feet.<br>Every talent here requires this.",
+    "effect": "You become Trained in Acrobatics.<br><br>You gain Panache whenever you critically succeed on a Strike, or when you successfully Feint or Demoralize.<br><br>You can hold one Panache at a time and you keep it until you spend it or the encounter ends (whichever happens first).<br><br>While you have Panache you gain a +1 Situation bonus to Evade and a +1-foot Situation bonus to your Speeds. At Expert rank, Speed bonus increases to 2 feet. At Master rank, your Evade bonus increases to +2. At Legendary rank, your Speed bonus increases to 3 feet.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
     "root": true
    },
    {
@@ -287,7 +287,7 @@
     "enabled": false,
     "effect": "Spend your Panache and Strike, with the following effects:<br><b>Hit</b> add 2d6 precision damage.<br><b>Graze</b> add 1d6 precision damage.<br>You lose the Panache either way.",
     "requires": [
-     "Panache"
+     "Bravo Calling"
     ]
    },
    {
@@ -297,7 +297,7 @@
     "enabled": false,
     "effect": "<b>Trigger</b> A creature's Strike against you is Stopped (a Graze or a Miss) while you have Panache.<br><b>Effect</b> You take Control of the attacking weapon as though you had Parried, without spending an action.",
     "requires": [
-     "Panache"
+     "Bravo Calling"
     ]
    },
    {
@@ -307,7 +307,7 @@
     "enabled": false,
     "effect": "While you have Panache, you may Recenter ⓿ once per round.",
     "requires": [
-     "Panache"
+     "Bravo Calling"
     ]
    },
    {
@@ -317,7 +317,7 @@
     "enabled": false,
     "effect": "You begin every encounter with Panache if you are not surprised.",
     "requires": [
-     "Panache"
+     "Bravo Calling"
     ]
    },
    {
@@ -327,7 +327,7 @@
     "enabled": false,
     "effect": "When you Raise a Shield ❶ to gain a Situation bonus to Guard from a buckler, increase the bonus from +1 to +2.<br>While you have a buckler raised, if a creature critically misses you with a Strike, you gain panache.",
     "requires": [
-     "Panache"
+     "Bravo Calling"
     ]
    },
    {
@@ -337,7 +337,7 @@
     "enabled": false,
     "effect": "<b>Requirements</b> You're wielding one or more one-handed weapons<br>You gain a +1 Situation bonus to Guard until your next Opportunity, or a +2 Situation bonus if you have a free hand or are wielding a weapon with the parry trait. You lose this Situation bonus if you no longer meet this feat's requirement. If a creature misses you with a Strike while you have this bonus, you gain panache.",
     "requires": [
-     "Panache"
+     "Bravo Calling"
     ]
    }
   ]
@@ -349,15 +349,15 @@
   "skills": [
    "Awareness"
   ],
-  "meta": "Calling • Wits (3 Vigor/level • Mark Prey)",
+  "meta": "Calling • Wits (10 Opening Vigor • Mark Prey)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
    {
-    "name": "Mark Prey ❶",
+    "name": "Hunter Calling",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You become Trained in Awareness.<br>(Concentrate) Choose one creature you can see. It is your prey until you Mark another or the encounter ends.<br>The first time each round that you Hit your prey, add 1d8 precision damage. You also always know roughly where your prey is while it is within 60 feet, even while it is Hidden or Undetected. The extra precision damage rises to 2d8 at Expert rank, 3d8 at Master, and 4d8 at Legendary.<br>Every talent here requires this.",
+    "effect": "You become Trained in Awareness.<br><br>(Concentrate) Choose one creature you can see. It is your prey until you Mark another or the encounter ends.<br><br>The first time each round that you Hit your prey, add 1d8 precision damage. You also always know roughly where your prey is while it is within 60 feet, even while it is Hidden or Undetected. The extra precision damage rises to 2d8 at Expert rank, 3d8 at Master, and 4d8 at Legendary.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
     "aura": {
      "range": 60,
      "affects": "all",
@@ -372,7 +372,7 @@
     "enabled": false,
     "effect": "You may Mark Prey as part of a Move rather than spending an action.",
     "requires": [
-     "Mark Prey"
+     "Hunter Calling"
     ]
    },
    {
@@ -382,7 +382,7 @@
     "enabled": false,
     "effect": "The first time each encounter your prey attacks you, you learn if its Evade or Guard is higher.",
     "requires": [
-     "Mark Prey"
+     "Hunter Calling"
     ]
    },
    {
@@ -392,7 +392,7 @@
     "enabled": false,
     "effect": "When you Hit your prey with the first Strike of the round, its Speed is reduced by 2 feet until the end of the next round.",
     "requires": [
-     "Mark Prey"
+     "Hunter Calling"
     ]
    },
    {
@@ -402,7 +402,7 @@
     "enabled": false,
     "effect": "<b>Trigger</b> Your prey Moves away from you.<br><b>Effect</b> Move up to your Speed toward it. This does not provoke Reactions from your prey.",
     "requires": [
-     "Mark Prey"
+     "Hunter Calling"
     ]
    },
    {
@@ -412,7 +412,7 @@
     "enabled": false,
     "effect": "Make a Deliberate weapon Strike ❷ against your Marked Prey. On this Strike, you gain a +2 Situation bonus to the attack roll and ignore your prey's concealed condition and any lesser cover.",
     "requires": [
-     "Mark Prey"
+     "Hunter Calling"
     ]
    }
   ]
@@ -424,15 +424,15 @@
   "skills": [
    "Athletics"
   ],
-  "meta": "Calling • Might (3 Vigor/level • Drilled)",
+  "meta": "Calling • Might (10 Opening Vigor • Drilled)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
    {
-    "name": "Drilled",
+    "name": "Weaponmaster Calling",
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You become Trained in Athletics.<br>You gain the Weapon Familiarity Talent for free.<br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br>You may take the Reactive Strike Talent, even if you are not Expert in Melee. However, you may still only use Reactive Strike with weapons in which you are at least Expert Proficiency Rank.<br>Every Talent in this Constellation requires this.",
+    "effect": "You become Trained in Athletics.<br><br>You gain the Weapon Familiarity Talent for free.<br><br>Choose one Weapon Group in which you are Familiar. When making attacks with weapons of that Group, treat your Weapons Proficiency Bonus as 2 higher. This does not actually increase your Proficiency Rank and does not satisfy Expert, Master, or Legendary prerequisites.<br><br>You may take the Reactive Strike Talent, even if you are not Expert in Melee. However, you may still only use Reactive Strike with weapons in which you are at least Expert Proficiency Rank.<br><br>If this is your first Calling, you also gain 10 Vigor and Training in Melee or Ranged.",
     "choice": "Weapon Group",
     "freeTalent": "Weapon Familiarity",
     "root": true
@@ -444,7 +444,7 @@
     "enabled": true,
     "effect": "Your Intercept also triggers when a creature within your Reach uses any Motion Maneuver, whether or not it leaves your Reach.",
     "requires": [
-     "Drilled"
+     "Weaponmaster Calling"
     ]
    },
    {
@@ -454,7 +454,7 @@
     "enabled": true,
     "effect": "Your Intercept disrupts the triggering Maneuver on a Hit, not only a Critical Hit, if the Zone struck was Exposed.",
     "requires": [
-     "Drilled"
+     "Weaponmaster Calling"
     ]
    },
    {
@@ -464,7 +464,7 @@
     "enabled": true,
     "effect": "Your weapon specialization damage arrives one rank early with your Drilled group: +2 while Trained, +3 at Expert, +4 at Master, +5 at Legendary.",
     "requires": [
-     "Drilled"
+     "Weaponmaster Calling"
     ]
    },
    {
@@ -474,7 +474,337 @@
     "enabled": true,
     "effect": "When one of your Strikes is Stopped and would Expose you, you may take 1 Vigor damage per level and Expose nothing instead.",
     "requires": [
-     "Drilled"
+     "Weaponmaster Calling"
+    ]
+   }
+  ]
+ },
+ "Spellshaper": {
+  "category": "Calling",
+  "enabled": true,
+  "feeds": "Wits",
+  "skills": [
+   "Guile"
+  ],
+  "meta": "Calling • Wits (6 Opening Vigor • Spellshaping)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Spellshaping",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You become Trained in Guile. Once per round, when declaring a Cast you know, you may add ❶ to its action cost to apply one alteration: extend the spell’s range by 5 feet; or, for an area spell, move one affected 1-foot square to an adjacent square outside the area, keeping the final affected space contiguous and the number of affected squares unchanged. Declare the alteration and any Prepared area before the first action is spent. Spell damage, Damage Dice, Threat, and Delivery do not change.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
+    "root": true
+   },
+   {
+    "name": "Selective Pattern",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When using Spellshaping with a Cast that affects an area, you may instead choose one ally you can see to be unaffected by that casting. Declare the ally before results are rolled. The added ❶ cost still applies.",
+    "requires": [
+     "Spellshaping"
+    ]
+   },
+   {
+    "name": "Far Reaching",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When Spellshaping increases range, increase it by 10 feet rather than 5 feet. This does not increase the radius or number of targets of an area spell.",
+    "requires": [
+     "Spellshaping"
+    ]
+   },
+   {
+    "name": "Hidden Pattern",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When using Spellshaping, you may obscure the precise target or area indicated by your gestures from observers more than 6 feet away. Speech and magical manifestations remain perceptible; this does not make preparation itself invisible.",
+    "requires": [
+     "Spellshaping"
+    ]
+   },
+   {
+    "name": "Lingering Form",
+    "tier": "E",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When using Spellshaping on a spell with a duration ending at your next Opportunity, you may instead extend it until the end of that Opportunity. The spell does not gain additional attacks or repeated damage from this extension, and cannot be extended again by this Talent.",
+    "requires": [
+     "Spellshaping"
+    ]
+   }
+  ]
+ },
+ "Blood Mage": {
+  "category": "Calling",
+  "enabled": true,
+  "feeds": "Might",
+  "skills": [
+   "Athletics"
+  ],
+  "meta": "Calling • Might (8 Opening Vigor • Blood Price)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Blood Price",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You become Trained in Athletics. Once per round when declaring a damaging Cast from a magical parent in which you are Trained, you may lose Vigor equal to 1 + that parent’s Damage Dice. You must have enough Vigor to remain at 1 or more after paying. This loss cannot be prevented, redirected to Temporary Vigor, or reduced by Protection or Resistance. If the Cast Hits, add the same amount as bonus damage to ONE creature Hit. Pay before the roll; a Graze or Miss does not refund it. This is Vigor loss, not an Attack or a Wound.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
+    "root": true
+   },
+   {
+    "name": "Crimson Focus",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Once per encounter, when a Wound would automatically abandon your Prepared Cast, you may lose 2 additional Vigor (remaining at 1 or more) to retain the preparation. You suffer the Wound and its normal effects.",
+    "requires": [
+     "Blood Price"
+    ]
+   },
+   {
+    "name": "Scar Ward ❶↺",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Trigger: You take damage from a Blast or Blight that you can perceive. Lose 2 Vigor (remaining at 1 or more); reduce that instance of incoming damage by 3 after other mitigation. Once per round. Vigor paid for this Talent is not reduced by its effect.",
+    "requires": [
+     "Blood Price"
+    ]
+   },
+   {
+    "name": "Sanguine Reach",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When you use Blood Price on a single-target Cast, you may increase that spell’s range by 5 feet instead of adding Blood Price bonus damage. The Vigor cost is still paid, and this choice is made when the Cast is declared.",
+    "requires": [
+     "Blood Price"
+    ]
+   },
+   {
+    "name": "Deeper Offering",
+    "tier": "E",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When declaring Blood Price, you may lose 2 additional Vigor to increase its bonus damage by 2 against its one chosen target on a Hit. You must remain at 1 or more Vigor after all costs. No additional damage applies on a Graze or Miss.",
+    "requires": [
+     "Blood Price"
+    ]
+   }
+  ]
+ },
+ "Necromancer": {
+  "category": "Calling",
+  "enabled": true,
+  "feeds": "Presence",
+  "skills": [
+   "Awareness"
+  ],
+  "meta": "Calling • Presence (6 Opening Vigor • Death Echo)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Death Echo",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You become Trained in Awareness. Once per round, when a living creature you can perceive within 15 feet takes a Wound or becomes Spent, you may capture a Death Echo (maximum one held; it fades at encounter end). Before rolling one of your own Strikes or damaging Casts, you may expend the Echo: if that Attack Hits, add +2 damage to one creature Hit. This cannot trigger from summoned manifestations or from your own voluntary Vigor loss.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
+    "aura": {
+     "range": 15,
+     "affects": "all",
+     "visible": false
+    },
+    "root": true
+   },
+   {
+    "name": "Read the Veil",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "As ❶, examine a creature you can Observe within 6 feet. Learn whether it is Spent, visibly Wounded, or dead; supernatural disguises may require a separate Awareness check at GM discretion. This reveals neither hidden exact Vigor nor unobserved causes of death.",
+    "aura": {
+     "range": 6,
+     "affects": "all",
+     "visible": false
+    },
+    "requires": [
+     "Death Echo"
+    ]
+   },
+   {
+    "name": "Grave Pressure",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When you expend a Death Echo and Hit, you may instead reduce one affected target’s Speed by 1 foot until the end of its next Opportunity. No bonus damage is added by Death Echo when you choose this effect.",
+    "requires": [
+     "Death Echo"
+    ]
+   },
+   {
+    "name": "Borrowed Resolve ❶↺",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Trigger: An ally within 6 feet suffers damage that would reduce them to 0 Vigor. Expend your Death Echo to reduce that instance of damage by 2, possibly preventing them from becoming Spent. The ally must be able to perceive you; once per round.",
+    "aura": {
+     "range": 6,
+     "affects": "allies",
+     "visible": false
+    },
+    "requires": [
+     "Death Echo"
+    ]
+   },
+   {
+    "name": "Harvest the Fallen",
+    "tier": "E",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Once per encounter, as ❶, capture a Death Echo from a corpse within 3 feet that died within the past minute. No creature may supply more than one Echo in this way. This does not animate or control the corpse.",
+    "aura": {
+     "range": 3,
+     "affects": "all",
+     "visible": false
+    },
+    "requires": [
+     "Death Echo"
+    ]
+   }
+  ]
+ },
+ "Summoner": {
+  "category": "Calling",
+  "enabled": true,
+  "feeds": "Wits",
+  "skills": [
+   "Awareness"
+  ],
+  "meta": "Calling • Wits (6 Opening Vigor • Call Manifestation)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Call Manifestation ❷",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You become Trained in Awareness. Create one 1-foot manifestation in an unoccupied square within 6 feet; it lasts until encounter end, you are Unconscious, or it is dismissed. You may have only one. It has Speed 6 feet and no independent actions. Command ❶ on your Opportunity to make it either Move up to its Speed or Strike an adjacent creature (Zoned Blow, 1d4 damage, using the chosen parent’s attack bonus). It uses your Evade or Guard when attacked and vanishes on a Hit; Graze does not dismiss it. It cannot use Reactions, Bind, Intercept, provide Support, or inflict Wounds. It never rolls Damage Dice for its Strike. Its form is cosmetic unless a Talent specifies otherwise.<br><br>If this is your first Calling, you also gain 6 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>NEEDS Expert/Master/Legendary increases.",
+    "aura": {
+     "range": 6,
+     "affects": "all",
+     "visible": false
+    },
+    "root": true
+   },
+   {
+    "name": "Long Leash",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You may summon your manifestation within 10 feet instead of 6 feet. You may Command it while it is within 30 feet of you; otherwise it remains in place until you come into range or dismiss it.",
+    "aura": {
+     "range": 10,
+     "affects": "all",
+     "visible": false
+    },
+    "requires": [
+     "Call Manifestation"
+    ]
+   },
+   {
+    "name": "Fighting Together",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Once per round, when you use Command ❶ to have your manifestation Strike and it Hits, you may Step 1 foot as a free effect. This Step does not provoke an Intercept from the creature it struck.",
+    "requires": [
+     "Call Manifestation"
+    ]
+   },
+   {
+    "name": "Interposing Form ❶↺",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Trigger: You or an ally within 3 feet of your manifestation would take damage from a Zoned Attack. Dismiss the manifestation and reduce that instance of damage by 2 after Protection. This is physical interception, not Resistance. Once per round.",
+    "requires": [
+     "Call Manifestation"
+    ]
+   },
+   {
+    "name": "Hardened Manifestation",
+    "tier": "E",
+    "cost": 1,
+    "enabled": true,
+    "effect": "The first Hit that would dismiss your manifestation each encounter instead leaves it active; the next Hit dismisses it. This has no effect on Critical Hits, which still dismiss it immediately.",
+    "requires": [
+     "Call Manifestation"
+    ]
+   }
+  ]
+ },
+ "Spellblade": {
+  "category": "Calling",
+  "enabled": true,
+  "feeds": "Might",
+  "skills": [
+   "Athletics"
+  ],
+  "meta": "Calling • Might (8 Opening Vigor • Spellbound Edge)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Spellbound Edge ❶",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You become Trained in Athletics. Requirements: Trained in Melee and one magical parent, and you know a damaging spell from that parent. Choose one damage type dealt by that spell. Your next Deliberate Melee Strike begun before the end of your next Opportunity may deal the chosen type instead of its usual type. It remains a Zoned Blow, uses Melee proficiency and weapon dice, and gains no spell Damage Dice or other spell effects.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Elementalism, or Forceweaving, Vitalism, Mindweaving, or Spiritcraft.<br><br>Special You must already be Trained in either Melee or Ranged (or, if you take this at character creation, you must use one become Trained in Melee or Ranged before the end of the character creation process.<br><br>NEEDS Expert/Master/Legendary increases.",
+    "root": true
+   },
+   {
+    "name": "Guarded Conduit",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "While preparing a Focused or Committed Cast and wielding a melee weapon, gain +1 Situation to Guard against Blows. This does not permit Guard against Blasts and ends when preparation ends.",
+    "requires": [
+     "Spellbound Edge"
+    ]
+   },
+   {
+    "name": "Flicker Step",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Once per round after a Melee Strike enhanced by Spellbound Edge Hits, you may Step 1 foot as a free effect without provoking an Intercept from the creature you struck.",
+    "requires": [
+     "Spellbound Edge"
+    ]
+   },
+   {
+    "name": "Attuned Edge",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Spellbound Edge may also enhance a Committed Melee Strike if you begin preparing it before the end of your next Opportunity. The chosen damage type persists until that Prepared Strike resolves or is abandoned. It still adds no spell dice or riders.",
+    "requires": [
+     "Spellbound Edge"
+    ]
+   },
+   {
+    "name": "Spellstrike ❹",
+    "tier": "E",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Requirements: Trained in Melee and one magical parent; know a damaging Cast from that parent. Declare a Prepared melee Attack against one target in Reach and choose one known damaging spell. On a Hit, deal normal Deliberate Melee Strike damage plus ONE base damage die from the spell, with both parts treated as a single Zoned Blow against the same Zone (Protection applies once). On a Graze, use Deliberate Strike Graze damage with no spell die. On a Critical Hit, double the weapon damage after Protection as for Deliberate Strike, then add one undoubled spell die. No other effects of the spell apply. Roll using Melee, not magical proficiency.",
+    "requires": [
+     "Spellbound Edge"
     ]
    }
   ]
@@ -484,6 +814,7 @@
   "enabled": false,
   "feeds": "Agility",
   "parent": "Ranged",
+  "group": true,
   "meta": "Combat Style • Agility (bows and careful ranged attacks)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -492,7 +823,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its Talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Draw a Bead ❶ action.<br><b>Draw a Bead ❶ Concentrate</b><br>Choose one creature you can Observe and can reach with your bow.<br>Until the end of your next Opportunity:<br>your next bow Strike against that creature gains a +1 Situation bonus to the attack;<br>ignore the weapon's Unwieldy penalty for that Strike;<br>if that Strike Grazes, you choose the Zone it lands on instead of the defender.",
+    "effect": "You learn this fighting style. Use your Ranged Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Ranged rank. You gain the Draw a Bead ❶ action.<br><br>Draw a Bead ❶ Concentrate<br>Choose one creature you can Observe and can reach with your bow.<br>Until the end of your next Opportunity:<br>your next bow Strike against that creature gains a +1 Situation bonus to the attack;<br>ignore the weapon's Unwieldy penalty for that Strike;<br>if that Strike Grazes, you choose the Zone it lands on instead of the defender.",
     "root": true
    },
    {
@@ -523,6 +854,7 @@
   "enabled": false,
   "feeds": "Presence",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Presence (the harness as a weapon)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -531,7 +863,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank.<br>When determining whether your armor forms a complete harness for an Armored Fighting Talent, all four Zones must be armored in the required material. If you are Master, only three Zones must be armored in the required material.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank.<br><br>When determining whether your armor forms a complete harness for an Armored Fighting Talent, all four Zones must be armored in the required material. If you are Master, only three Zones must be armored in the required material.",
     "desc": "Knowing how to exploit armor as part of your fighting method.",
     "feeds": "Might",
     "root": true
@@ -674,6 +1006,7 @@
   "enabled": false,
   "feeds": "Might",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Might (fists, feet, tusks, headbutts)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -682,7 +1015,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Clinch action.<br><b>Clinch ❶ Stance</b> While you are in this stance, a bare hand counts as a rigid implement: you may Parry, Bind, and Gain Control with it, and a creature whose weapon or limb you Control with a bare hand is also Grabbed. At Master rank, a creature you have Grabbed cannot Recenter.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank. Every talent here requires this. You gain the Clinch action.<br><br>Clinch ❶ Stance While you are in this stance, a bare hand counts as a rigid implement: you may Parry, Bind, and Gain Control with it, and a creature whose weapon or limb you Control with a bare hand is also Grabbed. At Master rank, a creature you have Grabbed cannot Recenter.",
     "root": true
    },
    {
@@ -722,6 +1055,7 @@
   "enabled": false,
   "feeds": "Wits",
   "parent": "Ranged",
+  "group": true,
   "meta": "Combat Style • Wits (prepared mechanical ranged weapons)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -730,7 +1064,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Brace the Stock ❶ action.<br><b>Brace the Stock ❶ Stance</b><br>You settle into a firing position.<br>Until you Move:<br>gain a +1 Situation bonus to all crossbow Strikes;<br>increase any Armor-Piercing [N] value of those attacks by 1;<br>if the attack Grazes, you choose the Zone it lands on.<br>The effect ends after you make a <b>Move</b>.",
+    "effect": "You learn this fighting style. Use your Ranged Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Ranged rank. You gain the Brace the Stock ❶ action.<br><br>Brace the Stock ❶ Stance<br>You settle into a firing position.<br>Until you Move:<br>gain a +1 Situation bonus to all crossbow Strikes;<br>increase any Armor-Piercing [N] value of those attack by 1;<br>if the attack Grazes, you choose the Zone it lands on.<br>The effect ends after you make a Move.",
     "root": true
    },
    {
@@ -791,6 +1125,7 @@
   "enabled": true,
   "feeds": "Agility",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Agility (one one-handed weapon, other hand free)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -799,7 +1134,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Hold the Cadence action.<br><b>Hold the Cadence ❶ Stance</b> You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the <b>same Defense it used against your previous Strike</b>, until you leave the stance or name another. At Master rank you may name a new creature ⓿.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank. Every talent here requires this. You gain the Hold the Cadence action.<br><br>Hold the Cadence ❶ Stance You must wield a single one-handed weapon with your other hand free. Name one creature as you enter the stance. That creature must answer your Strikes with the same Defense it used against your previous Strike, until you leave the stance or name another. At Master rank you may name a new creature ⓿.",
     "root": true
    },
    {
@@ -862,6 +1197,7 @@
   "enabled": true,
   "feeds": "Might",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Might (two hands, full commitment)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -870,7 +1206,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. You gain the Overreach action.<br><b>Overreach ❶ Stance</b><br>You must be wielding a two-handed melee weapon.<br>While you are in this stance your Hits and Critical Hits deal +2 damage and your Evade drops by 2, rising to +3 damage at Expert rank, +4 at Master, and +5 at Legendary. Every talent here requires this.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank. You gain the Overreach action.<br><br>Overreach ❶ Stance<br>You must be wielding a two-handed melee weapon.<br><br>While you are in this stance your Hits and Critical Hits deal +2 damage and your Evade drops by 2, rising to +3 damage at Expert rank, +4 at Master, and +5 at Legendary. Every talent here requires this.",
     "root": true
    },
    {
@@ -930,6 +1266,7 @@
   "enabled": false,
   "feeds": "Agility",
   "parent": "Ranged",
+  "group": true,
   "meta": "Combat Style • Agility (slings, thrown weapons, bolas)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -938,7 +1275,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Ranged Proficiency, and every Talent here counts toward your Ranged rank. You gain the Keep Moving ❶ action.<br><b>Keep Moving ❶ Stance<br>Requirements</b> You wield a sling or a weapon with the Thrown trait.<br>While in this stance:<br>if you make a ranged Strike, you may Step immediately before or after it;<br>you may use this benefit only once per round.",
+    "effect": "You learn this fighting style. Use your Ranged Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Ranged rank. You gain the Keep Moving ❶ action.<br><br>Keep Moving ❶ Stance<br>Requirements You wield a sling or a weapon with the Thrown trait.<br>While in this stance:<br>if you make a ranged Strike, you may Step immediately before or after it;<br>you may use this benefit only once per round.",
     "root": true
    },
    {
@@ -999,6 +1336,7 @@
   "enabled": false,
   "feeds": "Presence",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Presence (weapon and shield as one machine)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -1007,7 +1345,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Shield Wall action.<br><b>Shield Wall ❶ Stance</b> You must be wielding a shield. While you are in this stance your shield counts as <b>Raised at all times</b>, without spending an action for it, but you cannot Move; you may only Step. At Master rank you may Move up to half your Speed while the stance holds.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank. Every talent here requires this. You gain the Shield Wall action.<br><br>Shield Wall ❶ Stance You must be wielding a shield. While you are in this stance your shield counts as Raised at all times, without spending an action for it, but you cannot Move; you may only Step. At Master rank you may Move up to half your Speed while the stance holds.",
     "root": true
    },
    {
@@ -1057,7 +1395,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Flourish</b><br>With the protection of your shield, you dive into battle! You Raise your Shield and Move. If you end your movement within melee reach of at least one enemy, you can make a melee Strike against that enemy. You can use Defensive Advance while Burrowing, Climbing, Flying, or Swimming instead of Moving if you have the corresponding movement type.",
+    "effect": "Flourish<br>With the protection of your shield, you dive into battle! You Raise your Shield and Move. If you end your movement within melee reach of at least one enemy, you can make a melee Strike against that enemy. You can use Defensive Advance while Burrowing, Climbing, Flying, or Swimming instead of Striding if you have the corresponding movement type.",
     "requires": [
      "Shield Fighting Training"
     ]
@@ -1079,6 +1417,7 @@
   "enabled": false,
   "feeds": "Wits",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Wits (polearms and spears)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -1087,7 +1426,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. You gain the Keep Measure ❶ action.<br><b>Keep Measure ❶ Stance<br>Requirements</b> You are wielding a Hafted weapon.<br>While in this stance:<br>The first time each round an enemy moves from outside your Reach into it, you may Step ⓿ directly away after that movement finishes.<br>If that movement keeps the enemy within your Reach, it does not trigger Reactions from that enemy.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank. You gain the Keep Measure ❶ action.<br><br>Keep Measure ❶ Stance<br>Requirements You are wielding a Hafted weapon.<br>While in this stance:<br>The first time each round an enemy moves from outside your Reach into it, you may Step ⓿ directly away after that movement finishes.<br>If that movement keeps the enemy within your Reach, it does not trigger Reactions from that enemy.",
     "root": true
    },
    {
@@ -1136,7 +1475,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Press</b><br>While your opponent is still recovering from your prior attack, you snag its armor, clothing, or flesh to move it as you please. Make a melee Strike with a spear or polearm. If you hit a target that is your size or smaller, you can automatically Reposition it, with the same benefits as the Reposition action (including the Critical Success effect, if your Strike was a Critical Hit). Use your Total Reach for this Reposition.<br>This Strike has the following failure effect:<br><b>Failure</b> The target becomes Off-Guard until your next Opportunity.",
+    "effect": "Press<br>While your opponent is still recovering from your prior attack, you snag its armor, clothing, or flesh to move it as you please. Make a melee Strike with a spear or polearm. If you hit a target that is your size or smaller, you can automatically Reposition it, with the same benefits as the Reposition action (including the Critical Success effect, if your Strike was a Critical Hit). Use your Total Reach for this Reposition.This Strike has the following failure effect:Failure The target becomes Off-Guard until your next Opportunity.",
     "requires": [
      "Spear & Polearm Training"
     ]
@@ -1148,6 +1487,7 @@
   "enabled": false,
   "feeds": "Agility",
   "parent": "Melee",
+  "group": true,
   "meta": "Combat Style • Agility (a weapon in each hand)",
   "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
   "nodes": [
@@ -1156,7 +1496,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You are Trained in this fighting style: its exploits are open to you, and checks its talents call for use this Constellation's Proficiency. Attack rolls use your Melee Proficiency, and every Talent here counts toward your Melee rank. Every talent here requires this. You gain the Twin Openings action.<br><b>Twin Openings ❶ Stance</b> You must have a weapon in each hand. While you are in this stance, the first time each round that you hit the same creature with <b>both</b> of your weapons, you may make one of its zones <b>Exposed</b> after resolving the attack and damage.",
+    "effect": "You learn this fighting style. Use your Melee Proficiency for its checks and Attacks unless a technique specifies another check. Each Talent here contributes to your Melee rank. Every talent here requires this. You gain the Twin Openings action.<br><br>Twin Openings ❶ Stance You must have a weapon in each hand. While you are in this stance, the first time each round that you hit the same creature with both of your weapons, you may make one of its zones Exposed after resolving the attack and damage.",
     "root": true
    },
    {
@@ -1194,7 +1534,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You know Serrovine and Common.<br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
+    "effect": "You know Common and Serrovine.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
     "prereqs": "Raised in Serrovane",
     "root": true
    },
@@ -1213,11 +1553,10 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "+2 Situation to notice hidden clauses, traps, and altered terms in any agreement.",
+    "effect": "Read legal; and infernal; contracts at a glance.<br><br>+2 Situation to notice hidden clauses, traps, and altered terms in any agreement.",
     "requires": [
      "Serrovanian"
-    ],
-    "desc": "Read legal, and infernal, contracts at a glance."
+    ]
    },
    {
     "name": "Iron Etiquette",
@@ -1244,7 +1583,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "You know Reachspeak and Common.<br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
+    "effect": "You know Common and Reachspeak.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
     "prereqs": "Raised in the Kestrel Reach",
     "root": true
    },
@@ -1292,11 +1631,11 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in Awareness: add this Constellation's Proficiency Bonus to your Awareness checks, and to your Awareness Threshold (the number Sneak, Feint, and Lie attempts are measured against). Initiative is usually an Awareness check. Awareness answers Blights and Beguilement (see Chapter 2: The Four Threats).",
+    "effect": "You are Trained in Awareness. Awareness answers Blights and Beguilement (see Chapter 4: Threats and Permitted Defenses). Initiative is usually an Awareness check.",
     "root": true
    },
    {
-    "name": "Forewarned",
+    "name": "Sixth Sense",
     "tier": "T",
     "cost": 1,
     "enabled": false,
@@ -1310,7 +1649,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "When a creature critically fails to Feint against you, Lie to you, or Sneak past you, it becomes Exposed (Head) until it Recenters.",
+    "effect": "When a creature critically fails a check against your Awareness, it becomes Exposed (Head) until it Recenters.",
     "requires": [
      "Awareness Training"
     ]
@@ -1326,11 +1665,11 @@
     ]
    },
    {
-    "name": "Second Sense",
+    "name": "Blindsight",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "The first time each encounter that a hidden or unnoticed creature attacks you, you may use Guard against that attack even though you were unaware of it.",
+    "effect": "The first time each encounter that a hidden or unnoticed creature attacks you, you may Guard against that attack even though you were unaware of it.",
     "requires": [
      "Awareness Training"
     ]
@@ -1349,7 +1688,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in Evade: add this Constellation's Proficiency Bonus to your Evade checks. It is the number attack rolls are measured against when you try to slip a blow, and the check you roll against area effects, traps, and hazards. Evade answers Blows and Blasts.<br>You gain the <b>Void ❶↺</b> Reaction, and the Give Ground ⓿↺ Posture:<br>You gain a +2 Situation bonus to Evade for the triggering attack.<br>A Zone of your choice becomes Exposed until the end of the round, win or lose.",
+    "effect": "You are Trained in Evade. Evade answers Blows and Blasts (see Chapter 4: Threats and Permitted Defenses).<br><br>You gain the Give Ground ⓿↺ Posture:<br>Posture<br>Requirements You are not Grabbed or Restrained.<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You gain a +2 Situation bonus to Evade against the triggering attack. A Zone of your choice becomes Exposed.",
     "root": true
    },
    {
@@ -1373,11 +1712,11 @@
     ]
    },
    {
-    "name": "Slip the Line ⓿↺",
+    "name": "Slip the Line ❶↺",
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "Posture +2 to your Evade against one attack. If the blow does not Hit, you end in any square adjacent to the attacker, your choice.",
+    "effect": "You gain the Slip the Line ❶↺ Reaction:<br>Requirements You are not Grabbed or Restrained.<br>Trigger You are targeted by a melee Attack of which you are aware.<br><br>You gain a +2 Situation bonus to Evade against the triggering attack. If the Strike is a Graze or Miss, you may Move to any space adjacent to the attacker. In this case, Moving through an opponent’s space does not count as Difficult Terrain.",
     "requires": [
      "Evade Training"
     ]
@@ -1387,7 +1726,17 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "Posture +4 to your Evade against every attack until your next Opportunity. You end prone.",
+    "effect": "You gain the Drop Flat ⓿↺ Posture:<br>Posture<br>Requirements You are not Grabbed or Restrained.<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You drop Prone. You gain a +4 Situation bonus to Evade against the triggering attack.",
+    "requires": [
+     "Evade Training"
+    ]
+   },
+   {
+    "name": "Sidestep",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You gain the Sidestep ❶↺ Reaction:<br>Requirements You are not Grabbed or Restrained.<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You gain a +2 Situation bonus to Evade against the triggering attack. If the attack is a Graze or Miss, you may Step.",
     "requires": [
      "Evade Training"
     ]
@@ -1406,7 +1755,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in Guard: add this Constellation's Proficiency Bonus to your Guard checks. It is the number attack rolls are measured against when you meet a blow with weapon, shield, or braced arm, and the check you roll against fear, charm, confusion, and other assaults on your composure. Guard answers Blows and Beguilement, and answers a ranged Blow only with a shield Raised.<br>You gain the <b>Parry ❶↺</b> Reaction, and the Set Your Feet ⓿↺ Posture:<br>You gain a +2 Situation bonus to Guard for the triggering attack.<br>A Zone of your choice becomes Exposed until the end of the round, win or lose.",
+    "effect": "You are Trained in Guard. Guard answers Beguilement and Blows (see Chapter 4: Threats and Permitted Defenses). Guarding against a ranged Blow or an attack with an Area of Effect requires a Raised shield.<br><br>You gain the Set Your Feet ⓿↺ Posture:<br>Posture<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You gain a +2 Situation bonus to Guard against the triggering attack. A Zone of your choice becomes Exposed.",
     "root": true
    },
    {
@@ -1424,7 +1773,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "Posture You must have a shield Raised.<br>+4 to your Guard against every attack until your next Opportunity. Your Arms become Exposed, and your Speed is 0 until you spend an action to rise.",
+    "effect": "You gain the Kneel Behind the Shield ⓿↺ Posture:<br>Posture<br>Requirements Your shield is Raised.<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You gain a +4 Situation bonus to Guard against the triggering attack. Your Speed becomes 0 until you spend an action to rise. Your Arms become Exposed.",
     "requires": [
      "Guard Training"
     ]
@@ -1434,7 +1783,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "The first time each encounter that you take a Posture, it Exposes nothing.",
+    "effect": "The first time each encounter that you take a Posture you do not suffer the Exposed condition.",
     "requires": [
      "Guard Training"
     ]
@@ -1444,7 +1793,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Trigger</b> You are hit and have a hand free.<br><b>Effect</b> Reduce that attack's damage by 2 plus your Presence.",
+    "effect": "You gain the Deflecting Palms ❶↺ Reaction:<br>Requirements You have a hand free.<br>Trigger Your foe is no more than one size larger than you, and is attacking you with a melee weapon.<br><br>You gain a +2 Situation bonus to Guard against the triggering attack. If the Reduce that attack's damage by 1 plus your Presence.",
     "requires": [
      "Guard Training"
     ]
@@ -1454,7 +1803,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Trigger</b> An adjacent ally is attacked.<br><b>Effect</b> The attack is measured against your Guard instead of their chosen Defense, and any Bind that forms is with your weapon or shield.",
+    "effect": "You gain the Cover the Angle ❶↺ Reaction:<br>Requirements You are wielding a rigid object like a weapon or a shield.<br>Trigger An adjacent ally is being Attacked by a foe that is no more than one size larger than you with a melee weapon.<br><br>The attack roll is measured against your Guard instead of your ally’s Defense, and any Bind that forms is with your weapon or shield.",
     "requires": [
      "Guard Training"
     ]
@@ -1464,11 +1813,30 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Requirements</b> You are wearing Plate in all Zones.<br>Though you don't get any larger, you're treated as one size larger for the purposes of affecting other creatures with actions like Disarm, Grapple, Reposition, Shove, and Trip while wearing heavy armor. Similarly, you're treated as one size larger for the purposes of creatures affecting you with those same actions, as well as with Swallow Whole and similar actions, while wearing heavy armor.",
+    "effect": "Requirements You are wearing Plate in all Zones.<br><br>You're treated as one size larger for the purposes of affecting other creatures with Disarm, Grapple, Reposition, Shove, and Trip. Similarly, you're treated as one size larger for the purposes of creatures affecting you with those same maneuvers, as well as with Swallow Whole and similar actions.",
     "requires": [
      "Guard Training"
-    ],
-    "feeds": "Might"
+    ]
+   },
+   {
+    "name": "Parry ❶↺",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You gain the Parry ❶↺ Reaction:<br>Requirements You are wielding a rigid object like a weapon or a shield.<br>Trigger Your foe is no more than one size larger than you, and is Striking you with a melee weapon.<br><br>You gain a +2 Situation bonus to Guard against the triggering attack. If the Strike is a Graze or a Miss, you may immediately attempt to Gain Control of the attacking weapon.",
+    "requires": [
+     "Guard Training"
+    ]
+   },
+   {
+    "name": "Riposte",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "After you successfully Parry, instead of Controlling the attacking weapon, you may at once make a Quick Strike against its owner.",
+    "requires": [
+     "Parry"
+    ]
    }
   ]
  },
@@ -1484,7 +1852,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in Endure: add this Constellation's Proficiency Bonus to your Endure checks. It is the check you roll against poison, disease, exhaustion, and anything trying to break your body. Endure answers Blasts and Blights. You also reduce your Load Strain by 1 (to a minimum of 0) at Trained, 2 at Expert, 3 at Master, and 4 at Legendary. Your Vigor grows with your conditioning as well: at Expert rank in Endure you gain 1 more Vigor at every level, 2 at Master, and 3 at Legendary.",
+    "effect": "You are Trained in Endure. Endure answers Blasts and Blights (see Chapter 4: Threats and Permitted Defenses).<br><br>You reduce your Load Strain by 1 (to a minimum of 0) at Trained, 2 at Expert, 3 at Master, and 4 at Legendary.",
     "root": true
    },
    {
@@ -1492,7 +1860,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "Reduce each instance of persistent damage you take by your Might. This can never reduce it below 1.",
+    "effect": "Reduce each instance of Persistent Damage you take by your Might. This can never reduce it below 1.",
     "requires": [
      "Endure Training"
     ]
@@ -1512,7 +1880,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "+2 Situation bonus to your Guard against Shove, Trip, and Reposition.",
+    "effect": "You gain a +2 Situation bonus to Guard against Shove, Trip, and Reposition.",
     "requires": [
      "Endure Training"
     ]
@@ -1522,7 +1890,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "<b>Trigger</b> You would be moved by a forced movement effect<br><b>Requirements</b> You are wielding a melee weapon and are within reach of a hard surface<br>You plow your weapon into a floor, wall, or another sturdy surface, anchoring yourself in place. If you would be moved 6 feet or more, you are moved only 1 foot. Otherwise, you don't move at all.",
+    "effect": "Requirements You are wielding a rigid object like a weapon or a shield.<br>Trigger You would be moved by a forced movement effect.<br><br>You plow your weapon into a floor, wall, or another sturdy surface, anchoring yourself in place. If you would be moved 6 feet or more, you are moved only 1 foot. Otherwise, you don’t move at all.",
     "requires": [
      "Endure Training"
     ]
@@ -1541,7 +1909,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in this Lore: add the Constellation's rank to its checks. Recall and research within its field; you know its people, texts, and secrets. Every talent here requires this.",
+    "effect": "You are Trained in this Lore: add the Constellation's rank to its checks. Recall and research within its field; you know its history, texts, and secrets.",
     "root": true
    },
    {
@@ -1566,6 +1934,564 @@
    }
   ]
  },
+ "Elementalism": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Wits",
+  "meta": "Magic • Wits (Manipulation of fire, cold, water, wind, lightning, and related natural energies. Defenses and rituals are expressed as elemental alterations, not generic spells.)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Elementalism Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Elemental Dart (Blow, Zoned, 30 ft): Quick ❷ deals 1d6 fire or cold; Focused ❸ deals Damage Dice d6; Committed ❹ adds a 2-foot push or pull to a Hit, as described by the chosen element. Damage type is fixed when casting.",
+    "spell": {
+     "threat": "blow",
+     "delivery": "zoned",
+     "range": "30 ft",
+     "die": 6,
+     "types": [
+      "fire",
+      "cold"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "1d6 fire or cold",
+      "focused": "Damage Dice d6",
+      "committed": "Damage Dice d6; on a Hit, a 2-foot push or pull as the chosen element describes"
+     },
+     "defenses": []
+    },
+    "root": true
+   }
+  ]
+ },
+ "Flamecraft": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Wits",
+  "parent": "Elementalism",
+  "group": true,
+  "meta": "Magic • Wits",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Flamecraft Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Flame Seed ❷/❸/❹: cast a fire attack; on a Focused Hit, one creature takes Damage Dice d6 fire (Pervasive). Committed can instead affect a tiny 2-foot-radius area at reduced dice, subject to playtest.",
+    "spell": {
+     "threat": "blast",
+     "delivery": "pervasive",
+     "range": "",
+     "die": 6,
+     "types": [
+      "fire"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "",
+      "focused": "On a Hit, one creature takes Damage Dice d6 fire",
+      "committed": "A tiny 2-foot-radius area at reduced dice, subject to playtest"
+     },
+     "defenses": []
+    },
+    "root": true
+   },
+   {
+    "name": "Lingering Flame",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "On a Flamecraft Committed Hit, you may ignite one unoccupied 1-foot square in the effect until your next Opportunity; this terrain deals 1 fire damage to a creature entering it (once per creature).",
+    "requires": [
+     "Flamecraft Training"
+    ]
+   }
+  ]
+ },
+ "Stormcraft": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Wits",
+  "parent": "Elementalism",
+  "group": true,
+  "meta": "Magic • Wits",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Stormcraft Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Static Lash ❷/❸/❹: a Zoned lightning Blow against one target, 1d6 / Damage Dice d6 electricity; Committed can push the target 2 feet on a Hit.",
+    "spell": {
+     "threat": "blow",
+     "delivery": "zoned",
+     "range": "",
+     "die": 6,
+     "types": [
+      "electricity"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "1d6 electricity",
+      "focused": "Damage Dice d6 electricity",
+      "committed": "Damage Dice d6 electricity; on a Hit, push the target 2 feet"
+     },
+     "defenses": []
+    },
+    "root": true
+   },
+   {
+    "name": "Stormsense",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "You can identify an approaching natural storm and detect nearby exposed electrical currents or active storm magic; GM decides meaningful range.",
+    "requires": [
+     "Stormcraft Training"
+    ]
+   }
+  ]
+ },
+ "Forceweaving": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Might",
+  "meta": "Magic • Might (Control of momentum, kinetic pressure, gravity, impact, and physically manifest barriers. Emphasizes tactical displacement and interposition.)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Forceweaving Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Kinetic Dart (Blow, Zoned, 30 ft): Quick ❷ deals 1d6 bludgeoning; Focused ❸ deals Damage Dice d6; Committed ❹ may push a creature 2 feet on a Hit instead of gaining extra damage.",
+    "spell": {
+     "threat": "blow",
+     "delivery": "zoned",
+     "range": "30 ft",
+     "die": 6,
+     "types": [
+      "bludgeoning"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "1d6 bludgeoning",
+      "focused": "Damage Dice d6",
+      "committed": "On a Hit, push a creature 2 feet instead of gaining extra damage"
+     },
+     "defenses": []
+    },
+    "root": true
+   }
+  ]
+ },
+ "Kinetics": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Might",
+  "parent": "Forceweaving",
+  "group": true,
+  "meta": "Magic • Might",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Kinetics Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Vector Shove ❷: Blast versus Evade or Endure. On a Hit, push a creature up to 3 feet; on a Graze, 1 foot; on a Critical Hit, 5 feet. No damage.",
+    "spell": {
+     "threat": "blast",
+     "delivery": "",
+     "range": "",
+     "die": null,
+     "types": [],
+     "targets": "one",
+     "effects": {
+      "quick": "On a Hit, push a creature up to 3 feet; on a Graze, 1 foot; on a Critical Hit, 5 feet. No damage.",
+      "focused": "",
+      "committed": ""
+     },
+     "defenses": [
+      "evade",
+      "endure"
+     ]
+    },
+    "root": true
+   },
+   {
+    "name": "Anchor Point",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "❶↺ When you would be pushed by a Blast, gain +2 Endure against it; on Graze or Miss, prevent its forced movement.",
+    "requires": [
+     "Kinetics Training"
+    ]
+   }
+  ]
+ },
+ "Barriers": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Might",
+  "parent": "Forceweaving",
+  "group": true,
+  "meta": "Magic • Might",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Barriers Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Interpose Force ❶↺: When you or an adjacent creature suffers damage from a Zoned attack, reduce that damage by 2 after applicable Protection; once per round.",
+    "root": true
+   },
+   {
+    "name": "Woven Wall",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "❸ Prepared: create a short, stationary force barrier that grants Lesser Cover until your next Opportunity; exact dimensions require playtest.",
+    "requires": [
+     "Barriers Training"
+    ]
+   }
+  ]
+ },
+ "Vitalism": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Might",
+  "meta": "Magic • Might (Magic of living systems: restoration, growth, poison, disease, tissue, and decay. Healing and blight are different applications of one domain.)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Vitalism Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Sapping Touch (Blight, Pervasive, adjacent): Quick ❷ deals 1d4 poison; Focused ❸ deals Damage Dice d4 poison; Committed ❹ reduces the target’s next Move by 1 foot on a Hit. Creatures immune to poison ignore its damage.",
+    "spell": {
+     "threat": "blight",
+     "delivery": "pervasive",
+     "range": "adjacent",
+     "die": 4,
+     "types": [
+      "poison"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "1d4 poison",
+      "focused": "Damage Dice d4 poison",
+      "committed": "On a Hit, the target's next Move is reduced by 1 foot"
+     },
+     "defenses": []
+    },
+    "root": true
+   }
+  ]
+ },
+ "Restoration": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Might",
+  "parent": "Vitalism",
+  "group": true,
+  "meta": "Magic • Might",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Restoration Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Read Injury ❶: Identify whether a visible injury is a Wound, fatigue, poison, or ordinary loss of Vigor, subject to observable limits.",
+    "root": true
+   },
+   {
+    "name": "Restorative Practice",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Healing of Vigor or Wounds is reserved for a dedicated balance pass. At-will healing must not invalidate Spent, Wounds, recovery, or Downtime.",
+    "requires": [
+     "Restoration Training"
+    ]
+   }
+  ]
+ },
+ "Decay": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Might",
+  "parent": "Vitalism",
+  "group": true,
+  "meta": "Magic • Might",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Decay Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Toxic Bloom ❸: Prepare a small area of Blight; on a Hit, creatures in it take Damage Dice d4 poison damage (Pervasive). The initial area size is intentionally limited for testing.",
+    "spell": {
+     "threat": "blight",
+     "delivery": "pervasive",
+     "range": "",
+     "die": 4,
+     "types": [
+      "poison"
+     ],
+     "targets": "area",
+     "effects": {
+      "quick": "",
+      "focused": "On a Hit, creatures in the area take Damage Dice d4 poison",
+      "committed": ""
+     },
+     "defenses": []
+    },
+    "root": true
+   },
+   {
+    "name": "Purge Toxin",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "❶: Suppress one poison-induced penalty affecting yourself until the end of your next Opportunity; does not remove damage or end the poison.",
+    "requires": [
+     "Decay Training"
+    ]
+   }
+  ]
+ },
+ "Mindweaving": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Wits",
+  "meta": "Magic • Wits (Influence over perception, thought, emotion, dreams, memory, and illusions. Its illusions can mislead but do not create physical barriers.)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Mindweaving Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Mind Needle (Beguilement, Pervasive, 20 ft): Quick ❷ deals 1d4 psychic; Focused ❸ deals Damage Dice d4 psychic; Committed ❹ can instead make the target Wrong-Footed to your next attack on a Hit. The target answers with Awareness or Guard.",
+    "spell": {
+     "threat": "beguilement",
+     "delivery": "pervasive",
+     "range": "20 ft",
+     "die": 4,
+     "types": [
+      "psychic"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "1d4 psychic",
+      "focused": "Damage Dice d4 psychic",
+      "committed": "On a Hit, the target is instead Wrong-Footed to your next attack"
+     },
+     "defenses": [
+      "awareness",
+      "guard"
+     ]
+    },
+    "root": true
+   }
+  ]
+ },
+ "Illusion": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Wits",
+  "parent": "Mindweaving",
+  "group": true,
+  "meta": "Magic • Wits",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Illusion Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "False Image ❷: Create one stationary image in a visible 2-foot space until your next Opportunity. It cannot cause damage or physically impede movement.",
+    "root": true
+   },
+   {
+    "name": "Veiled Gesture",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "When casting an Illusion spell, you may conceal obvious visual signs from distant observers; nearby creatures still perceive ordinary speaking and movement.",
+    "requires": [
+     "Illusion Training"
+    ]
+   }
+  ]
+ },
+ "Emotions": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Wits",
+  "parent": "Mindweaving",
+  "group": true,
+  "meta": "Magic • Wits",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Emotions Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Unsettle ❷: Beguilement against Awareness or Guard; on a Hit, the target is Frightened 1; Graze and Miss have no effect.",
+    "spell": {
+     "threat": "beguilement",
+     "delivery": "",
+     "range": "",
+     "die": null,
+     "types": [],
+     "targets": "one",
+     "effects": {
+      "quick": "On a Hit, the target is Frightened 1; Graze and Miss have no effect",
+      "focused": "",
+      "committed": ""
+     },
+     "defenses": [
+      "awareness",
+      "guard"
+     ]
+    },
+    "root": true
+   },
+   {
+    "name": "Steady Thoughts",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "❶↺ When you would become Frightened, reduce the incoming Frightened value by 1 (minimum 0); once per round.",
+    "requires": [
+     "Emotions Training"
+    ]
+   }
+  ]
+ },
+ "Spiritcraft": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Presence",
+  "meta": "Magic • Presence (Manipulation of souls, spiritual bindings, oaths, curses, and unseen presences. Spiritcraft has its own defensive practices and rites.)",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Spiritcraft Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Spirit Lash (Blow, Zoned, 20 ft): Quick ❷ deals 1d6 force; Focused ❸ deals Damage Dice d6 force; Committed ❹ can suppress a spirit’s movement by 2 feet on a Hit. This spell may interact with incorporeal targets as specifically allowed by its Trait.",
+    "spell": {
+     "threat": "blow",
+     "delivery": "zoned",
+     "range": "20 ft",
+     "die": 6,
+     "types": [
+      "force"
+     ],
+     "targets": "one",
+     "effects": {
+      "quick": "1d6 force",
+      "focused": "Damage Dice d6 force",
+      "committed": "On a Hit, suppress a spirit's movement by 2 feet"
+     },
+     "defenses": []
+    },
+    "root": true
+   }
+  ]
+ },
+ "Oaths": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Presence",
+  "parent": "Spiritcraft",
+  "group": true,
+  "meta": "Magic • Presence",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Oaths Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Mark the Promise ❶: Witness a willing spoken promise and recognize whether its terms have been repeated or deliberately misquoted; this does not compel honesty.",
+    "root": true
+   },
+   {
+    "name": "Binding Vow",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "❸ Prepared ritual: Consecrate a spoken oath between willing participants. Spiritual consequences require separate agreed narrative or scenario rules.",
+    "requires": [
+     "Oaths Training"
+    ]
+   }
+  ]
+ },
+ "Exorcism": {
+  "category": "Magic",
+  "enabled": true,
+  "feeds": "Presence",
+  "parent": "Spiritcraft",
+  "group": true,
+  "meta": "Magic • Presence",
+  "sparks": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+  "nodes": [
+   {
+    "name": "Exorcism Training",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "Sense Presence ❶: Detect whether a manifested spirit is nearby, but not its exact square unless otherwise Observed.",
+    "root": true
+   },
+   {
+    "name": "Break Possession",
+    "tier": "T",
+    "cost": 1,
+    "enabled": true,
+    "effect": "❹ Prepared Beguilement against a possessing spirit’s Guard or Awareness; on a Hit, it must release the host until its next Opportunity. Cannot be repeatedly applied to the same spirit within one round.",
+    "spell": {
+     "threat": "beguilement",
+     "delivery": "",
+     "range": "",
+     "die": null,
+     "types": [],
+     "targets": "one",
+     "effects": {
+      "quick": "",
+      "focused": "",
+      "committed": "On a Hit, the possessing spirit must release the host until its next Opportunity"
+     },
+     "defenses": [
+      "guard",
+      "awareness"
+     ]
+    },
+    "requires": [
+     "Exorcism Training"
+    ]
+   }
+  ]
+ },
  "Acrobatics": {
   "category": "Skill",
   "enabled": true,
@@ -1578,7 +2504,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks.",
     "root": true
    },
    {
@@ -1792,7 +2718,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": false,
-    "effect": "On a successful Feint, you can use the following success and critical success effects instead of any other effects that would occur when you Feint.<br><b>Critical Success</b> The target takes a -2 Situation penalty to all attack rolls against you before the end of the next round.<br><b>Success</b> The target takes a -2 Situation penalty to its next attack roll against you before the end of the next round.",
+    "effect": "On a successful Feint, you can use the following success and critical success effects instead of any other effects that would occur when you Feint.Critical Success The target takes a -2 Situation penalty to all attack rolls against you before the end of the next round.Success The target takes a -2 Situation penalty to its next attack roll against you before the end of the next round.",
     "requires": [
      "Guile Training"
     ]
@@ -1940,7 +2866,7 @@
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Intercept ❶↺</b> Reaction. At Expert rank in Melee you also gain the <b>Counter ❶↺</b> Reaction.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
+    "effect": "You are Trained in Melee. Strikes and other Maneuvers involving melee weapons are usually Melee checks. <br><br>Special Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.<br><br>You gain the Intercept ❶↺ Reaction:<br>Requirements You are wielding a melee weapon.<br>Trigger A foe moves from outside your Total Reach to inside it, or attempts to Strike you with an Unwieldy weapon from inside its Unwieldy distance.<br><br>Make a Quick Strike against them. If it is a Critical Hit, their action is interrupted.",
     "root": true
    },
    {

@@ -53,11 +53,11 @@ export function registerMovementTracking() {
 /* -------------------------------------------- */
 
 /**
- * The actor's movement numbers in feet (PHB v4.10): Speed per Move, Step = half Speed, Rush = five
- * times Speed less Load Strain. The data model derives `step` and `rush`; if a build lacks them the
- * constants say the same thing.
+ * The actor's movement numbers in feet (PHB v4.21, Motion): Speed per Move, Step = half Speed,
+ * Rush = three times Speed less Load Strain, Crawl = half the Speed the legs had. The data model
+ * derives `step`, `rush` and `crawl`; if a build lacks them the constants say the same thing.
  * @param {Actor} actor
- * @returns {{speed: number, step: number, rush: number, loadStrain: number}}
+ * @returns {{speed: number, step: number, rush: number, crawl: number, loadStrain: number}}
  */
 export function movementNumbers(actor) {
   const sys = actor?.system ?? {};
@@ -70,36 +70,42 @@ export function movementNumbers(actor) {
   const loadStrain = Math.max(0, Number(sys.loadStrain) || 0);
   const step = Number.isFinite(sys.step) ? sys.step : Math.floor(speed / SW.STEP_DIVISOR);
   const rush = Number.isFinite(sys.rush) ? sys.rush : (speed * SW.RUSH_MULTIPLIER) - loadStrain;
-  return { speed, step: Math.max(0, step), rush: Math.max(0, rush), loadStrain };
+  // A fighter at Speed 0 crawls on the Speed the final Legs Wound took (ruling 138); a build
+  // without the derived number halves the stored Speed.
+  const fallbackCrawl = Math.floor(Math.max(speed, Number(sys.speed) || 0) / SW.CRAWL_DIVISOR);
+  const crawl = Number.isFinite(sys.crawl) ? sys.crawl : fallbackCrawl;
+  return { speed, step: Math.max(0, step), rush: Math.max(0, rush), crawl: Math.max(1, crawl), loadStrain };
 }
 
 /**
- * What a distance costs (PHB v4.10):
- *  - at Speed 0 (the final Legs Wound: Prone, cannot Stand): a Crawl ❶ per three feet, rounded up;
+ * What a distance costs (PHB v4.21):
+ *  - at Speed 0 (the final Legs Wound: Prone, cannot Stand): a Crawl ❶ per half Speed, rounded up;
  *  - within Step and across no difficult terrain: a Step ❶ (never provokes);
- *  - a straight line longer than three Moves and within Rush: a Rush ❸ (always provokes);
+ *  - a straight line longer than two Moves and within Rush: a Rush ❷ (always provokes; three
+ *    times Speed for two actions, so cheaper than the three Moves it replaces);
  *  - otherwise one Move ❶ per Speed's worth, rounded up.
- * `rushInstead` flags a bent path that a straight Rush would have paid three for.
+ * `rushInstead` flags a bent path that a straight Rush would have paid two for.
  * @param {number} feet
- * @param {{speed: number, step: number, rush: number}} numbers
+ * @param {{speed: number, step: number, rush: number, crawl?: number}} numbers
  * @param {object} [options]
  * @param {boolean} [options.terrain=false]   Did the path cross difficult terrain (cost above distance)?
  * @param {boolean} [options.straight=true]   Is the path a single straight line?
  * @returns {{kind: "crawl"|"step"|"move"|"rush", actions: number, moves: number, rushInstead: boolean}}
  */
-export function classifyMove(feet, { speed, step, rush }, { terrain = false, straight = true } = {}) {
+export function classifyMove(feet, { speed, step, rush, crawl = 3 }, { terrain = false, straight = true } = {}) {
   const eps = 1e-6;
-  // Prone and unable to Stand, you cannot Step, Move or Rush; Crawl ❶ is "while prone, move 3
-  // feet", one action per three feet of the path's cost. Checked first so a stale `step` cannot
-  // turn a crawl into a Step.
+  // Prone and unable to Stand, you cannot Step, Move or Rush; Crawl ❶ is "while prone, Move up
+  // to half your Speed", one action per that many feet of the path's cost. Checked first so a
+  // stale `step` cannot turn a crawl into a Step.
   if (speed <= 0) {
-    const crawls = Math.max(1, Math.ceil((feet / SW.CRAWL_FEET) - eps));
+    const per = Math.max(1, Number(crawl) || 1);
+    const crawls = Math.max(1, Math.ceil((feet / per) - eps));
     return { kind: "crawl", actions: crawls, moves: crawls, rushInstead: false };
   }
   if ((feet <= step + eps) && !terrain) return { kind: "step", actions: 1, moves: 1, rushInstead: false };
   const moves = Math.max(1, Math.ceil((feet / speed) - eps));
-  const rushable = (feet > (3 * speed) + eps) && (feet <= rush + eps);
-  if (rushable && straight) return { kind: "rush", actions: 3, moves, rushInstead: false };
+  const rushable = (feet > (SW.RUSH_COST * speed) + eps) && (feet <= rush + eps);
+  if (rushable && straight) return { kind: "rush", actions: SW.RUSH_COST, moves, rushInstead: false };
   return { kind: "move", actions: moves, moves, rushInstead: rushable && !straight };
 }
 
@@ -145,7 +151,7 @@ function onTokenMoves(token, movement, options) {
   if (moveCapped(move) && setting("capMoves", true)) {
     const key = (move.kind === "crawl") ? "STARWROUGHT.Actions.crawlCapped" : "STARWROUGHT.Actions.moveCapped";
     ui.notifications.warn(format(key, {
-      name: actor.name, feet: Math.round(feet.cost), speed: numbers.speed, crawl: SW.CRAWL_FEET, rush: numbers.rush
+      name: actor.name, feet: Math.round(feet.cost), speed: numbers.speed, crawl: numbers.crawl, rush: numbers.rush
     }));
     return false;
   }
@@ -251,12 +257,13 @@ function announceMove(actor, move, feet, numbers) {
   const notes = [];
   switch (move.kind) {
     case "crawl":
-      // The final Legs Wound: Prone, cannot Stand, three feet an action (PHB v4.10, Crawl ❶).
+      // The final Legs Wound: Prone, cannot Stand, half the Speed the legs had an action (PHB
+      // v4.21, Crawl ❶; ruling 138).
       glyph = g[1];
       title = move.moves > 1
         ? format("STARWROUGHT.Actions.crawlTitleMany", { n: move.moves })
         : localize("STARWROUGHT.Actions.crawlTitle");
-      text = format("STARWROUGHT.Actions.crawlText", { name, feet: rounded, crawl: SW.CRAWL_FEET, cost: move.actions });
+      text = format("STARWROUGHT.Actions.crawlText", { name, feet: rounded, crawl: numbers.crawl, cost: move.actions });
       notes.push(localize("STARWROUGHT.Actions.crawlNote"));
       if (move.moves > 1) notes.push(localize("STARWROUGHT.Actions.moveChainNote"));
       break;
@@ -267,7 +274,7 @@ function announceMove(actor, move, feet, numbers) {
       notes.push(localize("STARWROUGHT.Actions.stepNote"));
       break;
     case "rush":
-      glyph = g[3];
+      glyph = g[SW.RUSH_COST];
       title = localize("STARWROUGHT.Actions.rushTitle");
       text = format("STARWROUGHT.Actions.rushText", { name, feet: rounded, rush: numbers.rush, speed: numbers.speed });
       notes.push(localize("STARWROUGHT.Actions.rushNote"));
@@ -451,9 +458,8 @@ async function onInterceptDefense({ actor: mover, button }) {
   const threshold = Number(button.dataset.threshold) || 10;
   const attacker = interceptorFrom(button.dataset);
   // The mover answers an Intercept with the basic Defense alone: a Reaction never triggers a
-  // Reaction (PHB v4.10, Answering an Attack), so no Parry, Void or Counter is offered and the
-  // mover's stance is left standing. answeringDefense() names that basic Defense whatever stance
-  // they hold (Parry is a Guard, Void an Evade, Counter the better of the two, Grabbed swap applied).
+  // Reaction (PHB v4.21, Answering an Attack), so no Reaction Talent is offered and the mover's
+  // stance is left standing. answeringDefense() names that basic Defense (Grabbed swap applied).
   const answering = typeof mover.answeringDefense === "function" ? mover.answeringDefense() : null;
   const key = answering?.key ?? ((mover.system.stance in SW.DEFENSES) ? mover.system.stance : "evade");
   return mover.rollDefense(key, {

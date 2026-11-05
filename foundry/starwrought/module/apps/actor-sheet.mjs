@@ -19,6 +19,16 @@ import { requestTake } from "../documents/party-socket.mjs";
 // AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
 import { auraRowsByItem, reachRangeRows, rangeFor } from "../canvas/auras.mjs";
 
+/** The Cast ❷ ❸ ❹ a spell Talent's row carries (PHB v4.21, the Cast Maneuver). */
+function castButtons() {
+  return Object.entries(SW.CAST_KINDS).map(([key, kind]) => ({
+    key,
+    glyph: SW.ACTION_GLYPHS[kind.cost],
+    label: game.i18n.localize(kind.label),
+    hint: game.i18n.localize(`${kind.label}Hint`)
+  }));
+}
+
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 
@@ -53,7 +63,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       recovery: SwCharacterSheet.#onRecovery,
       refuseDeath: SwCharacterSheet.#onRefuseDeath,
       spendHeroPoint: SwCharacterSheet.#onSpendHeroPoint,
-      spendDeferred: SwCharacterSheet.#onSpendDeferred,
+      spendComet: SwCharacterSheet.#onSpendComet,
+      restTenMinutes: SwCharacterSheet.#onRestTenMinutes,
+      castSpell: SwCharacterSheet.#onCastSpell,
+      toggleVisor: SwCharacterSheet.#onToggleVisor,
+      toggleAdjusted: SwCharacterSheet.#onToggleAdjusted,
       treatWound: SwCharacterSheet.#onTreatWound,
       adjustWound: SwCharacterSheet.#onAdjustWound,
       endBind: SwCharacterSheet.#onEndBind,
@@ -167,8 +181,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         postureExposed: !!z.postureExposed,
         piece: z.piece,
         material: z.material,
-        materialLabel: game.i18n.localize(z.materialLabel ?? SW.MATERIALS.none.label),
-        weakTo: z.weakTo ? game.i18n.localize(SW.DAMAGE_TYPES[z.weakTo].label) : null,
+        materialLabel: game.i18n.localize(z.materialLabel ?? SW.ARMOR_TYPES.none.label),
         crit: game.i18n.localize(SW.ZONE_CRITICALS[key].effect),
         wounds: zoneWounds(actor, key)
       };
@@ -211,12 +224,20 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.auraByItem = auraRowsByItem(actor);
     context.ranges = reachRangeRows(actor);
 
-    // Movement, in feet: a Move, a Step, a Rush, a Leap.
+    // Movement, in feet (PHB v4.21): a Move, a Step, a Rush ❷, the three Leaps, a Crawl.
+    const speed = sys.speed ?? 0;
+    const strain = sys.loadStrain ?? 0;
+    const leap = sys.leap ?? {};
     context.movement = {
-      speed: sys.speed ?? 0,
-      step: sys.step ?? Math.floor((sys.speed ?? 0) / SW.STEP_DIVISOR),
-      rush: sys.rush ?? Math.max(0, (sys.speed ?? 0) * SW.RUSH_MULTIPLIER - (sys.loadStrain ?? 0)),
-      leap: sys.leap ?? Math.max(0, SW.LEAP_FEET - (sys.loadStrain ?? 0))
+      speed,
+      step: sys.step ?? Math.floor(speed / SW.STEP_DIVISOR),
+      rush: sys.rush ?? Math.max(0, speed * SW.RUSH_MULTIPLIER - strain),
+      rushGlyph: SW.ACTION_GLYPHS[SW.RUSH_COST],
+      leap: Object.entries(SW.LEAP_STEPS).map(([cost, factor]) => ({
+        glyph: SW.ACTION_GLYPHS[cost],
+        feet: leap[cost] ?? Math.max(0, Math.floor(speed * factor) - strain)
+      })),
+      crawl: sys.crawl ?? Math.floor(speed / SW.CRAWL_DIVISOR)
     };
 
     context.totalReachHint = sys.reachWeapon
@@ -240,15 +261,16 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       tooltip: game.i18n.format("STARWROUGHT.Milestone.pipHint", { n: reached, of: MILESTONES_PER_LEVEL })
     };
 
-    // 0.7.0 (party-sheet-plan.md, part 3; ruling 94): the Deferred Talent Points the character
-    // holds, a Milestone point that found no Flared Constellation. A reminder with a number on it,
-    // shown beside the pips while above 0, with one control, Spent, for the owner or the GM.
-    const deferred = Math.max(0, Number(sys.deferred) || 0);
-    context.deferred = {
-      count: deferred,
-      show: deferred > 0,
+    // The Comets the character holds (PHB v4.21; 0.7.0's Deferred Talent Point renamed, rulings
+    // 94 and 145): a Talent Point for any Constellation, from the fourth Milestone or a Milestone
+    // point no Flare could take. A reminder with a number on it, shown beside the pips while
+    // above 0, with one control, Spent, for the owner or the GM.
+    const comets = Math.max(0, Number(sys.comets) || 0);
+    context.comets = {
+      count: comets,
+      show: comets > 0,
       canSpend: actor.isOwner || game.user.isGM,
-      tooltip: game.i18n.format("STARWROUGHT.Deferred.badgeHint", { n: deferred })
+      tooltip: game.i18n.format("STARWROUGHT.Comet.badgeHint", { n: comets })
     };
 
     // 0.5.1 (T13): Refuse Death is for the Dying with a Hero Point to spend; the button says why
@@ -335,8 +357,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /* -------------------------------------------- */
 
   /**
-   * Melee and Ranged as the overview shows them: rank and Proficiency for each, the specialization
-   * damage the better of the two earns, and the number of weapon dice your level rolls.
+   * Melee and Ranged as the overview shows them: rank and Proficiency for each, and the weapon
+   * dice each rank rolls (PHB v4.21: one at Trained to four at Legendary; no specialization).
    */
   #prepareStrikes() {
     const sys = this.document.system;
@@ -352,7 +374,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         rank,
         rankLabel: game.i18n.localize(SW.RANKS[rank]?.label ?? SW.RANKS.untrained.label),
         proficiency: entry.proficiency ?? 0,
-        specialization: entry.specialization ?? 0,
+        dice: entry.dice ?? SW.weaponDice(rank),
         attribute: sys.constellations?.[slug]?.attribute ?? SW.constellations[slug]?.attribute ?? fallbackAttribute
       };
     };
@@ -361,7 +383,6 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return {
       melee,
       ranged,
-      weaponDice: sys.weaponDice ?? SW.weaponDice(sys.level),
       kinds: Object.entries(SW.STRIKE_KINDS).map(([key, kind]) => ({
         key,
         label: game.i18n.localize(kind.label),
@@ -397,14 +418,20 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
     for (const entry of Object.values(all)) {
       const group = groupFor(entry.category ?? "general");
-      // A parent (Melee, Ranged) counts its Combat Styles' points toward its rank; a child says
-      // which parent it feeds. Neither changes what the Talents themselves cost.
+      // A parent (Melee, Ranged, a discipline) counts its groups' points toward its rank; a group
+      // (PHB v4.21: a Combat Style, a magical specialty) has no rank of its own and wears the
+      // parent's, dimmed, with a hint saying whose. Neither changes what the Talents themselves cost.
       const inherited = Number(entry.inherited) || 0;
+      const parentName = parentNameOf(entry.parent);
       group.constellations.push({
         ...entry,
         pool: entry.pool ?? entry.points,
         inherited,
-        parentName: parentNameOf(entry.parent),
+        parentName,
+        rankFromName: entry.rankFrom ? parentName : "",
+        rankHint: entry.rankFrom
+          ? game.i18n.format("STARWROUGHT.Hint.groupRank", { parent: parentName })
+          : game.i18n.localize(SW.ATTRIBUTES[entry.attribute]?.label ?? ""),
         rankLabel: game.i18n.localize(entry.rankLabel),
         attributeGlyph: SW.ATTRIBUTES[entry.attribute]?.glyph ?? "",
         attributeLabel: game.i18n.localize(SW.ATTRIBUTES[entry.attribute]?.label ?? ""),
@@ -417,7 +444,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           tier: t.system.tier,
           glyph: t.system.glyph,
           root: t.system.root || t.system.bloodlineRoot,
-          effect: t.system.effect
+          effect: t.system.effect,
+          // A spell Talent (PHB v4.21) carries the Cast ❷ ❸ ❹ on its row.
+          spell: t.system.isSpell ? { casts: castButtons() } : null
         }))
       });
     }
@@ -427,6 +456,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         if (!meta.slug || all[meta.slug] || SW.isLoreSlug(meta.slug)) continue;
         const attribute = (meta.attribute in SW.ATTRIBUTES) ? meta.attribute : "might";
         const category = SW.CATEGORIES[meta.category] ? meta.category : "general";
+        // An unopened group wears its parent's rank too, when the parent is open (PHB v4.21).
+        const parentEntry = meta.parent ? all[meta.parent] : null;
+        const rank = parentEntry?.rank ?? "untrained";
+        const parentName = parentNameOf(meta.parent);
         groupFor(category).constellations.push({
           slug: meta.slug,
           name: meta.name,
@@ -434,13 +467,17 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           attribute,
           attributeGlyph: SW.ATTRIBUTES[attribute].glyph,
           attributeLabel: game.i18n.localize(SW.ATTRIBUTES[attribute].label),
-          rank: "untrained",
-          rankLabel: game.i18n.localize(SW.RANKS.untrained.label),
-          bonus: 0,
+          rank,
+          rankLabel: game.i18n.localize(SW.RANKS[rank]?.label ?? SW.RANKS.untrained.label),
+          rankFromName: meta.parent ? parentName : "",
+          rankHint: meta.parent
+            ? game.i18n.format("STARWROUGHT.Hint.groupRank", { parent: parentName })
+            : game.i18n.localize(SW.ATTRIBUTES[attribute].label),
+          bonus: parentEntry?.bonus ?? 0,
           points: 0,
-          pool: 0,
+          pool: parentEntry?.pool ?? 0,
           inherited: 0,
-          parentName: parentNameOf(meta.parent),
+          parentName,
           next: null,
           talents: [],
           unopened: true,
@@ -509,14 +546,26 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       else inventory.stowed.push(row);
     }
 
-    inventory.armorRows = Object.keys(SW.ZONES).map(zone => ({
-      zone,
-      label: game.i18n.localize(SW.ZONES[zone].label),
-      item: wornArmor[zone],
-      protection: actor.system.zones[zone].protection,
-      exposed: actor.system.zones[zone].exposed,
-      wounds: zoneWounds(actor, zone)
-    }));
+    inventory.armorRows = Object.keys(SW.ZONES).map(zone => {
+      const item = wornArmor[zone];
+      return {
+        zone,
+        label: game.i18n.localize(SW.ZONES[zone].label),
+        item,
+        protection: actor.system.zones[zone].protection,
+        exposed: actor.system.zones[zone].exposed,
+        wounds: zoneWounds(actor, zone),
+        // The two armor traits the system acts on (PHB v4.21): a Visored piece's visor, up or
+        // down, flipped for an action; a Fitted piece's adjusted tick, the player's word.
+        visored: !!item?.system.visored,
+        lowered: !!item?.system.visorLowered,
+        fitted: !!item?.system.fitted,
+        adjusted: !!item?.system.fittedAdjusted
+      };
+    });
+    inventory.fittedCount = actor.system.fittedCount ?? 0;
+    inventory.fittedHarness = !!actor.system.fittedHarness;
+    inventory.fittedZones = SW.FITTED_ZONES;
 
     // A piece can only be worn on an empty Zone, so the picker offers what is actually stowed.
     inventory.stowedArmorByZone = {};
@@ -576,7 +625,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const actor = this.document;
     const sys = actor.system;
     const slugKey = item.system.isRanged ? "ranged" : "melee";
-    const training = sys[slugKey] ?? { rank: "untrained", proficiency: 0, specialization: 0 };
+    const training = sys[slugKey] ?? { rank: "untrained", proficiency: 0, dice: 1 };
     // Handling still applies: Practiced drops a rank without Familiarity, Technical drops to Untrained.
     const rank = actor.weaponRank?.(item) ?? training.rank ?? "untrained";
 
@@ -586,16 +635,15 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const standing = SW.resolveModifiers(sys.attackModifiers ?? []).total;
     const attackMod = sys.attributes[attribute].mod + SW.rankBonus(rank) + sys.bonuses.attack + standing;
 
-    const dice = sys.weaponDice ?? SW.weaponDice(sys.level);
+    // The dice are the rank's (PHB v4.21), the rank Handling leaves this weapon with.
+    const dice = SW.weaponDice(rank);
     const might = item.system.flags.mechanical ? 0 : sys.attributes.might.mod;
-    const flat = might + (training.specialization ?? 0);
+    const flat = might;
     const die = item.system.effectiveDie;
     const full = flat ? `${dice}d${die}+${flat}` : `${dice}d${die}`;
-    // The Combat Style whose Key Attribute won, named for the tooltip. `system.style` is the
-    // Style's name or slug as authored on the weapon; slugify so either spelling finds it.
-    const styleSlug = SW.slugify(item.system.style ?? "");
-    const styleName = strike.source === "style"
-      ? (sys.constellations?.[styleSlug]?.name ?? SW.getConstellation(styleSlug)?.name ?? item.system.style)
+    // A Thrown weapon's throw is Might (PHB v4.21), said in the tooltip when it would differ.
+    const thrownNote = (item.system.flags?.thrown && !item.system.isRanged && (attribute !== "might"))
+      ? ` ${game.i18n.localize("STARWROUGHT.Strike.attributeThrown")}`
       : "";
 
     return {
@@ -607,9 +655,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       strikeAttribute: attribute,
       strikeAttributeGlyph: SW.ATTRIBUTES[attribute].glyph,
       strikeAttributeAbbr: game.i18n.localize(SW.ATTRIBUTES[attribute].abbr),
-      strikeAttributeHint: strike.source === "style"
-        ? game.i18n.format("STARWROUGHT.Strike.attributeFromStyle", { attribute: attributeLabel, style: styleName })
-        : game.i18n.format("STARWROUGHT.Strike.attributeFromWeapon", { attribute: attributeLabel }),
+      strikeAttributeHint: game.i18n.format("STARWROUGHT.Strike.attributeFromWeapon", { attribute: attributeLabel }) + thrownNote,
       damage: `${full} ${game.i18n.localize(SW.DAMAGE_TYPES[item.system.effectiveType].label)}`,
       quickDamage: `1d${die}`,
       // Total Reach is your Natural Reach plus the weapon's. A ranged weapon shows its range.
@@ -807,6 +853,19 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.setExposed(zone, !this.document.system.zones[zone].exposed);
   }
 
+  /** Raise or lower a Visored piece's visor (PHB v4.21): the Item's own method pays the action and says so. */
+  static async #onToggleVisor(event, target) {
+    const item = this.document.items.get(target.closest("[data-item-id]")?.dataset.itemId);
+    return item?.toggleVisor?.();
+  }
+
+  /** Tick or untick a Fitted piece as adjusted to its wearer (PHB v4.21): the player's word, no action. */
+  static async #onToggleAdjusted(event, target) {
+    const item = this.document.items.get(target.closest("[data-item-id]")?.dataset.itemId);
+    if (!item || (item.type !== "armor")) return null;
+    return item.update({ "system.adjusted": !item.system.adjusted });
+  }
+
   static async #onRecenter() {
     return this.document.recenter();
   }
@@ -829,17 +888,22 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
-   * The Deferred badge's one control (0.7.0, ruling 94): spend one Deferred Talent Point, and the
-   * table is told. ApplicationV2 actions fire whatever the sheet's editability, so the permission
-   * is checked again here: the owner, or the GM.
+   * The Comet badge's one control (0.7.0, ruling 94; PHB v4.21's name, ruling 145): spend one
+   * Comet, and the table is told. ApplicationV2 actions fire whatever the sheet's editability, so
+   * the permission is checked again here: the owner, or the GM.
    */
-  static async #onSpendDeferred() {
+  static async #onSpendComet() {
     const actor = this.document;
     if (!actor.isOwner && !game.user.isGM) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
       return null;
     }
-    return actor.spendDeferred();
+    return actor.spendComet();
+  }
+
+  /** Ten minutes' rest (PHB v4.21): level x Presence Vigor back and Fatigued off; the table's word that the minutes passed. */
+  static async #onRestTenMinutes() {
+    return this.document.restTenMinutes();
   }
 
   /** Ten minutes and an Endure check against 10 + the Wounds carried. The actor rolls it. */
@@ -882,6 +946,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onItemUse(event, target) {
     const item = this.#getItem(target);
     return item?.use({ dialog: !event.shiftKey });
+  }
+
+  /** The Cast Maneuver on a spell Talent's row (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed. */
+  static async #onCastSpell(event, target) {
+    const item = this.#getItem(target);
+    if (!item) return null;
+    return this.document.castSpell?.(item.id, { cast: target.dataset.cast, dialog: !event.shiftKey });
   }
 
   static async #onItemEdit(event, target) {

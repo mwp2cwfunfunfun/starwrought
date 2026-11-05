@@ -1,0 +1,71 @@
+{
+  "_id": "661a81dd91940302",
+  "name": "Vitalism Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "vitalism",
+    "constellationName": "Vitalism",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Sapping Touch (Blight, Pervasive, adjacent): Quick ❷ deals 1d4 poison; Focused ❸ deals Damage Dice d4 poison; Committed ❹ reduces the target’s next Move by 1 foot on a Hit. Creatures immune to poison ignore its damage.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blight",
+      "delivery": "pervasive",
+      "range": 0,
+      "adjacent": true,
+      "die": 4,
+      "types": [
+        "poison"
+      ],
+      "targets": "one",
+      "defenses": [],
+      "effects": {
+        "quick": "1d4 poison",
+        "focused": "Damage Dice d4 poison",
+        "committed": "On a Hit, the target's next Move is reduced by 1 foot"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "84dbb77e828eff5d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "cd7ed86553ad4768"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!661a81dd91940302"
+}

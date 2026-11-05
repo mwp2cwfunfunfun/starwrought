@@ -341,13 +341,19 @@ const LEGACY_CALLING_VIGOR = Object.freeze({
  * where it had been a per-level number. See LEGACY_CALLING_VIGOR.
  *
  * 0.10.1: token bars left on `hp` by the 0.6.0 rename point at `vigor`.
+ *
+ * 0.11.0 (PHB v4.21): what `migrateData` reads across on every load is written down once, so the
+ * stored documents say what the models say: a stance stood as Void, Parry or Counter becomes the
+ * Defense it stood on (SW.LEGACY_STANCES); a `deferred` count becomes `comets`; a Scale armor
+ * piece becomes Lamellar and a weapon's Combat Style field goes; an adversary Zone's material
+ * goes. Counted and said once.
  */
 async function migrateWorld() {
   if (!game.user.isGM) return;
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1")) {
+  if (!needs("0.4.0") && !needs("0.4.1") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -508,7 +514,58 @@ async function migrateWorld() {
     }
   }
 
+  // 0.11.0 (PHB v4.21): the stored shapes the models now read across, written down. The models'
+  // migrateData has already turned each of these on the way in, so the write is what the document
+  // already says, from `_source` so a value the model cleaned is still seen.
+  let v421 = 0;
+  if (needs("0.11.0")) {
+    for (const actor of game.actors) {
+      if (actor.type === SW.PARTY_TYPE) continue;
+      const src = actor._source.system ?? {};
+      const changes = {};
+      if (src.stance in SW.LEGACY_STANCES) changes["system.stance"] = SW.LEGACY_STANCES[src.stance];
+      if (src.deferred !== undefined) {
+        changes["system.comets"] = Number(src.comets ?? src.deferred) || 0;
+        changes["system.-=deferred"] = null;
+      }
+      if (actor.type === "npc") {
+        for (const [zone, z] of Object.entries(src.zones ?? {})) {
+          if (z && (typeof z === "object") && ("material" in z)) changes[`system.zones.${zone}.-=material`] = null;
+        }
+      }
+      if (!foundry.utils.isEmpty(changes)) {
+        await actor.update(changes);
+        v421++;
+      }
+      const items = [];
+      for (const item of actor.items) {
+        const s = item._source.system ?? {};
+        if ((item.type === "armor") && (s.material in SW.LEGACY_ARMOR_TYPES)) items.push({ _id: item.id, "system.material": SW.LEGACY_ARMOR_TYPES[s.material] });
+        else if ((item.type === "weapon") && (s.style !== undefined)) items.push({ _id: item.id, "system.-=style": null });
+      }
+      if (items.length) {
+        await actor.updateEmbeddedDocuments("Item", items);
+        v421 += items.length;
+      }
+    }
+    for (const item of game.items) {
+      const s = item._source.system ?? {};
+      if ((item.type === "armor") && (s.material in SW.LEGACY_ARMOR_TYPES)) {
+        await item.update({ "system.material": SW.LEGACY_ARMOR_TYPES[s.material] });
+        v421++;
+      } else if ((item.type === "weapon") && (s.style !== undefined)) {
+        await item.update({ "system.-=style": null });
+        v421++;
+      }
+    }
+  }
+
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (v421 > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.v421", { version: game.system.version, count: v421 });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (bars > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.tokenBars", { version: game.system.version, count: bars });
     console.log(`STARWROUGHT | ${message}`);

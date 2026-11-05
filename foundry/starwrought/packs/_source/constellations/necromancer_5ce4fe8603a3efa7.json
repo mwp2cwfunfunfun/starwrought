@@ -1,0 +1,36 @@
+{
+  "_id": "5ce4fe8603a3efa7",
+  "name": "Necromancer",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/necromancer.png",
+  "system": {
+    "slug": "necromancer",
+    "category": "calling",
+    "attribute": "presence",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Calling • Presence (6 Opening Vigor • Death Echo)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Calling • Presence (6 Opening Vigor • Death Echo)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a97f497f23c70887"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5ce4fe8603a3efa7"
+}

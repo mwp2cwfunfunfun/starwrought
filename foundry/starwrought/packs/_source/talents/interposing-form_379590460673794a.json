@@ -1,0 +1,55 @@
+{
+  "_id": "379590460673794a",
+  "name": "Interposing Form ❶↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "summoner",
+    "constellationName": "Summoner",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Call Manifestation"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger: You or an ally within 3 feet of your manifestation would take damage from a Zoned Attack. Dismiss the manifestation and reduce that instance of damage by 2 after Protection. This is physical interception, not Resistance. Once per round.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "5ebe1c9a3fe35773",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c18ae795e50d2015"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!379590460673794a"
+}

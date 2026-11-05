@@ -1,0 +1,36 @@
+{
+  "_id": "e062d47e1633d56e",
+  "name": "Forceweaving",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/forceweaving.png",
+  "system": {
+    "slug": "forceweaving",
+    "category": "magic",
+    "attribute": "might",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Magic • Might (Control of momentum, kinetic pressure, gravity, impact, and physically manifest barriers. Emphasizes tactical displacement and interposition.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Might (Control of momentum, kinetic pressure, gravity, impact, and physically manifest barriers. Emphasizes tactical displacement and interposition.)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "b78977b7614476e6"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e062d47e1633d56e"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "b8f9c4ee7eea0862",
+  "name": "Illusion",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/illusion.png",
+  "system": {
+    "slug": "illusion",
+    "category": "magic",
+    "attribute": "wits",
+    "parentSlug": "mindweaving",
+    "group": true,
+    "meta": "Magic • Wits",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c9cb95f7e8cb5887"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b8f9c4ee7eea0862"
+}

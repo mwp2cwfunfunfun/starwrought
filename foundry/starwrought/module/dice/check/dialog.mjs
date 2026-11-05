@@ -26,9 +26,10 @@ export async function prompt(cfg, parts) {
   const isDefense = cfg.kind === "defense";
 
   // Modifiers offered unticked, because the rule applies to a check the engine cannot tell
-  // apart from its neighbours. Load Strain on an Athletics check (PHB v4.11): a Climb or a Swim
-  // takes it, a grapple or a tumble does not, and only the player knows which this is (ruling
-  // R2). Each is a checkbox named `extra-<key>`; the ticked ones join the roll below.
+  // apart from its neighbours. Load Strain on an Athletics check (PHB v4.21, Speed at the
+  // margin): a Climb or a Swim takes it, a grapple or a tumble does not, and only the player
+  // knows which this is (ruling R2). Typed Condition as the book says. Each is a checkbox named
+  // `extra-<key>`; the ticked ones join the roll below.
   const extras = [];
   const strain = Number(actor.system?.loadStrain) || 0;
   if ((cfg.kind === "check") && (SW.STRAIN_CHECKS[cfg.slug] === "offered") && (strain >= 1)) {
@@ -37,7 +38,7 @@ export async function prompt(cfg, parts) {
       label: game.i18n.localize("STARWROUGHT.Roll.strainClimbSwim"),
       hint: game.i18n.localize("STARWROUGHT.Roll.strainClimbSwimHint"),
       value: -strain,
-      type: "untyped",
+      type: SW.STRAIN_TYPE,
       checked: false
     });
   }
@@ -65,21 +66,31 @@ export async function prompt(cfg, parts) {
   // for its own sake (Endure against a poison) has nothing to React to, and a Defense answering
   // a Reaction (an adversary's Intercept) is the basic roll alone, since a Reaction never
   // triggers a Reaction (PHB v4.10, Answering an Attack); the caller says so with `basicOnly`.
-  const owned = actor.system.reactions ?? {};
+  // PHB v4.21: the Reactions are Talents (SW.REACTIONS, kind "reaction"); the ones this actor owns
+  // on the Defense being rolled are offered, an adversary's all (the GM's to declare).
+  const owned = actor.system.reactions?.owned ?? {};
   const reactions = (isDefense && !cfg.basicOnly && ["evade", "guard"].includes(cfg.slug))
     ? Object.entries(SW.REACTIONS)
-      .filter(([key]) => ["parry", "void", "counter"].includes(key))
-      .filter(([key]) => (actor.type === "npc") || owned[key])
+      .filter(([, reaction]) => (reaction.kind === "reaction") && (reaction.defense === cfg.slug))
+      .filter(([key]) => (actor.type === "npc") || (key in owned))
       .map(([key, reaction]) => ({
         key,
         label: game.i18n.localize(reaction.label),
         glyph: `${SW.ACTION_GLYPHS[reaction.cost]}${SW.REACTION_GLYPH}`,
-        hint: game.i18n.localize(`STARWROUGHT.Reaction.${key}Hint`),
+        hint: game.i18n.localize(`${reaction.label}Hint`),
         defense: reaction.defense ? game.i18n.localize(SW.DEFENSES[reaction.defense].label) : "",
         active: key === cfg.reaction,
         warn: reaction.rigid && !actor.rigidImplement
       }))
     : [];
+
+  // A Strike made as part of another Maneuver (PHB v4.21, The Attack): the owned Talents and
+  // Maneuvers whose Key Attribute beats the weapon's own, offered as a select, none by default.
+  // The Maneuver's Requirements are the table's to hold; the hint says so.
+  const maneuvers = (isAttack ? (cfg.maneuverChoices ?? []) : []).map(m => ({
+    id: m.id,
+    label: `${m.name} · ${game.i18n.localize(SW.ATTRIBUTES[m.attribute]?.label ?? "")} ${m.mod >= 0 ? "+" : ""}${m.mod}`
+  }));
 
   const content = await renderTemplate("systems/starwrought/templates/dice/check-dialog.hbs", {
     cfg,
@@ -89,6 +100,8 @@ export async function prompt(cfg, parts) {
     isDefense,
     extras,
     strikes,
+    maneuvers,
+    attributeLabel: cfg.attribute ? game.i18n.localize(SW.ATTRIBUTES[cfg.attribute]?.label ?? "") : "",
     lockStrike: !!cfg.lockStrike,
     strikeLabel: cfg.strike ? game.i18n.localize(SW.STRIKE_KINDS[cfg.strike].label) : "",
     strikeGlyph: cfg.strike ? SW.ACTION_GLYPHS[SW.STRIKE_KINDS[cfg.strike].cost] : "",
@@ -139,10 +152,23 @@ export async function prompt(cfg, parts) {
 
   if (isAttack && !cfg.lockStrike && SW.STRIKE_KINDS[answer.strike]) config.strike = answer.strike;
 
+  // The Maneuver chosen lends its Key Attribute (PHB v4.21): the base terms are rebuilt around it,
+  // and the card says which Maneuver the Strike was part of.
+  if (isAttack && maneuvers.length && answer.maneuver) {
+    const chosen = (cfg.maneuverChoices ?? []).find(m => m.id === answer.maneuver);
+    if (chosen) {
+      config.attribute = chosen.attribute;
+      config.attributeSource = "maneuver";
+      config.viaManeuver = chosen.name;
+      config.subtitle = `${cfg.subtitle ?? ""} · ${game.i18n.format("STARWROUGHT.Roll.viaManeuver", { name: chosen.name })}`.replace(/^ · /, "");
+      rebuild = true;
+    }
+  }
+
   if (isDefense && reactions.length) {
-    const chosen = SW.REACTIONS[answer.reaction] ? answer.reaction : null;
+    const chosen = (SW.REACTIONS[answer.reaction]?.kind === "reaction") ? answer.reaction : null;
     config.reaction = chosen;
-    // Void is an Evade and Parry is a Guard, whatever Defense the button was pressed on.
+    // A Reaction stands on its own Defense, whatever Defense the button was pressed on.
     const def = chosen ? SW.REACTIONS[chosen].defense : null;
     if (def && (def !== cfg.slug)) {
       config.slug = SW.DEFENSES[def].slug;

@@ -105,6 +105,20 @@
           <td>{{#if row.item}}{{localize row.item.system.materialLabel}}{{/if}}</td>
           <td class="sw-item-controls">
             {{#if row.item}}
+            {{!-- The two armor traits the system acts on (PHB v4.21): the visor, an action to
+                  raise or lower; the Fitted tick, the player's word the piece was adjusted. --}}
+            {{#if row.visored}}
+            <a class="sw-visor-toggle {{#if row.lowered}}sw-on{{/if}}" data-action="toggleVisor"
+               data-tooltip="{{#if row.lowered}}{{localize 'STARWROUGHT.Action.raiseVisorHint'}}{{else}}{{localize 'STARWROUGHT.Action.lowerVisorHint'}}{{/if}}">
+              <i class="fa-solid {{#if row.lowered}}fa-mask{{else}}fa-face-smile{{/if}}"></i>
+            </a>
+            {{/if}}
+            {{#if row.fitted}}
+            <a class="sw-adjusted-toggle {{#if row.adjusted}}sw-on{{/if}}" data-action="toggleAdjusted"
+               data-tooltip="{{#if row.adjusted}}{{localize 'STARWROUGHT.Carry.adjustedHint'}}{{else}}{{localize 'STARWROUGHT.Carry.unadjustedHint'}}{{/if}}">
+              <i class="fa-solid {{#if row.adjusted}}fa-ruler-combined{{else}}fa-ruler{{/if}}"></i>
+            </a>
+            {{/if}}
             <a data-action="setCarry" data-state="carried" data-tooltip="STARWROUGHT.Carry.takeOffHint">
               <i class="fa-solid fa-arrow-down"></i>
             </a>
@@ -117,6 +131,11 @@
         {{/each}}
       </tbody>
     </table>
+    {{#if inventory.fittedHarness}}
+    <p class="sw-note sw-good">{{localize "STARWROUGHT.Hint.fittedHarness"}}</p>
+    {{else if inventory.fittedCount}}
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.fittedCount" n=inventory.fittedCount of=inventory.fittedZones}}</p>
+    {{/if}}
   </div>
 
   <div class="sw-panel">

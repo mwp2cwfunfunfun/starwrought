@@ -1,0 +1,16 @@
+{
+  "_id": "aa9d4a89287c4d93",
+  "name": "Flamecraft",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "31f277842f920484"
+    }
+  },
+  "_key": "!folders!aa9d4a89287c4d93"
+}

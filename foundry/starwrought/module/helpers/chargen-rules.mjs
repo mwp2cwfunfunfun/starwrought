@@ -55,6 +55,14 @@ export function categoryOf(actor, slug) {
  */
 export function rankAfter(actor, slug, extra = 0) {
   const level = actor.system.level ?? 1;
+  // A group has no rank of its own (PHB v4.21): the tier gate is measured against the parent's,
+  // which the group's points count toward once the parent's Root is owned (canBuy requires it).
+  const parentSlug = SW.constellations[slug]?.parent ?? "";
+  if (parentSlug) {
+    const owned = actor?.system?.constellations?.[parentSlug];
+    const pool = Number(owned?.pool ?? pointsIn(actor, parentSlug)) || 0;
+    return SW.rankFor(pool + extra, level);
+  }
   const points = (categoryOf(actor, slug) === "origin")
     ? originPoints(actor, extra)
     : pointsIn(actor, slug) + extra;
@@ -85,6 +93,19 @@ export function canBuy(actor, slug, talent) {
   const root = rootOf(slug);
   if (root && !talent.root && !ownsTalent(actor, slug, root.name)) {
     return { ok: false, why: game.i18n.format("STARWROUGHT.Chargen.whyNeedsRoot", { name: root.name }) };
+  }
+
+  // A group (PHB v4.21: a Combat Style within Melee or Ranged, a specialty within its discipline)
+  // has no rank of its own, so nothing in it can be bought before the parent's Root (ruling 127,
+  // the v4.10 sync's R2 kept): without that Root the group's points would count toward nothing.
+  const parentSlug = SW.constellations[slug]?.parent ?? "";
+  if (parentSlug) {
+    const parentRoot = rootOf(parentSlug);
+    if (parentRoot && !ownsTalent(actor, parentSlug, parentRoot.name)) {
+      return { ok: false, why: game.i18n.format("STARWROUGHT.Chargen.whyNeedsParentRoot", {
+        parent: SW.getConstellation(parentSlug).name, root: parentRoot.name
+      }) };
+    }
   }
 
   // Requires is an OR: any one of the named Talents opens it.

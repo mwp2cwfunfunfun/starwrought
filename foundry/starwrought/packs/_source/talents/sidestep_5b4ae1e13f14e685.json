@@ -1,0 +1,55 @@
+{
+  "_id": "5b4ae1e13f14e685",
+  "name": "Sidestep",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "evade",
+    "constellationName": "Evade",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Evade Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the Sidestep ❶↺ Reaction:<br>Requirements You are not Grabbed or Restrained.<br>Trigger You are targeted by an Attack of which you are aware.<br><br>You gain a +2 Situation bonus to Evade against the triggering attack. If the attack is a Graze or Miss, you may Step.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "57c800027a3ec530",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "fd26d86eaf177d41"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5b4ae1e13f14e685"
+}

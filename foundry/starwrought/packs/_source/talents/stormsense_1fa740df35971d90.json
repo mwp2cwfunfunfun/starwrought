@@ -1,0 +1,55 @@
+{
+  "_id": "1fa740df35971d90",
+  "name": "Stormsense",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "stormcraft",
+    "constellationName": "Stormcraft",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Stormcraft Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You can identify an approaching natural storm and detect nearby exposed electrical currents or active storm magic; GM decides meaningful range.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "8d912d1d000b1600",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "9d9e88f925652f3f"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1fa740df35971d90"
+}

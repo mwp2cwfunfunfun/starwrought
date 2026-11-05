@@ -48,7 +48,7 @@ import { prepareLoot } from "./party/loot.mjs";
 import {
   resolveMembers, memberCandidate, addMember, removeMember, addPlayerCharacters, beginSession,
   awardHeroPoint, correctHeroPoint, partyRests, restPreview, previewMilestone, awardMilestone,
-  takeBackAward, spendDeferred, isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper,
+  takeBackAward, spendComet, isLoot, giveTo, previewSplit, splitPurse, coinText, toCopper,
   askedName, askEveryone, explorationActivities, invalidateExplorationActivities, travelActivity,
   activityOf, activityHasChoice, activityRoll, travelWord, setActivity, sayThePlan, beginEncounter,
   keepableRolls, train
@@ -115,7 +115,7 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       correctHeroPoint: SwPartySheet.#onCorrectHeroPoint,
       flareAward: SwPartySheet.#onFlareAward,
       flareOut: SwPartySheet.#onFlareOut,
-      spendDeferred: SwPartySheet.#onSpendDeferred,
+      spendComet: SwPartySheet.#onSpendComet,
       rollCell: SwPartySheet.#onRollCell,
       askEveryone: SwPartySheet.#onAskEveryone,
       lootTake: SwPartySheet.#onLootTake,
@@ -742,11 +742,11 @@ export class SwPartySheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return actor.toggleFlare(slug, false);
   }
 
-  /** The Deferred badge's one control, for the owner or the GM (ruling 94). */
-  static async #onSpendDeferred(event, target) {
+  /** The Comet badge's one control, for the owner or the GM (ruling 94; PHB v4.21's name). */
+  static async #onSpendComet(event, target) {
     const actor = this.#memberFor(target);
     if (!actor) return;
-    return spendDeferred(actor);
+    return spendComet(actor);
   }
 
   /**

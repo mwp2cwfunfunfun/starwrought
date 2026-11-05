@@ -1,0 +1,55 @@
+{
+  "_id": "bc8e5e62efaedbec",
+  "name": "Lingering Form",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spellshaper",
+    "constellationName": "Spellshaper",
+    "tier": "E",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spellshaping"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When using Spellshaping on a spell with a duration ending at your next Opportunity, you may instead extend it until the end of that Opportunity. The spell does not gain additional attacks or repeated damage from this extension, and cannot be extended again by this Talent.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "277e81d4184d4ce8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "09c57e925c7ee734"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!bc8e5e62efaedbec"
+}

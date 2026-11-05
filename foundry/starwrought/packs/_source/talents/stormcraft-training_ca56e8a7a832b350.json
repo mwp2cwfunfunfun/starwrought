@@ -1,0 +1,71 @@
+{
+  "_id": "ca56e8a7a832b350",
+  "name": "Stormcraft Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "stormcraft",
+    "constellationName": "Stormcraft",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Static Lash ❷/❸/❹: a Zoned lightning Blow against one target, 1d6 / Damage Dice d6 electricity; Committed can push the target 2 feet on a Hit.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blow",
+      "delivery": "zoned",
+      "range": 0,
+      "adjacent": false,
+      "die": 6,
+      "types": [
+        "electricity"
+      ],
+      "targets": "one",
+      "defenses": [],
+      "effects": {
+        "quick": "1d6 electricity",
+        "focused": "Damage Dice d6 electricity",
+        "committed": "Damage Dice d6 electricity; on a Hit, push the target 2 feet"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "8d912d1d000b1600",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "44b9e73b867b830e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ca56e8a7a832b350"
+}

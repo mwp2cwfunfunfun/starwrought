@@ -1,10 +1,10 @@
 /**
- * The four Defenses, every modifier folded in, the Automation rules asked, and the stance read on top.
+ * The four Defenses, every modifier folded in, the Automation rules asked, and the stance (Evade or Guard) read on top.
  *
  * One pass of the character's derived data (module/data/actor.mjs, SwCharacterData, whose
  * prepareDerivedData is the ordered pipeline; through 0.10.1 these were its private methods). A
  * plain function over the data model: `data` is the SwCharacterData instance, `data.parent` the
- * Actor. Reads: data.constellations, data.attributes, data.bonuses, data.zones, data.shield, data.worn, data.helmPenalty, data.size, data.stance, the Actor's statuses and conditions, the rules index.
+ * Actor. Reads: data.constellations, data.attributes, data.bonuses, data.zones, data.shield, data.worn, data.visorPenalty, data.size, data.stance, the Actor's statuses and conditions, the rules index.
  * Writes: data.defenses, data.stanceReaction, data.stanceDefense, data.stanceBonus, data.stanceThreshold.
  */
 
@@ -17,20 +17,28 @@ import { ARMS_WOUND_PENALTY, unavailableEvade } from "./shared.mjs";
  * bonuses and penalties, with no level term (PHB v4.10, Checks & Thresholds). A Threshold is
  * that check with a 10 in place of the die.
  *
- * Folded in: Size (Evade and Guard, physical Attacks), Off-Guard, Frightened N, Fatigued N
- * (Evade and Guard), the helm on Awareness, a Parry weapon's Gear bonus and a raised shield's
- * Gear bonus on Guard (same type, so the better one stands), the first Arms Wound on Guard, and
- * the first Torso Wound as Off-Guard. Load Strain never touches Evade (PHB v4.11: "It never
- * comes off your Evade"; it came off until 0.6.0). Since 0.10.0 the Automation rules too: a
- * `bonus` whose target is this Defense's Constellation, through the `modifiers` hook point
- * (ruling 124), so the Threshold on the sheet, the Skills grid and the Defense roll agree; the
- * check engine's Defense branch rolls these resolved modifiers and asks the rules nothing more.
+ * Folded in: Size (Evade and Guard, physical Attacks), Off-Guard, Frightened N, Fatigued N (all
+ * four Defenses since PHB v4.21), a lowered visor's Gear penalty on Awareness, a Parry weapon's
+ * Gear bonus and a raised shield's Gear bonus on Guard (two pieces of gear, both counted since
+ * v4.21's stacking; ruling 125), the first Arms Wound on Guard, and the first Torso Wound as
+ * Off-Guard. Load Strain never touches Evade (PHB v4.11 and since: "it never makes you easier to
+ * hit"; it came off until 0.6.0). Since 0.10.0 the Automation rules too: a `bonus` whose target
+ * is this Defense's Constellation, through the `modifiers` hook point (ruling 124), so the
+ * Threshold on the sheet, the Skills grid and the Defense roll agree; the check engine's Defense
+ * branch rolls these resolved modifiers and asks the rules nothing more.
+ *
+ * Stacking is PHB v4.21's (SW.resolveModifiers): everything adds, and a circumstance is counted
+ * once. The one shared circumstance here is Off-Guard: the condition and the first Torso Wound
+ * (which is Off-Guard made lasting) carry `source: "off-guard"`, so a Wounded fighter who is also
+ * Off-Guard is -2, not -4. Frightened and Fatigued are two things and add; through 0.10.1 they
+ * were one type and only the worse counted.
  */
 export function prepareDefenses(data) {
   const statuses = data.parent.statuses ?? new Set();
   const offGuard = statuses.has("offGuard") ? SW.OFF_GUARD_PENALTY : 0;
   const frightened = -(data.parent.conditionValue("frightened") ?? 0);
-  // Fatigued N (PHB v4.11, Wind): -N Condition to Evade and Guard, and to attack rolls below.
+  // Fatigued N (PHB v4.21, Conditions): -N Condition to all four Defenses and to attack rolls
+  // (the offense pass). Through v4.15 it touched Evade and Guard only.
   const fatigued = -(data.parent.conditionValue("fatigued") ?? 0);
   const sizeMods = SW.SIZES[data.size] ?? SW.SIZES.medium;
 
@@ -57,14 +65,14 @@ export function prepareDefenses(data) {
     if (physical && offGuard) {
       modifiers.push({
         label: game.i18n.localize("STARWROUGHT.Condition.offGuard"),
-        value: offGuard, type: "situation"
+        value: offGuard, type: "situation", source: "off-guard"
       });
     }
-    // The first Torso Wound is Off-Guard made lasting.
+    // The first Torso Wound is Off-Guard made lasting: the same circumstance, counted once.
     if (physical && data.zones.torso.wounded) {
-      modifiers.push({ label: woundLabel("torso"), value: SW.OFF_GUARD_PENALTY, type: "situation" });
+      modifiers.push({ label: woundLabel("torso"), value: SW.OFF_GUARD_PENALTY, type: "situation", source: "off-guard" });
     }
-    if (physical && fatigued) {
+    if (fatigued) {
       modifiers.push({
         label: game.i18n.localize("STARWROUGHT.Condition.fatigued"),
         value: fatigued, type: "condition"
@@ -93,10 +101,13 @@ export function prepareDefenses(data) {
         });
       }
     }
-    if (key === "awareness" && data.helmPenalty) {
+    // A lowered visor (PHB v4.21, Visored): -1 Gear to Awareness and Initiative. Initiative
+    // rolled with Awareness comes through these modifiers; the check engine adds it to an
+    // Initiative rolled with another Constellation.
+    if (key === "awareness" && data.visorPenalty) {
       modifiers.push({
-        label: game.i18n.format("STARWROUGHT.Defense.helmPenalty", { piece: data.worn.head.name }),
-        value: data.helmPenalty, type: "situation"
+        label: game.i18n.format("STARWROUGHT.Defense.visorLowered", { piece: data.worn.head.name }),
+        value: data.visorPenalty, type: "gear"
       });
     }
 
@@ -138,26 +149,17 @@ export function prepareDefenses(data) {
 }
 
 /**
- * The stance, read as a Defense plus an optional Reaction. Void answers with Evade, Parry with
- * Guard; Counter has no Defense of its own and is taken here as Guard (you meet the blow to
- * answer it). `stanceThreshold` is the basic Threshold; the Reaction's +2 Situation and its
- * action cost are applied by the roll that resolves the attack, so they are exposed as
- * `stanceBonus` and `stanceReaction` rather than folded in.
+ * The stance, read as the basic Defense the character stands ready with: Evade or Guard (PHB
+ * v4.21: a Reaction is chosen per Blow in the Combat Prompt, never stood ready). A stance stored
+ * as Void, Parry or Counter by a release before 0.11.0 reads as the Defense it stood on
+ * (SW.LEGACY_STANCES; the migration rewrites the field too). `stanceReaction` and `stanceBonus`
+ * stay on the shape, null and 0, for the readers that asked.
  */
 export function prepareStance(data) {
-  const reaction = SW.REACTIONS[data.stance] ? data.stance : null;
-  // Counter has no Defense of its own: it stands on the better of the two basic Defenses that
-  // are available (ruling 43), which is what the attacker's roll meets.
-  const better = () => {
-    const evade = data.defenses.evade?.unavailable ? -Infinity : (data.defenses.evade?.threshold ?? 10);
-    const guard = data.defenses.guard?.unavailable ? -Infinity : (data.defenses.guard?.threshold ?? 10);
-    return guard >= evade ? "guard" : "evade";
-  };
-  const defense = SW.REACTIONS[data.stance]?.defense
-    ?? (data.stance === "counter" ? better() : data.stance);
-  data.stanceReaction = reaction;
+  const defense = SW.LEGACY_STANCES[data.stance] ?? data.stance;
+  data.stanceReaction = null;
   data.stanceDefense = SW.DEFENSES[defense] ? defense : "evade";
-  data.stanceBonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : 0;
+  data.stanceBonus = 0;
   if (data.defenses[data.stanceDefense]) data.defenses[data.stanceDefense].isStance = true;
   data.stanceThreshold = data.defenses[data.stanceDefense]?.threshold ?? 10;
 }

@@ -1,0 +1,35 @@
+{
+  "_id": "3cf0536ed402453d",
+  "name": "Heavy Gambeson",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 2,
+    "load": 1,
+    "material": "padded",
+    "traits": [
+      "Comfort"
+    ],
+    "price": "3 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "1d52ee52b96a1c29"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3cf0536ed402453d"
+}

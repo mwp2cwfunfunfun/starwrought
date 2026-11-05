@@ -1,11 +1,13 @@
 /**
  * Damage: rolling it, and the order of operations for spending it.
  *
- * The handbook's order (PHB v4.10) is followed literally, because it is the sort of arithmetic a
- * VTT is supposed to do for free: Immunity, then the total, then Weakness, then Resistance, then
- * the critical doubling, then Protection, then Temporary Vigor, then Vigor. What comes after the
- * Vigor is the part v4.10 added: Spent at 0, Wounds per Zone, and Dying only when the Torso or
- * the Head carries its final Wound.
+ * The handbook's order (PHB v4.21, Damage Resolution) is followed literally, because it is the
+ * sort of arithmetic a VTT is supposed to do for free: Immunity, then the total, then Resistance
+ * (all of it), then Weakness (all of it, only if damage remains), then the Zone's Protection once
+ * for a Zoned Attack (never for a Pervasive one), then the critical doubling, then Temporary
+ * Vigor, then Vigor. What comes after the Vigor is the part v4.10 added: Spent at 0, Wounds per
+ * Zone, and Dying only when the Torso or the Head carries its final Wound. Through v4.15 Weakness
+ * came before Resistance and the doubling before Protection.
  */
 
 import * as SW from "../config.mjs";
@@ -35,7 +37,7 @@ export class SwDamage {
    */
   static async roll({
     actor, weapon, outcome = "hit", strike = SW.DEFAULT_STRIKE, targetUuid = "", bonus = 0, precision = "",
-    slug = "", thrown = false
+    slug = "", thrown = false, rank = null
   } = {}) {
     const sys = actor.system;
     const kind = SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
@@ -62,19 +64,18 @@ export class SwDamage {
         parts.push({ label: game.i18n.localize("STARWROUGHT.Damage.precision"), formula: precision });
       }
     } else {
-      // Full damage: all the dice your level gives you, specialization in Melee or Ranged, Might.
-      const dice = sys.weaponDice ?? SW.weaponDice(sys.level);
+      // Full damage (PHB v4.21, Weapon Damage Dice): the dice your rank gives you, one at Trained
+      // to four at Legendary, in the Proficiency the Strike rolled (Ranged for a weapon that
+      // leaves the hand, a thrown dagger included, ruling 14, so the attack's slug decides when it
+      // is known; Handling's lowered rank through `rank` when the roll passed it), then Might.
+      // There is no specialization damage any more: "do not add them a second time as weapon
+      // specialization" (ruling 153).
+      const ranged = (slug === SW.RANGED_SLUG) || thrown || (!slug && weapon.system.isRanged);
+      const block = ranged ? sys.ranged : sys.melee;
+      const dice = SW.weaponDice(rank ?? block?.rank ?? "untrained");
       parts.push({ label: weapon.name, formula: `${dice}d${die}` });
       if (weapon.system.addsMight && sys.attributes?.might?.mod) {
         parts.push({ label: game.i18n.localize("STARWROUGHT.Attribute.might"), formula: String(sys.attributes.might.mod) });
-      }
-      // Specialization follows the Proficiency the Strike rolled: Ranged for a weapon that leaves
-      // the hand, a thrown dagger included (ruling 14), so the attack's slug decides when it is known.
-      const ranged = (slug === SW.RANGED_SLUG) || thrown || (!slug && weapon.system.isRanged);
-      const block = ranged ? sys.ranged : sys.melee;
-      const specialization = block?.specialization ?? 0;
-      if (specialization) {
-        parts.push({ label: game.i18n.localize("STARWROUGHT.Damage.specialization"), formula: String(specialization) });
       }
       const flat = (Number(bonus) || 0) + (sys.bonuses?.damage ?? 0);
       if (flat) parts.push({ label: game.i18n.localize("STARWROUGHT.Damage.bonus"), formula: String(flat) });
@@ -175,6 +176,105 @@ export class SwDamage {
   /* -------------------------------------------- */
 
   /**
+   * Roll a spell's damage for one Result of a Cast and post a card with Apply buttons (PHB v4.21,
+   * Spellwork). The dice are the discipline's rank's (SW.spellDice: one at Trained to four at
+   * Legendary), one for a Quick Cast; the die and the type are the Talent's spell block; no Might,
+   * no specialization and no sheet damage bonus (ruling 136). A Graze on a Focused or Committed
+   * Cast is one die; a Quick Cast's Graze deals nothing (the card offers no button). A Critical
+   * Hit doubles in the pipeline as any does (ruling 135). The card carries the spell's Delivery,
+   * so a Pervasive spell's Apply skips Protection; a Zoned spell lands on the Torso or a Zone the
+   * caster picks, as a Deliberate Strike does.
+   * @param {object} config
+   * @param {Actor} config.actor
+   * @param {Item} config.talent
+   * @param {"hit"|"graze"|"critical"} [config.outcome]
+   * @param {string} [config.cast]
+   * @param {string} [config.targetUuid]
+   * @returns {Promise<ChatMessage|null>}
+   */
+  static async rollSpell({ actor, talent, outcome = "hit", cast = SW.DEFAULT_CAST, targetUuid = "" } = {}) {
+    const spell = talent?.system?.spell;
+    if (!spell?.die) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Cast.noDie", { name: talent?.name ?? "" }));
+      return null;
+    }
+    const kind = SW.CAST_KINDS[cast] ?? SW.CAST_KINDS[SW.DEFAULT_CAST];
+    const graze = outcome === "graze";
+    const critical = outcome === "critical";
+    const discipline = actor.spellDisciplineFor?.(talent) ?? { rank: "untrained", name: "" };
+    const dice = (graze || !kind.full) ? 1 : SW.spellDice(discipline.rank);
+    const parts = [{ label: `${SW.plainName(talent.name)} (${game.i18n.localize(SW.RANKS[discipline.rank]?.label ?? "")})`, formula: `${dice}d${spell.die}` }];
+    const roll = await new Roll(parts.map(p => p.formula).join(" + ")).evaluate();
+    const damageType = SW.DAMAGE_TYPES[talent.system.spellType] ? talent.system.spellType : "untyped";
+    const delivery = talent.system.spellDelivery || "zoned";
+    const pervasive = delivery === "pervasive";
+
+    const target = targetUuid ? (fromUuidSync(targetUuid)?.actor ?? null) : null;
+    const exposedZones = Object.keys(SW.ZONES).filter(z => target?.system?.zones?.[z]?.exposed);
+    const offered = pervasive ? [SW.DEFAULT_ZONE] : [SW.DEFAULT_ZONE, ...exposedZones.filter(z => z !== SW.DEFAULT_ZONE)];
+    const zoneNote = pervasive ? "STARWROUGHT.Cast.zonePervasive"
+      : graze ? "STARWROUGHT.Damage.zoneDefender"
+      : critical ? "STARWROUGHT.Damage.zoneAttacker"
+      : (exposedZones.length ? "STARWROUGHT.Damage.zoneExposedChoice" : "STARWROUGHT.Damage.zoneTorso");
+
+    const content = await renderTemplate("systems/starwrought/templates/chat/damage-card.hbs", {
+      actor,
+      weapon: { name: SW.plainName(talent.name), img: talent.img },
+      outcome,
+      outcomeLabel: game.i18n.localize(`STARWROUGHT.Outcome.${outcome}`),
+      strike: null,
+      strikeLabel: game.i18n.localize(kind.label),
+      strikeGlyph: SW.ACTION_GLYPHS[kind.cost],
+      critical,
+      graze,
+      critDenied: false,
+      total: roll.total,
+      formula: roll.formula,
+      parts,
+      deadly: null,
+      damageType,
+      damageTypeLabel: `${game.i18n.localize(SW.DAMAGE_TYPES[damageType].label)} · ${game.i18n.localize(SW.DELIVERIES[delivery].label)}`,
+      armorPiercing: 0,
+      massive: false,
+      targetName: target?.name ?? "",
+      zones: offered.map(z => ({ key: z, label: SW.ZONES[z].label, exposed: exposedZones.includes(z) })),
+      defaultZone: SW.DEFAULT_ZONE,
+      zoneLocked: pervasive || (!graze && !critical && !exposedZones.length),
+      zoneNote
+    });
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content,
+      rolls: [roll],
+      flags: {
+        starwrought: {
+          kind: "damage",
+          outcome,
+          strike: null,
+          base: roll.total,
+          deadly: 0,
+          damageType,
+          critical,
+          graze,
+          armorPiercing: 0,
+          massive: false,
+          nonlethal: false,
+          delivery,
+          targetUuid,
+          actorUuid: actor.uuid,
+          weaponId: null,
+          spellId: talent.id,
+          cast
+        }
+      }
+    };
+    ChatMessage.applyRollMode(messageData, game.settings.get("core", "rollMode"));
+    return ChatMessage.create(messageData);
+  }
+
+  /* -------------------------------------------- */
+
+  /**
    * Spend damage against one Actor, following the printed order of operations, then let the body
    * answer: Spent at 0 Vigor, a Wound where the rules put one, Dying when a Wound is the last the
    * Torso or the Head can carry.
@@ -192,12 +292,16 @@ export class SwDamage {
    * @param {boolean} [config.massive]      The Massive trait: any Critical Hit Wounds.
    * @param {boolean} [config.nonlethal]    Nonlethal: a Wound on a Spent creature knocks it out instead.
    * @param {number} [config.multiplier]    1 for damage, -1 to heal, 0.5 for half.
+   * @param {"zoned"|"pervasive"} [config.delivery]  How the damage arrives (PHB v4.21, Damage
+   *                                        Delivery): Zoned meets the Zone's Protection once;
+   *                                        Pervasive (a Blast's heat, a Blight, Persistent Damage)
+   *                                        ignores ordinary Protection.
    * @returns {Promise<object>} A breakdown of what happened.
    */
   static async apply(actor, {
     base = 0, deadly = 0, type = "untyped", zone = SW.DEFAULT_ZONE,
     critical = false, graze = false, strike = SW.DEFAULT_STRIKE, armorPiercing = 0,
-    massive = false, nonlethal = false, multiplier = 1
+    massive = false, nonlethal = false, multiplier = 1, delivery = "zoned"
   } = {}) {
     const sys = actor.system;
     const steps = [];
@@ -205,6 +309,7 @@ export class SwDamage {
     // Protection and never Wounds through an Exposed Zone. An unknown kind is read as Deliberate.
     const kind = (strike === null) ? null : (SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE]);
     if (!(zone in SW.ZONES)) zone = SW.DEFAULT_ZONE;
+    const pervasive = delivery === "pervasive";
 
     // Healing takes the short road.
     if (multiplier < 0) {
@@ -212,6 +317,7 @@ export class SwDamage {
       return this.#applyHealing(actor, healed);
     }
 
+    // The order is PHB v4.21's (Damage Resolution), followed literally:
     // 1. Apply Immunity.
     if (sys.isImmuneTo(type)) {
       steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.immune"), value: 0, total: 0 });
@@ -222,36 +328,30 @@ export class SwDamage {
     let total = Math.floor(base * multiplier);
     steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.rolled"), value: total, total });
 
-    // 3. Add Weakness of the applicable damage type. A single point is enough to trigger it.
+    // 3. Subtract all applicable Resistance (a sum since v4.21). Unlike Protection, Resistance can
+    //    take an instance all the way to 0.
+    const resistance = sys.resistanceTo(type);
+    if (resistance && total > 0) {
+      total = Math.max(0, total - resistance);
+      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.resistance"), value: -resistance, total });
+    }
+
+    // 4. Add all applicable Weakness (a sum since v4.21), only if damage remains after Resistance.
     const weakness = sys.weaknessTo(type);
     if (weakness && total > 0) {
       total += weakness;
       steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.weakness"), value: weakness, total });
     }
 
-    // 4. Subtract Resistance. Unlike Protection, Resistance can take an instance all the way to 0.
-    const resistance = sys.resistanceTo(type);
-    if (resistance) {
-      total = Math.max(0, total - resistance);
-      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.resistance"), value: -resistance, total });
-    }
-
-    // 5. Double the total if it was a Critical Hit.
-    if (critical) {
-      total *= 2;
-      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.critical"), value: total / 2, total });
-    }
-
-    // A Deadly die is an additional critical effect of the weapon, so it lands after the doubling.
-    if (deadly) {
-      total += deadly;
-      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.deadly"), value: deadly, total });
-    }
-
-    // 6. Subtract Protection. Protection alone can never reduce damage below 1. An Exposed Zone
-    // is 0 against a Deliberate or Committed Strike only; a Quick Strike meets it in full.
+    // 5. For a Zoned Attack, subtract the Zone's Protection once, before the doubling (v4.21 moved
+    //    it ahead of the Critical Hit: "Protection before doubling", the Example of Play's own
+    //    lesson). Protection alone can never reduce positive damage below 1. An Exposed Zone is 0
+    //    against a Deliberate or Committed Strike only; a Quick Strike meets it in full. A
+    //    Pervasive Attack and Persistent Damage ignore ordinary Protection.
     const exposed = !!sys.zones?.[zone]?.exposed;
-    const protection = sys.zoneProtection(zone, { type, ignore: armorPiercing, strike });
+    const protection = pervasive
+      ? { value: 0, steps: [{ label: game.i18n.localize("STARWROUGHT.Damage.pervasive"), value: 0 }] }
+      : sys.zoneProtection(zone, { type, ignore: armorPiercing, strike });
     if (protection.value && total > 0) {
       const before = total;
       total = Math.max(1, total - protection.value);
@@ -263,10 +363,24 @@ export class SwDamage {
         total,
         detail: protection.steps
       });
+    } else if (pervasive && total > 0) {
+      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.pervasive"), value: 0, total });
     }
 
-    // 7. Deal damage to Temporary Vigor. 8. Deal damage to Vigor. Nothing goes below 0: "damage
-    // beyond what it took to empty your Vigor is simply lost".
+    // 6. Double what remains if it was a Critical Hit.
+    if (critical && total > 0) {
+      total *= 2;
+      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.critical"), value: total / 2, total });
+    }
+
+    // A Deadly die is an additional critical effect of the weapon, so it lands after the doubling.
+    if (deadly) {
+      total += deadly;
+      steps.push({ label: game.i18n.localize("STARWROUGHT.Damage.deadly"), value: deadly, total });
+    }
+
+    // 7. Deal damage to Temporary Vigor, then to Vigor. Nothing goes below 0: "damage beyond what
+    //    it took to empty your Vigor is simply lost".
     const updates = {};
     let remaining = total;
     const temp = sys.vigor?.temp ?? 0;
@@ -290,6 +404,7 @@ export class SwDamage {
       strike,
       critical,
       graze,
+      delivery,
       protection: protection.value,
       vigorBefore: before,
       vigorAfter: after,

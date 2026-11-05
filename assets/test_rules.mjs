@@ -26,7 +26,11 @@ import {
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
-import { slugify, plainName } from "../foundry/starwrought/module/config.mjs";
+import { slugify, plainName, resolveModifiers } from "../foundry/starwrought/module/config.mjs";
+
+// Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
+// so); plain Node has no such thing, and the stacking section below calls the function directly.
+Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
 
 /**
  * The kinds the registry ships with, by id, sorted. Empty in 0.9.0 (Mike, 2026-10-03: "do NOT
@@ -663,32 +667,32 @@ const searchItem = { type: "action", name: "Search ❶", id: "srch0001" };
 check("ruleModifiers: a Constellation target applies on its slug and nowhere else", () => {
   const actor = rulesActor([sneaky, humanity]);
   const onStealth = ruleModifiers(actor, { kind: "check", slug: "stealth", item: null });
-  same(onStealth.applied, [{ label: "Sneaky", value: 2, type: "situation" }], "applied on Stealth, the label the carrier's plain name");
+  same(onStealth.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "applied on Stealth, the label the carrier's plain name");
   const onAthletics = ruleModifiers(actor, { kind: "check", slug: "athletics", item: null });
   must(!onAthletics.applied.some(m => m.label === "Sneaky"), "absent on Athletics");
   const asInitiative = ruleModifiers(actor, { kind: "initiative", slug: "stealth", item: null });
-  same(asInitiative.applied, [{ label: "Sneaky", value: 2, type: "situation" }], "an Initiative rolled with Stealth is a Stealth check (ruling 111)");
+  same(asInitiative.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "an Initiative rolled with Stealth is a Stealth check (ruling 111)");
 });
 
 check("ruleModifiers: the rank condition is equality, read from the actor's proficiency", () => {
   const roll = { kind: "check", slug: "diplomacy", item: aidItem };
   same(ruleModifiers(rulesActor([humanity], { human: "untrained" }), roll).applied, [], "Untrained: none of the four");
-  same(ruleModifiers(rulesActor([humanity], { human: "trained" }), roll).applied, [{ label: "Humanity", value: 1, type: "condition" }], "Trained: the +1 alone");
-  same(ruleModifiers(rulesActor([humanity], { human: "expert" }), roll).applied, [{ label: "Humanity", value: 2, type: "condition" }], "Expert: the +2 alone");
-  same(ruleModifiers(rulesActor([humanity], { human: "legendary" }), roll).applied, [{ label: "Humanity", value: 4, type: "condition" }], "Legendary: the +4 alone");
+  same(ruleModifiers(rulesActor([humanity], { human: "trained" }), roll).applied, [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity:aid" }], "Trained: the +1 alone");
+  same(ruleModifiers(rulesActor([humanity], { human: "expert" }), roll).applied, [{ label: "Humanity", value: 2, type: "condition", source: "rule:Humanity:aid" }], "Expert: the +2 alone");
+  same(ruleModifiers(rulesActor([humanity], { human: "legendary" }), roll).applied, [{ label: "Humanity", value: 4, type: "condition", source: "rule:Humanity:aid" }], "Legendary: the +4 alone");
   same(ruleModifiers(rulesActor([humanity], {}), roll).applied, [], "a Constellation the actor has no entry for reads as Untrained");
 });
 
 check("ruleModifiers: a conditioned rule never fires for an actor without proficiency; an unconditioned one does", () => {
   const actor = rulesActor([humanity, sneaky], null);
   must(!("proficiency" in actor.system), "the fake adversary has no proficiency");
-  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: aidItem }).applied, [{ label: "Sneaky", value: 2, type: "situation" }], "only the unconditioned rule");
+  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: aidItem }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "only the unconditioned rule");
 });
 
 check("ruleModifiers: a Maneuver target applies when the roll carries that Maneuver, glyphs ignored", () => {
   const actor = rulesActor([humanity], { human: "trained" });
   const withAid = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: aidItem });
-  same(withAid.applied, [{ label: "Humanity", value: 1, type: "condition" }], "applied from the Aid Item");
+  same(withAid.applied, [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity:aid" }], "applied from the Aid Item");
   same(withAid.offered, [], "and not offered as well");
   const withSearch = ruleModifiers(actor, { kind: "check", slug: "awareness", item: searchItem });
   same(withSearch.applied, [], "a Search is not an Aid");
@@ -727,7 +731,7 @@ check("ruleModifiers: never offered on an attack, a Defense or an Initiative", (
 
 check("ruleModifiers: a Defense is a Constellation target, so the Defense pass can fold it in", () => {
   const roll = { kind: "defense", slug: "guard", item: null };
-  same(ruleModifiers(rulesActor([braced], { human: "expert" }), roll).applied, [{ label: "Braced", value: 1, type: "gear" }], "Guard at Expert");
+  same(ruleModifiers(rulesActor([braced], { human: "expert" }), roll).applied, [{ label: "Braced", value: 1, type: "gear", source: "rule:Braced:guard" }], "Guard at Expert");
   same(ruleModifiers(rulesActor([braced], { human: "trained" }), roll).applied, [], "not at Trained");
   same(ruleModifiers(rulesActor([braced], { human: "expert" }), { kind: "defense", slug: "evade", item: null }).applied, [], "not on Evade");
 });
@@ -736,7 +740,7 @@ check("ruleModifiers: no rules, no kinds with the hook, or nothing at all is two
   same(ruleModifiers(rulesActor([]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [] }, "no rules");
   same(ruleModifiers(rulesActor([talentA]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [] }, "a kind without the hook is skipped");
   same(ruleModifiers(null, { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [] }, "null actor");
-  same(ruleModifiers({ items: [sneaky] }, { kind: "check", slug: "stealth", item: null }).applied, [{ label: "Sneaky", value: 2, type: "situation" }], "an actor with no prepared index is collected on the spot");
+  same(ruleModifiers({ items: [sneaky] }, { kind: "check", slug: "stealth", item: null }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "an actor with no prepared index is collected on the spot");
 });
 
 check("ruleModifiers: a hook that throws contributes nothing and does not throw", () => {
@@ -756,7 +760,7 @@ check("ruleModifiers: a hook that throws contributes nothing and does not throw"
   } finally {
     console.error = original;
   }
-  same(result.applied, [{ label: "Sneaky", value: 2, type: "situation" }], "the other kind's modifiers still arrive");
+  same(result.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "the other kind's modifiers still arrive");
   must(errors.length === 1 && /the "explosive" kind's modifiers hook failed/.test(String(errors[0][0])), `the failure is reported once: ${JSON.stringify(errors.map(e => String(e[0])))}`);
 });
 
@@ -792,6 +796,84 @@ check("ruleModifiers: zero, non-numeric and malformed modifiers are dropped; a k
     ["offer three", "sloppy-0-2", ""]
   ], "offered: keys defaulted per kind and a shared key suffixed");
   must(offered.every(o => o.offer === true), "every offer is marked");
+});
+
+/* -------------------------------------------- */
+/*  Stacking (PHB v4.21; 0.11.0)                */
+/* -------------------------------------------- */
+
+/*
+ * SW.resolveModifiers is what every caller sums a kind's answers with, so the contract the kinds
+ * write to is checked here: everything adds, and entries sharing a `source` are one circumstance,
+ * counted once each way (the strongest bonus and the strongest penalty among them).
+ */
+
+check("resolveModifiers: every bonus and penalty adds, whatever its type (PHB v4.21)", () => {
+  const { total, applied, suppressed } = resolveModifiers([
+    { label: "Frightened", value: -1, type: "condition" },
+    { label: "Fatigued", value: -1, type: "condition" },
+    { label: "Parry weapon", value: 1, type: "gear" },
+    { label: "Raised shield", value: 2, type: "gear" },
+    { label: "Support", value: 2, type: "situation" },
+    { label: "adjustment", value: 1 }
+  ]);
+  must(total === 4, `−1 −1 +1 +2 +2 +1 is 4, got ${total}`);
+  must(applied.length === 6 && suppressed.length === 0, "all six count and nothing is set aside");
+});
+
+check("resolveModifiers: entries sharing a source are one circumstance, the strongest each way", () => {
+  const { total, applied, suppressed } = resolveModifiers([
+    { label: "Off-Guard", value: -2, type: "situation", source: "off-guard" },
+    { label: "Wounded Torso", value: -2, type: "situation", source: "off-guard" },
+    { label: "line +1", value: 1, type: "condition", source: "rule:Humanity:aid" },
+    { label: "line +3", value: 3, type: "condition", source: "rule:Humanity:aid" },
+    { label: "line −1", value: -1, type: "condition", source: "rule:Humanity:aid" },
+    { label: "another Talent", value: 1, type: "condition", source: "rule:Other:aid" }
+  ]);
+  must(total === 1, `−2 +3 −1 +1 is 1, got ${total}`);
+  same(applied.map(m => m.label).sort(), ["Off-Guard", "another Talent", "line +3", "line −1"], "what counts");
+  same(suppressed.map(m => m.label).sort(), ["Wounded Torso", "line +1"], "what a shared source set aside");
+});
+
+check("resolveModifiers: disabled, zero and non-numeric entries are dropped; the legacy type names still read", () => {
+  const { total, applied } = resolveModifiers([
+    { label: "off", value: 5, enabled: false },
+    { label: "zero", value: 0 },
+    { label: "words", value: "two" },
+    null,
+    { label: "old name", value: 1, type: "circumstance" }
+  ]);
+  must(total === 1 && applied.length === 1, `one survives, got total ${total} of ${applied.length}`);
+  same(resolveModifiers([]), { total: 0, applied: [], suppressed: [] }, "nothing in, nothing out");
+});
+
+check("bonus: `if Origin is <Rank>` reads the shared Origin rank, and a group is refused naming its parent (PHB v4.21)", () => {
+  const resolver = name => {
+    const lower = String(name).trim().toLowerCase();
+    if (lower === "origin") return { type: "constellation", slug: "origin", name: "Origin", group: false, parent: "" };
+    if (lower === "archery") return { type: "constellation", slug: "archery", name: "Archery", group: true, parent: "Ranged" };
+    if (lower === "ranged") return { type: "constellation", slug: "ranged", name: "Ranged", group: false, parent: "" };
+    if (lower === "aid") return { type: "action", slug: "aid", name: "Aid" };
+    return null;
+  };
+  const rule = bonusRule("bonus: +2 Condition to Aid if Origin is Expert", { resolve: resolver });
+  same(rule.when, { constellation: "origin", name: "Origin", rank: "expert" }, "the Origin clause");
+  throws(() => bonusRule("bonus: +1 Situation to Aid if Archery is Expert", { resolve: resolver }), /is a group and has no rank of its own; test Ranged instead/, "a group is refused");
+  must(bonusRule("bonus: +1 Situation to Archery", { resolve: resolver }).to.slug === "archery", "a group is still a fine target for a bonus");
+  // The hook reads the rank through `proficiency("origin")`, which the character model answers
+  // from the virtual Origin; the fake actor answers it like any slug.
+  const humanityOrigin = talentWith("Humanity", "bonus: +2 Condition to Aid if Origin is Expert", { resolve: resolver });
+  const roll = { kind: "check", slug: "diplomacy", item: aidItem };
+  same(ruleModifiers(rulesActor([humanityOrigin], { origin: "expert" }), roll).applied.map(m => m.value), [2], "fires at Origin Expert");
+  same(ruleModifiers(rulesActor([humanityOrigin], { origin: "trained", human: "expert" }), roll).applied, [], "and not from the Human sky's own rank");
+});
+
+check("bonus hook: one Talent's lines on one target share a source, two Talents do not", () => {
+  const twice = talentWith("Twice", "bonus: +1 Condition to Aid\nbonus: +3 Condition to Aid");
+  const other = talentWith("Other", "bonus: +1 Condition to Aid");
+  const { applied } = ruleModifiers(rulesActor([twice, other]), { kind: "check", slug: "diplomacy", item: aidItem });
+  same(applied.map(m => m.source), ["rule:Twice:aid", "rule:Twice:aid", "rule:Other:aid"], "the sources");
+  must(resolveModifiers(applied).total === 4, "+3 (the higher of Twice's) +1 (Other's) is 4");
 });
 
 /* -------------------------------------------- */

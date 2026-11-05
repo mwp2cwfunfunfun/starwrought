@@ -1,0 +1,36 @@
+{
+  "_id": "42d4f42be11d02b6",
+  "name": "Emotions",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/emotions.png",
+  "system": {
+    "slug": "emotions",
+    "category": "magic",
+    "attribute": "wits",
+    "parentSlug": "mindweaving",
+    "group": true,
+    "meta": "Magic • Wits",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "95e774caee707038"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!42d4f42be11d02b6"
+}

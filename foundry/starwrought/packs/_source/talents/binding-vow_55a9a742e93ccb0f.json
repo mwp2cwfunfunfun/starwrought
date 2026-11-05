@@ -1,0 +1,55 @@
+{
+  "_id": "55a9a742e93ccb0f",
+  "name": "Binding Vow",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "oaths",
+    "constellationName": "Oaths",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Oaths Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "❸ Prepared ritual: Consecrate a spoken oath between willing participants. Spiritual consequences require separate agreed narrative or scenario rules.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "163d3ab9e3121606",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "9727b76e22e43b7e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!55a9a742e93ccb0f"
+}

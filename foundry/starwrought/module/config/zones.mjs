@@ -55,21 +55,42 @@ export const DAMAGE_TYPES = Object.freeze({
   poison: { label: "STARWROUGHT.Damage.poison" },
   bleed: { label: "STARWROUGHT.Damage.bleed" },
   mental: { label: "STARWROUGHT.Damage.mental" },
+  /** PHB v4.21's spells (Forceweaving's force, Mindweaving's psychic), beside `mental`, not in its place (ruling 134). */
+  force: { label: "STARWROUGHT.Damage.force" },
+  psychic: { label: "STARWROUGHT.Damage.psychic" },
   untyped: { label: "STARWROUGHT.Damage.untyped" }
+});
+
+/**
+ * How damage arrives (PHB v4.21, Damage Delivery). Zoned lands on one Zone and meets its
+ * Protection once; Pervasive (a Blast's heat, a Blight's poison, Persistent Damage) ignores
+ * ordinary Protection. A weapon's Strike is Zoned; a spell says which.
+ */
+export const DELIVERIES = Object.freeze({
+  zoned: { label: "STARWROUGHT.Delivery.zoned" },
+  pervasive: { label: "STARWROUGHT.Delivery.pervasive" }
 });
 
 /** Single-letter damage abbreviations as printed on the weapon tables. */
 export const DAMAGE_ABBR = Object.freeze({ B: "bludgeoning", P: "piercing", S: "slashing" });
 
 /**
- * Armor materials, and the one damage type each turns poorly. A piece's Protection is reduced
- * by 1 against that type. Scale turns nothing poorly, which is what it is for.
+ * Armor types (PHB v4.21, Armor Types): what a piece is made of, as the armor table's Type column
+ * prints it. `rigid` is what Clatter counts (ruling 142: two or more rigid pieces while the Torso
+ * is not). Nothing turns a damage type poorly any more: the material-weakness step of v4.10 to
+ * v4.15 (padded and leather -1 against slashing, mail against piercing, plate against bludgeoning)
+ * went with its table (ruling 149), and Scale became Lamellar (ruling 141; `migrateData` on the
+ * armor Item brings a stored `scale` across). The armor Item's field is still named `material`.
  */
-export const MATERIALS = Object.freeze({
-  none: { label: "STARWROUGHT.Material.none", weakTo: null },
-  padded: { label: "STARWROUGHT.Material.padded", weakTo: "slashing" },
-  leather: { label: "STARWROUGHT.Material.leather", weakTo: "slashing" },
-  mail: { label: "STARWROUGHT.Material.mail", weakTo: "piercing" },
-  scale: { label: "STARWROUGHT.Material.scale", weakTo: null },
-  plate: { label: "STARWROUGHT.Material.plate", weakTo: "bludgeoning" }
+export const ARMOR_TYPES = Object.freeze({
+  none: { label: "STARWROUGHT.Material.none", rigid: false },
+  padded: { label: "STARWROUGHT.Material.padded", rigid: false },
+  leather: { label: "STARWROUGHT.Material.leather", rigid: false },
+  mail: { label: "STARWROUGHT.Material.mail", rigid: true },
+  lamellar: { label: "STARWROUGHT.Material.lamellar", rigid: true },
+  brigandine: { label: "STARWROUGHT.Material.brigandine", rigid: true },
+  splint: { label: "STARWROUGHT.Material.splint", rigid: true },
+  plate: { label: "STARWROUGHT.Material.plate", rigid: true }
 });
+/** The v4.10 to v4.15 names a stored armor Item or adversary Zone may still carry, and what each is now. */
+export const LEGACY_ARMOR_TYPES = Object.freeze({ scale: "lamellar" });

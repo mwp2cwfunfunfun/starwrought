@@ -19,9 +19,11 @@ export const CATEGORIES = Object.freeze({
   defense: { label: "STARWROUGHT.Category.defense", order: 2 },
   weapon: { label: "STARWROUGHT.Category.weapon", order: 3 },
   combatStyle: { label: "STARWROUGHT.Category.combatStyle", order: 4 },
-  skill: { label: "STARWROUGHT.Category.skill", order: 5 },
-  lore: { label: "STARWROUGHT.Category.lore", order: 6 },
-  general: { label: "STARWROUGHT.Category.general", order: 7 }
+  /** The five magical disciplines and their specialties (PHB v4.21, Chapter 6). */
+  magic: { label: "STARWROUGHT.Category.magic", order: 5 },
+  skill: { label: "STARWROUGHT.Category.skill", order: 6 },
+  lore: { label: "STARWROUGHT.Category.lore", order: 7 },
+  general: { label: "STARWROUGHT.Category.general", order: 8 }
 });
 
 /**
@@ -42,10 +44,21 @@ export const CATEGORY_ALIASES = Object.freeze({
   Weapons: "weapon",
   "Combat Style": "combatStyle",
   Armor: "combatStyle",
+  Magic: "magic",
   Skill: "skill",
   Lore: "lore",
   General: "general"
 });
+
+/**
+ * The Origin (PHB v4.21, Constellations and shared ranks): your Ancestry, Culture and Bloodline
+ * are authored as three skies and are one Constellation for rank, which counts every point across
+ * them. It has no Items and no tree of its own, so it is a virtual slug: the character model
+ * derives `system.origin` from the three, `proficiency("origin")` answers from it, and a rule may
+ * name it ("bonus: +2 Condition to Aid if Origin is Expert", Humanity's cell). The sheet's Origin
+ * category shows the pooled points; nothing Flares "origin" (a Flare is a sky's).
+ */
+export const ORIGIN_SLUG = "origin";
 
 /** The four Defenses, and the Attribute each keys off. */
 export const DEFENSES = Object.freeze({
@@ -77,9 +90,11 @@ export const DEFENSES = Object.freeze({
 
 /**
  * The two parent Constellations every Strike rolls (PHB v4.10): Melee for anything in your hand,
- * Ranged for anything that leaves it, a thrown dagger included. Every Combat Style is a child of
- * one of them, and a child's Talents count toward the parent's rank (rank only: the parent's own
- * Talents must still be bought, and Attribute Points are never counted twice).
+ * Ranged for anything that leaves it, a thrown dagger included. Since PHB v4.21 every Combat Style
+ * is a GROUP of Talents within one of them (`group` and `parent` on the registry entry, as the
+ * magical specialties are groups of their discipline): a group has no rank of its own, every
+ * Talent bought in it counts once toward the parent's rank, and its row wears the parent's rank
+ * (the parent's own Talents must still be bought, and Attribute Points are never counted twice).
  */
 export const MELEE_SLUG = "melee";
 export const RANGED_SLUG = "ranged";
@@ -99,9 +114,15 @@ export const MOVED_TALENTS = Object.freeze({
  * Constellation metadata, keyed by slug, populated at init from the shipped content index and
  * overridden by any Constellation Item found in the world or a compendium. Talents reference
  * their Constellation by slug, so this registry is what turns a slug into a Key Attribute.
- * @type {Record<string, {slug: string, name: string, category: string, attribute: string, img?: string}>}
+ * @type {Record<string, {slug: string, name: string, category: string, attribute: string, parent?: string, group?: boolean, img?: string}>}
  */
 export const constellations = {};
+
+/** Is this slug a group (a Combat Style, a magical specialty): a Constellation with a parent whose rank it wears? */
+export function isGroupSlug(slug) {
+  const entry = constellations[slug];
+  return !!entry && (!!entry.group || !!entry.parent);
+}
 
 /**
  * Register (or override) Constellation metadata.

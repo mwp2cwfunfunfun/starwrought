@@ -24,13 +24,20 @@ export async function rollDamageFromCard(message, flags, outcome) {
   const doc = actor?.actor ?? actor;
   if (!doc) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noActor"));
   if (!doc.isOwner) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+  // A spell's card (PHB v4.21): the spell's dice, not a weapon's.
+  if ((flags.source === "spell") && flags.spellId) {
+    const talent = doc.items.get(flags.spellId);
+    if (!talent) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noItem"));
+    return SwDamage.rollSpell({ actor: doc, talent, outcome, cast: flags.cast ?? SW.DEFAULT_CAST, targetUuid: flags.targetUuid ?? "" });
+  }
   const weapon = doc.items.get(flags.weaponId);
   if (!weapon) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noWeapon"));
   return SwDamage.roll({
     actor: doc, weapon, outcome,
     strike: flags.strike ?? SW.DEFAULT_STRIKE,
-    // The Proficiency the attack rolled (Melee or Ranged) decides whose specialization lands.
+    // The Proficiency the attack rolled (Melee or Ranged) and its rank decide the dice (PHB v4.21).
     slug: flags.slug ?? "",
+    rank: flags.rank ?? null,
     thrown: !!flags.thrown,
     targetUuid: flags.targetUuid ?? ""
   });
@@ -78,7 +85,9 @@ async function applyCard(actor, flags, { zone, multiplier }) {
     armorPiercing: flags.armorPiercing,
     massive: !!flags.massive,
     nonlethal: !!flags.nonlethal,
-    multiplier
+    multiplier,
+    // How the damage arrives (PHB v4.21): a weapon's Strike is Zoned; a spell's card says.
+    delivery: flags.delivery === "pervasive" ? "pervasive" : "zoned"
   });
   await postDamageSummary(actor, result, multiplier);
   return result;

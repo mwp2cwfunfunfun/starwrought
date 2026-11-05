@@ -163,15 +163,18 @@ export async function refreshConstellationRegistry() {
     // The index is raw stored data, so a pack built as `system.parent` (before the field was
     // renamed for the data model, whose own `parent` is the Item) is read under either name.
     const index = await pack.getIndex({
-      fields: ["system.slug", "system.category", "system.attribute", "system.parentSlug", "system.parent"]
+      fields: ["system.slug", "system.category", "system.attribute", "system.parentSlug", "system.parent", "system.group"]
     });
     for (const entry of index) {
+      const parent = entry.system?.parentSlug || entry.system?.parent || "";
       SW.registerConstellation({
         slug: entry.system?.slug || SW.slugify(entry.name),
         name: entry.name,
         category: entry.system?.category ?? "general",
         attribute: entry.system?.attribute ?? "might",
-        parent: entry.system?.parentSlug || entry.system?.parent || "",
+        parent,
+        // A group (PHB v4.21) wears its parent's rank; a parent slug alone says so too.
+        group: !!entry.system?.group || !!parent,
         img: entry.img,
         uuid: entry.uuid,
         // The build writes a Constellation document only when its Root is enabled (ruling 61),
@@ -183,14 +186,16 @@ export async function refreshConstellationRegistry() {
   for (const item of game.items ?? []) {
     if (item.type !== "constellation") continue;
     const slug = item.system.slug || SW.slugify(item.name);
+    // A world copy that predates the field (0.3.7) stores "" here; blank is silent, not "no
+    // parent", so it falls back to what the index or the pack already registered.
+    const parent = item.system.parentSlug || SW.constellations[slug]?.parent || "";
     SW.registerConstellation({
       slug,
       name: item.name,
       category: item.system.category,
       attribute: item.system.attribute,
-      // A world copy that predates the field (0.3.7) stores "" here; blank is silent, not "no
-      // parent", so it falls back to what the index or the pack already registered.
-      parent: item.system.parentSlug || SW.constellations[slug]?.parent || "",
+      parent,
+      group: !!item.system.group || !!parent,
       img: item.img,
       uuid: item.uuid,
       // A GM authored it into the world, so it is theirs to offer.
@@ -245,11 +250,14 @@ export function constellationEnabled(slug) {
  * compendium `index` is synchronous and carries `name` and `type`, so no await and no
  * getDocuments), then world Items of type action, so a GM's own Maneuver can be named; matched on
  * the plain name (glyphs ignored, `SW.plainName`) or its slug. A Constellation wins over a
- * Maneuver of the same name (none today). Null for anything else, and null before `game` is
- * ready, since the grammar must never throw for a cell's sake; the Lore refusal is the kind's, not
- * this function's, which resolves the template like any Constellation.
+ * Maneuver of the same name (none today). The Origin (SW.ORIGIN_SLUG; PHB v4.21's shared rank)
+ * answers as a Constellation though no Item carries it, since Humanity's cell names it; a
+ * Constellation answer also says whether it is a group (`group`) and of what (`parent`), so a
+ * kind can refuse "if Archery is Expert" naming Ranged. Null for anything else, and null before
+ * `game` is ready, since the grammar must never throw for a cell's sake; the Lore refusal is the
+ * kind's, not this function's, which resolves the template like any Constellation.
  * @param {string} name  As written in the cell: "Aid", "Armored Fighting", "armored-fighting".
- * @returns {{type: "constellation"|"action", slug: string, name: string}|null}
+ * @returns {{type: "constellation"|"action", slug: string, name: string, group?: boolean, parent?: string}|null}
  */
 export function resolveRuleTarget(name) {
   const raw = String(name ?? "").trim();
@@ -257,11 +265,19 @@ export function resolveRuleTarget(name) {
   const lower = raw.toLowerCase();
   const slug = SW.slugify(raw);
 
+  if ((slug === SW.ORIGIN_SLUG) || (lower === SW.ORIGIN_SLUG)) {
+    return { type: "constellation", slug: SW.ORIGIN_SLUG, name: "Origin", group: false, parent: "" };
+  }
   for (const con of Object.values(SW.constellations)) {
     if (!con?.slug) continue;
     const conName = String(con.name ?? "").trim().toLowerCase();
     if ((con.slug === slug) || (con.slug === lower) || (conName && (conName === lower))) {
-      return { type: "constellation", slug: con.slug, name: con.name ?? con.slug };
+      const parent = con.parent ?? "";
+      return {
+        type: "constellation", slug: con.slug, name: con.name ?? con.slug,
+        group: !!con.group || !!parent,
+        parent: parent ? (SW.getConstellation(parent)?.name ?? parent) : ""
+      };
     }
   }
 

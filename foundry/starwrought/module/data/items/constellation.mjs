@@ -34,6 +34,13 @@ export class SwConstellationData extends SwItemData {
        * Named `parentSlug` because `parent` on a data model is the owning Item, and read only.
        */
       parentSlug: new fields.StringField({ initial: "" }),
+      /**
+       * A group (PHB v4.21): a Combat Style within Melee or Ranged, a magical specialty within its
+       * discipline. It has no rank of its own and wears the parent's; the build sets it for every
+       * tree with a Parent, and a parent slug alone reads as a group too (the data model derives
+       * `isGroup`), so a world copy made before the field behaves.
+       */
+      group: new fields.BooleanField({ initial: false }),
       meta: new fields.StringField({ initial: "" }),
       flareTrigger: new fields.StringField({ initial: "" }),
       /** Identity Constellations are granted by a character-creation choice, never bought. */
@@ -61,6 +68,7 @@ export class SwConstellationData extends SwItemData {
     this.categoryLabel = SW.CATEGORIES[this.category]?.label ?? "";
     this.attributeGlyph = SW.ATTRIBUTES[this.attribute]?.glyph ?? "";
     this.parentName = this.parentSlug ? (SW.getConstellation(this.parentSlug)?.name ?? "") : "";
+    this.isGroup = this.group || !!this.parentSlug;
     prepareRules(this);
   }
 }

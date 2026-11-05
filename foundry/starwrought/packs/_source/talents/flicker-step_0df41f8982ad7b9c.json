@@ -1,0 +1,55 @@
+{
+  "_id": "0df41f8982ad7b9c",
+  "name": "Flicker Step",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spellblade",
+    "constellationName": "Spellblade",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spellbound Edge"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per round after a Melee Strike enhanced by Spellbound Edge Hits, you may Step 1 foot as a free effect without provoking an Intercept from the creature you struck.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "c0896ce7ffd8e58c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d92d8b0ba2ec1373"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0df41f8982ad7b9c"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "a2284c32e03f000d",
+  "name": "Plate Cuirass",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 4,
+    "load": 2,
+    "material": "plate",
+    "traits": [
+      "Attended",
+      "Fitted"
+    ],
+    "price": "20 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f1a6a8492073d6bd"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a2284c32e03f000d"
+}

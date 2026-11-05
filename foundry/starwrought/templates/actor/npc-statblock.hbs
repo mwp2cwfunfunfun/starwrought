@@ -82,7 +82,6 @@
         <tr>
           <th>{{localize "STARWROUGHT.Field.zone"}}</th>
           <th>{{localize "STARWROUGHT.Field.protection"}}</th>
-          <th>{{localize "STARWROUGHT.Field.material"}}</th>
           <th>{{localize "STARWROUGHT.Field.wounds"}}</th>
           <th>{{localize "STARWROUGHT.Condition.exposed"}}</th>
         </tr>
@@ -92,7 +91,6 @@
         <tr class="{{#if zone.exposed}}sw-row-exposed{{/if}} {{#if zone.wounds.wounded}}sw-row-wounded{{/if}}">
           <td class="sw-zone-cell">{{zone.label}}</td>
           <td><input type="number" name="system.zones.{{zone.key}}.protection" value="{{zone.protection}}" min="0"></td>
-          <td><select name="system.zones.{{zone.key}}.material">{{selectOptions @root.materialChoices selected=zone.material}}</select></td>
           <td class="sw-wounds-cell">
             {{> "systems/starwrought/templates/actor/wounds.hbs" zone.wounds}}
           </td>

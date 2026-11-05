@@ -1,0 +1,72 @@
+{
+  "_id": "a32529210dfd36c6",
+  "name": "Kinetics Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kinetics",
+    "constellationName": "Kinetics",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Vector Shove ❷: Blast versus Evade or Endure. On a Hit, push a creature up to 3 feet; on a Graze, 1 foot; on a Critical Hit, 5 feet. No damage.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blast",
+      "delivery": "",
+      "range": 0,
+      "adjacent": false,
+      "die": null,
+      "types": [],
+      "targets": "one",
+      "defenses": [
+        "evade",
+        "endure"
+      ],
+      "effects": {
+        "quick": "On a Hit, push a creature up to 3 feet; on a Graze, 1 foot; on a Critical Hit, 5 feet. No damage.",
+        "focused": "",
+        "committed": ""
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "8225c5e971ad8dd2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6bbfdf5db65fe3bb"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a32529210dfd36c6"
+}

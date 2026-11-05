@@ -147,6 +147,10 @@ EDITIONS = {
         "append": [],
         "rename": {},
     },
+    # v4.15 -> v4.21 (Mike, 2026-11-04): no entry. Mike authored and stamped v4.21 himself (cover and
+    # footers), so the formatting pass (assets/phb_format.py) wrote the edition straight out as
+    # Starwrought_Players_Handbook_v4.21.docx and this script had nothing to move. The corrections
+    # the sync found are tracked changes in assets/phb_propose.py, for Mike to accept.
     "3.4": {
         "from": "3.3",
         "replace": [

@@ -63,7 +63,7 @@ export class SwPartyData extends foundry.abstract.TypeDataModel {
 
       /**
        * The last Milestone award, for Take back (plan, part 3): when it was made, the session, and
-       * for every member it wrote the numbers before and after (level, milestone, deferred, the
+       * for every member it wrote the numbers before and after (level, milestone, comets, the
        * Vigor rise of a level). Null once taken back, or before any award. Take back reverses
        * exactly those numbers on exactly those members and refuses if any has been edited by hand
        * since; see helpers/party.mjs.

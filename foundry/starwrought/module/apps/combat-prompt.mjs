@@ -27,7 +27,7 @@
 import * as SW from "../config.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 import { AttackWorkflow } from "../combat/attack-workflow.mjs";
-import { legalAnswers, describeAnswer, BLOW_DEFENSES } from "../helpers/answers.mjs";
+import { legalAnswers, describeAnswer, postureNeedsZone, BLOW_DEFENSES } from "../helpers/answers.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -486,9 +486,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     for (const p of legal.postures) {
       const talent = actor.items?.get?.(p.talentId);
-      // A root-granted Posture (Give Ground, Set Your Feet; 0.5.3) carries the Reaction table's
-      // effect as its hint, since the root Talent's own text is the whole of Evade or Guard Training.
-      const hint = p.hint || plainText(talent?.system?.effect) || game.i18n.localize("STARWROUGHT.Reaction.postureHint");
+      // A Posture the table knows (PHB v4.21: Give Ground, Set Your Feet, Drop Flat, Kneel) carries
+      // its own hint; one by the general rule, the Talent's text.
+      const hint = (p.key ? game.i18n.localize(`${SW.REACTIONS[p.key].label}Hint`) : "")
+        || p.hint || plainText(talent?.system?.effect) || game.i18n.localize("STARWROUGHT.Reaction.postureHint");
       answers.push({
         value: `posture:${p.talentId}`,
         label: glyphed(describeAnswer({ posture: { ...p, zone: null } }, actor)),
@@ -503,7 +504,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     const { reaction, posture } = SwCombatPrompt.#answerParts(draft);
-    const zones = posture
+    // A Zone is asked only of a Posture that Exposes one of the defender's choice (PHB v4.21):
+    // Drop Flat Exposes nothing and Kneel names its own.
+    const needsZone = !!posture && postureNeedsZone(actor, posture);
+    const zones = needsZone
       ? Object.entries(SW.ZONES).sort((a, b) => a[1].order - b[1].order).map(([z, def]) => {
         const label = game.i18n.localize(def.label);
         return {
@@ -521,11 +525,15 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
       zones,
       zone: draft.zone,
       headWound: actor.system?.reactions?.blocked ? game.i18n.localize("STARWROUGHT.Prompt.headWound") : null,
-      counterHint: legal.reactions.includes("counter") ? game.i18n.localize("STARWROUGHT.Prompt.counterNeedsMelee") : null,
+      meleeHint: legal.reactions.some(r => SW.REACTIONS[r]?.melee)
+        ? game.i18n.format("STARWROUGHT.Prompt.meleeOnlyNote", {
+          names: legal.reactions.filter(r => SW.REACTIONS[r]?.melee).map(r => game.i18n.localize(SW.REACTIONS[r].label)).join(", ")
+        })
+        : null,
       preview: showThresholds ? this.#preview(actor, draft.defense, reaction, posture) : null,
-      // A Posture Exposes "a Zone of the defender's choice" (PHB v4.10): the choice is theirs to make, so
-      // nothing is pre-picked and Commit waits for it.
-      disabled: !!posture && !draft.zone
+      // A Posture Exposes "a Zone of the defender's choice" (PHB v4.21): the choice is theirs to make, so
+      // nothing is pre-picked and Commit waits for it; a Posture that names its Zone or none waits for nothing.
+      disabled: needsZone && !draft.zone
     };
   }
 

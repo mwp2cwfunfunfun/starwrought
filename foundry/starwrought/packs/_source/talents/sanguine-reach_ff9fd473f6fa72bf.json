@@ -1,0 +1,55 @@
+{
+  "_id": "ff9fd473f6fa72bf",
+  "name": "Sanguine Reach",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "blood-mage",
+    "constellationName": "Blood Mage",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Blood Price"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you use Blood Price on a single-target Cast, you may increase that spell’s range by 5 feet instead of adding Blood Price bonus damage. The Vigor cost is still paid, and this choice is made when the Cast is declared.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "ff98d604b0d6eadf",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a126599766c1fb2b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ff9fd473f6fa72bf"
+}

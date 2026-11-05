@@ -1,0 +1,55 @@
+{
+  "_id": "51747e81d37bad26",
+  "name": "Woven Wall",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "barriers",
+    "constellationName": "Barriers",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Barriers Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "❸ Prepared: create a short, stationary force barrier that grants Lesser Cover until your next Opportunity; exact dimensions require playtest.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "9615959961366296",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2f4e2bc8fe9d28b1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!51747e81d37bad26"
+}

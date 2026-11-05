@@ -1,0 +1,16 @@
+{
+  "_id": "a2139df797c9f1b3",
+  "name": "Emotions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "ccb634dd129eeec3"
+    }
+  },
+  "_key": "!folders!a2139df797c9f1b3"
+}

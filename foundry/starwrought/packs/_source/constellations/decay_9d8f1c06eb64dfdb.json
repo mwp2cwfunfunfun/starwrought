@@ -1,0 +1,36 @@
+{
+  "_id": "9d8f1c06eb64dfdb",
+  "name": "Decay",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/decay.png",
+  "system": {
+    "slug": "decay",
+    "category": "magic",
+    "attribute": "might",
+    "parentSlug": "vitalism",
+    "group": true,
+    "meta": "Magic • Might",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Might</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "665dc4b3a28f8abb"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9d8f1c06eb64dfdb"
+}

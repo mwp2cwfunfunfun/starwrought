@@ -1,0 +1,33 @@
+{
+  "_id": "fdb10ddec870bdec",
+  "name": "Leather Armguards",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "arms",
+    "protection": 2,
+    "load": 0,
+    "material": "leather",
+    "traits": [],
+    "price": "4 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f7f5a907f9a71c19"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fdb10ddec870bdec"
+}

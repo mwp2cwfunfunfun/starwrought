@@ -74,12 +74,13 @@ export const AttackMixin = Base => class extends Base {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.notHeld", { name: weapon.name }));
     }
 
-    // A Strike made as a Reaction (Intercept, Counter, the riposte) is always a Quick Strike. Only
-    // Intercept pays here; Counter's ❶↺ is charged when the attack it answers resolves, and the
-    // riposte is ⓿.
-    const reactionStrike = ["intercept", "counter", "riposte"].includes(asReaction) ? asReaction : null;
+    // A Strike made as a Reaction (Intercept, the Riposte after a Parry) is always a Quick Strike
+    // (PHB v4.21). Only Intercept pays here; the Riposte's Parry was paid when the attack it
+    // answered resolved, and the Riposte itself costs nothing more. (Counter, 0.4.2 to 0.10.1, is
+    // gone from the book.)
+    const reactionStrike = ["intercept", "riposte"].includes(asReaction) ? asReaction : null;
     const strike = reactionStrike ? "quick" : (SW.STRIKE_KINDS[askedStrike] ? askedStrike : SW.DEFAULT_STRIKE);
-    const free = askedFree || ["counter", "riposte"].includes(reactionStrike);
+    const free = askedFree || (reactionStrike === "riposte");
     // The flow's blind roll is the second step of a Strike that paid when it declared (0.5.3).
     const paid = !!(prepared || free || blind);
 
@@ -155,10 +156,12 @@ export const AttackMixin = Base => class extends Base {
       }
     }
 
-    // The Strike Attribute: the higher of the weapon's natural Attribute and the Key Attribute of
-    // a Combat Style whose root you own and whose weapon this is (PHB v4.10, The Attack).
-    const strikeAttribute = this.system.strikeAttributeFor?.(weapon)
-      ?? { attribute: weapon.system.attackAttribute, source: "weapon" };
+    // The Strike Attribute (PHB v4.21, The Attack): the weapon's own, Might for a throw (ruling
+    // 129); a Maneuver's Key Attribute may stand in when higher, which the dialog offers from the
+    // owned Talents and Maneuvers that have one and the roll applies when the player picks one.
+    const strikeAttribute = this.system.strikeAttributeFor?.(weapon, { thrown })
+      ?? { attribute: thrown ? "might" : weapon.system.attackAttribute, source: "weapon" };
+    const maneuverChoices = blind ? [] : (this.system.maneuverChoicesFor?.(weapon, { thrown }) ?? []);
 
     // The defender decides how to answer. Their stance is that decision, made in advance and
     // changeable until the die leaves the hand, so the roll reads it rather than asking the
@@ -238,7 +241,7 @@ export const AttackMixin = Base => class extends Base {
 
     const kindLabel = key => `${game.i18n.localize(SW.STRIKE_KINDS[key].label)} ${SW.ACTION_GLYPHS[SW.STRIKE_KINDS[key].cost]}`;
     const reactionLabel = reactionStrike
-      ? ` · ${game.i18n.localize(reactionStrike === "riposte" ? "STARWROUGHT.Reaction.riposte" : SW.REACTIONS[reactionStrike].label)}`
+      ? ` · ${game.i18n.localize(SW.REACTIONS[reactionStrike]?.label ?? "STARWROUGHT.Reaction.label")}`
       : "";
     const subtitleFor = key => `${kindLabel(key)}${reactionLabel} · ${
       game.i18n.localize(ranged ? "STARWROUGHT.Roll.rangedStrike" : "STARWROUGHT.Roll.meleeStrike")}`;
@@ -252,6 +255,7 @@ export const AttackMixin = Base => class extends Base {
       rankOverride: rank,
       attribute: strikeAttribute.attribute,
       attributeSource: strikeAttribute.source,
+      maneuverChoices,
       label: weapon.name,
       subtitle: subtitleFor(strike),
       strike,

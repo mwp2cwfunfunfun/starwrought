@@ -7,6 +7,225 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.11.0 (2026-11-04): Player's Handbook v4.21
+
+Built from **Player's Handbook v4.21** (`Starwrought_Players_Handbook_v4.21.docx`, Mike's
+`StarWrought_v4.21_Reorganized_Redline.docx` under `assets/phb_format.py`'s formatting pass, the
+visible text unchanged by a character; the cover and footers already read v4.21). The repository
+was synced to v4.15; v4.16, v4.17 and the v4.20 draft came and went on the shelf unsynced, and v4.21
+reorganises the book into eight chapters and moves the rules below. By the handbook rule every
+consumer moved with it (`data/*.xlsx` and the new `data/magic.xlsx`, `assets/roster.json`, the
+converter and the builders, the web app, this system, `FEATURES.md`, this file, both READMEs,
+`CLAUDE.md`), then `data/SYNC.json` was stamped. The rulings are in `v4.21-sync-report.md` in the
+project root (125 to 158, continuing the v4.14 report's numbering), with the handbook's own defects
+for Mike and the reviewer's five margin comments answered as the system behaves. Two redlines wait
+for Mike's acceptance: `Starwrought_Players_Handbook_v4.21_callings-vigor_proposal.docx` (the
+Chapter 3 Calling table's Vigor column brought to the five casters' root texts, Mike's decision) and
+`Starwrought_Players_Handbook_v4.21_consistency_proposal.docx` (the typos and the two Reaction card
+titles a machine can fix). Planned first (`eager-wobbling-possum.md` in the plans folder; Mike,
+2026-11-04: "going forward, let's plan before making changes"), then built in the order the plan
+set: data, then the engine's stacking, the constants, the Constellation groups and the Origin, the
+Strike Attribute, the Reactions as Talents, the damage pipeline, the spells. A minor bump: the
+stored data changes shape in four small ways and the world migration writes them once.
+
+### What the book moved, and what the system does about it
+
+- **Stacking** (Chapter 4, Bonuses and Penalties: "Independent bonuses and penalties stack,
+  regardless of type. Count each underlying circumstance only once"). `SW.resolveModifiers`
+  (`module/config/modifiers.mjs`) is a sum now, with an optional `source` on a modifier naming the
+  circumstance: entries that share one collapse to the strongest bonus and the strongest penalty
+  among them, and `suppressed` carries what was set aside. The three types stay on every modifier
+  as the book's labels for where the number comes from. Two sources are tagged: `off-guard` on the
+  Off-Guard condition and the first Torso Wound (Off-Guard made lasting, so a Wounded fighter who is
+  also Off-Guard is −2, not −4), and `rule:<item>:<target>` on the `bonus` kind's applied
+  modifiers, so one Talent's rank lines on one target give the higher while two Talents' bonuses
+  add. Frightened and Fatigued add; a Parry weapon and a raised shield both add to Guard (ruling
+  125); two Scouts give +2 Initiative (ruling 126). Through 0.10.1 the highest bonus and the worst
+  penalty of each type were taken. The self-test checks the contract (four new checks).
+- **Constellation groups and the Origin** (Chapter 3, Constellations and shared ranks). A tree with
+  a Parent is a **group** (a Combat Style within Melee or Ranged, a magical specialty within its
+  discipline): `prepareConstellations` (`module/data/character/constellations.mjs`) gives it no
+  rank of its own but its parent's rank, bonus and pool in a second pass (`rankFrom`), the sheet's
+  row wears the parent's badge dimmed with a hint, and an unopened group shows the parent's rank
+  too. Root first stands (ruling 127): a group's points count toward the parent once the parent's
+  Root is owned, and the creation wizard refuses a group Talent before it
+  (`STARWROUGHT.Chargen.whyNeedsParentRoot`), measuring the tier gate against the parent's pool.
+  `SW.ORIGIN_SLUG` (`origin`) is a virtual Constellation: the model derives `system.origin` from
+  the Ancestry, Culture and Bloodline skies and `proficiency("origin")` answers from it, so the
+  `bonus` kind's `if Origin is Expert` reads the shared rank; the resolvers (the build's and
+  `resolveRuleTarget`) answer "Origin" as a Constellation and say whether a name is a group, and the
+  kind refuses `if <group> is <Rank>` naming the parent to test instead. The registry carries
+  `group` and `parent` (`SwConstellationData` has a `group` field; `isGroupSlug` in the config).
+  The Magic category (`magic`) is between the Combat Styles and the Skills.
+- **The creation wizard** (Chapter 3, Creating Your Character: thirteen points; "If this is your
+  first Calling, you also gain N Vigor and Training in Melee or Ranged", or in one of the five
+  disciplines for a caster). The combat training is the first Calling's grant: the **Combat
+  Training** step follows the Calling and offers what the chosen Calling's root names
+  (`trainingChoicesOf` reads the root's Effect: Melee or Ranged for the five martial Callings, the
+  five disciplines for the five casters; the martial pair when nothing readable). The floor stays
+  14: the book's thirteen plus the Skill Training every Calling's root text still grants, which
+  Chapter 3's count leaves out (the report names it for Mike).
+- **The Strike Attribute** (Chapter 4, The Attack: "Melee: Might, or Agility if the weapon has the
+  Finesse trait. Ranged: Agility, or Might if the weapon has the Thrown trait"; "A Strike made as
+  part of another Maneuver ... If that Maneuver's Key Attribute has a higher bonus than the Strike's
+  normal Attribute, you may use it instead"). `attackAttribute` on the weapon is Might, or Agility
+  for Finesse or a ranged weapon; `strikeAttributeFor(weapon, { thrown, maneuver })` reads a throw
+  as Might (a Finesse dagger thrown is Might, the book's words taken literally; ruling 129) and
+  lends a Maneuver's Key Attribute when higher. The roll dialog offers **As part of a Maneuver**: the
+  owned Talents and Maneuvers whose Key Attribute beats the weapon's (`maneuverChoicesFor`), none by
+  default, the Requirements the table's; the chosen one rebuilds the base terms and the card says
+  "via <Maneuver>". The Combat Style substitution of v4.14 and the weapon's `style` field are gone
+  (`migrateData` drops the field; a Style is a group with no Attribute of its own to lend), and so
+  is the Composite trait (read as nothing now).
+- **Reactions are Talents** (Chapter 4, Answering an Attack; the Defense Constellations). The
+  table of the ones the system implements is `SW.REACTIONS`, keyed by the slug of the Talent's
+  plain name: Give Ground ⓿↺ (Evade Training's own text) and Set Your Feet ⓿↺ (Guard Training's),
+  Sidestep ❶↺ (Evade +2, a Step on a Stop), Slip the Line ❶↺ (Evade +2 against melee, a Move to a
+  space adjacent to the attacker on a Stop), Drop Flat ⓿↺ (Evade +4, you drop Prone, no Zone
+  Exposed), Parry ❶↺ (Guard +2 against melee, a rigid implement, Control on a Stop), Riposte (the
+  Quick Strike back instead of Control, when owned), Kneel Behind the Shield ⓿↺ (Guard +4 with the
+  shield Raised, the Arms Exposed, rooted), Deflecting Palms ❶↺ (Guard +2 against melee, a hand
+  free; the damage reduction is the table's), Cover the Angle ❶↺ (an ally's Blow against your Guard;
+  the table's: the prompt offers no answer for another's Blow yet), Intercept ❶↺ (Melee Training's).
+  Void and Counter are gone from the book and the system. A character owns a Reaction by owning the
+  Talent of that name, or the Training root that grants it (`ownedReactions` in
+  `module/helpers/answers.mjs`; `system.reactions.owned` on the actor, the flat booleans by key
+  beside it); an adversary owns them all, the GM's to declare. `legalAnswers` offers the owned
+  rows on the Defense being rolled (a Reaction of kind "reaction", a Posture of kind "posture"; a
+  ⓿↺ Talent in Evade or Guard the table does not know is still a Posture by the general rule, +2
+  and a Zone), a Posture's bonus is the table's (`postureBonus`: Drop Flat and Kneel +4), a Zone is
+  asked only of a Posture that Exposes one of the defender's choice (`postureNeedsZone`; Kneel
+  names its Arms, Drop Flat none), and the reveal applies the drawback (Prone) where it applied the
+  Zone. A melee-only Reaction is refused against an arrow (`STARWROUGHT.Prompt.meleeOnly`); the
+  card's Stop offers follow the row (`onStop`: step, adjacent with its own card line, control, and
+  the Riposte when owned). The standing stance is Evade or Guard alone (`helpers/stance.mjs`,
+  `SW.LEGACY_STANCES`: a stance stored as void, parry or counter reads as the Defense it stood on,
+  and the migration writes it). One answer per attack (ruling 133).
+- **Damage** (Chapter 4, Damage Resolution; Weapon Damage Dice; Damage Delivery). **Weapon dice
+  are the rank's**: one at Trained, two at Expert, three at Master, four at Legendary, in the Melee
+  or Ranged rank the Strike rolled (Handling's lowered rank included, carried on the card as
+  `rank`), a Quick Strike and a Graze one; the level table (two at 4th ... five at 16th) and the
+  specialization damage are gone ("do not add them a second time as weapon specialization"; ruling
+  153). `SW.weaponDice(rank)`, `system.melee.dice` and `system.ranged.dice`, the Overview's weapon
+  dice field reads "1 / 1". **The order**: Immunity, the total, Resistance (a sum since v4.21),
+  Weakness (a sum, only if damage remains), the Zone's Protection once for a Zoned Attack (never
+  below 1; never for a Pervasive one), the critical doubling, the Deadly die, Temporary Vigor,
+  Vigor; through 0.10.1 Weakness came before Resistance and the doubling before Protection.
+  `SwDamage.apply` takes `delivery` ("zoned" | "pervasive"), the damage card carries it, and
+  Persistent Damage now goes through the pipeline Pervasive (`onPersistentRoll`), where through
+  0.10.1 the card named the amount and left the applying to the sheet. The material-weakness step
+  and the matched harness's Torso +1 are gone with their tables (ruling 149); `SW.ARMOR_TYPES`
+  replaces `MATERIALS` (padded, leather, mail, lamellar, brigandine, splint, plate; `scale` reads
+  as lamellar, ruling 141) and the adversary Zone's `material` field is dropped. `force` and
+  `psychic` join the damage types (ruling 134). A Quick Strike's Miss costs nothing
+  (`STRIKE_KINDS.quick.exposeOnMiss` false; Table 9).
+- **Spells, first cut** (Chapter 6, the Magical Constellations; Spellwork: "Cast ❷ to ❹"). The
+  magic sheets carry structured spell columns (Threat, Delivery, Range, Die, Damage, Targets,
+  Quick, Focused, Committed, Defenses; `data/README.txt`), the converter validates them, and the
+  build writes them onto the Talent as `system.spell` (`SwTalentData`; `isSpell`, `spellDefenses`,
+  `spellDelivery`, `spellType` derived). A spell Talent's row on the Constellations tab and its
+  Item sheet carry the **Cast ❷ ❸ ❹** (`SW.CAST_KINDS`: Quick, Focused, Committed; `SwItem#use` on
+  a spell casts it). `SwActor#castSpell` (`module/documents/actor/cast.mjs`) rolls the discipline's
+  Proficiency (the Talent's Constellation, or its parent when it is a specialty's) with the
+  discipline's Key Attribute as an attack with `source: "spell"` and no Strike, against the higher
+  of the two Defenses the Threat permits on the target (the defender's choice read as the choice a
+  defender makes, named on the card), pays the actions (a Focused or Committed Cast in an encounter
+  is Prepared under the three-action rule, `prepare({ kind: "cast" })`, and resolves at the next
+  Opportunity), and prints the three Cast texts as the card's outcome rows. The card's damage
+  buttons roll `SwDamage.rollSpell`: the discipline's rank in dice (`SW.spellDice`: one at Trained
+  to four at Legendary; one for a Quick Cast; a Quick Cast's Graze deals nothing), the spell's die
+  and first type, no Might and no sheet damage bonus (ruling 136), delivered as the spell says; a
+  Quick Cast may Critically Hit (ruling 135). Position and Bind offers stay away from a spell. The
+  Cast rolls at once, outside the attack flow's declare, commit and reveal: the coordinator still
+  declares weapon Blows and adversary attack rows only, and the first non-Blow Threat in the flow
+  (the split `CLAUDE.md` names) is not in this release (section 9 of `FEATURES.md`). Areas, pushes,
+  conditions on a Hit, summons, Temporary Vigor pools and healing are the Talent's text.
+- **The constants.** Support to a maximum of +4 (`SUPPORT_MAX`). Rush ❷ for three times Speed
+  (`RUSH_MULTIPLIER` 3, `RUSH_COST` 2; `classifyMove` makes a straight line longer than two Moves a
+  Rush), Off-Guard until the next Opportunity in the card's words. Leap ❶ ❷ ❸ at half, one and one
+  and a half times Speed less Strain (`LEAP_STEPS`; `system.leap` is the three numbers, the
+  Overview prints them). Crawl ❶ half Speed, the Speed the final Legs Wound took (`CRAWL_DIVISOR`;
+  ruling 138). Sizes penalise only (Tiny −2 and Small −1 Guard; Large −1, Huge and Gargantuan −2
+  Evade; ruling 139). Wind with no exemption (ruling 150 supersedes 74): everyone carrying Load
+  Strain rolls at the end of every round, a failure Fatigued +1 and a critical failure +2
+  (`WIND_FAIL_RISE`, `WIND_CRIT_FAIL_RISE`); `system.wind.exempt` is always false. Fatigued N on all
+  four Defenses. Load Strain a Condition penalty on Stealth, Acrobatics, and the offered Climb or
+  Swim (`STRAIN_CHECKS`, `STRAIN_TYPE`). The Attribute Bonus has no +5 cap (`ATTRIBUTE_MAX`
+  Infinity; ruling 158: v4.21's Key Terms names none).
+- **Armor** (Chapter 5, the armor table and its traits). **Visored** replaces the helm penalties
+  by name: the armor Item stores `lowered`, derives `visored`, `visorPenalty` (−1 Gear to Awareness
+  and Initiative while lowered) and `effectiveProtection` (one less while raised); the Equipment
+  tab's control and `SwItem#toggleVisor` flip it for an action and say so, and the two Maneuvers
+  Lower the Visor and Raise the Visor run the same method once Mike authors their rows
+  (`documents/maneuvers.mjs`). **Fitted** replaces the matched harness: the Item stores `adjusted`
+  (the player's tick on the Item sheet or the Equipment tab), and three adjusted Fitted pieces worn
+  are the Fitted Harness that takes 1 off Load Strain (`FITTED_ZONES`, `FITTED_RELIEF`). Clatter
+  counts mail, lamellar, brigandine, splint and plate, a Muffled piece never (ruling 142). The
+  armor sheet's Material select is the Type.
+- **Vigor and rest** (Chapter 4, Vigor). The Endure Bonus to Vigor is gone (ruling 151, Mike's):
+  Vigor is 10 + Opening Vigor + Ancestry Vigor × level. **A night's rest restores all of it**;
+  **ten minutes' rest** (`SwActor#restTenMinutes`, the Overview's second rest button and the
+  Fatigued card's "Ten minutes' rest") restores level × Presence when Presence is positive (ruling
+  144) and ends Fatigued, one card. The five casters' Opening Vigor is their root texts' (6 / 8 / 6
+  / 6 / 8; ruling 152, Mike's), in the roster and the chassis pack.
+- **Comets** (Chapter 7). The Deferred Talent Point is the **Comet** (ruling 145): `system.comets`
+  (migrated from `deferred`), the badge and its Spent control on the sheet and the party roster
+  (`spendComet`), the Flare card's reminder, and the Milestone award counting one at the fourth
+  Milestone ("You also gain a Comet") as well as one for a Milestone point no Flare can take.
+
+### The pipeline and the data
+
+- `data/magic.xlsx`, new: the five disciplines and their ten specialties (Category `Magic`, the
+  specialties' `Parent` naming their discipline), every Talent from the book, the spell columns
+  filled where the book gives a spell. `data/callings.xlsx`: the five roots renamed "<Calling>
+  Calling", the first-Calling clause, the five caster sheets. `data/defenses.xlsx`: the Reaction
+  Talents (Sidestep, Slip the Line ❶↺, Drop Flat, Parry, Riposte, Kneel, Deflecting Palms, Cover
+  the Angle), the Training roots granting one Posture each, Endure Training without the Vigor
+  clause. `data/equipment.xlsx`: the Armor sheet is the book's 27 pieces with `Type` and
+  `Description`. `data/ancestries.xlsx`: the Human sheet gained its `Automation` column and
+  Humanity's four lines, written against `Origin` (the 0.10.0 item closed:
+  `automation: 4 rules on 1 document`). The converter: Category `Magic`, `group: true` on a tree
+  with a Parent, the spell columns validated into `node.spell`, Armor `Type` and `Description`,
+  `---` as blank. The builders: `spellOf` onto the Talent, `group` on the Constellation and the
+  index, the Origin in the rule resolver, the new journal pages (Damage Delivery, Spellwork, Weapon
+  Size), the compendium docx's new sections. The web app, by the fork that did its pass: groups,
+  the Magic category and the spell block, the Calling's combat training in the wizard, the derive
+  pass to v4.21 (the fitted harness, the visor, dice by rank, Rush ❷, the Leap tiers, the rests),
+  the Reactions from the roster's `postures` block, the Comet conversion, the migration of old
+  Calling roots and armor names, every prose section; smoke test SMOKE CLEAN.
+- **The world migration** (0.11.0 step of `migrateWorld`): a stance stored as a Reaction to its
+  Defense, `deferred` to `comets`, Scale armor to Lamellar, a weapon's `style` and an adversary
+  Zone's `material` dropped; counted and said once (`STARWROUGHT.Migration.v421`). The data models'
+  `migrateData` read every one of these across on load already, so a world that opened once under
+  0.11.0 before the step was present behaves the same.
+- **Checked live** in the test world: Frightened 1 + Fatigued 1 = −2 on Evade and Awareness alike;
+  Off-Guard + Torso Wound = −2 once; Shield Fighting, Armored Fighting and Great Weapon Fighting
+  wearing Melee's rank; `proficiency("origin")` Trained and Humanity +1 Condition on Hrolda's Aid
+  from the refreshed copy, offered unticked on a plain Diplomacy; a Battleaxe thrown reading Might;
+  Give Ground and Set Your Feet owned from the roots, Parry, Riposte and Drop Flat owned from
+  Talents of those names, Drop Flat folding +4 with no Zone, an unowned Sidestep falling back with
+  the note; `migrateData` turning `{stance: "void", deferred: 2}` into `{stance: "evade", comets:
+  2}`, Scale into Lamellar, dropping `style`; 15 feet at Speed 6 a Rush ❷ and 18 feet (past the
+  Strain-shortened 16) three Moves; the Seamfinder taking 8 slashing on Resistance 2 and Protection
+  2 as a Critical Hit for 8 (8 − 2 − 2, doubled), 6 Pervasive with no Protection line, and 11 fire
+  through its Weakness 5; a night's rest filling test 1's Vigor and ten minutes' rest healing
+  Hrolda 1 (level 1 × Presence 1) and test 1 nothing (Presence 0); Elementalism Training owned by
+  test 1 casting Quick ❷ ("Quick Cast ❷ · Blow · Zoned · Elementalism", Elementalism (Trained) +3,
+  flags `source: "spell"`, `strike: null`) and its Focused damage card 1d6 fire Zoned; the wizard's
+  Combat Training step listing the five disciplines for a Spellshaper and Melee for a Weaponmaster;
+  the character, adversary, Talent, armor and weapon sheets rendering with no console error, the
+  Overview printing "❷ Rush 16 ft", "❶ 1 / ❷ 4 / ❸ 7 ft" and the two rest buttons.
+
+### Known gaps in this release
+
+The Cast outside the attack flow (above); Cover the Angle, Kneel's rooted Speed and the "no more
+than one size larger" clauses as the table's; a Reaction Talent under a name the table does not
+have offered only as a ⓿↺ Posture by the general rule; the magic sheets' areas, pushes and
+conditions as text; sleeping in armor (Fatigued equal to Load Strain, maximum 3) still not applied.
+All in section 9 of `FEATURES.md`.
+
+---
+
 ## 0.10.1 (2026-11-04): Player's Handbook v4.15
 
 Built from Player's Handbook v4.15, unchanged: no rule moved, `data/SYNC.json` is untouched, and

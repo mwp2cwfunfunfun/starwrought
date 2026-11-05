@@ -1,0 +1,71 @@
+{
+  "_id": "59f0eeaa58906b69",
+  "name": "Flamecraft Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "flamecraft",
+    "constellationName": "Flamecraft",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Flame Seed ❷/❸/❹: cast a fire attack; on a Focused Hit, one creature takes Damage Dice d6 fire (Pervasive). Committed can instead affect a tiny 2-foot-radius area at reduced dice, subject to playtest.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blast",
+      "delivery": "pervasive",
+      "range": 0,
+      "adjacent": false,
+      "die": 6,
+      "types": [
+        "fire"
+      ],
+      "targets": "one",
+      "defenses": [],
+      "effects": {
+        "quick": "",
+        "focused": "On a Hit, one creature takes Damage Dice d6 fire",
+        "committed": "A tiny 2-foot-radius area at reduced dice, subject to playtest"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "aa9d4a89287c4d93",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8825dadda537a88e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!59f0eeaa58906b69"
+}

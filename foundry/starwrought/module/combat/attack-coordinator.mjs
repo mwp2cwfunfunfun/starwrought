@@ -29,7 +29,7 @@ import * as SW from "../config.mjs";
 import { AttackWorkflow, ACTIONS, TERMINAL_PHASES } from "./attack-workflow.mjs";
 import { renderAttackCard, updateAttackCard, mayControl } from "./attack-card.mjs";
 import { SwCheck } from "../dice/check.mjs";
-import { isLegalAnswer, postureName } from "../helpers/answers.mjs";
+import { isLegalAnswer, postureName, postureBonus, postureZone, postureRule } from "../helpers/answers.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 
 /** The socket channel system.json declares (`"socket": true`). */
@@ -44,12 +44,6 @@ const REQUEST_TIMEOUT = 15000;
 /** How long a card update waits for the matching socket broadcast before it stands in for it. */
 const SYNC_GRACE = 1500;
 
-/**
- * A Posture's bonus (brief, "What the table does": "+2 Situation to that Defense"). Used only by
- * the fallback Threshold arithmetic below; `SwActor#defenseThresholdFor` is the authority.
- */
-const POSTURE_BONUS = 2;
-
 /** Rejection reasons on the wire, and the string the requester shows for each. */
 const REASONS = Object.freeze({
   stale: "STARWROUGHT.Attack.stale",
@@ -59,7 +53,7 @@ const REASONS = Object.freeze({
   wrongPhase: "STARWROUGHT.Attack.wrongPhase",
   illegal: "STARWROUGHT.Attack.illegalAnswer",
   gmOnly: "STARWROUGHT.Attack.gmOnly",
-  counterNeedsMelee: "STARWROUGHT.Prompt.counterNeedsMelee",
+  meleeOnly: "STARWROUGHT.Prompt.meleeOnly",
   noTargets: "STARWROUGHT.Attack.noTargets",
   alreadyDeclared: "STARWROUGHT.Attack.alreadyDeclared",
   noActor: "STARWROUGHT.Notify.noActor",
@@ -882,17 +876,18 @@ export class AttackCoordinator {
     if (!actor.testUserPermission(user, "OWNER")) return { ok: false, reason: "notYours" };
 
     // 5. The choice is legal: Evade or Guard; nothing, an owned Reaction or an owned Posture,
-    //    never both; a Posture names the Zone it Exposes (PHB v4.10, Answering an Attack).
+    //    never both; a Posture that Exposes a Zone of the defender's choice names it (PHB v4.21,
+    //    Answering an Attack; Drop Flat Exposes nothing, Kneel names its own).
     const defense = String(payload.defense ?? "");
     const reaction = payload.reaction ? String(payload.reaction) : null;
     const posture = normalizePosture(payload.posture);
     const defenseLabel = SW.DEFENSES[defense] ? localize(SW.DEFENSES[defense].label) : defense;
     const illegal = { ok: false, reason: "illegal", reasonData: { name: actor.name, defense: defenseLabel } };
     if (!isLegalAnswer(actor, defense, { reaction, posture })) return illegal;
-    if (posture && !(posture.zone in SW.ZONES)) return illegal;
-    // Counter answers only a melee Blow from a foe within Reach.
-    if ((reaction === "counter") && !AttackCoordinator.#counterAnswers(workflow, target, actor)) {
-      return { ok: false, reason: "counterNeedsMelee" };
+    // A Reaction that answers a melee Blow only (Slip the Line, Parry, Deflecting Palms;
+    // SW.REACTIONS `melee`) is refused against an arrow.
+    if (reaction && SW.REACTIONS[reaction]?.melee && !AttackCoordinator.#meleeAnswers(workflow)) {
+      return { ok: false, reason: "meleeOnly", reasonData: { name: localize(SW.REACTIONS[reaction].label) } };
     }
 
     const store = AttackCoordinator.#storeFor(workflow.id);
@@ -900,8 +895,12 @@ export class AttackCoordinator {
       defense,
       reaction,
       // The Posture's name as the table reads it: a root-granted one ("Set Your Feet ⓿↺") is
-      // named by the Reaction table, not by the root Talent it rides on (0.5.3).
-      posture: posture ? { talentId: posture.talentId, name: postureName(actor, posture) ?? "", zone: posture.zone } : null,
+      // named by the Reaction table, not by the root Talent it rides on (0.5.3); its Zone the one
+      // chosen, the one its row names (Kneel's Arms), or none (Drop Flat).
+      posture: posture ? {
+        talentId: posture.talentId, name: postureName(actor, posture) ?? "", zone: postureZone(actor, posture),
+        drawback: postureRule(actor, posture)?.rule.drawback ?? null
+      } : null,
       userId: user.id
     };
     await AttackCoordinator.#savePrivate();
@@ -919,16 +918,13 @@ export class AttackCoordinator {
   }
 
   /**
-   * PHB v4.10, Answering an Attack: Counter answers only a melee Blow from a foe within your
-   * Reach. An unknown distance (no canvas) is not refused: nothing in this system is stopped on
-   * arithmetic the table cannot see.
+   * PHB v4.21: Slip the Line, Parry and Deflecting Palms answer a melee Blow only (a foe "Strikes
+   * you with a melee weapon"); an arrow meets the basic Defense or an answer that takes it. The
+   * size clause of Parry and Deflecting Palms ("no more than one size larger than you") is the
+   * table's: nothing in this system is stopped on a comparison the card can make for it.
    */
-  static #counterAnswers(workflow, target, actor) {
-    if (workflow.maneuver?.ranged) return false;
-    const gap = AttackCoordinator.#gapFor(workflow, target);
-    if (gap === null) return true;
-    const reach = actor.system?.totalReach ?? actor.system?.reach ?? 0;
-    return gap <= reach;
+  static #meleeAnswers(workflow) {
+    return !workflow.maneuver?.ranged;
   }
 
   /** The gap in feet between the attacker's token and a target's, edge to edge, or null off the map. */
@@ -1154,10 +1150,10 @@ export class AttackCoordinator {
   }
 
   /**
-   * Commit a defender with its standing stance: the `answeringDefense()` reading against this
-   * Blow (ranged or not, and the gap), Reaction included, never a Posture. The reading already
-   * applies every rule (a Head Wound, a stale Reaction stance, Counter's melee test), so it is legal
-   * by construction.
+   * Commit a defender with its standing stance: the `answeringDefense()` reading, the basic
+   * Defense alone (PHB v4.21: no Reaction stands ready; one is chosen per Blow in the prompt), so
+   * never a Reaction and never a Posture. The reading already applies the swap for an
+   * unavailable Defense, so it is legal by construction.
    */
   static #commitWithStance(workflow, target, actor, userId) {
     const reading = actor.answeringDefense?.({ ranged: !!workflow.maneuver?.ranged, gap: AttackCoordinator.#gapFor(workflow, target) })
@@ -1165,7 +1161,7 @@ export class AttackCoordinator {
     const store = AttackCoordinator.#storeFor(workflow.id);
     store[target.id] = {
       defense: ["evade", "guard"].includes(reading.key) ? reading.key : "evade",
-      reaction: reading.reaction ?? null,
+      reaction: null,
       posture: null,
       userId
     };
@@ -1264,8 +1260,10 @@ export class AttackCoordinator {
   /**
    * Apply a reveal's Postures on this client (brief, "The roll and the resolution"): each client
    * Exposes the Zone for the actors it owns, once per reveal, with `posture: true` so Recenter
-   * leaves it and the end of the round clears it. The coordinator applies for what it owns; another
-   * owner steps in only where the coordinator does not own the actor.
+   * leaves it and the end of the round clears it; a Drop Flat (PHB v4.21) drops the defender Prone
+   * instead, and a Kneel's rooted Speed is the card's note (the table's to hold). The coordinator
+   * applies for what it owns; another owner steps in only where the coordinator does not own the
+   * actor.
    */
   static #applyReveal(pub) {
     if (!["revealed", "rolling"].includes(pub?.phase)) return;
@@ -1273,15 +1271,24 @@ export class AttackCoordinator {
     const iCoordinate = pub.coordinatorUserId === game.user.id;
     for (const target of (pub.targets ?? [])) {
       const posture = target.revealed?.posture;
-      if (!posture?.zone || !(posture.zone in SW.ZONES)) continue;
+      if (!posture) continue;
+      const zone = (posture.zone in SW.ZONES) ? posture.zone : null;
+      const prone = posture.drawback === "prone";
+      if (!zone && !prone) continue;
       const key = `${pub.id}:${target.id}:${target.revealed.revision ?? pub.revision}`;
       if (AttackCoordinator.#applied.has(key)) continue;
       const actor = resolveActor(target.actorUuid);
       if (!actor?.isOwner) continue;
       if (!iCoordinate && coordinator?.active && actor.testUserPermission(coordinator, "OWNER")) continue;
       AttackCoordinator.#applied.add(key);
-      actor.setExposed(posture.zone, true, { posture: true })
-        .catch(err => console.error(`STARWROUGHT | ${actor.name}: the Posture's Zone could not be Exposed`, err));
+      if (zone) {
+        actor.setExposed(zone, true, { posture: true })
+          .catch(err => console.error(`STARWROUGHT | ${actor.name}: the Posture's Zone could not be Exposed`, err));
+      }
+      if (prone) {
+        Promise.resolve(actor.setCondition?.("prone", true))
+          .catch(err => console.error(`STARWROUGHT | ${actor.name}: Drop Flat could not make them Prone`, err));
+      }
     }
   }
 
@@ -1314,7 +1321,7 @@ export class AttackCoordinator {
     if (reaction && SW.REACTIONS[reaction]?.bonus) {
       extra.push({ label: localize(SW.REACTIONS[reaction].label), value: SW.REACTIONS[reaction].bonus, type: "situation" });
     }
-    if (posture) extra.push({ label: posture.name ?? localize("STARWROUGHT.Reaction.posture"), value: POSTURE_BONUS, type: "situation" });
+    if (posture) extra.push({ label: posture.name ?? localize("STARWROUGHT.Reaction.posture"), value: postureBonus(actor, posture), type: "situation" });
     if (extra.length) {
       if (Array.isArray(def?.modifiers)) {
         const { total } = SW.resolveModifiers([...def.modifiers, ...extra]);
@@ -1515,7 +1522,7 @@ export class AttackCoordinator {
       speakerActor = defender;
     }
 
-    const reaction = (revealed.reaction && SW.REACTIONS[revealed.reaction]) ? revealed.reaction : null;
+    const reaction = (SW.REACTIONS[revealed.reaction]?.kind === "reaction") ? revealed.reaction : null;
 
     // `resolveAgainst` charges the Reaction's ❶ itself on an attack when this client owns the
     // defender (`SwCheck.chargeReaction`, owner-gated) and writes `reactionCharged` to the card,

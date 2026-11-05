@@ -77,6 +77,49 @@
 
 {{> "systems/starwrought/templates/item/details/aura.hbs"}}
 
+{{!-- The spell block (PHB v4.21, Spellwork; 0.11.0): the magic sheet's columns, as the build
+     wrote them, and the Cast ❷ ❸ ❹ on an owned Talent. --}}
+<div class="sw-panel sw-spell-panel">
+  <h3 class="sw-panel-title">
+    {{localize "STARWROUGHT.Spell.title"}}
+    {{#if spell.castable}}
+    <span class="sw-panel-buttons">
+      {{#each spell.casts as |c|}}
+      <a class="sw-inline-button" data-action="castSpell" data-cast="{{c.key}}" data-tooltip="{{c.hint}}">{{c.glyph}} {{c.label}}</a>
+      {{/each}}
+    </span>
+    {{/if}}
+  </h3>
+  <div class="sw-body-grid">
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.enabled"}}</span>
+      <input type="checkbox" name="system.spell.enabled" {{checked system.spell.enabled}}></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Threat.label"}}</span>
+      <select name="system.spell.threat">{{selectOptions choices.threats selected=system.spell.threat blank=""}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.delivery"}}</span>
+      <select name="system.spell.delivery">{{selectOptions choices.deliveries selected=system.spell.delivery blank=""}}</select></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.range"}}</span>
+      <input type="number" name="system.spell.range" value="{{system.spell.range}}" min="0"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.adjacent"}}</span>
+      <input type="checkbox" name="system.spell.adjacent" {{checked system.spell.adjacent}}></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.die"}}</span>
+      <input type="number" name="system.spell.die" value="{{system.spell.die}}" min="2" step="2"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.types"}}</span>
+      <input type="text" name="system.spell.types" value="{{swJoin system.spell.types ', '}}" data-dtype="Array"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Spell.targets"}}</span>
+      <input type="text" name="system.spell.targets" value="{{system.spell.targets}}"></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Spell.defenses"}}</span>
+      <input type="text" name="system.spell.defenses" value="{{swJoin system.spell.defenses ', '}}" data-dtype="Array"
+             placeholder="{{spell.defensesDefault}}"></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Cast.quick"}} {{swActionGlyph 2}}</span>
+      <input type="text" name="system.spell.effects.quick" value="{{system.spell.effects.quick}}"></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Cast.focused"}} {{swActionGlyph 3}}</span>
+      <input type="text" name="system.spell.effects.focused" value="{{system.spell.effects.focused}}"></label>
+    <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Cast.committed"}} {{swActionGlyph 4}}</span>
+      <input type="text" name="system.spell.effects.committed" value="{{system.spell.effects.committed}}"></label>
+  </div>
+  <p class="sw-note">{{localize "STARWROUGHT.Spell.hint"}}</p>
+</div>
+
 <div class="sw-panel">
   <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.grant"}}</h3>
   <div class="sw-body-grid">

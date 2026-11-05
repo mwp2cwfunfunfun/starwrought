@@ -1,6 +1,6 @@
 {
   "_id": "ba233dfd4e558fcf",
-  "name": "Padded sleeves",
+  "name": "Padded Sleeves",
   "type": "armor",
   "img": "icons/svg/shield.svg",
   "system": {
@@ -9,8 +9,8 @@
     "load": 0,
     "material": "padded",
     "traits": [
-      "Padded",
-      "Comfort"
+      "Comfort",
+      "Flexible"
     ],
     "price": "1 gp",
     "quantity": 1,
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "97e14e88658fc42a"
+      "contentHash": "1681eb86783fe58b"
     }
   },
   "effects": [],

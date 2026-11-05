@@ -1,0 +1,36 @@
+{
+  "_id": "867fbd180bbd033d",
+  "name": "Summoner",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/summoner.png",
+  "system": {
+    "slug": "summoner",
+    "category": "calling",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Calling • Wits (6 Opening Vigor • Call Manifestation)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Calling • Wits (6 Opening Vigor • Call Manifestation)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a626bfeaf6a8d304"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!867fbd180bbd033d"
+}

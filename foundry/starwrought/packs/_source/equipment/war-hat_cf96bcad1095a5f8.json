@@ -1,0 +1,35 @@
+{
+  "_id": "cf96bcad1095a5f8",
+  "name": "War Hat",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 3,
+    "load": 1,
+    "material": "plate",
+    "traits": [
+      "Brimmed"
+    ],
+    "price": "6 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "16d86d2d352ceb63"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!cf96bcad1095a5f8"
+}

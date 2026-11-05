@@ -1,0 +1,16 @@
+{
+  "_id": "0a406984319b0052",
+  "name": "Forceweaving",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "96336e245ab39db1"
+    }
+  },
+  "_key": "!folders!0a406984319b0052"
+}

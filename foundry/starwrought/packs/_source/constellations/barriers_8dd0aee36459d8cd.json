@@ -1,0 +1,36 @@
+{
+  "_id": "8dd0aee36459d8cd",
+  "name": "Barriers",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/barriers.png",
+  "system": {
+    "slug": "barriers",
+    "category": "magic",
+    "attribute": "might",
+    "parentSlug": "forceweaving",
+    "group": true,
+    "meta": "Magic • Might",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Might</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ff3547b0ba3011fd"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8dd0aee36459d8cd"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "2f58ea85775cd4b8",
+  "name": "Spellshaper",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/spellshaper.png",
+  "system": {
+    "slug": "spellshaper",
+    "category": "calling",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Calling • Wits (6 Opening Vigor • Spellshaping)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Calling • Wits (6 Opening Vigor • Spellshaping)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8a6ba903e035aa7a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2f58ea85775cd4b8"
+}

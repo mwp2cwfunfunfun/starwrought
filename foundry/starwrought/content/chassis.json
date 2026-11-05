@@ -13,7 +13,7 @@
       "senses": "",
       "description": "<p>Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -27,7 +27,7 @@
       "specialAbility": "<p>You gain 1 Opening Talent Point.</p>",
       "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -41,7 +41,7 @@
       "specialAbility": "<p>Allies within 15 feet gain a +1 Situation bonus to their first Defense roll each round while they can see or hear you.</p>",
       "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -56,7 +56,7 @@
       "description": "<p>A lowland order-state where nothing is real until it is written and witnessed. Serrovane settles its disputes by formal challenge, keeps its ledgers in triplicate, and considers a broken oath a more serious crime than the violence that follows it.</p>",
       "specialAbility": "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -71,7 +71,7 @@
       "description": "<p>The trade-towns of a wide river delta, where six languages meet at every dock and a good broker is worth more than a good sword. Reach folk talk first, and are very good at it.</p>",
       "specialAbility": "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -91,7 +91,7 @@
       "traits": [
         "Common"
       ],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -111,7 +111,7 @@
       "traits": [
         "Common"
       ],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -131,7 +131,7 @@
       "traits": [
         "Common"
       ],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -149,7 +149,7 @@
       "specialAbility": "<p>Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +2d6 at Expert, +3d6 at Master, and +4d6 at Legendary.</p>",
       "description": "<p>Grants Training in Stealth, and 8 Opening Vigor, added once if it is your first Calling.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -167,7 +167,7 @@
       "specialAbility": "<p>Rage ❶: Temporary Vigor equal to your level + Might, +2 melee damage, −1 Evade, and you are Heedless while it lasts. The damage rises to +4 at Expert, +6 at Master, +8 at Legendary.</p>",
       "description": "<p>Grants Training in Athletics, and 12 Opening Vigor, added once if it is your first Calling.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -185,7 +185,7 @@
       "specialAbility": "<p>Panache: held on a critical Strike, a Feint, or a Demoralize; +1 Situation to Evade and +1 ft to your Speeds while you hold it (Speed +2 ft at Expert, Evade +2 at Master, Speed +3 ft at Legendary).</p>",
       "description": "<p>Grants Training in Acrobatics, and 10 Opening Vigor, added once if it is your first Calling.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -203,7 +203,7 @@
       "specialAbility": "<p>Mark Prey ❶: +1d8 precision damage the first time each round you Hit your prey (2d8 at Expert, 3d8 at Master, 4d8 at Legendary), and you always know roughly where it is within 60 feet.</p>",
       "description": "<p>Grants Training in Awareness, and 10 Opening Vigor, added once if it is your first Calling.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
     }
   },
   {
@@ -221,7 +221,97 @@
       "specialAbility": "<p>Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee.</p>",
       "description": "<p>Grants Training in Athletics, and 10 Opening Vigor, added once if it is your first Calling.</p>",
       "traits": [],
-      "source": "STARWROUGHT Playtest v4.10"
+      "source": "STARWROUGHT Playtest v4.21"
+    }
+  },
+  {
+    "name": "Spellshaper",
+    "img": "systems/starwrought/assets/constellations/spellshaper.png",
+    "enabled": true,
+    "system": {
+      "kind": "calling",
+      "constellation": "spellshaper",
+      "attribute": "wits",
+      "vigor": 6,
+      "grants": [
+        "Guile"
+      ],
+      "specialAbility": "<p>Spellshaping: once per round, add ❶ to a Cast you know to extend its range by 5 feet, or to move one square of its area; your first Calling also trains you in a magical discipline.</p>",
+      "description": "<p>Grants Training in Guile, and 6 Opening Vigor, added once if it is your first Calling.</p>",
+      "traits": [],
+      "source": "STARWROUGHT Playtest v4.21"
+    }
+  },
+  {
+    "name": "Blood Mage",
+    "img": "systems/starwrought/assets/constellations/blood-mage.png",
+    "enabled": true,
+    "system": {
+      "kind": "calling",
+      "constellation": "blood-mage",
+      "attribute": "might",
+      "vigor": 8,
+      "grants": [
+        "Athletics"
+      ],
+      "specialAbility": "<p>Blood Price: once per round, lose 1 + the discipline's Damage Dice in Vigor as you declare a damaging Cast; if it Hits, one creature takes that much more.</p>",
+      "description": "<p>Grants Training in Athletics, and 8 Opening Vigor, added once if it is your first Calling.</p>",
+      "traits": [],
+      "source": "STARWROUGHT Playtest v4.21"
+    }
+  },
+  {
+    "name": "Necromancer",
+    "img": "systems/starwrought/assets/constellations/necromancer.png",
+    "enabled": true,
+    "system": {
+      "kind": "calling",
+      "constellation": "necromancer",
+      "attribute": "presence",
+      "vigor": 6,
+      "grants": [
+        "Awareness"
+      ],
+      "specialAbility": "<p>Death Echo: once per round, when a living creature within 15 feet takes a Wound or becomes Spent, hold an Echo; spend it before a Strike or damaging Cast for +2 damage on a Hit.</p>",
+      "description": "<p>Grants Training in Awareness, and 6 Opening Vigor, added once if it is your first Calling.</p>",
+      "traits": [],
+      "source": "STARWROUGHT Playtest v4.21"
+    }
+  },
+  {
+    "name": "Summoner",
+    "img": "systems/starwrought/assets/constellations/summoner.png",
+    "enabled": true,
+    "system": {
+      "kind": "calling",
+      "constellation": "summoner",
+      "attribute": "wits",
+      "vigor": 6,
+      "grants": [
+        "Awareness"
+      ],
+      "specialAbility": "<p>Call Manifestation ❷: one 1-foot manifestation within 6 feet, lasting the encounter; Command ❶ it to Move or make a 1d4 Zoned Strike. It vanishes on a Hit.</p>",
+      "description": "<p>Grants Training in Awareness, and 6 Opening Vigor, added once if it is your first Calling.</p>",
+      "traits": [],
+      "source": "STARWROUGHT Playtest v4.21"
+    }
+  },
+  {
+    "name": "Spellblade",
+    "img": "systems/starwrought/assets/constellations/spellblade.png",
+    "enabled": true,
+    "system": {
+      "kind": "calling",
+      "constellation": "spellblade",
+      "attribute": "might",
+      "vigor": 8,
+      "grants": [
+        "Athletics"
+      ],
+      "specialAbility": "<p>Spellbound Edge ❶: your next Deliberate Melee Strike deals a known spell's damage type instead of its own. Needs Melee and a magical discipline.</p>",
+      "description": "<p>Grants Training in Athletics, and 8 Opening Vigor, added once if it is your first Calling.</p>",
+      "traits": [],
+      "source": "STARWROUGHT Playtest v4.21"
     }
   }
 ]

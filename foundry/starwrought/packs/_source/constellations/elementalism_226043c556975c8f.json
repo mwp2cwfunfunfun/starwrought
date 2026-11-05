@@ -1,0 +1,36 @@
+{
+  "_id": "226043c556975c8f",
+  "name": "Elementalism",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/elementalism.png",
+  "system": {
+    "slug": "elementalism",
+    "category": "magic",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Magic • Wits (Manipulation of fire, cold, water, wind, lightning, and related natural energies. Defenses and rituals are expressed as elemental alterations, not generic spells.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Wits (Manipulation of fire, cold, water, wind, lightning, and related natural energies. Defenses and rituals are expressed as elemental alterations, not generic spells.)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "42f8f81ff1b776cc"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!226043c556975c8f"
+}

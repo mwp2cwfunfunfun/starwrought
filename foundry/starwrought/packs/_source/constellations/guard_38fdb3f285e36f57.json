@@ -8,6 +8,7 @@
     "category": "defense",
     "attribute": "presence",
     "parentSlug": "",
+    "group": false,
     "meta": "Defense constellation • Presence (don't let it through • Parry Reaction and Set Your Feet Posture)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": false,
@@ -15,7 +16,7 @@
     "traits": [],
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": null,
   "sort": 0,
@@ -24,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d41da3c57fd272c0"
+      "contentHash": "e26a5e168829b5e4"
     }
   },
   "effects": [],

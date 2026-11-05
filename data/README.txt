@@ -36,30 +36,49 @@ ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   is named under Tree columns with its syntax when it ships.
 
 Index columns:  Tree | Category | Feeds (Might/Agility/Wits/Presence) | Flare Triggers | Meta note | Parent
-  Parent (v4.10): names the parent Constellation whose rank this tree's Talents also count toward.
-  Melee and Ranged are the parents; every Combat Style names one of them. Rank only is inherited:
-  the parent's own Talents must still be bought, and a Talent feeds its Attribute once. The
-  converter ERRORS on a Parent that names no tree, or one that has a parent of its own.
+  Parent (v4.10; a GROUP since PHB v4.21): names the Constellation this tree is a group of Talents
+  within. A Combat Style names Melee or Ranged; a magical specialty (Flamecraft, Stormcraft, ...)
+  names its discipline (Elementalism, ...). A tree with a Parent has NO rank of its own: every
+  Talent bought in it counts once toward the parent's rank and feeds its Attribute once, its row
+  in Foundry wears the parent's badge, and a Flare lit on it records the particular training. The
+  parent's own Talents must still be bought. The converter writes group: true on such a tree and
+  ERRORS on a Parent that names no tree, or one that has a parent of its own.
   Category must be one of: Skill, Defense, Weapon, Combat Style, Armor, Calling, Ancestry,
-  Culture, Bloodline, Background. The v1.8 spellings Save and Heritage still convert, as aliases
+  Culture, Bloodline, Background, Magic (v4.21: the five disciplines and their specialties, in
+  magic.xlsx). The v1.8 spellings Save and Heritage still convert, as aliases
   for Defense and Bloodline (CATALIAS in xlsx_to_trees.py), and are normalised on the way in.
-  Skill / Defense / Weapon / Combat Style / Armor trees REQUIRE a tree-level Feeds (untrained fallback).
+  Skill / Defense / Weapon / Combat Style / Armor / Magic trees REQUIRE a tree-level Feeds (untrained fallback).
   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses | Summary; those generate
   the "ancestries" block of roster.json, so the chassis is authored once, here. Speed is feet per
   Move (a Human's is 6).
   Calling rows may carry Skills: the Training the Calling grants at creation. A Calling's Vigor is
   NOT authored here: it is the third column of the hand-kept callings block of assets/roster.json,
   and since PHB v4.11 that column is the Calling's Opening Vigor (paid once, at 1st level, by your
-  first Calling: Berserker 12, Ambusher 8, Hunter, Bravo and Weaponmaster 10), not Vigor per level.
-  The Ancestry's Vigor stays per level; the two meet in Vigor = 10 + Opening Vigor + (Ancestry
-  Vigor + Endure Bonus) × level, where the Endure Bonus is Endure Training's conditioning clause
-  (0 until Expert, then 1 / 2 / 3).
+  first Calling: Berserker 12, Ambusher 8, Hunter, Bravo and Weaponmaster 10; the v4.21 casters
+  Spellshaper 6, Blood Mage 8, Necromancer 6, Summoner 6, Spellblade 8, per their root texts), not
+  Vigor per level. The Ancestry's Vigor stays per level; the two meet in Vigor = 10 + Opening
+  Vigor + Ancestry Vigor × level (v4.21; the Endure Bonus to Vigor of v4.11 to v4.15 is gone).
   Culture rows may carry Skills, but v1.8 cultures grant no skill points, so it stays empty.
 
 Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Description | Effect |
                 Feeds (blank = tree default) | Grants | Choice | Free Talent | Enabled? | Aura |
                 Automation
+                and, on the magic sheets only, the SPELL columns:
+                Threat | Delivery | Range | Die | Damage | Targets | Quick | Focused | Committed | Defenses
   Column ORDER does not matter; the first word of the header does.
+  Spell columns (PHB v4.21, Spellwork): a row with a Threat is a spell, and the Foundry system
+        gives its Talent the Cast ❷ / ❸ / ❹ buttons; a row without one is an ordinary Talent
+        whatever else the sheet says. Threat is Blow, Blast, Blight or Beguilement (ERROR
+        otherwise). Delivery is Zoned or Pervasive (ERROR otherwise; blank with damage WARNS, and
+        Zoned is assumed). Range is "N ft" or "adjacent" (ERROR otherwise; blank WARNS). Die is
+        "dN" (the spell rolls one such die per rank of the discipline, Trained 1 to Legendary 4; a
+        Quick Cast one). Damage is the damage types, comma-separated ("fire", "force, cold"); a
+        Die with no type WARNS. Targets is prose ("one creature", "every creature in a 3 ft
+        line"). Quick, Focused and Committed are the three Cast texts, what the sheet and the card
+        print for each; a spell with none of them WARNS. Defenses overrides the Threat's pair
+        ("Evade or Endure"); blank, the Threat decides; a word that is no Defense is an ERROR.
+        Nothing else is validated: an area, a push, a condition on a Hit, a summons or a healing
+        line stays prose the card prints, as a Talent's Effect does.
   Aura (0.5.1): the Effect's "within N feet", drawn on the map around the carrier. Accepted:
         "N ft" or "N feet" (everyone), "N ft allies", "N ft enemies", "all" spelled out for
         everyone, "visible" appended to pin the ring by default once an encounter starts
@@ -96,19 +115,25 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               <Rank> is Untrained, Trained, Expert, Master or Legendary, any case, the word between
               is "is" (not "="), and the test is EQUALITY: the line applies while the character's
               rank in that Constellation is exactly that rank, so a talent that scales by rank
-              writes one line per rank. Anything else is an ERROR printing the shape. Humanity, the
-              Human root, is the example (one line per sentence of its Effect):
-                bonus: +1 Condition to Aid if Human is Trained
-                bonus: +2 Condition to Aid if Human is Expert
-                bonus: +3 Condition to Aid if Human is Master
-                bonus: +4 Condition to Aid if Human is Legendary
+              writes one line per rank. "Origin" names the shared Origin rank (PHB v4.21: your
+              Ancestry, Culture and Bloodline are one Constellation for rank), so an Ancestry
+              Talent that scales "if you are Expert in your Origin" tests Origin, not Human. A
+              group (a Combat Style, a magical specialty) has no rank of its own, so "if Archery
+              is Expert" is an ERROR naming the parent to test instead. Anything else is an ERROR
+              printing the shape. Humanity, the Human root, is the example (one line per
+              sentence of its Effect):
+                bonus: +1 Condition to Aid if Origin is Trained
+                bonus: +2 Condition to Aid if Origin is Expert
+                bonus: +3 Condition to Aid if Origin is Master
+                bonus: +4 Condition to Aid if Origin is Legendary
               In play a bonus to a Constellation lands on every roll in it, on its Defense
               Threshold and on the Skills grid; a bonus to a Maneuver lands on a roll made from the
               Maneuver (its row on the Maneuvers tab) and is OFFERED, unticked, in the dialog of
               any other check, since only the player knows whether a roll is an Aid; never on an
-              attack, a Defense or an Initiative, and never on an adversary. Same type does not
-              stack (the highest of each type counts), so two lines of one talent that both apply
-              give the higher.
+              attack, a Defense or an Initiative, and never on an adversary. Since PHB v4.21
+              bonuses of one type ADD, and a circumstance is counted once: the lines of one talent
+              on one target are one circumstance, so two of them that both apply give the higher,
+              while two different talents' bonuses add.
   Enabled? (Mike, 2026-10-01): "Yes" (any case) means the talent ships to Foundry; blank, "No" or
         anything else means it does not. A sheet WITHOUT the column is wholly enabled: a missing
         column means the sheet has not been curated yet, not that it is all off. A constellation
@@ -216,7 +241,8 @@ EQUIPMENT WORKBOOK (equipment.xlsx)
   their own sheet because the book keeps them apart from armor and their columns differ. One
   piece per row. Columns (first word wins, order free):
     Weapons: Weapon | Kind | Handling | Group | Damage | Reach | Range | Traits | Price | Notes | Enabled?
-    Armor:   Piece | Zone | Protection | Load | Price | Traits | Material | Enabled?
+    Armor:   Piece | Zone | Protection | Load | Price | Traits | Type | Description | Enabled?
+             (Type was headed Material through v4.15; both headers read)
     Shields: Shield | Bonus | Hardness | Load | Price | Note | Enabled?
   Kind is Melee or Ranged, and decides which roster table the weapon lands in. Handling is
     Intuitive, Practiced or Technical. Damage is dice, a space and a type letter ("1d8 S"; B, P
@@ -227,11 +253,17 @@ EQUIPMENT WORKBOOK (equipment.xlsx)
     on a distance it cannot read as feet and on a value in the wrong column (the roster's melee
     table has no Range and its ranged table no Reach, so such a value reaches equipment.json only).
   Traits are comma-separated as the book prints them. equipment.json carries them as a list; the
-    roster blocks get them joined back with ", ".
-  Material (Armor) is Padded, Leather, Mail, Scale or Plate: the roster's materials table, which
-    stays hand-kept. Blank, it is derived from the first Trait, which is how the book prints a
-    piece ("Padded, Comfort" is Padded); a first Trait that is no material is then an ERROR, and a
-    Material that disagrees with the first Trait is a WARNING. Zone is Head, Torso, Arms or Legs.
+    roster blocks get them joined back with ", ". "---", the v4.21 armor table's marker for a piece
+    with no Traits, reads as blank (so do "-", "—", "none" and "n/a").
+  Type (Armor; PHB v4.21's armor types, the Material column until v4.15) is Padded, Leather,
+    Mail, Lamellar, Brigandine, Splint or Plate (Scale still reads, for an old sheet; Foundry
+    migrates a stored scale piece to lamellar). Blank, it is derived from the first Trait, which is
+    how the older books printed a piece ("Padded, Comfort" is Padded); a first Trait that is no
+    type is then an ERROR, and a Type that disagrees with the first Trait is a WARNING. Description
+    is the piece's one line of prose from the v4.21 table, carried to the Item and the tables.
+    Zone is Head, Torso, Arms or Legs. The Visored and Fitted traits are what the system acts on
+    since 0.11.0 (a lowered visor, an adjusted harness); Comfort, Noisy, Quiet and Attended read as
+    before.
   Protection, Load, Bonus and Hardness must be whole numbers (ERRORS). Bonus is the shield's Gear
     bonus to Guard when Raised, 0 for the Tower Shield, whose footnote is its Note. Notes
     (Weapons) is free prose: Unarmed Strike carries the book's "Varies; typically" remark there,
@@ -242,8 +274,8 @@ EQUIPMENT WORKBOOK (equipment.xlsx)
     EVERY row, enabled or not, in the positional shapes the web app, the Constellation Compendium
     docx and the Foundry build already read. Those four blocks are generated the way the
     ancestries block is: hand edits to them are pointless, the next run overwrites them, and the
-    run says so. Materials, handling and the weapon and armor trait tables stay hand-kept in
-    roster.json; nothing asked for them. A checkout without the workbook keeps equipment.json and
+    run says so. The armor types list, handling and the weapon and armor trait tables stay
+    hand-kept in roster.json; nothing asked for them. A checkout without the workbook keeps equipment.json and
     the roster as found, with a warning saying so.
   Enabled? works as on a tree sheet: "Yes" ships the row to Foundry, anything else keeps it out,
     and a sheet without the column ships every row. Every row is still written to equipment.json
@@ -262,7 +294,9 @@ Ancestry Vigor (or HP) must be a whole number. Every talent costs 1.
 
 It WARNS (does not block) on the Root Rule: every root should hang on something that gets ROLLED
 and should IMPROVE at Expert/Master/Legendary. The culture roots pass (their Diplomacy bonus
-scales); the two Human bloodline roots still break it on purpose. See v3.0-sync-report.md section 4.
+scales); the two Human bloodline roots still break it on purpose, and since v4.21 so do the five
+caster Callings' roots and the magical Training roots, whose texts name no higher tiers yet. See
+v3.0-sync-report.md section 4 and the v4.21 report.
 It also WARNS on Enabled? gaps: an enabled talent whose constellation root is disabled, an enabled
 talent whose Requires or Free Talent names a disabled talent, and an enabled Background granting a
 Skill whose root is disabled. The run ends its counts with one line of what Foundry will ship

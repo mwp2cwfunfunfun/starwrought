@@ -1,0 +1,33 @@
+{
+  "_id": "d93fb6b77345ca07",
+  "name": "Splinted Legguards",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "legs",
+    "protection": 3,
+    "load": 1,
+    "material": "splint",
+    "traits": [],
+    "price": "9 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0a5c94967519b5a7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d93fb6b77345ca07"
+}

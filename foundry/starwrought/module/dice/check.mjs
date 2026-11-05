@@ -101,8 +101,10 @@ export class SwCheck {
     if (actor.type === SW.PARTY_TYPE) throw new Error("STARWROUGHT | A party rolls nothing; roll as the member.");
 
     // An attack is one of the three Strikes; a Defense roll answers one. When nobody says which,
-    // the blow is read as Deliberate: full damage, and the middle of the table.
-    if (["attack", "defense"].includes(cfg.kind) && !SW.STRIKE_KINDS[cfg.strike]) cfg.strike = SW.DEFAULT_STRIKE;
+    // the blow is read as Deliberate: full damage, and the middle of the table. A spell's Cast
+    // (PHB v4.21; `source: "spell"`) is no Strike and keeps `strike` null: the card prints its
+    // Cast instead, and the Position and Bind offers stay away from it.
+    if (["attack", "defense"].includes(cfg.kind) && (cfg.source !== "spell") && !SW.STRIKE_KINDS[cfg.strike]) cfg.strike = SW.DEFAULT_STRIKE;
     if (cfg.reaction && !SW.REACTIONS[cfg.reaction]) cfg.reaction = null;
 
     // Assemble the standard modifiers from the character sheet and the Automation rules on the
@@ -129,8 +131,8 @@ export class SwCheck {
       .filter(m => Number.isNumeric(m?.value))
       .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null }));
 
-    // PHB v4.10, Answering an Attack: a Reaction is paid "before any roll from the same six you
-    // attack with". Parry and Void add +2 Situation to the Defense; Counter adds nothing to it.
+    // PHB v4.21, Answering an Attack: a Reaction is paid "before any roll from the same six you
+    // attack with", and its Situation bonus goes onto the Defense it stands on (SW.REACTIONS).
     if ((cfg.kind === "defense") && cfg.reaction) {
       const reaction = SW.REACTIONS[cfg.reaction];
       if (reaction.bonus) {
@@ -270,11 +272,11 @@ export class SwCheck {
     const roller = isAttack ? attacker : defender;
     if (!roller) throw new Error("STARWROUGHT | resolveAgainst needs the roller: the attacker on an Attack roll, the defender on a Defense roll.");
     if (!SW.STRIKE_KINDS[strike]) strike = SW.DEFAULT_STRIKE;
-    reaction = ["parry", "void", "counter"].includes(reaction) ? reaction : null;
+    reaction = (SW.REACTIONS[reaction]?.kind === "reaction") ? reaction : null;
     posture = posture?.talentId ? posture : null;
-    // A commitment is a Reaction or a Posture, never both (brief; roster.json forbids the stack).
+    // A commitment is a Reaction or a Posture, never both (brief; one answer per attack, PHB v4.21).
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
-    // Void is an Evade and Parry is a Guard, whatever Defense was named; Counter keeps the one given.
+    // A Reaction stands on its own Defense (Sidestep on Evade, Parry on Guard), whatever was named.
     if (SW.REACTIONS[reaction]?.defense) defense = SW.REACTIONS[reaction].defense;
     if (!SW.DEFENSES[defense]) defense = "evade";
 
@@ -325,7 +327,7 @@ export class SwCheck {
     // the Posture's own name.
     // Plain (0.5.1, T16): the card appends the ⓿↺ itself, so the data's glyph would print twice.
     const postureName = posture
-      ? SW.plainName(postureNameOf(defender, posture) ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? SW.plainName(postureNameOf(defender, posture) ?? game.i18n.localize("STARWROUGHT.Reaction.posture"))
       : "";
     const answerText = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
     const defenseLabel = game.i18n.localize(SW.DEFENSES[defense].label);
@@ -435,10 +437,9 @@ export class SwCheck {
   }
 
   /**
-   * Pay for a Reaction: its cost from the same six actions, and, when the Reaction was the actor's
-   * stance, the stance falls back to the basic Defense it was built on. Parry and Void are spent
-   * the moment an attack lands on them; Counter likewise. Owned actors only; a card offers the
-   * button to whoever owns the defender otherwise.
+   * Pay for a Reaction: its cost from the same six actions (PHB v4.21: a Reaction Talent's ❶↺ is
+   * spent the moment the attack it answers lands). Owned actors only; a card offers the button to
+   * whoever owns the defender otherwise. A ⓿↺ answer costs nothing and spends nothing.
    * @param {Actor} actor
    * @param {string} key  A key of SW.REACTIONS.
    * @returns {Promise<boolean>} whether the charge was made
@@ -446,13 +447,10 @@ export class SwCheck {
   static async chargeReaction(actor, key) {
     const reaction = SW.REACTIONS[key];
     if (!actor?.isOwner || !reaction) return false;
-    const fallback = actor.system.stance === key
-      ? (reaction.defense ?? actor.answeringDefense?.().key ?? "evade")
-      : null;
+    if (!reaction.cost) return true;
     await actor.spendActions(reaction.cost, {
       label: `${game.i18n.localize(reaction.label)} ${SW.ACTION_GLYPHS[reaction.cost]}${SW.REACTION_GLYPH}`
     });
-    if (fallback) await actor.setStance(fallback, { announce: false });
     return true;
   }
 
@@ -470,8 +468,8 @@ export class SwCheck {
     // A party token targeted by mistake has no Defenses to read (0.7.0, risk 1): the Threshold
     // stays unknown rather than reading as a bare 10.
     if (defender.type === SW.PARTY_TYPE) return;
-    // The threat the answer is read against: whether the Blow is ranged and how far it came, so
-    // a Counter stance falls away for an arrow or a foe beyond Reach (PHB v4.10, Answering an Attack).
+    // The standing stance is a basic Defense alone (PHB v4.21); the threat is passed through for
+    // a reader that still wants it.
     const now = defender.answeringDefense(cfg.threat ?? {});
     cfg.defender = defender;
     cfg.threshold = now.threshold;

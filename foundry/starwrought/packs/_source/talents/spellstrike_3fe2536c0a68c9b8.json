@@ -1,0 +1,55 @@
+{
+  "_id": "3fe2536c0a68c9b8",
+  "name": "Spellstrike ❹",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spellblade",
+    "constellationName": "Spellblade",
+    "tier": "E",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spellbound Edge"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Requirements: Trained in Melee and one magical parent; know a damaging Cast from that parent. Declare a Prepared melee Attack against one target in Reach and choose one known damaging spell. On a Hit, deal normal Deliberate Melee Strike damage plus ONE base damage die from the spell, with both parts treated as a single Zoned Blow against the same Zone (Protection applies once). On a Graze, use Deliberate Strike Graze damage with no spell die. On a Critical Hit, double the weapon damage after Protection as for Deliberate Strike, then add one undoubled spell die. No other effects of the spell apply. Roll using Melee, not magical proficiency.",
+    "description": "",
+    "cost": "4",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "c0896ce7ffd8e58c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "60e70ac51b51cc90"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3fe2536c0a68c9b8"
+}

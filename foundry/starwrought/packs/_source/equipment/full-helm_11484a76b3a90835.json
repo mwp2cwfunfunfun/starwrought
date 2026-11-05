@@ -1,0 +1,36 @@
+{
+  "_id": "11484a76b3a90835",
+  "name": "Full Helm",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 4,
+    "load": 2,
+    "material": "plate",
+    "traits": [
+      "Fitted",
+      "Visored"
+    ],
+    "price": "12 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7b80b4f384f3d719"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!11484a76b3a90835"
+}

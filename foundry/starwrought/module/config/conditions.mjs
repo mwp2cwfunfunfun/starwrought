@@ -29,12 +29,12 @@ export const CONDITIONS = Object.freeze({
   stunned: { id: "stunned", name: "STARWROUGHT.Condition.stunned", img: "icons/svg/daze.svg", numeric: true },
   slowed: { id: "slowed", name: "STARWROUGHT.Condition.slowed", img: "icons/svg/clockwork.svg", numeric: true },
   /**
-   * Fatigued N (PHB v4.13, Conditions): -N Condition (maximum of 3, FATIGUED_MAX) to Evade, Guard
-   * and attack rolls, and no Exploration Mode Activities; ends after ten minutes of rest, which is
-   * the rest card (a night is longer than ten minutes) or the Fatigued card's own button, the
-   * table's word that the ten minutes have passed (ruling 81). The end of the Combat clears
-   * nothing. Raised by a failed Wind check, which a fighter whose Endure Threshold meets 10 + Load
-   * Strain never makes.
+   * Fatigued N (PHB v4.21, Conditions): -N Condition (maximum of 3, FATIGUED_MAX) to all four
+   * Defenses and attack rolls (Evade and Guard only through v4.15), and no Exploration Mode
+   * Activity but Travel; ends after ten minutes of rest, which is the short rest, the rest card (a
+   * night is longer than ten minutes) or the Fatigued card's own button, the table's word that the
+   * ten minutes have passed (ruling 81). The end of the Combat clears nothing. Raised by 1 on a
+   * failed Wind check and by 2 on a critical failure.
    */
   fatigued: { id: "fatigued", name: "STARWROUGHT.Condition.fatigued", img: "icons/svg/unconscious.svg", numeric: true },
   blinded: { id: "blinded", name: "STARWROUGHT.Condition.blinded", img: "icons/svg/blind.svg" },

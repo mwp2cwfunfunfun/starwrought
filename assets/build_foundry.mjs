@@ -325,6 +325,9 @@ const CATEGORY_ALIASES = {
   Armor: "combatStyle",
   Skill: "skill",
   Lore: "lore",
+  // PHB v4.21: the five magical disciplines and their specialties (a specialty names its discipline
+  // in the Parent column, as a Combat Style names Melee or Ranged).
+  Magic: "magic",
   General: "general"
 };
 
@@ -360,8 +363,16 @@ const addRuleTarget = (keys, entry) => {
 };
 for (const treeName of Object.keys(trees)) {
   const slug = slugify(treeName);
-  addRuleTarget([treeName.trim().toLowerCase(), slug], { type: "constellation", slug, name: treeName });
+  // A group (PHB v4.21: a tree with a Parent) has no rank of its own; the kinds refuse "if
+  // <group> is <Rank>" naming the parent, so the answer carries both.
+  const parentName = trees[treeName].parent ?? "";
+  addRuleTarget([treeName.trim().toLowerCase(), slug], {
+    type: "constellation", slug, name: treeName, group: !!trees[treeName].group || !!parentName, parent: parentName
+  });
 }
+// Origin (PHB v4.21): Ancestry, Bloodline and Culture share one Origin rank, and a rule may name it
+// ("bonus: +2 Condition to Aid if Origin is Expert"). A virtual Constellation: no tree, no Items.
+addRuleTarget(["origin"], { type: "constellation", slug: "origin", name: "Origin", group: false, parent: "" });
 for (const actionLabel of [
   ...sheetActions.map(a => a.name),
   ...Object.values(roster.actions ?? {}).flat().map(([name]) => name)
@@ -382,6 +393,34 @@ function resolveRuleTarget(name) {
     ?? null;
 }
 
+/**
+ * THE SPELL (PHB v4.21; the magic workbook's spell columns, read by the converter into `node.spell`,
+ * the Aura column's precedent). On the Talent Item as `system.spell`, the shape the Cast Maneuver
+ * reads: the Threat (which two Defenses answer it), the Delivery (Zoned meets Protection, Pervasive
+ * does not), the range, the die and its damage types, the targets, what each cast does (Quick ❷,
+ * Focused ❸, Committed ❹) and an optional override of the Threat's Defenses. A Talent that is not a
+ * spell writes nothing, so the field reads its schema default.
+ */
+function spellOf(node) {
+  const s = node.spell;
+  if (!s) return {};
+  const feet = /^(\d+)\s*ft$/.exec(String(s.range ?? ""));
+  return {
+    spell: {
+      enabled: true,
+      threat: s.threat ?? "blow",
+      delivery: s.delivery || "",
+      range: feet ? Number(feet[1]) : 0,
+      adjacent: String(s.range ?? "").toLowerCase() === "adjacent",
+      die: Number.isFinite(s.die) ? s.die : null,
+      types: s.types ?? [],
+      targets: s.targets ?? "",
+      defenses: s.defenses ?? [],
+      effects: { quick: s.effects?.quick ?? "", focused: s.effects?.focused ?? "", committed: s.effects?.committed ?? "" }
+    }
+  };
+}
+
 const constellationIndex = [];
 const plateDir = path.join(ROOT, "assets", "constellations");
 const plates = fs.existsSync(plateDir) ? new Set(fs.readdirSync(plateDir)) : new Set();
@@ -391,8 +430,11 @@ for (const [name, tree] of Object.entries(trees)) {
   const category = CATEGORY_ALIASES[tree.category] ?? "general";
   const attribute = String(tree.feeds ?? "Might").toLowerCase();
   const plate = plates.has(`${slug}.png`) ? `systems/starwrought/assets/constellations/${slug}.png` : null;
-  // A child of Melee or Ranged (v4.10): its Talents count toward the parent's rank as well.
+  // A tree with a Parent is a GROUP of that Constellation's Talents (PHB v4.21: a fighting style
+  // within Melee or Ranged, a specialty within a magical discipline): it has no rank of its own, and
+  // every Talent in it counts once toward the parent's. Through v4.20 a child kept a rank of its own.
   const parent = tree.parent ? slugify(tree.parent) : "";
+  const group = !!tree.group || !!parent;
   // A Constellation exists in play when its Root does: the converter sets the tree's flag from
   // its root talent (ruling 60), and the Constellation document ships only when that is on.
   const treeEnabled = count("constellations", isEnabled(tree));
@@ -409,6 +451,7 @@ for (const [name, tree] of Object.entries(trees)) {
       // `parent` is the owning Item on a data model, so the field is parentSlug; the registry
       // entry in content/constellations.json keeps the plain name.
       parentSlug: parent,
+      group,
       meta: tree.meta ?? "",
       flareTrigger: tree.sparks ?? "",
       identity: ["Ancestry", "Culture", "Bloodline", "Heritage"].includes(tree.category),
@@ -418,14 +461,14 @@ for (const [name, tree] of Object.entries(trees)) {
       // column yet, so both are empty and present, as on every Talent and action.
       automation: "",
       rules: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 
   // The runtime index keeps EVERY Constellation, disabled ones included, so a character who already
   // owns a Talent of a Constellation that has since been turned off still resolves its name,
   // category, attribute and parent. `enabled` is what the runtime filters its pickers on.
-  constellationIndex.push({ slug, name, category, attribute, parent, img: plate ?? ICON.constellation, enabled: treeEnabled });
+  constellationIndex.push({ slug, name, category, attribute, parent, group, img: plate ?? ICON.constellation, enabled: treeEnabled });
 
   // One folder per Constellation keeps 170 Talents navigable in the sidebar. A Constellation that
   // ships no Talent gets no folder, so the sidebar shows nothing it cannot open.
@@ -461,6 +504,7 @@ for (const [name, tree] of Object.entries(trees)) {
         choice: { prompt: node.choice ?? "", value: "" },
         freeTalent: node.freeTalent ?? "",
         ...auraOf(node),
+        ...spellOf(node),
         // The Automation cell, parsed with the system's grammar; a bad line stops the build here.
         // `resolve` is what a kind asks about a target's name (0.10.0): a Constellation or a
         // Maneuver the book has, else the line fails naming the word.
@@ -469,7 +513,7 @@ for (const [name, tree] of Object.entries(trees)) {
           resolve: resolveRuleTarget
         }),
         traits: [],
-        source: "STARWROUGHT Playtest v4.10"
+        source: "STARWROUGHT Playtest v4.21"
       }
     });
   }
@@ -533,7 +577,7 @@ for (const ancestry of roster.ancestries ?? []) {
       senses: ancestry.senses === "—" ? "" : (ancestry.senses ?? ""),
       description: `<p>${ancestry.blurb ?? ""}</p>`,
       traits: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 
@@ -550,7 +594,7 @@ for (const ancestry of roster.ancestries ?? []) {
         specialAbility: `<p>${effect}</p>`,
         description: `<p>A bloodline of the ${ancestry.name} ancestry. Its Root Talent is granted free by the character-creation choice.</p>`,
         traits: [],
-        source: "STARWROUGHT Playtest v4.10"
+        source: "STARWROUGHT Playtest v4.21"
       }
     });
   }
@@ -573,7 +617,7 @@ for (const [name, langs, attribute, blurb] of roster.cultures ?? []) {
       description: `<p>${blurb}</p>`,
       specialAbility: "<p>Its Root Talent is granted free by the character-creation choice: a language, and a Diplomacy bonus toward those who share your Culture that rises with your Proficiency Rank in your Origin.</p>",
       traits: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 }
@@ -591,7 +635,7 @@ for (const background of backgrounds) {
       specialAbility: `<p>${background.effect ?? ""}</p>`,
       description: `<p>${background.desc ?? ""}</p>`,
       traits: background.rarity ? [background.rarity] : [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 }
@@ -614,7 +658,7 @@ for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
       specialAbility: `<p>${ability}</p>`,
       description: `<p>Grants Training in ${training}, and ${hp} Opening Vigor, added once if it is your first Calling.</p>`,
       traits: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 }
@@ -637,7 +681,7 @@ for (const [name, training, hp, attribute, ability] of roster.callings ?? []) {
 // Item's UUID, and a row disabled today restores the same document when it is enabled again.
 const equipmentPath = path.join(ROOT, "assets", "equipment.json");
 const equipment = fs.existsSync(equipmentPath) ? read("equipment.json") : null;
-const equipmentSource = equipment ? "data/equipment.xlsx" : "STARWROUGHT Playtest v4.10";
+const equipmentSource = equipment ? "data/equipment.xlsx" : "STARWROUGHT Playtest v4.21";
 
 // The roster blocks read into the sheet's row shape, so one builder per type serves both sources.
 // The ranged block has no price column, and neither does the book's Ranged Weapons table, so a
@@ -919,7 +963,7 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
         // A roster row has no Automation cell; the fields are present and empty (0.9.0).
         automation: "",
         rules: [],
-        source: "STARWROUGHT Playtest v4.10"
+        source: "STARWROUGHT Playtest v4.21"
       }
     });
   }
@@ -1014,7 +1058,7 @@ for (const [name, speed, description, checkNow = "", initiative = ""] of roster.
       ...(named ? { check: { enabled: true, constellation: check, defense: "" } } : {}),
       automation: "",
       rules: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 }
@@ -1035,7 +1079,7 @@ for (const [name, time, description] of roster.downtimeActions ?? []) {
       description: `<p>${description}</p>`,
       automation: "",
       rules: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 }
@@ -1068,7 +1112,7 @@ for (const [name, grantedBy, description] of roster.postures ?? []) {
       description: `<p>${description}</p>`,
       automation: "",
       rules: [],
-      source: "STARWROUGHT Playtest v4.10"
+      source: "STARWROUGHT Playtest v4.21"
     }
   });
 }
@@ -1110,40 +1154,39 @@ const actionRows = (...names) => {
 const reactionRows = (...names) => names.map(n => (roster.postures ?? []).find(r => r[0] === n)).filter(Boolean);
 
 const exposedPage = [
-  "<p>When a Zone becomes Exposed, a part of you is open for a focused attack:</p>",
+  "<p>An Exposed Zone presents an opening for an attack (PHB v4.21, Exposed Zones):</p>",
   "<ul>",
-  "<li>Its Protection counts as 0 against a Deliberate or Committed Strike. A Quick Strike gains nothing from it.</li>",
-  "<li>An ordinary Hit from a Deliberate or Committed Strike may be placed there instead of the Torso.</li>",
-  "<li>It stays Exposed until you Recenter ❶ (see Chapter 7: Rules Elements), except that a Zone Exposed by a Posture stays Exposed until the end of the round, and Recenter does not clear it.</li>",
-  "<li>A Critical Hit on it with a Deliberate or Committed Strike Wounds it.</li>",
+  "<li>Its Protection counts as 0, subject to any exception in the Attack's description (a Quick Strike's says Protection applies even to an Exposed Zone).</li>",
+  "<li>It remains Exposed until you Recenter ❶, unless the effect that Exposed it specifies another duration.</li>",
+  "<li>A Critical Hit against it with a Deliberate or Committed Strike inflicts a Wound.</li>",
+  "<li>Exposure caused by a Posture lasts until the end of the round and cannot be cleared by Recenter; Exposure caused by Control ends when that Control ends.</li>",
   "</ul>",
-  "<p>When a Zone is Exposed, the following condition is placed on you: Exposed [Zone Name]. Zones become Exposed when your own Committed Strike is Stopped; when any Strike of yours Misses; when you take a Posture; when a foe Controls your weapon in a Bind; and through certain Talents and critical effects.</p>",
+  "<p>When a Zone is Exposed, the following condition is placed on you: Exposed [Zone Name]. Zones become Exposed when your Deliberate or Committed Strike Misses, when a Committed Strike Grazes, when you take a Posture that says so, when a foe Controls your weapon in a Bind, when a Deliberate or Committed Strike of yours lands and you choose to open the Zone it struck, and through certain Talents and critical effects.</p>",
   "<h2>The condition</h2>",
   table(["Condition", "Effect"], conditionRows("Exposed [Zone]")),
   "<h2>Opening and closing a Zone</h2>",
   table(["Maneuver", "Effect"], actionRows("Recenter ❶")),
-  table(["Reaction", "Grants", "Effect"], reactionRows("Posture ⓿↺", "Give Ground ⓿↺", "Set Your Feet ⓿↺")),
+  table(["Reaction", "Grants", "Effect"], reactionRows("Give Ground ⓿↺", "Set Your Feet ⓿↺", "Drop Flat ⓿↺", "Kneel Behind the Shield ⓿↺")),
   `<p>What a Critical Hit does to each Zone, Exposed or not, is on ${pageLink("Zones and Critical Hits")}.</p>`,
   "<h2>In the system</h2>",
   "<p>Each Exposed Zone shows on the token as its own status (Exposed: Head, Exposed: Torso, Exposed: Arms, Exposed: Legs) and in the Zones panel of the sheet. Toggling the status on the token and toggling the Zone on the sheet are the same change. Recenter closes every Exposed Zone except one a Posture opened, and the statuses close with them.</p>"
 ].join("");
 
 const bindPage = [
-  "<p>When a rigid weapon or shield stops a melee weapon or natural attack, the two are in contact: a Bind. Track one relationship per implement, and name the two implements: longsword / spear, or shield > bite. A Bind is neutral (/) when neither fighter has the line, or Controlled (>) when one does. Only Guard can form a Bind, and only with a rigid weapon, a shield, or a natural weapon its profile allows. A bare hand or a Flexible weapon can Guard, but cannot Bind.</p>",
-  "<p>A Bind forms when a Guard Stops an attack, or when a Gain Control action Grazes. Control is taken when a Parry Stops a Deliberate or Committed Strike, when a Guard answers a Miss, or when Gain Control succeeds. A Quick Strike is a probe: Stopped, it can be bound but never Controlled.</p>",
+  "<p>A Bind forms when a rigid weapon or shield Guards against a melee Attack that Grazes or Misses, provided the implements involved can Bind (PHB v4.21, Binds): on a Graze a neutral Bind forms; on a Miss the defender gains Control of the attacking implement. Track one relationship per implement, and name the two implements: longsword / spear, or shield > bite. A Bind is neutral (/) when neither fighter has the line, or Controlled (>) when one does.</p>",
+  "<p>Use Gain Control ❶ to contest an existing Bind. A Parry ❶↺ that Stops a melee Strike may at once attempt to Gain Control of the attacking weapon, and a Riposte makes a Quick Strike instead.</p>",
   "<h2>While you Control a weapon</h2>",
   "<ul>",
   "<li>Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts.</li>",
   "<li>Your partner's attacks with the Controlled weapon take a −2 Situation penalty.</li>",
   "<li>You may Close ❶: Step toward your partner while keeping the Bind. The Controlled weapon cannot Intercept you.</li>",
-  "<li>A Bind has one Controller at most. A new Control replaces the old.</li>",
   "</ul>",
   "<h2>How a Bind ends</h2>",
-  "<p>A Bind ends when a Strike between the two actors resolves, when either partner Moves or Steps (Close excepted), when either actor Recenters, when the Controlling actor is attacked by a third party, or when either implement is dropped or Disarmed. Controlled is not Grappled or Restrained: you are redirecting a weapon, not holding a body. The Controlled actor may still Step, Move, or attack with something else, and attacking with an uncontrolled weapon or limb ends the Bind before the roll.</p>",
-  "<p>Recenter ❶ clears every Exposed Zone on you (except one Exposed by a Posture) and ends any Bind you are in. Being Controlled costs you the same action that being Exposed does. That is the tempo price of a lost line, and it is the reason Gain Control is worth an action.</p>",
-  "<p><strong>Size.</strong> An actor one Size larger or smaller Binds normally. Two or more Sizes apart, the smaller actor gains only momentary Control: it lasts until its first benefit is used or until the end of the Controller's next Opportunity, whichever comes first, and the larger creature Moves without first breaking the Bind. You can redirect a dragon's claw, but you cannot hold it.</p>",
-  "<p><strong>What cannot Bind.</strong> Flexible weapons (whips and flails), bare hands without a Talent, areas, spells, and attacks with the Unparryable trait. Incorporeal and amorphous attackers offer nothing to bind. Measure, footwork, and commitment still apply to all of them.</p>",
-  "<p><strong>Third parties.</strong> A Bind is between two implements. Your ally striking the opponent you Control does not break your Bind; that is the point of holding the line. An enemy striking you does.</p>",
+  "<p>A Bind ends when a participant uses the bound implement to Strike (a Strike against the other participant resolves before the Bind ends), when either participant Moves or Steps unless an ability expressly preserves the Bind, when either participant Recenters, when a third party attacks the combatant who currently has Control, or when either bound implement is dropped or Disarmed. Control redirects an implement; it does not itself make its wielder Grabbed or Restrained. The Controlled combatant can still Move, Step, or attack with another weapon or limb, and attacking with an unbound weapon or limb ends the Bind before the attack roll.</p>",
+  "<p>Recenter ❶ ends every Bind you are in and clears your Exposed Zones, except those Exposed by a Posture. Exposure caused specifically by Control ends when that Control ends; Exposure from other sources follows its own duration.</p>",
+  "<p><strong>Size.</strong> Creatures of the same Size, or one Size apart, Bind normally. Two or more Sizes apart, the smaller creature can gain only momentary Control: it ends after its first benefit is used or at the end of the controller's next Opportunity, whichever comes first, and the larger creature can Move without first breaking the Bind.</p>",
+  "<p><strong>What cannot Bind.</strong> Unless an ability says otherwise: Flexible weapons such as whips and flails, bare hands, spells and area effects, and attacks with the Unparryable trait. Incorporeal and amorphous attackers cannot be Bound unless a rule provides a way to do so.</p>",
+  "<p><strong>Third parties.</strong> An ally attacking the creature whose implement you Control does not break your Bind; a third party attacking you while you have Control does.</p>",
   "<h2>The conditions</h2>",
   table(["Condition", "Effect"], conditionRows("Bound [X]", "Controlled [X]", "Controlling [X]")),
   "<h2>Maneuvers and Reactions in the Bind</h2>",
@@ -1161,6 +1204,10 @@ const journalPages = [
     ["Step", "You choose", "You get", "Talent Points"], roster.chargenSteps ?? [])],
   ["Skills", table(["Skill", "Key Attribute", "Covers"], roster.skillRoster ?? [])],
   ["Combat Styles", table(["Style", "Key Attribute", "How you wield"], roster.weaponStyles ?? [])],
+  ["Damage Delivery", table(["Example", "Threat and Delivery"], roster.damageDelivery ?? [])],
+  ["Spellwork", table(["Rank in the discipline", "Damage Dice"], roster.spellwork ?? [])
+    + table(["Cast", "What it does"], roster.castKinds ?? [])],
+  ["Weapon Size", table(["Weapon Size", "Weapon Size Factor"], roster.weaponSize ?? [])],
   ["Defenses", table(
     ["Defense", "Key Attribute", "In a word", "Physical", "Mental"], roster.defenses ?? [])],
   ["Zones and Critical Hits", table(
@@ -1175,9 +1222,9 @@ const journalPages = [
   ["Armor Traits", table(["Trait", "Effect"], roster.armorTraits ?? [])],
   ["Action Traits", table(["Trait", "Effect"], roster.actionTraits ?? [])],
   ["Weapon Handling", table(["Handling", "Meaning", "If you lack Familiarity"], roster.handling ?? [])],
-  ["Armor Materials", table(
-    ["Material", "Turns this damage type poorly"],
-    (roster.materials ?? []).map(([m, w]) => [m, w]))],
+  // The materials-turn-poorly rule left the book in v4.21; the page keeps its title (its id is a UUID
+  // other pages link) and lists the armor Types.
+  ["Armor Materials", table(["Armor Type"], (roster.materials ?? []).map(([m]) => [m]))],
   ["Size, Space and Reach", table(
     ["Size", "Space", "Natural Reach", "Evade and Guard"], roster.sizes ?? [])],
   ["Detection", table(["State", "What your foe knows", "Effect", "Examples"], roster.detection ?? [])],

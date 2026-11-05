@@ -33,11 +33,6 @@ export class SwWeaponData extends SwItemData {
       }),
       /** Weapon Reach in feet. Total Reach is your Natural Reach plus this. */
       reach: new fields.NumberField({ required: true, integer: true, min: 0, initial: 2 }),
-      /**
-       * Which Combat Style you are wielding it in. It is load-bearing (PHB v4.10): if you own that
-       * Style's root, its Key Attribute is eligible as your Strike Attribute with this weapon.
-       */
-      style: new fields.StringField({ initial: "" }),
       /** Held in two hands right now, which matters for the Two-Hand dX trait. */
       twoHands: new fields.BooleanField({ initial: false }),
       /** Using the Versatile trait's alternate damage type right now. */
@@ -47,6 +42,10 @@ export class SwWeaponData extends SwItemData {
 
   /** @inheritdoc */
   static migrateData(source) {
+    // The Combat Style a weapon was "wielded in" (PHB v4.10 to v4.15, the Strike Attribute's
+    // Style substitution) is gone in v4.21: a Style is a group with no Key Attribute of its own
+    // to lend, and the substitution is a Maneuver's, chosen at the roll. The field is dropped.
+    delete source.style;
     return super.migrateData(migrateCarryState(source, "weapon"));
   }
 
@@ -63,11 +62,13 @@ export class SwWeaponData extends SwItemData {
     this.effectiveDie = (this.twoHands && this.flags.twoHandDie) ? this.flags.twoHandDie : this.damage.die;
     this.effectiveType = (this.versatileActive && this.flags.versatile) ? this.flags.versatile : this.damage.type;
 
-    // The weapon's natural Attribute (PHB v4.14, The Attack): Might, or Agility for a Finesse
-    // weapon and for a ranged weapon other than a composite bow (the Composite trait, 0.6.3,
-    // ruling 87). A thrown weapon is not `isRanged`, so Thrown X reads as Might. The Strike
-    // Attribute may still be a Combat Style's Key Attribute; see the actor's strikeAttributeFor.
-    this.attackAttribute = (this.flags.finesse || (this.isRanged && !this.flags.composite)) ? "agility" : "might";
+    // The weapon's own Strike Attribute (PHB v4.21, The Attack: "Melee: Might, or Agility if the
+    // weapon has the Finesse trait. Ranged: Agility, or Might if the weapon has the Thrown trait").
+    // A thrown weapon is not `isRanged`, so Thrown X reads as Might here, and a Finesse dagger
+    // thrown reads as Might at the roll, where the throw is decided (the actor's
+    // strikeAttributeFor; ruling 129). A Maneuver's Key Attribute may stand in when higher; that
+    // too is the roll's.
+    this.attackAttribute = (this.flags.finesse || this.isRanged) ? "agility" : "might";
     this.addsMight = !this.flags.mechanical;
 
     // A rigid implement can Parry, form a Bind and take Control. A Flexible weapon cannot, and a
@@ -78,18 +79,19 @@ export class SwWeaponData extends SwItemData {
   }
 
   /**
-   * The damage formula for one kind of blow (PHB v4.10, Strike damage). A Deliberate or Committed
-   * Hit is all the dice plus specialization, Might (unless Mechanical), bonuses and precision. A
-   * Quick Hit is one die plus precision. A Graze is one die and nothing else.
+   * The damage formula for one kind of blow (PHB v4.21, Strike damage). A Deliberate or Committed
+   * Hit is the rank's dice plus Might (unless Mechanical), bonuses and precision; there is no
+   * specialization damage since v4.21. A Quick Hit is one die plus precision. A Graze is one die
+   * and nothing else.
    */
   damageFormula({
-    dice = 1, might = 0, specialization = 0, bonus = 0, precision = 0, graze = false, quick = false
+    dice = 1, might = 0, bonus = 0, precision = 0, graze = false, quick = false
   } = {}) {
     const die = `d${this.effectiveDie}`;
     if (graze) return die;
     if (quick) return precision ? `1${die} + ${precision}` : `1${die}`;
     const parts = [`${dice}${die}`];
-    const flat = (this.addsMight ? might : 0) + specialization + bonus + precision;
+    const flat = (this.addsMight ? might : 0) + bonus + precision;
     if (flat) parts.push(String(flat));
     return parts.join(" + ");
   }

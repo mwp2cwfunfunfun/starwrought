@@ -121,11 +121,14 @@ export async function giveGroundFromCard(button) {
   return defender.giveGround(attackerToken, feet);
 }
 
-/** A Step granted by the exchange: announced, and the player moves the token. */
+/**
+ * A Step granted by the exchange, or a Slip the Line's Move to any space adjacent to the attacker
+ * (PHB v4.21; `data-mode="adjacent"`): announced, and the player moves the token.
+ */
 export async function stepFromCard(button) {
   const actor = ownedActor(button);
   if (!actor) return;
-  return actor.announceStep();
+  return actor.announceStep({ adjacent: button.dataset.mode === "adjacent" });
 }
 
 /**

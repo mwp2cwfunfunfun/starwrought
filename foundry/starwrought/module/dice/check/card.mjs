@@ -56,22 +56,28 @@ export async function cardContext(result, position) {
     html ?? "", { rollData: cfg.actor.getRollData(), relativeTo: item }
   );
 
-  const strikeKind = isExchange ? SW.STRIKE_KINDS[cfg.strike] : null;
+  const isSpell = cfg.source === "spell";
+  const strikeKind = (isExchange && !isSpell) ? SW.STRIKE_KINDS[cfg.strike] : null;
+  const castKind = isSpell ? (SW.CAST_KINDS[cfg.cast] ?? null) : null;
   const reaction = cfg.reaction ? SW.REACTIONS[cfg.reaction] : null;
   // A Posture stands where a Reaction would on the card: "{name} ⓿↺ (Expose {zone})". The two
   // never answer the same Blow together, so the slot is one or the other.
   let postureLabel = "";
   if (!reaction && cfg.posture?.talentId) {
-    const name = cfg.posture.name ?? game.i18n.localize(SW.REACTIONS.posture.label);
+    const name = cfg.posture.name ?? game.i18n.localize("STARWROUGHT.Reaction.posture");
     postureLabel = SW.ZONES[cfg.posture.zone]
       ? game.i18n.format("STARWROUGHT.Attack.answerPosture", { name, zone: game.i18n.localize(SW.ZONES[cfg.posture.zone].label) })
       : `${name} ${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}`;
   }
 
-  // Which damage buttons the attacker gets: a Quick Strike that cannot crit has no Critical.
-  const canDamage = !!result.outcome?.damage && !!cfg.weaponId;
+  // Which damage buttons the attacker gets: a Quick Strike that cannot crit has no Critical. A
+  // spell's card (PHB v4.21) offers them when the spell rolls a die; a Quick Cast's Graze deals
+  // nothing unless the spell says so, so its Graze button is left off.
+  const spellDamages = isSpell && !!item?.system?.spell?.die;
+  const canDamage = !!result.outcome?.damage && (!!cfg.weaponId || spellDamages);
   const damageButtons = canDamage ? ["critical", "hit", "graze"]
     .filter(key => (key !== "critical") || strikeCanCrit(cfg.strike, item))
+    .filter(key => (key !== "graze") || !isSpell || !!castKind?.grazeDie)
     .map(key => ({ key, label: `STARWROUGHT.Outcome.${key}`, primary: key === result.outcome.key }))
     : [];
 
@@ -102,9 +108,9 @@ export async function cardContext(result, position) {
     damageButtons,
     weaponId: cfg.weaponId ?? "",
     targetUuid: cfg.targetUuid ?? "",
-    strike: isExchange ? cfg.strike : "",
-    strikeLabel: strikeKind ? game.i18n.localize(strikeKind.label) : "",
-    strikeGlyph: strikeKind ? SW.ACTION_GLYPHS[strikeKind.cost] : "",
+    strike: (isExchange && !isSpell) ? cfg.strike : "",
+    strikeLabel: strikeKind ? game.i18n.localize(strikeKind.label) : (castKind ? game.i18n.localize(castKind.label) : ""),
+    strikeGlyph: strikeKind ? SW.ACTION_GLYPHS[strikeKind.cost] : (castKind ? SW.ACTION_GLYPHS[castKind.cost] : ""),
     critDenied: result.critDenied,
     // Why the defender answered with a Defense other than their stance, if they did. The card is
     // where the answer is revealed, so this is where the reason belongs.
@@ -151,9 +157,16 @@ export function cardFlags(result, position) {
     weaponId: cfg.weaponId ?? null,
     targetUuid: cfg.targetUuid ?? null,
     threshold: result.threshold,
-    strike: isExchange ? cfg.strike : null,
-    // The Proficiency rolled (melee or ranged), so the damage card adds the right specialization.
+    strike: isExchange ? (cfg.strike ?? null) : null,
+    // A spell's Cast (PHB v4.21): the Talent and the commitment, so the damage buttons roll the
+    // spell's dice rather than a weapon's.
+    source: cfg.source ?? null,
+    spellId: cfg.spellId ?? null,
+    cast: cfg.cast ?? null,
+    // The Proficiency rolled (melee or ranged) and the rank it rolled at (Handling applied), so
+    // the damage card rolls the right dice (PHB v4.21: dice by rank).
     slug: cfg.slug ?? null,
+    rank: cfg.rank ?? null,
     thrown: !!cfg.thrown,
     defense: cfg.defense ?? null,
     reaction: cfg.reaction ?? null,

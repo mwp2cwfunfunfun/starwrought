@@ -1,7 +1,7 @@
 /**
  * SwActor: Flares. Lighting or putting out a Constellation's Flare and saying so once, from
  * whichever button did it (ruling 86), with the GM's reason, the training line (ruling 113) and the
- * Deferred reminder (ruling 94); and the lit set.
+ * Comet reminder (ruling 94; PHB v4.21's name, ruling 145); and the lit set.
  */
 
 import * as SW from "../../config.mjs";
@@ -55,9 +55,9 @@ export const FlaresMixin = Base => class extends Base {
   /**
    * The Flare card: lit (the title, the Milestone line, the training line when Train lit it with
    * its warning when Train was already used since the last Milestone, a line when the
-   * Constellation was already lit, the GM's reason when one was given, and the Deferred reminder
-   * while the character holds a Deferred Talent Point: Table 4's point waits only because nothing
-   * was Flared to receive it, and this is the moment it is spent, ruling 94) or put out (one line).
+   * Constellation was already lit, the GM's reason when one was given, and the Comet reminder
+   * while the character holds one: a Comet spends in any Constellation, this one included, so a
+   * Flare is a fine moment to remember it, ruling 94) or put out (one line).
    */
   async #announceFlare(slug, lit, { reason = "", trained = false, already = false } = {}) {
     const name = this.system.constellations?.[slug]?.name ?? SW.getConstellation(slug)?.name ?? slug;
@@ -92,10 +92,10 @@ export const FlaresMixin = Base => class extends Base {
       lines.push(`<p class="sw-card-note sw-flare-reason">${
         game.i18n.format("STARWROUGHT.Flare.awardedBy", { reason: foundry.utils.escapeHTML(why) })}</p>`);
     }
-    const deferred = Number(this.system.deferred) || 0;
-    if (deferred > 0) {
-      lines.push(`<p class="sw-card-note sw-flare-deferred">${
-        game.i18n.format(deferred === 1 ? "STARWROUGHT.Flare.deferredHeld" : "STARWROUGHT.Flare.deferredHeldMany", { n: deferred })}</p>`);
+    const comets = Number(this.system.comets) || 0;
+    if (comets > 0) {
+      lines.push(`<p class="sw-card-note sw-flare-comets">${
+        game.i18n.format(comets === 1 ? "STARWROUGHT.Flare.cometHeld" : "STARWROUGHT.Flare.cometHeldMany", { n: comets })}</p>`);
     }
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),

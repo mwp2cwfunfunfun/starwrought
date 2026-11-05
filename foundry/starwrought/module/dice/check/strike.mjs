@@ -10,12 +10,15 @@
 import * as SW from "../../config.mjs";
 
 /**
- * Can this Strike Critically Hit? Quick cannot, unless the weapon is Agile (PHB v4.10).
- * @param {string} strike
+ * Can this Strike Critically Hit? Quick cannot, unless the weapon is Agile (PHB v4.10). A roll
+ * that is no Strike at all (a spell's Cast, `strike` null; PHB v4.21 gives spells no Agile rule,
+ * ruling 135) may.
+ * @param {string|null} strike
  * @param {Item|null} weapon
  * @returns {boolean}
  */
 export function strikeCanCrit(strike, weapon) {
+  if (strike === null) return true;
   const kind = SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
   if (kind.canCrit) return true;
   return !!(kind.agileCanCrit && weapon?.system?.flags?.agile);

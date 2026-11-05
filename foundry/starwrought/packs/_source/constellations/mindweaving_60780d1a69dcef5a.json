@@ -1,0 +1,36 @@
+{
+  "_id": "60780d1a69dcef5a",
+  "name": "Mindweaving",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/mindweaving.png",
+  "system": {
+    "slug": "mindweaving",
+    "category": "magic",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Magic • Wits (Influence over perception, thought, emotion, dreams, memory, and illusions. Its illusions can mislead but do not create physical barriers.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Wits (Influence over perception, thought, emotion, dreams, memory, and illusions. Its illusions can mislead but do not create physical barriers.)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e8f33a6d2845323f"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!60780d1a69dcef5a"
+}

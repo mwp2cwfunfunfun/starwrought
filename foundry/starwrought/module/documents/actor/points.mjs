@@ -1,6 +1,7 @@
 /**
- * SwActor: the two points a player spends by hand. A Hero Point (0.5.1, T9) and a Deferred Talent
- * Point (0.7.0, ruling 94); each is a write on the character and one card.
+ * SwActor: the two points a player spends by hand. A Hero Point (0.5.1, T9) and a Comet (0.7.0,
+ * ruling 94, as the Deferred Talent Point; PHB v4.21's name since 0.11.0, ruling 145); each is a
+ * write on the character and one card.
  */
 
 
@@ -33,29 +34,30 @@ export const PointsMixin = Base => class extends Base {
   }
 
   /**
-   * Spend one Deferred Talent Point, and say so (party-sheet-plan.md, part 3; ruling 94). The
-   * count is a reminder with a number on it: the Party Sheet's Milestone award adds one when a
-   * member has no Flared Constellation to receive the point (PHB v4.15, Table 4), and this takes
-   * one off when the player spends it, which is a Talent bought or dragged as today and policed by
-   * nothing. The header's Deferred badge and the party's roster both come here, so the one-line
-   * card ("{name} spends a Deferred Talent Point.") is said once from either; the update is marked
-   * for the audit, since the card is the announcement. Spending one that is not held writes
-   * nothing and says so in a notice.
-   * @returns {Promise<number|null>} the points still held, or null when there was nothing to spend
+   * Spend one Comet, and say so (PHB v4.21, Chapter 7: "A Comet is a Talent Point that can be
+   * spent in any Constellation, whether or not it is Flared or already open"; party-sheet-plan.md,
+   * part 3; rulings 94 and 145). The count is a reminder with a number on it: the Party Sheet's
+   * Milestone award adds one at the fourth Milestone and one when a member has no Talent eligible
+   * through a Flare to receive the point, and this takes one off when the player spends it, which
+   * is a Talent bought or dragged as today and policed by nothing. The header's Comet badge and
+   * the party's roster both come here, so the one-line card ("{name} spends a Comet.") is said
+   * once from either; the update is marked for the audit, since the card is the announcement.
+   * Spending one that is not held writes nothing and says so in a notice.
+   * @returns {Promise<number|null>} the Comets still held, or null when there was nothing to spend
    */
-  async spendDeferred() {
-    const have = Number(this.system.deferred) || 0;
+  async spendComet() {
+    const have = Number(this.system.comets) || 0;
     if (have <= 0) {
-      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Deferred.none"));
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Comet.none"));
       return null;
     }
     const left = have - 1;
-    await this.update({ "system.deferred": left }, { swAnnounced: true });
-    const key = left > 0 ? "STARWROUGHT.Deferred.spentLeft" : "STARWROUGHT.Deferred.spent";
+    await this.update({ "system.comets": left }, { swAnnounced: true });
+    const key = left > 0 ? "STARWROUGHT.Comet.spentLeft" : "STARWROUGHT.Comet.spent";
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
-      content: `<div class="starwrought action-card sw-deferred-card" data-actor-uuid="${this.uuid}">
-        <p><i class="fa-solid fa-hourglass-end"></i> ${game.i18n.format(key, { name: foundry.utils.escapeHTML(this.name), left })}</p></div>`
+      content: `<div class="starwrought action-card sw-comet-card" data-actor-uuid="${this.uuid}">
+        <p><i class="fa-solid fa-star-shooting"></i> ${game.i18n.format(key, { name: foundry.utils.escapeHTML(this.name), left })}</p></div>`
     });
     return left;
   }

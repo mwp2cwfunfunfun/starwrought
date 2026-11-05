@@ -35,7 +35,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "235dc76ee1e2834b",
   "sort": 0,
@@ -44,7 +44,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c11c1b4c09029767"
+      "contentHash": "4d5712dc4452d07f"
     }
   },
   "effects": [],

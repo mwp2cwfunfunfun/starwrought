@@ -5,21 +5,22 @@
  * The party sheet is the GM's console and the players' window; these are the verbs it calls, and
  * nothing else needs to know about them. The party never does a member's arithmetic: a rest is the
  * member's `restForTheNight`, a Flare is the member's `toggleFlare`, and a Milestone, a Hero Point
- * or a Deferred point is one small write to the member's own fields, read back from the member's
+ * or a Comet is one small write to the member's own fields, read back from the member's
  * derived data (the Vigor maximum a level raises is read after the level lands, never computed
  * here). Every write to a character goes through `actor.update(..., { swAnnounced: true })`, so
  * the player-edit audit (documents/audit.mjs) never doubles a card the party has already posted.
  *
  * Cards: the party speaks (`ChatMessage.getSpeaker({ actor: party })`) for Begin session, the
  * Milestone award, Take back, the party's night, the Split and Ask everyone; the member speaks for
- * a Hero Point award or correction, a Deferred point spent and a Give to. Dialogs belong to the
+ * a Hero Point award or correction, a Comet spent and a Give to. Dialogs belong to the
  * sheet; these functions refuse, write and say.
  *
  * Rulings (Mike, 2026-10-02, numbered on from the v4.14 report): 91 a Milestone award goes to
  * every member by default, with a checkbox per member to withhold it; 92 when the fourth Milestone
  * raises a level, current Vigor rises by the same amount as the maximum; 93 Begin session sets
- * every member's Hero Points to exactly 1; 94 Deferred Talent Points are counted on the character
- * and nothing is enforced; 95 players see every member's Thresholds on the Skills grid.
+ * every member's Hero Points to exactly 1; 94 Deferred Talent Points (Comets since PHB v4.21,
+ * ruling 145) are counted on the character and nothing is enforced; 95 players see every
+ * member's Thresholds on the Skills grid.
  *
  * Phase 2 (0.7.1): 96 the loot and the purse are a convenience with no rule authority (they move
  * Items and coin and value nothing; a row prints its price, nothing computes with it); 99 Split
@@ -346,16 +347,15 @@ function snapshot(actor) {
   return {
     level: Number(sys.level) || 0,
     milestone: Number(sys.milestone) || 0,
-    deferred: Number(sys.deferred) || 0,
+    comets: Number(sys.comets) || 0,
     vigor: Number(sys.vigor?.value) || 0
   };
 }
 
 /**
  * The Vigor maximum the character model would derive at a level (data/character/vigor.mjs, prepareVigor):
- * 10 + Opening Vigor + (Ancestry Vigor + Endure Bonus) × level + the adjustment, with the Endure
- * Bonus read from the rank the Endure pool reaches at that level, so a level that opens Expert
- * in Endure lifts every level's share. The preview uses the difference between this at the
+ * 10 + Opening Vigor + Ancestry Vigor × level + the adjustment (PHB v4.21; the Endure Bonus of
+ * v4.11 to v4.15 is gone, ruling 151). The preview uses the difference between this at the
  * current level and at the next, applied to the maximum the model shows, so any drift between
  * this and the model cancels; the award itself reads the recomputed maximum after the level lands.
  * @param {Actor} actor
@@ -364,10 +364,7 @@ function snapshot(actor) {
  */
 function vigorMaxAt(actor, level) {
   const sys = actor.system;
-  const endure = sys.constellations?.[SW.DEFENSES.endure.slug];
-  const pool = Number(endure?.pool ?? endure?.points) || 0;
-  const rank = endure ? SW.rankFor(pool, level) : "untrained";
-  const perLevel = (Number(sys.details?.ancestry?.vigor) || 0) + (SW.ENDURE_VIGOR_BONUS[rank] ?? 0);
+  const perLevel = Number(sys.details?.ancestry?.vigor) || 0;
   const opening = Number(sys.details?.calling?.vigor) || 0;
   return Math.max(1, 10 + opening + (perLevel * level) + (Number(sys.bonuses?.vigor) || 0));
 }
@@ -384,7 +381,7 @@ function rankOpeningAt(level) {
 /**
  * One preview line per member, for the award dialog (ruling 91: every member ticked by default):
  * "Hrolda: Milestone 2 of 3, a Milestone Talent Point (Flared: Melee, Athletics)"; "Wren:
- * Milestone 3 of 3, no Constellation Flared, so a Deferred point"; "Kessa: the 4th Milestone,
+ * Milestone 3 of 3, no Constellation Flared, so a Comet"; "Kessa: the 4th Milestone,
  * level 3, Vigor 36 to 45, a Comet", with "; Expert opens" at 5th, 10th and 15th (decision 10).
  * @param {Actor} party
  * @returns {Array<{uuid: string, name: string, line: string, levelUp: boolean}>}
@@ -401,7 +398,7 @@ export function previewMilestone(party) {
       const flared = flaredNames(actor);
       const line = flared.length
         ? F("STARWROUGHT.Milestone.previewPoint", { name, n: reached + 1, of, flared: flared.join(", ") })
-        : F("STARWROUGHT.Milestone.previewDeferred", { name, n: reached + 1, of });
+        : F("STARWROUGHT.Milestone.previewComet", { name, n: reached + 1, of });
       rows.push({ uuid, name, line, levelUp: false });
       continue;
     }
@@ -418,12 +415,12 @@ export function previewMilestone(party) {
 }
 
 /**
- * Award a Milestone to the chosen members (ruling 91). Each: `milestone + 1`, and `deferred + 1`
- * when no Constellation is Flared to receive the point (ruling 94; PHB Table 4: a Milestone
- * Talent Point with no Flared Constellation becomes a Deferred Talent Point, spent the instant a
- * Constellation is Flared); or, for a member already at the third, `level + 1` and `milestone 0`,
- * then the recomputed maximum is read and current Vigor rises by the same amount (ruling 92; two
- * writes, since the maximum is the model's to derive). The before-state of every member written
+ * Award a Milestone to the chosen members (ruling 91). Each: `milestone + 1`, and `comets + 1`
+ * when no Constellation is Flared to receive the point (ruling 94; PHB v4.21, Milestone
+ * Conversion: a Milestone Talent Point no Flare can take becomes a Comet); or, for a member
+ * already at the third, `level + 1`, `milestone 0` and `comets + 1` (PHB v4.21, Milestone 4: "You
+ * also gain a Comet"), then the recomputed maximum is read and current Vigor rises by the same
+ * amount (ruling 92; two writes, since the maximum is the model's to derive). The before-state of every member written
  * goes to the party's `lastAward` for Take back, and one public card spoken by the party carries
  * a line per member, with the next rank named at 5th, 10th and 15th.
  * @param {Actor} party
@@ -449,15 +446,18 @@ export async function awardMilestone(party, uuids) {
       const next = reached + 1;
       const flared = flaredNames(actor);
       const updates = { "system.milestone": next };
-      if (!flared.length) updates["system.deferred"] = before.deferred + 1;
+      // PHB v4.21, Milestone Conversion: with no Flare to take the point, it becomes a Comet.
+      if (!flared.length) updates["system.comets"] = before.comets + 1;
       await actor.update(updates, { swAnnounced: true });
       lines.push(flared.length
         ? F("STARWROUGHT.Milestone.cardPoint", { name, n: next, of, flared: escapeHTML(flared.join(", ")) })
-        : F("STARWROUGHT.Milestone.cardDeferred", { name, n: next, of, held: Number(actor.system.deferred) || 0 }));
+        : F("STARWROUGHT.Milestone.cardComet", { name, n: next, of, held: Number(actor.system.comets) || 0 }));
     } else {
       const level = before.level + 1;
       const maxBefore = Number(sys.vigor?.max) || 0;
-      await actor.update({ "system.level": level, "system.milestone": 0 }, { swAnnounced: true });
+      // PHB v4.21, Milestone 4: the level, and a Comet with it (through 0.10.1 the card named the
+      // Comet and nothing counted it).
+      await actor.update({ "system.level": level, "system.milestone": 0, "system.comets": before.comets + 1 }, { swAnnounced: true });
       // The model has derived the new maximum by now; the rise is what current Vigor gains.
       const maxAfter = Number(actor.system.vigor?.max) || maxBefore;
       rise = Math.max(0, maxAfter - maxBefore);
@@ -486,7 +486,7 @@ export async function awardMilestone(party, uuids) {
 
 /**
  * Take back the last award: exactly those numbers on exactly those members. Refused, with a
- * notice and no write, if any member's level, Milestone or Deferred count has since been edited
+ * notice and no write, if any member's level, Milestone or Comet count has since been edited
  * by hand (it no longer reads what the award left), or a member cannot be found. A level's Vigor
  * rise comes off current Vigor (never below 0) rather than restoring the old value, since Vigor
  * moves in play between an award and its reversal. Posts a card and clears `lastAward`. There is
@@ -510,7 +510,7 @@ export async function takeBackAward(party) {
       return false;
     }
     const now = snapshot(actor);
-    for (const [field, label] of [["level", "STARWROUGHT.Field.level"], ["milestone", "STARWROUGHT.Field.milestone"], ["deferred", "STARWROUGHT.Party.deferred"]]) {
+    for (const [field, label] of [["level", "STARWROUGHT.Field.level"], ["milestone", "STARWROUGHT.Field.milestone"], ["comets", "STARWROUGHT.Party.comets"]]) {
       if (now[field] === (Number(entry.after?.[field]) || 0)) continue;
       ui.notifications.warn(F("STARWROUGHT.Milestone.takeBackRefused", {
         name: actor.name, field: L(label), was: Number(entry.after?.[field]) || 0, now: now[field]
@@ -527,7 +527,7 @@ export async function takeBackAward(party) {
     const updates = {
       "system.level": Number(before.level) || 1,
       "system.milestone": Number(before.milestone) || 0,
-      "system.deferred": Number(before.deferred) || 0
+      "system.comets": Number(before.comets) || 0
     };
     const rise = Number(entry.rise) || 0;
     if (rise) updates["system.vigor.value"] = Math.max(0, now.vigor - rise);
@@ -547,37 +547,37 @@ export async function takeBackAward(party) {
 }
 
 /* -------------------------------------------- */
-/*  Deferred Talent Points (part 3)             */
+/*  Comets (part 3)                             */
 /* -------------------------------------------- */
 
 /**
- * Spend one Deferred Talent Point (ruling 94): `deferred - 1`, never below 0, and a one-line card
- * spoken by the character. For the character's owner or the GM. Spending is what it is today, a
- * Talent dragged or bought, unpoliced: this is the count coming down, not the spend itself. The
- * character's own `spendDeferred` (documents/actor/points.mjs, 0.7.0) does the write and says the card,
- * so the header's badge and the party's roster say it once from either; the write below is the
- * fallback for a build without it.
+ * Spend one Comet (ruling 94; PHB v4.21's name, ruling 145): `comets - 1`, never below 0, and a
+ * one-line card spoken by the character. For the character's owner or the GM. Spending is what it
+ * is today, a Talent dragged or bought, unpoliced: this is the count coming down, not the spend
+ * itself. The character's own `spendComet` (documents/actor/points.mjs) does the write and says
+ * the card, so the header's badge and the party's roster say it once from either; the write below
+ * is the fallback for a build without it.
  * @param {Actor} actor
- * @returns {Promise<number|null>}  The points still held, or null when there was nothing to spend.
+ * @returns {Promise<number|null>}  The Comets still held, or null when there was nothing to spend.
  */
-export async function spendDeferred(actor) {
+export async function spendComet(actor) {
   if (!actor?.testUserPermission(game.user, "OWNER")) {
     ui.notifications.warn(L("STARWROUGHT.Notify.notOwner"));
     return null;
   }
-  if (typeof actor.spendDeferred === "function") return actor.spendDeferred();
-  const have = Number(actor.system.deferred) || 0;
+  if (typeof actor.spendComet === "function") return actor.spendComet();
+  const have = Number(actor.system.comets) || 0;
   if (have <= 0) {
-    ui.notifications.warn(F("STARWROUGHT.Party.deferredNone", { name: actor.name }));
+    ui.notifications.warn(F("STARWROUGHT.Party.cometNone", { name: actor.name }));
     return null;
   }
   const left = have - 1;
-  await actor.update({ "system.deferred": left }, { swAnnounced: true });
+  await actor.update({ "system.comets": left }, { swAnnounced: true });
   await postMemberCard(actor, {
-    root: "sw-deferred-card",
-    icon: "fa-solid fa-hourglass-half",
-    title: L("STARWROUGHT.Party.deferredTitle"),
-    lines: [F("STARWROUGHT.Party.deferredSpent", { name: escapeHTML(actor.name), left })]
+    root: "sw-comet-card",
+    icon: "fa-solid fa-star-shooting",
+    title: L("STARWROUGHT.Party.cometTitle"),
+    lines: [F("STARWROUGHT.Party.cometSpent", { name: escapeHTML(actor.name), left })]
   });
   return left;
 }

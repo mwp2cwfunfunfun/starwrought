@@ -1,0 +1,72 @@
+{
+  "_id": "90321c98a1b8aae6",
+  "name": "Emotions Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "emotions",
+    "constellationName": "Emotions",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Unsettle ❷: Beguilement against Awareness or Guard; on a Hit, the target is Frightened 1; Graze and Miss have no effect.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "beguilement",
+      "delivery": "",
+      "range": 0,
+      "adjacent": false,
+      "die": null,
+      "types": [],
+      "targets": "one",
+      "defenses": [
+        "awareness",
+        "guard"
+      ],
+      "effects": {
+        "quick": "On a Hit, the target is Frightened 1; Graze and Miss have no effect",
+        "focused": "",
+        "committed": ""
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "a2139df797c9f1b3",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8180601569f39f74"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!90321c98a1b8aae6"
+}

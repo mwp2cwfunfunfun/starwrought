@@ -1,0 +1,55 @@
+{
+  "_id": "ca22ec15276818e8",
+  "name": "Guarded Conduit",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spellblade",
+    "constellationName": "Spellblade",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spellbound Edge"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "While preparing a Focused or Committed Cast and wielding a melee weapon, gain +1 Situation to Guard against Blows. This does not permit Guard against Blasts and ends when preparation ends.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "c0896ce7ffd8e58c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "222ecb9e7cd7fa01"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ca22ec15276818e8"
+}

@@ -8,7 +8,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e92bdce625d076cb"
+      "contentHash": "c909079e8da828b4"
     }
   },
   "categories": [],
@@ -27,7 +27,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Type</th><th>May be spent on</th><th>Flare required?</th></tr></thead><tbody><tr><td>Origin Talent Point</td><td>Your Origin Constellation only (Ancestry, Bloodline, Culture)</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Calling Talent Point</td><td>Calling Constellations only</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Defense Talent Point</td><td>The four Defense Constellations only: Awareness, Evade, Guard, or Endure</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Skill Talent Point</td><td>Skill Constellations only (includes Lore)</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Lore Talent Point</td><td>Lore Constellations only</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Opening Talent Point</td><td>Opening a new Constellation only, whatever kind. It buys a Root Talent and nothing else</td><td>If obtained after character creation, unless otherwise stated</td></tr><tr><td>Comet</td><td>Anything you qualify for</td><td>No</td></tr><tr><td>Milestone Talent Point</td><td>Anything you qualify for</td><td>Yes. However, if there are no Flared Constellations available, it becomes a Deferred Talent Point.</td></tr><tr><td>Deferred Talent Point</td><td>Anything you qualify for</td><td>Yes; must be spent the instant a Constellation is Flared.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Type</th><th>May be spent on</th><th>Flare required?</th></tr></thead><tbody><tr><td>Origin Talent Point</td><td>Talents in your Origin Constellation: your chosen Ancestry, Bloodline, and Culture</td><td>After character creation</td></tr><tr><td>Calling Talent Point</td><td>Talents in Calling Constellations</td><td>After character creation</td></tr><tr><td>Defense Talent Point</td><td>Talents in Awareness, Evade, Guard, or Endure</td><td>After character creation</td></tr><tr><td>Skill Talent Point</td><td>Talents in Skill Constellations, including Lore</td><td>After character creation</td></tr><tr><td>Lore Talent Point</td><td>Talents in Lore Constellations</td><td>After character creation</td></tr><tr><td>Opening Talent Point</td><td>The Root Talent of a Constellation you have not yet opened</td><td>After character creation</td></tr><tr><td>Comet</td><td>Any Talent you qualify for</td><td>No</td></tr><tr><td>Milestone Talent Point</td><td>Any Talent eligible through an applicable Flare</td><td>Yes</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -54,7 +54,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Step</th><th>You choose</th><th>You get</th><th>Talent Points</th></tr></thead><tbody><tr><td>1. Ancestry</td><td>Your body and blood. This forms the core of your Origin Constellation and gives you starting Vigor, Speed, and unique characteristics (e.g., keen eyes).</td><td>Vigor per level, Size, Speed, and 1 Special Ability.</td><td>1 Origin (your Ancestry's root Talent)</td></tr><tr><td>2. Bloodline</td><td>Your lineage. This adds a branch to your Origin Constellation and gives you additional unique characteristics.</td><td>1 Special Ability.</td><td>1 Origin (your Bloodline's root Talent)</td></tr><tr><td>3. Culture</td><td>Where you were raised. This adds a branch to your Origin Constellation and gives you additional customization options.</td><td>Starting language(s), and a bonus to Diplomacy checks with those who share your Culture.</td><td>1 Origin (your Culture's Root Talent)</td></tr><tr><td>4. Background</td><td>Your trade. This grants 1 Lore Talent Point and 2 Skill Talent Points.</td><td>—</td><td>1 Lore / 2 Skill</td></tr><tr><td>5. Calling</td><td>Your adventuring identity. This adds special techniques such as entering a rage or sneak attacking.</td><td>Training in one Skill or other Constellation, Opening Vigor if it is your first Calling, and a signature ability.</td><td>1 Calling</td></tr><tr><td>6. Defenses</td><td>Your defensive posture. You begin Trained in two of the four Defenses (Awareness, Evade, Guard, and Endure), your choice. Each answers two of the four kinds of threat (Blows, Blasts, Blights, Beguilement), so two Trained Defenses cover three kinds and leave one gap; choose the pair whose gap you can live with.</td><td>Two Trained Defenses. A Defense you leave Untrained still adds its Attribute, but every Threshold that depends on it is 3 lower.</td><td>2 Defense</td></tr><tr><td>7. Comets</td><td>Comets, which are Talent Points that can be used for any purpose (as long as you still meet the prerequisite).</td><td>—</td><td>3 Comets</td></tr><tr><td>Granted</td><td>Melee Training or Ranged Training, your choice: every character begins Trained in one of them. It is granted automatically, not spent from the steps above.</td><td>Trained in Melee or Ranged: +3 to Strikes with a weapon in your hand, or with one that leaves it. A completed 1st-level character has spent at least 14 Talent Points, 13 from the steps above plus this one.</td><td>1 Melee or Ranged Training</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Step</th><th>You choose</th><th>You get</th><th>Talent Points</th></tr></thead><tbody><tr><td>1. Ancestry</td><td>…Your body and blood. This forms the core of your Origin Constellation and gives you starting Vigor, Speed, and unique characteristics (e.g., keen eyes).</td><td>…Vigor per level, Size, Speed, and 1 Special Ability.</td><td>1 Origin (your Ancestry’s root Talent)</td></tr><tr><td>2. Bloodline</td><td>…Your lineage. This adds a branch to your Origin Constellation and gives you additional unique characteristics.</td><td>…1 Special Ability.</td><td>1 Origin (your Bloodline’s root Talent)</td></tr><tr><td>3. Culture</td><td>…Where you were raised. This adds a branch to your Origin Constellation and gives you additional customization options.</td><td>…Starting language(s), and a bonus to Diplomacy checks with those who share your Culture.</td><td>1 Origin (your Culture’s Root Talent)</td></tr><tr><td>4. Background</td><td>…Your trade, occupation, or lifestyle.</td><td>N/A</td><td>1 Lore\n2 Skill</td></tr><tr><td>5. Calling</td><td>…Your adventuring identity. This adds special techniques such as casting spells, entering a barbarian rage, sneak attacking, etc.</td><td>… Additional Vigor (at 1st level)</td><td>1 Calling\n1 Combat-related Constellation</td></tr><tr><td>6. Defenses</td><td>…Your defensive posture (Awareness, Evade, Guard, and Endure).</td><td>N/A</td><td>2 Defenses</td></tr><tr><td>7. Comets</td><td>…Comets, which are Talent Points that can be used for any purpose (as long as you still meet the prerequisite).</td><td>N/A</td><td>3 Comets</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -108,7 +108,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Style</th><th>Key Attribute</th><th>How you wield</th></tr></thead><tbody><tr><td>Archery</td><td>Agility</td><td>Bows and careful ranged attacks. Child of Ranged.</td></tr><tr><td>Armored Fighting</td><td>Presence</td><td>Using matched harnesses for additional benefits. Child of Melee.</td></tr><tr><td>Brawling</td><td>Might</td><td>Fists, feet, tusks, headbutts. Child of Melee.</td></tr><tr><td>Crossbow Fighting</td><td>Wits</td><td>Prepared mechanical ranged weapons. Child of Ranged.</td></tr><tr><td>Dueling</td><td>Agility</td><td>One one-handed weapon, other hand free. Child of Melee.</td></tr><tr><td>Great Weapon Fighting</td><td>Might</td><td>Two-handed, non-hafted weapons. Child of Melee.</td></tr><tr><td>Missile Skirmishing</td><td>Agility</td><td>Slings, thrown weapons, bolas. Child of Ranged.</td></tr><tr><td>Shield Fighting</td><td>Presence</td><td>Weapon and shield as one machine. Child of Melee.</td></tr><tr><td>Spear & Polearm Fighting</td><td>Wits</td><td>Hafted weapons: polearms and spears. Child of Melee.</td></tr><tr><td>Two-Weapon Fighting</td><td>Agility</td><td>A weapon in each hand. Child of Melee.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Style</th><th>Key Attribute</th><th>How you wield</th></tr></thead><tbody><tr><td>Archery</td><td>Agility</td><td>Bows and careful ranged attacks. A group of Talents within Ranged: it shares Ranged's rank and has none of its own.</td></tr><tr><td>Armored Fighting</td><td>Presence</td><td>Using matched harnesses for additional benefits. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr><tr><td>Brawling</td><td>Might</td><td>Fists, feet, tusks, headbutts. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr><tr><td>Crossbow Fighting</td><td>Wits</td><td>Prepared mechanical ranged weapons. A group of Talents within Ranged: it shares Ranged's rank and has none of its own.</td></tr><tr><td>Dueling</td><td>Agility</td><td>One one-handed weapon, other hand free. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr><tr><td>Great Weapon Fighting</td><td>Might</td><td>Two-handed, non-hafted weapons. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr><tr><td>Missile Skirmishing</td><td>Agility</td><td>Slings, thrown weapons, bolas. A group of Talents within Ranged: it shares Ranged's rank and has none of its own.</td></tr><tr><td>Shield Fighting</td><td>Presence</td><td>Weapon and shield as one machine. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr><tr><td>Spear & Polearm Fighting</td><td>Wits</td><td>Hafted weapons: polearms and spears. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr><tr><td>Two-Weapon Fighting</td><td>Agility</td><td>A weapon in each hand. A group of Talents within Melee: it shares Melee's rank and has none of its own.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -118,6 +118,87 @@
       "src": null,
       "system": {},
       "sort": 300,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "b06f3753527617a5",
+      "_key": "!journal.pages!489b438244686d7b.b06f3753527617a5",
+      "name": "Damage Delivery",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Example</th><th>Threat and Delivery</th></tr></thead><tbody><tr><td>Conjured stone spear</td><td>Zoned Blow</td></tr><tr><td>Exploding shrapnel bomb</td><td>Zoned Blast</td></tr><tr><td>Engulfing fire or corrosive vapor</td><td>Pervasive Blast</td></tr><tr><td>Poison gas that deals damage</td><td>Blight, usually Pervasive</td></tr><tr><td>Fear effect</td><td>Beguilement; no Delivery unless it deals damage</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 400,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "0248db30a0ca2b87",
+      "_key": "!journal.pages!489b438244686d7b.0248db30a0ca2b87",
+      "name": "Spellwork",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Rank in the discipline</th><th>Damage Dice</th></tr></thead><tbody><tr><td>Trained</td><td>1</td></tr><tr><td>Expert</td><td>2</td></tr><tr><td>Master</td><td>3</td></tr><tr><td>Legendary</td><td>4</td></tr></tbody></table><table><thead><tr><th>Cast</th><th>What it does</th></tr></thead><tbody><tr><td>❷ Quick Cast</td><td>Immediate, generally one damage die regardless of proficiency; no extra Damage Dice. Typically one target, and no significant additional effect. Graze normally deals no damage unless the spell says otherwise.</td></tr><tr><td>❸ Focused Cast</td><td>Prepared under the normal three-action rule. Full Damage Dice according to proficiency in the spell’s parent; use the spell’s normal effects. Graze normally deals one base damage die unless the spell says otherwise.</td></tr><tr><td>❹ Committed Cast</td><td>Prepared. Normally the same full Damage Dice plus an additional capability listed by the Talent, such as a secondary effect, area, or duration. This extra capability does not automatically add a damage die.</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 500,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "cc57c69c5827ccc4",
+      "_key": "!journal.pages!489b438244686d7b.cc57c69c5827ccc4",
+      "name": "Weapon Size",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>Weapon Size</th><th>Weapon Size Factor</th></tr></thead><tbody><tr><td>Tiny</td><td>1/3</td></tr><tr><td>Small</td><td>2/3</td></tr><tr><td>Medium</td><td>1</td></tr><tr><td>Large</td><td>1 ½</td></tr><tr><td>Huge</td><td>2</td></tr><tr><td>Gargantuan</td><td>3</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 600,
       "ownership": {
         "default": -1
       },
@@ -135,7 +216,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Defense</th><th>Key Attribute</th><th>In a word</th><th>Physical</th><th>Mental</th></tr></thead><tbody><tr><td>Awareness</td><td>Wits</td><td>Don't be surprised.</td><td>Blights: poison, disease, and anything that must be caught early. Initiative is usually Awareness. Never unavailable.</td><td>Beguilement: Feint, Lie, Sneak, and illusions are measured against your Awareness Threshold.</td></tr><tr><td>Evade</td><td>Agility</td><td>Don't be there.</td><td>Blows and Blasts. Unavailable while you are Grabbed or Restrained.</td><td>—</td></tr><tr><td>Guard</td><td>Presence</td><td>Don't let it through.</td><td>Blows (a ranged Blow only with a shield Raised). Unavailable while you are unaware of the attack, or have nothing equipped to ward it away.</td><td>Beguilement: fear, charm, confusion, and other assaults on your composure.</td></tr><tr><td>Endure</td><td>Might</td><td>Survive what does come through.</td><td>Blasts and Blights: poison, disease, exhaustion, Persistent Damage, and Recovery checks while Dying. Never unavailable.</td><td>—</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Defense</th><th>Key Attribute</th><th>In a word</th><th>Physical</th><th>Mental</th></tr></thead><tbody><tr><td>Awareness</td><td>Wits</td><td>Don't be surprised.</td><td>Blights: poison, disease, and anything that must be caught early. Initiative is usually Awareness.</td><td>Beguilement: Feint, Lie, Sneak, and illusions are measured against your Awareness Threshold.</td></tr><tr><td>Evade</td><td>Agility</td><td>Don't be there.</td><td>Blows and Blasts.</td><td>—</td></tr><tr><td>Guard</td><td>Presence</td><td>Don't let it through.</td><td>Blows. A ranged Blow or an attack with an Area of Effect only with a shield Raised.</td><td>Beguilement: fear, charm, confusion, and other assaults on your composure.</td></tr><tr><td>Endure</td><td>Might</td><td>Survive what does come through.</td><td>Blasts and Blights: poison, disease, exhaustion, Persistent Damage, and Recovery checks while Dying.</td><td>—</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -144,7 +225,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 400,
+      "sort": 700,
       "ownership": {
         "default": -1
       },
@@ -162,7 +243,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Zone</th><th>Critical Hit</th><th>Critical Hit on an Exposed Zone</th></tr></thead><tbody><tr><td>Torso</td><td>The target is Off-Guard until it Recenters.</td><td>As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds).</td></tr><tr><td>Arms</td><td>The target takes a −2 Situation penalty to attack rolls until it Recenters.</td><td>As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds).</td></tr><tr><td>Legs</td><td>The target's Speed is halved until it Recenters.</td><td>As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds).</td></tr><tr><td>Head</td><td>The target cannot use Reactions until it Recenters.</td><td>As left, and if the Strike was Deliberate or Committed, the Zone is Wounded (see Vigor & Wounds).</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Zone</th><th>Critical Hit</th><th>Critical Hit on an Exposed Zone</th></tr></thead><tbody><tr><td>Torso</td><td>The target is Off-Guard until it Recenters.</td><td>If the Zone was already Exposed when a Deliberate or Committed Strike Critically Hit it, the Zone is also Wounded (see Vigor & Wounds).</td></tr><tr><td>Arms</td><td>The target takes a −2 Situation penalty to attack rolls until it Recenters.</td><td>If the Zone was already Exposed when a Deliberate or Committed Strike Critically Hit it, the Zone is also Wounded (see Vigor & Wounds).</td></tr><tr><td>Legs</td><td>The target's Speed is halved until it Recenters.</td><td>If the Zone was already Exposed when a Deliberate or Committed Strike Critically Hit it, the Zone is also Wounded (see Vigor & Wounds).</td></tr><tr><td>Head</td><td>The target cannot use Reactions until it Recenters.</td><td>If the Zone was already Exposed when a Deliberate or Committed Strike Critically Hit it, the Zone is also Wounded (see Vigor & Wounds).</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -171,7 +252,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 500,
+      "sort": 800,
       "ownership": {
         "default": -1
       },
@@ -189,7 +270,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<p>When a Zone becomes Exposed, a part of you is open for a focused attack:</p><ul><li>Its Protection counts as 0 against a Deliberate or Committed Strike. A Quick Strike gains nothing from it.</li><li>An ordinary Hit from a Deliberate or Committed Strike may be placed there instead of the Torso.</li><li>It stays Exposed until you Recenter ❶ (see Chapter 7: Rules Elements), except that a Zone Exposed by a Posture stays Exposed until the end of the round, and Recenter does not clear it.</li><li>A Critical Hit on it with a Deliberate or Committed Strike Wounds it.</li></ul><p>When a Zone is Exposed, the following condition is placed on you: Exposed [Zone Name]. Zones become Exposed when your own Committed Strike is Stopped; when any Strike of yours Misses; when you take a Posture; when a foe Controls your weapon in a Bind; and through certain Talents and critical effects.</p><h2>The condition</h2><table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Exposed [Zone]</td><td>That Zone is Exposed: ordinary Hits can land there instead of your Torso. Recenter ❶ to clear, unless a Posture Exposed it: that lasts until the end of the round.</td></tr></tbody></table><h2>Opening and closing a Zone</h2><table><thead><tr><th>Maneuver</th><th>Effect</th></tr></thead><tbody><tr><td>Recenter ❶</td><td>Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in.</td></tr></tbody></table><table><thead><tr><th>Reaction</th><th>Grants</th><th>Effect</th></tr></thead><tbody><tr><td>Posture ⓿↺</td><td>Specific Talents • the named Defense</td><td>A Situation bonus to the named Defense, taken before you know whether the attack succeeded. It costs no actions, but a Zone of your choice becomes Exposed until the end of the round, whether or not the Posture works, and Recenter does not clear it. Its bonus is Situation, the same type Parry and Void grant, so a Posture and a Parry or Void do not stack.</td></tr><tr><td>Give Ground ⓿↺</td><td>Evade Training • Evade +2 Situation</td><td>+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</td></tr><tr><td>Set Your Feet ⓿↺</td><td>Guard Training • Guard +2 Situation</td><td>+2 Situation bonus to Guard for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</td></tr></tbody></table><p>What a Critical Hit does to each Zone, Exposed or not, is on @UUID[Compendium.starwrought.rules.JournalEntry.489b438244686d7b.JournalEntryPage.35ee7b6b93251cf3]{Zones and Critical Hits}.</p><h2>In the system</h2><p>Each Exposed Zone shows on the token as its own status (Exposed: Head, Exposed: Torso, Exposed: Arms, Exposed: Legs) and in the Zones panel of the sheet. Toggling the status on the token and toggling the Zone on the sheet are the same change. Recenter closes every Exposed Zone except one a Posture opened, and the statuses close with them.</p>"
+        "content": "<p>An Exposed Zone presents an opening for an attack (PHB v4.21, Exposed Zones):</p><ul><li>Its Protection counts as 0, subject to any exception in the Attack's description (a Quick Strike's says Protection applies even to an Exposed Zone).</li><li>It remains Exposed until you Recenter ❶, unless the effect that Exposed it specifies another duration.</li><li>A Critical Hit against it with a Deliberate or Committed Strike inflicts a Wound.</li><li>Exposure caused by a Posture lasts until the end of the round and cannot be cleared by Recenter; Exposure caused by Control ends when that Control ends.</li></ul><p>When a Zone is Exposed, the following condition is placed on you: Exposed [Zone Name]. Zones become Exposed when your Deliberate or Committed Strike Misses, when a Committed Strike Grazes, when you take a Posture that says so, when a foe Controls your weapon in a Bind, when a Deliberate or Committed Strike of yours lands and you choose to open the Zone it struck, and through certain Talents and critical effects.</p><h2>The condition</h2><table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Exposed [Zone]</td><td>That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated.</td></tr></tbody></table><h2>Opening and closing a Zone</h2><table><thead><tr><th>Maneuver</th><th>Effect</th></tr></thead><tbody><tr><td>Recenter ❶</td><td>Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in.</td></tr></tbody></table><table><thead><tr><th>Reaction</th><th>Grants</th><th>Effect</th></tr></thead><tbody><tr><td>Give Ground ⓿↺</td><td>Evade Training • Evade +2 Situation (Posture)</td><td>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. +2 Situation bonus to Evade against the triggering attack. A Zone of your choice becomes Exposed until the end of the round.</td></tr><tr><td>Set Your Feet ⓿↺</td><td>Guard Training • Guard +2 Situation (Posture)</td><td>Trigger You are targeted by an Attack of which you are aware. +2 Situation bonus to Guard against the triggering attack. A Zone of your choice becomes Exposed until the end of the round.</td></tr><tr><td>Drop Flat ⓿↺</td><td>Drop Flat (Evade) • Evade +4 Situation (Posture)</td><td>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. You drop Prone. +4 Situation bonus to Evade against the triggering attack.</td></tr><tr><td>Kneel Behind the Shield ⓿↺</td><td>Kneel Behind the Shield (Guard) • Guard +4 Situation (Posture)</td><td>Requirements Your shield is Raised. Trigger You are targeted by an Attack of which you are aware. +4 Situation bonus to Guard against the triggering attack. Your Speed becomes 0 until you spend an action to rise, and your Arms become Exposed.</td></tr></tbody></table><p>What a Critical Hit does to each Zone, Exposed or not, is on @UUID[Compendium.starwrought.rules.JournalEntry.489b438244686d7b.JournalEntryPage.35ee7b6b93251cf3]{Zones and Critical Hits}.</p><h2>In the system</h2><p>Each Exposed Zone shows on the token as its own status (Exposed: Head, Exposed: Torso, Exposed: Arms, Exposed: Legs) and in the Zones panel of the sheet. Toggling the status on the token and toggling the Zone on the sheet are the same change. Recenter closes every Exposed Zone except one a Posture opened, and the statuses close with them.</p>"
       },
       "image": {},
       "video": {
@@ -198,7 +279,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 600,
+      "sort": 900,
       "ownership": {
         "default": -1
       },
@@ -216,7 +297,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<p>When a rigid weapon or shield stops a melee weapon or natural attack, the two are in contact: a Bind. Track one relationship per implement, and name the two implements: longsword / spear, or shield > bite. A Bind is neutral (/) when neither fighter has the line, or Controlled (>) when one does. Only Guard can form a Bind, and only with a rigid weapon, a shield, or a natural weapon its profile allows. A bare hand or a Flexible weapon can Guard, but cannot Bind.</p><p>A Bind forms when a Guard Stops an attack, or when a Gain Control action Grazes. Control is taken when a Parry Stops a Deliberate or Committed Strike, when a Guard answers a Miss, or when Gain Control succeeds. A Quick Strike is a probe: Stopped, it can be bound but never Controlled.</p><h2>While you Control a weapon</h2><ul><li>Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts.</li><li>Your partner's attacks with the Controlled weapon take a −2 Situation penalty.</li><li>You may Close ❶: Step toward your partner while keeping the Bind. The Controlled weapon cannot Intercept you.</li><li>A Bind has one Controller at most. A new Control replaces the old.</li></ul><h2>How a Bind ends</h2><p>A Bind ends when a Strike between the two actors resolves, when either partner Moves or Steps (Close excepted), when either actor Recenters, when the Controlling actor is attacked by a third party, or when either implement is dropped or Disarmed. Controlled is not Grappled or Restrained: you are redirecting a weapon, not holding a body. The Controlled actor may still Step, Move, or attack with something else, and attacking with an uncontrolled weapon or limb ends the Bind before the roll.</p><p>Recenter ❶ clears every Exposed Zone on you (except one Exposed by a Posture) and ends any Bind you are in. Being Controlled costs you the same action that being Exposed does. That is the tempo price of a lost line, and it is the reason Gain Control is worth an action.</p><p><strong>Size.</strong> An actor one Size larger or smaller Binds normally. Two or more Sizes apart, the smaller actor gains only momentary Control: it lasts until its first benefit is used or until the end of the Controller's next Opportunity, whichever comes first, and the larger creature Moves without first breaking the Bind. You can redirect a dragon's claw, but you cannot hold it.</p><p><strong>What cannot Bind.</strong> Flexible weapons (whips and flails), bare hands without a Talent, areas, spells, and attacks with the Unparryable trait. Incorporeal and amorphous attackers offer nothing to bind. Measure, footwork, and commitment still apply to all of them.</p><p><strong>Third parties.</strong> A Bind is between two implements. Your ally striking the opponent you Control does not break your Bind; that is the point of holding the line. An enemy striking you does.</p><h2>The conditions</h2><table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Bound [X]</td><td>Your implement is in a neutral Bind with X's. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves.</td></tr><tr><td>Controlled [X]</td><td>X Controls your weapon. You have an Exposed Zone of X's choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it.</td></tr><tr><td>Controlling [X]</td><td>You Control X's weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.</td></tr></tbody></table><h2>Maneuvers and Reactions in the Bind</h2><table><thead><tr><th>Maneuver</th><th>Effect</th></tr></thead><tbody><tr><td>Gain Control ❶</td><td>Requirements A rigid weapon, shield, or permitted natural weapon in hand; the target's weapon or natural attack is within the longer of your two Total Reaches; the target is no more than one Size larger than you.<br>Roll Melee against the target's Guard.<br><b>Critical Success</b> You Control the weapon, and the target is Off-Guard until its next Opportunity. <b>Success</b> You Control the weapon. <b>Graze</b> A neutral Bind forms. <b>Miss</b> You pressed badly. The target Controls your weapon instead.<br><b>Special</b> Evade cannot answer this attack. While you Control a weapon, the target has an Exposed Zone of your choice and takes −2 Situation to attacks with it (see Chapter 2: The Exchange).</td></tr><tr><td>Close ❶</td><td>Requirements You Control a foe's weapon.<br>Step toward that foe. The Bind holds, and the Controlled weapon cannot Intercept you. This is the only movement that does not end a Bind.</td></tr><tr><td>Recenter ❶</td><td>Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in.</td></tr></tbody></table><table><thead><tr><th>Reaction</th><th>Grants</th><th>Effect</th></tr></thead><tbody><tr><td>Parry ❶↺</td><td>Guard Training • Guard +2 Situation</td><td>You Guard with a +2 Situation bonus. You need a rigid weapon, a shield, or a permitted natural weapon in hand. If you Stop a Deliberate or Committed Strike, you take Control of the attacking weapon rather than a neutral Bind, and you may at once make a Quick Strike ⓿ against its owner: the riposte. A Stopped Quick Strike gives only a neutral Bind.</td></tr></tbody></table><p>The Zone a Controller opens follows the rules on @UUID[Compendium.starwrought.rules.JournalEntry.489b438244686d7b.JournalEntryPage.941b13c4400511a4]{Exposed}.</p><h2>In the system</h2><p>A Bind is recorded on both fighters and drawn on the map as a gold chain between their tokens, labelled with the two implements; a Controlled Bind runs from the Controller to the Controlled with an arrowhead and the word Control. The token carries Bound, Controlling or Controlled, and that effect names the partner, both implements and the state. The sheet's bind line and the Recenter Maneuver end it; a Strike between the two ends it when the Strike resolves.</p>"
+        "content": "<p>A Bind forms when a rigid weapon or shield Guards against a melee Attack that Grazes or Misses, provided the implements involved can Bind (PHB v4.21, Binds): on a Graze a neutral Bind forms; on a Miss the defender gains Control of the attacking implement. Track one relationship per implement, and name the two implements: longsword / spear, or shield > bite. A Bind is neutral (/) when neither fighter has the line, or Controlled (>) when one does.</p><p>Use Gain Control ❶ to contest an existing Bind. A Parry ❶↺ that Stops a melee Strike may at once attempt to Gain Control of the attacking weapon, and a Riposte makes a Quick Strike instead.</p><h2>While you Control a weapon</h2><ul><li>Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts.</li><li>Your partner's attacks with the Controlled weapon take a −2 Situation penalty.</li><li>You may Close ❶: Step toward your partner while keeping the Bind. The Controlled weapon cannot Intercept you.</li></ul><h2>How a Bind ends</h2><p>A Bind ends when a participant uses the bound implement to Strike (a Strike against the other participant resolves before the Bind ends), when either participant Moves or Steps unless an ability expressly preserves the Bind, when either participant Recenters, when a third party attacks the combatant who currently has Control, or when either bound implement is dropped or Disarmed. Control redirects an implement; it does not itself make its wielder Grabbed or Restrained. The Controlled combatant can still Move, Step, or attack with another weapon or limb, and attacking with an unbound weapon or limb ends the Bind before the attack roll.</p><p>Recenter ❶ ends every Bind you are in and clears your Exposed Zones, except those Exposed by a Posture. Exposure caused specifically by Control ends when that Control ends; Exposure from other sources follows its own duration.</p><p><strong>Size.</strong> Creatures of the same Size, or one Size apart, Bind normally. Two or more Sizes apart, the smaller creature can gain only momentary Control: it ends after its first benefit is used or at the end of the controller's next Opportunity, whichever comes first, and the larger creature can Move without first breaking the Bind.</p><p><strong>What cannot Bind.</strong> Unless an ability says otherwise: Flexible weapons such as whips and flails, bare hands, spells and area effects, and attacks with the Unparryable trait. Incorporeal and amorphous attackers cannot be Bound unless a rule provides a way to do so.</p><p><strong>Third parties.</strong> An ally attacking the creature whose implement you Control does not break your Bind; a third party attacking you while you have Control does.</p><h2>The conditions</h2><table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Bound [X]</td><td>Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves.</td></tr><tr><td>Controlled [X]</td><td>X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it.</td></tr><tr><td>Controlling [X]</td><td>You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.</td></tr></tbody></table><h2>Maneuvers and Reactions in the Bind</h2><table><thead><tr><th>Maneuver</th><th>Effect</th></tr></thead><tbody><tr><td>Gain Control ❶</td><td>Requirements A rigid weapon, shield, or permitted natural weapon in hand; the target's weapon or natural attack is within the longer of your two Total Reaches; the target is no more than one Size larger than you.<br>Roll Melee against the target's Guard.<br><b>Critical Success</b> You Control the weapon, and the target is Off-Guard until its next Opportunity. <b>Success</b> You Control the weapon. <b>Graze</b> A neutral Bind forms. <b>Miss</b> You pressed badly. The target Controls your weapon instead.<br><b>Special</b> Evade cannot answer this attack. While you Control a weapon, the target has an Exposed Zone of your choice and takes −2 Situation to attacks with it (see Chapter 2: The Exchange).</td></tr><tr><td>Close ❶</td><td>Requirements You Control a foe's weapon.<br>Step toward that foe. The Bind holds, and the Controlled weapon cannot Intercept you. This is the only movement that does not end a Bind.</td></tr><tr><td>Recenter ❶</td><td>Gather yourself: clear every Exposed Zone on you (except one Exposed by a Posture) and end any Bind you are in.</td></tr></tbody></table><table><thead><tr><th>Reaction</th><th>Grants</th><th>Effect</th></tr></thead><tbody><tr><td>Parry ❶↺</td><td>Parry (Guard) • Guard +2 Situation</td><td>Requirements You are wielding a rigid object like a weapon or a shield. Trigger A foe no more than one size larger than you Strikes you with a melee weapon. +2 Situation bonus to Guard against the triggering attack. If the Strike is a Graze or Miss, you may at once attempt to Gain Control of the attacking weapon.</td></tr></tbody></table><p>The Zone a Controller opens follows the rules on @UUID[Compendium.starwrought.rules.JournalEntry.489b438244686d7b.JournalEntryPage.941b13c4400511a4]{Exposed}.</p><h2>In the system</h2><p>A Bind is recorded on both fighters and drawn on the map as a gold chain between their tokens, labelled with the two implements; a Controlled Bind runs from the Controller to the Controlled with an arrowhead and the word Control. The token carries Bound, Controlling or Controlled, and that effect names the partner, both implements and the state. The sheet's bind line and the Recenter Maneuver end it; a Strike between the two ends it when the Strike resolves.</p>"
       },
       "image": {},
       "video": {
@@ -225,7 +306,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 700,
+      "sort": 1000,
       "ownership": {
         "default": -1
       },
@@ -243,7 +324,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Step</th><th>Do this</th></tr></thead><tbody><tr><td>1</td><td>Apply Immunity.</td></tr><tr><td>2</td><td>Add up all of the remaining dice, damage bonuses, and damage modifiers.</td></tr><tr><td>3</td><td>Add Weakness of the applicable damage type(s).</td></tr><tr><td>4</td><td>Subtract Resistance from the dice rolls of the applicable damage type(s).</td></tr><tr><td>5</td><td>Double the total if it was a Critical Hit.</td></tr><tr><td>6</td><td>Subtract Protection from the total (if applicable).</td></tr><tr><td>7</td><td>Deal damage to Temporary Vigor (if applicable).</td></tr><tr><td>8</td><td>Deal damage to Vigor.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Step</th><th>Do this</th></tr></thead><tbody><tr><td>1</td><td>Check Immunity. Disregard damage types and effects to which the target is immune.</td></tr><tr><td>2</td><td>Add together the applicable damage dice and modifiers for each damage type.</td></tr><tr><td>3</td><td>Subtract the combined applicable Resistance from each damage type, to a minimum of 0. Apply Resistance once per damage type per damage instance, not once per die.</td></tr><tr><td>4</td><td>Add applicable Weakness to each damage type that still deals damage. Independent sources of Weakness are cumulative.</td></tr><tr><td>5</td><td>For a Zoned Attack, combine its remaining damage and subtract the struck Zone’s effective Protection once. Protection alone cannot reduce positive damage below 1. Damage already reduced to 0 remains 0.</td></tr><tr><td>6</td><td>Double the remaining damage if the Attack’s Critical Hit rules require it.</td></tr><tr><td>7</td><td>Apply the remaining damage to Vigor, or resolve it as the ability specifies. Apply associated effects at their stated timing.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -252,7 +333,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 800,
+      "sort": 1100,
       "ownership": {
         "default": -1
       },
@@ -270,7 +351,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Step</th><th>Do this</th></tr></thead><tbody><tr><td>1</td><td>If the Zone is Exposed and the Strike is Deliberate or Committed, its Protection is 0; you can stop here. (A Quick Strike always meets full Protection.)</td></tr><tr><td>2</td><td>Start with the Protection of the piece worn there. No piece worn means 0.</td></tr><tr><td>3</td><td>Add any bonus that applies to that Zone (a matched harness adds 1 to your Torso; some Talents add to every Zone).</td></tr><tr><td>4</td><td>Subtract 1 if the incoming damage type is the one that piece's material turns poorly. A Zone with no armor has no material, and so has no such weakness.</td></tr><tr><td>5</td><td>Subtract any Protection the attacker ignores.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Step</th><th>Do this</th></tr></thead><tbody><tr><td>1</td><td>Armor and similar equipment provide Protection for the Zones they cover; a Zone with nothing worn there has 0.</td></tr><tr><td>2</td><td>Protection reduces damage from Zoned Attacks, once per instance, and never changes the Defense roll or the Result. Protection alone cannot reduce positive damage below 1.</td></tr><tr><td>3</td><td>Pervasive Attacks and Persistent Damage ignore ordinary Protection.</td></tr><tr><td>4</td><td>An Exposed Zone's Protection counts as 0, subject to any exception in the Attack's description; a Critical Hit against it with a Deliberate or Committed Strike inflicts a Wound.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -279,7 +360,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 900,
+      "sort": 1200,
       "ownership": {
         "default": -1
       },
@@ -297,7 +378,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Off-Guard</td><td>−2 Situation to Evade and Guard against all foes.</td></tr><tr><td>Wrong-Footed [X]</td><td>Off-Guard against that creature only.</td></tr><tr><td>Frightened N</td><td>−N to all checks and Thresholds; reduce by 1 at the end of each round.</td></tr><tr><td>Prone</td><td>Off-Guard, −2 to Attacks; +2 Situation to Evade vs. ranged Attacks. Stand ❶ to clear.</td></tr><tr><td>Grabbed</td><td>Off-Guard and can't Move or Step; Escape ❶ to break free.</td></tr><tr><td>Heedless</td><td>Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action.</td></tr><tr><td>Restrained</td><td>As Grabbed but can't take any action other than Escape ❶.</td></tr><tr><td>Stunned N</td><td>Lose the next N actions; may carry over across rounds.</td></tr><tr><td>Slowed N</td><td>Lose N actions at the start of each round. Reduce by 1 at the end of each round.</td></tr><tr><td>Fatigued N</td><td>−N Condition (maximum of 3) penalty to Evade, Guard, and Attack rolls; can't use Exploration Mode Activities. Ends after ten minutes of rest.</td></tr><tr><td>Persistent Damage</td><td>Take it at the end of each round; Endure check (10 + the amount of persistent damage you just took) to end.</td></tr><tr><td>Dying</td><td>You're Dying (see Chapter 2: Core Rules), and you're also unconscious.</td></tr><tr><td>Wounded [Zone]</td><td>That Zone carries a Wound: its critical effect made lasting (see Chapter 2: Vigor & Wounds). Fill the Torso's or Head's Wound capacity (two, for anyone Medium or smaller) and you are Dying.</td></tr><tr><td>Spent</td><td>You have 0 Vigor. Every Hit that lands on you Wounds the Zone struck; a Critical Hit inflicts two. Grazes never Wound.</td></tr><tr><td>Bound [X]</td><td>Your implement is in a neutral Bind with X's. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves.</td></tr><tr><td>Controlled [X]</td><td>X Controls your weapon. You have an Exposed Zone of X's choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it.</td></tr><tr><td>Controlling [X]</td><td>You Control X's weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.</td></tr><tr><td>Preparing</td><td>You have begun a Maneuver of three or more actions: one action spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it.</td></tr><tr><td>Exposed [Zone]</td><td>That Zone is Exposed: ordinary Hits can land there instead of your Torso. Recenter ❶ to clear, unless a Posture Exposed it: that lasts until the end of the round.</td></tr><tr><td>Blinded</td><td>Cannot see. Cannot Observe any creature. Is Off-Guard.</td></tr><tr><td>Deafened</td><td>Cannot hear. Immune to any Auditory Maneuver or Activity.</td></tr><tr><td>Unconscious</td><td>You are out, Dying or knocked cold: you drop everything you are holding in your squares, and you're also Prone.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Condition</th><th>Effect</th></tr></thead><tbody><tr><td>Off-Guard</td><td>-2 Situation to Evade and Guard against all foes.</td></tr><tr><td>Wrong-Footed [X]</td><td>Off-Guard against that creature only.</td></tr><tr><td>Frightened N</td><td>-N to all checks and Thresholds; reduce by 1 at the end of each round.</td></tr><tr><td>Prone</td><td>Off-Guard, -2 to Attacks; +2 Situation to Evade vs. ranged Attacks. Stand ❶ to clear.</td></tr><tr><td>Grabbed</td><td>Off-Guard and can't Move or Step; Escape ❶ to break free.</td></tr><tr><td>Heedless</td><td>Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action.</td></tr><tr><td>Restrained</td><td>As Grabbed but can’t take any action other than Escape ❶.</td></tr><tr><td>Stunned N</td><td>Lose the next N actions; may carry over across rounds.</td></tr><tr><td>Slowed N</td><td>Lose N actions at the start of each round. Reduce N by 1 at the end of each round.</td></tr><tr><td>Fatigued N</td><td>−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified.</td></tr><tr><td>Dying</td><td>You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect.</td></tr><tr><td>Wounded [Zone]</td><td>That Zone carries a Wound: its critical effect made lasting (see Chapter 4: Vigor and Wounds). Fill the Torso’s or Head’s Wound capacity (two, for anyone Medium or smaller) and you are Dying.</td></tr><tr><td>Spent</td><td>Every Hit that lands on you inflicts a Wound on the Zone it struck, and a Critical Hit inflicts two.\n\nIf you are Hit or Critically Hit and take any Nonlethal damage as a result, you are knocked unconscious. You awake in ten minutes, or sooner if someone rouses you, with 1 Vigor.</td></tr><tr><td>Bound [X]</td><td>Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves.</td></tr><tr><td>Controlled [X]</td><td>X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it.</td></tr><tr><td>Controlling [X]</td><td>You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.</td></tr><tr><td>Preparing</td><td>You have begun a Maneuver of three or more actions: one action spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it.</td></tr><tr><td>Exposed [Zone]</td><td>That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated.</td></tr><tr><td>Blind</td><td>Off-Guard; cannot see. Immune to Visual effects.</td></tr><tr><td>Deafened</td><td>Cannot hear. Immune to Auditory effects.</td></tr><tr><td>Unconscious</td><td>You are out, Dying or knocked cold: you drop everything you are holding in your squares, and you’re also Prone.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -306,7 +387,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1000,
+      "sort": 1300,
       "ownership": {
         "default": -1
       },
@@ -324,7 +405,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Agile</td><td>Light enough to bite on the way in: a Quick Strike ❶ with it may Critically Hit.</td></tr><tr><td>Close</td><td>You may attack with it while you are Grabbed, while Squeezing, and against a creature you have Grabbed, with no penalty.</td></tr><tr><td>Deadly dX</td><td>On a critical hit, add one die of the listed size to the damage. It is a critical effect of the weapon rather than one of the dice rolled for damage, so it is added after the damage has been doubled, and is not itself doubled.</td></tr><tr><td>Finesse</td><td>You may use Agility instead of Might on attack rolls with this weapon. Damage still uses Might.</td></tr><tr><td>Nonlethal</td><td>It knocks out rather than kills.</td></tr><tr><td>Parry</td><td>A guard built for defense. +1 Gear bonus to Guard against melee Attacks while you wield it.</td></tr><tr><td>Sweep</td><td>+1 Situation bonus to attack a target you have not yet attacked this round.</td></tr><tr><td>Thrown X</td><td>You may throw it up to X feet, using Might for the attack roll.</td></tr><tr><td>Grapple, Trip, Disarm, Shove</td><td>You may attempt that Maneuver with this weapon in hand rather than a free hand.</td></tr><tr><td>Two-Hand dX</td><td>Wielded in two hands, its damage die becomes dX.</td></tr><tr><td>Two-Handed</td><td>It requires both hands.</td></tr><tr><td>Unwieldy [N]</td><td>You take a −2 Situation penalty to attack rolls with it against a target within N feet, and you cannot attack with it at all while you are Grabbed. A creature within N feet that you attack with it may Intercept you, as though you had entered its Reach.</td></tr><tr><td>Flexible</td><td>It cannot Parry, form a Bind, or be Bound. You can still Guard with it.</td></tr><tr><td>Versatile X</td><td>You may deal X damage instead of its usual type.</td></tr><tr><td>Ranged [N]</td><td>You may Strike a target up to N feet away. Use Agility instead of Might for the Attack roll.</td></tr><tr><td>Mechanical</td><td>You do not add Might to damage with this weapon.</td></tr><tr><td>Reload [N]</td><td>Reloading takes N actions.</td></tr><tr><td>Armor-Piercing [N]</td><td>Ignore N Protection when dealing piercing damage with this weapon.</td></tr><tr><td>Capacity [N]</td><td>The weapon can fire N times before it must be reloaded. Reloading its full capacity takes the listed Reload actions.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Agile</td><td>Light enough to bite on the way in: a Quick Strike ❶ with it may Critically Hit.</td></tr><tr><td>Armor-Piercing [Armor Type]</td><td>On a Hit or Critical Hit against a Zone protected by a listed armor type, reduce the struck Zone’s Protection up to the number of standard weapon damage dice the Strike uses.\n\nCount only the weapon dice provided by the Strike’s normal damage progression. Additional damage dice and Critical Hit effects do not increase this reduction. Apply this reduction only once per Strike.\n\nReducing Protection to 0 does not make the Zone Exposed.</td></tr><tr><td>Capacity [N]</td><td>The weapon can fire N times before it must be reloaded. Reloading its full capacity takes the listed Reload actions.</td></tr><tr><td>Close</td><td>You may attack with it while you are Grabbed, while Squeezing, and against a creature you have Grabbed, with no penalty.</td></tr><tr><td>Deadly dX</td><td>On a critical hit, add one die of the listed size to the damage. It is a critical effect of the weapon rather than one of the dice rolled for damage, so it is added after the damage has been doubled, and is not itself doubled.</td></tr><tr><td>Finesse</td><td>You may use Agility instead of Might on attack rolls with this weapon. Damage still uses Might.</td></tr><tr><td>Flexible</td><td>It cannot Parry, form a Bind, or be Bound. You can still Guard with it.</td></tr><tr><td>Grapple, Trip, Disarm, Shove</td><td>You may attempt that Maneuver with this weapon in hand rather than a free hand.</td></tr><tr><td>Mechanical</td><td>You do not add Might to damage with this weapon.</td></tr><tr><td>Nonlethal</td><td>It knocks out rather than kills.</td></tr><tr><td>Parry</td><td>A guard built for defense. +1 Gear bonus to Guard against melee Attacks while you wield it.</td></tr><tr><td>Ranged [N]</td><td>You may Strike a target up to N feet away. Use Agility instead of Might for the Attack roll.</td></tr><tr><td>Reload [N]</td><td></td></tr><tr><td>Sweep</td><td>+1 Situation bonus to attack a target you have not yet attacked this round.</td></tr><tr><td>Thrown X</td><td>You may throw it up to X feet, using Might for the attack roll.</td></tr><tr><td>Two-Hand dX</td><td>Wielded in two hands, its damage die becomes dX.</td></tr><tr><td>Two-Handed</td><td>It requires both hands.</td></tr><tr><td>Unwieldy [N]</td><td>You take a -2 Situation penalty to attack rolls with it against a target within [N] feet, and you cannot attack with it at all while you are Grabbed. A creature within [N] feet that you attack with it may Intercept you, as though you had entered its Reach.</td></tr><tr><td>Versatile X</td><td>You may deal X damage instead of its usual type.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -333,7 +414,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1100,
+      "sort": 1400,
       "ownership": {
         "default": -1
       },
@@ -351,7 +432,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Attended</td><td>It fastens behind the shoulder, beyond your own reach: alone, putting it on takes twice as long. Taking it off does not.</td></tr><tr><td>Comfort</td><td>You can sleep in it without increasing your Fatigued value by 1.</td></tr><tr><td>Noisy</td><td>−1 Situation penalty to Stealth, on top of your Load Strain.</td></tr><tr><td>Quiet</td><td>Your Load Strain never applies to Stealth while this is your only armor.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Articulated</td><td>While properly Fitted, the piece functions as Flexible.</td></tr><tr><td>Attended</td><td>Donning and doffing without help takes twice as long.</td></tr><tr><td>Brimmed</td><td>Gain +1 Protection against ranged attacks to this Zone.</td></tr><tr><td>Comfort</td><td>May be slept in without armor-induced Fatigue.</td></tr><tr><td>Concealable</td><td>Can be hidden beneath ordinary clothing or headwear unless closely inspected.</td></tr><tr><td>Fitted</td><td>If you wear armor with the Fitted trait in at least three Zones, and they have all been adjusted to you, reduce total Load Strain by 1.</td></tr><tr><td>Flexible</td><td>Treat this piece’s Load as 1 lower for checks relying on that zone’s full range of motion, such as Climb or Swim. It still counts fully for other Load Strain-related penalties, such as Rush, Leap, Acrobatics, and Stealth.</td></tr><tr><td>Muffled</td><td>Its fabric-covered construction never contributes to Clatter, even if damaged or worn loosely.</td></tr><tr><td>Noisy</td><td>Imposes a -1 cumulative Gear penalty to Stealth for each piece of Noisy gear equipped.</td></tr><tr><td>Open</td><td>Does not impair Awareness, breathing, speech, or visible spell targeting.</td></tr><tr><td>Repairable</td><td>A damaged piece may be restored during a rest with appropriate plates, cord, rivets, or tools; no full armorer’s workshop is required.</td></tr><tr><td>Visored</td><td>Can Raise or Lower the visor as a single action. Lowered: Imposes –1 Gear penalty to Awareness and Initiative. Raised: Protection is reduced by 1, but no Awareness or Initiative penalties.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -360,7 +441,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1200,
+      "sort": 1500,
       "ownership": {
         "default": -1
       },
@@ -378,7 +459,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Attack</td><td>An action a foe answers with a Defense. Attacks are resolved as Exchanges (see Chapter 2: The Exchange). A Committed Strike ❸ is also Weighted.</td></tr><tr><td>Motion</td><td>You change position under your own power. Moving into a foe's Total Reach may provoke an Intercept from that foe; moving out of it may provoke a Reaction from anyone with a Talent that allows it. Step does neither.</td></tr><tr><td>Manipulate</td><td>You use your hands. You need at least one free, and fine work near an enemy can provoke a Reaction from them.</td></tr><tr><td>Concentrate</td><td>Maneuvers with this Trait take an extra action to complete if you are Heedless.</td></tr><tr><td>Stance</td><td>A way of standing and holding yourself. You can be in only one stance at a time, and it lasts until you leave it, fall unconscious, or enter another.</td></tr><tr><td>Auditory</td><td>It works through sound. It fails on the deafened, and on anyone who cannot hear you.</td></tr><tr><td>Visual</td><td>It works through sight. It fails on the blinded, and on anyone who cannot see you.</td></tr><tr><td>Mental</td><td>It works on the mind. It fails on anything mindless.</td></tr><tr><td>Emotion</td><td>A mental effect that works on feeling. Anything immune to emotion ignores it.</td></tr><tr><td>Reaction</td><td>A Maneuver you may perform outside your Opportunity, the moment its Trigger occurs. It costs its listed actions from the same six as everything else, and you may use as many Reactions in a round as you can afford. A Reaction never triggers another Reaction. Marked ↺ beside its cost.</td></tr><tr><td>Press</td><td>Actions with this trait follow up an earlier attack. You can use a Press action only if your previous action this round was a Strike against the same target, and only at your own Opportunity. Some actions with the Press trait also grant an effect on a failure. The effects that are added on a failure don't apply on a critical failure. If your Press action succeeds, you can choose to apply the failure effect instead (for example, when an attack deals no damage due to resistance).</td></tr><tr><td>Weighted</td><td>A Committed Strike ❸. If it is Stopped (a Graze or a Miss), you are Exposed in a Zone of the defender's choice.</td></tr><tr><td>Prepared</td><td>A Maneuver of three or more actions. Spend one action now and reserve the rest; it resolves at your next Opportunity (see Encounter Mode).</td></tr><tr><td>Flexible</td><td>A weapon that cannot Parry, form a Bind, or be Bound.</td></tr><tr><td>Massive</td><td>An attack so heavy that any Critical Hit Wounds, whether or not the Zone was Exposed. Reserved for the largest creatures.</td></tr><tr><td>Unparryable</td><td>An attack that cannot be answered with Parry and offers nothing to Bind. Guard still applies to it.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Trait</th><th>Effect</th></tr></thead><tbody><tr><td>Attack</td><td>An action a foe answers with a Defense. Attacks are resolved as Exchanges (see Chapter 4: The Exchange). A Committed Strike ❸ is also Weighted.</td></tr><tr><td>Auditory</td><td>It works through sound. It fails on the deafened, and on anyone who cannot hear you.</td></tr><tr><td>Concentrate</td><td>Maneuvers with this Trait take an extra action to complete if you are Heedless.</td></tr><tr><td>Emotion</td><td>A mental effect that works on feeling. Anything immune to emotion ignores it.</td></tr><tr><td>Flexible</td><td>A weapon that cannot Parry, form a Bind, or be Bound.</td></tr><tr><td>Manipulate</td><td>You use your hands. You need at least one free, and fine work near an enemy can provoke a Reaction from them.</td></tr><tr><td>Massive</td><td>An attack so heavy that any Critical Hit Wounds, whether or not the Zone was Exposed. Reserved for the largest creatures.</td></tr><tr><td>Mental</td><td>It works on the mind. It fails on anything mindless.</td></tr><tr><td>Motion</td><td>You change position under your own power. Moving into a foe’s Total Reach may provoke an Intercept from that foe; moving out of it may provoke a Reaction from anyone with a Talent that allows it. Step does neither.</td></tr><tr><td>Press</td><td>Actions with this trait follow up an earlier attack. You can use a Press action only if your previous action this round was a Strike against the same target, and only at your own Opportunity. Some actions with the Press trait also grant an effect on a failure. The effects that are added on a failure don’t apply on a critical failure. If your Press action succeeds, you can choose to apply the failure effect instead (for example, when an attack deals no damage due to resistance).</td></tr><tr><td>Prepared</td><td>A Maneuver of three or more actions. Spend one action now and reserve the rest; it resolves at your next Opportunity (see Encounter Mode).</td></tr><tr><td>Posture</td><td>A special type of Reaction that doesn’t cost any actions. Any Zones Exposed by a Posture remain Exposed until the end of the round.</td></tr><tr><td>Reaction</td><td>A Maneuver you may perform outside your Opportunity, the moment its Trigger occurs. It costs its listed actions from the same six as everything else, and you may use as many Reactions in a round as you can afford. A Reaction never triggers another Reaction. Marked ↺ beside its cost.</td></tr><tr><td>Stance</td><td>A way of standing and holding yourself. You can be in only one stance at a time, and it lasts until you leave it, fall unconscious, or enter another.</td></tr><tr><td>Unparryable</td><td>An attack that cannot be answered with Parry and offers nothing to Bind. Guard still applies to it.</td></tr><tr><td>Weighted</td><td>A Committed Strike ❸. If it is Stopped (a Graze or a Miss), you are Exposed in a Zone of the defender’s choice.</td></tr><tr><td>Visual</td><td>It works through sight. It fails on the blinded, and on anyone who cannot see you.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -387,7 +468,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1300,
+      "sort": 1600,
       "ownership": {
         "default": -1
       },
@@ -414,7 +495,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1400,
+      "sort": 1700,
       "ownership": {
         "default": -1
       },
@@ -432,7 +513,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Material</th><th>Turns this damage type poorly</th></tr></thead><tbody><tr><td>Padded</td><td>slashing</td></tr><tr><td>Leather</td><td>slashing</td></tr><tr><td>Mail</td><td>piercing</td></tr><tr><td>Scale</td><td>nothing</td></tr><tr><td>Plate</td><td>bludgeoning</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Armor Type</th></tr></thead><tbody><tr><td>Padded</td></tr><tr><td>Leather</td></tr><tr><td>Mail</td></tr><tr><td>Lamellar</td></tr><tr><td>Brigandine</td></tr><tr><td>Splint</td></tr><tr><td>Plate</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -441,7 +522,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1500,
+      "sort": 1800,
       "ownership": {
         "default": -1
       },
@@ -459,7 +540,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>Size</th><th>Space</th><th>Natural Reach</th><th>Evade and Guard</th></tr></thead><tbody><tr><td>Tiny</td><td>1 ft x 1 ft</td><td>Adjacent</td><td>+2 Evade, −2 Guard</td></tr><tr><td>Small</td><td>2 ft x 2 ft</td><td>1 ft</td><td>+1 Evade, −1 Guard</td></tr><tr><td>Medium</td><td>3 ft x 3 ft</td><td>2 ft</td><td>No effect</td></tr><tr><td>Large</td><td>5 ft x 5 ft</td><td>4 ft</td><td>−1 Evade, +1 Guard</td></tr><tr><td>Huge</td><td>Varies</td><td>Varies</td><td>−2 Evade, +2 Guard</td></tr><tr><td>Gargantuan</td><td>Varies</td><td>Varies</td><td>−2 Evade, +2 Guard</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>Size</th><th>Space</th><th>Natural Reach</th><th>Evade and Guard</th></tr></thead><tbody><tr><td>Tiny</td><td>1 ft x 1 ft</td><td>Adjacent</td><td>−2 Guard</td></tr><tr><td>Small</td><td>2 ft x 2 ft</td><td>1 ft</td><td>−1 Guard</td></tr><tr><td>Medium</td><td>3 ft x 3 ft</td><td>2 ft</td><td>No effect on Evade or Guard</td></tr><tr><td>Large</td><td>5 ft x 5 ft</td><td>4 ft</td><td>−1 Evade</td></tr><tr><td>Huge</td><td>Varies</td><td>Varies</td><td>−2 Evade</td></tr><tr><td>Gargantuan</td><td>Varies</td><td>Varies</td><td>−2 Evade</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -468,7 +549,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1600,
+      "sort": 1900,
       "ownership": {
         "default": -1
       },
@@ -486,7 +567,7 @@
       },
       "text": {
         "format": 1,
-        "content": "<table><thead><tr><th>State</th><th>What your foe knows</th><th>Effect</th><th>Examples</th></tr></thead><tbody><tr><td>Observed</td><td>Exactly what squares you are in, and precisely where you are positioned.</td><td>—</td><td>Your foe can plainly see all of you.</td></tr><tr><td>Concealed</td><td>Exactly what squares you are in, but something is preventing them from seeing or otherwise detecting all of you.</td><td>You gain a +2 Situation bonus to Evade and Guard for physical Attacks.</td><td>You are surrounded in mist, or you are in dim light, or you are hiding in foliage.</td></tr><tr><td>Hidden</td><td>That you are present, but not what squares you occupy.</td><td>Your foe must successfully guess one of the squares you occupy in order to attack you. Even so, you gain a +4 Situation bonus to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.</td><td>Your foe is blind, or you have succeeded on a Sneak check.</td></tr><tr><td>Undetected</td><td>Has no idea if you are even present.</td><td>You cannot be targeted at all. Your foe is Wrong-Footed to you.</td><td>Your foe cannot see, hear, smell, or feel you.</td></tr></tbody></table>"
+        "content": "<table><thead><tr><th>State</th><th>What your foe knows</th><th>Effect</th><th>Examples</th></tr></thead><tbody><tr><td>Observed</td><td>Exactly what squares you are in, and precisely where you are positioned.</td><td>—</td><td>Your foe can plainly see all or most of your body.</td></tr><tr><td>Concealed</td><td>Exactly what squares you are in, but something is preventing them from seeing or otherwise detecting all of you.</td><td>You gain a +2 Situation bonus to Evade and Guard for physical Attacks.</td><td>You are surrounded in mist, or you are in dim light, or you are hiding in foliage.</td></tr><tr><td>Hidden</td><td>That you are present, but not what squares you occupy.</td><td>Your foe must successfully guess one of the squares you occupy in order to attack you. Even so, you gain a +4 Situation bonus to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.</td><td>Your foe is blind, or you have succeeded on a Sneak check.</td></tr><tr><td>Undetected</td><td>Has no idea if you are even present.</td><td>You cannot be targeted at all. Your foe is Wrong-Footed to you.</td><td>Your foe cannot see, hear, smell or feel you.</td></tr></tbody></table>"
       },
       "image": {},
       "video": {
@@ -495,7 +576,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1700,
+      "sort": 2000,
       "ownership": {
         "default": -1
       },
@@ -522,7 +603,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1800,
+      "sort": 2100,
       "ownership": {
         "default": -1
       },
@@ -549,7 +630,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 1900,
+      "sort": 2200,
       "ownership": {
         "default": -1
       },
@@ -576,7 +657,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 2000,
+      "sort": 2300,
       "ownership": {
         "default": -1
       },
@@ -603,7 +684,7 @@
       },
       "src": null,
       "system": {},
-      "sort": 2100,
+      "sort": 2400,
       "ownership": {
         "default": -1
       },

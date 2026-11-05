@@ -5,6 +5,7 @@
     "category": "skill",
     "attribute": "agility",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/acrobatics.png",
     "enabled": true
   },
@@ -14,6 +15,7 @@
     "category": "calling",
     "attribute": "agility",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/ambusher.png",
     "enabled": false
   },
@@ -23,6 +25,7 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "ranged",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/archery.png",
     "enabled": false
   },
@@ -32,6 +35,7 @@
     "category": "combatStyle",
     "attribute": "presence",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/armored-fighting.png",
     "enabled": false
   },
@@ -41,6 +45,7 @@
     "category": "skill",
     "attribute": "might",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/athletics.png",
     "enabled": true
   },
@@ -50,7 +55,18 @@
     "category": "defense",
     "attribute": "wits",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/awareness.png",
+    "enabled": true
+  },
+  {
+    "slug": "barriers",
+    "name": "Barriers",
+    "category": "magic",
+    "attribute": "might",
+    "parent": "forceweaving",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/barriers.png",
     "enabled": true
   },
   {
@@ -59,8 +75,19 @@
     "category": "calling",
     "attribute": "might",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/berserker.png",
     "enabled": false
+  },
+  {
+    "slug": "blood-mage",
+    "name": "Blood Mage",
+    "category": "calling",
+    "attribute": "might",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/blood-mage.png",
+    "enabled": true
   },
   {
     "slug": "bravo",
@@ -68,6 +95,7 @@
     "category": "calling",
     "attribute": "presence",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/bravo.png",
     "enabled": false
   },
@@ -77,6 +105,7 @@
     "category": "combatStyle",
     "attribute": "might",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/brawling.png",
     "enabled": false
   },
@@ -86,8 +115,19 @@
     "category": "combatStyle",
     "attribute": "wits",
     "parent": "ranged",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/crossbow-fighting.png",
     "enabled": false
+  },
+  {
+    "slug": "decay",
+    "name": "Decay",
+    "category": "magic",
+    "attribute": "might",
+    "parent": "vitalism",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/decay.png",
+    "enabled": true
   },
   {
     "slug": "diplomacy",
@@ -95,6 +135,7 @@
     "category": "skill",
     "attribute": "presence",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/diplomacy.png",
     "enabled": false
   },
@@ -104,7 +145,28 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/dueling.png",
+    "enabled": true
+  },
+  {
+    "slug": "elementalism",
+    "name": "Elementalism",
+    "category": "magic",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/elementalism.png",
+    "enabled": true
+  },
+  {
+    "slug": "emotions",
+    "name": "Emotions",
+    "category": "magic",
+    "attribute": "wits",
+    "parent": "mindweaving",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/emotions.png",
     "enabled": true
   },
   {
@@ -113,6 +175,7 @@
     "category": "defense",
     "attribute": "might",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/endure.png",
     "enabled": true
   },
@@ -122,7 +185,38 @@
     "category": "defense",
     "attribute": "agility",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/evade.png",
+    "enabled": true
+  },
+  {
+    "slug": "exorcism",
+    "name": "Exorcism",
+    "category": "magic",
+    "attribute": "presence",
+    "parent": "spiritcraft",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/exorcism.png",
+    "enabled": true
+  },
+  {
+    "slug": "flamecraft",
+    "name": "Flamecraft",
+    "category": "magic",
+    "attribute": "wits",
+    "parent": "elementalism",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/flamecraft.png",
+    "enabled": true
+  },
+  {
+    "slug": "forceweaving",
+    "name": "Forceweaving",
+    "category": "magic",
+    "attribute": "might",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/forceweaving.png",
     "enabled": true
   },
   {
@@ -131,6 +225,7 @@
     "category": "combatStyle",
     "attribute": "might",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/great-weapon-fighting.png",
     "enabled": true
   },
@@ -140,6 +235,7 @@
     "category": "defense",
     "attribute": "presence",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/guard.png",
     "enabled": true
   },
@@ -149,6 +245,7 @@
     "category": "skill",
     "attribute": "wits",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/guile.png",
     "enabled": false
   },
@@ -158,6 +255,7 @@
     "category": "origin",
     "attribute": "presence",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/human.png",
     "enabled": true
   },
@@ -167,8 +265,19 @@
     "category": "calling",
     "attribute": "wits",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/hunter.png",
     "enabled": false
+  },
+  {
+    "slug": "illusion",
+    "name": "Illusion",
+    "category": "magic",
+    "attribute": "wits",
+    "parent": "mindweaving",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/illusion.png",
+    "enabled": true
   },
   {
     "slug": "intimidation",
@@ -176,6 +285,7 @@
     "category": "skill",
     "attribute": "presence",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/intimidation.png",
     "enabled": false
   },
@@ -185,8 +295,19 @@
     "category": "origin",
     "attribute": "wits",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/kestrel-reach.png",
     "enabled": false
+  },
+  {
+    "slug": "kinetics",
+    "name": "Kinetics",
+    "category": "magic",
+    "attribute": "might",
+    "parent": "forceweaving",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/kinetics.png",
+    "enabled": true
   },
   {
     "slug": "lore",
@@ -194,6 +315,7 @@
     "category": "skill",
     "attribute": "wits",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/lore.png",
     "enabled": true
   },
@@ -203,7 +325,18 @@
     "category": "weapon",
     "attribute": "might",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/melee.png",
+    "enabled": true
+  },
+  {
+    "slug": "mindweaving",
+    "name": "Mindweaving",
+    "category": "magic",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/mindweaving.png",
     "enabled": true
   },
   {
@@ -212,8 +345,29 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "ranged",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/missile-skirmishing.png",
     "enabled": false
+  },
+  {
+    "slug": "necromancer",
+    "name": "Necromancer",
+    "category": "calling",
+    "attribute": "presence",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/necromancer.png",
+    "enabled": true
+  },
+  {
+    "slug": "oaths",
+    "name": "Oaths",
+    "category": "magic",
+    "attribute": "presence",
+    "parent": "spiritcraft",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/oaths.png",
+    "enabled": true
   },
   {
     "slug": "ranged",
@@ -221,8 +375,19 @@
     "category": "weapon",
     "attribute": "agility",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/ranged.png",
     "enabled": false
+  },
+  {
+    "slug": "restoration",
+    "name": "Restoration",
+    "category": "magic",
+    "attribute": "might",
+    "parent": "vitalism",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/restoration.png",
+    "enabled": true
   },
   {
     "slug": "serrovane",
@@ -230,6 +395,7 @@
     "category": "origin",
     "attribute": "presence",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/serrovane.png",
     "enabled": true
   },
@@ -239,6 +405,7 @@
     "category": "combatStyle",
     "attribute": "presence",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/shield-fighting.png",
     "enabled": false
   },
@@ -248,8 +415,39 @@
     "category": "combatStyle",
     "attribute": "wits",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/icons/constellation.svg",
     "enabled": false
+  },
+  {
+    "slug": "spellblade",
+    "name": "Spellblade",
+    "category": "calling",
+    "attribute": "might",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/spellblade.png",
+    "enabled": true
+  },
+  {
+    "slug": "spellshaper",
+    "name": "Spellshaper",
+    "category": "calling",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/spellshaper.png",
+    "enabled": true
+  },
+  {
+    "slug": "spiritcraft",
+    "name": "Spiritcraft",
+    "category": "magic",
+    "attribute": "presence",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/spiritcraft.png",
+    "enabled": true
   },
   {
     "slug": "stealth",
@@ -257,8 +455,29 @@
     "category": "skill",
     "attribute": "agility",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/stealth.png",
     "enabled": false
+  },
+  {
+    "slug": "stormcraft",
+    "name": "Stormcraft",
+    "category": "magic",
+    "attribute": "wits",
+    "parent": "elementalism",
+    "group": true,
+    "img": "systems/starwrought/assets/constellations/stormcraft.png",
+    "enabled": true
+  },
+  {
+    "slug": "summoner",
+    "name": "Summoner",
+    "category": "calling",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/summoner.png",
+    "enabled": true
   },
   {
     "slug": "two-weapon-fighting",
@@ -266,8 +485,19 @@
     "category": "combatStyle",
     "attribute": "agility",
     "parent": "melee",
+    "group": true,
     "img": "systems/starwrought/assets/constellations/two-weapon-fighting.png",
     "enabled": false
+  },
+  {
+    "slug": "vitalism",
+    "name": "Vitalism",
+    "category": "magic",
+    "attribute": "might",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/vitalism.png",
+    "enabled": true
   },
   {
     "slug": "weaponmaster",
@@ -275,6 +505,7 @@
     "category": "calling",
     "attribute": "might",
     "parent": "",
+    "group": false,
     "img": "systems/starwrought/assets/constellations/weaponmaster.png",
     "enabled": true
   }

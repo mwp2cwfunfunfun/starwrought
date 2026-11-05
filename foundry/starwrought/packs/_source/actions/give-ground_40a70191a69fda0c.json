@@ -10,7 +10,7 @@
     "reaction": true,
     "reactionCost": "",
     "category": "Reaction",
-    "requirements": "Evade Training • Evade +2 Situation",
+    "requirements": "Evade Training • Evade +2 Situation (Posture)",
     "trigger": "You are attacked, before you know whether the attack was successful.",
     "check": {
       "enabled": false,
@@ -20,10 +20,10 @@
     "traits": [
       "Reaction"
     ],
-    "description": "<p>+2 Situation bonus to Evade for the triggering attack. A Zone of your choice becomes Exposed until the end of the round, win or lose; Recenter does not clear it.</p>",
+    "description": "<p>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. +2 Situation bonus to Evade against the triggering attack. A Zone of your choice becomes Exposed until the end of the round.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "06c31a14b1e495a6"
+      "contentHash": "ca353a8aaa8252e8"
     }
   },
   "effects": [],

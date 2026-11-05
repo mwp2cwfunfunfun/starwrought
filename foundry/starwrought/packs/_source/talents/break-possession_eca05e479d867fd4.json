@@ -1,0 +1,74 @@
+{
+  "_id": "eca05e479d867fd4",
+  "name": "Break Possession",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "exorcism",
+    "constellationName": "Exorcism",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Exorcism Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "❹ Prepared Beguilement against a possessing spirit’s Guard or Awareness; on a Hit, it must release the host until its next Opportunity. Cannot be repeatedly applied to the same spirit within one round.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "beguilement",
+      "delivery": "",
+      "range": 0,
+      "adjacent": false,
+      "die": null,
+      "types": [],
+      "targets": "one",
+      "defenses": [
+        "guard",
+        "awareness"
+      ],
+      "effects": {
+        "quick": "",
+        "focused": "",
+        "committed": "On a Hit, the possessing spirit must release the host until its next Opportunity"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "38ecc3ed4f3b2b9d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "5064771d7bd15225"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!eca05e479d867fd4"
+}

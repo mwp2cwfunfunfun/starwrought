@@ -1,0 +1,16 @@
+{
+  "_id": "8d912d1d000b1600",
+  "name": "Stormcraft",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "85096d530df6df49"
+    }
+  },
+  "_key": "!folders!8d912d1d000b1600"
+}

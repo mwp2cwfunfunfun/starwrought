@@ -1,0 +1,71 @@
+{
+  "_id": "2cdb8821ff3caaeb",
+  "name": "Spiritcraft Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spiritcraft",
+    "constellationName": "Spiritcraft",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Spirit Lash (Blow, Zoned, 20 ft): Quick ❷ deals 1d6 force; Focused ❸ deals Damage Dice d6 force; Committed ❹ can suppress a spirit’s movement by 2 feet on a Hit. This spell may interact with incorporeal targets as specifically allowed by its Trait.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blow",
+      "delivery": "zoned",
+      "range": 20,
+      "adjacent": false,
+      "die": 6,
+      "types": [
+        "force"
+      ],
+      "targets": "one",
+      "defenses": [],
+      "effects": {
+        "quick": "1d6 force",
+        "focused": "Damage Dice d6 force",
+        "committed": "On a Hit, suppress a spirit's movement by 2 feet"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "0d9e72375e71a1f9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ab318aec2cb4f3e3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2cdb8821ff3caaeb"
+}

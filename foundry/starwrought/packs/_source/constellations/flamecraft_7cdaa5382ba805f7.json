@@ -1,0 +1,36 @@
+{
+  "_id": "7cdaa5382ba805f7",
+  "name": "Flamecraft",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/flamecraft.png",
+  "system": {
+    "slug": "flamecraft",
+    "category": "magic",
+    "attribute": "wits",
+    "parentSlug": "elementalism",
+    "group": true,
+    "meta": "Magic • Wits",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ee6b87ab636b9df3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7cdaa5382ba805f7"
+}

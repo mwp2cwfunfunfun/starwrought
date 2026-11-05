@@ -487,9 +487,8 @@ async function mark(combatant, key, combat) {
  *  - Persistent Damage is taken at the end of each round, dice rolled fresh, Protection ignored.
  *  - Wind: at the end of every round, from the first (ruling 79; v4.11 and v4.12 waited for the
  *    third), a fighter carrying Load Strain 1 or more whose Endure Threshold is less than 10 +
- *    Load Strain rolls Endure against that number; on a failure their Fatigued rises by 1, to a
- *    maximum of 3. An Endure Threshold that meets the Wind Threshold is exempt and never rolls
- *    (ruling 74).
+ *    Load Strain rolls Endure against that number; on a failure their Fatigued rises by 1, on a
+ *    critical failure by 2, to a maximum of 3 (PHB v4.21; no exemption since v4.21, ruling 150).
  * Both are cards with a roll button, whispered to the actor's owners and the GM.
  */
 async function endRound(combat, round) {
@@ -506,16 +505,14 @@ async function endRound(combat, round) {
 
     if (round >= SW.WIND_ROUND) {
       const strain = Number(actor.system.loadStrain) || 0;
-      const threshold = 10 + strain;
       const fatigued = Number(actor.conditionValue?.("fatigued")) || 0;
-      // PHB v4.13, Wind (ruling 74): a fighter whose Endure Threshold meets 10 + Load Strain never
-      // rolls. The character model derives `wind.exempt`; an adversary may lack the field, so the
-      // comparison itself stands in. A fighter with no Load Strain has nothing to be winded by,
-      // which is the book's own clause since v4.13 (ruling 80). Fatigued 3 is as winded as the rule
-      // goes (ruling R3; until 0.6.0 one failure ended the checks), and the unconscious and the
-      // Dying are out of the fight: nothing left to roll for.
-      const exempt = actor.system.wind?.exempt ?? (endureThresholdOf(actor) >= threshold);
-      if ((strain >= 1) && !exempt && (fatigued < SW.FATIGUED_MAX) && !statuses.has("unconscious") && !statuses.has("dying")) {
+      // PHB v4.21, Wind: everyone carrying Load Strain 1 or more rolls at the end of every round.
+      // The exemption of v4.12 to v4.15 (an Endure Threshold that met 10 + Load Strain, ruling 74)
+      // is gone from the book (ruling 150). A fighter with no Load Strain has nothing to be winded
+      // by (ruling 80). Fatigued 3 is as winded as the rule goes (ruling R3; until 0.6.0 one
+      // failure ended the checks), and the unconscious and the Dying are out of the fight: nothing
+      // left to roll for.
+      if ((strain >= 1) && (fatigued < SW.FATIGUED_MAX) && !statuses.has("unconscious") && !statuses.has("dying")) {
         await postWindReminder(actor, strain, round, fatigued);
       }
     }

@@ -1,0 +1,16 @@
+{
+  "_id": "84dbb77e828eff5d",
+  "name": "Vitalism",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "74645461632c020d"
+    }
+  },
+  "_key": "!folders!84dbb77e828eff5d"
+}

@@ -1,0 +1,35 @@
+{
+  "_id": "791f5db8b1e7bce9",
+  "name": "Plate Legguards",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "legs",
+    "protection": 3,
+    "load": 1,
+    "material": "plate",
+    "traits": [
+      "Fitted"
+    ],
+    "price": "12 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "22b4efe5234bdeec"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!791f5db8b1e7bce9"
+}

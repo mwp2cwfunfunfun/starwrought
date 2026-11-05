@@ -114,12 +114,18 @@ export const PositionMixin = Base => class extends Base {
    * A Step granted by the Exchange (an Evade that answered a Miss, or a Void that Stopped the
    * attack) costs nothing: the card says so, and the player moves the token.
    */
-  async announceStep() {
+  async announceStep({ adjacent = false } = {}) {
     const step = this.system.step ?? Math.floor((this.system.speed ?? SW.DEFAULT_SPEED) / SW.STEP_DIVISOR);
+    // Slip the Line (PHB v4.21): on a Graze or Miss, a Move to any space adjacent to the
+    // attacker, their space no Difficult Terrain for it.
+    const title = adjacent ? "STARWROUGHT.Position.adjacent" : "STARWROUGHT.Position.step";
+    const text = adjacent
+      ? game.i18n.format("STARWROUGHT.Position.adjacentText", { name: this.name })
+      : game.i18n.format("STARWROUGHT.Position.stepText", { name: this.name, feet: step });
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
-      content: `<div class="starwrought action-card"><h3>⓿ ${game.i18n.localize("STARWROUGHT.Position.step")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Position.stepText", { name: this.name, feet: step })}</p></div>`
+      content: `<div class="starwrought action-card"><h3>⓿ ${game.i18n.localize(title)}</h3>
+        <p>${text}</p></div>`
     });
   }
 };

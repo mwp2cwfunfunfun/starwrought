@@ -20,7 +20,7 @@ export { SwConstellationData } from "./items/constellation.mjs";
 export { SwTalentData } from "./items/talent.mjs";
 export { SwChassisData } from "./items/chassis.mjs";
 export { SwWeaponData } from "./items/weapon.mjs";
-export { SwArmorData, helmPenaltyFor } from "./items/armor.mjs";
+export { SwArmorData } from "./items/armor.mjs";
 export { SwShieldData } from "./items/shield.mjs";
 export { SwGearData } from "./items/gear.mjs";
 export { SwActionData } from "./items/action.mjs";

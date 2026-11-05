@@ -1,0 +1,36 @@
+{
+  "_id": "acd576ad549b4be8",
+  "name": "Mail Hood",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "head",
+    "protection": 2,
+    "load": 1,
+    "material": "mail",
+    "traits": [
+      "Flexible",
+      "Noisy"
+    ],
+    "price": "4 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "254716540c05ea63"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!acd576ad549b4be8"
+}

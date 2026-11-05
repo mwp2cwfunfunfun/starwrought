@@ -1,0 +1,33 @@
+{
+  "_id": "5c772cd1178e68d6",
+  "name": "Lamellar Armor",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 3,
+    "load": 2,
+    "material": "lamellar",
+    "traits": [],
+    "price": "11 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a47f807f9b5c234e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5c772cd1178e68d6"
+}

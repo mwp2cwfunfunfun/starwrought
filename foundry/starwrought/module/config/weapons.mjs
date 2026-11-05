@@ -1,5 +1,5 @@
 /**
- * Weapons: Handling, the Weapon Groups, the damage dice by level and specialization.
+ * Weapons: Handling, the Weapon Groups and the damage dice by rank.
  * The weapon Traits themselves are parsed in module/data/items/weapon-traits.mjs.
  *
  * Pure at module scope, as every file in module/config/ is: no `game`, `CONFIG`, `foundry` or `ui`
@@ -24,24 +24,25 @@ export const WEAPON_GROUPS = Object.freeze([
 ]);
 
 /**
- * Weapon damage dice by character level (PHB v4.10): two dice at 4th, three at 8th, four at 12th,
- * five at 16th. A Quick Strike and a Graze roll one die whatever the level.
- * @param {number} level
- * @returns {number}
+ * Weapon damage dice by rank (PHB v4.21, Weapon Damage Dice): a Deliberate or Committed Strike
+ * rolls one weapon die at Trained, two at Expert, three at Master and four at Legendary, the rank
+ * being Melee's or Ranged's as the Strike rolled it (Handling still applies); a Quick Strike and a
+ * Graze roll one whatever the rank. Untrained rolls one. The book adds: "do not add them a second
+ * time as weapon specialization", so the +2 / +3 / +4 specialization damage of v4.10 to v4.15 is
+ * gone with the level table (two dice at 4th, three at 8th, four at 12th, five at 16th; ruling
+ * 153).
  */
-export function weaponDice(level) {
-  level = Number(level) || 1;
-  if (level >= 16) return 5;
-  if (level >= 12) return 4;
-  if (level >= 8) return 3;
-  if (level >= 4) return 2;
-  return 1;
-}
-
-/** Weapon specialization damage by Melee or Ranged rank: +2 Expert, +3 Master, +4 Legendary. */
-export const SPECIALIZATION = Object.freeze({
-  untrained: 0, trained: 0, expert: 2, master: 3, legendary: 4
+export const WEAPON_DICE_BY_RANK = Object.freeze({
+  untrained: 1, trained: 1, expert: 2, master: 3, legendary: 4
 });
 
-// There is no Multiple Attack Penalty in v4.10. Tempo is paid in actions: six a round, spread
-// across Opportunities, and a Reaction costs the same actions an attack does.
+/**
+ * @param {string} rank  A rank key (untrained to legendary).
+ * @returns {number}
+ */
+export function weaponDice(rank) {
+  return WEAPON_DICE_BY_RANK[String(rank ?? "untrained").toLowerCase()] ?? 1;
+}
+
+// There is no Multiple Attack Penalty in v4.10 and since. Tempo is paid in actions: six a round,
+// spread across Opportunities, and a Reaction costs the same actions an attack does.

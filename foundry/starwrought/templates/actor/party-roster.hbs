@@ -43,12 +43,12 @@
             <i class="sw-milestone-pip {{#if pip.filled}}fa-solid sw-filled{{else}}fa-regular{{/if}} fa-star"></i>
             {{/each}}
           </span>
-          {{#if row.deferred}}
-          {{!-- A Deferred Talent Point, counted, not enforced (ruling 94). Spent is the owner's, and the GM's. --}}
-          <span class="sw-deferred-badge" data-tooltip="{{localize 'STARWROUGHT.Party.deferredHint'}}">
-            <i class="fa-solid fa-hourglass-half"></i> {{localize "STARWROUGHT.Party.deferred"}} <strong>{{row.deferred}}</strong>
+          {{#if row.comets}}
+          {{!-- Comets (PHB v4.21), counted, not enforced (rulings 94 and 145). Spent is the owner's, and the GM's. --}}
+          <span class="sw-deferred-badge sw-comet-badge" data-tooltip="{{localize 'STARWROUGHT.Party.cometHint'}}">
+            <i class="fa-solid fa-star-shooting"></i> {{localize "STARWROUGHT.Party.comets"}} <strong>{{row.comets}}</strong>
             {{#if row.owner}}
-            <a class="sw-deferred-spend" data-action="spendDeferred" data-tooltip="{{localize 'STARWROUGHT.Party.deferredSpendHint'}}">{{localize "STARWROUGHT.Party.deferredSpend"}}</a>
+            <a class="sw-deferred-spend" data-action="spendComet" data-tooltip="{{localize 'STARWROUGHT.Party.cometSpendHint'}}">{{localize "STARWROUGHT.Party.cometSpend"}}</a>
             {{/if}}
           </span>
           {{/if}}

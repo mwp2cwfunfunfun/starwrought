@@ -1,0 +1,71 @@
+{
+  "_id": "c8b1437d5a807241",
+  "name": "Forceweaving Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "forceweaving",
+    "constellationName": "Forceweaving",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Kinetic Dart (Blow, Zoned, 30 ft): Quick ❷ deals 1d6 bludgeoning; Focused ❸ deals Damage Dice d6; Committed ❹ may push a creature 2 feet on a Hit instead of gaining extra damage.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blow",
+      "delivery": "zoned",
+      "range": 30,
+      "adjacent": false,
+      "die": 6,
+      "types": [
+        "bludgeoning"
+      ],
+      "targets": "one",
+      "defenses": [],
+      "effects": {
+        "quick": "1d6 bludgeoning",
+        "focused": "Damage Dice d6",
+        "committed": "On a Hit, push a creature 2 feet instead of gaining extra damage"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "0a406984319b0052",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "5d04a155205e9827"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c8b1437d5a807241"
+}

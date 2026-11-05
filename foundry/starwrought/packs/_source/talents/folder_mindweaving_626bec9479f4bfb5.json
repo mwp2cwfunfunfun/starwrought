@@ -1,0 +1,16 @@
+{
+  "_id": "626bec9479f4bfb5",
+  "name": "Mindweaving",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "234238fda876a742"
+    }
+  },
+  "_key": "!folders!626bec9479f4bfb5"
+}

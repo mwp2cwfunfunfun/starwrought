@@ -1,0 +1,16 @@
+{
+  "_id": "e84badbb33ae8712",
+  "name": "Restoration",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "9531e4bbc4bbdd57"
+    }
+  },
+  "_key": "!folders!e84badbb33ae8712"
+}

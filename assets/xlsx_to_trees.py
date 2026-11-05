@@ -93,11 +93,14 @@ def parse_grants(plain_effect):
 
 # "Save" and "Heritage" are the retired v1.8 spellings of Defense and Bloodline. They stay in the
 # tuple so older sheets still convert, and are normalised to the current word on the way in.
+# "Magic" (PHB v4.21) is both the five disciplines (Elementalism, Forceweaving, Vitalism, Mindweaving,
+# Spiritcraft) and their specialties, which name their discipline in the Parent column as the Combat
+# Styles name Melee or Ranged.
 CATEGORIES = ("Skill", "Defense", "Save", "Weapon", "Combat Style", "Armor", "Calling",
-              "Ancestry", "Culture", "Bloodline", "Heritage", "Background")
+              "Ancestry", "Culture", "Bloodline", "Heritage", "Background", "Magic")
 CATALIAS = {"Save": "Defense", "Heritage": "Bloodline"}
 IDENTITY = ("Ancestry", "Culture", "Bloodline", "Heritage", "Background")  # roots granted by the chargen choice itself
-FALLBACK_NEEDED = ("Skill", "Defense", "Weapon", "Combat Style", "Armor")         # tree-level feed required (untrained fallback)
+FALLBACK_NEEDED = ("Skill", "Defense", "Weapon", "Combat Style", "Armor", "Magic")  # tree-level feed required (untrained fallback)
 ATTRS = ("Might", "Agility", "Wits", "Presence")
 
 def esc(s):
@@ -244,7 +247,8 @@ action_key = lambda s: action_bare(s).lower()
 def blank_none(s):
     """'None', a dash, or nothing at all is an empty cell. Anything else is kept as written."""
     s = (s or "").strip()
-    return "" if s.lower() in ("", "none", "n/a", "-", "—") else s
+    # "---" is how PHB v4.21's armor table prints a piece with no Traits.
+    return "" if s.lower() in ("", "none", "n/a", "-", "—", "---") else s
 
 COST_TOKEN = re.compile(r"[⓿❶❷❸❹❺❻]|◆+|◇")
 def _token_value(tok):
@@ -428,7 +432,8 @@ EQUIPMENT_SHEETS = ("Weapons", "Armor", "Shields")
 KINDS = ("Melee", "Ranged")
 HANDLING = ("Intuitive", "Practiced", "Technical")
 ZONES = ("Head", "Torso", "Arms", "Legs")
-MATERIALS = ("Padded", "Leather", "Mail", "Scale", "Plate")
+# The armor Types of PHB v4.21's table (Scale left the book there; it still reads, for an old sheet).
+MATERIALS = ("Padded", "Leather", "Mail", "Lamellar", "Brigandine", "Splint", "Plate", "Scale")
 DAMAGE = re.compile(r"\d+d\d+ [BPS]")      # "1d8 S": dice, a space, B, P or S
 DISTANCE = re.compile(r"\d+ ft")           # the grid is 1 foot (v0.40), so a distance is feet
 
@@ -455,8 +460,9 @@ EQUIPMENT_COLUMNS = {
                  "reach": "reach", "range": "range", "traits": "trait", "price": "price", "notes": "note",
                  "enabled": "enabled"},
                 ("name", "kind", "handling", "group", "damage"), "Weapon, Kind, Handling, Group and Damage"),
+    # The v4.21 Armor sheet says Type where the older one said Material, and adds a Description.
     "armor":   ({"name": "piece", "zone": "zone", "protection": "protection", "load": "load", "price": "price",
-                 "traits": "trait", "material": "material", "enabled": "enabled"},
+                 "traits": "trait", "material": "material", "type": "type", "description": "desc", "enabled": "enabled"},
                 ("name", "zone", "protection", "load"), "Piece, Zone, Protection and Load"),
     "shields": ({"name": "shield", "bonus": "bonus", "hardness": "hardness", "load": "load", "price": "price",
                  "note": "note", "enabled": "enabled"},
@@ -516,7 +522,7 @@ def parse_equipment_workbook(wb, fname, equipment, warnings, errors, defined):
                             "reach": reach, "range": rng, "traits": split_traits(pv("traits")),
                             "price": pv("price"), "notes": pv("notes")})
             elif kind == "armor":
-                zone, traits, material = pv("zone"), split_traits(pv("traits")), pv("material")
+                zone, traits, material = pv("zone"), split_traits(pv("traits")), (pv("material") or pv("type"))
                 protection, load = whole(cellv("protection")), whole(cellv("load"))
                 if zone not in ZONES:
                     errors.append(f"{where}: Zone must be {', '.join(ZONES[:-1])} or {ZONES[-1]} (got '{zone}')"); continue
@@ -536,6 +542,8 @@ def parse_equipment_workbook(wb, fname, equipment, warnings, errors, defined):
                     warnings.append(f"{where}: Material '{material}' but the first Trait is '{traits[0]}'; the book prints the material first")
                 row.update({"zone": zone, "protection": protection, "load": load, "price": pv("price"),
                             "traits": traits, "material": material})
+                description = pv("description")
+                if description: row["description"] = description
             else:
                 bonus, hardness, load = whole(cellv("bonus")), whole(cellv("hardness")), whole(cellv("load"))
                 if bonus is None:
@@ -548,6 +556,62 @@ def parse_equipment_workbook(wb, fname, equipment, warnings, errors, defined):
             row["enabled"] = enabled_flag(cellv("enabled"), "enabled" in cm)
             equipment[kind].append(row); counts[kind] += 1
     return counts
+
+# ---- The spell columns (PHB v4.21; the magic workbook) -----------------------------------------
+# A spell is authored as structure beside its Effect prose, the Aura column's precedent, so the Cast
+# Maneuver in Foundry, the web app and the compendium docx all read one shape and no consumer parses
+# prose. Columns (first word wins, order free): Threat (Blow | Blast | Blight | Beguilement; a row
+# with one is a spell), Delivery (Zoned | Pervasive; blank for an Attack that deals no damage), Range
+# ("adjacent" or "N ft"; blank where the book names none), Die ("d6"), Damage (the types, comma
+# separated; blank for no damage), Targets ("one", "area", or the book's words), Quick / Focused /
+# Committed (what each cast does, blank where the spell has no such cast), Defenses (an override of
+# the Threat's two, "Awareness or Guard"). The vocabulary is checked; the prose is not.
+SPELL_HEADERS = {"threat": "threat", "delivery": "delivery", "range": "range", "die": "die", "dmg": "damage",
+                 "targets": "target", "quick": "quick", "focused": "focused", "committed": "committed",
+                 "defenses": "defense"}
+SPELL_THREATS = ("Blow", "Blast", "Blight", "Beguilement")
+SPELL_DELIVERIES = ("Zoned", "Pervasive")
+SPELL_DEFENSES = ("Evade", "Guard", "Endure", "Awareness")
+SPELL_DIE = re.compile(r"^d(\d+)$")
+
+def spell_for(cellv, cm, where, warnings, errors):
+    """The row's spell block, or None when the sheet has no Threat column or the cell is blank."""
+    if "threat" not in cm: return None
+    pv = lambda k: blank_none(plain(cellv(k))) if k in cm else ""
+    threat = pv("threat")
+    if not threat: return None
+    if threat not in SPELL_THREATS:
+        errors.append(f"{where}: Threat must be {', '.join(SPELL_THREATS[:-1])} or {SPELL_THREATS[-1]} (got '{threat}')"); return None
+    delivery = pv("delivery")
+    if delivery and delivery not in SPELL_DELIVERIES:
+        errors.append(f"{where}: Delivery must be Zoned or Pervasive (got '{delivery}')"); return None
+    rng = pv("range")
+    if rng and rng.lower() != "adjacent" and not DISTANCE.fullmatch(rng):
+        errors.append(f"{where}: Range must be 'adjacent' or 'N ft' (got '{rng}')"); return None
+    die_text = pv("die")
+    die = None
+    if die_text:
+        m = SPELL_DIE.match(die_text.lower())
+        if not m:
+            errors.append(f"{where}: Die must be 'dN' (got '{die_text}')"); return None
+        die = int(m.group(1))
+    types = [t.strip().lower() for t in pv("dmg").split(",") if t.strip()]
+    if die and not types:
+        warnings.append(f"{where}: a Die with no Damage type; the roll will be untyped")
+    if types and not delivery:
+        warnings.append(f"{where}: damage with no Delivery; Zoned is assumed by the reader")
+    if not rng:
+        warnings.append(f"{where}: no Range; the book names none, so the table decides")
+    defenses = [d.strip() for d in re.split(r",| or ", pv("defenses")) if d.strip()]
+    for d in defenses:
+        if d not in SPELL_DEFENSES:
+            errors.append(f"{where}: Defenses must name {', '.join(SPELL_DEFENSES)} (got '{d}')"); return None
+    effects = {k: pv(k) for k in ("quick", "focused", "committed")}
+    if not any(effects.values()):
+        warnings.append(f"{where}: a spell with no Quick, Focused or Committed text")
+    spell = {"threat": threat.lower(), "delivery": delivery.lower(), "range": rng, "die": die, "types": types,
+             "targets": pv("targets"), "effects": effects, "defenses": [d.lower() for d in defenses]}
+    return spell
 
 # ---- Mike's root rule (v0.38) ----------------------------------------------------------------
 # Every root (constellation root and heritage root alike) must (1) hang on something that gets
@@ -655,7 +719,7 @@ def main():
             cm = header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "req": "requires",
                                  "prereq": "prereq", "desc": "desc", "effect": "effect", "feeds": "feeds", "grants": "grants",
                                  "choice": "choice", "freetalent": "free", "aura": "aura", "automation": "automation",
-                                 "enabled": "enabled"})
+                                 "enabled": "enabled", **SPELL_HEADERS})
             if "name" not in cm or "tier" not in cm or "effect" not in cm:
                 errors.append(f"{fname} / {name}: sheet needs Talent, Tier and Effect columns"); continue
             nodes, root_count, root_name = [], 0, None
@@ -718,6 +782,10 @@ def main():
                 # action parser reads it.
                 auto = blank_none(plain(cellv("automation")))
                 if auto: node["automation"] = auto
+                # The spell columns (PHB v4.21, the magic workbook): a row with a Threat is a spell,
+                # and the structure the Cast Maneuver needs rides beside the Effect prose; see spell_for.
+                spell = spell_for(cellv, cm, f"{name} / {nname}", warnings, errors)
+                if spell: node["spell"] = spell
                 if requires: node["requires"] = requires
                 if desc and desc.upper() != "TBD": node["desc"] = desc
                 if prereqs and norm(prereqs) != norm(nname): node["prereqs"] = prereqs
@@ -777,9 +845,13 @@ def main():
                         meta_extra = " • ".join(b for b in bits if b)
             # A parent Constellation (v4.10): every Talent bought here also counts toward the
             # parent's rank. Melee and Ranged are the parents; the Combat Styles name one of them.
+            # Since PHB v4.21 a tree with a Parent is a GROUP of that parent's Talents (a fighting style
+            # within Melee or Ranged, a specialty within a magical discipline): it has no rank of its
+            # own, and every Talent in it counts once toward the parent's. `group` says so to every
+            # reader; `parent` names the Constellation it belongs to.
             parent = g("parent")
             out[name] = {"category": category, "enabled": tree_enabled, "feeds": feeds, **({"skills": cskills} if cskills else {}),
-                         **({"parent": parent} if parent else {}),
+                         **({"parent": parent, "group": True} if parent else {}),
                          "meta": f"{label} • {feeds or '—'}" + (f" ({meta_extra})" if meta_extra else ""),
                          "sparks": g("sparks"), "nodes": nodes}
         if "Backgrounds" in wb.sheetnames:

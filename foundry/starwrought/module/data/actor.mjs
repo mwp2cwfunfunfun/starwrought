@@ -27,6 +27,7 @@ import { prepareVigor } from "./character/vigor.mjs";
 import { prepareActions } from "./character/actions.mjs";
 import { prepareOffense } from "./character/offense.mjs";
 import { unavailableEvade } from "./character/shared.mjs";
+import { ownedReactions } from "../helpers/answers.mjs";
 
 /** Re-exported so the canvas can import the ranges list from the model that derives it (0.5.1). */
 export { rangesOf } from "../helpers/ranges.mjs";
@@ -195,6 +196,23 @@ function migrateActorSource(source) {
     source.bonuses.vigor ??= source.bonuses.hp;
     delete source.bonuses.hp;
   }
+  // PHB v4.21: a Reaction is chosen per Blow in the Combat Prompt and the standing stance is
+  // Evade or Guard alone; a stance stored as Void, Parry or Counter (0.4.2 to 0.10.1) becomes the
+  // Defense it stood on.
+  if (source.stance in SW.LEGACY_STANCES) source.stance = SW.LEGACY_STANCES[source.stance];
+  // PHB v4.21: the Deferred Talent Point (v4.15, Table 4) became the Comet, a Talent Point with no
+  // strings attached (ruling 145). The count carries over under the new name.
+  if (source.deferred !== undefined) {
+    source.comets ??= source.deferred;
+    delete source.deferred;
+  }
+  // PHB v4.21 dropped the material-weakness step (ruling 149), and with it the adversary Zone's
+  // material; a stored one is not a field any more.
+  if (source.zones) {
+    for (const zone of Object.values(source.zones)) {
+      if (zone && (typeof zone === "object")) delete zone.material;
+    }
+  }
   // Speed is not converted here. migrateData runs on every construction and every update, so a
   // "15 or more is five-foot scale" rule would quarter a v4.10 Speed of 15 for ever; the one-time
   // conversion of a v3.x Speed is the world migration in starwrought.mjs.
@@ -225,11 +243,14 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
   /* -------------------------------------------- */
 
   /**
-   * Protection on one Zone against one damage type, worked down the handbook's list (PHB v4.10,
-   * Finding a Zone's Protection).
+   * Protection on one Zone, worked down the handbook's list (PHB v4.21, Protection: the piece worn
+   * there, any bonus to the Zone, less what the attacker ignores; an Exposed Zone's counts as 0
+   * against a Deliberate or Committed Strike). The material step of v4.10 to v4.15 (a piece's
+   * material turning one damage type poorly) went with its table (ruling 149), so the damage type
+   * is accepted and not read.
    * @param {string} zone                 A key of SW.ZONES.
    * @param {object} [options]
-   * @param {string|null} [options.type]    The incoming damage type, for the material step.
+   * @param {string|null} [options.type]    The incoming damage type. Not read since 0.11.0.
    * @param {number} [options.ignore]       Protection the attacker ignores (Armor-Piercing).
    * @param {string|null} [options.strike]  The kind of Strike (a key of SW.STRIKE_KINDS). An Exposed
    *   Zone's Protection is 0 only against a Deliberate or Committed Strike; a Quick Strike meets it
@@ -238,6 +259,7 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
    * @returns {{value: number, steps: Array<{label: string, value: number}>}}
    */
   zoneProtection(zone, { type = null, ignore = 0, strike = SW.DEFAULT_STRIKE } = {}) {
+    void type;
     const steps = [];
     const z = this.zones?.[zone];
     const kind = strike === null ? null : (SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE]);
@@ -248,39 +270,24 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
       return { value: 0, steps };
     }
 
-    // 2. Start with the Protection of the piece worn there. No piece worn means 0. `armor` is the
-    //    raw number either way (a character's `protection` already carries the Zone bonus for
-    //    the sheet), so step 3 adds that bonus exactly once.
+    // 2. Start with the Protection of the piece worn there (a raised visor already off it). No
+    //    piece worn means 0. `armor` is the raw number either way (a character's `protection`
+    //    already carries the Zone bonus for the sheet), so step 3 adds that bonus exactly once.
     const piece = this.armorOnZone(zone);
-    let total = piece ? (piece.system.protection ?? 0) : (z?.armor ?? 0);
+    let total = piece ? (piece.system.effectiveProtection ?? piece.system.protection ?? 0) : (z?.armor ?? 0);
     steps.push({
       label: piece?.name ?? game.i18n.localize("STARWROUGHT.Protection.armor"),
       value: total
     });
 
     // 3. Add any bonus that applies to that Zone.
-    const bonus = (z?.bonus ?? 0)
-      + (this.matchedHarness && zone === "torso" ? 1 : 0)
-      + (this.bonuses?.protection ?? 0);
+    const bonus = (z?.bonus ?? 0) + (this.bonuses?.protection ?? 0);
     if (bonus) {
       steps.push({ label: game.i18n.localize("STARWROUGHT.Protection.bonus"), value: bonus });
       total += bonus;
     }
 
-    // 4. Subtract 1 if the incoming damage type is the one that material turns poorly.
-    const materialKey = piece?.system.material ?? z?.material ?? "none";
-    const material = SW.MATERIALS[materialKey];
-    if (type && material?.weakTo === type) {
-      steps.push({
-        label: game.i18n.format("STARWROUGHT.Protection.material", {
-          material: game.i18n.localize(material.label)
-        }),
-        value: -1
-      });
-      total -= 1;
-    }
-
-    // 5. Subtract any Protection the attacker ignores.
+    // 4. Subtract any Protection the attacker ignores.
     if (ignore) {
       steps.push({ label: game.i18n.localize("STARWROUGHT.Protection.ignored"), value: -ignore });
       total -= ignore;
@@ -359,10 +366,12 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
   /* -------------------------------------------- */
 
   /**
-   * Speed in feet per Move, and what it buys (PHB v4.10, Grid Size and Speed; Load and Load
-   * Strain). Each Legs Wound short of the last halves what Speed is left ("a second Legs Wound
-   * halves what Speed it had left"); the final Legs Wound is Prone and cannot Stand, so 0. A Step
-   * is half Speed, a Rush five times Speed less Load Strain, a Leap 10 feet less Load Strain.
+   * Speed in feet per Move, and what it buys (PHB v4.21, Motion; Load and Load Strain). Each Legs
+   * Wound short of the last halves what Speed is left ("a second Legs Wound halves what Speed it
+   * had left"); the final Legs Wound is Prone and cannot Stand, so 0. A Step is half Speed; a Rush
+   * ❷ three times Speed less Load Strain; Leap ❶ half Speed, ❷ Speed, ❸ one and a half times it,
+   * each less Load Strain; Crawl ❶ half Speed, the Speed being the one the final Legs Wound took
+   * away (ruling 138), since a fighter who cannot Stand still crawls on the legs they had.
    * @param {number} base        Speed before Wounds.
    * @param {number} loadStrain  The wearer's Load Strain.
    */
@@ -370,17 +379,19 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
     let speed = Math.max(0, base);
     const legs = this.zones.legs;
     this.cannotStand = false;
+    // What the legs allowed before the last Wound: halved once per Wound short of the final one.
+    for (let i = 0; i < Math.max(0, legs.wounds - (legs.final ? 1 : 0)); i++) speed = Math.floor(speed / 2);
+    const beforeFinal = speed;
     if (legs.final) {
       speed = 0;
       this.cannotStand = true;
-    } else {
-      for (let i = 0; i < legs.wounds; i++) speed = Math.floor(speed / 2);
     }
     this.moveSpeed = speed;
     this.step = Math.floor(speed / SW.STEP_DIVISOR);
     this.rush = Math.max(0, (speed * SW.RUSH_MULTIPLIER) - loadStrain);
-    this.leap = Math.max(0, SW.LEAP_FEET - loadStrain);
-    this.crawl = SW.CRAWL_FEET;
+    this.leap = Object.fromEntries(Object.entries(SW.LEAP_STEPS)
+      .map(([cost, factor]) => [cost, Math.max(0, Math.floor(speed * factor) - loadStrain)]));
+    this.crawl = Math.floor(beforeFinal / SW.CRAWL_DIVISOR);
     // Speed ÷ 2 for the hour, rounded down (PHB v4.10, Math Conventions): an odd Speed never
     // prints a half mile.
     this.travel = {
@@ -392,16 +403,19 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
 
   /* -------------------------------------------- */
 
-  /** Total Weakness against one damage type. Same-type weaknesses do not stack. */
+  /**
+   * Total Weakness against one damage type: the sum of every Weakness to it (PHB v4.21, Damage
+   * Resolution: "add all applicable Weakness"; through v4.15 the highest alone counted).
+   */
   weaknessTo(type) {
     return (this.traits.weaknesses ?? []).filter(w => w.type === type)
-      .reduce((n, w) => Math.max(n, w.value), 0);
+      .reduce((n, w) => n + (Number(w.value) || 0), 0);
   }
 
-  /** Total Resistance against one damage type. */
+  /** Total Resistance against one damage type: the sum of every Resistance to it (PHB v4.21). */
   resistanceTo(type) {
     return (this.traits.resistances ?? []).filter(r => r.type === type)
-      .reduce((n, r) => Math.max(n, r.value), 0);
+      .reduce((n, r) => n + (Number(r.value) || 0), 0);
   }
 
   /** Is this creature Immune to the named damage type or effect. */
@@ -438,16 +452,18 @@ export class SwCharacterData extends SwActorData {
       }),
 
       /**
-       * Deferred Talent Points (PHB v4.15, Table 4: "a Milestone Talent Point with no Flared
-       * Constellation becomes a Deferred Talent Point ... spent the instant a Constellation is
-       * Flared"). A count, not a budget (ruling 94, 2026-10-02: counted on the character, nothing
-       * enforced). The Party Sheet's Milestone award adds 1 for a member with no Flared
+       * Comets (PHB v4.21, Chapter 7: "A Comet is a Talent Point that can be spent in any
+       * Constellation, whether or not it is Flared or already open"; one from the fourth Milestone,
+       * and a Milestone Talent Point becomes one when no Talent is eligible through any Flare). A
+       * count, not a budget (ruling 94, 2026-10-02: counted on the character, nothing enforced;
+       * ruling 145: the Deferred Talent Point of v4.15 renamed, what it buys the book's). The Party
+       * Sheet's Milestone award adds 1 at the fourth Milestone and 1 for a member with no Flared
        * Constellation to receive the point; the header's Spent control, or the party's, takes 1 off
        * when the player spends it, which is a Talent bought or dragged as today and policed by
-       * nothing; the Flare card carries a reminder line while this is above 0 (party-sheet-plan.md,
-       * part 3 and risk 4). New in 0.7.0 with a default, so no world migration.
+       * nothing; the Flare card carries a reminder line while this is above 0. Stored as `deferred`
+       * through 0.10.1; migrateActorSource carries the count across.
        */
-      deferred: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+      comets: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
 
       /**
        * On the road (0.7.2; party-sheet-plan.md, part 8; ruling 106): the Exploration Mode Activity
@@ -575,26 +591,29 @@ export class SwCharacterData extends SwActorData {
     for (const key of Object.keys(SW.ATTRIBUTES)) this.attributes[key] = { points: 0, mod: 0 };
     this.constellations = {};
     this.originPoints = 0;
+    this.origin = null;
     this.defenses = {};
     this.worn = { head: null, torso: null, arms: null, legs: null };
     this.shield = null;
-    this.helmPenalty = 0;
+    this.visor = null;
+    this.visorPenalty = 0;
     this.vigor.max = 0;
     this.spent = false;
     this.loadStrain = 0;
-    this.wind = { threshold: 10, endureThreshold: 10, exempt: true, due: false };
-    this.matchedHarness = false;
+    this.wind = { threshold: 10, endureThreshold: 10, exempt: false, due: false };
+    this.fittedHarness = false;
+    this.fittedCount = 0;
     this.clatter = false;
     this.speed = this.details.ancestry.speed;
     this.moveSpeed = this.speed;
     this.step = 0;
     this.rush = 0;
-    this.leap = 0;
+    this.leap = { 1: 0, 2: 0, 3: 0 };
+    this.crawl = 0;
     this.woundCount = 0;
-    this.weaponDice = 1;
-    this.melee = { rank: "untrained", proficiency: 0, specialization: 0 };
-    this.ranged = { rank: "untrained", proficiency: 0, specialization: 0 };
-    this.reactions = { parry: false, void: false, counter: false, intercept: false, rigid: false, blocked: null };
+    this.melee = { rank: "untrained", proficiency: 0, dice: 1 };
+    this.ranged = { rank: "untrained", proficiency: 0, dice: 1 };
+    this.reactions = { owned: {}, intercept: false, rigid: false, blocked: null };
     this.attackModifiers = [];
     this.ranges = [];
   }
@@ -634,36 +653,95 @@ export class SwCharacterData extends SwActorData {
   /* -------------------------------------------- */
 
   /**
-   * The Strike Attribute for a weapon (PHB v4.10, The Attack): the higher of the weapon's natural
-   * Attribute (Might; Agility for Finesse or a ranged weapon that is neither thrown nor a
-   * composite bow) and the Key Attribute of a Combat Style whose root you own and in which you
-   * are wielding the weapon (`weapon.system.style`). Damage still adds Might where the Strike
-   * allows it; this is the attack roll only.
+   * The Strike Attribute for a weapon (PHB v4.21, The Attack): Melee is Might, or Agility for a
+   * Finesse weapon; Ranged is Agility, or Might for a thrown weapon (a Finesse dagger thrown is
+   * Might, the book's words read literally; ruling 129). "A Strike made as part of another
+   * Maneuver ... If that Maneuver's Key Attribute has a higher bonus than the Strike's normal
+   * Attribute, you may use it instead": the roll dialog offers the owned Talents and Maneuvers
+   * that have one (`maneuverChoicesFor`), and the one chosen is passed here. Through v4.15 the
+   * substitute was a Combat Style's Key Attribute, written on the weapon; a Style is a group with
+   * no Attribute of its own to lend since v4.21. Damage still adds Might where the Strike allows
+   * it; this is the attack roll only.
    * @param {Item} weapon
-   * @returns {{attribute: string, mod: number, source: "weapon"|"style", style: string|null}}
+   * @param {object} [options]
+   * @param {boolean} [options.thrown=false]  The weapon leaves the hand this Strike.
+   * @param {Item|null} [options.maneuver]    The Maneuver the Strike is part of, when the player chose one.
+   * @returns {{attribute: string, mod: number, source: "weapon"|"maneuver", maneuver: string|null}}
    */
-  strikeAttributeFor(weapon) {
-    const natural = weapon?.system?.attackAttribute ?? "might";
-    const result = { attribute: natural, mod: this.attributes[natural]?.mod ?? 0, source: "weapon", style: null };
-    const styleSlug = SW.slugify(weapon?.system?.style ?? "");
-    if (!styleSlug) return result;
-    const entry = this.constellations[styleSlug];
-    if (!entry?.rootOwned) return result;
-    const attribute = entry.attribute || SW.getConstellation(styleSlug).attribute;
+  strikeAttributeFor(weapon, { thrown = false, maneuver = null } = {}) {
+    const natural = thrown ? "might" : (weapon?.system?.attackAttribute ?? "might");
+    const result = { attribute: natural, mod: this.attributes[natural]?.mod ?? 0, source: "weapon", maneuver: null };
+    const attribute = maneuver ? this.maneuverAttributeOf(maneuver) : null;
+    if (!attribute) return result;
     const mod = this.attributes[attribute]?.mod ?? 0;
-    if (mod > result.mod) return { attribute, mod, source: "style", style: styleSlug };
+    if (mod > result.mod) return { attribute, mod, source: "maneuver", maneuver: maneuver.name };
     return result;
+  }
+
+  /**
+   * A Maneuver's Key Attribute (PHB v4.21): for a Talent, the Attribute it feeds, else its
+   * Constellation's; for an action Item, the Constellation its check names, else nothing. A
+   * passive Talent is not a Maneuver and has none.
+   * @param {Item} item
+   * @returns {string|null}  An Attribute key, or null.
+   */
+  maneuverAttributeOf(item) {
+    if (!item?.system) return null;
+    if (item.type === "talent") {
+      if ((item.system.cost ?? "passive") === "passive") return null;
+      const own = item.system.attribute;
+      if (own in SW.ATTRIBUTES) return own;
+      const slug = item.system.constellation;
+      const fromSky = this.constellations[slug]?.attribute ?? SW.getConstellation(slug)?.attribute;
+      return (fromSky in SW.ATTRIBUTES) ? fromSky : null;
+    }
+    if (item.type === "action") {
+      const slug = item.system.check?.enabled ? item.system.check.constellation : "";
+      if (!slug) return null;
+      const attribute = this.constellations[slug]?.attribute ?? SW.getConstellation(slug)?.attribute;
+      return (attribute in SW.ATTRIBUTES) ? attribute : null;
+    }
+    return null;
+  }
+
+  /**
+   * The Maneuvers a Strike with this weapon could be part of to better effect (PHB v4.21): every
+   * owned Talent and action Item whose Key Attribute's bonus beats the weapon's own Strike
+   * Attribute. Offered in the roll dialog; the Maneuver's Requirements are the table's to hold
+   * ("provided you meet all of the Maneuver's Requirements"), as the dialog says.
+   * @param {Item} weapon
+   * @param {{thrown?: boolean}} [options]
+   * @returns {Array<{id: string, name: string, attribute: string, mod: number}>}
+   */
+  maneuverChoicesFor(weapon, { thrown = false } = {}) {
+    const natural = this.strikeAttributeFor(weapon, { thrown });
+    const out = [];
+    for (const item of this.parent.items) {
+      if (!["talent", "action"].includes(item.type)) continue;
+      const attribute = this.maneuverAttributeOf(item);
+      if (!attribute) continue;
+      const mod = this.attributes[attribute]?.mod ?? 0;
+      if (mod <= natural.mod) continue;
+      out.push({ id: item.id, name: item.name, attribute, mod });
+    }
+    return out.sort((a, b) => (b.mod - a.mod) || a.name.localeCompare(b.name));
   }
 
   /* -------------------------------------------- */
 
   /**
    * The Proficiency that applies to a named Constellation, and the Attribute it keys off.
-   * Untrained is a real answer, not an error: it is simply +0 Proficiency.
+   * Untrained is a real answer, not an error: it is simply +0 Proficiency. A group answers with
+   * its parent's rank (PHB v4.21), since that is the rank its entry wears; the Origin
+   * (SW.ORIGIN_SLUG) answers from the virtual Constellation the pass derived, so a rule's "if
+   * Origin is Expert" reads the shared rank.
    * @param {string} slug
    * @returns {{rank: string, proficiency: number, attribute: string, points: number, name: string}}
    */
   proficiency(slug) {
+    if ((slug === SW.ORIGIN_SLUG) && this.origin) {
+      return { rank: this.origin.rank, proficiency: this.origin.bonus, attribute: "", points: this.origin.points, name: this.origin.name };
+    }
     const entry = this.constellations[slug];
     if (entry) {
       return {
@@ -718,14 +796,12 @@ export class SwNpcData extends SwActorData {
       /** Extra Wound capacity from a creature template such as Elite or Boss. */
       woundBonus: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
 
-      // Protection is entered directly on an adversary; there is no armor paperwork.
+      // Protection is entered directly on an adversary; there is no armor paperwork. The Zone's
+      // material went with the material-weakness step in PHB v4.21 (ruling 149).
       zones: new fields.SchemaField(
         Object.keys(SW.ZONES).reduce((obj, z) => {
           obj[z] = zoneFields({
-            protection: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
-            material: new fields.StringField({
-              required: true, choices: Object.keys(SW.MATERIALS), initial: "none"
-            })
+            protection: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 })
           });
           return obj;
         }, {})
@@ -749,7 +825,7 @@ export class SwNpcData extends SwActorData {
     this.spent = false;
     this.woundCount = 0;
     this.moveSpeed = this.speed;
-    this.reactions = { parry: true, void: true, counter: true, intercept: true, rigid: true, blocked: null };
+    this.reactions = { owned: {}, intercept: true, rigid: true, blocked: null };
     this.ranges = [];
   }
 
@@ -787,8 +863,6 @@ export class SwNpcData extends SwActorData {
       // in zoneProtection, so the two are the same here.
       z.armor = z.protection;
       z.label = SW.ZONES[zone].label;
-      z.materialLabel = SW.MATERIALS[z.material].label;
-      z.weakTo = SW.MATERIALS[z.material].weakTo;
       // What a Deliberate or Committed Strike meets; a Quick Strike meets `protection` in full.
       z.effective = z.exposed ? 0 : z.protection;
     }
@@ -812,20 +886,20 @@ export class SwNpcData extends SwActorData {
     const statuses = this.parent.statuses ?? new Set();
     this.defenses.evade.unavailable = unavailableEvade(statuses);
 
-    // Stance: the same reading as a character's. An adversary's Reactions are the GM's to declare,
-    // so all four stand available unless a Head Wound forbids them.
-    const reaction = SW.REACTIONS[this.stance] ? this.stance : null;
-    const better = (this.defenses.guard?.threshold ?? 10) >= (this.defenses.evade?.threshold ?? 10) ? "guard" : "evade";
-    const defense = SW.REACTIONS[this.stance]?.defense ?? (this.stance === "counter" ? better : this.stance);
-    this.stanceReaction = reaction;
+    // Stance: the same reading as a character's, Evade or Guard (PHB v4.21: a Reaction is chosen
+    // per Blow; a stance stored as one by an earlier release reads as the Defense it stood on).
+    // An adversary's Reactions are the GM's to declare, so every answer stands available unless
+    // a Head Wound forbids them.
+    const defense = SW.LEGACY_STANCES[this.stance] ?? this.stance;
+    this.stanceReaction = null;
     this.stanceDefense = SW.DEFENSES[defense] ? defense : "evade";
-    this.stanceBonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : 0;
+    this.stanceBonus = 0;
     this.defenses[this.stanceDefense].isStance = true;
     this.stanceThreshold = this.defenses[this.stanceDefense]?.threshold ?? 10;
     const blocked = this.zones.head.wounded ? SW.ZONE_CRITICALS.head.first : null;
-    this.reactions = {
-      parry: !blocked, void: !blocked, counter: !blocked, intercept: !blocked, rigid: true, blocked
-    };
+    const owned = blocked ? {} : ownedReactions(this.parent);
+    this.reactions = { owned, rigid: true, blocked };
+    for (const key of Object.keys(SW.REACTIONS)) this.reactions[key] = key in owned;
 
     // Movement. The stored `speed` is the creature's own; `moveSpeed` is what its Legs allow.
     this._prepareMovement(this.speed, 0);

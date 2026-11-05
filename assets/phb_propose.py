@@ -152,6 +152,48 @@ PROPOSALS = {
     },
 }
 
+# v4.21 (Mike, 2026-11-04, the v4.21 sync): the Chapter 3 Calling table prints a 1st-level Vigor for
+# the five caster Callings that disagrees with each root Talent's own text (Spellshaper 8 against 6,
+# Blood Mage 10 against 8, Necromancer 10 against 6, Summoner 8 against 6, Spellblade 10 against 8).
+# Mike's ruling: "The root texts (6/8/6/6/8); and redline the Word Doc to fix the table." The roster
+# and the system carry the root texts' numbers; this proposal brings the table to them.
+PROPOSALS["callings-vigor"] = {
+    "from": "4.21",
+    "cell": [
+        # The Calling table (Calling | Free Training | 1st-level Vigor | Special Ability | Key
+        # Attribute): each row is found by its name and its free Skill, and the Vigor cell is two to
+        # the right.
+        (["Spellshaper", "Guile"], 2, "8", "6"),
+        (["Blood Mage", "Athletics"], 2, "10", "8"),
+        (["Necromancer", "Awareness"], 2, "10", "6"),
+        (["Summoner", "Awareness"], 2, "8", "6"),
+        (["Spellblade", "Athletics"], 2, "10", "8"),
+    ],
+}
+
+# v4.21 consistency (the v4.21 sync, 2026-11-04): the slips the sync's readers found that are text
+# and nothing else. Every judgement call (the duplicated "spend immediately" paragraph, the
+# duplicated Serrovane row, Deflecting Palms' and Spellblade's broken sentences, Master Cut and the
+# Glossary naming Counter and Void and the old parents) is in v4.21-sync-report.md for Mike instead.
+PROPOSALS["v4.21-consistency"] = {
+    "from": "4.21",
+    "replace": [
+        ("our four Defenses are Constellations", "our four", "Your four"),
+        ("Common, Reashspeak", "Reashspeak", "Reachspeak"),
+        # "the combination or your resolve" (for "of") is left to Mike: Word holds the words in
+        # separate runs, and a whole-paragraph rewrite is more than a typo deserves.
+        ("Vigor returns relatively quicky", "quicky", "quickly"),
+    ],
+    "cell": [
+        # The Guard table: Riposte's Requires cell carries Parry's cost glyph, which no other Requires
+        # cell does; the Talent is Parry.
+        # The formatter put each glyph in a run of its own, so the deletion is two, one per run.
+        (["Riposte", "Parry ❶↺"], 2, "❶", ""),
+        # After the first deletion the cell reads "Parry ↺" to the row finder.
+        (["Riposte", "Parry ↺"], 2, "↺", ""),
+    ],
+}
+
 PROPOSALS["vigor"] = {
     # Vigor, A plus B (Mike, 2026-10-02: "Go with A plus B"). The body sets the slope: your
     # Ancestry's Vigor every level. Your first Calling pays an Opening Vigor once, at creation

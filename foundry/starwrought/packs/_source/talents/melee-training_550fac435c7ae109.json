@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in Melee: add this Constellation's Proficiency Bonus to your attack rolls with any weapon in your hand, and to Gain Control. You gain the <b>Intercept ❶↺</b> Reaction. At Expert rank in Melee you also gain the <b>Counter ❶↺</b> Reaction.<br><b>Special</b> Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.",
+    "effect": "You are Trained in Melee. Strikes and other Maneuvers involving melee weapons are usually Melee checks. <br><br>Special Intuitive weapons use your full Melee Proficiency Bonus. Practiced or Technical weapons do not; see Chapter 5: Equipment for rules on Weapon Traits.<br><br>You gain the Intercept ❶↺ Reaction:<br>Requirements You are wielding a melee weapon.<br>Trigger A foe moves from outside your Total Reach to inside it, or attempts to Strike you with an Unwieldy weapon from inside its Unwieldy distance.<br><br>Make a Quick Strike against them. If it is a Critical Hit, their action is interrupted.",
     "description": "",
     "cost": "passive",
     "costMax": "",
@@ -33,7 +33,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "2a19b71d960a8b80",
   "sort": 0,
@@ -42,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "fe157cd03800560b"
+      "contentHash": "4535b93cf52931b8"
     }
   },
   "effects": [],

@@ -1,0 +1,55 @@
+{
+  "_id": "d69e6793089c7eaf",
+  "name": "Veiled Gesture",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "illusion",
+    "constellationName": "Illusion",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Illusion Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When casting an Illusion spell, you may conceal obvious visual signs from distant observers; nearby creatures still perceive ordinary speaking and movement.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "3b4326281d49dc92",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c291c0488d352027"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d69e6793089c7eaf"
+}

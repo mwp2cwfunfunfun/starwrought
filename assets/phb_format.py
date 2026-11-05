@@ -198,8 +198,13 @@ FIRST_USE_EXTRA = [
 GLYPHS = "⓿❶❷❸❹❺❻↺"
 GLYPH_RUN_RE = re.compile("[%s]+" % GLYPHS)
 WELCOME_HEADING = "1. Welcome to STARWROUGHT"
+# The title as each edition writes it: "1. Welcome to STARWROUGHT" through v4.15, "1 Welcome to
+# StarWrought" from v4.21 (the rebrand, and the chapter numbers lost their periods).
+WELCOME_RE = re.compile(r"^1\.?\s+Welcome to StarWrought", re.I)
 APPENDIX_HEADING = "Appendix A"
 KEY_TERMS_HEADING = "Key Terms"
+# The Defined Terms section: "Key Terms" in Chapter 2 through v4.20, "Glossary" in Chapter 8 from v4.21.
+KEY_TERMS_HEADINGS = ("Key Terms", "Glossary")
 
 # ----------------------------------------------------------------------------------------------
 # XML plumbing
@@ -577,7 +582,7 @@ class Model:
         # guide through v4.14 and is treated as its own section where it exists; Mike removed it in
         # v4.15 once handbook-style.md took over its job, so a handbook without it runs the body to
         # the end of the document.
-        welcome = [p for p in self.paras if p.heading == 1 and p.text.strip().startswith(WELCOME_HEADING)]
+        welcome = [p for p in self.paras if p.heading == 1 and WELCOME_RE.match(p.text.strip())]
         appendix = [p for p in self.paras if p.heading == 1 and p.text.strip().startswith(APPENDIX_HEADING)]
         if len(welcome) != 1 or len(appendix) > 1:
             raise SystemExit("this does not look like the handbook: Heading 1 %r found %d times, %r %d times"
@@ -1028,9 +1033,9 @@ def pass_key_terms(xml, report, dicts):
     model = Model(xml)
     edits = []
     tops = model.top_paras()
-    starts = [i for i, p in enumerate(tops) if p.heading == 2 and p.text.strip() == KEY_TERMS_HEADING]
+    starts = [i for i, p in enumerate(tops) if p.heading == 2 and p.text.strip() in KEY_TERMS_HEADINGS]
     if len(starts) != 1:
-        raise SystemExit("Heading 2 %r found %d times, wanted 1" % (KEY_TERMS_HEADING, len(starts)))
+        raise SystemExit("Heading 2 %r found %d times, wanted 1" % (" or ".join(KEY_TERMS_HEADINGS), len(starts)))
     i = starts[0] + 1
     leads = []
     while i < len(tops) and tops[i].heading != 2:

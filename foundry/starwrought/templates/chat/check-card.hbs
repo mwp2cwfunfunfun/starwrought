@@ -166,7 +166,7 @@
         <i class="fa-solid fa-shoe-prints"></i> {{localize position.ground.label}} {{position.ground.feet}} ft
       </button>
       {{else}}
-      <button type="button" data-sw-action="step" data-actor-uuid="{{position.defenderUuid}}">
+      <button type="button" data-sw-action="step" data-actor-uuid="{{position.defenderUuid}}" data-mode="{{position.ground.mode}}">
         <i class="fa-solid fa-shoe-prints"></i> {{localize position.ground.label}}
       </button>
       {{/if}}

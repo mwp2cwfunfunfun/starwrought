@@ -26,7 +26,8 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       effectCreate: SwItemSheet.#onEffectCreate,
       effectEdit: SwItemSheet.#onEffectEdit,
       effectDelete: SwItemSheet.#onEffectDelete,
-      chooseValue: SwItemSheet.#onChooseValue
+      chooseValue: SwItemSheet.#onChooseValue,
+      castSpell: SwItemSheet.#onCastSpell
     }
   };
 
@@ -140,7 +141,8 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       categories: this.#choices(SW.CATEGORIES),
       tiers: Object.fromEntries(Object.entries(SW.TIERS).map(([k, v]) => [k, game.i18n.localize(v.label)])),
       zones: this.#choices(SW.ZONES),
-      materials: this.#choices(SW.MATERIALS),
+      // The armor types (PHB v4.21's Type column; the select still writes `system.material`).
+      materials: this.#choices(SW.ARMOR_TYPES),
       damageTypes: this.#choices(SW.DAMAGE_TYPES),
       handling: this.#choices(SW.HANDLING),
       // Where a thing you can carry is (held, worn, carried): the physical panel's select (0.10.1).
@@ -155,6 +157,9 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       },
       sizes: this.#choices(SW.SIZES),
       defenses: this.#choices(SW.DEFENSES),
+      // A spell's Threat and Delivery (PHB v4.21), for the Talent sheet's spell panel.
+      threats: this.#choices(SW.THREATS),
+      deliveries: this.#choices(SW.DELIVERIES),
       groups: Object.fromEntries(SW.WEAPON_GROUPS.map(g => [g, g])),
       constellations: Object.fromEntries(
         withCurrent(enabled, current)
@@ -208,6 +213,18 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     if (item.type === "constellation" && item.system.parentSlug) {
       context.parentName = item.system.parentName || SW.getConstellation(item.system.parentSlug).name;
     }
+    // The spell panel (PHB v4.21): the Cast buttons on an owned spell Talent, and the Defenses the
+    // Threat permits when the sheet names none.
+    if (item.type === "talent") {
+      const threat = SW.THREATS[item.system.spell?.threat];
+      context.spell = {
+        castable: !!item.system.isSpell && !!item.actor && (item.actor.type === "character"),
+        casts: Object.entries(SW.CAST_KINDS).map(([key, kind]) => ({
+          key, glyph: SW.ACTION_GLYPHS[kind.cost], label: game.i18n.localize(kind.label), hint: game.i18n.localize(`${kind.label}Hint`)
+        })),
+        defensesDefault: threat ? threat.defenses.map(d => game.i18n.localize(SW.DEFENSES[d].label)).join(", ") : ""
+      };
+    }
     // Weapon trait flags the sheet calls out, since three of them decide what the weapon can do in
     // a Bind: a Flexible weapon cannot Parry or Bind, Massive Wounds on any crit, Unparryable
     // cannot be Parried. The data model parses the Traits string into `system.flags`.
@@ -228,12 +245,38 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     return context;
   }
 
+  /**
+   * @inheritdoc
+   * The spell panel's two list fields (PHB v4.21: the damage types and the Defenses) are typed as
+   * comma-separated text and stored as arrays, lower-cased as the build writes them.
+   */
+  _prepareSubmitData(event, form, formData, updateData) {
+    const data = super._prepareSubmitData(event, form, formData, updateData);
+    const spell = data?.system?.spell;
+    if (spell) {
+      for (const key of ["types", "defenses"]) {
+        if (typeof spell[key] === "string") {
+          spell[key] = spell[key].split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+        }
+      }
+    }
+    return data;
+  }
+
   /** Turn a config map into a {key: localizedLabel} object for a select. */
   #choices(map) {
     return Object.fromEntries(Object.entries(map).map(([k, v]) => [k, game.i18n.localize(v.label)]));
   }
 
   /* -------------------------------------------- */
+
+  /** Cast the spell this Talent is (PHB v4.21), Quick, Focused or Committed, from its own sheet. */
+  static async #onCastSpell(event, target) {
+    const item = this.document;
+    const actor = item.actor;
+    if (!actor || (typeof actor.castSpell !== "function")) return null;
+    return actor.castSpell(item.id, { cast: target.dataset.cast });
+  }
 
   static async #onEditImage() {
     if (!this.isEditable) return;

@@ -14,7 +14,7 @@
     "specialAbility": "<p>Drilled: Weapon Familiarity free; treat your Melee or Ranged Proficiency Bonus as 2 higher with that Weapon Group; and you may take Reactive Strike without being Expert in Melee.</p>",
     "description": "<p>Grants Training in Athletics, and 10 Opening Vigor, added once if it is your first Calling.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "646e56ad26c2456d",
   "sort": 0,
@@ -23,7 +23,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "35fbb86b5431f903"
+      "contentHash": "bad0a2a5dec729de"
     }
   },
   "effects": [],

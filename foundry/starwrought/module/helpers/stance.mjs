@@ -1,160 +1,98 @@
 /**
- * Stance: how this actor answers the next Blow.
+ * Stance: the basic Defense this actor stands ready with against the next Blow.
  *
- * "The defender chooses one of the two Defenses that answer it, and decides whether to spend an
- * action on a Reaction." The decision is the defender's, so it lives on the defender, as a setting
- * they can change at any moment before the attacker rolls, and the attack dialog simply reads it.
- *
- * Five answers (PHB v4.10, Answering an Attack). Two are the basic Defenses: Evade and Guard, which
- * cost nothing. Three are Reactions, paid ❶ from the same six actions when an attack lands on you:
- * Void (Evade +2, Evade Training), Parry (Guard +2, Guard Training and a rigid implement in hand),
- * and Counter (your basic Defense and a Quick Strike back, Expert rank in Melee with Melee Training
- * owned; ruling 63). A Reaction the actor has not earned is drawn, disabled, so the sheet still
- * teaches what the Talent, or the rank, would buy.
- * Awareness and Endure are not stances; the handbook calls for them by name.
+ * "The defender chooses one of the two Defenses that answer it." The decision is the defender's,
+ * so it lives on the defender, as a setting they can change at any moment before the attacker
+ * rolls, and the attack dialog simply reads it. Two answers: Evade (do not be there) and Guard
+ * (do not let it through). A Reaction is never stood ready (PHB v4.21: every Reaction is a Talent,
+ * chosen per Blow in the Combat Prompt; Mike, 2026-10-01: "Standing Stance should only include
+ * Evade or Guard"); a stance stored as Void, Parry or Counter by a release before 0.11.0 reads as
+ * the Defense it stood on (SW.LEGACY_STANCES). Awareness and Endure are not stances; the handbook
+ * calls for them by name.
  */
 
 import * as SW from "../config.mjs";
 
-/** The five answers to a blow, in the order the HUD cycles them, and how each is drawn. */
+/** The two answers to a Blow, in the order the HUD cycles them, and how each is drawn. */
 export const STANCES = Object.freeze({
   evade: { icon: "fa-solid fa-person-running", defense: "evade", reaction: null },
-  guard: { icon: "fa-solid fa-shield-halved", defense: "guard", reaction: null },
-  void: { icon: "fa-solid fa-wind", defense: "evade", reaction: "void" },
-  parry: { icon: "fa-solid fa-khanda", defense: "guard", reaction: "parry" },
-  counter: { icon: "fa-solid fa-arrows-rotate", defense: null, reaction: "counter" }
+  guard: { icon: "fa-solid fa-shield-halved", defense: "guard", reaction: null }
 });
 
 export const STANCE_ORDER = Object.freeze(Object.keys(STANCES));
 
-/** The two basic stances: what an actor with no Reactions can choose between. */
+/** The two basic stances: the whole list since PHB v4.21. */
 export const BASIC_STANCES = Object.freeze(["evade", "guard"]);
 
-/** Why a Reaction stance is out of reach, per stance, as an i18n key. */
-const NEEDS = Object.freeze({
-  void: "STARWROUGHT.Stance.needsVoid",
-  parry: "STARWROUGHT.Stance.needsParry",
-  counter: "STARWROUGHT.Stance.needsCounter"
-});
-
-/**
- * Is a stance one this actor can take right now: always for the two basic Defenses, and for a
- * Reaction only when the derived `system.reactions[key]` says the Talent (and, for Parry, the
- * implement) is there. A missing `reactions` object reads as no Reactions at all.
- * @param {Actor} actor
- * @param {string} key
- * @returns {boolean}
- */
-export function stanceAvailable(actor, key) {
-  const stance = STANCES[key];
-  if (!stance) return false;
-  if (!stance.reaction) return true;
-  return actor.system?.reactions?.[stance.reaction] === true;
+/** A stored stance read as one of the two: a legacy Reaction stance as the Defense it stood on. */
+export function stanceKey(stored) {
+  const key = SW.LEGACY_STANCES[stored] ?? stored;
+  return (key in STANCES) ? key : "evade";
 }
 
 /**
- * The Defense a stance is rolled with, and its Threshold as the attacker will meet it. Counter
- * has no Defense of its own: the defender rolls a basic Defense and Strikes back, so it shows the
- * better of the two basic Thresholds that are actually usable (ruling, v4.10 sync: 2b's
- * `answeringDefense()` should read the same way).
+ * Is a stance one this actor can take right now: always, for the two basic Defenses.
+ * @param {Actor} _actor
+ * @param {string} key
+ * @returns {boolean}
+ */
+export function stanceAvailable(_actor, key) {
+  return stanceKey(key) === key;
+}
+
+/**
+ * The Defense a stance is rolled with, and its Threshold as the attacker will meet it.
  * @param {Actor} actor
  * @param {string} key
  * @returns {{defense: string, threshold: number, bonus: number}}
  */
 export function stanceDefense(actor, key) {
   const sys = actor.system;
-  const stance = STANCES[key] ?? STANCES.evade;
-  const reaction = stance.reaction ? SW.REACTIONS[stance.reaction] : null;
-  const bonus = reaction?.bonus ?? 0;
-  if (stance.defense) {
-    return { defense: stance.defense, threshold: (sys.defenses?.[stance.defense]?.threshold ?? 10) + bonus, bonus };
-  }
-  // Counter: whichever basic Defense is available and better.
-  const candidates = BASIC_STANCES.filter(d => !sys.defenses?.[d]?.unavailable);
-  const pool = candidates.length ? candidates : BASIC_STANCES;
-  const best = pool.reduce((a, b) =>
-    ((sys.defenses?.[b]?.threshold ?? 10) > (sys.defenses?.[a]?.threshold ?? 10)) ? b : a);
-  return { defense: best, threshold: sys.defenses?.[best]?.threshold ?? 10, bonus: 0 };
+  const defense = stanceKey(key);
+  return { defense, threshold: sys.defenses?.[defense]?.threshold ?? 10, bonus: 0 };
 }
 
 /**
  * Everything a sheet, a HUD or a chat card needs to show an actor's stance.
  *
- * `options` is all five, in order, each saying whether it is active, whether the rules make it
- * unavailable right now (Evade while Grabbed, shown and never enforced), and whether it is
- * disabled outright (a Reaction the actor has no Talent for). `next` is the next stance in the
- * cycle that is not disabled, which is what the HUD button flips to; null when there is nothing
- * else to flip to.
+ * `options` is both, in order, each saying whether it is active and whether the rules make it
+ * unavailable right now (Evade while Grabbed, shown and never enforced). `next` is the other one,
+ * which is what the HUD button flips to.
  * @param {Actor} actor
  * @returns {{key: string, current: object, next: object|null, options: object[]}}
  */
 export function stanceContext(actor) {
   const sys = actor.system;
-  // The Standing stance is one of the two basic Defenses (Mike, 2026-10-01: "Standing Stance
-  // should only include Evade or Guard"); a Reaction is chosen per Blow in the Combat Prompt, and
-  // the Reactions themselves are Maneuvers on the sheet once their rows are enabled. A stance
-  // stored as a Reaction by an earlier release reads as the Defense it stood on (Counter as the
-  // better basic one), so nothing breaks for a character who set one before 0.5.3.
-  const stored = (sys.stance in STANCES) ? sys.stance : "evade";
-  const key = BASIC_STANCES.includes(stored) ? stored : stanceDefense(actor, stored).defense;
+  const key = stanceKey(sys.stance);
 
   const options = BASIC_STANCES.map(k => {
     const stance = STANCES[k];
-    const reaction = stance.reaction ? SW.REACTIONS[stance.reaction] : null;
     const { defense, threshold, bonus } = stanceDefense(actor, k);
     const defenseLabel = game.i18n.localize(SW.DEFENSES[defense].label);
-    const label = reaction ? game.i18n.localize(reaction.label) : defenseLabel;
-    const disabled = !stanceAvailable(actor, k);
-
-    // Evade while Grabbed or Restrained, and so Void, which is Evade with an action behind it.
-    const blocked = stance.defense ? sys.defenses?.[stance.defense]?.unavailable : null;
+    // Evade while Grabbed or Restrained.
+    const blocked = sys.defenses?.[defense]?.unavailable ?? null;
     const reason = blocked ? game.i18n.localize(SW.CONDITIONS[blocked]?.name ?? blocked) : null;
-
-    let tooltip;
-    if (disabled) {
-      // A Head Wound blocks every Reaction (PHB v4.10, Wounds), Talent or no Talent, so that is
-      // the reason to give before "needs X Training"; the data model records it as
-      // `reactions.blocked` (an i18n key, or true).
-      const noReactions = sys.reactions?.blocked;
-      tooltip = (typeof noReactions === "string") ? game.i18n.localize(noReactions)
-        : noReactions ? game.i18n.format("STARWROUGHT.Reaction.blocked", { name: actor.name })
-        : game.i18n.localize(NEEDS[k]);
-    }
-    else if (k === "counter") tooltip = game.i18n.localize("STARWROUGHT.Stance.switchToCounter");
-    else if (reaction) {
-      tooltip = game.i18n.format("STARWROUGHT.Stance.switchToReaction", {
-        stance: label, defense: defenseLabel, bonus: `+${bonus}`
-      });
-    } else if (reason) {
-      tooltip = game.i18n.format("STARWROUGHT.Stance.switchToUnavailable", { defense: label, reason });
-    } else tooltip = game.i18n.format("STARWROUGHT.Stance.switchTo", { defense: label });
-    if (reaction && reason && !disabled) {
-      tooltip += " " + game.i18n.format("STARWROUGHT.Stance.unavailableNote", { reason });
-    }
-
+    const tooltip = reason
+      ? game.i18n.format("STARWROUGHT.Stance.switchToUnavailable", { defense: defenseLabel, reason })
+      : game.i18n.format("STARWROUGHT.Stance.switchTo", { defense: defenseLabel });
     return {
       key: k,
-      label,
+      label: defenseLabel,
       defense,
       defenseLabel,
       threshold,
       bonus,
       active: k === key,
       unavailable: reason,
-      disabled,
-      reaction: !!reaction,
-      cost: reaction ? (SW.ACTION_GLYPHS[reaction.cost] ?? "") + SW.REACTION_GLYPH : "",
+      disabled: false,
+      reaction: false,
+      cost: "",
       icon: stance.icon,
       tooltip
     };
   });
 
   const current = options.find(o => o.active) ?? options[0];
-  const start = BASIC_STANCES.indexOf(current.key);
-  let next = null;
-  for (let i = 1; i < BASIC_STANCES.length; i++) {
-    const candidate = options[(start + i) % BASIC_STANCES.length];
-    if (!candidate.disabled) { next = candidate; break; }
-  }
+  const next = options.find(o => o.key !== current.key) ?? null;
   return { key, current, next, options };
 }

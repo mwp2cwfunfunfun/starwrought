@@ -106,6 +106,13 @@ export class SwItem extends Item {
       }
       case "shield":
         return this.raise();
+      case "talent":
+        // A spell Talent is cast (PHB v4.21, the Cast Maneuver; `cast` picks ❷ ❸ ❹, Focused by
+        // default); any other Talent goes to chat as before.
+        if (this.system.isSpell && this.actor && (typeof this.actor.castSpell === "function")) {
+          return this.actor.castSpell(this.id, rest);
+        }
+        return this.toMessage({ actor });
       default:
         return this.toMessage({ actor });
     }
@@ -137,6 +144,43 @@ export class SwItem extends Item {
       content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">❶</span> ${game.i18n.localize("STARWROUGHT.Action.raiseShield")}</h3>
         <p>${game.i18n.format(raised ? "STARWROUGHT.Action.raiseShieldOn" : "STARWROUGHT.Action.raiseShieldOff", {
           name: this.actor.name, shield: this.name, bonus: this.system.bonus
+        })}${left ? ` <strong class="sw-actions-left">${left}</strong>` : ""}</p></div>`
+    });
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Raise or lower a Visored piece's visor (PHB v4.21, Armor Traits: "Can Raise or Lower the visor
+   * as a single action. Lowered: Imposes -1 Gear penalty to Awareness and Initiative. Raised:
+   * Protection is reduced by 1"). The penalty and the Protection are derived by the data model
+   * from `system.lowered`, so all this does is flip the flag, pay the action and say so; the
+   * Equipment tab's control and the two Maneuvers (documents/maneuvers.mjs) both come here. A
+   * piece without the trait, or one not worn, is told and nothing changes.
+   * @param {boolean} [lowered]  The state to set; omitted, the visor flips.
+   */
+  async toggleVisor(lowered) {
+    if (!this.actor || (this.type !== "armor")) return null;
+    if (!this.system.visored) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.noVisor", { name: this.name }));
+      return null;
+    }
+    if (!this.system.worn) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.notWorn", { name: this.name }));
+      return null;
+    }
+    const next = (lowered === undefined) ? !this.system.lowered : !!lowered;
+    if (next === !!this.system.lowered) return null;
+    const label = game.i18n.localize(next ? "STARWROUGHT.Action.lowerVisor" : "STARWROUGHT.Action.raiseVisor");
+    // The card below carries the actions-left line, so the spend itself posts nothing.
+    await this.actor.spendActions(1, { label, announce: false });
+    await this.update({ "system.lowered": next });
+    const left = this.actor.actionsLeftLine?.() ?? "";
+    return ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">❶</span> ${label}</h3>
+        <p>${game.i18n.format(next ? "STARWROUGHT.Action.visorLowered" : "STARWROUGHT.Action.visorRaised", {
+          name: this.actor.name, piece: this.name
         })}${left ? ` <strong class="sw-actions-left">${left}</strong>` : ""}</p></div>`
     });
   }

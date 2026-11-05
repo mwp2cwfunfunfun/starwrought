@@ -12,8 +12,21 @@
     <label class="sw-field"><span>{{localize "STARWROUGHT.Field.load"}}</span>
       <input type="number" name="system.load" value="{{system.load}}" min="0"></label>
   </div>
-  {{#if system.weakTo}}
-  <p class="sw-note sw-warn">{{localize "STARWROUGHT.Hint.materialWeakness"}}</p>
+  {{!-- The two traits the system acts on (PHB v4.21). Each control shows only while the Traits
+        line carries the word, since the trait is what the piece is and the tick is its state. --}}
+  {{#if system.fitted}}
+  <label class="sw-field sw-check">
+    <input type="checkbox" name="system.adjusted" {{checked system.adjusted}}>
+    <span>{{localize "STARWROUGHT.Field.adjusted"}}</span>
+  </label>
+  <p class="sw-note">{{localize "STARWROUGHT.Hint.fitted"}}</p>
+  {{/if}}
+  {{#if system.visored}}
+  <label class="sw-field sw-check">
+    <input type="checkbox" name="system.lowered" {{checked system.lowered}}>
+    <span>{{localize "STARWROUGHT.Field.visorLowered"}}</span>
+  </label>
+  <p class="sw-note">{{localize "STARWROUGHT.Hint.visored"}}</p>
   {{/if}}
 </div>
 

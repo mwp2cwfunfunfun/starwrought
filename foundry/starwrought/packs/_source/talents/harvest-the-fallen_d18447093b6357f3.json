@@ -1,0 +1,60 @@
+{
+  "_id": "d18447093b6357f3",
+  "name": "Harvest the Fallen",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "necromancer",
+    "constellationName": "Necromancer",
+    "tier": "E",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Death Echo"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, as ❶, capture a Death Echo from a corpse within 3 feet that died within the past minute. No creature may supply more than one Echo in this way. This does not animate or control the corpse.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "aura": {
+      "range": 3,
+      "affects": "all",
+      "visible": false
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d58805ce57630e80",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7a75f0bc833183f7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d18447093b6357f3"
+}

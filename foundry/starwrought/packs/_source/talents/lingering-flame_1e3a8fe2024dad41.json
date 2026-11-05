@@ -1,0 +1,55 @@
+{
+  "_id": "1e3a8fe2024dad41",
+  "name": "Lingering Flame",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "flamecraft",
+    "constellationName": "Flamecraft",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Flamecraft Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "On a Flamecraft Committed Hit, you may ignite one unoccupied 1-foot square in the effect until your next Opportunity; this terrain deals 1 fire damage to a creature entering it (once per creature).",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "aa9d4a89287c4d93",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7ddd0f7622c1e3ab"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1e3a8fe2024dad41"
+}

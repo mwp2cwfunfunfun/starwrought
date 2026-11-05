@@ -1,0 +1,71 @@
+{
+  "_id": "eda650eb75e96a66",
+  "name": "Decay Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "decay",
+    "constellationName": "Decay",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Toxic Bloom ❸: Prepare a small area of Blight; on a Hit, creatures in it take Damage Dice d4 poison damage (Pervasive). The initial area size is intentionally limited for testing.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blight",
+      "delivery": "pervasive",
+      "range": 0,
+      "adjacent": false,
+      "die": 4,
+      "types": [
+        "poison"
+      ],
+      "targets": "area",
+      "defenses": [],
+      "effects": {
+        "quick": "",
+        "focused": "On a Hit, creatures in the area take Damage Dice d4 poison",
+        "committed": ""
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "55f7fb2c21d04468",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e724710791193150"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!eda650eb75e96a66"
+}

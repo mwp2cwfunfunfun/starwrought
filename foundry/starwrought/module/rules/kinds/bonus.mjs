@@ -57,8 +57,10 @@
  * sits with the player at the edge, the Load Strain Climb-or-Swim precedent), and it is never
  * offered on an attack, a Defense or an Initiative, nor on a check made from another Maneuver's
  * Item, which is plainly not an Aid. The applied modifier's label is the carrier's plain name, so
- * the card reads "Humanity +1"; typed stacking is the engine's (SW.resolveModifiers), so two lines
- * that both match (a designer's overlap, never Humanity's) resolve to the highest of the type.
+ * the card reads "Humanity +1"; stacking is the engine's (SW.resolveModifiers, PHB v4.21: every
+ * bonus adds and a circumstance is counted once), and one Talent's lines on one target carry one
+ * `source` (`rule:<item>:<target>`), so two lines that both match (a designer's overlap, never
+ * Humanity's) give the higher, while two Talents' bonuses on one roll add.
  *
  * What the hook does NOT do: it reaches no adversary's roll (adversaries roll flat in 0.10.0), it
  * reads no Effect text, and it moves nothing but a roll's modifiers and, through the Defense pass,
@@ -158,8 +160,11 @@ function readTarget(name, resolve) {
 /**
  * The Constellation of the `if` clause. With a resolver it must resolve to a Constellation: a
  * Maneuver has no rank to be at, and a name the resolver does not know is most likely a typo. A
- * Lore is refused with or without one: "if Lore is Expert" names no particular Lore, and a Lore
- * instance is the character's own (review, 2026-10-03).
+ * group (PHB v4.21: a Combat Style, a magical specialty) has no rank of its own, so it is refused
+ * naming the parent whose rank it wears; "Origin" (SW.ORIGIN_SLUG) is a Constellation for this
+ * purpose, the shared rank of Ancestry, Culture and Bloodline. A Lore is refused with or without a
+ * resolver: "if Lore is Expert" names no particular Lore, and a Lore instance is the character's
+ * own (review, 2026-10-03).
  * @param {string} name
  * @param {Function|undefined} resolve
  * @returns {{constellation: string, name: string}}
@@ -171,6 +176,10 @@ function readConstellation(name, resolve) {
     const found = resolve(written);
     if (!found || (found.type !== "constellation") || !found.slug) {
       throw new RuleSyntaxError(`"${written}" is not a Constellation`);
+    }
+    if (found.group) {
+      const parent = found.parent ? ` test ${found.parent} instead` : " test its parent instead";
+      throw new RuleSyntaxError(`"${found.name ?? written}" is a group and has no rank of its own;${parent}`);
     }
     out = { constellation: String(found.slug), name: String(found.name ?? written) };
   } else {
@@ -282,9 +291,13 @@ export default {
         const asConstellation = (target.type === "constellation") || (target.type == null);
         const asManeuver = (target.type === "action") || (target.type == null);
         const label = plainName(carrier?.name ?? "");
+        // One Talent's lines on one target are one circumstance (PHB v4.21: bonuses add, each
+        // circumstance counted once): the `source` lets SW.resolveModifiers keep the higher when
+        // two lines happen to apply, while two Talents' bonuses on the same roll add.
+        const source = `rule:${carrier?.id ?? carrier?.name ?? "rule"}:${target.slug}`;
 
         if (asConstellation && rollSlug && (rollSlug === target.slug)) {
-          if (!folded) out.push({ label, value: rule.value, type: rule.type });
+          if (!folded) out.push({ label, value: rule.value, type: rule.type, source });
           continue;
         }
         if (!asManeuver) continue;
@@ -293,7 +306,7 @@ export default {
           // The roll is some Maneuver's. The bonus applies when it is this one and is otherwise
           // nothing: a Search is not an Aid, and offering it would ask the player a question the
           // Item has already answered.
-          if (rollManeuver === target.slug) out.push({ label, value: rule.value, type: rule.type });
+          if (rollManeuver === target.slug) out.push({ label, value: rule.value, type: rule.type, source });
           continue;
         }
         // No Maneuver behind the roll. On a check the player may know it is one (ruling 122);

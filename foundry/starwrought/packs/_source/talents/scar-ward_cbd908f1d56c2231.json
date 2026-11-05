@@ -1,0 +1,55 @@
+{
+  "_id": "cbd908f1d56c2231",
+  "name": "Scar Ward ❶↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "blood-mage",
+    "constellationName": "Blood Mage",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Blood Price"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger: You take damage from a Blast or Blight that you can perceive. Lose 2 Vigor (remaining at 1 or more); reduce that instance of incoming damage by 3 after other mitigation. Once per round. Vigor paid for this Talent is not reduced by its effect.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "ff98d604b0d6eadf",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "cd74ced32ed2e226"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!cbd908f1d56c2231"
+}

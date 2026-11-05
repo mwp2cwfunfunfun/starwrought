@@ -1,26 +1,24 @@
 /**
- * SwActor: answering a blow. The Defense roll with its Reaction or Posture, which Defense and answer
- * a defender stands ready with (the stance), the Threshold a given answer presents, and setting the
- * stance. The stance words and the Posture's +2 Situation live here with their one reader.
+ * SwActor: answering a blow. The Defense roll with its Reaction or Posture, which Defense a
+ * defender stands ready with (the stance), the Threshold a given answer presents, and setting the
+ * stance. Every Reaction is a Talent since PHB v4.21 and the table of the ones the system
+ * implements is SW.REACTIONS; the words here are the two basic Defenses and the fold of an
+ * answer's bonus into one of them.
  */
 
 import * as SW from "../../config.mjs";
 import { SwCheck } from "../../dice/check.mjs";
-import { postureName as postureNameOf } from "../../helpers/answers.mjs";
+import {
+  postureName as postureNameOf, postureBonus, postureZone, postureNeedsZone, postureRule
+} from "../../helpers/answers.mjs";
 
-/** The five stances: the two basic Defenses, and the three Reactions a defender can stand ready with. */
-const STANCES = Object.freeze(["evade", "guard", "void", "parry", "counter"]);
-const REACTION_STANCES = Object.freeze(["void", "parry", "counter"]);
-/** The two basic Defenses that answer a Blow (PHB v4.10, The Four Threats). */
+/** The two basic Defenses that answer a Blow (PHB v4.21, The Four Threats), and the two stances. */
 const BLOW_DEFENSES = Object.freeze(["evade", "guard"]);
 
-/**
- * A Posture ⓿↺ (0.5.0 brief, after PHB v4.10's Slip the Line and Catch the Blade): an owned
- * Talent with a ⓿↺ cost in the Defense's Constellation, +2 Situation to that Defense and a Zone
- * of the defender's choice Exposed until the end of the round, whether or not it works. The
- * bonus is the same Situation stack a Reaction's +2 lives in, so the two never add.
- */
-const POSTURE_BONUS = 2;
+/** Is this key a Reaction ❶↺ that answers a Blow on the actor's own Defense (SW.REACTIONS, kind "reaction")? */
+function answeringReaction(key) {
+  return !!key && (SW.REACTIONS[key]?.kind === "reaction");
+}
 
 /** @param {typeof Actor} Base */
 export const DefenseMixin = Base => class extends Base {
@@ -28,15 +26,15 @@ export const DefenseMixin = Base => class extends Base {
    * Roll one of the four Defenses. When it answers an Attack, pass the attacker's Attack
    * Threshold; the degrees are then read from the attacker's side, so beating it by 10 is a Miss.
    *
-   * PHB v4.10, Answering an Attack: the basic Defense always rolls, whatever you have left. A
-   * Reaction does better and is paid from the same six actions: Parry ❶↺ is Guard at +2
-   * Situation and needs a rigid implement; Void ❶↺ is Evade at +2 Situation; Counter ❶↺ adds
-   * nothing to the Defense and answers with a Quick Strike of your own. The dialog offers the
+   * PHB v4.21, Answering an Attack: the basic Defense always rolls, whatever you have left. A
+   * Reaction does better and is paid from the same six actions: a Talent of Evade or Guard
+   * (Sidestep ❶↺ is Evade +2 Situation and a Step on a Stop; Parry ❶↺ is Guard +2 Situation with
+   * a rigid implement and Control on a Stop; ...), one answer per attack. The dialog offers the
    * Reactions this actor owns; the engine charges the action.
    * @param {string} key  A key of SW.DEFENSES.
    * @param {object} [options]
    * @param {number} [options.threshold]   The Attack Threshold being answered.
-   * @param {string|null} [options.reaction]  parry | void | counter | null.
+   * @param {string|null} [options.reaction]  A key of SW.REACTIONS of kind "reaction", or null.
    * @param {string} [options.strike]      The attacker's commitment, if known (quick | deliberate | committed).
    * @param {Actor|Token} [options.attacker]  Who is attacking; defaults to the current target.
    * @param {{id: string, targetId: string}} [options.workflow]  The attack flow's Defense roll
@@ -44,26 +42,28 @@ export const DefenseMixin = Base => class extends Base {
    *                                       the coordinator holds the adversary's number and reads
    *                                       this die against it; the answer was committed in the
    *                                       prompt, so no Reaction is offered here; nothing posts.
-   * @param {{talentId: string, name?: string, zone: string}} [options.posture]  A Posture ⓿↺
-   *                                       committed in the prompt: +2 Situation to the Defense,
-   *                                       its Zone Exposed before the die. Never beside a Reaction.
+   * @param {{talentId: string, name?: string, zone: string|null}} [options.posture]  A Posture ⓿↺
+   *                                       committed in the prompt: its Situation bonus to the
+   *                                       Defense, its Zone Exposed before the die (or its
+   *                                       drawback applied). Never beside a Reaction.
    */
   async rollDefense(key, options = {}) {
     const { reaction: askedReaction, attacker: givenAttacker, workflow = null, posture: askedPosture = null, ...rest } = options;
-    const reaction = SW.REACTIONS[askedReaction] && ["parry", "void", "counter"].includes(askedReaction)
-      ? askedReaction : null;
-    // Void is an Evade and Parry is a Guard, whichever button was pressed.
+    const reaction = answeringReaction(askedReaction) ? askedReaction : null;
+    // A Reaction stands on its own Defense (Sidestep on Evade, Parry on Guard), whichever button was pressed.
     if (reaction && SW.REACTIONS[reaction].defense) key = SW.REACTIONS[reaction].defense;
     const def = SW.DEFENSES[key];
     if (!def) return null;
 
-    // A Posture is an answer in its own right (brief): it never stands beside a Reaction, and the
-    // Zone is the player's choice at the prompt, so one without a Zone is not a Posture yet.
-    const posture = (askedPosture?.talentId && (askedPosture.zone in SW.ZONES)) ? askedPosture : null;
+    // A Posture is an answer in its own right (brief): it never stands beside a Reaction, and a
+    // Posture that Exposes a Zone of the defender's choice is not a Posture until the Zone is
+    // named (the prompt names it; Drop Flat and Kneel need none).
+    const posture = (askedPosture?.talentId && (!postureNeedsZone(this, askedPosture) || (askedPosture.zone in SW.ZONES)))
+      ? askedPosture : null;
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
     // Plain, so the ⓿↺ the modifier line and the card append is the only one shown (0.5.1, T16).
     const postureName = posture
-      ? SW.plainName(postureNameOf(this, posture) ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? SW.plainName(postureNameOf(this, posture) ?? game.i18n.localize("STARWROUGHT.Reaction.posture"))
       : "";
 
     const attackerToken = givenAttacker?.document ? givenAttacker
@@ -71,17 +71,21 @@ export const DefenseMixin = Base => class extends Base {
     const attacker = givenAttacker?.actor ?? (givenAttacker?.documentName === "Actor" ? givenAttacker : null)
       ?? attackerToken?.actor ?? null;
 
-    // The Posture's +2 Situation goes into the same stack as the Defense's own modifiers and a
-    // Reaction's +2 (the engine adds a Reaction's in roll()), so it cannot add to either.
+    // The Posture's bonus goes into the Defense's own modifiers (the engine adds a Reaction's in
+    // roll()); with PHB v4.21's stacking it adds to what is there, and one answer per attack keeps
+    // it one.
     const { modifiers: givenModifiers, beforeRoll: callerBeforeRoll, ...passthrough } = rest;
     const modifiers = [...(givenModifiers ?? [])];
-    if (posture) {
+    const bonus = posture ? postureBonus(this, posture) : 0;
+    if (posture && bonus) {
       modifiers.push({
         label: `${postureName} ${SW.ACTION_GLYPHS[0]}${SW.REACTION_GLYPH}`,
-        value: POSTURE_BONUS,
+        value: bonus,
         type: "situation"
       });
     }
+    const zone = posture ? postureZone(this, posture) : null;
+    const drawback = posture ? (postureRule(this, posture)?.rule.drawback ?? null) : null;
 
     const config = {
       actor: this,
@@ -92,16 +96,18 @@ export const DefenseMixin = Base => class extends Base {
       thresholdLabel: game.i18n.localize("STARWROUGHT.Roll.attackThreshold"),
       defense: key,
       reaction,
-      posture: posture ? { talentId: posture.talentId, name: postureName, zone: posture.zone } : null,
+      posture: posture ? { talentId: posture.talentId, name: postureName, zone } : null,
       attacker,
       targetUuid: attackerToken?.document?.uuid ?? "",
       targetName: attackerToken?.name ?? attacker?.name ?? "",
       defenderTokenUuid: this.tokenOnScene()?.uuid ?? "",
       modifiers,
       // A Posture Exposes its Zone whether or not it works (brief), so the Zone opens before the
-      // die, marked as a Posture's so Recenter leaves it and the end of the round clears it.
+      // die, marked as a Posture's so Recenter leaves it and the end of the round clears it; Drop
+      // Flat drops you Prone instead (PHB v4.21).
       beforeRoll: async cfg => {
-        if (posture) await this.setExposed(posture.zone, true, { posture: true });
+        if (zone) await this.setExposed(zone, true, { posture: true });
+        if (drawback === "prone") await this.setCondition?.("prone", true);
         return callerBeforeRoll ? callerBeforeRoll(cfg) : true;
       }
     };
@@ -121,59 +127,29 @@ export const DefenseMixin = Base => class extends Base {
   }
 
   /**
-   * The Defense that answers a physical Attack on this actor right now, with the Reaction behind
-   * it: the stance, unless the rules make its Defense unavailable (Evade while Grabbed or
-   * Restrained), in which case the other basic Defense and no Reaction. Read live, so a stance
-   * changed a moment ago is what the attacker's roll meets.
-   *
-   * Void is Evade +2 Situation; Parry is Guard +2 Situation (a rigid implement is needed, and its
-   * absence is noted, not enforced); Counter is the better of the two basic Defenses with no bonus
-   * and a Quick Strike back, and answers only a melee Blow from within Reach. The Reaction's ❶ is
-   * charged when the attack resolves.
-   * @param {object} [threat]            What is being answered. Omitted, nothing is ruled out.
-   * @param {boolean} [threat.ranged]    The Blow is ranged (a ranged weapon, or a throw).
-   * @param {number|null} [threat.gap]   The gap to the attacker in feet, edge to edge; null if unknown.
-   * @returns {{key: string, stance: string, reaction: string|null, bonus: number, label: string,
+   * The Defense that answers a physical Attack on this actor right now: the stance, unless the
+   * rules make its Defense unavailable (Evade while Grabbed or Restrained), in which case the
+   * other basic Defense. Read live, so a stance changed a moment ago is what the attacker's roll
+   * meets. No Reaction rides on a stance since PHB v4.21: one is chosen per Blow in the prompt.
+   * @param {object} [_threat]  What is being answered; kept for the callers that pass it.
+   * @returns {{key: string, stance: string, reaction: null, bonus: number, label: string,
    *            threshold: number, unavailable: string|null, note: string|null}}
    */
-  answeringDefense({ ranged = false, gap = null } = {}) {
+  answeringDefense(_threat = {}) {
     const sys = this.system;
-    const stance = STANCES.includes(sys.stance) ? sys.stance : "evade";
-    // The data model reads the stance apart into its Defense and its Reaction; fall back to the
-    // same reading here when it has not.
-    const stanceReaction = (sys.stanceReaction !== undefined)
-      ? (REACTION_STANCES.includes(sys.stanceReaction) ? sys.stanceReaction : null)
-      : (REACTION_STANCES.includes(stance) ? stance : null);
+    const stance = SW.LEGACY_STANCES[sys.stance] ?? sys.stance;
     const stanceDefense = BLOW_DEFENSES.includes(sys.stanceDefense) ? sys.stanceDefense
       : (BLOW_DEFENSES.includes(stance) ? stance : "evade");
-
-    // One reading for a stance and for a committed answer, so the two can never disagree: the
-    // Defense, the swap when it is unavailable, the Head Wound, a stale Reaction, Parry's rigid
-    // implement, and the +2 folded once into the Situation stack all live in defenseThresholdFor.
-    const read = this.defenseThresholdFor({ defense: stanceDefense, reaction: stanceReaction });
-    let { key, reaction, label, note } = read;
-
-    // Counter answers only a melee Blow from a foe within your Reach (PHB v4.10, Answering an
-    // Attack). Anything else meets the basic Defense, nothing is charged, and the stance stands.
-    // Counter adds nothing to the Threshold, so only the answer's name changes here.
-    if (reaction === "counter") {
-      const reach = sys.totalReach ?? sys.reach ?? 0;
-      if (ranged || ((gap !== null) && (gap > reach))) {
-        reaction = null;
-        note = game.i18n.localize("STARWROUGHT.Reaction.counterNeedsMelee");
-        label = game.i18n.localize(SW.DEFENSES[key].label);
-      }
-    }
-
+    const read = this.defenseThresholdFor({ defense: stanceDefense });
     return {
-      key,
-      stance,
-      reaction,
+      key: read.key,
+      stance: stanceDefense,
+      reaction: null,
       bonus: read.bonus,
-      label,
+      label: read.label,
       threshold: read.threshold,
       unavailable: read.unavailable,
-      note
+      note: read.note
     };
   }
 
@@ -183,21 +159,19 @@ export const DefenseMixin = Base => class extends Base {
    * the attack flow's prompt, so the sheet, the prompt's preview and the coordinator's
    * resolution all read the same number. Pure: nothing is written.
    *
-   * PHB v4.10, Answering an Attack. Void is Evade +2 Situation and Parry is Guard +2 Situation,
-   * whatever Defense was named; Counter adds nothing and stands on the better of the two basic
-   * Defenses. A Posture ⓿↺ (brief) is +2 Situation to its own Defense. The bonus goes into the
-   * same Situation stack as the Defense's own modifiers through SW.resolveModifiers, so it never
-   * adds to another Situation bonus already there (highest of the type counts), and a commitment
-   * is a Reaction or a Posture, never both. An adversary's Defenses carry no modifier stack, so
-   * its bonus is added arithmetically to the GM's Threshold. When the Defense is unavailable
-   * (Evade while Grabbed or Restrained) the other basic Defense answers and anything built on the
-   * lost one falls away; a Head Wound removes every Reaction and Posture; a Reaction stance the
-   * character no longer qualifies for falls back; a Parry without a rigid implement is noted,
-   * not enforced.
+   * PHB v4.21, Answering an Attack. A Reaction stands on its own Defense (SW.REACTIONS) with its
+   * bonus; a Posture ⓿↺ stands on its Defense with its bonus (the table's, or the general rule's
+   * +2). The bonus goes into the Defense's own modifiers through SW.resolveModifiers, where it
+   * adds (v4.21's stacking), and a commitment is a Reaction or a Posture, never both. An
+   * adversary's Defenses carry no modifier stack, so its bonus is added arithmetically to the
+   * GM's Threshold. When the Defense is unavailable (Evade while Grabbed or Restrained) the other
+   * basic Defense answers and anything built on the lost one falls away; a Head Wound removes
+   * every Reaction and Posture; a Reaction the character does not own falls back; a Parry without
+   * a rigid implement is noted, not enforced.
    *
    * @param {object} answer
    * @param {string} answer.defense               A key of SW.DEFENSES (evade or guard for a Blow).
-   * @param {string|null} [answer.reaction]       parry | void | counter | null.
+   * @param {string|null} [answer.reaction]       A key of SW.REACTIONS of kind "reaction", or null.
    * @param {{talentId: string, name?: string, zone?: string}|null} [answer.posture]
    * @returns {{key: string, threshold: number, bonus: number, label: string, reaction: string|null,
    *            posture: object|null, note: string|null, unavailable: string|null}}
@@ -205,26 +179,25 @@ export const DefenseMixin = Base => class extends Base {
    */
   defenseThresholdFor({ defense, reaction = null, posture = null } = {}) {
     const sys = this.system;
-    reaction = (REACTION_STANCES.includes(reaction) && SW.REACTIONS[reaction]) ? reaction : null;
+    reaction = answeringReaction(reaction) ? reaction : null;
     posture = (posture && (typeof posture === "object") && posture.talentId) ? posture : null;
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
 
-    // Which Defense: the Reaction's own, Counter's better basic one, else the one named.
-    let key = (reaction === "counter") ? this.#bestBasicDefense()
-      : (SW.REACTIONS[reaction]?.defense ?? (SW.DEFENSES[defense] ? defense : "evade"));
+    // Which Defense: the Reaction's own, else the one named.
+    let key = SW.REACTIONS[reaction]?.defense ?? (SW.DEFENSES[defense] ? defense : "evade");
     const named = key;
 
     const blocked = BLOW_DEFENSES.includes(key) ? (sys.defenses?.[key]?.unavailable ?? null) : null;
     if (blocked) {
       key = (key === "evade") ? "guard" : "evade";
-      // A Void is an Evade, and a Posture is a Talent of its Defense's Constellation: when the
-      // Defense cannot be used, neither can what was built on it.
-      if (reaction === "void") reaction = null;
+      // A Reaction is a Talent of its Defense, and so is a Posture: when the Defense cannot be
+      // used, neither can what was built on it.
+      reaction = null;
       posture = null;
     }
 
     let note = null;
-    // No Reactions at all: a Head Wound, a Head critical, a Rush. The basic Defense still rolls.
+    // No Reactions at all: a Head Wound, a Head critical. The basic Defense still rolls.
     const noReactions = sys.reactions?.blocked;
     if ((reaction || posture) && noReactions) {
       reaction = null;
@@ -233,33 +206,30 @@ export const DefenseMixin = Base => class extends Base {
         ? game.i18n.localize(noReactions)
         : game.i18n.format("STARWROUGHT.Reaction.blocked", { name: this.name });
     }
-    // A Reaction the character no longer qualifies for falls back to the basic Defense: a
-    // Counter held from before ruling 63 at a Melee rank below Expert, or a Training Root since
-    // removed. setStance only guards the way in; the roll has to read what is true now. Parry's
-    // rigid implement is noted below rather than enforced, so for Parry only the Root is tested.
-    if (reaction && (this.type === "character") && (sys.reactions?.[reaction] === false)) {
-      const stale = (reaction !== "parry") || !sys.constellations?.[SW.REACTIONS.parry.talent]?.rootOwned;
-      if (stale) {
-        const needs = { void: "STARWROUGHT.Stance.needsVoid", parry: "STARWROUGHT.Stance.needsParry", counter: "STARWROUGHT.Stance.needsCounter" };
-        note = game.i18n.localize(needs[reaction]);
-        reaction = null;
-      }
+    // A Reaction the character does not own falls back to the basic Defense: a Talent since
+    // removed. The roll has to read what is true now; an adversary owns them all (the GM's call).
+    if (reaction && (this.type === "character") && !(reaction in (sys.reactions?.owned ?? {}))) {
+      note = game.i18n.format("STARWROUGHT.Stance.needsTalent", {
+        reaction: game.i18n.localize(SW.REACTIONS[reaction].label),
+        talent: game.i18n.localize(SW.REACTIONS[reaction].label)
+      });
+      reaction = null;
     }
-    if ((reaction === "parry") && !this.rigidImplement) {
+    if (reaction && SW.REACTIONS[reaction].rigid && !this.rigidImplement) {
       note = game.i18n.localize("STARWROUGHT.Reaction.needsRigid");
     }
 
-    // The answer's name: a Reaction's label, or the Posture Talent's own name.
+    // The answer's name: a Reaction's label, or the Posture's own name.
     const postureName = posture
-      ? (postureNameOf(this, posture) ?? game.i18n.localize(SW.REACTIONS.posture.label))
+      ? (postureNameOf(this, posture) ?? game.i18n.localize("STARWROUGHT.Reaction.posture"))
       : "";
     const answerLabel = reaction ? game.i18n.localize(SW.REACTIONS[reaction].label) : postureName;
 
-    // The fold. The data model leaves a Reaction's bonus out of its own Threshold on purpose; it
+    // The fold. The data model leaves an answer's bonus out of its own Threshold on purpose; it
     // is added here, once, through the same stack the Defense already resolved.
     const def = sys.defenses?.[key];
     let threshold = def?.threshold ?? 10;
-    const bonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : (posture ? POSTURE_BONUS : 0);
+    const bonus = reaction ? (SW.REACTIONS[reaction].bonus ?? 0) : (posture ? postureBonus(this, posture) : 0);
     if (bonus) {
       if (Array.isArray(def?.modifiers)) {
         const { total } = SW.resolveModifiers([
@@ -279,7 +249,7 @@ export const DefenseMixin = Base => class extends Base {
       bonus,
       label: answerLabel ? `${defenseLabel} (${answerLabel})` : defenseLabel,
       reaction,
-      posture: posture ? { talentId: posture.talentId, name: postureName, zone: posture.zone ?? null } : null,
+      posture: posture ? { talentId: posture.talentId, name: postureName, zone: postureZone(this, posture) } : null,
       note,
       unavailable: blocked
         ? game.i18n.format("STARWROUGHT.Stance.answeringInstead", {
@@ -291,41 +261,23 @@ export const DefenseMixin = Base => class extends Base {
     };
   }
 
-  /** Of Evade and Guard, the one with the higher Threshold that the rules allow right now. */
-  #bestBasicDefense() {
-    const defs = this.system.defenses ?? {};
-    const open = ["evade", "guard"].filter(k => !defs[k]?.unavailable);
-    const pool = open.length ? open : ["evade", "guard"];
-    return pool.sort((a, b) => (defs[b]?.threshold ?? 10) - (defs[a]?.threshold ?? 10))[0];
-  }
-
   /**
-   * Choose how the next physical Attack is answered: Evade or Guard as the basic Defense, or
-   * stand ready with a Reaction (Void, Parry, Counter) that the attack pays for when it lands.
-   * The defender's call, so it lives here, and the attacker's roll reads it. A Reaction stance is
-   * only a character's to take when the Talent grants it; an adversary's profile is the GM's.
-   * @param {"evade"|"guard"|"void"|"parry"|"counter"} key
+   * Choose how the next physical Attack is answered: Evade or Guard as the basic Defense (PHB
+   * v4.21; a Reaction is chosen per Blow in the Combat Prompt, never stood ready). The defender's
+   * call, so it lives here, and the attacker's roll reads it. A legacy Reaction stance (void,
+   * parry, counter) is taken as the Defense it stood on.
+   * @param {"evade"|"guard"} key
    * @param {object} [options]
    * @param {boolean} [options.announce=true]
    */
   async setStance(key, { announce = true } = {}) {
-    if (!STANCES.includes(key)) return;
-    if (REACTION_STANCES.includes(key) && (this.type === "character") && !this.system.reactions?.[key]) {
-      // The gate the Reaction needs: its constellation at REACTIONS[key].rank when one is set
-      // (Counter at Melee Expert, ruling 63), otherwise the Root alone, which reads as Trained.
-      const { talent, rank } = SW.REACTIONS[key];
-      const rankLabel = SW.RANKS[rank ?? "trained"]?.label ?? "STARWROUGHT.Rank.trained";
-      ui.notifications.warn(game.i18n.format("STARWROUGHT.Stance.reactionUnavailable", {
-        stance: game.i18n.localize(SW.REACTIONS[key].label),
-        talent: talent ? `${SW.getConstellation(talent).name} ${game.i18n.localize(rankLabel)}` : ""
-      }));
-      return;
-    }
+    key = SW.LEGACY_STANCES[key] ?? key;
+    if (!BLOW_DEFENSES.includes(key)) return;
     if (this.system.stance === key) return;
     await this.update({ "system.stance": key });
     const answer = this.answeringDefense();
     // A Defense the rules say you cannot use right now is still yours to choose; the system says
-    // so and leaves the ruling to the table. So is a Parry with nothing rigid in hand.
+    // so and leaves the ruling to the table.
     const notes = [answer.unavailable, answer.note].filter(Boolean);
     for (const note of notes) ui.notifications.warn(note);
 

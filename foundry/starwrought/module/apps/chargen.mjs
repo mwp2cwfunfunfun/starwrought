@@ -12,11 +12,15 @@
  * inside a step does the same thing before applying the new one, so the Actor never accumulates
  * the residue of a decision you walked away from.
  *
- * The budget (PHB v4.10, Finishing Up): one Talent granted outright, Melee Training or Ranged
- * Training at the player's choice; then 3 Origin (the three identity Roots), 3 Skill (two from the
- * Background, one from the Calling's free Training), 1 Lore, 1 Calling, 2 Defense (two different
- * Defenses, the player's choice) and 3 Comets. Fourteen Talent Points is the floor; Talents that
- * grant points push it higher.
+ * The budget (PHB v4.21, Creating Your Character): 3 Origin (the three identity Roots), 1 Lore
+ * and 2 Skill from the Background, 1 Calling and the combat training your first Calling grants
+ * (Melee or Ranged for the five martial Callings; one of the five magical disciplines for the
+ * five casters), 2 Defense (two different Defenses, the player's choice) and 3 Comets: the book's
+ * thirteen, plus the Skill Training every Calling's root text still grants ("You become Trained
+ * in Athletics"), which Chapter 3's count leaves out, so fourteen is the floor the wizard reaches
+ * and the number it prints. Talents that grant points push it higher. Through v4.15 the combat
+ * training was granted before anything else, at the player's choice; since v4.21 it is the first
+ * Calling's, so the step follows the Calling and offers what its root names.
  *
  * The wizard shops only from what the spreadsheets enable (ruling 61 and 62). A card step with
  * nothing enabled says so and lets Next through without a pick; a point slot aimed at a
@@ -43,12 +47,12 @@ const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applicat
  * case there is nothing to pick and Next goes through (ruling 62); the others are point slots.
  */
 const STEPS = [
-  { id: "training", icon: "fa-solid fa-hand-fist", pick: true },
   { id: "ancestry", icon: "fa-solid fa-person", pick: true },
   { id: "bloodline", icon: "fa-solid fa-droplet", pick: true },
   { id: "culture", icon: "fa-solid fa-landmark", pick: true },
   { id: "background", icon: "fa-solid fa-scroll", pick: true },
   { id: "calling", icon: "fa-solid fa-fire", pick: true },
+  { id: "training", icon: "fa-solid fa-hand-fist", pick: true },
   { id: "defenses", icon: "fa-solid fa-shield-halved" },
   { id: "comets", icon: "fa-solid fa-meteor" },
   { id: "review", icon: "fa-solid fa-check" }
@@ -58,24 +62,41 @@ const STEPS = [
 const STEP = Object.fromEntries(STEPS.map((s, i) => [s.id, i]));
 
 /**
- * The one Talent every character is handed before a point is spent: Melee Training or Ranged
- * Training, their choice (PHB v4.10: "1 is automatically granted: Melee Training or Ranged
- * Training, your choice"). Nothing else is free any more; the four Defenses are bought with the
- * two Defense Talent Points below.
+ * The combat training a first Calling grants when its root text names none the wizard can read:
+ * Melee Training or Ranged Training, the martial Callings' pair (PHB v4.21, every martial root:
+ * "If this is your first Calling, you also gain N Vigor and Training in Melee or Ranged").
  */
-const TRAINING_CHOICES = [SW.MELEE_SLUG, SW.RANGED_SLUG];
+const DEFAULT_TRAINING_CHOICES = [SW.MELEE_SLUG, SW.RANGED_SLUG];
+
+/**
+ * What a Calling's root grants a first Calling, read from its Effect (PHB v4.21): the clause "If
+ * this is your first Calling, you also gain N Vigor and Training in X, or Y, Z, or W." The names
+ * are resolved against the registry by slug; a root with no readable clause, or whose names
+ * resolve to nothing, offers the martial pair. The casters' five disciplines come from here, so a
+ * sixth discipline Mike authors into a root is offered with no code change.
+ * @param {object|null} root  A cached Talent entry (chargen-data's), or null.
+ * @returns {string[]}  Constellation slugs.
+ */
+function trainingChoicesOf(root) {
+  const text = String(root?.effect ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const clause = /first Calling[^.]*?Training in ([^.]+)\./i.exec(text);
+  if (!clause) return DEFAULT_TRAINING_CHOICES;
+  const names = clause[1].split(/,\s*or\s+|,\s*|\s+or\s+/i).map(s => s.trim()).filter(Boolean);
+  const slugs = names.map(n => SW.slugify(n)).filter(slug => !!SW.constellations[slug]);
+  return slugs.length ? [...new Set(slugs)] : DEFAULT_TRAINING_CHOICES;
+}
 
 /** Defense Talent Points at creation (PHB v4.10, Defenses: "At 1st level, you gain 2 Defense Talent Points"). */
 const DEFENSE_POINTS = 2;
 /** Comets at creation (PHB v4.10, Comets: "Spend 3 Comets"). */
 const COMET_POINTS = 3;
-/** The book's floor for a finished 1st-level character: 1 granted plus 13 from the steps. */
-const MINIMUM_TALENTS = 14;
 /**
- * Vigor at 1st level is this, plus Ancestry Vigor, plus your first Calling's Opening Vigor (PHB
- * v4.11, Your Vigor). The Endure Bonus is in the formula too, but it is 0 until Expert rank, which
- * needs 5th level, so the wizard never has to print it.
+ * The floor for a finished 1st-level character: the book's 13 (PHB v4.21, Creating Your
+ * Character) plus the Skill Training every Calling's root text grants, which its table leaves out
+ * (the v4.21 sync report names it for Mike).
  */
+const MINIMUM_TALENTS = 14;
+/** Vigor at 1st level is this, plus Ancestry Vigor, plus your first Calling's Opening Vigor (PHB v4.21, Your Vigor). */
 const VIGOR_BASE = 10;
 
 /** The grant DSL in the spreadsheets, mapped onto the slot scopes the rules module understands. */
@@ -537,8 +558,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
   #cardOptions(step) {
     switch (STEPS[step]?.id) {
       case "training":
-        // A Training exists for the wizard when its Root is in the compendium (Melee today).
-        return TRAINING_CHOICES.filter(slug => rootOf(slug));
+        // What the chosen Calling's root grants (PHB v4.21), each when its Root is in the compendium.
+        return this.#trainingChoices().filter(slug => rootOf(slug));
       case "ancestry": return SwContent.chassis.ancestry.map(a => a.name);
       case "bloodline": {
         const ancestry = SwContent.chassis.ancestry.find(a => a.name === this.picks.ancestry);
@@ -549,6 +570,17 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       case "calling": return SwContent.chassis.calling.map(c => c.name);
       default: return null;
     }
+  }
+
+  /**
+   * The combat training the chosen Calling's root grants a first Calling (PHB v4.21), as slugs;
+   * the martial pair before a Calling is chosen or when the root names nothing readable.
+   * @returns {string[]}
+   */
+  #trainingChoices() {
+    const calling = SwContent.chassis.calling.find(c => c.name === this.picks.calling);
+    const slug = calling ? (calling.constellation || SW.slugify(calling.name)) : "";
+    return trainingChoicesOf(slug ? rootOf(slug) : null);
   }
 
   /**
@@ -705,17 +737,20 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /**
-   * Melee or Ranged, as two cards. Each shows its Key Attribute, the Root it grants, and the
-   * Combat Styles that are its children, since a point in any of those will count toward this
-   * rank too (PHB v4.10, Parent Constellations). Only a Training whose Root is in the compendium
-   * is offered (ruling 62): with one card the step still asks, with none it says so.
+   * The combat training the first Calling grants (PHB v4.21), as cards: Melee or Ranged for a
+   * martial Calling, one of the five disciplines for a caster, read from the Calling's root. Each
+   * shows its Key Attribute, the Root it grants, and the groups within it (the Combat Styles, the
+   * specialties), since a point in any of those counts toward this rank. Only a Training whose
+   * Root is in the compendium is offered (ruling 62): with one card the step still asks, with
+   * none it says so.
    */
   async _context_training(context) {
     const offered = this.#cardOptions(STEP.training);
+    context.parentName = this.picks.calling ?? "";
     context.cards = offered.map(slug => {
       const constellation = SW.getConstellation(slug);
       const root = rootOf(slug);
-      // Children that are themselves enabled; a Combat Style the spreadsheets have switched off
+      // Groups that are themselves enabled; a Combat Style the spreadsheets have switched off
       // is not something the card should promise.
       const children = childrenOf(slug).filter(c => constellationEnabled(c.slug)).map(c => c.name);
       const attribute = SW.ATTRIBUTES[constellation.attribute];
@@ -848,7 +883,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         rank: game.i18n.localize(SW.RANKS.trained.label),
         bonus: signed(SW.RANKS.trained.bonus)
       }),
-      training: TRAINING_CHOICES.map(slug => ({
+      training: this.#trainingChoices().map(slug => ({
         name: SW.getConstellation(slug).name,
         trained: pointsIn(this.actor, slug) > 0
       })),
@@ -858,11 +893,12 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /**
    * The floor a 1st-level character can actually reach with what the spreadsheets enable
-   * (ruling 62). The book's 14 is one granted Training, three Origin Roots, three Background
-   * points, the Calling's point and its free Training, two Defense points and three Comets; each
+   * (ruling 62). The 14 is three Origin Roots, three Background points, the Calling's point, its
+   * Skill Training and the combat training it grants, two Defense points and three Comets; each
    * is taken off when nothing enabled can receive it:
    *   - Training, Ancestry, Bloodline, Culture: 1 each, when the step offers no card. Bloodline is
-   *     read against the chosen Ancestry once there is one.
+   *     read against the chosen Ancestry once there is one; the Training against the chosen
+   *     Calling's grant.
    *   - Background: 3 when none is enabled. Calling: 2 when none is enabled (the point and the
    *     free Training). Otherwise the chosen Background's grants and the chosen Calling's two
    *     homes are directed points, and each Constellation they name can take as many of them as
@@ -1010,12 +1046,12 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /**
-   * Melee Training or Ranged Training, granted outright. The Root is the whole of the choice:
-   * nothing is spent, and Back (or picking the other card) takes it off again like any other
-   * step's Talents.
+   * The first Calling's combat training (PHB v4.21), granted outright: Melee or Ranged Training,
+   * or a discipline's. The Root is the whole of the choice: nothing is spent, and Back (or picking
+   * another card) takes it off again like any other step's Talents.
    */
   async _choose_training(slug) {
-    if (!TRAINING_CHOICES.includes(slug)) return;
+    if (!this.#trainingChoices().includes(slug)) return;
     const root = rootOf(slug);
     if (!root) {
       // The compendium has no Root for it: the pick is still recorded, so the wizard can go on,

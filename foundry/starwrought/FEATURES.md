@@ -1,7 +1,8 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.15** (v4.14's text under a formatting pass; no
-rule differs). System version **0.10.0**. Developed against
+Rules content built from **Player's Handbook v4.21** (Mike's reorganised edition of 4 November
+2026, formatted by `assets/phb_format.py` with the text unchanged; `v4.21-sync-report.md` in the
+project root has the rulings, 125 to 158). System version **0.11.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -26,15 +27,15 @@ will not let you past a step that still has a choice unmade or a point unspent.
 
 | Step | What it does |
 |---|---|
-| Weapon Training | Melee Training or Ranged Training, your choice, granted free. Each card names its Key Attribute, its Root, and the Combat Styles whose points will count toward it. Only a Training whose Root is enabled in the spreadsheets is offered |
 | Ancestry | Sets Vigor per level, Size, Speed (feet per Move) and Senses; grants the Ancestry Root |
 | Bloodline | Offers only the Bloodlines inside your Ancestry's Constellation; grants that Root. A step with nothing enabled says so and lets you continue |
 | Culture | Grants the Culture Root and adds its languages |
 | Background | Three directed points: Trained in two named Skills, and in a Lore of its own |
-| Calling | Sets your Opening Vigor, paid once at 1st level if it is your first Calling (Berserker 12, Ambusher 8, Hunter, Bravo and Weaponmaster 10); one Calling point buys the signature technique, one free Training goes to the Calling's Skill |
+| Calling | Sets your Opening Vigor, paid once at 1st level if it is your first Calling (Berserker 12, Ambusher 8, Hunter, Bravo and Weaponmaster 10; Spellshaper 6, Blood Mage 8, Necromancer 6, Summoner 6, Spellblade 8, per their root texts); one Calling point buys the signature technique, one free Training goes to the Calling's Skill |
+| Combat Training | What your first Calling grants with its Vigor (PHB v4.21): Melee Training or Ranged Training for a martial Calling, one of the five magical disciplines for a caster, read from the Calling's own root text. Each card names its Key Attribute, its Root, and the groups within it (the Combat Styles, the specialties) whose points will count toward it. Only a Training whose Root is enabled in the spreadsheets is offered |
 | Defenses | Two points, on two different Defenses, with the threat-coverage panel open beside them |
 | Comets | Three points, anywhere you qualify for |
-| Review | Name it and finish. The review prints the Vigor formula with your numbers in it, the Attribute rule (points ÷ 4), the rank rule (Trained +3), and your Talent count against the 14-point floor, or against the floor reachable with what is enabled when that is lower |
+| Review | Name it and finish. The review prints the Vigor formula with your numbers in it, the Attribute rule (points ÷ 4), the rank rule (Trained +3), and your Talent count against the 14-point floor (the book's thirteen plus the Skill Training every Calling's root grants), or against the floor reachable with what is enabled when that is lower |
 
 What the wizard enforces, all of it read from the compendium rather than hard-coded:
 
@@ -52,8 +53,10 @@ What the wizard enforces, all of it read from the compendium rather than hard-co
   Defenses you have Trained so far, and names the gap. Two Trained Defenses cover three threats, so
   the choice is which threat you can live without an answer to. Every Defense chip's tooltip says
   which threats it answers.
-- **Combat Style chips say which parent they count toward.** A point in Dueling counts toward
-  Melee's rank as well, and the chip says so.
+- **A group's chips say whose rank they wear.** A Combat Style is a group within Melee or Ranged
+  and a magical specialty a group within its discipline (PHB v4.21): it has no rank of its own, a
+  point in Dueling raises Melee's rank, the chip says so, and nothing in a group can be bought
+  before the parent's Root (ruling 127).
 - **Become Trained in X.** If X is not open the point buys its Root, and that purchase is what
   makes you Trained. If X is already open (your Calling and your Background both wanting Athletics,
   say) the point buys a deeper Talent there instead of being wasted.
@@ -96,7 +99,7 @@ beneath it without redrawing the step.
 that step added, restores the fields it set, and forgets the points it spent. Clicking an earlier
 step in the trail unwinds every step between. Changing a choice inside a step does the same before
 applying the new one, so the character never keeps the residue of a decision you walked away from.
-Picking the other Weapon Training card takes the first Root off again the same way. State lives on
+Picking another Combat Training card takes the first Root off again the same way. State lives on
 the Actor, so closing the wizard or reloading Foundry does not lose your place.
 
 Two things the first playtest taught the wizard. **The whole Talent card is the button**: anywhere
@@ -134,7 +137,7 @@ the sheet is authoritative for any action it names, the roster's Aid row stays r
 sheet's Aid ships under its document id. Since 0.6.1 the **Endure Constellation
 ships with its Root alone** (Mike enabled Endure Training on the Endure sheet of
 `data/defenses.xlsx`; the other four Endure Talents stay blank; sync report ruling 77), so Endure
-relief and the Endure Bonus to Vigor are reachable in play, and since 0.6.2 **Awareness ships the
+relief is reachable in play, and since 0.6.2 **Awareness ships the
 same way** (Mike enabled Awareness Training on the Awareness sheet; its other four rows stay blank;
 ruling 83), so every one of the four Defenses is one the wizard's Defenses step can Train; the
 enabled counts are 13 of 31 Constellations and 39 of 177 Talents. Weapons, armor and shields follow the same
@@ -157,58 +160,74 @@ anything it depends on changes.
 - **Attribute Points** counted per Talent owned, each flowing to that Talent's own feed and falling
   back to its Constellation's Key Attribute. Talents that override their feed are honoured, which
   is how Armored Fighting spreads across four Attributes.
-- **Attribute Bonus** = points ÷ 4, rounded down, maximum +5, with no minimum +1: 0 to 3 points is
-  +0, 4 to 7 is +1, 8 to 11 is +2. The sheet shows how many points to the next step.
+- **Attribute Bonus** = points ÷ 4, rounded down, with no minimum +1 and, since PHB v4.21, no
+  maximum: 0 to 3 points is +0, 4 to 7 is +1, 8 to 11 is +2. The sheet shows how many points to the
+  next step.
 - **Proficiency Rank** from points in the Constellation and character level: Trained +3 (1 point,
   level 1), Expert +6 (4 points, level 5), Master +9 (9 points, level 10), Legendary +12 (16
   points, level 15). Untrained is +0. The next rank's remaining cost, in points and in levels, is
   shown beside each Constellation.
 - **The Origin is pooled.** Ancestry, Bloodline and Culture are authored as separate skies but
-  progress as one Constellation, so their points share a rank.
-- **Melee and Ranged are parents.** Every Combat Style names one of them as its parent (Two-Weapon,
-  Shield, Brawling, Dueling, Great Weapon, Spear & Polearm and Armored Fighting under Melee;
-  Archery, Crossbow Fighting and Missile Skirmishing under Ranged). A child's Talents count toward
-  the parent's rank as well as the child's, **once the parent's own Root is owned**: without Melee
-  Training the Melee rank is Untrained whatever the Combat Styles hold, and with it every child
-  point counts. Only rank is inherited. The parent's own Talents must still be bought for their
-  effects, and an Attribute Point is counted once, at the Talent's own feed. The sheet shows a
-  parent's pool and how much of it is inherited, and a Combat Style carries a "child of" line.
-- **Vigor** = 10 + your first Calling's Opening Vigor + (Ancestry Vigor + Endure Bonus) × level
-  (PHB v4.11; sync report ruling 67). The Opening Vigor is paid once, at 1st level, and only by
-  the first Calling. The Ancestry's number is paid again at every level, and so is the **Endure
-  Bonus**: the conditioning clause of Endure Training, read live from your Endure rank, 0 at
-  Untrained and Trained, 1 at Expert, 2 at Master, 3 at Legendary. It is always 0 at 1st level,
-  since Expert needs 5th, and because it is read rather than recorded, reaching Expert lifts every
-  level's share at once, the levels already behind you included. A 1st-level Human Weaponmaster
-  has 28 (10 + 10 + 8 × 1); the same character at 5th with Expert Endure has 65 (10 + 10 +
-  (8 + 1) × 5). The sheet carries the per-level figure and the Opening figure separately, each
-  tooltip says where its number comes from, and the Adjustments field still adds on top.
-- **A night's rest** restores level × Presence Vigor, or level if Presence is 1 or less. It clears
-  Temporary Vigor and, since 0.6.2, Fatigued (ten minutes of rest is less than a night; the Rest
-  card says so when it did; PHB v4.13, sync report ruling 81), gives no Hero Point (the GM awards
-  those), and touches no Wound.
-- **Weapon dice by level**: one, then two at 4th, three at 8th, four at 12th, five at 16th.
-  **Specialization** by Melee or Ranged rank: +2 Expert, +3 Master, +4 Legendary.
+  progress as one Constellation, so their points share a rank. Since 0.11.0 the Origin is a
+  Constellation the engine can name (`origin`): `proficiency("origin")` answers the shared rank,
+  and an Automation line may test it (`if Origin is Expert`, Humanity's cell).
+- **Groups wear their parent's rank** (PHB v4.21, Constellations and shared ranks). Every Combat
+  Style is a group within Melee or Ranged (Two-Weapon, Shield, Brawling, Dueling, Great Weapon,
+  Spear & Polearm and Armored Fighting under Melee; Archery, Crossbow Fighting and Missile
+  Skirmishing under Ranged), and every magical specialty a group within its discipline (Flamecraft
+  and Stormcraft under Elementalism, Kinetics and Barriers under Forceweaving, Restoration and
+  Decay under Vitalism, Illusion and Emotions under Mindweaving, Oaths and Exorcism under
+  Spiritcraft). A group has no rank of its own: its row wears the parent's rank, bonus and pool,
+  dimmed, with a hint saying whose. Its Talents count toward the parent's rank **once the parent's
+  own Root is owned** (ruling 127): without Melee Training the Melee rank is Untrained whatever the
+  Combat Styles hold, and so is every group under it; with it every group point counts. The
+  parent's own Talents must still be bought for their effects, and an Attribute Point is counted
+  once, at the Talent's own feed. The sheet shows a parent's pool and how much of it comes from its
+  groups, and a group carries an "a group within" line. A Flare lit on a group records that
+  particular training (ruling 128).
+- **Vigor** = 10 + your first Calling's Opening Vigor + Ancestry Vigor × level (PHB v4.21). The
+  Opening Vigor is paid once, at 1st level, and only by the first Calling; the Ancestry's number is
+  paid again at every level. The Endure Bonus of v4.11 to v4.15 is gone (ruling 151): Endure
+  Training grants Load Strain relief and nothing to Vigor. A 1st-level Human Weaponmaster has 28
+  (10 + 10 + 8 × 1); at 5th, 50. The sheet carries the per-level figure and the Opening figure
+  separately, each tooltip says where its number comes from, and the Adjustments field still adds
+  on top.
+- **Two rests** (PHB v4.21). **A night's rest** restores all your Vigor, clears Temporary Vigor and
+  Fatigued, gives no Hero Point (the GM awards those), and touches no Wound. **Ten minutes' rest**
+  (the Overview's second rest button, and the Fatigued card's) restores level × Presence Vigor when
+  Presence is positive and nothing otherwise (ruling 144), and ends Fatigued; it is the table's word
+  that the ten minutes passed, since the system keeps no clock.
+- **Weapon dice by rank** (PHB v4.21): a Deliberate or Committed Strike rolls one weapon die at
+  Trained, two at Expert, three at Master, four at Legendary, in the Melee or Ranged rank the
+  Strike rolled (Handling's reduction included); a Quick Strike and a Graze roll one. There is no
+  specialization damage (ruling 153: "do not add them a second time as weapon specialization"); the
+  Overview's Strikes panel prints the dice for each, "1 / 1" at 1st level.
 
 ### The four Defenses
 
 Each is a Constellation, so each is Attribute Bonus + Proficiency Bonus, with a Threshold of ten
 plus that (plus Size, for Evade and Guard). Folded in automatically:
 
-- creature Size on Evade and Guard, outside the typed stack;
-- Off-Guard (−2 Situation to Evade and Guard), Frightened N and Fatigued N (each a −N Condition
-  penalty to Evade and Guard, so the worse of the two stands; Fatigued N reaches attack rolls as
-  well). Load Strain is not in the list: since PHB v4.11 armor never makes you easier to hit, and
-  Strain comes off nothing on the Defense grid;
+- creature Size on Evade and Guard, outside the stack, and since PHB v4.21 a penalty only: Tiny −2
+  and Small −1 to Guard, Large −1 and Huge or Gargantuan −2 to Evade (ruling 139);
+- Off-Guard (−2 Situation to Evade and Guard), Frightened N (−N Condition to all four) and
+  Fatigued N (−N Condition to all four Defenses since v4.21, and to attack rolls). Load Strain is
+  not in the list: armor never makes you easier to hit, and Strain comes off nothing on the
+  Defense grid;
 - the first Torso Wound as Off-Guard, and the first Arms Wound as −2 Situation to Guard;
-- a Parry weapon in hand (+1 Gear to Guard) and a raised shield (its Gear bonus to Guard), which
-  share a type and so do not stack: the better one stands. A tower shield gives Cover instead of a
-  number and is left out of the sum;
-- a Closed helm (−2 Situation) or an Open helm (−1) on Awareness and on Initiative, matched by the
-  Head piece's name because the book has no trait for it.
+- a Parry weapon in hand (+1 Gear to Guard) and a raised shield (its Gear bonus to Guard), two
+  pieces of gear that both count (ruling 125). A tower shield gives Cover instead of a number and
+  is left out of the sum;
+- a lowered visor (−1 Gear) on Awareness and on Initiative, read off the Visored trait of the Head
+  piece worn (PHB v4.21; the helm penalties by name of v4.10 to v4.15 are gone).
 
-Bonuses and penalties of the same type do not stack, and a bonus and a penalty of the same type add
-together first. An Untrained Defense is +0 Proficiency and is marked Untrained on the grid.
+**Stacking is PHB v4.21's**: every bonus and penalty adds, whatever its type, and a circumstance
+is counted once. The engine tags the circumstances it can see: Off-Guard and the first Torso Wound
+(Off-Guard made lasting) are one, so a Wounded fighter who is also Off-Guard is −2, not −4; one
+Talent's `bonus` lines on one target are one, so a Talent that scales by rank gives the higher
+line and never two. Frightened and Fatigued are two things and add. The three types stay as the
+book's labels for where a number comes from, printed on every card. An Untrained Defense is +0
+Proficiency and is marked Untrained on the grid.
 
 **Two Defenses at creation**, not four. **The four threats**: a Blow is answered by Evade or Guard,
 a Blast by Evade or Endure, a Blight by Endure or Awareness, a Beguilement by Awareness or Guard.
@@ -235,29 +254,27 @@ sheet can see, so they stay with the table.
   caller says so), and then rolls Ranged. **Weapon Handling** still applies on top: Intuitive uses
   the full rank, Practiced drops a rank without Familiarity, Technical drops you to Untrained.
   Familiarity is derived from what your Talents recorded plus the sheet's own list.
-- **The Strike Attribute** is the higher of the weapon's natural Attribute and the Key Attribute of
-  a Combat Style whose Root you own and in whose Style you are wielding the weapon (PHB v4.14, The
-  Attack: "Your Strike Attribute is the higher of two numbers: the weapon's natural Attribute
-  (Might; or Agility for a weapon with the Finesse trait, and for any ranged weapon other than a
-  composite bow or a thrown weapon), or the Key Attribute of a Combat Style whose root you have and
-  whose weapons you are wielding. Work it out once per weapon and write it on your sheet. Damage
-  still adds Might where the Strike allows it."; sync report rulings 87 and 88). The natural
-  Attribute is Might, or Agility for a Finesse weapon and for a ranged weapon that does not carry
-  the **Composite** trait; a thrown weapon is Might, since a weapon thrown from the hand is not a
-  ranged weapon in its own right (0.6.3; through 0.6.2 every ranged weapon read Agility, and no
-  weapon in the data carries Composite yet). "Write it on your sheet" is the weapon's **Combat
-  Style** field: name the Style you wield it in and the sheet makes the comparison. The weapon row
-  shows the glyph of the Attribute that won and its tooltip says whether it came from the weapon or
-  the Style. Damage still adds Might where the Strike allows it.
+- **The Strike Attribute** (PHB v4.21, The Attack: "Melee: Might, or Agility if the weapon has the
+  Finesse trait. Ranged: Agility, or Might if the weapon has the Thrown trait"). The weapon's own:
+  Might, or Agility for a Finesse weapon and for a ranged weapon; a throw is Might, a Finesse dagger
+  thrown included, the book's words taken literally (ruling 129; the weapon row's tooltip says so
+  when it would differ). "A Strike made as part of another Maneuver ... If that Maneuver's Key
+  Attribute has a higher bonus than the Strike's normal Attribute, you may use it instead": the
+  roll dialog offers **As part of a Maneuver**, the Talents and Maneuvers you own whose Key
+  Attribute beats the weapon's, none by default, the Maneuver's Requirements the table's; the
+  chosen one rebuilds the roll around its Attribute and the card says "via <Maneuver>". The Combat
+  Style substitution of v4.14 is gone with the weapon's Combat Style field (a Style is a group with
+  no Attribute of its own to lend), and so is the Composite trait. Damage still adds Might where the
+  Strike allows it.
 - **The three Strikes.** Every weapon row has three buttons, ❶ Quick, ❷ Deliberate, ❸ Committed,
   and the roll dialog shows the kind and lets it be changed (it is locked when the Strike is already
-  paid for: a finished preparation, a riposte, a Counter, an Intercept).
+  paid for: a finished preparation, a riposte, an Intercept).
   - **Quick ❶**: one weapon die plus precision, nothing else. It cannot Critically Hit unless the
     weapon is Agile: a natural 20 that would have been a critical is a Hit, the card says so, and
     the Flare button is still offered because the die was a 20. It lands on the Torso and meets
-    that Zone's Protection in full, Exposed or not. Stopped, it costs nothing beyond the action and
-    can be Bound but never Controlled.
-  - **Deliberate ❷**: the default. All your dice, specialization and Might. It may be placed on an
+    that Zone's Protection in full, Exposed or not. Stopped, it costs nothing beyond the action (a
+    Miss Exposes nothing, PHB v4.21's Table 9) and can be Bound but never Controlled.
+  - **Deliberate ❷**: the default. Your rank's dice and Might. It may be placed on an
     Exposed Zone, and a Critical Hit lets you Expose a plausible Zone. A Miss Exposes you in a
     Zone of the defender's choice; a Parry that Stops it takes Control.
   - **Committed ❸**: **Prepared**. In an encounter, choosing it spends one action, reserves two,
@@ -277,8 +294,8 @@ sheet can see, so they stay with the table.
   button is an offer to the side the rule favours, shown only to that actor's owner (the GM sees
   them all), never an automatic write, because "a plausible Zone" and "if they Guarded with a
   rigid weapon" are the table's to confirm.
-  - **Expose the attacker**: a Zone picker for the defender on any Miss, and on a Graze when the
-    Strike was Committed.
+  - **Expose the attacker**: a Zone picker for the defender on a Deliberate or Committed Miss, and
+    on a Graze when the Strike was Committed.
   - **Form Bind / Take Control**: when the defender Guarded with a rigid implement in hand (a
     shield, or a weapon that is neither Flexible nor a bare hand) and the attack itself can be
     bound: a melee weapon or natural attack that is neither Flexible nor Unparryable, and not an
@@ -290,45 +307,48 @@ sheet can see, so they stay with the table.
     Controlled.
   - **Give ground 3 ft / Step**: when the defender Evaded. A Graze gives 3 feet directly away from
     the attacker (the token is moved along that line, rounded to whole squares, and not charged as
-    a Move). A Miss, or a Void that Stopped the attack, offers a Step instead: the card says so, and
-    the player moves the token.
+    a Move). A Miss, or a Sidestep that Stopped the attack, offers a Step instead; a Slip the Line
+    that Stopped it offers a Move to any space adjacent to the attacker: the card says so, and the
+    player moves the token.
   - **Expose the defender**: a Zone picker for the attacker on a Committed Hit, or a Deliberate
     Critical Hit.
-  - **Counter**: the defender's Quick Strike back, offered whatever the Result was.
-- **Reactions, carried by the defender's stance.** Each actor carries one of five stances: Evade,
-  Guard, or a Reaction stance built on one of them.
-  - **Void ❶↺** (Evade Training): Evade at +2 Situation. Stopped, you may Step.
-  - **Parry ❶↺** (Guard Training and a rigid implement in hand): Guard at +2 Situation. Stopping a
-    Deliberate or Committed Strike takes Control and offers the riposte.
-  - **Counter ❶↺** (Expert rank in Melee; Melee Training alone grants Intercept, not Counter): the
-    better of your two usable basic Defenses, no bonus, and a
-    Quick Strike back whatever the Result. It answers only a melee Blow from a foe within your
-    Reach: an arrow, or a spear from beyond your Reach, meets the basic Defense, charges nothing,
-    leaves the stance standing, and the card says so.
-  - **A Reaction never triggers a Reaction.** A Strike made as a Reaction (Counter, Intercept, the
-    riposte) meets the target's basic Defense only: their stance is not read, nothing is charged to
-    them, and no Counter is offered back. The same holds when a player answers an adversary's
-    Intercept: the Defense dialog offers no Reaction, and the card says why.
-  - The attack reads the stance at the roll. The +2 is folded into the Threshold inside the same
-    Situation stack, so it does not add to another Situation bonus the Defense already carries. The
-    ❶ is charged to the defender when the roll resolves, from the same six actions, and their
-    stance falls back to the basic Defense it was built on. When the attacker's client does not own
-    the defender, the card carries a **Charge** button for whoever does.
-  - A Reaction stance the actor has no Talent for is drawn disabled. A Head Wound blocks every
-    Reaction (the basic Defense still rolls, and the card says why); a chip or the token HUD
-    disabled by the Wound says "You cannot use Reactions." rather than naming a Training the
-    character may well own. Parry with nothing rigid in hand is noted, not blocked.
+- **Reactions are Talents** (PHB v4.21, Answering an Attack; the Defense Constellations). The ones
+  the system implements are a table keyed by the Talent's plain name (`SW.REACTIONS`), and a
+  character owns one by owning the Talent, or the Training root that grants it in its own text;
+  an adversary owns them all, the GM's to declare. Void and Counter are gone from the book.
+  - **Give Ground ⓿↺** (Evade Training) and **Set Your Feet ⓿↺** (Guard Training): +2 Situation
+    to the Defense, a Zone of your choice Exposed until the end of the round, win or lose.
+  - **Sidestep ❶↺** (Evade): +2 Situation; Stopped, you may Step. **Slip the Line ❶↺** (Evade,
+    against melee): +2 Situation; Stopped, a Move to any space adjacent to the attacker. **Drop
+    Flat ⓿↺** (Evade): you drop Prone, +4 Situation, no Zone Exposed.
+  - **Parry ❶↺** (Guard, against melee, a rigid implement in hand): +2 Situation; Stopping a
+    Deliberate or Committed Strike takes Control, and offers the **Riposte** (a Quick Strike back
+    instead of Control) when that Talent is owned too. **Kneel Behind the Shield ⓿↺** (Guard, the
+    shield Raised): +4 Situation, your Arms Exposed, your Speed 0 until you rise (the card's note).
+    **Deflecting Palms ❶↺** (Guard, against melee, a hand free): +2 Situation; its damage reduction
+    is the table's. **Cover the Angle ❶↺** (Guard): an adjacent ally's melee Blow measured against
+    your Guard; the Combat Prompt offers no answer for another's Blow yet, so it is the table's.
+  - **One answer per attack** (ruling 133): a Reaction ❶↺ or a Posture ⓿↺, never both. A melee-only
+    Reaction is not offered against an arrow. A ⓿↺ Reaction Talent in Evade or Guard that the table
+    does not name is still a Posture by the general rule (+2 and a Zone).
+  - **A Reaction never triggers a Reaction.** A Strike made as a Reaction (Intercept, the Riposte)
+    meets the target's basic Defense only: nothing is charged to them. The same holds when a
+    player answers an adversary's Intercept: the Defense dialog offers no Reaction, and the card
+    says why.
+  - The bonus is folded into the Threshold through the Defense's own modifiers, where v4.21's
+    stacking adds it. The ❶ is charged to the defender when the roll resolves, from the same six
+    actions. When the attacker's client does not own the defender, the card carries a **Charge**
+    button for whoever does. A Reaction the character does not own falls back to the basic Defense
+    with a note; a Head Wound blocks every Reaction and Posture (the basic Defense still rolls, and
+    the card says why); Parry with nothing rigid in hand is noted, not blocked.
   - **A Defense rolled against an Attack Threshold** (a player answering an adversary's attack)
-    offers the Reactions the roller owns in the dialog (an adversary is offered all three), adds
-    the +2, swaps the Defense where the Reaction says so (Void is an Evade, Parry is a Guard) and
-    charges the ❶.
-- **Intercept ❶↺** (Melee Training, the one Reaction the Root grants) is offered by a card when a
-  foe Moves into your Total Reach.
-  See the six-action round.
+    offers the Reaction Talents the roller owns on that Defense in the dialog (an adversary is
+    offered them all), adds the bonus, swaps the Defense to the Reaction's own, and charges the ❶.
+- **Intercept ❶↺** (Melee Training, in its own text) is offered by a card when a foe Moves into
+  your Total Reach. See the six-action round.
 - **Support.** +1 Situation to a melee attack for each other conscious ally whose Total Reach
-  includes the target, to a maximum of +2. Allies are tokens of the attacker's disposition on the
-  scene; a hidden, Dying, unconscious or dead one grants nothing. Support shares a type with the
-  Controlled penalty, so the two resolve against each other rather than adding.
+  includes the target, to a maximum of +4 (PHB v4.21). Allies are tokens of the attacker's
+  disposition on the scene; a hidden, Dying, unconscious or dead one grants nothing.
 - **Controlled.** An attack with a weapon a foe Controls takes −2 Situation. Attacking with a weapon
   other than the one in the Bind ends the Bind before the roll; a Strike between the two partners
   ends it after; a Controller struck by a third party loses the line.
@@ -347,26 +367,68 @@ sheet can see, so they stay with the table.
   labelled "Relevant Check" with the Constellation and the reason as its subtitle. Adversaries do
   not roll them; they carry Thresholds.
 
+### Spells and the four Threats
+
+Since PHB v4.21 the book has five magical Constellations (Elementalism, Forceweaving, Vitalism,
+Mindweaving, Spiritcraft) with two specialties each, authored in `data/magic.xlsx` with structured
+spell columns beside the Talent's text (Threat, Delivery, Range, Die, Damage, Targets, Quick,
+Focused, Committed, Defenses; `data/README.txt`). A Talent with a Threat is a **spell**, and its row
+on the Constellations tab and its Item sheet carry the **Cast ❷ ❸ ❹** (Quick, Focused, Committed;
+using the Talent casts it Focused).
+
+- **The roll** (PHB v4.21, Spellwork: "Roll the named magical parent's proficiency with the spell's
+  Key Attribute against the Defenses permitted by its Threat"): the discipline's Proficiency (the
+  Talent's Constellation, or the discipline when the Talent is a specialty's) with the discipline's
+  Key Attribute, as an attack that is no Strike. The Threat names two Defenses (a Blow Evade or
+  Guard, a Blast Evade or Endure, a Blight Endure or Awareness, a Beguilement Awareness or Guard;
+  the sheet may override them): the roll meets the **higher** of the two on the target, the choice
+  a defender would make, and the card names it. The card's outcome rows are the spell's three Cast
+  texts, and its damage buttons roll the spell's dice.
+- **The dice**: one die at Trained, two at Expert, three at Master, four at Legendary in the
+  discipline's rank, one for a Quick Cast; the die and the first damage type are the sheet's; no
+  Might, no specialization, no sheet damage bonus (ruling 136). A Quick Cast's Graze deals nothing
+  (no button); a Focused or Committed Cast's Graze deals one die. A Quick Cast may Critically Hit
+  (ruling 135). `force` and `psychic` are damage types since 0.11.0 (ruling 134).
+- **Delivery** (PHB v4.21, Damage Delivery): a Zoned spell lands on the Torso or a Zone the caster
+  picks, as a Deliberate Strike does, and meets that Zone's Protection once; a Pervasive spell
+  ignores ordinary Protection, and the applied card says so.
+- **The actions**: Quick ❷ is immediate; Focused ❸ and Committed ❹ are Prepared under the
+  three-action rule in an encounter (one now, the rest reserved, resolved at the next Opportunity
+  through the same Finish button a Committed Strike uses) and immediate outside one.
+- **What it does not yet do.** A Cast rolls at once, outside the attack flow: the defender does not
+  commit, nothing is revealed, and an adversary's Threshold prints as 0.4.2 printed it. The first
+  non-Blow Threat in the coordinator is the next piece of work (section 9). Areas, pushes,
+  conditions on a Hit, summons, Temporary Vigor pools, healing and a second damage type are the
+  Talent's text on the card, the table's to apply. Spells on an adversary are the GM's to narrate:
+  the players roll everything, so a character's Defense answers one from the sheet.
+
 ### Damage
 
-**Per-Strike formulas.** A Deliberate or Committed Hit rolls all your weapon dice, plus Might
-(unless the weapon is Mechanical), plus specialization in Melee or Ranged by the weapon, plus flat
-bonuses, plus precision. A Quick Hit rolls one weapon die plus precision. A Graze rolls one weapon
-die and nothing else. A Critical Hit doubles the total; a Deadly die is a critical effect of the
-weapon and lands after the doubling, not inside it.
+**Per-Strike formulas.** A Deliberate or Committed Hit rolls your rank's weapon dice, plus Might
+(unless the weapon is Mechanical), plus flat bonuses, plus precision. A Quick Hit rolls one weapon
+die plus precision. A Graze rolls one weapon die and nothing else. A Critical Hit doubles what is
+left after Protection; a Deadly die is a critical effect of the weapon and lands after the
+doubling, not inside it.
 
-**The order of operations**, followed literally: Immunity, the total, Weakness, Resistance, the
-critical doubling, the Deadly die, Protection, Temporary Vigor, Vigor. Damage beyond what it took to
-empty your Vigor is lost; nothing goes below 0.
+**The order of operations** (PHB v4.21, Damage Resolution), followed literally: Immunity, the
+total, Resistance (all of it), Weakness (all of it, only if damage remains), the Zone's Protection
+once for a Zoned Attack, the critical doubling, the Deadly die, Temporary Vigor, Vigor. Damage
+beyond what it took to empty your Vigor is lost; nothing goes below 0. Through 0.10.1 Weakness
+came before Resistance and the doubling before Protection.
 
 - **Protection can never take a blow below 1.** Resistance can take it to 0. Immunity overrides both.
 - **Per-Zone Protection** worked down the handbook's list: an Exposed Zone is 0 **against a
   Deliberate or Committed Strike only**, and stops there. A Quick Strike meets the Zone's Protection
-  in full, and so does damage that is not a Strike at all (a Blast, a fall). Otherwise the piece
-  worn there, plus Zone bonuses and the matched-harness +1 on the Torso, minus 1 if the material
-  turns that damage type poorly, minus anything the attacker ignores (Armor-Piercing, on piercing).
-- **Materials are automatic.** Padded and leather turn slashing poorly, mail turns piercing poorly,
-  plate turns bludgeoning poorly, scale turns nothing.
+  in full, and so does Zoned damage that is not a Strike at all (a Blow spell, a fall). Otherwise
+  the piece worn there (one less while a Visored piece's visor is raised), plus Zone bonuses, minus
+  anything the attacker ignores (Armor-Piercing, on piercing).
+- **Pervasive damage meets no Protection.** A Pervasive spell, and Persistent Damage, which since
+  0.11.0 goes through the pipeline from its end-of-round card (Immunity, Resistance and Weakness
+  counted, the Vigor taken, Spent and the Wounds of a Spent body as for any damage) where through
+  0.10.1 the card named the amount and left the applying to the sheet.
+- **Armor types are a word, not a weakness.** Padded, leather, mail, lamellar, brigandine, splint
+  and plate (PHB v4.21's Type column; Scale reads as Lamellar) name what a piece is and turn nothing
+  poorly: the material-weakness step of v4.10 to v4.15 went with its table (ruling 149).
 - **Where it lands.** A Quick Strike lands on the Torso and the picker is locked. A Deliberate or
   Committed Hit lands on the Torso or on an Exposed Zone of the attacker's choice. A Graze goes
   where the defender says. A Critical Hit goes where the attacker chooses, and the picker opens on
@@ -471,9 +533,10 @@ action spent is lost. Taking a Wound abandons it, so does going down, and a new 
 an old one. You cannot Pass while Preparing; the Pass button says so and refuses. A preparation that
 never reaches its Opportunity expires with the round, with a card.
 
-**Reactions are paid from the same six.** There is no reaction slot. Void, Parry and Counter are
-charged when the attack they answer resolves; Intercept is charged when its Quick Strike is made;
-the riposte after a Parry is ⓿. Using a Maneuver Item that carries the Reaction trait from the
+**Reactions are paid from the same six.** There is no reaction slot. A ❶↺ Reaction Talent
+(Sidestep, Slip the Line, Parry, Deflecting Palms) is charged when the attack it answers resolves,
+a ⓿↺ Posture never; Intercept is charged when its Quick Strike is made; the Riposte after a Parry
+is ⓿. Using a Maneuver Item that carries the Reaction trait from the
 sheet spends its cost (its own Reaction cost when the sheet gives the Reaction half one, otherwise
 the cost printed; no shipped Maneuver carries a separate Reaction cost yet).
 
@@ -575,31 +638,39 @@ the Bind.
 
 ### Armor and load
 
-Load Strain is the Load of every piece worn and a shield carried, less 1 for a matched harness
-(which also gives +1 Torso Protection), less your Endure relief, to a minimum of 0. Endure relieves
-it from Trained (1 at Trained, 2 at Expert, 3 at Master, 4 at Legendary; Untrained relieves
-nothing), so a fighter Trained in Endure in full plate with a closed helm carries Strain 6 and a
-Master carries 4, as the book's own worked example has it. Clatter is as before.
+Load Strain is the Load of every piece worn and a shield carried, less 1 for a **Fitted Harness**,
+less your Endure relief, to a minimum of 0 (PHB v4.21). Endure relieves it from Trained (1 at
+Trained, 2 at Expert, 3 at Master, 4 at Legendary; Untrained relieves nothing). The Fitted Harness
+is the book's Fitted trait: "If you wear armor with the Fitted trait in at least three Zones, and
+they have all been adjusted to you, reduce total Load Strain by 1." A Fitted piece carries an
+**adjusted** tick (on its Item sheet, and a ruler control on the Equipment tab's row), the player's
+word that it was fitted to them; three adjusted Fitted pieces worn make the harness, and the
+Equipment tab counts them toward it. The matched harness of v4.10 to v4.15 (four pieces of one
+material, +1 Torso Protection) went with its tables. Clatter counts mail, lamellar, brigandine,
+splint and plate, a Muffled piece never (ruling 142).
 
-**Load Strain never touches Evade** (PHB v4.13, as v4.12: "Heavy armor does not make you easier to hit"), and
-it is no blanket penalty on Might or Agility. What it costs is breath, senses and the margins of
-movement: it comes off your Rush and Leap distances in feet; a Stealth check takes it as an untyped
-penalty automatically, labelled Load Strain on the card; and because the system cannot tell a Climb
-or a Swim from a grapple, the roll dialog for an Athletics check offers an unticked **Load Strain
-(Climb or Swim)** modifier whenever your Strain is 1 or more, for the player to tick when the check
-is one of those. No other check takes it. The Wind check above is the clock: at the end of every
-round, from the first, a fighter with Load Strain 1 or more whose Endure Threshold is below 10 +
-Load Strain rolls Endure against that number, each failure deepening Fatigued by one, to Fatigued
-3; a fighter whose Endure Threshold meets it never rolls, and neither does one carrying no Strain
-(PHB v4.13: "If your Load Strain is at least 1 and your Endure Threshold is less than 10 + your
-Load Strain, then at the end of every round while in an encounter, you must roll Endure against
-10 + Load Strain"; the third-round delay of v4.11 and v4.12 is gone from the book and the system
-follows it). The Load Strain field's tooltip gives both numbers and says which side of the line
-you stand on, to the GM and the player alike. Endure Training ships since 0.6.1, so the relief and
-the exemption are both reachable. Fatigued, once it has set in, outlasts the fight: ten minutes'
-rest ends it, by the button on the Fatigued card or by a night's rest, never by the Combat's end.
-A Closed helm is −2 Situation to Awareness checks, the Awareness Threshold and Initiative; an Open
-helm −1.
+**Load Strain never touches Evade**, and it is no blanket penalty on Might or Agility. What it
+costs is breath, senses and the margins of movement: it comes off your Rush and Leap distances in
+feet; a Stealth or Acrobatics check takes it as a Condition penalty automatically, labelled Load
+Strain on the card (PHB v4.21: "Apply your Load Strain as a Condition penalty to Stealth,
+Acrobatics, Climb, and Swim checks"); and because the system cannot tell a Climb or a Swim from a
+grapple, the roll dialog for an Athletics check offers an unticked **Load Strain (Climb or Swim)**
+modifier whenever your Strain is 1 or more, for the player to tick when the check is one of those.
+No other check takes it. The Wind check above is the clock: at the end of every round, from the
+first, a fighter with Load Strain 1 or more rolls Endure against 10 + Load Strain, a failure
+deepening Fatigued by one and a critical failure by two, to Fatigued 3 (PHB v4.21; the Endure
+Threshold exemption of v4.12 to v4.15 is gone from the book and the system follows it, ruling
+150). The Load Strain field's tooltip gives the Wind Threshold and your Endure Threshold, to the GM
+and the player alike. Fatigued, once it has set in, outlasts the fight: ten minutes' rest ends it,
+by the sheet's button, the button on the Fatigued card or a night's rest, never by the Combat's
+end.
+
+**Visored** (PHB v4.21): a Head piece with the trait has a visor, up or down. Lowered, it is −1
+Gear to Awareness checks, the Awareness Threshold and Initiative; raised, the piece Protects 1 less.
+Raising or lowering it is a single action: the mask control on the Equipment tab's row (or the
+Maneuvers Lower the Visor and Raise the Visor, once their rows exist) pays it and says so, and the
+Overview notes which way it stands. The helm penalties by name of v4.10 to v4.15 (Closed −2, Open
+−1) are gone.
 
 **Attended** (0.6.2; sync report ruling 82; Mike: "Yes to all") is an armor trait on the
 Breastplate alone, and it is display only: "It fastens behind the shoulder, beyond your own reach:
@@ -663,8 +734,8 @@ and then `toggleFlare` as before, so nothing on the chat path changed. The party
 opens the same picker from its GM-only Flare plus, with an optional one-line reason, and
 `toggleFlare(slug, state, { reason })` prints the reason on the lit card as its own line ("awarded
 by the GM: <reason>"), so a Flare the GM grants for something the dice never saw is said with its
-cause. While the character holds a Deferred Talent Point the lit card also carries "You hold a
-Deferred Talent Point: spend it here now." (ruling 94; see The party, under Sheets). The put-out
+cause. While the character holds a Comet the lit card also carries "You hold a Comet: a Talent
+Point for any Constellation, this one included." (rulings 94 and 145; see The party, under Sheets). The put-out
 card, and the silence on a Flare that was never lit, are unchanged. Since 0.7.5 the party sheet's
 Train opens the same picker with no reason field and lights the pick with
 `toggleFlare(slug, true, { trained: true })`, whose card says "Flared by seven days' training." in
@@ -673,7 +744,7 @@ party, Downtime, under Sheets).
 
 ### Initiative
 
-Awareness by default, with no level term and the helm's penalty inside it, or whatever you were
+Awareness by default, with no level term and a lowered visor's penalty inside it, or whatever you were
 actually doing: the "Roll Initiative by Activity" macro lets a player nominate the Constellation,
 and the roll swaps Awareness's two terms for the chosen Constellation's and keeps the rest. Since
 0.7.2 the party sheet's Begin the encounter writes the same thing for the whole party at once (see
@@ -685,8 +756,8 @@ Situation entry per Scout among the other members with a token on the scene ("Sc
 member the card names as having no token neither gives nor gets one), and every roll in the system
 reads both: the tracker's roll through `SwCombatant._getInitiativeFormula`, which since 0.7.2 asks
 the check engine for the very total the dialog would show (the flagged Constellation's terms, the
-sheet's Initiative adjustment, the helm, and the modifiers one per type at most, so two Scouts are
-+1 and not +2); the "Roll Initiative by Activity" macro, which replaces the Constellation with the
+sheet's Initiative adjustment, the visor, and the modifiers, which since PHB v4.21 add, so two
+Scouts are +2, ruling 126); the "Roll Initiative by Activity" macro, which replaces the Constellation with the
 one the player nominates and writes it back to the flag, the Scouts' modifiers still applying since
 it passes none of its own; `rollInitiativeWithCheck`, whose
 Constellation and modifiers default to the flags and whose card names the Constellation in its
@@ -700,16 +771,17 @@ Initiative assembly for that Constellation (`SwCheck.previewTotal` with `kind: "
 static and pure, so nothing is rolled and nothing is written to work it out) added to the natural
 die the check threw, with the Combatant's modifiers and the typed extras the check itself carried
 (the dialog's situational entry, kept on the record) resolved in one pass, so a +2 Situation for
-cover and a Scout's +1 Situation stack as every check does, highest only. Since 0.7.4 an
+cover and a Scout's +1 Situation add as every check's modifiers do since v4.21. Since 0.7.4 an
 Initiative rolled with a Constellation carries every modifier that Constellation's check does
 (ruling 111; Mike: "ALL active modifiers for any roll should be applied even if that roll is used
 for initiative"): the check adjustment, and Load Strain on a Stealth roll, which through 0.7.3 an
 Initiative never took. So against the check's own total the only difference is Initiative's own
-terms: the helm's penalty where the check did not already carry it (an Awareness check does, so a
-Search's Awareness never carries the helm twice), the sheet's Initiative adjustment, and the
-Scouts' +1. A Stealth 17 rolled by an Open-helm wearer at −1 with a Scout present is kept as 17 + 0,
-whatever their Load Strain; the card names the terms whenever the difference is not zero ("..., +1
-for Initiative's own terms (the helm, the Scouts' bonus, the sheet's Initiative adjustment): 18.").
+terms: the visor's penalty where the check did not already carry it (an Awareness check does, so a
+Search's Awareness never carries the visor twice), the sheet's Initiative adjustment, and the
+Scouts' +1 each. A Stealth 17 rolled with the visor down at −1 with a Scout present is kept as
+17 + 0, whatever their Load Strain; the card names the terms whenever the difference is not zero
+("..., +1 for Initiative's own terms (the visor, the Scouts' bonus, the sheet's Initiative
+adjustment): 18.").
 The value is written with
 `combat.setInitiative` onto every unrolled Combatant of the member, so the tracker, the party row
 and the grid's cell read it as any rolled Initiative, and the Combatant has rolled as far as a
@@ -811,13 +883,13 @@ the drag clone exists only on the dragging client; they see Foundry's own drag r
 "The defender chooses one of the two Defenses that answer it, and decides whether to spend an
 action on a Reaction." Each actor, character or adversary, carries a **stance**: the basic Defense
 the next physical Attack is met with, **Evade** or **Guard** (0.5.3; Mike: "Standing Stance should
-only include Evade or Guard"). The Reactions built on them, **Void**, **Parry** and **Counter**,
-cost ❶ from the six when an attack lands on you, are only yours when the Talent or rank that
-grants them is there (Evade Training, Guard Training with a rigid implement in hand, Expert rank
-in Melee for Counter), and are chosen blow by blow in the Combat Prompt rather than held as a
-stance; as Maneuvers they appear on the sheet's Maneuvers tab once their rows are enabled in
-`data/maneuvers.xlsx`. A stance a character set to a Reaction before 0.5.3 reads as the Defense it
-stood on. Awareness and Endure are not stances; the handbook calls for them by name.
+only include Evade or Guard"). The Reactions are Talents since PHB v4.21 (Sidestep, Slip the Line,
+Parry, Deflecting Palms ❶↺; the Postures Give Ground, Set Your Feet, Drop Flat, Kneel Behind the
+Shield ⓿↺), cost their ❶ from the six when an attack lands on you, are only yours when you own the
+Talent or the Training root that grants one, and are chosen blow by blow in the Combat Prompt
+rather than held as a stance. A stance a character set to Void, Parry or Counter before 0.11.0
+reads as the Defense it stood on, and the migration writes it. Awareness and Endure are not
+stances; the handbook calls for them by name.
 
 - **On the sheet**, two chips in the header, each showing the Threshold an attacker would meet,
   one click to switch, and the chosen Defense marked in the grid. Adversaries have the same chips.
@@ -838,16 +910,15 @@ stood on. Awareness and Endure are not stances; the handbook calls for them by n
   (`rollAttack(id, { defense: "awareness" })`) for a Talent that calls for one specifically; the
   dialog then shows the forced Defense by name, since the attacker chose it, and the stance is not
   consulted.
-- **A Reaction stance is spent when it is used.** The ❶ comes off the defender's six as the attack
-  resolves and the stance falls back to Evade or Guard, so standing ready to Parry is a decision
-  renewed every blow.
+- **A Reaction is spent when it is used.** The ❶ comes off the defender's six as the attack
+  resolves; the stance itself is never a Reaction, so there is nothing to fall back from.
 - **Not announced to the table.** A player's change of stance mid-encounter is whispered to the
   GM, who is running the thing about to swing; a GM's change goes nowhere. Everyone else learns
   what a defender answered with when the roll's card posts, and not before.
 - **Unavailable Defenses are shown, not enforced.** "Evade is unavailable while you are Grabbed or
   Restrained." A Grabbed defender's Evade chip goes dashed with a warning mark and the HUD button
-  gets a red ring; an Attack on them is answered with Guard (and a Void, being an Evade, falls away
-  with it), and the card says "Evade is unavailable while Grabbed; answered with Guard". Choosing
+  gets a red ring; an Attack on them is answered with Guard (and an Evade Reaction or Posture falls
+  away with it), and the card says "Evade is unavailable while Grabbed; answered with Guard". Choosing
   Evade anyway on the sheet posts a note saying so, to the owner. Guard's own exceptions are not
   things the sheet can see, so they stay with the table.
 
@@ -856,16 +927,16 @@ blow by blow, in a prompt that arrives with the attack. The stance is the prompt
 so a present player commits with one click, and the GM can answer for an absent player with their
 standing stance in one click too, which is what kept the 0.4.0 design from prompting at all. With
 the attack flow switched off the stance is read at the die exactly as before. Postures, the ⓿↺
-answers that Expose a Zone until the end of the round, are offered by the prompt in two forms: the
+answers (PHB v4.21, the Posture trait), are offered by the prompt from the Reactions table: the
 Posture each Defense's Training root grants in its own text, **Give Ground ⓿↺** with Evade Training
 and **Set Your Feet ⓿↺** with Guard Training (0.5.3; Mike: "Where can I choose my Posture, like
 Give Ground or Set Your Feet?"; they ride on the root Talent, since they are no Talent of their
-own, and the card names them as the Reaction table does), and any Posture Talent you own in the
-Defense's Constellation (Slip the Line ⓿↺, Catch the Blade ⓿↺, once enabled). The Exposed toggle on
-the sheet marks a Posture's Zone so Recenter leaves it alone and the round's end clears it. Since
-0.5.1 the chips are
-labelled **Standing stance**, which is what they are: the default the prompt pre-selects, not the
-answer itself.
+own), **Drop Flat ⓿↺** and **Kneel Behind the Shield ⓿↺** when owned, and any other ⓿↺ Reaction
+Talent you own in the Defense's Constellation by the general rule. A Zone is asked only of a
+Posture that Exposes one of your choice: Kneel names your Arms, Drop Flat none and drops you Prone
+at the reveal. The Exposed toggle on the sheet marks a Posture's Zone so Recenter leaves it alone
+and the round's end clears it. Since 0.5.1 the chips are labelled **Standing stance**, which is
+what they are: the default the prompt pre-selects, not the answer itself.
 
 ### The attack flow
 
@@ -885,11 +956,11 @@ notice naming the Blow in play.
 
 **Commit.** Every defender's controller gets the **Combat Prompt**: a small window, bottom-right,
 that never blocks Foundry. For a defender it offers the Defense (Evade or Guard) with the standing
-stance pre-selected, then the answers legal for that Defense right now (nothing; Void on Evade,
-Parry on Guard with a rigid implement, Counter on either at Melee Expert; any ⓿↺ Posture Talent
-owned in that Defense's Constellation, with the Zone it will Expose, though none ships enabled in
-the current data, so that choice waits on one), a preview of the resulting Threshold for a
-character, and Commit. Changing the Defense re-lists the answers, and an answer the new Defense
+stance pre-selected, then the answers legal for that Defense right now (nothing; the ❶↺ Reaction
+Talents owned on that Defense, Sidestep and Slip the Line on Evade, Parry with a rigid implement
+and Deflecting Palms on Guard, the melee-only ones left out against an arrow with a line saying
+so; the ⓿↺ Postures, with the Zone one will Expose where it is your choice), a preview of the
+resulting Threshold for a character, and Commit. Changing the Defense re-lists the answers, and an answer the new Defense
 does not allow falls back to nothing. The choice is
 sent as choices, never as a number, and the coordinator revalidates it against the rules. An
 adversary's answer is the GM's to declare: the GM gets one prompt row per adversary target. Until
@@ -1096,12 +1167,13 @@ Wounds carried and Dying, and, when you are in one, the **Bind line**: neutral, 
 Controlled, both implements named, with an End Bind button.
 
 Overview carries the four Attributes with their point counts and how far to the next bonus, the
-four Defenses (click to roll; Untrained ones marked), the four Zones with their Protection, material
-weakness, an Exposed toggle (a Posture's Exposure is labelled), and each Zone's **Wound pips**
+four Defenses (click to roll; Untrained ones marked), the four Zones with their Protection, an
+Exposed toggle (a Posture's Exposure is labelled), and each Zone's **Wound pips**
 against its capacity with the effect in force, a **Treat** link, and plus and minus adjusters for
-the GM. A **Strikes panel** shows Melee and Ranged with rank and Proficiency, your weapon dice, your
-specialization in each, and the three Strike kinds with their glyphs. The body block has the Ancestry's
-Vigor per level and the Calling's Opening Vigor, Speed with Step, Rush and Leap beside it, Natural
+the GM. A **Strikes panel** shows Melee and Ranged with rank and Proficiency, the weapon dice each
+rank rolls, and the three Strike kinds with their glyphs. The body block has the Ancestry's
+Vigor per level and the Calling's Opening Vigor, Speed with Step, Rush ❷, the three Leaps and (when
+you cannot Stand) Crawl beside it, Natural
 and Total Reach, Space, Load Strain (its tooltip, for the GM and the player alike, gives the Wind
 Threshold and says whether your Endure Threshold meets it), Initiative and Familiarity. A row of
 table buttons: Recovery check, Refuse Death, a night's rest (showing what it would restore).
@@ -1134,9 +1206,9 @@ next build. Clicking a name uses it as that
 character: the card goes to chat with the character speaking, or, for a Maneuver that rolls a check,
 the roll dialog opens. Shift-click skips the dialog. Each row can also be sent to chat, opened, or
 copied down onto the sheet to become the character's own to edit. Below that is the list the
-character has picked up: dragged from the compendium, made on the tab, or copied down. Parry, Void,
-Counter and Intercept appear here as the book's Defense & Recovery Maneuvers do; using one without
-its Training Talent is announced, not prevented. Using a Basic Maneuver spends nothing by itself
+character has picked up: dragged from the compendium, made on the tab, or copied down. The
+Reactions are Talents since PHB v4.21 and live on the Constellations tab; Intercept appears here as
+the book's Defense & Recovery Maneuvers do once its row is enabled. Using a Basic Maneuver spends nothing by itself
 unless it carries the Reaction trait, in which case its cost comes off the six, or unless it is one
 the system implements (0.10.1): a Maneuver named **Recenter** does what the Overview's Recenter
 button does (the action spent, every Exposed Zone but a Posture's closed, the Bind ended, the
@@ -1157,11 +1229,12 @@ Constellation named is a Relevant Check and opens the picker carrying the Maneuv
 Vigor (current, maximum and Temporary, typed directly), Spent, actions per round, Speed in feet per
 Move, the Initiative Threshold, the two stance chips, the pips in an encounter, Wounds and Dying,
 and the Bind line. The stat block has the four Defense Thresholds, **one Attack Threshold per
-attack** (there is no penalty ladder any more), the four Zones with Protection typed directly,
-material, Wound pips with Treat and adjusters, and an Exposed toggle, and a **Reactions** panel
-listing the creature's own abilities that carry the Reaction trait, skipped entirely when it has
-none. Parry, Void, Counter and Intercept are the GM's to declare for any adversary, so they live on
-the stance chips and the Intercept card rather than in the profile.
+attack** (there is no penalty ladder any more), the four Zones with Protection typed directly
+(the material column went with the material-weakness step in PHB v4.21), Wound pips with Treat and
+adjusters, and an Exposed toggle, and a **Reactions** panel listing the creature's own abilities
+that carry the Reaction trait, skipped entirely when it has none. Every Reaction of the table is
+the GM's to declare for any adversary, so they live in the Combat Prompt and the Intercept card
+rather than in the profile.
 
 **Item sheet.** One sheet for all eight Item types, branching on type. Talents and Maneuvers carry a
 cost from passive and ⓿ to ❻, an optional upper end with "to" or "or" between, so Strike reads
@@ -1190,10 +1263,10 @@ it comes from and what it feeds. The sheet reads the chassis from the compendium
 from `content/chassis.json`, which `build_foundry.mjs` writes for every authored chassis whether
 or not Enabled? let it into the pack, so a Background or Calling switched off after a character
 chose it still has its text. Level is a badge with three star pips
-beneath it for the Milestones reached (the fourth is the level) and, since 0.7.0, a **Deferred**
-badge beside them while the character holds a Deferred Talent Point, with a **Spent** control for
-the owner or the GM that lowers the count by one and posts a one-line card (ruling 94; see The
-party, below); Hero Points show a count and a
+beneath it for the Milestones reached (the fourth is the level) and, since 0.7.0, a **Comets**
+badge beside them while the character holds a Comet (PHB v4.21's name for the Deferred Talent
+Point of 0.7.0), with a **Spent** control for the owner or the GM that lowers the count by one and
+posts a one-line card (rulings 94 and 145; see The party, below); Hero Points show a count and a
 **Spend** button that posts "Hrolda spends a Hero Point (2 left)" to everyone, with no way to add
 one (the GM awards them from the party sheet); Refuse Death is disabled unless the character is
 Dying and holds a Hero Point; and a Talent,
@@ -1240,8 +1313,8 @@ through the shared Flare picker, and the Retrain and Provision lines. The plan i
 
 **The roster and status board.** Always open above the tabs, one row per member, every number on
 it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
-name, the level badge with the three Milestone pips and the Deferred badge while the character
-holds a Deferred Talent Point, Hero Points with the GM's award controls, the Vigor bar with
+name, the level badge with the three Milestone pips and the Comet badge while the character
+holds a Comet, Hero Points with the GM's award controls, the Vigor bar with
 Temporary Vigor and the Spent badge, Wounds with the Zones on hover, Dying N, Fatigued N, Load
 Strain with the Wind tooltip the character sheet builds, Speed, the owning players' colour dots
 (dim when not connected), the Flared Constellations as chips, a GM-only Flare plus, and Remove
@@ -1262,11 +1335,11 @@ before anything is written, and a minus as a correction. **The party rests** run
 Rest button does, then one party line; the confirm names the members whose worn Torso piece lacks
 Comfort, and the armor rule itself stays the table's (section 9).
 
-**The Milestone award, the Deferred point and Take back.** Award a Milestone opens a dialog
+**The Milestone award, the Comet and Take back.** Award a Milestone opens a dialog
 listing every member ticked, with a preview line each: who reaches Milestone 2 of 3 and may spend
 a Milestone Talent Point now in a Flared Constellation (named); who reaches it with no
-Constellation Flared, so the point is Deferred; who reaches the 4th and so the level, with Vigor
-before and after and a Comet. A Milestone belongs to the table (ruling 91): untick a character who
+Constellation Flared, so the point becomes a Comet; who reaches the 4th and so the level, with
+Vigor before and after and the level's Comet (PHB v4.21, Milestone 4: "You also gain a Comet"). A Milestone belongs to the table (ruling 91): untick a character who
 has left or sat the arc out. Confirm disables the button while it runs and writes each ticked
 member: `milestone + 1`, or for a member at 3 `level + 1` and `milestone 0`, then reads the
 recomputed maximum and raises current Vigor by the same rise (ruling 92; P62 says "Vigor rises",
@@ -1278,15 +1351,16 @@ undo: a Talent already spent is the player's to move. Rank unlocks need no write
 when 5th, 10th or 15th opens one. The system still does not police the spend: this part announces
 and remembers.
 
-**Deferred Talent Points** (ruling 94) are the book's own exception to "never banked": Table 4
-says a Milestone Talent Point with no Flared Constellation to receive it "becomes a Deferred Talent
-Point", spent "the instant a Constellation is Flared". The character carries a count,
-`system.deferred`, raised by an award that finds no Flare and lowered by **Spent**, a control on
-the Deferred badge (beside the Milestone pips on the character sheet, and on the roster) for the
-owner or the GM, which posts a one-line card spoken by the character ("{name} spends a Deferred
-Talent Point."). The lit Flare card carries a reminder line while the count is above 0. It is a
-reminder with a number on it, not a budget: nothing stops a Talent drag, and the count is not
-decremented when one lands.
+**Comets** (rulings 94 and 145) are the book's own exception to "never banked": since PHB v4.21 "a
+Comet is a Talent Point that can be spent in any Constellation, whether or not it is Flared or
+already open", one comes with every level (Milestone 4: "You also gain a Comet") and a Milestone
+Talent Point "becomes a Comet" when no Talent is eligible through any Flare. The character carries
+a count, `system.comets` (the `deferred` of 0.7.0 to 0.10.1, migrated), raised by the fourth
+Milestone and by an award that finds no Flare, lowered by **Spent**, a control on the Comet badge
+(beside the Milestone pips on the character sheet, and on the roster) for the owner or the GM,
+which posts a one-line card spoken by the character ("{name} spends a Comet."). The lit Flare card
+carries a reminder line while the count is above 0. It is a reminder with a number on it, not a
+budget: nothing stops a Talent drag, and the count is not decremented when one lands.
 
 **The Skills grid.** A tab with Constellations as rows and members as columns, because the
 question at the table is "who has Stealth". The four Defenses first, each cell showing the
@@ -1295,7 +1369,7 @@ then Initiative, live only while a Combat holds the member; the seven Skill Cons
 and Ranged, rank and Proficiency with the inherited pool on hover; and one row per Lore any member
 has opened, blank for the rest. A Skill cell shows the rank letter and the signed modifier from the
 same preview the roll dialog uses (`SwCheck.previewTotal`), so Stealth carries Load Strain, a
-closed helm reaches Awareness and Initiative, and a Frightened member's whole column moves within
+lowered visor reaches Awareness and Initiative, and a Frightened member's whole column moves within
 the debounce; Untrained is dimmed at +0, the Threshold is in the tooltip, and the best in each row
 is marked gold, ties all marked. Clicking a cell rolls that check as that member, through the
 member's own `rollCheck`, `rollDefense` or the Combat's Initiative roll, so the card speaks as the
@@ -1464,8 +1538,7 @@ skipped), and writes two flags on each member Combatant: `initiativeConstellatio
 Constellation the member's Activity names for Initiative (Awareness when it names none;
 Investigate's pick, or Awareness with a note when none is chosen), and `initiativeModifiers`, one
 +1 Situation entry per Scout among the other members present ("Scout (Hrolda)"; two Scouts give
-each other one and everyone else two of the same type, of which one applies, as the book's stacking
-rule says; a member with no token on the scene neither gives nor gets one, and an absent Defender's
+each other one and everyone else two, which add since PHB v4.21, ruling 126; a member with no token on the scene neither gives nor gets one, and an absent Defender's
 shield stays as it was). A Combatant that has already rolled is left alone, its flags not rewritten, and named. A
 Defender's held shield begins Raised: written with no action spent and no card of its own (the
 Raise a Shield card would print a cost), and lowered at the Defender's next Opportunity as any
@@ -1494,7 +1567,7 @@ Combatants have their Initiative set (`combat.setInitiative`) to the roll's tota
 own terms, the arithmetic under Initiative (section 2); the card's line for them replaces "rolls
 Stealth for Initiative" with "Wren keeps the Stealth 17 rolled on the road as Initiative." or,
 when the terms move it, "Wren keeps the Stealth 17 rolled on the road as Initiative, +1 for
-Initiative's own terms (the helm, the Scouts' bonus, the sheet's Initiative adjustment): 18.",
+Initiative's own terms (the visor, the Scouts' bonus, the sheet's Initiative adjustment): 18.",
 the Scout's Step and
 the Defender's shield lines following as they do. An unticked member rolls fresh from the tracker
 or the sheet as before; a kept member has rolled, so a second Begin names them and leaves them
@@ -1520,7 +1593,7 @@ member's owner and for the GM and offered to nobody else. It opens the shared Fl
 reason field (the reason is the training), and a pick lights that Constellation through the
 member's own `toggleFlare`, so the Flare card is posted as every Flare is, spoken by the member and
 public, its second line "Flared by seven days' training." in place of the GM's award line, the
-Deferred reminder following while the member holds a Deferred point; Cancel writes nothing. The
+Comet reminder following while the member holds a Comet; Cancel writes nothing. The
 character then records `flags.starwrought.trainedAt { level, milestone, time }`, and while that
 equals the member's level and Milestone count exactly the Train control is amber with "Train
 already used since the last Milestone" on hover, and the card says so too when a second Train is
@@ -1548,7 +1621,7 @@ roster, the same grid, the same loot and the same road,
 Thresholds included (ruling 95; a world setting is one line if the table objects, and adversaries'
 Thresholds never appear on the party sheet), read-only but for a few live things: portrait clicks
 on any member, the Flare chips on a character they own (a click puts one out through
-`toggleFlare`, which posts its card), the Spent control on their own Deferred badge, Take on a
+`toggleFlare`, which posts its card), the Spent control on their own Comet badge, Take on a
 loot row when they own a member, a drag of their own gear onto the party, the Roll button
 with their member's name on an Ask everyone card, and on the On the road tab the Activity and
 Investigate Constellation of a member they own and that member's Activity Roll (ruling 106; the
@@ -1568,9 +1641,8 @@ from the console: it is a convenience, not a vault, and nothing secret belongs o
 1 Hero Point.", with a line per member whose count changed, "Wren: 3 to 1"); the Milestone award,
 one line per member ("Hrolda reaches Milestone 2 of 3: a Milestone Talent Point, to be spent now
 in a Flared Constellation: Melee, Athletics."; "Wren reaches Milestone 3 of 3: no Constellation is
-Flared, so the point is Deferred: spend it the instant one Flares (Deferred held: 1)."; "Kessa
-reaches the 4th Milestone: level 3. Vigor 36 to 45. A Comet: a Talent Point for any Constellation,
-Flared or not."); Take back; the party's line after the night; the Split card listing the shares
+Flared, so the point becomes a Comet (Comets held: 1)."; "Kessa reaches the 4th Milestone: level
+3. Vigor 36 to 45. A Comet: a Talent Point for any Constellation, Flared or not."); Take back; the party's line after the night; the Split card listing the shares
 and the remainder (0.7.1); the Ask everyone card ("Everyone roll Awareness.") with its Roll
 buttons; and, since 0.7.2, Say the plan (a line per member, with the remembered road roll since
 0.7.3, the warnings, the speed line) and
@@ -1580,7 +1652,7 @@ as Initiative.", with Initiative's own terms named when they move it), the Scout
 Harmless's degrees for the GM, Investigate's "if related", and who
 had no token or had already rolled). Spoken by the member: a Hero
 Point awarded ("The GM awards Hrolda a Hero Point: carrying Toric out of the fire (2 of 3).") or
-corrected ("Hrolda's Hero Points corrected to 1."); a Deferred point Spent; each member's own rest
+corrected ("Hrolda's Hero Points corrected to 1."); a Comet Spent; each member's own rest
 card; the Flare card `toggleFlare` already posts, with "awarded by the GM" and the reason when
 the GM lit it from the roster, or, since 0.7.5, "Flared by seven days' training." when Train lit
 it, with the warning line when Train was already used since the last Milestone; since 0.7.1,
@@ -1709,7 +1781,8 @@ Death; a Hero Point spent; the **Flare** card, lit or put out, from a critical's
 sheet (0.6.3), with the GM's reason when it was awarded from the party sheet (0.7.0) or "Flared by
 seven days' training." when the party sheet's Train lit it (0.7.5); the
 **party's cards** (0.7.0: Begin session, a Hero Point awarded or corrected, the Milestone award
-and Take back, the party's night, a Deferred Talent Point Spent; 0.7.1: a Take from the loot, a
+and Take back, the party's night, a Comet Spent (the Deferred point of 0.7.0, renamed by PHB
+v4.21); 0.7.1: a Take from the loot, a
 Give to the party, the GM's Give to, the Split, and Ask everyone with a Roll button per member;
 see The party, under Sheets); the
 **Adjusted** card for a player's hand edits (0.5.1); and the overspend card,
@@ -1791,9 +1864,9 @@ map, because no kind for them exists, and Mike's instruction stands ("we will bu
 syntax hooks one at a time"). Kinds are added one at a time with Mike, each with its engine hook,
 its test, its line in `data/README.txt` and its docs; the next is the aura, for Torchbearer Human's
 15 feet, which will serve every aura in the book without more code. A Talent's Effect is prose the
-sheet displays (section 9) until a kind reads it; Humanity's is the first a kind can, and its cell
-is Mike's to paste (the 0.10.0 changelog entry prints the four lines). The design record is
-`automation-plan.md` in the project root.
+sheet displays (section 9) until a kind reads it; Humanity's is the first a kind does, its cell
+written in 0.11.0 against the Origin (`if Origin is <Rank>`, since PHB v4.21 names the shared
+Origin Proficiency). The design record is `automation-plan.md` in the project root.
 
 **The cell.** One rule per line, `kind: arguments` (the colon optional when there are no
 arguments), blank lines ignored, a line beginning with `#` a comment. The kind word is the word
@@ -1810,13 +1883,16 @@ refused with the current word named, and untyped is refused, since no Talent bon
 form reads too, and a Maneuver's glyphs are ignored). The `if` clause is equality: the rule applies
 while the character's rank in that Constellation is exactly Untrained, Trained, Expert, Master or
 Legendary, so a Talent that scales by rank writes one line per rank, and Humanity's Effect is four
-lines, one per sentence: `bonus: +1 Condition to Aid if Human is Trained`, `bonus: +2 Condition to
-Aid if Human is Expert`, `bonus: +3 Condition to Aid if Human is Master`, `bonus: +4 Condition to
-Aid if Human is Legendary`. A line that does not fit is refused with the shape printed (`bonus: +1
-Condition to Aid if Human is Expert`); a target that names no Constellation or Maneuver, an `if`
-that names a Maneuver, and a Lore as a target are refused by name. Same type does not stack, by the
-book: two Humanity lines never both apply (one rank at a time), and overlapping lines of one type
-give the highest.
+lines, one per sentence: `bonus: +1 Condition to Aid if Origin is Trained`, `bonus: +2 Condition to
+Aid if Origin is Expert`, `bonus: +3 Condition to Aid if Origin is Master`, `bonus: +4 Condition to
+Aid if Origin is Legendary` (`Origin` is the pooled Ancestry, Bloodline and Culture rank; the
+Ancestry's own name reads the same pool). A line that does not fit is refused with the shape
+printed (`bonus: +1 Condition to Aid if Origin is Expert`); a target that names no Constellation or
+Maneuver, an `if` that names a Maneuver or a group (a Combat Style, a specialty: it has no rank of
+its own), and a Lore as a target are refused by name. Stacking is v4.21's: bonuses add across and
+within types, and one Talent's lines on one target are one circumstance (tagged with the Talent as
+their `source`), so two Humanity lines never both apply (one rank at a time) and overlapping lines
+of one Talent give the highest.
 
 **Where the number shows.** A bonus to a Constellation (`bonus: +1 Situation to Stealth`) is
 applied wherever that Constellation's modifier is assembled: the roll dialog's list of terms and
@@ -1979,14 +2055,27 @@ before; the sources and the index are.
 
 - **Prerequisites outside the wizard are not enforced.** Drag a Talent onto a sheet by hand and
   nothing stops you. The wizard enforces them; the sheet trusts you.
-- **Talent Point types are not a budget after creation.** Milestone, Comet, Deferred and the rest are
+- **Talent Point types are not a budget after creation.** Milestone, Comet and the rest are
   documented in the Rules compendium, and the no-banking rule is not policed. Since 0.7.0 the
   Milestone award writes the Milestone and says where the point may go, and that is all it does.
-- **Deferred Talent Points are counted, not enforced** (0.7.0; ruling 94). `system.deferred` on
-  the character is a reminder with a number on it: a Milestone award that finds no Flared
-  Constellation raises it, the Spent control on the badge lowers it, and the Flare card reminds
-  you while it is above 0. Nothing stops a Talent drag, the count does not fall when one lands,
-  and whether the point was spent where the book says is the table's to see.
+- **Comets are counted, not enforced** (0.7.0; rulings 94 and 145). `system.comets` on the
+  character is a reminder with a number on it: the fourth Milestone and a Milestone award that
+  finds no Flared Constellation raise it, the Spent control on the badge lowers it, and the Flare
+  card reminds you while it is above 0. Nothing stops a Talent drag, the count does not fall when
+  one lands, and whether the point was spent where the book says is the table's to see.
+- **A Cast rolls outside the attack flow** (0.11.0). A spell is rolled at once, as a Reaction
+  Strike is, against the higher of the two Defenses its Threat permits on the target: the defender
+  does not commit, nothing is revealed, and an adversary's number prints as 0.4.2 printed it. The
+  first non-Blow Threat in the coordinator (a declaration with a source, a Threat and a Delivery,
+  the Combat Prompt offering the Threat's two Defenses) is the split `CLAUDE.md` names and the next
+  piece of work. Spell effects beyond the die (areas, pushes, conditions on a Hit, summons,
+  Temporary Vigor pools, healing, a second damage type) are the Talent's text on the card.
+- **Some Reactions are the table's** (0.11.0). Cover the Angle (an ally's Blow against your Guard)
+  is offered nowhere; Kneel Behind the Shield's rooted Speed, the "no more than one size larger"
+  clauses of Parry and Deflecting Palms, and Deflecting Palms' damage reduction are the card's
+  notes; a Reaction Talent under a name the table does not know is offered only as a ⓿↺ Posture by
+  the general rule. Sleeping in armor without Comfort (Fatigued equal to Load Strain, maximum 3) is
+  not applied; the party's rest dialog names who did.
 - **A party is never a combatant** (0.7.0; the plan's risk 1). The `party` Actor has no Zones,
   Wounds, Vigor, stance or actions, and Support's ally count (`supportFor`), `actorsIn`, `canAct`,
   the Combat Tracker's readout and the check engine skip or refuse it by type. A party token
@@ -2067,9 +2156,10 @@ before; the sources and the index are.
   cleared Fatigued when the Combat was deleted), so the Fatigued card offers the owner or the GM a
   Ten minutes' rest button, a night's rest clears it, and whether ten minutes passed between one
   scene and the next is the table's to say.
-- **Sleeping in armor without Comfort does not set Fatigued 1.** The book's Comfort row (PHB
-  v4.14): "You can sleep in it without increasing your Fatigued value by 1." The rest card restores
-  Vigor, clears Fatigued and does nothing else; that rule is the table's to apply.
+- **Sleeping in armor without Comfort does not set Fatigued.** The book (PHB v4.21, Donning and
+  Doffing): sleeping in armor without the Comfort trait leaves you Fatigued equal to your Load
+  Strain, to a maximum of 3. The rest card restores Vigor, clears Fatigued and does nothing else;
+  that rule is the table's to apply, and the party's rest confirm names who slept in such a piece.
 - **"Climb or Swim" is asked, not detected.** Load Strain lands on an Athletics check only when the
   player ticks the dialog's toggle, because the system cannot tell a Climb from a grapple.
 - **Zone critical effects other than the Torso's are announced, not tracked.** A Critical Hit on the

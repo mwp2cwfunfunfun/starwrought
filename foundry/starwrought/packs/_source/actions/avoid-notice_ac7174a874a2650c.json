@@ -12,7 +12,7 @@
     "category": "Exploration Mode",
     "requirements": "Travel Speed: Half",
     "traits": [],
-    "description": "<p>You move quietly and keep to cover. Roll Stealth; the GM applies it to the Awareness Threshold of anyone who might notice you. When an encounter begins, you can roll Stealth.</p>",
+    "description": "<p>You move quietly and keep to cover. Roll Stealth; the GM applies it to the Awareness Threshold of anyone who might notice you. When an encounter begins, you can use your Stealth roll for initiative.</p>",
     "exploration": {
       "travel": "half",
       "check": "stealth",
@@ -26,7 +26,7 @@
     },
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -35,7 +35,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c218fa5cd3345076"
+      "contentHash": "508cdd49baa0da42"
     }
   },
   "effects": [],

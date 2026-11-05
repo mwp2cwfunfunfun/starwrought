@@ -1,0 +1,33 @@
+{
+  "_id": "8d4470e178558934",
+  "name": "Brigandine",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "torso",
+    "protection": 4,
+    "load": 2,
+    "material": "brigandine",
+    "traits": [],
+    "price": "16 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "adc38b4b7d8a0ce3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8d4470e178558934"
+}

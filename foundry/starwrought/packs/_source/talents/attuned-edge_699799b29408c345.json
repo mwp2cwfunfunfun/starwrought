@@ -1,0 +1,55 @@
+{
+  "_id": "699799b29408c345",
+  "name": "Attuned Edge",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "spellblade",
+    "constellationName": "Spellblade",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Spellbound Edge"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Spellbound Edge may also enhance a Committed Melee Strike if you begin preparing it before the end of your next Opportunity. The chosen damage type persists until that Prepared Strike resolves or is abandoned. It still adds no spell dice or riders.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "c0896ce7ffd8e58c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "85d1c8d4d1cd5414"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!699799b29408c345"
+}

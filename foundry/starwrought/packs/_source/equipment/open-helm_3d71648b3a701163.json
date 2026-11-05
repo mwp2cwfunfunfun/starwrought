@@ -1,6 +1,6 @@
 {
   "_id": "3d71648b3a701163",
-  "name": "Open helm",
+  "name": "Open Helm",
   "type": "armor",
   "img": "icons/svg/shield.svg",
   "system": {
@@ -9,9 +9,9 @@
     "load": 1,
     "material": "plate",
     "traits": [
-      "Plate"
+      "Fitted"
     ],
-    "price": "5 gp",
+    "price": "8 gp",
     "quantity": 1,
     "state": "carried",
     "description": "",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "71ce9003dbefcd0a"
+      "contentHash": "7a49d624375ca3c8"
     }
   },
   "effects": [],

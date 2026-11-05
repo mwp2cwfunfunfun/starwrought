@@ -51,6 +51,34 @@ export class SwTalentData extends SwItemData {
       }),
       /** Another Talent this one hands over outright, with no Talent Point spent. */
       freeTalent: new fields.StringField({ initial: "" }),
+      /**
+       * A spell (PHB v4.21, Spellwork; 0.11.0): the structured columns of a magic sheet (Threat,
+       * Delivery, Range, Die, Damage, Targets, Quick, Focused, Committed, Defenses; data/README.txt),
+       * which `assets/build_foundry.mjs` writes here as the Aura column's precedent. A Talent with
+       * `enabled` and a Threat is cast with the Cast Maneuver (SwActor#castSpell: ❷ Quick, ❸ Focused,
+       * ❹ Committed) and rolls the discipline's Proficiency with its Key Attribute against the
+       * Defenses the Threat permits (`defenses` when the sheet names them, else SW.THREATS'); its
+       * damage is `die` per rank of the discipline, typed `types[0]`, delivered `delivery`. The three
+       * effect texts are what the card prints; an area, a push, a condition on a Hit, a summons or
+       * a healing line stays prose for the table (ruling 136: no Might, no sheet damage bonus).
+       */
+      spell: new fields.SchemaField({
+        enabled: new fields.BooleanField({ initial: false }),
+        threat: new fields.StringField({ initial: "" }),
+        delivery: new fields.StringField({ initial: "" }),
+        /** Range in feet; 0 when the sheet names none. */
+        range: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+        adjacent: new fields.BooleanField({ initial: false }),
+        die: new fields.NumberField({ required: true, nullable: true, integer: true, min: 2, initial: null }),
+        types: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: () => [] }),
+        targets: new fields.StringField({ initial: "" }),
+        defenses: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: () => [] }),
+        effects: new fields.SchemaField({
+          quick: new fields.StringField({ initial: "" }),
+          focused: new fields.StringField({ initial: "" }),
+          committed: new fields.StringField({ initial: "" })
+        })
+      }),
       /** The "within N feet" of the Effect, drawn on the map (0.5.1). */
       ...auraFields(),
       /** The Automation cell and the rules read from it (0.9.0). See rulesFields. */
@@ -91,9 +119,28 @@ export class SwTalentData extends SwItemData {
     }
     prepareAura(this);
     prepareRules(this);
+    prepareSpell(this);
   }
 
   get chatDescription() {
     return this.effect || this.description;
   }
+}
+
+/**
+ * The spell's derived reading (PHB v4.21): is it one, which Defenses answer it, whether it rolls
+ * damage, and the lines the sheets print. `isSpell` is the one question the sheets and the Cast
+ * ask; everything else is for printing.
+ */
+function prepareSpell(system) {
+  const s = system.spell;
+  const threat = SW.THREATS[s.threat] ? s.threat : "";
+  system.isSpell = !!s.enabled && !!threat;
+  system.spellThreat = threat;
+  const named = (s.defenses ?? []).filter(d => SW.DEFENSES[d]);
+  system.spellDefenses = named.length ? named : (threat ? [...SW.THREATS[threat].defenses] : []);
+  system.spellDelivery = SW.DELIVERIES[s.delivery] ? s.delivery : ((s.die && threat) ? "zoned" : "");
+  system.spellDamages = !!s.die && (s.types?.length > 0 || true);
+  system.spellType = s.types?.[0] ?? "untyped";
+  system.spellRangeText = s.adjacent ? "adjacent" : (s.range ? `${s.range} ft` : "");
 }

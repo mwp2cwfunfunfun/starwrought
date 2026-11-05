@@ -25,9 +25,12 @@ export const ChecksMixin = Base => class extends Base {
     data.level = sys.level ?? 1;
     if (this.type !== "character") return data;
     for (const [key, attr] of Object.entries(sys.attributes ?? {})) data[key] = attr.mod ?? 0;
-    data.spec = sys.melee?.specialization ?? 0;
-    data.rangedSpec = sys.ranged?.specialization ?? 0;
-    data.dice = sys.weaponDice ?? 1;
+    // Weapon dice by rank (PHB v4.21): Melee's as @dice, Ranged's as @rangedDice. The v4.10 to
+    // v4.15 @spec and @rangedSpec are 0 now, kept so an old formula still evaluates.
+    data.dice = sys.melee?.dice ?? 1;
+    data.rangedDice = sys.ranged?.dice ?? 1;
+    data.spec = 0;
+    data.rangedSpec = 0;
     data.loadStrain = sys.loadStrain ?? 0;
     data.wounds = this.woundCount;
     return data;

@@ -277,14 +277,13 @@ export function lockedTips(actor) {
 
 /**
  * The Load Strain field's tooltip (0.6.1; PHB v4.13, Wind, rulings 74 and 79): what Load Strain
- * is, then the Wind line with the numbers: the Wind Threshold (10 + Load Strain), the Endure
- * Threshold, and whether this fighter is exempt. The field is derived and read-only for everyone,
- * so unlike the locked tips this one is the same for the GM and the player. Three readings, one
- * string each: an Endure Threshold that meets the Wind Threshold (exempt); Load Strain carried and
- * the Threshold not met (the check comes at the end of every round); and no Load Strain at all
- * with an Endure Threshold below 10 (no check, but any Load would bring one). The numbers are the data
- * model's (`system.wind`), read defensively for a document not yet through prepareDerivedData.
- * HTML, which Foundry's tooltip renders.
+ * is, then the Wind line with the numbers: the Wind Threshold (10 + Load Strain) and the Endure
+ * Threshold it is rolled with. The field is derived and read-only for everyone, so unlike the
+ * locked tips this one is the same for the GM and the player. Two readings since PHB v4.21 (the
+ * exemption of v4.12 to v4.15 is gone, ruling 150), one string each: Load Strain carried (the
+ * check comes at the end of every round), and no Load Strain at all (no check, but any Load would
+ * bring one). The numbers are the data model's (`system.wind`), read defensively for a document
+ * not yet through prepareDerivedData. HTML, which Foundry's tooltip renders.
  * @param {Actor} actor
  * @returns {string}
  */
@@ -298,10 +297,7 @@ export function windTip(actor) {
   const wind = sys.wind ?? {};
   const threshold = num(wind.threshold, 10 + strain);
   const endure = num(wind.endureThreshold ?? sys.defenses?.endure?.threshold, 10);
-  const exempt = wind.exempt ?? (endure >= threshold);
-  const key = exempt ? "STARWROUGHT.Field.windExempt"
-    : (strain >= 1) ? "STARWROUGHT.Field.windDue"
-      : "STARWROUGHT.Field.windNoLoad";
+  const key = (strain >= 1) ? "STARWROUGHT.Field.windDue" : "STARWROUGHT.Field.windNoLoad";
   return `<p>${esc(L("STARWROUGHT.Field.loadStrainHint"))}</p>`
     + `<p><span class="sw-tip-title">${esc(L("STARWROUGHT.Combat.wind"))}</span>${esc(F(key, { endure, threshold }))}</p>`;
 }

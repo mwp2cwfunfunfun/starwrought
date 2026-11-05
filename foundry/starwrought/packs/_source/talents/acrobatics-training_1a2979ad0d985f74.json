@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
+    "effect": "You are Trained in this skill: add the Constellation's rank to its checks.",
     "description": "",
     "cost": "passive",
     "costMax": "",
@@ -33,7 +33,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,
@@ -42,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f30922c3f82b5d20"
+      "contentHash": "3fac715b6d777d33"
     }
   },
   "effects": [],

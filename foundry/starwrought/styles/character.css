@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.10.1"; }
+:root { --sw-css-version-character: "0.11.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -610,3 +610,22 @@
 /* On the Effects tab: a small book beside the condition's name. */
 .starwrought .sw-effect-rules { flex: 0 0 auto; margin: 0 0.3rem; font-size: 0.8em; color: var(--sw-ink-dim); border: none; }
 .starwrought .sw-effect-rules:hover { color: var(--sw-gold); }
+
+/* PHB v4.21 (0.11.0). A group's rank badge (a Combat Style within Melee or Ranged, a specialty
+   within its discipline): the parent's rank, dimmed, so the eye reads it as borrowed. */
+.starwrought .sw-rank.sw-rank-group { opacity: 0.62; font-style: italic; }
+
+/* The Cast ❷ ❸ ❹ on a spell Talent's row: three small gold glyphs before the chat control, the
+   Strike pills' idiom at a Talent row's size. */
+.starwrought .sw-cast-buttons { display: inline-flex; gap: 0.15rem; margin-right: 0.3rem; }
+.starwrought .sw-cast-button { color: var(--sw-gold); opacity: 0.75; font-size: 0.95em; }
+.starwrought .sw-cast-button:hover { opacity: 1; text-shadow: 0 0 6px var(--sw-gold); }
+
+/* The visor and the Fitted tick on a worn piece (Equipment tab): dim until on. */
+.starwrought .sw-visor-toggle, .starwrought .sw-adjusted-toggle { color: var(--sw-ink-dim); opacity: 0.55; }
+.starwrought .sw-visor-toggle.sw-on, .starwrought .sw-adjusted-toggle.sw-on { color: var(--sw-gold); opacity: 1; }
+
+/* The Comet badge (the Deferred badge of 0.7.0, renamed): a shooting star in the gold. */
+.starwrought .sw-comet-badge { border-color: var(--sw-gold); background: linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(212, 175, 55, 0.05)); }
+.starwrought .sw-comet-badge i, .starwrought .sw-comet-badge strong { color: var(--sw-gold); }
+.starwrought .sw-comet-badge .sw-deferred-spend { border-color: var(--sw-gold); color: var(--sw-gold); }

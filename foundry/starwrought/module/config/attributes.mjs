@@ -20,12 +20,15 @@ export const ATTRIBUTES = Object.freeze({
 });
 
 /**
- * Attribute Bonus = Attribute Points ÷ 4, rounded down (PHB v4.10: 0-3 is +0, 4-7 is +1, 8-11 is +2,
- * every 4 more is +1 more). The +5 cap is the Key Terms sentence, kept until the book repeals it
- * (v4.10 sync report, ruling 1).
+ * Attribute Bonus = Attribute Points ÷ 4, rounded down (PHB v4.21, Key Terms: "An Attribute Bonus
+ * equals the number of associated Attribute Points divided by 4, rounded down"; 0-3 is +0, 4-7 is
+ * +1, 8-11 is +2, every 4 more is +1 more). The +5 cap of v4.10 to v4.15 was the old Key Terms
+ * sentence, kept until the book repealed it (v4.10 sync report, ruling 1); v4.21's Key Terms
+ * names no maximum, so there is none (v4.21 sync report, ruling 158). `ATTRIBUTE_MAX` stays on
+ * the shape as Infinity for the one reader that compares against it.
  */
 export const ATTRIBUTE_DIVISOR = 4;
-export const ATTRIBUTE_MAX = 5;
+export const ATTRIBUTE_MAX = Infinity;
 
 /**
  * Convert Attribute Points into an Attribute Bonus.

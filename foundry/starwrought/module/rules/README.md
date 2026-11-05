@@ -240,8 +240,9 @@ below, and a kind's hook keeps to it.
   called on any client and any number of times with the same answer. `modifiers` is one. A
   failure is isolated to the kind that failed: the dispatcher reports it once and takes nothing
   from that kind, and the roll or the sheet goes on with the rest. Stacking and ordering are the
-  caller's, through the rule the caller already has (`SW.resolveModifiers` for a roll), never the
-  dispatcher's.
+  caller's, through the rule the caller already has (`SW.resolveModifiers` for a roll: since PHB
+  v4.21 every bonus adds and a circumstance is counted once, by the modifier's `source`), never
+  the dispatcher's.
 - **Triggered.** Something happened (a Critical Hit landed, a Wound was taken, a round ended) and
   a rule asks for an operation in answer: a condition set, Vigor restored, a card posted. Every
   client sees the event, so a triggered hook point must say, when it is defined, **which one
@@ -286,8 +287,10 @@ Calculated. `hooks.modifiers(entries, context, actor) -> Modifier[]`, dispatched
   `STARWROUGHT | the "<id>" kind's modifiers hook failed:` and contributing nothing, so a roll never
   dies over a rule; drops a modifier whose `value` is not a non-zero number (a numeric string is
   read as a number); gives a keyless offer a key of its own (`<kind>-<n>`) and suffixes a key two
-  offers share. Typed stacking is not its job: the caller's `SW.resolveModifiers` treats what comes
-  back as it treats every other term.
+  offers share. Stacking is not its job: the caller's `SW.resolveModifiers` treats what comes back
+  as it treats every other term (PHB v4.21: everything adds; entries sharing a `source` are one
+  circumstance, counted once, which is how the `bonus` kind keeps one Talent's lines on one target
+  from adding: `source: "rule:<item>:<target>"`).
 
 ## Adding a rule kind
 

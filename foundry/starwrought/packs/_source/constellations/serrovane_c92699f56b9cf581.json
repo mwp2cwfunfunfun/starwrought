@@ -8,6 +8,7 @@
     "category": "origin",
     "attribute": "presence",
     "parentSlug": "",
+    "group": false,
     "meta": "Culture constellation • Presence (Serrovine + Common; a lowland order-state where nothing is real until written and witnessed)",
     "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
     "identity": true,
@@ -15,7 +16,7 @@
     "traits": [],
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": null,
   "sort": 0,
@@ -24,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "1b272e7a5f45b5ed"
+      "contentHash": "9af89cba49ed8bdd"
     }
   },
   "effects": [],

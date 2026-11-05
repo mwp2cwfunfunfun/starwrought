@@ -48,5 +48,24 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
       return null;
     }
     return shield.raise();
-  }
+  },
+
+  /**
+   * Lower the Visor ❶ and Raise the Visor ❶ (PHB v4.21, the Visored armor trait: "Can Raise or
+   * Lower the visor as a single action"): the worn Visored Head piece's own method, which spends
+   * the action and posts the card. With no such piece worn the player is told. The rows do not
+   * exist in `data/maneuvers.xlsx` yet; these entries are what they will run when Mike authors
+   * them by these names, and the Equipment tab's control runs the same method today.
+   */
+  "lower-the-visor": async actor => visorOf(actor)?.toggleVisor(true) ?? null,
+  "raise-the-visor": async actor => visorOf(actor)?.toggleVisor(false) ?? null,
+  "lower-visor": async actor => visorOf(actor)?.toggleVisor(true) ?? null,
+  "raise-visor": async actor => visorOf(actor)?.toggleVisor(false) ?? null
 });
+
+/** The worn Visored piece, or null with a notice. */
+function visorOf(actor) {
+  const piece = actor.items.find(i => (i.type === "armor") && i.system.worn && i.system.visored);
+  if (!piece) ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.noVisorWorn", { name: actor.name }));
+  return piece ?? null;
+}

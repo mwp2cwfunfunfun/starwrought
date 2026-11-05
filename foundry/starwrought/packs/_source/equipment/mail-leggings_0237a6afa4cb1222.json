@@ -1,0 +1,36 @@
+{
+  "_id": "0237a6afa4cb1222",
+  "name": "Mail Leggings",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "legs",
+    "protection": 3,
+    "load": 2,
+    "material": "mail",
+    "traits": [
+      "Flexible",
+      "Noisy"
+    ],
+    "price": "8 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "3da9b932ddefba70"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0237a6afa4cb1222"
+}

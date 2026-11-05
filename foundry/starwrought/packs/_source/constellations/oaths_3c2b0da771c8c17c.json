@@ -1,0 +1,36 @@
+{
+  "_id": "3c2b0da771c8c17c",
+  "name": "Oaths",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/oaths.png",
+  "system": {
+    "slug": "oaths",
+    "category": "magic",
+    "attribute": "presence",
+    "parentSlug": "spiritcraft",
+    "group": true,
+    "meta": "Magic • Presence",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Presence</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "592029b7b41b6eb2"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3c2b0da771c8c17c"
+}

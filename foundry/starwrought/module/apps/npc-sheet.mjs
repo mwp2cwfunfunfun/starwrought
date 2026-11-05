@@ -115,8 +115,6 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ...sys.zones[key],
       key,
       label: game.i18n.localize(SW.ZONES[key].label),
-      materialLabel: game.i18n.localize(sys.zones[key].materialLabel),
-      weakTo: sys.zones[key].weakTo ? game.i18n.localize(SW.DAMAGE_TYPES[sys.zones[key].weakTo].label) : null,
       wounds: zoneWounds(actor, key)
     }));
 
@@ -151,10 +149,6 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.sizeChoices = Object.fromEntries(
       Object.entries(SW.SIZES).map(([k, v]) => [k, game.i18n.localize(v.label)])
     );
-    context.materialChoices = Object.fromEntries(
-      Object.entries(SW.MATERIALS).map(([k, v]) => [k, game.i18n.localize(v.label)])
-    );
-
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
     context.enrichedBiography = await TextEditor.enrichHTML(sys.details.biography, { relativeTo: actor });
     context.enrichedNotes = await TextEditor.enrichHTML(sys.details.notes, { relativeTo: actor });

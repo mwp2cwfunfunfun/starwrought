@@ -34,6 +34,7 @@ import { AurasMixin } from "./actor/auras.mjs";
 import { BindMixin } from "./actor/bind.mjs";
 import { FlaresMixin } from "./actor/flares.mjs";
 import { RestMixin } from "./actor/rest.mjs";
+import { CastMixin } from "./actor/cast.mjs";
 
 /**
  * The sections, in the order they are layered over Foundry's Actor. The order carries no meaning
@@ -53,6 +54,7 @@ const SECTIONS = [
   BindMixin,
   FlaresMixin,
   RestMixin,
+  CastMixin
 ];
 
 const Composed = SECTIONS.reduce((Base, mixin) => mixin(Base), Actor);

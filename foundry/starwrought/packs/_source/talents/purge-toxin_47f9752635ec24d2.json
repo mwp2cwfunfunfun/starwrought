@@ -1,0 +1,55 @@
+{
+  "_id": "47f9752635ec24d2",
+  "name": "Purge Toxin",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "decay",
+    "constellationName": "Decay",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Decay Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "❶: Suppress one poison-induced penalty affecting yourself until the end of your next Opportunity; does not remove damage or end the poison.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "55f7fb2c21d04468",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a9cfcac51d1ab5cb"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!47f9752635ec24d2"
+}

@@ -1,0 +1,60 @@
+{
+  "_id": "4d1ef2513fde7983",
+  "name": "Borrowed Resolve ❶↺",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "necromancer",
+    "constellationName": "Necromancer",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Death Echo"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Trigger: An ally within 6 feet suffers damage that would reduce them to 0 Vigor. Expend your Death Echo to reduce that instance of damage by 2, possibly preventing them from becoming Spent. The ally must be able to perceive you; once per round.",
+    "description": "",
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": true,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "aura": {
+      "range": 6,
+      "affects": "allies",
+      "visible": false
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d58805ce57630e80",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "439267e2cb6d53bc"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4d1ef2513fde7983"
+}

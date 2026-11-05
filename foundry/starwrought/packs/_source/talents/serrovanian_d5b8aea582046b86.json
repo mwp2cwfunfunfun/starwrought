@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "Raised in Serrovane",
     "attribute": "",
-    "effect": "You know Serrovine and Common.<br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
+    "effect": "You know Common and Serrovine.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture. When you are Expert in your Origin Constellation, the bonus increases to +2. Master: +3. Legendary: +4.",
     "description": "",
     "cost": "passive",
     "costMax": "",
@@ -33,7 +33,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "09d1d52e7c8e761e",
   "sort": 0,
@@ -42,7 +42,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "17a2a102ad6850f4"
+      "contentHash": "8029a8123c57b207"
     }
   },
   "effects": [],

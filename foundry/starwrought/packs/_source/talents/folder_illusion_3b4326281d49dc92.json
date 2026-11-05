@@ -1,0 +1,16 @@
+{
+  "_id": "3b4326281d49dc92",
+  "name": "Illusion",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "99ff31776501b512"
+    }
+  },
+  "_key": "!folders!3b4326281d49dc92"
+}

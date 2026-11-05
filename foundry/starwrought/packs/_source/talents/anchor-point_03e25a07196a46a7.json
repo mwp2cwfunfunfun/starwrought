@@ -1,0 +1,55 @@
+{
+  "_id": "03e25a07196a46a7",
+  "name": "Anchor Point",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "kinetics",
+    "constellationName": "Kinetics",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Kinetics Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "❶↺ When you would be pushed by a Blast, gain +2 Endure against it; on Graze or Miss, prevent its forced movement.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "8225c5e971ad8dd2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "80a8f87bb85168e1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!03e25a07196a46a7"
+}

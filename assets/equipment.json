@@ -497,263 +497,349 @@
  ],
  "armor": [
   {
-   "name": "Padded coif",
+   "name": "Padded Hood",
    "zone": "Head",
    "protection": 1,
    "load": 0,
    "price": "1 gp",
    "traits": [
-    "Padded",
     "Comfort"
    ],
    "material": "Padded",
+   "description": "Layers of quilted cloth protecting the head and neck. Light, quiet, and comfortable, but intended to soften blows rather than stop powerful weapons outright.",
    "enabled": true
   },
   {
-   "name": "Leather cap",
+   "name": "Leather Helm",
    "zone": "Head",
    "protection": 2,
    "load": 0,
-   "price": "2 gp",
-   "traits": [
-    "Leather",
-    "Quiet"
-   ],
+   "price": "3 gp",
+   "traits": [],
    "material": "Leather",
-   "enabled": false
+   "description": "Thick leather shaped and hardened around the skull while leaving the face and ears open. It provides unobtrusive protection without metal weight or noise.",
+   "enabled": true
   },
   {
-   "name": "Open helm",
+   "name": "Mail Hood",
+   "zone": "Head",
+   "protection": 2,
+   "load": 1,
+   "price": "4 gp",
+   "traits": [
+    "Flexible",
+    "Noisy"
+   ],
+   "material": "Mail",
+   "description": "Interlocking metal rings covering the head, neck, and shoulders. Its broad, flexible coverage resists cuts well, but adds weight and does little to stop the force of a heavy blow.",
+   "enabled": true
+  },
+  {
+   "name": "Skullcap",
+   "zone": "Head",
+   "protection": 2,
+   "load": 0,
+   "price": "4 gp",
+   "traits": [
+    "Concealable"
+   ],
+   "material": "Plate",
+   "description": "A close-fitting steel cap protecting the crown and sides of the skull while leaving the face and neck exposed. It can be hidden beneath a hood or large hat.",
+   "enabled": true
+  },
+  {
+   "name": "War Hat",
    "zone": "Head",
    "protection": 3,
    "load": 1,
-   "price": "5 gp",
+   "price": "6 gp",
    "traits": [
-    "Plate"
+    "Brimmed"
    ],
    "material": "Plate",
+   "description": "A steel helmet with a broad, sloping brim that shelters the head from descending blows, missiles, and falling debris. The open face preserves awareness and breathing.",
    "enabled": true
   },
   {
-   "name": "Scale coif",
+   "name": "Open Helm",
    "zone": "Head",
    "protection": 3,
-   "load": 2,
-   "price": "5 gp",
+   "load": 1,
+   "price": "8 gp",
    "traits": [
-    "Scale",
-    "Noisy"
+    "Fitted"
    ],
-   "material": "Scale",
-   "enabled": false
+   "material": "Plate",
+   "description": "A fitted steel helmet protecting the skull, temples, cheeks, and nape while leaving the face open. It offers strong all-purpose protection without substantially restricting sight or breathing.",
+   "enabled": true
   },
   {
-   "name": "Closed helm",
+   "name": "Full Helm",
    "zone": "Head",
    "protection": 4,
    "load": 2,
-   "price": "10 gp",
+   "price": "12 gp",
    "traits": [
-    "Plate"
+    "Fitted",
+    "Visored"
    ],
    "material": "Plate",
+   "description": "An enclosing steel helmet with movable face protection. Lowering the visor gives excellent head and facial protection at the cost of peripheral awareness; raising it restores an open view.",
    "enabled": true
   },
   {
-   "name": "Gambeson",
+   "name": "Light Gambeson",
    "zone": "Torso",
    "protection": 1,
    "load": 0,
    "price": "1 gp",
    "traits": [
-    "Padded",
     "Comfort",
-    "Quiet"
+    "Flexible"
    ],
    "material": "Padded",
+   "description": "A lightly quilted coat protecting the torso and hips without burdening movement. It may be worn alone or serve as the foundation beneath other armor.",
    "enabled": true
   },
   {
-   "name": "Leather cuirass",
+   "name": "Heavy Gambeson",
+   "zone": "Torso",
+   "protection": 2,
+   "load": 1,
+   "price": "3 gp",
+   "traits": [
+    "Comfort"
+   ],
+   "material": "Padded",
+   "description": "A thick, densely layered quilted coat designed to absorb impact as armor in its own right. It remains quiet and comfortable but is hotter and bulkier than a light gambeson.",
+   "enabled": true
+  },
+  {
+   "name": "Leather Cuirass",
    "zone": "Torso",
    "protection": 2,
    "load": 0,
    "price": "5 gp",
-   "traits": [
-    "Leather",
-    "Quiet"
-   ],
+   "traits": [],
    "material": "Leather",
-   "enabled": false
+   "description": "Thick, shaped, and hardened leather protecting the chest, back, and abdomen. “Leather” here means armor-grade hardened hide: not ordinary clothing leather.",
+   "enabled": true
   },
   {
-   "name": "Mail shirt",
+   "name": "Mail Shirt",
    "zone": "Torso",
    "protection": 3,
    "load": 1,
    "price": "10 gp",
    "traits": [
-    "Mail",
+    "Flexible",
     "Noisy"
    ],
    "material": "Mail",
-   "enabled": false
-  },
-  {
-   "name": "Scale hauberk",
-   "zone": "Torso",
-   "protection": 3,
-   "load": 2,
-   "price": "10 gp",
-   "traits": [
-    "Scale",
-    "Noisy"
-   ],
-   "material": "Scale",
-   "enabled": false
-  },
-  {
-   "name": "Breastplate",
-   "zone": "Torso",
-   "protection": 4,
-   "load": 2,
-   "price": "15 gp",
-   "traits": [
-    "Plate",
-    "Noisy",
-    "Attended"
-   ],
-   "material": "Plate",
+   "description": "Interlocking metal rings protecting the torso, shoulders, and upper arms. It moves naturally with the body and resists cuts exceptionally well, but requires padding and remains vulnerable to purpose-made narrow points.",
    "enabled": true
   },
   {
-   "name": "Padded sleeves",
+   "name": "Lamellar Armor",
+   "zone": "Torso",
+   "protection": 3,
+   "load": 2,
+   "price": "11 gp",
+   "traits": [],
+   "material": "Lamellar",
+   "description": "Overlapping rows of small rigid plates laced together around the torso. Lamellar needs no supporting fabric for its structure.",
+   "enabled": true
+  },
+  {
+   "name": "Brigandine",
+   "zone": "Torso",
+   "protection": 4,
+   "load": 2,
+   "price": "16 gp",
+   "traits": [],
+   "material": "Brigandine",
+   "description": "Overlapping steel plates riveted inside a fitted cloth or leather garment. It combines strong protection with more give and less exposed metal than a plate cuirass.",
+   "enabled": true
+  },
+  {
+   "name": "Plate Cuirass",
+   "zone": "Torso",
+   "protection": 4,
+   "load": 2,
+   "price": "20 gp",
+   "traits": [
+    "Attended",
+    "Fitted"
+   ],
+   "material": "Plate",
+   "description": "Shaped steel plates protecting the chest, back, abdomen, and often the hips. Its rigid surfaces deflect and distribute blows extremely well, but the cuirass works best when fitted to its wearer.",
+   "enabled": true
+  },
+  {
+   "name": "Padded Sleeves",
    "zone": "Arms",
    "protection": 1,
    "load": 0,
    "price": "1 gp",
    "traits": [
-    "Padded",
-    "Comfort"
+    "Comfort",
+    "Flexible"
    ],
    "material": "Padded",
+   "description": "Quilted cloth protecting the shoulders, arms, and elbows. They remain light and flexible enough for climbing, archery, weapon work, or spellcasting.",
    "enabled": true
   },
   {
-   "name": "Leather bracers",
+   "name": "Leather Armguards",
    "zone": "Arms",
    "protection": 2,
    "load": 0,
-   "price": "1 gp",
-   "traits": [
-    "Leather",
-    "Quiet"
-   ],
+   "price": "4 gp",
+   "traits": [],
    "material": "Leather",
-   "enabled": false
-  },
-  {
-   "name": "Mail sleeves",
-   "zone": "Arms",
-   "protection": 3,
-   "load": 1,
-   "price": "5 gp",
-   "traits": [
-    "Mail",
-    "Noisy"
-   ],
-   "material": "Mail",
-   "enabled": false
-  },
-  {
-   "name": "Scale sleeves",
-   "zone": "Arms",
-   "protection": 3,
-   "load": 2,
-   "price": "6 gp",
-   "traits": [
-    "Scale",
-    "Noisy"
-   ],
-   "material": "Scale",
-   "enabled": false
-  },
-  {
-   "name": "Vambraces w/ gauntlets",
-   "zone": "Arms",
-   "protection": 4,
-   "load": 2,
-   "price": "10 gp",
-   "traits": [
-    "Plate",
-    "Noisy"
-   ],
-   "material": "Plate",
+   "description": "Shaped leather defenses covering the exposed portions of the upper arms, elbows, and forearms while leaving the hands free. Gaps preserve mobility but remain vulnerable to precise attacks.",
    "enabled": true
   },
   {
-   "name": "Padded leggings",
+   "name": "Mail Sleeves",
+   "zone": "Arms",
+   "protection": 3,
+   "load": 1,
+   "price": "7 gp",
+   "traits": [
+    "Flexible",
+    "Noisy"
+   ],
+   "material": "Mail",
+   "description": "Interlocking rings protecting the arms through their full range of motion. They resist cuts without rigid joints, but their weight is noticeable during prolonged weapon use.",
+   "enabled": true
+  },
+  {
+   "name": "Splinted Arms",
+   "zone": "Arms",
+   "protection": 3,
+   "load": 1,
+   "price": "8 gp",
+   "traits": [],
+   "material": "Splint",
+   "description": "Narrow metal strips fixed to a leather or textile backing over the upper arms and forearms, with joint protection at the elbows. They are affordable and field-repairable but leave more gaps than complete plate.",
+   "enabled": true
+  },
+  {
+   "name": "Plate Armguards",
+   "zone": "Arms",
+   "protection": 3,
+   "load": 1,
+   "price": "10 gp",
+   "traits": [
+    "Fitted"
+   ],
+   "material": "Plate",
+   "description": "Articulated steel protecting the shoulders, elbows, and forearms while leaving selected inner surfaces or the hands less enclosed. They give efficient protection without the full Load of complete arm harness.",
+   "enabled": true
+  },
+  {
+   "name": "Plate Arms",
+   "zone": "Arms",
+   "protection": 4,
+   "load": 2,
+   "price": "14 gp",
+   "traits": [
+    "Attended",
+    "Fitted",
+    "Noisy"
+   ],
+   "material": "Plate",
+   "description": "Articulated steel plates protecting the shoulders, upper arms, elbows, forearms, and hands.",
+   "enabled": true
+  },
+  {
+   "name": "Padded Leggings",
    "zone": "Legs",
    "protection": 1,
    "load": 0,
    "price": "1 gp",
    "traits": [
-    "Padded",
-    "Comfort"
+    "Comfort",
+    "Flexible"
    ],
    "material": "Padded",
+   "description": "Quilted cloth protecting the thighs, knees, and lower legs. They permit unrestricted movement and may serve as the foundation beneath heavier leg armor.",
    "enabled": true
   },
   {
-   "name": "Leather leggings",
+   "name": "Leather Legguards",
    "zone": "Legs",
    "protection": 2,
    "load": 0,
-   "price": "1 gp",
-   "traits": [
-    "Leather",
-    "Quiet"
-   ],
+   "price": "4 gp",
+   "traits": [],
    "material": "Leather",
-   "enabled": false
+   "description": "Hardened leather covering the exposed fronts and sides of the thighs, knees, and shins. They are quiet and light, but their straps and gaps leave openings for precise attacks.",
+   "enabled": true
   },
   {
-   "name": "Mail chausses",
+   "name": "Mail Leggings",
    "zone": "Legs",
    "protection": 3,
-   "load": 1,
-   "price": "5 gp",
+   "load": 2,
+   "price": "8 gp",
    "traits": [
-    "Mail",
+    "Flexible",
     "Noisy"
    ],
    "material": "Mail",
-   "enabled": false
+   "description": "Interlocking rings providing broad protection from thigh to lower leg. They are flexible, but weight carried on the legs is particularly tiring during running and climbing.",
+   "enabled": true
   },
   {
-   "name": "Scale skirt",
+   "name": "Splinted Legguards",
+   "zone": "Legs",
+   "protection": 3,
+   "load": 1,
+   "price": "9 gp",
+   "traits": [],
+   "material": "Splint",
+   "description": "Metal strips secured to padded or leather supports over the thighs and shins, with separate knee protection. They provide efficient partial armor that can be repaired without an armorer’s forge.",
+   "enabled": true
+  },
+  {
+   "name": "Lamellar Legguards",
    "zone": "Legs",
    "protection": 3,
    "load": 2,
-   "price": "6 gp",
-   "traits": [
-    "Scale",
-    "Noisy"
-   ],
-   "material": "Scale",
-   "enabled": false
+   "price": "10 gp",
+   "traits": [],
+   "material": "Lamellar",
+   "description": "Small overlapping plates laced into panels protecting the thighs and other exposed portions of the legs. They provide broad, repairable protection but are bulkier than partial plate.",
+   "enabled": true
   },
   {
-   "name": "Greaves",
+   "name": "Plate Legguards",
+   "zone": "Legs",
+   "protection": 3,
+   "load": 1,
+   "price": "12 gp",
+   "traits": [
+    "Fitted"
+   ],
+   "material": "Plate",
+   "description": "Fitted steel plates protecting the knees, shins, and exposed portions of the thighs while omitting some enclosing plates. They retain most of plate’s defensive value at reduced Load.",
+   "enabled": true
+  },
+  {
+   "name": "Plate Legs",
    "zone": "Legs",
    "protection": 4,
    "load": 2,
-   "price": "10 gp",
+   "price": "16 gp",
    "traits": [
-    "Plate",
+    "Attended",
+    "Fitted",
     "Noisy"
    ],
    "material": "Plate",
+   "description": "Articulated steel plates protecting the thighs, knees, and lower legs. The components are fitted and joined so the legs can bend and move while remaining substantially enclosed.",
    "enabled": true
   }
  ],

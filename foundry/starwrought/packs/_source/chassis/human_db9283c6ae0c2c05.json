@@ -13,7 +13,7 @@
     "senses": "",
     "description": "<p>Humans are restless, adaptable, and ambitious, at home anywhere and finished nowhere.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.10"
+    "source": "STARWROUGHT Playtest v4.21"
   },
   "folder": "e179582241ca8c65",
   "sort": 0,
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "4373b121e84a1ebc"
+      "contentHash": "f97b726fb3bfb6f6"
     }
   },
   "effects": [],

@@ -212,10 +212,8 @@ async function onRollRecovery({ actor }) {
 /**
  * Wind (PHB v4.13, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
  * and on a failure Fatigued raised by 1 to a maximum of 3: -N Condition to Evade, Guard and attack
- * rolls until ten minutes of rest. The exemption (an Endure Threshold that meets the Wind
- * Threshold, ruling 74) is applied where the card is posted, in endRound, not here: a card already
- * posted still rolls. The card names the new value and carries the "Ten minutes' rest" button that
- * ends the condition (onWindRest, ruling 81).
+ * rolls until ten minutes of rest. The card names the new value and carries the "Ten minutes'
+ * rest" button that ends the condition (onWindRest, ruling 81).
  */
 async function onWindCheck({ actor }) {
   if (!requireOwner(actor)) return;
@@ -232,8 +230,10 @@ async function onWindCheck({ actor }) {
   });
   if (!result) return;
   if (["fail", "critFail"].includes(result.degree)) {
+    // PHB v4.21, Wind: Fatigued rises by 1 on a failure and by 2 on a critical failure.
+    const rise = result.degree === "critFail" ? SW.WIND_CRIT_FAIL_RISE : SW.WIND_FAIL_RISE;
     const current = Number(actor.conditionValue?.("fatigued")) || 0;
-    const value = Math.min(SW.FATIGUED_MAX, current + 1);
+    const value = Math.min(SW.FATIGUED_MAX, current + rise);
     await actor.setCondition?.("fatigued", value);
     await postCard(actor, cardHtml({
       root: "sw-round-card sw-wind-card",
@@ -250,17 +250,20 @@ async function onWindCheck({ actor }) {
 }
 
 /**
- * Ten minutes' rest (PHB v4.13, Conditions: Fatigued "ends after ten minutes of rest"; ruling 81).
+ * Ten minutes' rest (PHB v4.21, Conditions: Fatigued "ends after ten minutes of rest"; ruling 81).
  * The system has no clock for ten minutes, and the end of the Combat is not one either (through
  * 0.6.1 it cleared Fatigued there, ruling 70, now superseded), so whether the ten minutes have
  * passed is the table's call: the Fatigued card carries this button for the actor's owner or the
- * GM (`requireOwner`; a GM owns everything). Fatigued comes off whole, whatever its value, and a
- * one-line card tells the same table the Fatigued card went to. A night's rest clears it too
- * (SwActor#restForTheNight). Clicked for an actor no longer Fatigued, it says so quietly and
- * writes nothing.
+ * GM (`requireOwner`; a GM owns everything). Since 0.11.0 the ten minutes are the character's own
+ * short rest (SwActor#restTenMinutes: Fatigued off and level x Presence Vigor back, PHB v4.21),
+ * so a character goes through that and its card; an adversary, which has no short rest, keeps
+ * the old path: Fatigued comes off whole, whatever its value, and a one-line card tells the same
+ * table the Fatigued card went to. A night's rest clears it too (SwActor#restForTheNight).
+ * Clicked for an actor no longer Fatigued, it says so quietly and writes nothing.
  */
 async function onWindRest({ actor }) {
   if (!requireOwner(actor)) return;
+  if (typeof actor.restTenMinutes === "function") return actor.restTenMinutes();
   const current = Number(actor.conditionValue?.("fatigued")) || 0;
   if (!current) {
     ui.notifications.info(format("STARWROUGHT.Notify.notFatigued", { name: actor.name }));
@@ -276,9 +279,11 @@ async function onWindRest({ actor }) {
 }
 
 /**
- * Persistent Damage (PHB v4.10): roll it fresh, Protection does not apply, then Endure against
- * 10 + the amount just taken to end it. The card names the amount; applying it is the owner's, on
- * the sheet, since the engine's damage pipeline is built around a Zone and its Protection.
+ * Persistent Damage (PHB v4.21): roll it fresh and apply it Pervasive, past ordinary Protection,
+ * through the damage pipeline (Immunity, Resistance, Weakness, Temporary Vigor, Vigor, Spent and
+ * the Wounds of a Spent body all read as for any damage; `delivery: "pervasive"` skips the
+ * Protection step), then Endure against 10 + the amount just taken to end it. Through 0.10.1 the
+ * card named the amount and left the applying to the owner on the sheet.
  */
 async function onPersistentRoll({ actor, button }) {
   if (!requireOwner(actor)) return;
@@ -292,19 +297,31 @@ async function onPersistentRoll({ actor, button }) {
   const total = roll.total;
   const fromWound = button.dataset.source === "torsoWound";
   const threshold = 10 + total;
+  let applied = null;
+  try {
+    applied = await SwDamage.apply(actor, { base: total, type, strike: null, delivery: "pervasive" });
+  } catch (err) {
+    console.error(`STARWROUGHT | ${actor.name}: Persistent Damage could not be applied`, err);
+  }
   const buttons = fromWound ? [] : [{
     action: "persistentEndure", icon: "fa-solid fa-shield-heart",
     label: format("STARWROUGHT.Combat.endureVs", { threshold }),
     data: { threshold, type }
   }];
+  const lines = [format("STARWROUGHT.Combat.persistentTaken", { name: escapeHTML(actor.name), total, type: damageLabel(type) })];
+  if (applied) {
+    lines.push(format("STARWROUGHT.Combat.persistentApplied", {
+      name: escapeHTML(actor.name), applied: applied.applied, before: applied.vigorBefore, after: applied.vigorAfter
+    }));
+  }
   const content = cardHtml({
     root: "sw-round-card sw-persistent-card",
     actorUuid: actor.uuid,
     title: localize("STARWROUGHT.Combat.persistent"),
-    lines: [format("STARWROUGHT.Combat.persistentTaken", { name: escapeHTML(actor.name), total, type: damageLabel(type) })],
+    lines,
     notes: [
       fromWound ? localize("STARWROUGHT.Combat.persistentWoundNote") : format("STARWROUGHT.Combat.persistentEndNote", { threshold }),
-      localize("STARWROUGHT.Combat.persistentApplyNote")
+      applied ? localize("STARWROUGHT.Combat.persistentPervasiveNote") : localize("STARWROUGHT.Combat.persistentApplyNote")
     ],
     buttons
   });

@@ -1,0 +1,36 @@
+{
+  "_id": "98fb6362dda1ca9f",
+  "name": "Spiritcraft",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/spiritcraft.png",
+  "system": {
+    "slug": "spiritcraft",
+    "category": "magic",
+    "attribute": "presence",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Magic • Presence (Manipulation of souls, spiritual bindings, oaths, curses, and unseen presences. Spiritcraft has its own defensive practices and rites.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Presence (Manipulation of souls, spiritual bindings, oaths, curses, and unseen presences. Spiritcraft has its own defensive practices and rites.)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "1171ea774d41a60f"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!98fb6362dda1ca9f"
+}

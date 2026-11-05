@@ -29,6 +29,20 @@
   {{#unless lockStrike}}
   <p class="hint">{{localize "STARWROUGHT.Strike.dialogHint"}}</p>
   {{/unless}}
+  {{#if maneuvers.length}}
+  {{!-- A Strike made as part of another Maneuver (PHB v4.21): its Key Attribute may stand in when higher. --}}
+  <div class="form-group sw-maneuver-choice">
+    <label data-tooltip="{{localize 'STARWROUGHT.Roll.maneuverHint'}}">{{localize "STARWROUGHT.Roll.maneuverChoice"}}</label>
+    <div class="form-fields">
+      <select name="maneuver">
+        <option value="">{{localize "STARWROUGHT.Roll.noManeuver" attribute=attributeLabel}}</option>
+        {{#each maneuvers as |m|}}
+        <option value="{{m.id}}">{{m.label}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+  {{/if}}
   {{/if}}
 
   {{#if reactions.length}}

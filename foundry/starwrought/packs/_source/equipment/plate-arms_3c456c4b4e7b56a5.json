@@ -1,0 +1,37 @@
+{
+  "_id": "3c456c4b4e7b56a5",
+  "name": "Plate Arms",
+  "type": "armor",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "zone": "arms",
+    "protection": 4,
+    "load": 2,
+    "material": "plate",
+    "traits": [
+      "Attended",
+      "Fitted",
+      "Noisy"
+    ],
+    "price": "14 gp",
+    "quantity": 1,
+    "state": "carried",
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "95f00e73201b3e15",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "dd1fdc51a44b9dbf"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3c456c4b4e7b56a5"
+}

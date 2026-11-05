@@ -60,7 +60,7 @@ export function memberRow({ uuid, actor }) {
       pips: Array.fromRange(of, 1).map(n => ({ n, filled: n <= reached })),
       tooltip: F("STARWROUGHT.Milestone.pipHint", { n: reached, of })
     },
-    deferred: Number(sys.deferred) || 0,
+    comets: Number(sys.comets) || 0,
     heroPoints,
     heroMax: SW.HERO_POINTS_MAX,
     heroFull: heroPoints >= SW.HERO_POINTS_MAX,

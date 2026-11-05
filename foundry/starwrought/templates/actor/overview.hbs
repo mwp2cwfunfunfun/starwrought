@@ -86,11 +86,6 @@
         <div class="sw-zone-piece">
           {{#if zone.piece}}{{zone.piece.name}}{{else}}<em>{{localize "STARWROUGHT.Protection.unarmored"}}</em>{{/if}}
         </div>
-        {{#if zone.weakTo}}
-        <div class="sw-zone-weak" data-tooltip="STARWROUGHT.Hint.materialWeakness">
-          {{zone.materialLabel}} · −1 {{localize "STARWROUGHT.Field.vs"}} {{zone.weakTo}}
-        </div>
-        {{/if}}
         {{#if zone.wounds.effect}}<div class="sw-zone-wound-effect">{{zone.wounds.effect}}</div>{{/if}}
         {{#if zone.exposed}}
         <div class="sw-zone-flag">
@@ -121,11 +116,7 @@
       </div>
       <div class="sw-field sw-readonly" data-tooltip="STARWROUGHT.Field.weaponDiceHint">
         <span>{{localize "STARWROUGHT.Field.weaponDice"}}</span>
-        <strong>{{strikes.weaponDice}}</strong>
-      </div>
-      <div class="sw-field sw-readonly" data-tooltip="STARWROUGHT.Field.specializationHint">
-        <span>{{localize "STARWROUGHT.Field.specialization"}}</span>
-        <strong>{{swSigned strikes.melee.specialization}} <em>/</em> {{swSigned strikes.ranged.specialization}}</strong>
+        <strong>{{strikes.melee.dice}} <em>/</em> {{strikes.ranged.dice}}</strong>
       </div>
     </div>
     <div class="sw-strike-kinds">
@@ -210,13 +201,19 @@
         <strong>{{movement.step}} ft</strong>
       </div>
       <div class="sw-move" data-tooltip="STARWROUGHT.Field.rushHint">
-        <span class="sw-move-label">{{swActionGlyph 3}} {{localize "STARWROUGHT.Field.rush"}}</span>
+        <span class="sw-move-label">{{movement.rushGlyph}} {{localize "STARWROUGHT.Field.rush"}}</span>
         <strong>{{movement.rush}} ft</strong>
       </div>
       <div class="sw-move" data-tooltip="STARWROUGHT.Field.leapHint">
-        <span class="sw-move-label">{{swActionGlyph 1}} {{localize "STARWROUGHT.Field.leap"}}</span>
-        <strong>{{movement.leap}} ft</strong>
+        <span class="sw-move-label">{{localize "STARWROUGHT.Field.leap"}}</span>
+        <strong>{{#each movement.leap as |l|}}{{#if @index}} <em>/</em> {{/if}}<small>{{l.glyph}}</small> {{l.feet}}{{/each}} ft</strong>
       </div>
+      {{#if system.cannotStand}}
+      <div class="sw-move" data-tooltip="STARWROUGHT.Field.crawlHint">
+        <span class="sw-move-label">{{swActionGlyph 1}} {{localize "STARWROUGHT.Field.crawl"}}</span>
+        <strong>{{movement.crawl}} ft</strong>
+      </div>
+      {{/if}}
     </div>
 
     {{!-- AURAS (0.5.1): the body's own ranges, each with its ring toggle. A Visible ring is pinned on
@@ -236,8 +233,11 @@
     </div>
     {{/if}}
 
-    {{#if system.matchedHarness}}
-    <p class="sw-note sw-good">{{localize "STARWROUGHT.Hint.matchedHarness"}}</p>
+    {{#if system.fittedHarness}}
+    <p class="sw-note sw-good">{{localize "STARWROUGHT.Hint.fittedHarness"}}</p>
+    {{/if}}
+    {{#if system.visor}}
+    <p class="sw-note {{#if system.visor.lowered}}sw-warn{{/if}}">{{#if system.visor.lowered}}{{localize "STARWROUGHT.Hint.visorLowered"}}{{else}}{{localize "STARWROUGHT.Hint.visorRaised"}}{{/if}}</p>
     {{/if}}
     {{#if system.clatter}}
     <p class="sw-note sw-warn">{{localize "STARWROUGHT.Hint.clatter"}}</p>
@@ -257,9 +257,12 @@
           <i class="fa-solid fa-hand"></i> {{localize "STARWROUGHT.Roll.refuseDeath"}}
         </button>
       </span>
+      <button type="button" data-action="restTenMinutes" data-tooltip="{{localize 'STARWROUGHT.Rest.shortHint'}}">
+        <i class="fa-solid fa-mug-hot"></i> {{localize "STARWROUGHT.Rest.shortTitle"}}
+        <em>({{swSigned vigor.shortRest}} {{localize "STARWROUGHT.Field.vigor"}})</em>
+      </button>
       <button type="button" data-action="rest" data-tooltip="{{localize 'STARWROUGHT.Rest.hint'}}">
         <i class="fa-solid fa-bed"></i> {{localize "STARWROUGHT.Rest.title"}}
-        <em>({{swSigned vigor.rest}} {{localize "STARWROUGHT.Field.vigor"}})</em>
       </button>
     </div>
   </div>

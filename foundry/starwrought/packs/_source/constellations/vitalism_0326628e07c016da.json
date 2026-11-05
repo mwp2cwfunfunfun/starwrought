@@ -1,0 +1,36 @@
+{
+  "_id": "0326628e07c016da",
+  "name": "Vitalism",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/vitalism.png",
+  "system": {
+    "slug": "vitalism",
+    "category": "magic",
+    "attribute": "might",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Magic • Might (Magic of living systems: restoration, growth, poison, disease, tissue, and decay. Healing and blight are different applications of one domain.)",
+    "flareTrigger": "Crit succeed or crit fail on any roll with consequences, directly related to a talent in this constellation.",
+    "identity": false,
+    "description": "<p>Magic • Might (Magic of living systems: restoration, growth, poison, disease, tissue, and decay. Healing and blight are different applications of one domain.)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "466177a01843efde"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0326628e07c016da"
+}

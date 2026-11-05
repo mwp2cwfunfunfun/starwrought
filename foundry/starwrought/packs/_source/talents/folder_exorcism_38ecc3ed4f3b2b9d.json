@@ -1,0 +1,16 @@
+{
+  "_id": "38ecc3ed4f3b2b9d",
+  "name": "Exorcism",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "a03f3ab45795b654"
+    }
+  },
+  "_key": "!folders!38ecc3ed4f3b2b9d"
+}

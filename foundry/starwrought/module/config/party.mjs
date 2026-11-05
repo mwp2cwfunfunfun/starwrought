@@ -20,8 +20,8 @@
  * The rulings the sheet is built to (91 to 95, continuing the v4.14 report's numbering): a
  * Milestone award goes to every member by default, with a checkbox per member to withhold it (91);
  * when the fourth Milestone raises a level, current Vigor rises by the same amount as the maximum
- * (92); Begin session sets every member's Hero Points to exactly 1 (93); Deferred Talent Points are
- * counted on the character and nothing is enforced (94); players see every member's Thresholds on
+ * (92); Begin session sets every member's Hero Points to exactly 1 (93); Deferred Talent Points,
+ * Comets since PHB v4.21, are counted on the character and nothing is enforced (94); players see every member's Thresholds on
  * the Skills grid (95).
  *
  * Phase 2 (0.7.1; rulings 96 to 100): the party's embedded Items are its loot, PHYSICAL_TYPES only

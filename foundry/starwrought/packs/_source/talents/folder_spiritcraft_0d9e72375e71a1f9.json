@@ -1,0 +1,16 @@
+{
+  "_id": "0d9e72375e71a1f9",
+  "name": "Spiritcraft",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "a0b60c11e28107b8"
+    }
+  },
+  "_key": "!folders!0d9e72375e71a1f9"
+}

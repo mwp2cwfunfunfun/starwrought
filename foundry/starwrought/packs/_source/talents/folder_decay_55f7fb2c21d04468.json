@@ -1,0 +1,16 @@
+{
+  "_id": "55f7fb2c21d04468",
+  "name": "Decay",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "f73643e58d6d0f10"
+    }
+  },
+  "_key": "!folders!55f7fb2c21d04468"
+}

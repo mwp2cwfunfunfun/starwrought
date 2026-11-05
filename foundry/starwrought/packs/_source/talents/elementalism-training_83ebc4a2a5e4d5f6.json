@@ -1,0 +1,72 @@
+{
+  "_id": "83ebc4a2a5e4d5f6",
+  "name": "Elementalism Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elementalism",
+    "constellationName": "Elementalism",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Elemental Dart (Blow, Zoned, 30 ft): Quick ❷ deals 1d6 fire or cold; Focused ❸ deals Damage Dice d6; Committed ❹ adds a 2-foot push or pull to a Hit, as described by the chosen element. Damage type is fixed when casting.",
+    "description": "",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "spell": {
+      "enabled": true,
+      "threat": "blow",
+      "delivery": "zoned",
+      "range": 30,
+      "adjacent": false,
+      "die": 6,
+      "types": [
+        "fire",
+        "cold"
+      ],
+      "targets": "one",
+      "defenses": [],
+      "effects": {
+        "quick": "1d6 fire or cold",
+        "focused": "Damage Dice d6",
+        "committed": "Damage Dice d6; on a Hit, a 2-foot push or pull as the chosen element describes"
+      }
+    },
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": "d5b63b95c63fcc72",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "760e79147219d35a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!83ebc4a2a5e4d5f6"
+}
