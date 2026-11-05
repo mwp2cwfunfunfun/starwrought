@@ -122,8 +122,20 @@ export class AttackWorkflow {
    * @returns {object}
    */
   static create({ id, coordinatorUserId, initiatingUserId, attacker, maneuver, targets = [] }) {
-    const strike = SW.STRIKE_KINDS[maneuver?.strike] ? maneuver.strike : SW.DEFAULT_STRIKE;
-    const kind = SW.STRIKE_KINDS[strike];
+    // The source (0.12.0, attack-source.mjs): a weapon or an attack row is a Blow with a Strike;
+    // a spell is a Cast with no Strike at all. A record from before 0.12.0 names no source and
+    // reads as the Blow it was.
+    const source = (maneuver?.source === "spell") ? "spell"
+      : (maneuver?.source === "attack") ? "attack"
+      : (maneuver?.weaponId ? "weapon" : (maneuver?.attackId ? "attack" : (maneuver?.source ?? "weapon")));
+    const spell = (source === "spell") && maneuver?.spell ? { ...maneuver.spell } : null;
+    const strike = (source === "spell") ? null : (SW.STRIKE_KINDS[maneuver?.strike] ? maneuver.strike : SW.DEFAULT_STRIKE);
+    const kind = strike ? SW.STRIKE_KINDS[strike] : null;
+    const castKind = spell ? (SW.CAST_KINDS[spell.cast] ?? SW.CAST_KINDS[SW.DEFAULT_CAST]) : null;
+    const reaction = ["intercept", "riposte"].includes(maneuver?.reaction) ? maneuver.reaction : null;
+    const threat = SW.THREATS[maneuver?.threat] ? maneuver.threat : "blow";
+    const permitted = Array.isArray(maneuver?.defenses) ? maneuver.defenses.filter(d => SW.DEFENSES[d]) : [];
+    const defenses = permitted.length ? [...permitted] : [...SW.THREATS[threat].defenses];
     const attackerSnapshot = {
       actorUuid: attacker?.actorUuid ?? "",
       tokenUuid: attacker?.tokenUuid ?? "",
@@ -139,18 +151,26 @@ export class AttackWorkflow {
       initiatingUserId,
       attacker: attackerSnapshot,
       maneuver: {
+        source,
         weaponId: maneuver?.weaponId ?? null,
         weaponName: maneuver?.weaponName ?? "",
         strike,
-        glyph: maneuver?.glyph ?? SW.ACTION_GLYPHS[kind.cost] ?? "",
+        glyph: maneuver?.glyph ?? SW.ACTION_GLYPHS[(kind ?? castKind)?.cost] ?? "",
         label: maneuver?.label ?? "",
         thrown: maneuver?.thrown ?? null,
         prepared: !!maneuver?.prepared,
-        free: !!maneuver?.free,
+        free: !!maneuver?.free || (reaction === "riposte"),
         attackId: maneuver?.attackId ?? null,
-        // Whether the Blow is ranged, for the stance reading and the Counter rule (PHB v4.10,
-        // Answering an Attack: Counter answers a melee Blow within Reach only).
-        ranged: !!maneuver?.ranged
+        // Whether the Blow is ranged: a melee-only Reaction (Slip the Line, Parry, Deflecting
+        // Palms; PHB v4.21) answers a melee Blow alone. A Cast is never melee.
+        ranged: (source === "spell") ? true : !!maneuver?.ranged,
+        // 0.12.0: a Reaction Strike (Intercept, the Riposte) is answered by a basic Defense alone
+        // (a Reaction never triggers a Reaction); the Threat names the two Defenses that answer.
+        reaction,
+        basicOnly: !!reaction || !!maneuver?.basicOnly,
+        threat,
+        defenses,
+        spell
       },
       targets: targets.map((target, index) => {
         const snapshot = {
@@ -177,6 +197,33 @@ export class AttackWorkflow {
       attackRoll: null,
       log: [],
       messageId: null
+    };
+  }
+
+  /* -------------------------------------------- */
+  /*  The profile                                 */
+  /* -------------------------------------------- */
+
+  /**
+   * What the defenders of a Maneuver may answer with (0.12.0): the two Defenses its Threat permits
+   * (a Blow Evade or Guard; a spell's Threat, or the Defenses its sheet names), whether only a
+   * basic Defense answers (a Reaction Strike), whether the melee-only Reactions apply, and whether
+   * the resolution offers Position (never for a spell). A record from before 0.12.0 names none of
+   * this and reads as a Blow.
+   * @param {object} maneuver
+   * @returns {{defenses: string[], basicOnly: boolean, melee: boolean, canPosition: boolean, source: string}}
+   */
+  static profileFor(maneuver) {
+    const m = maneuver ?? {};
+    const source = m.source ?? "weapon";
+    const threat = SW.THREATS[m.threat] ? m.threat : "blow";
+    const named = Array.isArray(m.defenses) ? m.defenses.filter(d => SW.DEFENSES[d]) : [];
+    return {
+      source,
+      defenses: named.length ? [...named] : [...SW.THREATS[threat].defenses],
+      basicOnly: !!m.basicOnly || !!m.reaction,
+      melee: (source !== "spell") && !m.ranged,
+      canPosition: source !== "spell"
     };
   }
 

@@ -23,7 +23,10 @@
 
 import * as SW from "../config.mjs";
 
-/** The two Defenses that answer a Blow, in display order. */
+/**
+ * The two Defenses that answer a Blow, in display order: the default `permitted` list. A spell's
+ * Threat names another pair (SW.THREATS; `AttackWorkflow.profileFor`), which the callers pass.
+ */
 export const BLOW_DEFENSES = Object.freeze([...SW.THREATS.blow.defenses]);
 
 /** The Reaction key a Talent is, by the slug of its plain name, or null when the table has no row. */
@@ -80,13 +83,22 @@ function isGenericPostureFor(item, slug) {
 
 /**
  * The answers this actor may commit on a Defense right now.
+ *
+ * The options (0.12.0) describe the Maneuver being answered: `permitted`, the Defenses its Threat
+ * allows (a Blow's Evade and Guard by default; a spell's two); `basicOnly`, a Reaction Strike,
+ * which only a basic Defense answers (a Reaction never triggers a Reaction); `melee`, whether the
+ * melee-only Reactions (Slip the Line, Parry, Deflecting Palms; SW.REACTIONS `melee`) apply, false
+ * against an arrow or a spell. A Reaction answers any Threat met with its Defense (ruling 132).
  * @param {Actor} actor
- * @param {string} defense  "evade" or "guard".
+ * @param {string} defense  A key of SW.DEFENSES.
+ * @param {{permitted?: string[], basicOnly?: boolean, melee?: boolean}} [options]
  * @returns {{none: boolean, reactions: string[], postures: {talentId: string, key: string|null, name: string, hint?: string, exposes: boolean|string, granted?: boolean}[]}}
  */
-export function legalAnswers(actor, defense) {
+export function legalAnswers(actor, defense, { permitted = BLOW_DEFENSES, basicOnly = false, melee = true } = {}) {
   const none = { none: true, reactions: [], postures: [] };
-  if (!actor || !BLOW_DEFENSES.includes(defense)) return none;
+  const allowed = Array.isArray(permitted) && permitted.length ? permitted : BLOW_DEFENSES;
+  if (!actor || !allowed.includes(defense) || !SW.DEFENSES[defense]) return none;
+  if (basicOnly) return none;
 
   const reactions = actor.system?.reactions ?? {};
   // A Head Wound: no Reactions and no Postures at all; only the basic Defense answers.
@@ -97,6 +109,7 @@ export function legalAnswers(actor, defense) {
   const postures = [];
   for (const [key, rule] of Object.entries(SW.REACTIONS)) {
     if (!(key in owned) || (rule.defense !== defense)) continue;
+    if (rule.melee && !melee) continue;
     if (rule.kind === "reaction") legalReactions.push(key);
     else if (rule.kind === "posture") {
       postures.push({
@@ -200,12 +213,14 @@ export function postureName(actor, posture) {
  * @param {Actor} actor
  * @param {string} defense
  * @param {{reaction?: string|null, posture?: {talentId: string, zone?: string}|null}} [choice]
+ * @param {{permitted?: string[], basicOnly?: boolean, melee?: boolean}} [options]  As `legalAnswers`.
  * @returns {boolean}
  */
-export function isLegalAnswer(actor, defense, { reaction = null, posture = null } = {}) {
-  if (!BLOW_DEFENSES.includes(defense)) return false;
+export function isLegalAnswer(actor, defense, { reaction = null, posture = null } = {}, options = {}) {
+  const allowed = Array.isArray(options.permitted) && options.permitted.length ? options.permitted : BLOW_DEFENSES;
+  if (!allowed.includes(defense) || !SW.DEFENSES[defense]) return false;
   if (reaction && posture) return false;
-  const legal = legalAnswers(actor, defense);
+  const legal = legalAnswers(actor, defense, options);
   if (reaction) return legal.reactions.includes(reaction);
   if (posture) {
     if (!posture.talentId) return false;

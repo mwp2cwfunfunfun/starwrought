@@ -35,6 +35,7 @@ import { SwCheck } from "../dice/check.mjs";
 import { isLegalAnswer, postureName, postureBonus, postureZone, postureRule } from "../helpers/answers.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 import { AttackSocket, SOCKET } from "./attack-socket.mjs";
+import { resolveSource, maneuverFrom, costOf, meleeAnswers, attackThreshold, describe, resolveArgs, rollBlind } from "./attack-source.mjs";
 
 /** The socket channel, defined by the transport (attack-socket.mjs) and re-exported for callers. */
 export { SOCKET };
@@ -59,6 +60,10 @@ const REASONS = Object.freeze({
   alreadyDeclared: "STARWROUGHT.Attack.alreadyDeclared",
   noActor: "STARWROUGHT.Notify.noActor",
   noWeapon: "STARWROUGHT.Notify.noWeapon",
+  noSpell: "STARWROUGHT.Cast.notASpell",
+  npcCast: "STARWROUGHT.Cast.npc",
+  illegalDefense: "STARWROUGHT.Attack.illegalDefense",
+  basicOnly: "STARWROUGHT.Reaction.basicOnly",
   badRoll: "STARWROUGHT.Attack.badRoll",
   timeout: "STARWROUGHT.Attack.timeout",
   error: "STARWROUGHT.Attack.failed"
@@ -735,45 +740,12 @@ export class AttackCoordinator {
     }
     if (!targets.length) return { ok: false, reason: "noTargets" };
 
-    const weapon = payload.weaponId ? attacker.items.get(payload.weaponId) : null;
-    const attackItem = payload.attackId ? attacker.items.get(payload.attackId) : null;
-    const attackRow = payload.attackId ? attacker.system.attacks?.find(a => a.id === payload.attackId) : null;
-    if ((payload.weaponId && (weapon?.type !== "weapon")) || (!weapon && !attackItem && !attackRow)) {
-      return { ok: false, reason: "noWeapon" };
-    }
-
+    // What the attack is (0.12.0, attack-source.mjs): read from the attacker's own Items, so the
+    // Threat, the permitted Defenses and the cost are never the declaring client's to say.
     const attackerToken = resolveTokenDoc(payload.attackerTokenUuid) ?? attacker.tokenOnScene?.() ?? null;
-    const strike = SW.STRIKE_KINDS[payload.strike] ? payload.strike : SW.DEFAULT_STRIKE;
-    const kind = SW.STRIKE_KINDS[strike];
-
-    // Melee for a weapon in hand, Ranged for one that leaves it (PHB v4.10). A Thrown weapon
-    // leaves the hand when its target is beyond Total Reach, read against the first target, as
-    // rollAttack infers it; the declaration fixes the answer so the roll step agrees with the card.
-    let thrown = null;
-    let ranged = false;
-    if (weapon) {
-      const gap = (attackerToken && targets[0].tokenDoc && canvas?.ready)
-        ? gapBetween(attackerToken, targets[0].tokenDoc) : null;
-      const reachWith = (attacker.system.reach ?? 0) + (weapon.system.reach ?? 0);
-      thrown = (payload.thrown !== null && payload.thrown !== undefined) ? !!payload.thrown
-        : (!!weapon.system.flags?.thrown && !weapon.system.isRanged && (gap !== null) && (gap > reachWith));
-      ranged = !!weapon.system.isRanged || thrown;
-    }
-
-    const weaponName = weapon?.name ?? attackItem?.name ?? attackRow?.name ?? "";
-    const glyph = SW.ACTION_GLYPHS[kind.cost] ?? "";
-    const maneuver = {
-      weaponId: weapon?.id ?? null,
-      weaponName,
-      strike,
-      glyph,
-      label: `${weaponName}: ${localize(kind.label)} ${glyph}`.trim(),
-      thrown,
-      prepared: !!payload.prepared,
-      free: !!payload.free,
-      attackId: (attackItem?.id ?? attackRow?.id) ?? null,
-      ranged
-    };
+    const source = resolveSource(attacker, payload, { attackerToken, targetDoc: targets[0].tokenDoc ?? null });
+    if (source.error) return { ok: false, reason: source.error };
+    const maneuver = maneuverFrom(source, payload);
 
     const workflow = AttackWorkflow.create({
       id: foundry.utils.randomID(),
@@ -821,13 +793,21 @@ export class AttackCoordinator {
     const reaction = payload.reaction ? String(payload.reaction) : null;
     const posture = normalizePosture(payload.posture);
     const defenseLabel = SW.DEFENSES[defense] ? localize(SW.DEFENSES[defense].label) : defense;
-    const illegal = { ok: false, reason: "illegal", reasonData: { name: actor.name, defense: defenseLabel } };
-    if (!isLegalAnswer(actor, defense, { reaction, posture })) return illegal;
+    // What this Maneuver may be answered with (0.12.0, `profileFor`): the Threat's two Defenses,
+    // a basic Defense alone for a Reaction Strike, the melee-only Reactions only against a melee Blow.
+    const profile = AttackWorkflow.profileFor(workflow.maneuver);
+    const melee = meleeAnswers(workflow.maneuver);
+    if (!profile.defenses.includes(defense)) {
+      return { ok: false, reason: "illegalDefense", reasonData: { name: actor.name, defense: defenseLabel, threat: localize(SW.THREATS[workflow.maneuver?.threat]?.label ?? SW.THREATS.blow.label) } };
+    }
+    if (profile.basicOnly && (reaction || posture)) return { ok: false, reason: "basicOnly" };
     // A Reaction that answers a melee Blow only (Slip the Line, Parry, Deflecting Palms;
-    // SW.REACTIONS `melee`) is refused against an arrow.
-    if (reaction && SW.REACTIONS[reaction]?.melee && !AttackCoordinator.#meleeAnswers(workflow)) {
+    // SW.REACTIONS `melee`) is refused against an arrow or a spell, by name.
+    if (reaction && SW.REACTIONS[reaction]?.melee && !melee) {
       return { ok: false, reason: "meleeOnly", reasonData: { name: localize(SW.REACTIONS[reaction].label) } };
     }
+    const illegal = { ok: false, reason: "illegal", reasonData: { name: actor.name, defense: defenseLabel } };
+    if (!isLegalAnswer(actor, defense, { reaction, posture }, { permitted: profile.defenses, basicOnly: profile.basicOnly, melee })) return illegal;
 
     const store = AttackCoordinator.#storeFor(workflow.id);
     store[target.id] = {
@@ -854,16 +834,6 @@ export class AttackCoordinator {
       public: AttackCoordinator.#public(workflow),
       private: { [target.id]: store[target.id] }
     };
-  }
-
-  /**
-   * PHB v4.21: Slip the Line, Parry and Deflecting Palms answer a melee Blow only (a foe "Strikes
-   * you with a melee weapon"); an arrow meets the basic Defense or an answer that takes it. The
-   * size clause of Parry and Deflecting Palms ("no more than one size larger than you") is the
-   * table's: nothing in this system is stopped on a comparison the card can make for it.
-   */
-  static #meleeAnswers(workflow) {
-    return !workflow.maneuver?.ranged;
   }
 
   /** The gap in feet between the attacker's token and a target's, edge to edge, or null off the map. */
@@ -944,23 +914,24 @@ export class AttackCoordinator {
    */
   static async #refundStrike(workflow) {
     const maneuver = workflow.maneuver ?? {};
-    if (maneuver.prepared || maneuver.free) return;
     if (workflow.attackRoll || (workflow.targets ?? []).some(t => t.roll)) return;
     const attacker = resolveActor(workflow.attacker?.actorUuid);
     if (!attacker?.isOwner || !attacker.inEncounter || !attacker.system?.actions) return;
-    const kind = SW.STRIKE_KINDS[maneuver.strike];
-    const cost = Number(kind?.cost) || 0;
+    // What it cost (attack-source.mjs): the Strike's or the Cast's actions, Intercept's ❶↺,
+    // nothing for a Prepared or free one or a Riposte.
+    const cost = costOf(maneuver);
     if (!cost) return;
     const per = Number(attacker.actionsPerRound) || SW.ACTIONS_PER_ROUND;
     const value = Math.min(per, (attacker.system.actions.value ?? 0) + cost);
     await attacker.update({ "system.actions.value": value }, { swAnnounced: true });
+    const named = describe(maneuver);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: attacker }),
       content: `<div class="starwrought action-card sw-refund-card">
         <h3><i class="fa-solid fa-rotate-left"></i> ${localize("STARWROUGHT.Attack.refundedTitle")}</h3>
         <p>${format("STARWROUGHT.Attack.refunded", {
           name: foundry.utils.escapeHTML(attacker.name),
-          strike: `${localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost] ?? ""}`.trim(),
+          strike: `${named.kindLabel} ${named.glyph}`.trim(),
           n: cost, left: value, per
         })}</p></div>`,
       whisper: attacker.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
@@ -1168,10 +1139,14 @@ export class AttackCoordinator {
     AttackWorkflow.transition(workflow, "revealed");
     AttackCoordinator.#bump(workflow, { phase: true });
 
+    const permitted = AttackWorkflow.profileFor(workflow.maneuver).defenses;
     for (const target of workflow.targets) {
-      const commitment = store[target.id] ?? { defense: "evade", reaction: null, posture: null };
+      const commitment = store[target.id];
+      // No Defense is ever chosen by the system (0.12.0, ruling 159): the reveal fires only once
+      // every defender has committed, so a missing commitment is a programming error.
+      if (!commitment?.defense) throw new Error(`STARWROUGHT | attack workflow ${workflow.id}: no commitment for ${target.name}`);
       const actor = resolveActor(target.actorUuid);
-      const reading = AttackCoordinator.#thresholdFor(actor, commitment);
+      const reading = AttackCoordinator.#thresholdFor(actor, commitment, permitted);
       target.revealed = {
         defense: reading?.key ?? commitment.defense,
         reaction: commitment.reaction ?? null,
@@ -1239,19 +1214,20 @@ export class AttackCoordinator {
    * bonus already on the Defense do not stack.
    * @returns {{key: string, threshold: number, note: string|null}|null}
    */
-  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}) {
+  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null) {
     if (!actor) return null;
+    const allowed = (Array.isArray(permitted) && permitted.length) ? permitted : [...SW.THREATS.blow.defenses];
     if (typeof actor.defenseThresholdFor === "function") {
-      const reading = actor.defenseThresholdFor({ defense, reaction, posture });
+      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed });
       if (reading && Number.isFinite(Number(reading.threshold))) {
         return { key: reading.key ?? defense, threshold: Number(reading.threshold), note: reading.note ?? reading.unavailable ?? null };
       }
     }
     const defenses = actor.system?.defenses ?? {};
-    let key = ["evade", "guard"].includes(defense) ? defense : "evade";
+    let key = allowed.includes(defense) ? defense : allowed[0];
     let note = null;
     if (defenses[key]?.unavailable) {
-      key = (key === "evade") ? "guard" : "evade";
+      key = allowed.find(d => (d !== key) && !defenses[d]?.unavailable) ?? key;
       note = defenses[defense]?.unavailable ?? null;
     }
     const def = defenses[key];
@@ -1272,13 +1248,9 @@ export class AttackCoordinator {
     return { key, threshold, note };
   }
 
-  /** An adversary's Attack Threshold: the attack row's own number (brief, "Thresholds"). */
+  /** An adversary's Attack Threshold: the attack row's own number (attack-source.mjs). */
   static #attackThreshold(attacker, maneuver) {
-    const item = maneuver?.attackId ? attacker.items.get(maneuver.attackId) : null;
-    const row = maneuver?.attackId ? attacker.system.attacks?.find(a => a.id === maneuver.attackId) : null;
-    const value = item?.system?.attack?.threshold ?? row?.threshold ?? row?.thresholds?.[0];
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 10;
+    return attackThreshold(attacker, maneuver);
   }
 
   /**
@@ -1293,9 +1265,10 @@ export class AttackCoordinator {
     if (!flags) return null;
     if (flags.kind === "attack") {
       const defender = resolveActor(flags.defenderUuid);
+      // The card's Defense is the one the die met; every Defense is permitted for a reread.
       const reading = AttackCoordinator.#thresholdFor(defender, {
         defense: flags.defense, reaction: flags.reaction ?? null, posture: flags.posture ?? null
-      });
+      }, Object.keys(SW.DEFENSES));
       return Number.isFinite(reading?.threshold) ? reading.threshold : null;
     }
     if (flags.kind === "defense") {
@@ -1441,15 +1414,18 @@ export class AttackCoordinator {
     const attackerToken = resolveTokenDoc(workflow.attacker.tokenUuid) ?? attacker.tokenOnScene?.() ?? null;
     const defenderToken = resolveTokenDoc(target.tokenUuid) ?? defender.tokenOnScene?.() ?? null;
     const maneuver = workflow.maneuver;
-    const weapon = maneuver.weaponId ? (attacker.items.get(maneuver.weaponId) ?? null) : null;
-    const revealed = target.revealed ?? { defense: "evade", reaction: null, posture: null };
+    const profile = AttackWorkflow.profileFor(maneuver);
+    const revealed = target.revealed;
+    // No Defense is ever chosen by the system (0.12.0, ruling 159): a pairing with no revealed
+    // commitment is a programming error, never resolved against a default.
+    if (!revealed?.defense) throw new Error(`the pairing ${target.id} has no revealed Defense`);
     const rollData = AttackWorkflow.rollDataFor(workflow, target);
     if (!rollData?.roll) throw new Error("the pairing has no roll");
 
     let kind, threshold, showThreshold, speakerActor;
     if (target.roller === "attacker") {
       kind = "attack";
-      const reading = AttackCoordinator.#thresholdFor(defender, revealed);
+      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses);
       threshold = reading?.threshold ?? target.threshold ?? 10;
       target.threshold = threshold;
       showThreshold = !!target.isPlayer && showPcThresholds;
@@ -1468,9 +1444,10 @@ export class AttackCoordinator {
     // else the card offers the Charge button; a Defense roll paid it before the die. Charging here
     // as well would pay it twice.
     const result = await SwCheck.resolveAgainst({
-      attacker, defender, attackerToken, defenderToken, weapon,
-      attackId: maneuver.attackId ?? null,
-      strike: maneuver.strike,
+      attacker, defender, attackerToken, defenderToken,
+      // What the attack is (attack-source.mjs): the weapon, the Strike and the throw, or the
+      // spell Talent, its Cast and its outcome rows.
+      ...resolveArgs(attacker, maneuver),
       rollData,
       kind,
       defense: revealed.defense,
@@ -1478,8 +1455,7 @@ export class AttackCoordinator {
       posture: revealed.posture ?? null,
       threshold,
       showThreshold,
-      speakerActor,
-      thrown: !!maneuver.thrown
+      speakerActor
     });
 
     const outcome = result?.outcome;
@@ -1582,42 +1558,15 @@ export class AttackCoordinator {
     if (target.roller === "attacker") {
       if (!attacker) return void ui.notifications.warn(localize("STARWROUGHT.Notify.noActor"));
       if (!attacker.isOwner) return void ui.notifications.warn(localize("STARWROUGHT.Attack.notYours"));
-      if (maneuver.weaponId && attacker.items.get(maneuver.weaponId)) {
-        result = await attacker.rollAttack(maneuver.weaponId, {
-          strike: maneuver.strike,
-          prepared: !!maneuver.prepared,
-          free: !!maneuver.free,
-          thrown: (maneuver.thrown === null || maneuver.thrown === undefined) ? undefined : !!maneuver.thrown,
-          targetUuid: target.tokenUuid || target.actorUuid,
-          dialog: true,
-          lockStrike: true,
-          postCard: false,
-          blind: true,
-          workflow: link
-        });
-      } else {
-        // Adversary against adversary: a flat d20 for the GM, the Strike locked, no Threshold.
-        const kind = SW.STRIKE_KINDS[maneuver.strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
-        result = await SwCheck.roll({
-          actor: attacker,
-          kind: "attack",
-          slug: SW.MELEE_SLUG,
-          label: maneuver.weaponName || attacker.name,
-          subtitle: `${localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost] ?? ""}`.trim(),
-          strike: maneuver.strike,
-          lockStrike: true,
-          dialog: true,
-          postCard: false,
-          flatBonus: 0,
-          threshold: null,
-          defenseForced: true,
-          workflow: link
-        });
-      }
+      // The attacker's die, by what the attack is (attack-source.mjs): a weapon's Strike, a
+      // spell's Cast, or the flat d20 of an adversary against an adversary.
+      result = await rollBlind(attacker, maneuver, target, link);
     } else {
       if (!defender) return void ui.notifications.warn(localize("STARWROUGHT.Notify.noActor"));
       if (!defender.isOwner) return void ui.notifications.warn(localize("STARWROUGHT.Attack.notYours"));
-      const revealed = target.revealed ?? { defense: "evade", reaction: null, posture: null };
+      const revealed = target.revealed;
+      // No Defense is ever chosen by the system (0.12.0): a Defense roll with nothing revealed is refused.
+      if (!revealed?.defense) return void ui.notifications.warn(localize("STARWROUGHT.Attack.missing"));
       result = await defender.rollDefense(revealed.defense, {
         workflow: link,
         reaction: revealed.reaction ?? null,

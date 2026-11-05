@@ -173,23 +173,29 @@ export const DefenseMixin = Base => class extends Base {
    * @param {string} answer.defense               A key of SW.DEFENSES (evade or guard for a Blow).
    * @param {string|null} [answer.reaction]       A key of SW.REACTIONS of kind "reaction", or null.
    * @param {{talentId: string, name?: string, zone?: string}|null} [answer.posture]
+   * @param {string[]} [answer.permitted]         The Defenses the Threat allows (0.12.0): when the
+   *                                              one named is unavailable, the other of these
+   *                                              answers. A Blow's two by default.
    * @returns {{key: string, threshold: number, bonus: number, label: string, reaction: string|null,
    *            posture: object|null, note: string|null, unavailable: string|null}}
    * @throws {Error} when both a Reaction and a Posture are given.
    */
-  defenseThresholdFor({ defense, reaction = null, posture = null } = {}) {
+  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES } = {}) {
     const sys = this.system;
     reaction = answeringReaction(reaction) ? reaction : null;
     posture = (posture && (typeof posture === "object") && posture.talentId) ? posture : null;
     if (reaction && posture) throw new Error("STARWROUGHT | A Blow is answered with a Reaction or a Posture, never both.");
+    const allowed = (Array.isArray(permitted) && permitted.length) ? permitted.filter(d => SW.DEFENSES[d]) : [...BLOW_DEFENSES];
 
     // Which Defense: the Reaction's own, else the one named.
-    let key = SW.REACTIONS[reaction]?.defense ?? (SW.DEFENSES[defense] ? defense : "evade");
+    let key = SW.REACTIONS[reaction]?.defense ?? (SW.DEFENSES[defense] ? defense : allowed[0]);
     const named = key;
 
-    const blocked = BLOW_DEFENSES.includes(key) ? (sys.defenses?.[key]?.unavailable ?? null) : null;
+    const blocked = sys.defenses?.[key]?.unavailable ?? null;
     if (blocked) {
-      key = (key === "evade") ? "guard" : "evade";
+      // The other Defense the Threat permits answers (Guard for a Blow's Evade while Grabbed); a
+      // Threat with no other stays on the one named, noted.
+      key = allowed.find(d => (d !== key) && !sys.defenses?.[d]?.unavailable) ?? key;
       // A Reaction is a Talent of its Defense, and so is a Posture: when the Defense cannot be
       // used, neither can what was built on it.
       reaction = null;
