@@ -62,7 +62,7 @@ export async function promptForNewLore(actor) {
     const slug = SW.loreSlug(field);
     const name = SW.loreName(slug);
     if (slug === SW.LORE_TEMPLATE_SLUG) continue;
-    const open = actor.items.find(i => (i.type === "constellation") && ((i.system.slug || SW.slugify(i.name)) === slug));
+    const open = actor.items.find(i => (i.type === "constellation") && (SW.constellationSlugOf(i) === slug));
     if (open) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Notify.loreTaken", { name: open.name }));
       continue;

@@ -17,7 +17,9 @@
  * an effect line (../effects.mjs), which the grammar hands to the tag's kind; the block comes back
  * with `effect: true` and no kind of its own. Case never matters. The reader splits the blocks and
  * names the kind; each kind reads its own data (its `parse` with `context.form === "feature"` and
- * `context.block`). A block ends at the first `]`, which no effect component contains.
+ * `context.block`). A block ends at the first `]` outside parentheses (0.18.1): a `CLAIM(...)`
+ * text may say "[per the GM's table]" without ending the block early, since a condition's
+ * parentheses are the one place prose lives inside a block.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE (the build imports it from Node).
  */
@@ -63,7 +65,7 @@ export function readFeatureLine(text) {
     const ch = line[i];
     if (/\s/.test(ch)) { i += 1; continue; }
     if (ch !== "[") throw new RuleSyntaxError(`"${line.slice(i, i + 20)}": a feature line is blocks in square brackets, as in \`[TRAIT Human][SPEED 6]\``);
-    const close = line.indexOf("]", i);
+    const close = closingBracket(line, i);
     if (close < 0) throw new RuleSyntaxError("a [ has no closing ]");
     const inner = line.slice(i + 1, close).trim();
     if (!inner) throw new RuleSyntaxError("an empty [] names nothing");
@@ -72,6 +74,24 @@ export function readFeatureLine(text) {
   }
   if (!blocks.length) throw new RuleSyntaxError("a feature line is blocks in square brackets, as in `[TRAIT Human][SPEED 6]`");
   return blocks;
+}
+
+/**
+ * The index of the `]` that closes the block opened at `open`, skipping any `]` inside
+ * parentheses (a `CLAIM(...)` text, a `RANK(...)`); -1 when none closes it.
+ * @param {string} line
+ * @param {number} open  The index of the `[`.
+ * @returns {number}
+ */
+function closingBracket(line, open) {
+  let depth = 0;
+  for (let i = open + 1; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === "(") depth += 1;
+    else if ((ch === ")") && (depth > 0)) depth -= 1;
+    else if ((ch === "]") && (depth === 0)) return i;
+  }
+  return -1;
 }
 
 /** One block's inside: `KEYWORD data`, `<Constellation> trained`, or `EFFECT <effect line>`. */

@@ -48,10 +48,13 @@ import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS } from "./eff
  * The kind words of the 0.13.0 form (`kind: arg, arg, OP(...)`) that have no tag of their own in
  * the 0.16.0 shape. A line beginning with one, or a `mark:`, `reroll:` or `ignore:` line carrying
  * an operator call (`, IF(...)`, `, SEEN`), is the retired form, refused since 0.17.0 with
- * `LEGACY_REFUSAL`; through 0.16.0 it read with a warning.
+ * `LEGACY_REFUSAL`; through 0.16.0 it read with a warning. Only the operators the three surviving
+ * tags could carry are looked for, each with its call parentheses or, for the two flag words
+ * `SEEN` and `MARKED`, after a comma (0.18.1): `VISIBLE` and `DIFFERENT` were never a tag line's
+ * operators, and matching them refused a descriptor list that happened to end in such a word.
  */
 export const LEGACY_WORDS = Object.freeze(["bonus", "grant", "aura", "prevent"]);
-const LEGACY_OPERATOR = /(?:^|,)\s*(?:IF|FOR|WHILE|AGAINST|FIRST|ONCE|CLAIM)\s*\(|(?:^|,)\s*(?:SEEN|MARKED|VISIBLE|DIFFERENT)\s*(?:,|$)/i;
+const LEGACY_OPERATOR = /(?:^|,)\s*(?:IF|FOR|WHILE|AGAINST|FIRST|ONCE|CLAIM)\s*\(|,\s*(?:SEEN|MARKED)\s*(?:,|$)/i;
 export const LEGACY_REFUSAL = 'the 0.13.0 form ("bonus: +1, Condition, Aid, IF(...)") is retired since 0.17.0; AUTOMATION_GRAMMAR.md section 9 maps each operator to its component';
 
 /** Does a tag line carry the 0.13.0 operators (`, IF(...)`, `, SEEN`) rather than components? */

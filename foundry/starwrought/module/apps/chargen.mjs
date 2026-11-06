@@ -41,8 +41,6 @@ import { constellationEnabled, enabledConstellations } from "../helpers/content.
 // NAMING A LORE (0.18.0): the one prompt, shared with the createItem hook and the sheet.
 import { promptForNewLore } from "./lore-name.mjs";
 
-export { promptForLoreField } from "./lore-name.mjs";
-
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 /**
@@ -352,15 +350,13 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
    * Make sure the Constellation Item exists, so the sheet draws the sky and a Lore instance
    * carries its own field name. Returns the created id, or null if it was already there.
    * Since 0.18.0 the copy is `SwItem.ensureConstellation`'s (a Lore (X) from the template, named),
-   * so the wizard, the hook and `nameLore` make the same Item.
+   * so the wizard, the hook and `nameLore` make the same Item; it says whether it made one
+   * (0.18.1), so the lookup is done once, there.
    */
   async #ensureConstellation(slug, name = null) {
-    const existing = this.actor.items.find(i => (i.type === "constellation")
-      && ((i.system.slug || SW.slugify(i.name)) === slug));
-    if (existing) return null;
     const { SwItem } = await import("../documents/item.mjs");
-    const created = await SwItem.ensureConstellation(this.actor, slug, { name });
-    return created?.id ?? null;
+    const { item, created } = await SwItem.ensureConstellation(this.actor, slug, { name, report: true });
+    return created ? (item?.id ?? null) : null;
   }
 
   /* -------------------------------------------- */
@@ -1372,8 +1368,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     const slug = list[index].slug;
     const ids = [itemId];
     if (item && (pointsIn(this.actor, slug) === 1)) {
-      const constellation = this.actor.items.find(i => (i.type === "constellation")
-        && ((i.system.slug || SW.slugify(i.name)) === slug));
+      const constellation = this.actor.items.find(i => (i.type === "constellation") && (SW.constellationSlugOf(i) === slug));
       if (constellation) ids.push(constellation.id);
     }
     await this.actor.deleteEmbeddedDocuments("Item", ids.filter(id => this.actor.items.has(id)));

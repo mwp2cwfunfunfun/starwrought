@@ -59,7 +59,7 @@ export function prepareConstellations(data) {
   // Constellation Items the character has opened carry the authoritative metadata.
   for (const item of data.parent.items) {
     if (item.type !== "constellation") continue;
-    const slug = item.system.slug || SW.slugify(item.name);
+    const slug = SW.constellationSlugOf(item);
     // v3.4's Weapons Constellation is Melee in PHB v4.10. Its Talents are refiled by the Talent
     // model; a stale Weapons Item left on the character is ignored rather than drawn as an
     // empty sky, and the next Melee Talent opens a proper Melee Item.

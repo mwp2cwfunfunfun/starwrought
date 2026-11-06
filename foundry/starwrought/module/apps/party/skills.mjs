@@ -178,14 +178,13 @@ export function prepareGrid(actors) {
   });
 
   // One row per Lore any member has opened; a member without it shows a blank. A Lore left
-  // unnamed (0.18.0; the template's slug, which should not exist on a character) prints as
-  // "Lore (unnamed)", as the character's own tab prints it.
+  // unnamed from before 0.18.0 prints its Item's name, "Lore (unnamed)" since the 0.18.1 migration,
+  // as the character's own tab does.
   const lores = new Map();
   for (const actor of actors) {
     for (const [slug, entry] of Object.entries(actor.system.constellations ?? {})) {
       if (!SW.isLoreSlug(slug) || lores.has(slug)) continue;
-      const name = (slug === SW.LORE_TEMPLATE_SLUG) ? L("STARWROUGHT.Sheet.loreUnnamed") : entry.name;
-      lores.set(slug, { name, attribute: entry.attribute });
+      lores.set(slug, { name: entry.name, attribute: entry.attribute });
     }
   }
   if (lores.size) {

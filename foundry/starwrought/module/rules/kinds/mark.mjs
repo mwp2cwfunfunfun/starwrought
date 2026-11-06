@@ -31,7 +31,7 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
-import { plainName } from "../../config.mjs";
+import { plainName, flagKey, ruleCarrierKey } from "../../config.mjs";
 
 const SHAPE = "MARK: [<Who>] [, <Until>]";
 const EXAMPLE = "MARK: enemies";
@@ -104,7 +104,7 @@ export default {
           out.push({ item: carrier, refuse: `${name} names ${rule.who === "enemies" ? "an enemy" : "a creature"}; ${target.name ?? "that"} is not one.` });
           continue;
         }
-        const id = String(carrier.id ?? carrier.name ?? "rule").replace(/\./g, "-");
+        const id = flagKey(ruleCarrierKey(carrier));
         out.push({
           item: carrier,
           write: {

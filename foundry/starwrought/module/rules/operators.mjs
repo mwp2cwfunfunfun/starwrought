@@ -48,7 +48,7 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { RANKS, THREATS, DEGREES, isLoreSlug } from "../config.mjs";
+import { RANKS, THREATS, DEGREES, isLoreSlug, flagKey, ruleCarrierKey } from "../config.mjs";
 
 /**
  * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), refused since 0.17.0. The
@@ -427,8 +427,8 @@ export function markedHolds(rule, entry, context) {
   if (!other || (!other.uuid && !other.tokenUuid)) return false;
   const carrier = entry?.item;
   const owner = entry?.owner;
-  const key = String(carrier?.id ?? carrier?.name ?? "").replace(/\./g, "-");
-  const mark = key ? (owner?.flags?.starwrought?.rules?.marks?.[key] ?? null) : null;
+  const key = flagKey(ruleCarrierKey(carrier));
+  const mark = owner?.flags?.starwrought?.rules?.marks?.[key] ?? null;
   if (!mark) return false;
   if ((mark.combat ?? null) !== (context?.encounter?.combat ?? null)) return false;
   if (mark.uuid && other.uuid && (mark.uuid === other.uuid)) return true;

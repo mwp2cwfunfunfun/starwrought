@@ -39,7 +39,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `features.mjs` | The bracketed line (0.16.0; AUTOMATION_GRAMMAR.md section 2): `isFeatureLine`, `readFeatureLine(text)` splitting `[KEYWORD data]` blocks and naming each block's kind (`FEATURE_KEYWORDS`; `[<Constellation> trained]` to `grant`; `[EFFECT ...]` (0.17.0) back with `effect: true` for the grammar to hand to the effect reader). Pure. |
 | `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). Pure. |
 | `operators.mjs` | The shared vocabularies and readings (the 0.13.0 reader `readLine` is gone with the form, 0.17.0): `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. `OPERATORS` stays for the document gate on section 9. Pure. |
-| `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
+| `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)` (written here when this client may, else relayed as `rules:marks` over the system socket to the GM's client or an active owner's; `onRulesSocket` serves it, 0.18.1). The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
 | `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the sixteen kinds. |
 | `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` in an `[EFFECT ...]` block. |
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
@@ -50,7 +50,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/reroll.mjs` | The `reroll` kind (0.15.0): a button on the matching check card throws the die again; the `card` hook. |
 | `kinds/ignore.mjs` | The `ignore` kind (0.15.0): difficult terrain of named kinds costs nothing; no hook point. `ignoresTerrain(actor, kind)` is asked by the Difficult terrain region behavior (data/region-behaviors/difficult-terrain.mjs). |
 | `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |
-| `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. |
+| `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor` (a read, writing nothing; its `marks` are the Skips the reading would spend), `spendSkips`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. |
 | `kinds/<kind>.mjs` | One file per kind, each exporting the definition below. |
 | `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. |
 
@@ -397,7 +397,9 @@ offer may come back `ticked` with a `mark` the dialog files when the box stays t
   an applied modifier is a FIRST or ONCE the recipient should remember: the dispatcher lifts it
   into the third list it returns, `marks`, and the caller writes them once the roll resolves
   (`writeRuleMarks` in scene.mjs: `SwCheck.roll` for the roller's own, the attack coordinator for
-  a Threshold read), never from a preview.
+  a Threshold read), never from a preview. An offer carries its marks as `marks` (and the first as
+  `mark`), since a ticked claim on a one-roll custom effect spends the claim and the row alike
+  (0.18.1); the dialog files them with the roll.
 - **Who calls it with what** (0.13.0). `baseModifiers`' non-Defense branch asks for everything
   with the scene, the Threat (`cfg.threat`, set by `rollDefense` from the attack flow's Maneuver)
   and the encounter; its Defense branch and `SwActor#defenseThresholdFor` (the Combat Prompt's

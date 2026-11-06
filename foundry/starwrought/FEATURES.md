@@ -2,8 +2,8 @@
 
 Rules content built from **Player's Handbook v4.21** (Mike's reorganised edition of 4 November
 2026, formatted by `assets/phb_format.py` with the text unchanged; `v4.21-sync-report.md` in the
-project root has the rulings, 125 to 158; the 0.12.0 changelog entry has 159 to 163). System
-version **0.12.0**. Developed against
+project root has the rulings, 125 to 158; the 0.12.0 changelog entry has 159 to 163, and the
+entries since carry 164 to 198). System version **0.18.1**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -72,7 +72,8 @@ What the wizard enforces, all of it read from the compendium rather than hard-co
   answer, and on Cancel leaves the point outstanding with Next blocked until it is named; a
   Background written "Lore (Circus)" asks nothing. Outside the wizard a Lore Talent or the Lore
   Constellation dropped on a character asks the same question, and Cancel removes it; a template
-  left from before shows **Name this Lore** on its Constellations row.
+  left from before reads "Lore (unnamed)" (renamed once by the 0.18.1 migration, with a notice)
+  and shows **Name this Lore** on its Constellations row.
 - **Granted points.** A Talent with a `[POINT ...]` block in its Automation (the Grants column
   through 0.12.0, a `grant:` line through 0.15.0; `[POINT Calling]`, `[POINT Opening]`, `[POINT 2
   Skill different]`) pushes its point onto the step where you took the Talent, and blocks Next
@@ -1106,7 +1107,8 @@ maps! using a region or some sort of method! so this can be automated. and playe
 layers to see what is difficult etc."). The GM draws a Region with Foundry's own tools (any shape
 the Regions tool draws: a rectangle, an ellipse, a polygon, several at once; not only squares) and
 adds the system's **Difficult terrain** behavior to it, naming what the ground is made of and what
-a foot of it costs (2 by default, the book's difficult terrain). **The kinds are yours** (0.18.0;
+a foot of it costs (2 by default, the book's difficult terrain; picking a kind brings its roster
+row's cost, 0.18.1, and a number the GM types stands). **The kinds are yours** (0.18.0;
 ruling 197): the hand-kept `terrainKinds` block of `assets/roster.json`, a name, a one-line
 description, a default cost and an overlay colour per row (Mud, Shallow Water, Decking, Loose
 Stone, Rubble, Undergrowth, Snow, Ice, Sand and Other today), is what the behavior's Kind dropdown,
@@ -2001,7 +2003,9 @@ shown on the Tracker, or on the Character sheet"). The **Effects** tab (0.17.0; 
 panel through 0.16.0, moved at Mike's word with the tab that had only held Foundry's Active
 Effects) lists every effect line the character carries, from Talents, Maneuvers and the custom
 effects, each with its As read summary. A line the system applies by itself has FG's three-state
-switch **On / Skip / Off**: Skip lets the next application pass and returns to On, Off silences the
+switch **On / Skip / Off**: Skip lets the next application pass and returns to On (spent at the
+roll, the Condition write or the Expose that would have used it, never by a card being redrawn,
+and on another player's Talent through the GM's client; 0.18.1), Off silences the
 line until it is turned back on. A line the system cannot apply by itself, one with `IF:
 CLAIM(...)` (the Reacher's Diplomacy toward another Reacher), has instead **Apply to next roll**
 (0.17.0; Mike: such a line "should not have an on/off toggle"): pressed, it arms the claim the

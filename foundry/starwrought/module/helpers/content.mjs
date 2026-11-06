@@ -187,7 +187,7 @@ export async function refreshConstellationRegistry() {
   }
   for (const item of game.items ?? []) {
     if (item.type !== "constellation") continue;
-    const slug = item.system.slug || SW.slugify(item.name);
+    const slug = SW.constellationSlugOf(item);
     // A world copy that predates the field (0.3.7) stores "" here; blank is silent, not "no
     // parent", so it falls back to what the index or the pack already registered.
     const parent = item.system.parentSlug || SW.constellations[slug]?.parent || "";
@@ -419,7 +419,10 @@ const TERRAIN_PATH = "systems/starwrought/content/terrain.json";
  */
 export async function loadTerrainKinds({ fresh = false } = {}) {
   try {
-    const url = fresh ? `${TERRAIN_PATH}?t=${Date.now()}` : TERRAIN_PATH;
+    // Keyed on the system's version at init, so a release never reads the last one's file from the
+    // browser's cache, and on the clock after a sync, so a content loop's new row reaches an open
+    // world without a hard reload (0.18.1; the first load went uncached through 0.18.0).
+    const url = `${TERRAIN_PATH}?v=${encodeURIComponent(fresh ? Date.now() : (game.system?.version ?? SW.SYSTEM_VERSION))}`;
     const rows = await foundry.utils.fetchJsonWithTimeout(url);
     const count = SW.registerTerrainKinds(rows);
     console.log(`STARWROUGHT | Registered ${count} kinds of difficult terrain.`);

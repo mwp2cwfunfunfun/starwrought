@@ -37,7 +37,7 @@ export const LoreMixin = Base => class extends Base {
     const name = SW.loreName(slug);
     if (slug === SW.LORE_TEMPLATE_SLUG) return null;
 
-    const slugOf = item => item.system.slug || SW.slugify(item.name);
+    const slugOf = SW.constellationSlugOf;
     const open = this.items.find(i => (i.type === "constellation") && (slugOf(i) === slug));
     if (open) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Notify.loreTaken", { name: open.name }));

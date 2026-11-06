@@ -9,8 +9,7 @@
 
 import * as SW from "./module/config.mjs";
 // The `prevent` rules on the token palette's path (0.13.0): asked in preCreateActiveEffect below.
-import { preventersFor, sayPrevented } from "./module/rules/prevent.mjs";
-import { writeRuleMarks } from "./module/rules/scene.mjs";
+import { preventersFor, sayPrevented, spendSkips } from "./module/rules/prevent.mjs";
 import { SwCharacterData, SwNpcData } from "./module/data/actor.mjs";
 // THE PARTY (0.7.0): a third Actor type, GM-owned with Observer players, extending TypeDataModel
 // directly so the combat machinery never sees one (party-sheet-plan.md, phase 1).
@@ -29,6 +28,7 @@ import { onRenderChatMessage, onChatSocket } from "./module/documents/chat.mjs";
 // THE PARTY'S LOOT (0.7.1): a player's Take from the loot and Give to the party, served on the
 // active GM's client over the same socket (party-sheet-plan.md, part 6; ruling 97).
 import { onPartySocket } from "./module/documents/party-socket.mjs";
+import { onRulesSocket } from "./module/rules/scene.mjs";
 // THE ROAD (0.7.2 and 0.7.3): the Activities cache, and the one hook that remembers a member's
 // Activity roll on their character (ruling 108).
 import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
@@ -208,9 +208,9 @@ Hooks.once("init", async () => {
   registerHandlebarsHelpers();
   // THE TERRAIN KINDS (0.18.0): the roster's terrainKinds block, from content/terrain.json, into
   // the registry before the world's regions are built, so a Kind select, the overlay and the ruler
-  // read the roster's names (helpers/content.mjs; re-read after a content sync).
-  await loadTerrainKinds();
-  await loadConstellationIndex();
+  // read the roster's names (helpers/content.mjs; re-read after a content sync). Fetched beside
+  // the Constellation index, since neither waits on the other (0.18.1).
+  await Promise.all([loadTerrainKinds(), loadConstellationIndex()]);
   await preloadTemplates();
 });
 
@@ -251,10 +251,13 @@ Hooks.once("ready", async () => {
   // chooses on the other side's body), all 0.5.3, go to chat.mjs; `party:*` (a player's Take from
   // the party's loot or Give to the party, 0.7.1) goes to party-socket.mjs; everything else to
   // the attack coordinator.
+  // `rules:*` (0.18.1: a rule's mark the resolving client may not write, handed to one that may)
+  // goes to module/rules/scene.mjs.
   game.socket.on(`system.${SW.SYSTEM_ID}`, (message, senderId) => {
     const type = String(message?.type ?? "");
     if (/^(damage|reroll|expose):/.test(type)) return onChatSocket(message, senderId);
     if (/^party:/.test(type)) return onPartySocket(message, senderId);
+    if (/^rules:/.test(type)) return onRulesSocket(message, senderId);
     return AttackCoordinator.onSocket(message, senderId);
   });
   // A rerolled resolution card (0.5.3): the attack card that carried its outcome follows it.
@@ -385,7 +388,7 @@ async function migrateWorld() {
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0")) {
+  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0") && !needs("0.18.1")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -588,7 +591,35 @@ async function migrateWorld() {
     }
   }
 
+  // 0.18.1: a Lore template Constellation left on a character from before 0.18.0 (the 0.17.0
+  // wizard's auto-spend) is named "Lore (unnamed)" on the Item, once, so every list of a
+  // character's Constellations (the sheet, the party's Skills grid, whatever comes next) prints
+  // the Item's name as it prints any other's; its slug stays the template's, which is what the
+  // Constellations row's "Name this Lore" control keys on. Nothing is named for the player.
+  let unnamedLores = 0;
+  if (needs("0.18.1")) {
+    const label = game.i18n.localize("STARWROUGHT.Sheet.loreUnnamed");
+    const actors = [...game.actors];
+    for (const scene of game.scenes) {
+      for (const token of scene.tokens) if (!token.actorLink && token.actor) actors.push(token.actor);
+    }
+    for (const actor of actors) {
+      if (actor.type !== "character") continue;
+      const updates = actor.items
+        .filter(i => (i.type === "constellation") && (SW.constellationSlugOf(i) === SW.LORE_TEMPLATE_SLUG) && (i.name !== label))
+        .map(i => ({ _id: i.id, name: label }));
+      if (!updates.length) continue;
+      await actor.updateEmbeddedDocuments("Item", updates, { swAnnounced: true });
+      unnamedLores += updates.length;
+    }
+  }
+
   await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  if (unnamedLores > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.unnamedLores", { version: game.system.version, count: unnamedLores });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (stanceless > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.stanceRemoved", { version: game.system.version, count: stanceless });
     console.log(`STARWROUGHT | ${message}`);
@@ -740,7 +771,8 @@ function registerExposedStatuses() {
   // is asked here, on the creating client, before the document exists. A create that setCondition
   // already checked carries `swChecked`; a create that is not a single Condition is not asked.
   // The hook cannot wait, so the answer is read synchronously from the rules and the card and the
-  // mark follow; `preventersFor` reads the index and the scene and writes nothing.
+  // mark follow; `preventersFor` reads the index and the scene and writes nothing, and the Skips it
+  // read are spent here, at the write, as `conditionPrevented` spends them (0.18.1).
   Hooks.on("preCreateActiveEffect", (effect, data, options, userId) => {
     if (options?.swChecked || (userId !== game.user.id)) return;
     const actor = effect.parent;
@@ -750,11 +782,14 @@ function registerExposedStatuses() {
     const id = statuses[0];
     const config = SW.CONDITIONS[id];
     if (!config || config.zone || actor.statuses?.has(id)) return;
-    const { automatic } = preventersFor(actor, id);
+    const { automatic, marks } = preventersFor(actor, id);
     const preventer = automatic[0];
-    if (!preventer) return;
+    if (!preventer) {
+      spendSkips(actor, marks);
+      return;
+    }
     sayPrevented(actor, preventer, game.i18n.localize(config.name))
-      .then(() => (preventer.mark ? writeRuleMarks(actor, [preventer.mark]) : null))
+      .then(() => spendSkips(actor, [...marks, ...(preventer.mark ? [preventer.mark] : [])]))
       .catch(err => console.error(`STARWROUGHT | ${actor.name}: the prevented ${id} could not be said`, err));
     return false;
   });
@@ -832,7 +867,7 @@ const pendingLoreNames = new Map();
 function isUnnamedLore(item) {
   if (item.parent?.type !== "character") return false;
   if (item.type === "talent") return item.system.constellation === SW.LORE_TEMPLATE_SLUG;
-  if (item.type === "constellation") return (item.system.slug || SW.slugify(item.name)) === SW.LORE_TEMPLATE_SLUG;
+  if (item.type === "constellation") return SW.constellationSlugOf(item) === SW.LORE_TEMPLATE_SLUG;
   return false;
 }
 
@@ -858,7 +893,7 @@ async function nameLoreOnCreate(item) {
     }
     if ((item.type === "talent") && (item.system.constellation === SW.LORE_TEMPLATE_SLUG)) {
       await item.update({ "system.constellation": shared.slug, "system.constellationName": shared.name });
-    } else if ((item.type === "constellation") && ((item.system.slug || SW.slugify(item.name)) === SW.LORE_TEMPLATE_SLUG)) {
+    } else if ((item.type === "constellation") && (SW.constellationSlugOf(item) === SW.LORE_TEMPLATE_SLUG)) {
       // The first answer renamed the template in place, so a second template is the duplicate.
       await item.delete();
       return false;

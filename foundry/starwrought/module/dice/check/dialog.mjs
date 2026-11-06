@@ -50,7 +50,11 @@ export async function prompt(cfg, parts) {
   // A claim the player armed on the Talent's row (0.15.0, ruling 174) comes ticked, and carries
   // the mark that spends the arming once the roll goes through with the box still ticked.
   for (const o of cfg.ruleOffers ?? []) {
-    extras.push({ key: o.key, label: o.label, hint: o.hint ?? "", value: o.value, type: o.type, source: o.source ?? null, checked: o.ticked === true, mark: o.mark ?? null });
+    extras.push({
+      key: o.key, label: o.label, hint: o.hint ?? "", value: o.value, type: o.type, source: o.source ?? null, checked: o.ticked === true,
+      // Every mark a ticked box files (0.18.1): the claim's spend and, on a one-roll custom effect, the row's removal.
+      marks: Array.isArray(o.marks) ? o.marks : (o.mark ? [o.mark] : [])
+    });
   }
 
   // The three Strikes, with Committed marked as the one that waits for the next Opportunity.
@@ -145,7 +149,9 @@ export async function prompt(cfg, parts) {
   for (const offer of extras) {
     if (answer[`extra-${offer.key}`] !== true) continue;
     extra.push({ label: offer.label, value: offer.value, type: offer.type, ...(offer.source ? { source: offer.source } : {}) });
-    if (offer.mark?.key && offer.mark?.per) claimMarks.push({ key: offer.mark.key, per: offer.mark.per });
+    for (const mark of offer.marks ?? []) {
+      if (mark?.key && mark?.per) claimMarks.push({ key: mark.key, per: mark.per });
+    }
   }
 
   const config = { rollMode: answer.rollMode ?? cfg.rollMode };

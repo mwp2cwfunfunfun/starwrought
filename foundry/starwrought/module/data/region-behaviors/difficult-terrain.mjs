@@ -7,7 +7,8 @@
  *
  * The GM draws a Region with Foundry's own tools and adds this behavior to it, naming what the
  * ground is made of (`kind`, one of SW.TERRAIN_KINDS) and what a foot of it costs (`difficulty`,
- * the book's difficult terrain doubling it). Since 0.18.0 the kinds are the roster's `terrainKinds`
+ * the book's difficult terrain doubling it; the roster row's own cost when a kind is picked, 0.18.1,
+ * and the GM's number when they type one). Since 0.18.0 the kinds are the roster's `terrainKinds`
  * block, loaded into the registry at init (helpers/content.mjs), so the `kind` field reads its
  * choices LAZILY (a function, read when the select renders) and does not gate on them: a region
  * whose kind Mike has since struck from the roster keeps the slug it stored, reads with the title-
@@ -80,6 +81,22 @@ export class DifficultTerrainBehaviorType extends RegionBehaviorType {
   /** Planned paths are measured again when the region or the behavior changes, as core's does. */
   static async #recalculate() {
     canvas.tokens?.recalculatePlannedMovementPaths?.();
+  }
+
+  /**
+   * A kind picked brings the roster row's cost with it (0.18.1): the row's `difficulty` column is
+   * the kind's default multiplier, so choosing Snow in the dropdown sets Snow's cost unless the
+   * same update also types a cost of its own. Through 0.18.0 the column was printed in the docx
+   * and read by nothing on the map. A kind the registry does not know brings the book's 2.
+   * @inheritdoc
+   */
+  async _preUpdate(changes, options, user) {
+    const allowed = await super._preUpdate?.(changes, options, user);
+    if (allowed === false) return false;
+    const kind = foundry.utils.getProperty(changes, "system.kind");
+    if ((typeof kind === "string") && kind && (kind !== this.kind) && !foundry.utils.hasProperty(changes, "system.difficulty")) {
+      foundry.utils.setProperty(changes, "system.difficulty", SW.terrainKindDifficulty(kind));
+    }
   }
 
   /** @inheritdoc */

@@ -185,16 +185,33 @@ async function onPassClick(combat, combatant) {
   }
 }
 
+/** The pending redraw, or null: one timer collects a burst of changes into one render (0.18.1). */
+let renderTimer = null;
+
+/**
+ * Redraw the tracker once a burst settles, on a short timer as the party sheet does (never a
+ * requestAnimationFrame latch): six Defense rolls against an aura, or a Sync content refresh of
+ * every copy, render it once rather than once per write.
+ */
+function scheduleRender() {
+  if (renderTimer) return;
+  renderTimer = setTimeout(() => {
+    renderTimer = null;
+    if (game.combat?.isView) ui.combat?.render();
+  }, 50);
+}
+
 /** The readout is live: an actor spending actions re-renders its row. */
 function onActorChanged(actor, changes) {
   const combat = game.combat;
   if (!combat?.isView) return;
   // The actions readout in a started encounter; the effects badge (0.16.0) whenever a line's
-  // state or a custom effect changes.
+  // state or a custom effect changes. The rules' other flags (a FIRST/ONCE mark, an armed claim, a
+  // Talent's mark) draw nothing on the tracker and do not re-render it (0.18.1).
   const actions = combat.started && foundry.utils.hasProperty(changes, "system.actions");
-  const effects = foundry.utils.hasProperty(changes, "system.effects") || foundry.utils.hasProperty(changes, "flags.starwrought.rules");
+  const effects = foundry.utils.hasProperty(changes, "system.effects") || foundry.utils.hasProperty(changes, "flags.starwrought.rules.state");
   if (!actions && !effects) return;
-  if (combat.getCombatantsByActor(actor).length) ui.combat?.render();
+  if (combat.getCombatantsByActor(actor).length) scheduleRender();
 }
 
 /**
@@ -205,5 +222,5 @@ function onItemChanged(item) {
   const actor = item?.parent;
   const combat = game.combat;
   if (!actor || !combat?.isView || !["talent", "action", "constellation"].includes(item.type)) return;
-  if (combat.getCombatantsByActor(actor).length) ui.combat?.render();
+  if (combat.getCombatantsByActor(actor).length) scheduleRender();
 }

@@ -168,7 +168,7 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
 
     // Choice lists, localized once here so the templates stay declarative.
     const costs = Object.fromEntries(Object.keys(SW.ACTION_COSTS).map(k => [k, costLabel(k)]));
-    const ownSlug = item.type === "constellation" ? (item.system.slug || SW.slugify(item.name)) : null;
+    const ownSlug = item.type === "constellation" ? SW.constellationSlugOf(item) : null;
     // The selects offer what the spreadsheets enable (ruling 61), plus whatever this Item already
     // says: an owned Talent of a Constellation that has since been switched off still shows its
     // own Constellation rather than a blank, and saving the sheet does not silently move it.

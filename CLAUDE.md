@@ -1143,8 +1143,15 @@ Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
   (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
-  roster row** (0.18.0): adding one is a row in `terrainKinds`, no code. **A Lore left unnamed from
-  before 0.18.0** shows Name this Lore on its row; nothing renames it unasked.
+  roster row** (0.18.0): adding one is a row in `terrainKinds`, no code; picking a kind on a region
+  brings the row's cost (0.18.1). **A Lore left unnamed from before 0.18.0** reads "Lore
+  (unnamed)" (the 0.18.1 migration renamed the Item once) and shows Name this Lore on its row;
+  nothing names it for the player. **The rules' flag keys go through `SW.flagKey` and
+  `SW.ruleCarrierKey`, a Constellation Item's slug through `SW.constellationSlugOf`, and the
+  armed flag's one writer is `armClaim`** (0.18.1, the code review); a mark a client cannot write
+  is relayed as `rules:marks` to the GM's client or an active owner's (`onRulesSocket`,
+  `module/rules/scene.mjs`), and `preventersFor` is a read whose `marks` the acting caller spends
+  (`spendSkips`), never a render.
   **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
   Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, the roster's
   Opening Vigor) are read this release with a warning and refused next; `weapons.xlsx`'s Melee
@@ -1180,6 +1187,19 @@ Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
   Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
   Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
   Combat was deleted. Nothing in the repository depends on them.
+
+Cleared 2026-11-05 (the code review of 0.15.0 to 0.18.0, system 0.18.1; Mike: "do a thorough code
+review for mistakes, duplications, AND for performance improvements", then "Fix all 21"; the 0.18.1
+changelog entry lists every finding and its fix): a Skip spent by a chat render, now spent at the
+event; a ticked claim on a one-roll custom effect leaving the row, now spending it; another
+owner's mark dropped when unwritable, now relayed over the system socket; a removed row's armed
+flag, now cleared; a `]` inside CLAIM text, now read; the legacy test's two stray words; the
+terrain row's cost, now applied on pick; the terrain file's cache key; the tracker's burst
+rendering and the flag-write re-renders; the startup fetches, the Maneuver grant's index, the
+effects re-parse and the journal lookup; the three duplications under one helper each; the four
+simplifications; the unnamed Lore's migration. Checked by 112 self-test checks (three new), the
+content loop, the smoke test, the style check and live (the 0.18.1 changelog entry says what). No
+handbook moved and `data/SYNC.json` is untouched; no ruling.
 
 Cleared 2026-11-05 (the aura carries its effect, terrain kinds as data, a Lore named when it is
 Trained, system 0.18.0; rulings 195 to 198 in the 0.18.0 changelog entry; planned in

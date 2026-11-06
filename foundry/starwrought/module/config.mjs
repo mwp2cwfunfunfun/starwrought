@@ -86,4 +86,6 @@ export { CONDITIONS, ZONE_CONDITIONS, statusEffectId } from "./config/conditions
 
 export { BONUS_TYPES, LEGACY_BONUS_TYPES, bonusType, resolveModifiers } from "./config/modifiers.mjs";
 
-export { slugify, plainName, sameName, LORE_TEMPLATE_SLUG, loreSlug, loreName } from "./config/names.mjs";
+export {
+  slugify, plainName, sameName, constellationSlugOf, flagKey, ruleCarrierKey, LORE_TEMPLATE_SLUG, loreSlug, loreName
+} from "./config/names.mjs";

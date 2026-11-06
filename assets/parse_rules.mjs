@@ -94,7 +94,7 @@ try {
 
 const errors = [];
 const warnings = [];
-const tally = { rules: 0, cells: 0, kinds: new Set(), legacy: 0, roots: 0, markers: 0 };
+const tally = { rules: 0, cells: 0, kinds: new Set(), warned: 0, roots: 0, markers: 0 };
 
 /* -------------------------------------------- */
 /*  The cells                                   */
@@ -102,10 +102,11 @@ const tally = { rules: 0, cells: 0, kinds: new Set(), legacy: 0, roots: 0, marke
 
 /**
  * Parse one cell and write its rules onto the carrier. A line that does not parse is an error in
- * build_foundry's words (`automation: <source>, line <n>: <message> ("<text>")`); a cell in the
- * retiring form is warned about once, quoting its first such line; a `[MANEUVER ...]` naming a
- * row that is not enabled is an error on an enabled carrier (Foundry could not grant it) and a
- * warning on one that is off.
+ * build_foundry's words (`automation: <source>, line <n>: <message> ("<text>")`); a cell the
+ * grammar warns about (whatever warns next; the 0.17.0 bare line and `visible` are errors since
+ * 0.18.0) is warned about once, quoting its first such line; a `[MANEUVER ...]` naming a row that
+ * is not enabled is an error on an enabled carrier (Foundry could not grant it) and a warning on
+ * one that is off.
  * @param {object} carrier    A node, an action or a background: `automation` in, `rules` out.
  * @param {object} context    `{ itemName, constellation, itemType, source }`.
  */
@@ -120,10 +121,9 @@ function parseCell(carrier, context) {
     errors.push(`automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`);
   }
   if (parsed.errors.length) return;
-  // A line that reads but is on its way out (0.17.0): a bare effect line in a cell, an `[AURA ...
-  // visible]`. One warning per cell, the first such line quoted.
+  // The grammar's warnings, one per cell, the first such line quoted.
   if (parsed.warnings.length) {
-    tally.legacy += 1;
+    tally.warned += 1;
     const first = parsed.warnings[0];
     warnings.push(`${context.source}, line ${first.line}: ${first.message} ("${first.text}")`);
   }
@@ -396,5 +396,5 @@ save(roster);
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const kinds = tally.rules ? `${plural(tally.kinds.size, "kind")} in use` : `${plural(knownKinds().length, "kind")} defined, none in use`;
 console.log(`rules: ${plural(tally.rules, "rule")} on ${plural(tally.cells, "cell")} (${kinds}), `
-  + `${plural(tally.legacy, "cell")} warned; chassis: facts from ${plural(tally.roots, "root")}; `
+  + `${plural(tally.warned, "cell")} warned; chassis: facts from ${plural(tally.roots, "root")}; `
   + `markers: ${tally.markers} expanded`);

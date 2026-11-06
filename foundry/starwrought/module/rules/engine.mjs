@@ -44,6 +44,7 @@
  */
 
 import { KINDS, kindOf } from "./kinds/index.mjs";
+import { flagKey, ruleCarrierKey } from "../config.mjs";
 
 /**
  * The Item types that may carry rules. A Constellation Item is included now, before any carries
@@ -94,7 +95,7 @@ export function effectCarrier(effect) {
  * @returns {string}
  */
 export function ruleStateKey(item, rule) {
-  return `${item?.id ?? item?.name ?? "rule"}:${rule?.line ?? 0}`.replace(/\./g, "-");
+  return flagKey(`${ruleCarrierKey(item)}:${rule?.line ?? 0}`);
 }
 
 /**
@@ -401,10 +402,16 @@ export function ruleModifiers(actor, context = {}) {
             key = `${key}-${n}`;
           }
           keys.add(key);
-          if (!validMark) validMark = extra.find(m => m.per === "effect") ?? null;
-          // An offer keeps its mark for the dialog (0.15.0): an armed claim is spent only when the
-          // player leaves its box ticked, so the dialog, not the engine, files that mark.
-          offered.push({ ...clean, offer: true, key, hint: String(mod.hint ?? ""), ticked: mod.ticked === true, ...(validMark ? { mark: validMark } : {}) });
+          // An offer keeps its marks for the dialog (0.15.0): an armed claim is spent only when the
+          // player leaves its box ticked, so the dialog, not the engine, files them. BOTH ride: the
+          // kind's own (the claim's spend) and the traced one-roll effect's, since a ticked claim on
+          // a one-roll custom effect spends the claim and the effect alike (0.18.1; through 0.18.0
+          // the effect's mark was dropped whenever the kind gave one, and the row never left).
+          const offerMarks = [...(validMark ? [validMark] : []), ...extra.filter(m => m.per === "effect").map(m => ({ key: m.key, per: m.per }))];
+          offered.push({
+            ...clean, offer: true, key, hint: String(mod.hint ?? ""), ticked: mod.ticked === true,
+            ...(offerMarks.length ? { mark: offerMarks[0], marks: offerMarks } : {})
+          });
         } else {
           if (validMark) addMark(marks, validMark);
           delete clean.offer;

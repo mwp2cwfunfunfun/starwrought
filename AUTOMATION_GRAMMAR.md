@@ -81,7 +81,9 @@ Every block the cell reads, one example each. Case never matters.
   Conditions (`prone`), Threats (`BLOW`), ranks (`trained`). A Maneuver's cost glyphs are ignored
   (`Aid` and `Aid ❶` are one name). The slug form (`armored-fighting`) reads too.
 - Feet are a number with `ft` attached or not: `15`, `15ft`, `15 ft`. `0` means adjacent.
-- A block ends at the first `]`. Nothing a block carries contains one.
+- A block ends at the first `]` outside parentheses (0.18.1): a `CLAIM(...)` text may say
+  "[per the table]" and the block runs on to its own `]`. Outside a condition's parentheses
+  nothing a block carries contains one.
 
 A line the parser cannot read **fails the build** (`sync_content.cmd`, `node assets/build_all.mjs`)
 with the Constellation, the Talent, the line number and what is wrong, before anything is written
@@ -375,7 +377,10 @@ hover. The Grammar button on the panel opens this document's journal.
   `flags.starwrought.rules.round` or `.encounter`, keyed by the Talent and the line, naming the
   Combat and the round). The client that resolves the roll writes the mark: the coordinator's
   client for an attack read against a Threshold, the roller's for a Defense roll or a check; a
-  preview writes nothing.
+  preview writes nothing. A client that may not write the recipient (a player's Defense roll
+  spending a Skip on another player's Torchbearer line; an attacker's roll reading a body it does
+  not own) hands the mark over the system socket to the GM's client, else to an active owner's
+  (0.18.1); only a table with neither sees the rule apply again.
 - **A claim is the player's decision, at the roll** (ruling 174). A `CLAIM` bonus is a checkbox in
   the roll dialog, unticked, hint and all; ticked, it joins the roll and prints on the card by the
   Talent's name. Apply to next roll (the Effects tab) and the pin on the Talent's row arm it for
@@ -526,3 +531,10 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   effect's FOR (Mike: the Rally Aura said "15 feet, allies" twice); the bare effect line in a cell
   and the `visible` word refused, as promised; the terrain kinds a roster block (section 3's
   vocabulary is the block's names); a Lore named the moment it is Trained.
+- **0.18.1** (2026-11-05): the code review's fixes, no new word. A `]` inside a condition's
+  parentheses no longer ends the block; the retired-form test looks for the 0.13.0 operators alone
+  (`VISIBLE` and `DIFFERENT` were never a tag line's, and a descriptor ending in one was refused
+  for the wrong reason); a mark the resolving client cannot write is relayed to one that can; a
+  Skip is spent at the event, never by a render; a ticked claim on a one-roll custom effect spends
+  the row too; a removed row takes its armed flag with it; a terrain kind picked on a region brings
+  the roster row's cost.

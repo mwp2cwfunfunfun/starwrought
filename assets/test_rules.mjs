@@ -1711,6 +1711,40 @@ check("0.18.0: a bare effect line in a cell is refused (it warned in 0.17.0); on
   must((rowBlock.errors.length === 0) && (rowBlock.rules.length === 1), "the block reads on a row too");
 });
 
+check("0.18.1: a ] inside a CLAIM's parentheses does not end the block, and an unclosed block still says so", () => {
+  const block = "[EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading [per the table])]";
+  const parsed = parseAutomation(block, { resolve, itemType: "talent" });
+  same(parsed.errors, [], "no error");
+  same(parsed.rules.map(r => [r.kind, r.claim?.text, r.text]), [["bonus", "when trading [per the table]", block]], "the claim text keeps its brackets and the rule's text is the whole block");
+  const two = parseAutomation(`${block}[TRAIT Human]`, { resolve, itemType: "talent" });
+  same(two.rules.map(r => r.kind), ["bonus", "trait"], "the block after it still reads");
+  must(/a \[ has no closing \]/.test(parseAutomation("[EFFECT CHECK: 1 condition; IF: CLAIM(open]", { resolve, itemType: "talent" }).errors[0]?.message ?? ""), "a ] inside an unclosed parenthesis closes nothing");
+});
+
+check("0.18.1: the legacy test looks for the retired operators alone, so a descriptor word is the kind's to refuse", () => {
+  const onRow = cell => parseAutomation(cell, { resolve, itemType: "effect" }).errors[0]?.message ?? "";
+  must(onRow("CHECK: 1 condition, diplomacy, DIFFERENT") !== LEGACY_REFUSAL, "a trailing DIFFERENT is not the 0.13.0 form");
+  must(/takes one descriptor|is not a Constellation/.test(onRow("CHECK: 1 condition, diplomacy, DIFFERENT")), "and gets the bonus kind's own message");
+  must(onRow("IGNORE: terrain, mud, Visible") !== LEGACY_REFUSAL, "a trailing Visible is not the 0.13.0 form");
+  must(onRow("mark: enemies, MARKED") === LEGACY_REFUSAL && onRow("mark: enemies, IF(Origin=Expert)") === LEGACY_REFUSAL, "the retired operators still are");
+});
+
+check("0.18.1: a ticked claim on a one-roll custom effect carries the claim's spend AND the row's removal", () => {
+  const parsed = parseAutomation("CHECK: 2 situation, diplomacy; IF: CLAIM(this once)", { resolve, itemName: "Once", itemType: "effect" });
+  same(parsed.errors, [], "the row parses");
+  const actor = { items: [], system: { effects: [{ id: "row00001", label: "Once", text: "CHECK: 2 situation, diplomacy; IF: CLAIM(this once)", duration: "roll", rules: parsed.rules }] } };
+  actor.system.proficiency = () => ({ rank: "trained" });
+  actor.system.rules = collectRules(actor);
+  const unarmed = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained" });
+  same(unarmed.offered.map(o => [o.ticked, o.marks]), [[false, [{ key: "row00001", per: "effect" }]]], "unarmed: the offer carries the row's removal for a ticked box");
+  same(unarmed.marks, [], "nothing filed by the engine for an offer");
+  actor.flags = { starwrought: { rules: { armed: { "effect:row00001": { at: 1 } } } } };
+  const armed = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained" });
+  same(armed.offered.map(o => [o.ticked, o.mark, o.marks]), [[true, { key: "effect:row00001", per: "claim" }, [{ key: "effect:row00001", per: "claim" }, { key: "row00001", per: "effect" }]]], "armed: both marks, the claim's first");
+  const read = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: null, rank: "trained", read: true });
+  same(read.marks.map(m => `${m.per}:${m.key}`).sort(), ["claim:effect:row00001", "effect:row00001"], "a Threshold read with the claim armed files both itself");
+});
+
 check("0.17.0: the 0.13.0 operator form is one error naming the retirement, whatever the kind", () => {
   for (const line of [
     "bonus: +1, Condition, Aid",

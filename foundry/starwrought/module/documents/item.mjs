@@ -480,18 +480,22 @@ export class SwItem extends Item {
    * actor as any owned Item's are (`collectRules` walks owned Items; a compendium Maneuver is
    * never indexed). One already owned, by any route, is left alone. Called when a Talent lands
    * (the createItem hook, the wizard's #addTalent) and by `grantMissingManeuvers` at ready for
-   * Talents that gained the rule through Sync content, which fires no createItem.
+   * Talents that gained the rule through Sync content, which fires no createItem. The pack's index
+   * is fetched once per call unless the caller hands one in (`grantMissingManeuvers` walks every
+   * character with one index; 0.18.1).
    * @param {Actor} actor
    * @param {Item} talent
+   * @param {object} [options]
+   * @param {Collection|Array|null} [options.index]  The Actions pack's index, when the caller already has it.
    * @returns {Promise<Item[]>}  The actions created.
    */
-  static async grantManeuvers(actor, talent) {
+  static async grantManeuvers(actor, talent, { index = null } = {}) {
     if (!actor || !talent || (talent.type !== "talent")) return [];
     const wanted = (talent.system.rules ?? []).filter(r => (r?.kind === "maneuver") && !r.error && r.slug);
     if (!wanted.length) return [];
     const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
     if (!pack) return [];
-    const index = await pack.getIndex({ fields: ["system.category"] });
+    index ??= await pack.getIndex({ fields: ["system.category"] });
     const slugOf = name => SW.slugify(SW.plainName(name ?? ""));
     const owned = new Set(actor.items.filter(i => i.type === "action").map(i => slugOf(i.name)));
     const data = [];
@@ -527,9 +531,15 @@ export class SwItem extends Item {
    */
   static async grantMissingManeuvers() {
     let granted = 0;
+    // Only the Talents whose rules name a Maneuver are asked, with one index for all of them
+    // (0.18.1; through 0.18.0 every Talent of every character fetched the index).
+    const names = talent => (talent.system.rules ?? []).some(r => (r?.kind === "maneuver") && !r.error && r.slug);
+    let index = null;
     for (const actor of game.actors.filter(a => a.type === "character")) {
-      for (const talent of actor.items.filter(i => i.type === "talent")) {
-        const made = await this.grantManeuvers(actor, talent);
+      for (const talent of actor.items.filter(i => (i.type === "talent") && names(i))) {
+        index ??= await game.packs.get(`${SW.SYSTEM_ID}.actions`)?.getIndex({ fields: ["system.category"] });
+        if (!index) return granted;
+        const made = await this.grantManeuvers(actor, talent, { index });
         granted += made.length;
       }
     }
@@ -548,25 +558,28 @@ export class SwItem extends Item {
    * @param {string} slug
    * @param {object} [options]
    * @param {string|null} [options.name]  The copy's name, when the pack's is not it.
-   * @returns {Promise<Item|null>}  The Item on the character, found or made.
+   * @param {boolean} [options.report]    Answer `{ item, created }` instead of the Item (0.18.1), for
+   *                                      a caller that must know whether it made one (the wizard's
+   *                                      Back).
+   * @returns {Promise<Item|null|{item: Item|null, created: boolean}>}  The Item on the character, found or made.
    */
-  static async ensureConstellation(actor, slug, { name = null } = {}) {
-    if (!actor || !slug) return null;
-    const existing = actor.items.find(i => (i.type === "constellation")
-      && ((i.system.slug || SW.slugify(i.name)) === slug));
-    if (existing) return existing;
+  static async ensureConstellation(actor, slug, { name = null, report = false } = {}) {
+    const answer = (item, created) => (report ? { item, created } : item);
+    if (!actor || !slug) return answer(null, false);
+    const existing = actor.items.find(i => (i.type === "constellation") && (SW.constellationSlugOf(i) === slug));
+    if (existing) return answer(existing, false);
     const pack = game.packs.get(`${SW.SYSTEM_ID}.constellations`);
-    if (!pack) return null;
+    if (!pack) return answer(null, false);
     const index = await pack.getIndex({ fields: ["system.slug"] });
     const templateSlug = (SW.isLoreSlug(slug) && (slug !== SW.LORE_TEMPLATE_SLUG)) ? SW.LORE_TEMPLATE_SLUG : slug;
     const entry = index.find(e => (e.system?.slug ?? SW.slugify(e.name)) === templateSlug);
-    if (!entry) return null;
+    if (!entry) return answer(null, false);
     const doc = await pack.getDocument(entry._id);
     const data = doc.toObject();
     data.system.slug = slug;
     if (name) data.name = name;
     else if (templateSlug !== slug) data.name = SW.loreName(slug);
     const created = await actor.createEmbeddedDocuments("Item", [data], { swAuto: true });
-    return created[0] ?? null;
+    return answer(created[0] ?? null, !!created[0]);
   }
 }

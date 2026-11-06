@@ -53,7 +53,7 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled } from "../operators.mjs";
-import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug, DEFENSES } from "../../config.mjs";
+import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
 
 const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
 
@@ -283,7 +283,7 @@ export default {
 
         const target = rule.to;
         const label = ownRoll ? plainName(carrier?.name ?? "") : `${plainName(carrier?.name ?? "")} (${owner?.name ?? ""})`;
-        const carrierKey = carrier?.id ?? carrier?.name ?? "rule";
+        const carrierKey = ruleCarrierKey(carrier);
         const source = `rule:${carrierKey}:${target.slug}`;
         const modifier = { label, value: rule.value, type: rule.type, source, ...(mark ? { mark } : {}) };
 
@@ -319,8 +319,8 @@ export default {
         // Talent is armed; on a Threshold read (no dialog) applied only when armed; either way an
         // armed claim carries the mark that spends it once the roll or the read resolves.
         if (rule.claim) {
-          const armed = !!owner?.flags?.starwrought?.rules?.armed?.[carrierKey];
-          const spend = { key: String(carrierKey), per: "claim" };
+          const armed = !!owner?.flags?.starwrought?.rules?.armed?.[flagKey(carrierKey)];
+          const spend = { key: carrierKey, per: "claim" };
           if (context?.read) {
             if (armed) out.push({ ...modifier, mark: spend });
             continue;

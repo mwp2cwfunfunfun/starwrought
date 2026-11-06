@@ -237,17 +237,27 @@ export const GRAMMAR_JOURNAL = "STARWROUGHT Automation Grammar";
 export async function openRulesPage(title, { journal = REFERENCE_JOURNAL } = {}) {
   if (!title) return null;
   const pack = game.packs.get(`${SW.SYSTEM_ID}.rules`);
-  const entries = pack ? await pack.getDocuments() : [];
-  const wantedJournal = String(journal ?? "").trim().toLowerCase();
-  const named = entries.filter(e => e.name.trim().toLowerCase() === wantedJournal);
-  const searched = named.length ? named : entries;
-  const wanted = String(title).trim().toLowerCase();
-  for (const entry of searched) {
-    const page = entry.pages.find(p => p.name.trim().toLowerCase() === wanted);
-    if (page) return entry.sheet.render({ force: true, pageId: page.id });
+  if (!pack) {
+    ui.notifications.warn(game.i18n.format("STARWROUGHT.Rules.missing", { page: title }));
+    return null;
   }
-  const first = named[0]?.pages.contents.sort((a, b) => a.sort - b.sort)[0];
-  if (first) return named[0].sheet.render({ force: true, pageId: first.id });
+  // The journal by name from the pack's index, then that one document (0.18.1): through 0.18.0
+  // every click loaded both journals whole with every page to find one by name.
+  const index = await pack.getIndex();
+  const wantedJournal = String(journal ?? "").trim().toLowerCase();
+  const namedEntries = index.filter(e => String(e.name ?? "").trim().toLowerCase() === wantedJournal);
+  const searchedEntries = namedEntries.length ? namedEntries : [...index];
+  const wanted = String(title).trim().toLowerCase();
+  let named = null;
+  for (const entry of searchedEntries) {
+    const doc = await pack.getDocument(entry._id);
+    if (!doc) continue;
+    if (namedEntries.length && !named) named = doc;
+    const page = doc.pages.find(p => p.name.trim().toLowerCase() === wanted);
+    if (page) return doc.sheet.render({ force: true, pageId: page.id });
+  }
+  const first = named?.pages.contents.sort((a, b) => a.sort - b.sort)[0];
+  if (first) return named.sheet.render({ force: true, pageId: first.id });
   ui.notifications.warn(game.i18n.format("STARWROUGHT.Rules.missing", { page: title }));
   return null;
 }

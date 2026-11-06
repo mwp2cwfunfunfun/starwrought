@@ -7,6 +7,64 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.18.1 (2026-11-05): the code review's twenty-one fixes
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on
+the shelf unsynced). Mike: "do a thorough code review for mistakes, duplications, AND for
+performance improvements", over 0.15.0 to 0.18.0, then "Fix all 21". No ruling: nothing here
+changes what a player is asked. The eight mistakes:
+
+- **A Skip is spent at the event, never by a render.** `preventersFor` wrote a Skip line's
+  clearing mark as it was asked, and it is asked by the Expose widget's press and the GM's close
+  as well as by the Condition write; now it is a read that returns the marks, and the acting
+  callers spend them (`spendSkips`): `conditionPrevented` and the token palette's hook at the
+  Condition write, `exposePreventers` at the roll that posts the card.
+- **A ticked claim on a one-roll custom effect spends the row too.** The engine kept the kind's
+  claim mark and dropped the traced `effect` mark; an offer now carries every mark as `marks`, the
+  dialog files them all, and the row leaves with the roll.
+- **A mark the resolving client cannot write is relayed**, as `rules:marks` over the system
+  socket to the active GM's client, else to an active owner's (`onRulesSocket` in
+  `module/rules/scene.mjs`, routed by prefix beside `party:*`): a Skip on another player's
+  Torchbearer line spent on an ally's Defense roll now clears on the owner, and an attacker's roll
+  that reads a body it does not own writes that body's FIRST/ONCE marks through the GM. The
+  payload is the actor's uuid and the marks' keys and kinds; the recipient writes only what it
+  may, under its own view of the Combat.
+- **A removed custom effect takes its armed flag with it** (`rowFlagDeletions`: the row's state
+  keys and its `armed` entry, on Remove, on a one-roll spend and at the encounter's end).
+- **A `]` inside a condition's parentheses no longer ends the block** (`closingBracket` in
+  `features.mjs`; AUTOMATION_GRAMMAR.md section 1).
+- **The retired-form test looks for the 0.13.0 operators alone**: `VISIBLE` and `DIFFERENT` were
+  never a tag line's operators, and a descriptor list ending in such a word was refused with the
+  retirement message instead of the kind's own.
+- **The terrain row's cost is applied**: picking a kind on a Difficult terrain behavior sets its
+  cost to the roster row's `difficulty` unless the same update types one (`_preUpdate`); through
+  0.18.0 the column was printed in the docx and read by nothing on the map.
+- **`content/terrain.json` is fetched with a cache key** at init (the system's version) as well as
+  after a sync (the clock), so a reload after a content loop never reads yesterday's file.
+
+The performance findings: the combat tracker re-renders once per burst on a 50 ms timer and no
+longer on every `flags.starwrought.rules` write (only `rules.state` and `system.effects` draw
+there); the two startup fetches run together; `grantMissingManeuvers` asks only the Talents that
+name a Maneuver, with one pack index; `prepareEffectsUpdate` keeps a row's rules when its text is
+unchanged; `openRulesPage` finds the journal in the pack's index and loads that one document. The
+duplications: `armClaim` is the one writer of the armed flag for an Item and an effect carrier
+alike (`armClaimLine` is its export); `SW.flagKey` and `SW.ruleCarrierKey` replace nine spellings
+of the flag-key safing and three of the carrier key; `SW.constellationSlugOf` replaces ten
+spellings of a Constellation Item's slug. The simplifications: `readConstellation`'s JSDoc back on
+the function, the dead `promptForLoreField` re-export gone, the wizard's `#ensureConstellation`
+reading `SwItem.ensureConstellation`'s `{ item, created }` instead of searching first,
+`parse_rules.mjs`'s `tally.warned`. The altitude finding: a Lore template Constellation left on a
+character from before 0.18.0 is renamed "Lore (unnamed)" once by the 0.18.1 migration step (a
+notice says how many), so the Constellations tab and the party's Skills grid print the Item's name
+as any row's and keep only the Name this Lore control; its slug stays the template's, and nothing
+is named for the player.
+
+**Upgrading:** bump the version in `system.json`, `SYSTEM_VERSION` in `module/config/system.mjs`
+and `--sw-css-version-<name>` in the eleven stylesheets (done). The migration step runs once on
+the GM's first load and writes only the template Lores' names.
+
+---
+
 ## 0.18.0 (2026-11-05): the aura carries its effect, terrain kinds as data, a Lore named when it is Trained
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on

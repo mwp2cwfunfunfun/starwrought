@@ -7,18 +7,21 @@
  * state switch (On, Skip, Off; module/rules/effects-state.mjs), then the custom effects, each a
  * row the owner edits with its own lines under it; the combat tracker shows the count as a badge
  * with the lines as its tooltip (module/apps/combat-tracker.mjs). Every function takes the Actor
- * and returns plain data; none renders, none writes, except `armClaimLine` (0.17.0), the one write
- * here: a claim line (a `bonus` with `CLAIM(...)`) has no state switch, since the player's decision
- * is the claim itself, and its row carries an "Apply to next roll" button instead, which arms the
- * carrier's claims exactly as the pin on the Talent's row does (module/rules/claims.mjs), for an
- * Item or for a custom effect's carrier (`effect:<row id>`), which `armClaim` cannot name.
+ * and returns plain data; none renders, none writes. A claim line (a `bonus` with `CLAIM(...)`)
+ * has no state switch, since the player's decision is the claim itself, and its row carries an
+ * "Apply to next roll" button instead (0.17.0), which arms the carrier's claims exactly as the pin
+ * on the Talent's row does: `armClaim` in module/rules/claims.mjs, the one writer, for an Item or
+ * for a custom effect's carrier (`effect:<row id>`) alike since 0.18.1.
  */
 
 import * as SW from "../config.mjs";
 import { summarize } from "../rules/grammar.mjs";
 import { EFFECT_CARRIER_TYPE, ruleStateKey } from "../rules/engine.mjs";
-import { stateOf, RULE_STATES, effectsOf } from "../rules/effects-state.mjs";
-import { claimsOf } from "../rules/claims.mjs";
+import { stateOf, RULE_STATES } from "../rules/effects-state.mjs";
+import { claimsOf, isArmed } from "../rules/claims.mjs";
+
+// The sheet's action (`armClaimLine`) is the one writer in module/rules/claims.mjs.
+export { armClaim as armClaimLine } from "../rules/claims.mjs";
 
 /**
  * The kinds whose rules are effects: something the engine does on a roll, a Condition, a Use or a
@@ -38,12 +41,6 @@ const STATE_LOOK = Object.freeze({
   off: { icon: "fa-toggle-off" }
 });
 
-/** The flag path of an armed claim on its owner, the one module/rules/claims.mjs writes. */
-const ARMED_PATH = "flags.starwrought.rules.armed";
-
-/** A carrier key as the flag stores it: dots replaced, since the key is a path. */
-const safeKey = key => String(key ?? "").replace(/\./g, "-");
-
 /**
  * The claim control of a line (0.17.0), or null for a line with no `CLAIM`: whether the carrier's
  * claims are armed, the button's label and its hint (the pin's own strings, naming every claim
@@ -55,8 +52,8 @@ const safeKey = key => String(key ?? "").replace(/\./g, "-");
  */
 function claimControl(actor, item, rule, claims) {
   if (!rule?.claim || !item?.id) return null;
-  const held = claims.get(item.id);
-  const armed = held ? held.armed : !!actor?.flags?.starwrought?.rules?.armed?.[safeKey(item.id)];
+  const held = claims.get(SW.ruleCarrierKey(item));
+  const armed = held ? held.armed : isArmed(actor, item.id);
   const texts = (held?.texts ?? [String(rule.claim.text ?? "")]).join("; ");
   return {
     key: String(item.id),
@@ -92,40 +89,6 @@ function lineRow(actor, item, rule, { error = "", claims = null } = {}) {
     tooltip: F("STARWROUGHT.Rules.lineTooltip", { line: rule?.line ?? 0, text: rule?.text ?? "" }),
     claim: (error || !claims) ? null : claimControl(actor, item, rule, claims)
   };
-}
-
-/**
- * Arm or disarm a carrier's claims for the owner's next roll, from the Effects panel's button
- * (0.17.0). The same flag the pin writes (`flags.starwrought.rules.armed.<carrier key>`, read by
- * the `bonus` kind's hook and spent by `writeRuleMarks` with `per: "claim"`), so the pin on the
- * Talent's row and the button on its line are one state; the carrier may be an owned Item or a
- * custom effect's carrier (`effect:<row id>`), which must exist on the actor. The owner or a GM
- * writes; anyone else is told. Says nothing in chat: a pin is a private intention.
- * @param {object} actor
- * @param {string} key      The carrier key: an Item id, or `effect:<row id>`.
- * @param {boolean} [state] Toggle when omitted.
- * @returns {Promise<boolean|null>}  The new state, or null when refused.
- */
-export async function armClaimLine(actor, key, state = null) {
-  if (!actor || !key) return null;
-  if (!(actor.isOwner || game.user.isGM)) {
-    ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
-    return null;
-  }
-  const id = String(key);
-  const exists = id.startsWith("effect:")
-    ? effectsOf(actor).some(e => `effect:${e.id}` === id)
-    : !!actor.items?.get?.(id);
-  if (!exists) return null;
-  const safe = safeKey(id);
-  const now = !!actor.flags?.starwrought?.rules?.armed?.[safe];
-  const next = (state === null) ? !now : !!state;
-  if (next === now) return now;
-  const update = next
-    ? { [`${ARMED_PATH}.${safe}`]: { at: Date.now() } }
-    : { [`${ARMED_PATH}.-=${safe}`]: null };
-  await actor.update(update, { swAnnounced: true });
-  return next;
 }
 
 /**

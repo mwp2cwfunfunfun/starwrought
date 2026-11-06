@@ -59,6 +59,11 @@ export function toGrantField(rule) {
   return { n, mode: rule.different ? "different" : "any", scope: rule.scope, constellation };
 }
 
+/** A Constellation's category, spaces and case dropped, to the grant scope a directed point takes. */
+const SCOPE_BY_CATEGORY = Object.freeze({
+  skill: "Skill", defense: "Defense", calling: "Calling", combatstyle: "Combat Style", lore: "Lore"
+});
+
 /**
  * The Constellation a directed point names (`[Acrobatics trained]`): with a resolver it must be a
  * Constellation that is not a group, its scope word from its category (Skill, Defense, Calling,
@@ -68,11 +73,6 @@ export function toGrantField(rule) {
  * @param {Function|undefined} resolve
  * @returns {{slug: string, name: string, scope: string}}
  */
-/** A Constellation's category, spaces and case dropped, to the grant scope a directed point takes. */
-const SCOPE_BY_CATEGORY = Object.freeze({
-  skill: "Skill", defense: "Defense", calling: "Calling", combatstyle: "Combat Style", lore: "Lore"
-});
-
 function readConstellation(name, resolve) {
   const written = String(name ?? "").trim();
   if (!written) throw new RuleSyntaxError("a Trained Root names its Constellation: `[Acrobatics trained]`");

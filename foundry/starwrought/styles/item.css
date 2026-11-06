@@ -11,7 +11,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-item: "0.18.0"; }
+:root { --sw-css-version-item: "0.18.1"; }
 
 /* The read-only Item sheet (0.5.1, T15): the name as a rule, and the LOCKED tag beside it. */
 .starwrought .sw-item-name-locked { margin: 0; border-bottom: 1px solid var(--sw-edge); padding-bottom: 0.1rem; }

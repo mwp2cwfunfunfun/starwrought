@@ -24,12 +24,16 @@ import { parseAutomation, ruleEntries } from "./grammar.mjs";
 import { resolveRuleTarget } from "../helpers/content.mjs";
 import { responsibleFor } from "../helpers/authority.mjs";
 import { EFFECT_DURATIONS, ruleStates } from "./engine.mjs";
+import { flagKey } from "../config.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
 
 /** The flag path under which a line's state lives on its owner. */
 const STATE_PATH = "flags.starwrought.rules.state";
+
+/** The flag path of an armed claim (module/rules/claims.mjs writes it; a row's is cleared with the row). */
+const ARMED_PATH = "flags.starwrought.rules.armed";
 
 /* -------------------------------------------- */
 /*  The state switch                            */
@@ -42,7 +46,7 @@ const STATE_PATH = "flags.starwrought.rules.state";
  * @returns {"on"|"skip"|"off"}
  */
 export function stateOf(actor, key) {
-  const state = ruleStates(actor)[String(key ?? "").replace(/\./g, "-")];
+  const state = ruleStates(actor)[flagKey(key)];
   return RULE_STATES.includes(state) ? state : "on";
 }
 
@@ -60,7 +64,7 @@ export async function setRuleState(actor, key, state) {
     ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
     return null;
   }
-  const safe = String(key).replace(/\./g, "-");
+  const safe = flagKey(key);
   if (stateOf(actor, safe) === state) return state;
   const update = (state === "on")
     ? { [`${STATE_PATH}.-=${safe}`]: null }
@@ -94,14 +98,39 @@ export function markUpdates(actor, marks) {
   const spent = new Set();
   for (const mark of marks ?? []) {
     if (!mark?.key) continue;
-    const safe = String(mark.key).replace(/\./g, "-");
+    const safe = flagKey(mark.key);
     if ((mark.per === "state") && (states[safe] !== undefined)) update[`${STATE_PATH}.-=${safe}`] = null;
     else if (mark.per === "effect") spent.add(String(mark.key));
   }
   if (spent.size) {
     const rows = effectsOf(actor);
     const kept = rows.filter(e => !spent.has(String(e.id)));
-    if (kept.length !== rows.length) update["system.effects"] = kept;
+    if (kept.length !== rows.length) {
+      update["system.effects"] = kept;
+      Object.assign(update, rowFlagDeletions(actor, rows.filter(e => spent.has(String(e.id)))));
+    }
+  }
+  return update;
+}
+
+/**
+ * The flag entries that go with custom effect rows when the rows go (0.18.1): each line's state
+ * and the carrier's armed claim, which through 0.18.0 outlived a removed or spent row.
+ * @param {object} actor
+ * @param {Array<{id: string}>} rows  The rows leaving.
+ * @returns {object}  Entries for `actor.update`.
+ */
+function rowFlagDeletions(actor, rows) {
+  const update = {};
+  if (!rows.length) return update;
+  const prefixes = rows.map(e => `effect:${e.id}:`);
+  for (const key of Object.keys(ruleStates(actor))) {
+    if (prefixes.some(prefix => key.startsWith(prefix))) update[`${STATE_PATH}.-=${key}`] = null;
+  }
+  const armed = actor?.flags?.starwrought?.rules?.armed ?? {};
+  for (const row of rows) {
+    const key = flagKey(`effect:${row.id}`);
+    if (armed[key] !== undefined) update[`${ARMED_PATH}.-=${key}`] = null;
   }
   return update;
 }
@@ -182,11 +211,7 @@ export async function removeEffect(actor, id) {
   const rows = effectsOf(actor);
   const kept = rows.filter(e => String(e.id) !== String(id));
   if (kept.length === rows.length) return false;
-  const update = { "system.effects": kept };
-  const prefix = `effect:${id}:`;
-  for (const key of Object.keys(ruleStates(actor))) {
-    if (key.startsWith(prefix)) update[`${STATE_PATH}.-=${key}`] = null;
-  }
+  const update = { "system.effects": kept, ...rowFlagDeletions(actor, rows.filter(e => String(e.id) === String(id))) };
   await actor.update(update, { swAnnounced: true });
   return true;
 }
@@ -197,7 +222,9 @@ export async function removeEffect(actor, id) {
  * Talent's textarea. The rows may arrive as the sheet's form sends them, an object with numeric
  * keys that Foundry's ArrayField has already cast to an array by the time the diff reaches here,
  * or as an array a macro passed; either way a row missing its id (a hand-typed update) gets one,
- * a row missing a field keeps the stored row's by id, and the text always saves.
+ * a row missing a field keeps the stored row's by id, and the text always saves. A row whose text
+ * is the stored row's keeps the stored rules rather than parsing again (0.18.1): a one-roll spend
+ * or a Remove touches `system.effects` without changing any surviving row's text.
  * @param {object} actor
  * @param {object} changes  The update's differential, which is edited in place.
  */
@@ -223,7 +250,8 @@ export function prepareEffectsUpdate(actor, changes) {
     };
     if (seen.has(row.id)) row.id = foundry.utils.randomID();
     seen.add(row.id);
-    row.rules = parseEffectText(row);
+    const unchanged = (row.id === String(base.id ?? "")) && (row.text === String(base.text ?? "")) && (row.label === String(base.label ?? "")) && Array.isArray(base.rules);
+    row.rules = unchanged ? base.rules : parseEffectText(row);
     next.push(row);
   }
   if (flat) changes["system.effects"] = next;
@@ -253,11 +281,7 @@ export async function endEncounterEffects(combat) {
       const rows = effectsOf(actor);
       const kept = rows.filter(e => e.duration !== "encounter");
       if (kept.length === rows.length) continue;
-      const update = { "system.effects": kept };
-      const gone = new Set(rows.filter(e => e.duration === "encounter").map(e => `effect:${e.id}:`));
-      for (const key of Object.keys(ruleStates(actor))) {
-        if ([...gone].some(prefix => key.startsWith(prefix))) update[`${STATE_PATH}.-=${key}`] = null;
-      }
+      const update = { "system.effects": kept, ...rowFlagDeletions(actor, rows.filter(e => e.duration === "encounter")) };
       await actor.update(update, { swAnnounced: true });
     } catch (error) {
       console.error(`STARWROUGHT | the encounter effects on ${actor?.name ?? "an actor"} could not be cleared:`, error);

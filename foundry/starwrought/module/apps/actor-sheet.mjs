@@ -512,11 +512,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const inherited = Number(entry.inherited) || 0;
       const parentName = parentNameOf(entry.parent);
       // A Lore left unnamed (0.18.0): the template's own row, which should not exist on a
-      // character, prints "Lore (unnamed)" and carries the control that names it.
+      // character, carries the control that names it. Its name is the Item's, "Lore (unnamed)"
+      // since the 0.18.1 migration, printed as any row's is.
       const loreTemplate = entry.slug === SW.LORE_TEMPLATE_SLUG;
       group.constellations.push({
         ...entry,
-        name: loreTemplate ? game.i18n.localize("STARWROUGHT.Sheet.loreUnnamed") : entry.name,
         loreTemplate,
         pool: entry.pool ?? entry.points,
         inherited,

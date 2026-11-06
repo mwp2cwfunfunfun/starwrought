@@ -17,6 +17,13 @@
  *    the Expose widget, and `preventExposeFromCard` (documents/cards/position.mjs) is pressed by
  *    the Talent's owner, pays its cost, writes the mark, flags the card `prevented` and says "It
  *    Exposes nothing". The card is the event; a widget already prevented draws no Expose button.
+ *
+ * `preventersFor` itself is a read and writes nothing (0.18.1): through 0.18.0 it spent a Skip
+ * line's state as it was asked, and it is asked by renders and previews too (the Expose widget's
+ * press re-reads it, the Combat Prompt previews through the engine), so a card re-rendered on
+ * another client could clear a player's Skip before anything was prevented. The two acting
+ * callers spend the Skips (`spendSkips`): `conditionPrevented` and the token palette's hook at
+ * the Condition write, `exposePreventers` at the roll that posts the card.
  */
 
 import * as SW from "../config.mjs";
@@ -25,25 +32,44 @@ import { sceneContextFor, encounterContext, writeRuleMarks } from "./scene.mjs";
 import { EXPOSE } from "./kinds/prevent.mjs";
 
 /**
- * The preventers of an effect on an actor, split into the automatic ones and the Reactions.
+ * The preventers of an effect on an actor, split into the automatic ones and the Reactions, with
+ * the Skip marks the reading asks for (0.16.0: a line on Skip answered nothing this once, and the
+ * mark returns it to On). A READ, writing nothing: the Expose widget renders through it, the
+ * Combat Prompt previews through it, and a render must never spend a Skip (0.18.1). The client
+ * that ACTS on the answer (a Condition write refused, an Expose offered on a roll's card) writes
+ * the marks through `spendSkips`, so a Skip is spent once, at the event.
  * @param {Actor} actor
  * @param {string} effect  A condition id, or "expose".
  * @param {{token?: TokenDocument|null, threat?: object|null}} [options]
- * @returns {{automatic: import("./engine.mjs").Preventer[], reactions: import("./engine.mjs").Preventer[]}}
+ * @returns {{automatic: import("./engine.mjs").Preventer[], reactions: import("./engine.mjs").Preventer[], marks: Array<{key: string, per: string, owner?: string}>}}
  */
 export function preventersFor(actor, effect, { token = null, threat = null } = {}) {
   const all = rulePreventers(actor, {
     effect, threat, scene: sceneContextFor(actor, token), encounter: encounterContext()
   });
-  // CHARACTER EFFECTS (0.16.0): a line on Skip answered nothing this once; the dispatcher left the
-  // mark that returns it to On on the array, and the asking spends it.
-  if (all.marks?.length) writeRuleMarks(actor, all.marks).catch(err => console.error("STARWROUGHT | the skip marks could not be written", err));
-  return { automatic: all.filter(p => !p.reaction), reactions: all.filter(p => p.reaction) };
+  return { automatic: all.filter(p => !p.reaction), reactions: all.filter(p => p.reaction), marks: all.marks ?? [] };
+}
+
+/**
+ * Spend the Skip marks a reading left, and the acting preventer's own FIRST/ONCE mark beside them,
+ * on the client that acted (0.18.1). Never throws: a mark that will not write is logged.
+ * @param {Actor} actor
+ * @param {Array<{key: string, per: string, owner?: string}>} marks
+ * @returns {Promise<void>}
+ */
+export async function spendSkips(actor, marks) {
+  if (!marks?.length) return;
+  try {
+    await writeRuleMarks(actor, marks);
+  } catch (err) {
+    console.error("STARWROUGHT | the rule marks could not be written", err);
+  }
 }
 
 /**
  * Would a rule stop this Condition landing on the actor? When one does: the card, the mark, and
- * the preventer back, so the caller skips its write. Null when nothing prevents it.
+ * the preventer back, so the caller skips its write. Null when nothing prevents it. The Condition
+ * write is the event, so a Skip that would have prevented it is spent here either way.
  * @param {Actor} actor
  * @param {string} conditionId  A key of SW.CONDITIONS.
  * @returns {Promise<import("./engine.mjs").Preventer|null>}
@@ -51,18 +77,32 @@ export function preventersFor(actor, effect, { token = null, threat = null } = {
 export async function conditionPrevented(actor, conditionId) {
   const config = SW.CONDITIONS[conditionId];
   if (!config || config.zone) return null;
-  const { automatic } = preventersFor(actor, conditionId);
+  const { automatic, marks } = preventersFor(actor, conditionId);
   const preventer = automatic[0] ?? null;
-  if (!preventer) return null;
+  if (!preventer) {
+    await spendSkips(actor, marks);
+    return null;
+  }
   await sayPrevented(actor, preventer, game.i18n.localize(config.name));
-  if (preventer.mark) await writeRuleMarks(actor, [preventer.mark]);
+  await spendSkips(actor, [...marks, ...(preventer.mark ? [preventer.mark] : [])]);
   return preventer;
 }
 
-/** The Reaction Talents that could stop an Expose on this body, for the card's widget. */
+/**
+ * The Reaction Talents that could stop an Expose on this body, for the card's widget, as plain
+ * data the card's flags keep. The roll that posts the card is the event an Expose's Skip answers
+ * nothing to, so the roller's client spends the Skips it read, relayed to the owner's or the GM's
+ * when the body is not its own to write (`writeRuleMarks`); a widget drawn again from the flags
+ * reads nothing here. Never throws, so a card never dies over a rule.
+ * @param {Actor} actor
+ * @param {TokenDocument|null} [token]
+ * @returns {Array<{itemId: string, itemName: string, ownerUuid: string, ownerName: string, cost: number}>}
+ */
 export function exposePreventers(actor, token = null) {
   if (!actor) return [];
-  return preventersFor(actor, EXPOSE, { token }).reactions.map(p => ({
+  const { reactions, marks } = preventersFor(actor, EXPOSE, { token });
+  spendSkips(actor, marks);
+  return reactions.map(p => ({
     itemId: p.item.id ?? "", itemName: p.item.name ?? "", ownerUuid: p.owner?.uuid ?? "", ownerName: p.owner?.name ?? "",
     cost: Number(p.item.system?.costValue ?? SW.actionCostValue?.(p.item.system?.cost) ?? 0) || 0
   }));

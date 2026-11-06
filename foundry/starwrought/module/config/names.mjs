@@ -55,6 +55,42 @@ export function plainName(name) {
  */
 export const sameName = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
 
+/**
+ * A Constellation Item's slug: the stored one, else its name slugged (an Item made before the
+ * field existed, or by hand). The one reading (0.18.1); it was spelled out in ten places before.
+ * @param {object} item  A Constellation Item, or anything shaped like one.
+ * @returns {string}
+ */
+export function constellationSlugOf(item) {
+  return item?.system?.slug || slugify(item?.name);
+}
+
+/* -------------------------------------------- */
+/*  The rules' flag keys (0.18.1)               */
+/* -------------------------------------------- */
+
+/**
+ * A key made safe as a path under `flags.starwrought.rules.*`: a dot would open a level, so it is
+ * replaced; the colon of `<carrier>:<line>` is fine. Every writer and reader of the armed, state,
+ * round, encounter and marks flags goes through this, so one spelling is the key everywhere.
+ * @param {string} key
+ * @returns {string}
+ */
+export function flagKey(key) {
+  return String(key ?? "").replace(/\./g, "-");
+}
+
+/**
+ * The key a rule's carrier is known by in the flags and in a modifier's `source`: an Item's id, a
+ * custom effect's `effect:<row id>`, or a name for a carrier that has no id (a test's plain
+ * object), "rule" when it has neither.
+ * @param {object} carrier  An Item, or an effect carrier (module/rules/engine.mjs).
+ * @returns {string}
+ */
+export function ruleCarrierKey(carrier) {
+  return String(carrier?.id ?? carrier?.name ?? "rule");
+}
+
 /* -------------------------------------------- */
 /*  Lore (0.18.0)                               */
 /* -------------------------------------------- */
