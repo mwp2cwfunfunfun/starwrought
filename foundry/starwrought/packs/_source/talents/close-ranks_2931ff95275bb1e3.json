@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)",
+    "automation": "[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]",
     "rules": [
       {
         "value": 1,
@@ -64,10 +64,9 @@
         "limit": null,
         "claim": null,
         "marked": false,
-        "bare": true,
         "kind": "bonus",
         "line": 1,
-        "text": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)"
+        "text": "[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]"
       }
     ],
     "traits": [],
@@ -80,7 +79,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e970d3d299d11c24"
+      "contentHash": "4e2f09dc4a575dfe"
     }
   },
   "effects": [],

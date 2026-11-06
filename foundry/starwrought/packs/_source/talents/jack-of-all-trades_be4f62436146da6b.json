@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "CHECK: 1 situation; IF: RANK(roll = untrained)",
+    "automation": "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]",
     "rules": [
       {
         "value": 1,
@@ -57,10 +57,9 @@
         "limit": null,
         "claim": null,
         "marked": false,
-        "bare": true,
         "kind": "bonus",
         "line": 1,
-        "text": "CHECK: 1 situation; IF: RANK(roll = untrained)"
+        "text": "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]"
       }
     ],
     "traits": [],
@@ -73,7 +72,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "196867c7530e1796"
+      "contentHash": "88966c6df5f13eab"
     }
   },
   "effects": [],

@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
+    "effect": "You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
     "description": "<p><i>Others take heart from your presence, drawing courage from you and the example you set.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -35,14 +35,14 @@
       "range": 15,
       "affects": "allies"
     },
-    "automation": "[AURA 15 allies visible]\nDEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round",
+    "automation": "[AURA 15 allies]\n[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]",
     "rules": [
       {
         "range": 15,
         "affects": "allies",
         "kind": "aura",
         "line": 1,
-        "text": "[AURA 15 allies visible]"
+        "text": "[AURA 15 allies]"
       },
       {
         "value": 1,
@@ -70,10 +70,9 @@
         },
         "claim": null,
         "marked": false,
-        "bare": true,
         "kind": "bonus",
         "line": 2,
-        "text": "DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round"
+        "text": "[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
       }
     ],
     "traits": [],
@@ -86,7 +85,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "656d64255ca06a5e"
+      "contentHash": "27e36a51bcb4f940"
     }
   },
   "effects": [],

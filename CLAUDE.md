@@ -837,8 +837,8 @@ Constellations tab's Talent name is the `itemEdit` click with a rich tooltip of 
 `constellation` and `action`; the Description tab reads Traits, Description, Effect, Source and
 `.starwrought.item prose-mirror { min-height: 0 }`. The cells of `cultures.xlsx`,
 `backgrounds.xlsx`, `callings.xlsx` and the Talent Maneuvers rows are wrapped (backups in
-`backup/pre-0.17.0/`); Excel held `ancestries.xlsx`, so the Human's five effect lines stay bare,
-warned, Mike's to wrap.
+`backup/pre-0.17.0/`); Excel held `ancestries.xlsx` at the tag, and the Human's five lines were
+wrapped in the follow-up commit once Mike closed it.
 
 ## Where the source of truth lives
 
@@ -1118,9 +1118,9 @@ warned, Mike's to wrap.
   modifier (FG has them; no Talent wants them yet). **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell reads this release only** (0.17.0): it builds with a warning naming the
-  line, and 0.18.0 refuses it; the only cells known to carry it are the Human's five in
-  `data/ancestries.xlsx`, which Excel held open during the 0.17.0 rewrite, Mike's to wrap in
-  `[EFFECT ...]` (the custom effects field keeps the bare form). **The `visible` word of `[AURA
+  line, and 0.18.0 refuses it; no repository cell carries it (the Human's five were wrapped after
+  the tag, once Excel released `data/ancestries.xlsx`), but a GM's world Item may (the custom
+  effects field keeps the bare form). **The `visible` word of `[AURA
   ...]`** is read with a warning this release and refused next; no repository cell carries it.
   **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
   Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, the roster's
@@ -1166,8 +1166,8 @@ Edicts, Anathema and a Notes tab; the Effects panel on the Effects tab with Appl
 claim lines; every aura preview-only until shown; the Talent name as the click and the hover; the
 Item window reordered, fitted and without its empty tab. Checked by the self-test, the content
 loop, the smoke test, the style check and live (the 0.17.0 changelog entry lists what). The Human's
-five cells in `ancestries.xlsx` stay bare (Excel held the file), warned. No handbook moved and
-`data/SYNC.json` is untouched.
+five cells in `ancestries.xlsx`, bare at the tag because Excel held the file, were wrapped in the
+follow-up commit. No handbook moved and `data/SYNC.json` is untouched.
 
 Cleared 2026-11-05 (the grammar in Fantasy Grounds' shape, system 0.16.0; rulings 182 to 188 in
 the 0.16.0 changelog entry; planned in `eager-wobbling-possum.md`, the fourth plan, Mike's decisions

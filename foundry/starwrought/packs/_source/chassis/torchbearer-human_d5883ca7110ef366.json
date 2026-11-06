@@ -7,7 +7,7 @@
     "kind": "bloodline",
     "constellation": "human",
     "attribute": "presence",
-    "specialAbility": "<p>You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.</p>",
+    "specialAbility": "<p>You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.</p>",
     "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
     "traits": [],
     "source": "STARWROUGHT Playtest v4.21"
@@ -19,7 +19,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "098f92cc5495696c"
+      "contentHash": "bff9f7e63311462f"
     }
   },
   "effects": [],

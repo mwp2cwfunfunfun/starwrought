@@ -59,7 +59,7 @@
       },
       {
         "label": "Names",
-        "text": "<p>Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br><b>Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br><b>Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br><b>Example names</b> Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper.</p>"
+        "text": "<p>Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br>Common given names Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br>Common surnames Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br>Example names Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper.</p>"
       }
     ],
     "traits": [
@@ -74,7 +74,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "43ecfa04d834b127"
+      "contentHash": "74b8ef701f62907a"
     }
   },
   "effects": [],

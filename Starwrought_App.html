@@ -250,7 +250,7 @@ let TREES = {
    },
    {
     "label": "Names",
-    "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br><b>Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br><b>Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br><b>Example names</b> Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
+    "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br>Common given names Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br>Common surnames Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br>Example names Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
    }
   ],
   "traits": [
@@ -264,8 +264,8 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
-    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\nCHECK: 1 condition, aid; IF: RANK(Origin >= trained)",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br>Bonus to Aid. You gain a +1 Condition bonus on checks to Aid.",
+    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\n[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]",
     "desc": "<i>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</i>",
     "root": true,
     "rules": [
@@ -318,10 +318,9 @@ let TREES = {
       "limit": null,
       "claim": null,
       "marked": false,
-      "bare": true,
       "kind": "bonus",
       "line": 2,
-      "text": "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)"
+      "text": "[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]"
      }
     ]
    },
@@ -377,7 +376,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "The first time each encounter you would be knocked prone, you are not.",
-    "automation": "IMMUNE: prone; LIMIT: encounter",
+    "automation": "[EFFECT IMMUNE: prone; LIMIT: encounter]",
     "desc": "<i>Even when a blow catches you off balance, sheer stubbornness keeps you on your feet.</i>",
     "requires": [
      "Humanity"
@@ -394,10 +393,9 @@ let TREES = {
        "per": "encounter"
       },
       "marked": false,
-      "bare": true,
       "kind": "prevent",
       "line": 1,
-      "text": "IMMUNE: prone; LIMIT: encounter"
+      "text": "[EFFECT IMMUNE: prone; LIMIT: encounter]"
      }
     ]
    },
@@ -407,7 +405,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "While an ally is adjacent to you, both of you gain a +1 Situation bonus to Guard against Blows.",
-    "automation": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)",
+    "automation": "[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]",
     "desc": "<i>Shoulder to shoulder, you and your companions instinctively cover one another’s openings.</i>",
     "requires": [
      "Humanity"
@@ -442,10 +440,9 @@ let TREES = {
       "limit": null,
       "claim": null,
       "marked": false,
-      "bare": true,
       "kind": "bonus",
       "line": 1,
-      "text": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)"
+      "text": "[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]"
      }
     ]
    },
@@ -454,8 +451,8 @@ let TREES = {
     "tier": "T",
     "cost": 1,
     "enabled": true,
-    "effect": "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
-    "automation": "[AURA 15 allies visible]\nDEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round",
+    "effect": "You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
+    "automation": "[AURA 15 allies]\n[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]",
     "desc": "<i>Others take heart from your presence, drawing courage from you and the example you set.</i>",
     "hroot": true,
     "rules": [
@@ -464,7 +461,7 @@ let TREES = {
       "affects": "allies",
       "kind": "aura",
       "line": 1,
-      "text": "[AURA 15 allies visible]"
+      "text": "[AURA 15 allies]"
      },
      {
       "value": 1,
@@ -492,10 +489,9 @@ let TREES = {
       },
       "claim": null,
       "marked": false,
-      "bare": true,
       "kind": "bonus",
       "line": 2,
-      "text": "DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round"
+      "text": "[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
      }
     ]
    },
@@ -550,7 +546,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +1 Condition bonus to your Untrained checks.",
-    "automation": "CHECK: 1 situation; IF: RANK(roll = untrained)",
+    "automation": "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]",
     "desc": "<i>You have tried your hand at enough things to find a familiar thread in almost any task.</i>",
     "feeds": "Wits",
     "requires": [
@@ -579,10 +575,9 @@ let TREES = {
       "limit": null,
       "claim": null,
       "marked": false,
-      "bare": true,
       "kind": "bonus",
       "line": 1,
-      "text": "CHECK: 1 situation; IF: RANK(roll = untrained)"
+      "text": "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]"
      }
     ]
    }
@@ -4050,7 +4045,7 @@ let R = {
    "bloodlines": [
     [
      "Torchbearer Human",
-     "You gain the <b>Rally Aura</b>: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check."
+     "You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check."
     ],
     [
      "Versatile Human",
@@ -4107,7 +4102,7 @@ let R = {
     },
     {
      "label": "Names",
-     "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br><b>Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br><b>Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br><b>Example names</b> Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
+     "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br>Common given names Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br>Common surnames Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br>Example names Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
     }
    ]
   }

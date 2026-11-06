@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br><b>Bonus to Aid. </b>You gain a +1 Condition bonus on checks to Aid.",
+    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br>Bonus to Aid. You gain a +1 Condition bonus on checks to Aid.",
     "description": "<p><i>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -31,7 +31,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\nCHECK: 1 condition, aid; IF: RANK(Origin >= trained)",
+    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\n[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]",
     "rules": [
       {
         "name": "Human",
@@ -82,10 +82,9 @@
         "limit": null,
         "claim": null,
         "marked": false,
-        "bare": true,
         "kind": "bonus",
         "line": 2,
-        "text": "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)"
+        "text": "[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]"
       }
     ],
     "traits": [],
@@ -98,7 +97,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "45afe6279ca4e60f"
+      "contentHash": "65719d4d8a96b261"
     }
   },
   "effects": [],

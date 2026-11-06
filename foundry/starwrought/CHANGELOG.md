@@ -37,7 +37,8 @@ rulings:
   branches are gone, and `parseAutomation` returns `{ rules, errors, warnings }` with a kind warning
   through `context.warn`. Every cell of `cultures.xlsx`, `backgrounds.xlsx`, `callings.xlsx` and the
   Talent Maneuvers rows is rewritten (backups in `backup/pre-0.17.0/`); `ancestries.xlsx` was open in
-  Excel, so the Human's five cells stay bare one release, warned, Mike's to wrap.
+  Excel at the tag, and the Human's five cells were wrapped in the follow-up commit once Mike
+  closed it, so no repository cell is bare.
 - **190. The grammar document is the journal.** `AUTOMATION_GRAMMAR.md` is converted at build time
   (`assets/lib/markdown.mjs`, a hand-rolled converter; no dependency) into the **STARWROUGHT
   Automation Grammar** journal of the Rules pack (`docId("rules", "journal:grammar")`, one page per
@@ -86,10 +87,10 @@ rings preview-only with no mark and the Torchbearer ring shown after `setAuraVis
 window with Description and Details alone, its panels Traits, Description, Effect, Source and a
 Grammar control, and a weapon's window keeping its Effects tab; a world Item updated with the
 0.13.0 line storing the refusal beside a parsed `[EFFECT ...]` block. **Not done, said so:**
-`[EFFECT ...]` with FG's leading name; durations in rounds; the adversary sheet's Biography; the
-Human's five cells in `ancestries.xlsx`, which Excel held, warned each build until Mike wraps
-them; a world Item created with automation text parses it on its first update, not on creation,
-as since 0.9.0.
+`[EFFECT ...]` with FG's leading name; durations in rounds; the adversary sheet's Biography; a
+world Item created with automation text parses it on its first update, not on creation, as since
+0.9.0. (The Human's five cells, bare at the tag because Excel held `ancestries.xlsx`, were wrapped
+in the follow-up commit; the loop then reads `0 cells warned`.)
 
 ---
 

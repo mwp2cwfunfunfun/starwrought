@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "IMMUNE: prone; LIMIT: encounter",
+    "automation": "[EFFECT IMMUNE: prone; LIMIT: encounter]",
     "rules": [
       {
         "effect": "prone",
@@ -46,10 +46,9 @@
           "per": "encounter"
         },
         "marked": false,
-        "bare": true,
         "kind": "prevent",
         "line": 1,
-        "text": "IMMUNE: prone; LIMIT: encounter"
+        "text": "[EFFECT IMMUNE: prone; LIMIT: encounter]"
       }
     ],
     "traits": [],
@@ -62,7 +61,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "97b2359116f7a876"
+      "contentHash": "580eb868cc449b13"
     }
   },
   "effects": [],
