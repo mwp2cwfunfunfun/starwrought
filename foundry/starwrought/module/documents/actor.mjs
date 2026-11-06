@@ -35,6 +35,8 @@ import { BindMixin } from "./actor/bind.mjs";
 import { FlaresMixin } from "./actor/flares.mjs";
 import { RestMixin } from "./actor/rest.mjs";
 import { CastMixin } from "./actor/cast.mjs";
+// NAMING A LORE (0.18.0): the one writer of a Lore's field.
+import { LoreMixin } from "./actor/lore.mjs";
 // CHARACTER EFFECTS (0.16.0): a custom effect's text is parsed on write, as a Talent's cell is.
 import { prepareEffectsUpdate } from "../rules/effects-state.mjs";
 
@@ -56,7 +58,8 @@ const SECTIONS = [
   BindMixin,
   FlaresMixin,
   RestMixin,
-  CastMixin
+  CastMixin,
+  LoreMixin
 ];
 
 const Composed = SECTIONS.reduce((Base, mixin) => mixin(Base), Actor);

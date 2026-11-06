@@ -137,6 +137,8 @@ export async function reloadContentIndexes() {
   } catch (error) {
     console.warn("STARWROUGHT | the chassis index could not be re-read", error);
   }
+  // The terrain kinds (0.18.0): a kind added to the roster reaches the open world with the sync.
+  await loadTerrainKinds({ fresh: true });
   try {
     const { invalidateExplorationActivities } = await import("./party.mjs");
     invalidateExplorationActivities();
@@ -397,6 +399,35 @@ export function chassisByName(name) {
 /** Forget the chassis, so a GM's new world chassis is read on the next sheet render. */
 export function invalidateChassisIndex() {
   chassisIndex = null;
+}
+
+/* -------------------------------------------- */
+
+const TERRAIN_PATH = "systems/starwrought/content/terrain.json";
+
+/**
+ * The kinds of difficult terrain (0.18.0): the roster's hand-kept `terrainKinds` block, which
+ * `build_foundry.mjs` writes to content/terrain.json as the registry's records, read into
+ * `SW.TERRAIN_KINDS` (module/config/terrain.mjs). Called at init, before the world's documents are
+ * built, so a region's Kind select, the overlay, the ruler and the `ignore` kind read the roster's
+ * names; and again, `fresh`, after a content sync, so a kind Mike adds reaches the open world with
+ * the rest of the content. A file that cannot be read leaves the registry as it was (empty on a
+ * first load: a region then draws in the fallback colour with its slug title-cased, and the
+ * behavior's `kind` field does not gate on the list, so nothing becomes invalid).
+ * @param {{fresh?: boolean}} [options]
+ * @returns {Promise<number>}  How many kinds are registered now.
+ */
+export async function loadTerrainKinds({ fresh = false } = {}) {
+  try {
+    const url = fresh ? `${TERRAIN_PATH}?t=${Date.now()}` : TERRAIN_PATH;
+    const rows = await foundry.utils.fetchJsonWithTimeout(url);
+    const count = SW.registerTerrainKinds(rows);
+    console.log(`STARWROUGHT | Registered ${count} kinds of difficult terrain.`);
+    return count;
+  } catch (error) {
+    console.warn("STARWROUGHT | Could not read the difficult terrain kinds (content/terrain.json); the registry stands as it was.", error);
+    return Object.keys(SW.TERRAIN_KINDS).length;
+  }
 }
 
 /* -------------------------------------------- */

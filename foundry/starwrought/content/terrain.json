@@ -1,0 +1,72 @@
+[
+  {
+    "slug": "mud",
+    "name": "Mud",
+    "description": "Soft ground that takes the foot and gives it back slowly.",
+    "difficulty": 2,
+    "colour": "#6b4a2b"
+  },
+  {
+    "slug": "shallow-water",
+    "name": "Shallow Water",
+    "description": "Water to the knee or the waist: every stride is a wade.",
+    "difficulty": 2,
+    "colour": "#2f7fb8"
+  },
+  {
+    "slug": "decking",
+    "name": "Decking",
+    "description": "Loose boards, wet planking, a rolling deck; nothing underfoot stays still.",
+    "difficulty": 2,
+    "colour": "#9a7a4a"
+  },
+  {
+    "slug": "loose-stone",
+    "name": "Loose Stone",
+    "description": "Scree and shingle that slides under weight.",
+    "difficulty": 2,
+    "colour": "#7d7d7d"
+  },
+  {
+    "slug": "rubble",
+    "name": "Rubble",
+    "description": "Fallen masonry and broken timber to be climbed over or picked through.",
+    "difficulty": 2,
+    "colour": "#5c5c5c"
+  },
+  {
+    "slug": "undergrowth",
+    "name": "Undergrowth",
+    "description": "Brambles, roots and thicket that catch at the legs.",
+    "difficulty": 2,
+    "colour": "#3f7a3a"
+  },
+  {
+    "slug": "snow",
+    "name": "Snow",
+    "description": "Deep enough to swallow the foot at every step.",
+    "difficulty": 2,
+    "colour": "#cfe3f2"
+  },
+  {
+    "slug": "ice",
+    "name": "Ice",
+    "description": "A sheet that gives no purchase; every step is placed, not taken.",
+    "difficulty": 2,
+    "colour": "#9fd3e8"
+  },
+  {
+    "slug": "sand",
+    "name": "Sand",
+    "description": "Dry and shifting, so that half of every stride is lost.",
+    "difficulty": 2,
+    "colour": "#d8b56a"
+  },
+  {
+    "slug": "other",
+    "name": "Other",
+    "description": "Difficult ground of no named kind: the GM's catch-all.",
+    "difficulty": 2,
+    "colour": "#8a6fb0"
+  }
+]

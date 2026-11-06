@@ -6,9 +6,10 @@ automation, at Mike's direction, and since 0.17.0 every line of a cell is blocks
 does to the character: `[TRAIT Human][SPEED 6]`, `[Acrobatics trained]`, `[MANEUVER Steady the
 Line]`) and effect blocks, FG's own wrapper, `[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >=
 trained)]`. `grammar.mjs` splits the blocks (`features.mjs`) and hands an `EFFECT` block's inside
-to the effect reader (`effects.mjs`), whose tag names the kind; a bare effect line in a cell reads
-one more release flagged `bare: true` with a warning (the custom effects field's own form, where it
-is not flagged), and the 0.13.0 operator form is refused with `LEGACY_REFUSAL`. The kinds keep
+to the effect reader (`effects.mjs`), whose tag names the kind; an `AURA` block may carry its
+effect after a semicolon (0.18.0), the ring parsed first and the rest read as an effect whose FOR
+is the ring; a bare effect line in a cell is refused since 0.18.0 (it is the custom effects field's
+own form, `itemType: "effect"`), and the 0.13.0 operator form is refused with `LEGACY_REFUSAL`. The kinds keep
 their ids and stored shapes, so every hook reads what it always read. `parseAutomation` returns
 `{ rules, errors, warnings }`; a kind warns through `context.warn(message)`. `AUTOMATION_GRAMMAR.md`
 is the reference, and the build turns it into the Automation Grammar journal of the Rules pack.

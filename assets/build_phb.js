@@ -416,6 +416,15 @@ if (R.downtimeActions) {
   if (kept.length) kids.push(stripedTable(["Activity", "Duration", "Effect"],
     kept.map(r => [{ text: r[0], bold: true }, r[1], r[2]]), [1600, 1300, 6460]));
 }
+// Difficult terrain (0.18.0): the kinds the map's regions and a Talent's "ignore" line name, from
+// the roster's hand-kept terrainKinds block ([name, description, difficulty, colour]); the colour is
+// the map overlay's and is not printed.
+if ((R.terrainKinds || []).length) {
+  kids.push(h2("Difficult terrain"));
+  kids.push(para("Difficult terrain costs more than its length to cross: every foot of it costs the kind's multiplier (two, for the book's difficult terrain), a Step cannot enter it, and overlapping kinds multiply. A Talent may ignore named kinds (Riverfoot ignores mud, decking, loose stone and shallow water), crossing them as open ground. These are the kinds a region on the map may be, by name."));
+  kids.push(stripedTable(["Kind", "Description", "Cost ×"],
+    R.terrainKinds.map(r => [{ text: r[0], bold: true }, r[1], String(r[2])]), [1800, 6660, 900]));
+}
 
 kids.push(h1("Appendix D. Equipment"));
 kids.push(para("Your sword does not make you accurate and your armor does not make you hard to hit. Skill does that, and skill lives in your Constellations. Gear decides what happens when steel finally meets you: a weapon sets the size of the wound, armor sets how much of it your body actually feels. There are no magic plusses; quality and enchantment give a piece Traits, never numbers."));

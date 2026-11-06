@@ -57,6 +57,8 @@ import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
 import { SwPartySheet } from "./module/apps/party-sheet.mjs";
 import { SwItemSheet } from "./module/apps/item-sheet.mjs";
 import { SwChargen, promptForChoice } from "./module/apps/chargen.mjs";
+// NAMING A LORE (0.18.0): the field asked when a Lore lands on a sheet unnamed.
+import { askToNameLore } from "./module/apps/lore-name.mjs";
 import { loadChargenContent } from "./module/helpers/chargen-data.mjs";
 import { SwCheck } from "./module/dice/check.mjs";
 import { SwDamage } from "./module/dice/damage.mjs";
@@ -70,7 +72,7 @@ import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/ha
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
   loadChassisIndex, invalidateChassisIndex, chassisByName,
-  invalidateBasicActions
+  invalidateBasicActions, loadTerrainKinds
 } from "./module/helpers/content.mjs";
 
 /* -------------------------------------------- */
@@ -204,6 +206,10 @@ Hooks.once("init", async () => {
   registerExposedStatuses();
   registerTokenHud();
   registerHandlebarsHelpers();
+  // THE TERRAIN KINDS (0.18.0): the roster's terrainKinds block, from content/terrain.json, into
+  // the registry before the world's regions are built, so a Kind select, the overlay and the ruler
+  // read the roster's names (helpers/content.mjs; re-read after a content sync).
+  await loadTerrainKinds();
   await loadConstellationIndex();
   await preloadTemplates();
 });
@@ -810,14 +816,84 @@ Hooks.on("getSceneControlButtons", controls => {
 });
 
 /**
+ * NAMING A LORE (0.18.0): one prompt per character while a Lore question is open, by Actor id. A
+ * drop may land the Lore template Constellation and a Deep Knowledge in two creates; the second
+ * hook waits on the first's answer and files its own Item under it, or takes it back on Cancel.
+ * @type {Map<string, Promise<{slug: string, name: string}|null>>}
+ */
+const pendingLoreNames = new Map();
+
+/**
+ * Is this a Lore arriving unnamed on a character: a Talent filed under the template (slug `lore`),
+ * or the template Constellation Item itself?
+ * @param {Item} item
+ * @returns {boolean}
+ */
+function isUnnamedLore(item) {
+  if (item.parent?.type !== "character") return false;
+  if (item.type === "talent") return item.system.constellation === SW.LORE_TEMPLATE_SLUG;
+  if (item.type === "constellation") return (item.system.slug || SW.slugify(item.name)) === SW.LORE_TEMPLATE_SLUG;
+  return false;
+}
+
+/**
+ * A Lore is named when it is taken (0.18.0; Mike: "Immediately when getting Trained in Lore... I
+ * should be forced to create the Lore"). The field is asked on the creating user's own client, as
+ * the hook's other questions are; answered, `SwActor#nameLore` renames a template Constellation
+ * just landed or opens the named one, and files the Talent under it; cancelled, the Item just
+ * created is deleted and `STARWROUGHT.Notify.loreUnnamed` says to drop it again with its field.
+ * A second unnamed Lore Item arriving while the question is open shares the answer.
+ * @param {Item} item
+ * @returns {Promise<boolean>}  Whether the Item stays.
+ */
+async function nameLoreOnCreate(item) {
+  const actor = item.parent;
+  const pending = pendingLoreNames.get(actor.id);
+  if (pending) {
+    const shared = await pending;
+    if (!actor.items.has(item.id)) return false;
+    if (!shared) {
+      await item.delete();
+      return false;
+    }
+    if ((item.type === "talent") && (item.system.constellation === SW.LORE_TEMPLATE_SLUG)) {
+      await item.update({ "system.constellation": shared.slug, "system.constellationName": shared.name });
+    } else if ((item.type === "constellation") && ((item.system.slug || SW.slugify(item.name)) === SW.LORE_TEMPLATE_SLUG)) {
+      // The first answer renamed the template in place, so a second template is the duplicate.
+      await item.delete();
+      return false;
+    }
+    return true;
+  }
+
+  const question = askToNameLore(actor, { talentIds: (item.type === "talent") ? [item.id] : null });
+  pendingLoreNames.set(actor.id, question);
+  let named = null;
+  try {
+    named = await question;
+  } finally {
+    pendingLoreNames.delete(actor.id);
+  }
+  if (named) return true;
+  if (actor.items.has(item.id)) await item.delete();
+  ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.loreUnnamed"));
+  return false;
+}
+
+/**
  * Buying a Talent in a Constellation you have not opened is buying its Root, so draw the sky
  * whenever a Talent lands on a character without one.
  */
 async function onCreateItem(item, options, userId) {
   if (game.user.id !== userId) return;
   if (options.swAuto) return;
-  if (item.type !== "talent" || !item.parent) return;
-  if (game.settings.get(SW.SYSTEM_ID, "autoOpenConstellations")) {
+  if (!item.parent) return;
+  // NAMING A LORE (0.18.0): a Lore arriving unnamed is named first, or taken back. The named
+  // Constellation is `nameLore`'s to open, so the auto-open below is skipped for it.
+  const unnamedLore = isUnnamedLore(item);
+  if (unnamedLore && !(await nameLoreOnCreate(item))) return;
+  if (item.type !== "talent") return;
+  if (!unnamedLore && game.settings.get(SW.SYSTEM_ID, "autoOpenConstellations")) {
     await SwItem.ensureConstellation(item.parent, item.system.constellation);
   }
 

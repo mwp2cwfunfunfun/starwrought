@@ -1,0 +1,36 @@
+{
+  "_id": "58d1bd02e0bbfe83",
+  "name": "Guile",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/guile.png",
+  "system": {
+    "slug": "guile",
+    "category": "skill",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7cc07c8db15409e1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!58d1bd02e0bbfe83"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "7f9da261f3dfeccf",
+  "name": "Stealth",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/stealth.png",
+  "system": {
+    "slug": "stealth",
+    "category": "skill",
+    "attribute": "agility",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Agility",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Agility</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "391cb862f837b95b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7f9da261f3dfeccf"
+}

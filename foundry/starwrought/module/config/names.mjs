@@ -54,3 +54,36 @@ export function plainName(name) {
  * @returns {boolean}
  */
 export const sameName = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+
+/* -------------------------------------------- */
+/*  Lore (0.18.0)                               */
+/* -------------------------------------------- */
+
+/** The slug of the one authored Lore template, which no character keeps: every Lore is a Lore (X). */
+export const LORE_TEMPLATE_SLUG = "lore";
+
+/**
+ * Every Lore (X) is a copy of the one authored Lore template, so a character can grow several
+ * Lores side by side. This turns the field a player types ("Circus") into that Lore's own
+ * Constellation slug ("lore-circus"). In helpers/chargen-data.mjs through 0.17.0; here since
+ * 0.18.0 so the Actor's `nameLore`, the wizard and the hook agree without importing the wizard.
+ * @param {string} field
+ * @returns {string}
+ */
+export function loreSlug(field) {
+  return slugify(`lore ${field}`);
+}
+
+/**
+ * "Lore (Circus)" out of a slug, for display and for the named Constellation Item. The template
+ * slug itself is the template's name, "Lore". Title-cased by hand rather than with Foundry's
+ * String#titleCase, since this file is imported from plain Node too.
+ * @param {string} slug
+ * @returns {string}
+ */
+export function loreName(slug) {
+  if (slug === LORE_TEMPLATE_SLUG) return "Lore";
+  const words = String(slug ?? "").replace(/^lore-/, "").split("-").filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1));
+  return `Lore (${words.join(" ")})`;
+}

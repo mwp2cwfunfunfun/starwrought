@@ -1,0 +1,36 @@
+{
+  "_id": "20c00eea46e851b2",
+  "name": "Diplomacy",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/diplomacy.png",
+  "system": {
+    "slug": "diplomacy",
+    "category": "skill",
+    "attribute": "presence",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Presence",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Presence</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f38641d8cd3824e3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!20c00eea46e851b2"
+}

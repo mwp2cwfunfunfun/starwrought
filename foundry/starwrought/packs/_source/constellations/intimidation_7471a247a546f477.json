@@ -1,0 +1,36 @@
+{
+  "_id": "7471a247a546f477",
+  "name": "Intimidation",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/intimidation.png",
+  "system": {
+    "slug": "intimidation",
+    "category": "skill",
+    "attribute": "presence",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Presence",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Presence</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.21"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "84eac582bf868b79"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7471a247a546f477"
+}

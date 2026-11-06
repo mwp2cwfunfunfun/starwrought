@@ -540,8 +540,17 @@ export class SwItem extends Item {
   /**
    * Opening a Constellation is buying its Root, so when a Talent arrives on a character who has
    * no Constellation Item for it, fetch one from the compendium so the sky is drawn.
+   *
+   * A Lore (X) (0.18.0) is a copy of the one authored Lore template: a `lore-` slug fetches the
+   * template and writes the slug and the given `name` ("Lore (Circus)") onto the copy, which is
+   * what the wizard's private `#ensureConstellation` did through 0.17.0 and now delegates here.
+   * @param {Actor} actor
+   * @param {string} slug
+   * @param {object} [options]
+   * @param {string|null} [options.name]  The copy's name, when the pack's is not it.
+   * @returns {Promise<Item|null>}  The Item on the character, found or made.
    */
-  static async ensureConstellation(actor, slug) {
+  static async ensureConstellation(actor, slug, { name = null } = {}) {
     if (!actor || !slug) return null;
     const existing = actor.items.find(i => (i.type === "constellation")
       && ((i.system.slug || SW.slugify(i.name)) === slug));
@@ -549,10 +558,15 @@ export class SwItem extends Item {
     const pack = game.packs.get(`${SW.SYSTEM_ID}.constellations`);
     if (!pack) return null;
     const index = await pack.getIndex({ fields: ["system.slug"] });
-    const entry = index.find(e => (e.system?.slug ?? SW.slugify(e.name)) === slug);
+    const templateSlug = (SW.isLoreSlug(slug) && (slug !== SW.LORE_TEMPLATE_SLUG)) ? SW.LORE_TEMPLATE_SLUG : slug;
+    const entry = index.find(e => (e.system?.slug ?? SW.slugify(e.name)) === templateSlug);
     if (!entry) return null;
     const doc = await pack.getDocument(entry._id);
-    const created = await actor.createEmbeddedDocuments("Item", [doc.toObject()], { swAuto: true });
+    const data = doc.toObject();
+    data.system.slug = slug;
+    if (name) data.name = name;
+    else if (templateSlug !== slug) data.name = SW.loreName(slug);
+    const created = await actor.createEmbeddedDocuments("Item", [data], { swAuto: true });
     return created[0] ?? null;
   }
 }

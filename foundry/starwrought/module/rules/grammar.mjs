@@ -7,9 +7,11 @@
  *   # a line beginning with # is a comment, and a blank line is nothing
  *   [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]              feature blocks (./features.mjs)
  *   [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]   an effect block (./effects.mjs)
+ *   [AURA 15 allies; DEF: 1 situation; IF: SEEN]               a ring carrying its effect (0.18.0):
+ *                                                              the ring is the effect's FOR
  *   CHECK: 1 condition, aid                                    a bare effect line: the custom
- *                                                              effects field's form; in a cell it
- *                                                              reads with a warning this release
+ *                                                              effects field's form only; refused
+ *                                                              in a cell since 0.18.0
  *
  * This module reads the line structure and nothing else: it splits the blocks, names the kind
  * through the registry in ./kinds/index.mjs (a feature keyword, or an effect's tag), hands the
@@ -40,7 +42,7 @@ import { KIND_WORD, kindOf } from "./kinds/index.mjs";
 import { RuleSyntaxError } from "./syntax.mjs";
 // 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
 import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
-import { effectTagOf, readEffectLine, EFFECT_TAGS } from "./effects.mjs";
+import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS } from "./effects.mjs";
 
 /**
  * The kind words of the 0.13.0 form (`kind: arg, arg, OP(...)`) that have no tag of their own in
@@ -75,13 +77,6 @@ export { RuleSyntaxError, splitArgs, keyValues } from "./syntax.mjs";
  */
 export const RESERVED_WORDS = Object.freeze(["kind", "line", "text", "error"]);
 
-/**
- * Did any rule of a parse come from a bare effect line in a cell (0.17.0)? Such a line reads this
- * release and is refused next; the parse's `warnings` carry the message, this is the yes-or-no.
- */
-export function hasBare(parsed) {
-  return (parsed?.rules ?? []).some(r => r?.bare === true);
-}
 
 /* -------------------------------------------- */
 
@@ -123,10 +118,16 @@ export function parseAutomation(text, context = {}) {
     const warn = (message, text = trimmed) => warnings.push({ line, text, message });
 
     // An effect, from a block's inside or a bare line: the tag's kind reads it (./effects.mjs).
-    const parseEffect = (effectText, blockText, extra = {}) => {
+    // Inside an `[AURA ...; ...]` block (0.18.0) the ring is the FOR: `ring` is the parsed aura,
+    // and the effect's recipients are whom the ring is about, within its range.
+    const parseEffect = (effectText, blockText, extra = {}, ring = null) => {
       let effect;
       try {
         effect = readEffectLine(effectText, { context });
+        if (ring) {
+          if (effect.ops.for) throw new RuleSyntaxError("the ring is the FOR: an effect inside [AURA ...] reaches whom the ring is about, within its range; drop the FOR");
+          effect.ops.for = { who: ring.affects, range: ring.range };
+        }
       } catch (error) {
         errors.push({ line, text: blockText, message: kindFailure(null, error) });
         return;
@@ -167,7 +168,6 @@ export function parseAutomation(text, context = {}) {
       // it to another line or, by carrying `error`, have a parsed rule filed as one that did not parse.
       const own = stored.value;
       for (const word of RESERVED_WORDS) delete own[word];
-      delete own.bare;
       rules.push({ ...own, ...extra, kind: kind.id, line, text });
     };
 
@@ -197,21 +197,44 @@ export function parseAutomation(text, context = {}) {
           errors.push({ line, text: block.text, message: `the "${block.kind}" kind is not registered (a bug in the kinds, not in the cell)` });
           continue;
         }
+        // An aura block may carry its effect after a semicolon (0.18.0; Mike: "the Effects should
+        // be within the AURA's brackets"): `[AURA 15 allies; DEF: 1 situation; IF: SEEN]`. The ring
+        // is parsed first; the rest is an effect line whose FOR is the ring.
+        let blockData = block.data;
+        let effectText = null;
+        if ((kind.id === "aura") && block.data.includes(";")) {
+          let parts;
+          try {
+            parts = splitComponents(block.data);
+          } catch (error) {
+            errors.push({ line, text: block.text, message: kindFailure(null, error) });
+            continue;
+          }
+          blockData = parts[0] ?? "";
+          effectText = parts.slice(1).join("; ");
+        }
         let data;
         try {
-          data = kind.parse(block.data, { ...context, line, text: block.text, kind: kind.id, form: "feature", block, warn: message => warn(message, block.text) });
+          data = kind.parse(blockData, { ...context, line, text: block.text, kind: kind.id, form: "feature", block, warn: message => warn(message, block.text) });
         } catch (error) {
           errors.push({ line, text: block.text, message: kindFailure(kind, error) });
           continue;
         }
         store(kind, data, block.text);
+        if (effectText !== null) {
+          if (!effectTagOf(effectText)) {
+            errors.push({ line, text: block.text, message: `after the ring, an AURA block carries one effect, \`[AURA <N> <who>; <tag>: ...]\`: ${tagList()}` });
+          } else {
+            parseEffect(effectText, block.text, {}, data);
+          }
+        }
       }
       return;
     }
 
-    // A bare effect line: the custom effects field's form (FG's Character Effects string); in a
-    // cell it reads this release flagged `bare`, with a warning, and 0.18.0 refuses it. A tag line
-    // carrying the 0.13.0 operators is the retired form.
+    // A bare effect line is the custom effects field's form (FG's Character Effects string); in a
+    // cell it is refused since 0.18.0 (it read with a warning through 0.17.0). A tag line carrying
+    // the 0.13.0 operators is the retired form.
     const { word, args } = splitLine(trimmed);
     const tag = effectTagOf(trimmed);
     if (tag && looksLegacy(args)) {
@@ -220,10 +243,7 @@ export function parseAutomation(text, context = {}) {
     }
     if (tag) {
       if (bareIsTheForm) parseEffect(trimmed, trimmed);
-      else {
-        warn(`an effect line in a cell is written in brackets since 0.17.0; write "[EFFECT ${trimmed}]"`);
-        parseEffect(trimmed, trimmed, { bare: true });
-      }
+      else errors.push({ line, text: trimmed, message: `an effect line in a cell is written in brackets: write "[EFFECT ${trimmed}]"` });
       return;
     }
 

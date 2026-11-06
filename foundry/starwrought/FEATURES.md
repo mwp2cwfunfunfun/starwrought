@@ -65,6 +65,14 @@ What the wizard enforces, all of it read from the compendium rather than hard-co
   Trainings at once; choosing a Calling buys its signature technique. Automatic spends are marked
   and locked, because there is nothing to take them back to. Where a real choice exists the wizard
   still asks, which is exactly the already-open case above.
+- **A Lore is named the moment it is Trained** (0.18.0; ruling 198; Mike: "immediately when
+  getting Trained in Lore... I should be forced to create the Lore"). A Lore point is never spent
+  into the unnamed template: the wizard asks for the field ("Circus", "Warfare") when the point's
+  one legal purchase is the Lore Root, opens Lore (Circus) with Deep Knowledge under it on an
+  answer, and on Cancel leaves the point outstanding with Next blocked until it is named; a
+  Background written "Lore (Circus)" asks nothing. Outside the wizard a Lore Talent or the Lore
+  Constellation dropped on a character asks the same question, and Cancel removes it; a template
+  left from before shows **Name this Lore** on its Constellations row.
 - **Granted points.** A Talent with a `[POINT ...]` block in its Automation (the Grants column
   through 0.12.0, a `grant:` line through 0.15.0; `[POINT Calling]`, `[POINT Opening]`, `[POINT 2
   Skill different]`) pushes its point onto the step where you took the Talent, and blocks Next
@@ -1095,14 +1103,20 @@ module that has already replaced it instead of quietly discarding that module's 
 
 **Difficult terrain is a region** (0.15.0; ruling 178; Mike: "Let's build Difficult terrain INTO the
 maps! using a region or some sort of method! so this can be automated. and players can toggle
-layers to see what is difficult etc."). The GM draws a Region with Foundry's own tools and adds the
-system's **Difficult terrain** behavior to it, naming what the ground is made of (Mud, Shallow
-Water, Decking, Loose Stone, Rubble, Undergrowth, Snow, Ice, Sand, Other) and what a foot of it
-costs (2 by default, the book's difficult terrain). Foundry then charges the cost along every
+layers to see what is difficult etc."). The GM draws a Region with Foundry's own tools (any shape
+the Regions tool draws: a rectangle, an ellipse, a polygon, several at once; not only squares) and
+adds the system's **Difficult terrain** behavior to it, naming what the ground is made of and what
+a foot of it costs (2 by default, the book's difficult terrain). **The kinds are yours** (0.18.0;
+ruling 197): the hand-kept `terrainKinds` block of `assets/roster.json`, a name, a one-line
+description, a default cost and an overlay colour per row (Mud, Shallow Water, Decking, Loose
+Stone, Rubble, Undergrowth, Snow, Ice, Sand and Other today), is what the behavior's Kind dropdown,
+a Talent's `[EFFECT IGNORE: terrain, <kind>]`, the ruler's label and the overlay read; a row added
+to the block is in the game after the content loop and a Sync, with no code change, and a cell
+naming a kind the block lacks fails the build. Foundry then charges the cost along every
 token's path, splits the ruler at the region's edge and slows the token's animation inside it; the
 drag ruler's label names the kinds crossed ("12 ft ❶×2 · difficult: mud"), a Step cannot enter it
 and a Move pays for the cost, as the movement tracker has always read terrain. Overlapping regions
-multiply. **A Talent that ignores a kind** (`ignore: Terrain, Mud, ...`; Riverfoot) makes the region
+multiply. **A Talent that ignores a kind** (`[EFFECT IGNORE: terrain, mud, ...]`; Riverfoot) makes the region
 answer nothing for that token: not split, not charged, not slowed, not labelled, and a Step into
 it is a Step. **Every player has an overlay**: the token controls' toggle (and the client setting
 "Show difficult terrain on the map") fills every Difficult terrain region on the scene in its
@@ -1147,9 +1161,10 @@ ranges, opening a palette with one row per range and a Custom row for a ring of 
 it concerns, a label, a colour, and for the GM a GM-only switch; right-click the ring button to
 switch every mark off) or from the **sheet** (a ring icon on every Talent and Maneuver row that
 carries a range, and on the Overview's Ranges line for Natural Reach, Total Reach and Unwieldy).
-Marks are stored on the actor, so new tokens inherit them. Defaults come from the data: Torchbearer
-Human is Visible by default, Rally, Mark Prey and Battle Cry are not, and Reach is not, so a fight
-looks as it did until someone marks their reach. Colour follows who the effect concerns: allies
+Marks are stored on the actor, so new tokens inherit them. Every ring is a preview until its owner
+shows it (0.17.0; Mike: "ALL auras should be preview-only by default"): the Torchbearer's fifteen
+feet, Reach and a custom ring alike draw on hover, on selection and while dragging, and the Auras
+window's toggle is the one way a ring is shown to everyone. Colour follows who the effect concerns: allies
 green, enemies red, everyone violet; a custom ring takes the colour you pick. Fills are faint up to
 30 feet and outline-only beyond; several rings on one token stack as bands, largest first.
 
@@ -1940,10 +1955,14 @@ value and the bonus type (situation, condition, gear) and at most one descriptor
 the owner or the roll (`RANK(...)`, `SEEN`, `ALLIES(>=1, 0)`, `CLAIM(...)`, `RESULT(...)`), `IFT:`
 about the other party or the attack (`TRAIT(Fear)`, `MARKED`, `BLOW`, `MELEE`, `CHECK(intimidation)`),
 `FOR:` the recipients and `LIMIT:` the once-a-round or once-an-encounter. The stored rules are the
-ones the kinds have had since 0.13.0, so the engine's four hook points are untouched. A bare effect
-line in a cell (no `[EFFECT ...]`) reads one more release with a build warning naming the cell;
-the 0.13.0 operator form is refused since 0.17.0, the message naming the document's map from each
-old operator (section 9). `AUTOMATION_GRAMMAR.md` is the reference, and **it is in the game**
+ones the kinds have had since 0.13.0, so the engine's four hook points are untouched. **An aura
+carries its effect** (0.18.0; ruling 195; Mike: "the Effects should be within the AURA's
+brackets"): `[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` is the
+ring and what it does in one block, the ring being the effect's `FOR`, so "15 feet, allies" is said
+once; a `FOR:` inside the block is refused. A bare effect line in a cell (no `[EFFECT ...]`) and the
+`visible` word of `[AURA ...]` are refused since 0.18.0 (both warned in 0.17.0); the 0.13.0 operator
+form is refused since 0.17.0, the message naming the document's map from each old operator
+(section 9). `AUTOMATION_GRAMMAR.md` is the reference, and **it is in the game**
 (0.17.0): the build turns it into the **STARWROUGHT Automation Grammar** journal of the Rules
 compendium, one page per section with "At a glance" first (every block and tag with one example),
 opened by the **Grammar** button beside any Item's Automation panel and the Effects tab's custom
@@ -2065,8 +2084,7 @@ Stubborn Footing    [EFFECT IMMUNE: prone; LIMIT: encounter]
 Close Ranks         [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 Versatile Human     [POINT Opening]
 Jack of All Trades  [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]
-Torchbearer Human   [AURA 15 allies]
-                    [EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
+Torchbearer Human   [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
 Steady the Line     [MANEUVER Steady the Line]         (its Effect: @Maneuver[Steady the Line])
 ```
 
@@ -2096,9 +2114,9 @@ used from there with its own cost; it leaves with the Talent. The Talent's Effec
 replaces with the Maneuver's block: name and cost, Trigger, Requirements, Effect. The Expose widget
 now offers Steady the Line from the Maneuver, which the passive Talent of 0.15.0 never reached.
 
-Torchbearer Human's second line is the Rally Aura of Mike's 2026-11-05 text ("The first time each
+Torchbearer Human's one block is the Rally Aura of Mike's 2026-11-05 text ("The first time each
 round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they
-gain a +1 Situation bonus to that Defense check"): every Defense of an ally within 15 ft who can
+gain a +1 Situation bonus to that Defense check"): the ring, and every Defense of an ally within it who can
 see the Torchbearer, against an attack carrying Fear, once a round per ally, on the Defense roll
 the ally makes against an adversary and on the Threshold a player attacker rolls against alike.
 Nothing in the data carries Fear yet, so it fires when the first Fear spell or attack is authored.

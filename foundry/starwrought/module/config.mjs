@@ -74,7 +74,11 @@ export { DEFAULT_SPEED, STEP_DIVISOR, RUSH_MULTIPLIER, RUSH_COST, LEAP_STEPS, CR
 
 export { AURA_AUDIENCES, AURA_COLORS, REACH_COLORS } from "./config/auras.mjs";
 
-export { TERRAIN_KINDS, DEFAULT_TERRAIN_DIFFICULTY, terrainKindOf, terrainKindName } from "./config/terrain.mjs";
+export {
+  TERRAIN_KINDS, DEFAULT_TERRAIN_DIFFICULTY, FALLBACK_TERRAIN_COLOUR, TERRAIN_COLOUR_PATTERN,
+  terrainKindRecord, registerTerrainKinds, terrainKinds, terrainKindChoices, terrainKindOf,
+  terrainKindName, terrainKindColour, terrainKindDifficulty, terrainKindList
+} from "./config/terrain.mjs";
 
 export { TYPE_ICONS, FEATURE_TYPES, PHYSICAL_TYPES, CARRY_STATES, ACTIVE_STATE } from "./config/items.mjs";
 
@@ -82,4 +86,4 @@ export { CONDITIONS, ZONE_CONDITIONS, statusEffectId } from "./config/conditions
 
 export { BONUS_TYPES, LEGACY_BONUS_TYPES, bonusType, resolveModifiers } from "./config/modifiers.mjs";
 
-export { slugify, plainName, sameName } from "./config/names.mjs";
+export { slugify, plainName, sameName, LORE_TEMPLATE_SLUG, loreSlug, loreName } from "./config/names.mjs";

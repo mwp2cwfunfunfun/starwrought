@@ -252,7 +252,7 @@
     "cost": 1,
     "enabled": true,
     "effect": "You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
-    "automation": "[AURA 15 allies]\n[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]",
+    "automation": "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]",
     "desc": "<i>Others take heart from your presence, drawing courage from you and the example you set.</i>",
     "hroot": true,
     "rules": [
@@ -261,7 +261,7 @@
       "affects": "allies",
       "kind": "aura",
       "line": 1,
-      "text": "[AURA 15 allies]"
+      "text": "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
      },
      {
       "value": 1,
@@ -290,8 +290,8 @@
       "claim": null,
       "marked": false,
       "kind": "bonus",
-      "line": 2,
-      "text": "[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
+      "line": 1,
+      "text": "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
      }
     ]
    },
@@ -3438,7 +3438,7 @@
  },
  "Diplomacy": {
   "category": "Skill",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Presence",
   "meta": "Skill constellation • Presence",
   "sparks": "",
@@ -3447,7 +3447,7 @@
     "name": "Diplomacy Training",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -3455,13 +3455,8 @@
     "name": "Rally ❶",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain the Rally ❶ action:<br><b>Rally ❶<br>Auditory, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a success, one ally within 30 feet who can hear you gains a +1 Situation bonus to their next Defense roll before your next Opportunity. On a critical success, +2, and they can Recenter ❶ as a free action.",
-    "aura": {
-     "range": 30,
-     "affects": "allies",
-     "visible": false
-    },
     "requires": [
      "Diplomacy Training"
     ]
@@ -3470,7 +3465,7 @@
     "name": "Talk Them Down ❶",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain the Talk Them Down ❶ action:<br><b>Talk Them Down ❶<br>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against the target's Guard. On a success, it takes a -2 Situation penalty to Attacks against you until the end of the next round; on a critical success, until the end of the encounter. On a critical failure it gains a +1 Situation bonus to Attacks against you.",
     "requires": [
      "Diplomacy Training"
@@ -3480,7 +3475,7 @@
     "name": "Coordinated Effort",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "When you Aid an ally, the bonus is +2 instead of +1, and +3 on a critical success.",
     "requires": [
      "Diplomacy Training"
@@ -3490,7 +3485,7 @@
     "name": "Command the Field ❷",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You gain the Command the Field ❷ action:<br><b>Command the Field ❷<br>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against a Threshold of 14. On a Success, two allies who can hear you may each Step ⓿. On a critical success, they may each Move half their Speed instead.",
     "requires": [
      "Diplomacy Training"
@@ -3500,7 +3495,7 @@
  },
  "Guile": {
   "category": "Skill",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Wits",
   "meta": "Skill constellation • Wits",
   "sparks": "",
@@ -3509,7 +3504,7 @@
     "name": "Guile Training",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -3517,7 +3512,7 @@
     "name": "Feinting Step ❶",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "Feint, then Step.",
     "requires": [
      "Guile Training"
@@ -3527,7 +3522,7 @@
     "name": "Sell the Feint",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "When you critically succeed at a Feint, the target is off-guard to everyone, not just you, until the end of the next round.",
     "requires": [
      "Guile Training"
@@ -3537,7 +3532,7 @@
     "name": "Overextending Feint",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "On a successful Feint, you can use the following success and critical success effects instead of any other effects that would occur when you Feint.Critical Success The target takes a -2 Situation penalty to all attack rolls against you before the end of the next round.Success The target takes a -2 Situation penalty to its next attack roll against you before the end of the next round.",
     "requires": [
      "Guile Training"
@@ -3547,7 +3542,7 @@
     "name": "Distracting Feint",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a -2 Situation penalty to Awareness and Agility checks and Thresholds.",
     "requires": [
      "Guile Training"
@@ -3557,7 +3552,7 @@
  },
  "Intimidation": {
   "category": "Skill",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Presence",
   "meta": "Skill constellation • Presence",
   "sparks": "",
@@ -3566,7 +3561,7 @@
     "name": "Intimidation Training",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -3574,13 +3569,8 @@
     "name": "Battle Cry ⓿↺",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "<b>Trigger</b> You are about to roll Initiative.<br>Demoralize every enemy within 15 feet with a single roll, compared separately against each one's Guard.",
-    "aura": {
-     "range": 15,
-     "affects": "enemies",
-     "visible": false
-    },
     "requires": [
      "Intimidation Training"
     ]
@@ -3589,7 +3579,7 @@
     "name": "No Quarter",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "When you drop a creature, you may Demoralize ⓿ one enemy who saw it fall.",
     "requires": [
      "Intimidation Training"
@@ -3599,7 +3589,7 @@
     "name": "Unnerving",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "A creature you have Demoralized this encounter takes a −1 Situation penalty to attacks against you for the rest of it.",
     "requires": [
      "Intimidation Training"
@@ -3609,7 +3599,7 @@
     "name": "Brutal Beating",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "Whenever your Strike is a critical hit and deals damage, the target is Frightened 1.",
     "requires": [
      "Intimidation Training"
@@ -3619,7 +3609,7 @@
  },
  "Stealth": {
   "category": "Skill",
-  "enabled": false,
+  "enabled": true,
   "feeds": "Agility",
   "meta": "Skill constellation • Agility",
   "sparks": "",
@@ -3628,7 +3618,7 @@
     "name": "Stealth Training",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
     "root": true
    },
@@ -3636,7 +3626,7 @@
     "name": "Knife in the Dark",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "When you Hit a creature that is Off-Guard or Wrong-Footed to you, you choose which Zone the blow lands on.",
     "requires": [
      "Stealth Training"
@@ -3646,7 +3636,7 @@
     "name": "Lost in the Noise ❶↺",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "<b>Trigger</b> An attack against you Misses.<br><b>Effect</b> If you have cover or concealment, Hide as part of this Reaction.",
     "requires": [
      "Stealth Training"
@@ -3656,7 +3646,7 @@
     "name": "Killing Stillness",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "The first time each encounter that you Strike a creature that is unaware of you, a Graze becomes a Hit.",
     "requires": [
      "Stealth Training"
@@ -3666,7 +3656,7 @@
     "name": "Underhanded Assault ❷",
     "tier": "T",
     "cost": 1,
-    "enabled": false,
+    "enabled": true,
     "effect": "You Sneak up to a foe adjacent to one of your allies. You can roll against the foe you're Sneaking up on, even if it's currently observing you, as though you were hidden. You take a -2 penalty on your Stealth check. If your Stealth check against the chosen foe succeeds, you can make a melee Strike against that foe at the end of your Sneak, and they are Wrong-Footed against that Strike.",
     "requires": [
      "Stealth Training"

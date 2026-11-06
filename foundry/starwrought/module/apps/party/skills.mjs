@@ -177,12 +177,15 @@ export function prepareGrid(actors) {
     rows: [weaponRow(SW.MELEE_SLUG, "melee", "might"), weaponRow(SW.RANGED_SLUG, "ranged", "agility")]
   });
 
-  // One row per Lore any member has opened; a member without it shows a blank.
+  // One row per Lore any member has opened; a member without it shows a blank. A Lore left
+  // unnamed (0.18.0; the template's slug, which should not exist on a character) prints as
+  // "Lore (unnamed)", as the character's own tab prints it.
   const lores = new Map();
   for (const actor of actors) {
     for (const [slug, entry] of Object.entries(actor.system.constellations ?? {})) {
-      if (!SW.isLoreSlug(slug) || (slug === "lore") || lores.has(slug)) continue;
-      lores.set(slug, { name: entry.name, attribute: entry.attribute });
+      if (!SW.isLoreSlug(slug) || lores.has(slug)) continue;
+      const name = (slug === SW.LORE_TEMPLATE_SLUG) ? L("STARWROUGHT.Sheet.loreUnnamed") : entry.name;
+      lores.set(slug, { name, attribute: entry.attribute });
     }
   }
   if (lores.size) {

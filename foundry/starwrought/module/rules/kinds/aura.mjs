@@ -3,19 +3,22 @@
  * first example of what the framework was for (2026-10-03: "the Torchbearer 15' aura ... the
  * syntax that will work for OTHER auras, too, without additional coding").
  *
- *   [AURA <N> <Who>]
+ *   [AURA <N> <Who>]                 [AURA <N> <Who>; <tag>: ...; <component>; ...]
  *
- *   [AURA 15 allies]     Torchbearer Human
- *   [AURA 30 all]        Seek
+ *   [AURA 30 all]                                                           Seek
+ *   [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]   Torchbearer Human
  *
  * `<N>` is the range in feet (`15`, `15ft`, `15 ft`), edge to edge from the carrier's token; `<Who>`
  * is whom the ring is about, which picks its colour (SW.AURA_COLORS): allies, enemies, all. Every
  * ring is preview-only by default since 0.17.0 (Mike: "ALL auras should be preview-only by
  * default"): it draws on hover and when the owner shows it from the Auras window; the `visible`
- * word of 0.13.0 to 0.16.0 is read with a warning this release and refused next.
+ * word of 0.13.0 to 0.16.0 is refused. Since 0.18.0 (Mike: "the Effects should be within the
+ * AURA's brackets") the block may carry its effect after a semicolon: the grammar parses the ring
+ * here, then the rest as an effect line whose FOR is the ring (`for: { who, range }`), so the
+ * Rally Aura says "15 feet, allies" once; an explicit FOR inside the block is refused.
  *
- * The ring is a drawing and nothing more: what happens inside it is said by the other rules on
- * the same Talent (Torchbearer's `FOR: allies 15`), so the kind has no hook. The stored rule is
+ * The ring is a drawing and nothing more: what happens inside it is the effect it carries or the
+ * other rules on the same Talent, so the kind has no hook. The stored rule is
  * `{ kind: "aura", line, text, range, affects }`, and `toAuraField(rule)` is `system.aura`
  * (data/items/aura.mjs), so `rangesOf`, the canvas, the token HUD and the sheets read nothing new;
  * the build writes it and the Talent and action models derive it again from the rule at prepare.
@@ -48,10 +51,9 @@ export default {
   parse(args, context = {}) {
     if (context?.form !== "feature") throw new RuleSyntaxError(`an aura is a bracketed feature: \`${EXAMPLE}\``);
     const tokens = String(args ?? "").trim().split(/[\s,]+/).filter(Boolean);
-    // The retired word (0.17.0): read, warned about, and dropped; 0.18.0 refuses it.
+    // The retired word (warned in 0.17.0, refused since 0.18.0).
     if (tokens.length && ["visible", "pinned"].includes(tokens.at(-1).toLowerCase())) {
-      tokens.pop();
-      context.warn?.("[AURA ... visible]: every ring is preview-only since 0.17.0 and the Auras window shows one; drop the word");
+      throw new RuleSyntaxError("[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word");
     }
     // `15 ft allies` reads as well as `15ft allies`.
     if ((tokens.length === 3) && /^(ft\.?|feet)$/i.test(tokens[1])) tokens.splice(1, 1);

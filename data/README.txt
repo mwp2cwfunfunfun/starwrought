@@ -145,16 +145,18 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         and the line, before the sources are written. The same line typed into a world Item's
         textarea in Foundry saves and is marked on the Item sheet rather than refused. The action
         sheets take the same column. A bare effect line ("IMMUNE: prone; LIMIT: encounter" with no
-        [EFFECT ...]) reads in a cell this one release with a WARNING; 0.18.0 refuses it. The
-        0.13.0 operator form ("bonus: +1, Condition, Aid, IF(Origin=Trained)") and the 0.10.0
-        prose form are refused, the message naming the document's map to the new shape.
+        [EFFECT ...]) is refused in a cell since 0.18.0 (it is the sheet's custom effects field's
+        form alone); the 0.13.0 operator form ("bonus: +1, Condition, Aid, IF(Origin=Trained)") and
+        the 0.10.0 prose form are refused, the message naming the document's map to the new shape.
+        An AURA block may carry its effect after a semicolon (0.18.0), the ring as the effect's FOR:
+              [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
         THE ONE PARSE (0.16.0): node assets/parse_rules.mjs runs right after the converter, in
         every pipeline mode, and parses every Automation cell once (tree sheets, action sheets,
         the Backgrounds sheet) with the system's grammar, writing the parsed `rules` beside
         `automation` in trees.json, actions.json and backgrounds.json for every consumer; a line
-        it does not know is the ERROR described above, raised there, and a line on its way out (a
-        bare effect line, an [AURA ... visible]) is a WARNING naming the cell. The same step reads
-        the Root Talent's feature lines
+        it does not know is the ERROR described above, raised there, and a line on its way out
+        (none today; the step prints the grammar's warnings) is a WARNING naming the cell. The
+        same step reads the Root Talent's feature lines
         ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES Low-light vision], [TRAIT Human],
         [LANGUAGE Common, Serrovine]; a Calling's [VIGOR opening 12]) onto the roster's ancestry,
         culture and callings records, where they WIN: the _Tree Index columns Vigor (or HP), Size,
@@ -316,6 +318,19 @@ EQUIPMENT WORKBOOK (equipment.xlsx)
     run says so. The armor types list, handling and the weapon and armor trait tables stay
     hand-kept in roster.json; nothing asked for them. A checkout without the workbook keeps equipment.json and
     the roster as found, with a warning saying so.
+
+TERRAIN KINDS (0.18.0): terrainKinds is a hand-kept block of assets/roster.json, rows of
+  [name, description, difficulty, colour]. Each row is a kind of difficult terrain the map's
+  Difficult terrain region behavior can be: named in its Kind select, in a Talent's
+  [EFFECT IGNORE: terrain, <kind>] descriptors (checked against the block by parse_rules.mjs and
+  build_foundry.mjs, so an unknown kind's message lists these names), on the ruler's label and in
+  the player's overlay (the colour, #rrggbb). The slug is slugify(name) ("Shallow Water" is
+  shallow-water), so renaming a row changes the slug a region stores. difficulty is the kind's
+  usual multiplier, 1 to 5, printed in the Constellation Compendium docx's Difficult terrain table
+  (the region's own Cost field is what Foundry charges). Keep an Other row: it is the behavior's
+  initial kind. The build writes the block to foundry/starwrought/content/terrain.json and refuses
+  a missing block, a repeated name, a bad colour or difficulty, or no Other. Adding a kind is a row
+  here and a content loop; no code changes.
   Enabled? works as on a tree sheet: "Yes" ships the row to Foundry, anything else keeps it out,
     and a sheet without the column ships every row. Every row is still written to equipment.json
     with its flag, and every row still goes into the roster blocks, because the web app and the

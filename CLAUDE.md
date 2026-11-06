@@ -840,6 +840,30 @@ Constellations tab's Talent name is the `itemEdit` click with a rich tooltip of 
 `backup/pre-0.17.0/`); Excel held `ancestries.xlsx` at the tag, and the Human's five lines were
 wrapped in the follow-up commit once Mike closed it.
 
+**0.18.0 (Mike, 2026-11-05; rulings 195 to 198): the aura carries its effect, terrain kinds as
+data, a Lore named when it is Trained.** Mike: the Rally Aura's two lines said "15 feet, allies"
+twice ("the Effects should be within the AURA's brackets"); how difficult terrain works and whether
+to start a list of kinds; "immediately when getting Trained in Lore... I should be forced to create
+the Lore". **An AURA block carries its effect** (ruling 195): `[AURA 15 allies; DEF: 1 situation;
+IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]`; `grammar.mjs` splits the block on its semicolons
+(`splitComponents`), parses the ring with the `aura` kind, then the rest as an effect line whose
+`ops.for` is the ring (`parseEffect(text, blockText, extra, ring)`), both rules under the block's
+text; a `FOR:` inside is refused ("the ring is the FOR"), `[AURA 15 allies]` alone still draws, one
+effect per block, the first `aura` rule of a Talent is the ring drawn. **The bare effect line in a
+cell and `visible` are refused** (ruling 196; `hasBare` and the `bare` flag gone; `BARE_CARRIER`
+keeps the custom effects field bare). **The terrain kinds are the roster's** (ruling 197): the
+hand-kept `terrainKinds` block of `assets/roster.json` (name, description, default difficulty,
+colour; slug by `slugify`), written by the build to `content/terrain.json`, registered at startup
+(`registerTerrainKinds` in `module/config/terrain.mjs`, `TERRAIN_KINDS` a live view over the
+registry) and by `parse_rules.mjs` and `build_foundry.mjs` before parsing; the behavior's `kind`
+choices are a function; `Terrain.kind.*` i18n keys retired; the self-test seeds the ten. **A Lore
+is named when it is Trained** (ruling 198): `SwActor#nameLore(field)` (`documents/actor/lore.mjs`;
+`loreSlug`/`loreName` in `config/names.mjs`; `promptForLoreField` in `apps/lore-name.mjs`;
+`SwItem.ensureConstellation(actor, slug, { name })`), the wizard's `#autoSpend` prompting instead of
+spending into the template and holding Next until named, `onCreateItem` prompting for a Lore
+Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
+Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -1117,11 +1141,10 @@ wrapped in the follow-up commit once Mike closed it.
   Attack or Defense card (those keep the 0.5.3 button); durations in rounds and dice values on a
   modifier (FG has them; no Talent wants them yet). **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
-  bare effect line in a cell reads this release only** (0.17.0): it builds with a warning naming the
-  line, and 0.18.0 refuses it; no repository cell carries it (the Human's five were wrapped after
-  the tag, once Excel released `data/ancestries.xlsx`), but a GM's world Item may (the custom
-  effects field keeps the bare form). **The `visible` word of `[AURA
-  ...]`** is read with a warning this release and refused next; no repository cell carries it.
+  bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
+  (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
+  roster row** (0.18.0): adding one is a row in `terrainKinds`, no code. **A Lore left unnamed from
+  before 0.18.0** shows Name this Lore on its row; nothing renames it unasked.
   **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
   Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, the roster's
   Opening Vigor) are read this release with a warning and refused next; `weapons.xlsx`'s Melee
@@ -1131,8 +1154,10 @@ wrapped in the follow-up commit once Mike closed it.
   Rally Aura reads and fires on nothing until one is authored; the build warns. **Iron Etiquette's
   Intimidation line fires on nothing shipped** until the Demoralize row (or Feint, Talk Them Down)
   is enabled in `data/maneuvers.xlsx`; a world Item with a Defense named reads it today. **Rally ❶
-  and Battle Cry ⓿↺** are Talents that grant Maneuvers in Constellations not enabled; their rows
-  on the Talent Maneuvers sheet come when they are. The Jack of All
+  and Battle Cry ⓿↺** are Talents that grant Maneuvers; Mike enabled their Constellations
+  (Diplomacy, Intimidation, with Guile and Stealth) in `data/skills.xlsx` on 2026-11-05, so the
+  Talents ship, but their rows on the Talent Maneuvers sheet and their `[MANEUVER X]` cells are
+  still to be written, as the Steady the Line, Oathbound and Quick Tongue rows were. The Jack of All
   Trades rename gives the Talent a new document id; a character who owned "Jack of Trades" keeps
   the stale copy beside the new one after Sync content. Each new kind, by the recipe in
   `module/rules/README.md`: its file, its hook point (`modifiers`, `prevent`, `use` or `card` if
@@ -1155,6 +1180,18 @@ wrapped in the follow-up commit once Mike closed it.
   Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
   Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
   Combat was deleted. Nothing in the repository depends on them.
+
+Cleared 2026-11-05 (the aura carries its effect, terrain kinds as data, a Lore named when it is
+Trained, system 0.18.0; rulings 195 to 198 in the 0.18.0 changelog entry; planned in
+`eager-wobbling-possum.md`, the sixth plan, Mike's decisions by question: the effect inside the AURA
+block, the terrain kinds a roster block): the Rally Aura's duplicated "15 feet, allies", now one
+block with the ring as the effect's FOR; the bare effect line and `visible`, refused as promised;
+the ten terrain kinds in code, now the roster's `terrainKinds` block through a registry the
+behavior, the grammar, the ruler and the overlay read; a Lore point spent into the unnamed
+template, now a name asked in the wizard, on a drop and from the Constellations row, with Next
+held until it is given. Checked by 109 self-test checks, the content loop, the smoke test, the
+style check and live (the 0.18.0 changelog entry lists what; a second GM session on the old code
+is the one thing seen that was not a defect). No handbook moved and `data/SYNC.json` is untouched.
 
 Cleared 2026-11-05 (every line in brackets, the Grammar journal, the sheets' UI pass, system
 0.17.0; rulings 189 to 194 in the 0.17.0 changelog entry; planned in `eager-wobbling-possum.md`, the

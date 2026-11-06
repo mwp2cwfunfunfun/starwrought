@@ -16,7 +16,7 @@ export const SYSTEM_ID = "starwrought";
  * `assets/build_all.mjs` to pass, unless this, `--sw-css-version-<name>` in every stylesheet
  * system.json lists (styles/README.md) and system.json all agree.
  */
-export const SYSTEM_VERSION = "0.17.0";
+export const SYSTEM_VERSION = "0.18.0";
 
 /**
  * THE CONTENT LOOP (0.8.0; the content-loop brief, Mike 2026-10-03; ruling 115). The pack sources

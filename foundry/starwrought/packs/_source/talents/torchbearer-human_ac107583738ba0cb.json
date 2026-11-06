@@ -35,14 +35,14 @@
       "range": 15,
       "affects": "allies"
     },
-    "automation": "[AURA 15 allies]\n[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]",
+    "automation": "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]",
     "rules": [
       {
         "range": 15,
         "affects": "allies",
         "kind": "aura",
         "line": 1,
-        "text": "[AURA 15 allies]"
+        "text": "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
       },
       {
         "value": 1,
@@ -71,8 +71,8 @@
         "claim": null,
         "marked": false,
         "kind": "bonus",
-        "line": 2,
-        "text": "[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
+        "line": 1,
+        "text": "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]"
       }
     ],
     "traits": [],
@@ -85,7 +85,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "27e36a51bcb4f940"
+      "contentHash": "de5fc13b220a2ee6"
     }
   },
   "effects": [],

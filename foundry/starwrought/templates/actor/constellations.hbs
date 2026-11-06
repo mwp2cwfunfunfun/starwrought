@@ -53,6 +53,14 @@
           {{con.name}}
         </a>
 
+        {{#if con.loreTemplate}}
+        {{!-- NAMING A LORE (0.18.0): the template is never a character's; this row names its field. --}}
+        <button type="button" class="sw-inline-button sw-name-lore" data-action="nameLore" data-slug="{{con.slug}}"
+                data-tooltip="{{localize 'STARWROUGHT.Sheet.nameLoreHint'}}">
+          <i class="fa-solid fa-pen-nib"></i> {{localize "STARWROUGHT.Sheet.nameLore"}}
+        </button>
+        {{/if}}
+
         <span class="sw-rank sw-rank-{{con.rank}} {{#if con.rankFromName}}sw-rank-group{{/if}}" data-tooltip="{{#if con.rankHint}}{{con.rankHint}}{{else}}{{con.attributeLabel}}{{/if}}">
           {{con.rankLabel}} {{swSigned con.bonus}}
         </span>

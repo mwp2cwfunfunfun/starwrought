@@ -7,7 +7,11 @@
  *
  * The GM draws a Region with Foundry's own tools and adds this behavior to it, naming what the
  * ground is made of (`kind`, one of SW.TERRAIN_KINDS) and what a foot of it costs (`difficulty`,
- * the book's difficult terrain doubling it). Foundry then charges the cost along every token's
+ * the book's difficult terrain doubling it). Since 0.18.0 the kinds are the roster's `terrainKinds`
+ * block, loaded into the registry at init (helpers/content.mjs), so the `kind` field reads its
+ * choices LAZILY (a function, read when the select renders) and does not gate on them: a region
+ * whose kind Mike has since struck from the roster keeps the slug it stored, reads with the title-
+ * cased slug and the fallback colour, and is never made an invalid document by a list that moved. Foundry then charges the cost along every token's
  * path, slows the animation, splits the ruler at the region's edge, and the system's movement
  * tracker reads the cost as it always has (documents/movement.mjs: a Step cannot enter difficult
  * terrain, a Move pays for the cost). The one thing of ours in the loop is `_getTerrainEffects`:
@@ -28,6 +32,23 @@ import { ignoresTerrain } from "../../rules/kinds/ignore.mjs";
 const fields = foundry.data.fields;
 const { RegionBehaviorType } = foundry.data.regionBehaviors;
 
+/**
+ * The `kind` field (0.18.0): a StringField whose `choices` are the registry's current slug-to-name
+ * map (a function, so the dropdown is right at render time, after the roster block has loaded) and
+ * whose validation asks only for a non-blank string, never membership. Core's StringField refuses a
+ * value outside `choices`, which would turn a stored kind into an invalid behavior the moment its
+ * row left the roster, or on a client where content/terrain.json lost the race with the world's
+ * load; the choices are the dropdown's, not a gate.
+ */
+class TerrainKindField extends fields.StringField {
+  /** @inheritdoc */
+  _validateType(value, options) {
+    if (typeof value !== "string") throw new Error("must be a string");
+    if (value === "") throw new Error("may not be a blank string");
+    return true;
+  }
+}
+
 export class DifficultTerrainBehaviorType extends RegionBehaviorType {
   /** The system's type word, in `system.json` and `CONFIG.RegionBehavior`. */
   static TYPE = "difficultTerrain";
@@ -37,10 +58,9 @@ export class DifficultTerrainBehaviorType extends RegionBehaviorType {
 
   /** @inheritdoc */
   static defineSchema() {
-    const choices = Object.fromEntries(Object.entries(SW.TERRAIN_KINDS).map(([slug, def]) => [slug, def.label]));
     return {
-      kind: new fields.StringField({
-        required: true, blank: false, choices, initial: "other",
+      kind: new TerrainKindField({
+        required: true, blank: false, choices: () => SW.terrainKindChoices(), initial: "other",
         label: "STARWROUGHT.Terrain.kindField", hint: "STARWROUGHT.Terrain.kindHint"
       }),
       difficulty: new fields.NumberField({
@@ -83,6 +103,11 @@ export class DifficultTerrainBehaviorType extends RegionBehaviorType {
     if (segment?.action && (CONFIG.Token.movement.actions[segment.action]?.terrainAction === null)) return [];
     if (ignoresTerrain(token?.actor ?? null, this.kind)) return [];
     return [{ name: "difficulty", difficulty, kind: this.kind }];
+  }
+
+  /** The kind's printed name, the roster row's (0.18.0), for the overlay and the ruler. */
+  get kindName() {
+    return SW.terrainKindName(this.kind);
   }
 }
 

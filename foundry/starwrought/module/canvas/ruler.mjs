@@ -82,7 +82,7 @@ export function registerMoveRuler() {
       // The kinds of difficult terrain this drag crossed (0.15.0, SwTerrainData), named on the label.
       const kinds = terrainKinds(waypoint);
       const terrain = kinds.length
-        ? ` · ${game.i18n.format("STARWROUGHT.Terrain.rulerLabel", { kinds: kinds.map(k => game.i18n.localize(SW.TERRAIN_KINDS[k]?.label ?? k)).join(", ") })}`
+        ? ` · ${game.i18n.format("STARWROUGHT.Terrain.rulerLabel", { kinds: kinds.map(k => SW.terrainKindName(k)).join(", ") })}`
         : "";
       context.cost.total = `${context.cost.total}${units ? ` ${units}` : ""} ${labelFor(move, this.#capped(move))}${terrain}`;
       context.cost.units = "";

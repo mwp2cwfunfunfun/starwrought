@@ -43,7 +43,7 @@ import { fileURLToPath } from "node:url";
 
 import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { plainName, costGlyphs } from "../foundry/starwrought/module/config.mjs";
+import { plainName, costGlyphs, registerTerrainKinds } from "../foundry/starwrought/module/config.mjs";
 import { buildResolver } from "./lib/rule_targets.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -78,6 +78,19 @@ const roster = load("roster.json");
 
 const sheetActions = actions.data.actions ?? [];
 const resolve = buildResolver({ trees: trees.data, sheetActions, roster: roster.data });
+
+// The terrain kinds (0.18.0) are the roster's hand-kept `terrainKinds` block, registered before any
+// cell is parsed so `[EFFECT IGNORE: terrain, mud]` is checked against the roster and an unknown
+// kind's message lists the roster's names. The block's shape is build_foundry.mjs's to refuse in
+// detail (it fails the build); here a block that will not register fails the step the same way.
+try {
+  if (!registerTerrainKinds(roster.data.terrainKinds)) {
+    throw new Error("the block is missing or empty (rows of [name, description, difficulty, colour])");
+  }
+} catch (error) {
+  console.error(`RULE ERRORS (nothing written):\n  - roster.json terrainKinds: ${error.message}`);
+  process.exit(1);
+}
 
 const errors = [];
 const warnings = [];

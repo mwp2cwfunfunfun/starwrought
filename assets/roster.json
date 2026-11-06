@@ -1527,6 +1527,68 @@
    ]
   ]
  },
+ "terrainKinds": [
+  [
+   "Mud",
+   "Soft ground that takes the foot and gives it back slowly.",
+   2,
+   "#6b4a2b"
+  ],
+  [
+   "Shallow Water",
+   "Water to the knee or the waist: every stride is a wade.",
+   2,
+   "#2f7fb8"
+  ],
+  [
+   "Decking",
+   "Loose boards, wet planking, a rolling deck; nothing underfoot stays still.",
+   2,
+   "#9a7a4a"
+  ],
+  [
+   "Loose Stone",
+   "Scree and shingle that slides under weight.",
+   2,
+   "#7d7d7d"
+  ],
+  [
+   "Rubble",
+   "Fallen masonry and broken timber to be climbed over or picked through.",
+   2,
+   "#5c5c5c"
+  ],
+  [
+   "Undergrowth",
+   "Brambles, roots and thicket that catch at the legs.",
+   2,
+   "#3f7a3a"
+  ],
+  [
+   "Snow",
+   "Deep enough to swallow the foot at every step.",
+   2,
+   "#cfe3f2"
+  ],
+  [
+   "Ice",
+   "A sheet that gives no purchase; every step is placed, not taken.",
+   2,
+   "#9fd3e8"
+  ],
+  [
+   "Sand",
+   "Dry and shifting, so that half of every stride is lost.",
+   2,
+   "#d8b56a"
+  ],
+  [
+   "Other",
+   "Difficult ground of no named kind: the GM's catch-all.",
+   2,
+   "#8a6fb0"
+  ]
+ ],
  "explorationActions": [
   [
    "Travel",

@@ -46,6 +46,7 @@ Every block the cell reads, one example each. Case never matters.
 | `[TALENT Weapon Familiarity]` | a Talent handed over free | 2 |
 | `[CHOICE Weapon Group]` | a pick the Talent demands at creation | 2 |
 | `[AURA 15 allies]` | a ring on the map, preview-only until shown | 2 |
+| `[AURA 15 allies; DEF: 1 situation; IF: SEEN]` | a ring that carries its effect: the ring is the effect's FOR | 2 |
 | `[EFFECT CHECK: 1 condition, aid]` | a bonus to checks of a Constellation or Maneuver (none named: every check) | 3 |
 | `[EFFECT ATK: 1 condition]` | a bonus to every Strike and Cast | 3 |
 | `[EFFECT DEF: 1 situation, guard]` | a bonus to a Defense (none named: all four) | 3 |
@@ -88,10 +89,10 @@ to the pack sources. In an open world, a GM who edits a Talent's Automation text
 line wrong sees it in red on the Item sheet's Automation panel and the engine skips that line;
 nothing is ever thrown at the table over a cell.
 
-**A bare effect line in a cell reads for one release.** `IMMUNE: prone; LIMIT: encounter` on a line
-of its own, without the `[EFFECT ...]` wrapper, is read as the block would be and the build WARNS
-once per cell, quoting the line to wrap; 0.18.0 refuses it. The bare line is still the form of the
-sheet's custom effects (section 6), as FG's Character Effects field takes the bare string.
+**A bare effect line in a cell is refused** (since 0.18.0; it read with a warning in 0.17.0).
+`IMMUNE: prone; LIMIT: encounter` on a line of its own, without the `[EFFECT ...]` wrapper, is one
+error quoting the block to write. The bare line is the form of the sheet's custom effects alone
+(section 6), as FG's Character Effects field takes the bare string.
 
 **The 0.13.0 form is refused since 0.17.0.** A line in the old operator shape (`bonus: +1,
 Condition, Aid, IF(Origin=Trained)`, `grant: 1, Calling`, `aura: 15ft, allies, VISIBLE`, `prevent:
@@ -117,7 +118,8 @@ Each block is one rule.
 | `[MANEUVER Steady the Line]` | the Maneuver of that name, a row of `data/maneuvers.xlsx`, is the character's: copied onto the sheet when the Talent lands, listed under "From your Talents", used from there, gone with the Talent. The row's own Cost and Automation are the Maneuver's | `maneuver` |
 | `[TALENT Weapon Familiarity]` | a Talent handed over free, no point spent (the Free Talent column's successor) | `talent` |
 | `[CHOICE Weapon Group]` | a build-time pick the Talent demands (the Choice column's successor) | `choice` |
-| `[AURA 15 allies]` | the ring on the map: range in feet, whom it is about (`allies`, `enemies`, `all`). Every ring is preview-only until its owner shows it from the Auras window (0.17.0; the old `visible` word is read with a warning this release and refused next) | `aura` |
+| `[AURA 15 allies]` | the ring on the map: range in feet, whom it is about (`allies`, `enemies`, `all`). Every ring is preview-only until its owner shows it from the Auras window (0.17.0; the old `visible` word is refused) | `aura` |
+| `[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` | the ring **carrying its effect** (0.18.0): after the semicolon, one effect line (section 3) whose `FOR` is the ring, so "15 feet, allies" is said once; a `FOR:` inside the block is refused. Stored as two rules, the ring and the effect. A second effect on the same ring is a second block with the same range and audience, drawn once; two rings on one Talent draw the first | `aura`, and the effect's kind |
 | `[EFFECT ...]` | an effect block: section 3 | the tag's kind |
 
 **The chassis is written on the Root.** The Human's `[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]`
@@ -202,9 +204,10 @@ edge in feet; `0` is adjacency.
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
 
-**Terrain kind.** `mud`, `shallow water`, `decking`, `loose stone`, `rubble`, `undergrowth`, `snow`,
-`ice`, `sand`, `other`: the Difficult terrain region behavior's own list, which a region's GM picks
-from, so the words in a cell and on the map are one vocabulary.
+**Terrain kind.** The names of the hand-kept `terrainKinds` block of `assets/roster.json` (0.18.0;
+today `mud`, `shallow water`, `decking`, `loose stone`, `rubble`, `undergrowth`, `snow`, `ice`,
+`sand`, `other`), which is also the Difficult terrain region behavior's dropdown, so the words in a
+cell and on the map are one vocabulary; a row added to the block is a kind a cell may name.
 
 ## 4. The kinds, by their stored names
 
@@ -276,8 +279,7 @@ Stubborn Footing    [EFFECT IMMUNE: prone; LIMIT: encounter]
 Close Ranks         [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 Versatile Human     [POINT Opening]
 Jack of All Trades  [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]
-Torchbearer Human   [AURA 15 allies]
-                    [EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
+Torchbearer Human   [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
 Steady the Line     [MANEUVER Steady the Line]          Effect: @Maneuver[Steady the Line]
 ```
 
@@ -286,8 +288,8 @@ owner's condition. An ally receives it only while within 0 ft of the owner, whic
 adjacency, so one line serves both halves of "both of you". Torchbearer Human is the Rally Aura
 (Mike's text of 2026-11-05: "The first time each round an ally within 15 feet who can see you
 defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense
-check"): the first line draws the ring; the second gives every Defense of an ally within 15 ft who
-can see the owner a +1 against an attack carrying Fear, once a round per ally.
+check"): one block draws the ring and gives every Defense of an ally within it who can see the
+owner a +1 against an attack carrying Fear, once a round per ally.
 
 ### The two Cultures
 
@@ -429,7 +431,9 @@ hover. The Grammar button on the panel opens this document's journal.
 |---|---|
 | `unknown rule kind "<word>" (an effect begins with a tag: CHECK, ATK, ..., in brackets as [EFFECT ...]; a feature is a bracketed block: TRAIT, SIZE, ...)` | the word before the colon is neither a tag nor a keyword; check the spelling, or the line is prose that belongs in the Effect column |
 | `the 0.13.0 form ("bonus: +1, Condition, Aid, IF(...)") is retired since 0.17.0; AUTOMATION_GRAMMAR.md section 9 maps each operator to its component` | an old cell; rewrite it by section 9 |
-| `an effect line in a cell is written in brackets since 0.17.0; write "[EFFECT <line>]"` (a WARNING) | wrap the line; 0.18.0 refuses the bare form in a cell |
+| `an effect line in a cell is written in brackets: write "[EFFECT <line>]"` | wrap the line (the bare form is the custom effects field's alone) |
+| `the ring is the FOR: an effect inside [AURA ...] reaches whom the ring is about, within its range; drop the FOR` | a `FOR:` inside an AURA block |
+| `after the ring, an AURA block carries one effect, \`[AURA <N> <who>; <tag>: ...]\`` | what follows the ring's semicolon is no effect line |
 | `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: CHECK, ATK, ...` | the word after EFFECT is no tag |
 | `EFFECT is written \`[EFFECT <tag>: ...]\`, as in \`[EFFECT IMMUNE: prone; LIMIT: encounter]\`` | an empty `[EFFECT]` |
 | `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or [<Constellation> trained]` | the block's first word |
@@ -465,7 +469,7 @@ hover. The Grammar button on the panel opens this document's journal.
 | `SPEED is written \`[SPEED 6]\` ... or \`[SPEED +1]\`` / `VIGOR is written \`[VIGOR 8]\` ... or \`[VIGOR opening 12]\`` | the chassis blocks |
 | `"<word>" is not a Size: write Tiny, Small, Medium, Large, Huge or Gargantuan` | the Size block |
 | `AURA is written \`[AURA <N> <who>]\`` | the ring block |
-| `[AURA ... visible]: every ring is preview-only since 0.17.0 and the Auras window shows one; drop the word` (a WARNING) | drop `visible`; 0.18.0 refuses it |
+| `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
 | `WARNING: ... TRAIT(<Trait>): no shipping weapon, attack or Talent carries the trait "<Trait>"` | not a failure: the rule reads and fires when something is authored with that trait |
 | `WARNING: <workbook>: the _Tree Index columns <list> are retired; the Root's feature lines are the authoring now` | move the facts into the Root's cell as section 2 says, then drop the columns |
 | `ERROR: <tree>: the _Tree Index <column> reads <a> but the Root's [<KEYWORD>] says <b>; drop the column` | a retired column and the Root's block disagree |
@@ -518,3 +522,7 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   0.13.0 form refused; `visible` retired from `[AURA ...]`, every ring preview-only until shown;
   this document as the Automation Grammar journal in the Rules compendium with section 0 as its
   first page; claim lines on the Effects tab with Apply to next roll.
+- **0.18.0** (2026-11-05): an AURA block carries its effect after a semicolon, the ring as the
+  effect's FOR (Mike: the Rally Aura said "15 feet, allies" twice); the bare effect line in a cell
+  and the `visible` word refused, as promised; the terrain kinds a roster block (section 3's
+  vocabulary is the block's names); a Lore named the moment it is Trained.

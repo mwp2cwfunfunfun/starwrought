@@ -7,6 +7,7 @@
  *   -> foundry/starwrought/packs/_source/<pack>/*.json     (compendium pack sources)
  *   -> foundry/starwrought/packs/_source/index.json        (the content index the in-game sync reads)
  *   -> foundry/starwrought/content/constellations.json     (the runtime Constellation index)
+ *   -> foundry/starwrought/content/terrain.json            (the roster's terrainKinds block, 0.18.0)
  *   -> foundry/starwrought/assets/constellations/*.png     (plate art, copied)
  *   -> foundry/starwrought/packs/<pack>                    (compiled LevelDB, if the CLI is present)
  *
@@ -46,7 +47,10 @@ import { fileURLToPath } from "node:url";
 // they cannot drift: a slug that disagrees is a Talent that stops matching its Constellation.
 // This is why module/config.mjs must stay free of Foundry globals at module scope.
 import {
-  slugify, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE
+  slugify, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE,
+  // The terrain kinds' registry (0.18.0): the roster's `terrainKinds` block is registered before any
+  // Automation cell is parsed, so `[EFFECT IGNORE: terrain, mud]` is checked against the roster.
+  registerTerrainKinds, terrainKindRecord, terrainKinds, TERRAIN_COLOUR_PATTERN
 } from "../foundry/starwrought/module/config.mjs";
 // The automation grammar (0.9.0; ruling 120) is imported from the system for the same reason: the
 // build and the client must read an Automation cell identically, so there is one parser and it is
@@ -447,6 +451,56 @@ const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions 
  * name or slug, a Constellation winning over an action) are documented in that module.
  */
 const resolveRuleTarget = buildResolver({ trees, sheetActions, roster });
+
+/**
+ * THE TERRAIN KINDS (0.18.0). The kinds of difficult terrain are the roster's hand-kept
+ * `terrainKinds` block, rows of `[name, description, difficulty, colour]`, and nothing else: the
+ * Difficult terrain behavior's Kind select, the `[EFFECT IGNORE: terrain, <kind>]` descriptors, the
+ * grammar's messages, the ruler's label and the player's overlay all read the registry in
+ * module/config/terrain.mjs, which this block fills here (before any cell is parsed, so an unknown
+ * kind's message lists the roster's names) and which the system fills at init from
+ * content/terrain.json (written by writeContentIndex below). The slug is `slugify(name)`, so
+ * "Shallow Water" keeps the `shallow-water` a 0.15.0 region stored. The block is refused when it
+ * is missing or empty, when a name repeats after slugify, when a colour is not `#rrggbb`, when a
+ * difficulty is not a number from 1 to 5 (the behavior's own range), or when `other` is absent
+ * (the behavior's initial kind). A kind is added in the roster and nowhere else.
+ */
+function registerRosterTerrainKinds() {
+  const rows = roster.terrainKinds;
+  if (!Array.isArray(rows) || !rows.length) {
+    fail("roster.json has no terrainKinds block (rows of [name, description, difficulty, colour]); the Difficult terrain kinds are read from it since 0.18.0.");
+  }
+  const problems = [];
+  const slugs = new Set();
+  rows.forEach((row, i) => {
+    const where = `roster.json terrainKinds row ${i + 1}`;
+    if (!Array.isArray(row) || (row.length < 4)) {
+      problems.push(`${where} is not [name, description, difficulty, colour]`);
+      return;
+    }
+    const [name, description, difficulty, colour] = row;
+    if (!String(name ?? "").trim()) problems.push(`${where} has no name`);
+    const slug = slugify(name);
+    if (slug && slugs.has(slug)) problems.push(`${where} ("${name}") repeats the slug "${slug}" of an earlier row`);
+    slugs.add(slug);
+    if (typeof description !== "string") problems.push(`${where} ("${name}"): the description must be text`);
+    const d = Number(difficulty);
+    if ((typeof difficulty !== "number") || !Number.isFinite(d) || (d < 1) || (d > 5)) {
+      problems.push(`${where} ("${name}"): the difficulty must be a number from 1 to 5, not ${JSON.stringify(difficulty)}`);
+    }
+    if (!TERRAIN_COLOUR_PATTERN.test(String(colour ?? ""))) {
+      problems.push(`${where} ("${name}"): the colour must be #rrggbb, not ${JSON.stringify(colour)}`);
+    }
+  });
+  if (!slugs.has("other")) problems.push("roster.json terrainKinds has no \"Other\" row, the behavior's initial kind");
+  if (problems.length) fail(problems.join("\n  "));
+  try {
+    registerTerrainKinds(rows.map(terrainKindRecord));
+  } catch (error) {
+    fail(`roster.json terrainKinds: ${error.message}`);
+  }
+}
+registerRosterTerrainKinds();
 
 /**
  * THE SPELL (PHB v4.21; the magic workbook's spell columns, read by the converter into `node.spell`,
@@ -1593,6 +1647,14 @@ function writeContentIndex() {
   fs.writeFileSync(
     path.join(CONTENT, "chassis.json"),
     `${JSON.stringify(chassisIndex, null, 2)}\n`,
+    "utf8"
+  );
+
+  // The terrain kinds (0.18.0): the roster's block as the registry's records, in the roster's
+  // order, for `loadTerrainKinds` (helpers/content.mjs) to read at init and after a content sync.
+  fs.writeFileSync(
+    path.join(CONTENT, "terrain.json"),
+    `${JSON.stringify(terrainKinds(), null, 2)}\n`,
     "utf8"
   );
 

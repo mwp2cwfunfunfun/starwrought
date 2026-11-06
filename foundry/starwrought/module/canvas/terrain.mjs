@@ -81,7 +81,8 @@ export function refresh() {
     if (!kinds.length) continue;
     if (region.hidden && !gm) continue;
     const g = new PIXI.Graphics();
-    const colour = Number(`0x${(SW.TERRAIN_KINDS[kinds[0].kind]?.colour ?? "#8a6fb0").slice(1)}`);
+    // The kind's colour and name are the roster row's since 0.18.0 (config/terrain.mjs, the registry).
+    const colour = Number(`0x${SW.terrainKindColour(kinds[0].kind).slice(1)}`);
     g.lineStyle({ width: 2, color: colour, alpha: region.hidden ? 0.5 : 0.9, alignment: 0 });
     g.beginFill(colour, region.hidden ? 0.12 : 0.22);
     try {
@@ -97,7 +98,7 @@ export function refresh() {
     const bounds = region.bounds;
     if (!bounds) continue;
     const text = kinds.map(k => game.i18n.format("STARWROUGHT.Terrain.overlayLabel", {
-      kind: game.i18n.localize(SW.TERRAIN_KINDS[k.kind]?.label ?? k.kind), difficulty: k.difficulty
+      kind: SW.terrainKindName(k.kind), difficulty: k.difficulty
     })).join(" · ");
     const style = new PIXI.TextStyle({
       fontFamily: CONFIG.canvasTextStyle?.fontFamily ?? "Signika", fontSize: 18, fill: 0xffffff,

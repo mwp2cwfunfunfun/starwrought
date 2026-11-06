@@ -24,7 +24,7 @@
  */
 
 import {
-  parseAutomation, summarize, ruleEntries, splitArgs, keyValues, RuleSyntaxError, RESERVED_WORDS, hasBare, LEGACY_REFUSAL,
+  parseAutomation, summarize, ruleEntries, splitArgs, keyValues, RuleSyntaxError, RESERVED_WORDS, LEGACY_REFUSAL,
   KIND_WORD, kindOf, knownKinds
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
@@ -35,7 +35,12 @@ import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, t
 import { readEffectLine } from "../foundry/starwrought/module/rules/effects.mjs";
 import { FEATURE_KEYWORD_LIST } from "../foundry/starwrought/module/rules/features.mjs";
 import { ignoresTerrain } from "../foundry/starwrought/module/rules/kinds/ignore.mjs";
-import { terrainKindOf, terrainKindName } from "../foundry/starwrought/module/config.mjs";
+import { terrainKindOf, terrainKindName, registerTerrainKinds } from "../foundry/starwrought/module/config.mjs";
+
+// The terrain kinds are the roster's `terrainKinds` block since 0.18.0, registered before any parse
+// by the pipeline step and the build; the suite seeds the ten shipped rows the same way, so an
+// `[EFFECT IGNORE: terrain, mud]` reads here as it does there (an unseeded registry knows nothing).
+registerTerrainKinds([["Mud", "", 2, "#6b4a2b"], ["Shallow Water", "", 2, "#2f7fb8"], ["Decking", "", 2, "#9a7a4a"], ["Loose Stone", "", 2, "#7d7d7d"], ["Rubble", "", 2, "#5c5c5c"], ["Undergrowth", "", 2, "#3f7a3a"], ["Snow", "", 2, "#cfe3f2"], ["Ice", "", 2, "#9fd3e8"], ["Sand", "", 2, "#d8b56a"], ["Other", "", 2, "#8a6fb0"]]);
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
@@ -324,12 +329,12 @@ check("CRLF line endings, indentation and interleaved comments are read the same
   same(rules.map(r => [r.line, r.name, r.text]), [[3, "a", "[TRAIT a]"], [5, "b", "[TRAIT b]"]], "rules");
 });
 
-check("the reserved words win over a kind's data, and a kind cannot mark its own rule as an error or as bare", () => {
-  const sly = () => ({ kind: UNKNOWN_KIND, line: 99, text: "nope", error: "nope", bare: true, payload: 1 });
+check("the reserved words win over a kind's data, and a kind cannot mark its own rule as an error", () => {
+  const sly = () => ({ kind: UNKNOWN_KIND, line: 99, text: "nope", error: "nope", payload: 1 });
   const { rules, errors } = withParse("trait", sly, () => parseAutomation("[TRAIT anything]"));
   same(errors, [], "errors");
   same(rules[0], { payload: 1, kind: "trait", line: 1, text: "[TRAIT anything]" }, "the rule");
-  must(!("error" in rules[0]) && !("bare" in rules[0]), "a kind's `error` and `bare` are dropped");
+  must(!("error" in rules[0]), "a kind's `error` is dropped");
   must(summarize(rules[0]) === kindOf("trait").summary(rules[0]), "and the rule summarizes through its kind, not as an error");
   must(collectRules({ items: [{ type: "talent", system: { rules } }] }).all.length === 1, "and the engine files it as usable");
 });
@@ -350,8 +355,8 @@ check("the grammar hands the kind its context plus line, text, kind, form, warn 
   must((lastContext?.form === "effect") && (lastContext.kind === "bonus") && (lastContext.line === 1) && (lastContext.text === "[EFFECT CHECK: 1 condition, aid]"), `an effect block's context: ${JSON.stringify(lastContext)}`);
   same([lastContext.effect.tag, lastContext.effect.value, lastContext.effect.type, lastContext.effect.descriptors], ["check", 1, "condition", ["aid"]], "with the effect as read");
   lastContext = null;
-  withParse("bonus", testOnly.parse, () => parseAutomation("CHECK: 1 condition, aid", context));
-  must((lastContext?.form === "effect") && (lastContext.text === "CHECK: 1 condition, aid"), "a bare effect line's context, its text the line");
+  withParse("bonus", testOnly.parse, () => parseAutomation("CHECK: 1 condition, aid", { ...context, itemType: "effect" }));
+  must((lastContext?.form === "effect") && (lastContext.text === "CHECK: 1 condition, aid"), "a bare effect line's context on a custom effect row, its text the line");
 });
 
 check("summarize prints the kind's summary, by id or by alias", () => {
@@ -1035,16 +1040,40 @@ check("aura: the forms, the field the canvas reads, the summary", () => {
   must(Object.keys(kindOf("aura").hooks).length === 0, "no hook: the ring is a drawing");
 });
 
-check("aura: the retired `visible` word reads with one warning and is dropped (0.17.0)", () => {
-  const message = "[AURA ... visible]: every ring is preview-only since 0.17.0 and the Auras window shows one; drop the word";
+check("aura: the retired `visible` word is refused (warned in 0.17.0, refused since 0.18.0)", () => {
+  const message = "[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word";
   for (const word of ["visible", "VISIBLE", "pinned"]) {
     const parsed = parseAutomation(`[AURA 15 allies ${word}]`);
-    same(parsed.errors, [], `${word}: no error`);
-    same(parsed.rules.map(bare), [{ range: 15, affects: "allies", kind: "aura", line: 1 }], `${word}: the rule, the word dropped`);
-    same(parsed.warnings, [{ line: 1, text: `[AURA 15 allies ${word}]`, message }], `${word}: the one warning, under the block's text`);
+    same(parsed.rules, [], `${word}: no rule`);
+    same(parsed.errors, [{ line: 1, text: `[AURA 15 allies ${word}]`, message }], `${word}: the one error, under the block's text`);
+    same(parsed.warnings, [], `${word}: no warning beside it`);
   }
-  same(parseAutomation("[AURA 15 allies]").warnings, [], "no word, no warning");
-  same(parseAutomation("[TRAIT Human][AURA 15 allies visible]").warnings.map(w => w.text), ["[AURA 15 allies visible]"], "the warning names its block, not the line");
+  same(parseAutomation("[AURA 15 allies]").errors, [], "no word, no error");
+  same(parseAutomation("[TRAIT Human][AURA 15 allies visible]").errors.map(e => e.text), ["[AURA 15 allies visible]"], "the error names its block, not the line, and the trait beside it still parses");
+  must(parseAutomation("[TRAIT Human][AURA 15 allies visible]").rules.length === 1, "the trait beside it parses");
+});
+
+check("aura: a ring carries its effect after a semicolon, the ring as the FOR (0.18.0)", () => {
+  const nested = "[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]";
+  const rules = cellRules(nested);
+  must(rules.length === 2, `two rules from one block, got ${rules.length}`);
+  same(bare(rules[0]), { range: 15, affects: "allies", kind: "aura", line: 1 }, "the ring first");
+  same(bare(rules[1]), bare(cellRules("[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]")[0]), "the effect equals the two-block form's, FOR from the ring");
+  must(rules.every(r => r.text === nested), "both rules stand under the block's text");
+  same(bare(cellRules("[AURA 10 enemies; IMMUNE: prone]")[1]).for, { who: "enemies", range: 10 }, "an enemies ring reaches enemies within 10");
+  same(bare(cellRules("[AURA 30 all; ATK: 1 situation]")[1]).for, { who: "all", range: 30 }, "an all ring reaches everyone within 30");
+  must(cellRules("[AURA 15 allies; DEF: 1 situation][AURA 15 allies; ATK: 1 situation]").length === 4, "two blocks on one line, two rules each");
+  must(cellRules("[AURA 15 allies]").length === 1, "a ring alone is one rule");
+  {
+    // The ring parses; the effect behind it is the error, so the block reads as a ring plus a red line.
+    const parsed = parseAutomation("[AURA 15 allies; DEF: 1 situation; FOR: allies 15]", { resolve });
+    must((parsed.rules.length === 1) && (parsed.rules[0].kind === "aura"), "the ring stands");
+    must((parsed.errors.length === 1) && /the ring is the FOR/.test(parsed.errors[0].message), "an explicit FOR inside the block is refused");
+  }
+  must(/after the ring, an AURA block carries one effect/.test(parseAutomation("[AURA 15 allies; nonsense]", { resolve }).errors[0]?.message ?? ""), "what follows the ring must be an effect (the ring itself still parses)");
+  must(/^MARK does not take FOR$/.test(parseAutomation("[AURA 15 allies; MARK: enemies]", { resolve }).errors[0]?.message ?? ""), "a tag that takes no FOR refuses the ring's (the ring itself parses)");
+  must(/^AURA is written/.test(bonusError("[AURA 15; DEF: 1 situation]")), "the ring is still checked first, and a bad ring reads nothing behind it");
+  must(summarize(rules[1]) === summarize(cellRules("[EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]")[0]), "the As read line is the same");
 });
 
 check("aura: the refusals", () => {
@@ -1645,39 +1674,41 @@ const EFFECT_LINES = [
   "CHECK: -2 gear, stealth"
 ];
 
-check("0.17.0: an effect block parses to the rule its bare line gave, pairwise", () => {
+/** The same line read as a custom effect row (the bare form's one home since 0.18.0). */
+const rowRules = (line) => {
+  const parsed = parseAutomation(line, { resolve, itemName: "row", itemType: "effect" });
+  must(parsed.errors.length === 0, `"${line}" should parse on an effect row, got: ${parsed.errors.map(e => e.message).join("; ")}`);
+  return parsed.rules;
+};
+
+check("0.17.0: an effect block parses to the rule its bare line gives on a custom effect row, pairwise", () => {
   for (const line of EFFECT_LINES) {
     const block = `[EFFECT ${line}]`;
-    const a = cellRules(block), b = cellRules(line);
+    const a = cellRules(block), b = rowRules(line);
     must((a.length === 1) && (b.length === 1), `"${line}": one rule each way, got ${a.length} and ${b.length}`);
     same(a.map(bare), b.map(bare), `"${block}" vs "${line}"`);
     must(a[0].text === block, `"${block}": the block's text is the whole block, got "${a[0].text}"`);
-    must(b[0].text === line, `"${line}": the bare line's text is the line, got "${b[0].text}"`);
-    must(!("bare" in a[0]) && !("legacy" in a[0]) && !("legacy" in b[0]), `"${block}": a block is never bare, and nothing carries legacy`);
-    must(b[0].bare === true, `"${line}": the bare line in a Talent's cell is flagged`);
+    must(b[0].text === line, `"${line}": the row's text is the line, got "${b[0].text}"`);
+    must(!("bare" in a[0]) && !("bare" in b[0]) && !("legacy" in a[0]) && !("legacy" in b[0]), `"${block}": nothing carries bare or legacy`);
   }
 });
 
-check("0.17.0: a bare effect line in a cell carries `bare: true` and one warning; on an effect row it is the form", () => {
+check("0.18.0: a bare effect line in a cell is refused (it warned in 0.17.0); on an effect row it is the form", () => {
   const inCell = parseAutomation("CHECK: 1 condition, aid", { resolve, itemName: "test", itemType: "talent" });
-  same(inCell.errors, [], "no error");
-  must(inCell.rules[0].bare === true, "flagged bare");
-  same(inCell.warnings, [{ line: 1, text: "CHECK: 1 condition, aid", message: 'an effect line in a cell is written in brackets since 0.17.0; write "[EFFECT CHECK: 1 condition, aid]"' }], "the one warning, with the block to write");
-  must(hasBare(inCell), "hasBare");
+  same(inCell.rules, [], "no rule");
+  same(inCell.errors, [{ line: 1, text: "CHECK: 1 condition, aid", message: 'an effect line in a cell is written in brackets: write "[EFFECT CHECK: 1 condition, aid]"' }], "the one error, with the block to write");
+  same(inCell.warnings, [], "no warning beside it");
   const onRow = parseAutomation("CHECK: 1 condition, aid", { resolve, itemType: "effect" });
   same(onRow.errors, [], "no error on an effect row");
-  must(!("bare" in onRow.rules[0]), "not flagged on an effect row");
   same(onRow.warnings, [], "and no warning there");
-  must(!hasBare(onRow), "hasBare is false for the row");
-  same(bare(onRow.rules[0]), bare(inCell.rules[0]), "the same rule either way");
-  must(!hasBare(parseAutomation("[EFFECT CHECK: 1 condition, aid]", { resolve })), "a block is never bare");
-  must(!hasBare(null) && !hasBare({}) && !hasBare({ rules: [{ kind: "trait" }] }), "nothing, or no flag, is not bare");
+  same(bare(onRow.rules[0]), bare(cellRules("[EFFECT CHECK: 1 condition, aid]")[0]), "the same rule as the block");
   const three = parseAutomation("CHECK: 1 condition, aid\n[EFFECT DEF: 1 gear]\nIMMUNE: prone", { resolve, itemType: "talent" });
-  same(three.warnings.map(w => w.line), [1, 3], "one warning per bare line");
-  same(three.rules.map(r => r.bare === true), [true, false, true], "flagged per rule");
-  must(hasBare(three), "and the cell has bare lines");
+  same(three.errors.map(e => e.line), [1, 3], "one error per bare line");
+  same(three.rules.map(r => r.line), [2], "the block between them parses");
   const action = parseAutomation("IMMUNE: prone", { resolve, itemType: "action" });
-  must((action.rules[0].bare === true) && (action.warnings.length === 1), "a Maneuver's cell is a cell too: any itemType but effect");
+  must((action.rules.length === 0) && (action.errors.length === 1), "a Maneuver's cell is a cell too: any itemType but effect");
+  const rowBlock = parseAutomation("[EFFECT CHECK: 1 condition, aid]", { resolve, itemType: "effect" });
+  must((rowBlock.errors.length === 0) && (rowBlock.rules.length === 1), "the block reads on a row too");
 });
 
 check("0.17.0: the 0.13.0 operator form is one error naming the retirement, whatever the kind", () => {
@@ -1705,8 +1736,11 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
     same(parsed.warnings, [], `"${line}": no warning beside the error`);
   }
   must(/0\.13\.0 form/.test(LEGACY_REFUSAL) && /AUTOMATION_GRAMMAR\.md section 9/.test(LEGACY_REFUSAL), "the message names the form and the document's map");
-  // A tag line with no operator call is not the retired form: it is a bare effect line.
-  must((cellRules("mark: enemies, encounter")[0].bare === true) && (cellRules("ignore: Terrain, Mud")[0].bare === true), "a mark: or ignore: line without an operator is a bare effect line");
+  // A tag line with no operator call is not the retired form: it is a bare effect line, refused in a cell as one.
+  for (const line of ["mark: enemies, encounter", "ignore: Terrain, Mud"]) {
+    const message = parseAutomation(line, { resolve, itemType: "talent" }).errors[0]?.message ?? "";
+    must(/written in brackets: write "\[EFFECT /.test(message) && (message !== LEGACY_REFUSAL), `"${line}" is a bare effect line, not the retired form`);
+  }
   // A feature keyword typed as a line was never the 0.13.0 form: the grammar says to bracket it;
   // `aura:` was a 0.13.0 kind line, so it is the retirement message.
   must(parseAutomation("trait: Human").errors[0]?.message === "TRAIT is a feature and is written in brackets: `[TRAIT Human]`", "a feature keyword before a colon is told to bracket");
@@ -1758,7 +1792,7 @@ check("0.16.0: feature lines, one rule per block", () => {
   same(bare(cellRules("[MANEUVER Steady the Line]")[0]), { name: "Steady the Line", slug: "steady-the-line", enabled: true, kind: "maneuver", line: 1 }, "a granted Maneuver");
   same(bare(cellRules("[TALENT Weapon Familiarity ❶]")[0]), { name: "Weapon Familiarity", kind: "talent", line: 1 }, "a free Talent, glyphs dropped");
   same(bare(cellRules("[CHOICE Weapon Group]")[0]), { prompt: "Weapon Group", kind: "choice", line: 1 }, "a choice");
-  same(bare(cellRules("[AURA 15 allies visible]")[0]), bare(cellRules("[AURA 15 allies]")[0]), "an aura block with the retired word equals one without (and warns, checked above)");
+  must(/drop the word/.test(bonusError("[AURA 15 allies visible]")), "an aura block with the retired word is refused (0.18.0)");
   same(bare(cellRules("[AURA 30 ft all]")[0]), { range: 30, affects: "all", kind: "aura", line: 1 }, "an aura with ft spelled");
   same(toGrantField(cellRules("[Athletics trained]")[0]), { n: 1, mode: "any", scope: "Skill", constellation: "athletics" }, "the wizard's field carries the Constellation");
   // Mike's three-argument `grant: 1, Skill, Acrobatics` is the retired form since 0.17.0 (refused above); `[Acrobatics trained]` is its block.
@@ -1767,7 +1801,8 @@ check("0.16.0: feature lines, one rule per block", () => {
 });
 
 check("0.16.0: the refusals of the two layers", () => {
-  const err = cell => { const p = parseAutomation(cell, { resolve }); must(p.errors.length >= 1, `"${cell}" should be refused`); return p.errors[0].message; };
+  // Read as a custom effect row, where a bare tag line is the form, so each refusal is the line's own and not the missing brackets'.
+  const err = cell => { const p = parseAutomation(cell, { resolve, itemType: "effect" }); must(p.errors.length >= 1, `"${cell}" should be refused`); return p.errors[0].message; };
   must(/no Talent bonus is untyped/.test(err("CHECK: 1, diplomacy")), "no type");
   must(/a signed whole number first/.test(err("CHECK: condition, diplomacy")), "no value");
   must(/is not an effect tag/.test(err("FOO: 1 condition")) || /unknown rule kind "foo"/.test(err("FOO: 1 condition")), "a bad tag");

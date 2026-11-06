@@ -38,6 +38,10 @@ import {
   canBuy, ownsTalent, pointsIn, slotChoices, constellationLabel
 } from "../helpers/chargen-rules.mjs";
 import { constellationEnabled, enabledConstellations } from "../helpers/content.mjs";
+// NAMING A LORE (0.18.0): the one prompt, shared with the createItem hook and the sheet.
+import { promptForNewLore } from "./lore-name.mjs";
+
+export { promptForLoreField } from "./lore-name.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
@@ -156,6 +160,14 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** The Constellation currently selected inside each point slot's picker. */
   #openPicker = {};
+
+  /**
+   * NAMING A LORE (0.18.0): the slots whose Lore prompt has been opened once by `#autoSpend`, by
+   * slot id. A point whose one legal home is the Lore template asks for its field once, on
+   * arrival; cancelled, the slot waits unspent and its buy button asks again, and no later
+   * `#refresh` reopens the dialog on its own.
+   */
+  #loreAsked = new Set();
 
   /* -------------------------------------------- */
   /*  State                                       */
@@ -339,26 +351,15 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
   /**
    * Make sure the Constellation Item exists, so the sheet draws the sky and a Lore instance
    * carries its own field name. Returns the created id, or null if it was already there.
+   * Since 0.18.0 the copy is `SwItem.ensureConstellation`'s (a Lore (X) from the template, named),
+   * so the wizard, the hook and `nameLore` make the same Item.
    */
   async #ensureConstellation(slug, name = null) {
     const existing = this.actor.items.find(i => (i.type === "constellation")
       && ((i.system.slug || SW.slugify(i.name)) === slug));
     if (existing) return null;
-
-    const pack = game.packs.get(`${SW.SYSTEM_ID}.constellations`);
-    if (!pack) return null;
-    const index = await pack.getIndex({ fields: ["system.slug"] });
-
-    // A Lore (X) is a copy of the one authored Lore template.
-    const templateSlug = slug.startsWith("lore-") ? "lore" : slug;
-    const found = index.find(e => (e.system?.slug ?? SW.slugify(e.name)) === templateSlug);
-    if (!found) return null;
-
-    const doc = await pack.getDocument(found._id);
-    const data = doc.toObject();
-    data.system.slug = slug;
-    if (name) data.name = name;
-    const [created] = await this.actor.createEmbeddedDocuments("Item", [data], { swAuto: true });
+    const { SwItem } = await import("../documents/item.mjs");
+    const created = await SwItem.ensureConstellation(this.actor, slug, { name });
     return created?.id ?? null;
   }
 
@@ -384,6 +385,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       const grants = bg?.grants ?? [];
       grants.forEach((granted, i) => {
         const isLore = /^Lore\b/i.test(granted);
+        // A bare "Lore" is the template (slug `lore`), which the slot's point may not stay in: the
+        // player names the field when the point is spent (0.18.0), so the slot carries no name.
         const slug = isLore ? loreSlug(fieldOf(granted)) : SW.slugify(granted);
         slots.push({
           id: `bg-${i}`,
@@ -392,7 +395,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
           hint: isLore ? "STARWROUGHT.Chargen.loreHint" : "STARWROUGHT.Chargen.trainedHint",
           scope: "constellation",
           slugs: [slug],
-          constellationName: isLore ? granted : null
+          constellationName: (isLore && (slug !== SW.LORE_TEMPLATE_SLUG)) ? granted : null
         });
       });
     }
@@ -484,6 +487,9 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     const single = choices.length === 1 ? choices[0] : null;
     const wanted = this.#openPicker[slot.id];
     const selected = single ? single.slug : (choices.some(c => c.slug === wanted) ? wanted : null);
+    // A point waiting on its Lore's field (0.18.0): the one home is the template, which the point
+    // may not stay in, so the hint says what the buy button will ask.
+    const awaitsLoreName = (remaining > 0) && (single?.slug === SW.LORE_TEMPLATE_SLUG);
 
     // The chips, grouped the way the sheet groups Constellations, so a long list stays scannable.
     // A Defense chip says which threats it answers, since that is the whole decision at the
@@ -509,7 +515,10 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
 
     return {
       ...slot,
-      hint: slot.hint ? game.i18n.localize(slot.hint) : "",
+      hint: awaitsLoreName
+        ? game.i18n.localize("STARWROUGHT.Chargen.loreUnnamed")
+        : (slot.hint ? game.i18n.localize(slot.hint) : ""),
+      awaitsLoreName,
       spent: spent.map(s => ({ ...s, constellation: constellationLabel(this.actor, s.slug) })),
       remaining,
       done: remaining === 0,
@@ -639,6 +648,30 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
         if (legal.length !== 1) continue;
 
         const { choice, option } = legal[0];
+
+        // NAMING A LORE (0.18.0; Mike: "Immediately when getting Trained in Lore... I should be
+        // forced to create the Lore"). A point whose one legal home is the Lore template (a
+        // Background's bare "Lore", a `[Lore trained]` grant) is never spent into the template:
+        // the field is asked once here, and the point lands in Lore (X) with Deep Knowledge under
+        // it, exactly as a Background's "Lore (Circus)" does. Cancelled, the slot stays unspent,
+        // which blocks Next, and its buy button asks again; nothing reopens the dialog by itself.
+        // Through 0.17.0 the Acrobat's Lore bought Deep Knowledge under a Constellation named
+        // "Lore" with no field asked.
+        if (choice.slug === SW.LORE_TEMPLATE_SLUG) {
+          if (this.#loreAsked.has(slot.id)) continue;
+          this.#loreAsked.add(slot.id);
+          const picked = await promptForNewLore(this.actor);
+          if (!picked) continue;
+          const check = canBuy(this.actor, picked.slug, option.talent);
+          if (!check.ok) {
+            ui.notifications.warn(check.why);
+            continue;
+          }
+          await this.#spend({ ...slot, constellationName: picked.name }, picked.slug, option.talent);
+          spentSomething = true;
+          break;
+        }
+
         await this.#spend(slot, choice.slug, option.talent, { auto: true });
         spentSomething = true;
         break; // The state moved; work the list out again.
@@ -1109,6 +1142,8 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       await this[`_choose_${kind}`](key);
       await this.#setState({ picks: { [kind]: key } });
       this.#openPicker = {};
+      // A new card's Lore slot is a new question (0.18.0), though its slot id is the old one's.
+      this.#loreAsked.clear();
       await this.#refresh();
     };
   }
@@ -1276,13 +1311,14 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     let entry = talentsIn(slug).find(t => t.id === talentId);
     let constellationName = slot.constellationName ?? null;
 
-    // Every Lore (X) is its own Constellation. Ask which field this one is.
-    if (slug === "lore") {
-      const field = await promptForLoreField();
-      if (!field) return;
-      constellationName = `Lore (${field})`;
-      slug = loreSlug(field);
-      entry = talentsIn("lore").find(t => t.id === talentId);
+    // Every Lore (X) is its own Constellation. Ask which field this one is (since 0.18.0 the
+    // shared prompt, which refuses a field already open and asks again).
+    if (slug === SW.LORE_TEMPLATE_SLUG) {
+      const picked = await promptForNewLore(this.actor);
+      if (!picked) return;
+      constellationName = picked.name;
+      slug = picked.slug;
+      entry = talentsIn(SW.LORE_TEMPLATE_SLUG).find(t => t.id === talentId);
     } else if (slug.startsWith("lore-")) {
       constellationName ??= loreName(slug);
     }
@@ -1363,6 +1399,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     await this.#setState({ step: Math.min(STEPS.length - 1, this.step + 1) });
     this.#openPicker = {};
+    this.#loreAsked.clear();
     await this.#refresh();
   }
 
@@ -1372,6 +1409,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     await this.#undoStep(this.step);
     await this.#setState({ step: this.step - 1 });
     this.#openPicker = {};
+    this.#loreAsked.clear();
     await this.#refresh();
   }
 
@@ -1382,6 +1420,7 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
     for (let s = this.step; s > target_; s--) await this.#undoStep(s);
     await this.#setState({ step: target_ });
     this.#openPicker = {};
+    this.#loreAsked.clear();
     await this.#refresh();
   }
 
@@ -1617,18 +1656,6 @@ export async function promptForChoice(prompt, talent, { alsoApplies = null } = {
       label: game.i18n.localize("STARWROUGHT.Chargen.choiceOk"),
       callback: (event, target) => target.form.elements.value.value.trim()
     },
-    rejectClose: false
-  });
-}
-
-/** Ask which field of Lore this is, since every Lore (X) is its own Constellation. */
-async function promptForLoreField() {
-  return DialogV2.prompt({
-    window: { title: game.i18n.localize("STARWROUGHT.Chargen.loreTitle") },
-    classes: ["starwrought"],
-    content: `<p>${game.i18n.localize("STARWROUGHT.Chargen.lorePrompt")}</p>
-      <input type="text" name="field" placeholder="${game.i18n.localize("STARWROUGHT.Chargen.lorePlaceholder")}">`,
-    ok: { callback: (event, target) => target.form.elements.field.value.trim() },
     rejectClose: false
   });
 }

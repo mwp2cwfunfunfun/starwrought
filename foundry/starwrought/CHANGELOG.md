@@ -7,6 +7,77 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.18.0 (2026-11-05): the aura carries its effect, terrain kinds as data, a Lore named when it is Trained
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on
+the shelf unsynced). Mike, 2026-11-05, after the 0.17.0 push, three points: the Rally Aura's two
+lines said "15 feet, allies" twice with nothing tying them ("The AURA should be within the
+brackets for the EFFECT... or the Effects should be within the AURA's brackets"); how difficult
+terrain works, whether a kind can be chosen, and whether to start a list of kinds; and "immediately
+when getting Trained in Lore... I should be forced to create the Lore. For example Lore (Circus) or
+Lore (Warfare)". His decisions by question: the effect inside the AURA block; the terrain kinds a
+roster block he edits. Planned in `eager-wobbling-possum.md` (the plans folder, the sixth plan in
+it). The rulings:
+
+- **195. An aura carries its effect; the ring is the FOR.** `[AURA 15 allies; DEF: 1 situation;
+  IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` is the Rally Aura in one block: the grammar parses the
+  ring, then what follows the first semicolon as an effect line whose `FOR` is the ring (`{ who:
+  allies, range: 15 }`), stores both rules under the block's text, and refuses a `FOR:` inside the
+  block ("the ring is the FOR"). `[AURA 15 allies]` alone draws a ring that does nothing;
+  `[EFFECT ...; FOR: allies 15]` without a ring stays legal. One effect per block; a second effect
+  on the same ring is a second block with the same range and audience, and the first `aura` rule
+  of a Talent is the ring drawn. The engine, the hooks and the canvas read nothing new.
+- **196. The bare effect line in a cell and the `visible` word are refused**, as 0.17.0's records
+  promised: a tag line outside `[EFFECT ...]` in a Talent's, Maneuver's or Background's cell is one
+  error quoting the block to write (the custom effects field keeps the bare string; a block reads
+  there too); `[AURA ... visible]` is one error. `hasBare`, the `bare` flag and the warning branch
+  are gone; `parseAutomation` keeps its `warnings` for whatever warns next.
+- **197. The terrain kinds are the roster's.** A hand-kept `terrainKinds` block in
+  `assets/roster.json` (name, description, default difficulty, colour; the ten kinds of 0.15.0 with
+  their slugs unchanged) is written by the build to `content/terrain.json` and loaded at startup
+  into a registry (`registerTerrainKinds`, `module/config/terrain.mjs`), which the Difficult
+  terrain behavior's Kind dropdown, the `[EFFECT IGNORE: terrain, <kind>]` descriptors and their
+  messages, the ruler's label and the player's overlay all read; the pipeline step and the build
+  register the block before parsing, so a cell naming a kind the block lacks fails the build; the
+  compendium docx prints the list as an appendix. A kind is added with no code change.
+- **198. A Lore is named when it is Trained.** `SwActor#nameLore(field)` is the one method: the slug
+  `lore-<field>` and the name "Lore (Field)", the template Constellation renamed or the named one
+  made, every owned Talent on the template rewritten to it. The wizard no longer spends a Lore
+  point into the unnamed template: the point's one legal purchase prompts for the field once, and
+  Cancel leaves the point outstanding with Next blocked ("Name your Lore to spend this point");
+  a Background written "Lore (Circus)" asks nothing. Outside the wizard a Talent or the template
+  Constellation landing on a character prompts, and Cancel deletes it with a notice. A template
+  left from before shows **Name this Lore** on its Constellations row and prints "Lore (unnamed)"
+  there and on the party's Skills grid.
+
+Checked by the self-test (109 checks: the nested Rally Aura against its two-block form pairwise,
+the FOR refusal with the ring still read, a ring alone, two blocks on one line, the bare line and
+`visible` as errors, the terrain registry seeded as the pipeline seeds it), the content loop
+(`rules: 63 rules on 33 cells (15 kinds in use), 0 cells warned`; `automation: 36 rules on 21
+documents`; `content/terrain.json` written), the smoke test and the style check, and live in
+`starwrought-test` (the GM tab, Sync content): Wren's Torchbearer Talent carrying both rules under
+the one block, its As read reading the ring and "+1 Situation bonus to Defenses, against an attack
+with the Fear trait, for allies within 15 ft who can see you, the first time each round", its
+`system.aura` 15 allies; `SW.TERRAIN_KINDS` the ten from `content/terrain.json`, the Difficult
+terrain behavior's Kind choices the roster's names, the Test Mud behavior charging Tess (`{
+difficulty: 2, kind: "mud" }`) and nothing for Wren; the wizard with the Acrobat Background asking
+"Which Lore?" on arrival, Cancel leaving "Trained in Lore, 1 still to spend, Name your Lore to
+spend this point" with Next disabled and the step held, the slot's buy button asking again and
+"Circus" making Lore (Circus) with Deep Knowledge under `lore-circus`; Deep Knowledge created on
+Tess asking the same question, "Warfare" making Lore (Warfare) and filing the Talent under it,
+Cancel deleting the Talent with the notice; Name this Lore on a leftover template row renaming it
+Lore (Trade). One thing seen and not a defect of the new code: on the Cancel path a template
+Constellation "Lore" was created beside this tab's prompt with `swAuto`, by no call this tab made
+(the sheet's static was wrapped and saw none, and the setting gate it would need was never read
+here); the one maker of such an Item is the auto-open branch of the `createItem` hook as it stood
+through 0.17.0, running in another session of the same GM user (Foundry had been relaunched from
+Mike's side, and the server still served 0.17.0's manifest). A hook runs on every client of the
+creating user, so every GM tab reloads after Sync content; nothing in code answers it. **Not done, said so:** more than one
+effect inside one AURA block; an aura on a Maneuver row carrying an effect (untested); a terrain
+kind's own multiplier overriding a region's; a Lore renamed after it is named.
+
+---
+
 ## 0.17.0 (2026-11-05): every line in brackets, the Grammar journal, and the sheets' UI pass
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on

@@ -137,7 +137,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/diplomacy.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "dueling",
@@ -247,7 +247,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/guile.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "human",
@@ -287,7 +287,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/intimidation.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "kestrel-reach",
@@ -457,7 +457,7 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/stealth.png",
-    "enabled": false
+    "enabled": true
   },
   {
     "slug": "stormcraft",

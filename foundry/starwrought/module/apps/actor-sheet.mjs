@@ -9,6 +9,8 @@ import * as SW from "../config.mjs";
 import { MILESTONES_PER_LEVEL } from "../config.mjs";
 import { SwItem } from "../documents/item.mjs";
 import { SwChargen } from "./chargen.mjs";
+// NAMING A LORE (0.18.0)
+import { askToNameLore } from "./lore-name.mjs";
 import { loadBasicActions, enabledConstellations } from "../helpers/content.mjs";
 // The header's live state and the tooltips, shared with the adversary and party sheets (0.10.1).
 import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip } from "../helpers/actor-context.mjs";
@@ -104,6 +106,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rollInitiative: SwCharacterSheet.#onRollInitiative,
       toggleFlare: SwCharacterSheet.#onToggleFlare,
       toggleUnopened: SwCharacterSheet.#onToggleUnopened,
+      // NAMING A LORE (0.18.0): a leftover Lore template's row names its field.
+      nameLore: SwCharacterSheet.#onNameLore,
       toggleZone: SwCharacterSheet.#onToggleZone,
       recenter: SwCharacterSheet.#onRecenter,
       rest: SwCharacterSheet.#onRest,
@@ -507,8 +511,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // parent's, dimmed, with a hint saying whose. Neither changes what the Talents themselves cost.
       const inherited = Number(entry.inherited) || 0;
       const parentName = parentNameOf(entry.parent);
+      // A Lore left unnamed (0.18.0): the template's own row, which should not exist on a
+      // character, prints "Lore (unnamed)" and carries the control that names it.
+      const loreTemplate = entry.slug === SW.LORE_TEMPLATE_SLUG;
       group.constellations.push({
         ...entry,
+        name: loreTemplate ? game.i18n.localize("STARWROUGHT.Sheet.loreUnnamed") : entry.name,
+        loreTemplate,
         pool: entry.pool ?? entry.points,
         inherited,
         parentName,
@@ -787,9 +796,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
     const created = await super._onDropItem(event, item);
     // Buying a Talent in a Constellation you have not opened is buying its Root, so draw the sky.
+    // A Talent under the Lore template (0.18.0) is named by the createItem hook, which opens the
+    // Lore (X) itself; opening the template here would leave a second, unnamed sky.
     const docs = Array.isArray(created) ? created : [created];
     for (const doc of docs) {
-      if (doc?.type === "talent") await SwItem.ensureConstellation(this.document, doc.system.constellation);
+      if ((doc?.type === "talent") && (doc.system.constellation !== SW.LORE_TEMPLATE_SLUG)) {
+        await SwItem.ensureConstellation(this.document, doc.system.constellation);
+      }
     }
     return created;
   }
@@ -925,6 +938,15 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onToggleFlare(event, target) {
     return this.document.toggleFlare(target.dataset.slug);
+  }
+
+  /**
+   * NAMING A LORE (0.18.0): the Constellations tab's "Name this Lore" on a row whose slug is the
+   * template's. The prompt, then `SwActor#nameLore` with no Talent list, so the template Item is
+   * renamed in place and every Talent filed under it goes with it; the sheet redraws from the Items.
+   */
+  static async #onNameLore() {
+    return askToNameLore(this.document);
   }
 
   /**

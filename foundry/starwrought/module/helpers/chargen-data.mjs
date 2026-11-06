@@ -189,20 +189,16 @@ export async function talentDocument(entry) {
 
 /**
  * Every Lore (X) is a copy of the one authored Lore template, so a character can grow several
- * Lores side by side. This turns "Lore (Circus)" into its own Constellation slug.
+ * Lores side by side. `loreSlug` turns "Circus" into that Lore's own Constellation slug and
+ * `loreName` prints "Lore (Circus)" back out of it. Both live in config/names.mjs since 0.18.0
+ * (the Actor's `nameLore` and the createItem hook read them too) and are re-exported here so the
+ * wizard's imports stand.
  */
-export function loreSlug(field) {
-  return SW.slugify(`lore ${field}`);
-}
+export const loreSlug = SW.loreSlug;
+export const loreName = SW.loreName;
 
 /** Re-exported so callers here need only one import. The rule itself lives in config.mjs. */
 export const isLoreSlug = SW.isLoreSlug;
-
-/** "Lore (Circus)" out of a slug, for display. */
-export function loreName(slug) {
-  if (slug === "lore") return SW.getConstellation("lore").name;
-  return `Lore (${slug.replace(/^lore-/, "").replace(/-/g, " ").titleCase()})`;
-}
 
 /* -------------------------------------------- */
 

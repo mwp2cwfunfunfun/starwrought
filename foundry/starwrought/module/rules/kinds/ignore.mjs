@@ -10,8 +10,10 @@
  *   [EFFECT IGNORE: terrain]                                               every kind
  *
  * `Terrain` is the one word so far (the Difficult terrain region behavior,
- * module/data/region-behaviors/difficult-terrain.mjs); the kinds are SW.TERRAIN_KINDS
- * (module/config/terrain.mjs), the same list the behavior's `kind` select offers, so a cell and a
+ * module/data/region-behaviors/difficult-terrain.mjs); the kinds are the roster's hand-kept
+ * `terrainKinds` block (0.18.0), registered into module/config/terrain.mjs before any parse (by the
+ * pipeline step, the build, the client at init and the self-test), the same list the behavior's
+ * `kind` select offers, so a cell and a
  * region share one vocabulary. No kind named means every kind. The stored rule:
  * `{ kind: "ignore", line, text, what: "terrain", kinds: string[] (slugs; empty for all), when }`.
  *
@@ -27,7 +29,7 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
-import { TERRAIN_KINDS, terrainKindOf, terrainKindName } from "../../config.mjs";
+import { terrainKindOf, terrainKindName, terrainKindList } from "../../config.mjs";
 import { rulesOfKind } from "../engine.mjs";
 
 const SHAPE = "IGNORE: terrain [, <kind>, ...]";
@@ -47,10 +49,8 @@ export default {
     const kinds = [];
     for (const part of parts.slice(1)) {
       const slug = terrainKindOf(part);
-      if (!slug) {
-        const names = Object.keys(TERRAIN_KINDS).map(terrainKindName);
-        throw new RuleSyntaxError(`"${part}" is not a terrain kind: write ${names.slice(0, -1).join(", ")} or ${names.at(-1)}`);
-      }
+      // The kinds are the roster's `terrainKinds` block (0.18.0), registered before any parse.
+      if (!slug) throw new RuleSyntaxError(`"${part}" is not a terrain kind: write ${terrainKindList()}`);
       if (!kinds.includes(slug)) kinds.push(slug);
     }
     refuseOutcome(ops);
@@ -73,7 +73,7 @@ export default {
  * region behavior for the token's actor; an actor with no `ignore` rules, or none naming the kind,
  * pays the region's cost. An `IF` on a rule is the owner's rank.
  * @param {object|null} actor
- * @param {string} kind  A slug of SW.TERRAIN_KINDS.
+ * @param {string} kind  A slug of the registered terrain kinds (SW.TERRAIN_KINDS, the roster's rows).
  * @returns {boolean}
  */
 export function ignoresTerrain(actor, kind) {
