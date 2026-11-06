@@ -47,10 +47,12 @@ export { resolveActor, resolveTokenDoc, ownedActor } from "./cards/shared.mjs";
 export function onRenderChatMessage(message, html) {
   // A card title that opens a Rules Reference page (0.5.1, T6: the Bind and Exposed cards). Those
   // cards carry no flags, so this is wired before the flags gate and skipped by the loop below.
+  // Since 0.17.0 a link may name another journal of the pack with `data-journal` (the Automation
+  // Grammar); without it the Reference is meant, as every card through 0.16.0 wrote.
   for (const link of html.querySelectorAll("[data-sw-action='rulesPage']")) {
     link.addEventListener("click", event => {
       event.preventDefault();
-      openRulesPage(link.dataset.page);
+      openRulesPage(link.dataset.page, { journal: link.dataset.journal });
     });
   }
 
@@ -214,25 +216,51 @@ async function onCardButton(event, message, flags) {
 
 /* -------------------------------------------- */
 
+/** The two journals the build writes into the rules pack: the Reference (0.5.1) and the Grammar (0.17.0). */
+export const REFERENCE_JOURNAL = "STARWROUGHT Reference";
+export const GRAMMAR_JOURNAL = "STARWROUGHT Automation Grammar";
+
 /**
- * Open a page of the shipped Rules Reference by its title (0.5.1, T6). The page is found by name
- * in the `rules` compendium, never by id: the ids are deterministic in the build, but the client
- * has no business knowing them. Used by the Bind and Exposed card titles, the sheet's bind line,
- * the Zones panel's EXPOSED badge and the Effects tab.
- * @param {string} title  The page's name, as build_foundry.mjs's journalPages spells it.
+ * Open a page of a shipped rules journal by its title (0.5.1, T6). The journal and the page are
+ * found by name in the `rules` compendium, never by id: the ids are deterministic in the build,
+ * but the client has no business knowing them. Used by the Bind and Exposed card titles, the
+ * sheet's bind line, the Zones panel's EXPOSED badge and the Effects tab, and since 0.17.0 by the
+ * Grammar buttons on the Item sheet and the Effects panel, which name the Automation Grammar.
+ * @param {string} title             The page's name, as build_foundry.mjs spells it.
+ * @param {object} [options]
+ * @param {string} [options.journal]  The journal's name; the Reference when none is given. A pack
+ *                                    with no journal of that name is searched whole, as it was
+ *                                    through 0.16.0. When the journal is found and the page is
+ *                                    not, the journal opens at its first page.
  * @returns {Promise<Application|null>}
  */
-export async function openRulesPage(title) {
+export async function openRulesPage(title, { journal = REFERENCE_JOURNAL } = {}) {
   if (!title) return null;
   const pack = game.packs.get(`${SW.SYSTEM_ID}.rules`);
   const entries = pack ? await pack.getDocuments() : [];
+  const wantedJournal = String(journal ?? "").trim().toLowerCase();
+  const named = entries.filter(e => e.name.trim().toLowerCase() === wantedJournal);
+  const searched = named.length ? named : entries;
   const wanted = String(title).trim().toLowerCase();
-  for (const entry of entries) {
+  for (const entry of searched) {
     const page = entry.pages.find(p => p.name.trim().toLowerCase() === wanted);
     if (page) return entry.sheet.render({ force: true, pageId: page.id });
   }
+  const first = named[0]?.pages.contents.sort((a, b) => a.sort - b.sort)[0];
+  if (first) return named[0].sheet.render({ force: true, pageId: first.id });
   ui.notifications.warn(game.i18n.format("STARWROUGHT.Rules.missing", { page: title }));
   return null;
+}
+
+/**
+ * Open the Automation Grammar journal (0.17.0), at its first page unless another is named: the
+ * same document as AUTOMATION_GRAMMAR.md in the project root, which the build ships into the rules
+ * pack one page per section.
+ * @param {string} [page]  A page's name, as the document's `## ` headings read without their number.
+ * @returns {Promise<Application|null>}
+ */
+export async function openGrammar(page = "At a glance") {
+  return openRulesPage(page, { journal: GRAMMAR_JOURNAL });
 }
 
 /* -------------------------------------------- */

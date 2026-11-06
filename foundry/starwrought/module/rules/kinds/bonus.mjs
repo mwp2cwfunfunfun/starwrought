@@ -5,22 +5,20 @@
  * The first kind, and Mike's own (2026-10-03): "first automation kind we will create is the Human
  * Ancestry one. The Effect is: 'You gain a +1 Condition bonus on checks to Aid. If you are Expert
  * in Human, this becomes a +2 Condition bonus. If you are Master, +3. If you are Legendary, +4.'"
- * Then, on the second draft of the grammar (2026-11-05): "I am OK using logical operands like
- * IF(Origin=Trained) and grammatical shortcuts like Bonus: +1, Condition, Aid". So (AUTOMATION_GRAMMAR.md):
+ * Since 0.16.0 in Fantasy Grounds' shape, and since 0.17.0 in FG's block (AUTOMATION_GRAMMAR.md):
  *
- *   bonus: <±N>, <Type>, <Target> [, operators]
+ *   [EFFECT <TAG>: <±N> <type>, <descriptor>; <component>; ...]
  *
- *   bonus: +1, Condition, Aid, IF(Origin=Trained)                                              Humanity
- *   bonus: +1, Situation, Checks, IF(Rank=Untrained)                                           Jack of Trades
- *   bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)   Close Ranks
- *   bonus: +1, Situation, Defenses, FOR(allies, 15ft), SEEN, IF(Trait=Fear), FIRST(round)      Torchbearer Human
+ *   [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]                              Humanity
+ *   [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]                                    Jack of Trades
+ *   [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]        Close Ranks
+ *   [EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]        Torchbearer Human
  *
- * `<±N>` is a signed integer (a bare `1` reads as `+1`; `0` is refused). `<Type>` is Situation,
- * Condition or Gear (the retired words refused by name, `untyped` refused). `<Target>` is a
- * Constellation or a Maneuver by the book's name, or one of the words Defenses (all four), Checks
- * (every check that is not an attack, an Initiative included), Attacks, Initiative. The operators
- * are the grammar's (../operators.mjs): IF, FOR, WHILE, AGAINST, SEEN, FIRST, ONCE. The 0.10.0 prose
- * form (`+1 Condition to Aid if Human is Expert`) is retired and refused with the new shape.
+ * The tag names the target's kind (CHECK a Constellation or a Maneuver, or every check; DEF one
+ * Defense or all four; ATK, INIT, SPEED), the value is a signed integer (`0` refused), the type is
+ * situation, condition or gear (the retired words refused by name, `untyped` refused), and the
+ * components are the effect reader's (../effects.mjs). The 0.13.0 operator form and the 0.10.0
+ * prose form are refused by the grammar.
  *
  * The stored rule:
  *
@@ -54,12 +52,10 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled } from "../operators.mjs";
+import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled } from "../operators.mjs";
 import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug, DEFENSES } from "../../config.mjs";
 
-const SHAPE = "bonus: <±N>, <Type>, <Target> [, operators]";
 const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
-const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "CLAIM", "MARKED"]);
 
 /** The three type words of PHB v3.3, lower-cased. */
 const TYPES = Object.freeze(["situation", "condition", "gear"]);
@@ -166,32 +162,9 @@ export default {
         claim: e.ops.claim, marked: e.ops.marked
       };
     }
-    if (context?.form === "feature") throw new RuleSyntaxError("a bonus is an effect line, not a bracketed feature: `CHECK: 1 condition, aid`");
-
-    // The 0.13.0 form, read for one more release (the grammar flags it legacy and the build warns).
-    const text = String(args ?? "").trim();
-    // The 0.10.0 prose form, retired: a line with no comma and the word `to` in it.
-    if (!text.includes(",") && /\s+to\s+/i.test(text)) {
-      throw new RuleSyntaxError(`the 0.10.0 form "bonus: +1 Condition to Aid if Human is Expert" is retired; write \`${EXAMPLE}\``);
-    }
-    const { args: parts, ops } = readLine(text, { allow: OPERATORS_TAKEN, kind: "bonus", context });
-    if (parts.length !== 3) {
-      throw new RuleSyntaxError(`a bonus is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} argument${parts.length === 1 ? "" : "s"} given, 3 wanted)`);
-    }
-    const [valueText, typeWord, targetText] = parts;
-
-    if (!/^[+-]?\d+$/.test(valueText)) throw new RuleSyntaxError(`a bonus is a whole number such as +1 or -2, not "${valueText}"`);
-    const value = Number(valueText);
-    if (value === 0) throw new RuleSyntaxError("a bonus of 0 does nothing");
-
-    const type = readType(typeWord);
-    const to = readTarget(targetText, context?.resolve);
-    refuseOutcome(ops);
-
-    return {
-      value, type, to, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit,
-      claim: ops.claim, marked: ops.marked
-    };
+    // A bonus is an effect: a feature block names no bonus, and the 0.13.0 form is refused by the
+    // grammar before a kind sees it (0.17.0).
+    throw new RuleSyntaxError(`a bonus is an effect: \`[EFFECT ${EXAMPLE}]\``);
   },
 
   /** `+1 Condition bonus to Aid while Origin is Trained`; `penalty` when negative. */

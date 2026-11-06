@@ -2,35 +2,33 @@
  * The `grant` rule kind (0.13.0): Talent Points a Talent hands out at creation, the `Grants`
  * column's successor (Mike, 2026-11-05: "Move to Automation").
  *
- *   grant: <N>, <Scope> [, DIFFERENT] [, IF(...)]
+ *   [POINT [<N>] <Scope> [different]]        [<Constellation> trained]
  *
- *   grant: 1, Calling            Driven
- *   grant: 1, Skill              Quick Study
- *   grant: 1, Opening            Versatile Human
- *   grant: 2, Skill, DIFFERENT
+ *   [POINT Calling]              Driven
+ *   [POINT Skill]                Quick Study
+ *   [POINT Opening]              Versatile Human
+ *   [POINT 2 Skill different]
+ *   [Acrobatics trained]         a Background's or a Calling's free Training (0.16.0)
  *
  * `<N>` is a whole number of 1 or more. `<Scope>` is where the points may be spent: Opening (a Root
  * of a Constellation not yet opened, the book's Opening Talent Point), Calling, Skill, Lore,
- * Defense, Combat Style, or Comet (anywhere you qualify). `DIFFERENT`, with N above 1, puts each
- * point in a different Constellation of the scope. `IF` is accepted and stored; the wizard does not
- * read it yet (a Talent whose point depends on a rank at creation has not been written).
+ * Defense, Combat Style, or Comet (anywhere you qualify). `different`, with N above 1, puts each
+ * point in a different Constellation of the scope. `[<Constellation> trained]` is one point
+ * directed at that Root (`constellation` on the rule).
  *
- * The stored rule: `{ kind: "grant", line, text, n, scope, different, when }`. `toGrantField(rule)`
- * is the shape the creation wizard has read since 0.4 (`system.grant { n, mode, scope }`,
- * `GRANT_SCOPES` in apps/chargen.mjs): Opening is mode "open" anywhere, Comet mode "any" anywhere,
- * every other scope its own word with mode "different" or "any". The build writes it onto the Talent
- * and the Talent model derives it again from the rule at prepare, so a world Item whose textarea a
- * GM edits is read the same way. No hook: a grant is consumed by the wizard, not by a roll.
+ * The stored rule: `{ kind: "grant", line, text, n, scope, different, when, constellation? }`.
+ * `toGrantField(rule)` is the shape the creation wizard has read since 0.4 (`system.grant { n,
+ * mode, scope, constellation }`, `GRANT_SCOPES` in apps/chargen.mjs): Opening is mode "open"
+ * anywhere, Comet mode "any" anywhere, every other scope its own word with mode "different" or
+ * "any". The build writes it onto the Talent and the Talent model derives it again from the rule at
+ * prepare, so a world Item whose textarea a GM edits is read the same way. No hook: a grant is
+ * consumed by the wizard, not by a roll. The 0.13.0 `grant:` line is refused by the grammar.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE (the build imports it from Node).
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, summarizeOperators } from "../operators.mjs";
-
-const SHAPE = "grant: <N>, <Scope> [, DIFFERENT]";
-const EXAMPLE = "grant: 1, Calling";
-const OPERATORS_TAKEN = Object.freeze(["IF", "DIFFERENT"]);
+import { summarizeOperators } from "../operators.mjs";
 
 /** The scopes, by the lower-cased word with its spaces removed, to the word as stored and printed. */
 export const GRANT_SCOPES = Object.freeze({
@@ -118,24 +116,7 @@ export default {
       if (different && (n < 2)) throw new RuleSyntaxError("different needs 2 or more points to put in different Constellations");
       return { n, scope, different, when: null };
     }
-    if (context?.form === "effect") throw new RuleSyntaxError("a grant is a bracketed feature: `[POINT Skill]` or `[Acrobatics trained]`");
-
-    // The 0.13.0 form, read one more release; a third argument naming the Constellation (Mike's
-    // backgrounds of 2026-11-05, `grant: 1, Skill, Acrobatics`) reads as `[Acrobatics trained]`.
-    const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "grant", context });
-    if ((parts.length !== 2) && (parts.length !== 3)) {
-      throw new RuleSyntaxError(`a grant is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} argument${parts.length === 1 ? "" : "s"} given, 2 wanted)`);
-    }
-    const [nText, scopeWord, named] = parts;
-    if (!/^\d+$/.test(nText) || (Number(nText) < 1)) throw new RuleSyntaxError(`a grant is a whole number of points, 1 or more, not "${nText}"`);
-    const n = Number(nText);
-    const scope = readScope(scopeWord);
-    if (ops.different && (n < 2)) throw new RuleSyntaxError("DIFFERENT needs 2 or more points to put in different Constellations");
-    if (named) {
-      const found = readConstellation(named, context.resolve);
-      return { n, scope, constellation: found.slug, constellationName: found.name, different: ops.different, when: ops.when, trained: true };
-    }
-    return { n, scope, different: ops.different, when: ops.when };
+    throw new RuleSyntaxError("a grant is a bracketed feature: `[POINT Skill]` or `[Acrobatics trained]`");
   },
 
   /** `1 Calling Talent Point`; `2 Skill Talent Points, each in a different Constellation`; `Trained in Acrobatics`. */

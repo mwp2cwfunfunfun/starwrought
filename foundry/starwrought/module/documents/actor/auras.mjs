@@ -1,6 +1,8 @@
 /**
  * SwActor: auras (0.5.1). A Talent's aura pinned visible or not, the marks cleared, and the GM's
  * custom auras on an actor. The drawing is canvas/auras.mjs; this is the record on the document.
+ * Since 0.17.0 every ring is preview only until a mark lights it: the Item's `aura.visible` field
+ * is gone and a custom ring is added unlit, so `system.auras.visible` is the one way a ring shows.
  */
 
 
@@ -25,8 +27,9 @@ export const AurasMixin = Base => class extends Base {
   }
 
   /**
-   * Every mark unset: back to the data defaults, in which an ability's own Visible flag still
-   * counts and reach is preview only. The GM's Clear control calls it on every combatant.
+   * Every mark unset: back to the default, in which every ring is preview only (0.17.0; through
+   * 0.16.0 an ability's own Visible flag still counted). The GM's Clear control calls it on every
+   * combatant.
    * @returns {Promise<boolean>}  True when there was something to clear.
    */
   async clearAuraMarks() {
@@ -40,8 +43,9 @@ export const AurasMixin = Base => class extends Base {
   }
 
   /**
-   * Add a custom ring, Visible from the start: the "within 20 feet" the GM improvises mid-fight,
-   * or a player's own marker. `gmOnly` hides it from players always.
+   * Add a custom ring, preview only until lit (0.17.0; through 0.16.0 it was Visible from the
+   * start): the "within 20 feet" the GM improvises mid-fight, or a player's own marker. `gmOnly`
+   * hides it from players always.
    * @param {object} spec
    * @param {string} [spec.label]
    * @param {number} [spec.feet]
@@ -61,7 +65,7 @@ export const AurasMixin = Base => class extends Base {
       color: color || null,
       gmOnly: !!gmOnly
     });
-    await this.update({ "system.auras.custom": custom, [`system.auras.visible.${key}`]: true });
+    await this.update({ "system.auras.custom": custom });
     return key;
   }
 

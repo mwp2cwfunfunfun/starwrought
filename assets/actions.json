@@ -800,7 +800,7 @@
    "requirements": "The ally is willing to accept your aid.",
    "trigger": "",
    "description": "You use an action to help an ally.",
-   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br><b>Critical Success </b>If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
+   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br>Critical Success If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br>Success If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br>Critical Failure If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
    "automation": "",
    "meta": "Watching, Deceiving & Helping",
    "costDefaulted": false,
@@ -929,7 +929,7 @@
    "trigger": "An adjacent ally's Strike is Stopped and would Expose them.",
    "description": "You take the blow's momentum on your own guard, and your ally keeps their footing.",
    "effect": "It Exposes nothing.",
-   "automation": "IMMUNE: expose; FOR: allies 0",
+   "automation": "[EFFECT IMMUNE: expose; FOR: allies 0]",
    "meta": "",
    "costDefaulted": false,
    "sheet": "Talent Maneuvers",
@@ -949,7 +949,7 @@
      "marked": false,
      "kind": "prevent",
      "line": 1,
-     "text": "IMMUNE: expose; FOR: allies 0"
+     "text": "[EFFECT IMMUNE: expose; FOR: allies 0]"
     }
    ]
   },
@@ -968,7 +968,7 @@
    "trigger": "",
    "description": "When someone breaks faith with you, certainty steadies your hand and steels your resolve.",
    "effect": "Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.",
-   "automation": "MARK: enemies\nATK: 1 condition; IFT: MARKED\nDEF: 1 condition; IFT: MARKED",
+   "automation": "[EFFECT MARK: enemies]\n[EFFECT ATK: 1 condition; IFT: MARKED]\n[EFFECT DEF: 1 condition; IFT: MARKED]",
    "meta": "",
    "costDefaulted": false,
    "sheet": "Talent Maneuvers",
@@ -980,7 +980,7 @@
      "when": null,
      "kind": "mark",
      "line": 1,
-     "text": "MARK: enemies"
+     "text": "[EFFECT MARK: enemies]"
     },
     {
      "value": 1,
@@ -1000,7 +1000,7 @@
      "marked": true,
      "kind": "bonus",
      "line": 2,
-     "text": "ATK: 1 condition; IFT: MARKED"
+     "text": "[EFFECT ATK: 1 condition; IFT: MARKED]"
     },
     {
      "value": 1,
@@ -1020,7 +1020,7 @@
      "marked": true,
      "kind": "bonus",
      "line": 3,
-     "text": "DEF: 1 condition; IFT: MARKED"
+     "text": "[EFFECT DEF: 1 condition; IFT: MARKED]"
     }
    ]
   },
@@ -1039,7 +1039,7 @@
    "trigger": "You critically fail a Diplomacy check.",
    "description": "You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.",
    "effect": "Reroll the triggering Diplomacy check, using the second result.",
-   "automation": "REROLL: diplomacy; IF: RESULT(critical failure)",
+   "automation": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]",
    "meta": "",
    "costDefaulted": false,
    "sheet": "Talent Maneuvers",
@@ -1059,7 +1059,7 @@
      ],
      "kind": "reroll",
      "line": 1,
-     "text": "REROLL: diplomacy; IF: RESULT(critical failure)"
+     "text": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]"
     }
    ]
   }

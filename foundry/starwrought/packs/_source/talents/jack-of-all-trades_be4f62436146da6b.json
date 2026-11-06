@@ -57,6 +57,7 @@
         "limit": null,
         "claim": null,
         "marked": false,
+        "bare": true,
         "kind": "bonus",
         "line": 1,
         "text": "CHECK: 1 situation; IF: RANK(roll = untrained)"
@@ -72,7 +73,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ad11c769611c0516"
+      "contentHash": "196867c7530e1796"
     }
   },
   "effects": [],

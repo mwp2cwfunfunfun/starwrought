@@ -19,9 +19,11 @@
  *   source    the Item the entry comes from (the Talent, the Maneuver, the weapon that sets Total
  *             Reach or the Unwieldy zone), or null
  *   kind      `reach`, `totalReach`, `unwieldy`, `talent`, `action` or `custom`
- *   visible   the mark as it stands: the actor's own if one is stored, else the default (the
- *             Item's `aura.visible`; false for a band; true for a custom ring, since a ring somebody
- *             drew by hand was drawn to be seen)
+ *   visible   the mark as it stands: the actor's own if one is stored, else false. Since 0.17.0
+ *             every ring is preview only until its owner or the GM lights it in the Auras window
+ *             or on a sheet row: the Item's `aura.visible` field is gone, and a custom ring is no
+ *             longer lit as it is drawn (through 0.16.0 an ability's ring fell back to that field
+ *             and a custom ring to true)
  *   gmOnly    a custom ring the players never see
  *
  * The list is in the order the sheet lists it: Total Reach, Natural Reach, Unwieldy, then the
@@ -97,11 +99,11 @@ export function rangesOf(actor) {
     out.push({
       key: item.id, label: plainRangeLabel(item.name), feet: aura.range, audience,
       color: SW.AURA_COLORS[audience], source: item, kind: item.type,
-      visible: markOf(item.id, !!aura.visible), gmOnly: false
+      visible: markOf(item.id, false), gmOnly: false
     });
   }
 
-  // The custom rings drawn on the token HUD.
+  // The custom rings drawn on the token HUD, preview only until lit (0.17.0).
   // A ring of 0 feet is the adjacent squares, which the renderer draws and the palette accepts.
   for (const ring of system.auras?.custom ?? []) {
     if (!ring?.key || !(ring.feet >= 0)) continue;
@@ -109,7 +111,7 @@ export function rangesOf(actor) {
     out.push({
       key: ring.key, label: ring.label || localize("STARWROUGHT.Field.auraCustom"), feet: ring.feet,
       audience, color: ring.color || SW.AURA_COLORS[audience], source: null, kind: "custom",
-      visible: markOf(ring.key, true), gmOnly: !!ring.gmOnly
+      visible: markOf(ring.key, false), gmOnly: !!ring.gmOnly
     });
   }
 

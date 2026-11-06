@@ -1,0 +1,13 @@
+{{!-- The Notes tab (0.17.0): whatever else the table needs written down, on a tab of its own
+      (it shared the Biography tab through 0.16.0). --}}
+<section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.notes"}}</h3>
+    <prose-mirror name="system.details.notes" value="{{system.details.notes}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>
+      {{{enrichedNotes}}}
+    </prose-mirror>
+  </div>
+
+</section>

@@ -776,11 +776,8 @@ mud`; `module/rules/effects.mjs`; `IF:` the owner or the roll, `IFT:` the other 
 attack, both prefixes reading every condition). **The stored rule shapes and the four hook points
 did not change**: the readers fill the same `ops` record, so `bonus`, `prevent`, `mark`, `reroll`
 and `ignore` keep their hooks; nine feature kinds (`module/rules/kinds/features.mjs`: `trait`,
-`size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) have none. **The
-0.13.0 form reads one more release** (`grammar.mjs`: a `bonus:`, `grant:`, `aura:` or `prevent:`
-line, or a `mark:`/`reroll:`/`ignore:` line carrying `IF(...)`-style operators, is read by the
-kind's legacy branch and flagged `legacy: true`; the build and the pipeline step WARN once per
-cell; 0.17.0 refuses it; `operators.mjs` keeps `readLine` for it and the shared vocabularies).
+`size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) have none. The
+0.13.0 form read one more release and **is refused since 0.17.0** (below).
 **The chassis is written on the Root** (ruling 183): the index columns Vigor/HP, Size, Speed,
 Senses, Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, and the
 roster's Opening Vigor column are retired, read this release with one warning per workbook, a
@@ -808,6 +805,40 @@ indexed as a carrier, durations until removed / the next roll / the end of the e
 tracker's badge. Every cell of the Human, the Cultures, the Backgrounds, the Callings and the
 three Maneuver rows is written in the new shape (`AUTOMATION_GRAMMAR.md` section 5); Excel had
 released `ancestries.xlsx`, so Torchbearer's Rally Aura cell is finally in the sheet.
+
+**0.17.0 (Mike, 2026-11-05; rulings 189 to 194): every line in brackets, the Grammar journal, the
+sheets' UI pass.** Mike, with five screenshots: "shouldn't ALL of those be enclosed in Brackets?";
+a button to a Compendium entry with the grammar; Edicts, Anathema and a Notes tab; the Effects
+panel onto the empty Effects tab with an "apply to next roll" button for a line the system cannot
+apply by itself; "ALL auras should be preview-only by default"; the Talent name as the click and
+the hover; the Talent window reordered with the empty Active Effects tab gone. **Every cell line
+is a bracketed block** (ruling 189): the feature blocks and FG's own `[EFFECT <tag>: ...; ...]`
+(`features.mjs` returns the block with `effect: true`, `grammar.mjs` hands its inside to the effect
+reader; the stored rules unchanged); a bare effect line in a cell reads this release flagged
+`bare` with a warning (`parseAutomation` returns `{ rules, errors, warnings }`, a kind warns with
+`context.warn`), 0.18.0 refuses it, and the custom effects field (`itemType: "effect"`) keeps the
+bare string as FG's does; **the 0.13.0 operator form is refused** with `LEGACY_REFUSAL`
+(`readLine` and the kinds' legacy branches gone). **The document is the journal** (ruling 190):
+`assets/lib/markdown.mjs` turns `AUTOMATION_GRAMMAR.md` into the "STARWROUGHT Automation Grammar"
+journal of the Rules pack at build time (`docId("rules", "journal:grammar")`, a page per `##`
+section, "0. At a glance" first), `openRulesPage(title, { journal })` opens either journal, the
+**Grammar** button (`rulesJournal` action) sits on every Item's Automation panel and the Effects
+tab's custom heading, and the document gate wants every tag, component, condition and keyword to
+head a table row. **Every aura is preview-only until shown** (ruling 191): `rangesOf` falls back to
+`false` for every ring, `system.auras.visible.<key>` (the Auras window's toggle) is the one way a
+ring shows, `system.aura.visible` is gone from the Item (`migrateAuraVisible` in the models), the
+`visible` word warned this release and refused next. **A claim line is armed, never switched**
+(ruling 192): on the Effects tab a line with `IF: CLAIM(...)` shows **Apply to next roll**
+(`armClaimLine` in `helpers/effects.mjs`, the 0.15.0 flag). **Edicts, Anathema, Notes** (ruling
+193): `details.edicts` and `details.anathema` on the character; Notes the seventh tab
+(`Tab.characterNotes`). **The Effects tab holds the panel** (ruling 194). UI, no ruling: the
+Constellations tab's Talent name is the `itemEdit` click with a rich tooltip of the Effect
+(`talentTip`); `SwItemSheet.NO_EFFECTS_TAB` drops the Active Effects part and tab for `talent`,
+`constellation` and `action`; the Description tab reads Traits, Description, Effect, Source and
+`.starwrought.item prose-mirror { min-height: 0 }`. The cells of `cultures.xlsx`,
+`backgrounds.xlsx`, `callings.xlsx` and the Talent Maneuvers rows are wrapped (backups in
+`backup/pre-0.17.0/`); Excel held `ancestries.xlsx`, so the Human's five effect lines stay bare,
+warned, Mike's to wrap.
 
 ## Where the source of truth lives
 
@@ -1084,10 +1115,14 @@ released `ancestries.xlsx`, so Torchbearer's Rally Aura cell is finally in the s
   as a Reaction (no Talent asks for it; the Expose Reaction is built); adversaries' rolls (flat);
   hearing, light and sight range (`SEEN` is line of sight and three statuses); a `reroll` on an
   Attack or Defense card (those keep the 0.5.3 button); durations in rounds and dice values on a
-  modifier (FG has them; no Talent wants them yet). **The 0.13.0 form reads this release only**: a
-  cell still in it builds with a warning naming the line, and 0.17.0 refuses it; the only cells
-  known to carry it are none in the repository's workbooks (every Automation cell was rewritten),
-  but a GM's world Item may. **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
+  modifier (FG has them; no Talent wants them yet). **The 0.13.0 form is refused since 0.17.0**
+  (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
+  bare effect line in a cell reads this release only** (0.17.0): it builds with a warning naming the
+  line, and 0.18.0 refuses it; the only cells known to carry it are the Human's five in
+  `data/ancestries.xlsx`, which Excel held open during the 0.17.0 rewrite, Mike's to wrap in
+  `[EFFECT ...]` (the custom effects field keeps the bare form). **The `visible` word of `[AURA
+  ...]`** is read with a warning this release and refused next; no repository cell carries it.
+  **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
   Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, the roster's
   Opening Vigor) are read this release with a warning and refused next; `weapons.xlsx`'s Melee
   sheet still carries Weapon Familiarity's Choice "Weapon Group or Technical Weapon" in the column
@@ -1120,6 +1155,19 @@ released `ancestries.xlsx`, so Torchbearer's Rally Aura cell is finally in the s
   Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
   Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
   Combat was deleted. Nothing in the repository depends on them.
+
+Cleared 2026-11-05 (every line in brackets, the Grammar journal, the sheets' UI pass, system
+0.17.0; rulings 189 to 194 in the 0.17.0 changelog entry; planned in `eager-wobbling-possum.md`, the
+fifth plan, Mike's decisions by question: `[EFFECT ...]` as FG's own form, the Active Effects tab
+off the data Items only, `visible` retired): Mike's seven points after the 0.16.0 push, each
+built: `[EFFECT ...]` blocks with the bare line's one release of grace and the 0.13.0 form refused;
+the grammar document as a journal in the Rules pack with a Grammar button where a line is typed;
+Edicts, Anathema and a Notes tab; the Effects panel on the Effects tab with Apply to next roll on
+claim lines; every aura preview-only until shown; the Talent name as the click and the hover; the
+Item window reordered, fitted and without its empty tab. Checked by the self-test, the content
+loop, the smoke test, the style check and live (the 0.17.0 changelog entry lists what). The Human's
+five cells in `ancestries.xlsx` stay bare (Excel held the file), warned. No handbook moved and
+`data/SYNC.json` is untouched.
 
 Cleared 2026-11-05 (the grammar in Fantasy Grounds' shape, system 0.16.0; rulings 182 to 188 in
 the 0.16.0 changelog entry; planned in `eager-wobbling-possum.md`, the fourth plan, Mike's decisions

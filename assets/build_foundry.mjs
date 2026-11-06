@@ -11,7 +11,10 @@
  *   -> foundry/starwrought/packs/<pack>                    (compiled LevelDB, if the CLI is present)
  *
  * The Foundry system is generated content in exactly the way the app HTML is: edit the
- * spreadsheets, run the pipeline, run this. Nothing here is authored by hand.
+ * spreadsheets, run the pipeline, run this. Nothing here is authored by hand. Since 0.17.0 the
+ * rules pack also carries AUTOMATION_GRAMMAR.md from the project root as the "STARWROUGHT
+ * Automation Grammar" journal, one page per `## ` section, rendered by assets/lib/markdown.mjs, so
+ * the grammar the author reads and the one the Item sheet's Grammar button opens are one file.
  *
  * Document ids are a hash of pack plus name, so they are stable across rebuilds. That matters:
  * an id becomes a compendium UUID the moment somebody drags a Talent onto a character sheet.
@@ -54,6 +57,9 @@ import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs
 // The rule targets' resolver (0.16.0): one module, imported here and by assets/parse_rules.mjs, so
 // the step that parses every cell and this build's fallback parse answer a name identically.
 import { buildResolver } from "./lib/rule_targets.mjs";
+// The grammar journal (0.17.0): AUTOMATION_GRAMMAR.md cut at its `## ` headings and rendered to the
+// HTML a journal text page holds, by the build's own small converter (node built-ins only).
+import { markdownToHtml, splitSections } from "./lib/markdown.mjs";
 // The two kinds whose rules fill a field the system has read since before them (0.13.0): the
 // mapping lives in the kind file, so the build and the Talent model derive the same field.
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
@@ -189,17 +195,13 @@ function actionName(name) {
 }
 
 /**
- * The aura of a Talent or Maneuver (0.5.1), as the converter wrote it from the Aura column: feet
- * around the carrier, who it concerns, and whether it is Visible by default. Only a row with the
- * cell set carries one; the Item model supplies "none" for every other, so the sources stay small.
- */
-/**
- * The ring on the map (0.5.1). Since 0.13.0 an `aura:` rule in the Automation cell is the authoring
- * ("aura: 15ft, allies, VISIBLE"; AUTOMATION_GRAMMAR.md), parsed by the grammar like every rule and
- * carrying `{ range, affects, visible }`; the Aura column still reads on the sheets that have it,
- * and the converter refuses a row with both. One `aura` rule per document (a second is the kind's
- * own refusal). The field written is the same `system.aura`, so `rangesOf` and the canvas read
- * nothing new.
+ * The ring on the map (0.5.1). Since 0.13.0 an aura rule in the Automation cell is the authoring
+ * (`[AURA 15 allies]` since 0.16.0; AUTOMATION_GRAMMAR.md), parsed by the grammar like every rule
+ * and carrying `{ range, affects }`; the Aura column still reads on the sheets that have it, and the
+ * converter refuses a row with both. One `aura` rule per document (a second is the kind's own
+ * refusal). The field written is the same `system.aura`, so `rangesOf` and the canvas read nothing
+ * new. Every ring is preview-only until its owner shows it (0.17.0): the column's Visible flag,
+ * like the retired `visible` word, writes nothing.
  */
 const auraOf = (row, rules = []) => {
   const rule = rules.find(r => r.kind === "aura");
@@ -207,8 +209,7 @@ const auraOf = (row, rules = []) => {
   return row.aura ? {
     aura: {
       range: Number.isInteger(row.aura.range) ? row.aura.range : null,
-      affects: row.aura.affects ?? "all",
-      visible: !!row.aura.visible
+      affects: row.aura.affects ?? "all"
     }
   } : {};
 };
@@ -1376,6 +1377,63 @@ const journalPages = [
 }
 
 /* -------------------------------------------- */
+/*  The Automation Grammar journal (0.17.0)     */
+/* -------------------------------------------- */
+
+/* AUTOMATION_GRAMMAR.md, the grammar's reference for the person typing in an Automation cell
+   (CLAUDE.md, standing rule), shipped into the game as a second journal of the rules pack so the
+   Item sheet's Grammar button and the Effects panel's open the document the author reads. One page
+   per `## ` section, named by the heading without its "N. " number ("At a glance", "Feature lines
+   ..."), each page's id hashed from that name so it keeps its UUID across builds and across the
+   lead's renumbering; the H1 title goes on nothing, and the prose between it and the first section
+   opens the first page. The file is read at build time and rendered by assets/lib/markdown.mjs; a
+   missing or sectionless file fails the build, since the grammar is a standing document and the
+   journal would otherwise go silently stale. */
+const GRAMMAR_ID = docId("rules", "journal:grammar");
+const GRAMMAR_NAME = "STARWROUGHT Automation Grammar";
+const grammarPath = path.join(ROOT, "AUTOMATION_GRAMMAR.md");
+if (!fs.existsSync(grammarPath)) fail(`grammar journal: ${path.relative(ROOT, grammarPath)} is missing; the journal is built from it`);
+const grammar = splitSections(fs.readFileSync(grammarPath, "utf8"));
+if (!grammar.sections.length) fail(`grammar journal: ${path.relative(ROOT, grammarPath)} has no "## " sections to make pages of`);
+const grammarPages = grammar.sections.map((section, index) => {
+  const body = (index === 0 && grammar.intro) ? `${grammar.intro}\n\n${section.body}` : section.body;
+  return [section.name, markdownToHtml(body)];
+});
+
+{
+  const _id = GRAMMAR_ID;
+  push("rules", "journal", {
+    _id,
+    name: GRAMMAR_NAME,
+    folder: null,
+    sort: 100,
+    ownership: { default: 2 },
+    flags: {},
+    categories: [],
+    _stats: { systemId: "starwrought" },
+    pages: grammarPages.map(([name, html], index) => {
+      const pageId = docId("rules", `grammar:${name}`);
+      return {
+        _id: pageId,
+        _key: `!journal.pages!${_id}.${pageId}`,
+        name,
+        type: "text",
+        title: { show: true, level: 1 },
+        text: { format: 1, content: html },
+        image: {},
+        video: { controls: true, volume: 0.5 },
+        src: null,
+        system: {},
+        sort: index * 100,
+        ownership: { default: -1 },
+        flags: {},
+        category: null
+      };
+    })
+  });
+}
+
+/* -------------------------------------------- */
 /*  Macros                                      */
 /* -------------------------------------------- */
 
@@ -1651,6 +1709,8 @@ if (automationTally.rules) {
 } else {
   console.log(`  automation: no rules (${plural(kinds.length, "kind")} defined, none in use)`);
 }
+// The grammar journal (0.17.0): how many pages AUTOMATION_GRAMMAR.md made, one per `## ` section.
+console.log(`  grammar journal: ${plural(grammarPages.length, "page")} from ${path.relative(ROOT, grammarPath)}`);
 
 // The trait census (0.14.0; ruling 171): every trait a shipping weapon, action or Talent carries,
 // by its first word, against the traits the rules' `IF(Trait=...)` ask about. A trait nothing

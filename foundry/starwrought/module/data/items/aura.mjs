@@ -14,9 +14,10 @@ const fields = foundry.data.fields;
  * The aura of a Talent or Maneuver (0.5.1): the "within N feet" its Effect speaks of, drawn on the
  * map around whoever carries it. `range` is feet from the edge of the carrier's space, null when
  * the ability has none (a blank Aura cell in the spreadsheet); `affects` is who it concerns, which
- * picks its colour (SW.AURA_COLORS); `visible` is the default mark. Visible auras are Pinned for
- * every combatant once an encounter starts, the rest show only as a preview (Mike's rule), and the
- * carrier's own mark in `actor.system.auras.visible` overrides this default.
+ * picks its colour (SW.AURA_COLORS). Every ring is preview-only by default (0.17.0; Mike: "ALL
+ * auras should be preview-only by default"): it draws on hover and when the carrier shows it from
+ * the Auras window, which writes `actor.system.auras.visible.<key>`. The `visible` field of 0.5.1
+ * to 0.16.0 (the Item's default mark) is gone; the Talent and action models' `migrateData` drop it.
  */
 export function auraFields() {
   return {
@@ -24,10 +25,15 @@ export function auraFields() {
       range: new fields.NumberField({ required: true, nullable: true, integer: true, min: 0, initial: null }),
       affects: new fields.StringField({
         required: true, choices: Object.keys(SW.AURA_AUDIENCES), initial: "all"
-      }),
-      visible: new fields.BooleanField({ initial: false })
+      })
     })
   };
+}
+
+/** Drop the retired `aura.visible` from a stored Item (0.17.0). Called from the models' `migrateData`. */
+export function migrateAuraVisible(source) {
+  if (source?.aura && Object.hasOwn(source.aura, "visible")) delete source.aura.visible;
+  return source;
 }
 
 /**

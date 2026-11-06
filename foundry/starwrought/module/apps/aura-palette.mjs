@@ -208,7 +208,7 @@ export class SwAuraPalette extends HandlebarsApplicationMixin(ApplicationV2) {
     if (keys.length) await actor.setAuraVisible(keys, false);
   }
 
-  /** The Custom row's submit: a new ring, Visible from the start. */
+  /** The Custom row's submit: a new ring, preview only until its toggle lights it (0.17.0). */
   static async #onAddCustom(event, form, formData) {
     const actor = this.actor;
     if (!actor) return;

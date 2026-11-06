@@ -1,5 +1,7 @@
 {{!-- Shared by talent.hbs and action.hbs. --}}
-{{!-- The aura (0.5.1): the "within N feet" of the Effect, drawn on the map around the carrier. --}}
+{{!-- The aura (0.5.1): the "within N feet" of the Effect, drawn on the map around the carrier.
+     Every ring is preview-only until its owner shows it from the Auras window (0.17.0), so the
+     "Visible by default" checkbox of 0.5.1 to 0.16.0 is gone with the field. --}}
 <div class="sw-panel">
   <h3 class="sw-panel-title">
     {{localize "STARWROUGHT.Field.aura"}}
@@ -16,7 +18,5 @@
         <option value="allies" {{#if (eq system.aura.affects "allies")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsAllies"}}</option>
         <option value="enemies" {{#if (eq system.aura.affects "enemies")}}selected{{/if}}>{{localize "STARWROUGHT.Field.auraAffectsEnemies"}}</option>
       </select></label>
-    <label class="sw-field" data-tooltip="STARWROUGHT.Field.auraVisibleHint"><span>{{localize "STARWROUGHT.Field.auraVisible"}}</span>
-      <input type="checkbox" name="system.aura.visible" {{checked system.aura.visible}}></label>
   </div>
 </div>

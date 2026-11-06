@@ -94,7 +94,7 @@ export class SwActionData extends SwItemData {
 
   /** @inheritdoc */
   static migrateData(source) {
-    return super.migrateData(migrateCost(source, "action"));
+    return super.migrateData(migrateAuraVisible(migrateCost(source, "action")));
   }
 
   prepareDerivedData() {

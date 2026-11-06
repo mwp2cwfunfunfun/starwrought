@@ -1,8 +1,8 @@
 /* ==========================================================================
    STARWROUGHT: the Item sheet.
    What only an Item's window needs: the read-only header pieces (0.5.1, T15), the type line,
-   and the Automation panel (0.9.0). Serves templates/item/*.hbs. Builds on sheet.css for the
-   frame, header, tabs, panels and traits.
+   the Automation panel (0.9.0) and the editors sized to their text (0.17.0). Serves
+   templates/item/*.hbs. Builds on sheet.css for the frame, header, tabs, panels and traits.
 
    Load order is the order of the `styles` array in system.json. A file may rely on the files
    listed before it and never on one listed after it; no selector list is declared twice
@@ -11,7 +11,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-item: "0.16.0"; }
+:root { --sw-css-version-item: "0.17.0"; }
 
 /* The read-only Item sheet (0.5.1, T15): the name as a rule, and the LOCKED tag beside it. */
 .starwrought .sw-item-name-locked { margin: 0; border-bottom: 1px solid var(--sw-edge); padding-bottom: 0.1rem; }
@@ -46,3 +46,18 @@
 .starwrought .sw-rule-error .sw-rule-summary { color: #e0736f; }
 .starwrought .sw-rule-empty { background: none; border-left-color: transparent; padding: 0; }
 .starwrought .sw-rule-empty .sw-empty { padding: 0.1rem 0; }
+
+/* The Grammar control (0.17.0) on the Automation panel's title: the title is a flex row
+   (sheet.css), so the control sits at its right edge; the first child keeps its own text and count
+   together. */
+.starwrought .sw-rules-panel .sw-panel-title > span:first-child { display: inline-flex; align-items: baseline; gap: 0.5rem; }
+.starwrought .sw-grammar-button { flex: 0 0 auto; white-space: nowrap; }
+
+/* The editors on an Item's window (0.17.0): a Description, an Effect or a Special Ability is a
+   sentence or three, and the 10rem floor sheet.css gives the Biography and Notes left most of the
+   Item sheet's first tab empty. Scoped to the Item sheet's root (`.starwrought.item`, the
+   DEFAULT_OPTIONS classes), so the actor sheets keep their floor: the box fits its text, an empty
+   box keeps enough height to show its pen, and the open editor keeps the 6rem working area. */
+.starwrought.item prose-mirror { min-height: 0; }
+.starwrought.item prose-mirror .editor-content { min-height: 2.25rem; }
+.starwrought.item prose-mirror.active .editor-content { min-height: 6rem; }

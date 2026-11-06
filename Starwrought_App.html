@@ -318,6 +318,7 @@ let TREES = {
       "limit": null,
       "claim": null,
       "marked": false,
+      "bare": true,
       "kind": "bonus",
       "line": 2,
       "text": "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)"
@@ -393,6 +394,7 @@ let TREES = {
        "per": "encounter"
       },
       "marked": false,
+      "bare": true,
       "kind": "prevent",
       "line": 1,
       "text": "IMMUNE: prone; LIMIT: encounter"
@@ -440,6 +442,7 @@ let TREES = {
       "limit": null,
       "claim": null,
       "marked": false,
+      "bare": true,
       "kind": "bonus",
       "line": 1,
       "text": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)"
@@ -459,7 +462,6 @@ let TREES = {
      {
       "range": 15,
       "affects": "allies",
-      "visible": true,
       "kind": "aura",
       "line": 1,
       "text": "[AURA 15 allies visible]"
@@ -490,6 +492,7 @@ let TREES = {
       },
       "claim": null,
       "marked": false,
+      "bare": true,
       "kind": "bonus",
       "line": 2,
       "text": "DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round"
@@ -576,6 +579,7 @@ let TREES = {
       "limit": null,
       "claim": null,
       "marked": false,
+      "bare": true,
       "kind": "bonus",
       "line": 1,
       "text": "CHECK: 1 situation; IF: RANK(roll = untrained)"
@@ -2237,7 +2241,7 @@ let TREES = {
    },
    {
     "label": "Names",
-    "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br><b>Common given names</b> Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br><b>Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br><b>Example name</b>s Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
+    "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br>Common given names Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br>Common surnames Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br>Example names Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
    }
   ],
   "meta": "Culture constellation • Presence",
@@ -2249,7 +2253,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
-    "automation": "[LANGUAGE Common, Serrovine]\nCHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
+    "automation": "[LANGUAGE Common, Serrovine]\n[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]",
     "desc": "<i>Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.</i>",
     "root": true,
     "rules": [
@@ -2282,7 +2286,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 2,
-      "text": "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)"
+      "text": "[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]"
      }
     ]
    },
@@ -2315,7 +2319,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +2 Condition bonus to notice hidden clauses, traps, and altered terms in any agreement.",
-    "automation": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
+    "automation": "[EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]",
     "desc": "<i>You read what an agreement conceals as carefully as what it promises.</i>",
     "requires": [
      "Serrovanian"
@@ -2341,7 +2345,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 1,
-      "text": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)"
+      "text": "[EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]"
      }
     ]
    },
@@ -2351,7 +2355,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You gain a +1 Condition bonus to checks against Intimidation and other social manipulations.",
-    "automation": "DEF: 1 condition; IFT: CHECK(intimidation)\nDEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)",
+    "automation": "[EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]\n[EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]",
     "desc": "<i>Court manners are armor, and yours hold firm under threats, flattery, and calculated insult.</i>",
     "requires": [
      "Serrovanian"
@@ -2380,7 +2384,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 1,
-      "text": "DEF: 1 condition; IFT: CHECK(intimidation)"
+      "text": "[EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]"
      },
      {
       "value": 1,
@@ -2402,7 +2406,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 2,
-      "text": "DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)"
+      "text": "[EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]"
      }
     ]
    }
@@ -2459,7 +2463,7 @@ let TREES = {
    },
    {
     "label": "Names",
-    "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br><b>Common given names</b> Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br><b>Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br><b>Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
+    "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br>Common given names Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br>Common surnames Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br>Example names Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
    }
   ],
   "meta": "Culture constellation • Wits",
@@ -2471,7 +2475,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
-    "automation": "[LANGUAGE Common, Reachspeak]\nCHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
+    "automation": "[LANGUAGE Common, Reachspeak]\n[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]",
     "desc": "<i>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</i>",
     "root": true,
     "rules": [
@@ -2504,7 +2508,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 2,
-      "text": "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)"
+      "text": "[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]"
      }
     ]
    },
@@ -2537,7 +2541,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
-    "automation": "IGNORE: terrain, mud, decking, loose stone, shallow water\nSPEED: 1 situation; LIMIT: encounter",
+    "automation": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]\n[EFFECT SPEED: 1 situation; LIMIT: encounter]",
     "desc": "<i>Years among slick docks and shifting banks have taught you where to place your next step.</i>",
     "requires": [
      "Reacher"
@@ -2554,7 +2558,7 @@ let TREES = {
       "when": null,
       "kind": "ignore",
       "line": 1,
-      "text": "IGNORE: terrain, mud, decking, loose stone, shallow water"
+      "text": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]"
      },
      {
       "value": 1,
@@ -2576,7 +2580,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 2,
-      "text": "SPEED: 1 situation; LIMIT: encounter"
+      "text": "[EFFECT SPEED: 1 situation; LIMIT: encounter]"
      }
     ]
    },
@@ -2586,7 +2590,7 @@ let TREES = {
     "cost": 1,
     "enabled": true,
     "effect": "You gain +2 Situation to Diplomacy and Guile checks when trading.",
-    "automation": "CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)\nCHECK: 2 situation, guile; IF: CLAIM(when trading)",
+    "automation": "[EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]\n[EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading)]",
     "desc": "<i>You recognize a fair price at a glance and know when there is room to bargain.</i>",
     "requires": [
      "Reacher"
@@ -2612,7 +2616,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 1,
-      "text": "CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)"
+      "text": "[EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]"
      },
      {
       "value": 2,
@@ -2634,7 +2638,7 @@ let TREES = {
       "marked": false,
       "kind": "bonus",
       "line": 2,
-      "text": "CHECK: 2 situation, guile; IF: CLAIM(when trading)"
+      "text": "[EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading)]"
      }
     ]
    }
@@ -4162,7 +4166,7 @@ let R = {
     },
     {
      "label": "Names",
-     "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br><b>Common given names</b> Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br><b>Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br><b>Example name</b>s Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
+     "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br>Common given names Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br>Common surnames Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br>Example names Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
     }
    ],
    "traits": [],
@@ -4221,7 +4225,7 @@ let R = {
     },
     {
      "label": "Names",
-     "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br><b>Common given names</b> Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br><b>Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br><b>Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
+     "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br>Common given names Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br>Common surnames Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br>Example names Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
     }
    ],
    "traits": [],
@@ -6799,7 +6803,7 @@ let A = {
    "requirements": "The ally is willing to accept your aid.",
    "trigger": "",
    "description": "You use an action to help an ally.",
-   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br><b>Critical Success </b>If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br><b>Success</b> If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br><b>Critical Failure</b> If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
+   "effect": "You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.<br><br>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.<br><br>Critical Success If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br>Success If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br>Critical Failure If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.",
    "automation": "",
    "meta": "Watching, Deceiving & Helping",
    "costDefaulted": false,
@@ -6928,7 +6932,7 @@ let A = {
    "trigger": "An adjacent ally's Strike is Stopped and would Expose them.",
    "description": "You take the blow's momentum on your own guard, and your ally keeps their footing.",
    "effect": "It Exposes nothing.",
-   "automation": "IMMUNE: expose; FOR: allies 0",
+   "automation": "[EFFECT IMMUNE: expose; FOR: allies 0]",
    "meta": "",
    "costDefaulted": false,
    "sheet": "Talent Maneuvers",
@@ -6948,7 +6952,7 @@ let A = {
      "marked": false,
      "kind": "prevent",
      "line": 1,
-     "text": "IMMUNE: expose; FOR: allies 0"
+     "text": "[EFFECT IMMUNE: expose; FOR: allies 0]"
     }
    ]
   },
@@ -6967,7 +6971,7 @@ let A = {
    "trigger": "",
    "description": "When someone breaks faith with you, certainty steadies your hand and steels your resolve.",
    "effect": "Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.",
-   "automation": "MARK: enemies\nATK: 1 condition; IFT: MARKED\nDEF: 1 condition; IFT: MARKED",
+   "automation": "[EFFECT MARK: enemies]\n[EFFECT ATK: 1 condition; IFT: MARKED]\n[EFFECT DEF: 1 condition; IFT: MARKED]",
    "meta": "",
    "costDefaulted": false,
    "sheet": "Talent Maneuvers",
@@ -6979,7 +6983,7 @@ let A = {
      "when": null,
      "kind": "mark",
      "line": 1,
-     "text": "MARK: enemies"
+     "text": "[EFFECT MARK: enemies]"
     },
     {
      "value": 1,
@@ -6999,7 +7003,7 @@ let A = {
      "marked": true,
      "kind": "bonus",
      "line": 2,
-     "text": "ATK: 1 condition; IFT: MARKED"
+     "text": "[EFFECT ATK: 1 condition; IFT: MARKED]"
     },
     {
      "value": 1,
@@ -7019,7 +7023,7 @@ let A = {
      "marked": true,
      "kind": "bonus",
      "line": 3,
-     "text": "DEF: 1 condition; IFT: MARKED"
+     "text": "[EFFECT DEF: 1 condition; IFT: MARKED]"
     }
    ]
   },
@@ -7038,7 +7042,7 @@ let A = {
    "trigger": "You critically fail a Diplomacy check.",
    "description": "You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.",
    "effect": "Reroll the triggering Diplomacy check, using the second result.",
-   "automation": "REROLL: diplomacy; IF: RESULT(critical failure)",
+   "automation": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]",
    "meta": "",
    "costDefaulted": false,
    "sheet": "Talent Maneuvers",
@@ -7058,7 +7062,7 @@ let A = {
      ],
      "kind": "reroll",
      "line": 1,
-     "text": "REROLL: diplomacy; IF: RESULT(critical failure)"
+     "text": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]"
     }
    ]
   }

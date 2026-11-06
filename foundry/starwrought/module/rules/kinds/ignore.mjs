@@ -4,10 +4,10 @@
  * decking, loose stone, and shallow water", and his direction on how: "Let's build Difficult
  * terrain INTO the maps! using a region or some sort of method! so this can be automated."
  *
- *   ignore: Terrain [, <Kind>, <Kind>, ...]
+ *   [EFFECT IGNORE: terrain [, <kind>, <kind>, ...]]
  *
- *   ignore: Terrain, Mud, Decking, Loose Stone, Shallow Water     Riverfoot
- *   ignore: Terrain                                               every kind
+ *   [EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]     Riverfoot
+ *   [EFFECT IGNORE: terrain]                                               every kind
  *
  * `Terrain` is the one word so far (the Difficult terrain region behavior,
  * module/data/region-behaviors/difficult-terrain.mjs); the kinds are SW.TERRAIN_KINDS
@@ -26,24 +26,21 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
+import { rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { TERRAIN_KINDS, terrainKindOf, terrainKindName } from "../../config.mjs";
 import { rulesOfKind } from "../engine.mjs";
 
-const SHAPE = "ignore: Terrain [, <Kind>, ...]";
-const EXAMPLE = "ignore: Terrain, Mud, Shallow Water";
-const OPERATORS_TAKEN = Object.freeze(["IF"]);
+const SHAPE = "IGNORE: terrain [, <kind>, ...]";
+const EXAMPLE = "IGNORE: terrain, mud, shallow water";
 
 export default {
   id: "ignore",
   aliases: [],
 
   parse(args, context = {}) {
-    if (context?.form === "feature") throw new RuleSyntaxError("an ignore is an effect line, not a bracketed feature: `IGNORE: terrain, mud`");
-    // `IGNORE: terrain, mud, decking` reads the same in both shapes.
-    const { args: parts, ops } = (context?.form === "effect")
-      ? { args: context.effect.descriptors, ops: refuseComponents(context.effect.ops, "IGNORE", ["when"]) }
-      : readLine(args, { allow: OPERATORS_TAKEN, kind: "ignore", context });
+    if (context?.form !== "effect") throw new RuleSyntaxError(`an ignore is an effect: \`[EFFECT ${EXAMPLE}]\``);
+    const parts = context.effect.descriptors;
+    const ops = refuseComponents(context.effect.ops, "IGNORE", ["when"]);
     if (!parts.length || (parts[0].toLowerCase().replace(/\s+/g, "") !== "terrain")) {
       throw new RuleSyntaxError(`an ignore is written \`${SHAPE}\`, as in \`${EXAMPLE}\``);
     }

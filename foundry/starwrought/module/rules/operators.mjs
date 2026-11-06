@@ -1,18 +1,16 @@
 /**
- * The operators of the Automation grammar (0.13.0; AUTOMATION_GRAMMAR.md, section 4).
+ * The shared vocabularies and readings of the Automation grammar (0.13.0; AUTOMATION_GRAMMAR.md).
  *
- * A rule line is `<kind>: <arg>, <arg>, ... [, <OPERATOR>(...)] ...`: the kind's positional
- * arguments first, then any operators, each `NAME(...)` in capitals with its own comma-separated
- * contents, or a bare flag word (`VISIBLE`, `DIFFERENT`). The same operator means the same thing
- * in every kind, so this module reads them once and every kind file asks it: `readLine(args,
- * { allow, context })` splits the argument string on the commas outside parentheses and quotes,
- * takes the leading parts that are not operators as the arguments, reads each operator by name
- * against the shared vocabulary, and refuses an operator the kind did not allow by name
- * ("prevent does not take AGAINST"). Mike's direction (2026-11-05): logical operands and
- * grammatical shortcuts, no prose connectives, so nothing here reads "to", "if" or "while" as a
- * word.
+ * Written for the 0.13.0 operator form (`<kind>: <arg>, ..., <OPERATOR>(...)`), which 0.17.0
+ * refuses; what remains is what the effect reader (./effects.mjs) and the hooks still use: the
+ * `ops` record every reader fills (`emptyOps`), the readers of one condition's contents (`readIf`,
+ * `readFor`, `readWhile`, `readAgainst`, `readDegree`, `readRank`, `readRange`, `readWho`), the
+ * refusals (`refuseComponents`, `refuseOutcome`) and the hooks' tests (`rankMeets`, `whoMatches`,
+ * `hasTrait`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`). The names below
+ * are the old operators' because the stored rule shapes are theirs; the component each became is
+ * section 9 of the document, and `OPERATORS` is kept for that table's gate.
  *
- * The operators, and what each stores on the rule:
+ * The record, and what each reading stores on the rule:
  *
  *   IF(<Constellation><op><Rank>)   when: [{ constellation, name, op, rank }]; `Origin` is the pooled
  *                                   Origin rank; `IF(Rank=<Rank>)` is the roll's own rank:
@@ -53,14 +51,13 @@ import { RuleSyntaxError } from "./syntax.mjs";
 import { RANKS, THREATS, DEGREES, isLoreSlug } from "../config.mjs";
 
 /**
- * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), read for one more release by
- * `readLine` below and flagged legacy by the grammar (0.16.0; the Fantasy Grounds shape in
- * effects.mjs and features.mjs is the grammar now). The build checks each is named in the
- * grammar document's legacy section.
+ * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), refused since 0.17.0. The
+ * build checks each is still named in the grammar document's section 9, the map from the old
+ * operator to its component, which is what a GM with an old world Item reads.
  */
 export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "DIFFERENT", "VISIBLE", "CLAIM", "MARKED"]);
 
-/** A fresh operator record, the shape every reader fills (the legacy `readLine`, the effect reader's components). */
+/** A fresh operator record, the shape every reader fills (the effect reader's components). */
 export function emptyOps() {
   return { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false, claim: null, marked: false };
 }
@@ -89,7 +86,6 @@ const COMPARISONS = Object.freeze([">=", "<=", "==", "=", ">", "<"]);
 const RANGE = /^(\d+)\s*(?:ft\.?|feet|foot)?$/i;
 /** An operator call, `NAME(contents)`, or a bare flag word in capitals. */
 const CALL = /^([A-Za-z]+)\s*\(([\s\S]*)\)$/;
-const FLAG = /^([A-Za-z]+)$/;
 
 /** The word in Title Case for a message: "expert" to "Expert". */
 export function titled(word) {
@@ -141,127 +137,6 @@ export function splitOperands(text) {
   if (depth > 0) throw new RuleSyntaxError("a ( has no closing )");
   parts.push(current);
   return parts.map(p => p.trim()).filter(p => p !== "");
-}
-
-/** Is this part an operator call or a bare flag word the grammar knows? Returns its name in capitals, or null. */
-function operatorName(part) {
-  const call = part.match(CALL);
-  const word = (call ? call[1] : (part.match(FLAG)?.[1] ?? "")).toUpperCase();
-  return OPERATORS.includes(word) ? word : null;
-}
-
-/* -------------------------------------------- */
-/*  Reading                                     */
-/* -------------------------------------------- */
-
-/**
- * Read a kind's argument string into its positional arguments and its operators.
- *
- * The leading parts up to the first operator are the arguments; everything after must be an
- * operator, so a stray word after an operator is refused ("after the operators, only operators").
- * An operator the kind did not list in `allow` is refused by name. A flag operator written with
- * parentheses (`VISIBLE()`) reads as the flag; a call operator written bare (`FOR`) is refused with
- * its shape.
- *
- * @param {string} text                      The text after the kind word and colon, trimmed.
- * @param {object} options
- * @param {string[]} options.allow           The operator names this kind takes.
- * @param {string} options.kind              The kind's id, for messages.
- * @param {object} [options.context]         The grammar's context; `resolve` is read from it for IF.
- * @returns {{args: string[], ops: {when: object[]|null, for: object|null, while: object|null, against: object|null, limit: object|null, different: boolean, visible: boolean, seen: boolean, claim: object|null, marked: boolean}}}
- */
-export function readLine(text, { allow = [], kind = "rule", context = {} } = {}) {
-  const parts = splitOperands(String(text ?? "").trim().replace(/\.$/, ""));
-  const args = [];
-  const ops = emptyOps();
-  let seenOperator = false;
-
-  for (const part of parts) {
-    const name = operatorName(part);
-    if (!name) {
-      if (seenOperator) {
-        throw new RuleSyntaxError(`"${part}" comes after an operator; the arguments go first, then the operators (${OPERATORS.join(", ")})`);
-      }
-      args.push(part);
-      continue;
-    }
-    seenOperator = true;
-    if (!allow.includes(name)) throw new RuleSyntaxError(`${kind} does not take ${name}`);
-    const call = part.match(CALL);
-    const inside = call ? call[2].trim() : null;
-    readOperator(name, inside, ops, context);
-  }
-  return { args, ops };
-}
-
-/** One operator's contents into `ops`, each refusal naming the shape. */
-function readOperator(name, inside, ops, context) {
-  switch (name) {
-    case "IF": {
-      if (inside == null) throw new RuleSyntaxError("IF is written `IF(<Constellation>=<Rank>)`, as in `IF(Origin=Trained)`");
-      (ops.when ??= []).push(readIf(inside, context));
-      return;
-    }
-    case "FOR": {
-      if (ops.for) throw new RuleSyntaxError("FOR is given twice");
-      if (inside == null) throw new RuleSyntaxError("FOR is written `FOR(<Who>[, <N>ft])`, as in `FOR(allies, 15ft)`");
-      ops.for = readFor(inside);
-      return;
-    }
-    case "WHILE": {
-      if (ops.while) throw new RuleSyntaxError("WHILE is given twice");
-      if (inside == null) throw new RuleSyntaxError("WHILE is written `WHILE(<Who><op><N>[, <N>ft])`, as in `WHILE(allies>=1, 0ft)`");
-      ops.while = readWhile(inside);
-      return;
-    }
-    case "AGAINST": {
-      if (ops.against) throw new RuleSyntaxError("AGAINST is given twice");
-      if (inside == null) throw new RuleSyntaxError("AGAINST is written `AGAINST(<Threat>)`, as in `AGAINST(Blow)`");
-      ops.against = readAgainst(inside, context);
-      return;
-    }
-    case "CLAIM": {
-      if (ops.claim) throw new RuleSyntaxError("CLAIM is given twice");
-      const words = String(inside ?? "").trim().replace(/^["']|["']$/g, "").trim();
-      if (!words) throw new RuleSyntaxError("CLAIM is written `CLAIM(<text>)`, the words the player is asked, as in `CLAIM(when trading)`");
-      ops.claim = { text: words };
-      return;
-    }
-    case "MARKED": {
-      if (inside) throw new RuleSyntaxError("MARKED takes nothing in parentheses; who may be marked is the mark line's business");
-      ops.marked = true;
-      return;
-    }
-    case "FIRST": {
-      if (ops.limit) throw new RuleSyntaxError("FIRST and ONCE are one limit; write one of them");
-      if ((inside == null) || (inside.toLowerCase() !== "round")) throw new RuleSyntaxError("FIRST is written `FIRST(round)`");
-      ops.limit = { per: "round" };
-      return;
-    }
-    case "ONCE": {
-      if (ops.limit) throw new RuleSyntaxError("FIRST and ONCE are one limit; write one of them");
-      if ((inside == null) || (inside.toLowerCase() !== "encounter")) throw new RuleSyntaxError("ONCE is written `ONCE(encounter)`");
-      ops.limit = { per: "encounter" };
-      return;
-    }
-    case "DIFFERENT": {
-      if (inside) throw new RuleSyntaxError("DIFFERENT takes nothing in parentheses");
-      ops.different = true;
-      return;
-    }
-    case "VISIBLE": {
-      if (inside) throw new RuleSyntaxError("VISIBLE takes nothing in parentheses");
-      ops.visible = true;
-      return;
-    }
-    case "SEEN": {
-      if (inside) throw new RuleSyntaxError("SEEN takes nothing in parentheses; who must see you is who FOR names");
-      ops.seen = true;
-      return;
-    }
-    default:
-      throw new RuleSyntaxError(`unknown operator ${name}`);
-  }
 }
 
 /* -------------------------------------------- */

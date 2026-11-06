@@ -33,15 +33,13 @@
     "freeTalent": "",
     "aura": {
       "range": 15,
-      "affects": "allies",
-      "visible": true
+      "affects": "allies"
     },
     "automation": "[AURA 15 allies visible]\nDEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round",
     "rules": [
       {
         "range": 15,
         "affects": "allies",
-        "visible": true,
         "kind": "aura",
         "line": 1,
         "text": "[AURA 15 allies visible]"
@@ -72,6 +70,7 @@
         },
         "claim": null,
         "marked": false,
+        "bare": true,
         "kind": "bonus",
         "line": 2,
         "text": "DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round"
@@ -87,7 +86,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6194fe72ca917432"
+      "contentHash": "656d64255ca06a5e"
     }
   },
   "effects": [],

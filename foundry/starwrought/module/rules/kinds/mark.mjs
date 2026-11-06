@@ -5,11 +5,11 @@
  * Condition bonus to Attack checks and Defense checks against that creature until the encounter
  * ends." The naming is this kind; the bonuses are `bonus` lines with `MARKED` on the same Talent.
  *
- *   mark: [<Who>] [, <Until>]
+ *   [EFFECT MARK: [<Who>] [, <Until>]]
  *
- *   mark: enemies, encounter          Oathbound ❶
- *   bonus: +1, Condition, Attacks, MARKED
- *   bonus: +1, Condition, Defenses, MARKED
+ *   [EFFECT MARK: enemies]                        Oathbound ❶ (the Maneuver row)
+ *   [EFFECT ATK: 1 condition; IFT: MARKED]
+ *   [EFFECT DEF: 1 condition; IFT: MARKED]
  *
  * `<Who>` is who may be named, `enemies` or `all` (the default); `<Until>` how long the mark holds,
  * `encounter` (the one word so far, and the default). The stored rule: `{ kind: "mark", line,
@@ -30,12 +30,11 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
+import { rankMeets, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { plainName } from "../../config.mjs";
 
-const SHAPE = "mark: [<Who>] [, <Until>]";
-const EXAMPLE = "mark: enemies, encounter";
-const OPERATORS_TAKEN = Object.freeze(["IF"]);
+const SHAPE = "MARK: [<Who>] [, <Until>]";
+const EXAMPLE = "MARK: enemies";
 
 /** Who may be named: the relation words a target may bear to the owner. */
 export const MARK_WHO = Object.freeze({ enemies: ["enemy"], all: ["enemy", "ally", "neutral"] });
@@ -48,11 +47,10 @@ export default {
 
   parse(args, context = {}) {
     if (context?.form === "feature") throw new RuleSyntaxError("a mark is an effect line, not a bracketed feature: `MARK: enemies`");
-    // `MARK: enemies` reads the same in the 0.16.0 shape and the 0.13.0 one; the descriptors are
-    // the words either way, and the components (IF only) come from the effect reader.
-    const { args: parts, ops } = (context?.form === "effect")
-      ? { args: context.effect.descriptors, ops: refuseComponents(context.effect.ops, "MARK", ["when"]) }
-      : readLine(args, { allow: OPERATORS_TAKEN, kind: "mark", context });
+    if (context?.form !== "effect") throw new RuleSyntaxError(`a mark is an effect: \`[EFFECT ${EXAMPLE}]\``);
+    // The descriptors are the words; the components (IF only) come from the effect reader.
+    const parts = context.effect.descriptors;
+    const ops = refuseComponents(context.effect.ops, "MARK", ["when"]);
     if (parts.length > 2) throw new RuleSyntaxError(`a mark is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} arguments given, at most 2)`);
     let who = "all";
     let until = "encounter";

@@ -5,10 +5,10 @@
  * is Stopped and would Expose them. Effect It Exposes nothing"), one kind for both at his word
  * ("combine the prevent and protect kinds, with the <Who> being <self> in the case of prevent").
  *
- *   prevent: <Effect> [, operators]
+ *   [EFFECT IMMUNE: <Effect>; <component>; ...]          (FG's own `IMMUNE: [condition]`)
  *
- *   prevent: Prone, ONCE(encounter)         Stubborn Footing
- *   prevent: Expose, FOR(allies, 0ft)       Steady the Line ❶↺
+ *   [EFFECT IMMUNE: prone; LIMIT: encounter]       Stubborn Footing
+ *   [EFFECT IMMUNE: expose; FOR: allies 0]         Steady the Line ❶↺ (the Maneuver row)
  *
  * `<Effect>` is a Condition by the book's name (Prone, Frightened, Off-Guard, Grabbed, ...; the
  * keys of SW.CONDITIONS, spaces and hyphens ignored) or `Expose` (a Zone a Stop would Expose). By
@@ -36,12 +36,11 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { readLine, rankMeets, whoMatches, compare, hasTrait, againstHolds, markedHolds, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
+import { rankMeets, whoMatches, compare, hasTrait, againstHolds, markedHolds, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
 import { CONDITIONS } from "../../config.mjs";
 
-const SHAPE = "prevent: <Effect> [, operators]";
-const EXAMPLE = "prevent: Prone, ONCE(encounter)";
-const OPERATORS_TAKEN = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN", "FIRST", "ONCE", "MARKED"]);
+const SHAPE = "IMMUNE: <Condition or expose>; <component>; ...";
+const EXAMPLE = "IMMUNE: prone; LIMIT: encounter";
 
 /** The word for the Expose effect, and the condition ids by their lower-cased, squeezed names. */
 export const EXPOSE = "expose";
@@ -88,14 +87,7 @@ export default {
       refuseOutcome(e.ops);
       return { effect, when: e.ops.when, for: e.ops.for, while: e.ops.while, against: e.ops.against, seen: e.ops.seen, limit: e.ops.limit, marked: e.ops.marked };
     }
-    if (context?.form === "feature") throw new RuleSyntaxError("a prevention is an effect line, not a bracketed feature: `IMMUNE: prone`");
-    const { args: parts, ops } = readLine(args, { allow: OPERATORS_TAKEN, kind: "prevent", context });
-    if (parts.length !== 1) {
-      throw new RuleSyntaxError(`a prevent is written \`${SHAPE}\`, as in \`${EXAMPLE}\` (${parts.length} arguments given, 1 wanted)`);
-    }
-    const effect = readEffect(parts[0]);
-    refuseOutcome(ops);
-    return { effect, when: ops.when, for: ops.for, while: ops.while, against: ops.against, seen: ops.seen, limit: ops.limit, marked: ops.marked };
+    throw new RuleSyntaxError(`a prevention is an effect: \`[EFFECT ${EXAMPLE}]\``);
   },
 
   /** `Prone does not land, once each encounter`; `Expose does not land, for allies within 0 ft`. */

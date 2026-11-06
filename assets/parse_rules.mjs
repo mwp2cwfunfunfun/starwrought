@@ -14,8 +14,9 @@
  * Python holds no parser), the resolver is the shared one in assets/lib/rule_targets.mjs, which
  * build_foundry.mjs also imports, and a cell that does not parse FAILS the pipeline here naming
  * the Constellation, the Talent and the line, as build_foundry.mjs failed through 0.15.0 (ruling
- * 118), before any file is written: nothing half-read reaches the app or the pack sources. A cell
- * still in the 0.13.0 form reads for this one release and is WARNED about once.
+ * 118), before any file is written: nothing half-read reaches the app or the pack sources. A line
+ * that reads but is on its way out (0.17.0: a bare effect line, which belongs in `[EFFECT ...]`; an
+ * `[AURA ... visible]`) is WARNED about once per cell; the 0.13.0 operator form is refused.
  *
  * THE CHASSIS FACTS. A Root's feature lines are the authoring of what the chassis confers
  * ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES ...], [TRAIT Human], [LANGUAGE Common, Serrovine],
@@ -40,7 +41,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseAutomation, hasLegacy } from "../foundry/starwrought/module/rules/grammar.mjs";
+import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { plainName, costGlyphs } from "../foundry/starwrought/module/config.mjs";
 import { buildResolver } from "./lib/rule_targets.mjs";
@@ -89,7 +90,7 @@ const tally = { rules: 0, cells: 0, kinds: new Set(), legacy: 0, roots: 0, marke
 /**
  * Parse one cell and write its rules onto the carrier. A line that does not parse is an error in
  * build_foundry's words (`automation: <source>, line <n>: <message> ("<text>")`); a cell in the
- * 0.13.0 form is warned about once, quoting its first retired line; a `[MANEUVER ...]` naming a
+ * retiring form is warned about once, quoting its first such line; a `[MANEUVER ...]` naming a
  * row that is not enabled is an error on an enabled carrier (Foundry could not grant it) and a
  * warning on one that is off.
  * @param {object} carrier    A node, an action or a background: `automation` in, `rules` out.
@@ -106,10 +107,12 @@ function parseCell(carrier, context) {
     errors.push(`automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`);
   }
   if (parsed.errors.length) return;
-  if (hasLegacy(parsed)) {
+  // A line that reads but is on its way out (0.17.0): a bare effect line in a cell, an `[AURA ...
+  // visible]`. One warning per cell, the first such line quoted.
+  if (parsed.warnings.length) {
     tally.legacy += 1;
-    const first = parsed.rules.find(r => r.legacy === true);
-    warnings.push(`${context.source}: the 0.13.0 form is retired; rewrite "${first.text}" in the 0.16.0 shape (AUTOMATION_GRAMMAR.md)`);
+    const first = parsed.warnings[0];
+    warnings.push(`${context.source}, line ${first.line}: ${first.message} ("${first.text}")`);
   }
   for (const rule of parsed.rules) {
     tally.kinds.add(rule.kind);
@@ -380,5 +383,5 @@ save(roster);
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const kinds = tally.rules ? `${plural(tally.kinds.size, "kind")} in use` : `${plural(knownKinds().length, "kind")} defined, none in use`;
 console.log(`rules: ${plural(tally.rules, "rule")} on ${plural(tally.cells, "cell")} (${kinds}), `
-  + `${plural(tally.legacy, "legacy cell")} warned; chassis: facts from ${plural(tally.roots, "root")}; `
+  + `${plural(tally.legacy, "cell")} warned; chassis: facts from ${plural(tally.roots, "root")}; `
   + `markers: ${tally.markers} expanded`);

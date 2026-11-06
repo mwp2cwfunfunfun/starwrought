@@ -1,5 +1,34 @@
-{{!-- Effect first, because that is the rule; description second, because that is the flavour. --}}
+{{!-- The reading order of an Item's first tab (0.17.0): what the thing is tagged (Traits), the
+     flavour (Description, which sheet.css sets in italic), then the rule (the Effect, or on a chassis
+     its Special Ability and its Lore), then where it came from (Source). Through 0.16.0 the Effect
+     led and the Traits trailed. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  <div class="sw-panel trait-editor">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.traits"}}</h3>
+    <div class="sw-trait-list">
+      {{#each system.traits as |trait index|}}
+      <span class="sw-trait">
+        {{trait}}
+        {{#if @root.editable}}<a data-action="removeTrait" data-index="{{index}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+      </span>
+      {{else}}
+      <em class="sw-empty">{{localize "STARWROUGHT.Sheet.noTraits"}}</em>
+      {{/each}}
+    </div>
+    {{#if editable}}
+    <div class="sw-add-row">
+      <input type="text" name="newTrait" placeholder="{{localize 'STARWROUGHT.Field.addTrait'}}">
+      <button type="button" data-action="addTrait"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.description"}}</h3>
+    <prose-mirror name="system.description" value="{{system.description}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedDescription}}}</prose-mirror>
+  </div>
 
   {{#if isTalent}}
   <div class="sw-panel">
@@ -27,12 +56,6 @@
   </div>
   {{/if}}
 
-  <div class="sw-panel">
-    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.description"}}</h3>
-    <prose-mirror name="system.description" value="{{system.description}}"
-                  {{#unless editable}}disabled{{/unless}} toggled>{{{enrichedDescription}}}</prose-mirror>
-  </div>
-
   {{!-- The Lore sheet's sections (0.13.0), the spreadsheet's text in the author's order. Shown, not
         edited: the "<Ancestry> Lore" sheet is the author, and the content loop refreshes it. --}}
   {{#if loreSections.length}}
@@ -46,26 +69,6 @@
     {{/each}}
   </div>
   {{/if}}
-
-  <div class="sw-panel trait-editor">
-    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Field.traits"}}</h3>
-    <div class="sw-trait-list">
-      {{#each system.traits as |trait index|}}
-      <span class="sw-trait">
-        {{trait}}
-        {{#if @root.editable}}<a data-action="removeTrait" data-index="{{index}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
-      </span>
-      {{else}}
-      <em class="sw-empty">{{localize "STARWROUGHT.Sheet.noTraits"}}</em>
-      {{/each}}
-    </div>
-    {{#if editable}}
-    <div class="sw-add-row">
-      <input type="text" name="newTrait" placeholder="{{localize 'STARWROUGHT.Field.addTrait'}}">
-      <button type="button" data-action="addTrait"><i class="fa-solid fa-plus"></i></button>
-    </div>
-    {{/if}}
-  </div>
 
   <div class="sw-panel">
     <label class="sw-field sw-wide">

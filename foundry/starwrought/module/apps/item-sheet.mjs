@@ -1,10 +1,16 @@
 /**
  * One sheet for every kind of Item. The Details part branches on the Item type rather than
  * registering eight nearly identical Applications.
+ *
+ * Since 0.17.0 the Effects tab is left off a Talent, a Constellation and an action: their
+ * behaviour is the Automation cell's (the rules framework), and an Active Effect on one of them
+ * was a second, unread path. The physical Items and the chassis keep it. The Automation panel
+ * carries a Grammar button that opens the shipped Automation Grammar journal (`rulesJournal`).
  */
 
 import * as SW from "../config.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
+import { openRulesPage } from "../documents/chat.mjs";
 import { promptForChoice } from "./chargen.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -27,7 +33,8 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       effectEdit: SwItemSheet.#onEffectEdit,
       effectDelete: SwItemSheet.#onEffectDelete,
       chooseValue: SwItemSheet.#onChooseValue,
-      castSpell: SwItemSheet.#onCastSpell
+      castSpell: SwItemSheet.#onCastSpell,
+      rulesJournal: SwItemSheet.#onRulesJournal
     }
   };
 
@@ -52,6 +59,37 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       ]
     }
   };
+
+  /* -------------------------------------------- */
+  /*  Parts and tabs                              */
+  /* -------------------------------------------- */
+
+  /**
+   * Item types whose window has no Effects tab (0.17.0): what a Talent, a Constellation or a
+   * Maneuver does is its Automation cell's, read by the rules framework, so an Active Effect on one
+   * of them would be a second path nothing in the system reads. Weapons, armor, shields, gear and
+   * the chassis keep the tab.
+   */
+  static NO_EFFECTS_TAB = Object.freeze(["talent", "constellation", "action"]);
+
+  /** Does this Item's window carry the Effects tab? */
+  get hasEffectsTab() {
+    return !SwItemSheet.NO_EFFECTS_TAB.includes(this.document.type);
+  }
+
+  /** @inheritdoc. The Effects part is not rendered for the three automated types. */
+  _configureRenderParts(options) {
+    const parts = super._configureRenderParts(options);
+    if (!this.hasEffectsTab) delete parts.effects;
+    return parts;
+  }
+
+  /** @inheritdoc. And its tab is not offered; "description" stays the initial tab. */
+  _getTabsConfig(group) {
+    const config = super._getTabsConfig(group);
+    if (!config || this.hasEffectsTab) return config;
+    return { ...config, tabs: config.tabs.filter(t => t.id !== "effects") };
+  }
 
   /* -------------------------------------------- */
 
@@ -284,6 +322,15 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     const actor = item.actor;
     if (!actor || (typeof actor.castSpell !== "function")) return null;
     return actor.castSpell(item.id, { cast: target.dataset.cast });
+  }
+
+  /**
+   * Open a page of a shipped rules journal (0.17.0): the Automation panel's Grammar button names
+   * the Automation Grammar and its first page in `data-journal` and `data-page`. An anchor, not a
+   * form element, so the read-only pass on a player's Talent sheet leaves it clickable.
+   */
+  static async #onRulesJournal(event, target) {
+    return openRulesPage(target.dataset.page, { journal: target.dataset.journal });
   }
 
   static async #onEditImage() {

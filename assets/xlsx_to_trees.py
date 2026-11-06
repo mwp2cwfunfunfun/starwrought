@@ -232,8 +232,8 @@ def parse_aura(text):
     if not m: return False
     return {"range": int(m.group(1)), "affects": m.group(2) or "all", "visible": bool(m.group(3))}
 
-# Since 0.13.0 the Aura column is OPTIONAL: an "aura:" line in the Automation cell is the authoring
-# ("aura: 15ft, allies, VISIBLE", AUTOMATION_GRAMMAR.md), parsed by build_foundry.mjs like every
+# Since 0.13.0 the Aura column is OPTIONAL: an aura block in the Automation cell is the authoring
+# ("[AURA 15 allies]" since 0.16.0, AUTOMATION_GRAMMAR.md), parsed by parse_rules.mjs like every
 # rule, and the column survives for the sheets that still carry it. A row with both is an ERROR, so
 # a ring is never said twice. The converter does not parse the line (Python holds no second
 # grammar); it only looks for the kind word at the start of a line, which is all the drift check
@@ -253,17 +253,17 @@ def aura_for(cell, has_column, effect, where, warnings, errors, in_automation=Fa
     said = AURA_IN_EFFECT.search(re.sub(r"<[^>]+>", " ", effect or ""))
     if aura is False:
         errors.append(f"{where}: Aura '{plain(cell)}' not understood ('15 ft', '15 feet', '15 ft allies', "
-                      f"'15 ft enemies', add 'visible' to pin it by default, or 'none')")
+                      f"'15 ft enemies', or 'none'; every ring is preview-only until shown, 0.17.0)")
         return None
     if in_automation:
         if aura is not None:
-            errors.append(f"{where}: the Aura cell and an 'aura:' line in Automation both set the ring; "
-                          f"keep the Automation line and clear the cell (AUTOMATION_GRAMMAR.md)")
+            errors.append(f"{where}: the Aura cell and an [AURA ...] block in Automation both set the ring; "
+                          f"keep the Automation block and clear the cell (AUTOMATION_GRAMMAR.md)")
         return None
     if aura == "none": return None
     if said and aura is None:
         warnings.append(f"{where}: Effect says 'within {said.group(1)} feet' but no ring is set: write "
-                        f"'aura: {said.group(1)}ft, all' (or allies, enemies; add VISIBLE to pin it) in Automation"
+                        f"'[AURA {said.group(1)} all]' (or allies, enemies) in Automation"
                         + (", or fill the Aura cell" if has_column else "")
                         + ", or 'none' in the Aura cell if the circle is centred somewhere other than the carrier")
     elif said and aura and int(said.group(1)) != aura["range"]:

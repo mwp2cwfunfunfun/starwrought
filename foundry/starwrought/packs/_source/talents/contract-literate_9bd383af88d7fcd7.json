@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)",
+    "automation": "[EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]",
     "rules": [
       {
         "value": 2,
@@ -55,7 +55,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)"
+        "text": "[EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]"
       }
     ],
     "traits": [],
@@ -68,7 +68,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "946cd9284b2ebfb2"
+      "contentHash": "ddd0fd41bac32aa4"
     }
   },
   "effects": [],

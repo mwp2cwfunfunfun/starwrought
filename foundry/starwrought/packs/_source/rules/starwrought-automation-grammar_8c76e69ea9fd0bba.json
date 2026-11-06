@@ -1,0 +1,318 @@
+{
+  "_id": "8c76e69ea9fd0bba",
+  "name": "STARWROUGHT Automation Grammar",
+  "folder": null,
+  "sort": 100,
+  "ownership": {
+    "default": 2
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "22ecfbcc1216da37"
+    }
+  },
+  "categories": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "pages": [
+    {
+      "_id": "d233546b66599a4c",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.d233546b66599a4c",
+      "name": "At a glance",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>This is the reference for the <strong>Automation</strong> column of the data workbooks (<code>data/*.xlsx</code>), written for the person typing in the cell. The Foundry system reads the cell with one parser (<code>foundry/starwrought/module/rules/</code>) at build time and in play, so what is written here is what the system does. Every change to a rule kind, a tag, a keyword or a vocabulary updates this document in the same commit (CLAUDE.md, standing rule, 2026-11-05), and the build fails when a kind, a tag, a component or a keyword the system knows is not named here. In Foundry the same text is the <strong>STARWROUGHT Automation Grammar</strong> journal in the Rules compendium, one page per section, opened by the Grammar button beside any Automation panel and the sheet&#39;s custom effects.</p>\n<p>The grammar has the shape of Fantasy Grounds&#39; Pathfinder 2 automation, which Mike asked for by name (2026-11-05: &quot;I REALLY, REALLY like the FantasyGrounds effects automation ... can we use syntax substantially similar to this&quot;), and since 0.17.0 every line of a cell is <strong>blocks in square brackets</strong>, as FG&#39;s PC feature automation is (Mike: &quot;shouldn&#39;t ALL of those be enclosed in Brackets?&quot;):</p>\n<ul><li><strong>Feature blocks</strong>: what owning the Talent does to the character. <code>[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]</code>, <code>[Acrobatics trained]</code>, <code>[MANEUVER Steady the Line]</code>.</li><li><strong>Effect blocks</strong>, <code>[EFFECT ...]</code>: what the Talent does to a roll, a tag then components separated by semicolons, FG&#39;s own wrapper for an effect inside a feature. <code>[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin &gt;= trained)]</code>, <code>[EFFECT IMMUNE: prone; LIMIT: encounter]</code>.</li></ul>\n<pre><code>[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\n[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin &gt;= trained)]\n[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(&gt;=1, 0)]\n[MANEUVER Oathbound]</code></pre>\n<p>Every block the cell reads, one example each. Case never matters.</p>\n<table><thead><tr><th>write</th><th>it means</th><th>section</th></tr></thead><tbody><tr><td><code>[TRAIT Human]</code></td><td>the character has the trait</td><td>2</td></tr><tr><td><code>[SIZE Medium]</code></td><td>the body&#39;s Size</td><td>2</td></tr><tr><td><code>[SPEED 6]</code>, <code>[SPEED +1]</code></td><td>Speed in feet per Move, or an adjustment to it</td><td>2</td></tr><tr><td><code>[VIGOR 8]</code>, <code>[VIGOR opening 12]</code></td><td>Vigor per level; a Calling&#39;s Opening Vigor</td><td>2</td></tr><tr><td><code>[SENSES Low-light vision]</code></td><td>a sense</td><td>2</td></tr><tr><td><code>[LANGUAGE Common, Serrovine]</code></td><td>languages known</td><td>2</td></tr><tr><td><code>[Acrobatics trained]</code>, <code>[Lore trained]</code></td><td>a Trained Root at creation, one directed Talent Point</td><td>2</td></tr><tr><td><code>[POINT Skill]</code>, <code>[POINT 2 Skill different]</code></td><td>Talent Points at creation, by scope</td><td>2</td></tr><tr><td><code>[MANEUVER Steady the Line]</code></td><td>the Maneuver of that name is the character&#39;s</td><td>2</td></tr><tr><td><code>[TALENT Weapon Familiarity]</code></td><td>a Talent handed over free</td><td>2</td></tr><tr><td><code>[CHOICE Weapon Group]</code></td><td>a pick the Talent demands at creation</td><td>2</td></tr><tr><td><code>[AURA 15 allies]</code></td><td>a ring on the map, preview-only until shown</td><td>2</td></tr><tr><td><code>[EFFECT CHECK: 1 condition, aid]</code></td><td>a bonus to checks of a Constellation or Maneuver (none named: every check)</td><td>3</td></tr><tr><td><code>[EFFECT ATK: 1 condition]</code></td><td>a bonus to every Strike and Cast</td><td>3</td></tr><tr><td><code>[EFFECT DEF: 1 situation, guard]</code></td><td>a bonus to a Defense (none named: all four)</td><td>3</td></tr><tr><td><code>[EFFECT INIT: 1 situation]</code></td><td>a bonus to Initiative</td><td>3</td></tr><tr><td><code>[EFFECT SPEED: 1 situation]</code></td><td>feet on a Move</td><td>3</td></tr><tr><td><code>[EFFECT IMMUNE: prone]</code>, <code>[EFFECT IMMUNE: expose]</code></td><td>a Condition, or an Expose, does not land</td><td>3</td></tr><tr><td><code>[EFFECT MARK: enemies]</code></td><td>using it names one creature</td><td>3</td></tr><tr><td><code>[EFFECT REROLL: diplomacy]</code></td><td>the card of a matching roll offers the die again</td><td>3</td></tr><tr><td><code>[EFFECT IGNORE: terrain, mud]</code></td><td>difficult terrain of those kinds costs nothing</td><td>3</td></tr><tr><td><code>; IF: RANK(Origin &gt;= trained)</code></td><td>... while the owner&#39;s rank is at least that</td><td>3</td></tr><tr><td><code>; IF: RANK(roll = untrained)</code></td><td>... while the roll&#39;s own rank is that</td><td>3</td></tr><tr><td><code>; IF: SEEN</code></td><td>... for a recipient who can see the owner</td><td>3</td></tr><tr><td><code>; IF: ALLIES(&gt;=1, 0)</code></td><td>... while that many allies stand within the range (<code>ENEMIES</code>, <code>ALL</code>)</td><td>3</td></tr><tr><td><code>; IF: CLAIM(when trading)</code></td><td>... when the player says so (a checkbox in the roll dialog, or Apply to next roll)</td><td>3</td></tr><tr><td><code>; IF: RESULT(critical failure)</code></td><td>... on that degree (REROLL only)</td><td>3</td></tr><tr><td><code>; IFT: TRAIT(Fear)</code></td><td>... against an attack carrying the trait</td><td>3</td></tr><tr><td><code>; IFT: MARKED</code></td><td>... against the creature the MARK named</td><td>3</td></tr><tr><td><code>; IFT: BLOW</code> (<code>BLAST</code>, <code>BLIGHT</code>, <code>BEGUILEMENT</code>, <code>MELEE</code>, <code>RANGED</code>)</td><td>... against that Threat, or a Blow by its reach</td><td>3</td></tr><tr><td><code>; IFT: CHECK(intimidation)</code></td><td>... against a check of that Constellation read on this Defense</td><td>3</td></tr><tr><td><code>; FOR: allies 15</code></td><td>... given to allies within 15 ft (<code>self</code>, <code>enemies</code>, <code>all</code>, <code>self+allies</code>)</td><td>3</td></tr><tr><td><code>; LIMIT: round</code>, <code>; LIMIT: encounter</code></td><td>... the first time each round, or each encounter</td><td>3</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 0,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "b819f0e11afa0a12",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.b819f0e11afa0a12",
+      "name": "The cell",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<ul><li>A line is one or more blocks in square brackets. A cell may hold any number of lines; a <code>[EFFECT ...]</code> block is best on a line of its own, for reading.</li><li>A blank line is nothing. A line beginning with <code>#</code> is a comment.</li><li>Case does not matter anywhere: <code>[effect check: 1 Condition, Aid]</code>, <code>[trait human]</code> and <code>IF: rank(ORIGIN &gt;= Trained)</code> all read.</li><li>Spaces are free around commas, colons and semicolons. One trailing period inside a block is tolerated.</li><li>Names are the book&#39;s: Constellations (<code>Guard</code>, <code>Stealth</code>, <code>Elementalism</code>), Maneuvers (<code>Aid</code>, <code>Steady the Line</code>), Conditions (<code>prone</code>), Threats (<code>BLOW</code>), ranks (<code>trained</code>). A Maneuver&#39;s cost glyphs are ignored (<code>Aid</code> and <code>Aid ❶</code> are one name). The slug form (<code>armored-fighting</code>) reads too.</li><li>Feet are a number with <code>ft</code> attached or not: <code>15</code>, <code>15ft</code>, <code>15 ft</code>. <code>0</code> means adjacent.</li><li>A block ends at the first <code>]</code>. Nothing a block carries contains one.</li></ul>\n<p>A line the parser cannot read <strong>fails the build</strong> (<code>sync_content.cmd</code>, <code>node assets/build_all.mjs</code>) with the Constellation, the Talent, the line number and what is wrong, before anything is written to the pack sources. In an open world, a GM who edits a Talent&#39;s Automation textarea and gets a line wrong sees it in red on the Item sheet&#39;s Automation panel and the engine skips that line; nothing is ever thrown at the table over a cell.</p>\n<p><strong>A bare effect line in a cell reads for one release.</strong> <code>IMMUNE: prone; LIMIT: encounter</code> on a line of its own, without the <code>[EFFECT ...]</code> wrapper, is read as the block would be and the build WARNS once per cell, quoting the line to wrap; 0.18.0 refuses it. The bare line is still the form of the sheet&#39;s custom effects (section 6), as FG&#39;s Character Effects field takes the bare string.</p>\n<p><strong>The 0.13.0 form is refused since 0.17.0.</strong> A line in the old operator shape (<code>bonus: +1, Condition, Aid, IF(Origin=Trained)</code>, <code>grant: 1, Calling</code>, <code>aura: 15ft, allies, VISIBLE</code>, <code>prevent: Prone, ONCE(encounter)</code>, or a <code>mark:</code>, <code>reroll:</code> or <code>ignore:</code> line carrying <code>IF(...)</code>-style operators) is one error naming this document; section 9 maps each old operator to its component. The 0.10.0 prose form (<code>bonus: +1 Condition to Aid if Human is Expert</code>) stays refused.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 100,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "588e63a607461274",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.588e63a607461274",
+      "name": "Feature lines: what owning the Talent does",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>A feature line is one or more <strong>blocks</strong> in square brackets, <code>[KEYWORD data]</code>, any number on a line. Each block is one rule.</p>\n<table><thead><tr><th>block</th><th>means</th><th>stored kind</th></tr></thead><tbody><tr><td><code>[TRAIT Human]</code></td><td>the character has the trait (the Ancestry&#39;s on its Root; any Talent may add one)</td><td><code>trait</code></td></tr><tr><td><code>[SIZE Medium]</code></td><td>the body&#39;s Size: Tiny, Small, Medium, Large, Huge, Gargantuan</td><td><code>size</code></td></tr><tr><td><code>[SPEED 6]</code></td><td>Speed in feet per Move; <code>[SPEED +1]</code> or <code>[SPEED -1]</code> adjusts it</td><td><code>speed</code></td></tr><tr><td><code>[VIGOR 8]</code></td><td>Vigor per level (the Ancestry&#39;s); <code>[VIGOR opening 12]</code> a Calling&#39;s Opening Vigor</td><td><code>vigor</code></td></tr><tr><td><code>[SENSES Low-light vision]</code></td><td>a sense, added to the list</td><td><code>sense</code></td></tr><tr><td><code>[LANGUAGE Common, Serrovine]</code></td><td>languages known, comma separated</td><td><code>language</code></td></tr><tr><td><code>[Acrobatics trained]</code></td><td>a Trained Root in that Constellation at creation, FG&#39;s own form for a proficiency: one directed Talent Point that buys the Root (a Background&#39;s, a Calling&#39;s). <code>[Lore trained]</code> lets the player name the Lore. Only <code>trained</code> reads: nothing grants a higher rank at creation</td><td><code>grant</code></td></tr><tr><td><code>[POINT Skill]</code></td><td>a Talent Point at creation, by scope: <code>Opening</code> (a Root of a Constellation not yet opened), <code>Calling</code>, <code>Skill</code> (a Lore included), <code>Lore</code>, <code>Defense</code>, <code>Combat Style</code>, <code>Comet</code> (anywhere you qualify); <code>[POINT 2 Skill different]</code> is two points in different Constellations</td><td><code>grant</code></td></tr><tr><td><code>[MANEUVER Steady the Line]</code></td><td>the Maneuver of that name, a row of <code>data/maneuvers.xlsx</code>, is the character&#39;s: copied onto the sheet when the Talent lands, listed under &quot;From your Talents&quot;, used from there, gone with the Talent. The row&#39;s own Cost and Automation are the Maneuver&#39;s</td><td><code>maneuver</code></td></tr><tr><td><code>[TALENT Weapon Familiarity]</code></td><td>a Talent handed over free, no point spent (the Free Talent column&#39;s successor)</td><td><code>talent</code></td></tr><tr><td><code>[CHOICE Weapon Group]</code></td><td>a build-time pick the Talent demands (the Choice column&#39;s successor)</td><td><code>choice</code></td></tr><tr><td><code>[AURA 15 allies]</code></td><td>the ring on the map: range in feet, whom it is about (<code>allies</code>, <code>enemies</code>, <code>all</code>). Every ring is preview-only until its owner shows it from the Auras window (0.17.0; the old <code>visible</code> word is read with a warning this release and refused next)</td><td><code>aura</code></td></tr><tr><td><code>[EFFECT ...]</code></td><td>an effect block: section 3</td><td>the tag&#39;s kind</td></tr></tbody></table>\n<p><strong>The chassis is written on the Root.</strong> The Human&#39;s <code>[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]</code> and the Serrovanian&#39;s <code>[LANGUAGE Common, Serrovine]</code> are the authoring of the Ancestry&#39;s and the Culture&#39;s facts since 0.16.0; the <code>_Tree Index</code> columns Vigor, Size, Speed, Senses, Traits and Languages, the Callings&#39; Skills column and the roster&#39;s Opening Vigor column are retired, read one release with a warning, and a disagreement between a column and the Root&#39;s block fails the build. The pipeline (<code>assets/parse_rules.mjs</code>) carries the Root&#39;s blocks into the roster records the web app, the compendium docx and the Foundry build read, so every consumer sees one source.</p>\n<p>**<code>@Maneuver[Name]</code> in an Effect cell.** A Talent that grants a Maneuver need not repeat the Maneuver&#39;s text: <code>@Maneuver[Oathbound]</code> in its Effect is replaced, wherever the Effect prints (the web app, the docx, the Talent Item, the wizard&#39;s card), by the Maneuver&#39;s block: its name and cost, Trigger, Requirements and Effect from the row. A name that is no row fails the build.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 200,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "0c104afa6a13d699",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.0c104afa6a13d699",
+      "name": "Effect blocks: what the Talent does to a roll",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<pre><code>[EFFECT TAG: &lt;value&gt; &lt;type&gt;, &lt;descriptor&gt;; &lt;component&gt;; &lt;component&gt; ...]</code></pre>\n<p>The <strong>tag</strong> names what is modified. A <strong>modifier tag</strong> takes a signed whole number and a bonus type (<code>situation</code>, <code>condition</code> or <code>gear</code>, the book&#39;s three; FG&#39;s <code>[bonus]</code>), then at most one descriptor after a comma. The other tags take descriptors alone. No bonus is untyped.</p>\n<table><thead><tr><th>tag</th><th>modifies</th><th>descriptor</th><th>stored kind</th></tr></thead><tbody><tr><td><code>CHECK: 2 condition, diplomacy</code></td><td>checks of a Constellation or made from a Maneuver (<code>CHECK: 1 condition, aid</code>); with no descriptor every check (an Initiative rolled with a Constellation is a check in it, ruling 111)</td><td>a Constellation or a Maneuver by name; a Lore is refused</td><td><code>bonus</code></td></tr><tr><td><code>ATK: 1 condition</code></td><td>every Strike and Cast</td><td>none</td><td><code>bonus</code></td></tr><tr><td><code>DEF: 1 situation, guard</code></td><td>a Defense&#39;s roll and Threshold; with no descriptor all four</td><td><code>evade</code>, <code>guard</code>, <code>endure</code>, <code>awareness</code></td><td><code>bonus</code></td></tr><tr><td><code>INIT: 1 situation</code></td><td>Initiative</td><td>none</td><td><code>bonus</code></td></tr><tr><td><code>SPEED: 1 situation</code></td><td>feet on a Move (not a Step, a Rush or a Leap)</td><td>none</td><td><code>bonus</code></td></tr><tr><td><code>IMMUNE: prone</code></td><td>the Condition does not land; <code>IMMUNE: expose</code> a Zone a Stop would Expose stays closed (FG&#39;s own <code>IMMUNE: [condition]</code>)</td><td>a Condition by name, or <code>expose</code></td><td><code>prevent</code></td></tr><tr><td><code>MARK: enemies</code></td><td>using the Talent or Maneuver names one creature, the player&#39;s target, until the encounter ends; <code>enemies</code> or <code>all</code></td><td>who may be named</td><td><code>mark</code></td></tr><tr><td><code>REROLL: diplomacy</code></td><td>the card of a matching roll offers to throw the die again; no descriptor means any check</td><td>a Constellation</td><td><code>reroll</code></td></tr><tr><td><code>IGNORE: terrain, mud, decking</code></td><td>difficult terrain of those kinds costs nothing; <code>IGNORE: terrain</code> alone every kind</td><td><code>terrain</code>, then kinds</td><td><code>ignore</code></td></tr></tbody></table>\n<p>A bonus to a Constellation moves its <strong>Threshold as well as its roll</strong> (section 7). A bonus to a Maneuver is applied when the roll is made from that Maneuver&#39;s Item and otherwise <strong>offered</strong> unticked in the roll dialog (&quot;Humanity: Aid&quot;; ruling 122).</p>\n<p><strong>Components</strong> follow the tag, each after a semicolon:</p>\n<table><thead><tr><th>component</th><th>means</th></tr></thead><tbody><tr><td><code>IF: &lt;condition&gt;</code></td><td>about the owner, or the roll itself</td></tr><tr><td><code>IFT: &lt;condition&gt;</code></td><td>about the other party: the attacker you answer, the defender your Strike meets, the attack itself</td></tr><tr><td><code>FOR: allies 15</code></td><td>who receives it: <code>self</code> (the default), <code>allies</code>, <code>enemies</code>, <code>all</code>, <code>self+allies</code>, within that range of the owner; <code>FOR: self</code> takes no range</td></tr><tr><td><code>LIMIT: round</code></td><td>the first time it would apply to each recipient in a round, and not again until the next round</td></tr><tr><td><code>LIMIT: encounter</code></td><td>the first time in an encounter, and not again until the next. Outside an encounter either applies every time, said on the card</td></tr></tbody></table>\n<p>Both <code>IF:</code> and <code>IFT:</code> accept every condition (FG&#39;s own users mix them); the idiomatic prefix is the one in the table. Several <code>IF:</code>/<code>IFT:</code> components on one line must all hold.</p>\n<table><thead><tr><th>condition</th><th>means</th><th>idiom</th></tr></thead><tbody><tr><td><code>RANK(Origin &gt;= trained)</code></td><td>the owner&#39;s rank in that Constellation: <code>=</code>, <code>&gt;=</code> or <code>&lt;=</code>; <code>Origin</code> is the pooled Ancestry, Bloodline and Culture rank; a group (a Combat Style, a magical specialty) is refused naming its parent</td><td><code>IF:</code></td></tr><tr><td><code>RANK(roll = untrained)</code></td><td>the roll&#39;s own rank, Handling included (<code>roll</code> is the reserved word)</td><td><code>IF:</code></td></tr><tr><td><code>SEEN</code></td><td>the recipient can see you: a straight line from their token&#39;s centre to yours crosses no sight-blocking wall, they are not Blinded, your token is not hidden nor you Hidden or Undetected (ruling 170)</td><td><code>IF:</code></td></tr><tr><td><code>ALLIES(&gt;=1, 0)</code></td><td>how many allies stand within the range of the owner; <code>&gt;=</code>, <code>&lt;=</code>, <code>=</code>, <code>&gt;</code>, <code>&lt;</code></td><td><code>IF:</code></td></tr><tr><td><code>ENEMIES(&gt;=2, 15)</code></td><td>how many enemies stand within the range</td><td><code>IF:</code></td></tr><tr><td><code>ALL(&gt;=3, 5)</code></td><td>how many creatures of either side stand within the range</td><td><code>IF:</code></td></tr><tr><td><code>CLAIM(when trading)</code></td><td>the player decides: the bonus is a checkbox in the roll dialog with these words as its hint, unticked; the Effects tab&#39;s &quot;Apply to next roll&quot; and the pin on the Talent&#39;s row arm it for the next roll (ruling 174)</td><td><code>IF:</code></td></tr><tr><td><code>RESULT(critical failure)</code></td><td>the roll&#39;s degree: <code>critical success</code>, <code>success</code>, <code>failure</code>, <code>critical failure</code>. Only <code>REROLL</code> reads it</td><td><code>IF:</code></td></tr><tr><td><code>TRAIT(Fear)</code></td><td>the attack answered carries the trait (a weapon&#39;s, an adversary attack&#39;s or a spell Talent&#39;s), matched on its first word; the build warns when nothing shipping carries it (ruling 171)</td><td><code>IFT:</code></td></tr><tr><td><code>MARKED</code></td><td>the other party is the creature this Talent&#39;s or Maneuver&#39;s <code>MARK</code> named (FG&#39;s <code>IFT: CUSTOM(Hunt Prey)</code>)</td><td><code>IFT:</code></td></tr><tr><td><code>BLOW</code></td><td>the Threat answered is a Blow (a weapon&#39;s Strike, an adversary&#39;s attack row)</td><td><code>IFT:</code></td></tr><tr><td><code>BLAST</code></td><td>the Threat answered is a Blast</td><td><code>IFT:</code></td></tr><tr><td><code>BLIGHT</code></td><td>the Threat answered is a Blight</td><td><code>IFT:</code></td></tr><tr><td><code>BEGUILEMENT</code></td><td>the Threat answered is a Beguilement</td><td><code>IFT:</code></td></tr><tr><td><code>MELEE</code></td><td>a Blow that reached by hand</td><td><code>IFT:</code></td></tr><tr><td><code>RANGED</code></td><td>a Blow that reached by a missile or a throw</td><td><code>IFT:</code></td></tr><tr><td><code>CHECK(intimidation)</code></td><td>the check read against this Defense rolls that Constellation (a character&#39;s Demoralize against your Guard reads your live Threshold, ruling 179)</td><td><code>IFT:</code></td></tr></tbody></table>\n<p><strong>Who.</strong> Allies are tokens of the same disposition as the owner on the scene, as the Support rule counts them: never a party token, a hidden token, or a Dying, unconscious or dead body. Enemies are tokens of the opposite disposition. <code>all</code> is everyone but the owner. Ranges are measured edge to edge in feet; <code>0</code> is adjacency.</p>\n<p><strong>Rank.</strong> <code>untrained</code>, <code>trained</code>, <code>expert</code>, <code>master</code>, <code>legendary</code>.</p>\n<p><strong>Trait.</strong> Any word; the attack&#39;s traits are the weapon&#39;s Traits column, the adversary attack Item&#39;s Traits, or the spell Talent&#39;s <code>Traits</code> column on its tree sheet.</p>\n<p><strong>Terrain kind.</strong> <code>mud</code>, <code>shallow water</code>, <code>decking</code>, <code>loose stone</code>, <code>rubble</code>, <code>undergrowth</code>, <code>snow</code>, <code>ice</code>, <code>sand</code>, <code>other</code>: the Difficult terrain region behavior&#39;s own list, which a region&#39;s GM picks from, so the words in a cell and on the map are one vocabulary.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 300,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "a25fbbe482c2c625",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.a25fbbe482c2c625",
+      "name": "The kinds, by their stored names",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>The sheet&#39;s <strong>As read</strong> list and the build&#39;s messages name a rule by its kind. These are the words, each with the blocks that make it.</p>\n<h3><code>bonus</code></h3>\n<p>A typed bonus or penalty to a roll, and to the Threshold that roll&#39;s Constellation presents. Made by <code>[EFFECT CHECK: ...]</code>, <code>ATK</code>, <code>DEF</code>, <code>INIT</code> and <code>SPEED</code>. Every component applies.</p>\n<h3><code>prevent</code></h3>\n<p>An effect does not land: a Condition, or an Expose. Made by <code>[EFFECT IMMUNE: ...]</code>. Takes every component but <code>CLAIM</code>. With <code>FOR</code> the prevention reaches others; when the carrier is a Reaction (↺ in its cost) it is offered as that Reaction where the effect would land, and the owner pays its cost.</p>\n<h3><code>mark</code></h3>\n<p>Using the Talent or Maneuver names one creature. Made by <code>[EFFECT MARK: ...]</code>. Takes <code>IF: RANK(...)</code> alone.</p>\n<h3><code>reroll</code></h3>\n<p>The card of a matching roll offers to throw the die again, at the cost in the carrier&#39;s name. Made by <code>[EFFECT REROLL: ...]</code>. Takes <code>IF: RANK(...)</code> and <code>IF: RESULT(...)</code>.</p>\n<h3><code>ignore</code></h3>\n<p>Difficult terrain of named kinds costs nothing. Made by <code>[EFFECT IGNORE: ...]</code>. Takes <code>IF: RANK(...)</code> alone.</p>\n<h3><code>grant</code></h3>\n<p>Talent Points at creation: <code>[POINT ...]</code> by scope, <code>[&lt;Constellation&gt; trained]</code> directed at one Root.</p>\n<h3><code>aura</code></h3>\n<p>The ring on the map, <code>[AURA ...]</code>. A drawing: what happens inside it is the Talent&#39;s other lines.</p>\n<h3><code>trait</code></h3>\n<p><code>[TRAIT X]</code>.</p>\n<h3><code>size</code></h3>\n<p><code>[SIZE X]</code>.</p>\n<h3><code>speed</code></h3>\n<p><code>[SPEED N]</code> or <code>[SPEED +N]</code>.</p>\n<h3><code>vigor</code></h3>\n<p><code>[VIGOR N]</code> or <code>[VIGOR opening N]</code>.</p>\n<h3><code>sense</code></h3>\n<p><code>[SENSES X]</code>.</p>\n<h3><code>language</code></h3>\n<p><code>[LANGUAGE X, Y]</code>.</p>\n<h3><code>maneuver</code></h3>\n<p><code>[MANEUVER X]</code>.</p>\n<h3><code>talent</code></h3>\n<p><code>[TALENT X]</code>.</p>\n<h3><code>choice</code></h3>\n<p><code>[CHOICE X]</code>.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 400,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "7d774b90f5ee9178",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.7d774b90f5ee9178",
+      "name": "The book, written in the grammar",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<h3>The level-1 Human</h3>\n<pre><code>Humanity            [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\n                    [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin &gt;= trained)]\nDriven              [POINT Calling]\nQuick Study         [POINT Skill]\nStubborn Footing    [EFFECT IMMUNE: prone; LIMIT: encounter]\nClose Ranks         [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(&gt;=1, 0)]\nVersatile Human     [POINT Opening]\nJack of All Trades  [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]\nTorchbearer Human   [AURA 15 allies]\n                    [EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]\nSteady the Line     [MANEUVER Steady the Line]          Effect: @Maneuver[Steady the Line]</code></pre>\n<p>Close Ranks in words: <code>FOR: self+allies 0</code> is who gets the bonus; <code>IF: ALLIES(&gt;=1, 0)</code> is the owner&#39;s condition. An ally receives it only while within 0 ft of the owner, which is the same adjacency, so one line serves both halves of &quot;both of you&quot;. Torchbearer Human is the Rally Aura (Mike&#39;s text of 2026-11-05: &quot;The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check&quot;): the first line draws the ring; the second gives every Defense of an ally within 15 ft who can see the owner a +1 against an attack carrying Fear, once a round per ally.</p>\n<h3>The two Cultures</h3>\n<pre><code>Serrovanian         [LANGUAGE Common, Serrovine]\n                    [EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]\nOathbound           [MANEUVER Oathbound]                 Effect: @Maneuver[Oathbound]\nContract Literate   [EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]\nIron Etiquette      [EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]\n                    [EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]\nReacher             [LANGUAGE Common, Reachspeak]\n                    [EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]\nQuick Tongue        [MANEUVER Quick Tongue]              Effect: @Maneuver[Quick Tongue]\nRiverfoot           [EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]\n                    [EFFECT SPEED: 1 situation; LIMIT: encounter]\nBroker&#39;s Eye        [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]\n                    [EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading)]</code></pre>\n<h3>The Backgrounds and the Callings</h3>\n<pre><code>Acrobat             [Acrobatics trained][Athletics trained][Lore trained]\nSoldier             [Athletics trained][Intimidation trained][Lore trained]\nCriminal            [Guile trained][Stealth trained][Lore trained]\nWeaponmaster Calling   [Athletics trained][CHOICE Weapon Group][TALENT Weapon Familiarity][VIGOR opening 10]\nBerserker Calling      [Athletics trained][VIGOR opening 12]\n(every other Calling Root: its Trained Skill and its Opening Vigor the same way)</code></pre>\n<h3>The Talent Maneuvers (the &quot;Talent Maneuvers&quot; sheet of <code>data/maneuvers.xlsx</code>)</h3>\n<pre><code>Steady the Line  ❶↺   [EFFECT IMMUNE: expose; FOR: allies 0]\nOathbound        ❶    [EFFECT MARK: enemies]\n                      [EFFECT ATK: 1 condition; IFT: MARKED]\n                      [EFFECT DEF: 1 condition; IFT: MARKED]\nQuick Tongue     ❶↺   [EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]</code></pre>\n<p>What the system does not read, and the table does: whom Oathbound may name (&quot;a creature that has either formally challenged you, or that has broken a bargain or a truce with you&quot;; the mark takes the targeted enemy); Quick Tongue&#39;s Requirements (a settlement, and not used there within a month); Broker&#39;s Eye&#39;s &quot;always know an item&#39;s fair price&quot;; and which agreement, trade or social manipulation is in front of the player, which is what <code>CLAIM</code> asks them. Iron Etiquette&#39;s two lines are one Talent, so an Intimidation match and a ticked claim together are +1, not +2 (PHB v4.21&#39;s stacking collapses one source).</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 500,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "97e3c61ea16d4cb5",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.97e3c61ea16d4cb5",
+      "name": "Character Effects",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>The character sheet&#39;s <strong>Effects</strong> tab (0.16.0, the Overview&#39;s panel through 0.16.0; Mike: FG&#39;s &quot;Character Effects field ... automated and shown on the Tracker, or on the Character sheet&quot;) lists every effect line the character carries, from Talents, Maneuvers and the custom effects below, each with its As read line. A line the system applies by itself has FG&#39;s three-state switch <strong>On / Skip / Off</strong>: Skip lets the next application pass and returns to On; Off silences the line until it is turned back on. A line the system cannot apply by itself, one with <code>IF: CLAIM(...)</code>, has instead <strong>Apply to next roll</strong> (0.17.0): pressed, the bonus comes ticked in the next roll dialog or is applied to the next Threshold read, and the button goes out; the pin on the Talent&#39;s row is the same switch. <strong>Custom effects</strong> are lines the owner or the GM types on the sheet in the bare form, as FG&#39;s field takes them (<code>ATK: 2 situation; LIMIT: round</code>, <code>DEF: 1 situation, guard; IF: CLAIM(behind the cart)</code>; the <code>[EFFECT ...]</code> wrapper reads there too), with a duration: until removed, the next roll, or the end of the encounter. They act exactly as a Talent&#39;s lines do. The combat tracker shows a badge with the count of a combatant&#39;s active effects and their summaries on hover. The Grammar button on the panel opens this document&#39;s journal.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 600,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "cb04ff2ff2913a43",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.cb04ff2ff2913a43",
+      "name": "What a rule does in play, and what it does not",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<ul><li><strong>A bonus to a Constellation moves its Threshold.</strong> A Defense&#39;s Threshold is 10 plus the same modifiers its roll uses, so <code>[EFFECT DEF: 1 situation, guard]</code> raises the Guard Threshold on the sheet, in the Combat Prompt&#39;s preview and on the attack card, and the Guard roll alike. A Skill&#39;s Threshold, wherever one is shown (the party&#39;s Skills grid, the Relevant Check picker), is 10 plus the check&#39;s own modifier, so it moves too. <strong>Both of the player&#39;s paths are covered:</strong> a player defending against an adversary&#39;s attack rolls their Defense, and the roll carries the bonus (and writes the LIMIT mark); a player attacking a player rolls once against the defender&#39;s Threshold, and the Threshold the coordinator reads carries it. A rule that needs the attack (<code>IFT:</code> Threats, <code>IFT: TRAIT</code>, <code>IFT: CHECK</code>), the map (<code>FOR</code> reaching others, <code>ALLIES(...)</code>, <code>SEEN</code>), the other party (<code>IFT: MARKED</code>) or the round (<code>LIMIT</code>) is read at those moments and nowhere they are unknown.</li><li><strong>Position is read where a token is known.</strong> The sheet&#39;s Defense Threshold is computed without the map, so it does <strong>not</strong> include such bonuses; its tooltip lists the rules it leaves out; the Combat Prompt&#39;s preview, the attack card&#39;s Threshold and every roll made with a token on the scene do include them.</li><li>**<code>LIMIT: round</code> and <code>LIMIT: encounter</code> are remembered on the recipient** (a flag on the Actor, <code>flags.starwrought.rules.round</code> or <code>.encounter</code>, keyed by the Talent and the line, naming the Combat and the round). The client that resolves the roll writes the mark: the coordinator&#39;s client for an attack read against a Threshold, the roller&#39;s for a Defense roll or a check; a preview writes nothing.</li><li><strong>A claim is the player&#39;s decision, at the roll</strong> (ruling 174). A <code>CLAIM</code> bonus is a checkbox in the roll dialog, unticked, hint and all; ticked, it joins the roll and prints on the card by the Talent&#39;s name. Apply to next roll (the Effects tab) and the pin on the Talent&#39;s row arm it for the next roll (the box comes ticked) or the next Threshold read (applied, since no dialog shows); both go out when either resolves. Nothing is applied unasked, and nothing is remembered past that one roll.</li><li><strong>The other party is read per pairing</strong> (ruling 175). A Defense roll and a Threshold read know the attacker; a Strike&#39;s one blind die knows nobody, so a rule about the defender (<code>IFT: MARKED</code>) is read as each pairing resolves and added to that pairing&#39;s total, listed on its card and kept for a reroll of it. A Strike with no target rolls against a typed Threshold and has no other party.</li><li><strong>A mark names one creature</strong> (ruling 176). <code>flags.starwrought.rules.marks.&lt;carrier&gt;</code> on the owner: the targeted token, its name and the Combat it was made in. It holds while that Combat is the viewed one; made outside an encounter it holds until the next encounter starts or the Maneuver is used again. Using the Maneuver asks for exactly one target of the kind <code>MARK</code> names.</li><li><strong>A reroll pays once, in an encounter</strong> (ruling 177). The button on the card pays the carrier&#39;s cost through the owner&#39;s actions when a Combat is running and charges nothing outside one; the new card names the Talent and says its Requirements are the table&#39;s.</li><li><strong>A check against a Threshold reads it live</strong> (ruling 179). A Maneuver whose check names a Defense (Demoralize against Guard), used with one target, reads that target&#39;s Threshold through the same fold the attack flow uses (the Threat <code>check</code> and the attacker known, so <code>IFT: CHECK(...)</code> and <code>IFT: MARKED</code> apply), prints the number for a character target or a GM roller, and withholds an adversary&#39;s as the flow does.</li><li><strong>Terrain is on the map</strong> (ruling 178). A Difficult terrain region behavior carries a kind and a multiplier; <code>[EFFECT IGNORE: terrain, &lt;kind&gt;]</code> makes the owner&#39;s token cross that kind as open ground. A region the GM hides carries no terrain for anyone (Foundry&#39;s rule), so a terrain region is never hidden to keep it secret; players toggle their own overlay instead.</li><li>**A <code>prevent</code> of a Condition<strong> refuses the write wherever the system sets the Condition (Drop Flat at the reveal, the final Legs Wound, the token palette, the Effects tab) and posts one card saying which Talent prevented it. </strong>A <code>prevent</code> of <code>expose</code><strong> is answered on the resolution card: the Expose widget shows the Reaction&#39;s button for each ally whose Maneuver reaches the attacker; pressed, the ally&#39;s cost is paid, the card says &quot;It Exposes nothing&quot;, and the Expose widget is gone. </strong>Pressed after the Zone was picked** it closes the Zone this card Exposed, and the card says so (ruling 172). A Zone Exposed by anything but this card is never touched.</li><li><strong>A Talent Maneuver</strong> (<code>[MANEUVER X]</code>) is an owned action Item copied from the Actions pack when the Talent lands (a drag onto the sheet, the wizard, or the GM&#39;s ready pass after Sync content), flagged with the Talent that granted it, listed under &quot;From your Talents&quot;, and deleted with the Talent. Its cost is the row&#39;s Cost column; its rules are the row&#39;s Automation, indexed on the character as any owned Item&#39;s are.</li><li><strong>An aura is a preview until shown</strong> (0.17.0). <code>[AURA ...]</code> draws on hover, on selection and while the token is dragged; the Auras window on the token&#39;s HUD shows a ring to everyone for the encounter, and that choice is the character&#39;s (<code>system.auras.visible</code>), not the cell&#39;s.</li><li><strong>Sight is read, hearing is not.</strong> <code>SEEN</code> is line of sight between token centres against sight-blocking walls plus three statuses; light, sight range and hearing are the table&#39;s.</li><li><strong>Nothing reads a Talent&#39;s Effect text.</strong> What the cell does not say, the system does not do: every clause with no line for it is the table&#39;s.</li><li><strong>Adversaries.</strong> A rule on an adversary&#39;s Item is indexed but no adversary roll asks for modifiers (adversaries roll flat), and no adversary casts. A <code>prevent</code> on an adversary works, since Conditions are set on adversaries as on characters.</li></ul>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 700,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "1a2a34466750474b",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.1a2a34466750474b",
+      "name": "The messages the build prints",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<table><thead><tr><th>message</th><th>what to do</th></tr></thead><tbody><tr><td><code>unknown rule kind &quot;&lt;word&gt;&quot; (an effect begins with a tag: CHECK, ATK, ..., in brackets as [EFFECT ...]; a feature is a bracketed block: TRAIT, SIZE, ...)</code></td><td>the word before the colon is neither a tag nor a keyword; check the spelling, or the line is prose that belongs in the Effect column</td></tr><tr><td><code>the 0.13.0 form (&quot;bonus: +1, Condition, Aid, IF(...)&quot;) is retired since 0.17.0; AUTOMATION_GRAMMAR.md section 9 maps each operator to its component</code></td><td>an old cell; rewrite it by section 9</td></tr><tr><td><code>an effect line in a cell is written in brackets since 0.17.0; write &quot;[EFFECT &lt;line&gt;]&quot;</code> (a WARNING)</td><td>wrap the line; 0.18.0 refuses the bare form in a cell</td></tr><tr><td><code>EFFECT wraps an effect line, `[EFFECT &lt;tag&gt;: ...]`: CHECK, ATK, ...</code></td><td>the word after EFFECT is no tag</td></tr><tr><td><code>EFFECT is written `[EFFECT &lt;tag&gt;: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`</code></td><td>an empty <code>[EFFECT]</code></td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or [&lt;Constellation&gt; trained]</code></td><td>the block&#39;s first word</td></tr><tr><td><code>TRAIT is a feature and is written in brackets: `[TRAIT Human]`</code></td><td>a feature keyword typed as a line, without its brackets</td></tr><tr><td><code>a [ has no closing ]</code></td><td>a bracket left open</td></tr><tr><td><code>CHECK is written `CHECK: &lt;value&gt; &lt;type&gt;, &lt;descriptor&gt;` ... a signed whole number first</code></td><td>the value is missing or not a number</td></tr><tr><td><code>no Talent bonus is untyped; name situation, condition or gear after the value</code></td><td>the bonus type is missing</td></tr><tr><td><code>write condition, not status: the book renamed the types in v3.3</code></td><td>the retired type words (circumstance, status, item)</td></tr><tr><td><code>CHECK takes one descriptor, a Constellation or a Maneuver, not N</code></td><td>two descriptors after the comma</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a Defense: DEF takes evade, guard, endure or awareness, or none for all four</code></td><td>the descriptor of DEF</td></tr><tr><td><code>ATK takes no descriptor</code></td><td>ATK, INIT and SPEED name nothing</td></tr><tr><td><code>&quot;&lt;name&gt;&quot; names no Constellation or Maneuver</code></td><td>the target is misspelt, or the Maneuver&#39;s row is not on an action sheet yet (a disabled row still resolves)</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a condition: IF: takes RANK, SEEN, ALLIES, ...</code></td><td>the word inside IF or IFT</td></tr><tr><td><code>RANK is written `RANK(&lt;Constellation&gt; &lt;op&gt; &lt;rank&gt;)`</code></td><td>the contents of RANK</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a rank: write Untrained, Trained, Expert, Master or Legendary</code></td><td>the rank word</td></tr><tr><td><code>&quot;&lt;name&gt;&quot; is a group and has no rank of its own; test &lt;parent&gt; instead</code></td><td><code>RANK(Dueling = expert)</code>: write the parent</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a Degree: write Critical Success, Success, Failure or Critical Failure</code></td><td>the degree in RESULT</td></tr><tr><td><code>IF(Outcome=...) is only read by a kind that acts after the die (reroll)</code></td><td>a RESULT condition on anything but REROLL</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a Threat (...) or a Constellation</code></td><td>the word after IFT: that is neither</td></tr><tr><td><code>a Threat is written bare: `IFT: BLOW`</code></td><td><code>IFT: CHECK(blow)</code></td></tr><tr><td><code>&lt;TAG&gt; does not take &lt;component&gt;</code></td><td>a component the tag has no use for (<code>IMMUNE does not take IF: CLAIM(...)</code>)</td></tr><tr><td><code>&quot;&lt;TAG&gt;&quot; is a tag and begins its own line; one effect per line</code></td><td>two tags in one block</td></tr><tr><td><code>FOR is written `FOR: &lt;who&gt; [&lt;N&gt;]`</code> / <code>FOR: self takes no range</code></td><td>the recipients</td></tr><tr><td><code>LIMIT is written `LIMIT: round` or `LIMIT: encounter`</code></td><td>the limit</td></tr><tr><td><code>a who is written self, allies, enemies, all or self+allies</code></td><td>the FOR subject</td></tr><tr><td><code>a range is written &lt;N&gt;ft, as in 15ft</code></td><td>the feet</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a Condition or Expose</code></td><td>the IMMUNE descriptor</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a terrain kind: write Mud, Shallow Water, ...</code></td><td>a kind not in the Difficult terrain behavior&#39;s list</td></tr><tr><td><code>&quot;&lt;name&gt;&quot; is not a Maneuver: a [MANEUVER ...] names a row of data/maneuvers.xlsx</code></td><td>the Maneuver&#39;s row is missing, or (the build) not enabled</td></tr><tr><td><code>&quot;&lt;name&gt;&quot; is not a Constellation</code></td><td><code>[&lt;name&gt; trained]</code> names no Constellation</td></tr><tr><td><code>[&lt;name&gt; expert]: a Root is Trained; nothing grants Expert at creation</code></td><td>only <code>trained</code> reads</td></tr><tr><td><code>POINT is written `[POINT &lt;N&gt; &lt;Scope&gt; [different]]`</code> / <code>&quot;&lt;word&gt;&quot; is not a grant scope: write Opening, Calling, Skill, Lore, Defense, Combat Style or Comet</code></td><td>the point block</td></tr><tr><td><code>SPEED is written `[SPEED 6]` ... or `[SPEED +1]`</code> / <code>VIGOR is written `[VIGOR 8]` ... or `[VIGOR opening 12]`</code></td><td>the chassis blocks</td></tr><tr><td><code>&quot;&lt;word&gt;&quot; is not a Size: write Tiny, Small, Medium, Large, Huge or Gargantuan</code></td><td>the Size block</td></tr><tr><td><code>AURA is written `[AURA &lt;N&gt; &lt;who&gt;]`</code></td><td>the ring block</td></tr><tr><td><code>[AURA ... visible]: every ring is preview-only since 0.17.0 and the Auras window shows one; drop the word</code> (a WARNING)</td><td>drop <code>visible</code>; 0.18.0 refuses it</td></tr><tr><td><code>WARNING: ... TRAIT(&lt;Trait&gt;): no shipping weapon, attack or Talent carries the trait &quot;&lt;Trait&gt;&quot;</code></td><td>not a failure: the rule reads and fires when something is authored with that trait</td></tr><tr><td><code>WARNING: &lt;workbook&gt;: the _Tree Index columns &lt;list&gt; are retired; the Root&#39;s feature lines are the authoring now</code></td><td>move the facts into the Root&#39;s cell as section 2 says, then drop the columns</td></tr><tr><td><code>ERROR: &lt;tree&gt;: the _Tree Index &lt;column&gt; reads &lt;a&gt; but the Root&#39;s [&lt;KEYWORD&gt;] says &lt;b&gt;; drop the column</code></td><td>a retired column and the Root&#39;s block disagree</td></tr></tbody></table>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 800,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "a409ef454e27aed4",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.a409ef454e27aed4",
+      "name": "Refused since 0.17.0: the 0.13.0 operators",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<p>A line in the 0.13.0 shape, <code>kind: &lt;arg&gt;, &lt;arg&gt;, ... [, &lt;OPERATOR&gt;(...)]</code>, is refused with one error naming this section. Its operators, and the component each became:</p>\n<table><thead><tr><th>operator</th><th>component since 0.16.0</th></tr></thead><tbody><tr><td><code>IF(&lt;Constellation&gt;=&lt;Rank&gt;)</code>, <code>IF(Rank=&lt;Rank&gt;)</code>, <code>IF(Trait=&lt;Trait&gt;)</code>, <code>IF(Outcome=&lt;Degree&gt;)</code></td><td><code>IF: RANK(...)</code>, <code>IF: RANK(roll ...)</code>, <code>IFT: TRAIT(...)</code>, <code>IF: RESULT(...)</code></td></tr><tr><td><code>FOR(&lt;Who&gt;[, &lt;N&gt;ft])</code></td><td><code>FOR: &lt;who&gt; [&lt;N&gt;]</code></td></tr><tr><td><code>WHILE(&lt;Who&gt;&lt;op&gt;&lt;N&gt;[, &lt;N&gt;ft])</code></td><td><code>IF: ALLIES(&lt;op&gt;&lt;N&gt;[, &lt;N&gt;])</code> (ENEMIES, ALL)</td></tr><tr><td><code>AGAINST(&lt;Threat&gt;)</code>, <code>AGAINST(&lt;Constellation&gt;)</code></td><td><code>IFT: BLOW</code> (BLAST, BLIGHT, BEGUILEMENT, MELEE, RANGED), <code>IFT: CHECK(...)</code></td></tr><tr><td><code>SEEN</code></td><td><code>IF: SEEN</code></td></tr><tr><td><code>FIRST(round)</code></td><td><code>LIMIT: round</code></td></tr><tr><td><code>ONCE(encounter)</code></td><td><code>LIMIT: encounter</code></td></tr><tr><td><code>CLAIM(&lt;text&gt;)</code></td><td><code>IF: CLAIM(&lt;text&gt;)</code></td></tr><tr><td><code>MARKED</code></td><td><code>IFT: MARKED</code></td></tr><tr><td><code>DIFFERENT</code></td><td><code>[POINT N &lt;Scope&gt; different]</code></td></tr><tr><td><code>VISIBLE</code></td><td>nothing: every ring is preview-only since 0.17.0</td></tr></tbody></table>\n<p>And the old kind lines: <code>bonus: +1, Condition, Aid</code> is <code>[EFFECT CHECK: 1 condition, aid]</code>; <code>bonus: +1, Situation, Defenses</code> is <code>[EFFECT DEF: 1 situation]</code>; <code>bonus: +1, Situation, Attacks</code> is <code>[EFFECT ATK: 1 situation]</code>; <code>prevent: Prone</code> is <code>[EFFECT IMMUNE: prone]</code>; <code>grant: 1, Skill</code> is <code>[POINT Skill]</code>; <code>aura: 15ft, allies, VISIBLE</code> is <code>[AURA 15 allies]</code>.</p>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 900,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    },
+    {
+      "_id": "d615e96e260f106a",
+      "_key": "!journal.pages!8c76e69ea9fd0bba.d615e96e260f106a",
+      "name": "The grammar's own history",
+      "type": "text",
+      "title": {
+        "show": true,
+        "level": 1
+      },
+      "text": {
+        "format": 1,
+        "content": "<ul><li><strong>0.9.0</strong> (2026-10-03): the framework; one rule per line, <code>kind: arguments</code>, no kinds.</li><li><strong>0.10.0</strong>: <code>bonus: &lt;value&gt; &lt;Type&gt; to &lt;Target&gt; [if &lt;Constellation&gt; is &lt;Rank&gt;]</code>, prose connectives.</li><li><strong>0.13.0</strong> (2026-11-05): the operator grammar, Mike&#39;s direction (&quot;logical operands and grammatical shortcuts&quot;); <code>bonus</code> rewritten to it and the 0.10.0 prose form retired; <code>grant</code>, <code>aura</code>, <code>prevent</code>; the operators <code>IF</code>, <code>FOR</code>, <code>WHILE</code>, <code>AGAINST</code>, <code>FIRST</code>, <code>ONCE</code>, <code>DIFFERENT</code>, <code>VISIBLE</code>.</li><li><strong>0.14.0</strong> (2026-11-05): <code>SEEN</code> and <code>IF(Trait=&lt;Trait&gt;)</code>, for the Torchbearer Human&#39;s Rally Aura; a <code>Traits</code> column on tree sheets.</li><li><strong>0.15.0</strong> (2026-11-05): the two Cultures&#39; eight Talents. <code>CLAIM(&lt;text&gt;)</code> and the arm pin, <code>MARKED</code> with the <code>mark</code> kind, <code>reroll</code> with <code>IF(Outcome=...)</code>, <code>AGAINST(&lt;Constellation&gt;)</code> and the check that reads a target&#39;s Threshold, <code>Speed</code> as a bonus target, <code>ignore: Terrain</code> with the Difficult terrain region behavior.</li><li><strong>0.16.0</strong> (2026-11-05): the grammar in Fantasy Grounds&#39; shape, Mike&#39;s direction: feature lines in brackets and effect lines of tags and components; the chassis facts as feature lines on the Root and the index columns retired; Talent Maneuvers as rows granted by <code>[MANEUVER X]</code> with <code>@Maneuver[X]</code> in the Effect; Trained Roots as <code>[X trained]</code>; Character Effects with the On / Skip / Off switch and custom effect lines. The 0.13.0 form read one more release with a warning.</li><li><strong>0.17.0</strong> (2026-11-05): every line in brackets, Mike&#39;s question answered in FG&#39;s own form: an effect line is <code>[EFFECT ...]</code>, a bare line in a cell reads one more release with a warning; the 0.13.0 form refused; <code>visible</code> retired from <code>[AURA ...]</code>, every ring preview-only until shown; this document as the Automation Grammar journal in the Rules compendium with section 0 as its first page; claim lines on the Effects tab with Apply to next roll.</li></ul>"
+      },
+      "image": {},
+      "video": {
+        "controls": true,
+        "volume": 0.5
+      },
+      "src": null,
+      "system": {},
+      "sort": 1000,
+      "ownership": {
+        "default": -1
+      },
+      "flags": {},
+      "category": null
+    }
+  ],
+  "_key": "!journal!8c76e69ea9fd0bba"
+}

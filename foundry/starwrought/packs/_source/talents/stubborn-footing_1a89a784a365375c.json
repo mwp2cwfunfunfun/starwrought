@@ -46,6 +46,7 @@
           "per": "encounter"
         },
         "marked": false,
+        "bare": true,
         "kind": "prevent",
         "line": 1,
         "text": "IMMUNE: prone; LIMIT: encounter"
@@ -61,7 +62,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "b90c616b1625233a"
+      "contentHash": "97b2359116f7a876"
     }
   },
   "effects": [],

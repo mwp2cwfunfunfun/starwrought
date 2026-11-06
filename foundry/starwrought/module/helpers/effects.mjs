@@ -1,18 +1,24 @@
 /**
  * CHARACTER EFFECTS (0.16.0): the sheet's and the tracker's view of the rule lines a character
  * carries that act in play, in the spirit of Fantasy Grounds' Character Effects (Mike's ask). The
- * Effects panel on the Overview tab (templates/actor/overview.hbs) lists every effect line grouped
+ * Effects panel on the Effects tab (templates/actor/effects.hbs; on the Overview through 0.16.0)
+ * lists every effect line grouped
  * by the Talent, Maneuver or Constellation that carries it, each with its As read summary and its
  * state switch (On, Skip, Off; module/rules/effects-state.mjs), then the custom effects, each a
  * row the owner edits with its own lines under it; the combat tracker shows the count as a badge
  * with the lines as its tooltip (module/apps/combat-tracker.mjs). Every function takes the Actor
- * and returns plain data; none renders, none writes.
+ * and returns plain data; none renders, none writes, except `armClaimLine` (0.17.0), the one write
+ * here: a claim line (a `bonus` with `CLAIM(...)`) has no state switch, since the player's decision
+ * is the claim itself, and its row carries an "Apply to next roll" button instead, which arms the
+ * carrier's claims exactly as the pin on the Talent's row does (module/rules/claims.mjs), for an
+ * Item or for a custom effect's carrier (`effect:<row id>`), which `armClaim` cannot name.
  */
 
 import * as SW from "../config.mjs";
 import { summarize } from "../rules/grammar.mjs";
 import { EFFECT_CARRIER_TYPE, ruleStateKey } from "../rules/engine.mjs";
-import { stateOf, RULE_STATES } from "../rules/effects-state.mjs";
+import { stateOf, RULE_STATES, effectsOf } from "../rules/effects-state.mjs";
+import { claimsOf } from "../rules/claims.mjs";
 
 /**
  * The kinds whose rules are effects: something the engine does on a roll, a Condition, a Use or a
@@ -32,8 +38,39 @@ const STATE_LOOK = Object.freeze({
   off: { icon: "fa-toggle-off" }
 });
 
-/** One line's row for the panel: the state, its look, the summary and the tooltip. */
-function lineRow(actor, item, rule, { error = "" } = {}) {
+/** The flag path of an armed claim on its owner, the one module/rules/claims.mjs writes. */
+const ARMED_PATH = "flags.starwrought.rules.armed";
+
+/** A carrier key as the flag stores it: dots replaced, since the key is a path. */
+const safeKey = key => String(key ?? "").replace(/\./g, "-");
+
+/**
+ * The claim control of a line (0.17.0), or null for a line with no `CLAIM`: whether the carrier's
+ * claims are armed, the button's label and its hint (the pin's own strings, naming every claim
+ * text the carrier holds), and the key `armClaimLine` takes.
+ * @param {object} actor
+ * @param {object} item     The carrier (an Item or an effect carrier).
+ * @param {object} rule
+ * @param {Map} claims      `claimsOf(actor)`.
+ */
+function claimControl(actor, item, rule, claims) {
+  if (!rule?.claim || !item?.id) return null;
+  const held = claims.get(item.id);
+  const armed = held ? held.armed : !!actor?.flags?.starwrought?.rules?.armed?.[safeKey(item.id)];
+  const texts = (held?.texts ?? [String(rule.claim.text ?? "")]).join("; ");
+  return {
+    key: String(item.id),
+    armed,
+    label: L(armed ? "STARWROUGHT.Effects.armed" : "STARWROUGHT.Effects.applyNext"),
+    hint: F(armed ? "STARWROUGHT.Sheet.claimArmed" : "STARWROUGHT.Sheet.claimArm", { texts })
+  };
+}
+
+/**
+ * One line's row for the panel: the state, its look, the summary and the tooltip; a claim line
+ * (0.17.0) carries `claim` and the template draws the arm button in the switch's place.
+ */
+function lineRow(actor, item, rule, { error = "", claims = null } = {}) {
   const key = ruleStateKey(item, rule);
   const state = error ? "on" : stateOf(actor, key);
   const next = RULE_STATES[(RULE_STATES.indexOf(state) + 1) % RULE_STATES.length];
@@ -52,8 +89,43 @@ function lineRow(actor, item, rule, { error = "" } = {}) {
       state: stateLabel,
       next: L(`STARWROUGHT.Effects.state${next[0].toUpperCase()}${next.slice(1)}`)
     }),
-    tooltip: F("STARWROUGHT.Rules.lineTooltip", { line: rule?.line ?? 0, text: rule?.text ?? "" })
+    tooltip: F("STARWROUGHT.Rules.lineTooltip", { line: rule?.line ?? 0, text: rule?.text ?? "" }),
+    claim: (error || !claims) ? null : claimControl(actor, item, rule, claims)
   };
+}
+
+/**
+ * Arm or disarm a carrier's claims for the owner's next roll, from the Effects panel's button
+ * (0.17.0). The same flag the pin writes (`flags.starwrought.rules.armed.<carrier key>`, read by
+ * the `bonus` kind's hook and spent by `writeRuleMarks` with `per: "claim"`), so the pin on the
+ * Talent's row and the button on its line are one state; the carrier may be an owned Item or a
+ * custom effect's carrier (`effect:<row id>`), which must exist on the actor. The owner or a GM
+ * writes; anyone else is told. Says nothing in chat: a pin is a private intention.
+ * @param {object} actor
+ * @param {string} key      The carrier key: an Item id, or `effect:<row id>`.
+ * @param {boolean} [state] Toggle when omitted.
+ * @returns {Promise<boolean|null>}  The new state, or null when refused.
+ */
+export async function armClaimLine(actor, key, state = null) {
+  if (!actor || !key) return null;
+  if (!(actor.isOwner || game.user.isGM)) {
+    ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+    return null;
+  }
+  const id = String(key);
+  const exists = id.startsWith("effect:")
+    ? effectsOf(actor).some(e => `effect:${e.id}` === id)
+    : !!actor.items?.get?.(id);
+  if (!exists) return null;
+  const safe = safeKey(id);
+  const now = !!actor.flags?.starwrought?.rules?.armed?.[safe];
+  const next = (state === null) ? !now : !!state;
+  if (next === now) return now;
+  const update = next
+    ? { [`${ARMED_PATH}.${safe}`]: { at: Date.now() } }
+    : { [`${ARMED_PATH}.-=${safe}`]: null };
+  await actor.update(update, { swAnnounced: true });
+  return next;
 }
 
 /**
@@ -80,9 +152,11 @@ export function effectGroups(actor) {
     }
     return groups.get(id);
   };
+  // The carriers' claims, read once (0.17.0): a claim line's row gets the arm button, not the switch.
+  const claims = claimsOf(actor);
   for (const { rule, item } of index.all ?? []) {
     if (!EFFECT_KINDS.includes(rule?.kind)) continue;
-    groupFor(item).rows.push(lineRow(actor, item, rule));
+    groupFor(item).rows.push(lineRow(actor, item, rule, { claims }));
   }
   for (const { rule, item, reason } of index.unknown ?? []) {
     if (item?.type !== EFFECT_CARRIER_TYPE) continue;

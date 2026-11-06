@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "DEF: 1 condition; IFT: CHECK(intimidation)\nDEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)",
+    "automation": "[EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]\n[EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]",
     "rules": [
       {
         "value": 1,
@@ -58,7 +58,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "DEF: 1 condition; IFT: CHECK(intimidation)"
+        "text": "[EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]"
       },
       {
         "value": 1,
@@ -80,7 +80,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)"
+        "text": "[EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]"
       }
     ],
     "traits": [],
@@ -93,7 +93,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "9d2879692426019c"
+      "contentHash": "f355b5d4d056ca59"
     }
   },
   "effects": [],

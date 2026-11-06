@@ -31,7 +31,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "[LANGUAGE Common, Reachspeak]\nCHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
+    "automation": "[LANGUAGE Common, Reachspeak]\n[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]",
     "rules": [
       {
         "languages": [
@@ -62,7 +62,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)"
+        "text": "[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]"
       }
     ],
     "traits": [],
@@ -75,7 +75,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d6aa255f147178c9"
+      "contentHash": "da568cc0797c4512"
     }
   },
   "effects": [],

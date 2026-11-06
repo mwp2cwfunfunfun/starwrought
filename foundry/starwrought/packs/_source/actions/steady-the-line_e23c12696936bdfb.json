@@ -17,7 +17,7 @@
     "trigger": "An adjacent ally's Strike is Stopped and would Expose them.",
     "description": "<p>You take the blow's momentum on your own guard, and your ally keeps their footing.</p>",
     "effect": "<p>It Exposes nothing.</p>",
-    "automation": "IMMUNE: expose; FOR: allies 0",
+    "automation": "[EFFECT IMMUNE: expose; FOR: allies 0]",
     "rules": [
       {
         "effect": "expose",
@@ -33,7 +33,7 @@
         "marked": false,
         "kind": "prevent",
         "line": 1,
-        "text": "IMMUNE: expose; FOR: allies 0"
+        "text": "[EFFECT IMMUNE: expose; FOR: allies 0]"
       }
     ],
     "source": "data/maneuvers.xlsx"
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d14c1d4161a13abd"
+      "contentHash": "9fcb26cc74783fa4"
     }
   },
   "effects": [],

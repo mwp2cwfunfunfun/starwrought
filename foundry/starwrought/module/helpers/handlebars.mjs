@@ -95,6 +95,7 @@ export function preloadTemplates() {
     "systems/starwrought/templates/actor/actions.hbs",
     "systems/starwrought/templates/actor/effects.hbs",
     "systems/starwrought/templates/actor/biography.hbs",
+    "systems/starwrought/templates/actor/notes.hbs", // 0.17.0: the character's Notes tab
     "systems/starwrought/templates/actor/npc-header.hbs",
     "systems/starwrought/templates/actor/npc-statblock.hbs",
     "systems/starwrought/templates/actor/npc-abilities.hbs",

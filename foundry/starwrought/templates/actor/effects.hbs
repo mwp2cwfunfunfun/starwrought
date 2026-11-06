@@ -1,5 +1,97 @@
-{{!-- Active Effects and conditions. --}}
+{{!-- The Effects tab: the Character Effects panel (0.16.0; here since 0.17.0, off the Overview),
+      then Foundry's Active Effects and conditions. --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
+
+  {{!-- CHARACTER EFFECTS (0.16.0): every rule line the engine acts on, grouped by what carries
+        it, each with its state switch (On, Skip, Off); then the custom effects typed in the
+        grammar, each a row with its own lines read back under it. helpers/effects.mjs builds it.
+        A claim line (0.17.0) has no switch: the player's decision is the "Apply to next roll"
+        button, which arms the carrier's claims as the pin on the Talent's row does. --}}
+  <div class="sw-panel sw-effects-panel">
+    <h3 class="sw-panel-title">
+      {{localize "STARWROUGHT.Effects.title"}}
+      <span class="sw-panel-buttons">
+        <span class="sw-points" data-tooltip="{{localize 'STARWROUGHT.Effects.hint'}}">{{effectsPanel.countLabel}}</span>
+      </span>
+    </h3>
+    {{#each effectsPanel.groups as |group|}}
+    <div class="sw-effects-group" data-carrier-id="{{group.id}}">
+      <div class="sw-effects-source">{{group.name}}</div>
+      <ol class="sw-effects-list">
+        {{#each group.rows as |row|}}
+        <li class="sw-effect-line sw-effect-{{row.state}}" data-tooltip="{{row.tooltip}}">
+          <span class="sw-effect-kind">{{row.kind}}</span>
+          <span class="sw-effect-summary">{{row.summary}}</span>
+          {{#if row.claim}}
+          <a class="sw-effect-state sw-claim-line {{#if row.claim.armed}}sw-claim-on{{/if}}" data-action="armClaimLine" data-key="{{row.claim.key}}"
+             data-tooltip="{{row.claim.hint}}"><i class="fa-solid fa-thumbtack"></i> {{row.claim.label}}</a>
+          {{else}}
+          <a class="sw-effect-state sw-effect-state-{{row.state}}" data-action="cycleEffectState" data-key="{{row.key}}"
+             data-tooltip="{{row.stateHint}}"><i class="fa-solid {{row.icon}}"></i> {{row.stateLabel}}</a>
+          {{/if}}
+        </li>
+        {{/each}}
+      </ol>
+    </div>
+    {{else}}
+    <p class="sw-empty">{{localize "STARWROUGHT.Effects.none"}}</p>
+    {{/each}}
+
+    <h4 class="sw-subtitle sw-effects-custom-title">
+      {{localize "STARWROUGHT.Effects.custom"}}
+      <span class="sw-effects-custom-buttons">
+        {{!-- The grammar's reference (0.17.0): the Automation Grammar journal, opened at its first page. --}}
+        <button type="button" class="sw-inline-button" data-action="rulesJournal" data-journal="STARWROUGHT Automation Grammar" data-page="At a glance" data-tooltip="STARWROUGHT.Rules.grammarHint">
+          <i class="fa-solid fa-book"></i> {{localize "STARWROUGHT.Rules.grammar"}}
+        </button>
+        <button type="button" class="sw-inline-button" data-action="addEffect" data-tooltip="{{localize 'STARWROUGHT.Effects.add'}}">
+          <i class="fa-solid fa-plus"></i> {{localize "STARWROUGHT.Effects.addShort"}}
+        </button>
+      </span>
+    </h4>
+    <ol class="sw-effects-custom">
+      {{#each effectsPanel.custom as |effect|}}
+      <li class="sw-custom-effect {{#if effect.hasError}}sw-custom-error{{/if}}" data-effect-id="{{effect.id}}">
+        <input type="hidden" name="system.effects.{{effect.index}}.id" value="{{effect.id}}">
+        <div class="sw-custom-fields">
+          <input type="text" class="sw-custom-label" name="system.effects.{{effect.index}}.label" value="{{effect.label}}"
+                 placeholder="{{localize 'STARWROUGHT.Effects.labelPlaceholder'}}" data-tooltip="{{localize 'STARWROUGHT.Effects.label'}}">
+          <textarea class="sw-custom-text" name="system.effects.{{effect.index}}.text" rows="1"
+                    placeholder="{{@root.effectsPanel.placeholder}}" data-tooltip="{{localize 'STARWROUGHT.Effects.text'}}">{{effect.text}}</textarea>
+          <select class="sw-custom-duration" name="system.effects.{{effect.index}}.duration" data-tooltip="{{localize 'STARWROUGHT.Effects.duration'}}">
+            {{selectOptions @root.effectsPanel.durations selected=effect.duration}}
+          </select>
+          <a class="sw-custom-remove" data-action="removeEffect" data-tooltip="{{localize 'STARWROUGHT.Effects.remove'}}"><i class="fa-solid fa-trash"></i></a>
+        </div>
+        {{#if effect.rows.length}}
+        <ol class="sw-effects-list sw-custom-lines">
+          {{#each effect.rows as |row|}}
+          <li class="sw-effect-line sw-effect-{{row.state}} {{#if row.error}}sw-effect-error{{/if}}" data-tooltip="{{row.tooltip}}">
+            {{#if row.error}}
+            <span class="sw-effect-kind sw-effect-kind-error"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            <span class="sw-effect-summary">{{row.summary}}</span>
+            {{else}}
+            <span class="sw-effect-kind">{{row.kind}}</span>
+            <span class="sw-effect-summary">{{row.summary}}</span>
+            {{#if row.claim}}
+            <a class="sw-effect-state sw-claim-line {{#if row.claim.armed}}sw-claim-on{{/if}}" data-action="armClaimLine" data-key="{{row.claim.key}}"
+               data-tooltip="{{row.claim.hint}}"><i class="fa-solid fa-thumbtack"></i> {{row.claim.label}}</a>
+            {{else}}
+            <a class="sw-effect-state sw-effect-state-{{row.state}}" data-action="cycleEffectState" data-key="{{row.key}}"
+               data-tooltip="{{row.stateHint}}"><i class="fa-solid {{row.icon}}"></i> {{row.stateLabel}}</a>
+            {{/if}}
+            {{/if}}
+          </li>
+          {{/each}}
+        </ol>
+        {{/if}}
+      </li>
+      {{else}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Effects.noCustom"}}</li>
+      {{/each}}
+    </ol>
+    <p class="sw-note">{{localize "STARWROUGHT.Effects.customHint"}}</p>
+  </div>
 
   <div class="sw-panel">
     <h3 class="sw-panel-title">

@@ -16,9 +16,10 @@
  *
  * The Visible mark is stored on the actor (`system.auras.visible[key]`; Mike: new tokens inherit
  * it): an ability's key is its Item id, the reach bands are `reach`, `totalReach` and `unwieldy`,
- * a custom ring carries its own. A mark absent from the store means the data default (`aura.visible`
- * on the Item; false for reach). The owner toggles marks, the GM toggles anyone's, from the Token
- * HUD's palette or the ring icons on the sheets.
+ * a custom ring carries its own. A mark absent from the store means preview only, for every ring
+ * (0.17.0; through 0.16.0 an ability's ring fell back to the Item's `aura.visible`, a field that is
+ * gone). The owner toggles marks, the GM toggles anyone's, from the Token HUD's palette or the
+ * ring icons on the sheets.
  *
  * Who sees what: players see nothing of a hidden token, and the GM sees its rings dashed; a custom
  * ring flagged GM-only never reaches a player; the scene flag `aurasSuppressed` (the GM's Token

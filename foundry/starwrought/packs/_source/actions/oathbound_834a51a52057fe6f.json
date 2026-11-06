@@ -17,7 +17,7 @@
     "trigger": "",
     "description": "<p>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</p>",
     "effect": "<p>Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.</p>",
-    "automation": "MARK: enemies\nATK: 1 condition; IFT: MARKED\nDEF: 1 condition; IFT: MARKED",
+    "automation": "[EFFECT MARK: enemies]\n[EFFECT ATK: 1 condition; IFT: MARKED]\n[EFFECT DEF: 1 condition; IFT: MARKED]",
     "rules": [
       {
         "who": "enemies",
@@ -25,7 +25,7 @@
         "when": null,
         "kind": "mark",
         "line": 1,
-        "text": "MARK: enemies"
+        "text": "[EFFECT MARK: enemies]"
       },
       {
         "value": 1,
@@ -45,7 +45,7 @@
         "marked": true,
         "kind": "bonus",
         "line": 2,
-        "text": "ATK: 1 condition; IFT: MARKED"
+        "text": "[EFFECT ATK: 1 condition; IFT: MARKED]"
       },
       {
         "value": 1,
@@ -65,7 +65,7 @@
         "marked": true,
         "kind": "bonus",
         "line": 3,
-        "text": "DEF: 1 condition; IFT: MARKED"
+        "text": "[EFFECT DEF: 1 condition; IFT: MARKED]"
       }
     ],
     "source": "data/maneuvers.xlsx"
@@ -77,7 +77,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f50d4542e9161fe4"
+      "contentHash": "9b9ac019a6ce9c3d"
     }
   },
   "effects": [],

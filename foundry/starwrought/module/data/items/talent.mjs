@@ -98,6 +98,7 @@ export class SwTalentData extends SwItemData {
    */
   static migrateData(source) {
     migrateCost(source, "talent");
+    migrateAuraVisible(source);
     if (source.constellation === SW.WEAPONS_SLUG) {
       source.constellation = SW.MELEE_SLUG;
       if (source.constellationName) source.constellationName = SW.getConstellation(SW.MELEE_SLUG).name;

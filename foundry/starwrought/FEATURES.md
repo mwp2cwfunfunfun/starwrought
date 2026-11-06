@@ -1200,7 +1200,8 @@ the Bind or for Exposed in the STARWROUGHT Reference journal.
 
 ## 3. Sheets
 
-**Character sheet.** Six tabs. The header carries the **Vigor bar** (current, maximum and
+**Character sheet.** Seven tabs (Overview, Constellations, Equipment, Maneuvers, Effects,
+Biography and, since 0.17.0, Notes). The header carries the **Vigor bar** (current, maximum and
 Temporary, with a Spent badge at 0), the **six action pips** with the
 reserved marker, the Pass, End Opportunity and reset controls and, while Preparing, a line naming the
 Maneuver with Finish and Abandon buttons (the pips only show in an encounter), then Hero Points, the
@@ -1226,8 +1227,11 @@ toggle (0.6.3) adds the shipping Constellations you have not opened as dimmed ro
 control and nothing else, and remembers the choice per client (see Flares). Equipment lays armor out by Zone with the
 Zone's Wounds beside its Protection; a party's Item dragged onto the sheet moves from the party's
 loot rather than copying, the whole stack (0.7.1; ruling 98; see The party): the player's drag is
-a Take over the relay to the GM's client, the GM's the same move made locally. Also Maneuvers,
-Effects and Biography.
+a Take over the relay to the GM's client, the GM's the same move made locally. Also Maneuvers;
+Effects (since 0.17.0 the Character Effects panel, section 7, above Foundry's Active Effects);
+Biography, with **Edicts** and **Anathema** editors beside the biography (0.17.0); and **Notes**, a
+tab of its own since 0.17.0. On the Constellations tab a Talent's **name** opens its window and
+shows its Effect on hover (0.17.0; through 0.16.0 only the small image opened it).
 
 **A chassis window** (an Ancestry, Bloodline, Culture, Background or Calling in the compendium;
 0.13.0, ruling 169). An Ancestry's Description tab prints its **Lore** under the Description: the
@@ -1286,7 +1290,11 @@ that carry the Reaction trait, skipped entirely when it has none. Every Reaction
 the GM's to declare for any adversary, so they live in the Combat Prompt and the Intercept card
 rather than in the profile.
 
-**Item sheet.** One sheet for all eight Item types, branching on type. Talents and Maneuvers carry a
+**Item sheet.** One sheet for all eight Item types, branching on type. Since 0.17.0 a Talent's, a
+Constellation's and a Maneuver's window has two tabs, Description and Details (the Active Effects
+tab, always empty on them, is gone; the physical Items keep it for a GM's hand-made effect), the
+Description tab reads Traits, Description, Effect (or a chassis's Special Ability and Lore), Source,
+and each text box fits its lines. Talents and Maneuvers carry a
 cost from passive and ⓿ to ❻, an optional upper end with "to" or "or" between, so Strike reads
 "❶ to ❸" and Disarm "❶ or ❸", a **Reaction ↺** checkbox, and the Reaction's own cost when it
 differs, printed as "❶ (⓿↺)" for a ❶ Maneuver whose Reaction half is free; no shipped Maneuver
@@ -1921,18 +1929,25 @@ FantasyGrounds effects automation ... can we use syntax substantially similar to
 layers, as FG has: **feature lines**, blocks in square brackets for what owning the Talent does
 (`[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]`, `[LANGUAGE Common, Serrovine]`, `[Acrobatics
 trained]`, `[POINT Skill]`, `[MANEUVER Steady the Line]`, `[TALENT Weapon Familiarity]`, `[CHOICE
-Weapon Group]`, `[AURA 15 allies visible]`, `[VIGOR opening 12]`, `[SENSES Low-light vision]`), and
-**effect lines**, a tag then components separated by semicolons (`CHECK: 1 condition, aid; IF:
-RANK(Origin >= trained)`; `DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1,
-0)`; `IMMUNE: prone; LIMIT: encounter`; `MARK: enemies`; `REROLL: diplomacy; IF: RESULT(critical
-failure)`; `IGNORE: terrain, mud, decking`). `CHECK`, `ATK`, `DEF`, `INIT` and `SPEED` take a signed
+Weapon Group]`, `[AURA 15 allies]`, `[VIGOR opening 12]`, `[SENSES Low-light vision]`), and
+**effect blocks**, `[EFFECT ...]`, FG's own wrapper (0.17.0; Mike: "shouldn't ALL of those be
+enclosed in Brackets?"), a tag then components separated by semicolons (`[EFFECT CHECK: 1
+condition, aid; IF: RANK(Origin >= trained)]`; `[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR:
+self+allies 0; IF: ALLIES(>=1, 0)]`; `[EFFECT IMMUNE: prone; LIMIT: encounter]`; `[EFFECT MARK:
+enemies]`; `[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]`; `[EFFECT IGNORE: terrain,
+mud, decking]`). `CHECK`, `ATK`, `DEF`, `INIT` and `SPEED` take a signed
 value and the bonus type (situation, condition, gear) and at most one descriptor; `IF:` is about
 the owner or the roll (`RANK(...)`, `SEEN`, `ALLIES(>=1, 0)`, `CLAIM(...)`, `RESULT(...)`), `IFT:`
 about the other party or the attack (`TRAIT(Fear)`, `MARKED`, `BLOW`, `MELEE`, `CHECK(intimidation)`),
 `FOR:` the recipients and `LIMIT:` the once-a-round or once-an-encounter. The stored rules are the
-ones the kinds have had since 0.13.0, so the engine's four hook points are untouched; the 0.13.0
-operator form reads one more release with a build warning naming the cell, and 0.17.0 refuses it.
-`AUTOMATION_GRAMMAR.md` is the reference, its section 9 the map from each old operator.
+ones the kinds have had since 0.13.0, so the engine's four hook points are untouched. A bare effect
+line in a cell (no `[EFFECT ...]`) reads one more release with a build warning naming the cell;
+the 0.13.0 operator form is refused since 0.17.0, the message naming the document's map from each
+old operator (section 9). `AUTOMATION_GRAMMAR.md` is the reference, and **it is in the game**
+(0.17.0): the build turns it into the **STARWROUGHT Automation Grammar** journal of the Rules
+compendium, one page per section with "At a glance" first (every block and tag with one example),
+opened by the **Grammar** button beside any Item's Automation panel and the Effects tab's custom
+effects.
 
 **The two Cultures** (0.15.0; rulings 174 to 181). Mike rewrote the eight Culture Talents and asked
 how a roleplay-only bonus should be automated; the cells, as `AUTOMATION_GRAMMAR.md` section 5
@@ -1940,18 +1955,18 @@ prints them:
 
 ```
 Serrovanian        [LANGUAGE Common, Serrovine]
-                   CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)
-Oathbound          [MANEUVER Oathbound]              (the row: MARK: enemies / ATK: 1 condition; IFT: MARKED / DEF: 1 condition; IFT: MARKED)
-Contract Literate  CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)
-Iron Etiquette     DEF: 1 condition; IFT: CHECK(intimidation)
-                   DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)
+                   [EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]
+Oathbound          [MANEUVER Oathbound]              (the row: [EFFECT MARK: enemies] / [EFFECT ATK: 1 condition; IFT: MARKED] / [EFFECT DEF: 1 condition; IFT: MARKED])
+Contract Literate  [EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]
+Iron Etiquette     [EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]
+                   [EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]
 Reacher            [LANGUAGE Common, Reachspeak]
-                   CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)
-Quick Tongue       [MANEUVER Quick Tongue]           (the row: REROLL: diplomacy; IF: RESULT(critical failure))
-Riverfoot          IGNORE: terrain, mud, decking, loose stone, shallow water
-                   SPEED: 1 situation; LIMIT: encounter
-Broker's Eye       CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)
-                   CHECK: 2 situation, guile; IF: CLAIM(when trading)
+                   [EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]
+Quick Tongue       [MANEUVER Quick Tongue]           (the row: [EFFECT REROLL: diplomacy; IF: RESULT(critical failure)])
+Riverfoot          [EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]
+                   [EFFECT SPEED: 1 situation; LIMIT: encounter]
+Broker's Eye       [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]
+                   [EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading)]
 Acrobat            [Acrobatics trained][Athletics trained][Lore trained]
 Weaponmaster       [Athletics trained][CHOICE Weapon Group][TALENT Weapon Familiarity][VIGOR opening 10]
 ```
@@ -1963,15 +1978,22 @@ Talent when it is open; `[Lore trained]` is a Lore slot the player names. A Skil
 Lore.
 
 **Character Effects** (0.16.0; ruling 187; Mike: FG's "Character Effects field ... automated and
-shown on the Tracker, or on the Character sheet"). The Overview tab's **Effects** panel lists every
-effect line the character carries, from Talents, Maneuvers and the custom effects, each with its As
-read summary and FG's three-state switch **On / Skip / Off**: Skip lets the next application pass
-and returns to On, Off silences the line until it is turned back on. **Custom effects** are lines
-the owner or the GM type in the grammar on the sheet ("ATK: 2 situation; LIMIT: round", "DEF: 1
+shown on the Tracker, or on the Character sheet"). The **Effects** tab (0.17.0; the Overview's
+panel through 0.16.0, moved at Mike's word with the tab that had only held Foundry's Active
+Effects) lists every effect line the character carries, from Talents, Maneuvers and the custom
+effects, each with its As read summary. A line the system applies by itself has FG's three-state
+switch **On / Skip / Off**: Skip lets the next application pass and returns to On, Off silences the
+line until it is turned back on. A line the system cannot apply by itself, one with `IF:
+CLAIM(...)` (the Reacher's Diplomacy toward another Reacher), has instead **Apply to next roll**
+(0.17.0; Mike: such a line "should not have an on/off toggle"): pressed, it arms the claim the
+Talent row's pin arms, the box comes ticked in the next roll dialog or the bonus joins the next
+Threshold read, and the button goes out. **Custom effects** are lines the owner or the GM type in
+the grammar on the sheet, bare as FG's field takes them ("ATK: 2 situation; LIMIT: round", "DEF: 1
 situation, guard; IF: CLAIM(behind the cart)"), parsed as they are typed (an error shows red and
 is skipped, never refused) and acting exactly as a Talent's lines do, with a duration: until
-removed, the next roll, or the end of the encounter. The combat tracker shows a badge with the
-count of a combatant's active effects and their summaries on hover.
+removed, the next roll, or the end of the encounter. The **Grammar** button on the panel opens the
+Automation Grammar journal. The combat tracker shows a badge with the count of a combatant's
+active effects and their summaries on hover.
 
 - **A claim** (`CLAIM(<text>)`; ruling 174; Mike: "both") is a checkbox in the roll dialog, unticked,
   with the Talent's hint ("Serrovanian: +1 Condition bonus toward someone who shares your Culture.
@@ -2036,15 +2058,15 @@ ruling 171). The level-1 Human, written in it:
 
 ```
 Humanity            [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]
-                    CHECK: 1 condition, aid; IF: RANK(Origin >= trained)
+                    [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]
 Driven              [POINT Calling]
 Quick Study         [POINT Skill]
-Stubborn Footing    IMMUNE: prone; LIMIT: encounter
-Close Ranks         DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)
+Stubborn Footing    [EFFECT IMMUNE: prone; LIMIT: encounter]
+Close Ranks         [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 Versatile Human     [POINT Opening]
-Jack of All Trades  CHECK: 1 situation; IF: RANK(roll = untrained)
-Torchbearer Human   [AURA 15 allies visible]
-                    DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round
+Jack of All Trades  [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]
+Torchbearer Human   [AURA 15 allies]
+                    [EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
 Steady the Line     [MANEUVER Steady the Line]         (its Effect: @Maneuver[Steady the Line])
 ```
 

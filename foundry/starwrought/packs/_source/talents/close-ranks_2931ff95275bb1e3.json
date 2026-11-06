@@ -64,6 +64,7 @@
         "limit": null,
         "claim": null,
         "marked": false,
+        "bare": true,
         "kind": "bonus",
         "line": 1,
         "text": "DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)"
@@ -79,7 +80,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c2bc5581cfec6c2e"
+      "contentHash": "e970d3d299d11c24"
     }
   },
   "effects": [],

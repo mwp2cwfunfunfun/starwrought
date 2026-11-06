@@ -118,37 +118,43 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         ("Evade or Endure"); blank, the Threat decides; a word that is no Defense is an ERROR.
         Nothing else is validated: an area, a push, a condition on a Hit, a summons or a healing
         line stays prose the card prints, as a Talent's Effect does.
-  Automation (0.9.0; the operator grammar since 0.13.0): what the Foundry system should DO with
-        the talent, one rule per line, in the grammar the system owns. THE REFERENCE IS
-        AUTOMATION_GRAMMAR.md IN THE PROJECT ROOT: the shape of a line, every kind with its
-        arguments, every operator, the vocabularies, the level-1 Human written out, what a rule
-        does and does not do in play, and the build's messages. It is kept current with every
-        change to the code, and the build fails when a kind or an operator it knows is not named
-        there. In short:
-              <kind>: <argument>, <argument>, ... [, <OPERATOR>(...)] ...
-              bonus: +1, Condition, Aid, IF(Origin=Trained)             a typed bonus to a roll
-              grant: 1, Calling                                          a Talent Point at creation
-              aura: 15ft, allies, VISIBLE                                the ring on the map
-              prevent: Prone, ONCE(encounter)                            an effect does not land
-              mark: enemies, encounter                                   name one creature on use (0.15.0)
-              reroll: Diplomacy, IF(Outcome=Critical Failure)            throw a check's die again (0.15.0)
-              ignore: Terrain, Mud, Shallow Water                        difficult terrain costs nothing (0.15.0)
-              bonus: +1, Condition, Diplomacy, CLAIM(when trading)       the player's checkbox (0.15.0)
+  Automation (0.9.0; Fantasy Grounds' shape since 0.16.0, every line in brackets since 0.17.0):
+        what the Foundry system should DO with the talent, in the grammar the system owns. THE
+        REFERENCE IS AUTOMATION_GRAMMAR.md IN THE PROJECT ROOT (and, in Foundry, the Automation
+        Grammar journal in the Rules compendium, built from it): every block and tag with an
+        example, the components and conditions, the vocabularies, the book written out, what a
+        rule does and does not do in play, and the build's messages. It is kept current with every
+        change to the code, and the build fails when a kind, a tag, a component or a keyword it
+        knows is not named there. In short, a line is blocks in square brackets:
+              [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]                the chassis, on the Root
+              [LANGUAGE Common, Serrovine]  [SENSES Low-light vision]
+              [Acrobatics trained]  [POINT Calling]  [POINT 2 Skill different]   points at creation
+              [MANEUVER Steady the Line]  [TALENT Weapon Familiarity]  [CHOICE Weapon Group]
+              [AURA 15 allies]                                            the ring on the map (preview-only until shown)
+              [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]   a typed bonus to a roll
+              [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0]
+              [EFFECT IMMUNE: prone; LIMIT: encounter]                    an effect does not land
+              [EFFECT MARK: enemies]                                      name one creature on use
+              [EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]    throw a check's die again
+              [EFFECT IGNORE: terrain, mud, shallow water]                difficult terrain costs nothing
+              [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]   the player's checkbox
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
-        trailing period is tolerated. The converter copies the cell through as text and parses
-        nothing; build_foundry.mjs parses it, and a line it does not know is an ERROR that stops
-        the build (and so sync_content.cmd) naming the Constellation, the Talent and the line,
-        before the sources are written. The same line typed into a world Item's textarea in
-        Foundry saves and is marked on the Item sheet rather than refused. The action sheets take
-        the same column. The 0.10.0 prose form ("bonus: +1 Condition to Aid if Human is Expert")
-        is retired and refused with the new shape printed.
+        trailing period inside a block is tolerated. The converter copies the cell through as text
+        and parses nothing; parse_rules.mjs parses it (below), and a line it does not know is an
+        ERROR that stops the build (and so sync_content.cmd) naming the Constellation, the Talent
+        and the line, before the sources are written. The same line typed into a world Item's
+        textarea in Foundry saves and is marked on the Item sheet rather than refused. The action
+        sheets take the same column. A bare effect line ("IMMUNE: prone; LIMIT: encounter" with no
+        [EFFECT ...]) reads in a cell this one release with a WARNING; 0.18.0 refuses it. The
+        0.13.0 operator form ("bonus: +1, Condition, Aid, IF(Origin=Trained)") and the 0.10.0
+        prose form are refused, the message naming the document's map to the new shape.
         THE ONE PARSE (0.16.0): node assets/parse_rules.mjs runs right after the converter, in
         every pipeline mode, and parses every Automation cell once (tree sheets, action sheets,
         the Backgrounds sheet) with the system's grammar, writing the parsed `rules` beside
         `automation` in trees.json, actions.json and backgrounds.json for every consumer; a line
-        it does not know is the ERROR described above, raised there, and a cell still in the
-        0.13.0 shape ("bonus: +1, Condition, Aid, IF(Origin=Trained)") reads for this one release
-        with a WARNING naming the cell. The same step reads the Root Talent's feature lines
+        it does not know is the ERROR described above, raised there, and a line on its way out (a
+        bare effect line, an [AURA ... visible]) is a WARNING naming the cell. The same step reads
+        the Root Talent's feature lines
         ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES Low-light vision], [TRAIT Human],
         [LANGUAGE Common, Serrovine]; a Calling's [VIGOR opening 12]) onto the roster's ancestry,
         culture and callings records, where they WIN: the _Tree Index columns Vigor (or HP), Size,

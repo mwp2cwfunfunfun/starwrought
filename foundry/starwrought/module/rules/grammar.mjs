@@ -1,17 +1,22 @@
 /**
  * The Automation grammar (0.9.0; rulings 118 to 120).
  *
- * An Automation cell on a Talent sheet or an action sheet holds one rule per line:
+ * An Automation cell on a Talent sheet or an action sheet holds blocks in square brackets, in the
+ * shape of Fantasy Grounds' PC feature automation (0.16.0, 0.17.0; AUTOMATION_GRAMMAR.md):
  *
  *   # a line beginning with # is a comment, and a blank line is nothing
- *   kind: arguments
- *   kind arguments          (the colon is optional)
+ *   [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]              feature blocks (./features.mjs)
+ *   [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]   an effect block (./effects.mjs)
+ *   CHECK: 1 condition, aid                                    a bare effect line: the custom
+ *                                                              effects field's form; in a cell it
+ *                                                              reads with a warning this release
  *
- * The word before the colon (or the first whitespace) names a rule kind; everything after it,
- * trimmed, is that kind's to read. This module reads the line structure and nothing else: it finds
- * the kind through the registry in ./kinds/index.mjs, hands the kind its arguments, and turns what
- * comes back into rule data. It knows no kind's syntax. The cell is data, not code: nothing here
- * or anywhere generates JavaScript from a cell (ruling 118).
+ * This module reads the line structure and nothing else: it splits the blocks, names the kind
+ * through the registry in ./kinds/index.mjs (a feature keyword, or an effect's tag), hands the
+ * kind its arguments, and turns what comes back into rule data. It knows no kind's syntax. The
+ * cell is data, not code: nothing here or anywhere generates JavaScript from a cell (ruling 118).
+ * The 0.13.0 operator form (`bonus: +1, Condition, Aid, IF(Origin=Trained)`) is refused since
+ * 0.17.0 with a message naming the document's map from each operator to its component.
  *
  * It is used in two places, with one parse (ruling 120). `assets/build_foundry.mjs` parses every
  * cell at build time, and a line that does not parse FAILS the build naming the Constellation, the
@@ -31,7 +36,7 @@
  * the content build. `assets/test_rules.mjs` imports it the same way.
  */
 
-import { KIND_WORD, kindOf, knownKinds } from "./kinds/index.mjs";
+import { KIND_WORD, kindOf } from "./kinds/index.mjs";
 import { RuleSyntaxError } from "./syntax.mjs";
 // 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
 import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
@@ -39,17 +44,21 @@ import { effectTagOf, readEffectLine, EFFECT_TAGS } from "./effects.mjs";
 
 /**
  * The kind words of the 0.13.0 form (`kind: arg, arg, OP(...)`) that have no tag of their own in
- * the 0.16.0 shape: a line beginning with one is read by the kind's legacy branch and flagged
- * `legacy: true`, which the build warns about once per cell; 0.17.0 refuses it. `mark:`, `reroll:`
- * and `ignore:` read the same in both shapes unless an operator call follows (see `looksLegacy`).
+ * the 0.16.0 shape. A line beginning with one, or a `mark:`, `reroll:` or `ignore:` line carrying
+ * an operator call (`, IF(...)`, `, SEEN`), is the retired form, refused since 0.17.0 with
+ * `LEGACY_REFUSAL`; through 0.16.0 it read with a warning.
  */
 export const LEGACY_WORDS = Object.freeze(["bonus", "grant", "aura", "prevent"]);
 const LEGACY_OPERATOR = /(?:^|,)\s*(?:IF|FOR|WHILE|AGAINST|FIRST|ONCE|CLAIM)\s*\(|(?:^|,)\s*(?:SEEN|MARKED|VISIBLE|DIFFERENT)\s*(?:,|$)/i;
+export const LEGACY_REFUSAL = 'the 0.13.0 form ("bonus: +1, Condition, Aid, IF(...)") is retired since 0.17.0; AUTOMATION_GRAMMAR.md section 9 maps each operator to its component';
 
-/** Does a `mark:`, `reroll:` or `ignore:` line carry the 0.13.0 operators (`, IF(...)`, `, SEEN`) rather than components? */
+/** Does a tag line carry the 0.13.0 operators (`, IF(...)`, `, SEEN`) rather than components? */
 function looksLegacy(args) {
   return !String(args ?? "").includes(";") && LEGACY_OPERATOR.test(String(args ?? ""));
 }
+
+/** The carrier whose Automation is typed bare, FG's Character Effects field: a custom effect row. */
+const BARE_CARRIER = "effect";
 
 // The registry's vocabulary, re-exported so a module that needs the grammar and the words needs
 // one import. `registerKind` stays in the index: that is where a kind is registered. The error
@@ -66,9 +75,12 @@ export { RuleSyntaxError, splitArgs, keyValues } from "./syntax.mjs";
  */
 export const RESERVED_WORDS = Object.freeze(["kind", "line", "text", "error"]);
 
-/** Did any rule of a parse come from the 0.13.0 form? The build warns once per cell (0.16.0). */
-export function hasLegacy(parsed) {
-  return (parsed?.rules ?? []).some(r => r?.legacy === true);
+/**
+ * Did any rule of a parse come from a bare effect line in a cell (0.17.0)? Such a line reads this
+ * release and is refused next; the parse's `warnings` carry the message, this is the yes-or-no.
+ */
+export function hasBare(parsed) {
+  return (parsed?.rules ?? []).some(r => r?.bare === true);
 }
 
 /* -------------------------------------------- */
@@ -83,26 +95,52 @@ export function hasLegacy(parsed) {
  * blanks and comments included, so "line 3" is the third line the designer sees.
  *
  * A rule is `{ ...data, kind, line, text }`: whatever the kind's `parse` returned, then the
- * reserved words, which win. An error is `{ line, text, message }`. The two lists come back
- * separately so the build can fail on `errors.length` and the client can store both (through
- * `ruleEntries`) and show them. Nothing in here throws for a cell's sake: an unknown word, a kind
- * that throws, a kind that returns something that is not an object, all become error lines.
+ * reserved words, which win. An error is `{ line, text, message }`; a warning (0.17.0) the same
+ * shape for a line that reads but is on its way out (a bare effect line in a cell, an `[AURA ...]`
+ * with the retired `visible`), which the pipeline and the build print and the client ignores. The
+ * lists come back separately so the build can fail on `errors.length` and the client can store the
+ * rules and the errors (through `ruleEntries`) and show them. Nothing in here throws for a cell's
+ * sake: an unknown word, a kind that throws, a kind that returns something that is not an object,
+ * all become error lines. A kind warns through `context.warn(message)`.
  *
  * @param {string} text                      The cell's text.
  * @param {object} [context]                 For messages and for the kind: `itemName`,
  *                                           `constellation`, `itemType`, `source`, as the caller has
- *                                           them. The grammar adds `line`, `text` and `kind`.
- * @returns {{rules: object[], errors: Array<{line: number, text: string, message: string}>}}
+ *                                           them. The grammar adds `line`, `text`, `kind` and `warn`.
+ * @returns {{rules: object[], errors: Array<{line: number, text: string, message: string}>, warnings: Array<{line: number, text: string, message: string}>}}
  */
 export function parseAutomation(text, context = {}) {
   const rules = [];
   const errors = [];
+  const warnings = [];
   const lines = String(text ?? "").split(/\r?\n/);
+  const bareIsTheForm = context?.itemType === BARE_CARRIER;
 
   lines.forEach((raw, index) => {
     const line = index + 1;
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("#")) return;
+    const warn = (message, text = trimmed) => warnings.push({ line, text, message });
+
+    // An effect, from a block's inside or a bare line: the tag's kind reads it (./effects.mjs).
+    const parseEffect = (effectText, blockText, extra = {}) => {
+      let effect;
+      try {
+        effect = readEffectLine(effectText, { context });
+      } catch (error) {
+        errors.push({ line, text: blockText, message: kindFailure(null, error) });
+        return;
+      }
+      const kind = kindOf(effect.kind);
+      let data;
+      try {
+        data = kind.parse(splitLine(effectText).args, { ...context, line, text: blockText, kind: kind.id, form: "effect", effect, warn });
+      } catch (error) {
+        errors.push({ line, text: blockText, message: kindFailure(kind, error) });
+        return;
+      }
+      store(kind, data, blockText, extra);
+    };
 
     // One parsed block or line into the lists: the kind's data checked, the reserved words written.
     const store = (kind, data, text, extra = {}) => {
@@ -129,11 +167,12 @@ export function parseAutomation(text, context = {}) {
       // it to another line or, by carrying `error`, have a parsed rule filed as one that did not parse.
       const own = stored.value;
       for (const word of RESERVED_WORDS) delete own[word];
-      delete own.legacy;
+      delete own.bare;
       rules.push({ ...own, ...extra, kind: kind.id, line, text });
     };
 
-    // A feature line (0.16.0): blocks in brackets, each its own rule under the block's text.
+    // A bracketed line (0.16.0): blocks, each its own rule under the block's text; an `[EFFECT ...]`
+    // block (0.17.0) is an effect line in FG's own wrapper.
     if (isFeatureLine(trimmed)) {
       let blocks;
       try {
@@ -143,6 +182,16 @@ export function parseAutomation(text, context = {}) {
         return;
       }
       for (const block of blocks) {
+        if (block.effect) {
+          if (!effectTagOf(block.data)) {
+            errors.push({ line, text: block.text, message: `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}` });
+          } else if (looksLegacy(splitLine(block.data).args)) {
+            errors.push({ line, text: block.text, message: LEGACY_REFUSAL });
+          } else {
+            parseEffect(block.data, block.text);
+          }
+          continue;
+        }
         const kind = kindOf(block.kind);
         if (!kind) {
           errors.push({ line, text: block.text, message: `the "${block.kind}" kind is not registered (a bug in the kinds, not in the cell)` });
@@ -150,7 +199,7 @@ export function parseAutomation(text, context = {}) {
         }
         let data;
         try {
-          data = kind.parse(block.data, { ...context, line, text: block.text, kind: kind.id, form: "feature", block });
+          data = kind.parse(block.data, { ...context, line, text: block.text, kind: kind.id, form: "feature", block, warn: message => warn(message, block.text) });
         } catch (error) {
           errors.push({ line, text: block.text, message: kindFailure(kind, error) });
           continue;
@@ -160,52 +209,49 @@ export function parseAutomation(text, context = {}) {
       return;
     }
 
-    // An effect line (0.16.0): a tag, then components; unless the tag's arguments carry the
-    // 0.13.0 operators, which is the legacy form below.
+    // A bare effect line: the custom effects field's form (FG's Character Effects string); in a
+    // cell it reads this release flagged `bare`, with a warning, and 0.18.0 refuses it. A tag line
+    // carrying the 0.13.0 operators is the retired form.
     const { word, args } = splitLine(trimmed);
     const tag = effectTagOf(trimmed);
-    if (tag && !looksLegacy(args)) {
-      let effect;
-      try {
-        effect = readEffectLine(trimmed, { context });
-      } catch (error) {
-        errors.push({ line, text: trimmed, message: kindFailure(null, error) });
-        return;
+    if (tag && looksLegacy(args)) {
+      errors.push({ line, text: trimmed, message: LEGACY_REFUSAL });
+      return;
+    }
+    if (tag) {
+      if (bareIsTheForm) parseEffect(trimmed, trimmed);
+      else {
+        warn(`an effect line in a cell is written in brackets since 0.17.0; write "[EFFECT ${trimmed}]"`);
+        parseEffect(trimmed, trimmed, { bare: true });
       }
-      const kind = kindOf(effect.kind);
-      let data;
-      try {
-        data = kind.parse(args, { ...context, line, text: trimmed, kind: kind.id, form: "effect", effect });
-      } catch (error) {
-        errors.push({ line, text: trimmed, message: kindFailure(kind, error) });
-        return;
-      }
-      store(kind, data, trimmed);
       return;
     }
 
-    // The 0.13.0 form, read for one more release and flagged; or a word nothing answers to.
+    // Nothing answers to the line: the retired form, or a word nobody knows.
     if (!word) {
-      errors.push({ line, text: trimmed, message: "this line has no tag: an effect is written `TAG: value type, descriptors; IF: ...` and a feature `[KEYWORD data]`" });
+      errors.push({ line, text: trimmed, message: "this line has no tag: an effect is written `[EFFECT TAG: value type, descriptors; IF: ...]` and a feature `[KEYWORD data]`" });
       return;
     }
-    const kind = kindOf(word);
-    if (!kind) {
-      errors.push({ line, text: trimmed, message: unknownKindMessage(word) });
+    if (LEGACY_WORDS.includes(word)) {
+      errors.push({ line, text: trimmed, message: LEGACY_REFUSAL });
       return;
     }
-    let data;
-    try {
-      data = kind.parse(args, { ...context, line, text: trimmed, kind: kind.id, form: "legacy" });
-    } catch (error) {
-      errors.push({ line, text: trimmed, message: kindFailure(kind, error) });
+    // A feature keyword typed as a line (`trait: Human`): never the 0.13.0 form, just unbracketed.
+    const keyword = FEATURE_KEYWORD_LIST.find(k => k.toLowerCase() === word);
+    if (keyword || kindOf(word)) {
+      const shown = keyword ?? word.toUpperCase();
+      errors.push({ line, text: trimmed, message: `${shown} is a feature and is written in brackets: \`[${shown} ${args || "..."}]\`` });
       return;
     }
-    const legacy = LEGACY_WORDS.includes(word) || looksLegacy(args);
-    store(kind, data, trimmed, legacy ? { legacy: true } : {});
+    errors.push({ line, text: trimmed, message: unknownKindMessage(word) });
   });
 
-  return { rules, errors };
+  return { rules, errors, warnings };
+}
+
+/** The effect tags, upper-cased and joined, for messages. */
+function tagList() {
+  return Object.keys(EFFECT_TAGS).map(t => t.toUpperCase()).join(", ");
 }
 
 /**
@@ -228,11 +274,8 @@ function splitLine(trimmed) {
  * @returns {string}
  */
 function unknownKindMessage(word) {
-  const known = knownKinds();
-  const tags = Object.keys(EFFECT_TAGS).map(t => t.toUpperCase()).join(", ");
   const keywords = FEATURE_KEYWORD_LIST.join(", ");
-  let message = `unknown rule kind "${word}" (an effect begins with a tag: ${tags}; a feature is a bracketed block: ${keywords}, or [<Constellation> trained]`;
-  message += known.length ? `; the 0.13.0 kind words still read: ${known.filter(k => LEGACY_WORDS.includes(k) || ["mark", "reroll", "ignore"].includes(k)).join(", ")})` : ")";
+  let message = `unknown rule kind "${word}" (an effect begins with a tag: ${tagList()}, in brackets as [EFFECT ...]; a feature is a bracketed block: ${keywords}, or [<Constellation> trained])`;
   if (!KIND_WORD.test(word) && !/^[A-Za-z]+$/.test(word)) message += "; a line begins with its tag or kind word, letters only, then a colon";
   return message;
 }

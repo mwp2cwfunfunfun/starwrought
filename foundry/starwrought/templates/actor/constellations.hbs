@@ -100,13 +100,14 @@
       <ol class="sw-talent-list">
         {{#each con.talents as |talent|}}
         <li class="sw-talent" data-item-id="{{talent.id}}">
-          {{!-- The image opens the Talent (0.5.1, T14); the chat control on the right sends it. The
+          {{!-- The image and the name open the Talent (0.5.1, T14; the name since 0.17.0, with the
+                Talent's Effect as its rich tooltip); the chat control on the right sends it. The
                 name is printed plain, with the gold glyph the one cost shown (T16). --}}
           <img class="sw-talent-img" src="{{talent.img}}" alt="{{talent.name}}"
                data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.view">
           <span class="sw-tier sw-tier-{{talent.tier}}">{{talent.tier}}</span>
-          <span class="sw-talent-name">
-            {{swPlainName talent.name}}
+          <span class="sw-talent-label">
+            <a class="sw-talent-name" data-action="itemEdit" data-tooltip="{{talent.tip}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="RIGHT">{{swPlainName talent.name}}</a>
             {{#if talent.root}}<em class="sw-root-mark" data-tooltip="STARWROUGHT.Field.rootHint">✧</em>{{/if}}
             {{#if talent.glyph}}<span class="sw-action-glyph">{{talent.glyph}}</span>{{/if}}
           </span>

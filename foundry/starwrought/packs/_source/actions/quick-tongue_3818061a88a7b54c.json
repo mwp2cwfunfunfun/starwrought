@@ -17,7 +17,7 @@
     "trigger": "You critically fail a Diplomacy check.",
     "description": "<p>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</p>",
     "effect": "<p>Reroll the triggering Diplomacy check, using the second result.</p>",
-    "automation": "REROLL: diplomacy; IF: RESULT(critical failure)",
+    "automation": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]",
     "rules": [
       {
         "to": {
@@ -33,7 +33,7 @@
         ],
         "kind": "reroll",
         "line": 1,
-        "text": "REROLL: diplomacy; IF: RESULT(critical failure)"
+        "text": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]"
       }
     ],
     "source": "data/maneuvers.xlsx"
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "837352547043a541"
+      "contentHash": "abc2d7152ae10b45"
     }
   },
   "effects": [],

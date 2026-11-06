@@ -7,6 +7,92 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.17.0 (2026-11-05): every line in brackets, the Grammar journal, and the sheets' UI pass
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on
+the shelf unsynced). Mike, 2026-11-05, after the 0.16.0 push, with five screenshots and seven
+points: a button to a Compendium entry holding "an organized and intuitive version of the
+Automation Grammar"; "shouldn't ALL of those be enclosed in Brackets? even the `IMMUNE: prone;
+LIMIT: encounter` one?"; Edicts and Anathema on the Biography tab and Notes as its own tab; the
+Effects tab empty while the Effects panel sat on Overview, and a line the system cannot apply by
+itself wanting "an 'apply to next roll' button" rather than a switch; "ALL auras should be
+preview-only by default"; the Constellations tab's Talent name to show its Effect on hover and open
+the window on click; the Talent window's Description tab in the order Traits, Description, Effect,
+Source with boxes sized to their text and the empty Active Effects tab gone. His decisions by
+question: `[EFFECT ...]`, Fantasy Grounds' own form; the Active Effects tab removed from Talents,
+Constellations and Maneuvers and kept on the physical Items; the `visible` word retired from
+`[AURA ...]`. Planned in `eager-wobbling-possum.md` (the plans folder, the fifth plan in it). The
+rulings:
+
+- **189. Every line in brackets, and the 0.13.0 form refused.** A cell is blocks in square
+  brackets: the feature blocks of 0.16.0 and, for an effect, FG's own wrapper `[EFFECT <tag>: ...;
+  <component>; ...]` (`features.mjs` hands an `EFFECT` block's inside to the effect reader, the tag
+  names the kind). The stored rules did not change. A bare effect line in a cell (no wrapper)
+  reads this one release flagged `bare` with a warning from the pipeline step and the build (`an
+  effect line in a cell is written in brackets since 0.17.0; write "[EFFECT <line>]"`); 0.18.0
+  refuses it. The custom effects field keeps the bare string, as FG's Character Effects field
+  does, and reads the wrapper too. The 0.13.0 operator form (`bonus: +1, Condition, Aid,
+  IF(...)`, `grant:`, `aura:`, `prevent:`, and a tag line carrying `IF(...)`-style operators) is
+  refused with one error naming the document's section 9; `readLine` and the kinds' legacy
+  branches are gone, and `parseAutomation` returns `{ rules, errors, warnings }` with a kind warning
+  through `context.warn`. Every cell of `cultures.xlsx`, `backgrounds.xlsx`, `callings.xlsx` and the
+  Talent Maneuvers rows is rewritten (backups in `backup/pre-0.17.0/`); `ancestries.xlsx` was open in
+  Excel, so the Human's five cells stay bare one release, warned, Mike's to wrap.
+- **190. The grammar document is the journal.** `AUTOMATION_GRAMMAR.md` is converted at build time
+  (`assets/lib/markdown.mjs`, a hand-rolled converter; no dependency) into the **STARWROUGHT
+  Automation Grammar** journal of the Rules pack (`docId("rules", "journal:grammar")`, one page per
+  `##` section under a stable id, "0. At a glance" first: every block and tag with one example), so
+  the text the person reads in Foundry is the text the build enforces. `openRulesPage(title, {
+  journal })` opens either journal; the **Grammar** button sits on every Item's Automation panel and
+  on the Effects tab's custom effects heading. The document gate now wants every effect tag,
+  component, condition and feature keyword to head a table row.
+- **191. Every aura is preview-only until shown.** `rangesOf` falls back to `false` for a Talent's,
+  a Maneuver's and a custom ring alike; the Auras window's toggle (`system.auras.visible.<key>`) is
+  the one way a ring is shown. The `visible` word of `[AURA ...]` is read with a warning this
+  release and refused next, `system.aura.visible` is gone from the Item (the models' `migrateData`
+  drop it), and the Item sheet's "Visible by default" checkbox with it.
+- **192. A claim line is armed, never switched.** On the Effects tab a line with `IF: CLAIM(...)`
+  has no On / Skip / Off but **Apply to next roll** (`armClaimLine`, the 0.15.0 arm reused, a
+  custom effect's carrier armable by its key); armed it reads "Armed for the next roll" and the
+  Talent row's pin lights too; pressed again it disarms; the roll or Threshold read spends it.
+- **193. Edicts, Anathema, Notes.** `details.edicts` and `details.anathema` on the character, two
+  editors under Biography; Notes is the seventh tab (`STARWROUGHT.Tab.characterNotes`, since
+  `Tab.notes` was the party's "GM Notes").
+- **194. The Effects tab holds the panel.** The 0.16.0 Effects panel moved whole from Overview to
+  the Effects tab above Foundry's Active Effects; the Overview is the numbers again.
+- **UI, no ruling.** The Constellations tab's Talent name is the click that opens the window and
+  carries a rich tooltip of the Effect (`talentTip`); the Item window's Description tab reads
+  Traits, Description, Effect (or Special Ability and Lore), Source, its boxes fit their text
+  (`.starwrought.item prose-mirror { min-height: 0 }`), and `SwItemSheet.NO_EFFECTS_TAB` drops the
+  Active Effects part and tab for `talent`, `constellation` and `action`.
+
+Checked by the self-test (108 checks, rewritten to the bracketed shape: every effect block against
+its bare twin pairwise, the bare flag and its warning, the 0.13.0 refusal, a feature keyword typed
+as a line told to bracket itself, the `visible` warning, the EFFECT block's own refusals), the
+content loop (`rules: 63 rules on 33 cells (15 kinds in use), 5 cells warned`, the five the
+Human's; `automation: 36 rules on 21 documents`; `grammar journal: 11 pages from
+AUTOMATION_GRAMMAR.md`), the document gate over every tag, component, condition and keyword, the
+smoke test and the style check, and live in `starwrought-test` (Foundry restarted for the
+manifest; the GM tab): the Rules compendium holding both journals, the Grammar journal's eleven
+pages in order with "At a glance" first, and the Effects tab's Grammar button opening it there;
+Sync content refreshing 28 copies, Tess's Serrovanian line reading `[EFFECT CHECK: ...]` and
+Wren's Torchbearer `system.aura` carrying no `visible`; the character sheet's seven tabs, the
+Overview without the panel and the Effects tab with it, Humanity's, Close Ranks' and Oathbound's
+lines on the three-state switch and Serrovanian's, Contract Literate's and Iron Etiquette's claim
+line on Apply to next roll (armed and disarmed, the Talent row's pin lighting with it, a custom
+claim effect armable by its key); Biography with the three editors and Notes with its own;
+sixteen Talent-name anchors opening the window with the Effect in a rich tooltip; Wren's three
+rings preview-only with no mark and the Torchbearer ring shown after `setAuraVisible`; a Talent
+window with Description and Details alone, its panels Traits, Description, Effect, Source and a
+Grammar control, and a weapon's window keeping its Effects tab; a world Item updated with the
+0.13.0 line storing the refusal beside a parsed `[EFFECT ...]` block. **Not done, said so:**
+`[EFFECT ...]` with FG's leading name; durations in rounds; the adversary sheet's Biography; the
+Human's five cells in `ancestries.xlsx`, which Excel held, warned each build until Mike wraps
+them; a world Item created with automation text parses it on its first update, not on creation,
+as since 0.9.0.
+
+---
+
 ## 0.16.0 (2026-11-05): the grammar in Fantasy Grounds' shape, Talent Maneuvers, the chassis as automation, Character Effects
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on

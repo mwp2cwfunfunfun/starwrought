@@ -56,7 +56,7 @@
       },
       {
         "label": "Names",
-        "text": "<p>Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br><b>Common given names</b> Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br><b>Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br><b>Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank.</p>"
+        "text": "<p>Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br>Common given names Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br>Common surnames Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br>Example names Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank.</p>"
       }
     ],
     "specialAbility": "<p>You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
@@ -70,7 +70,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "5697d8acf1673eb6"
+      "contentHash": "6868a7ebc61355ec"
     }
   },
   "effects": [],

@@ -4,13 +4,20 @@
      action: the cell as the author wrote it, one rule per line, and beneath it what the grammar
      read, one row per line with the kind word as a tag and the kind's summary. A line that did
      not parse, or names a kind this system does not have, is a red row with the message; the
-     build fails on such a line, while a line edited here saves and is marked (SwItem#_preUpdate). --}}
+     build fails on such a line, while a line edited here saves and is marked (SwItem#_preUpdate).
+     The Grammar control (0.17.0) opens the shipped Automation Grammar journal at its first page; an
+     anchor rather than a button, as the Cast and Choose controls are, so a player's read-only Talent
+     sheet keeps it clickable (DocumentSheetV2 disables every form element there). --}}
 <div class="sw-panel sw-rules-panel">
   <h3 class="sw-panel-title">
-    {{localize "STARWROUGHT.Section.automation"}}
-    {{#if ruleLines.length}}
-    <span class="sw-points">{{#if (eq ruleLines.length 1)}}{{localize "STARWROUGHT.Rules.countOne"}}{{else}}{{localize "STARWROUGHT.Rules.count" n=ruleLines.length}}{{/if}}</span>
-    {{/if}}
+    <span>
+      {{localize "STARWROUGHT.Section.automation"}}
+      {{#if ruleLines.length}}
+      <span class="sw-points">{{#if (eq ruleLines.length 1)}}{{localize "STARWROUGHT.Rules.countOne"}}{{else}}{{localize "STARWROUGHT.Rules.count" n=ruleLines.length}}{{/if}}</span>
+      {{/if}}
+    </span>
+    <a class="sw-inline-button sw-grammar-button" data-action="rulesJournal" data-journal="STARWROUGHT Automation Grammar" data-page="At a glance"
+       data-tooltip="STARWROUGHT.Rules.grammarHint"><i class="fa-solid fa-book"></i> {{localize "STARWROUGHT.Rules.grammar"}}</a>
   </h3>
   <p class="sw-note">{{localize "STARWROUGHT.Hint.automation"}}</p>
   <textarea name="system.automation" rows="3" spellcheck="false" {{#unless editable}}disabled{{/unless}}>{{system.automation}}</textarea>

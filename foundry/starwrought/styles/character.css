@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.16.0"; }
+:root { --sw-css-version-character: "0.17.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -380,7 +380,12 @@
 }
 .starwrought .sw-talent:hover { background: rgba(255, 255, 255, 0.05); }
 .starwrought .sw-talent-img { width: 20px; height: 20px; border: none; border-radius: 3px; }
-.starwrought .sw-talent-name { flex: 1; font-size: 0.82rem; }
+/* The name: on the sheet an anchor that opens the Talent with its Effect as a rich tooltip
+   (0.17.0), inside the `sw-talent-label` wrapper that holds the row's slot; in the wizard still the
+   span the row prints (chargen.css colours it on hover). */
+.starwrought .sw-talent-label { flex: 1; font-size: 0.82rem; }
+.starwrought .sw-talent-name { flex: 1; font-size: 0.82rem; cursor: pointer; }
+.starwrought a.sw-talent-name:hover { text-decoration: underline; }
 .starwrought .sw-root-mark { color: var(--sw-gold); font-style: normal; }
 .starwrought .sw-capstone { color: var(--sw-flare); }
 
@@ -573,7 +578,7 @@
 .starwrought .sw-comet-badge .sw-deferred-spend { border-color: var(--sw-gold); color: var(--sw-gold); }
 
 /* --------------------------------------------------------------------------
-   CHARACTER EFFECTS (0.16.0): the Overview's Effects panel. Every rule line the engine acts on,
+   CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0). Every rule line the engine acts on,
    grouped by its carrier, each with its three-state switch (On in the gold, Skip in amber, Off
    dimmed); then the custom effects, a row of fields each with its lines read back under it, an
    unparsed line in red. helpers/effects.mjs builds the rows; module/rules/effects-state.mjs writes.
@@ -653,3 +658,15 @@
 .starwrought .sw-custom-remove { flex: 0 0 auto; color: var(--sw-ink-dim); opacity: 0.6; font-size: 0.75rem; }
 .starwrought .sw-custom-remove:hover { color: var(--sw-blood); opacity: 1; }
 .starwrought .sw-custom-lines { margin-top: 0.15rem; padding-left: 0.3rem; }
+/* The subtitle's two buttons (0.17.0): Grammar, which opens the grammar's journal, and Add. */
+.starwrought .sw-effects-custom-buttons { display: flex; align-items: center; gap: 0.35rem; }
+
+/* A claim line's "Apply to next roll" button (0.17.0): the switch's pill, dim until armed, then
+   lit in the gold as the Talent row's pin is; the two are one flag. */
+.starwrought .sw-effect-state.sw-claim-line { text-transform: none; letter-spacing: 0; }
+.starwrought .sw-effect-state.sw-claim-line.sw-claim-on {
+  color: var(--sw-gold);
+  border-color: var(--sw-gold);
+  background: rgba(212, 175, 55, 0.12);
+  text-shadow: 0 0 6px var(--sw-gold);
+}

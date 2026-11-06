@@ -23,8 +23,9 @@ import { claimsOf, armClaim } from "../rules/claims.mjs";
 import { needsMoment } from "../rules/operators.mjs";
 import { summarize } from "../rules/grammar.mjs";
 import { usableByRule } from "../rules/engine.mjs";
-// CHARACTER EFFECTS (0.16.0): the Overview's Effects panel, its state switch and its custom rows.
-import { effectsContext } from "../helpers/effects.mjs";
+// CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0), its state
+// switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
+import { effectsContext, armClaimLine } from "../helpers/effects.mjs";
 import { cycleRuleState, addEffect, removeEffect } from "../rules/effects-state.mjs";
 
 /**
@@ -41,6 +42,28 @@ function conditionalDefenseRules(actor) {
     out.push({ slug, talent: SW.plainName(item?.name ?? ""), summary: summarize(rule) });
   }
   return out;
+}
+
+/**
+ * A Talent row's rich tooltip (0.17.0), in the `lockedTips` idiom (helpers/actor-context.mjs): the
+ * plain name with its cost glyph as the title, the tier's word, then the Talent's Effect as the
+ * HTML it is stored as (the `@Maneuver` block included), or its Description when the Effect is
+ * empty. Placed in the `data-tooltip` attribute, which Handlebars escapes and Foundry's tooltip
+ * reads back as HTML, as the Load Strain and locked-field tips are.
+ * @param {Item} talent
+ * @returns {string}
+ */
+function talentTip(talent) {
+  const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
+  const sys = talent.system ?? {};
+  const glyph = sys.glyph ? `<span class="sw-tip-kind">${esc(sys.glyph)}</span>` : "";
+  const tierKey = SW.TIERS?.[sys.tier]?.label;
+  const tier = tierKey ? game.i18n.localize(tierKey) : String(sys.tier ?? "");
+  const parts = [`<span class="sw-tip-title">${esc(SW.plainName(talent.name))}${glyph}</span>`];
+  if (tier) parts.push(`<span class="sw-tip-root">${esc(tier)}</span>`);
+  const body = String(sys.effect ?? "").trim() || String(sys.description ?? "").trim();
+  if (body) parts.push(body);
+  return parts.join("");
 }
 
 /** The Cast ❷ ❸ ❹ a spell Talent's row carries (PHB v4.21, the Cast Maneuver). */
@@ -127,7 +150,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // CHARACTER EFFECTS (0.16.0)
       cycleEffectState: SwCharacterSheet.#onCycleEffectState,
       addEffect: SwCharacterSheet.#onAddEffect,
-      removeEffect: SwCharacterSheet.#onRemoveEffect
+      removeEffect: SwCharacterSheet.#onRemoveEffect,
+      // 0.17.0: a claim line's arm button, and the Grammar button that opens the grammar's journal.
+      armClaimLine: SwCharacterSheet.#onArmClaimLine,
+      rulesJournal: SwCharacterSheet.#onRulesJournal
     }
   };
 
@@ -140,7 +166,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     equipment: { template: "systems/starwrought/templates/actor/equipment.hbs", scrollable: [""] },
     actions: { template: "systems/starwrought/templates/actor/actions.hbs", scrollable: [""] },
     effects: { template: "systems/starwrought/templates/actor/effects.hbs", scrollable: [""] },
-    biography: { template: "systems/starwrought/templates/actor/biography.hbs", scrollable: [""] }
+    biography: { template: "systems/starwrought/templates/actor/biography.hbs", scrollable: [""] },
+    // 0.17.0: the Notes on their own tab; the Biography keeps Biography, Edicts and Anathema.
+    notes: { template: "systems/starwrought/templates/actor/notes.hbs", scrollable: [""] }
   };
 
   /** @inheritdoc. The `actions` tab keeps its id; the handbook now calls them Maneuvers, and the label says so. */
@@ -154,7 +182,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         { id: "equipment", icon: "fa-solid fa-sack" },
         { id: "actions", icon: "fa-solid fa-bolt" },
         { id: "effects", icon: "fa-solid fa-wand-sparkles" },
-        { id: "biography", icon: "fa-solid fa-book-open" }
+        { id: "biography", icon: "fa-solid fa-book-open" },
+        // Its own label: `STARWROUGHT.Tab.notes` is the party sheet's "GM Notes".
+        { id: "notes", icon: "fa-solid fa-note-sticky", label: "STARWROUGHT.Tab.characterNotes" }
       ]
     }
   };
@@ -338,6 +368,13 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.enrichedBiography = await TextEditor.enrichHTML(sys.details.biography, {
       relativeTo: actor, rollData: actor.getRollData()
     });
+    // Edicts and Anathema (0.17.0): two more prose panels on the Biography tab.
+    context.enrichedEdicts = await TextEditor.enrichHTML(sys.details.edicts ?? "", {
+      relativeTo: actor, rollData: actor.getRollData()
+    });
+    context.enrichedAnathema = await TextEditor.enrichHTML(sys.details.anathema ?? "", {
+      relativeTo: actor, rollData: actor.getRollData()
+    });
     context.enrichedNotes = await TextEditor.enrichHTML(sys.details.notes, {
       relativeTo: actor, rollData: actor.getRollData()
     });
@@ -353,7 +390,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
-   * An open Biography or Notes editor across a re-render (0.5.1, T19). The sheet redraws its parts
+   * An open Biography, Edicts, Anathema or Notes editor across a re-render (0.5.1, T19; the editors
+   * found by their element, so a new one needs no entry here). The sheet redraws its parts
    * whenever the actor changes, and a change can arrive from anywhere while a player is typing: a
    * round's reset, a GM's edit, a Wound. Foundry's part sync keeps focus and scroll but not an
    * open <prose-mirror>, whose teardown saves into a detached element and so loses the draft. So
@@ -491,6 +529,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           glyph: t.system.glyph,
           root: t.system.root || t.system.bloodlineRoot,
           effect: t.system.effect,
+          // The name's rich tooltip (0.17.0): the Talent's Effect under its name and tier, in the
+          // `lockedTips` idiom, so a player reads what a Talent does without opening it.
+          tip: talentTip(t),
           // A spell Talent (PHB v4.21) carries the Cast ❷ ❸ ❹ on its row.
           spell: t.system.isSpell ? { casts: castButtons() } : null,
           // A Talent with a cost in its name is used from its row (0.15.0, ruling 176).
@@ -987,6 +1028,14 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /**
+   * A page of a named journal (0.17.0): the Effects panel's Grammar button opens the Automation
+   * Grammar journal at the page the button names (`data-journal`, `data-page`).
+   */
+  static async #onRulesJournal(event, target) {
+    return openRulesPage(target.dataset.page ?? "", { journal: target.dataset.journal });
+  }
+
+  /**
    * Strike: Quick ❶, Deliberate ❷ or Committed ❸, from the buttons on a weapon row. The kind is
    * a default the roll dialog can still change; shift-click skips the dialog.
    */
@@ -1030,6 +1079,17 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const id = target.closest("[data-effect-id]")?.dataset.effectId;
     if (!id) return false;
     return removeEffect(this.document, id);
+  }
+
+  /**
+   * The "Apply to next roll" button on a claim line (0.17.0): arm or disarm the carrier's claims,
+   * the same flag the Talent row's pin writes; `data-key` is the carrier key (an Item id, or a
+   * custom effect's `effect:<row id>`).
+   */
+  static async #onArmClaimLine(event, target) {
+    const key = target.dataset.key;
+    if (!key) return null;
+    return armClaimLine(this.document, key);
   }
 
   /** The Cast Maneuver on a spell Talent's row (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed. */

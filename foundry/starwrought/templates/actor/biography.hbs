@@ -1,4 +1,5 @@
-{{!-- Who they were before the road, and whatever else the table needs written down. --}}
+{{!-- Who they were before the road, what they hold to and what they will not do (Biography, Edicts
+      and Anathema since 0.17.0). The Notes have their own tab (notes.hbs). --}}
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
   <div class="sw-panel">
@@ -10,10 +11,18 @@
   </div>
 
   <div class="sw-panel">
-    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.notes"}}</h3>
-    <prose-mirror name="system.details.notes" value="{{system.details.notes}}"
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.edicts"}}</h3>
+    <prose-mirror name="system.details.edicts" value="{{system.details.edicts}}"
                   {{#unless editable}}disabled{{/unless}} toggled>
-      {{{enrichedNotes}}}
+      {{{enrichedEdicts}}}
+    </prose-mirror>
+  </div>
+
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.anathema"}}</h3>
+    <prose-mirror name="system.details.anathema" value="{{system.details.anathema}}"
+                  {{#unless editable}}disabled{{/unless}} toggled>
+      {{{enrichedAnathema}}}
     </prose-mirror>
   </div>
 

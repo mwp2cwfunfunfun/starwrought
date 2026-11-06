@@ -117,8 +117,9 @@ function commonActorFields() {
     /**
      * Auras (0.5.1). `visible` holds the Visible marks, key to boolean: the Item id of a Talent or
      * Maneuver that carries an aura, `reach`, `totalReach` or `unwieldy` for the reach bands, or
-     * a custom ring's key. A key absent from the map means the data default: the Item's own
-     * `aura.visible`, false for a band, true for a custom ring. Stored on the actor rather than
+     * a custom ring's key. A key absent from the map means preview only (0.17.0: every ring, an
+     * ability's, a band's and a custom one's alike; the Item's `aura.visible` field is gone, and
+     * the stored mark is the one way a ring is shown). Stored on the actor rather than
      * the token so a new token inherits it (Mike). `custom` is the rings drawn by hand on the token
      * HUD; `gmOnly` keeps one from the players for good. The derived list that reads all of this
      * is `system.ranges`; see helpers/ranges.mjs.
@@ -548,6 +549,10 @@ export class SwCharacterData extends SwActorData {
         }),
         languages: new fields.StringField({ initial: "" }),
         biography: new fields.HTMLField({ initial: "" }),
+        /** Edicts and Anathema (0.17.0): two more prose panels on the Biography tab. */
+        edicts: new fields.HTMLField({ initial: "" }),
+        anathema: new fields.HTMLField({ initial: "" }),
+        /** The Notes, on their own tab since 0.17.0. */
         notes: new fields.HTMLField({ initial: "" })
       }),
 

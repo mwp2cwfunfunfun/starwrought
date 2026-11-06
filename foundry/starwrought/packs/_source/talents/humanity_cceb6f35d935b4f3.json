@@ -82,6 +82,7 @@
         "limit": null,
         "claim": null,
         "marked": false,
+        "bare": true,
         "kind": "bonus",
         "line": 2,
         "text": "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)"
@@ -97,7 +98,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "817bb07658e4c3cd"
+      "contentHash": "45afe6279ca4e60f"
     }
   },
   "effects": [],

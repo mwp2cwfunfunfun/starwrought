@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "IGNORE: terrain, mud, decking, loose stone, shallow water\nSPEED: 1 situation; LIMIT: encounter",
+    "automation": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]\n[EFFECT SPEED: 1 situation; LIMIT: encounter]",
     "rules": [
       {
         "what": "terrain",
@@ -46,7 +46,7 @@
         "when": null,
         "kind": "ignore",
         "line": 1,
-        "text": "IGNORE: terrain, mud, decking, loose stone, shallow water"
+        "text": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]"
       },
       {
         "value": 1,
@@ -68,7 +68,7 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "SPEED: 1 situation; LIMIT: encounter"
+        "text": "[EFFECT SPEED: 1 situation; LIMIT: encounter]"
       }
     ],
     "traits": [],
@@ -81,7 +81,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "4b6a726c14e7d8d7"
+      "contentHash": "7e1e9cfbc1f92083"
     }
   },
   "effects": [],

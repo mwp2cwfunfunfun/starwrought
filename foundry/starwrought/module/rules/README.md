@@ -1,13 +1,17 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0)
 
-**0.16.0 (2026-11-05).** The grammar has two layers in the shape of Fantasy Grounds' PF2 automation,
-at Mike's direction: feature lines in square brackets (what owning the Talent does to the
-character: `[TRAIT Human][SPEED 6]`, `[Acrobatics trained]`, `[MANEUVER Steady the Line]`) and
-effect lines of a tag and components (`CHECK: 1 condition, aid; IF: RANK(Origin >= trained)`).
-`grammar.mjs` tells the two apart (a `[` opens a feature line; a known tag an effect line; a
-0.13.0 kind word the legacy form, read one release and flagged `legacy: true`); `features.mjs` and
-`effects.mjs` are the readers; the kinds keep their ids and stored shapes, so every hook reads what
-it always read. `AUTOMATION_GRAMMAR.md` is the reference; its section 9 maps the old operators.
+**0.16.0 and 0.17.0 (2026-11-05).** The grammar has two layers in the shape of Fantasy Grounds' PF2
+automation, at Mike's direction, and since 0.17.0 every line of a cell is blocks in square brackets
+(Mike: "shouldn't ALL of those be enclosed in Brackets?"): feature blocks (what owning the Talent
+does to the character: `[TRAIT Human][SPEED 6]`, `[Acrobatics trained]`, `[MANEUVER Steady the
+Line]`) and effect blocks, FG's own wrapper, `[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >=
+trained)]`. `grammar.mjs` splits the blocks (`features.mjs`) and hands an `EFFECT` block's inside
+to the effect reader (`effects.mjs`), whose tag names the kind; a bare effect line in a cell reads
+one more release flagged `bare: true` with a warning (the custom effects field's own form, where it
+is not flagged), and the 0.13.0 operator form is refused with `LEGACY_REFUSAL`. The kinds keep
+their ids and stored shapes, so every hook reads what it always read. `parseAutomation` returns
+`{ rules, errors, warnings }`; a kind warns through `context.warn(message)`. `AUTOMATION_GRAMMAR.md`
+is the reference, and the build turns it into the Automation Grammar journal of the Rules pack.
 
 Mike, 2026-10-03: "I'd like an Automation field in the data .xlsx files. And based on what is in
 there, when I run sync_content.cmd (or when you run it as part of a build), it will create the
@@ -31,12 +35,12 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 |---|---|
 | `grammar.mjs` | The line structure of a cell and nothing else: `parseAutomation`, `summarize`, `ruleEntries`, and the plain-data check on what a kind returns. Re-exports the registry's words and `syntax.mjs`. |
 | `syntax.mjs` | What a kind file imports: `RuleSyntaxError`, `splitArgs`, `keyValues`. Imports nothing, so a kind never imports the grammar and no circle exists (0.10.1; the class alone as `errors.mjs` in 0.10.0). |
-| `features.mjs` | The feature line (0.16.0; AUTOMATION_GRAMMAR.md section 2): `isFeatureLine`, `readFeatureLine(text)` splitting `[KEYWORD data]` blocks and naming each block's kind (`FEATURE_KEYWORDS`; `[<Constellation> trained]` to `grant`). Pure. |
+| `features.mjs` | The bracketed line (0.16.0; AUTOMATION_GRAMMAR.md section 2): `isFeatureLine`, `readFeatureLine(text)` splitting `[KEYWORD data]` blocks and naming each block's kind (`FEATURE_KEYWORDS`; `[<Constellation> trained]` to `grant`; `[EFFECT ...]` (0.17.0) back with `effect: true` for the grammar to hand to the effect reader). Pure. |
 | `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). Pure. |
-| `operators.mjs` | The shared vocabularies and the 0.13.0 reader, kept one release (section 9): `readLine(args, { allow, kind, context })` for the old `kind: arg, OP(...)` form; `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. Pure. |
+| `operators.mjs` | The shared vocabularies and readings (the 0.13.0 reader `readLine` is gone with the form, 0.17.0): `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. `OPERATORS` stays for the document gate on section 9. Pure. |
 | `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)`. The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
 | `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the sixteen kinds. |
-| `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` (0.16.0) and the 0.13.0 `bonus:` line. |
+| `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` in an `[EFFECT ...]` block. |
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
 | `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map, `[AURA ...]`; `toAuraField` is `system.aura`. No hook. |
 | `kinds/features.mjs` | The feature kinds (0.16.0): `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`, each read from its block; no hooks. The build and the pipeline step carry the chassis facts, the wizard the choice and the free Talent, `SwItem.grantManeuvers` the Maneuver, and the character's `_prepareRules` the Talents' additions (`system.features`). |
@@ -61,21 +65,23 @@ root** (0.13.0), kept current with every change to a kind, an operator or a voca
 same commit; `build_all.mjs` fails when a registered kind has no section there or an operator in
 `operators.mjs` is not in its table. This file is the engineering side: how the modules fit.
 
-One rule per line. The word before the colon names a kind; everything after it is that kind's:
-its positional arguments, comma-separated, then any operators, each `NAME(...)` in capitals.
+A line is blocks in square brackets (0.17.0). A feature block is `[KEYWORD data]`, its keyword
+naming the kind that reads the data; an effect block is `[EFFECT <tag>: <value> <type>,
+<descriptor>; <component>; ...]`, its tag naming the kind.
 
 ```
 # a line beginning with # is a comment; a blank line is nothing
-bonus: +1, Condition, Aid, IF(Origin=Trained)
-bonus +2, Condition, Aid, IF(Origin=Expert)          (the colon is optional)
-bonus: +1, Situation, Guard, AGAINST(Blow), FOR(self+allies, 0ft), WHILE(allies>=1, 0ft)
+[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]
+[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]
+[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 ```
 
-The kind word is everything up to the first `:` or whitespace, lower-cased. A word no kind answers
-to is an error, `unknown rule kind "<word>" (known kinds: bonus)`. The operators are read by
-`operators.mjs` for every kind (`readLine`), so a kind's `parse` is its arguments' count and types
-and the list of operators it allows; the 0.10.0 prose form (`+1 Condition to Aid if Human is
-Expert`) is retired and refused with the new shape. At build time any error **fails
+A keyword or tag nobody answers to is an error naming the tags and the keywords. A kind's `parse`
+receives `context.form` (`"feature"` with `context.block`, or `"effect"` with `context.effect`, the
+reader's `{ tag, value, type, descriptors, ops }`) and refuses the other form by name. A bare effect
+line in a cell (no `[EFFECT ...]`) reads one more release flagged `bare: true` with a warning in the
+parse's `warnings`; with `itemType: "effect"` (a custom effect row) the bare line is the form. The
+0.13.0 operator form and the 0.10.0 prose form are refused. At build time any error **fails
 the build**, naming the Constellation, the Talent and the line, as a bad Aura cell stops the
 converter's write; at runtime, when a GM edits a world Item's textarea, the same error is saved as
 an entry the Item sheet shows in red and the engine skips. Nothing is ever thrown for a cell's sake
@@ -229,10 +235,11 @@ What a kind may rely on:
 - `throw new RuleSyntaxError("...")` is the designer's error and is printed as written. Any other
   throw is reported as the kind's failure ("a bug in the kind, not in the cell") so the build log
   points at the file. Either way the grammar never crashes.
-- `readLine(text, { allow, kind, context })` in `operators.mjs` is how a kind reads its line
-  (0.13.0): the positional arguments and the operators it allowed, every refusal already worded.
-  `splitArgs(text)` and `keyValues(parts)` in `syntax.mjs` remain for a kind with a different
-  shape; `splitOperands` is the parenthesis-aware split the operators need.
+- An effect kind reads `context.effect` (the effect reader's `{ tag, value, type, descriptors,
+  ops }`, every component already read and refused where malformed) and calls
+  `refuseComponents(ops, TAG, allowed)` for the components it has no use for; a feature kind reads
+  `context.block.data` as it likes. `splitArgs(text)` and `keyValues(parts)` in `syntax.mjs`
+  remain for a kind with a different shape; `splitOperands` is the parenthesis-aware split.
 - `summary(rule)` gets the stored entry. A summary that throws falls back to the rule's text.
 - **A kind file imports from `../syntax.mjs` and `../../config/*` and never from `../grammar.mjs`
   or `./index.mjs`.** The grammar imports the registry and the registry imports every kind, so a
