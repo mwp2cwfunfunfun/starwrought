@@ -88,6 +88,20 @@ and why (mis-typed, no kind yet, not yet readable), clears its own red when the 
 in the project root. `--dry-run` reports only. The workbooks are loaded with `rich_text=True`, so
 the Effect cells' formatting survives the save; a workbook open in Excel is not written.
 
+**The last line of every build is the report (0.20.1; Mike, 2026-11-08: "create an excel sheet
+every build, with build issues/errors that I can fix/need to decide something/inconsistencies/
+rulesdecisions. include your recommended solution as well").** `build_all.mjs` pipes every step's
+output and, on every path out (clean, a failed step, stamps, drift, the stamp, `--check`), writes
+`build/build-log.json` and runs `assets/build_report.py`, which writes `build-report.xlsx` in the
+project root: Summary, Issues (Severity Error / Fix / Decision / Note, Where, the step's words,
+the recommendation, first seen), Decisions, Red cells. It adds its own red-cell and index
+analyses (importing `highlight_automation.py` and `index_sheets.py`, writing nothing) so a build
+the converter refused still gets a full report. `assets/open_decisions.json` is HAND-KEPT: the
+standing questions only Mike can close, one object each with its recommendation; add a row when
+a sync or a build leaves one, mark it decided with the ruling number for one build, then delete
+it. A new warning the pipeline learns to print gets its row in `RULES` in `build_report.py`, with
+the recommendation, in the same commit. The report's exit code never fails a build.
+
 **Also not a step: `python assets/index_sheets.py`** (0.20.0; Mike, 2026-11-08: "I need you to
 generate/re-generate/update the _Tree Index tabs in all of them"). It brings every workbook's
 `_Tree Index` up to the sheets it holds: a tree sheet with no row gets one with its Category

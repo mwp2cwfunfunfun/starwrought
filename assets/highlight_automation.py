@@ -164,21 +164,26 @@ def read_tree_workbook(wb, fname, trees, unindexed, index_without_sheet, cells, 
         if g("cat") not in xt.CATEGORIES:
             continue
         index_rows[fname].append((name, {k: g(k) for k in ("vigor", "hp", "size", "speed", "senses", "traits", "languages", "skills")}))
-        if name not in wb.sheetnames:
+        # The Lore template (0.20.0): the index's `Lore` row reads a sheet named "Lore (…)", as the
+        # converter reads it, and the "(LORE_NAME)" placeholder leaves the Talent names.
+        sheet_name = name if name in wb.sheetnames else next(
+            (sn for sn in wb.sheetnames if name == "Lore" and xt.LORE_TEMPLATE_SHEET.match(sn)), None)
+        if sheet_name is None:
             if not (category == "Background" and "Backgrounds" in wb.sheetnames):
                 index_without_sheet.append((fname, name))
             continue
+        named.add(sheet_name)
         if name in trees:  # the first workbook read stands (the converter's rule since 2026-11-07)
             continue
-        trees[name] = {"parent": g("parent"), "category": category, "workbook": fname, "sheet": name}
-        ws = wb[name]
+        trees[name] = {"parent": g("parent"), "category": category, "workbook": fname, "sheet": sheet_name}
+        ws = wb[sheet_name]
         cm = xt.header_map(ws, {"name": "talent", "tier": "tier", "root": "root", "effect": "effect",
                                 "automation": "automation", "enabled": "enabled"})
         if "name" not in cm or "effect" not in cm:
             continue
         for r in ws.iter_rows(min_row=2):
             cv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
-            talent = xt.plain(cv("name"))
+            talent = xt.strip_lore(xt.plain(cv("name")))
             if not talent:
                 continue
             enabled = xt.enabled_flag(cv("enabled"), "enabled" in cm)
@@ -186,14 +191,14 @@ def read_tree_workbook(wb, fname, trees, unindexed, index_without_sheet, cells, 
             source = f"{name} / {talent}"
             if "automation" in cm:
                 c = cv("automation")
-                text = text_of(c.value) if c is not None else ""
+                text = xt.strip_lore(text_of(c.value)) if c is not None else ""
                 if text.strip():
                     cell = Cell(fname, ws, c.row, c.column, text, talent, name, "talent", source, enabled, "automation")
                     cell.root = is_root
                     cells.append(cell)
             e = cv("effect")
             if e is not None and MARKER.search(text_of(e.value)):
-                cells.append(Cell(fname, ws, e.row, e.column, text_of(e.value), talent, name, "talent", source, enabled, "effect"))
+                cells.append(Cell(fname, ws, e.row, e.column, xt.strip_lore(text_of(e.value)), talent, name, "talent", source, enabled, "effect"))
     extra = [t for t in wb.sheetnames if t != "_Tree Index" and not t.endswith(" Lore") and t not in named]
     if extra:
         unindexed[fname] = extra

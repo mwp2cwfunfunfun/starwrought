@@ -36,3 +36,6 @@ __pycache__/
 
 # Handbook proposals (tracked changes for Mike to accept; not editions)
 *_proposal.docx
+
+build/build-log.json
+

@@ -264,19 +264,67 @@ function handbookHash(book) {
 
 /* -------------------------------------------- */
 
+/**
+ * THE BUILD REPORT (Mike, 2026-11-08: "create an excel sheet every build, with build
+ * issues/errors that I can fix/need to decide something/inconsistencies/rulesdecisions. include
+ * your recommended solution as well"). Every step's output is kept here as well as printed, and
+ * `finish()` writes build/build-log.json and runs assets/build_report.py last, on every path out
+ * of this script (a clean run, a failed step, disagreeing stamps, drift, the stamp, --check), so
+ * build-report.xlsx in the project root always describes the build that just ran. The report's
+ * own exit code never changes the build's: a report that cannot be written is a printed warning.
+ */
+const LOG = {
+  mode: content ? "content" : checkOnly ? "check" : accept ? "accept-phb" : skipSlow ? "skip-slow" : "full",
+  startedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+  python: "",
+  outcome: "running",
+  failedStep: null,
+  steps: [],
+  drift: null,
+  stamps: []
+};
+const BUILD_DIR = path.join(ROOT, "build");
+const BUILD_LOG = path.join(BUILD_DIR, "build-log.json");
+
+function finish(code, outcome) {
+  LOG.outcome = outcome;
+  try {
+    const py = PY ?? resolvePython();
+    LOG.python ||= py?.path ?? "";
+    fs.mkdirSync(BUILD_DIR, { recursive: true });
+    fs.writeFileSync(BUILD_LOG, JSON.stringify(LOG, null, 1), "utf8");
+    const result = spawnSync(py.cmd, [...py.args, "assets/build_report.py", path.relative(ROOT, BUILD_LOG)],
+      { cwd: ROOT, stdio: "pipe", shell: false, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    const text = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+    const last = text.split(/\r?\n/).filter(Boolean).at(-1) ?? "";
+    console.log(`\n${last.startsWith("build report") ? last : `build report: not written (${last || result.error?.message || "no output"})`}`);
+  } catch (error) {
+    console.log(`\nbuild report: not written (${error.message})`);
+  }
+  process.exit(code);
+}
+
 /** Run one step; `args` and `label` are the content-mode overrides, else the step's own. */
 function run(step, { args: stepArgs = step.args, label = step.name } = {}) {
   process.stdout.write(`\n=== ${label} ===\n`);
   // A Python step runs with the interpreter resolvePython() chose, launcher arguments included.
   const cmd = step.py ? PY.cmd : step.cmd;
   const argv = step.py ? [...PY.args, ...stepArgs] : stepArgs;
-  const result = spawnSync(cmd, argv, { cwd: ROOT, stdio: "inherit", shell: false });
+  // Piped rather than inherited (0.20.1): the output is printed as before AND kept for the report.
+  const result = spawnSync(cmd, argv, { cwd: ROOT, stdio: "pipe", shell: false, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  process.stdout.write(output);
+  const entry = { name: step.name, label, status: result.status, output };
+  LOG.steps.push(entry);
   if (result.error) {
     console.error(`  could not run ${cmd}: ${result.error.message}`);
+    entry.output += `\n  could not run ${cmd}: ${result.error.message}\n`;
+    entry.status = -1;
     return false;
   }
   if (result.status !== 0) {
     console.error(`  ${step.name} exited ${result.status}`);
+    entry.output += `\n  ${step.name} exited ${result.status}\n`;
     return false;
   }
   return true;
@@ -499,10 +547,12 @@ if (!checkOnly) {
       : run(step);
     if (!ok) {
       console.error("\nPipeline stopped. Nothing further was run.");
-      process.exit(1);
+      LOG.failedStep = step.name;
+      finish(1, "failed");
     }
   }
 }
+if (PY) LOG.python = PY.path;
 
 /**
  * The grammar document names every kind and operator the system knows (0.13.0; Mike: "create a
@@ -547,22 +597,24 @@ async function grammarDocCheck() {
 }
 
 const stamps = [...stampCheck(), ...await configBarrelCheck(), ...await grammarDocCheck()];
+LOG.stamps = stamps;
 if (stamps.length) {
   console.log("\n" + "=".repeat(72));
   console.log("VERSION STAMPS DISAGREE: the client would warn every user of a stale copy.");
   console.log("=".repeat(72));
   for (const line of stamps) console.log(`  - ${line}`);
   console.log("\nBump SYSTEM_VERSION in module/config/system.mjs and --sw-css-version-<name> in every stylesheet system.json lists to match system.json.\n");
-  process.exit(1);
+  finish(1, "stamps disagree");
 }
 
 const drift = driftCheck();
+LOG.drift = { ok: drift.ok, recorded: drift.recorded, book: drift.book, missing: drift.missing, changed: drift.changed };
 
 if (accept) {
   if (drift.missing.length) {
     reportDrift(drift);
     console.error("Refusing to stamp: the changelog and the features file have to say what changed.");
-    process.exit(1);
+    finish(1, "stamp refused");
   }
   const data = readSync();
   data.phb = drift.book?.version ?? data.phb;
@@ -574,12 +626,14 @@ if (accept) {
   }
   fs.writeFileSync(SYNC, `${JSON.stringify(data, null, 2)}\n`, "utf8");
   console.log(`\nStamped data/SYNC.json: synced to v${data.phb}${data.phbSha256 ? ` (${data.phbSha256.slice(0, 12)})` : ""}.`);
-  process.exit(0);
+  LOG.drift.ok = true;
+  LOG.drift.recorded = data.phb;
+  finish(0, "stamped");
 }
 
 if (!drift.ok) {
   reportDrift(drift, { warning: content });
-  if (!content) process.exit(1);
+  if (!content) finish(1, "handbook drift");
 }
 
 if (content) {
@@ -588,3 +642,4 @@ if (content) {
 } else {
   console.log(`\nAll steps clean, and the repository is synced to PHB v${drift.recorded}.`);
 }
+finish(0, drift.ok ? "clean" : "clean (handbook drift, a warning in content mode)");

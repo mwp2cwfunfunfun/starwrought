@@ -7,6 +7,44 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.20.1 (2026-11-08): the build report
+
+Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No system
+behaviour changes; the stamps move because the stamp check wants the thirteen to agree. Mike,
+after the v4.24 sync: "now that we are doing content additions and automations, please also
+create an excel sheet every build, with build issues/errors that I can fix/need to decide
+something/inconsistencies/rulesdecisions. include your recommended solution as well."
+
+- **`build-report.xlsx`, in the project root, rewritten by every `node assets/build_all.mjs`
+  run** (full, `--content` and so `sync_content.cmd`, `--skip-slow`, `--check`, `--accept-phb`),
+  on success and on failure. `build_all.mjs` now pipes every step's output (printed as before and
+  kept), and `finish()` on every path out of the script writes `build/build-log.json` (gitignored)
+  and runs `assets/build_report.py` last; the report's exit code never changes the build's.
+- **The report** (`assets/build_report.py`) reads the log and adds two analyses of its own so the
+  workbook is complete even when the converter refused to write: the red cells (every Automation
+  line the grammar cannot read, judged by `highlight_automation.py`'s own functions, with the cause
+  and the hint; nothing painted) and the indexes (what `index_sheets.py` would add or report, on
+  workbooks loaded and never saved). Every finding is one row: Severity (Error: the build stopped
+  on it; Fix: a cell or file to mend; Decision: Mike's call; Note: accepted and said each run),
+  Category, Where, Item, Finding in the step's words, Recommendation, Step, First seen, Status
+  (`build/report-seen.json` remembers first-seen dates). Four sheets: Summary (mode, outcome, the
+  failed step, counts, the handbook on the shelf, "do this first"), Issues (filterable, severity
+  coloured), Decisions, Red cells. A table of recognised messages carries the recommendation
+  (the Root Rule's two parts, an index row with no sheet, a duplicate row, a missing ring, a
+  retired column, an unknown column, an unreadable line by its cause, a granted row typed
+  "Maneuver", a trait nothing carries, drift, stamps, style); a message the table does not know
+  is a Fix that says so.
+- **`assets/open_decisions.json`**, hand-kept: the standing questions only a person can close,
+  each with its recommendation, printed on the Decisions sheet beside the machine's Decision rows.
+  Seeded with fifteen (Supine, Murovian, the Necromancer root text, the two v4.24 redlines, the
+  seventeen granted rows, Rescue Haul, Brace an Object, Drop Prone, the eight red cells wanting
+  kinds, the cover's v4.23, the Exploration trait, the caster Callings, Fear, Drilled). A decided
+  row keeps its ruling number one build, then goes.
+- When Excel holds `build-report.xlsx` open the report is written as
+  `build-report.<date-time>.xlsx` and the console says so.
+
+---
+
 ## 0.20.0 (2026-11-08): Player's Handbook v4.24
 
 Built from **Player's Handbook v4.24** (`Starwrought_Players_Handbook_v4.24.docx`, Mike's edition

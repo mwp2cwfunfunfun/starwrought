@@ -1,0 +1,142 @@
+[
+  {
+    "id": "supine",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "PHB v4.24, Conditions table; Drop Prone, Stand, Kip Up",
+    "question": "Supine is in the Conditions table with an empty Effects cell, and Drop Prone, Stand and Kip Up name it. What does Supine do (Prone's -2 to Attacks and Off-Guard? a different Evade clause?), or should the word go?",
+    "recommendation": "Define it in the book in one line (if it is Prone face-up with no mechanical difference, say so and the system treats it as Prone); the system adds nothing until the cell is filled (ruling 213).",
+    "decidedBy": ""
+  },
+  {
+    "id": "murovian",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Index",
+    "where": "data/cultures.xlsx _Tree Index row 6",
+    "question": "Murovian is indexed with no sheet, and PHB v4.24 has no Murovian Culture. Is a sheet coming, or should the row go?",
+    "recommendation": "Write the Murovian sheet and its Lore sheet when the Culture is authored; until then the row costs one warning a run. Delete it only if the Culture is dropped.",
+    "decidedBy": ""
+  },
+  {
+    "id": "necromancer-root-text",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Handbook",
+    "where": "PHB v4.24, Chapter 6, Death Echo",
+    "question": "Death Echo's text says 'you also gain 6 Vigor' while the Chapter 3 table and the Root's [VIGOR opening 8] say 8. The system reads 8 (ruling 212).",
+    "recommendation": "Change the root text to 8 in Word (the proposal tool could not place it: the sentence is shared by three Roots).",
+    "decidedBy": ""
+  },
+  {
+    "id": "v4.24-redlines",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.24_preparing_proposal.docx; ..._consistency_proposal.docx",
+    "question": "Two redlines wait: Chapter 4's Preparing procedure and the Preparing condition to two actions with the cover to v4.24; the typos, the Modifiers paragraph and Chapter 4's 'Downtime Activities' to 'Endeavors'.",
+    "recommendation": "Accept them in Word (Track Changes, author Claude) and save as the next edition; the sync then follows by the handbook rule. Also by hand: 'forced movemt' (Blade Brake), 'side by sid' (the Lore blurb), the lowercase 'count each', the duplicate '### Kestrel Reach' heading in Chapter 3.",
+    "decidedBy": ""
+  },
+  {
+    "id": "granted-rows-typed-maneuver",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx, 17 rows",
+    "question": "Steady the Line, Quench the Ember, Glimmer, Quick Tongue, Oathbound, Tumbling Retreat, Kip Up, Sure Seat, Bull Rush, Reliable Anchor, Rally, Talk Them Down, Command the Field, Feinting Step, Battle Cry, No Quarter and Lost in the Dark are typed 'Maneuver' though a Talent grants each.",
+    "recommendation": "Retype them 'Talent Maneuver'. The build reads them as granted meanwhile (ruling 207), so nothing ships wrong; the retype just silences the build line.",
+    "decidedBy": ""
+  },
+  {
+    "id": "rescue-haul-ungranted",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx Culture Actions / Rescue Haul; data/cultures.xlsx Cairnward",
+    "question": "Rescue Haul is a Cairnward Maneuver, but no Cairnward Talent's Automation carries [MANEUVER Rescue Haul] or its Effect @Maneuver[Rescue Haul], so it is basic and on every character's Actions tab.",
+    "recommendation": "Add [MANEUVER Rescue Haul] to the Cairnward Talent that grants it and @Maneuver[Rescue Haul] to its Effect, as Steady the Line's and Oathbound's do.",
+    "decidedBy": ""
+  },
+  {
+    "id": "brace-an-object-twice",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx Crafting Actions and Guile Actions",
+    "question": "Brace an Object sits on both sheets with Constellation Crafting; the Crafting row stands and the Guile row is dropped with a warning each run.",
+    "recommendation": "Delete the Guile Actions row.",
+    "decidedBy": ""
+  },
+  {
+    "id": "drop-prone-blank",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx Basic Actions / Drop Prone",
+    "question": "Drop Prone's Enabled? cell is blank, so it ships nowhere while the book lists it (Drop Prone ⓿) and Stand and Kip Up refer to it.",
+    "recommendation": "Set Enabled? = Yes unless the omission is deliberate.",
+    "decidedBy": ""
+  },
+  {
+    "id": "red-cells-want-kinds",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Automation cell",
+    "where": "ancestries.xlsx (Dwarf, Elf, Gnome, Halfling), maneuvers.xlsx Ancestry Actions",
+    "question": "Eight Automation lines want something the grammar has no kind for: a forced-movement cap (Hold Your Ground), a degree-of-success downgrade (Unclouded Mind), a Size condition (Small Opening), a Swim Speed (Riverkin), ending Persistent damage (Quench the Ember), a terrain kind 'roots' (Greenblood), a check target 'repair' (Small Ingenuity), a bare REROLL with a CLAIM (Halfling Fortune). In release mode parse_rules stops on the first of them.",
+    "recommendation": "Pick the next kind to author with Claude, one at a time (ruling 119), from the Talent that wants it most; rewrite the others as prose (or blank the cell) until their kind exists, so the release pipeline passes. Greenblood's 'roots' is a terrainKinds row in assets/roster.json, no code.",
+    "decidedBy": ""
+  },
+  {
+    "id": "cover-v4-23",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.24.docx, cover table",
+    "question": "The cover still reads PLAYTEST EDITION v4.23 in the v4.24 file.",
+    "recommendation": "Accept the preparing proposal (it rewrites the line) or change it by hand; the drift check reads the file name, so nothing blocks.",
+    "decidedBy": ""
+  },
+  {
+    "id": "exploration-trait-vs-travel",
+    "since": "2026-11-08",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "PHB v4.24, Traits table (Exploration) and the Activities table",
+    "question": "The Exploration trait says 'you can Move up to half your Speed' while Travel is Full and Hustle Double in the Activities table.",
+    "recommendation": "Reword the trait to defer to the table's Speed column ('your Travel Speed is the Activity's Speed'); the system reads the table.",
+    "decidedBy": ""
+  },
+  {
+    "id": "caster-callings-disabled",
+    "since": "2026-11-05",
+    "status": "open",
+    "category": "Data",
+    "where": "data/callings.xlsx, Enabled? on Spellshaper, Blood Mage, Necromancer, Summoner, Spellblade",
+    "question": "The five caster Callings are disabled (blank Enabled?), so they and their Talents are not in the Foundry packs. Deliberate?",
+    "recommendation": "Set Enabled? = Yes when they are ready to playtest; they return under the same document ids.",
+    "decidedBy": ""
+  },
+  {
+    "id": "fear-carried-by-nothing",
+    "since": "2026-11-05",
+    "status": "open",
+    "category": "Data",
+    "where": "data/*.xlsx Traits columns",
+    "question": "Torchbearer's Rally Aura and Braveheart Halfling's Steady Heart read IFT: TRAIT(Fear), and no weapon, attack or spell Talent carries the Fear trait yet (the build warns the same about Poison and Disease for Healthy Frame).",
+    "recommendation": "Author the first Fear spell or attack with the trait in its Traits cell; the rules fire the moment one ships.",
+    "decidedBy": ""
+  },
+  {
+    "id": "drilled-weapon-familiarity",
+    "since": "2026-10-01",
+    "status": "open",
+    "category": "Data",
+    "where": "data/weapons.xlsx Melee",
+    "question": "Drilled is enabled while the Weapon Familiarity it hands over free is not, and its Choice column is retired in favour of [CHOICE Weapon Group or Technical Weapon].",
+    "recommendation": "Enable Weapon Familiarity and move the Choice cell into its Automation block.",
+    "decidedBy": ""
+  }
+]

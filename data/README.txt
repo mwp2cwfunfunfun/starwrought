@@ -35,6 +35,14 @@ ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   name), tick or untick "refresh the characters' copies" (an owned Talent or weapon takes the new
   text while keeping its quantity, carry state, raised shield and chosen option), and press Sync.
   Nothing restarts, and nothing already on a sheet changes its UUID.
+  THE BUILD REPORT (0.20.1; Mike, 2026-11-08): every build_all.mjs run, this loop included, ends
+  by writing build-report.xlsx in the project root: Summary (mode, outcome, what to do first),
+  Issues (every finding with Severity, Where, the step's words and Claude's recommendation; filter
+  by Severity: Error stopped the build, Fix is a cell or file to mend, Decision is yours, Note is
+  accepted and said each run), Decisions (the standing questions, from assets/open_decisions.json
+  plus the machine's), Red cells (every Automation line the grammar cannot read, with the cause).
+  Open it after a build; close it before the next, or the report is written beside it with a
+  date in its name.
   What the loop does NOT do: the handbook, the Constellation Compendium docx, the PDFs and the
   compiled packs on disk. Those belong to a release: close Foundry and run the full pipeline,
   node assets/build_all.mjs (the two paths are set out at the bottom of this file). Since 0.9.0
