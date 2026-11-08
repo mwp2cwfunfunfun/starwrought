@@ -1,0 +1,131 @@
+{
+  "_id": "22ccafa9af7a75a6",
+  "name": "Gnomish Spark",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Ancestry. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You gain 7 Vigor per level. Your Speed is 5 feet. Your Size is Small. You gain the Gnome trait.<br><br><b>Fey Resilience.</b> Gain a +1 Condition bonus to Awareness and Guard checks vs. Beguilements.",
+    "description": "<p><i>Gnomes are small, perceptive people whose minds retain an unusual resilience against influences that would reshape their thoughts.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[TRAIT Gnome][SIZE Small][SPEED 5][VIGOR 7]\n[EFFECT DEF: 1 condition, guard; IFT: BEGUILEMENT]\n[EFFECT DEF: 1 condition, awareness; IFT: BEGUILEMENT]",
+    "rules": [
+      {
+        "name": "Gnome",
+        "kind": "trait",
+        "line": 1,
+        "text": "[TRAIT Gnome]"
+      },
+      {
+        "size": "small",
+        "kind": "size",
+        "line": 1,
+        "text": "[SIZE Small]"
+      },
+      {
+        "feet": 5,
+        "mode": "set",
+        "kind": "speed",
+        "line": 1,
+        "text": "[SPEED 5]"
+      },
+      {
+        "value": 7,
+        "scope": "level",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR 7]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Guard",
+          "slug": "guard",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": {
+          "threat": "beguilement",
+          "reach": null,
+          "check": null,
+          "name": null
+        },
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT DEF: 1 condition, guard; IFT: BEGUILEMENT]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Awareness",
+          "slug": "awareness",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": {
+          "threat": "beguilement",
+          "reach": null,
+          "check": null,
+          "name": null
+        },
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 3,
+        "text": "[EFFECT DEF: 1 condition, awareness; IFT: BEGUILEMENT]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0cb1755518b987d5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!22ccafa9af7a75a6"
+}

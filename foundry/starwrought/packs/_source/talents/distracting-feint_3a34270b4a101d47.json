@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "While a creature is Off-Guard or Wrong-Footed by your Feints, it also takes a -2 Situation penalty to Awareness and Agility checks and Thresholds.",
-    "description": "",
+    "effect": "While a creature is Off-Guard or Wrong-Footed because of your Feint, it also takes a -2 Situation penalty to <i>Awareness</i> checks.",
+    "description": "<p><i>The false opening leaves an opponent watching the wrong detail.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "9b627d432ecf1771",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6f4eaa6ea899bc0f"
+      "contentHash": "086b5e863f5c6bc9"
     }
   },
   "effects": [],

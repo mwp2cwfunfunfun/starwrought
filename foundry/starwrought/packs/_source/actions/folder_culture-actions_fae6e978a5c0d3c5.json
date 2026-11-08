@@ -1,0 +1,16 @@
+{
+  "_id": "fae6e978a5c0d3c5",
+  "name": "Culture Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 5,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "5b539e8948198077"
+    }
+  },
+  "_key": "!folders!fae6e978a5c0d3c5"
+}

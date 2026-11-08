@@ -1,0 +1,56 @@
+{
+  "_id": "5c73dc2728b3402b",
+  "name": "Shaped Glimmer",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Glimmerblood Gnome"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "Your Glimmer image can fill a 3-foot cube instead of a 1-foot cube. It remains stationary and visibly illusory, with no substance, sound, readable text, Cover, or Concealment.",
+    "description": "<p><i>The small image you hold in the air unfolds into a fuller display.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d01d377c06227223"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5c73dc2728b3402b"
+}

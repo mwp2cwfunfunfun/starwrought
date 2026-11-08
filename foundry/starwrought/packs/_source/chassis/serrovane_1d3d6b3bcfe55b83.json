@@ -56,12 +56,12 @@
       },
       {
         "label": "Names",
-        "text": "<p>Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br>Common given names Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br>Common surnames Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br>Example names Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith.</p>"
+        "text": "<p>Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><b>• Common given names </b>Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><b>• Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><b>• Example names</b> Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith.</p>"
       }
     ],
-    "specialAbility": "<p>You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
+    "specialAbility": "<p>You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Serrovane.<br><br>You know the Common and Serrovine languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "ae2a6da93bc423e9",
   "sort": 0,
@@ -70,7 +70,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "de211b8e3e2b680c"
+      "contentHash": "ab3290c4549b7710"
     }
   },
   "effects": [],

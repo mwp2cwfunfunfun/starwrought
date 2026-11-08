@@ -1,0 +1,56 @@
+{
+  "_id": "7f8f88fb7e04865a",
+  "name": "Ensemble Direction",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Performance Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you successfully use Performance to Aid another creature’s check as part of a shared presentation, add an additional +1 Situation bonus to the Aid's results.",
+    "description": "<p><i>Your cues help another performer find the right moment.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "f54f067a4c4c15f2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "cb941f838236fc32"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7f8f88fb7e04865a"
+}

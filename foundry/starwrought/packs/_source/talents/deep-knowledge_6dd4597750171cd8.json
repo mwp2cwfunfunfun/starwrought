@@ -13,8 +13,8 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this Lore: add the Constellation's rank to its checks. Recall and research within its field; you know its history, texts, and secrets.",
-    "description": "",
+    "effect": "You become Trained in this Lore. Use its this Constellation’s Proficiency Bonus for its checks. Each Talent here contributes to this Constellation’s rank and its Key Attribute.",
+    "description": "<p><i>You know a particular subject well enough to recognize what matters within it. Lore might concern a profession, faith, region, people, organization, historical period, creature type, or similarly focused field. Every Lore field has its own training and Constellation.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -34,7 +34,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "f59506a3bbc6d7ef",
   "sort": 0,
@@ -43,7 +43,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "218417df32e46b18"
+      "contentHash": "57db510dc5e6ce1c"
     }
   },
   "effects": [],

@@ -23,7 +23,7 @@
     "description": "<p>Requirements You are not Grabbed or Restrained. Trigger You are targeted by a melee Attack of which you are aware. +2 Situation bonus to Evade against the triggering attack. If the Strike is a Graze or Miss, you may Move to any space adjacent to the attacker; moving through its space does not count as Difficult Terrain.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e2089624fedc4475"
+      "contentHash": "7ddec17644eeb1d8"
     }
   },
   "effects": [],

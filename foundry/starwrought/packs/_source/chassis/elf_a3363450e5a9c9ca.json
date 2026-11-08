@@ -1,0 +1,85 @@
+{
+  "_id": "a3363450e5a9c9ca",
+  "name": "Elf",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/elf.png",
+  "system": {
+    "kind": "ancestry",
+    "constellation": "elf",
+    "attribute": "wits",
+    "vigor": 7,
+    "size": "medium",
+    "speed": 7,
+    "senses": "low-light vision",
+    "description": "<p>Elves are long-lived and keen-sensed, finding beauty in careful attention and difficulty in knowing when a thing is truly finished.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Elves are long-lived and keen-sensed, finding beauty in careful attention and difficulty in knowing when a thing is truly finished.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>An elf may remember the sapling beneath a spreading oak, the face on a weathered statue, and the first small quarrel behind a feud that now has its own songs. That memory changes how the world feels. A road is also the wood it replaced. A stranger’s expression may recall someone who died a century ago. Few things arrive without an echo.<br><br>Yet elves are as capable of impatience as anyone. Some spend years refining a small work because its imperfections will not leave them alone; others flee an old home because every doorway holds a conversation they can still hear. Their long lives offer time to change, but also time to become very certain that change is a mistake. An elf who takes to the road may be seeking something new, or finally accepting that something old is over.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character whose long memory and careful senses make even familiar places feel layered with possibility, play an elf.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Notice how a place has changed before asking who now owns it.<br>• Return to an unfinished craft, friendship, or promise after years away.<br>• Become fiercely attached to a short-lived companion’s plans.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Mistake your deliberate attention for distraction or indifference.<br>• Ask you to remember a history you never personally witnessed.<br>• Wonder whether you are listening to them or to someone they remind you of.</p>"
+      },
+      {
+        "label": "Physical Description (at a glance)",
+        "text": "<p>Elves usually stand five and a half to six and a half feet tall, with long limbs, fine ears, and a light frame. Their coloring varies widely between families; eyes often show distinct rings or flecks that become clearer in dim light. Their movements tend to make small adjustments early, keeping a loose surface or crowded passage from becoming an obvious obstacle. Clothing and ornament follow upbringing, occupation, and personal taste.</p>"
+      },
+      {
+        "label": "Physical Description (lifecycle)",
+        "text": "<p>Elves reach physical adulthood at roughly twenty years. Many live three to five centuries, with rare elders surviving longer. Customs about adulthood vary by Culture, often marking the acceptance of responsibility or a first independent undertaking. Their memories remain fallible, and an old elf knows only the parts of history they actually lived or studied.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Elves live in cities, farm valleys, forest settlements, and communities shared with other ancestries. Their cultures govern their laws and loyalties. Where long-lived elven families gather, continuity often rests with people as much as with records: the same neighbor may witness several generations of a household’s agreements. This can preserve trust, but it can also preserve a grievance long after anyone else remembers its beginning.<br><br>Some elven households keep a place for returning members, expecting departures that would count as a lifetime elsewhere. Others deliberately move, rename themselves, or pass responsibility onward so the young are not forever waiting behind an elder. Among mixed communities, elves often learn the difficult habit of making decisions on someone else’s shorter timetable.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Elven beliefs are as varied as their cultures. Traditions with long elven histories often ask what deserves to continue and what should be allowed to end. A carefully maintained grove, a restored public square, and a song finally permitted to change may all express the same reverence. Some elves find comfort in cycles; others devote themselves to a particular life or work precisely because it will not return.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Give a person or a work your full attention.<br>• Preserve what others cannot afford to lose.<br>• Leave room for those who will follow you.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Treat a short life as a lesser one.<br>• Keep a promise only because you have forgotten why it mattered.<br>• Destroy an irreplaceable thing through simple impatience.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Many elven naming traditions pair a flowing given name with a family name recalling a seasonal or celestial change. In Common, these family names often become two-part compounds such as Firstfrost or Rainwake. The name may recall an ancestor’s arrival, a remembered omen, or the season when a household began.<br><b>• Common given names </b>Aelira, Calen, Elaris, Lethan, Meriel, Naeris, Orilan, Saelith.<br><b>• Common family names</b> Dawnbloom, Firstfrost, Leafturn, Nightfall, Rainwake, Sunwane.</p>"
+      }
+    ],
+    "traits": [
+      "Elf"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "e179582241ca8c65",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "da4972f1dfe2d760"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a3363450e5a9c9ca"
+}

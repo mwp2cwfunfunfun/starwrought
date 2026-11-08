@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "+2 Situation to any check where you can explain how this field directly applies. The GM is the judge; the story is the proof.",
-    "description": "",
+    "effect": "You gain a +2 Situation bonus to any check where you can explain how this field directly applies, subject to GM approval.",
+    "description": "<p><i>You recognize familiar principles in unfamiliar problems and turn your knowledge into solutions.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "f59506a3bbc6d7ef",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "c79b43b9cc07c2b8"
+      "contentHash": "3e0d3c8e451db0c7"
     }
   },
   "effects": [],

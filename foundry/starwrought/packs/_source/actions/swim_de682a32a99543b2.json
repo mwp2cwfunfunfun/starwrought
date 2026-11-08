@@ -1,0 +1,51 @@
+{
+  "_id": "de682a32a99543b2",
+  "name": "Swim",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "You are in a liquid such as water (GM’s discretion as to whether it is deep enough or swimmable).",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Athletics</i> check against a Threshold set by the GM, with the following results:<br>  <b> Critical Success </b>Move up to your Speed through the liquid.<br>   <b>Success</b> Move up to half your Speed through the liquid.<br>   <b>Failure</b> You do not make progress.<br>  <b> Critical Failure</b> You do not make progress, and you sink 5 feet.<br>While Swimming, you are Off-Guard.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7f9109a4f006986a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!de682a32a99543b2"
+}

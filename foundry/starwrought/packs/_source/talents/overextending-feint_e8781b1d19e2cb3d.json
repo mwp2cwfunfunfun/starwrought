@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "On a successful Feint, you can use the following success and critical success effects instead of any other effects that would occur when you Feint.Critical Success The target takes a -2 Situation penalty to all attack rolls against you before the end of the next round.Success The target takes a -2 Situation penalty to its next attack roll against you before the end of the next round.",
-    "description": "",
+    "effect": "Before rolling Feint, you may choose these results in place of its normal success results:<br>  <b> Critical Success</b> -2 Situation to all its Attacks against you until then. <br>   <b>Success</b> -2 Situation to the target’s next Attack against you before the end of the next round.<br>   <b>Failure </b>or<b> Critical</b> <b>Failure</b> are unchanged.<br><br>These results do not also make it Wrong-Footed.",
+    "description": "<p><i>You draw a committed answer to an opening that was never there.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "9b627d432ecf1771",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "42baea99ba5db75e"
+      "contentHash": "6190375cf48d356a"
     }
   },
   "effects": [],

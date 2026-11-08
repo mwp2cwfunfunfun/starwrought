@@ -1,0 +1,45 @@
+{
+  "_id": "a21bf158d6c3783d",
+  "name": "Feinting Step",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Guile Actions",
+    "basic": false,
+    "traits": [
+      "Mental"
+    ],
+    "prerequisites": "Feinting Step",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>Your opponent follows the suggestion of a movement while you take the real one.</i></p>",
+    "effect": "<p>Feint, the Step (regardless of the results of the Feint).</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "30023a5bfcb7bf9c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "9ede227e31408838"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a21bf158d6c3783d"
+}

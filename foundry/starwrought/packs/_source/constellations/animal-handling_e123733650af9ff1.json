@@ -1,0 +1,36 @@
+{
+  "_id": "e123733650af9ff1",
+  "name": "Animal Handling",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/animal-handling.png",
+  "system": {
+    "slug": "animal-handling",
+    "category": "skill",
+    "attribute": "presence",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Presence",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Presence</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6b8de073f13b8a7e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e123733650af9ff1"
+}

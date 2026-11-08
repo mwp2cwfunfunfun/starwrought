@@ -1,0 +1,36 @@
+{
+  "_id": "b3611dcdf51df68c",
+  "name": "Elf",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/elf.png",
+  "system": {
+    "slug": "elf",
+    "category": "origin",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Ancestry constellation • Wits (Medium • Vigor 7 • 7 ft • low-light vision)",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Ancestry constellation • Wits (Medium • Vigor 7 • 7 ft • low-light vision)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ed9d6a85659660f0"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b3611dcdf51df68c"
+}

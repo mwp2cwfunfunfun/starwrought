@@ -1,0 +1,16 @@
+{
+  "_id": "17f1e005b4428dbf",
+  "name": "Defensive & Recovery Maneuvers",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 1,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "d1ad64b4d4e07004"
+    }
+  },
+  "_key": "!folders!17f1e005b4428dbf"
+}

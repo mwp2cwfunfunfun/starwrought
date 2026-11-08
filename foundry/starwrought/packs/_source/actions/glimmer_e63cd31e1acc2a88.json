@@ -1,0 +1,47 @@
+{
+  "_id": "e63cd31e1acc2a88",
+  "name": "Glimmer",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Ancestry Actions",
+    "basic": false,
+    "traits": [
+      "Concentrate",
+      "Magical",
+      "Visual"
+    ],
+    "prerequisites": "Glimmerblood Gnome",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "15 feet",
+    "target": "",
+    "duration": "Sustained",
+    "description": "<p><i>The small image you hold in the air unfolds into a fuller display.</i></p>",
+    "effect": "<p>Create either a stationary visual image no larger than a 1-foot cube, or a stationary mote that sheds bright light for 15 feet and dim light for 15 feet beyond that. You must have line of effect to its location. The image is visibly illusory, has no substance or sound, cannot create readable text, and cannot provide Cover or Concealment. You can Sustain one Glimmer; creating another ends the first. It ends if you become unconscious.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "5e509cc3fcff7303",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "35f49bb4f1663ae9"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e63cd31e1acc2a88"
+}

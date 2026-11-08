@@ -1,0 +1,45 @@
+{
+  "_id": "8e5d7fcb91c124f1",
+  "name": "Reload",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "6",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack Maneuvers",
+    "basic": true,
+    "traits": [
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "You are holding a weapon that requires ammunition.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>You reload the weapon.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b7f05dd01d0fd43",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "279f4e6a99aa4ca4"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8e5d7fcb91c124f1"
+}

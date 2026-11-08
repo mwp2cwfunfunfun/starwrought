@@ -1,0 +1,54 @@
+{
+  "_id": "3212bfd8fc9335bf",
+  "name": "Insight Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Skill. Use this Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to this Constellation’s Proficiency Rank.",
+    "description": "<p><i>You have learned to attend to the reasons behind an answer as carefully as the words.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3a1270446eb5e188",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "db60b4a9cc964fc5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3212bfd8fc9335bf"
+}

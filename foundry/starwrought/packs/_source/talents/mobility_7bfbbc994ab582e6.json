@@ -16,7 +16,7 @@
     "prerequisites": "",
     "attribute": "",
     "effect": "When you Move half your Speed or less, that movement does not trigger Intercepts or other Reactions. You can use Mobility when Climbing, Flying, or Swimming instead of Moving if you have the corresponding movement type.",
-    "description": "",
+    "description": "<p><i>You read the safe intervals between weapons and moving bodies.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "989205467f81e594"
+      "contentHash": "bdeca8248fae2a4b"
     }
   },
   "effects": [],

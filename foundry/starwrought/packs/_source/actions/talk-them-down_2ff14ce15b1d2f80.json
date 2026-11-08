@@ -1,0 +1,52 @@
+{
+  "_id": "2ff14ce15b1d2f80",
+  "name": "Talk Them Down",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Diplomacy Actions",
+    "basic": false,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Mental"
+    ],
+    "prerequisites": "Talk Them Down",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "Once per encounter (per target)",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>A measured appeal gives an opponent a reason to hesitate.</i></p>",
+    "effect": "<p>Attempt a <i>Diplomacy</i> check vs. <i>Guard </i>one creature within 30 feet that understands you, with the following effects:<br><b>Critical Success </b>It takes a -2 Situation penalty to its next Attack against you before the end of the next round.<b><br>Success </b>It takes a -2 Situation penalty to its next Attack against you until your next Opportunity.<br><b>Failure</b> No effect.<br><b>Critical Failure</b> It gains a +1 Situation bonus to its next Attack against you until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "diplomacy",
+      "defense": "guard"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "4e20ce19d02f6ff4",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "41cb4662f3025ba6"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2ff14ce15b1d2f80"
+}

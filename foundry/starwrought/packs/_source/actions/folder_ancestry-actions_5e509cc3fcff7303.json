@@ -1,0 +1,16 @@
+{
+  "_id": "5e509cc3fcff7303",
+  "name": "Ancestry Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 4,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "82a116ef40bfb2ed"
+    }
+  },
+  "_key": "!folders!5e509cc3fcff7303"
+}

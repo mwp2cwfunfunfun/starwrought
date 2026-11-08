@@ -1,0 +1,45 @@
+{
+  "_id": "c7e616a4f50b5dda",
+  "name": "Well-Read",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Lore Actions",
+    "basic": false,
+    "traits": [
+      "Concentrate"
+    ],
+    "prerequisites": "Well-Read",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "Once per encounter",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>Long familiarity with your subject brings useful facts to mind in a heartbeat.</i></p>",
+    "effect": "<p>Recall Knowledge on your Lore’s subject.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "c8a50442f521d5c2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "00b556fa3b2a7a11"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c7e616a4f50b5dda"
+}

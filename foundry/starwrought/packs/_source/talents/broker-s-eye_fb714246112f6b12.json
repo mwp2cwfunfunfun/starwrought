@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain +2 Situation to Diplomacy and Guile checks when trading.",
+    "effect": "You gain +2 Condition to Diplomacy and Guile checks when trading.",
     "description": "<p><i>You recognize a fair price at a glance and know when there is room to bargain.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -33,11 +33,11 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "[EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]\n[EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading)]",
+    "automation": "[EFFECT CHECK: 2 condition, diplomacy; IF: CLAIM(when trading)]\n[EFFECT CHECK: 2 condition, guile; IF: CLAIM(when trading)]",
     "rules": [
       {
         "value": 2,
-        "type": "situation",
+        "type": "condition",
         "to": {
           "name": "Diplomacy",
           "slug": "diplomacy",
@@ -55,11 +55,11 @@
         "marked": false,
         "kind": "bonus",
         "line": 1,
-        "text": "[EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]"
+        "text": "[EFFECT CHECK: 2 condition, diplomacy; IF: CLAIM(when trading)]"
       },
       {
         "value": 2,
-        "type": "situation",
+        "type": "condition",
         "to": {
           "name": "Guile",
           "slug": "guile",
@@ -77,11 +77,11 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "[EFFECT CHECK: 2 situation, guile; IF: CLAIM(when trading)]"
+        "text": "[EFFECT CHECK: 2 condition, guile; IF: CLAIM(when trading)]"
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "d11b952536b11224",
   "sort": 0,
@@ -90,7 +90,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "586cf7ff7c47802d"
+      "contentHash": "c7825ce49e4328e0"
     }
   },
   "effects": [],

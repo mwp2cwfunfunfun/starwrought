@@ -23,7 +23,7 @@
     "description": "<p>After you successfully Parry, instead of Controlling the attacking weapon, you may at once make a Quick Strike against its owner.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ad982d32bd06a6c7"
+      "contentHash": "493b03e3894aef05"
     }
   },
   "effects": [],

@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br>Bonus to Aid. You gain a +1 Condition bonus on checks to Aid.",
+    "effect": "You become Trained in this Ancestry. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Medium. You gain the Human trait.<br><br><b>Bonus to Aid.</b> You gain a +1 Condition bonus on checks to Aid.",
     "description": "<p><i>Humans are restless, adaptable, and ambitious, making much of their brief lives and finding strength in one another.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -31,7 +31,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\n[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]",
+    "automation": "[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]\n[EFFECT CHECK: 1 condition, aid]",
     "rules": [
       {
         "name": "Human",
@@ -67,14 +67,7 @@
           "slug": "aid",
           "type": "action"
         },
-        "when": [
-          {
-            "constellation": "origin",
-            "name": "Origin",
-            "op": ">=",
-            "rank": "trained"
-          }
-        ],
+        "when": null,
         "for": null,
         "while": null,
         "against": null,
@@ -84,11 +77,11 @@
         "marked": false,
         "kind": "bonus",
         "line": 2,
-        "text": "[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]"
+        "text": "[EFFECT CHECK: 1 condition, aid]"
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,
@@ -97,7 +90,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "65719d4d8a96b261"
+      "contentHash": "dbf4f528a43319ad"
     }
   },
   "effects": [],

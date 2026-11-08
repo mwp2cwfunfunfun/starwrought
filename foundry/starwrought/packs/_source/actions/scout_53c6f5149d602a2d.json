@@ -10,18 +10,28 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Exploration Mode",
-    "requirements": "Travel Speed: Half",
-    "traits": [],
-    "description": "<p>Every ally gains a +1 Situation bonus to initiative, and you may Step ⓿ when you roll initiative. When an encounter begins, you can roll Awareness.</p>",
+    "basic": true,
+    "traits": [
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Every ally gains a +1 Situation bonus to Initiative, and you may immediately Step when you roll Initiative. When an encounter begins, roll <i>Awareness</i> for Initiative.</p>",
+    "automation": "",
+    "rules": [],
     "exploration": {
       "travel": "half",
       "check": "",
       "initiative": "",
       "effect": "scout"
     },
-    "automation": "",
-    "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "data/activities.xlsx"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -30,7 +40,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "5a457d392207a0dd"
+      "contentHash": "ef309858c11f5e14"
     }
   },
   "effects": [],

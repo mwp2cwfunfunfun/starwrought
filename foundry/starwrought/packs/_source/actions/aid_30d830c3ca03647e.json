@@ -9,14 +9,18 @@
     "costMode": "to",
     "reaction": false,
     "reactionCost": "",
-    "category": "Watching, Deceiving & Helping",
+    "category": "Other Basic Maneuvers",
     "basic": true,
     "traits": [],
     "prerequisites": "",
-    "requirements": "The ally is willing to accept your aid.",
+    "requirements": "An ally is willing to accept your aid.",
     "trigger": "",
-    "description": "<p>You use an action to help an ally.</p>",
-    "effect": "<p>You must explain to the GM exactly how you're trying to help, and they determine whether you can Aid your ally.</p><p>Attempt a Relevant Check. The typical Threshold is 15, but the GM might adjust this Threshold for particularly hard or easy tasks. The GM can add any relevant traits to your action depending on the situation, or even allow you to Aid checks other than skill checks and attack rolls.</p><p>Critical Success If your ally attempts the check you specified, you grant them a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br>Success If your ally attempts the check you specified, you grant them a +1 Situation bonus to the check.<br>Critical Failure If your ally attempts the check you specified, you grant them a -1 Situation penalty to the check.</p>",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>You use an action to help an ally. You must explain to the GM exactly how you're trying to help and what Constellation you would like to aid your ally with. The GM can add any relevant traits to your action depending on the situation. Attempt a Relevant check vs. a Threshold set by the GM (typically 15), with the following effects:<br>   <b>Critical Success</b> Until your next Opportunity, the first time your ally attempts a check with the Constellation you specified, they gain a +2 Situation bonus to the check. If you're a master with the check you attempted, the bonus is +3, and if you're legendary, it's +4.<br>   <b>Success</b> Until your next Opportunity, the first time your ally attempts a check with the Constellation you specified, they gain a +1 Situation bonus to the check.<br>   <b>Failure</b> No effect.<br>   <b>Critical Failure</b> If your ally attempts a check with the Constellation you specified, you grant them a -1 Situation penalty to the check.</p>",
     "automation": "",
     "rules": [],
     "check": {
@@ -26,14 +30,14 @@
     },
     "source": "data/maneuvers.xlsx"
   },
-  "folder": "fdaa17210c6d23e8",
+  "folder": "0aa9b5722ed296d9",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6d9d3deeca1496d6"
+      "contentHash": "d5782714e15b5638"
     }
   },
   "effects": [],

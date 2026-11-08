@@ -1,0 +1,81 @@
+{
+  "_id": "2bebb316fa69356f",
+  "name": "Cairnward",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/cairnward.png",
+  "system": {
+    "kind": "culture",
+    "constellation": "cairnward",
+    "attribute": "might",
+    "languages": "Common, Cairnic",
+    "description": "<p>Cairnwarders share the work that keeps a mountain road passable, a shelter supplied, and a struggling traveler from being left behind.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Cairnwarders share the work that keeps a mountain road passable, a shelter supplied, and a struggling traveler from being left behind.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>Cairnward is a chain of high valleys and pass towns joined by narrow roads, rope bridges, and stone shelters whose doors open from the outside. Snow can close a route between breakfast and dusk. Every settlement therefore maintains places where a stranger can find dry fuel, a blanket, and directions to the next safe roof. The supplies belong to the road, and taking what you need creates an expectation that you will replenish a shelter when you can.<br><br>People of many ancestries keep this system working. A halfling may inspect a bridge’s underside while a dwarf anchors the line, an elf reads a changing sky, and a gnome counts the fuel left at the next refuge. Cairnwarders learn that useful strength includes knowing when to ask for another pair of hands. The region admires a difficult rescue, but admires the uneventful journey made possible by good maintenance just as much.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who judges a community by whom it is prepared to help, shares difficult work readily, and knows the value of a safe place to stop, choose Cairnward.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Check how much fuel and food remain before settling into a borrowed shelter.<br>• Divide a difficult load before anyone has to admit that it is too heavy.<br>• Leave a clear warning where the next traveler will see it.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Trust you to notice when someone is quietly falling behind.<br>• Find your questions about ropes, weather, and spare blankets excessive until the road turns bad.<br>• Assume you will help, and sometimes forget to ask what that help costs you.</p>"
+      },
+      {
+        "label": "Dress and Bearing",
+        "text": "<p>Cairnward clothing favors repairable layers, close-fitting sleeves, and cords that can be handled with cold fingers. Bright shoulder tabs make travelers easier to count in fog or snow. Different towns favor different colors, while a small braided loop commonly identifies a household that helps maintain a particular route. Garments and equipment are fitted to their wearer’s ancestry and build.<br><br>Offering someone the sheltered side of a doorway is a familiar courtesy. So is taking one end of a load before beginning a long conversation. Elaborate clothing earns little admiration if its owner refuses to mend a loose fastening.</p>"
+      },
+      {
+        "label": "Upbringing and Milestones",
+        "text": "<p>Children begin with small contributions: carrying a handful of kindling to a nearby refuge, learning the warning signs, and accompanying adults on a short maintenance walk. They are taught to distinguish a task they can manage from one that needs help.<br><br>A first independently completed shelter round often marks growing responsibility. The young person returns with an account of what was repaired, replaced, or left for a more experienced crew. Ancestry, ability, and circumstance shape the timing. Later milestones include taking responsibility for a route, teaching a new crew, and handing a demanding duty onward before age or injury makes it unsafe.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Cairnward’s towns govern their own affairs but share responsibility for the routes between them. Seasonal gatherings assign shelter rounds, bridge inspections, and repair crews. Contributions may be labor, materials, food, transport, or skilled planning. A person who cannot safely climb a pass can still arrange the work that makes it passable.<br><br>Rescue crews are assembled around the situation rather than inherited office. The most experienced person for the route leads, and others are expected to speak when they notice a danger. Once everyone is home, the community replaces damaged equipment and supports those injured in its service.<br><br>The system can also make unreasonable demands. A capable household may receive every difficult assignment while a wealthy one supplies goods and keeps its members safe at home. Families sometimes pressure an exhausted rescuer to prove their loyalty one more time. Cairnwarders argue over how to share danger fairly, and who must be heard when a respected leader says the risk is acceptable.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Cairnward shelters often contain a small shared shrine, though the people who maintain them follow many faiths. Travelers leave a knot, a stone, or a few words of thanks after reaching safety. Those lost on the road are remembered by name, with particular care taken to mark where a rescue failed or a route changed.<br><br>Many Cairnwarders understand care for an unknown future traveler as a form of devotion. A dry blanket left behind can serve that purpose as readily as a prayer spoken aloud.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Leave the shelter ready for the person who comes after you.<br>• Share the load before it breaks someone.<br>• Mark a danger clearly, even when you cannot repair it yourself.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Take a refuge’s last supplies and conceal the shortage.<br>• Move or falsify a trusted waymark for personal advantage.<br>• Pressure someone into a rescue whose danger you refuse to share.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Cairnward household names often pair a number with a useful provision. Such a name remembers the painted sign of an old refuge, the gift that established a household, or the supplies its members once promised to maintain. The number is a remembered emblem rather than a current inventory. Adopted relatives and people who join a household commonly take its name.<br><br>Given names often come from family and ancestry traditions. Common forms of the household names are used below.<br><b>• Common given names </b>Anya, Bera, Elda, Fenna, Kellan, Meriel, Pella, Torek.<br><b>• Common household names</b> Five-Blankets, Four-Cups, Nine-Ropes, Seven-Coals, Three-Loaves, Two-Lanterns.</p>"
+      }
+    ],
+    "specialAbility": "<p>You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Cairnward.<br><br>You know the Common and Cairnic languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "ae2a6da93bc423e9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "355e061ac3925906"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2bebb316fa69356f"
+}

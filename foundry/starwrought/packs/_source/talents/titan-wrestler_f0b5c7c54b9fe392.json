@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Grapple, Shove, and Trip creatures up to two sizes larger than you.",
-    "description": "",
+    "effect": "You can Grapple, Shove, or Trip a creature up to two Sizes larger than you. All other requirements remain, including reach and a suitable grip or implement.",
+    "description": "<p><i>You know how to turn a larger opponent’s weight against them.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "235dc76ee1e2834b",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "05fbdc59286c9714"
+      "contentHash": "825c8a7acbfc0ccb"
     }
   },
   "effects": [],

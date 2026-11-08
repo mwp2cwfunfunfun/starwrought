@@ -1,0 +1,45 @@
+{
+  "_id": "483953ff4b82c46d",
+  "name": "Grab an Edge",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Acrobatics Actions",
+    "basic": true,
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "",
+    "requirements": "You have a hand free. You may Release an item as part of this Reaction to free a hand.",
+    "trigger": "You fall past an edge, ledge, or handhold within your reach.",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt your best of <i>Athletics</i> or <i>Acrobatics</i> against a Threshold of 15, with the following effects:<br>   <b>Critical Success </b>You grab the edge and pull yourself up in the same motion. You do not fall.<br>   <b>Success</b> You grab the edge and hang there until you use an action to pull yourself up to an unoccupied space. You are Off-Guard while you are hanging and cannot Evade.<br>   <b>Failure</b> You slow yourself down via one or more failed edge grabs, but the damage caused by falling distance is reduced by 10 feet.<br>   <b>Critical Failure</b> You fall the full distance.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "131b3e0aa90866d8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7b2ebbd96fd3b2f8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!483953ff4b82c46d"
+}

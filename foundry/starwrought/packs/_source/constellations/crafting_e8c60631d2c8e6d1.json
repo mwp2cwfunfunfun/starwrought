@@ -1,0 +1,36 @@
+{
+  "_id": "e8c60631d2c8e6d1",
+  "name": "Crafting",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/crafting.png",
+  "system": {
+    "slug": "crafting",
+    "category": "skill",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "79f123f7f637749c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e8c60631d2c8e6d1"
+}

@@ -1,0 +1,56 @@
+{
+  "_id": "26159474dc9d3436",
+  "name": "Shelterwise",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "cairnward",
+    "constellationName": "Cairnward",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Cairnwarder"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +1 Condition bonus to Survival checks to anticipate dangerous weather, choose a safe campsite or shelter, or plan a route around an environmental hazard. This does not apply to <i>Endure</i> or another Defense against the hazard itself.",
+    "description": "<p><i>A change in the wind or a poorly placed snowbank tells you when a comfortable stopping place will become a dangerous one.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "86f0ada2eccf87c7",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "464f27baba10b3d9"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!26159474dc9d3436"
+}

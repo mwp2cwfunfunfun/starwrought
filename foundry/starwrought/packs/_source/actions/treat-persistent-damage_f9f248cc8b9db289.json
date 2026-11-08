@@ -1,0 +1,45 @@
+{
+  "_id": "f9f248cc8b9db289",
+  "name": "Treat Persistent Damage",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "6",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Medicine Actions",
+    "basic": true,
+    "traits": [
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "You are adjacent to a willing or helpless creature that has not been targeted by Treat Persistent Damage this round.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Make a plausible case to the GM to explain how your actions will help your patient. At the GM's discretion, the patient's next <i>Endure </i>check against the Persistent Damage will receive up to a +1 Situation bonus for each action you spent treating it.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "08de73ef78d5df16",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "01507ddde50a0fab"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f9f248cc8b9db289"
+}

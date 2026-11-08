@@ -1,0 +1,45 @@
+{
+  "_id": "9af89ee62521b3e6",
+  "name": "Squeeze",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Movement Maneuvers",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "You are entering a space narrower than your token size, but at least half as wide.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Move up to half your Speed. While any part of you is in that space:<br>•\tYou are Off-Guard.<br>•\tYou cannot Evade.<br>•\tYou can attack only with weapons that have the Close trait.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "7a1baa02eae18ebc",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "584627fa7d216c36"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9af89ee62521b3e6"
+}

@@ -1,0 +1,79 @@
+{
+  "_id": "9ff8dd931851d584",
+  "name": "Lucent Gaze",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Starlit Elf"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +2 Condition bonus to Awareness checks made specifically to detect or see through a visual illusion. This does not automatically expose an illusion or reveal something you could not otherwise perceive. It does not apply to a Defense merely because the Attack is magical.",
+    "description": "<p><i>A false image never quite settles into the light as your eyes expect it to.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 2 condition, awareness; IF: CLAIM(detect or see through an illusion)]",
+    "rules": [
+      {
+        "value": 2,
+        "type": "condition",
+        "to": {
+          "name": "Awareness",
+          "slug": "awareness",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "detect or see through an illusion"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 2 condition, awareness; IF: CLAIM(detect or see through an illusion)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7a02554bcc812211"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9ff8dd931851d584"
+}

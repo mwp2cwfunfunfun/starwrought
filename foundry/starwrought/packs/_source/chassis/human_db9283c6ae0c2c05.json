@@ -38,7 +38,7 @@
         "text": "<p>Humans are middling in most measures and wildly varied in all of them. They stand roughly five to six and a half feet tall, in every build from wiry to broad, with skin, hair, and eyes spanning every shade their homelands offer. What marks a human crowd is not a shared look but a shared motion: quick eyes, busy hands, and clothing that borrows freely from every neighbor they have ever traded with.</p>"
       },
       {
-        "label": "Physical Description (life cycle)",
+        "label": "Physical Description (lifecycle)",
         "text": "<p>Humans reach physical adulthood around 15 years and are usually granted a place at the adults' table by 18, though every town draws that line differently. A human who avoids war, plague, and their own ambition can expect sixty to ninety years, and a rare few see a century. Their short season is the quiet engine of their character; humans plant orchards whose shade they will never sit in, and they know it.</p>"
       },
       {
@@ -59,13 +59,13 @@
       },
       {
         "label": "Names",
-        "text": "<p>Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br>Common given names Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br>Common surnames Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br>Example names Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper.</p>"
+        "text": "<p>Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><b>• Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><b>• Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.</p>"
       }
     ],
     "traits": [
       "Human"
     ],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "e179582241ca8c65",
   "sort": 0,
@@ -74,7 +74,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "74b8ef701f62907a"
+      "contentHash": "110b1e320cda22e7"
     }
   },
   "effects": [],

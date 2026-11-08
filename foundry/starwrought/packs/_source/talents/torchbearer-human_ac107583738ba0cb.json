@@ -10,10 +10,12 @@
     "root": false,
     "bloodlineRoot": true,
     "capstone": false,
-    "requires": [],
+    "requires": [
+      "Humanity"
+    ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check.",
+    "effect": "You belong to the Torchbearer Human bloodline.<br><br>You gain the <b>Rally Aura: </b>The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that check.",
     "description": "<p><i>Others take heart from your presence, drawing courage from you and the example you set.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -76,7 +78,7 @@
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,
@@ -85,7 +87,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "de5fc13b220a2ee6"
+      "contentHash": "5cd9d2b369f53040"
     }
   },
   "effects": [],

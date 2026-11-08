@@ -1,0 +1,16 @@
+{
+  "_id": "d0e3052b6766ae2c",
+  "name": "Animal Handling",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "9dd4cfb488d65bb0"
+    }
+  },
+  "_key": "!folders!d0e3052b6766ae2c"
+}

@@ -1,0 +1,51 @@
+{
+  "_id": "73aa5fc1ccbc27be",
+  "name": "Brace an Object",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "3",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Crafting Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "Tools or suitable bracing material; an unattended door, support, container, or similar object within reach.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Crafting</i> check against a Threshold set by the GM, with the following results:<br>  <b> Critical Success</b> +3 Situation bonus to its Threshold against forcing open or breaking it for 1 minute.<br>   <b>Success</b> +2 Situation bonus to its Threshold against forcing open or breaking it for 1 minute.<br>   <b>Failure</b> No effect.<br> <b>  Critical Failure</b> The bracing jams the object; removing it takes a Interact action.<br>Bracing cannot improve worn armor, a carried shield, an Attack, or a creature’s Defense, and requires physically sufficient material.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "crafting",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "ddbafaacb8bcbd20",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e855e1611e61851b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!73aa5fc1ccbc27be"
+}

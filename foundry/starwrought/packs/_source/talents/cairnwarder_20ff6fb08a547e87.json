@@ -1,0 +1,86 @@
+{
+  "_id": "20ff6fb08a547e87",
+  "name": "Cairnwarder",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "cairnward",
+    "constellationName": "Cairnward",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Cairnward.<br><br>You know the Common and Cairnic languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "description": "<p><i>Cairnwarders share the work that keeps a mountain road passable, a shelter supplied, and a struggling traveler from being left behind.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[LANGUAGE Common, Cairnic]\n[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]",
+    "rules": [
+      {
+        "languages": [
+          "Common",
+          "Cairnic"
+        ],
+        "kind": "language",
+        "line": 1,
+        "text": "[LANGUAGE Common, Cairnic]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "toward someone who shares your Culture"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "86f0ada2eccf87c7",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "94dc1f3e49574cb1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!20ff6fb08a547e87"
+}

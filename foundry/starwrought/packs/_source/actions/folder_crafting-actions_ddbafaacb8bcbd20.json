@@ -1,0 +1,16 @@
+{
+  "_id": "ddbafaacb8bcbd20",
+  "name": "Crafting Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 9,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "4bd8e7a6cfd14680"
+    }
+  },
+  "_key": "!folders!ddbafaacb8bcbd20"
+}

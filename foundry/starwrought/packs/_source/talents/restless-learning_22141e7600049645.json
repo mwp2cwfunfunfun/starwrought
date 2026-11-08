@@ -1,0 +1,66 @@
+{
+  "_id": "22141e7600049645",
+  "name": "Restless Learning",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Gnomish Spark"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain 1 Skill Talent Point.",
+    "description": "<p><i>You return to a new interest often enough that it becomes another useful part of your life.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 1,
+      "mode": "any",
+      "scope": "Skill",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[POINT Skill]",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Skill",
+        "different": false,
+        "when": null,
+        "kind": "grant",
+        "line": 1,
+        "text": "[POINT Skill]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2a5866af4702edb7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!22141e7600049645"
+}

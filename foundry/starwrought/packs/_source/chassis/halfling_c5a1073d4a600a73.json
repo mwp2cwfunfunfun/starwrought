@@ -1,0 +1,85 @@
+{
+  "_id": "c5a1073d4a600a73",
+  "name": "Halfling",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/halfling.png",
+  "system": {
+    "kind": "ancestry",
+    "constellation": "halfling",
+    "attribute": "agility",
+    "vigor": 8,
+    "size": "small",
+    "speed": 6,
+    "senses": "",
+    "description": "<p>Halflings are small and adaptable, often finding that an attentive hand and a fortunate second chance can turn the course of a much larger problem.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Halflings are small and adaptable, often finding that an attentive hand and a fortunate second chance can turn the course of a much larger problem.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>Halflings live close to a world built by larger people. A countertop can hide a conversation; a hurried crowd can become moving walls; a door made for someone else may require both hands. Familiarity with such inconveniences often produces a practical eye for another approach. A halfling notices the smaller latch, the loose board, or the person nobody thought to ask.<br><br>Their reputed luck is harder to explain. A slipping grip catches again. A lock yields at the last adjustment. The bridge plank breaks one step behind them. Halflings disagree about whether this is a blessing, an inherited gift, or a story people tell after forgetting all the careful work that preceded it. None of those explanations guarantees an easy life, and many halflings become adventurers because they are tired of being someone else’s reassuring little exception.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character whose small stature leaves plenty of room for resourcefulness, courage, and the occasional unlikely escape, play a halfling.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Notice who has been overlooked in a crowded room.<br>• Keep a modest comfort ready for an uncertain journey.<br>• Try a practical approach after an imposing one has failed.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Underestimate how far you have already traveled.<br>• Tell the story of your escape as though luck did all the work.<br>• Relax around you before realizing how closely you have been paying attention.</p>"
+      },
+      {
+        "label": "Physical Description (at a glance)",
+        "text": "<p>Halflings usually stand two and a half to three and a half feet tall. They are Small, with varied builds, rounded or lightly pointed ears, and hands capable of very precise work. Broad feet and dense hair on the lower legs occur in many families; well-fitted boots and sturdy sandals are as common as bare feet. Their clothing and household arrangements follow the Culture and surroundings in which they live.</p>"
+      },
+      {
+        "label": "Physical Description (lifecycle)",
+        "text": "<p>Halflings reach physical adulthood at around eighteen years. Many live between one hundred and one hundred sixty years, with some surviving longer. Their physical development resembles that of humans more closely than that of the very long-lived peoples, while their extended later years let them remain part of several generations of a household.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Halflings build their own settlements and live throughout the towns and countries of other peoples. Their families may be established farmers, urban tenants, river travelers, court officials, or anything else their Culture and circumstances allow. Communities with many halfling households often pay close attention to shared access: a low latch, an extra step, and a place to sit are signs that someone has considered who will actually use a room.<br><br>Some households preserve belonging through regular meals and visits; others through routes, letters, and the expectation that a traveler can return without explaining every year away. This welcome can become intrusive when a family decides it knows what kind of life should make a person content. A halfling who leaves may be carrying the household’s hopes, escaping them, or simply curious about what lies beyond the familiar turn in the road.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Many halfling traditions give significance to ordinary acts of welcome, safe passage, and remembering the absent. Luck may be addressed as a spirit, a blessing, an ancestor’s attention, or a habit of staying alert. Their beliefs can be solemn, skeptical, or exuberant. The familiar emphasis on small comforts is often an acknowledgment that security requires work, not proof that the world is harmless.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Make room for someone the room was not built to welcome.<br>• Share what keeps you steady through a difficult day.<br>• Give a good effort the chance to become a fortunate one.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Mistake another person’s small stature for a small claim to respect.<br>• Take hospitality and repay it with contempt.<br>• Rely on luck to excuse a danger you could have prevented.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Many halfling family names remember a small landmark near an ancestral home: a gate, lane, stile, ford, or turn in a road. In Common they often combine a plant or local feature with that landmark. The family need not still live there.<br><b>• Common given names</b> Bessa, Jory, Milo, Nell, Orrin, Pella, Tamsin, Tobin.<br><b>• Common family names </b>Barleybridge, Brackenstile, Hazelturn, Littleford, Reedgate, Sunlane.</p>"
+      }
+    ],
+    "traits": [
+      "Halfling"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "e179582241ca8c65",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "36b949cd210740ff"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c5a1073d4a600a73"
+}

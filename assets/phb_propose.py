@@ -194,6 +194,74 @@ PROPOSALS["v4.21-consistency"] = {
     ],
 }
 
+PROPOSALS["v4.24-preparing"] = {
+    # Preparing (Mike, 2026-11-08, by question, on the v4.24 sync; system 0.20.0, ruling 205). The
+    # v4.24 edition changed Chapter 2 ("by spending two actions and reserving the rest") and the
+    # Prepared trait ("Spend two actions now and reserve the rest") from one action to two, and
+    # left Chapter 4's procedure ("Spend one now and set the rest aside as reserved") and the
+    # Preparing condition ("one action spent, the rest reserved") at one. Mike: two, and "redline
+    # the PHB to eliminate the inconsistency". The system spends two since 0.20.0 (SW.PREPARE_SPEND).
+    # The cover table still reads v4.23 in the v4.24 file, so the edition check reads 4.23 and the
+    # first edit brings the cover to the file's own number.
+    "from": "4.23",
+    "replace": [
+        (
+            "Preparing a three-action (or greater) Maneuver",
+            "Spend one now and set the rest aside as reserved.",
+            "Spend two now and set the rest aside as reserved."
+        ),
+        (
+            "Preparing a three-action (or greater) Maneuver",
+            "losing the action already spent",
+            "losing the actions already spent"
+        ),
+    ],
+    "rewrite": [
+        # The cover's edition line: Word holds "v4.23" across runs, so the whole line is rewritten.
+        ("PLAYTEST EDITION v4.23", "PLAYTEST EDITION v4.24"),
+    ],
+    "cell": [
+        # The Conditions table: the Preparing row's one-line entry, one to the right of its name.
+        (["Preparing"], 1, "one action spent, the rest reserved", "two actions spent, the rest reserved"),
+    ],
+    "row": [],
+    "append": [],
+    "insert_after": [],
+}
+
+PROPOSALS["v4.24-consistency"] = {
+    # The text defects the v4.24 sync found that a machine can fix (v4.24-sync-report.md lists the
+    # rest, Mike's): two typos in the Activities table, Defend's doubled clause, the Modifiers
+    # paragraph that welded two
+    # sentences, and Chapter 4's Downtime Mode still calling the Endeavors "Downtime Activities"
+    # and naming Provision, which Chapter 8 dropped.
+    "from": "4.23",
+    "replace": [
+        ("Attempt an Endure check. You can Hustle", "Intiative", "Initiative"),
+        ("Attempt an Endure check. You can Hustle", "your can roll", "you can roll"),
+        ("Your shield begins Raised.", "When an encounter begins, when an encounter begins,", "When an encounter begins,"),
+        ("each character chooses one Downtime Activity", "Downtime Activity", "Endeavor"),
+        ("Ordinary rest is not a Downtime Activity", "Downtime Activity", "Endeavor"),
+        ("engages in Downtime Activities, such as Retraining or Provisioning",
+         "Downtime Activities, such as Retraining or Provisioning", "Endeavors, such as Retraining or Training"),
+    ],
+    "rewrite": [
+        (
+            "Modifiers can grant both bonuses and penalties. When calculating Modifiers",
+            "Modifiers can grant both bonuses and penalties. Bonuses and penalties from independent circumstances,"
+            " conditions, equipment, and abilities stack, even when they share the same type. Add all applicable"
+            " modifiers to determine your final check total."
+        ),
+    ],
+    # The Necromancer's root text ("you also gain 6 Vigor", where the table and the data say 8) is
+    # left to Mike: the sentence sits in a later paragraph of the Effect cell, in words three Roots
+    # share, so neither finder can place it.
+    "cell": [],
+    "row": [],
+    "append": [],
+    "insert_after": [],
+}
+
 PROPOSALS["vigor"] = {
     # Vigor, A plus B (Mike, 2026-10-02: "Go with A plus B"). The body sets the slope: your
     # Ancestry's Vigor every level. Your first Calling pays an Opening Vigor once, at creation

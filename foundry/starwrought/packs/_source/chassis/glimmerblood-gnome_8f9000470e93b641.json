@@ -1,0 +1,30 @@
+{
+  "_id": "8f9000470e93b641",
+  "name": "Glimmerblood Gnome",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "gnome",
+    "attribute": "wits",
+    "specialAbility": "<p>You belong to the Glimmerblood Gnome Bloodline.<br><br>You gain the <b>Glimmer</b> Maneuver.<br><br>@Maneuver[Glimmer]</p>",
+    "description": "<p>A bloodline of the Gnome ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "113daacfd42e207a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8f9000470e93b641"
+}

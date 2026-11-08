@@ -187,6 +187,23 @@ def header_map(ws, wanted, unknown=None, where=""):
             unknown.append(f"{where}: unknown column '{full}' (ignored)")
     return m
 
+def header_containing(ws, word, exclude=()):
+    """The 0-based index of the first row-1 header whose text CONTAINS `word` (lower-cased) and
+    none of `exclude`, or None. How an actions index headed 'Action Type' or 'Category/Type'
+    (Mike, 2026-11-08) is read for its Type and Category columns, which no first-word rule finds."""
+    for j in range(1, ws.max_column + 1):
+        h = plain(ws.cell(1, j)).lower()
+        if word in h and not any(x in h for x in exclude): return j - 1
+    return None
+
+# The Lore template's placeholder (0.20.0): skills.xlsx's sheet is "Lore (LORE_NAME)" and its
+# Talent names carry the suffix ("Deep Knowledge (LORE_NAME)"), as does the Lore Actions row's
+# Constellation cell. The template Constellation is "Lore" and the Talent is "Deep Knowledge"; a
+# named Lore gets its field from SwActor#nameLore, never from the data. Stripped wherever it rides.
+LORE_PLACEHOLDER = re.compile(r"\s*\(\s*LORE[ _]?NAME\s*\)", re.I)
+LORE_TEMPLATE_SHEET = re.compile(r"^Lore\s*\(.*\)\s*$", re.I)
+strip_lore = lambda s: LORE_PLACEHOLDER.sub("", s or "")
+
 def header_word(ws, key_col, *words):
     """Which of `words` the header of column key_col (0-based) starts with, lower-cased; None if
     none. How a sheet headed 'Attribute' (strict) is told from one still headed 'Feeds'."""
@@ -387,35 +404,60 @@ def parse_cost(text):
         return {"cost": lo, "costMax": hi if hi != lo else "", "costMode": join, "reaction": reaction, "reactionCost": ""}
     return None
 
+# The actions-workbook index names with no row on any sheet, written to actions.json as `retired`
+# (0.20.0): the builders treat them as the sheet's, so a roster row of the name ships nowhere.
+RETIRED_BY_INDEX = []
+
 def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
     """One action per row, typed by the row's own Type cell, else its _Tree Index row
     (Name | Type | Meta note), else the sheet the row sits on. Appends to `actions`; errors block
     the write like any other. `defined` is shared across workbooks (bare lower-case name -> file),
     so the same action in two files is an error, as the same tree in two files is."""
+    # The index (0.20.0): `Name | Type | Meta note`, Mike's `Name | Action Type | Category/Type`
+    # (maneuvers.xlsx) and `Name | Type | Category` (activities.xlsx, endeavors.xlsx) all read: the
+    # Type column is any header containing "type" that is not the Category column, and the index
+    # is a fallback for a row with no Type cell of its own, never a requirement. The tool that
+    # keeps it current is assets/index_sheets.py.
     idx = wb["_Tree Index"]
-    im = header_map(idx, {"name": "name", "type": "type", "meta": "meta"})
+    im = header_map(idx, {"name": "name", "meta": "meta"})
+    tcol = header_containing(idx, "type", exclude=("categ",))
+    if tcol is not None: im["type"] = tcol
+    ccol = header_containing(idx, "categ")
+    if ccol is not None: im["cat"] = ccol
     typed = {}
     for row in idx.iter_rows(min_row=2):
         g = lambda k: blank_none(plain(row[im[k]])) if k in im and len(row) > im[k] else ""
-        if g("name"): typed[action_key(g("name"))] = {"type": g("type"), "meta": g("meta")}
+        if g("name"): typed[action_key(g("name"))] = {"type": g("type"), "meta": g("meta"), "cat": g("cat")}
     seen, no_cost = {}, []
     for ws in wb.worksheets:
         # An About sheet is notes for the author, as in the equipment workbook, not a sheet of actions.
         if ws.title in ("_Tree Index", "About"): continue
-        cm = header_map(ws, {"name": "action", "cost": "cost", "traits": "trait", "type": "type",
-                             "prereq": "prereq", "req": "requirement", "trigger": "trigger",
+        # The name column is Action, Activity or Endeavor (0.20.0: activities.xlsx and endeavors.xlsx
+        # head theirs by what the rows are). The columns Mike added on 2026-11-08 are read and
+        # carried: Constellation (the check the row rolls, read rather than inferred from the sheet),
+        # Frequency, Range, Target, Duration (an Endeavor's), Movement Speed (an Activity's Travel
+        # Speed word), Category (the Basic Actions sheet's book group), and Check and Initiative (an
+        # Activity's Constellation for the check it rolls now and for Initiative; a Constellation, a
+        # Defense, `choice`, or blank). A header none of these match is warned about by name.
+        cm = header_map(ws, {"name": ("action", "activity", "endeavor"), "cost": "cost", "traits": "trait",
+                             "type": "type", "prereq": "prereq", "req": "requirement", "trigger": "trigger",
                              "desc": "desc", "effect": "effect", "automation": "automation",
-                             "aura": "aura", "enabled": "enabled"})
+                             "aura": "aura", "enabled": "enabled", "constellation": "constellation",
+                             "frequency": "frequen", "range": "range", "target": "target",
+                             "duration": "duration", "speed": ("movement", "speed"), "category": "categ",
+                             "check": "check", "initiative": "initiative"},
+                        unknown=warnings, where=f"{fname} / {ws.title}")
         if "name" not in cm:
-            warnings.append(f"{fname} / {ws.title}: no Action column, sheet ignored"); continue
+            warnings.append(f"{fname} / {ws.title}: no Action, Activity or Endeavor column, sheet ignored"); continue
         if "effect" not in cm:
             errors.append(f"{fname} / {ws.title}: an action sheet needs Action and Effect columns"); continue
-        if "cost" not in cm: no_cost.append(ws.title)
+        # A sheet with no Cost column is named below only if a row on it actually defaulted to ❶
+        # (an Activities or Endeavors sheet has none and needs none).
         for r in ws.iter_rows(min_row=2):
             cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
             # Every plain read blanks "None", so the rule holds in every column, not just four.
             pv = lambda k: blank_none(plain(cellv(k)))
-            raw = plain(cellv("name"))
+            raw = strip_lore(plain(cellv("name")))
             if not raw: continue
             # Glyphs may ride in the name, as they do in talent names; the name itself is bare.
             name = action_bare(raw)
@@ -441,6 +483,14 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
             elif key in defined:
                 errors.append(f"{fname} / {ws.title} / {name}: also defined in {defined[key]}"); continue
             seen[key] = (ws.title, row_enabled, len(actions)); defined[key] = fname
+            # Type: the row's own cell, else the index row of that name, else the sheet. The row's
+            # cell is the authoring since 2026-11-08 (every row of Mike's sheets has one), so the
+            # index warning fires only for a row that has neither.
+            meta = typed.get(key)
+            atype = pv("type") or (meta or {}).get("type") or ws.title
+            if meta is None and not pv("type"):
+                warnings.append(f"{fname} / {ws.title} / {name}: no Type cell and not in _Tree Index; typed by its sheet name")
+            is_mode_action = atype.lower() in ("activity", "endeavor")
             cost_text = pv("cost") if "cost" in cm else ""
             if cost_text:
                 cost = parse_cost(cost_text)
@@ -450,27 +500,38 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
             else:
                 cost = parse_cost(raw) if ACTION_GLYPHS.search(raw) else None
             defaulted = cost is None
-            if defaulted: cost = {"cost": "1", "costMax": "", "costMode": "to", "reaction": False, "reactionCost": ""}
+            if defaulted and is_mode_action:
+                # An Activity or an Endeavor spends no actions: it takes a Travel Speed or a
+                # Duration instead (PHB v4.24, Chapter 8), as the roster rows it replaces did.
+                cost, defaulted = {"cost": "passive", "costMax": "", "costMode": "to", "reaction": False, "reactionCost": ""}, False
+            if defaulted:
+                cost = {"cost": "1", "costMax": "", "costMode": "to", "reaction": False, "reactionCost": ""}
+                if "cost" not in cm and ws.title not in no_cost: no_cost.append(ws.title)
             # The rich-text cells are read through their plain text first, so an Effect of "None"
             # is an empty Effect and a Description of "None" ships blank.
             effect = cell_html(cellv("effect")) if pv("effect") else ""
             if not effect:
                 errors.append(f"{fname} / {ws.title} / {name}: empty Effect"); continue
-            meta = typed.get(key)
-            atype = pv("type") or (meta or {}).get("type") or ws.title
-            if meta is None:
-                warnings.append(f"{fname} / {ws.title} / {name}: not in _Tree Index, typed by "
-                                f"{'its Type cell' if pv('type') else 'its sheet name'}")
             traits = [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", pv("traits"))) if t]
             # `workbook` says which file wrote the row, so a later run can tell whose actions are
             # missing when that file is (carry_over_absent below), and so the Foundry build can
-            # label the Item's source. `sheet` keeps the group the row sits in.
+            # label the Item's source. `sheet` keeps the group the row sits in; `category` is the
+            # row's Category cell when the sheet has one (the Basic Actions sheet's book group), else
+            # the index row's, else blank, and the builders fall back to the sheet.
             actions.append({"name": name, "type": atype, **cost,
                             "enabled": row_enabled,
                             "traits": traits,
                             "prerequisites": pv("prereq"), "requirements": pv("req"),
                             "trigger": pv("trigger"), "description": cell_html(cellv("desc")) if pv("desc") else "",
                             "effect": effect, "automation": pv("automation"),
+                            "constellation": strip_lore(pv("constellation")),
+                            "frequency": pv("frequency"), "range": pv("range"), "target": pv("target"),
+                            "duration": pv("duration"), "speed": pv("speed"),
+                            # The row's own Category cell (the Basic Actions sheet's book groups); never the
+                            # index's Category column, which is a mirror the index tool fills and whose
+                            # hand-kept cells ("Athletics Action") would split a sheet into two groups.
+                            "category": pv("category"),
+                            "check": pv("check"), "initiative": pv("initiative"),
                             "meta": (meta or {}).get("meta", ""), "costDefaulted": defaulted,
                             "sheet": ws.title, "workbook": fname})
             # The aura (0.5.1), carried only when the cell is set, as on the talent sheets.
@@ -480,7 +541,14 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
     # The rows a duplicate displaced (None above) leave the list here, in one pass.
     actions[:] = [a for a in actions if a is not None]
     for k in typed:
-        if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
+        if k not in seen:
+            # An index name with no row on any sheet (Parry, Void, Counter, Intercept, Avert Gaze on
+            # 2026-11-08: Mike deleted the blank rows and kept the names) is the workbook saying the
+            # action is its own and not shipped: it retires a roster row of the name exactly as a
+            # blank sheet row did through 0.19.0 (ruling 61), so the Reactions that became Talents in
+            # v4.21 and a Maneuver the book dropped do not come back as roster rows.
+            warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet; a roster row of the name is retired")
+            RETIRED_BY_INDEX.append(k)
     if no_cost:
         warnings.append(f"{fname}: no Cost column on {', '.join(no_cost)}; an action with no glyph in its "
                         f"name costs one action ❶ until the column exists")
@@ -778,10 +846,13 @@ def main():
         if "_Tree Index" in wb.sheetnames:
             probe = header_map(wb["_Tree Index"], {"tree": "tree", "name": "name", "type": "type"})
             if "tree" not in probe and "name" in probe:
-                # A Tree-less index with a Name column is an actions workbook. Without a Type column
-                # it is an error rather than a fall-through, so a stale actions.json can never ship.
-                if "type" not in probe:
-                    errors.append(f"{fname}: an actions _Tree Index needs Name and Type columns (Name | Type | Meta note)"); continue
+                # A Tree-less index with a Name column is an actions workbook. Its Type column
+                # (any header containing "type": Type, Action Type) is a fallback for rows with no
+                # Type cell of their own since 0.20.0, so a missing one is a warning, not the error
+                # it was through 0.19.0 (which refused Mike's renamed maneuvers.xlsx whole).
+                if header_containing(wb["_Tree Index"], "type", exclude=("categ",)) is None:
+                    warnings.append(f"{fname}: the actions _Tree Index has no Type column; every row is typed by "
+                                    f"its own Type cell or its sheet (python assets/index_sheets.py fills the index)")
                 n_before = len(actions)
                 parse_actions_workbook(wb, fname, actions, warnings, errors, defined_actions)
                 action_files.append(fname)
@@ -857,14 +928,21 @@ def main():
                 where = "has no worksheet here anyway" if name not in wb.sheetnames else "this workbook's sheet is ignored"
                 warnings.append(f"{fname} / {name}: also defined in {sources[name]}, which stands (read first); {where}")
                 continue
-            if name not in wb.sheetnames:
+            # The Lore template (0.20.0; Mike's decision of 2026-11-08): the index's `Lore` row reads
+            # skills.xlsx's sheet "Lore (LORE_NAME)", whose Talent names carry the same placeholder;
+            # the tree is "Lore" and the names lose the suffix (strip_lore), so the template the
+            # system copies for each named Lore (SwActor#nameLore) is the one the book prints.
+            sheet_name = name if name in wb.sheetnames else next(
+                (sn for sn in wb.sheetnames if name == "Lore" and LORE_TEMPLATE_SHEET.match(sn)), None)
+            if sheet_name is None:
                 if category == "Background" and "Backgrounds" in wb.sheetnames:
                     indexed.add(name)  # lives in the Backgrounds table, handled below
                 else:
                     warnings.append(f"{fname} / {name}: in _Tree Index but no worksheet yet; skipped")
                 continue
-            indexed.add(name); sources[name] = fname
-            ws = wb[name]
+            indexed.add(sheet_name); sources[name] = fname
+            ws = wb[sheet_name]
+            lore_template = sheet_name != name
             # "Attribute" (0.13.0) is the talent-level Feeds under its current name: on a sheet headed
             # so, a blank cell is an ERROR (Mike: "no Attribute cell should ever be blank"); a sheet
             # still headed "Feeds" keeps the inherit-from-the-tree rule until it is renamed too.
@@ -903,7 +981,9 @@ def main():
             nodes, root_count, root_name = [], 0, None
             for r in rows:
                 cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
-                pv = lambda k: plain(cellv(k))
+                # On the Lore template sheet every read loses the "(LORE_NAME)" placeholder.
+                pv = (lambda k: strip_lore(plain(cellv(k)))) if lore_template else (lambda k: plain(cellv(k)))
+                html = (lambda k: strip_lore(cell_html(cellv(k)))) if lore_template else (lambda k: cell_html(cellv(k)))
                 nname = pv("name")
                 if not nname: continue
                 tier = pv("tier").upper()[:1]
@@ -914,8 +994,8 @@ def main():
                 is_hroot = rootcell in ("h", "heritage")
                 requires = [s.strip() for s in re.split(r",| or ", pv("req")) if s.strip()]
                 prereqs = pv("prereq")
-                desc = cell_html(cellv("desc"))
-                effect = cell_html(cellv("effect"))
+                desc = html("desc")
+                effect = html("effect")
                 feeds_o = pv("feeds")
                 if not effect:
                     errors.append(f"{name} / {nname}: empty Effect"); continue
@@ -956,7 +1036,7 @@ def main():
                 # module. Python holds no second parser, so the two can never disagree. Line breaks
                 # inside the cell are the rule boundaries, and plain() keeps them. A cell reading
                 # "None" or a dash is an empty cell, as the action parser reads it.
-                auto = blank_none(plain(cellv("automation")))
+                auto = blank_none(pv("automation"))
                 if auto: node["automation"] = auto
                 # "Within N feet" of the carrier, drawn on the map (0.5.1). Since 0.13.0 the ring is
                 # authored as an "aura:" line in Automation; the cell still reads where a sheet has
@@ -1156,7 +1236,8 @@ def main():
     # absent ones whose actions were carried over after them.
     if action_files:
         sources = action_files + sorted({a["workbook"] for a in carried} - set(action_files))
-        json.dump({"source": sources, "actions": all_actions}, open(AOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        json.dump({"source": sources, "actions": all_actions, "retired": sorted(set(RETIRED_BY_INDEX))},
+                  open(AOUT, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
         defaulted = [a["name"] for a in all_actions if a.get("costDefaulted")]
         print(f"wrote {AOUT}: {len(all_actions)} actions from {', '.join(sources)}"
               + (f" ({len(carried)} carried over from a workbook not in data/)" if carried else "")

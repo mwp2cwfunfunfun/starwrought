@@ -1,0 +1,50 @@
+{
+  "_id": "7ba232be0f12978d",
+  "name": "Disarm",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "3",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "prerequisites": "",
+    "requirements": "You have a free hand or a weapon with the Disarm Trait, and the target must be within reach and no more than one Size larger than you.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Athletics</i> check against your target’s Evade or Guard, with the following effects, depending on how many actions you took:<br>❷ <b>Quick Disarm.</b><br>  <b> Critical Success</b> The item drops from their grip and lands in one of their squares.<br>   <b>Success</b> Their grip is loosened: they suffer a -2 Situation penalty to attacks with it, and future Disarm attempts against them gain a +2 Situation bonus, until they spend an Interact to resettle their grip.<br>   <b>Failure</b> No effect.<br>   <b>Critical Failure</b> You overcommit and are Off-Guard until your next Opportunity.<br>❸ <b>Wrench</b>.<br> <b>  Critical Success</b> The item flies from their grip and lands 1d10 feet away, in a direction of your choosing.<br>   <b>Success</b> The item drops from their grip and lands in one of their squares.<br>   <b>Failure</b> You overcommit and are Wrong-Footed to your target until your next Opportunity.<br>   <b>Critical Failure</b> You overcommit and are Off-Guard until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": "evade"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "66b8c78eba5f4792"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7ba232be0f12978d"
+}

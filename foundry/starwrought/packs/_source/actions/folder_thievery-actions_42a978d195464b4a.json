@@ -1,0 +1,16 @@
+{
+  "_id": "42a978d195464b4a",
+  "name": "Thievery Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 19,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "f364538c924355a9"
+    }
+  },
+  "_key": "!folders!42a978d195464b4a"
+}

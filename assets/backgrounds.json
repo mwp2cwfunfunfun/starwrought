@@ -19,6 +19,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Diplomacy trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "society",
+    "constellationName": "Society",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Society trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -40,6 +78,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Acrobatics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -63,6 +139,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Animal Handling trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Medicine trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -84,6 +198,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Crafting trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Medicine trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -107,6 +259,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Crafting trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -128,6 +318,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Animal Handling trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Performance trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -151,6 +379,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Acrobatics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "thievery",
+    "constellationName": "Thievery",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Thievery trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -172,6 +438,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -195,6 +499,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Performance trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -216,6 +558,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Acrobatics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -239,6 +619,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -260,6 +678,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "thievery",
+    "constellationName": "Thievery",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Thievery trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -283,6 +739,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Acrobatics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Performance trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -305,6 +799,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Intimidation trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -312,12 +844,12 @@
   "rarity": "Common",
   "enabled": true,
   "desc": "<i>You studied how structures carried weight and how machines turned effort into work. You learned to test a promising design against measurements before trusting anyone's life to it.</i>",
-  "effect": "You become Trained in Crafting and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Engineering Lore, Architecture Lore, Siegeworks Lore.",
-  "automation": "[Crafting trained][Investigation trained][Lore trained]",
+  "effect": "You become Trained in Crafting and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Engineering Lore, Architecture Lore, Siegeworks Lore.",
+  "automation": "[Crafting trained][Insight trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Crafting and Investigation"
+     "Crafting and Insight"
     ],
     "extra": 0
    },
@@ -326,6 +858,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Crafting trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -349,6 +919,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Diplomacy trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Performance trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -370,6 +978,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "acrobatics",
+    "constellationName": "Acrobatics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Acrobatics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "thievery",
+    "constellationName": "Thievery",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Thievery trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -393,6 +1039,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Diplomacy trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -414,6 +1098,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Animal Handling trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -437,6 +1159,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -458,6 +1218,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Medicine trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -481,6 +1279,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "thievery",
+    "constellationName": "Thievery",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Thievery trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -502,6 +1338,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "guile",
+    "constellationName": "Guile",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Guile trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -525,6 +1399,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Medicine trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -546,6 +1458,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Animal Handling trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -569,6 +1519,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Medicine trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -591,6 +1579,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Diplomacy trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -598,12 +1624,12 @@
   "rarity": "Common",
   "enabled": true,
   "desc": "<i>You made a living finding what people had concealed, from missing property to the explanation for a death. You learned to test a convincing account against what a place and its people actually revealed.</i>",
-  "effect": "You become Trained in Insight and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Legal Lore, Criminal Networks Lore, Forensics Lore.",
-  "automation": "[Insight trained][Investigation trained][Lore trained]",
+  "effect": "You become Trained in Insight and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Legal Lore, Criminal Networks Lore, Forensics Lore.",
+  "automation": "[Insight trained][Society trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Insight and Investigation"
+     "Insight and Society"
     ],
     "extra": 0
    },
@@ -612,6 +1638,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "society",
+    "constellationName": "Society",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Society trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -635,6 +1699,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Crafting trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "thievery",
+    "constellationName": "Thievery",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Thievery trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -657,13 +1759,51 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "society",
+    "constellationName": "Society",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Society trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Intimidation trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
   "name": "Merchant",
   "rarity": "Common",
   "enabled": true,
-  "desc": "<i>Your livelihood depended on finding buyers and giving them a reason to return. You learned how much a promise could be worth—and how expensive it became when someone failed to keep it.</i>",
+  "desc": "<i>Your livelihood depended on finding buyers and giving them a reason to return. You learned how much a promise could be worth, and how expensive it became when someone failed to keep it.</i>",
   "effect": "You become Trained in Diplomacy and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Commerce Lore, Lore of a traded commodity, Lore of a merchant guild.",
   "automation": "[Diplomacy trained][Society trained][Lore trained]",
   "grants": [
@@ -678,6 +1818,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Diplomacy trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "society",
+    "constellationName": "Society",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Society trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -701,6 +1879,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -708,12 +1924,12 @@
   "rarity": "Common",
   "enabled": true,
   "desc": "<i>You studied living things in the places they grew and hunted, preserving specimens and comparing your observations. You learned to recognize signs of injury or illness that a casual observer would miss.</i>",
-  "effect": "You become Trained in Medicine and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Botany Lore, Animal Anatomy Lore, Lore of a particular ecosystem.",
-  "automation": "[Medicine trained][Investigation trained][Lore trained]",
+  "effect": "You become Trained in Medicine and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Botany Lore, Animal Anatomy Lore, Lore of a particular ecosystem.",
+  "automation": "[Medicine trained][Survival trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Medicine and Investigation"
+     "Medicine and Survival"
     ],
     "extra": 0
    },
@@ -722,6 +1938,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Medicine trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -745,6 +1999,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "diplomacy",
+    "constellationName": "Diplomacy",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Diplomacy trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "society",
+    "constellationName": "Society",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Society trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -766,6 +2058,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Intimidation trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -789,6 +2119,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Crafting trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Performance trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -811,6 +2179,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -818,12 +2224,12 @@
   "rarity": "Common",
   "enabled": true,
   "desc": "<i>You studied old accounts and disputed their meaning with people just as certain as you were. An unanswered question eventually gave you a reason to leave the safety of your books.</i>",
-  "effect": "You become Trained in Investigation and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of a region's history, Astronomy Lore, Lore of an ancient civilization.",
-  "automation": "[Investigation trained][Society trained][Lore trained]",
+  "effect": "You become Trained in Insight and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of a region's history, Astronomy Lore, Lore of an ancient civilization.",
+  "automation": "[Insight trained][Society trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Investigation and Society"
+     "Insight and Society"
     ],
     "extra": 0
    },
@@ -833,6 +2239,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "society",
+    "constellationName": "Society",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Society trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -840,12 +2284,12 @@
   "rarity": "Common",
   "enabled": true,
   "desc": "<i>You copied and preserved documents, learning to recognize a careless source and mend a damaged page. Somewhere among other people's words, you found a matter that demanded action.</i>",
-  "effect": "You become Trained in Crafting and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Calligraphy Lore, Bookbinding Lore, Lore of a particular archive.",
-  "automation": "[Crafting trained][Investigation trained][Lore trained]",
+  "effect": "You become Trained in Crafting and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Calligraphy Lore, Bookbinding Lore, Lore of a particular archive.",
+  "automation": "[Crafting trained][Insight trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Crafting and Investigation"
+     "Crafting and Insight"
     ],
     "extra": 0
    },
@@ -854,6 +2298,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Crafting trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -877,6 +2359,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -898,6 +2418,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Intimidation trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  },
@@ -921,6 +2479,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Animal Handling trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Athletics trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -943,6 +2539,44 @@
     ],
     "extra": 0
    }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "stealth",
+    "constellationName": "Stealth",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Stealth trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Survival trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
+   }
   ]
  },
  {
@@ -964,6 +2598,44 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
+   }
+  ],
+  "rules": [
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "insight",
+    "constellationName": "Insight",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Insight trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Skill",
+    "constellation": "intimidation",
+    "constellationName": "Intimidation",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Intimidation trained]"
+   },
+   {
+    "n": 1,
+    "scope": "Lore",
+    "constellation": "lore",
+    "constellationName": "Lore",
+    "different": false,
+    "when": null,
+    "trained": true,
+    "kind": "grant",
+    "line": 1,
+    "text": "[Lore trained]"
    }
   ]
  }

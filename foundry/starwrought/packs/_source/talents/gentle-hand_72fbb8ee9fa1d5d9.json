@@ -1,0 +1,56 @@
+{
+  "_id": "72fbb8ee9fa1d5d9",
+  "name": "Gentle Hand",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Animal Handling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +2 Situation bonus to Calm Animal.",
+    "description": "<p><i>Animals settle when your familiar voice and touch give them something to follow.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "d0e3052b6766ae2c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7b18125a3e69a724"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!72fbb8ee9fa1d5d9"
+}

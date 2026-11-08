@@ -9,13 +9,17 @@
     "costMode": "to",
     "reaction": false,
     "reactionCost": "",
-    "category": "Talent Maneuvers",
+    "category": "Culture Actions",
     "basic": false,
     "traits": [],
-    "prerequisites": "",
+    "prerequisites": "Oathbound",
     "requirements": "",
     "trigger": "",
-    "description": "<p>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</p>",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>When someone breaks faith with you, certainty steadies your hand and steels your resolve.</i></p>",
     "effect": "<p>Name one creature that has either formally challenged you, or that has broken a bargain or a truce with you. You gain a +1 Condition bonus to Attack checks and Defense checks against that creature until the encounter ends.</p>",
     "automation": "[EFFECT MARK: enemies]\n[EFFECT ATK: 1 condition; IFT: MARKED]\n[EFFECT DEF: 1 condition; IFT: MARKED]",
     "rules": [
@@ -70,14 +74,14 @@
     ],
     "source": "data/maneuvers.xlsx"
   },
-  "folder": "678f65cc481b1fe1",
+  "folder": "fae6e978a5c0d3c5",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "9b9ac019a6ce9c3d"
+      "contentHash": "b10adaa6a9118e1e"
     }
   },
   "effects": [],

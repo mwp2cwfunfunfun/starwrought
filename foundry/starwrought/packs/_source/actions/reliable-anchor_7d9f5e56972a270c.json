@@ -1,0 +1,50 @@
+{
+  "_id": "7d9f5e56972a270c",
+  "name": "Reliable Anchor",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": false,
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "Reliable Anchor",
+    "requirements": "You have a free hand and are not in danger of falling, yourself.",
+    "trigger": "A willing creature no more than one Size Larger that you falls within your reach.",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>When a companion loses their hold, yours is the hand they find.</i></p>",
+    "effect": "<p>Attempt an <i>Athletics</i> check against Threshold 15, with the following effects:<br>   <b>Critical Success </b>You catch a part of the creature and help it swing into an adjacent unoccupied space.<br>   <b>Success</b> You catch a part of the creature, and you and the creature are Off-Guard until your or it spends an action to swing it into an adjacent unoccupied space.<br>  <b> Failure </b>or <b>Critical Failure</b> You do not catch the creature.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "53b21b7398594ec8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7d9f5e56972a270c"
+}

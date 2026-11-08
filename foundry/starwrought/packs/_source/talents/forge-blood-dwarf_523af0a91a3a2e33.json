@@ -1,0 +1,56 @@
+{
+  "_id": "523af0a91a3a2e33",
+  "name": "Forge-Blood Dwarf",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Dwarven Endurance"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You belong to the Forge-Blood Dwarf Bloodline.<br><br><b>Forge Resistance.</b> You gain Resistance 2 to fire damage. It becomes Resistance 4 at Expert Origin rank, 6 at Master, and 8 at Legendary. This reduces damage only; it does not make smoke safe to breathe or automatically prevent other effects of heat.",
+    "description": "<p><i>A lasting warmth beneath your skin and metallic tones in your hair mark a lineage altered by ancient forge fires.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "472d6d999503da6d"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!523af0a91a3a2e33"
+}

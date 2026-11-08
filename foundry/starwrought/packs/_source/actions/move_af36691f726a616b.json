@@ -1,0 +1,45 @@
+{
+  "_id": "af36691f726a616b",
+  "name": "Move",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Movement Maneuvers",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Move up to your Speed.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "7a1baa02eae18ebc",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "175e70960e8bad85"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!af36691f726a616b"
+}

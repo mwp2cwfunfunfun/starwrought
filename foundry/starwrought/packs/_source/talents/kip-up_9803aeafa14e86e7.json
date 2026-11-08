@@ -1,6 +1,6 @@
 {
   "_id": "9803aeafa14e86e7",
-  "name": "Kip Up ❶",
+  "name": "Kip Up",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,9 +15,9 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Stand up. This movement doesn't trigger Reactions.",
-    "description": "",
-    "cost": "1",
+    "effect": "You gain the Kip Up Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Kip Up ❶</strong></p><p><strong>Requirements</strong> You are Prone or Supine.</p><p>Stand up. This movement doesn't trigger Reactions.</p></div>",
+    "description": "<p><i>You rise with enough momentum to carry yourself clear.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
     "reaction": false,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Kip Up]",
+    "rules": [
+      {
+        "name": "Kip Up",
+        "slug": "kip-up",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Kip Up]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d3906910e23f1ee2"
+      "contentHash": "d9fa4d2e8c2ba7d4"
     }
   },
   "effects": [],

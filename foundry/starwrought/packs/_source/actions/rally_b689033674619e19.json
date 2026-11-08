@@ -1,0 +1,52 @@
+{
+  "_id": "b689033674619e19",
+  "name": "Rally",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Diplomacy Actions",
+    "basic": false,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Mental"
+    ],
+    "prerequisites": "Rally",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You bring a companion’s attention back to what they can still do.</i></p>",
+    "effect": "<p>Attempt a <i>Diplomacy </i>check vs. a Threshold set by the GM (typically 15), with the following effects:<br><b>   Critical Success </b>One willing ally within 30 feet who hears you gains a +1 Situation bonus to their next Defense before your next Opportunity, and may immediately Recenter.<b><br>   Success</b> One willing ally within 30 feet who hears you gains a +1 Situation bonus to their next Defense before your next Opportunity.<br><b>   Failure</b> or <b>Critical Failure</b> No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "diplomacy",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "4e20ce19d02f6ff4",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a9a6945832a301c3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b689033674619e19"
+}

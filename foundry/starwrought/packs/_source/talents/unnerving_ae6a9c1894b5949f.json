@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "A creature you have Demoralized this encounter takes a −1 Situation penalty to attacks against you for the rest of it.",
-    "description": "",
+    "effect": "A creature you have Demoralized this encounter takes a -1 Situation penalty to attacks against you until they Recenter.",
+    "description": "<p><i>An opponent who has felt your threat cannot entirely put it out of mind.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "122698d6a8541059",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f00a5de3a65f652d"
+      "contentHash": "34a881d2880a12f7"
     }
   },
   "effects": [],

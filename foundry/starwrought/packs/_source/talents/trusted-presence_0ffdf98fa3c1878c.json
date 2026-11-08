@@ -1,0 +1,56 @@
+{
+  "_id": "0ffdf98fa3c1878c",
+  "name": "Trusted Presence",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Animal Handling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Calm Animal suppresses 2 points of Frightened on a success, or the entire Frightened value on a critical success, until the end of the animal’s next Opportunity. The value then returns with any normal reductions that occurred during that time. This does not remove or grant immunity to the source of the fear.",
+    "description": "<p><i>An animal in your care holds to your cue through a moment of panic.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "d0e3052b6766ae2c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "51f46f77da3bd190"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0ffdf98fa3c1878c"
+}

@@ -1,0 +1,56 @@
+{
+  "_id": "332e5f6aad1e0428",
+  "name": "Light Recovery",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Elvendom"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "Once per encounter, when you Stand, you may immediately Step up to 1 foot as part of the same Maneuver. You must end in a legal space and obey the normal Step restrictions.",
+    "description": "<p><i>You rise from a fall without surrendering the space you need to move.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "51bb1eb8817981c2"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!332e5f6aad1e0428"
+}

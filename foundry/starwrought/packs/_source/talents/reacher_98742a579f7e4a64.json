@@ -13,7 +13,7 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "effect": "You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
     "description": "<p><i>Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -66,7 +66,7 @@
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "d11b952536b11224",
   "sort": 0,
@@ -75,7 +75,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "da568cc0797c4512"
+      "contentHash": "55906845248835a8"
     }
   },
   "effects": [],

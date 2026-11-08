@@ -1,0 +1,54 @@
+{
+  "_id": "9cfcca98ddabeca4",
+  "name": "Performance Training",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Skill. Use this Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to this Constellation’s Proficiency Rank.",
+    "description": "<p><i>You have learned how to hold a room and recover when a performance takes an unexpected turn.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "f54f067a4c4c15f2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "cc1edacf6a4e79cc"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9cfcca98ddabeca4"
+}

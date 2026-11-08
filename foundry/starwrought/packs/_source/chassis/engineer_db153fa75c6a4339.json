@@ -1,0 +1,36 @@
+{
+  "_id": "db153fa75c6a4339",
+  "name": "Engineer",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Crafting",
+      "Insight",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Crafting and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Engineering Lore, Architecture Lore, Siegeworks Lore.</p>",
+    "description": "<p><i>You studied how structures carried weight and how machines turned effort into work. You learned to test a promising design against measurements before trusting anyone's life to it.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6d470b455ca9cef7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!db153fa75c6a4339"
+}

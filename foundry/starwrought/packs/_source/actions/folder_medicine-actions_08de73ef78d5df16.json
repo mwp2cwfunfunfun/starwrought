@@ -1,0 +1,16 @@
+{
+  "_id": "08de73ef78d5df16",
+  "name": "Medicine Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 15,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "31376612b9a6a5ea"
+    }
+  },
+  "_key": "!folders!08de73ef78d5df16"
+}

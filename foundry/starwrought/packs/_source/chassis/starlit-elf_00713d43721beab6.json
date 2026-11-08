@@ -1,0 +1,30 @@
+{
+  "_id": "00713d43721beab6",
+  "name": "Starlit Elf",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "elf",
+    "attribute": "wits",
+    "specialAbility": "<p>You belong to the Starlit Elf Bloodline.<br><br><b>Starlit Composure. </b>Gain a +1 Condition bonus to Awareness and Guard checks vs. Beguilements.</p>",
+    "description": "<p>A bloodline of the Elf ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "51037336b3a0874a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!00713d43721beab6"
+}

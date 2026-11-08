@@ -88,6 +88,16 @@ and why (mis-typed, no kind yet, not yet readable), clears its own red when the 
 in the project root. `--dry-run` reports only. The workbooks are loaded with `rich_text=True`, so
 the Effect cells' formatting survives the save; a workbook open in Excel is not written.
 
+**Also not a step: `python assets/index_sheets.py`** (0.20.0; Mike, 2026-11-08: "I need you to
+generate/re-generate/update the _Tree Index tabs in all of them"). It brings every workbook's
+`_Tree Index` up to the sheets it holds: a tree sheet with no row gets one with its Category
+inferred from the workbook and its other cells blank and named in the report (Primary Attribute
+and Parent are hand-kept, never guessed); an actions workbook's index gets one row per action with
+the row's Type and the sheet's Category or name; an index row whose sheet or row is gone is
+reported with the nearest name, never dropped; filled cells are never touched; `rich_text=True`;
+saved only when a cell changed, after a copy to `backup/index-<date>/`; `--dry-run` reports only;
+a workbook open in Excel is skipped. A sheet named `Lore (…)` is the index's `Lore` row.
+
 `build_foundry.mjs` sits next to `build_phb.js` for the same reason: both read `trees.json`,
 `actions.json` and `roster.json` (and `build_foundry.mjs` reads `equipment.json`), so both must
 re-run whenever any of those change. It writes `packs/_source/*.json` and then
@@ -460,11 +470,12 @@ Exploration Activity is `system.exploration { activity, constellation }` on the 
 compendium `_id` of the Activity Item in the Actions pack's Exploration Mode folder, "" meaning
 Travel; Investigate's chosen slug), written directly by the owner or the GM with `swAnnounced`
 and said in one line by the member (`setActivity`; ruling 106: the pick is the character's, and
-an owner may write their own Actor, so no relay and no GM connected). The Activity data is two
-positional columns on the roster's hand-kept `explorationActions` rows (column 4 what the Activity
-rolls now, column 5 what it rolls for Initiative: "", a Constellation name as the trees print it,
-or `choice` for the member's own pick; the Avoid Notice row added as the eighth, ruling 103),
-which `build_foundry.mjs` writes onto the Activity Item under its existing id as
+an owner may write their own Actor, so no relay and no GM connected). The Activity data is the
+rows of `data/activities.xlsx` since 0.20.0 (PHB v4.24's Activities table; two positional columns
+on the roster's hand-kept `explorationActions` rows through 0.19.0, ruling 103): the Movement
+Speed, Check and Initiative columns (Check and Initiative "", a Constellation or Defense name as
+the trees print it, or `choice` for the member's own pick), which `build_foundry.mjs` writes onto
+the Activity Item under the id the roster row had as
 `system.exploration { travel, check, initiative, effect }` and, for a named check-now
 Constellation, `system.check`; the `effect` tags scout and defend are set by the row's name, since
 the Scout's bonus and Step and the Defender's shield are not Constellations (ruling 104;
@@ -883,6 +894,22 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.20.0 (Mike, 2026-11-08; rulings 205 to 214): the PHB v4.24 sync.** The first handbook sync
+since v4.21 (`v4.24-sync-report.md`; planned in `lucky-kindling-walrus.md`, Mike's four decisions
+by question). **Preparing spends two actions now** (ruling 205; `SW.PREPARE_SPEND`; Chapter 2 and
+the Prepared trait say two, Chapter 4 and the Preparing condition still say one and are redlined
+in `Starwrought_Players_Handbook_v4.24_preparing_proposal.docx`). **Three kinds of action**
+(ruling 209): a row typed Activity is an Exploration Mode Item and one typed Endeavor a Downtime
+Mode Item wherever it sits, from `data/activities.xlsx`, `data/endeavors.xlsx` and the Skill
+sheets, under the ids the roster rows had; the roster blocks are gone; Hustle rolls Endure;
+Provision is gone (ruling 211). **The row's Type wins and `assets/index_sheets.py` keeps every
+`_Tree Index` current** (ruling 206). **Every ungranted Maneuver is basic** (ruling 207). **The
+Lore template is skills.xlsx's sheet** (ruling 208). **The Constellation column is the check a
+row rolls** (ruling 210). The Necromancer's Opening Vigor is 8 (ruling 212), Supine waits for a
+definition (213), Look Harmless's Reach limit is 1 (214). The book's new Ancestries, Cultures and
+Skills, which Mike authored in the sheets between the 5th and the 8th, reach the pack sources for
+the first time with this release.
+
 **0.19.0 (Mike, 2026-11-08; rulings 199 to 204): the playtest's eight.** Planned first
 (`playtest-plan-0.19.0.md`; Mike's four decisions by question) and built in one release; no data
 moved and the rulings are system decisions in the 0.19.0 changelog entry. **A fighter with no action
@@ -1021,11 +1048,36 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   `equipment.json` and ships only the enabled rows under the same document ids. Built from the
   handbook's Chapter 5 tables; the handbook wins when they disagree, and the sheet needs a pass.
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
-- **`data/maneuvers.xlsx` is the actions workbook** (the format Mike's, 2026-09-26, as
-  `data/actions.xlsx`; the file his since 2026-10-01, 0.5.1, T17; the only one since 2026-10-03).
-  The converter recognises an actions workbook by its `_Tree Index` carrying `Name | Type | Meta
-  note` instead of `Tree | Category`; every other sheet in it holds one action per row. Columns
-  (first word wins): Action, Cost, Traits, Type,
+- **The three actions workbooks since 0.20.0 (PHB v4.24, Chapter 8; Mike's restructure of
+  2026-11-07, read as written, rulings 206 to 210):** `data/maneuvers.xlsx` (a Basic Actions sheet
+  whose Category column carries the book groups, Ancestry and Culture Actions sheets, one
+  `<Skill> Actions` sheet per Skill, every row naming its Constellation), `data/activities.xlsx`
+  (the eight Exploration Activities: Activity, Movement Speed, Check, Initiative) and
+  `data/endeavors.xlsx` (Retrain and Train, with a Duration). An actions workbook is a `_Tree
+  Index` with a Name column and no Tree column; its Type column is any header containing "type"
+  (`Type`, `Action Type`; `Category/Type` is the Category) and optional: the row's own Type cell
+  types it (Maneuver, Talent Maneuver, Activity, Endeavor), the index is the fallback, the sheet
+  the last; a row's group is its own Category cell else its sheet, never the index's Category
+  column; an index name with no row on any sheet retires a roster row of the name as a blank sheet
+  row did (`actions.json` `retired`). `python assets/index_sheets.py` regenerates every workbook's
+  index from its sheets (tree workbooks too), never dropping a row and never touching a filled
+  cell. The name column is
+  Action, Activity or Endeavor; Constellation, Frequency, Range, Target, Duration, Movement Speed,
+  Category, Check and Initiative are carried to `actions.json` and the Item (`frequency`, `range`,
+  `target`, `duration`). An Activity is an Exploration Mode Item under its old `exploration:` id
+  and an Endeavor a Downtime Mode one under `downtime:`, whichever sheet it sits on; the roster's
+  `explorationActions` and `downtimeActions` blocks are gone. Basic (ruling 207): every Maneuver,
+  Activity or Endeavor a Talent does not grant (`[MANEUVER X]`, `@Maneuver[X]`, or Type `Talent
+  Maneuver`). The Constellation column is the check the row rolls when the Effect attempts or
+  rolls one, the Defense read from "vs." or "against" in the Effect (ruling 210). The "(LORE_NAME)"
+  placeholder is stripped from names and Constellation cells, and the index's `Lore` row reads
+  skills.xlsx's `Lore (LORE_NAME)` sheet (ruling 208; `lore.xlsx` deleted by Mike). What follows
+  is the history of the one workbook through 0.19.0.
+- **`data/maneuvers.xlsx` was the one actions workbook** (the format Mike's, 2026-09-26, as
+  `data/actions.xlsx`; the file his since 2026-10-01, 0.5.1, T17; the only one 2026-10-03 to
+  2026-11-07). The converter recognised an actions workbook by its `_Tree Index` carrying
+  `Name | Type | Meta note` instead of `Tree | Category`; every other sheet in it holds one action
+  per row. Columns (first word wins): Action, Cost, Traits, Type,
   Prerequisites, Requirements, Trigger, Description, Effect, Automation. Cost takes glyphs or
   words (`◆`, `◆ to ◆◆◆`, `↺`, `◇`, `1 or 3`, `reaction`); without a Cost column the glyphs in the
   name are read, and with neither the action costs one action and the converter says which ones.
@@ -1096,18 +1148,22 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   `Starwrought_Players_Handbook_v4.21_v4.21-consistency_proposal.docx`; the rest are Mike's.
 - **The Example of Play** was rewritten in v4.21 around Set Your Feet, Gain Control and Protection
   before doubling, and still names Counter and Void in one exchange. Its sums were not re-audited.
-- **Aid ships and 39 Basic Maneuvers wait on Mike enabling their rows in `data/maneuvers.xlsx`**
-  (0.5.1, at his request: "get rid of all of these"; Aid's row set to Yes on 2026-10-03). v4.21's
-  Aid matches the sheet's single-action form, so the v4.10 difference (ruling 10) is closed. The
-  Parry, Void, Counter and Intercept rows are retired: Reactions are Talents since v4.21, and
-  Intercept rides on Melee Training's text. The compendium docx and the web app print every
-  Maneuver under one "Basic Action" heading; in Foundry the book groups survive, since the builder
-  takes an action's group from the sheet it sits on. Aid is not in the workbook's `_Tree Index`,
-  so the converter types it from its Type cell and warns every run until Mike adds the row.
-  Recenter, Raise a Shield, Lower the Visor and Raise the Visor have system behaviour behind them
-  (`documents/maneuvers.mjs`) and need their rows enabled to appear as Items.
+- **The action sheets since 0.20.0 (Mike's restructure of 2026-11-07, read as written):** 82 of
+  83 rows ship (Drop Prone's row is blank); Parry, Void, Counter, Intercept and Avert Gaze are
+  `_Tree Index` names with no row on any sheet, reported each run (the Reactions are Talents since
+  v4.21). Seventeen rows typed "Maneuver" are granted by a Talent and the build reads them as not
+  basic, naming them each run, until Mike retypes them "Talent Maneuver" (Steady the Line, Quench
+  the Ember, Glimmer, Quick Tongue, Oathbound, Tumbling Retreat, Kip Up, Sure Seat, Bull Rush,
+  Reliable Anchor, Rally, Talk Them Down, Command the Field, Feinting Step, Battle Cry, No Quarter,
+  Lost in the Dark). Rescue Haul is granted by no Talent's block or marker, so it is basic until
+  the Cairnward Talent names it. Brace an Object sits on the Crafting and the Guile sheets (the
+  first stands).
+  Lower the Visor and Raise the Visor have system behaviour behind them (`documents/maneuvers.mjs`)
+  and no row yet. Murovian is indexed in `cultures.xlsx` with no sheet and the book has no
+  Murovian Culture: Mike's to write or to delete.
 - **Two `Enabled?` loose ends for Mike:** Drilled is enabled while the Weapon Familiarity it hands
-  over free is not (the converter warns), and `lore.xlsx` has no column, so Lore ships whole.
+  over free is not (the converter warns), and the Lore template sheet in `skills.xlsx` has no
+  column, so Lore ships whole.
 - **Sleeping in armor without Comfort is not implemented.** v4.21: Fatigued equal to your Load
   Strain, to a maximum of 3, on waking. The rest card restores Vigor and clears Fatigued and
   nothing else; the party's rest confirm names who slept in such a piece; the rule is the table's.
@@ -1223,22 +1279,52 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   (their `Enabled?` cells blank), so Spellshaper, Blood Mage, Necromancer, Summoner and Spellblade
   and their Talents left the pack sources in 0.13.0; setting the rows to Yes restores them under
   the same ids. Whether that was meant is his to say.
-- **PHB v4.22 and v4.23 are on the shelf, unsynced** (Mike's edits in progress, 2026-11-05): the
-  full pipeline exits 1 at the drift gate and the content loop warns, until the sync.
+- **PHB v4.24 is synced (0.20.0, 2026-11-08); its defects are Mike's** (`v4.24-sync-report.md`):
+  the cover reads v4.23, Chapter 3's Culture section has two `### Kestrel Reach` headings, Supine is
+  in the Conditions table with no definition (not implemented, ruling 213), the Necromancer's root
+  text says 6 Opening Vigor against the table's and the data's 8 (ruling 212), Chapter 4's Downtime
+  Mode still says "Downtime Activities" and names Provision, the Exploration trait says half Speed
+  while Travel is Full, and Blade Brake's "forced movemt" and the Lore template's "side by sid" are
+  typos the proposal tool could not place. Two redlines wait:
+  `Starwrought_Players_Handbook_v4.24_preparing_proposal.docx` and
+  `Starwrought_Players_Handbook_v4.24_consistency_proposal.docx`. **The release pipeline with no
+  flag exits 1 at `parse_rules`** until the eight red Automation cells read (release mode stops on
+  the first unreadable line, Halfling Fortune's; `automation-cells-report.md`): the stamp was made
+  with `--check --accept-phb` and `--check` passes.
 - **The test world carries 0.15.0's fixtures**: a "Test Mud" region with the Difficult terrain
   behavior east of Tess, a world "Demoralize ❶" action Item on Wren with its check against Guard,
   Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
   Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
   Combat was deleted (again after the 0.19.0 live drive, which also left its probe cards in the
-  chat log and put testpc6's ownership back to default). Nothing in the repository depends on them.
+  chat log and put testpc6's ownership back to default; the 0.20.0 drive left its Prepared and
+  Abandon cards too, and deleted its probe party and probe character). The world has no party
+  Actor. Nothing in the repository depends on them.
 - **0.19.0 leaves to the table or to Mike:** a Form Bind control for a Bind the GM narrates (the
   card forms them) and Close ❶ as a Maneuver (both declined for now); the out-of-turn permit is
   one Maneuver this round and a player with no GM connected waits; the glance shows an adversary's
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
-  one driven. The release pipeline still exits 1 at the drift gate (v4.24 on the shelf) and the
-  converter at `data/maneuvers.xlsx`'s renamed index column; the first content loop after Mike's
-  restructure needs the v4.24 sync.
+  one driven.
+
+Cleared 2026-11-08 (the PHB v4.24 sync, system 0.20.0; rulings 205 to 214 in `v4.24-sync-report.md`;
+planned in `lucky-kindling-walrus.md`, Mike's four decisions by question: two actions now with a
+redline, the row's Type with an index tool, every ungranted Maneuver basic, skills.xlsx's Lore
+sheet): the converter refusing `data/maneuvers.xlsx` over its renamed index and ignoring
+`activities.xlsx` and `endeavors.xlsx`, now reading all three as Mike wrote them (the Type column
+optional, nine new columns carried, the name column Action, Activity or Endeavor); the
+`_Tree Index` tabs, now regenerated by `assets/index_sheets.py` (52 rows added across four
+workbooks, the seven Skills with their attributes from the book); the roster's `explorationActions`
+and `downtimeActions` blocks, now the two workbooks' rows under the same document ids;
+Preparing's one action, now two; the `basic` flag reading a Type that no row carries, now every
+ungranted Maneuver; the Lore template in a deleted workbook, now skills.xlsx's sheet with the
+placeholder stripped; the five Backgrounds training "Investigation", the Stealth row misnamed
+"Lost in the Noise", the Necromancer's 6, the Merchant's em-dash, all brought to the book; and the
+pack sources, last written 2026-11-05, now carrying the Dwarf, Elf, Gnome, Halfling, Cairnward,
+Lethra and seven Skill Constellations Mike authored since. Checked by 112 self-test checks, the
+content loop (8 red cells of 137, the genuine slips), the smoke test, the style check, the slow
+release steps run one by one and the test world (the 0.20.0 changelog entry and the report say
+what). `data/SYNC.json` is stamped v4.24 with `--check --accept-phb`; the release pipeline with
+no flag stops at `parse_rules` on the first red cell until Mike mends them.
 
 Cleared 2026-11-05 (the code review of 0.15.0 to 0.18.0, system 0.18.1; Mike: "do a thorough code
 review for mistakes, duplications, AND for performance improvements", then "Fix all 21"; the 0.18.1

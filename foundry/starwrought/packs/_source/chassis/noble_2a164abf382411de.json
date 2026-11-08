@@ -1,0 +1,36 @@
+{
+  "_id": "2a164abf382411de",
+  "name": "Noble",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Diplomacy",
+      "Society",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Diplomacy and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Heraldry Lore, Genealogy Lore, Lore of a ruling house.</p>",
+    "description": "<p><i>You were raised with a family name that opened doors and carried obligations through them. You learned how to ask with authority and how much a household's reputation could demand.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "01339d2e1c7e7063"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2a164abf382411de"
+}

@@ -186,7 +186,7 @@
 </head>
 <body>
 <header>
-  <span class="logo">STARWROUGHT &#10022;</span><span class="ver">COMPANION · Playtest v4.21</span>
+  <span class="logo">STARWROUGHT &#10022;</span><span class="ver">COMPANION · Playtest v4.24</span>
   <nav class="tabs">
     <button class="tab" data-t="chars">Characters</button>
     <button class="tab" data-t="wizard">Create</button>
@@ -583,7 +583,7 @@ const TORVA = {id:"sample-mira", name:"Mira of the Long Road", level:1, mileston
  sparks:{}, languages:["Common","Reachspeak"],
  gear:"Full leather harness, cap to leggings - rapier - chalk, sash and juggling knives - circus poster of her old troupe",
  notesTxt:"Circus Lore covers troupes, rigging, and crowds. Sixteen gold of leather, helm to legguards: Protection 2 on every Zone and Load 0 on every piece, so the Load Strain is nothing and there is no Wind check. Dueling is a Combat Style, a group within Melee: it shares her Melee rank and its point counts toward it.",
- created:"chargen v4.21",
+ created:"chargen v4.24",
  log:["Created via chargen: Human (Versatile) - Kestrel Reach - Acrobat - Ambusher. Three Origin roots granted by the choices; the Ambusher Calling, her first, granted Melee Training; eleven points placed: background bought Athletics, Acrobatics, and Lore (Circus); the Calling point bought the Ambusher Calling and its Training brought Stealth with it; the two Defense points opened Awareness and Evade; three Comets took Driven, Dueling Training, and Kip Up. Driven's Calling point bought Surprise Attacker, and Versatile Human's Opening Talent Point opened Guard. Endure stays Untrained: it rolls Might alone, and its Threshold is 3 lower for it. All four attributes lit."]};
 
 // ---------- shell ----------
@@ -680,9 +680,9 @@ function reactionGrant(c,d,nm){
   const title=!owned?"needs "+need+where:d.noReactions?"blocked by your Head Wound":"granted by "+need+where;
   return {granted:owned, has, title};
 }
-// The sheet's labels come from sheet_spec.json, which the printed sheets read too; these few are the v4.21
+// The sheet's labels come from sheet_spec.json, which the printed sheets read too; these few are the v4.24
 // readings of lines the spec still carries in their v4.12 form (the spec is the sheet generator's to move).
-const SHEET_V421={version:"Playtest v4.21",
+const SHEET_V424={version:"Playtest v4.24",
   melee_ranged:"Melee: any melee Strike. Ranged: any ranged Strike, a thrown weapon included. Weapon dice by rank: 1 Trained, 2 Expert, 3 Master, 4 Legendary; a Quick Strike or a Graze rolls one.",
   attacks:"atk = d20 + Strike Attribute + Melee or Ranged proficiency  |  Strike Attribute: Might, or Agility if Finesse (melee); Agility, or Might if Thrown (ranged)  |  no multiple attack penalty",
   reactions:"tick the ones your Talents grant; each costs its printed actions, on anyone's Opportunity. One answer per attack: a Reaction, or a ⓿↺ Posture.",
@@ -725,7 +725,7 @@ function vSheet(c){
     return `<span class="shms" data-ms="${i+1}" style="${isLvl&&c.milestones>=3?"border-color:#E2703A;box-shadow:0 0 0 1.5px #E2703A":""}">${on?"✕":""}</span><span class="shmicro" style="margin-right:8px;color:${isLvl?"#E2703A":"#0E5F6B"};font-weight:700">${lab}</span>`;
   }).join("");
   return `<div class="sheet">
-   <div class="shband"><span class="t">${S.meta.title}</span><span class="s">${S.meta.subtitle}</span><span class="v">${SHEET_V421.version} &bull; ${S.meta.tagline}</span></div>
+   <div class="shband"><span class="t">${S.meta.title}</span><span class="s">${S.meta.subtitle}</span><span class="v">${SHEET_V424.version} &bull; ${S.meta.tagline}</span></div>
    <div class="shpad">
     <div class="shid">
       ${S.identity.map(f=>{
@@ -738,7 +738,7 @@ function vSheet(c){
     <div style="display:flex;align-items:center;gap:6px;margin:8px 0 2px"><span class="shlab" style="margin:0">${S.milestones.label}</span>&nbsp;${msBoxes}
       <span class="pill" style="margin-left:auto">points are spent on receipt: never banked</span>
       <button class="b" data-a="spend" style="padding:4px 10px;font-size:11px" ${!(c.bankedM||c.bankedF)?"disabled":""}>Spend a point</button></div>
-    <div class="shmicro">${SHEET_V421.milestones}</div>
+    <div class="shmicro">${SHEET_V424.milestones}</div>
     <div class="shcols" style="margin-top:6px">
      <div class="shL">
       ${shSec(S.attributes.label,S.attributes.micro)}
@@ -773,7 +773,7 @@ function vSheet(c){
       <div class="shattr"><span class="nm">LOAD / STRAIN</span>
         <span class="shmicro" style="width:96px;flex-shrink:0">armor ${d.loadArmor}${d.shield?" + shield "+d.shield[3]:""}; Endure −${d.endureRelief}</span>
         <span class="shcell em">${d.strain}</span></div>
-      <div class="shmicro">${SHEET_V421.ladder}${d.strain?` &bull; <b>−${d.strain} Condition to Stealth, Acrobatics, Climb, and Swim checks${d.strainMotion!==d.strain?` (−${d.strainMotion} to Climb and Swim: Flexible pieces count 1 less)`:""} (never off Evade); Rush and Leap ${d.strain} ft shorter; Wind each round: Endure vs ${d.wind.threshold} (Endure Threshold ${d.wind.endureThreshold})</b>`:""}${d.noisyCount?` &bull; <b>noisy: −${d.noisyCount} Gear to Stealth</b> (${d.noisyCount} Noisy piece${d.noisyCount>1?"s":""})`:""}${d.visored?" &bull; Visored: visor lowered −1 Gear to Awareness and Initiative; raised, that Zone's Protection −1 and no penalty":""}${d.brimmed.length?` &bull; Brimmed: +1 Protection against ranged attacks to the ${d.brimmed.join(", ")}`:""}</div>
+      <div class="shmicro">${SHEET_V424.ladder}${d.strain?` &bull; <b>−${d.strain} Condition to Stealth, Acrobatics, Climb, and Swim checks${d.strainMotion!==d.strain?` (−${d.strainMotion} to Climb and Swim: Flexible pieces count 1 less)`:""} (never off Evade); Rush and Leap ${d.strain} ft shorter; Wind each round: Endure vs ${d.wind.threshold} (Endure Threshold ${d.wind.endureThreshold})</b>`:""}${d.noisyCount?` &bull; <b>noisy: −${d.noisyCount} Gear to Stealth</b> (${d.noisyCount} Noisy piece${d.noisyCount>1?"s":""})`:""}${d.visored?" &bull; Visored: visor lowered −1 Gear to Awareness and Initiative; raised, that Zone's Protection −1 and no penalty":""}${d.brimmed.length?` &bull; Brimmed: +1 Protection against ranged attacks to the ${d.brimmed.join(", ")}`:""}</div>
       <div class="shmicro">${S.defense.zone_micro}</div>
       ${shSec(SV.label,SV.micro)}
       <div style="display:flex;gap:6px;margin-top:5px;align-items:flex-end">
@@ -803,16 +803,16 @@ function vSheet(c){
       ${shSec(S.trees.label,S.trees.micro)}
       <table class="sht"><tr>${S.trees.cols.map(x=>`<th>${x}</th>`).join("")}</tr>${treeRows}</table>
       <div class="shmicro">${S.trees.foot1}</div><div class="shmicro">${S.trees.foot2}</div>
-      ${S.melee_ranged?shSec(S.melee_ranged.melee_label+" / "+S.melee_ranged.ranged_label,SHEET_V421.melee_ranged):""}
+      ${S.melee_ranged?shSec(S.melee_ranged.melee_label+" / "+S.melee_ranged.ranged_label,SHEET_V424.melee_ranged):""}
       ${S.melee_ranged?["melee","ranged"].map(k=>{const m=d[k], tn=k==="melee"?"Melee":"Ranged", inh=inheritedPts(c,tn);
         return `<div class="shattr"><span class="nm" style="flex:0 0 72px">${S.melee_ranged[k+"_label"]}</span>
           <span class="chip" style="background:${m.rank?TIERC[m.rank]:"#8AA0A8"};font-size:8.5px">${m.rank?TIERN[m.rank]:"UNTRAINED"}</span>
           <span class="shcell" title="${(S.melee_ranged.cols||[])[1]||"proficiency"}">+${m.prof}</span>
           <span class="shcell" title="weapon dice on a Deliberate or Committed Strike, by rank">${m.dice}d</span>
           <span class="shmicro">${pointsIn(c,tn)} pt${pointsIn(c,tn)===1?"":"s"}${inh?` +${inh} from Combat Styles${waitNote(c,tn)}`:""} &bull; ${m.dice} weapon di${m.dice>1?"ce":"e"} ❷❸, one ❶ or on a Graze</span></div>`;}).join(""):""}
-      ${shSec(S.attacks.label,SHEET_V421.attacks)}
+      ${shSec(S.attacks.label,SHEET_V424.attacks)}
       <table class="sht"><tr>${S.attacks.cols.map(x=>`<th>${x}</th>`).join("")}</tr>${atkRows}</table>
-      ${S.reactions?shSec(S.reactions.label,SHEET_V421.reactions):""}
+      ${S.reactions?shSec(S.reactions.label,SHEET_V424.reactions):""}
       ${S.reactions?(R.postures||[]).map(([nm,grant,fx])=>{const rg=reactionGrant(c,d,nm);
         return `<div class="shattr" style="align-items:flex-start;margin:3px 0"><span class="shms" title="${rg.title}">${rg.has?"✕":""}</span><span class="shmicro" style="flex:1;line-height:1.3" title="${String(fx||"").replace(/"/g,"&quot;")}"><b>${nm}</b> ${grant}</span></div>`;}).join(""):""}
       ${shSec(S.talents.label,S.talents.micro)}
@@ -1922,18 +1922,26 @@ function vWiki(){
   const acts=(typeof A!=="undefined"&&A&&A.actions)||[];
   // a Maneuver's bare name: glyphs out, a bracketed reaction cost like "(⓿↺)" out, the trailing to/or joiner out
   const bareAct=n=>String(n).replace(/\(\s*[◆◇↺★⓿❶-❻\s]*\)/g,"").replace(/[◆◇↺★⓿❶-❻]/g,"").replace(/\s+(to|or)\s*$/i,"").trim().toLowerCase();
-  const fromSheet=new Set(acts.map(a=>bareAct(a.name)));
+  // An index name with no row (actions.json `retired`, 0.20.0) is the sheet's too: its roster row prints nowhere.
+  const fromSheet=new Set([...acts.map(a=>bareAct(a.name)),...(((typeof A!=="undefined"&&A&&A.retired)||[]).map(bareAct))]);
   const notSheet=rows=>(rows||[]).filter(r=>!fromSheet.has(bareAct(r[0])));
-  const modeOf=t=>/exploration/i.test(t)?"Exploration":/downtime/i.test(t)?"Downtime":"Encounter";
+  // A row's Type (PHB v4.24, Chapter 8): an Activity prints under Exploration Mode, an Endeavor under Downtime Mode, every Maneuver under Encounter Mode.
+  const modeOf=t=>/^activity$/i.test(t)?"Exploration":/^endeavor$/i.test(t)?"Downtime":"Encounter";
+  const groupOf=a=>a.category||a.sheet||a.type;
+  const leadIns=a=>(a.frequency?`<b>Frequency</b> ${a.frequency}<br>`:"")+(a.requirements?`<b>Requirements</b> ${a.requirements}<br>`:"")+(a.trigger?`<b>Trigger</b> ${a.trigger}<br>`:"")
+    +(a.range?`<b>Range</b> ${a.range}<br>`:"")+(a.target?`<b>Target</b> ${a.target}<br>`:"")+(a.duration&&modeOf(a.type)!=="Downtime"?`<b>Duration</b> ${a.duration}<br>`:"")+(a.description?`<i>${a.description}</i><br>`:"");
   // actions.json costs: "0".."6", "free", "reaction" (+ optional reaction/reactionCost flags), ranges via costMax/costMode
   const CG={"0":"⓿","1":"❶","2":"❷","3":"❸","4":"❹","5":"❺","6":"❻",free:"⓿",reaction:"↺",passive:""};
   const cg=k=>CG[String(k)]??"";
   const costOf=a=>{ let s=cg(a.cost); if(a.costMax) s+=` ${a.costMode==="or"?"or":"to"} ${cg(a.costMax)}`;
     if(a.reaction&&a.cost!=="reaction") s+=a.reactionCost!==undefined&&a.reactionCost!==""&&String(a.reactionCost)!==String(a.cost)?` (${cg(a.reactionCost)}↺)`:"↺";
     return s.trim(); };
-  const sheetTables=mode=>[...new Set(acts.filter(a=>modeOf(a.type)===mode).map(a=>a.type))].map(t=>`<h4>${t}</h4>`
-    +tbl(["Maneuver","Cost","Traits","Effect"],acts.filter(a=>a.type===t).map(a=>[`<b>${a.name}</b>`,costOf(a),(a.traits||[]).join(", "),
-      (a.requirements?`<b>Requirements</b> ${a.requirements}<br>`:"")+(a.trigger?`<b>Trigger</b> ${a.trigger}<br>`:"")+(a.description?`<i>${a.description}</i><br>`:"")+a.effect]))).join("");
+  // The sheet actions of a mode, grouped by the row's Category (the Basic Actions sheet's book groups) else its sheet; an Activity prints its Speed, an Endeavor its Duration, a Maneuver its cost.
+  const sheetTables=mode=>{const rows=acts.filter(a=>modeOf(a.type)===mode);
+    return [...new Set(rows.map(groupOf))].map(g=>{const grp=rows.filter(a=>groupOf(a)===g);
+      return `<h4>${g}</h4>`+(mode==="Exploration"?tbl(["Activity","Speed","Traits","Effect"],grp.map(a=>[`<b>${a.name}</b>`,a.speed||"",(a.traits||[]).join(", "),leadIns(a)+a.effect]))
+        :mode==="Downtime"?tbl(["Endeavor","Duration","Traits","Effect"],grp.map(a=>[`<b>${a.name}</b>`,a.duration||"",(a.traits||[]).join(", "),leadIns(a)+a.effect]))
+        :tbl(["Maneuver","Cost","Traits","Effect"],grp.map(a=>[`<b>${a.name}</b>`,costOf(a),(a.traits||[]).join(", "),leadIns(a)+a.effect])));}).join("");};
   const threatTbl=()=>tbl(["Threat","Answered by","Or by"],THREATS.map(([k,a,b])=>[`<b>${k}</b>`,link(a),link(b)]));
 
   if(wikiSec==="How to Play") h+=`
@@ -2107,11 +2115,9 @@ function vWiki(){
     +`<h3>Exploration Mode</h3>`
     +P("Your Travel Speed is <b>Speed × 40 feet per minute</b>, <b>Speed ÷ 2 miles per hour</b>, or <b>Speed × 4 miles per day</b>. Exploration Mode Activities (such as Avoid Notice) halve it, except Hustle, which doubles it. Difficult Terrain halves it; Greater Difficult Terrain cuts it to one-third. As a rule of thumb, it takes about 10 minutes to proceed through a location while performing Activities such as Search, be it a ballroom, a dungeon corridor, or a forest clearing.")
     +sheetTables("Exploration")
-    +tbl(["Activity","Speed","Effect"],notSheet(R.explorationActions).map(r=>r.slice(0,3)))
     +`<h3>Downtime Mode</h3>`
     +P("You spend days, and the GM typically tells you how many you have before the world begins to move quickly again. One activity per day: an activity that takes a week is the same choice made on seven consecutive days, and interrupting it loses the days already spent unless the GM says otherwise. Ordinary rest is not a Downtime Activity: a night's sleep already restores some of your Vigor but none of your Wounds; Downtime is for the things a night's rest cannot fix.")
-    +sheetTables("Downtime")
-    +tbl(["Activity","Duration","Effect"],notSheet(R.downtimeActions).map(r=>r.slice(0,3)));
+    +sheetTables("Downtime");
 
   if(wikiSec==="Combat") h+=`
     <div class="callout"><b>Every attack in Starwrought is an exchange</b>: a sword, a fireball, a poisoned cup, or a lie told to a guard. A fencing master would tell you the first question is not whether it landed but who came out of it holding the advantage. One roll answers three things at once: whether harm landed, how much, and who is out of position. The exchange runs in the same order every time: the Attack is declared with its targets, the Defense answers it with any Reaction, the die decides the Result, the Damage and effects land, and the Position of everyone involved is settled.</div>

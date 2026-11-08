@@ -1,0 +1,65 @@
+{
+  "_id": "22df445716ad1ac2",
+  "name": "Sure Seat",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Animal Handling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the<b> Sure Seat</b> Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Sure Seat ❶</strong></p><p><strong>Trigger</strong> Your mount falls Prone, and an adjacent space can fit your token.</p><p>You dismount into an adjacent empty space.</p></div>",
+    "description": "<p><i>You know when to leave a falling saddle and how to land clear.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[MANEUVER Sure Seat]",
+    "rules": [
+      {
+        "name": "Sure Seat",
+        "slug": "sure-seat",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Sure Seat]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "d0e3052b6766ae2c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7c834882072d2a91"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!22df445716ad1ac2"
+}

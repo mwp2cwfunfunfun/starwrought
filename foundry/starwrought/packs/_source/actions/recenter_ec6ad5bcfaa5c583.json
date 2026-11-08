@@ -1,0 +1,45 @@
+{
+  "_id": "ec6ad5bcfaa5c583",
+  "name": "Recenter",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Defensive & Recovery Maneuvers",
+    "basic": true,
+    "traits": [
+      "Concentrate"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Clear every Exposed Zone on you and end any Bind you are in.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "17f1e005b4428dbf",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f935a00dae6f0a2d"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ec6ad5bcfaa5c583"
+}

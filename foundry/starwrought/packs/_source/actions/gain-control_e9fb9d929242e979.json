@@ -1,0 +1,45 @@
+{
+  "_id": "e9fb9d929242e979",
+  "name": "Gain Control",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack Maneuvers",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "prerequisites": "",
+    "requirements": "You are in a Bind with your target, and they are no more than one Size larger than you.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Roll <i>Melee</i> against the target’s <i>Guard</i>, with the following effects:<br><b>   Critical Success</b> You Control the weapon, and the target is Off-Guard until its next Opportunity.<br>   <b>Success</b> You Control the weapon.<br>   <b>Failure</b> A neutral Bind forms.<br><b>   Critical Failure</b> You pressed badly. The target Controls your weapon instead.<br><b>Special</b> While you Control the weapon, the target takes −2 Situation to attacks with it and has an Exposed Zone of your choice.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b7f05dd01d0fd43",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "5ce08dc86a488d60"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e9fb9d929242e979"
+}

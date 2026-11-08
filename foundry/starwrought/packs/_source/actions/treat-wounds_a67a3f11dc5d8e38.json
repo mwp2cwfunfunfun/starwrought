@@ -1,0 +1,56 @@
+{
+  "_id": "a67a3f11dc5d8e38",
+  "name": "Treat Wounds",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Exploration Mode",
+    "basic": true,
+    "traits": [
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "Appropriate supplies, and a willing or helpless patient who is not Dying.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>After spending 1 hour on this Activity, attempt a <i>Medicine </i>check vs. 10 + the patient’s total Wounds, with the following effects:<br>   <b>Critical Success </b>Two Wounds are healed.<b><br>   Success </b>One Wound is healed.<br>   <b>Failure </b>or<b> Critical Failure</b> No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "exploration": {
+      "travel": "",
+      "check": "medicine",
+      "initiative": "",
+      "effect": ""
+    },
+    "check": {
+      "enabled": true,
+      "constellation": "medicine",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "862955095072b340"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a67a3f11dc5d8e38"
+}

@@ -1,0 +1,45 @@
+{
+  "_id": "b32ecd9af21b30fe",
+  "name": "Convalescent Care",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Downtime Mode",
+    "basic": true,
+    "traits": [
+      "Downtime"
+    ],
+    "prerequisites": "",
+    "requirements": "Supplies, and up to 4 resting patients suffering from a nonmagical Affliction.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Medicine </i>check vs. the illness or poison’s Threshold, with the following effects:<br>   <b>Critical Success </b>Each treated patient gets a +2 Situation bonus to their next <i>Endure </i>check against the Affliction within 24 hours.<br>   <b>Success</b> Each treated patient gets a +1 Situation bonus to their next Endure check against the Affliction within 24 hours.<br>   <b>Failure </b>or <b>Critical Failure</b> grants no bonus.</p><p><u>Note:</u> Use one check for patients receiving the same care for the same condition; otherwise check each separately. Patients still make their own checks.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "b938ff7019fcd374",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "79a144436340b5e0"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b32ecd9af21b30fe"
+}

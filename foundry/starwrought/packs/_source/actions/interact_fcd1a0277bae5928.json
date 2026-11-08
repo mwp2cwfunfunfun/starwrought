@@ -1,0 +1,45 @@
+{
+  "_id": "fcd1a0277bae5928",
+  "name": "Interact",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Other Basic Maneuvers",
+    "basic": true,
+    "traits": [
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Draw or stow a weapon, open a door, pull a potion from your pack, pick something up, work a lever.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "0aa9b5722ed296d9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "df7930f5865a8233"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fcd1a0277bae5928"
+}

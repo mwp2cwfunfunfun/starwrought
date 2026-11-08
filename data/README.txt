@@ -5,12 +5,21 @@ category). RULE: each spreadsheet needs its own "_Tree Index" sheet listing the 
 inside THAT file. The converter merges every file; the same tree in two files is an error;
 sheets missing from their file's index are ignored with a warning. A workbook open in Excel
 (~$lock file present) is converted from its last saved version, with a warning saying so.
+  THE INDEX TOOL (0.20.0; Mike, 2026-11-08: "generate/re-generate/update the _Tree Index tabs
+  in all of them"): python assets/index_sheets.py brings every workbook's _Tree Index up to the
+  sheets it holds. A tree sheet with no row gets one with its Category (ancestries.xlsx ->
+  Ancestry, skills.xlsx -> Skill, and so on) and its other cells blank and named in the report
+  (Primary Attribute and Parent are hand-kept, so the tool never guesses them); an actions
+  workbook's index gets one row per action with the row's Type and the sheet's Category or name;
+  an index row whose sheet or row is gone is REPORTED with the nearest name, never dropped;
+  filled cells are never touched; a workbook is saved only when a cell changed, after a copy to
+  backup/index-<date>/. --dry-run reports only. A workbook open in Excel is skipped.
 
 ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   Add rows to a sheet, a sheet to a workbook, or a whole new workbook in this folder. A new
   workbook needs its own "_Tree Index" sheet naming the trees inside it, as the first paragraph
-  says; an actions workbook carries a  Name | Type | Meta note  index instead (ACTIONS WORKBOOKS,
-  below); weapons, armor and shields live in equipment.xlsx and nowhere else (EQUIPMENT WORKBOOK,
+  says; an actions workbook carries a  Name | Type | Category  index instead (ACTIONS WORKBOOKS,
+  below; python assets/index_sheets.py fills it); weapons, armor and shields live in equipment.xlsx and nowhere else (EQUIPMENT WORKBOOK,
   below). Set Enabled? to Yes on anything that should ship to Foundry; the web app shows everything
   regardless. Save the workbook (leaving it open in Excel is fine: the last saved version converts).
   Then double-click sync_content.cmd in the project root, or from the project root run
@@ -233,16 +242,46 @@ BACKGROUNDS (backgrounds.xlsx)
   to assets/backgrounds.json with its flag. The converter WARNS when an enabled Background grants
   a Skill whose constellation root is disabled, since that Training point has nowhere to land.
 
-ACTIONS WORKBOOKS (maneuvers.xlsx; the only one since 2026-10-03)
-  Recognised by a _Tree Index carrying  Name | Type | Meta note  instead of Tree | Category. Any
-  number of them are read; the same action in two of them is an ERROR, and a sheet named "About"
-  is skipped as notes for the author (as in the equipment workbook). Every other sheet holds one
-  action per row. Columns (first word wins, order free):
-    Action | Cost | Traits | Type | Prerequisites | Requirements | Trigger | Description | Effect |
-    Automation | Aura | Enabled?
-  Type comes from the row's own Type cell if there is one, else the _Tree Index row of that name,
-    else the sheet's name (with a warning that the action is not in the index). A Type beginning
-    with "Basic" puts the action on every character's Maneuvers tab in Foundry.
+ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's three kinds)
+  Recognised by a _Tree Index carrying a Name column and no Tree column:  Name | Type | Category
+  (activities.xlsx, endeavors.xlsx) or Mike's  Name | Action Type | Category/Type  (maneuvers.xlsx)
+  both read, the Type column being any header containing "type" and OPTIONAL since 0.20.0 (the
+  index is a fallback for a row with no Type cell, and python assets/index_sheets.py keeps it
+  filled). Any number of them are read; the same action in two of them is an ERROR, a duplicate on
+  two sheets of ONE workbook is a WARNING (an enabled row beats a disabled one, else the earlier
+  sheet stands), and a sheet named "About" is skipped as notes for the author (as in the equipment
+  workbook). Every other sheet holds one action per row. Columns (first word wins, order free):
+    Action (or Activity, or Endeavor) | Cost | Traits | Type | Constellation | Prerequisites |
+    Requirements | Trigger | Frequency | Range | Target | Duration | Movement Speed | Category |
+    Check | Initiative | Description | Effect | Automation | Aura | Enabled?
+  Type is the row's own Type cell (Maneuver, Talent Maneuver, Activity, Endeavor), else the
+    _Tree Index row of that name, else the sheet's name (with a warning only when the row has no
+    Type cell either). An ACTIVITY is an Exploration Mode Item in Foundry (the party sheet's road;
+    category "Exploration Mode", its old `exploration:` document id), an ENDEAVOR a Downtime Mode
+    one (the Downtime panel; `downtime:`), whichever sheet the row sits on (Treat Wounds on the
+    Medicine sheet is one as Search is); neither spends actions, so neither needs a Cost. Every
+    other row is a Maneuver, grouped in the pack, the app and the docx by its Category cell (the
+    Basic Actions sheet's Movement Maneuvers, Attack Maneuvers, ...) else its sheet.
+  BASIC (Mike, 2026-11-08): a Maneuver, Activity or Endeavor is on every character's Actions tab
+    in Foundry unless a Talent grants it: its Type is "Talent Maneuver", or a Talent's
+    [MANEUVER X] block or @Maneuver[X] marker names it (Rally, Battle Cry, Kip Up, the Ancestry and
+    Culture Maneuvers). The build names the rows it read as granted though typed "Maneuver".
+  Constellation (0.20.0): the Constellation the row rolls, read rather than inferred from the
+    sheet. When it names exactly one Constellation or Defense and the Effect attempts or rolls a
+    check, the Foundry Item's check is enabled on it (Climb rolls Athletics from its row, Hide
+    Stealth); the Defense it is measured against is read from the Effect when it names one after
+    "vs." or "against" (Demoralize vs. Guard). "N/A", a blank, a list ("Melee or Ranged") or an
+    Effect that rolls nothing leaves the check off. An Effect saying "Relevant Check" opens the
+    picker (Aid, Recall Knowledge).
+  Frequency, Range, Target, Duration (0.20.0): strings carried to the Item and printed on its
+    sheet, its card, the app and the docx. Duration is an Endeavor's clock on the Downtime panel
+    ("7 days"); Movement Speed is an Activity's Travel Speed word (Full, Half, Double; blank reads
+    as Full); Check and Initiative (activities.xlsx) name the Constellation or Defense an Activity
+    rolls now and for Initiative, "choice" for the member's own pick (Investigate), blank for
+    nothing now and Awareness for Initiative. Scout's bonus and Defend's shield are effects set by
+    the row's name.
+  The "(LORE_NAME)" placeholder is stripped from an action's name and its Constellation cell
+    (Well-Read on the Lore Actions sheet), as it is from the Lore template's Talent names.
   Cost takes glyphs or words: ❶, ❷, ❸ (up to ❻), ⓿ (free), ↺ beside a cost for a Reaction
     ("❶↺", "⓿↺"), "❶ to ❸", "❶ or ❸", "❶ (⓿↺)" for a Maneuver whose Reaction half has a cost of
     its own (the book's Aid; the sheet's Aid costs ❶), "1 or 3", "reaction", "free". The v3 forms
@@ -251,29 +290,35 @@ ACTIONS WORKBOOKS (maneuvers.xlsx; the only one since 2026-10-03)
     neither, the action costs one action ❶ and the converter names the ones it defaulted. Effect
     is required; a cell reading "None" counts as blank.
   Description is the flavour line; Effect is the rules, rich text welcome. Automation (0.9.0) is
-    the same column as on a tree sheet, no longer prose: one rule per line, "kind: arguments", a
-    "#" line a comment, parsed by build_foundry.mjs, which stops on a line it does not know; the
-    kinds and their syntax are under Tree columns, above (seven since 0.15.0). An action's name is
-    also what a talent's "bonus ... to <Maneuver>" line is matched against, so a roll made from the
-    action's row carries the bonus. An action whose Effect says "Relevant Check" and names no
-    check opens the Relevant Check picker when it is used, carrying the action, so Aid's roll is
-    Aid's (0.10.0).
+    the same column as on a tree sheet, no longer prose: one bracketed block per line in the
+    grammar of AUTOMATION_GRAMMAR.md (feature blocks and [EFFECT ...] blocks, 0.16.0 and 0.17.0),
+    parsed by assets/parse_rules.mjs and build_foundry.mjs, which stop on a line they do not know
+    (the content loop stores it as a red error line instead). An action's name is also what a
+    talent's CHECK line names as its target, so a roll made from the action's row carries the
+    bonus. An action whose Effect says "Relevant Check" and names no check opens the Relevant
+    Check picker when it is used, carrying the action, so Aid's roll is Aid's (0.10.0).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.
   Writes assets/actions.json, every action stamped with the `sheet` and `workbook` it came from.
     THE SHEET WINS: any action it names retires the roster.json row of the same name from the
     compendium, the app and the compendium docx, under the same document id. Roster rows no sheet
-    carries yet stay. Actions typed "Basic Action" appear on every character's Maneuvers tab in
-    Foundry, read from the compendium rather than copied.
+    carries yet stay (none today: the roster's Exploration and Downtime blocks went with 0.20.0,
+    replaced by activities.xlsx and endeavors.xlsx, and every Encounter row is named by a sheet).
+    Basic rows (above) appear on every character's Actions tab in Foundry, read from the
+    compendium rather than copied.
   Enabled? works as on a tree sheet: "Yes" ships the action to Foundry, anything else keeps it
     out, and a sheet without the column ships every row. Every action is still written to
     actions.json with its flag. A disabled action STILL retires the roster row of the same name
     (the sheet is authoritative for any action it names), so a blank Maneuver row ships nowhere in
     Foundry and keeps the roster's row out too. Aid reads Yes (Mike, 2026-10-03) and ships.
-  maneuvers.xlsx (Mike, 2026-10-01, T17) holds the Encounter Mode Maneuvers: one sheet per group
-    of the handbook's Chapter 2 tables (Motion; Attack; Defense & Recovery; Watching, Deceiving &
-    Helping; Handling Things; Special). It was scaffolded ONCE from the roster's Maneuver tables by
+  maneuvers.xlsx (Mike, 2026-10-01, T17; restructured 2026-11-07 for PHB v4.24) holds the
+    Maneuvers: a Basic Actions sheet whose Category column carries the book's Chapter 8 groups
+    (Movement, Attack, Defense & Recovery, Other Basic Maneuvers), an Ancestry Actions and a
+    Culture Actions sheet for the Talent-granted Maneuvers, and one "<Skill> Actions" sheet per
+    Skill Constellation for the book's Skill action tables, each row naming its Constellation.
+    activities.xlsx holds the eight Exploration Activities and endeavors.xlsx the two Endeavors
+    (Retrain, Train; Provision left the book in v4.24). It was scaffolded ONCE from the roster's Maneuver tables by
     assets/make_maneuvers_xlsx.py: names written plain with the glyphs moved to Cost, the
     "Requirements" and "Trigger" lines lifted out of the Effect into their columns, Type "Basic
     Action", Aura filled where the text earns it (Seek, 30 ft), and Enabled? BLANK on every row.
@@ -284,8 +329,12 @@ ACTIONS WORKBOOKS (maneuvers.xlsx; the only one since 2026-10-03)
     working file, then defined it; on 2026-10-03 he moved Aid onto the "Watching, Deceiving &
     Helping" sheet (row 9) with Enabled? = Yes and deleted actions.xlsx, so maneuvers.xlsx is the
     one actions workbook and Aid ships for the first time, under the roster row's old document id.
-    Aid is not in the _Tree Index yet, so the converter types it from its Type cell and WARNS every
-    run until the row is added.
+    Since 0.20.0 the index is filled by python assets/index_sheets.py and a row typed by its own
+    Type cell is not warned about; Parry, Void, Counter, Intercept and Avert Gaze are index names
+    with no row on any sheet (the Reactions are Talents since PHB v4.21), reported each run, and
+    an index name with no row RETIRES a roster row of the name exactly as a blank sheet row did
+    (actions.json carries them as `retired`), so deleting a blank row and keeping its name in the
+    index keeps the action off the table.
   A workbook that goes missing keeps what it last wrote: the converter carries over, as found, the
     actions of any workbook actions.json names that is missing from data/, and WARNS, so a checkout
     without that workbook still retires the roster rows it retired. An action a present workbook

@@ -1,0 +1,56 @@
+{
+  "_id": "83d01c4aaf988064",
+  "name": "Shared Fortune",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Halfling Fortune"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "You may use Fortunate on a willing ally within 15 feet whose failed Skill check you can perceive, instead of on your own check. That ally rerolls and uses the second result. This expends your same once-per-day Fortunate use and obeys all its restrictions. The ally must actually have made a roll.",
+    "description": "<p><i>A companion’s close call sometimes finds the same fortunate turn that so often finds you.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ae97926e49d20ff0"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!83d01c4aaf988064"
+}

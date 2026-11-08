@@ -655,7 +655,7 @@ class Dictionaries:
         for group in roster["actions"].values():
             for row in group:
                 maneuvers.add(strip_glyphs(re.split("[%s]" % GLYPHS, row[0])[0]))
-        for row in roster["explorationActions"] + roster["downtimeActions"]:
+        for row in roster.get("explorationActions", []) + roster.get("downtimeActions", []):
             maneuvers.add(row[0].strip())
         for a in actions["actions"]:
             maneuvers.add(a["name"].strip())

@@ -24,6 +24,18 @@
   {{#if item.system.trigger}}
   <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.trigger"}}</strong> {{item.system.trigger}}</p>
   {{/if}}
+  {{#if item.system.frequency}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.frequency"}}</strong> {{item.system.frequency}}</p>
+  {{/if}}
+  {{#if item.system.range}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.range"}}</strong> {{item.system.range}}</p>
+  {{/if}}
+  {{#if item.system.target}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.target"}}</strong> {{item.system.target}}</p>
+  {{/if}}
+  {{#if item.system.duration}}
+  <p class="sw-card-note"><strong>{{localize "STARWROUGHT.Field.duration"}}</strong> {{item.system.duration}}</p>
+  {{/if}}
 
   {{#if flavor}}
   <div class="sw-card-flavor">{{{flavor}}}</div>

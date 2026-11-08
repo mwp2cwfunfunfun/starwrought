@@ -1,0 +1,16 @@
+{
+  "_id": "0aa9b5722ed296d9",
+  "name": "Other Basic Maneuvers",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 3,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "55475b91ed21df7c"
+    }
+  },
+  "_key": "!folders!0aa9b5722ed296d9"
+}

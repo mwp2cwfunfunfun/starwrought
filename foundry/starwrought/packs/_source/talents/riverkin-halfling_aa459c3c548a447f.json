@@ -1,0 +1,62 @@
+{
+  "_id": "aa459c3c548a447f",
+  "name": "Riverkin Halfling",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Halfling Fortune"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You belong to the Riverkin Halfling Bloodline.<br><br><b>River Swimmer. </b>You gain a Swim Speed equal to half your land Speed, rounded down to a whole foot. A Swim ❶ moves you up to that Swim Speed without a check in ordinary water. Dangerous currents or a specific hazard can still require checks. You must still breathe air.",
+    "description": "<p><i>Broad feet, slight webbing between the toes, and an easy buoyancy reveal a lineage at home in moving water.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[SPEED: Swim [HALF]]",
+    "rules": [
+      {
+        "error": "\"SPEED:\" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or `[<Constellation> trained]`; an effect goes in `[EFFECT <tag>: ...]`",
+        "line": 1,
+        "text": "[SPEED: Swim [HALF]]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d961af489192ea2c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!aa459c3c548a447f"
+}

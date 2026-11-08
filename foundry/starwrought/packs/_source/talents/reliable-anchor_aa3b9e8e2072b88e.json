@@ -1,0 +1,65 @@
+{
+  "_id": "aa3b9e8e2072b88e",
+  "name": "Reliable Anchor",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "athletics",
+    "constellationName": "Athletics",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Athletics Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the <b>Reliable Anchor</b> Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Reliable Anchor ❶</strong></p><p><strong>Trigger</strong> A willing creature no more than one Size Larger that you falls within your reach.</p><p><strong>Requirements</strong> You have a free hand and are not in danger of falling, yourself.</p><p>Attempt an <i>Athletics</i> check against Threshold 15, with the following effects:<br>   <b>Critical Success </b>You catch a part of the creature and help it swing into an adjacent unoccupied space.<br>   <b>Success</b> You catch a part of the creature, and you and the creature are Off-Guard until your or it spends an action to swing it into an adjacent unoccupied space.<br>  <b> Failure </b>or <b>Critical Failure</b> You do not catch the creature.</p></div>",
+    "description": "<p><i>When a companion loses their hold, yours is the hand they find.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[MANEUVER Reliable Anchor]",
+    "rules": [
+      {
+        "name": "Reliable Anchor",
+        "slug": "reliable-anchor",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Reliable Anchor]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "235dc76ee1e2834b",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "69e0234b7afedaa7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!aa3b9e8e2072b88e"
+}

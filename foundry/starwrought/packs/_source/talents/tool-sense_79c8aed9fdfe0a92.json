@@ -1,0 +1,56 @@
+{
+  "_id": "79c8aed9fdfe0a92",
+  "name": "Tool Sense",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Crafting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +1 Condition bonus to brace an object or to estimate workmanship quality.",
+    "description": "<p><i>Your first touch often tells you where a construction is under strain.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "aff18274e78f6d24",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6d97dea891233a3b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!79c8aed9fdfe0a92"
+}

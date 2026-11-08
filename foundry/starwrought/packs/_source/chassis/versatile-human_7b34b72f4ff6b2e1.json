@@ -7,10 +7,10 @@
     "kind": "bloodline",
     "constellation": "human",
     "attribute": "presence",
-    "specialAbility": "<p>You gain 1 Opening Talent Point.</p>",
+    "specialAbility": "<p>You belong to the Versatile Human bloodline.<br><br>You gain 1 Opening Talent Point.</p>",
     "description": "<p>A bloodline of the Human ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "581566cb83a944ca",
   "sort": 0,
@@ -19,7 +19,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "89785cdcaccdaad7"
+      "contentHash": "5d3819c6296b1aea"
     }
   },
   "effects": [],

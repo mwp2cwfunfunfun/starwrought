@@ -1,6 +1,6 @@
 {
   "_id": "f006a2ea8301f887",
-  "name": "Battle Cry ⓿↺",
+  "name": "Battle Cry",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,12 +15,12 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "<b>Trigger</b> You are about to roll Initiative.<br>Demoralize every enemy within 15 feet with a single roll, compared separately against each one's Guard.",
-    "description": "",
-    "cost": "0",
+    "effect": "You gain the <b>Battle Cry</b> Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Battle Cry ❶</strong></p><p><strong>Trigger</strong> Initiative has been rolled, but nobody taken their Opportunity yet.</p><p>Use the <b>Demoralize</b> ❷ <b>Break Them</b> Maneuver.</p></div>",
+    "description": "<p><i>You begin the exchange with a warning that reaches the whole enemy line.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
-    "reaction": true,
+    "reaction": false,
     "reactionCost": "",
     "grant": {
       "n": 0,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Battle Cry]",
+    "rules": [
+      {
+        "name": "Battle Cry",
+        "slug": "battle-cry",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Battle Cry]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "122698d6a8541059",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "50f842102e01674e"
+      "contentHash": "1fa0a2cf1845f5e3"
     }
   },
   "effects": [],

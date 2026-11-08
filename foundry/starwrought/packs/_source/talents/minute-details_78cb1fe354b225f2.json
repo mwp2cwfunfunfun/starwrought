@@ -1,0 +1,79 @@
+{
+  "_id": "78cb1fe354b225f2",
+  "name": "Minute Details",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Gnomish Spark"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Condition bonus to checks to Seek hidden objects, concealed mechanisms, or small physical alterations. This does not apply to detecting creatures or to Defenses.",
+    "description": "<p><i>Your eyes linger on the small seam or uneven mark that a hurried glance passes over.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, seek; IF: CLAIM(hidden objects, concealed mechanisms, or small physical alterations)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Seek",
+          "slug": "seek",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "hidden objects, concealed mechanisms, or small physical alterations"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, seek; IF: CLAIM(hidden objects, concealed mechanisms, or small physical alterations)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "309e12f4624341c5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!78cb1fe354b225f2"
+}

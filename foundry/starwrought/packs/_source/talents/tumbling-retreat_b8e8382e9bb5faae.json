@@ -1,6 +1,6 @@
 {
   "_id": "b8e8382e9bb5faae",
-  "name": "Tumbling Retreat ❶",
+  "name": "Tumbling Retreat",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,9 +15,9 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Step your full Speed away from your foes. You still cannot Step in Difficult Terrain or Greater Difficult Terrain.",
-    "description": "",
-    "cost": "1",
+    "effect": "You gain the Tumbling Retreat Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Tumbling Retreat ❶</strong></p><p>Step your full Speed. You must end up further than you started from at least one foe.</p></div>",
+    "description": "<p><i>You turn a retreat into a controlled roll that keeps a pursuer at a distance.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
     "reaction": false,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Tumbling Retreat]",
+    "rules": [
+      {
+        "name": "Tumbling Retreat",
+        "slug": "tumbling-retreat",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Tumbling Retreat]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "8e9079a8b2494f17"
+      "contentHash": "6df5b6fd528c0178"
     }
   },
   "effects": [],

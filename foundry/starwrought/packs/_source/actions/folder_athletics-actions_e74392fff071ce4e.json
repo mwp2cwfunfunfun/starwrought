@@ -1,0 +1,16 @@
+{
+  "_id": "e74392fff071ce4e",
+  "name": "Athletics Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 8,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "d1aff16ae6a0b632"
+    }
+  },
+  "_key": "!folders!e74392fff071ce4e"
+}

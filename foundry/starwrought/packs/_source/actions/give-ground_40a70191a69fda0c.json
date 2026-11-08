@@ -23,7 +23,7 @@
     "description": "<p>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. +2 Situation bonus to Evade against the triggering attack. A Zone of your choice becomes Exposed until the end of the round.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ca353a8aaa8252e8"
+      "contentHash": "41a0c07bf74dd40a"
     }
   },
   "effects": [],

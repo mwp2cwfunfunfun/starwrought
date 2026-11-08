@@ -1,0 +1,45 @@
+{
+  "_id": "72033c25d64cbc9a",
+  "name": "Rush",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Movement Maneuvers",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Move in a straight line up to three times your Speed, with your Load Strain subtracted once from that maximum distance. You are Off-Guard until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "7a1baa02eae18ebc",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8a50fece704c73ae"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!72033c25d64cbc9a"
+}

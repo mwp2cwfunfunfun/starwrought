@@ -1,0 +1,56 @@
+{
+  "_id": "2ad2fa0a085e57e7",
+  "name": "Crowdwise",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "lethra",
+    "constellationName": "Lethra",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Lethran"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your Moves ignore ordinary Difficult Terrain caused by crowds or loose, nonhazardous street debris. You must still follow the normal rules for entering another creature’s space, including Tumble Through when required. This does not let you Step into Difficult Terrain, pass through a solid barrier, ignore Greater Difficult Terrain, or avoid damage from a hazard.",
+    "description": "<p><i>Years of crowded courts and festival streets have taught you how to keep moving without making every obstacle someone else’s problem.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "2088b951dc2bbe76",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "1114f5bfecc9fee8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2ad2fa0a085e57e7"
+}

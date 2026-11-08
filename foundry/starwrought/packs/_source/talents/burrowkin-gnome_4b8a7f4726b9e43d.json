@@ -1,0 +1,63 @@
+{
+  "_id": "4b8a7f4726b9e43d",
+  "name": "Burrowkin Gnome",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Gnomish Spark"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You belong to the Burrowkin Gnome Bloodline.<br><br><b>Darkvision. </b>You can see in nonmagical darkness as though it were bright light, but only in shades of gray. This does not let you see through Cover, fog, smoke, an opaque barrier, or magical darkness.",
+    "description": "<p><i>Wide pupils, sensitive ears, and strong hands mark a lineage adapted to life in close earthen places.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[SENSES darkvision]",
+    "rules": [
+      {
+        "name": "darkvision",
+        "kind": "sense",
+        "line": 1,
+        "text": "[SENSES darkvision]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "57f6d12eabfb3e5e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4b8a7f4726b9e43d"
+}

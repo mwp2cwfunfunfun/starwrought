@@ -1,0 +1,50 @@
+{
+  "_id": "1cf575febcc2312a",
+  "name": "Reposition",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "prerequisites": "",
+    "requirements": "You have a free hand or are already Grabbing or Restraining the target, the target must be within reach and no more than one Size larger than you.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Athletics</i> check against your target’s <i>Evade</i> or <i>Guard</i>, with the following effects, depending on how many actions you took:<br>❶ <b>Quick Reposition.<br>   Critical Success</b> Move the target up to 6 feet, staying within your reach, not into or through obstacles.<br>   <b>Success</b> Move the target up to 3 feet, staying within your reach, not into or through obstacles.<br>   <b>Failure</b> No effect.<br>  <b> Critical Failure </b>The target can move you up to 3 feet as though it Repositioned you.<br>❷ <b>Haul.<br>   Critical Success </b>Move up to your Speed, bringing the target with you.<br>   <b>Success</b> Move up to half your Speed, bringing the target with you.<br>   <b>Failure</b> No effect.<br>   <b>Critical Failure</b> The target can Move you, as if it got a Critical Success on you.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": "evade"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "b1a9705e75012642"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1cf575febcc2312a"
+}

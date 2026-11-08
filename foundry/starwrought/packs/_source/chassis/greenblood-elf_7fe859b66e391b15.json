@@ -1,0 +1,30 @@
+{
+  "_id": "7fe859b66e391b15",
+  "name": "Greenblood Elf",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "elf",
+    "attribute": "wits",
+    "specialAbility": "<p>You belong to the Greenblood Elf Bloodline.<br><br><b>Woodland Passage.</b> Your Moves ignore Difficult Terrain caused by nonmagical undergrowth, roots, and low branches. This does not permit a Step into Difficult Terrain or ignore Greater Difficult Terrain, a solid barrier, or damage from a hazard.</p>",
+    "description": "<p>A bloodline of the Elf ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "633eeb3d62d45de1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7fe859b66e391b15"
+}

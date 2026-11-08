@@ -184,7 +184,8 @@ try { LANGS = JSON.parse(fs.readFileSync("assets/languages.json", "utf8")); } ca
 // printed twice.
 let ACTS = { actions: [] };
 try { ACTS = JSON.parse(fs.readFileSync("assets/actions.json", "utf8")); } catch (e) {}
-const actionsFromSheet = new Set((ACTS.actions || []).map(a => stripCost(a.name).toLowerCase()));
+// An index name with no row (actions.json `retired`, 0.20.0) is the sheet's too: its roster row prints nowhere.
+const actionsFromSheet = new Set([...(ACTS.actions || []).map(a => stripCost(a.name).toLowerCase()), ...(ACTS.retired || []).map(n => stripCost(n).toLowerCase())]);
 const bareAction = n => stripCost(n).toLowerCase();
 // An actions.json cost is "0".."6" (or "passive") with `reaction` and `reactionCost` beside it;
 // the v3.x keys "free" and "reaction" still print (design brief, Glyphs).
@@ -202,21 +203,38 @@ function costText(a) {
   return `${range}↺`.trim();
 }
 const notSheet = rows => (rows || []).filter(r => !actionsFromSheet.has(bareAction(r[0])));
-// A sheet Type prints in the mode its name says (Exploration, Downtime), else with the encounter maneuvers.
-const modeOf = t => /exploration/i.test(t) ? "Exploration" : /downtime/i.test(t) ? "Downtime" : "Encounter";
+// A row's Type (PHB v4.24, Chapter 8): an Activity prints under Exploration Mode, an Endeavor under
+// Downtime Mode, every Maneuver under Encounter Mode; within a mode the rows are grouped by the
+// row's Category (the Basic Actions sheet's book groups) else the sheet they sit on (0.20.0).
+const modeOf = t => /^activity$/i.test(t) ? "Exploration" : /^endeavor$/i.test(t) ? "Downtime" : "Encounter";
+const groupOf = a => a.category || a.sheet || a.type;
+const leadIns = a => [
+  a.frequency ? `<b>Frequency</b> ${a.frequency}<br>` : "",
+  a.requirements ? `<b>Requirements</b> ${a.requirements}<br>` : "",
+  a.trigger ? `<b>Trigger</b> ${a.trigger}<br>` : "",
+  a.range ? `<b>Range</b> ${a.range}<br>` : "",
+  a.target ? `<b>Target</b> ${a.target}<br>` : "",
+  a.duration && modeOf(a.type) !== "Downtime" ? `<b>Duration</b> ${a.duration}<br>` : "",
+  a.description ? `<i>${a.description}</i><br>` : ""
+].join("");
 function sheetActionTables(kids, mode) {
-  for (const type of [...new Set((ACTS.actions || []).filter(a => modeOf(a.type) === mode).map(a => a.type))]) {
-    kids.push(h2(type));
-    kids.push(stripedTable(["Maneuver", "Cost", "Traits", "Effect"],
-      ACTS.actions.filter(a => a.type === type).map(a => [
-        { text: a.name, bold: true }, costText(a), (a.traits || []).join(", "),
-        fmtPara([
-          a.requirements ? `<b>Requirements</b> ${a.requirements}<br>` : "",
-          a.trigger ? `<b>Trigger</b> ${a.trigger}<br>` : "",
-          a.description ? `<i>${a.description}</i><br>` : "",
-          a.effect
-        ].join(""), 19)
-      ]), [1500, 900, 1200, 5760]));
+  const rows = (ACTS.actions || []).filter(a => modeOf(a.type) === mode);
+  for (const group of [...new Set(rows.map(groupOf))]) {
+    const grp = rows.filter(a => groupOf(a) === group);
+    kids.push(h2(group));
+    if (mode === "Exploration") {
+      kids.push(stripedTable(["Activity", "Speed", "Traits", "Effect"],
+        grp.map(a => [{ text: a.name, bold: true }, a.speed || "", (a.traits || []).join(", "), fmtPara(leadIns(a) + a.effect, 19)]),
+        [1500, 900, 1200, 5760]));
+    } else if (mode === "Downtime") {
+      kids.push(stripedTable(["Endeavor", "Duration", "Traits", "Effect"],
+        grp.map(a => [{ text: a.name, bold: true }, a.duration || "", (a.traits || []).join(", "), fmtPara(leadIns(a) + a.effect, 19)]),
+        [1500, 900, 1200, 5760]));
+    } else {
+      kids.push(stripedTable(["Maneuver", "Cost", "Traits", "Effect"],
+        grp.map(a => [{ text: a.name, bold: true }, costText(a), (a.traits || []).join(", "), fmtPara(leadIns(a) + a.effect, 19)]),
+        [1500, 900, 1200, 5760]));
+    }
   }
 }
 
@@ -234,7 +252,7 @@ kids.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 240
   children: [new TextRun({ text: "You are what you do.", font: HEAD, size: 22, italics: true, color: EMBER })] }));
 kids.push(callout("HOW TO USE THIS", [
   "This book is generated from the game data, not written by hand. Every Constellation, Talent, Maneuver and reference table below is read straight out of assets/trees.json, assets/roster.json and assets/actions.json, so it is never out of step with the app, the Foundry system, or the character sheet.",
-  "The rules themselves live in the Player's Handbook (v4.21), which is written by hand. The short paragraphs between the tables restate it; where the two ever disagree, the handbook wins and this file needs a rebuild.",
+  "The rules themselves live in the Player's Handbook (v4.24), which is written by hand. The short paragraphs between the tables restate it; where the two ever disagree, the handbook wins and this file needs a rebuild.",
 ], PAPER, TEAL));
 kids.push(para([run("Contents: ", { bold: true }), run("the character-creation menus (Ancestries and Bloodlines, Cultures, Backgrounds, Callings, Defenses), then every Constellation in the game with its full Talent list and star map, then the reference appendices: conditions and Zones, Vigor and Wounds, traits, Maneuvers and Activities, equipment, and the damage tables.")]));
 kids.push(new Paragraph({ children: [new TableOfContents("Contents", { hyperlink: true, headingStyleRange: "1-3" })] }));
@@ -402,20 +420,12 @@ for (const [grp, rows] of Object.entries(R.actions || {})) {
   kids.push(stripedTable(["Maneuver", "Traits", "Effect"],
     kept.map(r => [{ text: r[0], bold: true }, r[1], fmtPara(r[2], 19)]), [1700, 1500, 6160]));
 }
-if (R.explorationActions) {
-  kids.push(h2("Exploration Mode"));
-  sheetActionTables(kids, "Exploration");
-  const kept = notSheet(R.explorationActions);
-  if (kept.length) kids.push(stripedTable(["Activity", "Speed", "Effect"],
-    kept.map(r => [{ text: r[0], bold: true }, r[1], fmtPara(r[2], 19)]), [1600, 1100, 6660]));
-}
-if (R.downtimeActions) {
-  kids.push(h2("Downtime Mode"));
-  sheetActionTables(kids, "Downtime");
-  const kept = notSheet(R.downtimeActions);
-  if (kept.length) kids.push(stripedTable(["Activity", "Duration", "Effect"],
-    kept.map(r => [{ text: r[0], bold: true }, r[1], r[2]]), [1600, 1300, 6460]));
-}
+// The Activities and the Endeavors are rows of data/activities.xlsx and data/endeavors.xlsx since
+// 0.20.0 (PHB v4.24, Chapter 8); the roster's hand-kept tables went with them.
+kids.push(h2("Exploration Mode"));
+sheetActionTables(kids, "Exploration");
+kids.push(h2("Downtime Mode"));
+sheetActionTables(kids, "Downtime");
 // Difficult terrain (0.18.0): the kinds the map's regions and a Talent's "ignore" line name, from
 // the roster's hand-kept terrainKinds block ([name, description, difficulty, colour]); the colour is
 // the map overlay's and is not printed.

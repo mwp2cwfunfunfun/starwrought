@@ -1,0 +1,51 @@
+{
+  "_id": "770922ecb87e290e",
+  "name": "Quench the Ember",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Ancestry Actions",
+    "basic": false,
+    "traits": [
+      "Concentrate"
+    ],
+    "prerequisites": "Quench the Ember",
+    "requirements": "You are taking persistent fire damage.",
+    "trigger": "",
+    "frequency": "Once per encounter",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You can draw the heat of a lingering flame inward until its last trace gutters out.</i></p>",
+    "effect": "<p>End one instance of persistent fire damage on yourself. This does not remove its source, prevent a new application, or extinguish an independently burning object.</p>",
+    "automation": "[EFFECT: End Persistent Fire Damage; LIMIT: encounter]",
+    "rules": [
+      {
+        "error": "\"EFFECT:\" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or `[<Constellation> trained]`; an effect goes in `[EFFECT <tag>: ...]`",
+        "line": 1,
+        "text": "[EFFECT: End Persistent Fire Damage; LIMIT: encounter]"
+      }
+    ],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "5e509cc3fcff7303",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8c9ee87dd409e86e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!770922ecb87e290e"
+}

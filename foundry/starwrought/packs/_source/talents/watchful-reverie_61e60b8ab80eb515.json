@@ -1,0 +1,56 @@
+{
+  "_id": "61e60b8ab80eb515",
+  "name": "Watchful Reverie",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Elvendom"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Four hours of uninterrupted reverie provides the benefits of a full night’s rest. You remain conscious, though resting, and can notice events through your ordinary senses. Acting or undertaking another Activity interrupts the reverie. This does not shorten the time required to heal a Wound or to perform downtime Endeavors.",
+    "description": "<p><i>Your rest settles into a quiet reverie from which the world is never entirely absent.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "65258fcd7336a25a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!61e60b8ab80eb515"
+}

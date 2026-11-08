@@ -1,0 +1,36 @@
+{
+  "_id": "ccdedfc696f22b85",
+  "name": "Artisan",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Athletics",
+      "Crafting",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Athletics and Crafting, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Smithing Lore, Carpentry Lore, Masonry Lore.</p>",
+    "description": "<p><i>You spent years learning a craft and the patience it demands. You still judge unfamiliar places by what their people make and how well they make it.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "00f05be890748545"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ccdedfc696f22b85"
+}

@@ -1,0 +1,82 @@
+{
+  "_id": "b0fcd6ef9d5c4717",
+  "name": "Braveheart Halfling",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Halfling Fortune"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "You belong to the Braveheart Halfling Bloodline.<br><br><b>Steady Heart. </b>Gain a +1 Condition bonus to Defenses against Attacks with the Fear trait.",
+    "description": "<p><i>A steady pulse and unusually even response to sudden stress mark a lineage slow to yield to panic.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT DEF: 1 condition; IFT: TRAIT(Fear)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Defenses",
+          "slug": "defenses",
+          "type": "scope"
+        },
+        "when": [
+          {
+            "trait": "fear",
+            "name": "Fear"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT DEF: 1 condition; IFT: TRAIT(Fear)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "de5b52594956945b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b0fcd6ef9d5c4717"
+}

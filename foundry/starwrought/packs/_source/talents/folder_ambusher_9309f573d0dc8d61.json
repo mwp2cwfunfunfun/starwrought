@@ -1,0 +1,16 @@
+{
+  "_id": "9309f573d0dc8d61",
+  "name": "Ambusher",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "019201a05a6d768d"
+    }
+  },
+  "_key": "!folders!9309f573d0dc8d61"
+}

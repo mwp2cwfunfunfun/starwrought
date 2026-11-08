@@ -1,0 +1,52 @@
+{
+  "_id": "b4c14147f0313569",
+  "name": "Rescue Haul",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Culture Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Manipulate",
+      "Motion"
+    ],
+    "prerequisites": "Rescue Haul",
+    "requirements": "Enough free hands and carrying capacity to carry or drag your Target.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "An adjacent willing or helpless creature of your Size or smaller",
+    "duration": "",
+    "description": "<p><i>You find a secure grip and a clear route before someone else’s strength gives out.</i></p>",
+    "effect": "<p>Attempt an <i>Athletics </i>check against the terrain’s Threshold (Typically 15), with the following effects:<br>Critical Success Move up to your Speed, bringing the creature with you.<br>Success Move up to half your Speed, bringing it with you.<br>Failure Neither of you moves.<br>Critical Failure Neither of you moves, and you fall Prone.<br>When you move, place the creature in an adjacent unoccupied space at the end. Your movement provokes Reactions normally; the carried creature’s movement does not separately trigger them. It retains its conditions, including Prone if it was already Prone. This grants it no action or Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "cairnward",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "fae6e978a5c0d3c5",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "988e777dffabc1fb"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b4c14147f0313569"
+}

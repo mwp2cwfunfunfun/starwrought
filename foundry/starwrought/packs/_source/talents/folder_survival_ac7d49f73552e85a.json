@@ -1,0 +1,16 @@
+{
+  "_id": "ac7d49f73552e85a",
+  "name": "Survival",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "a1022e0d7911e36b"
+    }
+  },
+  "_key": "!folders!ac7d49f73552e85a"
+}

@@ -1,0 +1,45 @@
+{
+  "_id": "0a54d93b82acd7da",
+  "name": "Lost in the Dark",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Stealth Actions",
+    "basic": false,
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "Lost in the Noise",
+    "requirements": "",
+    "trigger": "An Attack against you has Missed, and you can Hide.",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Perform the <b>Hide</b> maneuver.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "eeea8a54824148e2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "92ec48406fa3f675"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0a54d93b82acd7da"
+}

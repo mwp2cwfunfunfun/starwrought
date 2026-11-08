@@ -1,0 +1,50 @@
+{
+  "_id": "b98d5f8c3bbf4379",
+  "name": "Sneak",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Stealth Actions",
+    "basic": true,
+    "traits": [
+      "Move"
+    ],
+    "prerequisites": "",
+    "requirements": "You are (or believe you are) Hidden or Undetected from at least one creature.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Choose a route and destination within half your Speed. Before moving, attempt one <i>Stealth</i> check, compared separately against the <i>Awareness</i> of each creature that could detect your movement and to which you are currently Hidden or Undetected. Follow your chosen route, applying the following results separately to each creature:<br>❶ <b>Quick Sneak.<br>   Critical Success</b> or <b>Success</b> You retain your previous awareness state relative to that creature throughout the movement.<br>   <b>Failure</b> The creature detects your movement at the first point along your route where it could do so.<br> <b>  Critical Failure</b> As Failure, and you are Wrong-Footed to that creature until your next Opportunity.<br>❷ <b>Creep. </b>You move cautiously enough to recognize danger before committing. After rolling, but before Moving, you may choose to abandon the entire movement. You remain in your starting space and retain your previous awareness states. Both actions are still spent. If you proceed, resolve the results above, except a Critical Failure does not make you Wrong-Footed.<br><u>Note on Ending in the Open:</u> Against a creature that could otherwise see you, your destination must provide Concealment or at least Lesser Cover. Otherwise, it detects you regardless of your check.<br><u>Note on Being Detected:</u> Crossing open ground during the movement does not itself reveal you. If detected, a creature that detects you treats you as Observed if it can see you clearly, Concealed if Concealment still applies, or Hidden if it can sense your presence but cannot see you.<br><u>Note on Hide vs. Sneak:</u> Sneak does not itself improve your awareness state relative to any creature. Use Hide to become Hidden from a creature that already knows your location.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "stealth",
+      "defense": "awareness"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "eeea8a54824148e2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "18a226c33d924e9c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b98d5f8c3bbf4379"
+}

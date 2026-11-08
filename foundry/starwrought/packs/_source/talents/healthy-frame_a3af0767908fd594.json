@@ -1,0 +1,107 @@
+{
+  "_id": "a3af0767908fd594",
+  "name": "Healthy Frame",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Dwarven Endurance"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Condition bonus to Endure checks against poison and disease, including recovery checks against those effects.",
+    "description": "<p><i>Your body throws off corruption with the same steady effort it brings to hard work.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT DEF: 1 condition, endure; IFT: TRAIT(Poison)]\n[EFFECT DEF: 1 condition, endure; IFT: TRAIT(Disease)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Endure",
+          "slug": "endure",
+          "type": "constellation"
+        },
+        "when": [
+          {
+            "trait": "poison",
+            "name": "Poison"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT DEF: 1 condition, endure; IFT: TRAIT(Poison)]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Endure",
+          "slug": "endure",
+          "type": "constellation"
+        },
+        "when": [
+          {
+            "trait": "disease",
+            "name": "Disease"
+          }
+        ],
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT DEF: 1 condition, endure; IFT: TRAIT(Disease)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7107d85a9dfca503"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a3af0767908fd594"
+}

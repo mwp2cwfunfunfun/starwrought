@@ -1,0 +1,50 @@
+{
+  "_id": "69c361fa315bb6cd",
+  "name": "Grapple",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "",
+    "requirements": "You have a free hand or a weapon with the Grapple Trait, and the target must be within reach and no more than one Size larger than you.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Athletics</i> check against your target’s <i>Evade</i> or <i>Guard</i>, with the following effects, depending on how many actions you took:<br>❶ <b>Quick Grab.</b><br>   <b>Critical Success </b>The target is Restrained until the start of your next Opportunity.<br>   <b>Success</b> The target is Grabbed until the your next Opportunity.<br>   <b>Failure</b> No effect.<br>  <b> Critical Failure </b>You overcommit and are Off-Guard until your next Opportunity.<br>❷<b> Tackle.</b><br>  <b> Critical Success</b> The target is knocked Prone or Supine (your choice, subject to GM judgment call), and Restrained until your next Opportunity.<br>   <b>Success</b> The target is knocked Prone or Supine (your choice, subject to GM judgment call), and Grabbed until your next Opportunity. You fall Prone adjacent to them.<br>   <b>Failure</b> No effect.<br> <b>  Critical Failure </b>You overcommit and fall Prone.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": "evade"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c08dfb18330c9929"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!69c361fa315bb6cd"
+}

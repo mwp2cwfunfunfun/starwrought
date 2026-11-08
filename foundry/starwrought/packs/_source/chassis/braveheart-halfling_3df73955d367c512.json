@@ -1,0 +1,30 @@
+{
+  "_id": "3df73955d367c512",
+  "name": "Braveheart Halfling",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "halfling",
+    "attribute": "agility",
+    "specialAbility": "<p>You belong to the Braveheart Halfling Bloodline.<br><br><b>Steady Heart. </b>Gain a +1 Condition bonus to Defenses against Attacks with the Fear trait.</p>",
+    "description": "<p>A bloodline of the Halfling ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "5bd3824fc44937cb"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3df73955d367c512"
+}

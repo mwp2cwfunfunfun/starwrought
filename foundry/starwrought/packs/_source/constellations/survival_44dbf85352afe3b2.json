@@ -1,0 +1,36 @@
+{
+  "_id": "44dbf85352afe3b2",
+  "name": "Survival",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/survival.png",
+  "system": {
+    "slug": "survival",
+    "category": "skill",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "dd7959c52ef39a44"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!44dbf85352afe3b2"
+}

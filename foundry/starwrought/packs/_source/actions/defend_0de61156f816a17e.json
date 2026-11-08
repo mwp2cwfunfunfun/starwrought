@@ -10,18 +10,28 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Exploration Mode",
-    "requirements": "Travel Speed: Half",
-    "traits": [],
-    "description": "<p>Your shield begins Raised and a weapon is already in hand. When an encounter begins, you can roll Awareness.</p>",
+    "basic": true,
+    "traits": [
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Your shield begins Raised. When an encounter begins, when an encounter begins, roll <i>Awareness</i> for Initiative.</p>",
+    "automation": "",
+    "rules": [],
     "exploration": {
       "travel": "half",
       "check": "",
       "initiative": "",
       "effect": "defend"
     },
-    "automation": "",
-    "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "data/activities.xlsx"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -30,7 +40,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "0bfc034a5f867d25"
+      "contentHash": "7842f44836807aa6"
     }
   },
   "effects": [],

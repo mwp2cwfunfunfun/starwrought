@@ -12,8 +12,8 @@
  * PHB v4.10: every combatant receives six actions at the start of each round; they expire at the
  * end of it. Play cycles through the initiative order and each visit is an Opportunity: one
  * Maneuver you can afford, or Pass. A full circuit of Passes ends the round. Reactions are paid
- * from the same six. A Maneuver of three or more actions is Prepared: one action now, the rest
- * reserved, resolved at your next Opportunity.
+ * from the same six. A Maneuver of three or more actions is Prepared: PREPARE_SPEND actions now,
+ * the rest reserved, resolved at your next Opportunity.
  */
 export const ACTIONS_PER_ROUND = 6;
 /**
@@ -25,6 +25,14 @@ export const ACTIONS_PER_ROUND = 6;
 export const ACTIONS_MAX = 12;
 /** A Maneuver costing this many actions or more is Prepared. */
 export const PREPARED_THRESHOLD = 3;
+/**
+ * The actions spent as a Prepared Maneuver begins; the rest of its cost is reserved until the next
+ * Opportunity. PHB v4.24 (Chapter 2, Reactions and Preparation; the Prepared trait): "You begin it
+ * at one Opportunity by spending two actions and reserving the rest." Through 0.19.0 it was one
+ * (PHB v4.10 to v4.21); Mike's decision of 2026-11-08 (ruling 205) follows the two sentences the
+ * v4.24 edition changed, and Chapter 4's "Spend one now" is redlined to match.
+ */
+export const PREPARE_SPEND = 2;
 
 /**
  * The action glyphs the handbook prints (PHB v4.10, Symbols): ⓿ is free, ❶ to ❻ a cost; ↺ marks

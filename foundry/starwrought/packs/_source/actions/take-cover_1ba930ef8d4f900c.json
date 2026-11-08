@@ -1,0 +1,43 @@
+{
+  "_id": "1ba930ef8d4f900c",
+  "name": "Take Cover",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Defensive & Recovery Maneuvers",
+    "basic": true,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "You are in or adjacent to a space that provides Cover or Greater Cover, or you are wielding a tower shield.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Press yourself into your cover. Your Cover improves by one grade. Adjust the Zones Covered to match. This lasts until you Move, Step or Attack.<br><b>Special</b> A raised tower shield gives you Cover with nothing to get behind, so Taking Cover behind one gives you Greater cover.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "17f1e005b4428dbf",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e877bcfcb79f4371"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1ba930ef8d4f900c"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "d8684a434858c915",
+  "name": "Society",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/society.png",
+  "system": {
+    "slug": "society",
+    "category": "skill",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "96b9822c8a242d26"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d8684a434858c915"
+}

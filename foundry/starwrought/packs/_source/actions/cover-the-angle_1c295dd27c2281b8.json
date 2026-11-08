@@ -23,7 +23,7 @@
     "description": "<p>Requirements You are wielding a rigid object like a weapon or a shield. Trigger An adjacent ally is Attacked in melee by a foe no more than one size larger than you. The attack is measured against your Guard instead of your ally's Defense, and any Bind that forms is with your weapon or shield.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "0603ce99aeadb079"
+      "contentHash": "d6a794011353450b"
     }
   },
   "effects": [],

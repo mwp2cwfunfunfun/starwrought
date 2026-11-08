@@ -81,7 +81,7 @@
    "hp": 9,
    "size": "Medium",
    "speed": "5 ft",
-   "senses": "Low-light vision",
+   "senses": "low-light vision",
    "tree": "Dwarf",
    "blurb": "Dwarves are enduring and powerfully built, with long memories for the things that hold a life together and the faults that can bring it down.",
    "bloodlines": [
@@ -155,7 +155,7 @@
    "hp": 7,
    "size": "Medium",
    "speed": "7 ft",
-   "senses": "Low-light vision",
+   "senses": "low-light vision",
    "tree": "Elf",
    "blurb": "Elves are long-lived and keen-sensed, finding beauty in careful attention and difficulty in knowing when a thing is truly finished.",
    "bloodlines": [
@@ -305,7 +305,7 @@
    "speed": "6 ft",
    "senses": "—",
    "tree": "Halfling",
-   "blurb": "",
+   "blurb": "Halflings are small and adaptable, often finding that an attentive hand and a fortunate second chance can turn the course of a much larger problem.",
    "bloodlines": [
     [
      "Braveheart Halfling",
@@ -318,6 +318,56 @@
    ],
    "traits": [
     "Halfling"
+   ],
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Halflings are small and adaptable, often finding that an attentive hand and a fortunate second chance can turn the course of a much larger problem."
+    },
+    {
+     "label": "About",
+     "text": "Halflings live close to a world built by larger people. A countertop can hide a conversation; a hurried crowd can become moving walls; a door made for someone else may require both hands. Familiarity with such inconveniences often produces a practical eye for another approach. A halfling notices the smaller latch, the loose board, or the person nobody thought to ask.<br><br>Their reputed luck is harder to explain. A slipping grip catches again. A lock yields at the last adjustment. The bridge plank breaks one step behind them. Halflings disagree about whether this is a blessing, an inherited gift, or a story people tell after forgetting all the careful work that preceded it. None of those explanations guarantees an easy life, and many halflings become adventurers because they are tired of being someone else’s reassuring little exception."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character whose small stature leaves plenty of room for resourcefulness, courage, and the occasional unlikely escape, play a halfling."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Notice who has been overlooked in a crowded room.<br>• Keep a modest comfort ready for an uncertain journey.<br>• Try a practical approach after an imposing one has failed."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Underestimate how far you have already traveled.<br>• Tell the story of your escape as though luck did all the work.<br>• Relax around you before realizing how closely you have been paying attention."
+    },
+    {
+     "label": "Physical Description (at a glance)",
+     "text": "Halflings usually stand two and a half to three and a half feet tall. They are Small, with varied builds, rounded or lightly pointed ears, and hands capable of very precise work. Broad feet and dense hair on the lower legs occur in many families; well-fitted boots and sturdy sandals are as common as bare feet. Their clothing and household arrangements follow the Culture and surroundings in which they live."
+    },
+    {
+     "label": "Physical Description (lifecycle)",
+     "text": "Halflings reach physical adulthood at around eighteen years. Many live between one hundred and one hundred sixty years, with some surviving longer. Their physical development resembles that of humans more closely than that of the very long-lived peoples, while their extended later years let them remain part of several generations of a household."
+    },
+    {
+     "label": "Society",
+     "text": "Halflings build their own settlements and live throughout the towns and countries of other peoples. Their families may be established farmers, urban tenants, river travelers, court officials, or anything else their Culture and circumstances allow. Communities with many halfling households often pay close attention to shared access: a low latch, an extra step, and a place to sit are signs that someone has considered who will actually use a room.<br><br>Some households preserve belonging through regular meals and visits; others through routes, letters, and the expectation that a traveler can return without explaining every year away. This welcome can become intrusive when a family decides it knows what kind of life should make a person content. A halfling who leaves may be carrying the household’s hopes, escaping them, or simply curious about what lies beyond the familiar turn in the road."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Many halfling traditions give significance to ordinary acts of welcome, safe passage, and remembering the absent. Luck may be addressed as a spirit, a blessing, an ancestor’s attention, or a habit of staying alert. Their beliefs can be solemn, skeptical, or exuberant. The familiar emphasis on small comforts is often an acknowledgment that security requires work, not proof that the world is harmless."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Make room for someone the room was not built to welcome.<br>• Share what keeps you steady through a difficult day.<br>• Give a good effort the chance to become a fortunate one."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Mistake another person’s small stature for a small claim to respect.<br>• Take hospitality and repay it with contempt.<br>• Rely on luck to excuse a danger you could have prevented."
+    },
+    {
+     "label": "Names",
+     "text": "Many halfling family names remember a small landmark near an ancestral home: a gate, lane, stile, ford, or turn in a road. In Common they often combine a plant or local feature with that landmark. The family need not still live there.<br><b>• Common given names</b> Bessa, Jory, Milo, Nell, Orrin, Pella, Tamsin, Tobin.<br><b>• Common family names </b>Barleybridge, Brackenstile, Hazelturn, Littleford, Reedgate, Sunlane."
+    }
    ]
   }
  ],
@@ -326,7 +376,7 @@
    "name": "Serrovane",
    "enabled": true,
    "attribute": "Presence",
-   "languages": "Serrovine, Common",
+   "languages": "Common, Serrovine",
    "blurb": "Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.",
    "lore": [
     {
@@ -385,7 +435,7 @@
    "name": "Kestrel Reach",
    "enabled": true,
    "attribute": "Wits",
-   "languages": "Reachspeak, Common",
+   "languages": "Common, Reachspeak",
    "blurb": "Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.",
    "lore": [
     {
@@ -439,6 +489,124 @@
    ],
    "traits": [],
    "tree": "Kestrel Reach"
+  },
+  {
+   "name": "Cairnward",
+   "enabled": true,
+   "attribute": "Might",
+   "languages": "Common, Cairnic",
+   "blurb": "Cairnwarders share the work that keeps a mountain road passable, a shelter supplied, and a struggling traveler from being left behind.",
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Cairnwarders share the work that keeps a mountain road passable, a shelter supplied, and a struggling traveler from being left behind."
+    },
+    {
+     "label": "About",
+     "text": "Cairnward is a chain of high valleys and pass towns joined by narrow roads, rope bridges, and stone shelters whose doors open from the outside. Snow can close a route between breakfast and dusk. Every settlement therefore maintains places where a stranger can find dry fuel, a blanket, and directions to the next safe roof. The supplies belong to the road, and taking what you need creates an expectation that you will replenish a shelter when you can.<br><br>People of many ancestries keep this system working. A halfling may inspect a bridge’s underside while a dwarf anchors the line, an elf reads a changing sky, and a gnome counts the fuel left at the next refuge. Cairnwarders learn that useful strength includes knowing when to ask for another pair of hands. The region admires a difficult rescue, but admires the uneventful journey made possible by good maintenance just as much."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character who judges a community by whom it is prepared to help, shares difficult work readily, and knows the value of a safe place to stop, choose Cairnward."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Check how much fuel and food remain before settling into a borrowed shelter.<br>• Divide a difficult load before anyone has to admit that it is too heavy.<br>• Leave a clear warning where the next traveler will see it."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Trust you to notice when someone is quietly falling behind.<br>• Find your questions about ropes, weather, and spare blankets excessive until the road turns bad.<br>• Assume you will help, and sometimes forget to ask what that help costs you."
+    },
+    {
+     "label": "Dress and Bearing",
+     "text": "Cairnward clothing favors repairable layers, close-fitting sleeves, and cords that can be handled with cold fingers. Bright shoulder tabs make travelers easier to count in fog or snow. Different towns favor different colors, while a small braided loop commonly identifies a household that helps maintain a particular route. Garments and equipment are fitted to their wearer’s ancestry and build.<br><br>Offering someone the sheltered side of a doorway is a familiar courtesy. So is taking one end of a load before beginning a long conversation. Elaborate clothing earns little admiration if its owner refuses to mend a loose fastening."
+    },
+    {
+     "label": "Upbringing and Milestones",
+     "text": "Children begin with small contributions: carrying a handful of kindling to a nearby refuge, learning the warning signs, and accompanying adults on a short maintenance walk. They are taught to distinguish a task they can manage from one that needs help.<br><br>A first independently completed shelter round often marks growing responsibility. The young person returns with an account of what was repaired, replaced, or left for a more experienced crew. Ancestry, ability, and circumstance shape the timing. Later milestones include taking responsibility for a route, teaching a new crew, and handing a demanding duty onward before age or injury makes it unsafe."
+    },
+    {
+     "label": "Society",
+     "text": "Cairnward’s towns govern their own affairs but share responsibility for the routes between them. Seasonal gatherings assign shelter rounds, bridge inspections, and repair crews. Contributions may be labor, materials, food, transport, or skilled planning. A person who cannot safely climb a pass can still arrange the work that makes it passable.<br><br>Rescue crews are assembled around the situation rather than inherited office. The most experienced person for the route leads, and others are expected to speak when they notice a danger. Once everyone is home, the community replaces damaged equipment and supports those injured in its service.<br><br>The system can also make unreasonable demands. A capable household may receive every difficult assignment while a wealthy one supplies goods and keeps its members safe at home. Families sometimes pressure an exhausted rescuer to prove their loyalty one more time. Cairnwarders argue over how to share danger fairly, and who must be heard when a respected leader says the risk is acceptable."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Cairnward shelters often contain a small shared shrine, though the people who maintain them follow many faiths. Travelers leave a knot, a stone, or a few words of thanks after reaching safety. Those lost on the road are remembered by name, with particular care taken to mark where a rescue failed or a route changed.<br><br>Many Cairnwarders understand care for an unknown future traveler as a form of devotion. A dry blanket left behind can serve that purpose as readily as a prayer spoken aloud."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Leave the shelter ready for the person who comes after you.<br>• Share the load before it breaks someone.<br>• Mark a danger clearly, even when you cannot repair it yourself."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Take a refuge’s last supplies and conceal the shortage.<br>• Move or falsify a trusted waymark for personal advantage.<br>• Pressure someone into a rescue whose danger you refuse to share."
+    },
+    {
+     "label": "Names",
+     "text": "Cairnward household names often pair a number with a useful provision. Such a name remembers the painted sign of an old refuge, the gift that established a household, or the supplies its members once promised to maintain. The number is a remembered emblem rather than a current inventory. Adopted relatives and people who join a household commonly take its name.<br><br>Given names often come from family and ancestry traditions. Common forms of the household names are used below.<br><b>• Common given names </b>Anya, Bera, Elda, Fenna, Kellan, Meriel, Pella, Torek.<br><b>• Common household names</b> Five-Blankets, Four-Cups, Nine-Ropes, Seven-Coals, Three-Loaves, Two-Lanterns."
+    }
+   ],
+   "traits": [],
+   "tree": "Cairnward"
+  },
+  {
+   "name": "Lethra",
+   "enabled": true,
+   "attribute": "Agility",
+   "languages": "Common, Lethric",
+   "blurb": "Lethrans learn to read the part a person is playing, signal across a crowded room, and move gracefully between public duties and private lives.",
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Lethrans learn to read the part a person is playing, signal across a crowded room, and move gracefully between public duties and private lives."
+    },
+    {
+     "label": "About",
+     "text": "Lethra is a terraced hill city and its surrounding towns, known for shaded lanes, lantern courts, and the public masks hung beside the doors of neighborhood halls. A service mask identifies a duty. The Open Palm hears a dispute, the Lantern Eye guides people through the night, and the White Reed carries an entrusted message. Qualified residents take turns wearing them, so a familiar office may have a different voice or stature tomorrow.<br><br>The custom gives people a way to serve without making every public act a test of family standing. An elven mediator, a dwarven messenger, and a halfling night guide may wear masks recognized across the same quarter. Private faces are greeted by name; public masks are addressed by their duties. Festivals turn that habit into theater, with neighbors borrowing parts, exchanging costumes, and enjoying how much a small change of bearing can alter a familiar person."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character who understands the power of a convincing role, protects room for a private self, and can turn a crowded scene into an opportunity for a companion, choose Lethra."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Ask what duty a person is performing before deciding how to address them.<br>• Use a small gesture to cue a companion across a noisy room.<br>• Keep a change of clothing or a carefully maintained mask among your belongings."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Expect you to notice a false note in someone’s manner.<br>• Wonder which parts of your public confidence you carry into private life.<br>• Rely on you to draw attention when someone else needs a moment to act."
+    },
+    {
+     "label": "Dress and Bearing",
+     "text": "Lethran clothing favors garments that can be adjusted, layered, and moved in easily. Reversible coats, detachable collars, and bright linings let a person change their public presentation without replacing an entire wardrobe. Masks are fitted to the wearer: beards, ears, spectacles, and different facial shapes all receive practical consideration.<br><br>Service masks use established designs; festival masks invite invention. Lethrans generally leave another person’s mask alone unless invited to handle it. Removing one’s own mask at the end of a duty is a small but deliberate acknowledgment that the office has been put aside."
+    },
+    {
+     "label": "Upbringing and Milestones",
+     "text": "Children learn public roles through games, errands, and supervised festival performances. A game may require them to deliver an accurate message while pretending to be someone else, or to recognize a familiar adult from posture alone. They also learn when a shared joke has made another person uncomfortable.<br><br>A first public duty is usually undertaken with an experienced partner. Acceptance depends on readiness, training, and the demands of the role across Lethra’s many ancestries. Taking a service mask, returning it after a final term, and teaching its next wearer are widely recognized milestones."
+    },
+    {
+     "label": "Society",
+     "text": "Neighborhood maskhouses maintain the service masks, train their wearers, and arrange rotating duties. Residents can bring a complaint against an office without knowing the wearer’s private name. The maskhouse is responsible for examining the complaint and putting right harm done in its service; the wearer remains answerable for deliberate abuse.<br><br>Public performance supports ordinary civic life. Announcements, petitions, and difficult disagreements are often presented in open courts where people are accustomed to attending closely and responding in turn. A well-timed pause or an offered change of speaker can keep an argument from becoming a contest of volume.<br><br>The system has its failures. Established maskhouses may decide who is qualified before an outsider ever receives a fair hearing, and an admired office can shelter a disappointing wearer. A convincing false mask can exploit public trust. Lethrans debate how much privacy an officeholder should retain, and how to expose wrongdoing without turning every public duty into a spectacle."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Lethra’s faiths approach masks in different ways. Some use them to represent divine duties, ancestral figures, or the changing seasons. Others insist that worship begins when every mask is set aside. Both kinds of shrine can stand in the same street.<br><br>A common act of remembrance is to repair an object used in someone’s public service and offer it to a new wearer. The dead person is named during the gift, preserving their contribution while leaving the next person room to serve in their own way."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Perform the duty you have agreed to represent.<br>• Give another person room to put a public role aside.<br>• Use attention carefully, especially when a quieter voice needs to be heard."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Claim the authority of a service mask you have no right to wear.<br>• Expose a private confidence merely to entertain an audience.<br>• Let a respected office excuse deliberate harm by its wearer."
+    },
+    {
+     "label": "Names",
+     "text": "Many Lethran family names combine a color with part of a garment. The name may recall the costume of an old household festival role, a family’s traditional colors, or an ancestor’s recognizable public dress. These inherited names remain in use after the original garment has been lost. They confer no office or authority.<br><br>Given names often retain the sounds of a family’s ancestry or home language. The surnames below use their familiar Common translations.<br><b>• Common given names </b>Della, Elaris, Jori, Lio, Marda, Neri, Sella, Tavin.<br><b>• Common surnames </b>Bluesleeve, Goldcuff, Grayhem, Greencollar, Redsash, Whiteribbon."
+    }
+   ],
+   "traits": [],
+   "tree": "Lethra"
   }
  ],
  "backgrounds": [
@@ -511,7 +679,7 @@
   [
    "Necromancer",
    "Awareness",
-   6,
+   8,
    "Presence",
    "Death Echo: once per round, when a living creature within 15 feet takes a Wound or becomes Spent, hold an Echo; spend it before a Strike or damaging Cast for +2 damage on a Hit."
   ],
@@ -1835,81 +2003,6 @@
    "#8a6fb0"
   ]
  ],
- "explorationActions": [
-  [
-   "Travel",
-   "Full",
-   "When an encounter begins, you can roll Awareness.",
-   "",
-   ""
-  ],
-  [
-   "Hustle",
-   "Double",
-   "When an encounter begins, you can roll Athletics.",
-   "",
-   "Athletics"
-  ],
-  [
-   "Search",
-   "Half",
-   "Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures. When an encounter begins, you can roll Awareness.",
-   "Awareness",
-   ""
-  ],
-  [
-   "Scout",
-   "Half",
-   "Every ally gains a +1 Situation bonus to initiative, and you may Step ⓿ when you roll initiative. When an encounter begins, you can roll Awareness.",
-   "",
-   ""
-  ],
-  [
-   "Defend",
-   "Half",
-   "Your shield begins Raised and a weapon is already in hand. When an encounter begins, you can roll Awareness.",
-   "",
-   ""
-  ],
-  [
-   "Investigate",
-   "Half",
-   "Roll a relevant Lore or Skill check; the GM applies it to the Thresholds to potentially recall relevant information about your surroundings. When an encounter begins, you can roll the same Lore or Skill check, if the encounter is related to what you are Investigating.",
-   "choice",
-   "choice"
-  ],
-  [
-   "Look Harmless",
-   "Half",
-   "Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.\n\nRequirements You wield no weapon with a Reach greater than Adjacent, and your worn armor totals Load 1 or less.\n\nEffects When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy that you are Observed to, with the following effects:\nCritical SuccessThey are Wrong-Footed to you until the end of your first Opportunity.\nSuccessThey are Wrong-Footed to your first attack.\nFailureNothing; they were watching you all along.\nCritical FailureYou overplayed it. You are Wrong-Footed to them until your next Opportunity.\n\nOutside an encounter, a Successful Guile check lets you approach, pass, or linger without being challenged by anyone who would otherwise have wanted to know your business.",
-   "Guile",
-   "Guile"
-  ],
-  [
-   "Avoid Notice",
-   "Half",
-   "You move quietly and keep to cover. Roll Stealth; the GM applies it to the Awareness Threshold of anyone who might notice you. When an encounter begins, you can use your Stealth roll for initiative.",
-   "Stealth",
-   "Stealth"
-  ]
- ],
- "downtimeActions": [
-  [
-   "Retrain",
-   "1 month",
-   "Move 1 already spent Talent Point to another Talent you qualify for. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or a Talent that would reduce your Proficiency Rank in a Constellation."
-  ],
-  [
-   "Train",
-   "7 days",
-   "You work with a teacher, a rival, or a manual. You gain a Flare for the particular training pursued, subject to GM approval as described in Chapter 7. You may benefit from Train only once between one Milestone and the next."
-  ],
-  [
-   "Provision",
-   "1 day",
-   "Buy and sell in a settlement. Common goods are simply available. For anything uncommon, roll a relevant Skill or Lore against a Threshold the GM sets to find someone who has one. You sell at half price."
-  ]
- ],
  "conditions": [
   [
    "Off-Guard",
@@ -1977,7 +2070,7 @@
   ],
   [
    "Preparing",
-   "You have begun a Maneuver of three or more actions: one action spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it."
+   "You have begun a Maneuver of three or more actions: two actions spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it."
   ],
   [
    "Exposed [Zone]",

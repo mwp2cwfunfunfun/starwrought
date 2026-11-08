@@ -1,0 +1,36 @@
+{
+  "_id": "b4be67940b8ce549",
+  "name": "Charlatan",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Guile",
+      "Performance",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Guile and Performance, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Confidence Schemes Lore, Stagecraft Lore, False Credentials Lore.</p>",
+    "description": "<p><i>You lived by selling convincing stories, borrowed credentials, or cures that promised rather more than they delivered. You learned to become the person an audience wanted to believe.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2735ae7f15ba1ee3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b4be67940b8ce549"
+}

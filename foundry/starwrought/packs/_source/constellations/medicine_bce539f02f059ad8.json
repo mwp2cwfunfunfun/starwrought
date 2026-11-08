@@ -1,0 +1,36 @@
+{
+  "_id": "bce539f02f059ad8",
+  "name": "Medicine",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/medicine.png",
+  "system": {
+    "slug": "medicine",
+    "category": "skill",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8a756c7c29183ce6"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!bce539f02f059ad8"
+}

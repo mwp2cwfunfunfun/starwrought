@@ -1,0 +1,16 @@
+{
+  "_id": "f54f067a4c4c15f2",
+  "name": "Performance",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "9f36bed28527a39f"
+    }
+  },
+  "_key": "!folders!f54f067a4c4c15f2"
+}

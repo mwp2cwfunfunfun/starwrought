@@ -7,15 +7,21 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "reaction": true,
+    "reaction": false,
     "reactionCost": "",
-    "category": "Talent Maneuvers",
+    "category": "Culture Actions",
     "basic": false,
-    "traits": [],
-    "prerequisites": "",
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "Quick Tongue",
     "requirements": "You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.",
     "trigger": "You critically fail a Diplomacy check.",
-    "description": "<p>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</p>",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</i></p>",
     "effect": "<p>Reroll the triggering Diplomacy check, using the second result.</p>",
     "automation": "[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]",
     "rules": [
@@ -38,14 +44,14 @@
     ],
     "source": "data/maneuvers.xlsx"
   },
-  "folder": "678f65cc481b1fe1",
+  "folder": "fae6e978a5c0d3c5",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "abc2d7152ae10b45"
+      "contentHash": "773304068c60a358"
     }
   },
   "effects": [],

@@ -1,12 +1,12 @@
 {
-  "phb": "4.21",
-  "syncedOn": "2026-11-05",
-  "constellations": 51,
-  "talents": 230,
+  "phb": "4.24",
+  "syncedOn": "2026-11-08",
+  "constellations": 65,
+  "talents": 306,
   "equipment": 59,
   "enabled": {
-    "constellations": 33,
-    "talents": 101,
+    "constellations": 48,
+    "talents": 183,
     "equipment": 31
   }
 }

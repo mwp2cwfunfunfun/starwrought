@@ -1,0 +1,53 @@
+{
+  "_id": "1826398a11381e58",
+  "name": "Demoralize",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "3",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Intimidation Actions",
+    "basic": true,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Fear",
+      "Mental"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Choose one creature that can hear you. Attempt an <i>Intimidation</i> check vs. <i>Guard</i>, with the following effects, depending on how many actions you took:<br>❶ <b>Quick Demoralize.</b><br>   <b>Critical Success </b>The target is Frightened 2.<br>   <b>Success</b> The target is Frightened 1.<br>   <b>Failure</b> No effect.<br>   <b>Critical Failure</b> The target is emboldened, gaining a +1 Situation bonus to Attacks against you until your next Opportunity.<br>❷ <b>Break Them.</b><br>As Quick Demoralize, but you can target any amount of creatures within 30 feet that can hear you.<br>❸ <b>Focused Demoralize.</b><br>   <b>Critical Success </b>The target is Frightened 3 and Heedless until your next Opportunity.<br>   <b>Success</b> The target is Frightened 2.<br>   <b>Failure</b> or <b>Critical Failure</b> No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "intimidation",
+      "defense": "guard"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b65d9b83c082292",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "60d87e15a1ca3035"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1826398a11381e58"
+}

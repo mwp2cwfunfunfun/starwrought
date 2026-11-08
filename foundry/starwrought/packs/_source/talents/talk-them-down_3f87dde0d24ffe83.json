@@ -1,6 +1,6 @@
 {
   "_id": "3f87dde0d24ffe83",
-  "name": "Talk Them Down ❶",
+  "name": "Talk Them Down",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,9 +15,9 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Talk Them Down ❶ action:<br><b>Talk Them Down ❶<br>Auditory, Concentrate, Emotion, Mental</b><br>Roll Diplomacy against the target's Guard. On a success, it takes a -2 Situation penalty to Attacks against you until the end of the next round; on a critical success, until the end of the encounter. On a critical failure it gains a +1 Situation bonus to Attacks against you.",
-    "description": "",
-    "cost": "1",
+    "effect": "You gain the <b>Talk Them Down </b>Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Talk Them Down ❶</strong></p><p>Attempt a <i>Diplomacy</i> check vs. <i>Guard </i>one creature within 30 feet that understands you, with the following effects:<br><b>Critical Success </b>It takes a -2 Situation penalty to its next Attack against you before the end of the next round.<b><br>Success </b>It takes a -2 Situation penalty to its next Attack against you until your next Opportunity.<br><b>Failure</b> No effect.<br><b>Critical Failure</b> It gains a +1 Situation bonus to its next Attack against you until your next Opportunity.</p></div>",
+    "description": "<p><i>A measured appeal gives an opponent a reason to hesitate.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
     "reaction": false,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Talk Them Down]",
+    "rules": [
+      {
+        "name": "Talk Them Down",
+        "slug": "talk-them-down",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Talk Them Down]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "eb638d2c93ae2065",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "275ee675c827d882"
+      "contentHash": "482de6457c2bffb5"
     }
   },
   "effects": [],

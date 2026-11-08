@@ -1,0 +1,50 @@
+{
+  "_id": "23b764d60ccde6f9",
+  "name": "Find Footing",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Survival Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "One adjacent, contiguous field of Nonmagical Difficult Terrain",
+    "duration": "For the remainder of the encounter",
+    "description": "",
+    "effect": "<p>Attempt a <i>Survival</i> check against your target's Threshold, with the following effects:<br>   <b>Critical Success </b>You can Move and Step through your target as if it were not Difficult Terrain.<b><br></b>   <b>Success </b>You can Move through your target as if it were not Difficult Terrain, though you still cannot Step through it.<br>   <b>Failure</b> or <b>Critical Failure </b>No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "survival",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "a0011baa55770005",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4518c050a549c2da"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!23b764d60ccde6f9"
+}

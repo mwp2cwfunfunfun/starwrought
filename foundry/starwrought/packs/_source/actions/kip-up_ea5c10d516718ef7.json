@@ -1,0 +1,43 @@
+{
+  "_id": "ea5c10d516718ef7",
+  "name": "Kip Up",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Acrobatics Actions",
+    "basic": false,
+    "traits": [],
+    "prerequisites": "Kip Up",
+    "requirements": "You are Prone or Supine.",
+    "trigger": "",
+    "frequency": "once per round",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Stand up. This movement doesn't trigger Reactions.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "131b3e0aa90866d8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "dae31c57d90cd979"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ea5c10d516718ef7"
+}

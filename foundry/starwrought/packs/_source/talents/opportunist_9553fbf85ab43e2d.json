@@ -1,0 +1,56 @@
+{
+  "_id": "9553fbf85ab43e2d",
+  "name": "Opportunist",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "ambusher",
+    "constellationName": "Ambusher",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Ambusher Calling"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "<b>Opportunist ❶↺<br><br>Trigger</b> An ally Hits a creature within your reach.<br><b>Effect</b> Strike that creature. It is Off-Guard to this Strike.",
+    "description": "<p><i>An ally’s attack creates a moment of distraction, and you are ready to make it costly.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9309f573d0dc8d61",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "b5c8bd7f19f73772"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9553fbf85ab43e2d"
+}

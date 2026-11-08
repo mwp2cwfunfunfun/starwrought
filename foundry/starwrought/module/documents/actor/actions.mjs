@@ -244,7 +244,10 @@ export const ActionsMixin = Base => class extends Base {
       await this.abandonPrepared({ reason: "replaced" });
     }
     cost = Math.max(1, Math.floor(Number(cost) || SW.PREPARED_THRESHOLD));
-    const reserve = cost - 1;
+    // PHB v4.24: two actions now, the rest reserved (SW.PREPARE_SPEND; ruling 205). The whole cost
+    // leaves the pool here; `reserved` is the part that returns on Abandon.
+    const spend = Math.min(cost, SW.PREPARE_SPEND);
+    const reserve = cost - spend;
     const left = this.system.actions.value ?? 0;
     // A Cast's preparation (PHB v4.21: a Focused or Committed Cast is Prepared under the
     // three-action rule) remembers the spell Talent and the commitment as a Strike's remembers
@@ -271,7 +274,7 @@ export const ActionsMixin = Base => class extends Base {
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought action-card sw-prepared-card" data-actor-uuid="${this.uuid}">
         <h3><i class="fa-solid fa-hourglass-half"></i> ${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, reserved: reserve })}
+        <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, spent: spend, reserved: reserve })}
         <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>
         <p class="sw-card-note">${game.i18n.localize("STARWROUGHT.Prepared.finishLater")}</p>
         <div class="sw-card-buttons">
@@ -336,7 +339,7 @@ export const ActionsMixin = Base => class extends Base {
   }
 
   /**
-   * Abandon a Prepared Maneuver: the action already spent is lost, the reserved actions return.
+   * Abandon a Prepared Maneuver: the actions already spent are lost, the reserved actions return.
    * @param {object} [options]
    * @param {"choice"|"wound"|"replaced"} [options.reason]
    */
@@ -356,7 +359,7 @@ export const ActionsMixin = Base => class extends Base {
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought action-card"><h3>${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
-        <p>${game.i18n.format(key, { name: this.name, what: prep.label ?? "", returned: actions.reserved ?? 0 })}
+        <p>${game.i18n.format(key, { name: this.name, what: prep.label ?? "", returned: actions.reserved ?? 0, spent: Math.max(0, (prep.cost ?? SW.PREPARED_THRESHOLD) - (actions.reserved ?? 0)) })}
         <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p></div>`,
       whisper: this.announcesSpends ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
     });

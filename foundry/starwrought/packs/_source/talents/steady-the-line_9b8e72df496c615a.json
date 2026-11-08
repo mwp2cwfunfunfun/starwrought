@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Steady the Line Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Steady the Line ❶↺</strong></p><p><strong>Trigger</strong> An adjacent ally's Strike is Stopped and would Expose them.</p><p>It Exposes nothing.</p></div>",
+    "effect": "You gain the<b> Steady the Line</b> Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Steady the Line ❶</strong></p><p><strong>Trigger</strong> An adjacent ally would become Exposed.</p><p>The adjacent ally does not become Exposed.</p></div>",
     "description": "<p><i>You cut through the clash, steadying a companion’s defense before it can falter.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -45,7 +45,7 @@
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,
@@ -54,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ee5128de31d02e2e"
+      "contentHash": "529d9846a8853af6"
     }
   },
   "effects": [],

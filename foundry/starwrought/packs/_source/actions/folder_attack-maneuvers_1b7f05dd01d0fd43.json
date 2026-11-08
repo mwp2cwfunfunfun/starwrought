@@ -1,0 +1,16 @@
+{
+  "_id": "1b7f05dd01d0fd43",
+  "name": "Attack Maneuvers",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "3840286238e25879"
+    }
+  },
+  "_key": "!folders!1b7f05dd01d0fd43"
+}

@@ -1,0 +1,56 @@
+{
+  "_id": "f9434176572ff26e",
+  "name": "Dwarven Resolve",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Dwarven Endurance"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, at the end of a round in which you are Frightened, reduce your Frightened value by 1 additional point. This is in addition to the normal end-of-round reduction.",
+    "description": "<p><i>You hold to a deliberate breath when fear tries to make every choice for you.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0b69fb476f2d0277"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f9434176572ff26e"
+}

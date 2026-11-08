@@ -1,0 +1,43 @@
+{
+  "_id": "5d433c4eae9537f0",
+  "name": "Close",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack Maneuvers",
+    "basic": true,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "You Control a foe’s weapon.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Step toward that foe. The Bind does not end due to this movement, and the Controlled weapon cannot Intercept you.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b7f05dd01d0fd43",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "17c97e63b464d411"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5d433c4eae9537f0"
+}

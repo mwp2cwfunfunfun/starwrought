@@ -1,0 +1,36 @@
+{
+  "_id": "c2baf04bfe5d810c",
+  "name": "Investigator",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Insight",
+      "Society",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Insight and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Legal Lore, Criminal Networks Lore, Forensics Lore.</p>",
+    "description": "<p><i>You made a living finding what people had concealed, from missing property to the explanation for a death. You learned to test a convincing account against what a place and its people actually revealed.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ed2173d98774f9f9"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c2baf04bfe5d810c"
+}

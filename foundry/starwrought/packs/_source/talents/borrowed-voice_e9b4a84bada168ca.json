@@ -1,0 +1,79 @@
+{
+  "_id": "e9b4a84bada168ca",
+  "name": "Borrowed Voice",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Gnomish Spark"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "Gain a +1 Condition bonus to Guile checks to imitate a voice you have heard clearly for at least 1 minute. A listener who knows the speaker may still notice inconsistencies; this does not change your appearance or grant a language.",
+    "description": "<p><i>Your voice can reproduce a remembered cadence with unsettling precision.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, guile; IF: CLAIM(imitate a voice you have heard clearly for at least 1 minute)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Guile",
+          "slug": "guile",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "imitate a voice you have heard clearly for at least 1 minute"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, guile; IF: CLAIM(imitate a voice you have heard clearly for at least 1 minute)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a9ac45a5187b8427"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e9b4a84bada168ca"
+}

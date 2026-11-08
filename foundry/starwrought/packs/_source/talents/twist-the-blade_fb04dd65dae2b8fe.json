@@ -1,0 +1,56 @@
+{
+  "_id": "fb04dd65dae2b8fe",
+  "name": "Twist the Blade",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "ambusher",
+    "constellationName": "Ambusher",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Ambusher Calling"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per round, when your Sneak Attack damage applies to a Hit, the Zone it landed on becomes Exposed.",
+    "description": "<p><i>You turn a precise strike into an opening in your enemy’s guard, leaving a vulnerable spot exposed.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9309f573d0dc8d61",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4ad69db65efa7f8a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fb04dd65dae2b8fe"
+}

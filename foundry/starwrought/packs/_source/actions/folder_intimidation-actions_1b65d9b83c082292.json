@@ -1,0 +1,16 @@
+{
+  "_id": "1b65d9b83c082292",
+  "name": "Intimidation Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 13,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "a59c4a4963b7cb7f"
+    }
+  },
+  "_key": "!folders!1b65d9b83c082292"
+}

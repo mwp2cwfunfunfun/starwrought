@@ -1,0 +1,16 @@
+{
+  "_id": "30023a5bfcb7bf9c",
+  "name": "Guile Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 11,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "947154b475fd3ce0"
+    }
+  },
+  "_key": "!folders!30023a5bfcb7bf9c"
+}

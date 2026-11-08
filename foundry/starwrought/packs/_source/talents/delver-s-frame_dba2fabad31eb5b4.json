@@ -1,0 +1,56 @@
+{
+  "_id": "dba2fabad31eb5b4",
+  "name": "Delver’s Frame",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Understone Dwarf"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Squeeze, you may move up to your Speed instead of the normal 3 feet. All other Squeeze limits remain, including the minimum opening, being Off-Guard, losing access to Evade, and restrictions on weapons.",
+    "description": "<p><i>Your shoulders and joints turn through close passages with less wasted movement.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2ca5de6facbb653e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!dba2fabad31eb5b4"
+}

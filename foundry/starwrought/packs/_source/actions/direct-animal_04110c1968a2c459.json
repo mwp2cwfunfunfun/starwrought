@@ -1,0 +1,51 @@
+{
+  "_id": "04110c1968a2c459",
+  "name": "Direct Animal",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Animal Handling Actions",
+    "basic": true,
+    "traits": [
+      "Auditory",
+      "Concentrate"
+    ],
+    "prerequisites": "",
+    "requirements": "A willing animal trained for the cue is within 30 feet, can perceive it, has an action to spend, and has not been Directed this round.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Give one cue to Move, Step, or Interact. A calm animal complies without a check. Under distraction or fear, attempt an <i>Animal Handling</i> check against the animal’s <i>Guard</i>, with the following results:<br>   <b>Critical Success </b>or <b>Success</b> The animal carries out its cue immediately, spending ❶ from its own pool. This is not a reaction.<br>   <b>Failure</b> or<b> Critical Failure </b>No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "animal-handling",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "faccc82d8db9ff3f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a5995e1a4c21742c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!04110c1968a2c459"
+}

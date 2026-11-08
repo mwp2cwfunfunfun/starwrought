@@ -7,16 +7,22 @@
     "cost": "1",
     "costMax": "",
     "costMode": "to",
-    "reaction": true,
+    "reaction": false,
     "reactionCost": "",
-    "category": "Talent Maneuvers",
+    "category": "Ancestry Actions",
     "basic": false,
-    "traits": [],
-    "prerequisites": "",
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "Steady the Line",
     "requirements": "",
-    "trigger": "An adjacent ally's Strike is Stopped and would Expose them.",
-    "description": "<p>You take the blow's momentum on your own guard, and your ally keeps their footing.</p>",
-    "effect": "<p>It Exposes nothing.</p>",
+    "trigger": "An adjacent ally would become Exposed.",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You take the blow's momentum on your own guard, and your ally keeps their footing.</i></p>",
+    "effect": "<p>The adjacent ally does not become Exposed.</p>",
     "automation": "[EFFECT IMMUNE: expose; FOR: allies 0]",
     "rules": [
       {
@@ -38,14 +44,14 @@
     ],
     "source": "data/maneuvers.xlsx"
   },
-  "folder": "678f65cc481b1fe1",
+  "folder": "5e509cc3fcff7303",
   "sort": 0,
   "ownership": {
     "default": 0
   },
   "flags": {
     "starwrought": {
-      "contentHash": "9fcb26cc74783fa4"
+      "contentHash": "097150e0a17d7503"
     }
   },
   "effects": [],

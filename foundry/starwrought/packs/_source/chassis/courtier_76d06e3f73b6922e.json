@@ -1,0 +1,36 @@
+{
+  "_id": "76d06e3f73b6922e",
+  "name": "Courtier",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Guile",
+      "Insight",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Guile and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of a royal court, Heraldry Lore, Lore of a noble household.</p>",
+    "description": "<p><i>You served in a household where a misplaced word could do more damage than a drawn blade. You learned to recognize influence and conceal your intentions behind the proper courtesies.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "59dc118105790142"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!76d06e3f73b6922e"
+}

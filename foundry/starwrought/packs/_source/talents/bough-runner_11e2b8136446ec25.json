@@ -1,0 +1,101 @@
+{
+  "_id": "11e2b8136446ec25",
+  "name": "Bough Runner",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Greenblood Elf"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "Gain a +1 Condition bonus to checks to Climb trees and to checks to Balance on branches or fallen trunks. You still need a physically possible route.",
+    "description": "<p><i>Your hands and feet find purchase in living wood with an instinctive certainty.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, climb; IF: CLAIM(Climbing trees)]\n[EFFECT CHECK: 1 condition, balance; IF: CLAIM(Balancing on branches or fallen trunks)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Climb",
+          "slug": "climb",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "Climbing trees"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, climb; IF: CLAIM(Climbing trees)]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Balance",
+          "slug": "balance",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "Balancing on branches or fallen trunks"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT CHECK: 1 condition, balance; IF: CLAIM(Balancing on branches or fallen trunks)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "39bc598bb25cde12"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!11e2b8136446ec25"
+}

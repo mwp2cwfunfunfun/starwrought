@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You ignore difficult terrain from mud, decking, loose stone, and shallow water, and your first Move each encounter is 1 foot longer.",
+    "effect": "Your Moves ignore Difficult Terrain caused by mud, decking, loose stone, and shallow water. This does not permit a Step into Difficult Terrain or ignore Greater Difficult Terrain, a solid barrier, or damage from a hazard.",
     "description": "<p><i>Years among slick docks and shifting banks have taught you where to place your next step.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -33,7 +33,7 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]\n[EFFECT SPEED: 1 situation; LIMIT: encounter]",
+    "automation": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]",
     "rules": [
       {
         "what": "terrain",
@@ -47,32 +47,10 @@
         "kind": "ignore",
         "line": 1,
         "text": "[EFFECT IGNORE: terrain, mud, decking, loose stone, shallow water]"
-      },
-      {
-        "value": 1,
-        "type": "situation",
-        "to": {
-          "name": "Speed",
-          "slug": "speed",
-          "type": "scope"
-        },
-        "when": null,
-        "for": null,
-        "while": null,
-        "against": null,
-        "seen": false,
-        "limit": {
-          "per": "encounter"
-        },
-        "claim": null,
-        "marked": false,
-        "kind": "bonus",
-        "line": 2,
-        "text": "[EFFECT SPEED: 1 situation; LIMIT: encounter]"
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "d11b952536b11224",
   "sort": 0,
@@ -81,7 +59,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7e1e9cfbc1f92083"
+      "contentHash": "8847c19928ffec28"
     }
   },
   "effects": [],

@@ -1,0 +1,56 @@
+{
+  "_id": "f77ce2f2e324c20c",
+  "name": "Find Your Courage",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Braveheart Halfling"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "Once per encounter, at the end of a round in which you are Frightened, reduce your Frightened value by 1 additional point. This is in addition to the normal end-of-round reduction.",
+    "description": "<p><i>You acknowledge the fear, steady your breathing, and give it less room to stay.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "9a4af825064bcbd3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f77ce2f2e324c20c"
+}

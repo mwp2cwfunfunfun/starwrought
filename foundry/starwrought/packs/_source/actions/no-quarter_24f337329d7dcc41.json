@@ -1,0 +1,50 @@
+{
+  "_id": "24f337329d7dcc41",
+  "name": "No Quarter",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Intimidation Actions",
+    "basic": false,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Fear",
+      "Mental",
+      "Reaction",
+      "Visual"
+    ],
+    "prerequisites": "No Quarter",
+    "requirements": "",
+    "trigger": "You reduce an enemy to 0 Vigor.",
+    "frequency": "Once per round",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>An enemy falling gives your next warning a terrible clarity.</i></p>",
+    "effect": "<p>Use the <b>Demoralize</b> ❶ <b>Quick Demoralize</b> Maneuver on an enemy that saw you reduce the triggering enemy to 0 Vigor.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b65d9b83c082292",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "68198a75ab9d41d8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!24f337329d7dcc41"
+}

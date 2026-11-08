@@ -1,0 +1,36 @@
+{
+  "_id": "c5a5c85f151acfbc",
+  "name": "Gambler",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Guile",
+      "Insight",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Guile and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Gambling Lore, Lore of a particular game, Gaming Houses Lore.</p>",
+    "description": "<p><i>You earned your living across a gaming table, where confidence could be worth more than a winning hand. You learned when to press someone and when to gather your winnings quietly.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "759a26313c6013d7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c5a5c85f151acfbc"
+}

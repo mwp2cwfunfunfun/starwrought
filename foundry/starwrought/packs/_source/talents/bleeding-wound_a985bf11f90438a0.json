@@ -1,0 +1,56 @@
+{
+  "_id": "a985bf11f90438a0",
+  "name": "Bleeding Wound",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "ambusher",
+    "constellationName": "Ambusher",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Ambusher Calling"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When your Sneak Attack damage applies, the target also takes 1d4 persistent bleed damage. This rises to 1d6 at Expert rank, 1d8 at Master, and 1d10 at Legendary.",
+    "description": "<p><i>You place your strikes where the bleeding is hardest to stop.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9309f573d0dc8d61",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "5daf5d6fc5242f99"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a985bf11f90438a0"
+}

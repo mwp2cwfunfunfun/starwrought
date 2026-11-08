@@ -1,0 +1,36 @@
+{
+  "_id": "8f05123167a1d7da",
+  "name": "Gnome",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/gnome.png",
+  "system": {
+    "slug": "gnome",
+    "category": "origin",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Ancestry constellation • Wits (Small • Vigor 7 • 5 ft)",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Ancestry constellation • Wits (Small • Vigor 7 • 5 ft)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "3fe46e5e1277a5a5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8f05123167a1d7da"
+}

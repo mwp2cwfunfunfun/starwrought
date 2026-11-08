@@ -1,6 +1,6 @@
 {
   "_id": "1914fd727ced52ed",
-  "name": "Wrestler's Grip",
+  "name": "Wrestler’s Grip",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "A creature you have Grabbed takes a −2 Situation penalty to Escape.",
-    "description": "",
+    "effect": "A creature you have Grabbed or Restrained takes a -2 Situation penalty to checks to Escape your hold.",
+    "description": "<p><i>You keep pressure where a struggling opponent needs room.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "235dc76ee1e2834b",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e14ad021ca2e626e"
+      "contentHash": "b72d1a586b3456a9"
     }
   },
   "effects": [],

@@ -1,0 +1,16 @@
+{
+  "_id": "2088b951dc2bbe76",
+  "name": "Lethra",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "2618237145747801"
+    }
+  },
+  "_key": "!folders!2088b951dc2bbe76"
+}

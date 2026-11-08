@@ -1,0 +1,16 @@
+{
+  "_id": "03cfa720de394c85",
+  "name": "Halfling",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "92ffe02b65e91c41"
+    }
+  },
+  "_key": "!folders!03cfa720de394c85"
+}

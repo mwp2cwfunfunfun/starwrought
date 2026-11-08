@@ -10,12 +10,22 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Downtime Mode",
-    "requirements": "7 days",
-    "traits": [],
-    "description": "<p>You work with a teacher, a rival, or a manual. You gain a Flare for the particular training pursued, subject to GM approval as described in Chapter 7. You may benefit from Train only once between one Milestone and the next.</p>",
+    "basic": true,
+    "traits": [
+      "Downtime"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "7 days",
+    "description": "",
+    "effect": "<p>You work with a teacher, a rival, or a manual. You gain a Flare for the particular training pursued, subject to GM approval as described in Chapter 7. You may benefit from Train only once between one Milestone and the next.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "data/endeavors.xlsx"
   },
   "folder": "b938ff7019fcd374",
   "sort": 0,
@@ -24,7 +34,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "de3ab14d69c2d120"
+      "contentHash": "dd6af62cf496a609"
     }
   },
   "effects": [],

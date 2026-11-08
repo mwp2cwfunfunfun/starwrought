@@ -1,0 +1,36 @@
+{
+  "_id": "2c84024fb280a653",
+  "name": "Thievery",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/thievery.png",
+  "system": {
+    "slug": "thievery",
+    "category": "skill",
+    "attribute": "agility",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Agility",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Agility</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a5c9dfe1d83b12b5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2c84024fb280a653"
+}

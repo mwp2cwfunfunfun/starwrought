@@ -124,14 +124,16 @@ def read_workbooks():
         books[fname] = wb
         if "_Tree Index" in wb.sheetnames:
             idx = wb["_Tree Index"]
-            probe = xt.header_map(idx, {"tree": "tree", "name": "name", "type": "type"})
+            probe = xt.header_map(idx, {"tree": "tree", "name": "name"})
             if "tree" not in probe and "name" in probe:
-                if "type" not in probe:
-                    notes.append(f"**{fname}**: its `_Tree Index` has no `Type` column (the header reads "
+                # The converter's own rule since 0.20.0: the Type column is any header containing
+                # "type" and is optional (the row's own Type cell types it). Named here only so the
+                # report says what the index lacks; nothing is refused.
+                if xt.header_containing(idx, "type", exclude=("categ",)) is None:
+                    notes.append(f"**{fname}**: its `_Tree Index` has no Type column (the header reads "
                                  f"`{' | '.join(xt.plain(idx.cell(1, j)) for j in range(1, idx.max_column + 1))}`); the "
-                                 f"converter refuses the whole workbook (\"an actions _Tree Index needs Name and Type "
-                                 f"columns\"), so no Maneuver of it reaches the pipeline until the column is named `Type` "
-                                 f"again. The cells below were judged as if it read.")
+                                 f"converter types every row by its own Type cell or its sheet, and "
+                                 f"`python assets/index_sheets.py` fills the index.")
                 read_actions_workbook(wb, fname, actions, other_rows, cells, notes)
                 continue
         if "_Tree Index" not in wb.sheetnames:

@@ -1,0 +1,81 @@
+{
+  "_id": "1aa012eae564727a",
+  "name": "Lethra",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/lethra.png",
+  "system": {
+    "kind": "culture",
+    "constellation": "lethra",
+    "attribute": "agility",
+    "languages": "Common, Lethric",
+    "description": "<p>Lethrans learn to read the part a person is playing, signal across a crowded room, and move gracefully between public duties and private lives.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Lethrans learn to read the part a person is playing, signal across a crowded room, and move gracefully between public duties and private lives.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>Lethra is a terraced hill city and its surrounding towns, known for shaded lanes, lantern courts, and the public masks hung beside the doors of neighborhood halls. A service mask identifies a duty. The Open Palm hears a dispute, the Lantern Eye guides people through the night, and the White Reed carries an entrusted message. Qualified residents take turns wearing them, so a familiar office may have a different voice or stature tomorrow.<br><br>The custom gives people a way to serve without making every public act a test of family standing. An elven mediator, a dwarven messenger, and a halfling night guide may wear masks recognized across the same quarter. Private faces are greeted by name; public masks are addressed by their duties. Festivals turn that habit into theater, with neighbors borrowing parts, exchanging costumes, and enjoying how much a small change of bearing can alter a familiar person.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who understands the power of a convincing role, protects room for a private self, and can turn a crowded scene into an opportunity for a companion, choose Lethra.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Ask what duty a person is performing before deciding how to address them.<br>• Use a small gesture to cue a companion across a noisy room.<br>• Keep a change of clothing or a carefully maintained mask among your belongings.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Expect you to notice a false note in someone’s manner.<br>• Wonder which parts of your public confidence you carry into private life.<br>• Rely on you to draw attention when someone else needs a moment to act.</p>"
+      },
+      {
+        "label": "Dress and Bearing",
+        "text": "<p>Lethran clothing favors garments that can be adjusted, layered, and moved in easily. Reversible coats, detachable collars, and bright linings let a person change their public presentation without replacing an entire wardrobe. Masks are fitted to the wearer: beards, ears, spectacles, and different facial shapes all receive practical consideration.<br><br>Service masks use established designs; festival masks invite invention. Lethrans generally leave another person’s mask alone unless invited to handle it. Removing one’s own mask at the end of a duty is a small but deliberate acknowledgment that the office has been put aside.</p>"
+      },
+      {
+        "label": "Upbringing and Milestones",
+        "text": "<p>Children learn public roles through games, errands, and supervised festival performances. A game may require them to deliver an accurate message while pretending to be someone else, or to recognize a familiar adult from posture alone. They also learn when a shared joke has made another person uncomfortable.<br><br>A first public duty is usually undertaken with an experienced partner. Acceptance depends on readiness, training, and the demands of the role across Lethra’s many ancestries. Taking a service mask, returning it after a final term, and teaching its next wearer are widely recognized milestones.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Neighborhood maskhouses maintain the service masks, train their wearers, and arrange rotating duties. Residents can bring a complaint against an office without knowing the wearer’s private name. The maskhouse is responsible for examining the complaint and putting right harm done in its service; the wearer remains answerable for deliberate abuse.<br><br>Public performance supports ordinary civic life. Announcements, petitions, and difficult disagreements are often presented in open courts where people are accustomed to attending closely and responding in turn. A well-timed pause or an offered change of speaker can keep an argument from becoming a contest of volume.<br><br>The system has its failures. Established maskhouses may decide who is qualified before an outsider ever receives a fair hearing, and an admired office can shelter a disappointing wearer. A convincing false mask can exploit public trust. Lethrans debate how much privacy an officeholder should retain, and how to expose wrongdoing without turning every public duty into a spectacle.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Lethra’s faiths approach masks in different ways. Some use them to represent divine duties, ancestral figures, or the changing seasons. Others insist that worship begins when every mask is set aside. Both kinds of shrine can stand in the same street.<br><br>A common act of remembrance is to repair an object used in someone’s public service and offer it to a new wearer. The dead person is named during the gift, preserving their contribution while leaving the next person room to serve in their own way.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Perform the duty you have agreed to represent.<br>• Give another person room to put a public role aside.<br>• Use attention carefully, especially when a quieter voice needs to be heard.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Claim the authority of a service mask you have no right to wear.<br>• Expose a private confidence merely to entertain an audience.<br>• Let a respected office excuse deliberate harm by its wearer.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Many Lethran family names combine a color with part of a garment. The name may recall the costume of an old household festival role, a family’s traditional colors, or an ancestor’s recognizable public dress. These inherited names remain in use after the original garment has been lost. They confer no office or authority.<br><br>Given names often retain the sounds of a family’s ancestry or home language. The surnames below use their familiar Common translations.<br><b>• Common given names </b>Della, Elaris, Jori, Lio, Marda, Neri, Sella, Tavin.<br><b>• Common surnames </b>Bluesleeve, Goldcuff, Grayhem, Greencollar, Redsash, Whiteribbon.</p>"
+      }
+    ],
+    "specialAbility": "<p>You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Lethra.<br><br>You know the Common and Lethric languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "ae2a6da93bc423e9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "78e365101267c6e8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1aa012eae564727a"
+}

@@ -38,11 +38,12 @@ export const PARTY_TYPE = "party";
 /**
  * Phase 3 of the Party Sheet (party-sheet-plan.md, parts 8 and 9; rulings 101 to 107): the
  * Exploration Mode Activity each character is doing, the party's Travel Speed, and Initiative by
- * Activity when the encounter begins. The Activity data itself is content, not code: two
- * positional columns on the roster's `explorationActions` rows (the Constellation the Activity
- * rolls now, and the one it rolls for Initiative, each a name as the trees print it, blank, or
- * ACTIVITY_CHOICE for the member's own pick), which `assets/build_foundry.mjs` writes onto the
- * Activity Item as `system.exploration` and `system.check` (ruling 104). What follows here is the
+ * Activity when the encounter begins. The Activity data itself is content, not code: the Check
+ * and Initiative columns of data/activities.xlsx (0.20.0; two positional columns on the roster's
+ * `explorationActions` rows through 0.19.0): the Constellation the Activity rolls now, and the one
+ * it rolls for Initiative, each a name as the trees print it, blank, or ACTIVITY_CHOICE for the
+ * member's own pick, which `assets/build_foundry.mjs` writes onto the Activity Item as
+ * `system.exploration` and `system.check` (ruling 104). What follows here is the
  * handful of words the book uses that the data only names. Nothing in it is enforced: a Fatigued
  * character's select locks to Travel and the stored pick waits (ruling 101), the party's speed is
  * a line of text and no token moves (ruling 102), and a Scout's Step is announced and not taken
@@ -50,9 +51,10 @@ export const PARTY_TYPE = "party";
  */
 
 /**
- * What an Activity does to Travel Speed (PHB v4.15, Exploration Mode: "Exploration Mode Activities
- * (such as Avoid Notice) halve it, except Hustle, which doubles it"; Travel is the full figure).
- * Keyed by the roster row's Speed word, lowercased; the Activity Item derives `multiplier` from it,
+ * What an Activity does to Travel Speed (PHB v4.24, Exploration Mode: "Performing Exploration Mode
+ * Activities (such as Avoid Notice) halve the Travel Speed, except Hustle which doubles it"; Travel
+ * is the full figure; the Activities table's Speed column says which).
+ * Keyed by the row's Movement Speed word, lowercased; the Activity Item derives `multiplier` from it,
  * and the party's Travel Speed is the lowest member's Speed × multiplier, through the book's three
  * formulae in TRAVEL (ruling 102).
  */

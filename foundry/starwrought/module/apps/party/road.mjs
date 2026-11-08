@@ -170,8 +170,11 @@ export async function prepareDowntime(party) {
       id: item.id,
       slug: SW.slugify(item.name),
       name: item.name,
-      duration: String(item.system.requirements ?? "").trim(),
-      description: await TextEditor.enrichHTML(String(item.system.description ?? ""), { relativeTo: item }),
+      // The Duration column of data/endeavors.xlsx (0.20.0); `requirements` held it through 0.19.0.
+      duration: String(item.system.duration || item.system.requirements || "").trim(),
+      // The sheet's Effect is the rules and the Description the flavour line (0.20.0); a row with
+      // no flavour prints its Effect, as the chat card does (chatDescription).
+      description: await TextEditor.enrichHTML(String(item.system.description || item.system.effect || ""), { relativeTo: item }),
       byHand: downtimeHandLine(item)
     });
   }

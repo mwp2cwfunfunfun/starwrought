@@ -1,0 +1,56 @@
+{
+  "_id": "a0a0c209fa5f2071",
+  "name": "Working Team",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "animal-handling",
+    "constellationName": "Animal Handling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Animal Handling Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Direct Animal can cue two animals trained for the same task. Each spends its own action and remains limited to one Direct Animal action per round. Resolve any necessary checks separately. Your Maneuver still costs ❶.",
+    "description": "<p><i>A short cue is enough to set a familiar team moving together.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "d0e3052b6766ae2c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4a82bba1551a72c6"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a0a0c209fa5f2071"
+}

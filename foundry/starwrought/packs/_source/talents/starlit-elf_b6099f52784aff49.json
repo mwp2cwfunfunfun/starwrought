@@ -1,0 +1,107 @@
+{
+  "_id": "b6099f52784aff49",
+  "name": "Starlit Elf",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Elvendom"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You belong to the Starlit Elf Bloodline.<br><br><b>Starlit Composure. </b>Gain a +1 Condition bonus to Awareness and Guard checks vs. Beguilements.",
+    "description": "<p><i>Pale flecks in your eyes and a faint sheen beneath your skin mark a lineage shaped by generations of starlit magic.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT DEF: 1 condition, guard; IFT: BEGUILEMENT]\n[EFFECT DEF: 1 condition, awareness; IFT: BEGUILEMENT]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Guard",
+          "slug": "guard",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": {
+          "threat": "beguilement",
+          "reach": null,
+          "check": null,
+          "name": null
+        },
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT DEF: 1 condition, guard; IFT: BEGUILEMENT]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Awareness",
+          "slug": "awareness",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": {
+          "threat": "beguilement",
+          "reach": null,
+          "check": null,
+          "name": null
+        },
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT DEF: 1 condition, awareness; IFT: BEGUILEMENT]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "00476b901ab33042"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b6099f52784aff49"
+}

@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Whenever your Strike is a critical hit and deals damage, the target is Frightened 1.",
-    "description": "",
+    "effect": "Once per round, when your Strike is a Critical Hit and deals damage, the target becomes Frightened 1.",
+    "description": "<p><i>A decisive blow leaves your opponent afraid of the next one.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "122698d6a8541059",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f2b864ec4852bf45"
+      "contentHash": "103275db7d05d242"
     }
   },
   "effects": [],

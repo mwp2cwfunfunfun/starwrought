@@ -13,7 +13,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-hud: "0.19.0"; }
+:root { --sw-css-version-hud: "0.20.0"; }
 
 /* The combat tracker: actions left per combatant, the pass streak, and the Pass control. */
 /* The actions readout (0.5.3): a number you can read from across the table, the round's count

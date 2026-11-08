@@ -84,7 +84,7 @@
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "09d1d52e7c8e761e",
   "sort": 0,
@@ -93,7 +93,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f355b5d4d056ca59"
+      "contentHash": "2d91bd5ae58c689e"
     }
   },
   "effects": [],

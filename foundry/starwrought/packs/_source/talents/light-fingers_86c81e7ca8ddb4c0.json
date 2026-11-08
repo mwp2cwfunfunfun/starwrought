@@ -1,0 +1,79 @@
+{
+  "_id": "86c81e7ca8ddb4c0",
+  "name": "Light Fingers",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Halfling Fortune"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Condition bonus to Thievery checks to palm, conceal, or discreetly transfer a hand-held object.",
+    "description": "<p><i>A small adjustment of your hands is often enough to keep a small object out of sight.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, thievery; IF: CLAIM(palming, concealing, or discreetly transferring a hand-held object)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Thievery",
+          "slug": "thievery",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "palming, concealing, or discreetly transferring a hand-held object"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, thievery; IF: CLAIM(palming, concealing, or discreetly transferring a hand-held object)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7ac29b4568d2d4c1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!86c81e7ca8ddb4c0"
+}

@@ -1,6 +1,6 @@
 {
   "_id": "4cbccf610116c7e6",
-  "name": "Feinting Step ❶",
+  "name": "Feinting Step",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,9 +15,9 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Feint, then Step.",
-    "description": "",
-    "cost": "1",
+    "effect": "You gain the <b>Feinting Step</b> Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Feinting Step ❶</strong></p><p>Feint, the Step (regardless of the results of the Feint).</p></div>",
+    "description": "<p><i>Your opponent follows the suggestion of a movement while you take the real one.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
     "reaction": false,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Feinting Step]",
+    "rules": [
+      {
+        "name": "Feinting Step",
+        "slug": "feinting-step",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Feinting Step]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "9b627d432ecf1771",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "0db1b26daeef31e4"
+      "contentHash": "0b57e437a25959cc"
     }
   },
   "effects": [],

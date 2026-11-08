@@ -1,0 +1,87 @@
+{
+  "_id": "b8d8425af2f21bc9",
+  "name": "Elvendom",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Ancestry. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You gain 7 Vigor per level. Your Speed is 7 feet. Your Size is Medium. You gain the Elf trait.<br><br><b>Low-Light Vision. </b>Dim light does not make creatures or objects Concealed to you. Darkness, cover, mist, and other obstructions affect you normally.",
+    "description": "<p><i>Elves are long-lived and keen-sensed, carrying themselves with a lightness that makes an awkward path seem briefly effortless.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[TRAIT Elf][SIZE Medium][SPEED 7][VIGOR 7][SENSES low-light vision]",
+    "rules": [
+      {
+        "name": "Elf",
+        "kind": "trait",
+        "line": 1,
+        "text": "[TRAIT Elf]"
+      },
+      {
+        "size": "medium",
+        "kind": "size",
+        "line": 1,
+        "text": "[SIZE Medium]"
+      },
+      {
+        "feet": 7,
+        "mode": "set",
+        "kind": "speed",
+        "line": 1,
+        "text": "[SPEED 7]"
+      },
+      {
+        "value": 7,
+        "scope": "level",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR 7]"
+      },
+      {
+        "name": "low-light vision",
+        "kind": "sense",
+        "line": 1,
+        "text": "[SENSES low-light vision]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f7819bbf81242109"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b8d8425af2f21bc9"
+}

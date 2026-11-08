@@ -1,0 +1,16 @@
+{
+  "_id": "a0011baa55770005",
+  "name": "Survival Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 18,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "3cb8fc2a0f9e9284"
+    }
+  },
+  "_key": "!folders!a0011baa55770005"
+}

@@ -1,0 +1,16 @@
+{
+  "_id": "dd2a6fd928aa3c94",
+  "name": "Insight Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 12,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "ecaed5d3a1ec65cc"
+    }
+  },
+  "_key": "!folders!dd2a6fd928aa3c94"
+}

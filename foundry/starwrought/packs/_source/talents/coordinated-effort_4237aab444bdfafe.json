@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you Aid an ally, the bonus is +2 instead of +1, and +3 on a critical success.",
-    "description": "",
+    "effect": "When you Aid an ally, the bonus is +2 instead of +1, and a Critical Failure becomes a Failure.",
+    "description": "<p><i>You give help that makes the next step clear.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "eb638d2c93ae2065",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "1f8deb112c7a5486"
+      "contentHash": "1e919ca4cd27b999"
     }
   },
   "effects": [],

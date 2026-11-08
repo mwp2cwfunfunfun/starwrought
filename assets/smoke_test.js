@@ -149,7 +149,7 @@ const driver=`
   // Ancestry's Vigor every level and no Endure Bonus; Load Strain counts a shield, never comes off Evade, is cut by
   // Endure relief from Trained and by a Fitted harness of three Fitted pieces; Flexible, Noisy and Visored read.
   step("v4.21: Opening Vigor, no Endure Bonus, Load Strain off Evade, the Fitted harness, Visored", ()=>{
-    must([["Ambusher",8],["Berserker",12],["Bravo",10],["Hunter",10],["Weaponmaster",10],["Spellshaper",6],["Blood Mage",8],["Necromancer",6],["Summoner",6],["Spellblade",8]].every(([n,v])=>callingOf(n)&&callingOf(n)[2]===v), "the roster's third Calling column is Opening Vigor: 8/12/10/10/10, and the casters' 6/8/6/6/8 (ruling 152)");
+    must([["Ambusher",8],["Berserker",12],["Bravo",10],["Hunter",10],["Weaponmaster",10],["Spellshaper",6],["Blood Mage",8],["Necromancer",8],["Summoner",6],["Spellblade",8]].every(([n,v])=>callingOf(n)&&callingOf(n)[2]===v), "the roster's third Calling column is Opening Vigor: 8/12/10/10/10, and the casters' 6/8/8/6/8 (ruling 152; the Necromancer's 8 since v4.24, ruling 212)");
     must(R.conditions.some(c=>c[0]==="Fatigued N"&&/maximum of 3/.test(c[1])&&/all Defense/.test(c[1])), "the Conditions table's Fatigued N reaches all four Defenses");
     const mk=(level,endure,extra={})=>migrate({name:"v",level,milestones:0,ancestry:"Human",calling:"Berserker",sparks:{},armor:null,shield:null,languages:[],talents:endure?{Endure:endure}:{},...extra});
     const e0=derive(mk(1,null)); must(e0.vigorMax===30&&e0.vigorOpening===12&&e0.vigorPerLvl===8&&e0.endureBonus===0, "a L1 Human Berserker has 10 + Opening 12 + Human 8 = 30 Vigor, found "+e0.vigorMax);

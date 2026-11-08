@@ -1,0 +1,101 @@
+{
+  "_id": "6dbb25f11f849f82",
+  "name": "Waterwise Balance",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Riverkin Halfling"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Condition bonus to checks to Balance on wet surfaces or aboard a boat, and to Swim against currents.",
+    "description": "<p><i>You adjust to a wet surface before the shift reaches the rest of your body.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, balance; IF: CLAIM(Wet surface or aboard a boat)]\n[EFFECT CHECK: 1 condition, swim; IF: CLAIM(against currents)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Balance",
+          "slug": "balance",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "Wet surface or aboard a boat"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, balance; IF: CLAIM(Wet surface or aboard a boat)]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Swim",
+          "slug": "swim",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "against currents"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT CHECK: 1 condition, swim; IF: CLAIM(against currents)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "45f1040fabcea022"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!6dbb25f11f849f82"
+}

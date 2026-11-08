@@ -1,0 +1,16 @@
+{
+  "_id": "15b72f971146c644",
+  "name": "Gnome",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "809e609841b3cca3"
+    }
+  },
+  "_key": "!folders!15b72f971146c644"
+}

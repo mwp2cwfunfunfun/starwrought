@@ -1,0 +1,79 @@
+{
+  "_id": "343df7e2db7485cf",
+  "name": "Living Camouflage",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Greenblood Elf"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "Gain a +1 Condition bonus to Stealth checks while vegetation provides you with Cover or Concealment. This does not create Cover or Concealment.",
+    "description": "<p><i>Your coloring settles into the greens and browns around you when you become still.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, stealth; IF: CLAIM(Cover or Concealment provided by vegetation)]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Stealth",
+          "slug": "stealth",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "Cover or Concealment provided by vegetation"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, stealth; IF: CLAIM(Cover or Concealment provided by vegetation)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "72a3a640d2b2ba86"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!343df7e2db7485cf"
+}

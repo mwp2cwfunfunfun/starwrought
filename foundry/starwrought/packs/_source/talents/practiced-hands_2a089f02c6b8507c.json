@@ -1,0 +1,56 @@
+{
+  "_id": "2a089f02c6b8507c",
+  "name": "Practiced Hands",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Medicine Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per patient per day, treat your critical failure at Stabilize as a failure. Decide after seeing the result. This does not change that patient’s normal Recovery checks or prevent harm from another source.",
+    "description": "<p>Even when a treatment fails, your care avoids the worst mistake.</p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "c1e91feddd2b7d78",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "09896d8f425768e6"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2a089f02c6b8507c"
+}

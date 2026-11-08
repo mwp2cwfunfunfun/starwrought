@@ -1,0 +1,45 @@
+{
+  "_id": "12e63ca03ae1eeaf",
+  "name": "Train Animal",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Downtime Mode",
+    "basic": true,
+    "traits": [
+      "Downtime"
+    ],
+    "prerequisites": "",
+    "requirements": "A willing and able animal, regular care, and a reward or routine suited to it.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Teach one simple cue, such as stay, come, carry, or heel. Three workdays is the minimum for a simple cue in a domestic or already accustomed animal; the GM sets a longer period for unfamiliar or demanding behavior. This Endeavor does not domesticate a hostile wild animal or grant Attacks or extra actions.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "b938ff7019fcd374",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "ef02c25bca356a75"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!12e63ca03ae1eeaf"
+}

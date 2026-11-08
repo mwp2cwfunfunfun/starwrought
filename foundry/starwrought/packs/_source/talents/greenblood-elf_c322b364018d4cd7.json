@@ -1,0 +1,62 @@
+{
+  "_id": "c322b364018d4cd7",
+  "name": "Greenblood Elf",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Elvendom"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "You belong to the Greenblood Elf Bloodline.<br><br><b>Woodland Passage.</b> Your Moves ignore Difficult Terrain caused by nonmagical undergrowth, roots, and low branches. This does not permit a Step into Difficult Terrain or ignore Greater Difficult Terrain, a solid barrier, or damage from a hazard.",
+    "description": "<p><i>Leaflike markings and a body responsive to the living world reveal a lineage long shaped by woodland magic.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT IGNORE: terrain, undergrowth, roots, low branches]",
+    "rules": [
+      {
+        "error": "\"roots\" is not a terrain kind: write Mud, Shallow Water, Decking, Loose Stone, Rubble, Undergrowth, Snow, Ice, Sand or Other",
+        "line": 1,
+        "text": "[EFFECT IGNORE: terrain, undergrowth, roots, low branches]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "56122bd961fcae16"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c322b364018d4cd7"
+}

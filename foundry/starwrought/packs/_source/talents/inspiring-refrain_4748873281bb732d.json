@@ -1,0 +1,56 @@
+{
+  "_id": "4748873281bb732d",
+  "name": "Inspiring Refrain",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Performance Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per round, Bolster can target two willing allies in range with the same Performance check.",
+    "description": "<p>You give two companions the same phrase to hold onto.</p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "f54f067a4c4c15f2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "dd5ae1688923a74a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4748873281bb732d"
+}

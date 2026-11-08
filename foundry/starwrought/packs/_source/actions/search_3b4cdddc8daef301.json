@@ -10,13 +10,26 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Exploration Mode",
-    "requirements": "Travel Speed: Half",
-    "traits": [],
-    "description": "<p>Roll an Awareness check; the GM applies it to the Thresholds to spot hidden objects and creatures. When an encounter begins, you can roll Awareness.</p>",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Awareness</i> check; the GM applies it to one or more <i>Stealth</i> Thresholds to spot hidden objects and creatures. When an encounter begins, use the results of the <i>Awareness</i> check for Initiative.</p>",
+    "automation": "",
+    "rules": [],
     "exploration": {
       "travel": "half",
       "check": "awareness",
-      "initiative": "",
+      "initiative": "awareness",
       "effect": ""
     },
     "check": {
@@ -24,9 +37,7 @@
       "constellation": "awareness",
       "defense": ""
     },
-    "automation": "",
-    "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "data/activities.xlsx"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -35,7 +46,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "35b487ca897f3001"
+      "contentHash": "9a50951f58dfa335"
     }
   },
   "effects": [],

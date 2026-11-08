@@ -1,0 +1,56 @@
+{
+  "_id": "a00b85e580d2ddfd",
+  "name": "Shared Burden",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "cairnward",
+    "constellationName": "Cairnward",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Cairnwarder"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +2 Condition bonus to Athletics checks to Aid another creature’s Climb, lifting, hauling, or carrying. Explain how you are providing physical help and meet the normal Aid requirements. This improves your Aid check, not the bonus Aid grants.",
+    "description": "<p><i>You have learned where one more hand can keep a load moving or a climber from losing their hold.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "86f0ada2eccf87c7",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d281907e12074fd0"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a00b85e580d2ddfd"
+}

@@ -30,6 +30,16 @@ export class SwActionData extends SwItemData {
       prerequisites: new fields.StringField({ initial: "" }),
       requirements: new fields.StringField({ initial: "" }),
       trigger: new fields.StringField({ initial: "" }),
+      /**
+       * The four columns Mike added to the action sheets on 2026-11-08 (0.20.0; PHB v4.24's
+       * Chapter 8 and Skill action tables): Frequency ("Once per round"), Range ("15 feet"),
+       * Target, and an Endeavor's Duration ("7 days"; the Downtime panel's clock, which read
+       * `requirements` through 0.19.0). Strings the sheet and the card print when set.
+       */
+      frequency: new fields.StringField({ initial: "" }),
+      range: new fields.StringField({ initial: "" }),
+      target: new fields.StringField({ initial: "" }),
+      duration: new fields.StringField({ initial: "" }),
       /** The rules text. `description` is the flavour line above it. */
       effect: new fields.HTMLField({ initial: "" }),
       /**
@@ -48,8 +58,9 @@ export class SwActionData extends SwItemData {
       }),
       /**
        * An Exploration Mode Activity's part in the road (0.7.2; party-sheet-plan.md, part 8;
-       * ruling 104), written by assets/build_foundry.mjs from the two positional columns on the
-       * roster's `explorationActions` rows and blank on every other action. `travel` is the row's
+       * ruling 104), written by assets/build_foundry.mjs from the row's Movement Speed, Check and
+       * Initiative columns in data/activities.xlsx (0.20.0; the roster's `explorationActions` rows
+       * through 0.19.0) and blank on every other action. `travel` is the row's
        * Speed word, lowercased, a key of SW.ACTIVITY_SPEEDS; `check` is the slug of the
        * Constellation the Activity rolls now (Search's Awareness, Look Harmless's Guile), "" when it
        * rolls nothing, or SW.ACTIVITY_CHOICE for the member's own pick (Investigate); `initiative`
@@ -57,7 +68,7 @@ export class SwActionData extends SwItemData {
        * default; `effect` is what Begin the encounter does for it beyond the Initiative
        * Constellation, a key of SW.EXPLORATION_EFFECTS set by the row's name (scout, defend) or "".
        * The Party Sheet reads all of it from the Item and never from a table of its own, so a row
-       * Mike adds to the roster ships here with no code (the plan's risk 9). `blank: true` is said
+       * Mike adds to the workbook ships here with no code (the plan's risk 9). `blank: true` is said
        * outright on the two choice fields: a StringField with choices refuses "" by default, and ""
        * is the value every Maneuver carries.
        */
@@ -99,7 +110,7 @@ export class SwActionData extends SwItemData {
 
   prepareDerivedData() {
     prepareCost(this);
-    /** A Maneuver of three or more actions is Prepared: one now, the rest at your next Opportunity. */
+    /** A Maneuver of three or more actions is Prepared: two now (PHB v4.24), the rest at your next Opportunity. */
     this.prepared = this.costValue >= SW.PREPARED_THRESHOLD;
     applyAuraRule(this);
     prepareAura(this);
@@ -109,6 +120,9 @@ export class SwActionData extends SwItemData {
     // reads both from the Item.
     this.exploration.multiplier = SW.ACTIVITY_SPEEDS[this.exploration.travel]?.multiplier ?? 1;
     this.isExploration = this.category === "Exploration Mode";
+    // An Endeavor (PHB v4.24, Chapter 8; a Downtime Mode Item, 0.20.0) the same way, for the
+    // Downtime panel's list.
+    this.isDowntime = this.category === "Downtime Mode";
     prepareRules(this);
   }
 

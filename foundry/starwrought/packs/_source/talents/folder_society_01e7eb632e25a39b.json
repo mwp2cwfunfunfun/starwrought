@@ -1,0 +1,16 @@
+{
+  "_id": "01e7eb632e25a39b",
+  "name": "Society",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "7d82c432870bfed0"
+    }
+  },
+  "_key": "!folders!01e7eb632e25a39b"
+}

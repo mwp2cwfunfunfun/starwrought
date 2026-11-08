@@ -1,0 +1,56 @@
+{
+  "_id": "da8bda5791d7f9f9",
+  "name": "Tunnel Runner",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Burrowkin Gnome"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "When you Squeeze, you may move up to your Speed instead of the normal 3 feet. All other Squeeze limits remain, including the minimum opening, being Off-Guard, losing access to Evade, and restrictions on weapons.",
+    "description": "<p><i>You turn through a narrow opening with the easy certainty of a creature finding its own den.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "661fb52a8f240e21"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!da8bda5791d7f9f9"
+}

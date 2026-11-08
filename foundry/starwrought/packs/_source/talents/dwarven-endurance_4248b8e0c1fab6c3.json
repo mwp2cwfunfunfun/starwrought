@@ -1,0 +1,87 @@
+{
+  "_id": "4248b8e0c1fab6c3",
+  "name": "Dwarven Endurance",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Ancestry. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You gain 9 Vigor per level. Your Speed is 5 feet. Your Size is Medium. You gain the Dwarf trait.<br><br><b>Low-Light Vision.</b> Dim light does not make creatures or objects Concealed to you. Darkness, cover, mist, and other obstructions affect you normally.",
+    "description": "<p><i>Dwarves are compact and powerfully built.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[TRAIT Dwarf][SIZE Medium][SPEED 5][VIGOR 9][SENSES low-light vision]",
+    "rules": [
+      {
+        "name": "Dwarf",
+        "kind": "trait",
+        "line": 1,
+        "text": "[TRAIT Dwarf]"
+      },
+      {
+        "size": "medium",
+        "kind": "size",
+        "line": 1,
+        "text": "[SIZE Medium]"
+      },
+      {
+        "feet": 5,
+        "mode": "set",
+        "kind": "speed",
+        "line": 1,
+        "text": "[SPEED 5]"
+      },
+      {
+        "value": 9,
+        "scope": "level",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR 9]"
+      },
+      {
+        "name": "low-light vision",
+        "kind": "sense",
+        "line": 1,
+        "text": "[SENSES low-light vision]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e114d936886024ec"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4248b8e0c1fab6c3"
+}

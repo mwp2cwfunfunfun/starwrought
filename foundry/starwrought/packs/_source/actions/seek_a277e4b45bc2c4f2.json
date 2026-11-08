@@ -1,0 +1,50 @@
+{
+  "_id": "a277e4b45bc2c4f2",
+  "name": "Seek",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Other Basic Maneuvers",
+    "basic": true,
+    "traits": [
+      "Concentrate"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an Awareness check vs. Stealth of anything Hiding, or against a Threshold the GM sets. Covers everything within 30 feet, with the following effects:<br>   <b>Critical Success</b> As Success, but the creature moves two states.<br>   <b>Success</b> The creature moves one state toward Observed: Undetected becomes Hidden, Hidden becomes Concealed, Concealed becomes Observed.<br>   <b>Failure</b> You learn nothing.<br> <b>  Critical Failure</b> You believe something is there when it isn’t.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "awareness",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "0aa9b5722ed296d9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "bd888df326cb7544"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a277e4b45bc2c4f2"
+}

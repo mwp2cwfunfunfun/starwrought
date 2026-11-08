@@ -1,0 +1,45 @@
+{
+  "_id": "f0432d8c13cbc7c6",
+  "name": "Sure Seat",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Animal Handling Actions",
+    "basic": false,
+    "traits": [
+      "Reaction"
+    ],
+    "prerequisites": "Sure Seat",
+    "requirements": "",
+    "trigger": "Your mount falls Prone, and an adjacent space can fit your token.",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You know when to leave a falling saddle and how to land clear.</i></p>",
+    "effect": "<p>You dismount into an adjacent empty space.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "faccc82d8db9ff3f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "54231ee9fc62dae3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f0432d8c13cbc7c6"
+}

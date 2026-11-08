@@ -1,0 +1,53 @@
+{
+  "_id": "f23e3b2937b74380",
+  "name": "Calm Animal",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "3",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Animal Handling Actions",
+    "basic": true,
+    "traits": [
+      "Auditory",
+      "Concentrate",
+      "Emotion",
+      "Visual"
+    ],
+    "prerequisites": "",
+    "requirements": "An animal within 15 feet can perceive you, and you have never attacked it.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Animal Handling</i> check against the animal’s <i>Guard</i>, with the following results, depending on how many actions you took:<br>❷ <b>Quick Calm.</b><br>  <b> Critical Success </b>Suppress 2 points of its Frightened value until the end of its next Opportunity.<br>   <b>Success</b> Suppress 1 point of its Frightened value until the end of its next Opportunity.<br>   <b>Failure</b> No effect.<br>  <b> Critical Failure </b>It avoids your approach, and you cannot try again this encounter.<br>❸ <b>Deliberate Calm.</b><br>   <b>Critical Success </b>Recall two useful facts.<br>   <b>Success</b> Recall a useful fact.<br>   <b>Failure</b> or <b>Critical Failure</b> Nothing happens.<br><u>Note:</u> A Success or Critical Success also lets a non-hostile animal tolerate a simple contact, such as taking its reins. Threatening it ends that tolerance.<br>This does not end hostility or magical control.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "animal-handling",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "faccc82d8db9ff3f",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "cd32e8068b185bbe"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f23e3b2937b74380"
+}

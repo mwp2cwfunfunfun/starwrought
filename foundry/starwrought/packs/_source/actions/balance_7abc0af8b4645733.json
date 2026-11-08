@@ -1,0 +1,51 @@
+{
+  "_id": "7abc0af8b4645733",
+  "name": "Balance",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Acrobatics Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "You can stand on or reach the narrow or unstable surface.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an Acrobatics check against a Threshold set by the GM, with the following results:<br><b>   Critical Success </b>Move up to your Speed along the surface<br><b>   Success</b> Move up to half your Speed along the surface<br>   <b>Failure</b> You do not make progress.<br><b>   Critical Failure </b>You lose your footing and slip or fall.<br>While on a surface that requires Balance checks, you are Off-Guard.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "acrobatics",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "131b3e0aa90866d8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7f31df41efc1e70a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7abc0af8b4645733"
+}

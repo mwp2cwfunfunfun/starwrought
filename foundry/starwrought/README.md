@@ -92,10 +92,10 @@ as a chip, and Begin the encounter offers, one checkbox per member, to keep it a
 roll rather than throw the die twice; since 0.7.4 an Initiative rolled with a Constellation carries
 every modifier that Constellation's check does, Load Strain on Stealth included (ruling 111).
 Since 0.7.5 (phase 4, the plan's last) the tab ends in a Downtime panel: the days the GM gives
-(a number nothing counts down), the three Downtime Activities printed from the pack with their
-Duration and Effect, Train per member, which Flares a Constellation through the shared picker,
-says "Flared by seven days' training." on the card and warns, never refuses, when it was already
-used since the last Milestone, and one line each saying Retrain and Provision are done by hand.
+(a number nothing counts down), the Endeavors printed from the pack with their Duration and
+Effect (Retrain and Train since PHB v4.24), Train per member, which Flares a Constellation through
+the shared picker, says "Flared by seven days' training." on the card and warns, never refuses,
+when it was already used since the last Milestone, and one line saying Retrain is done by hand.
 Every rule effect runs through the member's own methods and cards; the party is never a
 combatant, and the loot values nothing. The plan is built.
 
@@ -225,8 +225,8 @@ The full list is section 9 of `FEATURES.md`. The short version:
   no shop. A player's Take or Give runs on the active GM's client, so it needs a GM connected; the
   GM's own moves do not.
 - Downtime is a panel, not a mode: the days are a number nothing counts down, Train warns when it
-  was already used since the last Milestone and never refuses, and Retrain and Provision have no
-  control; each says it is done by hand.
+  was already used since the last Milestone and never refuses, and Retrain has no control; it
+  says it is done by hand (Provision left the book's Endeavors in v4.24).
 - The content loop compiles nothing, and the in-game sync writes only the system's own packs: a
   document the GM wrote into one of them by hand is stale by the sources and is listed for
   deletion; a GM's content belongs in the world. Since 0.9.0 the loop also stops on an Automation

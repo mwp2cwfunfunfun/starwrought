@@ -7,16 +7,16 @@
     "kind": "background",
     "attribute": "wits",
     "grants": [
-      "Acrobatics",
       "Athletics",
+      "Acrobatics",
       "Lore"
     ],
-    "specialAbility": "<p>You become Trained in <i>Athletics</i> and in <i>Acrobatics</i>, and you become Trained in a relevant <i>Lore</i> of your choice.</p>",
+    "specialAbility": "<p>You become Trained in Athletics and Acrobatics, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Circus Lore, Street Performance Lore, Stage Rigging Lore, Traveling Troupes Lore.</p>",
     "description": "<p><i>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</i></p>",
     "traits": [
       "Common"
     ],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "9fc281b910f79646",
   "sort": 0,
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "db532b211ea11c3a"
+      "contentHash": "39f8caa842acb3c7"
     }
   },
   "effects": [],

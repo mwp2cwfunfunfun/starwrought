@@ -10,18 +10,34 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Exploration Mode",
-    "requirements": "Travel Speed: Half",
-    "traits": [],
-    "description": "<p>Roll a relevant Lore or Skill check; the GM applies it to the Thresholds to potentially recall relevant information about your surroundings. When an encounter begins, you can roll the same Lore or Skill check, if the encounter is related to what you are Investigating.</p>",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Roll a Relevant check; the GM applies it to the Thresholds to potentially recall or discover relevant information about your surroundings. When an encounter begins, you may use the same roll’s results for Initiative, if the encounter is related to what you are Investigating.</p>",
+    "automation": "",
+    "rules": [],
     "exploration": {
       "travel": "half",
       "check": "choice",
       "initiative": "choice",
       "effect": ""
     },
-    "automation": "",
-    "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "check": {
+      "enabled": true,
+      "constellation": "",
+      "defense": ""
+    },
+    "source": "data/activities.xlsx"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -30,7 +46,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7eb03e8f05596aeb"
+      "contentHash": "c49bb3f2896c7f39"
     }
   },
   "effects": [],

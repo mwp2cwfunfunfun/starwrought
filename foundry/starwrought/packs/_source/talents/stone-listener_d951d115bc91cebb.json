@@ -1,0 +1,56 @@
+{
+  "_id": "d951d115bc91cebb",
+  "name": "Stone Listener",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Understone Dwarf"
+    ],
+    "prerequisites": "",
+    "attribute": "wits",
+    "effect": "When you Seek while touching a continuous stone surface, you may use vibrations to detect a creature moving on that same surface within 10 feet. Use the ordinary Awareness check and detection rules. This sense can locate a creature only as Hidden, never Observed, and cannot detect a motionless or airborne creature. It does not convey speech, appearance, or identity.",
+    "description": "<p><i>With a hand against the floor, you can feel the approach that the air refuses to reveal.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "01df24f80b2c3ee7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!d951d115bc91cebb"
+}

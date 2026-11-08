@@ -1,0 +1,36 @@
+{
+  "_id": "b6a1719221e13810",
+  "name": "Halfling",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/halfling.png",
+  "system": {
+    "slug": "halfling",
+    "category": "origin",
+    "attribute": "agility",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Ancestry constellation • Agility (Small • Vigor 8 • 6 ft)",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Ancestry constellation • Agility (Small • Vigor 8 • 6 ft)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d892728ac36a0c94"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b6a1719221e13810"
+}

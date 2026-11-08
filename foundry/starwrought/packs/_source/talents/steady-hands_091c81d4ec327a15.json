@@ -1,0 +1,56 @@
+{
+  "_id": "091c81d4ec327a15",
+  "name": "Steady Hands",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Braveheart Halfling"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Treat the penalty from Frightened as 1 lower, to a minimum of 0, for your Skill checks that are not Attacks, Defenses, or Initiative. The Frightened value itself does not change. This benefit does not stack with another reduction of that same penalty.",
+    "description": "<p><i>Even with fear close behind you, your hands remember the work in front of them.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8fe390f9f1fbb2d5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!091c81d4ec327a15"
+}

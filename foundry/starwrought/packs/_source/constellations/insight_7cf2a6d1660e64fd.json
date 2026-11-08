@@ -1,0 +1,36 @@
+{
+  "_id": "7cf2a6d1660e64fd",
+  "name": "Insight",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/insight.png",
+  "system": {
+    "slug": "insight",
+    "category": "skill",
+    "attribute": "wits",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Wits",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Wits</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "914003211436cfd5"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7cf2a6d1660e64fd"
+}

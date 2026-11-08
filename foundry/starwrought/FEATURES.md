@@ -1,9 +1,9 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.21** (Mike's reorganised edition of 4 November
-2026, formatted by `assets/phb_format.py` with the text unchanged; `v4.21-sync-report.md` in the
-project root has the rulings, 125 to 158; the 0.12.0 changelog entry has 159 to 163, and the
-entries since carry 164 to 198). System version **0.18.1**. Developed against
+Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 November 2026, every
+tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
+onward; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, and the
+entries between carry 164 to 204). System version **0.20.0**. Developed against
 **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -559,8 +559,10 @@ reserved state, which the tracker showed as spent until then), then the reserved
 hourglass while Preparing. The big number is what you can act on; the pips and the tooltip's
 legend carry the reserve.
 
-**Prepared Maneuvers.** A Maneuver of three or more actions is Prepared: one action now, the rest
-reserved, and you are Preparing (a token status) until your next Opportunity. The Committed Strike
+**Prepared Maneuvers.** A Maneuver of three or more actions is Prepared: two actions now (PHB
+v4.24, Chapter 2 and the Prepared trait; one through v4.21 and system 0.19.0; ruling 205, with a
+redline bringing Chapter 4's procedure and the Preparing condition to two), the rest reserved, and
+you are Preparing (a token status) until your next Opportunity. The Committed Strike
 is the one the system runs end to end: a card with **Abandon** posts at once, and a card with
 **Finish** and Abandon when your next Opportunity begins (publicly, since preparation is
 telegraphed by design). Finish belongs to that next Opportunity and nowhere earlier (0.19.0,
@@ -568,7 +570,7 @@ ruling 200; Mike: "it should not let you Finish/Abandon it right away in the cha
 Combat marks the preparation ready as the Opportunity begins, the sheet's Finish is disabled until
 then with the reason as its tooltip, and an early Finish is refused with a notice; the GM's click
 on the sheet forces it. Abandon is the book's "at any time" and never waits. Finish spends the
-reserve and rolls the Strike, already paid; Abandon returns the reserve and the action spent is
+reserve and rolls the Strike, already paid; Abandon returns the reserve and the actions spent are
 lost. Taking a Wound abandons it, so does going down, and a new preparation replaces an old one.
 You cannot Pass while Preparing; the Pass button says so and refuses. A preparation that never
 reaches its Opportunity expires with the round, with a card.
@@ -804,7 +806,8 @@ and the roll swaps Awareness's two terms for the chosen Constellation's and keep
 0.7.2 the party sheet's Begin the encounter writes the same thing for the whole party at once (see
 The party, under Sheets; ruling 105): every member Combatant carries two flags,
 `initiativeConstellation`, the Constellation the member's Exploration Activity names (Awareness
-when it names none; Stealth for Avoid Notice, Athletics for Hustle, Guile for Look Harmless,
+when it names none; Stealth for Avoid Notice, Endure for Hustle (PHB v4.24; Athletics through
+v4.21), Guile for Look Harmless,
 Investigate's own pick), and `initiativeModifiers`, a list of typed modifiers with one +1
 Situation entry per Scout among the other members with a token on the scene ("Scout (Hrolda)"; a
 member the card names as having no token neither gives nor gets one), and every roll in the system
@@ -1448,8 +1451,9 @@ rulings 101 to 107) is the road: each member's Exploration Activity, the party's
 Fatigued gate, Say the plan, and Begin the encounter with Initiative by Activity, and its second
 cut (0.7.3; rulings 108 to 110) remembers each member's road roll on their row and lets Begin the
 encounter keep it as the Initiative roll; phase 4 (0.7.5; rulings 112 to 114) is Downtime, the
-plan's last: the days the GM gives, the three Downtime Activities printed from the pack, Train
-through the shared Flare picker, and the Retrain and Provision lines. The plan is built.
+plan's last: the days the GM gives, the Downtime Activities printed from the pack (the Endeavors
+since PHB v4.24: Retrain and Train), Train through the shared Flare picker, and the Retrain line
+(Provision's went with its row in v4.24). The plan is built.
 
 **The roster and status board.** Always open above the tabs, one row per member, every number on
 it the member's own derived data, read and never recomputed: portrait (click opens the sheet),
@@ -1579,17 +1583,20 @@ member's owner or the GM (an owner may write their own Actor, so unlike a Take i
 and no GM connected), announced with `swAnnounced` so the Adjusted card never doubles it, and said
 in one line spoken by the member ("Wren's Activity is now Search (Half)."; "Toric Investigates
 with Lore (Warfare)."). The Activity Items themselves carry what each Activity does, written by the
-pipeline from two positional columns on the roster's `explorationActions` rows (rulings 103 and
-104): `system.exploration { travel, check, initiative, effect }`, the Travel word, the
-Constellation the Activity rolls now (Search: Awareness; Look Harmless: Guile; Avoid Notice:
-Stealth; Investigate: the member's own pick), the Constellation it rolls for Initiative (Awareness
-unless the row says otherwise: Hustle Athletics, Look Harmless Guile, Avoid Notice Stealth,
-Investigate the pick), and an effect tag for the two Activities that do something at the start of
-an encounter rather than roll (scout, defend), so the panel reads the Item and holds no table of its
-own, and a row Mike adds needs no code unless it does something new. Avoid Notice, which P342 names
-and the Example of Play rolls while Table 95 has no row for it, is the eighth row and ships in the
-pack, the web app and the compendium docx ahead of the book (ruling 103; the proposal adds the row
-to Table 95). One row per member: portrait, name, the Activity select (the folder's Items in folder
+pipeline from the rows of `data/activities.xlsx` (0.20.0, PHB v4.24's Activities table; the
+roster's hand-kept `explorationActions` rows through 0.19.0; rulings 103, 104 and 209): a row's
+Type `Activity` makes it an Exploration Mode Item wherever it sits (Treat Wounds on the Medicine
+sheet too), its Movement Speed, Check and Initiative columns become
+`system.exploration { travel, check, initiative, effect }`, the Travel word, the Constellation the
+Activity rolls now (Search: Awareness; Hustle: Endure; Look Harmless: Guile; Avoid Notice: Stealth;
+Investigate: the member's own pick; a blank Check column falls back to the row's Constellation
+when the Effect rolls it), the Constellation it rolls for Initiative (Awareness unless the row says
+otherwise: Hustle Endure, Look Harmless Guile, Avoid Notice Stealth, Investigate the pick), and an
+effect tag for the two Activities that do something at the start of an encounter rather than roll
+(scout, defend, by name), so the panel reads the Item and holds no table of its own, and a row
+Mike adds needs no code unless it does something new. The eight rows are the book's eight (Travel,
+Hustle, Search, Avoid Notice, Scout, Defend, Look Harmless, Investigate) under the document ids
+the roster rows had. One row per member: portrait, name, the Activity select (the folder's Items in folder
 order, cached per session as the Basic Maneuvers are; a world action Item of the same name and
 category replaces the printed one), the Travel word, the Initiative Constellation the pick implies,
 the Constellation select for Investigate (the member's opened Constellations plus their Lores), the
@@ -1716,18 +1723,22 @@ member, every time: the record is a convenience, and the box is the whole of the
 
 **Downtime** (0.7.5; plan, part 10; rulings 112 to 114). The foot of the On the road tab, under
 its own heading, open to players as the rest of the tab is. Downtime is a panel, not a mode: the
-book's Downtime is days the GM gives ("you have ten days", P348) and three Activities, and the
-panel prints both and runs nothing. **The days** are `system.downtime.days` on the party, an
+book's Downtime is days the GM gives ("you have ten days") and its Endeavors (Retrain and Train
+since PHB v4.24; three Activities with Provision through v4.21), and the panel prints both and
+runs nothing. **The days** are `system.downtime.days` on the party, an
 integer the GM types in the party form's own field and a player reads as a number, with the P348
 hint beside it (the GM typically tells you how many you have before the world begins to move
 quickly again); nothing counts them down, spends them or refuses anything for want of them
-(section 9), and nothing is derived from them. **The Activities** print from the Actions pack's
-Downtime Mode folder (`downtimeActivities` in `helpers/party.mjs`, the category read off the Item;
-cached per session as the Exploration Activities are and forgotten with them when a world action
-Item changes; a world Item of the same name and category replaces the printed one), one row each
-with the Duration tag from the Item's Requirements and the Effect: Retrain (1 month), Train (7
-days), Provision (1 day). The panel holds no table of its own, so a row Mike adds to the roster's
-`downtimeActions` block appears with no code change, and an empty folder says so. **Train** is the
+(section 9), and nothing is derived from them. **The Endeavors** (PHB v4.24's word for a Downtime
+Mode action; Downtime Activities through v4.21) print from the Actions pack's Downtime Mode folder
+(`downtimeActivities` in `helpers/party.mjs`, the category read off the Item; cached per session as
+the Exploration Activities are and forgotten with them when a world action Item changes; a world
+Item of the same name and category replaces the printed one), one row each with the Duration tag
+from the Item's `duration` (the Duration column of `data/endeavors.xlsx`; the Requirements field
+through 0.19.0) and the Effect: Retrain (1 month), Train (7 days). Provision left the book's table
+in v4.24 and the panel with it (ruling 211). The panel holds no table of its own, so a row Mike
+adds to `data/endeavors.xlsx`, or a row typed `Endeavor` on any action sheet (Train Animal,
+Convalescent Care), appears with no code change, and an empty folder says so. **Train** is the
 one control: under the Activities, one entry per member (portrait, name, Train), live for the
 member's owner and for the GM and offered to nobody else. It opens the shared Flare picker with no
 reason field (the reason is the training), and a pick lights that Constellation through the
@@ -1745,10 +1756,9 @@ nothing on the sheet changes." beneath it, so a Train is never silent; that line
 critical card's Flare button and the roster's GM award too when they pick a Flared Constellation,
 where 0.7.4 posted a plain Flared card. The flag write is an
 `updateActor` on the member and the road part redraws on it, so the amber mark appears as the card
-lands. **Retrain and Provision** carry one line each saying they are done by hand: Retrain's
-Talent Point is moved by dragging as today, with the restrictions the player's and the GM's to
-honour; Provision's buying and selling, the half price and the uncommon-goods check are the
-table's. The system adds no control for either (ruling 114). The book says Train may be used "only
+lands. **Retrain** carries one line saying it is done by hand: its Talent Point is moved by
+dragging as today, with the restrictions the player's and the GM's to honour. The system adds no
+control for it (ruling 114; Provision's line went with the row, ruling 211). The book says Train may be used "only
 once between Milestones"; the system counts that for each character, which is what the downtime
 proposal asks the book to say (the plan's handbook item 11; see the 0.7.5 changelog entry).
 
@@ -2439,7 +2449,8 @@ before; the sources and the index are.
   nothing draws or counts its token, and no party token is meant to stand on any map.
 - **Loot values nothing** (0.7.1; ruling 96). The party's Loot tab and purse move Items and coin
   and claim no rule authority: the book has no shared loot and no party purse (coin is per
-  character, and the only price rule is Provision's half price). A row prints the price string the
+  character, and the book's one price rule, Provision's half price, left with Provision in v4.24). A
+  row prints the price string the
   Item carries and nothing computes with it; there is no selling, no shop and no Contribute, and
   Split divides copper equally and leaves the remainder in the purse. Who may take what, beyond
   owning a member and the stock being there, is the table's.
@@ -2462,14 +2473,14 @@ before; the sources and the index are.
   differ, the Avoid Notice row) are a proposal for Mike to accept, not yet an edition.
 - **Downtime is a panel, not a mode** (0.7.5; rulings 112 to 114). The party's days are an integer
   the GM types, and nothing counts them down, spends them or refuses anything for want of them: no
-  clock, no calendar, no per-member day counters. The three Activities are printed from the pack
-  with their Duration and Effect. Train lights a Flare through the shared picker and warns, in
+  clock, no calendar, no per-member day counters. The Endeavors (Retrain and Train since PHB
+  v4.24) are printed from the pack with their Duration and Effect. Train lights a Flare through the shared picker and warns, in
   amber, in the tooltip and on the card, when it was already used since the last Milestone, and
   refuses nothing (decision 14: a GM may rule an exception); there is no "already Flared this
   session" warning, which would need a history the system does not keep. Retrain moves no Talent
-  (the drag is the move, and the restrictions are the player's and the GM's) and Provision buys and
-  sells nothing (the loot values nothing, and the uncommon-goods Threshold is the GM's); each says so
-  in a line. The book's "only once between Milestones" is counted for each character, which the
+  (the drag is the move, and the restrictions are the player's and the GM's) and says so in a line;
+  Provision, which bought and sold nothing here, left the book's Endeavors in v4.24 and the panel
+  with it. The book's "only once between Milestones" is counted for each character, which the
   downtime proposal asks the book to say and no edition yet does.
 - **The content loop compiles nothing and polices nothing** (0.8.0; rulings 115 to 117).
   `--content` writes the pack sources and the index and leaves the LevelDB packs on disk as the

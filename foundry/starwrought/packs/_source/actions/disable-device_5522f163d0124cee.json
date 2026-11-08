@@ -1,0 +1,51 @@
+{
+  "_id": "5522f163d0124cee",
+  "name": "Disable Device",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Thievery Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "You are holding a Thievery Toolkit, or you are wearing one and have at least one hand free.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "One device you are adjacent to or holding",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Thievery </i>check vs. a Threshold set by the GM, with the following effects:<br>  <b>Critical Success </b>You disable the device, or you achieve two successes toward disabling a device requiring more than one success. You leave no trace of your tampering, and you can rearm the device later, if that type of device can be rearmed.<b><br>   Success </b>You disable the device, or you achieve one success toward disabling a device that requires more than one success.<b><br>   Failure </b>No effect.<b><br>   Critical Failure </b>You trigger the device.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "thievery",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "42a978d195464b4a",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "57ab20c65506e3ea"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5522f163d0124cee"
+}

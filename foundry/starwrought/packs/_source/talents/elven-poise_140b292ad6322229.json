@@ -1,0 +1,97 @@
+{
+  "_id": "140b292ad6322229",
+  "name": "Elven Poise",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Elvendom"
+    ],
+    "prerequisites": "",
+    "attribute": "agility",
+    "effect": "Gain a +1 Condition bonus to Acrobatics checks to Balance or Tumble Through.",
+    "description": "<p><i>You make small adjustments before a narrow footing or crowded passage can disturb your balance.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, balance]\n[EFFECT CHECK: 1 condition, tumble through]",
+    "rules": [
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Balance",
+          "slug": "balance",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, balance]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Tumble Through",
+          "slug": "tumble-through",
+          "type": "action"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": null,
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT CHECK: 1 condition, tumble through]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "06c09823f6e645f4"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!140b292ad6322229"
+}

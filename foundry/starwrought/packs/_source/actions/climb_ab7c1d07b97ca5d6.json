@@ -1,0 +1,51 @@
+{
+  "_id": "ab7c1d07b97ca5d6",
+  "name": "Climb",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "You are standing adjacent to the surface you wish to Climb.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Athletics</i> check against a Threshold set by the GM, with the following results:<br>   <b>Critical Success </b>Move up to your Speed along the surface<br>   <b>Success</b> Move up to half your Speed along the surface<br>   <b>Failure</b> You do not make progress.<br>   <b>Critical Failure</b> You lose your grip and fall.<br>While Climbing, you are Off-Guard.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e7ecc6acea139d49"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ab7c1d07b97ca5d6"
+}

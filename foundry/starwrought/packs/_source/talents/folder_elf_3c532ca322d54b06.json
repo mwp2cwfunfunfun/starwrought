@@ -1,0 +1,16 @@
+{
+  "_id": "3c532ca322d54b06",
+  "name": "Elf",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "bb7ad2f55bcf1ab5"
+    }
+  },
+  "_key": "!folders!3c532ca322d54b06"
+}

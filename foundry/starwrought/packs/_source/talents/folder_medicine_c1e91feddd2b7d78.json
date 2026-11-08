@@ -1,0 +1,16 @@
+{
+  "_id": "c1e91feddd2b7d78",
+  "name": "Medicine",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "e5be5ed5b0f1c6c8"
+    }
+  },
+  "_key": "!folders!c1e91feddd2b7d78"
+}

@@ -1,0 +1,30 @@
+{
+  "_id": "ce3ee03cdfc07a3e",
+  "name": "Riverkin Halfling",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "halfling",
+    "attribute": "agility",
+    "specialAbility": "<p>You belong to the Riverkin Halfling Bloodline.<br><br><b>River Swimmer. </b>You gain a Swim Speed equal to half your land Speed, rounded down to a whole foot. A Swim ❶ moves you up to that Swim Speed without a check in ordinary water. Dangerous currents or a specific hazard can still require checks. You must still breathe air.</p>",
+    "description": "<p>A bloodline of the Halfling ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "dc63d0347093251e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!ce3ee03cdfc07a3e"
+}

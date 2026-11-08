@@ -1,0 +1,45 @@
+{
+  "_id": "2fc494e4c20bed2a",
+  "name": "Cast",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "4",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Attack Maneuvers",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attack with a magic spell. Attempt the appropriate check against the appropriate Defense:<br>❷<b> Quick Cast.</b> See Spell for details, but generally: One damage die plus Precision Damage (if any); One target; No significant additional effect; No damage on Graze or Miss.<br>❸ <b>Focused Cast. </b>See Spell for details, but generally: Full damage dice plus Precision Damage (if any); use the spell’s normal effects; One damage die plus Precision Damage (if any) on Graze.<br>❹ <b>Committed Cast. </b>See Spell for details, but generally: Full damage dice plus Precision Damage (if any); additional spell effects such as expanded area.<br>Special A Cast of 3 or more actions gains the Prepared trait.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b7f05dd01d0fd43",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "63037fb7e459bf4b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2fc494e4c20bed2a"
+}

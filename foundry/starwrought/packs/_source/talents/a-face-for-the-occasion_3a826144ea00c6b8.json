@@ -1,0 +1,56 @@
+{
+  "_id": "3a826144ea00c6b8",
+  "name": "A Face for the Occasion",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "lethra",
+    "constellationName": "Lethra",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Lethran"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +2 Condition bonus to Guile checks to maintain a plausible disguise or impersonate a social role. You must have suitable clothing or props for the claim. This supplies no credentials, language, or knowledge of the person you imitate.",
+    "description": "<p><i>A suitable coat, a borrowed manner, and a well-judged pause help you settle into the role a room expects.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "2088b951dc2bbe76",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c441bb61088db698"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3a826144ea00c6b8"
+}

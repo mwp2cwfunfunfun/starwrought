@@ -1,0 +1,50 @@
+{
+  "_id": "0ea0311062ac853e",
+  "name": "Tumble Through",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Acrobatics Actions",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "You are adjacent to a hostile creature.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Acrobatics</i> check vs. your target’s <i>Awareness</i>, with the following results:<br>   <b>Critical Success</b> Move up to your Speed through your target’s space (and beyond, if you have enough Speed remaining).<br>   <b>Success</b> Move up to half your Speed through your target’s space (and beyond, if you have enough Speed remaining).<br>   <b>Failure</b> Nothing happens.<br>   <b>Critical Failure</b> You make a mistake, and are Wrong-Footed to your target until the end of their next Opportunity.<br><u>Note:</u> Regardless of your result, Moving through a hostile creature’s space counts as Difficult Terrain.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "acrobatics",
+      "defense": "awareness"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "131b3e0aa90866d8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4488f645e63b4170"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0ea0311062ac853e"
+}

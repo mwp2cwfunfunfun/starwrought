@@ -1,0 +1,56 @@
+{
+  "_id": "a2e29c9c2a20c5e6",
+  "name": "Battle Dressing",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Medicine Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "When you Treat Persistent Damage, the patient’s treatment-based <i>Endure</i> recovery bonus is +3 Situation instead of +2. This changes only that recovery check, not the damage or the check’s availability.",
+    "description": "<p><i>You make a hurried dressing hold long enough to matter.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "c1e91feddd2b7d78",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4bea802066f24f44"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a2e29c9c2a20c5e6"
+}

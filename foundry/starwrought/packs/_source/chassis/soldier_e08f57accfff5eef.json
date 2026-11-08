@@ -11,12 +11,12 @@
       "Intimidation",
       "Lore"
     ],
-    "specialAbility": "<p>You become Trained in <i>Athletics</i> and in <i>Intimidation</i>, and you become Trained in a relevant <i>Lore</i> of your choice.</p>",
+    "specialAbility": "<p>You become Trained in Athletics and Intimidation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Military Logistics Lore, Siegecraft Lore, Fortifications Lore, Lore of a particular army or campaign.</p>",
     "description": "<p><i>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</i></p>",
     "traits": [
       "Common"
     ],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "9fc281b910f79646",
   "sort": 0,
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "2d9ccd16e8396298"
+      "contentHash": "49cd0803fba33324"
     }
   },
   "effects": [],

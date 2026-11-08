@@ -1,0 +1,53 @@
+{
+  "_id": "39a4eb329d7ac57c",
+  "name": "Anticipate",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Insight Actions",
+    "basic": true,
+    "traits": [
+      "Auditory",
+      "Concentrate",
+      "Emotion",
+      "Mental"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "One per round (per target)",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Frequency Once per round (per target)<br>Requirements One Observed creature within 30 feet has acted where you could perceive it this encounter.<br>Effect Attempt an Insight check vs. Guile, with the following effects:<br>   Critical Success You gain a +2 Situation bonus to your next Defense against it until your next Opportunity.<br>   Success You gain a +1 Situation bonus to your next Defense against it until your next Opportunity.<br>   Failure No effect.<br>   Critical Failure You take a -1 Situation penalty to your next Defense against it until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "insight",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "dd2a6fd928aa3c94",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6b955a117d91609e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!39a4eb329d7ac57c"
+}

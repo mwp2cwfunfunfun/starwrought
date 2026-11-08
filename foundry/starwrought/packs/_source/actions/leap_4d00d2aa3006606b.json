@@ -1,0 +1,45 @@
+{
+  "_id": "4d00d2aa3006606b",
+  "name": "Leap",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "3",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Motion"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>The following actions normally do not require a check; longer or higher Leaps, or Leaps under certain circumstances, may require an <i>Athletics</i> check against a Threshold set by the GM.<br><b>Quick Jump</b> ❶ Leap up to half your Speed (less your Load Strain) in feet.<br><b>Standing Long Jump </b>❷ Leap up to your Speed (less your Load Strain) in feet.<br><b>Running Long Jump</b> ❸ Move at least half your Speed and Leap in the same direction up to your 1.5x of your Speed (less your Load Strain) in feet.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6569a0fb37ac655b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4d00d2aa3006606b"
+}

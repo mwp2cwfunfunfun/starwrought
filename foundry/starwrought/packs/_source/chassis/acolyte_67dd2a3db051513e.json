@@ -1,0 +1,36 @@
+{
+  "_id": "67dd2a3db051513e",
+  "name": "Acolyte",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Diplomacy",
+      "Society",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Diplomacy and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of your faith, Lore of a religious order, Funerary Rites Lore.</p>",
+    "description": "<p><i>You tended a shrine and learned to offer comfort or speak with religious authority. Something beyond its walls eventually demanded more of you than prayer.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2a9edfb29c2da35e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!67dd2a3db051513e"
+}

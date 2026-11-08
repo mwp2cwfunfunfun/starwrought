@@ -1,0 +1,16 @@
+{
+  "_id": "86f0ada2eccf87c7",
+  "name": "Cairnward",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "b274341558afc463"
+    }
+  },
+  "_key": "!folders!86f0ada2eccf87c7"
+}

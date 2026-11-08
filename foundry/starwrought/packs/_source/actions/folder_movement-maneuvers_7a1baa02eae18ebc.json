@@ -1,0 +1,16 @@
+{
+  "_id": "7a1baa02eae18ebc",
+  "name": "Movement Maneuvers",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 2,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "98aadead802cf21b"
+    }
+  },
+  "_key": "!folders!7a1baa02eae18ebc"
+}

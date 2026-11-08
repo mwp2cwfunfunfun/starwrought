@@ -1,0 +1,52 @@
+{
+  "_id": "fb8fa47e04530b57",
+  "name": "Command the Field",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Diplomacy Actions",
+    "basic": false,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Mental"
+    ],
+    "prerequisites": "Command the Field",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "Once per round",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>Your companions recognize the opening as soon as you call it.</i></p>",
+    "effect": "<p>Attempt a <i>Diplomacy</i> check vs. a Threshold set by the GM (typically 15), with the following effects:<br><b>   Critical Success </b>One willing ally within 30 feet who hears you may each immediately Move.<b><br>   Success</b> One willing ally within 30 feet who hears you may each immediately Step.<br><b>   Failure </b>or <b>Critical Failure</b> No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "diplomacy",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "4e20ce19d02f6ff4",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "2bc2979010fc506a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!fb8fa47e04530b57"
+}

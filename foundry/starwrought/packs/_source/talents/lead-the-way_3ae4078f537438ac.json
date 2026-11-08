@@ -1,0 +1,56 @@
+{
+  "_id": "3ae4078f537438ac",
+  "name": "Lead the Way",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Survival Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "After a successful <b>Find Footing</b>, up to two willing allies within 10 feet who can see you your directions may receive the effect from your results until the end of the round.",
+    "description": "<p><i>You leave a route a companion can follow at a glance.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "ac7d49f73552e85a",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "552e79f3fadc6bbc"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3ae4078f537438ac"
+}

@@ -1,0 +1,16 @@
+{
+  "_id": "eeea8a54824148e2",
+  "name": "Stealth Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 17,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "d2804bc546bf1542"
+    }
+  },
+  "_key": "!folders!eeea8a54824148e2"
+}

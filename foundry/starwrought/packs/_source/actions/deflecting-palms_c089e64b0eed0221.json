@@ -23,7 +23,7 @@
     "description": "<p>Requirements You have a hand free. Trigger A foe no more than one size larger than you attacks you with a melee weapon. +2 Situation bonus to Guard against the triggering attack, and that attack's damage is reduced by 1 plus your Presence.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "ac6d5ea482a9da68"
+      "contentHash": "e2e757b881630c09"
     }
   },
   "effects": [],

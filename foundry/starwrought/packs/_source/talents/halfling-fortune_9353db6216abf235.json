@@ -1,0 +1,86 @@
+{
+  "_id": "9353db6216abf235",
+  "name": "Halfling Fortune",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Ancestry. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You gain 8 Vigor per level. Your Speed is 6 feet. Your Size is Small. You gain the Halfling trait.<br><br><b>Fortunate. </b>Once per day, after you fail or critically fail a Skill check, you may reroll it and use the second result. This does not apply to Attacks, Defenses, or Initiative.",
+    "description": "<p><i>Halflings are small, sure-handed people whose knack for finding a second chance often matters more than their size.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[TRAIT Halfling][SIZE Small][SPEED 6][VIGOR 8]\n[EFFECT Reroll Failed or Critically Failed Skill Check; IF: CLAIM(hidden objects, concealed mechanisms, or small physical alterations)]",
+    "rules": [
+      {
+        "name": "Halfling",
+        "kind": "trait",
+        "line": 1,
+        "text": "[TRAIT Halfling]"
+      },
+      {
+        "size": "small",
+        "kind": "size",
+        "line": 1,
+        "text": "[SIZE Small]"
+      },
+      {
+        "feet": 6,
+        "mode": "set",
+        "kind": "speed",
+        "line": 1,
+        "text": "[SPEED 6]"
+      },
+      {
+        "value": 8,
+        "scope": "level",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR 8]"
+      },
+      {
+        "error": "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE",
+        "line": 2,
+        "text": "[EFFECT Reroll Failed or Critically Failed Skill Check; IF: CLAIM(hidden objects, concealed mechanisms, or small physical alterations)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "63e3a86ac08032b4"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!9353db6216abf235"
+}

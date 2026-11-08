@@ -1,0 +1,66 @@
+{
+  "_id": "c3b91357f135d5b1",
+  "name": "Long Memory",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Elvendom"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain 1 Lore Talent Point.",
+    "description": "<p><i>A long life leaves room for a subject you have returned to again and again.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 1,
+      "mode": "any",
+      "scope": "Lore",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[POINT Lore]",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Lore",
+        "different": false,
+        "when": null,
+        "kind": "grant",
+        "line": 1,
+        "text": "[POINT Lore]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e7e3a043334aee39"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c3b91357f135d5b1"
+}

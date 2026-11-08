@@ -1,0 +1,16 @@
+{
+  "_id": "aff18274e78f6d24",
+  "name": "Crafting",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "62740d1d9b00b5f4"
+    }
+  },
+  "_key": "!folders!aff18274e78f6d24"
+}

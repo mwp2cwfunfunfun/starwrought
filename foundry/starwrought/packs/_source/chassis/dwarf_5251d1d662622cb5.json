@@ -1,0 +1,85 @@
+{
+  "_id": "5251d1d662622cb5",
+  "name": "Dwarf",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/dwarf.png",
+  "system": {
+    "kind": "ancestry",
+    "constellation": "dwarf",
+    "attribute": "might",
+    "vigor": 9,
+    "size": "medium",
+    "speed": 5,
+    "senses": "low-light vision",
+    "description": "<p>Dwarves are enduring and powerfully built, with long memories for the things that hold a life together and the faults that can bring it down.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Dwarves are enduring and powerfully built, with long memories for the things that hold a life together and the faults that can bring it down.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>A dwarf is difficult to hurry when they think the next step deserves another look. They can feel the strain in a carried load, set their weight before a hard pull, and continue a task long after its novelty has worn away. Outsiders often call this stubbornness. Sometimes the dwarf agrees.<br><br>Long life and a durable body make endurance familiar, but they do not make every dwarf patient or every attachment wise. Some stay with a failing work because leaving would feel like admitting it was never worth the effort. Others become adventurers when they finally distinguish what is theirs to carry from what an older generation placed on their shoulders. A dwarf’s departure can be as considered and determined as another dwarf’s decision to remain.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who can hold their ground, carry a difficult responsibility, and decide which commitments deserve that strength, play a dwarf.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Inspect the support before trusting the impressive surface.<br>• Keep an old tool or ordinary object because of who used it before you.<br>• Show affection by doing the work someone else has been avoiding.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Trust you to stay when a task turns unpleasant.<br>• Assume your certainty comes from experience rather than temperament.<br>• Wonder how long you intend to remember one careless remark.</p>"
+      },
+      {
+        "label": "Physical Description (at a glance)",
+        "text": "<p>Dwarves generally stand four to five feet tall, with broad torsos, sturdy joints, and a low center of balance. They are Medium despite their height. Hair, skin, and eye colors vary by lineage; thick hair and strong facial growth are common but differ between individuals and families. A dwarf’s clothing, beard styling, jewelry, and visible marks of belonging reflect their Culture and choices rather than an ancestry-wide uniform.</p>"
+      },
+      {
+        "label": "Physical Description (lifecycle)",
+        "text": "<p>Dwarves reach physical adulthood around twenty years and often live two to three centuries. They tend to retain strength well into later life, though age still brings injury, fatigue, and loss. Different cultures place different weight on years, experience, or the acceptance of a public responsibility when recognizing adulthood.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Dwarves inhabit mountain holds, river towns, cities, farms, and settlements alongside other peoples. Their work is as varied as the places they inhabit. In some communities with many dwarven families, a household is understood as a work carried across generations: its members might maintain a bridge, keep a garden, preserve a library, or support a trade. The obligation matters more than the material it involves.<br><br>Such arrangements can make reliable institutions and burdensome expectations. A family may expect a young dwarf to continue a work they never chose, or refuse to admit that a respected practice no longer serves anyone. Other communities deliberately pass important duties beyond blood relations, considering the person who keeps a thing working more significant than the name of its first maker.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Dwarven traditions often give spiritual weight to maintenance, honest workmanship, and obligations that can survive a bad year. A repaired roof may be a more convincing offering than an expensive ceremony. That outlook can serve many faiths, including those that have no connection to stone or metal. A dwarf may honor an ancestor by continuing their work, improving it, or finally correcting the harm it caused.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Make the thing sound before calling it finished.<br>• Carry the share you have agreed to carry.<br>• Teach someone how to maintain what you leave behind.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Conceal a fault that will endanger another person.<br>• Claim the credit for work another hand completed.<br>• Demand endurance from others to spare yourself an honest change.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Many dwarven family names combine a material or descriptive word with part of a lasting structure: a span, vault, arch, pier, or lintel. The name may commemorate an ancestral home or public work rather than a current occupation. Given names are often short, with firm consonants.<br><b>• Common given names </b>Bera, Dagna, Dorik, Helda, Korrin, Marda, Rurik, Torren.<br><b>• Common family names</b> Broadarch, Deepvault, Highlintel, Ironspan, Redkeystone, Stonepier.</p>"
+      }
+    ],
+    "traits": [
+      "Dwarf"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "e179582241ca8c65",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a3410cdaabedc6a1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5251d1d662622cb5"
+}

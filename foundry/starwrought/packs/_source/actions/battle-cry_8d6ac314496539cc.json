@@ -1,0 +1,49 @@
+{
+  "_id": "8d6ac314496539cc",
+  "name": "Battle Cry",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Intimidation Actions",
+    "basic": false,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Fear",
+      "Mental",
+      "Reaction"
+    ],
+    "prerequisites": "Battle Cry",
+    "requirements": "",
+    "trigger": "Initiative has been rolled, but nobody taken their Opportunity yet.",
+    "frequency": "Once per encounter",
+    "range": "30 feet",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You begin the exchange with a warning that reaches the whole enemy line.</i></p>",
+    "effect": "<p>Use the <b>Demoralize</b> ❷ <b>Break Them</b> Maneuver.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "1b65d9b83c082292",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "1f309b6bdd0b9411"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8d6ac314496539cc"
+}

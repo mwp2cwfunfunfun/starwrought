@@ -1,0 +1,16 @@
+{
+  "_id": "faccc82d8db9ff3f",
+  "name": "Animal Handling Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 7,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "b15347cef06eb250"
+    }
+  },
+  "_key": "!folders!faccc82d8db9ff3f"
+}

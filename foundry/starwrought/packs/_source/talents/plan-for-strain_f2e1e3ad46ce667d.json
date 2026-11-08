@@ -1,0 +1,56 @@
+{
+  "_id": "f2e1e3ad46ce667d",
+  "name": "Plan for Strain",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Crafting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "After a successful Survey Workmanship, name a check that directly exploits or avoids the flaw you identified. One ally who hears your explanation gains a +1 Situation bonus to that check if made within 10 minutes. Each survey grants only one such benefit, and surveying the same flaw again does not renew it.",
+    "description": "<p><i>You explain where pressure will matter before someone puts their weight there.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "aff18274e78f6d24",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "53394e6712205309"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f2e1e3ad46ce667d"
+}

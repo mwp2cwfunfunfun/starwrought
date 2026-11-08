@@ -1,0 +1,36 @@
+{
+  "_id": "1183fd2db7506952",
+  "name": "Stablehand",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Animal Handling",
+      "Athletics",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Animal Handling and Athletics, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Stabling Lore, Animal Husbandry Lore, Equine Anatomy Lore.</p>",
+    "description": "<p><i>You cared for mounts and worked wherever a stable needed strong hands. You learned to approach a nervous animal patiently and recognize trouble before a saddle ever touched its back.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6032f272a07a487b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1183fd2db7506952"
+}

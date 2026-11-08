@@ -1,6 +1,6 @@
 {
   "_id": "ad163ee5657cd28d",
-  "name": "Well Read ⓿",
+  "name": "Well-Read",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,9 +15,9 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Once per scene, Recall Knowledge ⓿ about your field.",
-    "description": "",
-    "cost": "0",
+    "effect": "You gain the Well-Read Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Well-Read ⓿</strong></p><p>Recall Knowledge on your Lore’s subject.</p></div>",
+    "description": "<p><i>Long familiarity with your subject brings useful facts to mind in a heartbeat.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
     "reaction": false,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Well-Read]",
+    "rules": [
+      {
+        "name": "Well-Read",
+        "slug": "well-read",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Well-Read]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "f59506a3bbc6d7ef",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "e5a050ec742b13d8"
+      "contentHash": "11f98119c26998ed"
     }
   },
   "effects": [],

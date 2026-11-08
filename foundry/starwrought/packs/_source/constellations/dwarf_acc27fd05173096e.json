@@ -1,0 +1,36 @@
+{
+  "_id": "acc27fd05173096e",
+  "name": "Dwarf",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/dwarf.png",
+  "system": {
+    "slug": "dwarf",
+    "category": "origin",
+    "attribute": "might",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Ancestry constellation • Might (Medium • Vigor 9 • 5 ft • low-light vision)",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Ancestry constellation • Might (Medium • Vigor 9 • 5 ft • low-light vision)</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0d7b3a0dbdd7b7ee"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!acc27fd05173096e"
+}

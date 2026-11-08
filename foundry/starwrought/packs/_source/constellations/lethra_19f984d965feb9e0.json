@@ -1,0 +1,36 @@
+{
+  "_id": "19f984d965feb9e0",
+  "name": "Lethra",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/lethra.png",
+  "system": {
+    "slug": "lethra",
+    "category": "origin",
+    "attribute": "agility",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Culture constellation • Agility",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Culture constellation • Agility</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "9d68bf9180bfe222"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!19f984d965feb9e0"
+}

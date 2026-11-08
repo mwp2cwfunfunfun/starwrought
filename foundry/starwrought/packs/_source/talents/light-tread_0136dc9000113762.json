@@ -1,0 +1,56 @@
+{
+  "_id": "0136dc9000113762",
+  "name": "Light Tread",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Survival Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, Find Footing is a ⓿ Maneuver instead of ❶.",
+    "description": "<p><i>You recognize a stable path before you have to pause to find it.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "ac7d49f73552e85a",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "09cd8aaec1c488e8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0136dc9000113762"
+}

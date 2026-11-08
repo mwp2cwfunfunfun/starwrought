@@ -23,7 +23,7 @@
     "description": "<p>Requirements You are not Grabbed or Restrained. Trigger You are targeted by an Attack of which you are aware. You drop Prone. +4 Situation bonus to Evade against the triggering attack.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "71aa1f6530242105"
+      "contentHash": "83ad1aae7e7a33e3"
     }
   },
   "effects": [],

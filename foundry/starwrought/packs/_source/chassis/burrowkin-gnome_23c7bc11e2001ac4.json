@@ -1,0 +1,30 @@
+{
+  "_id": "23c7bc11e2001ac4",
+  "name": "Burrowkin Gnome",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "gnome",
+    "attribute": "wits",
+    "specialAbility": "<p>You belong to the Burrowkin Gnome Bloodline.<br><br><b>Darkvision. </b>You can see in nonmagical darkness as though it were bright light, but only in shades of gray. This does not let you see through Cover, fog, smoke, an opaque barrier, or magical darkness.</p>",
+    "description": "<p>A bloodline of the Gnome ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f5a8a18fc8b29235"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!23c7bc11e2001ac4"
+}

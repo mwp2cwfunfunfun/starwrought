@@ -1,0 +1,51 @@
+{
+  "_id": "a89f7c006cbb12c5",
+  "name": "Stabilize",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Medicine Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "You have appropriate first-aid supplies, and are adjacent to a willing or helpless Dying creature that has not been targeted by Stabilize this round.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Medicine</i> check vs. 10 + the patient’s Dying value + its total Wounds, with the following effects:<br>   <b>Critical Success</b> Set Dying to 0; end one instance of Persistent damage affecting it.<br>   <b>Success</b> Set Dying to 0.<br>   <b>Failure</b> No effect.<br>   <b>Critical Failure</b> Increase Dying by 1.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "medicine",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "08de73ef78d5df16",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "248f2390c5d30174"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a89f7c006cbb12c5"
+}

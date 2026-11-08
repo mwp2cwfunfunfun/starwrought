@@ -1,0 +1,51 @@
+{
+  "_id": "f4e13a3c12c739d2",
+  "name": "Field Patch",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "4",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Crafting Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "Tools and expendable repair material; a reachable mundane object with minor, repairable damage or a jam.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Crafting</i> check against a Threshold set by the GM, with the following results:<br>   <b>Critical Success</b> Restore the object’s ordinary function for 10 minutes.<br>   <b>Success</b> Restore the object’s ordinary function for 1 minute.<br>   <b>Failure</b> or <b>Critical Failure</b> No effect.<br>An object can benefit from one Field Patch until it receives a proper repair. This cannot replace a missing major component, restore a destroyed object, refill a consumable, restore charges, or improve statistics.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "crafting",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "ddbafaacb8bcbd20",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d7d575fd22ca19d2"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f4e13a3c12c739d2"
+}

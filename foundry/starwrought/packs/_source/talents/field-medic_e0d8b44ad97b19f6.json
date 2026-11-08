@@ -1,0 +1,56 @@
+{
+  "_id": "e0d8b44ad97b19f6",
+  "name": "Field Medic",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "medicine",
+    "constellationName": "Medicine",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Medicine Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, Stabilize costs ❶ instead of ❷.",
+    "description": "<p><i>You recognize the immediate measure that can keep a casualty alive.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "c1e91feddd2b7d78",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "33f5d0f41d35df59"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e0d8b44ad97b19f6"
+}

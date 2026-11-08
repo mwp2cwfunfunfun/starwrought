@@ -1,0 +1,53 @@
+{
+  "_id": "808d278321ba39b6",
+  "name": "Captivate",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Performance Actions",
+    "basic": true,
+    "traits": [
+      "Auditory or Visual",
+      "Concentrate",
+      "Mental",
+      "Sustained"
+    ],
+    "prerequisites": "",
+    "requirements": "Up to three creatures within 30 feet can perceive the performance and are not facing immediate violence or another urgent danger.",
+    "trigger": "",
+    "frequency": "Once per encounter (per target)",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Performance</i> check once vs. against each target’s <i>Awareness</i>, with the following effects:<br>   <b>Critical Success</b> It takes a -1 Situation penalty to <i>Awareness</i> checks until the end of your next Opportunity, unless you Sustain it.<br>   <b>Success</b> It takes a -1 Situation penalty to <i>Awareness </i>checks until the end of your next Opportunity, unless you Sustain it.<br>   <b>Failure </b>or <b>Critical Failure</b> No effect.</p><p>If a target is Attacked, the penalty immediately ends.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "performance",
+      "defense": "awareness"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "0eb1b3aa700cbad0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "d5cd4d576ac89bf7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!808d278321ba39b6"
+}

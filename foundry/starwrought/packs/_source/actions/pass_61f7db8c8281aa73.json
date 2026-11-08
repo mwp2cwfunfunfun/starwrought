@@ -1,0 +1,43 @@
+{
+  "_id": "61f7db8c8281aa73",
+  "name": "Pass",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "0",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Defensive & Recovery Maneuvers",
+    "basic": true,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "Once per round",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Do nothing at this Opportunity. You may still use Reactions.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "17f1e005b4428dbf",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "86d4807be4e85e3a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!61f7db8c8281aa73"
+}

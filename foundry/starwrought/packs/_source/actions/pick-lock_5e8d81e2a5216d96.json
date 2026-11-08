@@ -1,0 +1,51 @@
+{
+  "_id": "5e8d81e2a5216d96",
+  "name": "Pick Lock",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Thievery Actions",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "You are holding a Thievery Toolkit, or you are wearing one and have at least one hand free.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "One lock you are adjacent to or holding",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Thievery </i>check vs. a Threshold set by the GM, with the following effects:<br>  <b>Critical Success </b>You unlock the lock, or you achieve two successes toward opening a lock that requires more than one success. You leave no trace of your tampering.<b><br>   Success </b>You open the lock, or you achieve one success toward opening a lock that requires more than one success. You leave behind damage that indicates the lock was picked on close scrutiny.<b><br>   Failure </b>No effect.<b><br>   Critical Failure </b>You break your toolkit and leave behind obvious damage. Fixing a broken toolkit requires using Crafting to Repair it or else swapping in replacement picks (costing 3 sp, or 3 gp for an infiltrator thieves' toolkit).</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "thievery",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "42a978d195464b4a",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "54abcaf5b7efdd80"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5e8d81e2a5216d96"
+}

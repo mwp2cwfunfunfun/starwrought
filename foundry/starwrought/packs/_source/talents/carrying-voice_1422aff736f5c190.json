@@ -1,0 +1,56 @@
+{
+  "_id": "1422aff736f5c190",
+  "name": "Carrying Voice",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Performance Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Bolster’s range increases from 15 feet to 30 feet.",
+    "description": "<p>A companion can pick your encouraging phrase out of the noise.</p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "f54f067a4c4c15f2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "3d481138982854b8"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!1422aff736f5c190"
+}

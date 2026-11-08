@@ -1,0 +1,56 @@
+{
+  "_id": "7521ebb3ec0c9011",
+  "name": "Weather Eye",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "survival",
+    "constellationName": "Survival",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Survival Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Situation bonus to <i>Survival</i> checks to anticipate weather, choose a shelter or campsite, or navigate around an environmental hazard.",
+    "description": "<p><i>You notice the change in wind or ground that makes a camp or route unsafe.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "ac7d49f73552e85a",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4f6a3e184c974d3a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7521ebb3ec0c9011"
+}

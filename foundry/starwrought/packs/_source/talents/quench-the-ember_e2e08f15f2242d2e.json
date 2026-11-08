@@ -1,0 +1,65 @@
+{
+  "_id": "e2e08f15f2242d2e",
+  "name": "Quench the Ember",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Forge-Blood Dwarf"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain the <b>Quench the Ember </b>Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Quench the Ember ❶</strong></p><p><strong>Requirements</strong> You are taking persistent fire damage.</p><p>End one instance of persistent fire damage on yourself. This does not remove its source, prevent a new application, or extinguish an independently burning object.</p></div>",
+    "description": "<p><i>You can draw the heat of a lingering flame inward until its last trace gutters out.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[MANEUVER Quench the Ember]",
+    "rules": [
+      {
+        "name": "Quench the Ember",
+        "slug": "quench-the-ember",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Quench the Ember]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "86c57ba5e153ff55"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e2e08f15f2242d2e"
+}

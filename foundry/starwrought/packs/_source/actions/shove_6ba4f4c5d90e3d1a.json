@@ -1,0 +1,50 @@
+{
+  "_id": "6ba4f4c5d90e3d1a",
+  "name": "Shove",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "prerequisites": "",
+    "requirements": "You have a free hand or a weapon with the Shove Trait, and the target must be within reach and no more than one Size larger than you.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Athletics</i> check vs. <i>Evade</i> or <i>Guard</i>, with the following effects, depending on how many actions you took:<br>❶ <b>Push.</b><br>   <b>Critical Success </b>The target is pushed up to your Speed. You may Move as part of this action, if it is in the same direction.<br>   <b>Success</b> The target is pushed up to half your Speed.<br>   <b>Failure</b> No effect.<br>  <b> Critical Failure </b>You overcommit and are Off-Guard until your next Opportunity.<br>❷ <b>Heave.<br>   Critical Success </b>The target is pushed up to double your Speed. You may Move as part of this action, if it is in the same direction.<br>   <b>Success</b> The target is pushed up to your Speed.<br>   <b>Failure</b> You are Wrong-Footed against the target until your next Opportunity.<br>   <b>Critical Failure</b> You overcommit and are Off-Guard until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "athletics",
+      "defense": "evade"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "db25f83e69b910a2"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!6ba4f4c5d90e3d1a"
+}

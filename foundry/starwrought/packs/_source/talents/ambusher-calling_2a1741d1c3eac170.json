@@ -1,0 +1,74 @@
+{
+  "_id": "2a1741d1c3eac170",
+  "name": "Ambusher Calling",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "ambusher",
+    "constellationName": "Ambusher",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Calling. Use this Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to this Constellation’s Proficiency Rank.<br><br>You become Trained in <i>Stealth</i>.<br><br>You gain the Sneak Attack Maneuver:<br>+1d6 precision damage vs. Off-Guard foes. Rises to +2d6 at Expert rank, +3d6 at Master, +4d6 at Legendary.<br><br>If this is your first Calling, you also gain 8 Vigor and Training in Melee or Ranged.",
+    "description": "<p><i>You stalk the edges of a fight, striking where attention falters and defenses leave an opening.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 1,
+      "mode": "any",
+      "scope": "Skill",
+      "constellation": "stealth"
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[Stealth trained][VIGOR opening 8]",
+    "rules": [
+      {
+        "n": 1,
+        "scope": "Skill",
+        "constellation": "stealth",
+        "constellationName": "Stealth",
+        "different": false,
+        "when": null,
+        "trained": true,
+        "kind": "grant",
+        "line": 1,
+        "text": "[Stealth trained]"
+      },
+      {
+        "value": 8,
+        "scope": "opening",
+        "kind": "vigor",
+        "line": 1,
+        "text": "[VIGOR opening 8]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9309f573d0dc8d61",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7207b4de80f81eb7"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!2a1741d1c3eac170"
+}

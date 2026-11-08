@@ -10,18 +10,33 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Exploration Mode",
-    "requirements": "Travel Speed: Double",
-    "traits": [],
-    "description": "<p>When an encounter begins, you can roll Athletics.</p>",
-    "exploration": {
-      "travel": "double",
-      "check": "",
-      "initiative": "athletics",
-      "effect": ""
-    },
+    "basic": true,
+    "traits": [
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt an <i>Endure</i> check. You can Hustle for a number of hours equal to 1/5 your check, rounded down, or else you become Fatigued. When an encounter begins, you can choose to use the results of the <i>Endure</i> check for Intiative, or your can roll <i>Awareness</i>.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "exploration": {
+      "travel": "double",
+      "check": "endure",
+      "initiative": "endure",
+      "effect": ""
+    },
+    "check": {
+      "enabled": true,
+      "constellation": "endure",
+      "defense": ""
+    },
+    "source": "data/activities.xlsx"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -30,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "626b1ac747dc422a"
+      "contentHash": "5b93dd232bfdb9be"
     }
   },
   "effects": [],

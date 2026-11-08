@@ -1,0 +1,62 @@
+{
+  "_id": "c981ed39faf919aa",
+  "name": "Unclouded Mind",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "elf",
+    "constellationName": "Elf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Starlit Elf"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, when your Defense against an Attack with the Beguilement Threat would result in a Critical Hit against you, treat that Result as a Hit instead. Apply this after the roll and any reroll, before resolving the Attack’s effects. This changes only the Result against you.",
+    "description": "<p><i>When an enchantment catches your thoughts, something in you holds to the shape they had before it.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "NEED AUTOMATION GRAMMAR FOR REDUCING DEGREE OF SUCCESS FROM CRITICAL SUCCESS TO SUCCESS.",
+    "rules": [
+      {
+        "error": "unknown rule kind \"need\" (an effect begins with a tag: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, in brackets as [EFFECT ...]; a feature is a bracketed block: TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or [<Constellation> trained])",
+        "line": 1,
+        "text": "NEED AUTOMATION GRAMMAR FOR REDUCING DEGREE OF SUCCESS FROM CRITICAL SUCCESS TO SUCCESS."
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "3c532ca322d54b06",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "772cf82528767be9"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c981ed39faf919aa"
+}

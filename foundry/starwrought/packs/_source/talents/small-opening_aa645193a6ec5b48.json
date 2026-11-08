@@ -1,0 +1,62 @@
+{
+  "_id": "aa645193a6ec5b48",
+  "name": "Small Opening",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Halfling Fortune"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Condition bonus to Acrobatics or Athletics checks to Escape a creature larger than you.",
+    "description": "<p><i>A larger opponent’s hold leaves small spaces that your body knows how to use.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, escape; IFT: SIZE: Larger]",
+    "rules": [
+      {
+        "error": "\"SIZE: Larger\" is not a condition: IFT: takes RANK, SEEN, ALLIES, ENEMIES, ALL, CLAIM, RESULT, TRAIT, MARKED, BLOW, BLAST, BLIGHT, BEGUILEMENT, MELEE, RANGED, CHECK",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, escape; IFT: SIZE: Larger]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "9808ea782e64c33d"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!aa645193a6ec5b48"
+}

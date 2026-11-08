@@ -1,0 +1,56 @@
+{
+  "_id": "3d4724464a8607e7",
+  "name": "Hearty Appetite",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Halfling Fortune"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "Once per day, when you finish a 10-minute rest and eat a normal meal or ration, recover additional Vigor equal to your level. This adds to the rest’s normal recovery, cannot exceed your maximum Vigor, and heals no Wounds. You cannot gain the benefit while Dying or unable to eat.",
+    "description": "<p><i>A proper meal helps you find the strength that an empty stomach had hidden.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "4d1f4d624d8a4353"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3d4724464a8607e7"
+}

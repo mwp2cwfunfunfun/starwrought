@@ -1,0 +1,45 @@
+{
+  "_id": "a5399d90561f5b6a",
+  "name": "Escape",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Acrobatics Actions",
+    "basic": true,
+    "traits": [
+      "Attack"
+    ],
+    "prerequisites": "",
+    "requirements": "You are Grabbed or Restrained.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt your best of <i>Athletics</i> or <i>Acrobatics</i> against the grabber's Endure, or a Threshold set by the GM, with the following results, depending on how many actions you took:<br>❶ <b>Quick Escape.</b><br>   <b>Critical Success</b> or <b>Success</b> You are no longer Grabbed or Restrained.<br>   <b>Failure</b> The Grabbed or Restrained condition persists.<br>   <b>Critical</b> <b>Failure</b> The condition persists and their hold improves. If you were Grabbed, you are now Restrained.</p><p>❷ <b>Deliberate Escape.</b><br>  <b> Critical Success</b> You are no longer Grabbed or Restrained, and may Step.<br>   <b>Success</b> You are no longer Grabbed or Restrained.<br>   <b>Failure</b> or<b> Critical Failure</b> The Grabbed or Restrained condition persists.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "131b3e0aa90866d8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c461b81c1ed2a554"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a5399d90561f5b6a"
+}

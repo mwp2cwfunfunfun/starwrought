@@ -1,0 +1,30 @@
+{
+  "_id": "4888e9bfffdcab26",
+  "name": "Forge-Blood Dwarf",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "bloodline",
+    "constellation": "dwarf",
+    "attribute": "might",
+    "specialAbility": "<p>You belong to the Forge-Blood Dwarf Bloodline.<br><br><b>Forge Resistance.</b> You gain Resistance 2 to fire damage. It becomes Resistance 4 at Expert Origin rank, 6 at Master, and 8 at Legendary. This reduces damage only; it does not make smoke safe to breathe or automatically prevent other effects of heat.</p>",
+    "description": "<p>A bloodline of the Dwarf ancestry. Its Root Talent is granted free by the character-creation choice.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "581566cb83a944ca",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "050de7a97ad36772"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!4888e9bfffdcab26"
+}

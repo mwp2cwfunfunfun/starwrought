@@ -1,0 +1,48 @@
+{
+  "_id": "32558f398d01faea",
+  "name": "Hide",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Stealth Actions",
+    "basic": true,
+    "traits": [],
+    "prerequisites": "",
+    "requirements": "You have Concealment or at least Lesser Cover.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt one <i>Stealth</i> check, compared separately against the <i>Awareness</i> of each creature that can currently locate you and from which you have Concealment or at least Lesser Cover. Apply the following results separately to each creature:<br>   <b>Critical Success </b>or <b>Success</b> You become Hidden to that creature.<br>   <b>Failure</b> Your awareness state relative to that creature does not change.<br> <b>  Critical Failure</b> As Failure, and you are Wrong-Footed to that creature until your next Opportunity.<br><u>Note on Existing Stealth:</u> You remain Hidden or Undetected to creatures to which you already had that state. Hide does not make a creature forget that you are present.<br><u>Note on Cover and Concealment:</u> Check these separately for each creature. You cannot use Hide to become Hidden from a creature against which you lack the required Cover or Concealment.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "stealth",
+      "defense": "awareness"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "eeea8a54824148e2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e21944950d48dcaa"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!32558f398d01faea"
+}

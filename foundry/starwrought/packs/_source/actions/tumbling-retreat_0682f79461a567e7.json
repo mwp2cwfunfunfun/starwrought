@@ -1,0 +1,43 @@
+{
+  "_id": "0682f79461a567e7",
+  "name": "Tumbling Retreat",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Acrobatics Actions",
+    "basic": false,
+    "traits": [],
+    "prerequisites": "Tumbling Retreat",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "once per round",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Step your full Speed. You must end up further than you started from at least one foe.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "131b3e0aa90866d8",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8c5c0f97b591e53e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0682f79461a567e7"
+}

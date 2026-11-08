@@ -1366,9 +1366,10 @@ export function keepableRolls(party, activities) {
 
 /**
  * The warnings a row shows, read from live data and never enforced (ruling 107): Look Harmless's
- * Requirements, "You wield no weapon with a Reach greater than Adjacent, and your worn armor
- * totals Load 1 or less", as a held weapon whose `system.reach` is above 0 (the data writes
- * Adjacent as 0 and a Shortsword as 2), named with its Reach, and the worn pieces' Load summed
+ * Requirements, "You wield no weapon with a Reach greater than 1, and your worn armor totals
+ * Load 1 or less" (PHB v4.24; "greater than Adjacent" through v4.21), as a held weapon whose
+ * `system.reach` is above 1 (the data writes Adjacent as 0, a dagger as 1 and a Shortsword as 2),
+ * named with its Reach, and the worn pieces' Load summed
  * when it passes 1; an Activity whose roll is the member's pick with no pick made; and a pick
  * left blank where only Initiative wanted one (Awareness until then). Localized strings, in the
  * order the row prints them.
@@ -1381,7 +1382,7 @@ export function activityWarnings(actor, item) {
   if (!actor || !item) return warnings;
   const ex = explorationOf(item);
   if (activitySlug(item) === LOOK_HARMLESS) {
-    const reaching = actor.items.filter(i => (i.type === "weapon") && i.system.held && ((Number(i.system.reach) || 0) > 0));
+    const reaching = actor.items.filter(i => (i.type === "weapon") && i.system.held && ((Number(i.system.reach) || 0) > 1));
     for (const weapon of reaching) {
       warnings.push(F("STARWROUGHT.Travel.warnReach", { weapon: weapon.name, reach: Number(weapon.system.reach) || 0 }));
     }
@@ -1607,16 +1608,18 @@ export async function sayThePlan(party) {
 }
 
 /**
- * The degrees of success printed on an Activity, for the GM to compare by hand: the Item's
- * description from its first "Critical Success" to the end of that run of text, or the whole
- * description when it prints no degrees. The system's own content is written this way (Look
- * Harmless); a GM's rewrite is theirs and prints as written.
+ * The degrees of success printed on an Activity, for the GM to compare by hand: the Item's Effect
+ * (its description through 0.19.0, when the roster row held the whole text; since 0.20.0 the
+ * sheet's Effect cell is the rules and the Description the flavour line) from its first "Critical
+ * Success" to the end of that run of text, or the whole text when it prints no degrees. The
+ * system's own content is written this way (Look Harmless); a GM's rewrite is theirs and prints
+ * as written.
  * @param {Item|null} item
  * @returns {string}  HTML, as the Item carries it.
  */
 function degreesOf(item) {
-  const html = String(item?.system?.description ?? "");
-  const at = html.indexOf("<b>Critical Success</b>");
+  const html = String(item?.system?.effect || item?.system?.description || "");
+  const at = html.search(/<(?:b|strong)>\s*Critical Success\s*<\/(?:b|strong)>/i);
   if (at < 0) return html;
   const rest = html.slice(at);
   const end = rest.search(/<br\s*\/?>|<\/p>/i);
@@ -1838,14 +1841,13 @@ export async function beginEncounter(party, { keep = [] } = {}) {
 const DOWNTIME_CATEGORY = "Downtime Mode";
 
 /**
- * The two Downtime Activities the panel says are done by hand (ruling 114), as `SW.slugify` spells
- * them: Retrain's Talent Point moves by dragging as today, and Provision's buying and selling are
- * the table's. Named here only to hang one localized line each on their rows; every other row,
- * Train included, prints what the Item carries and nothing more, so a row Mike adds needs no name
- * here unless it wants a line of its own.
+ * The Endeavor the panel says is done by hand (ruling 114), as `SW.slugify` spells it: Retrain's
+ * Talent Point moves by dragging as today. Provision had a line too until PHB v4.24 dropped it
+ * from the Endeavors (0.20.0). Named here only to hang one localized line on its row; every other
+ * row, Train included, prints what the Item carries and nothing more, so a row Mike adds to
+ * data/endeavors.xlsx needs no name here unless it wants a line of its own.
  */
 const RETRAIN = "retrain";
-const PROVISION = "provision";
 
 /** Is this action Item a Downtime Activity? The model's flag when it carries one, the category otherwise. */
 function isDowntimeAction(item) {
@@ -1858,8 +1860,9 @@ function isDowntimeAction(item) {
  * as `explorationActivities` builds the road's list and cached once per session the same way; a
  * world action Item of the same name in the same category replaces the printed one.
  * `invalidateExplorationActivities` forgets this list too, so a GM's rewrite reaches the panel
- * without a reload. Data first (ruling 112): a row Mike adds to the roster's `downtimeActions`
- * ships through the pipeline into this folder and appears on the panel with no code change.
+ * without a reload. Data first (ruling 112): a row Mike adds to data/endeavors.xlsx (or an
+ * Endeavor-typed row on any action sheet) ships through the pipeline into this folder and appears
+ * on the panel with no code change.
  * @returns {Promise<Item[]>}
  */
 export async function downtimeActivities() {
@@ -1870,15 +1873,14 @@ export async function downtimeActivities() {
 
 /**
  * The hand line a Downtime row carries (ruling 114), localized, or "" for a row that has none:
- * Retrain's and Provision's say the system adds no control for them. Train has no line, because
- * the member strip below the rows is its control.
+ * Retrain's says the system adds no control for it. Train has no line, because the member strip
+ * below the rows is its control.
  * @param {Item|null} item
  * @returns {string}
  */
 export function downtimeHandLine(item) {
   const slug = item ? SW.slugify(item.name) : "";
   if (slug === RETRAIN) return L("STARWROUGHT.Travel.retrainByHand");
-  if (slug === PROVISION) return L("STARWROUGHT.Travel.provisionByHand");
   return "";
 }
 

@@ -13,8 +13,8 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this skill: add the Constellation's rank to its checks. Every talent here requires this.",
-    "description": "",
+    "effect": "You become Trained in this Skill. Use this Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to this Constellation’s Proficiency Rank.",
+    "description": "<p><i>You have learned when a quiet warning carries farther than a shout.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -34,7 +34,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "122698d6a8541059",
   "sort": 0,
@@ -43,7 +43,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "83de91d9ce7c8be6"
+      "contentHash": "1982744e243384d7"
     }
   },
   "effects": [],

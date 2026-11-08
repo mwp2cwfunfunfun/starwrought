@@ -10,10 +10,12 @@
     "root": false,
     "bloodlineRoot": true,
     "capstone": false,
-    "requires": [],
+    "requires": [
+      "Humanity"
+    ],
     "prerequisites": "",
     "attribute": "wits",
-    "effect": "You gain 1 Opening Talent Point.",
+    "effect": "You belong to the Versatile Human bloodline.<br><br>You gain 1 Opening Talent Point.",
     "description": "<p><i>Your interests lead in many directions, and you rarely let an opportunity to learn something new pass unexplored.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -44,7 +46,7 @@
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "42704b4e7190f5c8",
   "sort": 0,
@@ -53,7 +55,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "df4602c741c27ec8"
+      "contentHash": "c77773fb30138a66"
     }
   },
   "effects": [],

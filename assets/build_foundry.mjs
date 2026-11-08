@@ -447,7 +447,11 @@ const languages = read("languages.json");
 // below where they are used: the rule-target resolver needs every Maneuver's name while the
 // Talents are built (0.10.0), and a `const` read further down would still be in its dead zone.
 const actionsPath = path.join(ROOT, "assets", "actions.json");
-const sheetActions = fs.existsSync(actionsPath) ? (read("actions.json").actions ?? []) : [];
+const actionsFile = fs.existsSync(actionsPath) ? read("actions.json") : {};
+const sheetActions = actionsFile.actions ?? [];
+// The index names with no row on any sheet (0.20.0): the workbook's, so a roster row of the name
+// is retired as a blank sheet row retired it through 0.19.0.
+const retiredByIndex = (actionsFile.retired ?? []).map(n => String(n).toLowerCase());
 
 /**
  * THE AUTOMATION RULES' TARGETS (0.10.0; rulings 121 and 122). What a rule's target or condition
@@ -583,7 +587,7 @@ for (const [name, tree] of Object.entries(trees)) {
       // column yet, so both are empty and present, as on every Talent and action.
       automation: "",
       rules: [],
-      source: "STARWROUGHT Playtest v4.21"
+      source: "STARWROUGHT Playtest v4.24"
     }
   });
 
@@ -637,7 +641,7 @@ for (const [name, tree] of Object.entries(trees)) {
         // The sheet's Traits column (0.14.0), so a spell Talent can carry the trait a defender's
         // `IF(Trait=...)` asks about.
         traits: Array.isArray(node.traits) ? node.traits.map(String) : [],
-        source: "STARWROUGHT Playtest v4.21"
+        source: "STARWROUGHT Playtest v4.24"
       }
     });
   }
@@ -707,7 +711,7 @@ for (const ancestry of roster.ancestries ?? []) {
       // The index's Traits column (0.14.0): the creature traits the Ancestry confers ("Human"),
       // which the character sheet's header reads off the chassis by name.
       traits: Array.isArray(ancestry.traits) ? ancestry.traits.map(String) : [],
-      source: "STARWROUGHT Playtest v4.21"
+      source: "STARWROUGHT Playtest v4.24"
     }
   });
 
@@ -724,7 +728,7 @@ for (const ancestry of roster.ancestries ?? []) {
         specialAbility: `<p>${effect}</p>`,
         description: `<p>A bloodline of the ${ancestry.name} ancestry. Its Root Talent is granted free by the character-creation choice.</p>`,
         traits: [],
-        source: "STARWROUGHT Playtest v4.21"
+        source: "STARWROUGHT Playtest v4.24"
       }
     });
   }
@@ -756,7 +760,7 @@ for (const culture of roster.cultures ?? []) {
       lore: (culture.lore ?? []).map(({ label, text }) => ({ label, text: `<p>${text}</p>` })),
       specialAbility: root ? `<p>${root.effect}</p>` : "",
       traits: Array.isArray(culture.traits) ? culture.traits.map(String) : [],
-      source: "STARWROUGHT Playtest v4.21"
+      source: "STARWROUGHT Playtest v4.24"
     }
   });
 }
@@ -795,7 +799,7 @@ for (const background of backgrounds) {
       specialAbility: `<p>${background.effect ?? ""}</p>`,
       description: `<p>${background.desc ?? ""}</p>`,
       traits: background.rarity ? [background.rarity] : [],
-      source: "STARWROUGHT Playtest v4.21"
+      source: "STARWROUGHT Playtest v4.24"
     }
   });
 }
@@ -827,7 +831,7 @@ for (const [name, rowTraining, hp, attribute, ability] of roster.callings ?? [])
       specialAbility: `<p>${ability}</p>`,
       description: `<p>Grants Training in ${training}, and ${hp} Opening Vigor, added once if it is your first Calling.</p>`,
       traits: [],
-      source: "STARWROUGHT Playtest v4.21"
+      source: "STARWROUGHT Playtest v4.24"
     }
   });
 }
@@ -850,7 +854,7 @@ for (const [name, rowTraining, hp, attribute, ability] of roster.callings ?? [])
 // Item's UUID, and a row disabled today restores the same document when it is enabled again.
 const equipmentPath = path.join(ROOT, "assets", "equipment.json");
 const equipment = fs.existsSync(equipmentPath) ? read("equipment.json") : null;
-const equipmentSource = equipment ? "data/equipment.xlsx" : "STARWROUGHT Playtest v4.21";
+const equipmentSource = equipment ? "data/equipment.xlsx" : "STARWROUGHT Playtest v4.24";
 
 // The roster blocks read into the sheet's row shape, so one builder per type serves both sources.
 // The ranged block has no price column, and neither does the book's Ranged Weapons table, so a
@@ -985,8 +989,8 @@ for (const row of equipmentRows("shields")) {
 // resolver (0.10.0) needs the Maneuvers' names before the Talents are built.
 /** The workbook that wrote a sheet action, as the Item's Source line; a pre-0.5.1 actions.json carried no stamp and was the old actions.xlsx alone. */
 const actionSource = a => a.workbook ? `data/${a.workbook}` : "data/actions.xlsx";
-const fromSheet = new Set(sheetActions.map(a => a.name.toLowerCase()));
-const disabledOnSheet = new Set(sheetActions.filter(a => !isEnabled(a)).map(a => a.name.toLowerCase()));
+const fromSheet = new Set([...sheetActions.map(a => a.name.toLowerCase()), ...retiredByIndex]);
+const disabledOnSheet = new Set([...sheetActions.filter(a => !isEnabled(a)).map(a => a.name.toLowerCase()), ...retiredByIndex]);
 const retired = [];
 const retiredByDisabled = [];
 function supersededBySheet(name) {
@@ -1042,8 +1046,10 @@ function inherit(name, key) {
   else rosterKey.set(bare, key);
 }
 for (const rows of Object.values(roster.actions ?? {})) for (const [name] of rows) inherit(name, `action:${slugify(name)}`);
-for (const [name] of roster.explorationActions ?? []) inherit(name, `exploration:${slugify(name)}`);
-for (const [name] of roster.downtimeActions ?? []) inherit(name, `downtime:${slugify(name)}`);
+// The Activities and the Endeavors were roster rows keyed `exploration:` and `downtime:` through
+// 0.19.0; since 0.20.0 they are rows of data/activities.xlsx and data/endeavors.xlsx and keep those
+// keys by their Type (modeOf, below), so an Activity on a character's `system.exploration.activity`
+// still resolves.
 // The roster's `postures` block is the Reaction table now (Parry, Void, Counter, Intercept, and the
 // Talent-granted Postures). The four named Reactions are also Defense & Recovery Maneuvers, and
 // the Maneuver row is the one that ships; a Reaction row of the same name is skipped, not doubled.
@@ -1060,44 +1066,179 @@ for (const [name] of roster.postures ?? []) {
 const shippedSheetActions = sheetActions.filter(a => count("sheetActions", isEnabled(a)));
 const actionFolders = {};
 let actionSort = 0;
-// A sheet action's group is the sheet it sits on (the book's Motion, Attack, Defense & Recovery
-// and so on in data/maneuvers.xlsx), falling back to its Type for a workbook with no such
-// grouping; the `basic` flag still reads the Type. So the Maneuvers tab and the pack keep the
-// book's groups rather than one "Basic Action" heap (review, 2026-10-01).
+// A sheet action's group is the sheet it sits on (data/maneuvers.xlsx: Basic Actions, Athletics
+// Actions, ...), falling back to its Type for a workbook with no such grouping; it is the parse
+// context and the Source line. The pack folder and `category` are finer since 0.20.0 (below).
 const actionGroup = a => a.sheet || a.type;
+
 /**
- * A Maneuver whose Effect calls for a Relevant Check (0.10.0; ruling 123): its check is enabled
- * with no Constellation named, which SwItem#use reads as the picker, carrying the Maneuver, so
- * Aid's roll is Aid's and a `bonus ... to Aid` applies to it (ruling 122). Aid is the one row that
- * says so, and it is not enabled (ruling 61), so no shipped document changes today; the day its
- * row reads Yes it ships ready. No sheet action names a check otherwise, so every other row leaves
- * the field to the model's default, disabled, as before.
+ * THE THREE TYPES (PHB v4.24, Chapter 8: Maneuvers, Activities, Endeavors; 0.20.0). A row's Type
+ * cell says what it is. An Activity is an Exploration Mode Item (the road's select; category
+ * "Exploration Mode", key `exploration:<slug>`), an Endeavor a Downtime Mode one (category
+ * "Downtime Mode", key `downtime:<slug>`), whichever sheet it sits on (Treat Wounds on the Medicine
+ * sheet is an Activity as Search is); the keys are the ones the roster rows had through 0.19.0, so
+ * the ids an Activity left on a character do not move. Everything else is a Maneuver: its category
+ * is the row's Category cell (the Basic Actions sheet's book groups: Movement Maneuvers, Attack
+ * Maneuvers, ...) else its sheet, and its key the roster's when a roster row of the name existed.
  */
-const relevantCheckOf = a => /relevant\s+check/i.test(String(a.effect ?? ""))
-  ? { check: { enabled: true, constellation: "", defense: "" } }
-  : {};
-for (const group of [...new Set(shippedSheetActions.map(actionGroup))]) {
-  actionFolders[group] = folder("actions", group, { sort: actionSort++, color: "#5a4a1e" });
+const typeWord = a => String(a.type ?? "").trim().toLowerCase();
+const modeOf = a => typeWord(a) === "activity" ? "exploration" : typeWord(a) === "endeavor" ? "downtime" : null;
+const MODE_CATEGORY = { exploration: "Exploration Mode", downtime: "Downtime Mode" };
+const actionCategory = a => MODE_CATEGORY[modeOf(a)] ?? (a.category || actionGroup(a));
+const actionKey = a => modeOf(a) ? `${modeOf(a)}:${slugify(a.name)}` : (rosterKey.get(a.name.toLowerCase()) ?? `action:${slugify(a.name)}`);
+
+/**
+ * BASIC (Mike, 2026-11-08, by question: "every ungranted Maneuver"). A row is on every character's
+ * Actions tab unless a Talent grants it: its Type is `Talent Maneuver`, or a Talent's `[MANEUVER X]`
+ * rule or `@Maneuver[X]` marker (any tree, enabled or not, and the Backgrounds) names it. Mike's
+ * sheets type Rally, Battle Cry, Kip Up and the Ancestry and Culture Maneuvers as plain
+ * "Maneuver"; the build reads them as granted and says so once, by name, so the sheet can be
+ * tidied at leisure and ships right meanwhile. Through 0.19.0 the flag read a Type beginning
+ * "Basic", which no row carries any more.
+ */
+const grantedManeuvers = new Set();
+const noteGranted = name => grantedManeuvers.add(actionName(String(name ?? "")).toLowerCase());
+const MARKER = /@Maneuver\[([^\]]+)\]/g;
+const grantsOf = carrier => {
+  for (const r of carrier.rules ?? []) if ((r?.kind === "maneuver") && !r.error && r.name) noteGranted(r.name);
+  for (const m of String(carrier.effectSource ?? carrier.effect ?? "").matchAll(MARKER)) noteGranted(m[1]);
+};
+for (const tree of Object.values(trees)) for (const node of tree.nodes ?? []) grantsOf(node);
+for (const background of backgrounds ?? []) grantsOf(background);
+const isGranted = a => /^talent\b/i.test(typeWord(a)) || grantedManeuvers.has(a.name.toLowerCase());
+const retyped = shippedSheetActions.filter(a => isGranted(a) && !/^talent\b/i.test(typeWord(a))).map(a => a.name);
+
+/**
+ * The Constellations an Activity column may name (0.7.2, ruling 104): every tree in trees.json and
+ * the four Defenses, by name as the trees print them, case blind. The four Defenses are trees too,
+ * and their lowercased names are their slugs, so the second loop is the brief's belt to the first
+ * loop's braces. Lore is a template and its instances are the character's own, so a column cannot
+ * name one; ACTIVITY_CHOICE covers Investigate's pick.
+ */
+const activityConstellations = new Map();
+for (const treeName of Object.keys(trees)) {
+  const slug = slugify(treeName);
+  if (slug === "lore") continue; // the template: no character rolls it, so no column may name it
+  activityConstellations.set(treeName.trim().toLowerCase(), slug);
+}
+for (const slug of Object.keys(DEFENSES)) activityConstellations.set(slug, slug);
+
+/**
+ * One Activity column (data/activities.xlsx `Check` and `Initiative`; 0.20.0, the roster's two
+ * positional columns before it): "" as is, `choice` as is (written as the constant, whatever its
+ * case), else the slug of the named Constellation. A name that is neither is an authoring error and
+ * stops the build, because a slug nobody can roll would ship as a silent Awareness.
+ */
+function activityConstellation(cell, activity, column) {
+  const text = String(cell ?? "").trim();
+  if (!text) return "";
+  if (text.toLowerCase() === ACTIVITY_CHOICE) return ACTIVITY_CHOICE;
+  const slug = activityConstellations.get(text.toLowerCase());
+  if (!slug) {
+    fail(`data/activities.xlsx: "${activity}" names "${text}" in its ${column} column, which is neither a `
+      + `Constellation in trees.json nor a Defense (nor "${ACTIVITY_CHOICE}"; a Lore is the member's own pick, `
+      + `so write "${ACTIVITY_CHOICE}" for one).`);
+  }
+  return slug;
+}
+
+/**
+ * THE CHECK A ROW ROLLS (0.20.0). Mike's sheets carry a `Constellation` column ("read it rather
+ * than inferring the Constellation from the sheet title"): when it names one Constellation or
+ * Defense and the Effect says the row attempts or rolls a check, the Item's check is enabled on it,
+ * so Use rolls Climb's Athletics and Hide's Stealth from the row; a cell naming two ("Melee or
+ * Ranged"), nothing ("N/A", blank) or a Constellation the Effect never rolls (Steady the Line's
+ * Human) leaves the field at the model's default. The Defense is read from the Effect when it
+ * names exactly one after "vs." or "against" (Demoralize's Guard), so a Talent's `AGAINST(Guard)`
+ * line has a shipped Maneuver to fire on. A Maneuver whose Effect calls for a Relevant Check
+ * (0.10.0; ruling 123) is enabled with no Constellation named, which SwItem#use reads as the
+ * picker carrying the Maneuver (Aid, Recall Knowledge).
+ */
+const ROLLS_A_CHECK = /\b(?:attempt|roll)s?\b[^.<]{0,80}?\bcheck\b/i;
+const DEFENSE_NAMED = /\b(?:vs\.?|against)\s+(?:the\s+|its\s+|their\s+|a\s+|an\s+|one\s+|each\s+|your\s+)*(?:target(?:'|’)s\s+|creature(?:'|’)s\s+|foe(?:'|’)s\s+)?(Awareness|Evade|Guard|Endure)\b/gi;
+const plainText = html => String(html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+function defenseIn(text) {
+  const found = new Set([...text.matchAll(DEFENSE_NAMED)].map(m => m[1].toLowerCase()));
+  return found.size === 1 ? [...found][0] : "";
+}
+/** The slug the row's Constellation cell names, when it names exactly one and the Effect rolls it. */
+function rolledConstellation(a) {
+  const named = String(a.constellation ?? "").trim();
+  if (!named || /\bor\b|,|\//.test(named)) return "";
+  if (!ROLLS_A_CHECK.test(plainText(a.effect))) return "";
+  return activityConstellations.get(named.toLowerCase()) ?? "";
+}
+function checkOf(a) {
+  const text = plainText(a.effect);
+  if (/relevant\s+check/i.test(text)) return { check: { enabled: true, constellation: "", defense: defenseIn(text) } };
+  const slug = rolledConstellation(a);
+  return slug ? { check: { enabled: true, constellation: slug, defense: defenseIn(text) } } : {};
+}
+
+/**
+ * AN ACTIVITY'S PART IN THE ROAD (0.7.2, ruling 104; the row's own columns since 0.20.0). `travel`
+ * is the Movement Speed word, lowercased, a key of SW.ACTIVITY_SPEEDS ("" when the sheet has none,
+ * which the road reads as Full); `check` the Check column, else the Constellation the row rolls
+ * (Treat Wounds' Medicine), "" when it rolls nothing, or `choice` for the member's own pick
+ * (Investigate); `initiative` the Initiative column the same way, "" meaning Awareness; `effect`
+ * what Begin the encounter does for it beyond the Initiative Constellation, by name (scout,
+ * defend). A named check-now Constellation is also the Item's own check, so an owned copy of Search
+ * rolls Awareness from the sheet exactly as the road's Roll does; `choice` opens the picker (ruling
+ * 107). Nothing here is Mike's hand-kept JSON any more: the roster's `explorationActions` and
+ * `downtimeActions` blocks went with 0.20.0.
+ */
+function explorationOf(a) {
+  if (modeOf(a) !== "exploration") return {};
+  const travel = String(a.speed ?? "").trim().toLowerCase();
+  if (travel && !ACTIVITY_SPEEDS[travel]) {
+    fail(`data/activities.xlsx: "${a.name}" has Movement Speed "${a.speed}"; it must be one of `
+      + `${Object.keys(ACTIVITY_SPEEDS).map(k => k[0].toUpperCase() + k.slice(1)).join(", ")}, or blank.`);
+  }
+  const check = activityConstellation(a.check, a.name, "Check") || rolledConstellation(a);
+  const rolls = activityConstellation(a.initiative, a.name, "Initiative");
+  const effectSlug = slugify(a.name);
+  const effect = EXPLORATION_EFFECTS[effectSlug] ? effectSlug : "";
+  const named = check && (check !== ACTIVITY_CHOICE);
+  const relevant = /relevant\s+check/i.test(plainText(a.effect)) || (check === ACTIVITY_CHOICE);
+  return {
+    exploration: { travel, check, initiative: rolls, effect },
+    ...(named ? { check: { enabled: true, constellation: check, defense: "" } }
+      : relevant ? { check: { enabled: true, constellation: "", defense: "" } } : {})
+  };
+}
+
+for (const a of shippedSheetActions) {
+  const category = actionCategory(a);
+  if (actionFolders[category]) continue;
+  const mode = modeOf(a);
+  actionFolders[category] = mode
+    ? folder("actions", category, { sort: mode === "exploration" ? 90 : 91, color: "#2f5a3f" })
+    : folder("actions", category, { sort: actionSort++, color: "#5a4a1e" });
 }
 let actionAutomation;
 for (const a of shippedSheetActions) {
   item("actions", {
-    key: rosterKey.get(a.name.toLowerCase()) ?? `action:${slugify(a.name)}`,
+    key: actionKey(a),
     name: a.name,
     type: "action",
-    folder: actionFolders[actionGroup(a)],
+    folder: actionFolders[actionCategory(a)],
     system: {
       cost: a.cost,
       costMax: a.costMax ?? "",
       costMode: a.costMode ?? "to",
       reaction: a.reaction ?? false,
       reactionCost: a.reactionCost ?? "",
-      category: actionGroup(a),
-      basic: /^basic\b/i.test(a.type),
+      category: actionCategory(a),
+      basic: !isGranted(a),
       traits: a.traits ?? [],
       prerequisites: a.prerequisites ?? "",
       requirements: a.requirements ?? "",
       trigger: a.trigger ?? "",
+      // The four columns Mike added on 2026-11-08, strings the sheet and the card print when set.
+      frequency: a.frequency ?? "",
+      range: a.range ?? "",
+      target: a.target ?? "",
+      duration: a.duration ?? "",
       description: a.description ? `<p>${a.description}</p>` : "",
       effect: paragraphs(a.effect),
       // The sheet's Automation column is the same column as a Talent's now (0.9.0), no longer
@@ -1110,11 +1251,12 @@ for (const a of shippedSheetActions) {
       }, a.rules)),
       // An action's ring may be an `aura:` line too (0.13.0), as a Talent's.
       ...auraOf(a, actionAutomation.rules),
-      ...relevantCheckOf(a),
+      ...(modeOf(a) ? explorationOf(a) : checkOf(a)),
       source: actionSource(a)
     }
   });
 }
+if (retyped.length) console.log(`  granted by a Talent, so not basic though typed "Maneuver" on the sheet: ${retyped.join(", ")}`);
 
 for (const [category, rows] of Object.entries(roster.actions ?? {})) {
   const folderId = (actionFolders[category] ??= folder("actions", category, { sort: actionSort++, color: "#3b2f63" }));
@@ -1134,7 +1276,7 @@ for (const [category, rows] of Object.entries(roster.actions ?? {})) {
         // A roster row has no Automation cell; the fields are present and empty (0.9.0).
         automation: "",
         rules: [],
-        source: "STARWROUGHT Playtest v4.21"
+        source: "STARWROUGHT Playtest v4.24"
       }
     });
   }
@@ -1150,110 +1292,10 @@ function fail(message) {
   process.exit(1);
 }
 
-/**
- * The Constellations an Activity column may name (0.7.2, ruling 104): every tree in trees.json and
- * the four Defenses, by name as the trees print them, case blind. The four Defenses are trees too,
- * and their lowercased names are their slugs, so the second loop is the brief's belt to the first
- * loop's braces. Lore is a template and its instances are the character's own, so a column cannot
- * name one; ACTIVITY_CHOICE covers Investigate's pick.
- */
-const activityConstellations = new Map();
-for (const treeName of Object.keys(trees)) {
-  const slug = slugify(treeName);
-  if (slug === "lore") continue; // the template: no character rolls it, so no column may name it
-  activityConstellations.set(treeName.trim().toLowerCase(), slug);
-}
-for (const slug of Object.keys(DEFENSES)) activityConstellations.set(slug, slug);
-
-/**
- * One Activity column: "" as is, `choice` as is (written as the constant, whatever its case), else
- * the slug of the named Constellation. A name that is neither is an authoring error and stops the
- * build, because a slug nobody can roll would ship as a silent Awareness.
- * @param {string} cell      The roster cell.
- * @param {string} activity  The row's name, for the message.
- * @param {string} column    Which column, for the message.
- * @returns {string}
- */
-function activityConstellation(cell, activity, column) {
-  const text = String(cell ?? "").trim();
-  if (!text) return "";
-  if (text.toLowerCase() === ACTIVITY_CHOICE) return ACTIVITY_CHOICE;
-  const slug = activityConstellations.get(text.toLowerCase());
-  if (!slug) {
-    fail(`roster.json explorationActions: "${activity}" names "${text}" for ${column}, which is neither a `
-      + `Constellation in trees.json nor a Defense (nor "${ACTIVITY_CHOICE}"; a Lore is the member's own pick, `
-      + `so write "${ACTIVITY_CHOICE}" for one).`);
-  }
-  return slug;
-}
-
-// The Exploration Mode Activities (PHB v4.15, Table 95), from the roster's hand-kept rows. Since
-// 0.7.2 (party-sheet-plan.md, part 8; ruling 104) each row carries two more positional columns:
-// the Constellation the Activity rolls NOW (Search's Awareness, Look Harmless's Guile) and the one
-// it rolls for INITIATIVE (Hustle's Athletics, Avoid Notice's Stealth), each a name, blank, or
-// `choice` for the member's own pick (Investigate's relevant Lore or Skill). They land on the Item
-// as `system.exploration` and, for a named check-now Constellation, `system.check`, so the Party
-// Sheet reads the Activity from the Item and never from a table of its own (the plan's risk 9).
-// The Scout's bonus and Step and the Defender's shield are `effect` tags set by the row's name,
-// not Constellations, so a row Mike adds ships here with no code unless it does something new.
-// The key and the name are as they were, so the ids do not move (an id is a compendium UUID the
-// moment an Activity lands on a sheet), and neither does the Source line.
-const explorationFolder = folder("actions", "Exploration Mode", { sort: 90, color: "#2f5a3f" });
-for (const [name, speed, description, checkNow = "", initiative = ""] of roster.explorationActions ?? []) {
-  if (supersededBySheet(name)) continue;
-  const travel = String(speed ?? "").trim().toLowerCase();
-  if (!ACTIVITY_SPEEDS[travel]) {
-    fail(`roster.json explorationActions: "${name}" has Speed "${speed}"; it must be one of `
-      + `${Object.keys(ACTIVITY_SPEEDS).map(k => k[0].toUpperCase() + k.slice(1)).join(", ")}.`);
-  }
-  const check = activityConstellation(checkNow, name, "the check it rolls now");
-  const rolls = activityConstellation(initiative, name, "Initiative");
-  const effectSlug = slugify(name);
-  const effect = EXPLORATION_EFFECTS[effectSlug] ? effectSlug : "";
-  // A named check-now Constellation is also the Item's own check (SwItem#roll rolls it), so an
-  // owned copy of Search rolls Awareness from the sheet exactly as the Party Sheet's Roll does.
-  // `choice` is not a Constellation and opens the Relevant Check picker instead (ruling 107).
-  const named = check && (check !== ACTIVITY_CHOICE);
-  item("actions", {
-    key: `exploration:${slugify(name)}`,
-    name,
-    type: "action",
-    folder: explorationFolder,
-    system: {
-      ...parseActionCost(name),
-      category: "Exploration Mode",
-      requirements: `Travel Speed: ${speed}`,
-      traits: [],
-      description: `<p>${description}</p>`,
-      exploration: { travel, check, initiative: rolls, effect },
-      ...(named ? { check: { enabled: true, constellation: check, defense: "" } } : {}),
-      automation: "",
-      rules: [],
-      source: "STARWROUGHT Playtest v4.21"
-    }
-  });
-}
-
-const downtimeFolder = folder("actions", "Downtime Mode", { sort: 91, color: "#2f5a3f" });
-for (const [name, time, description] of roster.downtimeActions ?? []) {
-  if (supersededBySheet(name)) continue;
-  item("actions", {
-    key: `downtime:${slugify(name)}`,
-    name,
-    type: "action",
-    folder: downtimeFolder,
-    system: {
-      ...parseActionCost(name),
-      category: "Downtime Mode",
-      requirements: time,
-      traits: [],
-      description: `<p>${description}</p>`,
-      automation: "",
-      rules: [],
-      source: "STARWROUGHT Playtest v4.21"
-    }
-  });
-}
+// The Exploration Mode Activities and the Downtime Mode Endeavors were hand-kept roster rows
+// (`explorationActions`, `downtimeActions`) through 0.19.0; since 0.20.0 they are rows of
+// data/activities.xlsx and data/endeavors.xlsx, written with the other sheet actions above under
+// the keys the roster rows had (modeOf, explorationOf).
 
 // Reactions (PHB v4.10, Answering an Attack): the roster row's second column reads
 // "<Granting Talent> • <Defense> +N Situation", or "A Zone" for a Posture. The Defense it names is
@@ -1283,17 +1325,18 @@ for (const [name, grantedBy, description] of roster.postures ?? []) {
       description: `<p>${description}</p>`,
       automation: "",
       rules: [],
-      source: "STARWROUGHT Playtest v4.21"
+      source: "STARWROUGHT Playtest v4.24"
     }
   });
 }
 
 if (sheetActions.length) {
   console.log(`  ${shippedSheetActions.length} of ${sheetActions.length} action(s) from ${[...new Set(sheetActions.map(actionSource))].join(", ")} enabled`
-    + (retired.length ? `; roster rows retired in their favour: ${retired.join(", ")}` : ""));
+    + (retired.length ? `; roster rows retired in their favour: ${[...new Set(retired)].join(", ")}` : ""));
   // An action in this list is in neither the sheet's output nor the roster's: it is off the table
-  // entirely until its sheet row reads Enabled? = Yes, and the sync report flags it for Mike.
-  if (retiredByDisabled.length) console.log(`  retired by a disabled sheet row: ${retiredByDisabled.join(", ")}`);
+  // entirely until its sheet row reads Enabled? = Yes (or, since 0.20.0, until the index name has a
+  // row at all), and the sync report flags it for Mike.
+  if (retiredByDisabled.length) console.log(`  retired by a disabled sheet row or an index name with no row: ${[...new Set(retiredByDisabled)].join(", ")}`);
 }
 
 /* -------------------------------------------- */

@@ -1,0 +1,16 @@
+{
+  "_id": "b66e4e636b0722ff",
+  "name": "Thievery",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 0,
+  "color": "#3b2f63",
+  "flags": {
+    "starwrought": {
+      "contentHash": "650ebaed51e7dcd5"
+    }
+  },
+  "_key": "!folders!b66e4e636b0722ff"
+}

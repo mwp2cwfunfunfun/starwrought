@@ -1,0 +1,85 @@
+{
+  "_id": "e755d7df6fabb5d6",
+  "name": "Gnome",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/gnome.png",
+  "system": {
+    "kind": "ancestry",
+    "constellation": "gnome",
+    "attribute": "wits",
+    "vigor": 7,
+    "size": "small",
+    "speed": 5,
+    "senses": "",
+    "description": "<p>Gnomes are perceptive and resilient, with a lasting sensitivity to the unusual and a capacity for attention that can make a small detail occupy an entire afternoon.</p>",
+    "lore": [
+      {
+        "label": "Summary",
+        "text": "<p>Gnomes are perceptive and resilient, with a lasting sensitivity to the unusual and a capacity for attention that can make a small detail occupy an entire afternoon.</p>"
+      },
+      {
+        "label": "About",
+        "text": "<p>A gnome may notice a slight change in a voice, a hairline seam in a well-made object, or a pattern that only appears when everyone else has stopped looking. Some turn that attention toward machines or magic; others toward gardens, people, music, law, or a question so narrow that its importance takes time to explain. An interest can outlast a working life and follow its owner through several changes of vocation.<br><br>Old stories connect gnomes with places where the world behaves a little differently: lights without a flame, paths that seem shorter on the return journey, voices heard through the wrong wall. Their inherited resistance to mental influence lends those stories weight, though it does not prove any one account. Gnomes can be practical about the uncanny and hopelessly speculative about an ordinary loose hinge. They become adventurers for the same varied reasons anyone does, with the added possibility that the unanswered question has finally moved somewhere dangerous.</p>"
+      },
+      {
+        "label": "If you want...",
+        "text": "<p>If you want a character who notices the odd detail, follows an interest seriously, and can bring an unusual perspective to a familiar problem, play a gnome.</p>"
+      },
+      {
+        "label": "You Might...",
+        "text": "<p>• Ask a precise question that changes what everyone thought they understood.<br>• Keep a small object because its construction or history still puzzles you.<br>• Become deeply competent in a subject that first caught your attention by accident.</p>"
+      },
+      {
+        "label": "Others Probably...",
+        "text": "<p>• Confuse your intense interest with an inability to take anything seriously.<br>• Bring you a mystery when they meant to ask for a simple repair.<br>• Discover that you remember the small thing they said months ago.</p>"
+      },
+      {
+        "label": "Physical Description (at a glance)",
+        "text": "<p>Gnomes generally stand two and a half to three and a half feet tall. They are Small, with expressive faces, fine ears, and alert eyes. Skin, hair, and eye colors vary widely; some lineages show unusual saturated tones or a faint luminous sheen. These features need not be bright or conspicuous. Dress, ornament, and the tools a gnome carries reflect their Culture and work rather than an ancestry-wide taste for tinkering.</p>"
+      },
+      {
+        "label": "Physical Description (lifecycle)",
+        "text": "<p>Gnomes reach physical adulthood around twenty years and commonly live one hundred eighty to two hundred fifty years. Their interests may change many times over that span, or deepen around a single enduring pursuit. Age brings physical changes and personal losses. Some elders seek fresh pursuits; others find a settled pleasure in familiar work and the people who have come to share it.</p>"
+      },
+      {
+        "label": "Society",
+        "text": "<p>Gnomes live in mixed cities, quiet rural settlements, river communities, and places of their own making. Their laws and institutions come from their cultures. In communities with many gnomish households, informal networks often gather around shared interests: a survey, a musical tradition, an old court case, or the careful observation of one hillside. Such groups can outlast the problem that brought them together.<br><br>Attention can be generous or possessive. One gnome may welcome anyone who can add a useful observation, while another guards a modest discovery as though it were a royal inheritance. Long-running projects sometimes become the easiest route into a community and the hardest thing to leave. Adventuring gnomes often carry a promise to bring back a specimen, an answer, or simply an account that someone at home will understand.</p>"
+      },
+      {
+        "label": "Beliefs",
+        "text": "<p>Gnomish traditions often value careful observation, honest wonder, and the obligation to admit when a cherished explanation fails. Some faiths understand discovery as a form of devotion; others emphasize tending the mysteries that should not be disturbed. A gnome’s sensitivity to the uncanny can lead to reverence, skepticism, or a very practical desire to know which door should remain closed.</p>"
+      },
+      {
+        "label": "Popular Edicts",
+        "text": "<p>• Look closely before deciding that a thing is ordinary.<br>• Share a discovery with someone who can make good use of it.<br>• Change your explanation when the evidence demands it.</p>"
+      },
+      {
+        "label": "Popular Anathemas",
+        "text": "<p>• Make a person the unwilling subject of your curiosity.<br>• Hide a dangerous flaw to protect the elegance of an idea.<br>• Dismiss another person’s interest merely because it is small or unfamiliar.</p>"
+      },
+      {
+        "label": "Names",
+        "text": "<p>Some gnomish families favor alliterative names. Their translated family names often pair a material with a small object or component, preserving the memory of an old discovery, project, or household curiosity. A pleasing sound can follow a family for generations after the original object or project has been forgotten.<br>• Common given names Bimri, Della, Fenna, Nori, Perri, Sella, Tessa, Venn.<br>• Common family names Brasshinge, Dewglass, Flintwheel, Needlespring, Pewterpin, Tinspire.</p>"
+      }
+    ],
+    "traits": [
+      "Gnome"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "e179582241ca8c65",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "aa6129dafd01f1aa"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!e755d7df6fabb5d6"
+}

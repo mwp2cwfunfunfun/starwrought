@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "When you Hit a creature that is Off-Guard or Wrong-Footed to you, you choose which Zone the blow lands on.",
-    "description": "",
+    "effect": "When you damage a creature that is Off-Guard or Wrong-Footed to you, you choose the Zone struck, even if it is a Graze or otherwise would not let you choose the Zone.",
+    "description": "<p><i>You place a blow where an unready opponent cannot bring their protection to bear in time.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "dc41914280a0d356",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "d9c3d12fcc082998"
+      "contentHash": "f7ba89a3adba6d91"
     }
   },
   "effects": [],

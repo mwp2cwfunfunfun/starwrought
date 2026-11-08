@@ -1,0 +1,36 @@
+{
+  "_id": "f541795adf4d2b5c",
+  "name": "Cairnward",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/cairnward.png",
+  "system": {
+    "slug": "cairnward",
+    "category": "origin",
+    "attribute": "might",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Culture constellation • Might",
+    "flareTrigger": "",
+    "identity": true,
+    "description": "<p>Culture constellation • Might</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "6c6247b891b45e9d"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!f541795adf4d2b5c"
+}

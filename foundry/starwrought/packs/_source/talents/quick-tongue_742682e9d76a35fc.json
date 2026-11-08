@@ -15,7 +15,7 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You gain the Quick Tongue Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Quick Tongue ❶↺</strong></p><p><strong>Trigger</strong> You critically fail a Diplomacy check.</p><p><strong>Requirements</strong> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.</p><p>Reroll the triggering Diplomacy check, using the second result.</p></div>",
+    "effect": "You gain the Quick Tongue Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Quick Tongue ❶</strong></p><p><strong>Trigger</strong> You critically fail a Diplomacy check.</p><p><strong>Requirements</strong> You're in a settlement or community, and you haven't used Quick Tongue in this settlement or community within the past month.</p><p>Reroll the triggering Diplomacy check, using the second result.</p></div>",
     "description": "<p><i>You catch a conversation as it slips, turning an ill-chosen word into a chance to begin again.</i></p>",
     "cost": "passive",
     "costMax": "",
@@ -45,7 +45,7 @@
       }
     ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "d11b952536b11224",
   "sort": 0,
@@ -54,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "82da25f6371f4a6a"
+      "contentHash": "0d1cc947b2e4128f"
     }
   },
   "effects": [],

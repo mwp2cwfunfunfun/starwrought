@@ -1,0 +1,56 @@
+{
+  "_id": "3522d31222b41eba",
+  "name": "Quick Patch",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "crafting",
+    "constellationName": "Crafting",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Crafting Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, Field Patch costs ❸ instead of ❹. You still need its tools and materials, and its one-patch limit remains.",
+    "description": "<p><i>You carry the small fixes that turn an awkward repair into a few practiced movements.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "aff18274e78f6d24",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e1ded6300955ba5c"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!3522d31222b41eba"
+}

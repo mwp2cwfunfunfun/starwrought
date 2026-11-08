@@ -1,0 +1,52 @@
+{
+  "_id": "7a0ed7893891fd84",
+  "name": "Bolster",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Performance Actions",
+    "basic": true,
+    "traits": [
+      "Auditory",
+      "Emotion",
+      "Mental"
+    ],
+    "prerequisites": "",
+    "requirements": "One willing ally within 15 feet can hear your brief encouraging performance.",
+    "trigger": "",
+    "frequency": "Once per round (per target)",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Performance</i> check against a Threshold set by the GM (typically 15), with the following effects:<br>   <b>Critical Success </b>The ally gains a +2 Situation bonus to their next Defense against a Fear effect until the end of the next round.<br>   <b>Success</b> The ally gains a +1 Situation bonus to their next Defense against a Fear effect until the end of the next round.<br>   <b>Failure</b> or <b>Critical Failure</b> No effect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "performance",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "0eb1b3aa700cbad0",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "975c83b0ecbc1ee3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!7a0ed7893891fd84"
+}

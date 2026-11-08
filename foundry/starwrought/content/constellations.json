@@ -17,7 +17,17 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/ambusher.png",
-    "enabled": false
+    "enabled": true
+  },
+  {
+    "slug": "animal-handling",
+    "name": "Animal Handling",
+    "category": "skill",
+    "attribute": "presence",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/animal-handling.png",
+    "enabled": true
   },
   {
     "slug": "archery",
@@ -110,6 +120,26 @@
     "enabled": false
   },
   {
+    "slug": "cairnward",
+    "name": "Cairnward",
+    "category": "origin",
+    "attribute": "might",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/cairnward.png",
+    "enabled": true
+  },
+  {
+    "slug": "crafting",
+    "name": "Crafting",
+    "category": "skill",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/crafting.png",
+    "enabled": true
+  },
+  {
     "slug": "crossbow-fighting",
     "name": "Crossbow Fighting",
     "category": "combatStyle",
@@ -150,6 +180,16 @@
     "enabled": true
   },
   {
+    "slug": "dwarf",
+    "name": "Dwarf",
+    "category": "origin",
+    "attribute": "might",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/dwarf.png",
+    "enabled": true
+  },
+  {
     "slug": "elementalism",
     "name": "Elementalism",
     "category": "magic",
@@ -157,6 +197,16 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/elementalism.png",
+    "enabled": true
+  },
+  {
+    "slug": "elf",
+    "name": "Elf",
+    "category": "origin",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/elf.png",
     "enabled": true
   },
   {
@@ -220,6 +270,16 @@
     "enabled": true
   },
   {
+    "slug": "gnome",
+    "name": "Gnome",
+    "category": "origin",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/gnome.png",
+    "enabled": true
+  },
+  {
     "slug": "great-weapon-fighting",
     "name": "Great Weapon Fighting",
     "category": "combatStyle",
@@ -247,6 +307,16 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/guile.png",
+    "enabled": true
+  },
+  {
+    "slug": "halfling",
+    "name": "Halfling",
+    "category": "origin",
+    "attribute": "agility",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/halfling.png",
     "enabled": true
   },
   {
@@ -280,6 +350,16 @@
     "enabled": true
   },
   {
+    "slug": "insight",
+    "name": "Insight",
+    "category": "skill",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/insight.png",
+    "enabled": true
+  },
+  {
     "slug": "intimidation",
     "name": "Intimidation",
     "category": "skill",
@@ -310,6 +390,16 @@
     "enabled": true
   },
   {
+    "slug": "lethra",
+    "name": "Lethra",
+    "category": "origin",
+    "attribute": "agility",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/lethra.png",
+    "enabled": true
+  },
+  {
     "slug": "lore",
     "name": "Lore",
     "category": "skill",
@@ -317,6 +407,16 @@
     "parent": "",
     "group": false,
     "img": "systems/starwrought/assets/constellations/lore.png",
+    "enabled": true
+  },
+  {
+    "slug": "medicine",
+    "name": "Medicine",
+    "category": "skill",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/medicine.png",
     "enabled": true
   },
   {
@@ -370,6 +470,16 @@
     "enabled": true
   },
   {
+    "slug": "performance",
+    "name": "Performance",
+    "category": "skill",
+    "attribute": "presence",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/performance.png",
+    "enabled": true
+  },
+  {
     "slug": "ranged",
     "name": "Ranged",
     "category": "weapon",
@@ -408,6 +518,16 @@
     "group": true,
     "img": "systems/starwrought/assets/constellations/shield-fighting.png",
     "enabled": false
+  },
+  {
+    "slug": "society",
+    "name": "Society",
+    "category": "skill",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/society.png",
+    "enabled": true
   },
   {
     "slug": "spear-and-polearm-fighting",
@@ -478,6 +598,26 @@
     "group": false,
     "img": "systems/starwrought/assets/constellations/summoner.png",
     "enabled": false
+  },
+  {
+    "slug": "survival",
+    "name": "Survival",
+    "category": "skill",
+    "attribute": "wits",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/survival.png",
+    "enabled": true
+  },
+  {
+    "slug": "thievery",
+    "name": "Thievery",
+    "category": "skill",
+    "attribute": "agility",
+    "parent": "",
+    "group": false,
+    "img": "systems/starwrought/assets/constellations/thievery.png",
+    "enabled": true
   },
   {
     "slug": "two-weapon-fighting",

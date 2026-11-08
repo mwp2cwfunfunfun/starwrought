@@ -1,0 +1,56 @@
+{
+  "_id": "6a656b45e452aaef",
+  "name": "Practiced Act",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "performance",
+    "constellationName": "Performance",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Performance Training"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You gain a +2 Situation bonus to Captivate when you have had at least 1 minute to prepare at this location and use an improvised act suited to the audience. You must still have any essential instrument or prop.",
+    "description": "<p><i>You can build a performance from whatever the room gives you.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "",
+    "rules": [],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "f54f067a4c4c15f2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e6500e28568f8c69"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!6a656b45e452aaef"
+}

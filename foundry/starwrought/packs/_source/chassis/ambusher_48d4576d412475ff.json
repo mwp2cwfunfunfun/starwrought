@@ -1,0 +1,34 @@
+{
+  "_id": "48d4576d412475ff",
+  "name": "Ambusher",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/constellations/ambusher.png",
+  "system": {
+    "kind": "calling",
+    "constellation": "ambusher",
+    "attribute": "agility",
+    "vigor": 8,
+    "grants": [
+      "Stealth"
+    ],
+    "specialAbility": "<p>Sneak Attack: +1d6 precision damage vs. Off-Guard foes, rising to +2d6 at Expert, +3d6 at Master, and +4d6 at Legendary.</p>",
+    "description": "<p>Grants Training in Stealth, and 8 Opening Vigor, added once if it is your first Calling.</p>",
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "646e56ad26c2456d",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "3996d2fca093b3e3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!48d4576d412475ff"
+}

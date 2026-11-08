@@ -1,0 +1,62 @@
+{
+  "_id": "49775755d4097484",
+  "name": "Hold Your Ground",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "dwarf",
+    "constellationName": "Dwarf",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Dwarven Endurance"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Once per encounter, reduce one forced movement against you by up to 3 feet, to a minimum of 0 feet. Decide when its distance is determined. This does not change the Attack’s Result, prevent damage or conditions, or stop movement caused by a fall.",
+    "description": "<p><i>You give ground by inches when an impact should have driven you much farther.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT Reduce forced movement by up to 3 feet; IF: CLAIM(would forcibly move); LIMIT: encounter]",
+    "rules": [
+      {
+        "error": "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE",
+        "line": 1,
+        "text": "[EFFECT Reduce forced movement by up to 3 feet; IF: CLAIM(would forcibly move); LIMIT: encounter]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "1942abeabd3197fa",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e40050a6ebbf837f"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!49775755d4097484"
+}

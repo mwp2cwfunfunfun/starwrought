@@ -1,0 +1,16 @@
+{
+  "_id": "c8a50442f521d5c2",
+  "name": "Lore Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 14,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "d78ed127168f7bd6"
+    }
+  },
+  "_key": "!folders!c8a50442f521d5c2"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "06bc0a92b2192e38",
+  "name": "Performance",
+  "type": "constellation",
+  "img": "systems/starwrought/assets/constellations/performance.png",
+  "system": {
+    "slug": "performance",
+    "category": "skill",
+    "attribute": "presence",
+    "parentSlug": "",
+    "group": false,
+    "meta": "Skill constellation • Presence",
+    "flareTrigger": "",
+    "identity": false,
+    "description": "<p>Skill constellation • Presence</p>",
+    "traits": [],
+    "automation": "",
+    "rules": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0fc25dfb70eb03ce"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!06bc0a92b2192e38"
+}

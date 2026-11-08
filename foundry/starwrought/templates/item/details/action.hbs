@@ -23,6 +23,15 @@
       <input type="text" name="system.requirements" value="{{system.requirements}}"></label>
     <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.trigger"}}</span>
       <input type="text" name="system.trigger" value="{{system.trigger}}"></label>
+    {{!-- The four columns of the action sheets since 0.20.0 (PHB v4.24): Frequency, Range, Target, Duration. --}}
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.frequency"}}</span>
+      <input type="text" name="system.frequency" value="{{system.frequency}}"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.range"}}</span>
+      <input type="text" name="system.range" value="{{system.range}}"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.target"}}</span>
+      <input type="text" name="system.target" value="{{system.target}}"></label>
+    <label class="sw-field"><span>{{localize "STARWROUGHT.Field.duration"}}</span>
+      <input type="text" name="system.duration" value="{{system.duration}}"></label>
     <label class="sw-field" data-tooltip="STARWROUGHT.Field.basicHint"><span>{{localize "STARWROUGHT.Field.basic"}}</span>
       <input type="checkbox" name="system.basic" {{checked system.basic}}></label>
   </div>

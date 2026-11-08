@@ -1,0 +1,50 @@
+{
+  "_id": "b4b7c02433aea167",
+  "name": "Recall Knowledge",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "2",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Other Basic Maneuvers",
+    "basic": true,
+    "traits": [
+      "Concentrate"
+    ],
+    "prerequisites": "",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You draw on your learning and experience to recognize a danger, place something unfamiliar, or recall a detail that could make all the difference.</i></p>",
+    "effect": "<p>Effect Roll a Relevant check (to potentially recall or discover relevant information about a specific topic) vs. a Threshold the GM determines, with the following results, depending on how many actions you took:<br>❶ Quick Recall.<br>   <b>Critical Success</b> Recall two useful facts.<br>   <b>Success</b> Recall a useful fact.<br>   <b>Failure</b> Nothing happens.<br>   <b>Critical Failure</b> Recall a plausible but incorrect fact.</p><p>❷ Study.<br>   <b>Critical Success</b> Recall two useful facts.<br>   <b>Success</b> Recall a useful fact.<br>   <b>Failure</b> Nothing happens.<br>   <b>Critical Failure</b> Nothing happens.<br><u>Note:</u> If used on a creature, you may ask about things as an attack or defense Threshold, Protection, Resistance, Immunity, Weakness, special ability, or other defined aspect.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "0aa9b5722ed296d9",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "31a946c51c9b785d"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b4b7c02433aea167"
+}

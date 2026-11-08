@@ -1,0 +1,62 @@
+{
+  "_id": "a9b43b30ad4727d7",
+  "name": "Small Ingenuity",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Gnomish Spark"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Gain a +1 Condition bonus to Crafting checks to repair hand-held objects or small mechanical components. This does not provide tools, parts, magic-item creation, or knowledge you have not acquired.",
+    "description": "<p><i>You can hold the whole arrangement of a small mechanism in your head while your hands set it right.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT CHECK: 1 condition, repair; IF: CLAIM(hand-held objects or small mechanical components)]",
+    "rules": [
+      {
+        "error": "\"repair\" names no Constellation or Maneuver",
+        "line": 1,
+        "text": "[EFFECT CHECK: 1 condition, repair; IF: CLAIM(hand-held objects or small mechanical components)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "f5373f5c7222e9a1"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a9b43b30ad4727d7"
+}

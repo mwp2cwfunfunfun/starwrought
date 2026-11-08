@@ -1,0 +1,46 @@
+{
+  "_id": "a9ec12a8b7fb14ac",
+  "name": "Bull Rush",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "2",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Athletics Actions",
+    "basic": false,
+    "traits": [
+      "Attack",
+      "Motion"
+    ],
+    "prerequisites": "Bull Rush",
+    "requirements": "",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p><i>You drive forward with the force of your approach behind your hands.</i></p>",
+    "effect": "<p>Move in a straight line up to your Speed, then Shove ❶ a creature within reach, with the following additional effects:<br>   <b>Critical Succes</b>s Add 1 foot to the Shove results for every foot you Moved.<br>   <b>Success</b> Add 1 foot to the Shove results for every 2 feet you Moved.</p>",
+    "automation": "",
+    "rules": [],
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e74392fff071ce4e",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "7126ee64fd8d598e"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!a9ec12a8b7fb14ac"
+}

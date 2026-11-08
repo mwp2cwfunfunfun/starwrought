@@ -13,8 +13,8 @@
     "requires": [],
     "prerequisites": "",
     "attribute": "",
-    "effect": "You are Trained in this skill: add the Constellation's rank to its checks.",
-    "description": "",
+    "effect": "You become Trained in this Skill. Use this Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to this Constellation’s Proficiency Rank.",
+    "description": "<p><i>You keep your footing where a careless step would send you falling. Acrobatics covers balance, tumbling, controlled landings, and slipping through tight or contested spaces. It rewards timing and coordination more than brute force.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -34,7 +34,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,
@@ -43,7 +43,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "321ecfae9147ef74"
+      "contentHash": "c024c843a8361a5d"
     }
   },
   "effects": [],

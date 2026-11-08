@@ -1,0 +1,36 @@
+{
+  "_id": "c6e7fa6e8710ebf0",
+  "name": "Locksmith",
+  "type": "chassis",
+  "img": "systems/starwrought/assets/icons/chassis.svg",
+  "system": {
+    "kind": "background",
+    "attribute": "wits",
+    "grants": [
+      "Crafting",
+      "Thievery",
+      "Lore"
+    ],
+    "specialAbility": "<p>You become Trained in Crafting and Thievery, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Locks Lore, Security Devices Lore, Safe Construction Lore.</p>",
+    "description": "<p><i>You made locks dependable and opened them when their owners could not. Years of patient work taught you how small a fault can make a strong door useless.</i></p>",
+    "traits": [
+      "Common"
+    ],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "9fc281b910f79646",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "a21c0964b43a6beb"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c6e7fa6e8710ebf0"
+}

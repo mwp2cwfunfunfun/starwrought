@@ -1,0 +1,86 @@
+{
+  "_id": "5bfeee38c1cce3d2",
+  "name": "Lethran",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "lethra",
+    "constellationName": "Lethra",
+    "tier": "T",
+    "root": true,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Lethra.<br><br>You know the Common and Lethric languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.",
+    "description": "<p><i>Lethrans learn to read the part a person is playing, signal across a crowded room, and move gracefully between public duties and private lives.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[LANGUAGE Common, Lethric]\n[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]",
+    "rules": [
+      {
+        "languages": [
+          "Common",
+          "Lethric"
+        ],
+        "kind": "language",
+        "line": 1,
+        "text": "[LANGUAGE Common, Lethric]"
+      },
+      {
+        "value": 1,
+        "type": "condition",
+        "to": {
+          "name": "Diplomacy",
+          "slug": "diplomacy",
+          "type": "constellation"
+        },
+        "when": null,
+        "for": null,
+        "while": null,
+        "against": null,
+        "seen": false,
+        "limit": null,
+        "claim": {
+          "text": "toward someone who shares your Culture"
+        },
+        "marked": false,
+        "kind": "bonus",
+        "line": 2,
+        "text": "[EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "2088b951dc2bbe76",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "c54a0dc983944f14"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!5bfeee38c1cce3d2"
+}

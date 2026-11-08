@@ -1,0 +1,16 @@
+{
+  "_id": "4e20ce19d02f6ff4",
+  "name": "Diplomacy Actions",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 10,
+  "color": "#5a4a1e",
+  "flags": {
+    "starwrought": {
+      "contentHash": "c164b84f95a69b75"
+    }
+  },
+  "_key": "!folders!4e20ce19d02f6ff4"
+}

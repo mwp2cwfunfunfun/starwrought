@@ -1,0 +1,58 @@
+{
+  "_id": "b96da9f7f56bf759",
+  "name": "Survey Workmanship",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Exploration Mode",
+    "basic": true,
+    "traits": [
+      "Concentrate",
+      "Exploration",
+      "Manipulate"
+    ],
+    "prerequisites": "",
+    "requirements": "You can inspect an exposed object or structure closely.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>After spending 10 minutes surveying the workmanship of an object or structure, attempt a <i>Crafting</i> check against a Threshold set by the GM, with the following results:<br>   <b>Critical Success</b> Find two useful details and a plausible way to address them.<br>   <b>Success</b> Find one useful detail and a plausible way to address it.<br>   <b>Failure</b> No effect.<br><b>   Critical Failure </b>Produce a mistaken assessment that the GM grounds in what you inspected.<br>This examines visible workmanship to look for things like material flaws, unsafe joints, or practical construction details; hidden triggers still require detection, usually with <i>Awareness</i>.</p>",
+    "automation": "",
+    "rules": [],
+    "exploration": {
+      "travel": "",
+      "check": "crafting",
+      "initiative": "",
+      "effect": ""
+    },
+    "check": {
+      "enabled": true,
+      "constellation": "crafting",
+      "defense": ""
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "e80cf8f5d20bb8b2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "3eb7f5d2507f4a4a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!b96da9f7f56bf759"
+}

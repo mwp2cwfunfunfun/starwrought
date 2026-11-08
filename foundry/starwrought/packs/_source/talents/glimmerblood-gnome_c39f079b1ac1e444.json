@@ -1,0 +1,65 @@
+{
+  "_id": "c39f079b1ac1e444",
+  "name": "Glimmerblood Gnome",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "gnome",
+    "constellationName": "Gnome",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": true,
+    "capstone": false,
+    "requires": [
+      "Gnomish Spark"
+    ],
+    "prerequisites": "",
+    "attribute": "presence",
+    "effect": "You belong to the Glimmerblood Gnome Bloodline.<br><br>You gain the <b>Glimmer</b> Maneuver.<br><br><div class=\"sw-maneuver-block\"><p><strong>Glimmer ❷</strong></p><p>Create either a stationary visual image no larger than a 1-foot cube, or a stationary mote that sheds bright light for 15 feet and dim light for 15 feet beyond that. You must have line of effect to its location. The image is visibly illusory, has no substance or sound, cannot create readable text, and cannot provide Cover or Concealment. You can Sustain one Glimmer; creating another ends the first. It ends if you become unconscious.</p></div>",
+    "description": "<p><i>Faint lights in your eyes and a pearly sheen beneath your skin reveal a lineage touched by persistent fey magic.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[MANEUVER Glimmer]",
+    "rules": [
+      {
+        "name": "Glimmer",
+        "slug": "glimmer",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Glimmer]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "15b72f971146c644",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "0cf8518c7e3fc14a"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!c39f079b1ac1e444"
+}

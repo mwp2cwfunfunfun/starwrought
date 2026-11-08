@@ -24,11 +24,11 @@
       },
       {
         "label": "You Might...",
-        "text": "<p>Learn a few useful words whenever you encounter a new language.<br>Introduce yourself by naming someone the other person already knows.<br>Look for what each side needs before deciding that a dispute cannot be settled.</p>"
+        "text": "<p>• Learn a few useful words whenever you encounter a new language.<br>• Introduce yourself by naming someone the other person already knows.<br>• Look for what each side needs before deciding that a dispute cannot be settled.</p>"
       },
       {
         "label": "Others Probably...",
-        "text": "<p>Expect you to know a useful contact in almost any port.<br>Wonder whether your friendly questions are leading toward a proposal.<br>Rely on you to notice the custom, omission, or hidden cost they overlooked.</p>"
+        "text": "<p>• Expect you to know a useful contact in almost any port.<br>• Wonder whether your friendly questions are leading toward a proposal.<br>• Rely on you to notice the custom, omission, or hidden cost they overlooked.</p>"
       },
       {
         "label": "Dress and Bearing",
@@ -48,20 +48,20 @@
       },
       {
         "label": "Popular Edicts",
-        "text": "<p>Learn how to greet people on their own terms.<br>Give the other party a reason to trade with you again.<br>Share a useful introduction when it costs you little.</p>"
+        "text": "<p>• Learn how to greet people on their own terms.<br>• Give the other party a reason to trade with you again.<br>• Share a useful introduction when it costs you little.</p>"
       },
       {
         "label": "Popular Anathemas",
-        "text": "<p>Abuse the protection offered to a guest.<br>Conceal a danger that makes an agreement impossible to fulfill.<br>Betray a confidence entrusted to you as a broker.</p>"
+        "text": "<p>• Abuse the protection offered to a guest.<br>• Conceal a danger that makes an agreement impossible to fulfill.<br>• Betray a confidence entrusted to you as a broker.</p>"
       },
       {
         "label": "Names",
-        "text": "<p>Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br>Common given names Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br>Common surnames Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br>Example names Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank.</p>"
+        "text": "<p>Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><b>• Common given names </b>Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><b>• Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><b>• Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank.</p>"
       }
     ],
-    "specialAbility": "<p>You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
+    "specialAbility": "<p>You become Trained in this Culture. Use your Origin Constellation’s Proficiency Bonus for its checks. Each Talent in this Constellation contributes to your Origin Constellation’s Proficiency Rank.<br><br>You were raised in Kestrel Reach.<br><br>You know the Common and Reachspeak languages.<br><br>You gain a +1 Condition bonus to Diplomacy checks toward those who share the same Culture.</p>",
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "ae2a6da93bc423e9",
   "sort": 0,
@@ -70,7 +70,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "6868a7ebc61355ec"
+      "contentHash": "e1f17dba4ec52335"
     }
   },
   "effects": [],

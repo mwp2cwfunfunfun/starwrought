@@ -1,6 +1,6 @@
 {
   "_id": "3513479de38b6a2d",
-  "name": "Bull Rush ❷",
+  "name": "Bull Rush",
   "type": "talent",
   "img": "systems/starwrought/assets/icons/talent.svg",
   "system": {
@@ -15,9 +15,9 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "Move, then Shove.<br>Add 1 foot to the push for every 2 feet you moved first.",
-    "description": "",
-    "cost": "2",
+    "effect": "You gain the <b>Bull Rush</b> Maneuver:<br><br><div class=\"sw-maneuver-block\"><p><strong>Bull Rush ❷</strong></p><p>Move in a straight line up to your Speed, then Shove ❶ a creature within reach, with the following additional effects:<br>   <b>Critical Succes</b>s Add 1 foot to the Shove results for every foot you Moved.<br>   <b>Success</b> Add 1 foot to the Shove results for every 2 feet you Moved.</p></div>",
+    "description": "<p><i>You drive forward with the force of your approach behind your hands.</i></p>",
+    "cost": "passive",
     "costMax": "",
     "costMode": "to",
     "reaction": false,
@@ -33,10 +33,19 @@
       "value": ""
     },
     "freeTalent": "",
-    "automation": "",
-    "rules": [],
+    "automation": "[MANEUVER Bull Rush]",
+    "rules": [
+      {
+        "name": "Bull Rush",
+        "slug": "bull-rush",
+        "enabled": true,
+        "kind": "maneuver",
+        "line": 1,
+        "text": "[MANEUVER Bull Rush]"
+      }
+    ],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "235dc76ee1e2834b",
   "sort": 0,
@@ -45,7 +54,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "acc53c337719a0aa"
+      "contentHash": "d80417f42de83d35"
     }
   },
   "effects": [],

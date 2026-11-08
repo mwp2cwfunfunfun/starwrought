@@ -1,0 +1,50 @@
+{
+  "_id": "0e12096794954cee",
+  "name": "Feint",
+  "type": "action",
+  "img": "icons/svg/target.svg",
+  "system": {
+    "cost": "1",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "category": "Guile Actions",
+    "basic": true,
+    "traits": [
+      "Mental"
+    ],
+    "prerequisites": "",
+    "requirements": "An enemy is within your reach.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "",
+    "effect": "<p>Attempt a <i>Guile</i> check vs. target's <i>Awareness</i>, with the following effects:<br>   <b>Critical Success </b>The target is Wrong-Footed to you until the end of your next Opportunity.<br>   <b>Success</b> The target is Wrong-Footed to you until your next Opportunity.<br>   <b>Failure</b> No effect.<br>  <b> Critical Failure</b> You overcommit. You are Wrong-Footed to that creature until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
+    "check": {
+      "enabled": true,
+      "constellation": "guile",
+      "defense": "awareness"
+    },
+    "source": "data/maneuvers.xlsx"
+  },
+  "folder": "30023a5bfcb7bf9c",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "78b8c9a89654daa3"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!0e12096794954cee"
+}

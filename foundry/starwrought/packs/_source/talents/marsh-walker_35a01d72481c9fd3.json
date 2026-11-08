@@ -1,0 +1,68 @@
+{
+  "_id": "35a01d72481c9fd3",
+  "name": "Marsh Walker",
+  "type": "talent",
+  "img": "systems/starwrought/assets/icons/talent.svg",
+  "system": {
+    "constellation": "halfling",
+    "constellationName": "Halfling",
+    "tier": "T",
+    "root": false,
+    "bloodlineRoot": false,
+    "capstone": false,
+    "requires": [
+      "Riverkin Halfling"
+    ],
+    "prerequisites": "",
+    "attribute": "",
+    "effect": "Your Moves ignore ordinary Difficult Terrain caused by mud or shallow water. This does not permit a Step into Difficult Terrain or ignore Greater Difficult Terrain, a solid barrier, or damage from a hazard.",
+    "description": "<p><i>Your broad feet spread your weight across mud and find purchase in the shallows.</i></p>",
+    "cost": "passive",
+    "costMax": "",
+    "costMode": "to",
+    "reaction": false,
+    "reactionCost": "",
+    "grant": {
+      "n": 0,
+      "mode": "",
+      "scope": "",
+      "constellation": ""
+    },
+    "choice": {
+      "prompt": "",
+      "value": ""
+    },
+    "freeTalent": "",
+    "automation": "[EFFECT IGNORE: terrain, mud, shallow water]",
+    "rules": [
+      {
+        "what": "terrain",
+        "kinds": [
+          "mud",
+          "shallow-water"
+        ],
+        "when": null,
+        "kind": "ignore",
+        "line": 1,
+        "text": "[EFFECT IGNORE: terrain, mud, shallow water]"
+      }
+    ],
+    "traits": [],
+    "source": "STARWROUGHT Playtest v4.24"
+  },
+  "folder": "03cfa720de394c85",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "36f11bca10a24e3b"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!35a01d72481c9fd3"
+}

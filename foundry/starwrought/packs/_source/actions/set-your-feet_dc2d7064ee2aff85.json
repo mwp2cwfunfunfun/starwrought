@@ -23,7 +23,7 @@
     "description": "<p>Trigger You are targeted by an Attack of which you are aware. +2 Situation bonus to Guard against the triggering attack. A Zone of your choice becomes Exposed until the end of the round.</p>",
     "automation": "",
     "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "b93d96fd63573850",
   "sort": 0,
@@ -32,7 +32,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "976ff2e2f6989459"
+      "contentHash": "cee828d14f7d4155"
     }
   },
   "effects": [],

@@ -10,9 +10,21 @@
     "reaction": false,
     "reactionCost": "",
     "category": "Exploration Mode",
-    "requirements": "Travel Speed: Half",
-    "traits": [],
-    "description": "<p>Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.\n\nRequirements You wield no weapon with a Reach greater than Adjacent, and your worn armor totals Load 1 or less.\n\nEffects When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy that you are Observed to, with the following effects:\nCritical SuccessThey are Wrong-Footed to you until the end of your first Opportunity.\nSuccessThey are Wrong-Footed to your first attack.\nFailureNothing; they were watching you all along.\nCritical FailureYou overplayed it. You are Wrong-Footed to them until your next Opportunity.\n\nOutside an encounter, a Successful Guile check lets you approach, pass, or linger without being challenged by anyone who would otherwise have wanted to know your business.</p>",
+    "basic": true,
+    "traits": [
+      "Exploration"
+    ],
+    "prerequisites": "",
+    "requirements": "You wield no weapon with a Reach greater than 1, and your worn armor totals Load 1 or less.",
+    "trigger": "",
+    "frequency": "",
+    "range": "",
+    "target": "",
+    "duration": "",
+    "description": "<p>Hands empty, eyes down, pace unhurried. You are not hiding. You are simply not worth watching.</p>",
+    "effect": "<p>When an encounter begins, you may roll Guile for Initiative. Compare the roll against the Awareness of each enemy that you are Observed to, with the following effects:<br>  <b> Critical Success </b>They are Wrong-Footed to you until the end of your first Opportunity.<br>   <b>Success</b> They are Wrong-Footed to your first attack.<br>   <b>Failure</b> Nothing; they were watching you all along.<br>  <b> Critical Failure</b> You overplayed it. You are Wrong-Footed to them until your next Opportunity.</p>",
+    "automation": "",
+    "rules": [],
     "exploration": {
       "travel": "half",
       "check": "guile",
@@ -24,9 +36,7 @@
       "constellation": "guile",
       "defense": ""
     },
-    "automation": "",
-    "rules": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "data/activities.xlsx"
   },
   "folder": "e80cf8f5d20bb8b2",
   "sort": 0,
@@ -35,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "bc65c3da5b791d04"
+      "contentHash": "1786e094c19a1bd0"
     }
   },
   "effects": [],

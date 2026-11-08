@@ -15,8 +15,8 @@
     ],
     "prerequisites": "",
     "attribute": "",
-    "effect": "+2 Situation bonus to Escape.",
-    "description": "",
+    "effect": "You gain a +2 Situation bonus to Escape checks.",
+    "description": "<p><i>A grip that should hold you finds only a shoulder turning out of reach.</i></p>",
     "cost": "passive",
     "costMax": "",
     "costMode": "to",
@@ -36,7 +36,7 @@
     "automation": "",
     "rules": [],
     "traits": [],
-    "source": "STARWROUGHT Playtest v4.21"
+    "source": "STARWROUGHT Playtest v4.24"
   },
   "folder": "53dcb9125a4b0bf1",
   "sort": 0,
@@ -45,7 +45,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "25e9d64ba6ceff1f"
+      "contentHash": "585edf08a3af78de"
     }
   },
   "effects": [],
