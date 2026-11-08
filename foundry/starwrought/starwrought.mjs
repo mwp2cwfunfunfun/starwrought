@@ -52,6 +52,8 @@ import { registerBind } from "./module/canvas/bind.mjs";
 // THE BIND'S PAIR (0.10.1): the two-sided record kept whole, a document concern, beside its drawing.
 import { registerBindSync } from "./module/documents/bind.mjs";
 import { registerTokenHud } from "./module/apps/token-hud.mjs";
+// THE GLANCE (0.19.0): the hover card beside a token, what anyone standing near could see.
+import { registerGlance, hideGlance } from "./module/canvas/glance.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
 import { SwPartySheet } from "./module/apps/party-sheet.mjs";
@@ -205,6 +207,7 @@ Hooks.once("init", async () => {
   registerBindSync();
   registerExposedStatuses();
   registerTokenHud();
+  registerGlance(); // THE GLANCE (0.19.0)
   registerHandlebarsHelpers();
   // THE TERRAIN KINDS (0.18.0): the roster's terrainKinds block, from content/terrain.json, into
   // the registry before the world's regions are built, so a Kind select, the overlay and the ruler
@@ -1082,6 +1085,18 @@ function registerSettings() {
     type: Boolean,
     default: true,
     onChange: () => refreshTargets()
+  });
+
+  // THE GLANCE (0.19.0; Mike, playtest): the hover card beside a token, for every user who can
+  // see it. Off, the LIMITED sheet still shows the same panel.
+  game.settings.register(SW.SYSTEM_ID, "showGlance", {
+    name: "STARWROUGHT.Settings.showGlance",
+    hint: "STARWROUGHT.Settings.showGlanceHint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => hideGlance()
   });
 
   // A Stride is a Move in PHB v4.10. The 0.3.x client choice lived under `showStrideBands`, which

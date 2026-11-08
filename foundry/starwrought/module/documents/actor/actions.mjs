@@ -6,6 +6,7 @@
  */
 
 import * as SW from "../../config.mjs";
+import { requestOpportunity, hasPermit, spendPermit } from "../cards/opportunity.mjs";
 
 /** @param {typeof Actor} Base */
 export const ActionsMixin = Base => class extends Base {
@@ -22,6 +23,41 @@ export const ActionsMixin = Base => class extends Base {
   /** This Actor's combatant in the running encounter, if any. */
   get combatant() {
     return game.combat?.combatants.find(c => c.actor?.id === this.id) ?? null;
+  }
+
+  /**
+   * May this actor perform a Maneuver right now without asking? (0.19.0; Mike, playtest: "any
+   * actions a player attempts to make when it is not their turn should not be able to be carried
+   * out unless the GM approves it in the chat window".) Yes outside an encounter, on the GM's own
+   * client, at this actor's own Opportunity, for a Reaction or a Posture (PHB v4.24: a Reaction
+   * "may be performed outside your Opportunity"; "At 0 actions you still roll your basic Defense,
+   * and you may still use ⓿ Reactions such as Postures"), and while a permit the GM wrote this round
+   * stands (documents/cards/opportunity.mjs). Synchronous, so a `preMoveToken` handler can ask it.
+   * @param {object} [options]
+   * @param {boolean} [options.reaction=false]  The Maneuver is a Reaction or a Posture.
+   * @returns {boolean}
+   */
+  canActNow({ reaction = false } = {}) {
+    if (reaction || !this.inEncounter || game.user.isGM || this.isTurn) return true;
+    return hasPermit(this);
+  }
+
+  /**
+   * The gate every Maneuver passes before it does anything (0.19.0): true to go on, with a permit
+   * spent when one let it through; false after the request card went to the GM, and the caller
+   * does nothing. Reactions, Postures, Defense rolls, rerolls, Finish and Abandon never come here.
+   * @param {object} [options]
+   * @param {string} [options.label]       The Maneuver, as the spend labels it, for the card.
+   * @param {boolean} [options.reaction=false]
+   * @returns {Promise<boolean>}
+   */
+  async mayActNow({ label = "", reaction = false } = {}) {
+    if (!this.canActNow({ reaction })) {
+      await requestOpportunity(this, label);
+      return false;
+    }
+    if (!reaction && this.inEncounter && !game.user.isGM && !this.isTurn) await spendPermit(this);
+    return true;
   }
 
   /**
@@ -213,9 +249,13 @@ export const ActionsMixin = Base => class extends Base {
     // A Cast's preparation (PHB v4.21: a Focused or Committed Cast is Prepared under the
     // three-action rule) remembers the spell Talent and the commitment as a Strike's remembers
     // the weapon and the Strike.
+    // `ready` (0.19.0): false until this actor's next Opportunity begins, when the Combat's
+    // beginOpportunity sets it. Finish is refused before that (PHB v4.24: "At your next Opportunity
+    // you must finish it"); Abandon is the book's "at any time" and never waits.
     const preparing = {
       kind, label, weaponId, targetTokenId, targetUuid, cost, strike, talentId, cast,
-      targetUuids: Array.isArray(targetUuids) ? targetUuids.filter(Boolean) : []
+      targetUuids: Array.isArray(targetUuids) ? targetUuids.filter(Boolean) : [],
+      ready: false
     };
     await this.update({
       "system.actions.value": Math.max(0, left - cost),
@@ -233,10 +273,8 @@ export const ActionsMixin = Base => class extends Base {
         <h3><i class="fa-solid fa-hourglass-half"></i> ${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
         <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, reserved: reserve })}
         <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>
+        <p class="sw-card-note">${game.i18n.localize("STARWROUGHT.Prepared.finishLater")}</p>
         <div class="sw-card-buttons">
-          <button type="button" data-sw-action="finishPrepared" data-actor-uuid="${this.uuid}" data-owner-uuid="${this.uuid}">
-            <i class="fa-solid fa-check"></i> ${game.i18n.localize("STARWROUGHT.Prepared.finish")}
-          </button>
           <button type="button" data-sw-action="abandonPrepared" data-actor-uuid="${this.uuid}" data-owner-uuid="${this.uuid}">
             <i class="fa-solid fa-xmark"></i> ${game.i18n.localize("STARWROUGHT.Prepared.abandon")}
           </button>
@@ -250,11 +288,20 @@ export const ActionsMixin = Base => class extends Base {
    * Finish a Prepared Maneuver at your Opportunity: the reserved actions are spent (they left the
    * pool when the preparation began) and the Maneuver resolves. A Committed Strike rolls now,
    * already paid for. Range, line of effect and requirements are the table's to check again.
+   * Since 0.19.0 it is refused until the next Opportunity has begun (`preparing.ready`, written by
+   * the Combat when this actor's turn comes round; PHB v4.24: "At your next Opportunity you must
+   * finish it"); the GM may force it from the sheet for a table that rules otherwise.
+   * @param {object} [options]
+   * @param {boolean} [options.force=false]  Finish before the next Opportunity (the GM's call).
    */
-  async finishPrepared() {
+  async finishPrepared({ force = false } = {}) {
     const prep = this.system.actions?.preparing;
     if (!prep) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.nothing"));
+      return null;
+    }
+    if (!prep.ready && !force && this.inEncounter) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Prepared.notYet", { name: this.name, what: prep.label ?? "" }));
       return null;
     }
     await this.update({ "system.actions.reserved": 0, "system.actions.preparing": null });

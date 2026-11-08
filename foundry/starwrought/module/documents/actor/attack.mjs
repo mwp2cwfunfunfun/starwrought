@@ -73,6 +73,14 @@ export const AttackMixin = Base => class extends Base {
     // The flow's blind roll is the second step of a Strike that paid when it declared (0.5.3).
     const paid = !!(prepared || free || blind);
 
+    // A Strike that is not a Reaction's, made outside this actor's Opportunity, waits for the GM
+    // (0.19.0); a Prepared Strike finishing, a free Strike and the flow's blind roll were gated
+    // when they began.
+    if (!paid && !(await this.mayActNow({
+      label: `${game.i18n.localize(SW.STRIKE_KINDS[strike].label)} ${SW.ACTION_GLYPHS[SW.STRIKE_KINDS[strike].cost]}: ${weapon.name}`,
+      reaction: !!reactionStrike
+    }))) return null;
+
     // Your named target first, then your Foundry target, then the one target this token is
     // remembered as having, so a reload does not cost you the Threshold along with the arrow.
     let targetToken = targetTokenId ? (canvas.tokens?.get(targetTokenId) ?? null) : null;

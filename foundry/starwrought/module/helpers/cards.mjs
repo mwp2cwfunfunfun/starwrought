@@ -16,6 +16,8 @@
  * which predates this map. Through 0.10.0 all of this lived in documents/combat.mjs.
  */
 
+import * as SW from "../config.mjs";
+
 const { escapeHTML } = foundry.utils;
 
 /**
@@ -81,10 +83,15 @@ export function tableFor(actor) {
   return theirs ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id);
 }
 
-/** Post a card spoken by an actor. */
-export function postCard(actor, content, { whisper = [], rolls = [] } = {}) {
+/**
+ * Post a card spoken by an actor. `flags` (0.19.0) are written under the system's scope, so the
+ * chat render pass (documents/chat.mjs) treats the card as one of ours and strips its
+ * `[data-gm-only]` controls for everyone who is not the GM.
+ */
+export function postCard(actor, content, { whisper = [], rolls = [], flags = null } = {}) {
   const data = { speaker: ChatMessage.getSpeaker({ actor }), content, whisper };
   if (rolls.length) data.rolls = rolls;
+  if (flags) data.flags = { [SW.SYSTEM_ID]: flags };
   return ChatMessage.create(data);
 }
 

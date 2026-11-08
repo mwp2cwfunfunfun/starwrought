@@ -7,6 +7,129 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.19.0 (2026-11-08): the playtest's eight
+
+Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 to v4.24 on
+the shelf unsynced, v4.24 read with every tracked change taken as accepted, by Mike's word, for
+the rules behind each item). Mike, after playtesting: eight bugs and enhancements, numbered 1, 2,
+4, 5, 6, 7, 9 and 10 in his message, planned first (`playtest-plan-0.19.0.md` in the project
+root; his four decisions by question: Abandon stays on the first card, off-turn drags are gated
+too, the glance is a hover card plus the LIMITED sheet, Take Control only). No data moved. The
+rulings are system decisions, numbered on from 198, because they change what a player is asked.
+
+- **Ruling 199, a fighter with no Opportunity to take is passed over** (item 2: "an actor with 0
+  actions remaining should automatically be skipped"). `SwCombat#canTakeOpportunity`: a combatant
+  with no free action and nothing reserved cannot afford a Maneuver, so Next Turn, End Opportunity
+  and Pass walk past it, its tracker row dims with the reason in the readout's tooltip, and the
+  circuit of Passes counts only the combatants who can still act (`opportunityHolders`). When
+  nobody can, the round ends: PHB v4.24, "When nobody has any actions left ... the round ends." A
+  Preparing fighter keeps its Opportunity whatever its free count, because the book makes it
+  Finish or Abandon there. The cost, accepted: a fighter at 0 loses the chance to Drop Prone ⓿ or
+  Release ⓿ on its own Opportunity; the GM's Previous Turn gives it back. On the way, a bug since
+  0.4.0: the Pass and spend stamps on a Combatant were never cleared and `{ round, turn }` repeats
+  every circuit, so a fighter who spent on circuit 1 and Passed on circuit 2 still read as having
+  acted and reset the streak; `beginOpportunity` now forgets the stamps as the Opportunity begins,
+  and `movedForward` reads the wrap from at or past the last holder, since the fighter who just
+  acted may have left the list.
+- **Ruling 200, Finish waits for the next Opportunity** (item 6: "it should not let you
+  Finish/Abandon it right away in the chat window"). `prepare()` writes `preparing.ready = false`
+  and the Combat sets it true when this fighter's next Opportunity begins (`beginOpportunity`, on
+  the responsible client): the first card offers Abandon alone with a line saying when Finish
+  comes, the Opportunity's card offers both, the sheet's Finish is disabled until then with the
+  reason as its tooltip, and `finishPrepared` refuses early with a notice. The GM's click on the
+  sheet forces it (`{ force: true }`) for a table that rules otherwise. Abandon stays "at any time",
+  the book's words, by Mike's choice.
+- **Ruling 201, the Wind roll is public** (item 4). The Wind card goes to the table (`tableFor`:
+  public for a player's fighter, the GM's for an adversary) instead of the owners and the GM, and
+  its Endure rolls with the visibility fixed (`rollMode` set, the dialog's select disabled with a
+  tooltip: `lockRollMode` on `SwCheck.roll`, a new option used by nothing else). The Recovery and
+  Persistent cards stay whispered.
+- **Ruling 202, a Maneuver outside your Opportunity waits for the GM** (item 5: "any actions a
+  player attempts to make when it is not their turn should not be able to be carried out unless
+  the GM approves it in the chat window"). `SwActor#canActNow` and `mayActNow`
+  (`documents/actor/actions.mjs`) are the one gate: outside an encounter, on the GM's own client,
+  at your own Opportunity, and for a Reaction or a Posture (PHB v4.24: a Reaction "may be performed
+  outside your Opportunity"; "At 0 actions you still roll your basic Defense, and you may still
+  use ⓿ Reactions such as Postures") it says yes; otherwise it refuses, posts one request card
+  (`documents/cards/opportunity.mjs`: who wants what, GM-only **Approve** and **Refuse**, public
+  for the table) and the Maneuver does nothing. Approve writes a one-shot permit on the actor
+  (`flags.starwrought.opportunityPermit`, this round's) and the player performs the Maneuver
+  again, which spends it; Refuse says so; a second attempt while one is pending gets the notice
+  and no second card; with no GM connected the card waits (ruling 162's precedent). Gated: a
+  Strike that is not Intercept or a Riposte (before it declares), a Cast, a Talent or Maneuver
+  used from its row, Recenter, Raise a Shield, the visor, drawing or stowing, and a player's drag
+  of their combatant's token on the combat's scene (`preMoveToken` refuses it; an approved drag is
+  charged as a Move at the Opportunity is). Never gated: Reactions, Postures, Defense rolls,
+  rerolls, Finish, Abandon, Pass, the pips, and every Maneuver of the GM's own creatures. The
+  "nothing is ever prevented" rule of 0.4.0 to 0.18.1 ends here for off-turn Maneuvers;
+  FEATURES.md says so.
+- **Ruling 203, Take Control by hand, and the Control's Zone follows the Bind** (item 7: "a way to
+  manually Take Control of a Bind on CharSheet, like there is for Breaking the Bind. Also, is
+  there automation for the Controlled condition?"). The Bind line on both sheets gains **Take
+  Control** beside End Bind while this side does not hold the line (`SwActor#takeControl`: the
+  Zone picker, then `formBind` with `state: "controlling"`). The Zone the Control Exposes is now
+  part of the Bind (`system.bind.zone`, the same on both sides, mirrored by the pair-keeper): the
+  Controlled side's own write opens it, wherever that side is written (this client when it owns
+  the partner, else the owner's or the GM's as the mirror reaches it, so the Expose relay is no
+  longer needed for a Control), and closes it when the Control ends or moves to another Zone,
+  unless a Posture holds it open (PHB v4.24: "Exposure caused specifically by Control ends when
+  that Control ends"). Through 0.18.1 the card opened the Zone once and End Bind left it open. The
+  check card's Take Control asks the Zone first and still records it on the card for a `prevent`
+  Reaction (ruling 172). The Controlled automation, answered: the −2 Situation on a character's
+  Strike with the Controlled weapon stood since 0.5.1; it now reaches an adversary's Attack
+  Threshold too (`attackThreshold` in `combat/attack-source.mjs`: the row named as the Bind's
+  implement, or the creature's only row). The Exposed card is `SwActor#sayExposed` now, so the
+  Position buttons and the Bind's writes post one card. Not built, by Mike's choice: a Form Bind
+  control for a Bind the GM narrates; Close ❶ as a Maneuver.
+- **Ruling 204, the glance** (item 1: "allows players to see certain things about other actors
+  --- for example, what weapons and armor are Equipped… what Zones are Exposed or Wounded, etc.").
+  `module/canvas/glance.mjs`: rest the mouse on any token you can see and, after a quarter
+  second, a card beside it shows what anyone standing near could see: the name, what it holds (a
+  raised shield marked), the armor worn on each Zone by piece name, the Zones Exposed or Wounded
+  with the Wound count, and the conditions the token shows. The sheet's numbers stay the sheet's:
+  Protection and Vigor show to the owner and the GM alone; Thresholds and Load Strain never. The
+  card is drawn into the page, not the canvas layer, so the zoom never shrinks it; it follows the
+  actor's changes while shown and goes as the mouse leaves or the canvas pans; client setting
+  `showGlance`. The same panel is a LIMITED user's whole sheet (`_configureRenderParts` on both
+  actor sheets): through 0.18.1 LIMITED permission showed every tab read-only, which is more than
+  the GM meant by it. An Observer keeps the full read-only sheet.
+- **Item 9, a search box on the Constellations tab.** `<input type="search">` first in the tab's
+  toolbar: the Constellations and Talents whose names contain the text (a category's name counts)
+  stay, the rest hide, a group with no row left hides too, Escape clears. While a filter is set
+  every Constellation renders unfolded so its Talents can be matched; the fold state is kept and
+  returns when the box empties. The sheet's first listener outside `actions` (`_onRender`).
+- **Item 10, the Token HUD keeps its size when zoomed out.** Core scales the whole HUD layer with
+  the canvas zoom, so the token's controls shrank with it. `token-hud.mjs` writes `--sw-hud-scale`
+  (1 / zoom, never below 1, capped at 4) on the HUD at render and on every pan, and `hud.css`
+  scales the left and right columns back by it, outward from the token, the middle column about
+  its centre. At 100% zoom and above nothing changes.
+
+Checked by the 112 self-test checks, `node --check` on every touched module, the pipeline's
+stamp, stylesheet and grammar-document checks (the twelve stamps read 0.19.0), the style check
+(its one failure is an em-dash in the Merchant background's Description in `data/backgrounds.xlsx`,
+Mike's prose, there before this work), and live in the test world with a GM tab and a player tab
+(Mike's user): Wren at 0 passed over by Next Turn with the holders down to two and the row's
+reason "spent"; everyone at 0 ending round 1 and the actions returning; a spend stamped at Wren's
+Opportunity and gone when it came round again; Wren's Committed Strike Prepared with Abandon alone
+on the first card and the note, Finish refused early, `ready` true and both buttons on the next
+Opportunity's card, the sheet's Finish live for the GM; a neutral Bind taken by hand with the Arms
+as the Zone, both sides recording it, the Bandit's Arms open with the Control's own card, its Club
+row's Threshold 14 reading 12, End Bind closing the Arms and leaving a Posture's Legs open, the
+Threshold back to 14; the Wind card public and its dialog's visibility select disabled on
+"publicroll"; as the player, Wren's Strike outside its Opportunity refused with one public request
+card carrying no buttons for the player, a second attempt refused without a second card, a
+Reaction untouched, an off-turn drag refused before the token moved, the Wind card visible; the
+GM's Approve writing the permit and settling the card, Wren's Recenter then going through once
+(one action spent) and the next asking again; the glance beside the Bandit's token after the
+delay, with the owner's Vigor for the GM and none for the player's view, and testpc6 at LIMITED
+opening as the glance alone while Wren's own sheet kept every tab; the filter "ste" leaving Guard
+with Riposte and Evade with Sidestep and three groups hidden, the caret kept, Escape restoring
+all seven rows; the HUD at the scene's smallest zoom (0.57) scaled by 1.76 outward from the token.
+No console errors in either tab. The handbook did not move. The converter is refusing to write
+while `data/maneuvers.xlsx`'s index column reads "Action Type" and the two new workbooks
+(`activities.xlsx`, `endeavors.xlsx`) use an "Activity" column it does not know; that is Mike's
+restructure in progress, and the v4.24 sync that reads them is its own task.
+
 ## 0.18.1 (2026-11-05): the code review's twenty-one fixes
 
 Built from **Player's Handbook v4.21**, unchanged (`data/SYNC.json` untouched; v4.22 and v4.23 on

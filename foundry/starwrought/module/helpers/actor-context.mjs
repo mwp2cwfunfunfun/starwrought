@@ -75,6 +75,15 @@ export function actionsContext(actor) {
     const cost = SW.ACTION_GLYPHS[Number(preparing.cost)] ?? "";
     if (cost) preparingLabel = `${preparingLabel} ${cost}`;
   }
+  // Finish waits for the next Opportunity (0.19.0): the button is live once the Combat has marked
+  // the preparation ready, and for the GM always, whose click forces it.
+  const preparingReady = !!preparing?.ready;
+  const canFinish = preparingReady || game.user.isGM;
+  const finishHint = preparingReady
+    ? game.i18n.localize("STARWROUGHT.Actions.finishHint")
+    : game.user.isGM
+      ? game.i18n.localize("STARWROUGHT.Actions.finishForceHint")
+      : game.i18n.localize("STARWROUGHT.Actions.finishNotYetHint");
 
   return {
     show: true,
@@ -85,6 +94,9 @@ export function actionsContext(actor) {
     pips,
     preparing,
     preparingLabel,
+    preparingReady,
+    canFinish,
+    finishHint,
     passGlyph: SW.ACTION_GLYPHS[0],
     // The block's tooltip: whose Opportunity it is, then the legend of the three pip states.
     tooltip: `${isTurn
@@ -112,11 +124,15 @@ export function bindContext(actor) {
     theirs: bind.theirs || game.i18n.localize("STARWROUGHT.Bind.unnamedImplement")
   };
   const condition = SW.CONDITIONS[BIND_KEYS[state]];
+  // The Zone the Control opened (0.19.0), named on the line while it holds.
+  const zone = (bind.zone in SW.ZONES) ? game.i18n.localize(SW.ZONES[bind.zone].label) : "";
   return {
     state,
-    text: game.i18n.format(`STARWROUGHT.Bind.${state}`, args),
+    text: game.i18n.format(`STARWROUGHT.Bind.${state}`, args) + (zone ? ` ${game.i18n.format("STARWROUGHT.Bind.zoneLine", { zone })}` : ""),
     conditionLabel: game.i18n.localize(condition.name),
-    img: condition.img
+    img: condition.img,
+    // Take Control (0.19.0) is offered while this side does not hold the line.
+    canTakeControl: state !== "controlling"
   };
 }
 

@@ -1,15 +1,15 @@
 [
  {
-  "name": "Acrobat",
+  "name": "Acolyte",
   "rarity": "Common",
   "enabled": true,
-  "desc": "<i>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</i>",
-  "effect": "You become Trained in <i>Athletics</i> and in <i>Acrobatics</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
-  "automation": "[Acrobatics trained][Athletics trained][Lore trained]",
+  "desc": "<i>You tended a shrine and learned to offer comfort or speak with religious authority. Something beyond its walls eventually demanded more of you than prayer.</i>",
+  "effect": "You become Trained in Diplomacy and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of your faith, Lore of a religious order, Funerary Rites Lore.",
+  "automation": "[Diplomacy trained][Society trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Athletics and in Acrobatics"
+     "Diplomacy and Society"
     ],
     "extra": 0
    },
@@ -18,58 +18,20 @@
      "relevant Lore of your choice"
     ],
     "extra": 0
-   }
-  ],
-  "rules": [
-   {
-    "n": 1,
-    "scope": "Skill",
-    "constellation": "acrobatics",
-    "constellationName": "Acrobatics",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Acrobatics trained]"
-   },
-   {
-    "n": 1,
-    "scope": "Skill",
-    "constellation": "athletics",
-    "constellationName": "Athletics",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Athletics trained]"
-   },
-   {
-    "n": 1,
-    "scope": "Lore",
-    "constellation": "lore",
-    "constellationName": "Lore",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Lore trained]"
    }
   ]
  },
  {
-  "name": "Soldier",
+  "name": "Acrobat",
   "rarity": "Common",
   "enabled": true,
-  "desc": "<i>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</i>",
-  "effect": "You become Trained in <i>Athletics</i> and in <i>Intimidation</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
-  "automation": "[Athletics trained][Intimidation trained][Lore trained]",
+  "desc": "<i>In a circus or on the streets, you earned your pay by performing as an acrobat. You might have turned to adventuring when the money dried up, or simply decided to put your skills to better use.</i>",
+  "effect": "You become Trained in Athletics and Acrobatics, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Circus Lore, Street Performance Lore, Stage Rigging Lore, Traveling Troupes Lore.",
+  "automation": "[Athletics trained][Acrobatics trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Athletics and in Intimidation"
+     "Athletics and Acrobatics"
     ],
     "extra": 0
    },
@@ -79,43 +41,203 @@
     ],
     "extra": 0
    }
-  ],
-  "rules": [
+  ]
+ },
+ {
+  "name": "Animal Healer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You tended injured mounts and sick livestock, working with patients who could neither explain their pain nor promise to stay still. A calm approach became as useful to you as a steady hand.</i>",
+  "effect": "You become Trained in Animal Handling and Medicine, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Animal Anatomy Lore, Livestock Diseases Lore, Stable Management Lore.",
+  "automation": "[Animal Handling trained][Medicine trained][Lore trained]",
+  "grants": [
    {
-    "n": 1,
-    "scope": "Skill",
-    "constellation": "athletics",
-    "constellationName": "Athletics",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Athletics trained]"
+    "options": [
+     "Animal Handling and Medicine"
+    ],
+    "extra": 0
    },
    {
-    "n": 1,
-    "scope": "Skill",
-    "constellation": "intimidation",
-    "constellationName": "Intimidation",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Intimidation trained]"
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Apothecary",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You prepared remedies and useful mixtures, learning how much depended on clean tools and careful measures. Customers brought you their complaints, and sometimes problems they were afraid to take elsewhere.</i>",
+  "effect": "You become Trained in Crafting and Medicine, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Herbalism Lore, Alchemy Lore, Toxicology Lore.",
+  "automation": "[Crafting trained][Medicine trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Crafting and Medicine"
+    ],
+    "extra": 0
    },
    {
-    "n": 1,
-    "scope": "Lore",
-    "constellation": "lore",
-    "constellationName": "Lore",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Lore trained]"
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Artisan",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You spent years learning a craft and the patience it demands. You still judge unfamiliar places by what their people make and how well they make it.</i>",
+  "effect": "You become Trained in Athletics and Crafting, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Smithing Lore, Carpentry Lore, Masonry Lore.",
+  "automation": "[Athletics trained][Crafting trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Crafting"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Beast Trainer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You taught animals to work beside people, shaping patient practice into dependable habits. You learned how to hold an animal's attention even when a crowd or sudden noise threatened to break it.</i>",
+  "effect": "You become Trained in Animal Handling and Performance, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Animal Training Lore, Circus Lore, Falconry Lore.",
+  "automation": "[Animal Handling trained][Performance trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Animal Handling and Performance"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Burglar",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You entered buildings by routes their owners had never intended as entrances. You learned to cross awkward spaces quietly and open a lock before anyone thought to check the door.</i>",
+  "effect": "You become Trained in Acrobatics and Thievery, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Burglary Lore, Urban Architecture Lore, Household Security Lore.",
+  "automation": "[Acrobatics trained][Thievery trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Acrobatics and Thievery"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Caravan Hand",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You loaded wagons and walked the long miles between settlements. You learned which bargains keep a caravan moving and how to talk your way past a troublesome checkpoint.</i>",
+  "effect": "You become Trained in Athletics and Guile, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Trade Routes Lore, Caravans Lore, Lore of a region you traveled.",
+  "automation": "[Athletics trained][Guile trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Guile"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Charlatan",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You lived by selling convincing stories, borrowed credentials, or cures that promised rather more than they delivered. You learned to become the person an audience wanted to believe.</i>",
+  "effect": "You become Trained in Guile and Performance, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Confidence Schemes Lore, Stagecraft Lore, False Credentials Lore.",
+  "automation": "[Guile trained][Performance trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Guile and Performance"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Courier",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You carried messages through crowded streets and across unfriendly borders. Getting there mattered; arriving unnoticed sometimes mattered more. One delivery may have changed the course of your life.</i>",
+  "effect": "You become Trained in Acrobatics and Stealth, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of a city, Local Routes Lore, Lore of a courier network.",
+  "automation": "[Acrobatics trained][Stealth trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Acrobatics and Stealth"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Courtier",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You served in a household where a misplaced word could do more damage than a drawn blade. You learned to recognize influence and conceal your intentions behind the proper courtesies.</i>",
+  "effect": "You become Trained in Guile and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of a royal court, Heraldry Lore, Lore of a noble household.",
+  "automation": "[Guile trained][Insight trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Guile and Insight"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
    }
   ]
  },
@@ -124,12 +246,12 @@
   "rarity": "Common",
   "enabled": true,
   "desc": "<i>You made your living outside the law, whether by picking pockets, running contraband, or talking your way through doors that were meant to stay shut. You still know who to ask, and which questions never to.</i>",
-  "effect": "You become Trained in <i>Guile</i> and in <i>Stealth</i>, and you become Trained in a relevant <i>Lore</i> of your choice.",
-  "automation": "[Guile trained][Stealth trained][Lore trained]",
+  "effect": "You become Trained in Stealth and Thievery, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Smuggling Lore, Burglary Lore, Prison Lore, Lore of a particular city's criminal networks.",
+  "automation": "[Stealth trained][Thievery trained][Lore trained]",
   "grants": [
    {
     "options": [
-     "Guile and in Stealth"
+     "Stealth and Thievery"
     ],
     "extra": 0
    },
@@ -139,43 +261,709 @@
     ],
     "extra": 0
    }
-  ],
-  "rules": [
+  ]
+ },
+ {
+  "name": "Dancer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You performed with movement, learning to keep your footing while making difficult steps look effortless. You came to recognize a room's mood before the first measure had ended.</i>",
+  "effect": "You become Trained in Acrobatics and Performance, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Dance Traditions Lore, Court Festivals Lore, Theater Lore.",
+  "automation": "[Acrobatics trained][Performance trained][Lore trained]",
+  "grants": [
    {
-    "n": 1,
-    "scope": "Skill",
-    "constellation": "guile",
-    "constellationName": "Guile",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Guile trained]"
+    "options": [
+     "Acrobatics and Performance"
+    ],
+    "extra": 0
    },
    {
-    "n": 1,
-    "scope": "Skill",
-    "constellation": "stealth",
-    "constellationName": "Stealth",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Stealth trained]"
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Debt Collector",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You recovered money from people who had learned to avoid answering their doors. A convincing bluff and a carefully judged threat often did more for you than an honest request.</i>",
+  "effect": "You become Trained in Guile and Intimidation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Debt Law Lore, Moneylending Lore, Local Business Lore.",
+  "automation": "[Guile trained][Intimidation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Guile and Intimidation"
+    ],
+    "extra": 0
    },
    {
-    "n": 1,
-    "scope": "Lore",
-    "constellation": "lore",
-    "constellationName": "Lore",
-    "different": false,
-    "when": null,
-    "trained": true,
-    "kind": "grant",
-    "line": 1,
-    "text": "[Lore trained]"
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Engineer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You studied how structures carried weight and how machines turned effort into work. You learned to test a promising design against measurements before trusting anyone's life to it.</i>",
+  "effect": "You become Trained in Crafting and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Engineering Lore, Architecture Lore, Siegeworks Lore.",
+  "automation": "[Crafting trained][Investigation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Crafting and Investigation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Entertainer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You earned your living with music, stories, or the stage. You learned to win a difficult audience and keep a performance alive when everything behind the curtain went wrong.</i>",
+  "effect": "You become Trained in Diplomacy and Performance, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Music Lore, Theater Lore, Storytelling Lore, Festivals Lore.",
+  "automation": "[Diplomacy trained][Performance trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Diplomacy and Performance"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Escape Artist",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You earned your living slipping bonds and opening restraints before an audience could discover your methods. The tools you kept hidden proved useful long after a performance ended.</i>",
+  "effect": "You become Trained in Acrobatics and Thievery, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Restraints Lore, Stage Mechanisms Lore, Circus Lore.",
+  "automation": "[Acrobatics trained][Thievery trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Acrobatics and Thievery"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Exile",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>A judgment, a feud, or a change of rulers made your home somewhere you could no longer remain. You learned to seek welcome carefully and leave before hospitality became suspicion.</i>",
+  "effect": "You become Trained in Diplomacy and Stealth, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of your homeland, Lore of a displaced community, Borderlands Lore.",
+  "automation": "[Diplomacy trained][Stealth trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Diplomacy and Stealth"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Falconer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You trained birds of prey and followed them across open country. You learned the patience required to earn an animal's trust and the care needed to bring a hunt to a safe end.</i>",
+  "effect": "You become Trained in Animal Handling and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Falconry Lore, Game Birds Lore, Hunting Grounds Lore.",
+  "automation": "[Animal Handling trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Animal Handling and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Farmer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You worked the land or tended livestock, measuring the year by weather and harvests. You learned to make each season's labor last through the next, even when the seasons refused to cooperate.</i>",
+  "effect": "You become Trained in Athletics and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Agriculture Lore, Animal Husbandry Lore, Lore of a farming region.",
+  "automation": "[Athletics trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Field Medic",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You treated injuries close enough to danger that keeping out of sight was part of keeping someone alive. You learned to work quickly and leave a place before the fighting reached it.</i>",
+  "effect": "You become Trained in Medicine and Stealth, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Battlefield Medicine Lore, Wound Care Lore, Military Logistics Lore.",
+  "automation": "[Medicine trained][Stealth trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Medicine and Stealth"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Former Prisoner",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You spent part of your life behind locked doors, whether the sentence was just or otherwise. You learned to hide what mattered, bargain with limited means, and make patient use of small opportunities.</i>",
+  "effect": "You become Trained in Guile and Thievery, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Prison Lore, Penal Law Lore, Lore of a particular prison.",
+  "automation": "[Guile trained][Thievery trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Guile and Thievery"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Gambler",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You earned your living across a gaming table, where confidence could be worth more than a winning hand. You learned when to press someone and when to gather your winnings quietly.</i>",
+  "effect": "You become Trained in Guile and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Gambling Lore, Lore of a particular game, Gaming Houses Lore.",
+  "automation": "[Guile trained][Insight trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Guile and Insight"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Healer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You tended the sick and injured, learning to keep your hands steady when others were losing hope. Patients trusted you with their pain, and sometimes with things they had told no one else.</i>",
+  "effect": "You become Trained in Insight and Medicine, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Anatomy Lore, Herbalism Lore, Midwifery Lore.",
+  "automation": "[Insight trained][Medicine trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Insight and Medicine"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Herder",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You guided livestock between pasture and shelter, keeping scattered animals together through difficult country. You learned to notice a troubled beast before the rest of the herd followed its example.</i>",
+  "effect": "You become Trained in Animal Handling and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Animal Husbandry Lore, Grazing Lands Lore, Lore of a chosen livestock species.",
+  "automation": "[Animal Handling trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Animal Handling and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Hermit",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You lived far from ready help and learned to find shelter and tend injuries with what the country provided. Returning to company has given you fresh reasons to value the habits of solitude.</i>",
+  "effect": "You become Trained in Medicine and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Herbalism Lore, Foraging Lore, Lore of a wilderness region.",
+  "automation": "[Medicine trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Medicine and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Innkeeper",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You kept a common room welcoming and settled disputes before they became broken furniture. Travelers paid for a place to rest, and often left you more stories than coin.</i>",
+  "effect": "You become Trained in Diplomacy and Insight, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Hospitality Lore, Cooking Lore, Lore of a local settlement.",
+  "automation": "[Diplomacy trained][Insight trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Diplomacy and Insight"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Investigator",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You made a living finding what people had concealed, from missing property to the explanation for a death. You learned to test a convincing account against what a place and its people actually revealed.</i>",
+  "effect": "You become Trained in Insight and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Legal Lore, Criminal Networks Lore, Forensics Lore.",
+  "automation": "[Insight trained][Investigation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Insight and Investigation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Locksmith",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You made locks dependable and opened them when their owners could not. Years of patient work taught you how small a fault can make a strong door useless.</i>",
+  "effect": "You become Trained in Crafting and Thievery, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Locks Lore, Security Devices Lore, Safe Construction Lore.",
+  "automation": "[Crafting trained][Thievery trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Crafting and Thievery"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Magistrate",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You heard disputes and gave judgments that other people were expected to obey. You learned the workings of local law and how to hold a room's attention when a ruling pleased no one.</i>",
+  "effect": "You become Trained in Society and Intimidation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Legal Lore, Court Procedure Lore, Local Government Lore.",
+  "automation": "[Society trained][Intimidation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Society and Intimidation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Merchant",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>Your livelihood depended on finding buyers and giving them a reason to return. You learned how much a promise could be worth—and how expensive it became when someone failed to keep it.</i>",
+  "effect": "You become Trained in Diplomacy and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Commerce Lore, Lore of a traded commodity, Lore of a merchant guild.",
+  "automation": "[Diplomacy trained][Society trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Diplomacy and Society"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Miner",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You worked underground, following seams through places where a cracked support could end a life. You learned to watch the stone and listen when an experienced worker told everyone to stop.</i>",
+  "effect": "You become Trained in Athletics and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Mining Lore, Geology Lore, Underground Routes Lore.",
+  "automation": "[Athletics trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Naturalist",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You studied living things in the places they grew and hunted, preserving specimens and comparing your observations. You learned to recognize signs of injury or illness that a casual observer would miss.</i>",
+  "effect": "You become Trained in Medicine and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Botany Lore, Animal Anatomy Lore, Lore of a particular ecosystem.",
+  "automation": "[Medicine trained][Investigation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Medicine and Investigation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Noble",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You were raised with a family name that opened doors and carried obligations through them. You learned how to ask with authority and how much a household's reputation could demand.</i>",
+  "effect": "You become Trained in Diplomacy and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Heraldry Lore, Genealogy Lore, Lore of a ruling house.",
+  "automation": "[Diplomacy trained][Society trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Diplomacy and Society"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Pit Fighter",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You fought for purses, wagers, or someone else’s profit. You learned how to frighten an opponent before the first exchange and how to keep standing when the crowd demanded more.</i>",
+  "effect": "You become Trained in Athletics and Intimidation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Arena Fighting Lore, Prizefights Lore, Lore of a fighting circuit.",
+  "automation": "[Athletics trained][Intimidation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Intimidation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Puppeteer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You built figures and gave them a life before an audience. You learned how a small movement could hold a room's attention and how to repair a tangled mechanism before anyone noticed.</i>",
+  "effect": "You become Trained in Crafting and Performance, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Puppetry Lore, Stage Mechanisms Lore, Theater Lore.",
+  "automation": "[Crafting trained][Performance trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Crafting and Performance"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Sailor",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You worked aboard a vessel where an unsecured line could cost a life. Weather and hard voyages taught you to keep your footing and trust the people working beside you.</i>",
+  "effect": "You become Trained in Athletics and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Sailing Lore, River Navigation Lore, Lore of a particular coastline.",
+  "automation": "[Athletics trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Scholar",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You studied old accounts and disputed their meaning with people just as certain as you were. An unanswered question eventually gave you a reason to leave the safety of your books.</i>",
+  "effect": "You become Trained in Investigation and Society, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Lore of a region's history, Astronomy Lore, Lore of an ancient civilization.",
+  "automation": "[Investigation trained][Society trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Investigation and Society"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Scribe",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You copied and preserved documents, learning to recognize a careless source and mend a damaged page. Somewhere among other people's words, you found a matter that demanded action.</i>",
+  "effect": "You become Trained in Crafting and Investigation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Calligraphy Lore, Bookbinding Lore, Lore of a particular archive.",
+  "automation": "[Crafting trained][Investigation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Crafting and Investigation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Servant",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You worked in a household where remaining useful often meant remaining unnoticed. You learned its routines, soothed its tempers, and discovered how much people reveal when they forget who is in the room.</i>",
+  "effect": "You become Trained in Insight and Stealth, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Household Management Lore, Etiquette Lore, Lore of a prominent household.",
+  "automation": "[Insight trained][Stealth trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Insight and Stealth"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Soldier",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You served in somebody's army: a levy, a free company, a city watch that saw real fighting. You learned the drill, the marching, and the waiting, and you learned what a line looks like just before it breaks.</i>",
+  "effect": "You become Trained in Athletics and Intimidation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Military Logistics Lore, Siegecraft Lore, Fortifications Lore, Lore of a particular army or campaign.",
+  "automation": "[Athletics trained][Intimidation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Athletics and Intimidation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Stablehand",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You cared for mounts and worked wherever a stable needed strong hands. You learned to approach a nervous animal patiently and recognize trouble before a saddle ever touched its back.</i>",
+  "effect": "You become Trained in Animal Handling and Athletics, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Stabling Lore, Animal Husbandry Lore, Equine Anatomy Lore.",
+  "automation": "[Animal Handling trained][Athletics trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Animal Handling and Athletics"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Trapper",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You made your living following tracks and setting snares far from settled roads. Patience put food on your table, and quiet movement kept you from becoming something else’s meal.</i>",
+  "effect": "You become Trained in Stealth and Survival, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include Hunting Lore, Trapping Lore, Lore of a wilderness region.",
+  "automation": "[Stealth trained][Survival trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Stealth and Survival"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
+   }
+  ]
+ },
+ {
+  "name": "Watch Officer",
+  "rarity": "Common",
+  "enabled": true,
+  "desc": "<i>You kept watch where a quiet street could turn dangerous without warning. You learned to read a gathering crowd and make your authority felt before a quarrel became a fight.</i>",
+  "effect": "You become Trained in Insight and Intimidation, and you become Trained in a relevant Lore of your choice.<br><br>Example Lores include City Watch Lore, Patrol Routes Lore, Local Law Lore.",
+  "automation": "[Insight trained][Intimidation trained][Lore trained]",
+  "grants": [
+   {
+    "options": [
+     "Insight and Intimidation"
+    ],
+    "extra": 0
+   },
+   {
+    "options": [
+     "relevant Lore of your choice"
+    ],
+    "extra": 0
    }
   ]
  }

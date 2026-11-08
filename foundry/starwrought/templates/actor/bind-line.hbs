@@ -5,6 +5,13 @@
      data-tooltip="STARWROUGHT.Rules.openBind">{{conditionLabel}}</a>
   <span class="sw-bind-text">{{text}}</span>
   {{#if @root.editable}}
+  {{#if canTakeControl}}
+  {{!-- Take Control by hand (0.19.0): a neutral Bind, or the partner's Control contested and won at the table. --}}
+  <button type="button" class="sw-inline-button" data-action="takeControl"
+          data-tooltip="{{localize 'STARWROUGHT.Bind.takeControlSheetHint'}}">
+    <i class="fa-solid fa-hand-fist"></i> {{localize "STARWROUGHT.Bind.takeControl"}}
+  </button>
+  {{/if}}
   <button type="button" class="sw-inline-button" data-action="endBind"
           data-tooltip="{{localize 'STARWROUGHT.Bind.endHint'}}">
     <i class="fa-solid fa-link-slash"></i> {{localize "STARWROUGHT.Bind.end"}}

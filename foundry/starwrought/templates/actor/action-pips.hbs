@@ -34,8 +34,9 @@
 <div class="sw-preparing" data-tooltip="{{localize 'STARWROUGHT.Actions.preparingHint'}}">
   <i class="fa-solid fa-hourglass-half"></i>
   <span class="sw-preparing-label">{{localize "STARWROUGHT.Actions.preparing" label=preparingLabel}}</span>
+  {{!-- Finish is live once the next Opportunity has begun (0.19.0); the GM's click forces it. --}}
   <button type="button" class="sw-inline-button sw-primary" data-action="finishPrepared"
-          data-tooltip="{{localize 'STARWROUGHT.Actions.finishHint'}}">
+          data-tooltip="{{finishHint}}"{{#unless canFinish}} disabled{{/unless}}>
     <i class="fa-solid fa-check"></i> {{localize "STARWROUGHT.Actions.finish"}}
   </button>
   <button type="button" class="sw-inline-button sw-cancel" data-action="abandonPrepared"

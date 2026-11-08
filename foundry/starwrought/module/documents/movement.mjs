@@ -160,9 +160,23 @@ function onTokenMoves(token, movement, options) {
   if (!actor?.system) return;
 
   // Only a Move at your own Opportunity is a Maneuver. Anything else (the GM repositioning a
-  // token, a Step handed out by a Defense result, forced movement) costs nothing here.
-  const combatant = opportunityOf(token);
-  if (!combatant) return;
+  // token, a Step handed out by a Defense result, forced movement) costs nothing here. Since
+  // 0.19.0 a player's drag of their combatant outside its Opportunity is refused and asks the GM
+  // (the gate in documents/actor/actions.mjs; Mike, playtest); a drag the GM approved goes
+  // through once, charged as a Move at the Opportunity would be.
+  let combatant = opportunityOf(token);
+  if (!combatant) {
+    const waiting = combatantOutOfTurn(token);
+    if (!waiting) return;
+    if (!actor.canActNow()) {
+      actor.mayActNow({ label: localize("STARWROUGHT.Opportunity.aMove") })
+        .catch(err => console.error("STARWROUGHT | the move's request could not be posted", err));
+      return false;
+    }
+    combatant = waiting;
+    actor.mayActNow({ label: localize("STARWROUGHT.Opportunity.aMove") })
+      .catch(err => console.error("STARWROUGHT | the move's permit could not be spent", err));
+  }
 
   // A path a region splits into pieces arrives as several updates under one movement id; the
   // first carries the pending remainder, so it pays for the whole.
@@ -210,6 +224,24 @@ export function opportunityOf(token) {
   if (combat.scene && (combat.scene.id !== token.parent?.id)) return null;
   const combatant = combat.getCombatantsByToken(token.id)[0] ?? combat.getCombatantsByActor(actor)[0] ?? null;
   if (!combatant || (combat.combatant?.id !== combatant.id)) return null;
+  return combatant;
+}
+
+/**
+ * This token's combatant in the started encounter on its scene when it is NOT its Opportunity and
+ * the mover is a player (0.19.0): the drag the Opportunity gate asks the GM about. Null for the
+ * GM's own drags, a token outside the encounter, or the current combatant (`opportunityOf`).
+ * @param {TokenDocument} token
+ * @returns {Combatant|null}
+ */
+function combatantOutOfTurn(token) {
+  if (game.user.isGM) return null;
+  const actor = token?.actor;
+  const combat = game.combat;
+  if (!actor || !combat?.started) return null;
+  if (combat.scene && (combat.scene.id !== token.parent?.id)) return null;
+  const combatant = combat.getCombatantsByToken(token.id)[0] ?? combat.getCombatantsByActor(actor)[0] ?? null;
+  if (!combatant || (combat.combatant?.id === combatant.id)) return null;
   return combatant;
 }
 

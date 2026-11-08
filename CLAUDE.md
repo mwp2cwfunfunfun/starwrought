@@ -77,6 +77,17 @@ python assets/build_features_docx.py  # FEATURES.md -> Starwrought_Foundry_Featu
 python assets/check_style.py          # the two absolute rules below, enforced. Exit 1 on a violation.
 ```
 
+**Not a step, a status: `python assets/highlight_automation.py`** (2026-11-08; Mike: "Any automation
+fields that I may have mis-typed, or for which there are not yet Kinds, highlight those cells in
+red"). It reads every workbook directly, hands the Automation cells and the `@Maneuver[...]`
+markers to `assets/lib/parse_cells.mjs` (the system's grammar and the build's resolver over the
+trees and Maneuver rows read from the same workbooks, so it works while the converter is refusing
+to write), paints a cell that does not read solid red with a comment giving the grammar's message
+and why (mis-typed, no kind yet, not yet readable), clears its own red when the cell reads again
+(a yellow of Mike's underneath is recorded and restored), and writes `automation-cells-report.md`
+in the project root. `--dry-run` reports only. The workbooks are loaded with `rich_text=True`, so
+the Effect cells' formatting survives the save; a workbook open in Excel is not written.
+
 `build_foundry.mjs` sits next to `build_phb.js` for the same reason: both read `trees.json`,
 `actions.json` and `roster.json` (and `build_foundry.mjs` reads `equipment.json`), so both must
 re-run whenever any of those change. It writes `packs/_source/*.json` and then
@@ -107,7 +118,15 @@ only a changed or new Constellation's plate is drawn, gone ones pruned), `build_
 --no-compile` and `check_style --quiet`, skips the sheets, the compendium docx and the features
 docx, never compiles the LevelDB packs, and reports handbook drift under a "HANDBOOK DRIFT (a
 warning in content mode)" banner and exits 0, because adding a Talent to a sheet is not a handbook
-sync (ruling 115); a failing step and the stamp check still exit 1, and `--content` with
+sync (ruling 115); **since 2026-11-07 it also runs `parse_rules --lenient`** (Mike, with new
+sheets half-authored: "there are some duplicates and other missing items in terms of the
+spreadsheets, but let's make a new build anyway"): an Automation line the grammar cannot read is
+stored on its Item as an error entry (red on the sheet, skipped in play, the shape the client
+gives a GM's bad textarea line) and listed under an "AUTOMATION ERRORS (a warning in content
+mode)" banner, while the release pipeline still fails on the first such line; and the converter
+resolves a Maneuver on two sheets of one workbook (an enabled row over a disabled one, else the
+earlier sheet) and a tree indexed in two workbooks (the first read stands) with a warning each,
+never an error, so a restructure in progress builds; a failing step and the stamp check still exit 1, and `--content` with
 `--skip-slow`, `--check` or `--accept-phb` is an error (a handbook sync is never stamped from the
 mode whose point is that it is not one). `build_all.mjs` resolves the Python its steps run with by
 probing for the four modules they import (`STARWROUGHT_PYTHON`, the project's `.venv`, `python`,
@@ -864,6 +883,30 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.19.0 (Mike, 2026-11-08; rulings 199 to 204): the playtest's eight.** Planned first
+(`playtest-plan-0.19.0.md`; Mike's four decisions by question) and built in one release; no data
+moved and the rulings are system decisions in the 0.19.0 changelog entry. **A fighter with no action
+left and nothing reserved is passed over** (ruling 199; `SwCombat#canTakeOpportunity`, the one
+reading behind `nextTurn`, `opportunityHolders` and the tracker's dimmed row; a Preparing fighter
+keeps its Opportunity; when nobody can act the round ends; the Pass and spend stamps on a Combatant
+are forgotten as its Opportunity begins, a 0.4.0 bug). **Finish waits for the next Opportunity**
+(ruling 200; `preparing.ready`, written by `beginOpportunity`; Abandon any time; the GM's sheet
+click forces). **The Wind card and roll are public** for a player's fighter (ruling 201;
+`lockRollMode` on `SwCheck.roll`). **A Maneuver outside your Opportunity waits for the GM**
+(ruling 202; `SwActor#canActNow` / `mayActNow` in `documents/actor/actions.mjs` is the one gate,
+called before the effect by every spend site and `preMoveToken`; the request card in
+`documents/cards/opportunity.mjs` with GM-only Approve and Refuse; a one-shot permit flag; never a
+Reaction, a Posture, a Defense roll, a reroll, Finish, Abandon, Pass, the pips or the GM's own
+creatures; "nothing is ever prevented" now reads "an overspend is never prevented"). **Take Control
+by hand and the Control's Zone on the Bind** (ruling 203; `SwActor#takeControl`, `system.bind.zone`
+on both sides, opened and closed by the Controlled side's own `#writeBind`, so the Expose relay is
+not needed for a Control; `SwActor#sayExposed` is the one Exposed card; `attackThreshold` reads the
+−2 for an adversary; `apps/zone-picker.mjs` is the shared dialog). **The glance** (ruling 204;
+`module/canvas/glance.mjs`, `glanceData` read by the hover card and by both sheets'
+`_configureRenderParts` for a LIMITED user; client setting `showGlance`). The Constellations tab's
+filter box (`#filter`, `_onRender`, the sheet's one listener outside `actions`) and the Token HUD's
+zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
+
 ## Where the source of truth lives
 
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
@@ -1186,7 +1229,16 @@ Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
   behavior east of Tess, a world "Demoralize ❶" action Item on Wren with its check against Guard,
   Tess as a Serrovanian with the four Serrovane Talents and Wren as a Reacher with the four Kestrel
   Reach ones (their `details.culture.name` set), and a mark on Tess naming the Bandit. The GM's
-  Combat was deleted. Nothing in the repository depends on them.
+  Combat was deleted (again after the 0.19.0 live drive, which also left its probe cards in the
+  chat log and put testpc6's ownership back to default). Nothing in the repository depends on them.
+- **0.19.0 leaves to the table or to Mike:** a Form Bind control for a Bind the GM narrates (the
+  card forms them) and Close ❶ as a Maneuver (both declined for now); the out-of-turn permit is
+  one Maneuver this round and a player with no GM connected waits; the glance shows an adversary's
+  gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
+  counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
+  one driven. The release pipeline still exits 1 at the drift gate (v4.24 on the shelf) and the
+  converter at `data/maneuvers.xlsx`'s renamed index column; the first content loop after Mike's
+  restructure needs the v4.24 sync.
 
 Cleared 2026-11-05 (the code review of 0.15.0 to 0.18.0, system 0.18.1; Mike: "do a thorough code
 review for mistakes, duplications, AND for performance improvements", then "Fix all 21"; the 0.18.1

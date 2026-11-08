@@ -108,6 +108,9 @@ export function preloadTemplates() {
     "systems/starwrought/templates/actor/action-pips.hbs",
     "systems/starwrought/templates/actor/bind-line.hbs",
     "systems/starwrought/templates/actor/wounds.hbs",
+    // THE GLANCE (0.19.0): the hover card's body, and the LIMITED sheet that wraps it.
+    "systems/starwrought/templates/actor/glance.hbs",
+    "systems/starwrought/templates/actor/glance-sheet.hbs",
     "systems/starwrought/templates/item/header.hbs",
     "systems/starwrought/templates/item/description.hbs",
     "systems/starwrought/templates/item/details.hbs",

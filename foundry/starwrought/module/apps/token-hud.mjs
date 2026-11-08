@@ -21,13 +21,40 @@ import { actionPips } from "../helpers/actor-context.mjs";
 import { rangesFor } from "../canvas/auras.mjs";
 import { SwAuraPalette } from "./aura-palette.mjs";
 
-/** Register the HUD injection, and the re-render that keeps its counter live. */
+/** Register the HUD injection, the re-render that keeps its counter live, and the zoom counter-scale. */
 export function registerTokenHud() {
   Hooks.on("renderTokenHUD", onRenderTokenHud);
   Hooks.on("updateActor", onActorChanged);
+  Hooks.on("canvasPan", onCanvasPan);
+}
+
+/**
+ * The counter-scale (0.19.0; Mike, playtest: "When zoomed out on the battle map, when Right
+ * clicking on token, the options surrounding the token are VERY small"). Core lays the whole HUD
+ * layer over the canvas and scales it with the zoom, so every control shrinks as the map zooms
+ * out. The HUD's columns are scaled back by the inverse, outward from the token (hud.css reads
+ * `--sw-hud-scale`), so they never read smaller than at 100% zoom; the factor is capped at 4 so a
+ * far zoom-out does not fill the screen with buttons. At 100% and above nothing changes.
+ * @returns {string}
+ */
+function hudScale() {
+  const zoom = Number(canvas?.stage?.scale?.x) || 1;
+  return String(Math.min(4, Math.max(1, 1 / zoom)));
+}
+
+function applyHudScale(element) {
+  if (element?.style) element.style.setProperty("--sw-hud-scale", hudScale());
+}
+
+/** The zoom changed while the HUD is open: the counter-scale follows. */
+function onCanvasPan() {
+  const hud = canvas.tokens?.hud;
+  if (!hud?.rendered) return;
+  applyHudScale(hud.element);
 }
 
 function onRenderTokenHud(hud, element) {
+  applyHudScale(element);
   const actor = hud.object?.actor;
   if (!actor?.system || !actor.isOwner) return;
   const column = element.querySelector(".col.right");

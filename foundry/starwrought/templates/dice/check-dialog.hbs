@@ -115,7 +115,7 @@
   <div class="form-group">
     <label>{{localize "CHAT.RollVisibility"}}</label>
     <div class="form-fields">
-      <select name="rollMode">{{selectOptions rollModes selected=rollMode localize=true}}</select>
+      <select name="rollMode"{{#if lockRollMode}} disabled data-tooltip="{{localize 'STARWROUGHT.Roll.rollModeLocked'}}"{{/if}}>{{selectOptions rollModes selected=rollMode localize=true}}</select>
     </div>
   </div>
 

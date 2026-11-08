@@ -99,7 +99,15 @@ function bindFields() {
      * ends: the tombstone the pair-keeper reads to tell "my partner ended this very Bind" from
      * "my partner's side was never written" (review, 2026-10-01).
      */
-    id: new fields.StringField({ initial: "" })
+    id: new fields.StringField({ initial: "" }),
+    /**
+     * The Zone the Control Exposes on the Controlled fighter (0.19.0; PHB v4.24, The Bind: "its
+     * wielder has an Exposed Zone chosen by the controller for as long as the Bind lasts"), the
+     * same on both sides, blank for a neutral Bind. The Controlled side's write opens it and
+     * closes it when the Control ends ("Exposure caused specifically by Control ends when that
+     * Control ends"); through 0.18.1 the Zone was opened once from the card and never tied to it.
+     */
+    zone: new fields.StringField({ initial: "" })
   });
 }
 

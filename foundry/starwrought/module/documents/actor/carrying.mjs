@@ -37,8 +37,11 @@ export const CarryingMixin = Base => class extends Base {
         });
       }
     } else if (state === "held" || item.system.state === "held") {
-      // Drawing it or putting it away: one Interact.
-      await this.spendActions(1, { label: game.i18n.format("STARWROUGHT.Actions.interactLabel", { name: item.name }) });
+      // Drawing it or putting it away: one Interact, a Maneuver, so outside this actor's
+      // Opportunity it waits for the GM (0.19.0).
+      const label = game.i18n.format("STARWROUGHT.Actions.interactLabel", { name: item.name });
+      if (!(await this.mayActNow({ label }))) return;
+      await this.spendActions(1, { label });
     }
 
     if ((item.system.state === "held") && this.system.bind?.state && SW.sameName(this.system.bind.mine, item.name)) {

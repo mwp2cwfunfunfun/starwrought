@@ -12,6 +12,8 @@ export const PositionMixin = Base => class extends Base {
    * by a Posture, which lasts to the end of the round) and end any Bind you are in.
    */
   async recenter() {
+    // A Maneuver: outside this actor's Opportunity it waits for the GM (0.19.0).
+    if (!(await this.mayActNow({ label: game.i18n.localize("STARWROUGHT.Action.recenter") }))) return null;
     // The card below carries the actions-left line, so the spend itself posts nothing.
     await this.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.recenter"), announce: false });
     const updates = {};
@@ -41,8 +43,11 @@ export const PositionMixin = Base => class extends Base {
    * @param {boolean} [options.announced]  The caller's card already says it (a Posture's reveal,
    *                                        a Position offer), so the audit stays quiet (0.5.1,
    *                                        T10). Defaults to `posture`; a sheet toggle is announced.
+   * @param {boolean} [options.say=false]   Post the Exposed card (0.19.0; the card the Position
+   *                                        buttons posted from documents/cards/position.mjs through
+   *                                        0.18.1, here so the Bind's own writes can say it too).
    */
-  async setExposed(zone, exposed = true, { posture = false, announced = posture } = {}) {
+  async setExposed(zone, exposed = true, { posture = false, announced = posture, say = false } = {}) {
     if (!(zone in SW.ZONES)) return;
     const on = !!exposed;
     const z = this.system.zones?.[zone];
@@ -56,7 +61,30 @@ export const PositionMixin = Base => class extends Base {
     }
     // The token status mirrors the Zone (0.5.1): Exposed: Head on the token when the Head is open.
     await this.setCondition(SW.ZONE_CONDITIONS[zone], on);
+    if (say) await this.sayExposed(zone, on);
     return this.system.zones?.[zone];
+  }
+
+  /**
+   * The Exposed card: a Zone opened on this actor, or closed again, its title opening the rules
+   * page (0.5.1, T6). Public, as the Zone is.
+   * @param {string} zone
+   * @param {boolean} [on=true]  False for the card that says a Zone closed.
+   * @param {object} [options]
+   * @param {"control"|""} [options.by]  What opened it, when the duration is not "until you
+   *   Recenter": a Control's Zone lasts while the Control does (0.19.0).
+   */
+  async sayExposed(zone, on = true, { by = "" } = {}) {
+    if (!(zone in SW.ZONES)) return;
+    const key = !on ? "STARWROUGHT.Position.exposedClosedText"
+      : by === "control" ? "STARWROUGHT.Position.exposedByControlText"
+      : "STARWROUGHT.Position.exposedText";
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-exposed-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="Exposed" data-tooltip="STARWROUGHT.Rules.openExposed"><i class="fa-solid fa-bullseye"></i> ${
+        game.i18n.localize("STARWROUGHT.Condition.exposed")}</a></h3>
+        <p>${game.i18n.format(key, { name: this.name, zone: game.i18n.localize(SW.ZONES[zone].label) })}</p></div>`
+    });
   }
 
   /** End of round: a Zone Exposed by a Posture closes now, and only now. */

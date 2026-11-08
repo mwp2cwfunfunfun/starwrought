@@ -38,6 +38,7 @@ import {
   registerRoundCards, postRecoveryReminder, postWindReminder, postPersistentReminder, postPreparedCard,
   announcePassWhilePreparing, persistentDamageOf, endureThresholdOf
 } from "./cards/round.mjs";
+import { registerOpportunityCards } from "./cards/opportunity.mjs";
 
 /** The Combat flag holding how many Passes in a row the table has made this round. */
 const FLAG_STREAK = "passStreak";
@@ -201,12 +202,51 @@ export class SwCombat extends Combat {
   }
 
   /**
-   * The combatants who get an Opportunity each circuit: everyone in the order, less the defeated
-   * when the tracker is set to skip them. This is the count a full circuit of Passes has to reach.
+   * The combatants who get an Opportunity this circuit: everyone in the order who can take one
+   * (`canTakeOpportunity`). This is the count a full circuit of Passes has to reach, and it shrinks
+   * as fighters spend their last action (0.19.0): the round ends when everyone who could still
+   * act has Passed in a row, or when nobody can act at all.
    * @type {Combatant[]}
    */
   get opportunityHolders() {
-    return this.settings.skipDefeated ? this.turns.filter(c => !c.isDefeated) : [...this.turns];
+    return this.turns.filter(c => this.canTakeOpportunity(c));
+  }
+
+  /**
+   * Can this combatant take the Opportunity the order offers it? Not the defeated, when the tracker
+   * is set to skip them; not a party, which cannot act at all (0.7.0, risk 1); and, since 0.19.0
+   * (Mike, playtest: "an actor with 0 actions remaining should automatically be skipped"), not a
+   * fighter with no free action and nothing reserved, who can afford no Maneuver: PHB v4.24,
+   * "When nobody has any actions left ... the round ends." A Preparing fighter keeps its Opportunity
+   * whatever its free count, because the book makes it Finish or Abandon there ("At your next
+   * Opportunity you must finish it ... or abandon it"). The one cost, recorded in the changelog: a
+   * fighter at 0 loses the chance to Drop Prone ⓿ or Release ⓿ on its own Opportunity; the GM's
+   * Previous Turn gives it back.
+   * @param {Combatant} combatant
+   * @returns {boolean}
+   */
+  canTakeOpportunity(combatant) {
+    if (!combatant) return false;
+    if (this.settings.skipDefeated && combatant.isDefeated) return false;
+    const actor = combatant.actor;
+    if (!actor?.system) return true;
+    if (actor.type === SW.PARTY_TYPE) return false;
+    const actions = actor.system.actions;
+    if (!actions || actions.preparing) return true;
+    return ((Number(actions.value) || 0) > 0) || ((Number(actions.reserved) || 0) > 0);
+  }
+
+  /**
+   * Why this combatant is passed over, for the tracker's tooltip: "defeated", "party", "spent"
+   * (no action left and nothing reserved), or null when it takes its Opportunity.
+   * @param {Combatant} combatant
+   * @returns {"defeated"|"party"|"spent"|null}
+   */
+  skipReason(combatant) {
+    if (!combatant || this.canTakeOpportunity(combatant)) return null;
+    if (this.settings.skipDefeated && combatant.isDefeated) return "defeated";
+    if (combatant.actor?.type === SW.PARTY_TYPE) return "party";
+    return "spent";
   }
 
   /**
@@ -225,11 +265,13 @@ export class SwCombat extends Combat {
     let next = null;
     for (let i = 1; i <= n; i++) {
       const index = (turn + i) % n;
-      if (this.settings.skipDefeated && this.turns[index].isDefeated) continue;
+      // The defeated, a party, and since 0.19.0 a fighter with no action left and nothing reserved
+      // are passed over (`canTakeOpportunity`); the tracker dims their rows and says why.
+      if (!this.canTakeOpportunity(this.turns[index])) continue;
       next = index;
       break;
     }
-    // Nobody left standing: let core say so.
+    // Nobody left who can act: "When nobody has any actions left ... the round ends" (PHB v4.24).
     if (next === null) return this.nextRound();
     // One combatant alone cycles to itself. Its Pass already ended the round in registerPass; any
     // other Next Turn is simply its next Opportunity in the same round, so the round does not move
@@ -374,6 +416,8 @@ export function registerCombatTracking() {
   Hooks.on("deleteCombat", onCombatEnds);
   registerCardButtons();
   registerRoundCards();
+  // The out-of-turn request's Approve and Refuse (0.19.0; documents/cards/opportunity.mjs).
+  registerOpportunityCards();
 }
 
 /* -------------------------------------------- */
@@ -415,6 +459,10 @@ async function onTurnChange(combat, previous, current) {
 /**
  * Did the turn go forward? Within a round, forward is a higher turn index, or the wrap from the
  * last Opportunity holder to the first. Anything else is a GM rewinding, which settles nothing.
+ * The holders are read now, after the step (0.19.0): the combatant who just ended its Opportunity
+ * may have spent its last action and left the list, so the wrap is "from at or past the last
+ * holder", not "from the last holder exactly", or its Opportunity would never be settled and the
+ * next one never begun.
  */
 function movedForward(combat, previous, current) {
   if ((current.turn === null) || (previous.turn === null)) return true;
@@ -423,7 +471,7 @@ function movedForward(combat, previous, current) {
   if (!holders.length) return false;
   const first = combat.turns.indexOf(holders[0]);
   const last = combat.turns.indexOf(holders[holders.length - 1]);
-  return (current.turn === first) && (previous.turn === last);
+  return (current.turn === first) && (previous.turn >= last);
 }
 
 /* -------------------------------------------- */
@@ -477,6 +525,23 @@ async function mark(combatant, key, combat) {
     await combatant.setFlag(SW.SYSTEM_ID, key, value);
   } catch (err) {
     console.warn(`STARWROUGHT | could not stamp ${key} on ${combatant.name}`, err);
+  }
+}
+
+/**
+ * Forget a Combatant's stamps as its Opportunity begins (0.19.0). The order wraps within the round,
+ * so `{ round, turn }` comes back every circuit: through 0.18.1 a combatant who spent on circuit 1
+ * and Passed on circuit 2 still read as having acted, and the streak reset. Written by the client
+ * that begins the Opportunity, which owns the combatant or is the GM.
+ */
+async function unmark(combatant) {
+  for (const key of [MARK_PASSED, MARK_ACTED]) {
+    if (combatant.getFlag(SW.SYSTEM_ID, key) === undefined) continue;
+    try {
+      await combatant.unsetFlag(SW.SYSTEM_ID, key);
+    } catch (err) {
+      console.warn(`STARWROUGHT | could not clear ${key} on ${combatant.name}`, err);
+    }
   }
 }
 
@@ -551,10 +616,16 @@ async function startRound(combat, round) {
  *  - Raise a Shield lasts "until your next Opportunity", so a raised shield comes down here.
  *  - A Prepared Maneuver must be finished or abandoned now; the card offers both and rolls nothing
  *    on its own, because finishing means checking range, line of effect and requirements again.
+ *    Since 0.19.0 this is the moment Finish becomes possible at all: the preparation is marked
+ *    `ready` here, and `finishPrepared` refuses before it (Mike, playtest: "it should not let you
+ *    Finish/Abandon it right away in the chat window"; the book's "At your next Opportunity").
+ *  - The Pass and spend stamps of the last circuit are forgotten (`unmark`).
  */
 async function beginOpportunity(combat, combatant) {
   const actor = combatant.actor;
   if (!actor?.system || !responsibleFor(actor)) return;
+
+  await unmark(combatant);
 
   // The trail of the last Opportunity's Moves goes when the next begins (Mike, 2026-10-01: "My past
   // Move trails should disappear when it is my opportunity to go again"). Core clears every
@@ -577,7 +648,14 @@ async function beginOpportunity(combat, combatant) {
   }
 
   const preparing = actor.system.actions?.preparing;
-  if (preparing) await postPreparedCard(actor, preparing, combat);
+  if (preparing) {
+    // "At your next Opportunity you must finish it": this is that Opportunity. The whole object is
+    // written back, since an ObjectField is replaced, not merged.
+    if (!preparing.ready) {
+      await actor.update({ "system.actions.preparing": { ...preparing, ready: true } }, { swAnnounced: true });
+    }
+    await postPreparedCard(actor, actor.system.actions.preparing, combat);
+  }
 }
 
 /**

@@ -80,6 +80,10 @@ export const CastMixin = Base => class extends Base {
     const targetToken = targets[0] ?? null;
     const targetActor = targetToken?.actor ?? null;
 
+    // A Cast outside this actor's Opportunity waits for the GM (0.19.0); a finished preparation
+    // and the flow's blind roll were gated when they began.
+    if (!blind && !prepared && !(await this.mayActNow({ label: `${castLabel}: ${name}` }))) return null;
+
     // Prepare first (PHB v4.21: a Focused or Committed Cast is Prepared under the three-action
     // rule in an encounter) and resolve at the next Opportunity; a finished preparation paid already.
     if (!blind && !prepared && kind.prepared && this.inEncounter) {

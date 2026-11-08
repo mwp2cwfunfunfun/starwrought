@@ -420,11 +420,27 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
             # Glyphs may ride in the name, as they do in talent names; the name itself is bare.
             name = action_bare(raw)
             key = name.lower()
+            row_enabled = enabled_flag(cellv("enabled"), "enabled" in cm)
             if key in seen:
-                errors.append(f"{fname} / {ws.title} / {name}: also defined on sheet '{seen[key]}'"); continue
-            if key in defined:
+                # The same action on two sheets of one workbook (2026-11-07: Mike's per-Skill sheets
+                # repeat rows the Chapter 2 sheets still hold; "there are some duplicates ... but
+                # let's make a new build anyway"): a WARNING, not an error, and one row wins. A row
+                # that ships (Enabled? Yes) beats one that does not; between two that do or two that
+                # do not, the earlier sheet in the workbook's order stands. The loser is dropped
+                # here, so the pack sources, the app and the docx print the action once under its
+                # one document id. An action in two WORKBOOKS stays an error below.
+                first_sheet, first_enabled, first_at = seen[key]
+                if row_enabled and not first_enabled:
+                    warnings.append(f"{fname} / {ws.title} / {name}: also on sheet '{first_sheet}', whose row is not "
+                                    f"enabled; this enabled row stands and that one is dropped")
+                    actions[first_at] = None
+                else:
+                    warnings.append(f"{fname} / {ws.title} / {name}: also on sheet '{first_sheet}', which stands "
+                                    f"(read first{'' if row_enabled == first_enabled else ', and enabled'}); this row is dropped")
+                    continue
+            elif key in defined:
                 errors.append(f"{fname} / {ws.title} / {name}: also defined in {defined[key]}"); continue
-            seen[key] = ws.title; defined[key] = fname
+            seen[key] = (ws.title, row_enabled, len(actions)); defined[key] = fname
             cost_text = pv("cost") if "cost" in cm else ""
             if cost_text:
                 cost = parse_cost(cost_text)
@@ -450,7 +466,7 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
             # missing when that file is (carry_over_absent below), and so the Foundry build can
             # label the Item's source. `sheet` keeps the group the row sits in.
             actions.append({"name": name, "type": atype, **cost,
-                            "enabled": enabled_flag(cellv("enabled"), "enabled" in cm),
+                            "enabled": row_enabled,
                             "traits": traits,
                             "prerequisites": pv("prereq"), "requirements": pv("req"),
                             "trigger": pv("trigger"), "description": cell_html(cellv("desc")) if pv("desc") else "",
@@ -461,6 +477,8 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
             aura = aura_for(cellv("aura"), "aura" in cm, effect, f"{fname} / {ws.title} / {name}", warnings, errors,
                             in_automation=automation_has(pv("automation"), "aura"))
             if aura: actions[-1]["aura"] = aura
+    # The rows a duplicate displaced (None above) leave the list here, in one pass.
+    actions[:] = [a for a in actions if a is not None]
     for k in typed:
         if k not in seen: warnings.append(f"{fname}: '{k}' is in _Tree Index but has no row on any sheet")
     if no_cost:
@@ -832,7 +850,13 @@ def main():
             if not feeds and category in FALLBACK_NEEDED:
                 errors.append(f"{fname} / {name}: {category} trees need a tree-level Feeds (untrained fallback)"); continue
             if name in out:
-                errors.append(f"{name}: defined in both {sources[name]} and {fname}"); continue
+                # The same tree indexed in two workbooks (2026-11-07: Lore in lore.xlsx and in
+                # skills.xlsx, whose sheet is still named "Lore (LORE_NAME)"): the first workbook
+                # read stands and this row is skipped with a WARNING, not an error, so a tree
+                # being moved between workbooks does not stop the build in the middle of the move.
+                where = "has no worksheet here anyway" if name not in wb.sheetnames else "this workbook's sheet is ignored"
+                warnings.append(f"{fname} / {name}: also defined in {sources[name]}, which stands (read first); {where}")
+                continue
             if name not in wb.sheetnames:
                 if category == "Background" and "Backgrounds" in wb.sheetnames:
                     indexed.add(name)  # lives in the Backgrounds table, handled below

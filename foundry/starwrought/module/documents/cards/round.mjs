@@ -85,7 +85,10 @@ export async function postWindReminder(actor, strain, round, fatigued = 0) {
       label: format("STARWROUGHT.Combat.endureVs", { threshold })
     }]
   });
-  return postCard(actor, content, { whisper: ownersOf(actor) });
+  // Public for a player's fighter, the GM's for an adversary (0.19.0; Mike, playtest: "The Wind
+  // roll for having too much Load Strain should be public"). Through 0.18.1 it went to the owners
+  // and the GM alone, as the Recovery and Persistent cards still do.
+  return postCard(actor, content, { whisper: tableFor(actor) });
 }
 
 export async function postPersistentReminder(actor, source, round) {
@@ -226,7 +229,11 @@ async function onWindCheck({ actor }) {
     label: localize("STARWROUGHT.Combat.wind"),
     subtitle: format("STARWROUGHT.Combat.windSubtitle", { strain }),
     threshold,
-    thresholdLabel: localize("STARWROUGHT.Combat.windThreshold")
+    thresholdLabel: localize("STARWROUGHT.Combat.windThreshold"),
+    // The Wind roll is public for a player's fighter (0.19.0) and the dialog cannot change that;
+    // an adversary's stays the GM's.
+    rollMode: tableFor(actor).length ? "gmroll" : "publicroll",
+    lockRollMode: true
   });
   if (!result) return;
   if (["fail", "critFail"].includes(result.degree)) {

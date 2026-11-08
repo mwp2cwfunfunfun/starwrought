@@ -15,6 +15,8 @@ import { loadBasicActions, enabledConstellations } from "../helpers/content.mjs"
 // The header's live state and the tooltips, shared with the adversary and party sheets (0.10.1).
 import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip } from "../helpers/actor-context.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
+// THE GLANCE (0.19.0): the panel a LIMITED user's sheet shows alone.
+import { glanceData } from "../canvas/glance.mjs";
 // THE PARTY'S LOOT (0.7.1): a party Item dropped on this sheet is a Take over the relay, not a copy.
 import { requestTake } from "../documents/party-socket.mjs";
 // AURAS (0.5.1): the ring toggles on the Talent and Maneuver rows and the Overview's Ranges line.
@@ -122,6 +124,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       treatWound: SwCharacterSheet.#onTreatWound,
       adjustWound: SwCharacterSheet.#onAdjustWound,
       endBind: SwCharacterSheet.#onEndBind,
+      takeControl: SwCharacterSheet.#onTakeControl,
       rulesPage: SwCharacterSheet.#onRulesPage,
       strike: SwCharacterSheet.#onStrike,
       itemUse: SwCharacterSheet.#onItemUse,
@@ -172,7 +175,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     effects: { template: "systems/starwrought/templates/actor/effects.hbs", scrollable: [""] },
     biography: { template: "systems/starwrought/templates/actor/biography.hbs", scrollable: [""] },
     // 0.17.0: the Notes on their own tab; the Biography keeps Biography, Edicts and Anathema.
-    notes: { template: "systems/starwrought/templates/actor/notes.hbs", scrollable: [""] }
+    notes: { template: "systems/starwrought/templates/actor/notes.hbs", scrollable: [""] },
+    // THE GLANCE (0.19.0): a LIMITED user's whole sheet; dropped from every other render
+    // (_configureRenderParts), so no tab names it.
+    glance: { template: "systems/starwrought/templates/actor/glance-sheet.hbs", scrollable: [""] }
   };
 
   /** @inheritdoc. The `actions` tab keeps its id; the handbook now calls them Maneuvers, and the label says so. */
@@ -195,6 +201,96 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   /** Which Constellations the user has folded shut. Session state, not saved on the Actor. */
   #collapsed = new Set();
+
+  /**
+   * THE FILTER (0.19.0): the text in the Constellations tab's search box. Session state, kept
+   * across the part's re-renders; while set, every Constellation renders unfolded (the collapse
+   * state is kept but not read) so the Talents can be matched.
+   */
+  #filter = "";
+
+  /** Put the caret back in the filter box after a re-render the typing caused. */
+  #refocusFilter = false;
+
+  /* -------------------------------------------- */
+
+  /**
+   * @inheritdoc
+   * A LIMITED user (0.19.0) sees the glance and nothing else: no header, no tabs. Everyone else
+   * never sees the glance part. Through 0.18.1 a LIMITED user saw every tab read-only, which is
+   * more than the permission means.
+   */
+  _configureRenderParts(options) {
+    const parts = super._configureRenderParts(options);
+    if (this.document.limited && !game.user.isGM) return { glance: parts.glance };
+    delete parts.glance;
+    return parts;
+  }
+
+  /**
+   * @inheritdoc
+   * The filter box (0.19.0) is wired here, the sheet's one listener outside `actions`: a text
+   * input is not a click. Typing filters the rendered rows in place; going from nothing to
+   * something, or back, re-renders the part, so the Talents come in unfolded (or the fold state
+   * returns), and the caret is put back.
+   */
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+    const input = this.element?.querySelector(".sw-constellation-filter");
+    if (!input) return;
+    input.value = this.#filter;
+    input.addEventListener("input", () => this.#onFilterInput(input));
+    input.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      input.value = "";
+      this.#onFilterInput(input);
+    });
+    this.#applyFilter();
+    if (this.#refocusFilter) {
+      this.#refocusFilter = false;
+      input.focus();
+      const end = input.value.length;
+      try { input.setSelectionRange(end, end); } catch { /* a search input in some browsers refuses */ }
+    }
+  }
+
+  #onFilterInput(input) {
+    const previous = this.#filter;
+    this.#filter = input.value.trim().toLowerCase();
+    if (!!previous !== !!this.#filter) {
+      // Nothing to something: unfold everything so the Talents are there to match. Something to
+      // nothing: the fold state returns. Either is a render of the part.
+      this.#refocusFilter = true;
+      this.render({ parts: ["constellations"] });
+      return;
+    }
+    this.#applyFilter();
+  }
+
+  /** Show the rows whose names contain the filter, hide the rest; a group with no row left hides too. */
+  #applyFilter() {
+    const root = this.element?.querySelector(".sw-tab[data-tab='constellations']");
+    if (!root) return;
+    const q = this.#filter;
+    for (const group of root.querySelectorAll(".sw-constellation-group")) {
+      let anyRow = false;
+      for (const row of group.querySelectorAll(".sw-constellation")) {
+        const rowMatches = !q || (row.dataset.filter ?? "").includes(q);
+        let anyTalent = false;
+        for (const talent of row.querySelectorAll(".sw-talent")) {
+          const matches = rowMatches || (talent.dataset.filter ?? "").includes(q);
+          talent.classList.toggle("sw-hidden", !matches);
+          if (matches) anyTalent = true;
+        }
+        const show = rowMatches || anyTalent;
+        row.classList.toggle("sw-hidden", !show);
+        if (show) anyRow = true;
+      }
+      group.classList.toggle("sw-hidden", !anyRow);
+    }
+  }
 
   /* -------------------------------------------- */
 
@@ -268,6 +364,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     // The Constellations tab's toolbar toggle (0.6.3, ruling 85): what it shows now, and so what
     // the button offers next.
     context.showUnopened = SwCharacterSheet.showUnopened();
+    context.filter = this.#filter; // THE FILTER (0.19.0)
     context.inventory = this.#prepareInventory();
     context.strikes = this.#prepareStrikes();
     // TALENT MANEUVERS (0.16.0): the Maneuvers a Talent granted (`flags.starwrought.grantedBy`)
@@ -390,6 +487,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _preparePartContext(partId, context) {
     context.partId = partId;
     if (context.tabs?.[partId]) context.tab = context.tabs[partId];
+    // THE GLANCE (0.19.0): what anyone standing near could see; the numbers for the owner and the GM.
+    if (partId === "glance") context.glance = glanceData(this.document, { full: this.document.isOwner || game.user.isGM });
     return context;
   }
 
@@ -528,11 +627,14 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         rankLabel: game.i18n.localize(entry.rankLabel),
         attributeGlyph: SW.ATTRIBUTES[entry.attribute]?.glyph ?? "",
         attributeLabel: game.i18n.localize(SW.ATTRIBUTES[entry.attribute]?.label ?? ""),
-        collapsed: this.#collapsed.has(entry.slug),
+        // A filter (0.19.0) unfolds every row so its Talents can be matched; the fold state is kept.
+        collapsed: this.#filter ? false : this.#collapsed.has(entry.slug),
+        filterText: `${entry.name} ${group.label}`.toLowerCase(),
         unopened: false,
         talents: entry.talents.map(t => ({
           id: t.id,
           name: t.name,
+          filterText: SW.plainName(t.name).toLowerCase(),
           img: t.img,
           tier: t.system.tier,
           glyph: t.system.glyph,
@@ -567,6 +669,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         groupFor(category).constellations.push({
           slug: meta.slug,
           name: meta.name,
+          filterText: `${meta.name} ${groupFor(category).label}`.toLowerCase(),
           category,
           attribute,
           attributeGlyph: SW.ATTRIBUTES[attribute].glyph,
@@ -1044,6 +1147,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.endBind();
   }
 
+  /** Take Control of the Bind by hand (0.19.0): the Zone picker, then the record and the Exposure. */
+  static async #onTakeControl() {
+    return this.document.takeControl();
+  }
+
   /** The bind line, the EXPOSED badge and a condition row open their Rules Reference page (0.5.1, T6). */
   static async #onRulesPage(event, target) {
     return openRulesPage(target.dataset.page);
@@ -1224,8 +1332,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return game.combat?.nextTurn();
   }
 
+  /** Finish waits for the next Opportunity (0.19.0); a GM's click from the sheet forces it. */
   static async #onFinishPrepared() {
-    return this.document.finishPrepared();
+    return this.document.finishPrepared({ force: game.user.isGM });
   }
 
   static async #onAbandonPrepared() {

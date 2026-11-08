@@ -8,6 +8,7 @@ import * as SW from "../../config.mjs";
 // THE BIND'S PAIR (0.10.1): defined once with the pair-keeper in ../bind.mjs, a different file from
 // documents/actor/bind.mjs (this actor's own Bind verbs).
 import { MIRROR as BIND_MIRROR, resolveActor as resolveActorByUuid } from "../bind.mjs";
+import { promptForZone } from "../../apps/zone-picker.mjs";
 
 /** @param {typeof Actor} Base */
 export const BindMixin = Base => class extends Base {
@@ -27,8 +28,11 @@ export const BindMixin = Base => class extends Base {
    *   (module/documents/bind.mjs keeps the pair whole), so the pickup never bounces back.
    * @param {string} [options.id]  The Bind's identity, shared by both sides; a pickup passes the
    *   one it is mirroring, a fresh Bind gets a new one.
+   * @param {string} [options.zone]  For a Control (0.19.0): the Zone it Exposes on the Controlled
+   *   fighter, recorded on both sides; the Controlled side's write opens it and closes it when the
+   *   Control ends. Ignored for a neutral Bind.
    */
-  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true, pair = true, id = "" } = {}) {
+  async formBind(partner, { state = "neutral", mine = "", theirs = "", announce = true, pair = true, id = "", zone = "" } = {}) {
     const other = partner?.actor ?? (partner?.documentName === "Actor" ? partner : null);
     // A Bind is between two implements on two fighters; a token of your own is not a partner.
     if (!other || (other === this) || !other.uuid) return null;
@@ -36,6 +40,7 @@ export const BindMixin = Base => class extends Base {
     if (!(state in mirror)) state = "neutral";
     mine = mine || this.rigidImplement?.name || "";
     theirs = theirs || other.rigidImplement?.name || "";
+    zone = ((state !== "neutral") && (zone in SW.ZONES)) ? zone : "";
 
     // One Bind per fighter (PHB v4.10, The Bind): forming one over a Bind with someone else ends
     // the old one first, on both sides. endBind clears the old partner's side when this client
@@ -49,19 +54,22 @@ export const BindMixin = Base => class extends Base {
     // unpaired, and the partner's owning client (the GM's, when one is connected) writes the
     // mirror as the update reaches it, so a player's click on the card still forms the pair.
     const bothSides = pair && other.isOwner;
-    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs, id }, { paired: bothSides || !pair });
+    await this.#writeBind({ state, partnerUuid: other.uuid, mine, theirs, id, zone }, { paired: bothSides || !pair });
     if (bothSides) {
-      await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine, id }, { paired: true });
+      await other.#writeBind({ state: mirror[state], partnerUuid: this.uuid, mine: theirs, theirs: mine, id, zone }, { paired: true });
     }
 
     if (announce) {
       const controller = state === "controlling" ? this : state === "controlled" ? other : null;
       const partnerOf = controller === this ? other : this;
+      const zoneText = (controller && zone)
+        ? ` ${game.i18n.format("STARWROUGHT.Bind.zoneOpened", { partner: partnerOf.name, zone: game.i18n.localize(SW.ZONES[zone].label) })}`
+        : "";
       const text = controller
         ? game.i18n.format("STARWROUGHT.Bind.controlTaken", {
             name: controller.name, partner: partnerOf.name,
             theirs: controller === this ? (theirs || game.i18n.localize("STARWROUGHT.Bind.weapon")) : (mine || game.i18n.localize("STARWROUGHT.Bind.weapon"))
-          })
+          }) + zoneText
         : game.i18n.format("STARWROUGHT.Bind.formed", {
             name: this.name, partner: other.name,
             mine: mine || game.i18n.localize("STARWROUGHT.Bind.weapon"),
@@ -97,7 +105,11 @@ export const BindMixin = Base => class extends Base {
     const bothSides = pair && !!partner?.isOwner && partnerMirrors;
     // The emptied record keeps the Bind's id as a tombstone: the pair-keeper reads it to tell a
     // Bind this side ended from a mirror that was never written (module/documents/bind.mjs).
-    const ended = { state: "", partnerUuid: "", mine: "", theirs: "", id: bind.id ?? "" };
+    const ended = { state: "", partnerUuid: "", mine: "", theirs: "", id: bind.id ?? "", zone: "" };
+    // The Zone the Control held open closes with it (0.19.0; PHB v4.24: "Exposure caused
+    // specifically by Control ends when that Control ends"): the Controlled side's write does the
+    // closing, here when this client owns it, else on its owner's client as the mirror is cleared.
+    const zoneClosed = (bind.zone in SW.ZONES) ? game.i18n.localize(SW.ZONES[bind.zone].label) : "";
     await this.#writeBind(ended, {
       paired: bothSides || !pair || !partnerMirrors,
       previousPartner: bind.partnerUuid
@@ -108,9 +120,47 @@ export const BindMixin = Base => class extends Base {
         speaker: ChatMessage.getSpeaker({ actor: this }),
         content: `<div class="starwrought action-card sw-bind-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="The Bind" data-tooltip="STARWROUGHT.Rules.openBind"><i class="fa-solid fa-link-slash"></i> ${
           game.i18n.localize("STARWROUGHT.Bind.label")}</a></h3>
-          <p>${game.i18n.format("STARWROUGHT.Bind.ended", { name: this.name, partner: partner?.name ?? "" })}</p></div>`
+          <p>${game.i18n.format("STARWROUGHT.Bind.ended", { name: this.name, partner: partner?.name ?? "" })}${
+            zoneClosed ? ` ${game.i18n.format("STARWROUGHT.Bind.zoneClosed", { zone: zoneClosed })}` : ""}</p></div>`
       });
     }
+  }
+
+  /**
+   * Take Control of the Bind this actor is in, by hand from the sheet (0.19.0; Mike, playtest:
+   * "There should be a way to manually Take Control of a Bind on CharSheet, like there is for
+   * Breaking the Bind"): a neutral Bind, or the partner's Control contested and won at the table
+   * (Gain Control ❶ resolved by hand). The Controller picks the Zone the Control Exposes; the
+   * record carries it, and the Controlled side's write opens the Zone wherever that side is
+   * written (this client when it owns the partner, else the partner's owner's or the GM's as the
+   * mirror reaches it), so no relay is needed. The card is `formBind`'s.
+   * @param {object} [options]
+   * @param {string} [options.zone]  The Zone, when the caller has already asked.
+   * @returns {Promise<object|null>}  This side of the Bind, or null when nothing was done.
+   */
+  async takeControl({ zone = "" } = {}) {
+    const bind = this.system.bind;
+    if (!bind?.state) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Bind.noBindToControl", { name: this.name }));
+      return null;
+    }
+    if (bind.state === "controlling") {
+      ui.notifications.info(game.i18n.format("STARWROUGHT.Bind.alreadyControlling", { name: this.name }));
+      return bind;
+    }
+    const partner = resolveActorByUuid(bind.partnerUuid);
+    if (!partner) {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.notFormed"));
+      return null;
+    }
+    if (!(zone in SW.ZONES)) {
+      zone = await promptForZone({
+        title: game.i18n.localize("STARWROUGHT.Bind.takeControl"),
+        text: game.i18n.format("STARWROUGHT.Bind.exposePrompt", { partner: partner.name })
+      });
+      if (!zone) return null;
+    }
+    return this.formBind(partner, { state: "controlling", mine: bind.mine, theirs: bind.theirs, id: bind.id, zone });
   }
 
   /**
@@ -120,11 +170,30 @@ export const BindMixin = Base => class extends Base {
    * `flags.starwrought.bind = {partnerUuid, mine, theirs, state}` is the record for anything that
    * reads effects rather than actors. The update's `swBind` option tells the pair-keeper in
    * module/documents/bind.mjs whether the writer handled both sides.
-   * @param {{state: string, partnerUuid: string, mine: string, theirs: string}} bind
+   * The Control's Zone (0.19.0) follows the record on the Controlled side: a write that makes
+   * this actor Controlled with a Zone opens it (and says so, unless it is already open); a write
+   * that ends that Control, or moves it to another Zone, closes the old one, unless a Posture
+   * holds it open ("Exposure caused specifically by Control ends when that Control ends"). The
+   * Controlling side's write touches no Zone: the body is the partner's, and the partner's own
+   * write, on whichever client owns it, does this.
+   * @param {{state: string, partnerUuid: string, mine: string, theirs: string, id?: string, zone?: string}} bind
    * @param {{paired?: boolean, previousPartner?: string}} [mark]
    */
   async #writeBind(bind, { paired = true, previousPartner = "" } = {}) {
+    const before = this.system.bind;
+    const heldOpen = ((before?.state === "controlled") && (before.zone in SW.ZONES)) ? before.zone : "";
+    const opens = ((bind.state === "controlled") && (bind.zone in SW.ZONES)) ? bind.zone : "";
+
     await this.update({ "system.bind": bind }, { swBind: { paired, previousPartner } });
+
+    if (heldOpen && (heldOpen !== opens)) {
+      const z = this.system.zones?.[heldOpen];
+      if (z?.exposed && !z.postureExposed) await this.setExposed(heldOpen, false, { announced: true, say: true });
+    }
+    if (opens && !this.system.zones?.[opens]?.exposed) {
+      await this.setExposed(opens, true, { announced: true });
+      await this.sayExposed(opens, true, { by: "control" });
+    }
 
     const partner = bind.state ? resolveActorByUuid(bind.partnerUuid) : null;
     const weapon = game.i18n.localize("STARWROUGHT.Bind.weapon");
@@ -148,7 +217,7 @@ export const BindMixin = Base => class extends Base {
           + `<p>${game.i18n.localize(`${condition.name}Hint`)}</p>`
           + `<p>${game.i18n.format("STARWROUGHT.Rules.where", { page: condition.rulesPage })}</p>`,
         origin: partner?.uuid ?? bind.partnerUuid ?? "",
-        flags: { [SW.SYSTEM_ID]: { bind: { partnerUuid: bind.partnerUuid, mine: bind.mine, theirs: bind.theirs, state } } }
+        flags: { [SW.SYSTEM_ID]: { bind: { partnerUuid: bind.partnerUuid, mine: bind.mine, theirs: bind.theirs, state, zone: bind.zone ?? "" } } }
       });
     }
   }

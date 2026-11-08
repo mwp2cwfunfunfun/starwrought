@@ -77,7 +77,8 @@ export function pickUpMirror(actor, { paired = true, previousPartner = "" } = {}
     }
     const want = MIRROR[bind.state];
     if ((theirs?.state === want) && (theirs.partnerUuid === actor.uuid)) return;
-    partner.formBind(actor, { state: want, mine: bind.theirs, theirs: bind.mine, id: bind.id, announce: false, pair: false })
+    // The Control's Zone (0.19.0) rides along, so the Controlled side's write opens it here.
+    partner.formBind(actor, { state: want, mine: bind.theirs, theirs: bind.mine, id: bind.id, zone: bind.zone ?? "", announce: false, pair: false })
       .catch(err => console.error(`STARWROUGHT | ${partner.name}: the Bind's other side could not be written`, err));
     return;
   }

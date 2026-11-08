@@ -1,0 +1,45 @@
+{{!-- THE GLANCE (0.19.0): what anyone who can see the token could see of it. Context: glanceData()
+      in module/canvas/glance.mjs; `full` (the owner or the GM) adds Protection and Vigor. Rendered
+      beside a hovered token and as a LIMITED user's whole sheet (glance-sheet.hbs). --}}
+<div class="sw-glance-body">
+  <div class="sw-glance-head">
+    <img src="{{img}}" alt="">
+    <strong>{{name}}</strong>
+    {{#if vigor}}<span class="sw-glance-vigor" data-tooltip="STARWROUGHT.Field.vigor">{{vigor.value}}/{{vigor.max}}</span>{{/if}}
+  </div>
+
+  <div class="sw-glance-section">
+    <span class="sw-glance-label">{{localize "STARWROUGHT.Glance.held"}}</span>
+    {{#each held as |thing|}}
+    <span class="sw-item-tag {{#if thing.raised}}sw-good-tag{{/if}}">{{thing.name}}{{#if thing.raised}} · {{localize "STARWROUGHT.Action.raised"}}{{/if}}</span>
+    {{else}}
+    <span class="sw-glance-none">{{localize "STARWROUGHT.Glance.nothingHeld"}}</span>
+    {{/each}}
+  </div>
+
+  <table class="sw-glance-zones">
+    <tbody>
+    {{#each zones as |z|}}
+    <tr class="{{#if z.exposed}}sw-glance-exposed{{/if}} {{#if z.wounds}}sw-glance-wounded{{/if}}">
+      <th>{{z.label}}</th>
+      <td>
+        {{#if z.piece}}{{z.piece}}{{else}}<span class="sw-glance-none">{{localize "STARWROUGHT.Glance.bare"}}</span>{{/if}}
+        {{#if z.protection}}<span class="sw-glance-prot" data-tooltip="STARWROUGHT.Field.protection">{{z.protection}}</span>{{/if}}
+      </td>
+      <td class="sw-glance-marks">
+        {{#if z.exposed}}<span class="sw-glance-mark sw-glance-mark-exposed">{{localize "STARWROUGHT.Condition.exposed"}}</span>{{/if}}
+        {{#if z.wounds}}<span class="sw-glance-mark">{{z.woundsLabel}}</span>{{/if}}
+      </td>
+    </tr>
+    {{/each}}
+    </tbody>
+  </table>
+
+  {{#if conditions.length}}
+  <div class="sw-glance-section">
+    {{#each conditions as |c|}}
+    <span class="sw-item-tag sw-glance-condition">{{#if c.img}}<img src="{{c.img}}" alt="">{{/if}}{{c.label}}{{#if c.value}} {{c.value}}{{/if}}</span>
+    {{/each}}
+  </div>
+  {{/if}}
+</div>

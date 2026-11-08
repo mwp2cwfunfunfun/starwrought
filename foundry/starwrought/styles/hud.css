@@ -13,7 +13,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-hud: "0.18.1"; }
+:root { --sw-css-version-hud: "0.19.0"; }
 
 /* The combat tracker: actions left per combatant, the pass streak, and the Pass control. */
 /* The actions readout (0.5.3): a number you can read from across the table, the round's count
@@ -32,6 +32,10 @@
 }
 #combat .sw-tracker-actions-of { font-size: 0.8rem; font-weight: 400; opacity: 0.75; margin-left: 0.05rem; }
 #combat .sw-tracker-actions.sw-none .sw-tracker-actions-left { color: #e08a84; }
+/* A fighter passed over by Next Turn (0.19.0): no action left and nothing reserved. The row dims;
+   the readout's tooltip says why. Core's defeated styling is its own. */
+#combat li.combatant.sw-skipped .token-name h4,
+#combat li.combatant.sw-skipped .token-image { opacity: 0.5; }
 #combat .sw-tracker-pips { display: inline-flex; gap: 3px; align-items: center; }
 #combat .sw-tracker-pip {
   display: inline-block;
@@ -86,6 +90,15 @@ li.combatant.sw-in-crosshairs {
   box-shadow: inset 3px 0 0 #b4453f;
   background: linear-gradient(90deg, rgba(180, 69, 63, 0.22), transparent 65%);
 }
+/* The zoom counter-scale (0.19.0): core scales the whole HUD layer with the canvas zoom, so the
+   token's controls shrink as the map zooms out. module/apps/token-hud.mjs writes --sw-hud-scale
+   (1 / zoom, never below 1, capped at 4) on #token-hud at render and on every pan, and the two
+   columns grow back by it, outward from the token, so they keep their size at 100% zoom. The middle
+   column (the bars and elevation) scales about its own centre, so it stays on the token. */
+#token-hud { --sw-hud-scale: 1; }
+#token-hud .col.left { transform: scale(var(--sw-hud-scale)); transform-origin: right center; }
+#token-hud .col.right { transform: scale(var(--sw-hud-scale)); transform-origin: left center; }
+#token-hud .col.middle { transform: scale(var(--sw-hud-scale)); transform-origin: center center; }
 /* The action counter on the Token HUD (0.10.1): the free count over the round's count and the
    sheet's three-state pips beneath it, a readout and not a button, in an encounter only. */
 #token-hud .sw-hud-actions {

@@ -276,7 +276,7 @@ function freeTalentOf(row, rules, source) {
 /* -------------------------------------------- */
 
 /** What the Automation cells added up to, for the summary line: rules, documents carrying any, kinds used. */
-const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map() };
+const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), unread: 0, unreadDocuments: 0 };
 
 /**
  * An Item's `automation` and `rules` from the cell the converter copied through (0.9.0; rulings
@@ -316,10 +316,19 @@ function automationOf(text, context, preparsed) {
     }
     rules = parsed.rules;
   }
-  if (rules.length) {
-    automationTally.rules += rules.length;
+  // An error entry (`{ error, line, text }`, a line parse_rules --lenient could not read, 2026-11-07)
+  // travels onto the document as the client stores a GM's unparsed line: red on the sheet, skipped
+  // in play. It is counted apart and is no rule.
+  const unread = rules.filter(r => r?.error);
+  if (unread.length) {
+    automationTally.unread += unread.length;
+    automationTally.unreadDocuments += 1;
+  }
+  const parsedRules = rules.filter(r => !r?.error);
+  if (parsedRules.length) {
+    automationTally.rules += parsedRules.length;
     automationTally.documents += 1;
-    for (const rule of rules) {
+    for (const rule of parsedRules) {
       automationTally.kinds.add(rule.kind);
       // `IF(Trait=<Trait>)` (0.14.0): remembered, and checked at the end against every trait a
       // shipping weapon, action or Talent carries; a trait nothing carries is a WARNING, not a
@@ -1765,7 +1774,8 @@ const kinds = knownKinds();
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 if (automationTally.rules) {
   console.log(`  automation: ${plural(automationTally.rules, "rule")} on ${plural(automationTally.documents, "document")} `
-    + `(${plural(automationTally.kinds.size, "kind")} in use)`);
+    + `(${plural(automationTally.kinds.size, "kind")} in use)`
+    + (automationTally.unread ? `; ${plural(automationTally.unread, "line")} on ${plural(automationTally.unreadDocuments, "document")} stored as errors (red on the sheet, skipped in play)` : ""));
 } else if (!kinds.length) {
   console.log("  automation: no rules (no rule kinds are defined yet)");
 } else {

@@ -207,13 +207,37 @@ export function meleeAnswers(maneuver) {
   return !!maneuver && (maneuver.source !== "spell") && !maneuver.ranged;
 }
 
-/** An adversary's Attack Threshold: the attack row's own number (brief, "Thresholds"). */
+/**
+ * An adversary's Attack Threshold: the attack row's own number (brief, "Thresholds"), less the
+ * Controlled penalty (0.19.0; PHB v4.24, The Bind: "Attacks with the Controlled implement take a
+ * −2 Situation penalty") while a foe Controls the implement the row attacks with: the row whose
+ * name is the Bind's `mine`, or the adversary's only row when the names do not match. A character's
+ * Strike takes the same penalty as a modifier (documents/actor/attack.mjs).
+ */
 export function attackThreshold(attacker, maneuver) {
   const item = maneuver?.attackId ? attacker.items.get(maneuver.attackId) : null;
-  const row = maneuver?.attackId ? attacker.system.attacks?.find(a => a.id === maneuver.attackId) : null;
+  const rows = attacker.system.attacks ?? [];
+  const row = maneuver?.attackId ? rows.find(a => a.id === maneuver.attackId) : null;
   const value = item?.system?.attack?.threshold ?? row?.threshold ?? row?.thresholds?.[0];
   const n = Number(value);
-  return Number.isFinite(n) ? n : 10;
+  const base = Number.isFinite(n) ? n : 10;
+  return base + (controlledPenaltyFor(attacker, item?.name ?? row?.name ?? maneuver?.weaponName, rows.length) ? SW.CONTROLLED_PENALTY : 0);
+}
+
+/**
+ * Does the Controlled penalty reach this attack of this attacker? Yes while the attacker's Bind
+ * says Controlled and the attack is made with the Bound implement: the row named as the Bind's
+ * `mine`, or, when no row carries that name, the attacker's one and only row.
+ * @param {Actor} attacker
+ * @param {string} attackName
+ * @param {number} rowCount
+ * @returns {boolean}
+ */
+export function controlledPenaltyFor(attacker, attackName, rowCount = 0) {
+  const bind = attacker?.system?.bind;
+  if (bind?.state !== "controlled") return false;
+  if (bind.mine && attackName && SW.sameName(bind.mine, attackName)) return true;
+  return !bind.mine || (rowCount <= 1);
 }
 
 /**

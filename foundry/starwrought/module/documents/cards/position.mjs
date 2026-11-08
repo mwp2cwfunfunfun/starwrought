@@ -10,6 +10,7 @@
 import * as SW from "../../config.mjs";
 import { SwCheck } from "../../dice/check.mjs";
 import { resolveActor, resolveTokenDoc, ownedActor, zoneFrom, resolveTargets, SOCKET, replyTo } from "./shared.mjs";
+import { promptForZone } from "../../apps/zone-picker.mjs";
 
 /**
  * Expose a Zone on an actor from a card: the attacker after a Miss or a Weighted Graze (the
@@ -40,15 +41,8 @@ export async function exposeFromCard(message, flags, button) {
  * pressed afterwards can close exactly that Zone (ruling 172).
  */
 async function exposeAndSay(actor, zone, message = null) {
-  await actor.setExposed(zone, true, { announced: true });
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<div class="starwrought action-card sw-exposed-card"><h3><a class="sw-rules-link" data-sw-action="rulesPage" data-page="Exposed" data-tooltip="STARWROUGHT.Rules.openExposed"><i class="fa-solid fa-bullseye"></i> ${
-      game.i18n.localize("STARWROUGHT.Condition.exposed")}</a></h3>
-      <p>${game.i18n.format("STARWROUGHT.Position.exposedText", {
-        name: actor.name, zone: game.i18n.localize(SW.ZONES[zone].label)
-      })}</p></div>`
-  });
+  // The card is the actor's own since 0.19.0 (SwActor#sayExposed), so the Bind's writes say it too.
+  await actor.setExposed(zone, true, { announced: true, say: true });
   await recordExposed(message, actor, zone);
 }
 
@@ -108,6 +102,12 @@ async function relayExpose(message, { actor, chooser, zone }) {
  * Form a Bind, or take Control of the attacking weapon. The defender is the one who Guarded, so
  * the defender's owner clicks; the attacker's side is mirrored when this client owns it too.
  * Taking Control also opens a Zone of the Controller's choice on the partner, while it lasts.
+ * Since 0.19.0 the Zone is asked first and recorded on the Bind (`system.bind.zone`), and the
+ * Controlled side's own write opens it, on this client when it owns the partner and else on the
+ * partner's owner's or the GM's client as the mirror reaches it (module/documents/bind.mjs), so
+ * the Zone closes with the Control and no relay is needed; the card still records the Zone, so a
+ * `prevent` Reaction pressed afterwards can close exactly that one (ruling 172). Through 0.18.1
+ * the Zone was opened once, over the Expose relay, and left open when the Bind ended.
  */
 export async function formBindFromCard(message, flags, button) {
   const defender = ownedActor(button, "controllerUuid");
@@ -118,35 +118,26 @@ export async function formBindFromCard(message, flags, button) {
   // tokens); a Bind is between two fighters, so there is nothing to form.
   if (partner === defender) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.samePartner"));
   const control = button.dataset.mode === "control";
+
+  // "Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts."
+  let zone = "";
+  if (control) {
+    zone = await promptForZone({
+      title: game.i18n.localize("STARWROUGHT.Bind.takeControl"),
+      text: game.i18n.format("STARWROUGHT.Bind.exposePrompt", { partner: partner.name })
+    });
+    if (!zone) return;
+  }
   const bind = await defender.formBind(partner, {
     state: control ? "controlling" : "neutral",
     mine: button.dataset.mine ?? "",
-    theirs: button.dataset.theirs ?? ""
+    theirs: button.dataset.theirs ?? "",
+    zone
   });
   // formBind returns the recorded side, or null when it could not form one; say so rather than
   // leaving the player to find out from the sheet (0.5.1, T4).
   if (!bind?.state) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.notFormed"));
-  if (!control) return;
-
-  // "Your partner has an Exposed Zone of your choice, and it stays Exposed while the Bind lasts."
-  // The partner is usually not this client's to write; the GM's client opens the Zone (0.5.3).
-  const options = Object.entries(SW.ZONES)
-    .map(([key, z]) => `<option value="${key}" ${key === SW.DEFAULT_ZONE ? "selected" : ""}>${game.i18n.localize(z.label)}</option>`)
-    .join("");
-  const zone = await foundry.applications.api.DialogV2.prompt({
-    window: { title: game.i18n.localize("STARWROUGHT.Bind.takeControl"), icon: "fa-solid fa-link" },
-    classes: ["starwrought"],
-    content: `<p>${game.i18n.format("STARWROUGHT.Bind.exposePrompt", { partner: partner.name })}</p>
-      <select name="zone" style="width: 100%">${options}</select>`,
-    ok: {
-      label: game.i18n.localize("STARWROUGHT.Condition.exposed"),
-      callback: (event, target) => target.form.elements.zone.value
-    },
-    rejectClose: false
-  });
-  if (!zone || !(zone in SW.ZONES)) return;
-  if (partner.isOwner) await exposeAndSay(partner, zone, message);
-  else await relayExpose(message, { actor: partner, chooser: defender, zone });
+  if (control) await recordExposed(message, partner, zone);
 }
 
 /** An Evade that Grazed gives 3 feet of ground, directly away from the attacker. */

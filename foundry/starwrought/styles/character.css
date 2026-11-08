@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.18.1"; }
+:root { --sw-css-version-character: "0.19.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -369,6 +369,53 @@
 .starwrought .sw-collapse-blank { display: inline-block; }
 .starwrought .sw-unopened-mark { font-style: italic; }
 .starwrought .sw-tab-toolbar .sw-inline-button.sw-active { border-color: var(--sw-gold); color: var(--sw-flare); }
+
+/* The filter box (0.19.0; Mike, playtest: "a search box on the Constellations tab ... that
+   filters the list of Constellations/Talents as you type"), first in the toolbar and pushed to the
+   left of its buttons. Rows and Talents the text does not match wear sw-hidden; a group with no
+   row left wears it too. */
+.starwrought .sw-tab-toolbar .sw-constellation-filter {
+  margin-right: auto;
+  flex: 0 1 16rem;
+  min-width: 8rem;
+  height: 1.7rem;
+  font-size: 0.78rem;
+}
+
+/* --------------------------------------------------------------------------
+   The glance (0.19.0): what anyone standing near could see. module/canvas/glance.mjs draws it
+   beside a hovered token (the hover card, fixed to the page so the zoom never shrinks it) and
+   both actor sheets show it as the whole sheet of a LIMITED user (glance-sheet.hbs).
+   -------------------------------------------------------------------------- */
+.sw-glance { position: fixed; z-index: 60; pointer-events: none; width: 270px; max-width: 42vw; display: none; }
+.sw-glance.sw-glance-shown { display: block; }
+.starwrought.sw-glance .sw-glance-body {
+  background: rgba(12, 9, 24, 0.94);
+  border: 1px solid var(--sw-edge);
+  border-radius: var(--sw-radius);
+  padding: 0.45rem 0.55rem 0.5rem;
+  color: var(--sw-ink);
+  font-size: 0.78rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+.starwrought .sw-glance-head { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
+.starwrought .sw-glance-head img { width: 26px; height: 26px; border: none; border-radius: 4px; object-fit: cover; }
+.starwrought .sw-glance-vigor { margin-left: auto; color: var(--sw-gold); font-weight: 600; }
+.starwrought .sw-glance-label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sw-ink-dim); margin-right: 0.2rem; }
+.starwrought .sw-glance-section { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; margin: 0.2rem 0; }
+.starwrought .sw-glance-none { color: var(--sw-ink-dim); font-style: italic; }
+.starwrought .sw-glance-zones { width: 100%; border-collapse: collapse; margin-top: 0.25rem; }
+.starwrought .sw-glance-zones th { text-align: left; font-weight: 600; padding: 0.1rem 0.3rem 0.1rem 0; width: 3.4rem; color: var(--sw-ink-dim); }
+.starwrought .sw-glance-zones td { padding: 0.1rem 0.2rem; }
+.starwrought .sw-glance-zones tr.sw-glance-exposed th { color: var(--sw-gold); }
+.starwrought .sw-glance-zones tr.sw-glance-wounded th { color: #e08a84; }
+.starwrought .sw-glance-marks { text-align: right; white-space: nowrap; }
+.starwrought .sw-glance-mark { font-size: 0.62rem; border: 1px solid #7a3b3b; color: #e08a84; border-radius: 3px; padding: 0 0.25rem; margin-left: 0.15rem; }
+.starwrought .sw-glance-mark.sw-glance-mark-exposed { border-color: var(--sw-gold-dim); color: var(--sw-gold); }
+.starwrought .sw-glance-prot { font-size: 0.66rem; color: var(--sw-ink-dim); margin-left: 0.2rem; }
+.starwrought .sw-glance-condition img { width: 12px; height: 12px; border: none; vertical-align: -2px; margin-right: 0.2rem; filter: invert(0.85); }
+.starwrought .sw-glance-sheet { padding: 0.6rem; }
+.starwrought .sw-glance-sheet .sw-glance-body { font-size: 0.85rem; }
 
 .starwrought .sw-talent-list { list-style: none; margin: 0.25rem 0 0; padding: 0 0 0 1.4rem; }
 .starwrought .sw-talent {

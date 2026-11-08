@@ -41,7 +41,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
+import { parseAutomation, ruleEntries } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { plainName, costGlyphs, registerTerrainKinds } from "../foundry/starwrought/module/config.mjs";
 import { buildResolver } from "./lib/rule_targets.mjs";
@@ -94,7 +94,21 @@ try {
 
 const errors = [];
 const warnings = [];
-const tally = { rules: 0, cells: 0, kinds: new Set(), warned: 0, roots: 0, markers: 0 };
+const tally = { rules: 0, cells: 0, kinds: new Set(), warned: 0, roots: 0, markers: 0, unread: 0, unreadCells: 0 };
+
+/**
+ * `--lenient` (2026-11-07; the content loop passes it): a cell line the grammar cannot read does
+ * NOT stop the step. Mike, with new sheets half-authored ("there are some duplicates and other
+ * missing items in terms of the spreadsheets, but let's make a new build anyway"): a `[Medicine
+ * trained]` on a Background before the Medicine sheet exists, a `[MANEUVER Rally]` before Rally's
+ * row, a note-to-self typed in a cell. Each such line is stored on its carrier as the client
+ * stores a GM's unparsed textarea line, `{ error, line, text }` (ruleEntries), which the Item
+ * sheet shows in red and the engine skips (ruling 118's shape, the build's refusal lifted), and
+ * every one is printed under an AUTOMATION ERRORS banner so the list stays in front of the author.
+ * The full pipeline (a release) still fails on the first such line, as it always has.
+ */
+const lenient = process.argv.includes("--lenient");
+const unread = [];
 
 /* -------------------------------------------- */
 /*  The cells                                   */
@@ -118,9 +132,19 @@ function parseCell(carrier, context) {
   }
   const parsed = parseAutomation(text, { ...context, resolve });
   for (const e of parsed.errors) {
-    errors.push(`automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`);
+    (lenient ? unread : errors).push(`automation: ${context.source}, line ${e.line}: ${e.message} ("${e.text}")`);
   }
-  if (parsed.errors.length) return;
+  if (parsed.errors.length) {
+    if (!lenient) return;
+    // Lenient: the lines that read are rules, the rest error entries, all on the carrier.
+    tally.unread += parsed.errors.length;
+    tally.unreadCells += 1;
+    for (const rule of parsed.rules) tally.kinds.add(rule.kind);
+    tally.rules += parsed.rules.length;
+    tally.cells += 1;
+    carrier.rules = ruleEntries(parsed);
+    return;
+  }
   // The grammar's warnings, one per cell, the first such line quoted.
   if (parsed.warnings.length) {
     tally.warned += 1;
@@ -388,13 +412,24 @@ if (errors.length) {
   process.exit(1);
 }
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+if (unread.length) {
+  console.log("");
+  console.log("=".repeat(72));
+  console.log(`AUTOMATION ERRORS (a warning in content mode): ${plural(unread.length, "line")} on ${plural(tally.unreadCells, "cell")} did not read.`);
+  console.log("Each is stored on its Item as an error, shown in red on the Item sheet's Automation panel and skipped");
+  console.log("in play; the full pipeline (a release) stops on the first of them until the cell is mended.");
+  console.log("=".repeat(72));
+  for (const e of unread) console.log(`  - ${e}`);
+  console.log("");
+}
+
 save(trees);
 save(actions);
 save(backgrounds);
 save(roster);
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const kinds = tally.rules ? `${plural(tally.kinds.size, "kind")} in use` : `${plural(knownKinds().length, "kind")} defined, none in use`;
 console.log(`rules: ${plural(tally.rules, "rule")} on ${plural(tally.cells, "cell")} (${kinds}), `
-  + `${plural(tally.warned, "cell")} warned; chassis: facts from ${plural(tally.roots, "root")}; `
-  + `markers: ${tally.markers} expanded`);
+  + `${plural(tally.warned, "cell")} warned${unread.length ? `, ${plural(unread.length, "line")} unread on ${plural(tally.unreadCells, "cell")}` : ""}; `
+  + `chassis: facts from ${plural(tally.roots, "root")}; markers: ${tally.markers} expanded`);

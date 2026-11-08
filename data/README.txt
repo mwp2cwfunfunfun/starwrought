@@ -141,21 +141,40 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
         trailing period inside a block is tolerated. The converter copies the cell through as text
         and parses nothing; parse_rules.mjs parses it (below), and a line it does not know is an
-        ERROR that stops the build (and so sync_content.cmd) naming the Constellation, the Talent
-        and the line, before the sources are written. The same line typed into a world Item's
-        textarea in Foundry saves and is marked on the Item sheet rather than refused. The action
+        ERROR that stops the release build (node assets/build_all.mjs) naming the Constellation,
+        the Talent and the line, before the sources are written. The content loop
+        (sync_content.cmd, build_all --content) is LENIENT since 2026-11-07: the same line is
+        listed under an AUTOMATION ERRORS banner and stored on its Item as an error, red on the
+        Item sheet and skipped in play, so a half-authored sheet still builds. The same line typed
+        into a world Item's textarea in Foundry saves and is marked the same way. The action
         sheets take the same column. A bare effect line ("IMMUNE: prone; LIMIT: encounter" with no
         [EFFECT ...]) is refused in a cell since 0.18.0 (it is the sheet's custom effects field's
         form alone); the 0.13.0 operator form ("bonus: +1, Condition, Aid, IF(Origin=Trained)") and
         the 0.10.0 prose form are refused, the message naming the document's map to the new shape.
         An AURA block may carry its effect after a semicolon (0.18.0), the ring as the effect's FOR:
               [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
+        RED CELLS (2026-11-08; Mike: "highlight those cells in red"): python assets/highlight_automation.py
+        paints every Automation cell the grammar cannot read, and every Effect cell whose
+        @Maneuver[Name] names no row, solid red (FF9999) with a cell comment giving the grammar's
+        message for each bad line and WHY: mis-typed (with the nearest name when one is close), no
+        kind yet (the grammar has no word for what the line asks), or not yet readable (the cell is
+        right but the sheet it names is not in its _Tree Index, or the workbook it names is one the
+        converter does not read). It writes automation-cells-report.md in the project root with the
+        same list, the kinds the cells ask for, and the data-shape notes. Fix the cell and run it
+        again: its own red and comment go, and a yellow of yours underneath is put back. It reads
+        the workbooks directly through assets/lib/parse_cells.mjs (the system's parser and the
+        build's resolver), so it works while the converter is refusing to write; --dry-run reports
+        without writing; a workbook open in Excel is reported, not written. Not a pipeline step.
         THE ONE PARSE (0.16.0): node assets/parse_rules.mjs runs right after the converter, in
         every pipeline mode, and parses every Automation cell once (tree sheets, action sheets,
         the Backgrounds sheet) with the system's grammar, writing the parsed `rules` beside
         `automation` in trees.json, actions.json and backgrounds.json for every consumer; a line
-        it does not know is the ERROR described above, raised there, and a line on its way out
-        (none today; the step prints the grammar's warnings) is a WARNING naming the cell. The
+        it does not know is the ERROR described above, raised there (an error entry on the Item
+        under --lenient), and a line the grammar warns about is a WARNING naming the cell. The
+        converter, likewise, lets a build through a restructure in progress (2026-11-07): the same
+        Maneuver on two sheets of one workbook is a WARNING and one row stands (an enabled row
+        over a disabled one, else the earlier sheet), and a tree indexed in two workbooks is a
+        WARNING with the first workbook's standing; an action in two WORKBOOKS stays an ERROR. The
         same step reads the Root Talent's feature lines
         ([VIGOR 8], [SIZE Medium], [SPEED 6], [SENSES Low-light vision], [TRAIT Human],
         [LANGUAGE Common, Serrovine]; a Calling's [VIGOR opening 12]) onto the roster's ancestry,

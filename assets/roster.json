@@ -13,11 +13,11 @@
    "bloodlines": [
     [
      "Torchbearer Human",
-     "You gain the Rally Aura: The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that Defense check."
+     "You belong to the Torchbearer Human bloodline.<br><br>You gain the <b>Rally Aura: </b>The first time each round an ally within 15 feet who can see you defends against an Attack with the Fear trait, they gain a +1 Situation bonus to that check."
     ],
     [
      "Versatile Human",
-     "You gain 1 Opening Talent Point."
+     "You belong to the Versatile Human bloodline.<br><br>You gain 1 Opening Talent Point."
     ]
    ],
    "traits": [
@@ -49,7 +49,7 @@
      "text": "Humans are middling in most measures and wildly varied in all of them. They stand roughly five to six and a half feet tall, in every build from wiry to broad, with skin, hair, and eyes spanning every shade their homelands offer. What marks a human crowd is not a shared look but a shared motion: quick eyes, busy hands, and clothing that borrows freely from every neighbor they have ever traded with."
     },
     {
-     "label": "Physical Description (life cycle)",
+     "label": "Physical Description (lifecycle)",
      "text": "Humans reach physical adulthood around 15 years and are usually granted a place at the adults' table by 18, though every town draws that line differently. A human who avoids war, plague, and their own ambition can expect sixty to ninety years, and a rare few see a century. Their short season is the quiet engine of their character; humans plant orchards whose shade they will never sit in, and they know it."
     },
     {
@@ -70,8 +70,254 @@
     },
     {
      "label": "Names",
-     "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><br>Common given names Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><br>Common surnames Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver.<br><br>Example names Alden Cooper, Cassia Fletcher, Elsbeth Weaver, Garron Mason, Lysa Carter, Tavin Roper."
+     "text": "Human given names vary widely between families and homelands. Many human surnames preserve an ancestor’s occupation, carrying the memory of a workshop, livelihood, or useful skill through generations. A family named Cooper might have stopped making barrels centuries ago, yet still treasure the name.<br><b>• Common given names </b>Alden, Bram, Cassia, Doran, Elsbeth, Garron, Hale, Imre, Joss, Lysa, Mara, Oren, Sera, Tavin, Wren, Ysolde.<br><b>• Common surnames</b> Baker, Carter, Cooper, Fletcher, Mason, Miller, Roper, Tanner, Turner, Weaver."
     }
+   ]
+  },
+  {
+   "name": "Dwarf",
+   "enabled": true,
+   "vigor": 9,
+   "hp": 9,
+   "size": "Medium",
+   "speed": "5 ft",
+   "senses": "Low-light vision",
+   "tree": "Dwarf",
+   "blurb": "Dwarves are enduring and powerfully built, with long memories for the things that hold a life together and the faults that can bring it down.",
+   "bloodlines": [
+    [
+     "Forge-Blood Dwarf",
+     "You belong to the Forge-Blood Dwarf Bloodline.<br><br><b>Forge Resistance.</b> You gain Resistance 2 to fire damage. It becomes Resistance 4 at Expert Origin rank, 6 at Master, and 8 at Legendary. This reduces damage only; it does not make smoke safe to breathe or automatically prevent other effects of heat."
+    ],
+    [
+     "Understone Dwarf",
+     "You belong to the Understone Dwarf Bloodline.<br><br><b>Darkvision.</b> You can see in nonmagical darkness as though it were bright light, but only in shades of gray. This does not let you see through Cover, fog, smoke, an opaque barrier, or magical darkness."
+    ]
+   ],
+   "traits": [
+    "Dwarf"
+   ],
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Dwarves are enduring and powerfully built, with long memories for the things that hold a life together and the faults that can bring it down."
+    },
+    {
+     "label": "About",
+     "text": "A dwarf is difficult to hurry when they think the next step deserves another look. They can feel the strain in a carried load, set their weight before a hard pull, and continue a task long after its novelty has worn away. Outsiders often call this stubbornness. Sometimes the dwarf agrees.<br><br>Long life and a durable body make endurance familiar, but they do not make every dwarf patient or every attachment wise. Some stay with a failing work because leaving would feel like admitting it was never worth the effort. Others become adventurers when they finally distinguish what is theirs to carry from what an older generation placed on their shoulders. A dwarf’s departure can be as considered and determined as another dwarf’s decision to remain."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character who can hold their ground, carry a difficult responsibility, and decide which commitments deserve that strength, play a dwarf."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Inspect the support before trusting the impressive surface.<br>• Keep an old tool or ordinary object because of who used it before you.<br>• Show affection by doing the work someone else has been avoiding."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Trust you to stay when a task turns unpleasant.<br>• Assume your certainty comes from experience rather than temperament.<br>• Wonder how long you intend to remember one careless remark."
+    },
+    {
+     "label": "Physical Description (at a glance)",
+     "text": "Dwarves generally stand four to five feet tall, with broad torsos, sturdy joints, and a low center of balance. They are Medium despite their height. Hair, skin, and eye colors vary by lineage; thick hair and strong facial growth are common but differ between individuals and families. A dwarf’s clothing, beard styling, jewelry, and visible marks of belonging reflect their Culture and choices rather than an ancestry-wide uniform."
+    },
+    {
+     "label": "Physical Description (lifecycle)",
+     "text": "Dwarves reach physical adulthood around twenty years and often live two to three centuries. They tend to retain strength well into later life, though age still brings injury, fatigue, and loss. Different cultures place different weight on years, experience, or the acceptance of a public responsibility when recognizing adulthood."
+    },
+    {
+     "label": "Society",
+     "text": "Dwarves inhabit mountain holds, river towns, cities, farms, and settlements alongside other peoples. Their work is as varied as the places they inhabit. In some communities with many dwarven families, a household is understood as a work carried across generations: its members might maintain a bridge, keep a garden, preserve a library, or support a trade. The obligation matters more than the material it involves.<br><br>Such arrangements can make reliable institutions and burdensome expectations. A family may expect a young dwarf to continue a work they never chose, or refuse to admit that a respected practice no longer serves anyone. Other communities deliberately pass important duties beyond blood relations, considering the person who keeps a thing working more significant than the name of its first maker."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Dwarven traditions often give spiritual weight to maintenance, honest workmanship, and obligations that can survive a bad year. A repaired roof may be a more convincing offering than an expensive ceremony. That outlook can serve many faiths, including those that have no connection to stone or metal. A dwarf may honor an ancestor by continuing their work, improving it, or finally correcting the harm it caused."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Make the thing sound before calling it finished.<br>• Carry the share you have agreed to carry.<br>• Teach someone how to maintain what you leave behind."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Conceal a fault that will endanger another person.<br>• Claim the credit for work another hand completed.<br>• Demand endurance from others to spare yourself an honest change."
+    },
+    {
+     "label": "Names",
+     "text": "Many dwarven family names combine a material or descriptive word with part of a lasting structure: a span, vault, arch, pier, or lintel. The name may commemorate an ancestral home or public work rather than a current occupation. Given names are often short, with firm consonants.<br><b>• Common given names </b>Bera, Dagna, Dorik, Helda, Korrin, Marda, Rurik, Torren.<br><b>• Common family names</b> Broadarch, Deepvault, Highlintel, Ironspan, Redkeystone, Stonepier."
+    }
+   ]
+  },
+  {
+   "name": "Elf",
+   "enabled": true,
+   "vigor": 7,
+   "hp": 7,
+   "size": "Medium",
+   "speed": "7 ft",
+   "senses": "Low-light vision",
+   "tree": "Elf",
+   "blurb": "Elves are long-lived and keen-sensed, finding beauty in careful attention and difficulty in knowing when a thing is truly finished.",
+   "bloodlines": [
+    [
+     "Starlit Elf",
+     "You belong to the Starlit Elf Bloodline.<br><br><b>Starlit Composure. </b>Gain a +1 Condition bonus to Awareness and Guard checks vs. Beguilements."
+    ],
+    [
+     "Greenblood Elf",
+     "You belong to the Greenblood Elf Bloodline.<br><br><b>Woodland Passage.</b> Your Moves ignore Difficult Terrain caused by nonmagical undergrowth, roots, and low branches. This does not permit a Step into Difficult Terrain or ignore Greater Difficult Terrain, a solid barrier, or damage from a hazard."
+    ]
+   ],
+   "traits": [
+    "Elf"
+   ],
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Elves are long-lived and keen-sensed, finding beauty in careful attention and difficulty in knowing when a thing is truly finished."
+    },
+    {
+     "label": "About",
+     "text": "An elf may remember the sapling beneath a spreading oak, the face on a weathered statue, and the first small quarrel behind a feud that now has its own songs. That memory changes how the world feels. A road is also the wood it replaced. A stranger’s expression may recall someone who died a century ago. Few things arrive without an echo.<br><br>Yet elves are as capable of impatience as anyone. Some spend years refining a small work because its imperfections will not leave them alone; others flee an old home because every doorway holds a conversation they can still hear. Their long lives offer time to change, but also time to become very certain that change is a mistake. An elf who takes to the road may be seeking something new, or finally accepting that something old is over."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character whose long memory and careful senses make even familiar places feel layered with possibility, play an elf."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Notice how a place has changed before asking who now owns it.<br>• Return to an unfinished craft, friendship, or promise after years away.<br>• Become fiercely attached to a short-lived companion’s plans."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Mistake your deliberate attention for distraction or indifference.<br>• Ask you to remember a history you never personally witnessed.<br>• Wonder whether you are listening to them or to someone they remind you of."
+    },
+    {
+     "label": "Physical Description (at a glance)",
+     "text": "Elves usually stand five and a half to six and a half feet tall, with long limbs, fine ears, and a light frame. Their coloring varies widely between families; eyes often show distinct rings or flecks that become clearer in dim light. Their movements tend to make small adjustments early, keeping a loose surface or crowded passage from becoming an obvious obstacle. Clothing and ornament follow upbringing, occupation, and personal taste."
+    },
+    {
+     "label": "Physical Description (lifecycle)",
+     "text": "Elves reach physical adulthood at roughly twenty years. Many live three to five centuries, with rare elders surviving longer. Customs about adulthood vary by Culture, often marking the acceptance of responsibility or a first independent undertaking. Their memories remain fallible, and an old elf knows only the parts of history they actually lived or studied."
+    },
+    {
+     "label": "Society",
+     "text": "Elves live in cities, farm valleys, forest settlements, and communities shared with other ancestries. Their cultures govern their laws and loyalties. Where long-lived elven families gather, continuity often rests with people as much as with records: the same neighbor may witness several generations of a household’s agreements. This can preserve trust, but it can also preserve a grievance long after anyone else remembers its beginning.<br><br>Some elven households keep a place for returning members, expecting departures that would count as a lifetime elsewhere. Others deliberately move, rename themselves, or pass responsibility onward so the young are not forever waiting behind an elder. Among mixed communities, elves often learn the difficult habit of making decisions on someone else’s shorter timetable."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Elven beliefs are as varied as their cultures. Traditions with long elven histories often ask what deserves to continue and what should be allowed to end. A carefully maintained grove, a restored public square, and a song finally permitted to change may all express the same reverence. Some elves find comfort in cycles; others devote themselves to a particular life or work precisely because it will not return."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Give a person or a work your full attention.<br>• Preserve what others cannot afford to lose.<br>• Leave room for those who will follow you."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Treat a short life as a lesser one.<br>• Keep a promise only because you have forgotten why it mattered.<br>• Destroy an irreplaceable thing through simple impatience."
+    },
+    {
+     "label": "Names",
+     "text": "Many elven naming traditions pair a flowing given name with a family name recalling a seasonal or celestial change. In Common, these family names often become two-part compounds such as Firstfrost or Rainwake. The name may recall an ancestor’s arrival, a remembered omen, or the season when a household began.<br><b>• Common given names </b>Aelira, Calen, Elaris, Lethan, Meriel, Naeris, Orilan, Saelith.<br><b>• Common family names</b> Dawnbloom, Firstfrost, Leafturn, Nightfall, Rainwake, Sunwane."
+    }
+   ]
+  },
+  {
+   "name": "Gnome",
+   "enabled": true,
+   "vigor": 7,
+   "hp": 7,
+   "size": "Small",
+   "speed": "5 ft",
+   "senses": "—",
+   "tree": "Gnome",
+   "blurb": "Gnomes are perceptive and resilient, with a lasting sensitivity to the unusual and a capacity for attention that can make a small detail occupy an entire afternoon.",
+   "bloodlines": [
+    [
+     "Glimmerblood Gnome",
+     "You belong to the Glimmerblood Gnome Bloodline.<br><br>You gain the <b>Glimmer</b> Maneuver.<br><br>@Maneuver[Glimmer]"
+    ],
+    [
+     "Burrowkin Gnome",
+     "You belong to the Burrowkin Gnome Bloodline.<br><br><b>Darkvision. </b>You can see in nonmagical darkness as though it were bright light, but only in shades of gray. This does not let you see through Cover, fog, smoke, an opaque barrier, or magical darkness."
+    ]
+   ],
+   "traits": [
+    "Gnome"
+   ],
+   "lore": [
+    {
+     "label": "Summary",
+     "text": "Gnomes are perceptive and resilient, with a lasting sensitivity to the unusual and a capacity for attention that can make a small detail occupy an entire afternoon."
+    },
+    {
+     "label": "About",
+     "text": "A gnome may notice a slight change in a voice, a hairline seam in a well-made object, or a pattern that only appears when everyone else has stopped looking. Some turn that attention toward machines or magic; others toward gardens, people, music, law, or a question so narrow that its importance takes time to explain. An interest can outlast a working life and follow its owner through several changes of vocation.<br><br>Old stories connect gnomes with places where the world behaves a little differently: lights without a flame, paths that seem shorter on the return journey, voices heard through the wrong wall. Their inherited resistance to mental influence lends those stories weight, though it does not prove any one account. Gnomes can be practical about the uncanny and hopelessly speculative about an ordinary loose hinge. They become adventurers for the same varied reasons anyone does, with the added possibility that the unanswered question has finally moved somewhere dangerous."
+    },
+    {
+     "label": "If you want...",
+     "text": "If you want a character who notices the odd detail, follows an interest seriously, and can bring an unusual perspective to a familiar problem, play a gnome."
+    },
+    {
+     "label": "You Might...",
+     "text": "• Ask a precise question that changes what everyone thought they understood.<br>• Keep a small object because its construction or history still puzzles you.<br>• Become deeply competent in a subject that first caught your attention by accident."
+    },
+    {
+     "label": "Others Probably...",
+     "text": "• Confuse your intense interest with an inability to take anything seriously.<br>• Bring you a mystery when they meant to ask for a simple repair.<br>• Discover that you remember the small thing they said months ago."
+    },
+    {
+     "label": "Physical Description (at a glance)",
+     "text": "Gnomes generally stand two and a half to three and a half feet tall. They are Small, with expressive faces, fine ears, and alert eyes. Skin, hair, and eye colors vary widely; some lineages show unusual saturated tones or a faint luminous sheen. These features need not be bright or conspicuous. Dress, ornament, and the tools a gnome carries reflect their Culture and work rather than an ancestry-wide taste for tinkering."
+    },
+    {
+     "label": "Physical Description (lifecycle)",
+     "text": "Gnomes reach physical adulthood around twenty years and commonly live one hundred eighty to two hundred fifty years. Their interests may change many times over that span, or deepen around a single enduring pursuit. Age brings physical changes and personal losses. Some elders seek fresh pursuits; others find a settled pleasure in familiar work and the people who have come to share it."
+    },
+    {
+     "label": "Society",
+     "text": "Gnomes live in mixed cities, quiet rural settlements, river communities, and places of their own making. Their laws and institutions come from their cultures. In communities with many gnomish households, informal networks often gather around shared interests: a survey, a musical tradition, an old court case, or the careful observation of one hillside. Such groups can outlast the problem that brought them together.<br><br>Attention can be generous or possessive. One gnome may welcome anyone who can add a useful observation, while another guards a modest discovery as though it were a royal inheritance. Long-running projects sometimes become the easiest route into a community and the hardest thing to leave. Adventuring gnomes often carry a promise to bring back a specimen, an answer, or simply an account that someone at home will understand."
+    },
+    {
+     "label": "Beliefs",
+     "text": "Gnomish traditions often value careful observation, honest wonder, and the obligation to admit when a cherished explanation fails. Some faiths understand discovery as a form of devotion; others emphasize tending the mysteries that should not be disturbed. A gnome’s sensitivity to the uncanny can lead to reverence, skepticism, or a very practical desire to know which door should remain closed."
+    },
+    {
+     "label": "Popular Edicts",
+     "text": "• Look closely before deciding that a thing is ordinary.<br>• Share a discovery with someone who can make good use of it.<br>• Change your explanation when the evidence demands it."
+    },
+    {
+     "label": "Popular Anathemas",
+     "text": "• Make a person the unwilling subject of your curiosity.<br>• Hide a dangerous flaw to protect the elegance of an idea.<br>• Dismiss another person’s interest merely because it is small or unfamiliar."
+    },
+    {
+     "label": "Names",
+     "text": "Some gnomish families favor alliterative names. Their translated family names often pair a material with a small object or component, preserving the memory of an old discovery, project, or household curiosity. A pleasing sound can follow a family for generations after the original object or project has been forgotten.<br>• Common given names Bimri, Della, Fenna, Nori, Perri, Sella, Tessa, Venn.<br>• Common family names Brasshinge, Dewglass, Flintwheel, Needlespring, Pewterpin, Tinspire."
+    }
+   ]
+  },
+  {
+   "name": "Halfling",
+   "enabled": true,
+   "vigor": 8,
+   "hp": 8,
+   "size": "Small",
+   "speed": "6 ft",
+   "senses": "—",
+   "tree": "Halfling",
+   "blurb": "",
+   "bloodlines": [
+    [
+     "Braveheart Halfling",
+     "You belong to the Braveheart Halfling Bloodline.<br><br><b>Steady Heart. </b>Gain a +1 Condition bonus to Defenses against Attacks with the Fear trait."
+    ],
+    [
+     "Riverkin Halfling",
+     "You belong to the Riverkin Halfling Bloodline.<br><br><b>River Swimmer. </b>You gain a Swim Speed equal to half your land Speed, rounded down to a whole foot. A Swim ❶ moves you up to that Swim Speed without a check in ordinary water. Dangerous currents or a specific hazard can still require checks. You must still breathe air."
+    ]
+   ],
+   "traits": [
+    "Halfling"
    ]
   }
  ],
@@ -80,7 +326,7 @@
    "name": "Serrovane",
    "enabled": true,
    "attribute": "Presence",
-   "languages": "Common, Serrovine",
+   "languages": "Serrovine, Common",
    "blurb": "Serrovanians build trust through witnessed promises, careful records, and the conviction that a person should answer for their word.",
    "lore": [
     {
@@ -129,7 +375,7 @@
     },
     {
      "label": "Names",
-     "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><br>Common given names Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><br>Common surnames Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><br>Example names Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
+     "text": "Many Serrovanian surnames take the form of a short promise: something a household declares it will uphold. These names are inherited, and families take particular pride in living up to them. Someone named Speaktrue can expect a lie to be remembered with unusual clarity.<br><br>People commonly retain given names from their family or ancestry. The surnames below are familiar Common translations of Serrovine names.<br><b>• Common given names </b>Cerran, Dovra, Ilyra, Maroven, Orven, Selka, Tavren, Veyra.<br><b>• Common surnames</b> Bearwitness, Holdfaith, Keepword, Speaktrue, Standfast.<br><b>• Example names</b> Cerran Keepword, Dovra Standfast, Ilyra Speaktrue, Maroven Bearwitness, Selka Holdfaith."
     }
    ],
    "traits": [],
@@ -139,7 +385,7 @@
    "name": "Kestrel Reach",
    "enabled": true,
    "attribute": "Wits",
-   "languages": "Common, Reachspeak",
+   "languages": "Reachspeak, Common",
    "blurb": "Reachers thrive where people and possibilities meet, building livelihoods through sharp observation, useful introductions, and bargains worth making again.",
    "lore": [
     {
@@ -156,11 +402,11 @@
     },
     {
      "label": "You Might...",
-     "text": "Learn a few useful words whenever you encounter a new language.<br>Introduce yourself by naming someone the other person already knows.<br>Look for what each side needs before deciding that a dispute cannot be settled."
+     "text": "• Learn a few useful words whenever you encounter a new language.<br>• Introduce yourself by naming someone the other person already knows.<br>• Look for what each side needs before deciding that a dispute cannot be settled."
     },
     {
      "label": "Others Probably...",
-     "text": "Expect you to know a useful contact in almost any port.<br>Wonder whether your friendly questions are leading toward a proposal.<br>Rely on you to notice the custom, omission, or hidden cost they overlooked."
+     "text": "• Expect you to know a useful contact in almost any port.<br>• Wonder whether your friendly questions are leading toward a proposal.<br>• Rely on you to notice the custom, omission, or hidden cost they overlooked."
     },
     {
      "label": "Dress and Bearing",
@@ -180,15 +426,15 @@
     },
     {
      "label": "Popular Edicts",
-     "text": "Learn how to greet people on their own terms.<br>Give the other party a reason to trade with you again.<br>Share a useful introduction when it costs you little."
+     "text": "• Learn how to greet people on their own terms.<br>• Give the other party a reason to trade with you again.<br>• Share a useful introduction when it costs you little."
     },
     {
      "label": "Popular Anathemas",
-     "text": "Abuse the protection offered to a guest.<br>Conceal a danger that makes an agreement impossible to fulfill.<br>Betray a confidence entrusted to you as a broker."
+     "text": "• Abuse the protection offered to a guest.<br>• Conceal a danger that makes an agreement impossible to fulfill.<br>• Betray a confidence entrusted to you as a broker."
     },
     {
      "label": "Names",
-     "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><br>Common given names Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><br>Common surnames Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><br>Example names Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
+     "text": "Reach surnames often come from waterways and shoreline features. A name may remember the bank where a household built its first home, the channel its boats worked, or the landing from which its members scattered across the world. Families carry these names inland long after the river itself has become a distant memory.<br><br>Given names mingle freely across languages and ancestries. The surnames below are commonly used in their Common forms.<br><b>• Common given names </b>Avi, Dena, Jori, Kes, Lio, Mira, Neris, Orren, Savi, Tavi.<br><b>• Common surnames</b> Broadwater, Lowbank, Northbank, Reedbank, Siltwater, Stillwater, Three-Tides, Willowbend.<br><b>• Example names</b> Avi Northbank, Dena Willowbend, Jori Reedbank, Mira Three-Tides, Neris Stillwater, Tavi Lowbank."
     }
    ],
    "traits": [],

@@ -121,7 +121,10 @@ export async function prompt(cfg, parts) {
     thresholdWithheld: !!cfg.workflow,
     threshold: Number.isNumeric(cfg.threshold) ? cfg.threshold : "",
     rollModes: CONFIG.Dice.rollModes,
-    rollMode: cfg.rollMode
+    rollMode: cfg.rollMode,
+    // A caller that fixes the visibility (the Wind roll, public since 0.19.0) shows the select
+    // disabled; a disabled control is not submitted, so the answer falls back to the caller's mode.
+    lockRollMode: !!cfg.lockRollMode
   });
 
   const answer = await DialogV2.wait({

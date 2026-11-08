@@ -67,6 +67,13 @@ function onRenderTracker(app, element) {
     if (actions && combat.started && !li.querySelector(".sw-tracker-actions")) {
       li.querySelector(".token-name")?.append(actionsReadout(actor, actions));
     }
+    // A fighter with no action left and nothing reserved is passed over by Next Turn (0.19.0):
+    // its row is dimmed and its readout says so. The defeated keep core's own look.
+    if (combat.started && (combat.skipReason(combatant) === "spent")) {
+      li.classList.add("sw-skipped");
+      const line = li.querySelector(".sw-tracker-actions");
+      if (line) line.dataset.tooltip = `${localize("STARWROUGHT.Tracker.skipped")} ${line.dataset.tooltip ?? ""}`;
+    }
     // CHARACTER EFFECTS (0.16.0): the count of live effect lines, the lines in the tooltip, on
     // the actions line when there is one (beside the pips), else under the name.
     if (!li.querySelector(".sw-tracker-effects")) {

@@ -11,6 +11,8 @@ import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } fr
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
 import { auraRowsByItem, rangeFor } from "../canvas/auras.mjs";
+// THE GLANCE (0.19.0): the panel a LIMITED user's sheet shows alone.
+import { glanceData } from "../canvas/glance.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -35,6 +37,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       treatWound: SwNpcSheet.#onTreatWound,
       adjustWound: SwNpcSheet.#onAdjustWound,
       endBind: SwNpcSheet.#onEndBind,
+      takeControl: SwNpcSheet.#onTakeControl,
       rulesPage: SwNpcSheet.#onRulesPage,
       setActions: SwNpcSheet.#onSetActions,
       resetActions: SwNpcSheet.#onResetActions,
@@ -58,8 +61,18 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     statblock: { template: "systems/starwrought/templates/actor/npc-statblock.hbs", scrollable: [""] },
     abilities: { template: "systems/starwrought/templates/actor/npc-abilities.hbs", scrollable: [""] },
     effects: { template: "systems/starwrought/templates/actor/effects.hbs", scrollable: [""] },
-    biography: { template: "systems/starwrought/templates/actor/biography.hbs", scrollable: [""] }
+    biography: { template: "systems/starwrought/templates/actor/biography.hbs", scrollable: [""] },
+    // THE GLANCE (0.19.0): a LIMITED user's whole sheet; dropped from every other render.
+    glance: { template: "systems/starwrought/templates/actor/glance-sheet.hbs", scrollable: [""] }
   };
+
+  /** @inheritdoc A LIMITED user (0.19.0) sees the glance alone; everyone else never sees that part. */
+  _configureRenderParts(options) {
+    const parts = super._configureRenderParts(options);
+    if (this.document.limited && !game.user.isGM) return { glance: parts.glance };
+    delete parts.glance;
+    return parts;
+  }
 
   /** @inheritdoc */
   static TABS = {
@@ -156,6 +169,8 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _preparePartContext(partId, context) {
     context.partId = partId;
     if (context.tabs?.[partId]) context.tab = context.tabs[partId];
+    // THE GLANCE (0.19.0): what anyone standing near could see; the numbers for the owner and the GM.
+    if (partId === "glance") context.glance = glanceData(this.document, { full: this.document.isOwner || game.user.isGM });
     return context;
   }
 
@@ -237,6 +252,11 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.document.endBind();
   }
 
+  /** Take Control of the Bind by hand (0.19.0): the Zone picker, then the record and the Exposure. */
+  static async #onTakeControl() {
+    return this.document.takeControl();
+  }
+
   /** The bind line and a condition row open their Rules Reference page (0.5.1, T6). */
   static async #onRulesPage(event, target) {
     return openRulesPage(target.dataset.page);
@@ -301,8 +321,9 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return game.combat?.nextTurn();
   }
 
+  /** Finish waits for the next Opportunity (0.19.0); a GM's click from the sheet forces it. */
   static async #onFinishPrepared() {
-    return this.document.finishPrepared();
+    return this.document.finishPrepared({ force: game.user.isGM });
   }
 
   static async #onAbandonPrepared() {

@@ -543,7 +543,15 @@ Unconscious, Dying) and so Passes by necessity. A GM who clicks Next Turn for a 
 has not Passed for it, and any Maneuver paid at your own Opportunity resets the streak. A lone
 combatant's Pass is a whole circuit and ends the round; its Next Turn or End Opportunity after a
 Maneuver is simply its next Opportunity in the same round, so its six actions and any Prepared
-Maneuver survive. With no GM connected the streak is kept in memory by one elected client. Under
+Maneuver survive. With no GM connected the streak is kept in memory by one elected client.
+**A fighter with no action left and nothing reserved is passed over** (0.19.0, ruling 199; Mike:
+"an actor with 0 actions remaining should automatically be skipped"): Next Turn, End Opportunity
+and Pass walk past it, its tracker row dims with the reason in the readout's tooltip, the streak
+counts only the combatants who can still take an Opportunity, and when nobody can the round ends
+(PHB v4.24: "When nobody has any actions left ... the round ends"). A Preparing fighter keeps its
+Opportunity whatever its free count, since the book makes it Finish or Abandon there; a fighter at
+0 loses the chance to Drop Prone ⓿ or Release ⓿ on its own Opportunity, which the GM's Previous
+Turn gives back. Under
 each tracker row: the actions free to spend now as a large gold number over the round's count
 ("5/6", red at zero) with a pip per action in the sheet's three states, gold free, violet
 reserved, hollow spent (0.5.3 for the pips, which were one small circled glyph; 0.10.1 for the
@@ -553,12 +561,17 @@ legend carry the reserve.
 
 **Prepared Maneuvers.** A Maneuver of three or more actions is Prepared: one action now, the rest
 reserved, and you are Preparing (a token status) until your next Opportunity. The Committed Strike
-is the one the system runs end to end: a card with **Finish** and **Abandon** posts at once and
-again when your next Opportunity begins (publicly, since preparation is telegraphed by design).
-Finish spends the reserve and rolls the Strike, already paid; Abandon returns the reserve and the
-action spent is lost. Taking a Wound abandons it, so does going down, and a new preparation replaces
-an old one. You cannot Pass while Preparing; the Pass button says so and refuses. A preparation that
-never reaches its Opportunity expires with the round, with a card.
+is the one the system runs end to end: a card with **Abandon** posts at once, and a card with
+**Finish** and Abandon when your next Opportunity begins (publicly, since preparation is
+telegraphed by design). Finish belongs to that next Opportunity and nowhere earlier (0.19.0,
+ruling 200; Mike: "it should not let you Finish/Abandon it right away in the chat window"): the
+Combat marks the preparation ready as the Opportunity begins, the sheet's Finish is disabled until
+then with the reason as its tooltip, and an early Finish is refused with a notice; the GM's click
+on the sheet forces it. Abandon is the book's "at any time" and never waits. Finish spends the
+reserve and rolls the Strike, already paid; Abandon returns the reserve and the action spent is
+lost. Taking a Wound abandons it, so does going down, and a new preparation replaces an old one.
+You cannot Pass while Preparing; the Pass button says so and refuses. A preparation that never
+reaches its Opportunity expires with the round, with a card.
 
 **Reactions are paid from the same six.** There is no reaction slot. A ❶↺ Reaction Talent
 (Sidestep, Slip the Line, Parry, Deflecting Palms) is charged when the attack it answers resolves,
@@ -579,11 +592,25 @@ actions it took, and how many are left this round (and how many are reserved whi
 Raise a Shield, Recenter, a Prepared Maneuver and an Abandon carry the same line on the card they
 already post, so nothing is said twice. The GM's adversaries stay quiet unless they overspend.
 
-**Nothing is ever prevented.** If a Strike happens with no actions left it still happens, and a card
-goes to chat saying it went over the budget, by how much, and that none are left. Putting armor on mid-fight, which the
-handbook prices in minutes, gets the same treatment: the system says how long it would take and gets
-out of the way. World setting `trackActions` turns the automatic spending off entirely; the
-Intercept offer below is a rules prompt, not a spend, and does not depend on it.
+**An overspend is never prevented.** If a Strike happens with no actions left it still happens, and
+a card goes to chat saying it went over the budget, by how much, and that none are left. Putting
+armor on mid-fight, which the handbook prices in minutes, gets the same treatment: the system says
+how long it would take and gets out of the way. World setting `trackActions` turns the automatic
+spending off entirely; the Intercept offer below is a rules prompt, not a spend, and does not
+depend on it.
+
+**A Maneuver outside your Opportunity waits for the GM** (0.19.0, ruling 202; Mike: "any actions a
+player attempts to make when it is not their turn should not be able to be carried out unless the
+GM approves it in the chat window"). In an encounter, a player-controlled combatant that tries a
+Maneuver when the order is not on it (a Strike that is not Intercept or a Riposte, a Cast, a
+Talent or Maneuver used from its row, Recenter, Raise a Shield, the visor, drawing or stowing, a
+drag of its token on the combat's scene) does nothing, and one card goes to the table: who wants
+what, with **Approve** and **Refuse** for the GM alone. Approve grants one Maneuver this round; the
+player performs it again and it goes through, charged as it would be at the Opportunity. Refuse
+says so. A second attempt while a request is pending only gets the notice, and with no GM
+connected the card waits. Never gated: Reactions and Postures (the book's own out-of-turn
+Maneuvers), Defense rolls, rerolls, Finish, Abandon, Pass, the pips, and every Maneuver of the GM's
+own creatures.
 
 **Movement is charged from the drag**, on the client that made it, before the token lands, and only
 at your own Opportunity on the combat's scene (a GM repositioning a token, forced movement, undo and
@@ -1193,7 +1220,13 @@ A Bind is drawn between the two bound tokens for everyone who can see both (Mike
 gold rails with rungs for a neutral Bind, labelled at the midpoint with both implements ("Spear /
 Shortsword"); a Controlled Bind runs from the Controller with an arrowhead at the Controlled end and
 a small Control pill. It follows a drag clone, is dashed while either token is hidden (GM only),
-and goes when the Bind ends. The chain is drawn light and beneath the targeting arrows (0.5.2;
+and goes when the Bind ends. **The Control's Zone is part of the Bind** (0.19.0, ruling 203;
+`system.bind.zone`, the same on both sides): the Controlled fighter's own side of the record opens
+it, on whichever client writes that side, and closes it when the Control ends or moves, unless a
+Posture holds it open (PHB v4.24: "Exposure caused specifically by Control ends when that Control
+ends"); through 0.18.1 the card opened it once and End Bind left it open. An adversary's attack
+with the Controlled implement reads −2 on its Threshold, as a character's Strike has since 0.5.1.
+The chain is drawn light and beneath the targeting arrows (0.5.2;
 Mike: the line was overpowering the distance arrow): thin rails, dim rungs, a small label that
 stands off the midpoint far enough to clear the arrow's distance pill at any zoom, so a Bind and a
 target between the same two tokens read as an arrow with a chain under it, not the other way
@@ -1213,6 +1246,28 @@ toggleable from the token's palette in the other direction. The Bind and Exposed
 sheet's Bind line and EXPOSED badge, and the Bound row on the Effects tab open the rules page for
 the Bind or for Exposed in the STARWROUGHT Reference journal.
 
+### The glance
+
+Rest the mouse on any token you can see and, after a quarter second, a card beside it shows **what
+anyone standing near could see** (0.19.0, ruling 204; Mike: "allows players to see certain things
+about other actors --- for example, what weapons and armor are Equipped… what Zones are Exposed or
+Wounded, etc."): the name, what it holds (a raised shield marked), the armor worn on each Zone by
+piece name, the Zones Exposed or Wounded with the Wound count, and the conditions the token shows.
+The sheet's numbers stay the sheet's: Protection and Vigor show to the owner and the GM alone,
+Thresholds and Load Strain never. The card is drawn into the page rather than the canvas layer, so
+the zoom never shrinks it; it follows the actor's changes while shown, goes as the mouse leaves or
+the canvas pans, and is switched off by the client setting `showGlance`. The same panel is a
+**LIMITED user's whole sheet** (both actor sheets): a user the GM gave LIMITED permission opens the
+glance and nothing else, where through 0.18.1 they saw every tab read-only. An Observer keeps the
+full read-only sheet.
+
+### The Token HUD at any zoom
+
+Core scales the whole HUD layer with the canvas zoom, so a token's controls shrank as the map
+zoomed out (Mike: "the options surrounding the token are VERY small"). Since 0.19.0 the HUD's
+columns are scaled back by the inverse, outward from the token, so they never read smaller than at
+100% zoom; the factor is capped at 4, and at 100% and above nothing changes.
+
 ---
 
 ## 3. Sheets
@@ -1223,7 +1278,10 @@ Temporary, with a Spent badge at 0), the **six action pips** with the
 reserved marker, the Pass, End Opportunity and reset controls and, while Preparing, a line naming the
 Maneuver with Finish and Abandon buttons (the pips only show in an encounter), then Hero Points, the
 Wounds carried and Dying, and, when you are in one, the **Bind line**: neutral, Controlling or
-Controlled, both implements named, with an End Bind button.
+Controlled, both implements named and the Zone the Control Exposes, with an End Bind button and,
+while this side does not hold the line, **Take Control** (0.19.0, ruling 203): the Zone picker,
+then the record, the partner's Zone opened by the partner's own side of the Bind and closed when
+the Control ends.
 
 Overview carries the four Attributes with their point counts and how far to the next bonus, the
 four Defenses (click to roll; Untrained ones marked), the four Zones with their Protection, an
@@ -1241,7 +1299,10 @@ shows rank, Proficiency, points and what the next rank is waiting on, and folds 
 you own with a Flare toggle on each Constellation; a parent shows its pool and how much is inherited,
 and a Combat Style says which parent it is a child of. Its toolbar's **Show every Constellation**
 toggle (0.6.3) adds the shipping Constellations you have not opened as dimmed rows with a Flare
-control and nothing else, and remembers the choice per client (see Flares). Equipment lays armor out by Zone with the
+control and nothing else, and remembers the choice per client (see Flares); its **filter box**
+(0.19.0; Mike: "a search box on the Constellations tab") keeps the Constellations and Talents
+whose names contain the text and hides the rest, every matching Constellation unfolded while a
+filter is set, Escape clearing it. Equipment lays armor out by Zone with the
 Zone's Wounds beside its Protection; a party's Item dragged onto the sheet moves from the party's
 loot rather than copying, the whole stack (0.7.1; ruling 98; see The party): the player's drag is
 a Take over the relay to the GM's client, the GM's the same move made locally. Also Maneuvers;
@@ -1837,16 +1898,23 @@ full that Zone now is, the effect in force, the bleed a Torso Wound adds, a redi
 useless limb to the Torso, the total carried, and the Dying value if the Wound was the last the
 Torso or Head could hold.
 
-**Prepared cards**: when a preparation begins (Finish / Abandon), again at the owner's next
-Opportunity (public), and when it is finished, abandoned, replaced or expires with the round.
+**Prepared cards**: when a preparation begins (Abandon alone, and a line saying Finish comes at
+the next Opportunity; 0.19.0), again at the owner's next Opportunity (public, Finish and Abandon),
+and when it is finished, abandoned, replaced or expires with the round.
+
+**The request card** (0.19.0, ruling 202): a player-controlled combatant tried a Maneuver outside
+its Opportunity; who wants what, public for the table, with Approve and Refuse for the GM alone,
+settled in place with the decision.
 
 **Round cards**, whispered to the actor's owners and the GM: the Recovery check at the start of a
-round while Dying, with a roll button; the Wind check at the end of every round, for a fighter
-with Load Strain 1 or more whose Endure Threshold is below 10 + Load Strain (one whose Threshold
-meets it is exempt and gets no card), with an Endure button and, on a failure, a card naming the
+round while Dying, with a roll button; and Persistent Damage at the end of every round. **The Wind
+card is public** for a player's fighter (0.19.0, ruling 201; Mike: "The Wind roll for having too
+much Load Strain should be public") and the GM's for an adversary: at the end of every round, for a
+fighter with Load Strain 1 or more, with an Endure button whose roll's visibility is fixed to
+match (the dialog's select is disabled and says why) and, on a failure, a card naming the
 new Fatigued value (1 the first time, one more each time after, to 3) and carrying the **Ten
 minutes' rest** button that ends the condition, for the owner or the GM, with a one-line card when
-it does; and Persistent Damage at the end of every round,
+it does; Persistent Damage at the end of every round,
 with a roll button, and after the roll an Endure button to end it (except the Torso bleed, which
 only treating the Wound closes) and a note that the amount is applied on the sheet.
 
@@ -1909,6 +1977,7 @@ are markers for the table.
 | Show pinned auras | on | Draw every combatant's Visible ranges on the map while an encounter runs. Off, only the hover preview draws. Per client |
 | Range ring contrast | Normal | How boldly the reach and aura rings are drawn. Every ring has a dark halo under its outline so it reads on a pale floor; Strong thickens the lines and deepens the fills. Per client |
 | Show every Constellation | off | On the sheet's Constellations tab, list every shipping Constellation the character has not opened as a dimmed row with a Flare control, so one can be Flared from the sheet. Per client; the tab's toolbar button is the switch, and the setting has no entry in Configure Settings |
+| Show a glance card beside a hovered token | on | Rest the mouse on any token you can see and a card shows what anyone standing near could see: what it holds, the armor on each Zone, the Zones Exposed or Wounded, its conditions; Protection and Vigor for its owner and the GM alone (0.19.0). Per client; the LIMITED sheet shows the same panel whatever this says |
 
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
 for it is ignored.

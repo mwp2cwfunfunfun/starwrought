@@ -3,6 +3,11 @@
 <section class="tab sw-tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}">
 
   <div class="sw-tab-toolbar">
+    {{!-- THE FILTER (0.19.0): the Constellations and Talents whose names contain the text; the sheet
+          wires it in _onRender and keeps the text across re-renders. Escape clears. --}}
+    <input type="search" class="sw-constellation-filter" name="sw-constellation-filter" value="{{filter}}"
+           placeholder="{{localize 'STARWROUGHT.Sheet.filterConstellations'}}" autocomplete="off"
+           data-tooltip="{{localize 'STARWROUGHT.Sheet.filterConstellationsHint'}}">
     {{!-- Opened only, or every Constellation: a client setting, so it is this user's everywhere. --}}
     {{#if showUnopened}}
     <button type="button" class="sw-inline-button sw-active" data-action="toggleUnopened"
@@ -35,7 +40,7 @@
     </h3>
 
     {{#each group.constellations as |con|}}
-    <div class="sw-constellation {{#if con.flared}}sw-flared{{/if}} {{#if con.unopened}}sw-unopened{{/if}}" data-slug="{{con.slug}}">
+    <div class="sw-constellation {{#if con.flared}}sw-flared{{/if}} {{#if con.unopened}}sw-unopened{{/if}}" data-slug="{{con.slug}}" data-filter="{{con.filterText}}">
 
       <div class="sw-constellation-head">
         {{#if con.unopened}}
@@ -107,7 +112,7 @@
       {{#unless con.collapsed}}
       <ol class="sw-talent-list">
         {{#each con.talents as |talent|}}
-        <li class="sw-talent" data-item-id="{{talent.id}}">
+        <li class="sw-talent" data-item-id="{{talent.id}}" data-filter="{{talent.filterText}}">
           {{!-- The image and the name open the Talent (0.5.1, T14; the name since 0.17.0, with the
                 Talent's Effect as its rich tooltip); the chat control on the right sends it. The
                 name is printed plain, with the gold glyph the one cost shown (T16). --}}

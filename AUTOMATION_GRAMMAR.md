@@ -85,11 +85,23 @@ Every block the cell reads, one example each. Case never matters.
   "[per the table]" and the block runs on to its own `]`. Outside a condition's parentheses
   nothing a block carries contains one.
 
-A line the parser cannot read **fails the build** (`sync_content.cmd`, `node assets/build_all.mjs`)
-with the Constellation, the Talent, the line number and what is wrong, before anything is written
-to the pack sources. In an open world, a GM who edits a Talent's Automation textarea and gets a
-line wrong sees it in red on the Item sheet's Automation panel and the engine skips that line;
-nothing is ever thrown at the table over a cell.
+A line the parser cannot read **fails the release build** (`node assets/build_all.mjs`) with the
+Constellation, the Talent, the line number and what is wrong, before anything is written to the
+pack sources. **The content loop is lenient** (`sync_content.cmd`, `node assets/build_all.mjs
+--content`; since 2026-11-07): the same line is listed under an AUTOMATION ERRORS banner and
+stored on its Item as an error, which the Item sheet's Automation panel shows in red and the
+engine skips, exactly as a GM's wrongly edited textarea line is treated in an open world; the
+lines that did read on the same cell are rules as usual. So a sheet half-authored (a `[Medicine
+trained]` before the Medicine sheet exists) still builds, and the release stops until it is
+mended. Nothing is ever thrown at the table over a cell.
+
+**Red cells in the workbooks.** `python assets/highlight_automation.py` (2026-11-08) paints every cell
+this parser cannot read solid red in `data/*.xlsx`, with a cell comment giving the message for each
+line and why: mis-typed (the nearest name offered when one is close), no kind yet (nothing in this
+document reads what the line asks), or not yet readable (the cell is right, but the sheet it names
+is not in its `_Tree Index`, or the workbook it names is one the converter does not read). Fix the
+cell and run it again and its red goes. `automation-cells-report.md` in the project root lists the
+red cells and the kinds they ask for.
 
 **A bare effect line in a cell is refused** (since 0.18.0; it read with a warning in 0.17.0).
 `IMMUNE: prone; LIMIT: encounter` on a line of its own, without the `[EFFECT ...]` wrapper, is one

@@ -203,8 +203,11 @@ const STEPS = [
   // JSON, `rules` written beside each cell, the chassis facts the Roots' feature lines state
   // written onto the roster's records, and the @Maneuver[Name] markers expanded, before anything
   // downstream reads the files. A line the grammar does not know stops the pipeline here, naming
-  // the cell, as build_foundry did through 0.15.0; a 0.13.0-form cell is a warning for one release.
-  { name: "parse_rules", cmd: "node", args: ["assets/parse_rules.mjs"] },
+  // the cell, as build_foundry did through 0.15.0. In content mode (2026-11-07, Mike: "let's make
+  // a new build anyway") the step is lenient: such a line is stored on its Item as an error, red on
+  // the sheet and skipped in play, and printed under an AUTOMATION ERRORS banner; a release fails.
+  { name: "parse_rules", cmd: "node", args: ["assets/parse_rules.mjs"],
+    content: ["assets/parse_rules.mjs", "--lenient"] },
   { name: "inject", py: true, args: ["assets/inject.py"] },
   { name: "render_constellations", py: true, args: ["assets/render_constellations.py"], slow: true,
     content: ["assets/render_constellations.py", "--changed"] },

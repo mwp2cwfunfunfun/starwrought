@@ -77,8 +77,15 @@ export class SwItem extends Item {
         if (!this.actor) return this.toMessage({ actor });
         return this.actor.rollAttack(this.id, rest);
       case "action": {
+        // A built-in Maneuver's method (Recenter, Raise a Shield, the visor) passes the Opportunity
+        // gate itself, so it is not asked twice.
         const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
         if (builtIn && actor) return builtIn(actor, this, rest);
+        // Outside the actor's Opportunity a Maneuver that is not a Reaction waits for the GM
+        // (0.19.0, the gate in documents/actor/actions.mjs); a Reaction is the book's own
+        // out-of-turn Maneuver and goes straight on.
+        if (actor && !this.system.reaction && (typeof actor.mayActNow === "function")
+          && !(await actor.mayActNow({ label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() }))) return null;
         // A Maneuver whose rules act when it is used (0.16.0: Oathbound's `MARK`, granted by a
         // Talent's `[MANEUVER Oathbound]`): paid and run as a Talent with such rules is.
         if (actor && this.actor && usableByRule(this)) return this.#useWithRules(actor);
@@ -134,7 +141,13 @@ export class SwItem extends Item {
         if (this.system.isSpell && this.actor && (typeof this.actor.castSpell === "function")) {
           return this.actor.castSpell(this.id, rest);
         }
-        if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) return this.#useWithRules(actor);
+        if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) {
+          // A Talent used as a Maneuver (0.15.0) passes the Opportunity gate (0.19.0) unless it is
+          // a Reaction or a Posture, the book's out-of-turn Maneuvers.
+          if (!this.system.reaction && (typeof actor.mayActNow === "function")
+            && !(await actor.mayActNow({ label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() }))) return null;
+          return this.#useWithRules(actor);
+        }
         return this.toMessage({ actor });
       default:
         return this.toMessage({ actor });
@@ -233,6 +246,9 @@ export class SwItem extends Item {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.notHeld", { name: this.name }));
     }
     const raised = !this.system.raised;
+    // Raising is a Maneuver and passes the Opportunity gate (0.19.0); lowering is free and does not.
+    if (raised && (typeof this.actor.mayActNow === "function")
+      && !(await this.actor.mayActNow({ label: game.i18n.localize("STARWROUGHT.Action.raiseShield") }))) return null;
     if (raised) {
       // The card below carries the actions-left line, so the spend itself posts nothing.
       await this.actor.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.raiseShield"), announce: false });
@@ -272,6 +288,8 @@ export class SwItem extends Item {
     const next = (lowered === undefined) ? !this.system.lowered : !!lowered;
     if (next === !!this.system.lowered) return null;
     const label = game.i18n.localize(next ? "STARWROUGHT.Action.lowerVisor" : "STARWROUGHT.Action.raiseVisor");
+    // A single action, so a Maneuver: the Opportunity gate (0.19.0).
+    if ((typeof this.actor.mayActNow === "function") && !(await this.actor.mayActNow({ label }))) return null;
     // The card below carries the actions-left line, so the spend itself posts nothing.
     await this.actor.spendActions(1, { label, announce: false });
     await this.update({ "system.lowered": next });
