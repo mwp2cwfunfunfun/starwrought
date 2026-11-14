@@ -22,6 +22,7 @@ import { postureName as postureNameOf } from "../helpers/answers.mjs";
 // card and Settle Position. This file is the entry point and the order of a roll; it keeps
 // roll, resolveAgainst and the public statics so every caller still says `SwCheck.x`.
 import { assemble } from "./check/modifiers.mjs";
+import { mergeMarks } from "./check/substitute.mjs";
 import { prompt } from "./check/dialog.mjs";
 import { toMessage } from "./check/card.mjs";
 import { strikeCanCrit } from "./check/strike.mjs";
@@ -121,9 +122,14 @@ export class SwCheck {
       Object.assign(cfg, answer.config);
       // A Reaction chosen in the dialog can change which Defense is rolled, so the base terms are
       // rebuilt around the new slug before the extras go on.
+      // A swap ticked or unticked (0.21.0) rebuilds them too: `cfg.substitute` now says which.
       if (answer.rebuild) parts = assemble(actor, cfg);
       dialogExtra = Array.isArray(answer.extra) ? answer.extra : [];
       parts.push(...dialogExtra);
+      // The marks of the boxes left ticked (an armed claim's spend, a one-roll custom effect's
+      // removal) join the roll's own AFTER any rebuild, which set the roll's marks afresh
+      // (0.21.0; through 0.20.1 a rebuild lost them).
+      if (answer.marks?.length) cfg.ruleMarks = mergeMarks(cfg.ruleMarks, answer.marks);
     }
     // Everything the roll carried beyond the base terms the sheet assembles: the caller's typed
     // modifiers and the dialog's extras. The Party Sheet's remembered road roll keeps these (0.7.3,
@@ -480,14 +486,29 @@ export class SwCheck {
    * caller passes in `config.modifiers`. The Relevant Check picker prints this beside each
    * Constellation so that a strained Stealth ranks where the roll will land. The dialog's own
    * offers (Load Strain on a Climb or a Swim; a rule's bonus to a Maneuver this roll may or may not
-   * be) are not in it.
+   * be) are not in it. A swap of the base terms that would stand by the default rule IS in it
+   * (0.21.0, ruling 218), since the dialog opens with its box ticked; `preview` says so.
    * @param {Actor} actor
    * @param {object} [config]  The same shape `roll()` takes; `kind` defaults to "check".
    * @returns {number}
    */
   static previewTotal(actor, config = {}) {
+    return this.preview(actor, config).total;
+  }
+
+  /**
+   * `previewTotal`, with what it rests on (0.21.0): the number, and the swap of the base terms the
+   * number includes when one would stand (`[EFFECT USE: Presence, Origin, aid]` on an Aid made from
+   * its Item), so the Relevant Check picker can mark the rows whose number is not the
+   * Constellation's own pair.
+   * @param {Actor} actor
+   * @param {object} [config]  The same shape `roll()` takes; `kind` defaults to "check".
+   * @returns {{total: number, substituted: object|null}}  `substituted` is the card's record of the swap, or null.
+   */
+  static preview(actor, config = {}) {
     const cfg = foundry.utils.mergeObject({ kind: "check" }, config, { inplace: false });
-    return SW.resolveModifiers(assemble(actor, cfg)).total;
+    const total = SW.resolveModifiers(assemble(actor, cfg)).total;
+    return { total, substituted: cfg.substituted ?? null };
   }
 
   /**

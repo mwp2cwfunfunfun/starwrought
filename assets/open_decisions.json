@@ -1,5 +1,35 @@
 [
   {
+    "id": "bonus-on-defense-rolled-as-check",
+    "since": "2026-11-10",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "module/rules/kinds/bonus.mjs, the Defense branch of a check; ruling 222 (0.21.0)",
+    "question": "Ruling 222 lets a bonus to a Maneuver reach a check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid made with Awareness). Should a bonus to every check, and a bonus to a Maneuver made without its Item, also reach a Defense rolled as a check (Wind's Endure, a Recovery, a Search with Awareness)? Today neither does: nothing is applied and nothing is offered there.",
+    "recommendation": "Yes, as its own ruling, with a Wind roll driven live, because it changes numbers outside Aid.",
+    "decidedBy": ""
+  },
+  {
+    "id": "use-names-a-constellation",
+    "since": "2026-11-10",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "module/rules/kinds/substitute.mjs, the third descriptor of USE; rulings 219 and 111",
+    "question": "A USE line names a Maneuver's check and nothing wider (ruling 219); a Constellation there is refused ('a Constellation's own checks are not read yet'). When a Talent wants a Constellation as the check a USE names, does the swap carry into an Initiative rolled with that Constellation? Ruling 111 (an Initiative rolled with a Constellation carries every modifier of that Constellation's check) argues yes.",
+    "recommendation": "Settle it with the first Talent that names one; the refusal stands until then.",
+    "decidedBy": ""
+  },
+  {
+    "id": "human-sheet-proposed-cells",
+    "since": "2026-11-10",
+    "status": "open",
+    "category": "Automation cell",
+    "where": "data/ancestries.xlsx, the Human sheet in progress (Mike's, uncommitted)",
+    "question": "16 Automation cells on the Human sheet hold only '# PROPOSED' notes naming tags the grammar does not have (ALTER, PREPARE, CONDITION and extra IF conditions), Jack of All Trades' and Quick Study's among them, so those Talents automate nothing once the sheet builds; and Torchbearer Human's cell no longer carries the Rally Aura. Which comes first?",
+    "recommendation": "Pick the next kind from them with Claude, one at a time (ruling 119), from the Talent that wants it most; the others stay '#' notes, which the grammar reads as comments, until their kind exists.",
+    "decidedBy": ""
+  },
+  {
     "id": "supine",
     "since": "2026-11-08",
     "status": "open",

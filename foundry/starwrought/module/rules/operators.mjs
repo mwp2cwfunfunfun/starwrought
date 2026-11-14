@@ -5,7 +5,7 @@
  * refuses; what remains is what the effect reader (./effects.mjs) and the hooks still use: the
  * `ops` record every reader fills (`emptyOps`), the readers of one condition's contents (`readIf`,
  * `readFor`, `readWhile`, `readAgainst`, `readDegree`, `readRank`, `readRange`, `readWho`), the
- * refusals (`refuseComponents`, `refuseOutcome`) and the hooks' tests (`rankMeets`, `whoMatches`,
+ * one reading of a target's name (`readTargetName`, 0.21.0), the refusals (`refuseComponents`, `refuseOutcome`) and the hooks' tests (`rankMeets`, `whoMatches`,
  * `hasTrait`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`). The names below
  * are the old operators' because the stored rule shapes are theirs; the component each became is
  * section 9 of the document, and `OPERATORS` is kept for that table's gate.
@@ -48,7 +48,7 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { RANKS, THREATS, DEGREES, isLoreSlug, flagKey, ruleCarrierKey } from "../config.mjs";
+import { RANKS, THREATS, DEGREES, isLoreSlug, flagKey, ruleCarrierKey, slugify, plainName } from "../config.mjs";
 
 /**
  * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), refused since 0.17.0. The
@@ -285,6 +285,28 @@ export function readAgainst(inside, context = {}) {
   }
   if (isLoreSlug(check)) throw new RuleSyntaxError("a Lore is the character's own; nothing rolls it against a Defense");
   return { threat: null, reach: null, check, name };
+}
+
+/**
+ * A Constellation or a Maneuver by the name a cell wrote (0.21.0): the one reading behind the
+ * targets of `bonus`, `reroll` and `substitute`, which through 0.20.1 each kept a copy. With the
+ * caller's resolver: the canonical name, the slug and the type, with the resolver's own record
+ * under `found` (its `group` and `parent` are a kind's to read, never to store), or null when the
+ * resolver knows nothing by the name. Without one: the name as written, the slug made here (a
+ * Maneuver's glyphs never reach it, so `Aid ❶ (⓿↺)` and `Aid` are one target) and a null type.
+ * The refusals are each kind's own: a scope word, a Lore, a wrong type.
+ * @param {string} written
+ * @param {Function|undefined} resolve  `context.resolve`, when the caller has one.
+ * @returns {{name: string, slug: string, type: string|null, found: object|null}|null}
+ */
+export function readTargetName(written, resolve) {
+  const text = String(written ?? "").trim();
+  if (typeof resolve === "function") {
+    const found = resolve(text);
+    if (!found || !found.slug) return null;
+    return { name: String(found.name ?? text), slug: String(found.slug), type: found.type ?? null, found };
+  }
+  return { name: text, slug: slugify(plainName(text)), type: null, found: null };
 }
 
 /** The degree word of `IF(Outcome=...)`, to a key of SW.DEGREES. */

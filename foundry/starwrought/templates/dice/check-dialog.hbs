@@ -2,12 +2,35 @@
 {{!-- A div, not a form: DialogV2 supplies the form, and a nested one is dropped by the parser. --}}
 <div class="check-dialog-form">
 
+  {{#if variantLists}}
+  {{!-- A check that may be made with other terms (0.21.0, the USE tag): the roll every way it may
+       be made, one list each; the dialog's render callback shows the one the boxes below name. --}}
+  {{#each variantLists as |v|}}
+  <ul class="sw-card-modifiers {{#if v.hidden}}sw-hidden{{/if}}" data-substitute-variant="{{v.key}}">
+    {{#each v.parts as |mod|}}
+    <li><span>{{mod.label}}</span><strong>{{swSigned mod.value}}</strong></li>
+    {{/each}}
+    <li class="sw-total"><span>{{localize "STARWROUGHT.Roll.beforeTheDie"}}</span><strong>{{swSigned v.total}}</strong></li>
+  </ul>
+  {{/each}}
+  {{#each substitutes as |s|}}
+  {{!-- One swap may stand: ticked when it is the better way to make this roll, the player's to change. --}}
+  <div class="form-group sw-substitute-choice">
+    <label class="sw-dialog-option sw-substitute-option" data-tooltip="{{s.hint}}">
+      <input type="checkbox" name="substitute-{{s.key}}" data-substitute="{{s.key}}" {{#if s.checked}}checked{{/if}}>
+      <span>{{s.label}}</span>
+    </label>
+    <div class="form-fields"><strong class="sw-substitute-delta">{{swSigned s.delta}}</strong></div>
+  </div>
+  {{/each}}
+  {{else}}
   <ul class="sw-card-modifiers">
     {{#each parts as |mod|}}
     <li><span>{{mod.label}}</span><strong>{{swSigned mod.value}}</strong></li>
     {{/each}}
     <li class="sw-total"><span>{{localize "STARWROUGHT.Roll.beforeTheDie"}}</span><strong>{{swSigned total}}</strong></li>
   </ul>
+  {{/if}}
 
   {{#if isAttack}}
   {{!-- The three Strikes (PHB v4.10): how much of yourself is behind the blow. --}}
@@ -77,7 +100,9 @@
 
   {{#each extras as |x|}}
   {{!-- A modifier the engine can name but not decide (Load Strain on a Climb or a Swim, PHB v4.11): offered unticked. --}}
-  <div class="form-group sw-extra-choice">
+  {{!-- On a check that may be made with other terms (0.21.0) an offer only some variants carry is
+       indexed, drawn hidden when the standing variant does not offer it, and follows the swap box. --}}
+  <div class="form-group sw-extra-choice{{#if x.hidden}} sw-hidden{{/if}}"{{#if x.variants}} data-offer-index="{{@index}}"{{/if}}>
     <label class="sw-dialog-option" data-tooltip="{{x.hint}}">
       <input type="checkbox" name="extra-{{x.key}}" {{#if x.checked}}checked{{/if}}>
       <span>{{x.label}}</span>

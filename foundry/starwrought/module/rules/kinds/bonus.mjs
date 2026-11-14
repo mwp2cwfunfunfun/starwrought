@@ -40,7 +40,10 @@
  * tokens around the owner; AGAINST needs the Threat the roll answers; FIRST/ONCE reads the
  * recipient's mark and asks for one to be written. A rule that
  * needs the scene, the Threat or the round is answered only where they are known (`momentOnly`),
- * and the sheet's Defense pass asks for the rest (`staticOnly`); see ../engine.mjs. Then the
+ * and the sheet's Defense pass asks for the rest (`staticOnly`); see ../engine.mjs. One static rule
+ * is answered under `momentOnly` as well (0.21.0, ruling 222): a bonus to a Maneuver, on a check
+ * rolled with a Defense Constellation from that Maneuver's Item (Aid made with Awareness), which
+ * the Defense pass could never have folded in. Then the
  * target: a Constellation applies on its slug; a scope word on the roll's kind; a Maneuver when the
  * roll carries that Maneuver's Item, and is OFFERED unticked on a check made without one (ruling
  * 122), never on an attack, a Defense or an Initiative. The label is the carrier's plain name (with
@@ -52,7 +55,7 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled } from "../operators.mjs";
+import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled, readTargetName } from "../operators.mjs";
 import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
 
 const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
@@ -102,14 +105,9 @@ function readTarget(name, resolve) {
   const written = String(name ?? "").trim();
   const scopeSlug = slugify(written);
   if (Object.hasOwn(SCOPES, scopeSlug)) return { name: SCOPES[scopeSlug].name, slug: scopeSlug, type: "scope" };
-  let target;
-  if (typeof resolve === "function") {
-    const found = resolve(written);
-    if (!found || !found.slug) throw new RuleSyntaxError(`"${written}" names no Constellation or Maneuver`);
-    target = { name: String(found.name ?? written), slug: String(found.slug), type: found.type ?? null };
-  } else {
-    target = { name: written, slug: slugify(plainName(written)), type: null };
-  }
+  const read = readTargetName(written, resolve);
+  if (!read) throw new RuleSyntaxError(`"${written}" names no Constellation or Maneuver`);
+  const target = { name: read.name, slug: read.slug, type: read.type };
   if (isLoreSlug(target.slug)) throw new RuleSyntaxError("a Lore is the character's own; a bonus cannot name it");
   return target;
 }
@@ -204,7 +202,19 @@ export default {
         const ownRoll = owner === actor;
         const moment = needsMoment(rule);
         if (context?.staticOnly && moment) continue;
-        if (context?.momentOnly && !moment) continue;
+        if (context?.momentOnly && !moment) {
+          // A static rule is the sheet's Defense pass's, which folded it into the Threshold and the
+          // Defense's own modifiers, so a `momentOnly` ask leaves it out. One static rule that pass
+          // could never have folded in (0.21.0, ruling 222): a bonus to a MANEUVER, on a check
+          // rolled with a Defense Constellation from that Maneuver's Item (Aid made with Awareness
+          // and Humanity's +1). It is matched by the Item alone; a target that is also this roll's
+          // own Constellation was the pass's, and nothing is offered on this branch.
+          const to = rule.to;
+          const byManeuver = (rollKind === "check") && (rollManeuver !== null)
+            && ((to.type === "action") || (to.type == null)) && (rollManeuver === to.slug)
+            && !((to.type == null) && rollSlug && (rollSlug === to.slug));
+          if (!byManeuver) continue;
+        }
         // A pairing asks for the rules about the other party alone (0.15.0, ruling 175): the one
         // blind die already carried everything else, and a claim was the dialog's.
         if (context?.pairingOnly && !rule.marked) continue;

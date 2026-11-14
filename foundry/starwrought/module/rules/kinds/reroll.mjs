@@ -27,7 +27,7 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { rankMeets, refuseComponents, summarizeOperators } from "../operators.mjs";
+import { rankMeets, refuseComponents, summarizeOperators, readTargetName } from "../operators.mjs";
 import { slugify, plainName, isLoreSlug } from "../../config.mjs";
 
 const SHAPE = "REROLL: [<Constellation>]; IF: RESULT(<degree>)";
@@ -37,13 +37,13 @@ const EXAMPLE = "REROLL: diplomacy; IF: RESULT(critical failure)";
 function readTarget(name, resolve) {
   const written = String(name ?? "").trim();
   if (slugify(written) === "checks") return { name: "Checks", slug: "checks", type: "scope" };
+  const read = readTargetName(written, resolve);
   let target;
   if (typeof resolve === "function") {
-    const found = resolve(written);
-    if (!found || (found.type !== "constellation") || !found.slug) throw new RuleSyntaxError(`a reroll is written \`${SHAPE}\`: "${written}" names no Constellation (or write Checks)`);
-    target = { name: String(found.name ?? written), slug: String(found.slug), type: "constellation" };
+    if (!read || (read.type !== "constellation")) throw new RuleSyntaxError(`a reroll is written \`${SHAPE}\`: "${written}" names no Constellation (or write Checks)`);
+    target = { name: read.name, slug: read.slug, type: "constellation" };
   } else {
-    target = { name: written, slug: slugify(plainName(written)), type: null };
+    target = { name: read.name, slug: read.slug, type: null };
   }
   if (!target.slug) throw new RuleSyntaxError(`a reroll is written \`${SHAPE}\`, as in \`${EXAMPLE}\``);
   if (isLoreSlug(target.slug)) throw new RuleSyntaxError("a Lore is the character's own; a reroll cannot name it");

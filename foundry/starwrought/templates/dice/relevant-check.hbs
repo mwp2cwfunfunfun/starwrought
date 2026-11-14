@@ -11,18 +11,20 @@
         {{#if trained.length}}
         <optgroup label="{{localize 'STARWROUGHT.Roll.relevantTrained'}}">
           {{#each trained as |c|}}
-          <option value="{{c.slug}}">{{c.glyph}} {{c.name}} · {{c.rankLabel}} {{swSigned c.mod}}</option>
+          <option value="{{c.slug}}">{{c.glyph}} {{c.name}} · {{c.rankLabel}} {{swSigned c.mod}}{{#if c.swapped}} *{{/if}}</option>
           {{/each}}
         </optgroup>
         {{/if}}
         <optgroup label="{{localize 'STARWROUGHT.Roll.relevantUntrained'}}">
           {{#each untrained as |c|}}
-          <option value="{{c.slug}}">{{c.glyph}} {{c.name}} · {{c.rankLabel}} {{swSigned c.mod}}</option>
+          <option value="{{c.slug}}">{{c.glyph}} {{c.name}} · {{c.rankLabel}} {{swSigned c.mod}}{{#if c.swapped}} *{{/if}}</option>
           {{/each}}
         </optgroup>
       </select>
     </div>
   </div>
+  {{!-- A number marked * is made with other terms (0.21.0, the USE tag): the line says whose. --}}
+  {{#if swapNote}}<p class="hint sw-relevant-swap">{{swapNote}}</p>{{/if}}
 
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.relevantWhy"}}</label>

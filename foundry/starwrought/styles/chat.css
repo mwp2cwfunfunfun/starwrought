@@ -18,7 +18,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-chat: "0.20.1"; }
+:root { --sw-css-version-chat: "0.21.0"; }
 
 /* --------------------------------------------------------------------------
    Chat cards
@@ -248,6 +248,14 @@
 .starwrought .sw-dialog-option:hover { border-color: var(--sw-gold-dim); }
 .starwrought .sw-dialog-option.sw-active { border-color: var(--sw-gold); background: rgba(227, 178, 60, 0.12); }
 .starwrought .sw-dialog-option small { display: block; color: var(--sw-ink-dim); font-size: 0.7rem; }
+
+/* A check made with other terms (0.21.0, the USE tag): the row that offers the swap. Its label
+   says the whole swap ("Presence and Origin (Trained) in place of Wits and Crafting (Untrained)"),
+   so it takes the row, and the difference the swap makes to the total sits in a narrow column. */
+.starwrought .check-dialog-form .sw-substitute-choice { align-items: center; flex-wrap: nowrap; }
+.starwrought .check-dialog-form .sw-substitute-choice > .sw-substitute-option { flex: 1 1 0; min-width: 0; }
+.starwrought .check-dialog-form .sw-substitute-choice > .form-fields { flex: 0 0 2.5rem; text-align: right; }
+.starwrought .sw-substitute-delta { color: var(--sw-gold); }
 
 /* The defender's answer: stated, not offered. */
 .starwrought .sw-answering { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }

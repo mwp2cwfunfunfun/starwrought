@@ -56,8 +56,9 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT MARK: enemies]` | using it names one creature | 3 |
 | `[EFFECT REROLL: diplomacy]` | the card of a matching roll offers the die again | 3 |
 | `[EFFECT IGNORE: terrain, mud]` | difficult terrain of those kinds costs nothing | 3 |
+| `[EFFECT USE: Presence, Origin, aid]` | a check made from that Maneuver may be rolled with that Attribute and that Constellation's Proficiency Bonus in place of its own (`same` keeps a term) | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
-| `; IF: RANK(roll = untrained)` | ... while the roll's own rank is that | 3 |
+| `; IF: RANK(roll = untrained)` | ... while the rank the roll is made at is that (the borrowed Constellation's when a `USE` stands; on a `USE` line itself, the check's own rank before the swap) | 3 |
 | `; IF: SEEN` | ... for a recipient who can see the owner | 3 |
 | `; IF: ALLIES(>=1, 0)` | ... while that many allies stand within the range (`ENEMIES`, `ALL`) | 3 |
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
@@ -78,8 +79,9 @@ Every block the cell reads, one example each. Case never matters.
   `IF: rank(ORIGIN >= Trained)` all read.
 - Spaces are free around commas, colons and semicolons. One trailing period inside a block is tolerated.
 - Names are the book's: Constellations (`Guard`, `Stealth`, `Elementalism`), Maneuvers (`Aid`, `Steady the Line`),
-  Conditions (`prone`), Threats (`BLOW`), ranks (`trained`). A Maneuver's cost glyphs are ignored
-  (`Aid` and `Aid ❶` are one name). The slug form (`armored-fighting`) reads too.
+  Conditions (`prone`), Threats (`BLOW`), ranks (`trained`), Attributes (`presence`). A Maneuver's
+  cost glyphs are ignored (`Aid` and `Aid ❶` are one name). The slug form (`armored-fighting`)
+  reads too.
 - Feet are a number with `ft` attached or not: `15`, `15ft`, `15 ft`. `0` means adjacent.
 - A block ends at the first `]` outside parentheses (0.18.1): a `CLAIM(...)` text may say
   "[per the table]" and the block runs on to its own `]`. Outside a condition's parentheses
@@ -155,9 +157,11 @@ Trigger, Requirements and Effect from the row. A name that is no row fails the b
 [EFFECT TAG: <value> <type>, <descriptor>; <component>; <component> ...]
 ```
 
-The **tag** names what is modified. A **modifier tag** takes a signed whole number and a bonus type
-(`situation`, `condition` or `gear`, the book's three; FG's `[bonus]`), then at most one descriptor
-after a comma. The other tags take descriptors alone. No bonus is untyped.
+The **tag** names what is modified. A **modifier tag** (`CHECK`, `ATK`, `DEF`, `INIT`, `SPEED`)
+takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the book's three;
+FG's `[bonus]`), then at most one descriptor after a comma. The other tags (`IMMUNE`, `MARK`,
+`REROLL`, `IGNORE`, `USE`) take descriptors alone; `USE` takes exactly three, and never a value or
+a type. No bonus is untyped.
 
 | tag | modifies | descriptor | stored kind |
 |---|---|---|---|
@@ -170,10 +174,15 @@ after a comma. The other tags take descriptors alone. No bonus is untyped.
 | `MARK: enemies` | using the Talent or Maneuver names one creature, the player's target, until the encounter ends; `enemies` or `all` | who may be named | `mark` |
 | `REROLL: diplomacy` | the card of a matching roll offers to throw the die again; no descriptor means any check | a Constellation | `reroll` |
 | `IGNORE: terrain, mud, decking` | difficult terrain of those kinds costs nothing; `IGNORE: terrain` alone every kind | `terrain`, then kinds | `ignore` |
+| `USE: Presence, Origin, aid` | the two base terms of a check made from a Maneuver's own Item, written `USE: <Attribute>, <Constellation>, <Maneuver>`: the Attribute Bonus and the Proficiency Bonus are the named Attribute's and the named Constellation's in place of the check's own, offered in the roll dialog; nothing else on the roll changes (0.21.0) | exactly three: an Attribute or `same`, a Constellation or `same`, then a Maneuver by name | `substitute` |
 
 A bonus to a Constellation moves its **Threshold as well as its roll** (section 7). A bonus to a
 Maneuver is applied when the roll is made from that Maneuver's Item and otherwise **offered**
-unticked in the roll dialog ("Humanity: Aid"; ruling 122).
+unticked in the roll dialog ("Humanity: Aid"; ruling 122). A `USE` is **offered** in the roll dialog
+too, but only when the roll is made from the Maneuver's own Item and never on another check: a
+checkbox naming the two pairs ("Cooperative Instinct: Presence and Origin (Trained) in place of
+Wits and Crafting (Untrained)") with the signed difference in the total beside it, ticked by
+default when the swapped total is strictly higher (rulings 218 and 219; section 4, `substitute`).
 
 **Components** follow the tag, each after a semicolon:
 
@@ -191,7 +200,7 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | condition | means | idiom |
 |---|---|---|
 | `RANK(Origin >= trained)` | the owner's rank in that Constellation: `=`, `>=` or `<=`; `Origin` is the pooled Ancestry, Bloodline and Culture rank; a group (a Combat Style, a magical specialty) is refused naming its parent | `IF:` |
-| `RANK(roll = untrained)` | the roll's own rank, Handling included (`roll` is the reserved word) | `IF:` |
+| `RANK(roll = untrained)` | the rank the roll is made at, Handling included (`roll` is the reserved word): the borrowed Constellation's when a `USE` stands (ruling 217); on a `USE` line itself, the check's own rank, before any swap | `IF:` |
 | `SEEN` | the recipient can see you: a straight line from their token's centre to yours crosses no sight-blocking wall, they are not Blinded, your token is not hidden nor you Hidden or Undetected (ruling 170) | `IF:` |
 | `ALLIES(>=1, 0)` | how many allies stand within the range of the owner; `>=`, `<=`, `=`, `>`, `<` | `IF:` |
 | `ENEMIES(>=2, 15)` | how many enemies stand within the range | `IF:` |
@@ -214,6 +223,10 @@ tokens of the opposite disposition. `all` is everyone but the owner. Ranges are 
 edge in feet; `0` is adjacency.
 
 **Rank.** `untrained`, `trained`, `expert`, `master`, `legendary`.
+
+**Attribute.** `might`, `agility`, `wits`, `presence`: the first descriptor of `USE`. The word
+`same` stands there, or in the second descriptor, for a term the check keeps: it means "the term
+this check would use without this line".
 
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
@@ -246,6 +259,78 @@ by `[EFFECT REROLL: ...]`. Takes `IF: RANK(...)` and `IF: RESULT(...)`.
 
 ### `ignore`
 Difficult terrain of named kinds costs nothing. Made by `[EFFECT IGNORE: ...]`. Takes `IF: RANK(...)` alone.
+
+### `substitute`
+A check made with another Attribute and another Constellation's Proficiency Bonus (0.21.0; rulings
+215 to 222). Made by `[EFFECT USE: ...]`. It is for a Talent such as Cooperative Instinct (Mike,
+2026-11-10: "When you Aid, you may use Presence + Origin proficiency in place of the Attribute and
+proficiency normally used for that Aid check"; and his generalisation: "Replacing the Constellation
+AND the Attribute bonus for a check with something else").
+
+```
+[EFFECT USE: <Attribute>, <Constellation>, <Maneuver>]
+
+[EFFECT USE: Presence, Origin, aid]        Cooperative Instinct
+[EFFECT USE: same, Origin, aid]            the Proficiency Bonus alone; the check keeps its Attribute
+[EFFECT USE: Presence, same, aid]          the Attribute alone
+[EFFECT USE: Presence, Origin, aid; IF: RANK(Origin >= expert); LIMIT: encounter]
+```
+
+Exactly three descriptors, in this order (ruling 215):
+
+- **The Attribute** the check is made with: `might`, `agility`, `wits` or `presence`, or `same`.
+- **The Constellation** whose Proficiency Bonus is borrowed, by the name the trees print: `Origin`,
+  a Skill or a Defense, or `same`. A Maneuver and a Lore are refused, a group is refused naming its
+  parent (as `RANK` does), and so is a rank word or a number: a flat Proficiency Bonus is not read
+  yet.
+- **The Maneuver** whose check is swapped, by the name the action sheets print (`aid`; its cost
+  glyphs are ignored). A Constellation, a Defense, a scope word (`checks`), a Lore and `same` are
+  refused: a `USE` never means every check (ruling 219).
+
+`same` is "the term this check would use without this line". `same, same` swaps nothing and is
+refused. The likely slips have messages of their own (section 8): a `+` between the two terms, as
+the Talent's prose has it; a value and a type; two descriptors; four.
+
+Takes `IF: RANK(...)` and `LIMIT:` alone. On a `USE` line `RANK(roll ...)` is the check's own rank,
+before any swap. Every other component is refused by name (`FOR`, `IF: SEEN`, the counts,
+`IF: CLAIM(...)`, `IF: RESULT(...)`, and every condition about the other party: `IFT: TRAIT(...)`,
+`IFT: MARKED`, a Threat, `IFT: CHECK(...)`), and a `USE` after the ring of an `[AURA ...]` block is
+refused in its own words: a substitution is the owner's own roll.
+
+**As read:** `may use Presence + Origin proficiency on checks to Aid`; with one term kept, `may use
+Origin proficiency on checks to Aid` or `may use Presence on checks to Aid`. The components follow
+as on any line (`..., while Origin is at least Expert, once each encounter`), a `RANK(roll ...)` as
+`while the check's own rank is Untrained`.
+
+In play:
+
+- **It replaces the two base terms and nothing else** (ruling 216): the Attribute Bonus and the
+  Proficiency Bonus. The roll stays a check in its own Constellation, so the Flare preselection,
+  Load Strain on Stealth, bonuses to that Constellation, rerolls and the road-roll memory are
+  untouched.
+- **The rank recorded is the rank rolled** (ruling 217): the borrowed Constellation's when a swap
+  stands. Every other rule's `IF: RANK(roll ...)` reads that rank, and the card prints it; Aid's
+  "master with the check you attempted" is read there.
+- **Offered, and only from the Maneuver's own Item** (rulings 218 and 219; Mike: "Only from Aid").
+  A check made from the Maneuver's Item shows a checkbox in the roll dialog, "Cooperative Instinct:
+  Presence and Origin (Trained) in place of Wits and Crafting (Untrained)", with the signed
+  difference in the total beside it. A check made without that Item is offered nothing.
+- **Ticked when it is better** (ruling 218; Mike: "ticking it by default when it is a better
+  pair"). Better is judged on the whole assembled total, not on the two base numbers, because
+  another rule may read the rank: the box is ticked only when the swapped total is strictly
+  higher, and a tie or a loss is offered unticked. One swap stands on a roll. With no dialog (a
+  Shift-click) the default applies.
+- **The card says so**: "Cooperative Instinct: Presence and Origin (Trained) in place of Wits and
+  Crafting (Untrained)." The card keeps the record in its flags (`flags.starwrought.substituted`,
+  beside the Attribute rolled, `flags.starwrought.attribute`, and the rank rolled,
+  `flags.starwrought.rank`). In the Relevant Check picker a row whose number includes a swap is
+  marked with an asterisk, and one hint line under the list names the Talent.
+- **Checks only, characters only** (ruling 220): never a Strike, a Cast, a Defense roll, a
+  Threshold read or an Initiative; an adversary rolls flat.
+- **A limit is spent by the swap that is rolled** (ruling 221): a `LIMIT:` is never spent by a
+  swap that was offered and left unticked.
+- **On / Skip / Off** on the Effects tab switch the line like any effect line (section 6), and
+  Skip or Off is how a swap is declined on a roll with no dialog.
 
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
@@ -369,6 +454,15 @@ removed, the next roll, or the end of the encounter. They act exactly as a Talen
 combat tracker shows a badge with the count of a combatant's active effects and their summaries on
 hover. The Grammar button on the panel opens this document's journal.
 
+A `USE` line (0.21.0) is a third case. The system neither applies it by itself nor waits for it to
+be armed: it **offers** the swap in the roll dialog, and the line has **On / Skip / Off** like any
+effect line. **On**: offered when the roll is made from the Maneuver the line names. **Skip**: left
+out of the next such roll, then back On (a roll that is not that Maneuver's does not spend the
+Skip). **Off**: never offered. On a roll with no dialog (a Shift-click) a swap that would come
+ticked is applied, so Skip and Off are the ways to decline it there. A custom effect may be a `USE`
+line too (`USE: Presence, Origin, aid`), with the same three durations; one that lasts the next
+roll leaves only when its swap is the one rolled.
+
 ## 7. What a rule does in play, and what it does not
 
 - **A bonus to a Constellation moves its Threshold.** A Defense's Threshold is 10 plus the same
@@ -434,6 +528,27 @@ hover. The Grammar button on the panel opens this document's journal.
 - **An aura is a preview until shown** (0.17.0). `[AURA ...]` draws on hover, on selection and
   while the token is dragged; the Auras window on the token's HUD shows a ring to everyone for the
   encounter, and that choice is the character's (`system.auras.visible`), not the cell's.
+- **A substitution swaps two terms, at the roll, when the player lets it** (0.21.0; rulings 216 to
+  220; section 4, `substitute`). A `USE` line is offered in the roll dialog of a check made from
+  the Maneuver's own Item, ticked when the swapped total is strictly higher, one swap to a roll.
+  It replaces the Attribute Bonus and the Proficiency Bonus and nothing else, the card names both
+  pairs, and the rank the roll records is the rank rolled. Never a Strike, a Cast, a Defense roll,
+  a Threshold read or an Initiative, and never an adversary's roll.
+- **A rule about the roll's rank reads the rank rolled** (ruling 217). A line such as Jack of All
+  Trades' `IF: RANK(roll = untrained)` does not hold on a roll whose swap borrows a Trained
+  Proficiency Bonus (Mike's Talent text: the +1 "does not apply to ... a check receiving a
+  substituted proficiency bonus"). That is why "better" is judged on the whole total: the swap is
+  priced with the +1 gone, and the check as it was with the +1 in.
+- **A bonus to a Maneuver follows the Maneuver onto a Defense's check** (ruling 222). A check
+  rolled with a Defense Constellation from that Maneuver's Item (an Aid made with Awareness)
+  carries a bonus to the Maneuver (Humanity's +1 to Aid), which it lost through 0.20.1. Whether a
+  bonus to every check reaches a Defense rolled as a check (Wind, Recovery, a Search) is untouched
+  and is an open decision.
+- **What a substitution does not read yet** (0.21.0). Not built: a Constellation as the check a
+  `USE` names (it brings the Initiative question of ruling 111 with the first Talent that wants
+  it); offers on plain checks, made without the Maneuver's Item; `IF: UNSUBSTITUTED`; a flat
+  Proficiency Bonus (Working Knowledge's "+3 instead of +0"); `FOR` and auras; `CLAIM`; and Aid's
+  own outcome bonus, which stays the card's text.
 - **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
   sight-blocking walls plus three statuses; light, sight range and hearing are the table's.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
@@ -455,6 +570,8 @@ hover. The Grammar button on the panel opens this document's journal.
 | `EFFECT is written \`[EFFECT <tag>: ...]\`, as in \`[EFFECT IMMUNE: prone; LIMIT: encounter]\`` | an empty `[EFFECT]` |
 | `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or [<Constellation> trained]` | the block's first word |
 | `TRAIT is a feature and is written in brackets: \`[TRAIT Human]\`` | a feature keyword typed as a line, without its brackets |
+| `"substitute" is the kind's name, and its tag is USE: write \`[EFFECT USE: Presence, Origin, aid]\`` | a kind's stored name typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): an effect is written with its tag. On a custom effect row the message offers the bare `USE: Presence, Origin, aid` |
+| `USE is an effect tag and takes a colon: write \`[EFFECT USE: Presence, Origin, aid]\`` | a tag typed without its colon (`use Presence, Origin, aid`; 0.21.0); any tag is told the same in its own word (`CHECK is an effect tag and takes a colon: ...`), but `SPEED`, which is a feature keyword first |
 | `a [ has no closing ]` | a bracket left open |
 | `CHECK is written \`CHECK: <value> <type>, <descriptor>\` ... a signed whole number first` | the value is missing or not a number |
 | `no Talent bonus is untyped; name situation, condition or gear after the value` | the bonus type is missing |
@@ -473,14 +590,37 @@ hover. The Grammar button on the panel opens this document's journal.
 | `a Threat is written bare: \`IFT: BLOW\`` | `IFT: CHECK(blow)` |
 | `<TAG> does not take <component>` | a component the tag has no use for (`IMMUNE does not take IF: CLAIM(...)`) |
 | `"<TAG>" is a tag and begins its own line; one effect per line` | two tags in one block |
+| `"<part>" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT: (descriptors are separated by commas; a semicolon begins a component)` | what follows a semicolon is none of the four. The words in parentheses are added (0.21.0) when the part has no colon: most often a descriptor that followed a semicolon (`USE: Presence; Origin; aid`) |
 | `FOR is written \`FOR: <who> [<N>]\`` / `FOR: self takes no range` | the recipients |
 | `LIMIT is written \`LIMIT: round\` or \`LIMIT: encounter\`` | the limit |
 | `a who is written self, allies, enemies, all or self+allies` | the FOR subject |
 | `a range is written <N>ft, as in 15ft` | the feet |
 | `"<word>" is not a Condition or Expose` | the IMMUNE descriptor |
 | `"<word>" is not a terrain kind: write Mud, Shallow Water, ...` | a kind not in the Difficult terrain behavior's list |
+| `a substitution is written \`USE: <Attribute>, <Constellation>, <Maneuver>\`, as in \`USE: Presence, Origin, aid\`` | a `USE` with no descriptor; with one alone the message ends `(1 descriptor given, 3 wanted)` |
+| `USE takes three descriptors, the Attribute, the Constellation and the Maneuver, not <N>: \`USE: Presence, Origin, aid\`` | four descriptors or more |
+| `the Attribute is missing: USE takes three descriptors, as in \`USE: same, <first>, <second>\` to keep the check's own Attribute (might, agility, wits or presence names another)` | two descriptors, the first of them no Attribute word |
+| `the Constellation is missing: USE takes three descriptors, as in \`USE: <first>, same, <second>\` to keep the check's own Proficiency Bonus` | two descriptors, an Attribute and a Maneuver |
+| `a term is missing: USE takes three descriptors, and same twice swaps nothing; name the Attribute, the Constellation, or both, as in \`USE: Presence, same, <Maneuver>\` or \`USE: same, Origin, <Maneuver>\`` | two descriptors, `same` and a Maneuver (`USE: same, aid`): a second `same` would swap nothing |
+| `the Maneuver is missing: USE never means every check; name the Maneuver whose check is swapped third, as in \`USE: Presence, Origin, aid\` (write same for a term the check keeps)` | two descriptors, the Attribute and the Constellation: the check was left off; also two descriptors ending in `same`, which the third place never takes |
+| `"<descriptor>": the Attribute and the Constellation are two descriptors with a comma between them, as in \`USE: Presence, Origin, aid\`` | a `+` between the two terms, as the Talent's prose has it (`USE: Presence + Origin, aid`) |
+| `USE takes no value: it names the terms a check is made with, \`USE: <Attribute>, <Constellation>, <Maneuver>\`, as in \`USE: Presence, Origin, aid\`; a bonus is \`CHECK: 1 condition, aid\`` | a number first (`USE: 1 condition, aid`): `USE` is no modifier tag |
+| `"<word>" is not an Attribute: write might, agility, wits or presence, or same to keep the check's own` | the first descriptor of `USE` |
+| `\`roll\` is RANK's word; in a USE line write same for a term the check keeps` | `roll` as the first or the second descriptor of `USE` |
+| `\`USE: same, same\` swaps nothing: name the Attribute, the Constellation, or both, as in \`USE: Presence, Origin, aid\`` | both terms kept |
+| `"<word>": a flat Proficiency Bonus is not read yet; the second descriptor is the Constellation whose Proficiency Bonus is borrowed, or same` | a rank word or a number as the second descriptor (`trained`, `+3`): not built, section 7 |
+| `"<word>" is an Attribute, and the first descriptor is where it goes; the second is the Constellation whose Proficiency Bonus is borrowed, or same` | an Attribute word as the second descriptor |
+| `"<name>" is not a Constellation: a Maneuver has no Proficiency Bonus to borrow` | a Maneuver as the second descriptor |
+| `"<name>" is a group and has no rank of its own; borrow <parent> instead` | a group as the second descriptor (`USE: Presence, Archery, aid`): write the parent |
+| `a Lore is the character's own; a substitution cannot borrow it` / `a Lore is the character's own; a substitution cannot name it` | a Lore as the second or the third descriptor |
+| `same keeps one of the first two terms; the third descriptor names the Maneuver whose check is swapped, as in \`USE: Presence, Origin, aid\`` | `same` as the third descriptor |
+| `"<word>" is a scope word, and USE never means every check: name the Maneuver whose check is swapped, as in \`USE: Presence, Origin, aid\`` | `checks`, `defenses`, `attacks`, `initiative` or `speed` as the third descriptor |
+| `"<word>" is a Defense: its Threshold and its roll against an attack are never substituted; name the Maneuver that rolls it` | a Defense as the third descriptor |
+| `"<name>" is a Constellation: USE reads a Maneuver's check in this version, as in \`USE: Presence, Origin, aid\`; a Constellation's own checks are not read yet` | a Constellation as the third descriptor: not built, section 7 |
+| `USE does not take FOR` / `USE does not take IF: SEEN` / `USE does not take IF: ALLIES(...)` / `USE does not take IFT: <Threat>` / `USE does not take IFT: MARKED` / `USE does not take IF: CLAIM(...)` / `USE does not take IFT: TRAIT(...)` | a component `USE` has no use for: it takes `IF: RANK(...)` and `LIMIT:` alone. `IFT: CHECK(...)` is told `IFT: <Threat>`, and an `IF: RESULT(...)` gets the reroll message above |
+| `a substitution is the owner's own roll and cannot ride an [AURA ...] block; write it as its own \`[EFFECT USE: Presence, Origin, aid]\`` | a `USE` after the ring's semicolon in an `[AURA ...]` block |
 | `"<name>" is not a Maneuver: a [MANEUVER ...] names a row of data/maneuvers.xlsx` | the Maneuver's row is missing, or (the build) not enabled |
-| `"<name>" is not a Constellation` | `[<name> trained]` names no Constellation |
+| `"<name>" is not a Constellation` | `[<name> trained]` names no Constellation; the same words answer a `RANK(...)` or the second descriptor of a `USE` that names none |
 | `[<name> expert]: a Root is Trained; nothing grants Expert at creation` | only `trained` reads |
 | `POINT is written \`[POINT <N> <Scope> [different]]\`` / `"<word>" is not a grant scope: write Opening, Calling, Skill, Lore, Defense, Combat Style or Comet` | the point block |
 | `SPEED is written \`[SPEED 6]\` ... or \`[SPEED +1]\`` / `VIGOR is written \`[VIGOR 8]\` ... or \`[VIGOR opening 12]\`` | the chassis blocks |
@@ -550,3 +690,20 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   Skip is spent at the event, never by a render; a ticked claim on a one-roll custom effect spends
   the row too; a removed row takes its armed flag with it; a terrain kind picked on a region brings
   the roster row's cost.
+- **0.21.0** (2026-11-10): the `USE` tag and the `substitute` kind, from Mike's Cooperative Instinct
+  ("you may use Presence + Origin proficiency in place of the Attribute and proficiency normally
+  used for that Aid check") and his own cell, written before the kind existed: `USE: <Attribute>,
+  <Constellation>, <Maneuver>`, exactly three descriptors, `same` for a term the check keeps
+  (ruling 215). It replaces a check's two base terms and nothing else (216); the rank recorded,
+  which every other rule's `RANK(roll ...)` reads, is the rank rolled (217); it is offered in the
+  roll dialog, ticked when the whole total is strictly higher, one to a roll (218), only from the
+  Maneuver's own Item, and only a Maneuver may be named (219); checks only, characters only (220);
+  the `substitutions` hook point, the fifth, defined with the kind (221). A bonus to a Maneuver
+  reaches a check rolled with a Defense Constellation from that Maneuver's Item (222). A `USE`
+  line has On / Skip / Off on the Effects tab. Fixed on the way, no new word: a roll dialog that
+  rebuilt the roll dropped the marks of the boxes the player left ticked (an armed claim was not
+  spent, a one-roll custom effect not removed); a kind's own name typed as a line (`substitute:
+  ...`) is told its tag rather than "is a feature", a tag typed without its colon is told the
+  colon, and a part after a semicolon that has no colon is told that commas separate descriptors.
+  The release carries the kind alone: Cooperative Instinct is on Mike's Human sheet in progress,
+  and no shipped cell uses `USE` yet.

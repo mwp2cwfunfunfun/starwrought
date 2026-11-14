@@ -58,9 +58,12 @@ export function prepareDefenses(data) {
     const rank = con?.rank ?? "untrained";
     const attribute = con?.attribute ?? def.attribute;
     const physical = (key === "evade") || (key === "guard");
+    // The two base terms are tagged (0.21.0): a check made with a Defense from a Maneuver's Item
+    // may swap them for another pair (the `substitutions` hook point; dice/check/modifiers.mjs),
+    // and it finds them by the tag. Nothing else reads it; a Defense roll and a Threshold never swap.
     const modifiers = [
-      { label: game.i18n.localize(SW.ATTRIBUTES[attribute].label), value: data.attributes[attribute].mod },
-      { label: game.i18n.localize(SW.RANKS[rank].label), value: SW.rankBonus(rank) },
+      { label: game.i18n.localize(SW.ATTRIBUTES[attribute].label), value: data.attributes[attribute].mod, base: "attribute" },
+      { label: game.i18n.localize(SW.RANKS[rank].label), value: SW.rankBonus(rank), base: "proficiency" },
       { label: game.i18n.localize("STARWROUGHT.Field.customBonus"), value: data.bonuses.defenses[key] }
     ];
     if (physical && offGuard) {

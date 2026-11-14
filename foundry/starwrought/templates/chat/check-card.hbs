@@ -20,6 +20,9 @@
     {{/each}}
   </ul>
 
+  {{!-- A check made with other terms (0.21.0, the USE tag): which Talent swapped what for what. --}}
+  {{#if substituteNote}}<p class="sw-card-note sw-substitute-note"><i class="fa-solid fa-right-left"></i> {{substituteNote}}</p>{{/if}}
+
   {{!-- A Strike at a target the weapon cannot reach: said, never refused, for the GM to rule on. --}}
   {{#if rangeNote}}<p class="sw-card-note sw-warn sw-range-note"><i class="fa-solid fa-ruler-horizontal"></i> {{rangeNote}}</p>{{/if}}
 

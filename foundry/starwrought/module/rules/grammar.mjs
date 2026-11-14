@@ -261,6 +261,25 @@ export function parseAutomation(text, context = {}) {
     }
     // A feature keyword typed as a line (`trait: Human`): never the 0.13.0 form, just unbracketed.
     const keyword = FEATURE_KEYWORD_LIST.find(k => k.toLowerCase() === word);
+    // An effect kind's own id typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): the
+    // kind is read through its tag, so the message names the tag and not a block that does not
+    // exist. `bonus` and `prevent` never reach here (the retired form, above), and `mark`, `reroll`
+    // and `ignore` are their own tags, so they are told the same thing in their own word.
+    // A tag typed without its colon (`use Presence, Origin, aid`) is told about the colon.
+    const named = keyword ? null : kindOf(word);
+    const tagWord = (!keyword && Object.hasOwn(EFFECT_TAGS, word)) ? word : null;
+    const tagOfKind = tagWord ?? (named ? Object.keys(EFFECT_TAGS).find(t => EFFECT_TAGS[t] === named.id) : null);
+    if (tagOfKind) {
+      const TAG = tagOfKind.toUpperCase();
+      const written = bareIsTheForm ? `\`${TAG}: ${args || "..."}\`` : `\`[EFFECT ${TAG}: ${args || "..."}]\``;
+      errors.push({
+        line, text: trimmed,
+        message: tagWord
+          ? `${TAG} is an effect tag and takes a colon: write ${written}`
+          : `"${word}" is the kind's name, and its tag is ${TAG}: write ${written}`
+      });
+      return;
+    }
     if (keyword || kindOf(word)) {
       const shown = keyword ?? word.toUpperCase();
       errors.push({ line, text: trimmed, message: `${shown} is a feature and is written in brackets: \`[${shown} ${args || "..."}]\`` });

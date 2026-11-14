@@ -10,6 +10,7 @@
 import * as SW from "../../config.mjs";
 import { strikeCanCrit } from "./strike.mjs";
 import { position as settlePosition } from "./position.mjs";
+import { substitutionLine } from "./modifiers.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
 
@@ -99,6 +100,10 @@ export async function cardContext(result, position) {
     threshold: result.threshold,
     thresholdLabel: result.thresholdLabel,
     modifiers: result.modifiers,
+    // A check made with other terms (0.21.0, ruling 216): the swap in words, under the modifiers.
+    // The rows above already read "Presence +2" and "Origin (Trained) +3", but a term of +0 is
+    // left out of them, so the note is what says a swap stood and what it replaced.
+    substituteNote: cfg.substituted ? game.i18n.format("STARWROUGHT.Roll.substituteNote", { line: substitutionLine(cfg.substituted) }) : "",
     degree: result.degree,
     degreeLabel: result.degree ? game.i18n.localize(SW.DEGREES[result.degree].label) : "",
     outcome: result.outcome ? game.i18n.localize(result.outcome.label) : "",
@@ -167,6 +172,8 @@ export function cardFlags(result, position) {
     // the damage card rolls the right dice (PHB v4.21: dice by rank).
     slug: cfg.slug ?? null,
     rank: cfg.rank ?? null,
+    // The Attribute rolled (0.21.0): the check's own, or the one a swap put in its place.
+    attribute: cfg.substituted?.attribute ?? cfg.attribute ?? null,
     thrown: !!cfg.thrown,
     defense: cfg.defense ?? null,
     reaction: cfg.reaction ?? null,
@@ -195,6 +202,10 @@ export function cardFlags(result, position) {
   // A check's own extras and the Threshold it was withheld (0.15.0): a reroll of the check keeps
   // its formula and reads the Threshold again from the target when the card could not print it.
   if (!isExchange) {
+    // A check made with other terms (0.21.0): the record of the swap that stood. `slug` above is
+    // still the check's own Constellation (the Flare button names it); `rank` is the rank rolled,
+    // the borrowed Constellation's; this says which rule swapped which term for what.
+    if (cfg.substituted) flags.substituted = cfg.substituted;
     if (cfg.withholdThreshold === true) flags.withheldThreshold = true;
     if (cfg.targetDefenseKey) flags.targetDefense = cfg.targetDefenseKey;
     if (cfg.rerollOf) flags.rerollRule = cfg.rerollRule ?? null;

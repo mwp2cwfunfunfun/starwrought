@@ -28,11 +28,15 @@ import {
   KIND_WORD, kindOf, knownKinds
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
-import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds } from "../foundry/starwrought/module/rules/operators.mjs";
+import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleStateKey, usableByRule, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName } from "../foundry/starwrought/module/rules/operators.mjs";
 // 0.17.0: the effect reader behind every tag (the operator reader's successor) and the feature
 // keyword list, each checked on its own as readLine was.
-import { readEffectLine } from "../foundry/starwrought/module/rules/effects.mjs";
+import { readEffectLine, EFFECT_TAGS } from "../foundry/starwrought/module/rules/effects.mjs";
+// 0.21.0: the pure half of a check made with other terms, and the list of kinds the Effects tab
+// switches (the module's top level names no Foundry global, so it imports here).
+import { swapTerms, substitutionRecord, chooseVariant, mergeMarks } from "../foundry/starwrought/module/dice/check/substitute.mjs";
+import { EFFECT_KINDS } from "../foundry/starwrought/module/helpers/effects.mjs";
 import { FEATURE_KEYWORD_LIST } from "../foundry/starwrought/module/rules/features.mjs";
 import { ignoresTerrain } from "../foundry/starwrought/module/rules/kinds/ignore.mjs";
 import { terrainKindOf, terrainKindName, registerTerrainKinds } from "../foundry/starwrought/module/config.mjs";
@@ -60,7 +64,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["aura", "bonus", "choice", "grant", "ignore", "language", "maneuver", "mark", "prevent", "reroll", "sense", "size", "speed", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["aura", "bonus", "choice", "grant", "ignore", "language", "maneuver", "mark", "prevent", "reroll", "sense", "size", "speed", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -674,7 +678,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -1671,7 +1675,11 @@ const EFFECT_LINES = [
   "INIT: 1 situation",
   "CHECK: 2 situation, guile; IF: CLAIM(when trading)",
   "CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)",
-  "CHECK: -2 gear, stealth"
+  "CHECK: -2 gear, stealth",
+  // 0.21.0: the substitution, whole and with one term kept.
+  "USE: Presence, Origin, aid",
+  "USE: same, Origin, aid; IF: RANK(Origin >= expert); LIMIT: encounter",
+  "USE: Presence, same, aid; IF: RANK(roll = untrained)"
 ];
 
 /** The same line read as a custom effect row (the bare form's one home since 0.18.0). */
@@ -1785,7 +1793,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   must(err("[EFFECT CHECK]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
@@ -1860,6 +1868,390 @@ check("0.16.0: the refusals of the two layers", () => {
   must(err("AURA: 15 allies") === LEGACY_REFUSAL, "an aura as a tag");
   must(/is not a Maneuver/.test(err("[MANEUVER Fly]")), "a Maneuver that is no row");
   must(/is not a Size/.test(err("[SIZE Vast]")), "a bad Size");
+});
+
+/* -------------------------------------------- */
+/*  0.21.0: the substitute kind (USE) and the substitutions hook point */
+/* -------------------------------------------- */
+
+/** A resolver that knows a group, as the build's does: Archery is a group within Ranged. */
+const groupResolve = name => {
+  const lower = String(name).trim().toLowerCase();
+  if (lower === "archery") return { type: "constellation", slug: "archery", name: "Archery", group: true, parent: "Ranged" };
+  return resolve(name);
+};
+
+/** Parse one USE cell and return the one error's message. */
+const useError = (cell, context = { resolve: groupResolve }) => bonusError(cell, context);
+
+check("substitute: registered with its substitutions hook, no aliases, and no use hook", () => {
+  const kind = kindOf("substitute");
+  must(kind && kind.id === "substitute", "kindOf('substitute')");
+  same(kind.aliases, [], "no aliases");
+  same(Object.keys(kind.hooks), ["substitutions"], "one hook point");
+  must(typeof kind.hooks.substitutions === "function", "hooks.substitutions is a function");
+  must(EFFECT_TAGS.use === "substitute", "the USE tag names the kind");
+  // A kind with `hooks.use` draws a Use control on the Talent's row and runs when it is used: a
+  // substitution is never used, so its hook is not that one.
+  must(!usableByRule({ system: { rules: cellRules("[EFFECT USE: Presence, Origin, aid]") } }), "a USE line draws no Use control");
+});
+
+check("substitute: every accepted form, without a resolver, stored whole", () => {
+  const text = "[EFFECT USE: Presence, Origin, aid]";
+  same(bonusRule(text), {
+    attribute: "presence", proficiency: { constellation: "origin", name: "Origin" },
+    to: { name: "aid", slug: "aid", type: null }, when: null, limit: null,
+    kind: "substitute", line: 1, text
+  }, "Cooperative Instinct's cell");
+  const kept = bonusRule("[EFFECT USE: same, Origin, aid]");
+  same([kept.attribute, kept.proficiency], [null, { constellation: "origin", name: "Origin" }], "same keeps the Attribute");
+  const other = bonusRule("[EFFECT USE: Presence, same, aid]");
+  same([other.attribute, other.proficiency], ["presence", null], "same keeps the Proficiency");
+  for (const word of ["might", "Agility", "WITS", "presence"]) must(bonusRule(`[EFFECT USE: ${word}, same, aid]`).attribute === word.toLowerCase(), `${word} is an Attribute, case blind`);
+  same(bonusRule("[EFFECT use:presence,origin,Aid ❶ (⓿↺).]").to, { name: "Aid ❶ (⓿↺)", slug: "aid", type: null }, "spaces free, the tag case blind, a Maneuver's glyphs out of the slug, a trailing period tolerated");
+  same(bonusRule("[EFFECT USE: Presence, Armored Fighting, aid]").proficiency, { constellation: "armored-fighting", name: "Armored Fighting" }, "a two-word Constellation");
+  const full = bonusRule("[EFFECT USE: Presence, Origin, aid; IF: RANK(Origin >= expert); IF: RANK(roll = untrained); LIMIT: encounter]");
+  same(full.when, [{ constellation: "origin", name: "Origin", op: ">=", rank: "expert" }, { roll: true, op: "=", rank: "untrained" }], "the conditions");
+  same(full.limit, { per: "encounter" }, "the limit");
+  const row = parseAutomation("USE: Presence, Origin, aid", { itemType: "effect" });
+  same([row.errors, row.rules.map(bare)], [[], [bare(bonusRule(text))]], "the bare line on a custom effect row is the same rule");
+  same(JSON.parse(JSON.stringify(full)), full, "a stored rule equals its JSON image");
+});
+
+check("substitute: with a resolver the borrowed Constellation and the Maneuver carry the resolved names", () => {
+  const rule = bonusRule("[EFFECT USE: presence, origin, aid ❶]", { resolve });
+  same(rule.proficiency, { constellation: "origin", name: "Origin" }, "the Origin, by the resolver's name");
+  same(rule.to, { name: "Aid", slug: "aid", type: "action" }, "the Maneuver, typed");
+  same(bonusRule("[EFFECT USE: Presence, GUARD, aid]", { resolve }).proficiency, { constellation: "guard", name: "Guard" }, "a Defense's Proficiency Bonus may be borrowed");
+  same(bonusRule("[EFFECT USE: same, athletics, Steady the Line]", { resolve }).to, { name: "Steady the Line", slug: "steady-the-line", type: "action" }, "a Maneuver of several words");
+});
+
+check("substitute: the refusals, each with a message the designer can act on", () => {
+  const A = "might, agility, wits or presence";
+  must(useError("[EFFECT USE: Luck, Origin, aid]") === `"Luck" is not an Attribute: write ${A}, or same to keep the check's own`, "an unknown Attribute");
+  must(useError("[EFFECT USE: roll, Origin, aid]") === "`roll` is RANK's word; in a USE line write same for a term the check keeps", "roll as the Attribute");
+  must(useError("[EFFECT USE: Presence, roll, aid]") === "`roll` is RANK's word; in a USE line write same for a term the check keeps", "roll as the Constellation");
+  must(useError("[EFFECT USE: same, same, aid]") === "`USE: same, same` swaps nothing: name the Attribute, the Constellation, or both, as in `USE: Presence, Origin, aid`", "same twice");
+  must(useError("[EFFECT USE: Presence, Nobody, aid]") === '"Nobody" is not a Constellation', "an unknown Constellation");
+  must(useError("[EFFECT USE: Presence, Search, aid]") === '"Search" is not a Constellation: a Maneuver has no Proficiency Bonus to borrow', "a Maneuver as the Constellation");
+  must(useError("[EFFECT USE: Presence, Archery, aid]") === '"Archery" is a group and has no rank of its own; borrow Ranged instead', "a group names its parent");
+  must(useError("[EFFECT USE: Presence, Lore, aid]") === "a Lore is the character's own; a substitution cannot borrow it", "a Lore as the Constellation");
+  const flat = "a flat Proficiency Bonus is not read yet; the second descriptor is the Constellation whose Proficiency Bonus is borrowed, or same";
+  for (const word of ["trained", "Expert", "3", "+3"]) {
+    must(useError(`[EFFECT USE: Presence, ${word}, aid]`) === `"${word}": ${flat}`, `${word} with a resolver`);
+    must(useError(`[EFFECT USE: Presence, ${word}, aid]`, {}) === `"${word}": ${flat}`, `${word} without one: the same refusal`);
+  }
+  must(useError("[EFFECT USE: Presence, Wits, aid]", {}) === '"Wits" is an Attribute, and the first descriptor is where it goes; the second is the Constellation whose Proficiency Bonus is borrowed, or same', "an Attribute as the Constellation");
+  must(useError("[EFFECT USE: Presence, Origin, same]") === "same keeps one of the first two terms; the third descriptor names the Maneuver whose check is swapped, as in `USE: Presence, Origin, aid`", "same as the check");
+  must(useError("[EFFECT USE: Presence, Origin, checks]") === '"checks" is a scope word, and USE never means every check: name the Maneuver whose check is swapped, as in `USE: Presence, Origin, aid`', "a scope word");
+  for (const word of ["guard", "Awareness", "evade", "Endure"]) {
+    must(useError(`[EFFECT USE: Presence, Origin, ${word}]`, {}) === `"${word}" is a Defense: its Threshold and its roll against an attack are never substituted; name the Maneuver that rolls it`, `${word} as the check, with no resolver needed`);
+  }
+  must(useError("[EFFECT USE: Presence, Origin, Diplomacy]") === '"Diplomacy" is a Constellation: USE reads a Maneuver\'s check in this version, as in `USE: Presence, Origin, aid`; a Constellation\'s own checks are not read yet', "a Constellation as the check");
+  must(useError("[EFFECT USE: Presence, Origin, Aidd]") === '"Aidd" names no Constellation or Maneuver', "an unknown check");
+  must(useError("[EFFECT USE: Presence, Origin, Lore]") === "a Lore is the character's own; a substitution cannot name it", "a Lore as the check");
+});
+
+check("substitute: the slips a count alone would misname", () => {
+  must(useError("[EFFECT USE: Presence + Origin, aid]") === '"Presence + Origin": the Attribute and the Constellation are two descriptors with a comma between them, as in `USE: Presence, Origin, aid`', "the Talent's own prose, with a plus");
+  must(useError("[EFFECT USE: Presence + Origin proficiency, aid]").startsWith('"Presence + Origin proficiency": the Attribute and the Constellation are two descriptors'), "and with the word proficiency");
+  must(useError("[EFFECT USE: 1 condition, aid]") === "USE takes no value: it names the terms a check is made with, `USE: <Attribute>, <Constellation>, <Maneuver>`, as in `USE: Presence, Origin, aid`; a bonus is `CHECK: 1 condition, aid`", "a value and a type");
+  must(useError("[EFFECT USE: Presence, Origin]") === "the Maneuver is missing: USE never means every check; name the Maneuver whose check is swapped third, as in `USE: Presence, Origin, aid` (write same for a term the check keeps)", "the check left off");
+  must(useError("[EFFECT USE: Presence, aid]") === "the Constellation is missing: USE takes three descriptors, as in `USE: Presence, same, aid` to keep the check's own Proficiency Bonus", "the Constellation left off");
+  must(useError("[EFFECT USE: Presence, , aid]") === "the Constellation is missing: USE takes three descriptors, as in `USE: Presence, same, aid` to keep the check's own Proficiency Bonus", "an empty place is dropped by the reader, and reads the same");
+  must(useError("[EFFECT USE: Origin, aid]") === `the Attribute is missing: USE takes three descriptors, as in \`USE: same, Origin, aid\` to keep the check's own Attribute (might, agility, wits or presence names another)`, "the Attribute left off");
+  must(useError("[EFFECT USE: Presence, aid]", {}) === "the Maneuver is missing: USE never means every check; name the Maneuver whose check is swapped third, as in `USE: Presence, Origin, aid` (write same for a term the check keeps)", "two descriptors with no resolver to tell which");
+  // An example is never a line the parser refuses in its turn: `same, aid` is not told `same, same, aid`
+  // (which swaps nothing), and `Origin, same` is not told to end a line in `same`.
+  const sameAid = useError("[EFFECT USE: same, aid]");
+  must(sameAid === "a term is missing: USE takes three descriptors, and same twice swaps nothing; name the Attribute, the Constellation, or both, as in `USE: Presence, same, aid` or `USE: same, Origin, aid`", `same and a Maneuver: "${sameAid}"`);
+  must(!/same, same/.test(sameAid) && !/same, same/i.test(useError("[EFFECT USE: SAME, Aid]")), "and never the line that swaps nothing, case blind");
+  for (const advised of ["[EFFECT USE: Presence, same, aid]", "[EFFECT USE: same, Origin, aid]"]) must(cellRules(advised).length === 1, `${advised} is a line that reads`);
+  must(useError("[EFFECT USE: Origin, same]") === "the Maneuver is missing: USE never means every check; name the Maneuver whose check is swapped third, as in `USE: Presence, Origin, aid` (write same for a term the check keeps)", "a Constellation and same: the Maneuver is what is missing");
+  must(useError("[EFFECT USE: aid, same]").startsWith("the Maneuver is missing"), "a Maneuver and same: the same sentence, never an example ending in same");
+  must(useError("[EFFECT USE: the stairs]") === "a substitution is written `USE: <Attribute>, <Constellation>, <Maneuver>`, as in `USE: Presence, Origin, aid` (1 descriptor given, 3 wanted)", "one descriptor, counted in the singular");
+  must(useError("[EFFECT USE:]") === "a substitution is written `USE: <Attribute>, <Constellation>, <Maneuver>`, as in `USE: Presence, Origin, aid`", "none");
+  must(useError("[EFFECT USE: Presence, Origin, aid, search]") === "USE takes three descriptors, the Attribute, the Constellation and the Maneuver, not 4: `USE: Presence, Origin, aid`", "four");
+  must(useError("[EFFECT USE: Presence; Origin; aid]") === '"Origin" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT: (descriptors are separated by commas; a semicolon begins a component)', "semicolons for commas, told which mark does what");
+});
+
+check("substitute: the components it has no use for are refused by name, and an AURA block in the author's own terms", () => {
+  must(useError("[EFFECT USE: Presence, Origin, aid; FOR: allies 15]") === "USE does not take FOR", "FOR");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IF: SEEN]") === "USE does not take IF: SEEN", "SEEN");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IF: ALLIES(>=1, 0)]") === "USE does not take IF: ALLIES(...)", "a count");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IFT: BLOW]") === "USE does not take IFT: <Threat>", "a Threat");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IFT: CHECK(intimidation)]") === "USE does not take IFT: <Threat>", "a check read against a Defense");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IFT: MARKED]") === "USE does not take IFT: MARKED", "MARKED");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IF: CLAIM(when teaching)]") === "USE does not take IF: CLAIM(...)", "a claim");
+  must(/IF\(Outcome=\.\.\.\) is only read by a kind that acts after the die/.test(useError("[EFFECT USE: Presence, Origin, aid; IF: RESULT(failure)]")), "a degree");
+  must(useError("[EFFECT USE: Presence, Origin, aid; IFT: TRAIT(Fear)]") === "USE does not take IFT: TRAIT(...)", "a trait");
+  const ring = parseAutomation("[AURA 15 allies; USE: Presence, Origin, aid]", { resolve, itemType: "talent" });
+  same(ring.errors.map(e => e.message), ["a substitution is the owner's own roll and cannot ride an [AURA ...] block; write it as its own `[EFFECT USE: Presence, Origin, aid]`"], "an AURA block: no FOR the author never wrote");
+  same(ring.rules.map(r => r.kind), ["aura"], "the ring itself still reads, and nothing is stored for the effect");
+});
+
+check("substitute: a kind's own name typed as a line is told its tag, and a tag without its colon the colon", () => {
+  const cell = parseAutomation("substitute: Presence, Origin, aid", { resolve, itemType: "talent" });
+  same([cell.rules, cell.errors.map(e => e.message)], [[], ['"substitute" is the kind\'s name, and its tag is USE: write `[EFFECT USE: Presence, Origin, aid]`']], "in a cell");
+  must(parseAutomation("Substitute Presence, Origin, aid", { resolve, itemType: "effect" }).errors[0]?.message === '"substitute" is the kind\'s name, and its tag is USE: write `USE: Presence, Origin, aid`', "on a custom effect row, the bare form");
+  must(parseAutomation("use Presence, Origin, aid", { resolve, itemType: "talent" }).errors[0]?.message === "USE is an effect tag and takes a colon: write `[EFFECT USE: Presence, Origin, aid]`", "a tag with no colon");
+  must(parseAutomation("[USE: Presence, Origin, aid]", { resolve }).errors.length === 1 && parseAutomation("[SUBSTITUTE Presence, Origin, aid]", { resolve }).errors.length === 1, "neither word is a feature keyword");
+  // The words that never were tags or 0.13.0 lines keep their messages (the checks above).
+  must(/^PROBE is a feature and is written in brackets/.test(parseAutomation("probe: the grammar").errors[0]?.message ?? ""), "an alias of a kind no tag names is still told to bracket");
+  must(parseAutomation("trait: Human").errors[0]?.message === "TRAIT is a feature and is written in brackets: `[TRAIT Human]`", "and so is a feature keyword");
+  must(parseAutomation("speed 6").errors[0]?.message === "SPEED is a feature and is written in brackets: `[SPEED 6]`", "SPEED is a feature keyword first, though it is a tag too");
+});
+
+check("substitute: the summary, in the Talent's own phrase", () => {
+  must(summarize(bonusRule("[EFFECT USE: Presence, Origin, aid]", { resolve })) === "may use Presence + Origin proficiency on checks to Aid", "both terms");
+  must(summarize(bonusRule("[EFFECT USE: same, Origin, aid]", { resolve })) === "may use Origin proficiency on checks to Aid", "the Proficiency alone");
+  must(summarize(bonusRule("[EFFECT USE: Presence, same, aid]", { resolve })) === "may use Presence on checks to Aid", "the Attribute alone");
+  must(summarize(bonusRule("[EFFECT USE: Presence, Athletics, aid; IF: RANK(Origin >= expert); LIMIT: encounter]", { resolve })) === "may use Presence + Athletics proficiency on checks to Aid, while Origin is at least Expert, once each encounter", "the components");
+  must(summarize(bonusRule("[EFFECT USE: Presence, Origin, aid; IF: RANK(roll = untrained)]", { resolve })) === "may use Presence + Origin proficiency on checks to Aid, while the check's own rank is Untrained", "on a USE line the roll's rank is the check's own, and the summary says so");
+});
+
+check("operators: readTargetName is the one reading of a target's name", () => {
+  same(readTargetName(" Aid ❶ (⓿↺) ", undefined), { name: "Aid ❶ (⓿↺)", slug: "aid", type: null, found: null }, "no resolver: the name as written, the slug made, no type");
+  const read = readTargetName("aid ❶", resolve);
+  same([read.name, read.slug, read.type, read.found === KNOWN.aid], ["Aid", "aid", "action", true], "a resolver: the canonical name, the type, and the resolver's own record");
+  must(readTargetName("Nobody", resolve) === null, "a resolver that knows nothing answers null");
+  must(readTargetName("x", () => ({ type: "constellation", name: "No Slug" })) === null, "and so does a record with no slug");
+});
+
+/* The hook, through the dispatcher. */
+
+const cooperative = talentWith("Cooperative Instinct", "[EFFECT USE: Presence, Origin, aid]");
+const COOP = {
+  key: "use-Cooperative Instinct-1", item: cooperative, label: "Cooperative Instinct",
+  attribute: "presence", proficiency: { constellation: "origin", name: "Origin" }, certain: true, marks: []
+};
+const aidRoll = { kind: "check", slug: "diplomacy", item: aidItem, rank: "untrained" };
+
+check("ruleSubstitutions: a candidate only when the roll carries the Maneuver's own Item, and only on a check", () => {
+  const actor = rulesActor([cooperative, humanity], { origin: "trained" });
+  same(ruleSubstitutions(actor, aidRoll), { candidates: [COOP], marks: [] }, "Aid from its Item: one candidate, mirroring the rule");
+  same(ruleSubstitutions(actor, { ...aidRoll, slug: "awareness" }).candidates.map(c => c.key), [COOP.key], "whatever Constellation the Aid is rolled with, a Defense included");
+  same(ruleSubstitutions(actor, { ...aidRoll, item: searchItem }).candidates, [], "a Search is not an Aid");
+  same(ruleSubstitutions(actor, { ...aidRoll, item: null }).candidates, [], "a check made without the Item is offered nothing");
+  same(ruleSubstitutions(actor, { ...aidRoll, item: { type: "talent", name: "Aid" } }).candidates, [], "a Talent named Aid is not the Maneuver");
+  for (const kind of ["attack", "defense", "initiative"]) same(ruleSubstitutions(actor, { ...aidRoll, kind }).candidates, [], `never on ${kind === "attack" ? "an" : "a"} ${kind}`);
+  same(ruleSubstitutions(rulesActor([{ ...cooperative, id: "coop0001" }]), aidRoll).candidates.map(c => c.key), ["use-coop0001-1"], "an Item with an id keys on it");
+  same(ruleSubstitutions(rulesActor([{ ...cooperative, name: "Cooperative Instinct ❶↺" }]), aidRoll).candidates.map(c => c.label), ["Cooperative Instinct"], "the label is the carrier's plain name, glyphs out");
+  const noResolver = talentWith("Plain", "[EFFECT USE: Presence, Origin, aid]", {});
+  same(ruleSubstitutions(rulesActor([noResolver]), aidRoll).candidates.map(c => c.label), ["Plain"], "a rule parsed without a resolver matches the Maneuver by its slug");
+  const byHand = { type: "talent", name: "By hand", system: { rules: [{ kind: "substitute", line: 1, text: "x", attribute: "presence", proficiency: null, to: { name: "Diplomacy", slug: "aid", type: "constellation" }, when: null, limit: null }] } };
+  same(ruleSubstitutions(rulesActor([byHand]), aidRoll).candidates, [], "a Constellation as the check is not read in this version, even stored by hand");
+});
+
+check("ruleSubstitutions: IF reads the owner's rank, and `roll` the check's own rank before any swap", () => {
+  const expert = talentWith("Seasoned", "[EFFECT USE: Presence, Origin, aid; IF: RANK(Origin >= expert)]");
+  same(ruleSubstitutions(rulesActor([expert], { origin: "trained" }), aidRoll).candidates, [], "Origin Trained: not yet");
+  same(ruleSubstitutions(rulesActor([expert], { origin: "master" }), aidRoll).candidates.map(c => c.label), ["Seasoned"], "Origin Master: offered");
+  same(ruleSubstitutions(rulesActor([expert], null), aidRoll).candidates, [], "an actor with no proficiency never meets a rank condition");
+  same(ruleSubstitutions(rulesActor([cooperative], null), aidRoll).candidates.map(c => c.label), ["Cooperative Instinct"], "an unconditioned line needs none");
+  const untrained = talentWith("Stopgap", "[EFFECT USE: Presence, Origin, aid; IF: RANK(roll = untrained)]");
+  same(ruleSubstitutions(rulesActor([untrained]), { ...aidRoll, rank: "untrained" }).candidates.map(c => c.label), ["Stopgap"], "the check's own rank is Untrained");
+  same(ruleSubstitutions(rulesActor([untrained]), { ...aidRoll, rank: "trained" }).candidates, [], "and not when the check is Trained by itself");
+  same(ruleSubstitutions(rulesActor([untrained]), { ...aidRoll, rank: undefined }).candidates, [], "no rank known, no match");
+  // The comparison words, on the check's own rank and on the owner's: `=` alone would pass both.
+  const atMost = talentWith("AtMost", "[EFFECT USE: Presence, Origin, aid; IF: RANK(roll <= trained)]");
+  const atLeast = talentWith("AtLeast", "[EFFECT USE: Presence, Origin, aid; IF: RANK(roll >= trained)]");
+  const ranks = ["untrained", "trained", "expert"];
+  same(ranks.map(rank => ruleSubstitutions(rulesActor([atMost]), { ...aidRoll, rank }).candidates.length), [1, 1, 0], "the check's own rank at most Trained");
+  same(ranks.map(rank => ruleSubstitutions(rulesActor([atLeast]), { ...aidRoll, rank }).candidates.length), [0, 1, 1], "the check's own rank at least Trained");
+  const capped = talentWith("Capped", "[EFFECT USE: Presence, Origin, aid; IF: RANK(Origin <= trained)]");
+  same(ranks.map(origin => ruleSubstitutions(rulesActor([capped], { origin }), aidRoll).candidates.length), [1, 1, 0], "the owner's rank at most Trained");
+  const later = { type: "talent", name: "Later", system: { rules: [{ ...cooperative.system.rules[0], when: [{ substituted: false }] }] } };
+  same(ruleSubstitutions(rulesActor([later]), aidRoll).candidates, [], "a condition this version does not know does not hold");
+});
+
+check("ruleSubstitutions: a LIMIT's mark rides on the candidate, and a spent one offers nothing", () => {
+  const once = talentWith("Once", "[EFFECT USE: Presence, Origin, aid; LIMIT: encounter]");
+  const each = talentWith("Each", "[EFFECT USE: Presence, Origin, aid; LIMIT: round]");
+  const inFight = { ...aidRoll, encounter: { combat: "c1", round: 2 } };
+  const fresh = ruleSubstitutions(rulesActor([once, each]), inFight);
+  same(fresh.candidates.map(c => [c.label, c.marks]), [["Once", [{ key: "Once:1", per: "encounter" }]], ["Each", [{ key: "Each:1", per: "round" }]]], "each candidate carries its own mark");
+  same(fresh.marks, [], "and the dispatcher files none itself: only the swap the die is thrown with is spent");
+  same(ruleSubstitutions(rulesActor([once]), aidRoll).candidates.map(c => c.marks), [[]], "outside an encounter there is nothing to remember");
+  const spent = rulesActor([once, each]);
+  spent.flags = { starwrought: { rules: { encounter: { "Once:1": "c1" }, round: { "Each:1": { combat: "c1", round: 2 } } } } };
+  same(ruleSubstitutions(spent, inFight).candidates, [], "both spent");
+  same(ruleSubstitutions(spent, { ...aidRoll, encounter: { combat: "c1", round: 3 } }).candidates.map(c => c.label), ["Each"], "a new round frees the round's; the encounter's stays spent");
+  same(ruleSubstitutions(spent, { ...aidRoll, encounter: { combat: "c2", round: 1 } }).candidates.map(c => c.label), ["Once", "Each"], "another Combat frees both");
+  // The shape the system itself stores for an encounter's mark is `{ combat }` (writeMarksOn in
+  // module/rules/scene.mjs); the bare string above is the older reading, kept beside it.
+  const stored = rulesActor([once]);
+  stored.flags = { starwrought: { rules: { encounter: { "Once:1": { combat: "c1" } } } } };
+  same(ruleSubstitutions(stored, { ...aidRoll, encounter: { combat: "c1", round: 5 } }).candidates, [], "{ combat } is spent for the rest of the Combat");
+  same(ruleSubstitutions(stored, { ...aidRoll, encounter: { combat: "c2", round: 1 } }).candidates.map(c => c.label), ["Once"], "and another Combat frees it");
+});
+
+check("ruleSubstitutions: Off drops the line, Skip drops it once and asks for its state to clear, a one-roll effect's removal rides on its candidate", () => {
+  const rule = cooperative.system.rules[0];
+  const off = rulesActor([cooperative]);
+  off.flags = { starwrought: { rules: { state: { [ruleStateKey(cooperative, rule)]: "off" } } } };
+  same(ruleSubstitutions(off, aidRoll), { candidates: [], marks: [] }, "Off: nothing, and nothing to clear");
+  const skip = rulesActor([cooperative]);
+  skip.flags = { starwrought: { rules: { state: { [ruleStateKey(cooperative, rule)]: "skip" } } } };
+  same(ruleSubstitutions(skip, aidRoll), { candidates: [], marks: [{ key: ruleStateKey(cooperative, rule), per: "state" }] }, "Skip: no candidate, and the state clears with this roll");
+  same(ruleSubstitutions(skip, { ...aidRoll, item: searchItem }), { candidates: [], marks: [] }, "a Skip line that would not have matched is not spent");
+  const parsed = parseAutomation("USE: Presence, Origin, aid", { resolve, itemName: "Borrowed", itemType: "effect" });
+  const row = { items: [], system: { effects: [{ id: "row00002", label: "Borrowed", text: "USE: Presence, Origin, aid", duration: "roll", rules: parsed.rules }] } };
+  row.system.rules = collectRules(row);
+  const once = ruleSubstitutions(row, aidRoll);
+  same(once.candidates.map(c => [c.key, c.label, c.marks]), [["use-effect:row00002-1", "Borrowed", [{ key: "row00002", per: "effect" }]]], "a one-roll custom effect: its removal is the candidate's to carry");
+  same(once.marks, [], "and is not filed unless that swap is rolled");
+});
+
+check("ruleSubstitutions: no rules, no actor, a hook that throws and a hook that answers badly", () => {
+  same(ruleSubstitutions(rulesActor([]), aidRoll), { candidates: [], marks: [] }, "no rules");
+  same(ruleSubstitutions(rulesActor([humanity, sneaky]), aidRoll), { candidates: [], marks: [] }, "kinds without the hook are skipped");
+  same(ruleSubstitutions(null, aidRoll), { candidates: [], marks: [] }, "null actor");
+  same(ruleSubstitutions({ items: [cooperative] }, aidRoll).candidates.map(c => c.key), [COOP.key], "an actor with no prepared index is collected on the spot");
+
+  registerKind({ id: "explosive-swap", parse: () => ({}), summary: () => "", hooks: { substitutions() { throw new Error("kaboom"); } } });
+  const volatile = { type: "talent", name: "Volatile", system: { rules: [{ kind: "explosive-swap", line: 1, text: "x" }] } };
+  const errors = [];
+  const original = console.error;
+  console.error = (...args) => errors.push(args);
+  let result;
+  try {
+    result = ruleSubstitutions(rulesActor([volatile, cooperative]), aidRoll);
+  } finally {
+    console.error = original;
+  }
+  same(result.candidates.map(c => c.key), [COOP.key], "the other kind's candidate still arrives");
+  must(errors.length === 1 && /the "explosive-swap" kind's substitutions hook failed/.test(String(errors[0][0])), `the failure is reported once: ${JSON.stringify(errors.map(e => String(e[0])))}`);
+
+  const carrier = { type: "talent", name: "Loose", system: { rules: [{ kind: "sloppy-swap", line: 1, text: "x" }] } };
+  registerKind({
+    id: "sloppy-swap", parse: () => ({}), summary: () => "",
+    hooks: {
+      substitutions: () => [
+        null, "x", { attribute: "presence" }, { item: carrier }, { item: carrier, attribute: "luck" },
+        // An unknown Attribute WITH something borrowed: dropped whole, never read as `same, Origin`.
+        { item: carrier, attribute: "luck", proficiency: { constellation: "origin" } },
+        { item: carrier, attribute: null, proficiency: null }, { item: carrier, proficiency: {} },
+        { item: carrier, attribute: "presence" },
+        { item: carrier, attribute: "might", label: "Named" },
+        { item: carrier, attribute: "wits", key: "dup", certain: false, mark: { key: "k", per: "round" } },
+        { item: carrier, proficiency: { constellation: "origin" }, key: "dup", mark: { key: "half" } }
+      ]
+    }
+  });
+  same(ruleSubstitutions(rulesActor([carrier]), aidRoll).candidates, [
+    { key: "sloppy-swap-0", item: carrier, label: "Loose", attribute: "presence", proficiency: null, certain: true, marks: [] },
+    { key: "sloppy-swap-1", item: carrier, label: "Named", attribute: "might", proficiency: null, certain: true, marks: [] },
+    { key: "dup", item: carrier, label: "Loose", attribute: "wits", proficiency: null, certain: false, marks: [{ key: "k", per: "round" }] },
+    { key: "dup-2", item: carrier, label: "Loose", attribute: null, proficiency: { constellation: "origin", name: "origin" }, certain: true, marks: [] }
+  ], "no carrier, an Attribute the system does not have (alone or with something borrowed) and a swap of nothing are dropped; a keyless candidate gets a key, a label given stands, a shared key is suffixed, a half mark is dropped");
+});
+
+/* The pure half of the check engine's side (module/dice/check/substitute.mjs). */
+
+check("substitute: swapTerms prices the two terms a swap rolls, and `same` keeps the check's own", () => {
+  // The check's own pair is NOT the functions' fallback (Untrained, +0), so a kept term is told
+  // apart from a dropped one, and Master +9 is neither Origin's Trained +3 nor Guard's Expert +6.
+  const own = { attribute: "wits", slug: "crafting", name: "Crafting", rank: "master", value: 9 };
+  const read = {
+    attributeBonus: key => ({ might: 0, agility: 1, wits: 1, presence: 2 })[key],
+    proficiency: slug => ({ origin: { name: "Origin", rank: "trained", bonus: 3 }, guard: { name: "Guard", rank: "expert", bonus: 6 } })[slug] ?? null
+  };
+  same(swapTerms(COOP, own, read), { attribute: "presence", attributeValue: 2, slug: "origin", name: "Origin", rank: "trained", value: 3 }, "Presence and Origin");
+  same(swapTerms({ attribute: null, proficiency: { constellation: "guard", name: "Guard" } }, own, read), { attribute: "wits", attributeValue: 1, slug: "guard", name: "Guard", rank: "expert", value: 6 }, "same, Guard: the check's own Attribute");
+  same(swapTerms({ attribute: "presence", proficiency: null }, own, read), { attribute: "presence", attributeValue: 2, slug: "crafting", name: "Crafting", rank: "master", value: 9 }, "Presence, same: the check's own Proficiency, at its own rank");
+  same(swapTerms({ attribute: null, proficiency: { constellation: "nowhere", name: "Nowhere" } }, { ...own, attribute: "" }, read), { attribute: null, attributeValue: 0, slug: "nowhere", name: "Nowhere", rank: "untrained", value: 0 }, "a Constellation the character has no entry for is Untrained, and a check with no Attribute keeps none");
+  same(substitutionRecord(COOP, swapTerms(COOP, own, read), own), {
+    key: COOP.key, itemName: "Cooperative Instinct", attribute: "presence",
+    proficiency: { constellation: "origin", name: "Origin", rank: "trained" },
+    from: { attribute: "wits", slug: "crafting", name: "Crafting", rank: "master" }
+  }, "the card's record mirrors the rule and names what was replaced, at the rank it held");
+  const half = { key: "k", label: "Half", attribute: "presence", proficiency: null };
+  same(substitutionRecord(half, swapTerms(half, own, read), own).proficiency, null, "a Proficiency the check kept is null in the record");
+  const kept = { key: "k2", label: "Kept", attribute: null, proficiency: { constellation: "origin", name: "Origin" } };
+  same(substitutionRecord(kept, swapTerms(kept, own, read), own).attribute, null, "an Attribute the check kept is null in the record, though the terms rolled name it");
+});
+
+check("substitute: chooseVariant ticks a swap only when its total is strictly better", () => {
+  const none = { key: null, total: 1 };
+  const better = { key: "a", total: 5, certain: true };
+  const best = { key: "b", total: 6, certain: true };
+  const level = { key: "c", total: 6, certain: true };
+  must(chooseVariant([none, better], undefined) === better, "better: the swap");
+  must(chooseVariant([none, { key: "a", total: 1 }], undefined) === none, "a tie: the check as it was");
+  must(chooseVariant([none, { key: "a", total: 0 }], undefined) === none, "worse: the check as it was");
+  must(chooseVariant([none, better, best], undefined) === best, "the highest of two");
+  must(chooseVariant([none, best, level], undefined) === best, "two level with each other: the earlier");
+  must(chooseVariant([none, { key: "u", total: 9, certain: false }, better], undefined) === better, "an uncertain candidate is never the default");
+  must(chooseVariant([none, better], null) === none, "an explicit none");
+  must(chooseVariant([none, { key: "a", total: 0 }], "a").key === "a", "an explicit key stands though it is worse");
+  must(chooseVariant([none, better], "gone") === none, "a key no variant has is no swap");
+  must(chooseVariant([], undefined) === null && chooseVariant(null, "a") === null, "nothing in, nothing out");
+});
+
+check("substitute: mergeMarks keeps each mark once", () => {
+  same(mergeMarks([{ key: "a", per: "round" }], undefined, [{ key: "a", per: "round" }, { key: "a", per: "encounter" }, { key: "b", per: "state", owner: "Actor.x" }, null, { key: "c" }]),
+    [{ key: "a", per: "round" }, { key: "a", per: "encounter" }, { key: "b", per: "state", owner: "Actor.x" }], "by key, per and owner; a half mark dropped");
+  same(mergeMarks([{ key: "s", per: "state", owner: "Actor.a" }], [{ key: "s", per: "state", owner: "Actor.b" }, { key: "s", per: "state" }, { key: "s", per: "state", owner: "Actor.a" }]),
+    [{ key: "s", per: "state", owner: "Actor.a" }, { key: "s", per: "state", owner: "Actor.b" }, { key: "s", per: "state" }], "the same line on two owners and on the roller is three marks; the same owner twice is one");
+});
+
+check("0.21.0: a claim that reads the roll's rank is offered on the check's own terms and not under a swap that borrows a Trained rank", () => {
+  // The fact the roll dialog must honour (the review of 2026-11-10): each variant of a swappable
+  // roll has its own offers, so the dialog draws the union and counts a ticked row only when the
+  // variant rolled offers it.
+  const improviser = talentWith("Improviser", "[EFFECT CHECK: 2 situation, aid; IF: RANK(roll = untrained); IF: CLAIM(when improvising)]");
+  const actor = rulesActor([{ ...improviser, id: "impr0001" }]);
+  const own = ruleModifiers(actor, { kind: "check", slug: "crafting", item: aidItem, rank: "untrained" });
+  same(own.offered.map(o => [o.key, o.value, o.ticked]), [["claim-impr0001-1", 2, false]], "on the check's own Untrained rank: offered");
+  const swapped = ruleModifiers(actor, { kind: "check", slug: "crafting", item: aidItem, rank: "trained" });
+  same([swapped.offered, swapped.applied], [[], []], "at a borrowed Trained rank: neither offered nor applied");
+});
+
+check("0.21.0: under momentOnly only an applied answer spends a one-roll effect or clears a Skip; an offer no box is drawn for does not", () => {
+  const rowActor = (text) => {
+    const parsed = parseAutomation(text, { resolve, itemName: "Row", itemType: "effect" });
+    must(parsed.errors.length === 0, `"${text}" should parse: ${parsed.errors.map(e => e.message).join("; ")}`);
+    const actor = { items: [], system: { effects: [{ id: "fx1", label: "Row", text, duration: "roll", rules: parsed.rules }] } };
+    actor.system.proficiency = () => ({ rank: "trained" });
+    actor.system.rules = collectRules(actor);
+    return actor;
+  };
+  const aidRow = rowActor("CHECK: 1 condition, aid");
+  const wind = ruleModifiers(aidRow, { kind: "check", slug: "endure", item: null, rank: "trained", momentOnly: true });
+  same([wind.applied, wind.offered, wind.marks], [[], [], []], "a Wind roll (a Defense rolled as a check, no Item): a one-roll bonus to Aid is neither applied, offered nor spent");
+  const withAid = ruleModifiers(aidRow, { kind: "check", slug: "awareness", item: aidItem, rank: "trained", momentOnly: true });
+  same([withAid.applied.map(m => m.value), withAid.marks], [[1], [{ key: "fx1", per: "effect" }]], "the Aid made with Awareness: applied, and spent");
+  const plain = ruleModifiers(aidRow, { kind: "check", slug: "crafting", item: null, rank: "trained" });
+  same([plain.offered.map(o => o.marks), plain.marks], [[[{ key: "fx1", per: "effect" }]], []], "a plain check still offers it, the removal riding on the box");
+  const guardRow = rowActor("DEF: 1 situation, guard");
+  same(ruleModifiers(guardRow, { kind: "defense", slug: "guard", item: null, rank: "trained", momentOnly: true }).marks, [{ key: "fx1", per: "effect" }], "a one-roll bonus to Guard the sheet's pass folded in is still spent by the Guard roll");
+  const skipped = rulesActor([{ ...humanity, id: "hum1" }], { human: "trained" });
+  skipped.flags = { starwrought: { rules: { state: { [ruleStateKey({ id: "hum1" }, { line: 1 })]: "skip" } } } };
+  same(ruleModifiers(skipped, { kind: "check", slug: "endure", item: null, rank: "trained", momentOnly: true }).marks, [], "a Skip on a bonus to Aid is not cleared by a Wind roll");
+  same(ruleModifiers(skipped, { kind: "check", slug: "awareness", item: aidItem, rank: "trained", momentOnly: true }).marks, [{ key: ruleStateKey({ id: "hum1" }, { line: 1 }), per: "state" }], "and is by the Aid it would have reached");
+});
+
+check("0.21.0: the Effects tab switches exactly the kinds the effect tags name", () => {
+  same([...EFFECT_KINDS].sort(), [...new Set(Object.values(EFFECT_TAGS))].sort(), "EFFECT_KINDS against EFFECT_TAGS");
+});
+
+check("0.21.0: a bonus to a Maneuver reaches a check rolled with a Defense from that Maneuver's Item, and nothing else changes there (ruling 222)", () => {
+  const plus = [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity:aid" }];
+  const actor = rulesActor([humanity], { human: "trained" });
+  const withAwareness = ruleModifiers(actor, { kind: "check", slug: "awareness", item: aidItem, rank: "trained", momentOnly: true });
+  same([withAwareness.applied, withAwareness.offered], [plus, []], "Aid made with Awareness: Humanity's +1, applied");
+  same(ruleModifiers(actor, { kind: "defense", slug: "awareness", item: null, staticOnly: true }).applied, [], "the sheet's Defense pass, asked as the data model asks it, never folded it in, so it is counted once");
+  const plain = ruleModifiers(actor, { kind: "check", slug: "endure", item: null, rank: "trained", momentOnly: true });
+  same([plain.applied, plain.offered], [[], []], "a Defense rolled as a check with no Item: nothing applied and nothing offered");
+  same(ruleModifiers(actor, { kind: "check", slug: "awareness", item: searchItem, rank: "trained", momentOnly: true }).applied, [], "another Maneuver's Item");
+  for (const kind of ["defense", "initiative"]) same(ruleModifiers(actor, { kind, slug: "awareness", item: aidItem, rank: "trained", momentOnly: true }).applied, [], `not on ${kind === "initiative" ? "an" : "a"} ${kind}`);
+  const everyCheck = talentWith("Jack of All Trades", "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]");
+  same(ruleModifiers(rulesActor([everyCheck]), { kind: "check", slug: "awareness", item: aidItem, rank: "untrained", momentOnly: true }).applied, [], "a bonus to every check stays out of the Defense branch, as before");
+  const toGuard = talentWith("Braced for it", "[EFFECT CHECK: 2 condition, guard]");
+  same(ruleModifiers(rulesActor([toGuard]), { kind: "check", slug: "guard", item: aidItem, rank: "trained", momentOnly: true }).applied, [], "a bonus to the Defense itself was the sheet's pass's, and is not added again");
+  const untyped = talentWith("Helpful", "[EFFECT CHECK: 1 condition, aid]", {});
+  same(ruleModifiers(rulesActor([untyped]), { kind: "check", slug: "awareness", item: aidItem, rank: "trained", momentOnly: true }).applied.map(m => m.value), [1], "a rule parsed without a resolver matches the Maneuver by its slug too");
 });
 
 /* -------------------------------------------- */

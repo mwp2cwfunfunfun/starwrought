@@ -171,6 +171,10 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     kind: "check",
     slug: flags.slug ?? "",
     rank: flags.rank ?? null,
+    // A check made with other terms (0.21.0) is rerolled as it was made: the same formula and
+    // modifiers, and the record of the swap, so the new card says it again.
+    attribute: flags.attribute ?? null,
+    substituted: flags.substituted ?? null,
     label: foundry.utils.unescapeHTML?.(label) ?? label,
     subtitle: "",
     threshold: withhold ? null : threshold,

@@ -44,7 +44,7 @@
  */
 
 import { KINDS, kindOf } from "./kinds/index.mjs";
-import { flagKey, ruleCarrierKey } from "../config.mjs";
+import { flagKey, ruleCarrierKey, ATTRIBUTES } from "../config.mjs";
 
 /**
  * The Item types that may carry rules. A Constellation Item is included now, before any carries
@@ -251,7 +251,8 @@ function addMark(marks, mark) {
  * entry when none is traced, else one per entry. Returns `[{ entry, result, touched }]`: `entry`
  * null for the untraced batch; `result` what to take; `touched` whether the entry's rule reached
  * this roll at all, which for a traced entry under a `momentOnly` ask is read with the half-split
- * lifted (a static Skip line on a Defense roll was dropped by the sheet's pass and must still clear
+ * lifted, counting applied answers alone since 0.21.0 (an offer is a box this branch never draws)
+ * (a static Skip line on a Defense roll was dropped by the sheet's pass and must still clear
  * here; a one-roll DEF effect folded into the Threshold must still be spent by the Defense roll),
  * while `result` keeps the split so nothing is counted twice. A hook that throws is reported once
  * and contributes nothing (a roll never dies over a rule).
@@ -277,7 +278,12 @@ function callHook(kind, point, hook, entries, context, actor) {
     let touched = result.length > 0;
     if (needsTrace(entry) && context?.momentOnly && !touched) {
       const whole = run([entry], { ...context, momentOnly: false, staticOnly: false });
-      touched = !!whole && (whole.length > 0);
+      // Only an APPLIED answer says the rule reached this roll (0.21.0, the review of ruling
+      // 222's neighbours). With the split lifted a bonus to a Maneuver answers a check made
+      // without that Maneuver's Item with an OFFER (ruling 122), and on this branch no box is
+      // ever drawn for it: counting it spent a one-roll custom effect, and cleared a Skip, on a
+      // Wind roll that neither applied nor offered the bonus.
+      touched = !!whole && whole.some(m => m && (typeof m === "object") && (m.offer !== true));
     }
     out.push({ entry, result: entry.skip === true ? [] : result, touched });
   }
@@ -423,6 +429,103 @@ export function ruleModifiers(actor, context = {}) {
   }
 
   return { applied, offered, marks };
+}
+
+/* -------------------------------------------- */
+/*  The `substitutions` hook point (0.21.0)     */
+/* -------------------------------------------- */
+
+/**
+ * @typedef {object} RuleSubstitution
+ * @property {string} key         Stable per rule line; the roll dialog's checkbox and the card's record name it.
+ * @property {object} item        The Talent (or the custom effect's carrier) whose rule this is.
+ * @property {string} label       The carrier's plain name ("Cooperative Instinct").
+ * @property {string|null} attribute   The Attribute the check is made with instead, a key of SW.ATTRIBUTES;
+ *                                null when the check keeps its own.
+ * @property {{constellation: string, name: string}|null} proficiency  The Constellation whose Proficiency
+ *                                Bonus is borrowed; null when the check keeps its own.
+ * @property {boolean} certain    The roll is known to be the check the rule names (always true in
+ *                                0.21.0: a swap is offered only from the Maneuver's own Item).
+ * @property {Array<{key: string, per: string}>} marks  What to remember if THIS swap is the one the die is
+ *                                thrown with: the rule's own LIMIT, and a one-roll custom effect's removal.
+ */
+
+/**
+ * The swaps the registered kinds' rules offer on one check, before its base terms are assembled
+ * (the `substitutions` hook point, defined with the `substitute` kind; ruling 221). Calculated in
+ * category (../README.md): the hook answers with data on any client, and nothing is written here.
+ * A kind takes part by declaring `hooks.substitutions(entries, context, actor)`, `entries` its own
+ * rules on this actor from `rulesOfKind` (an Off line never arrives), and returns candidates that
+ * say WHICH two terms a swap would put in place of the check's own. The check engine prices each
+ * (dice/check/modifiers.mjs), offers them in the roll dialog and ticks the one whose assembled
+ * total is strictly the best; at most one stands on a roll.
+ *
+ * The dispatch is `ruleModifiers`' twin, with two differences. Only the roller's OWN rules are
+ * asked: a swap is the owner's own roll, and the kind refuses FOR. And a candidate keeps its marks
+ * (`marks`), as an offered modifier does: a LIMIT is spent, and a one-roll custom effect removed,
+ * only when that candidate is the one rolled, which the check engine knows and this function does
+ * not. What comes back in the top-level `marks` is what the roll owes whichever way it goes: a
+ * Skip line that would have offered a swap is dropped and its state cleared (`per: "state"`).
+ *
+ * A kind without the hook is skipped, a kind with no rules on this actor is not asked, a hook
+ * that throws is reported once and contributes nothing, and a candidate that names no carrier,
+ * names an Attribute the system does not have, or swaps nothing is dropped. A key two candidates
+ * share is suffixed, so the dialog's checkboxes never collide.
+ * @param {object} actor
+ * @param {{kind: string, slug: string, item: object|null, rank?: string, encounter?: object|null}} context
+ *        `rank` is the check's OWN rank, before any swap (a `RANK(roll ...)` on a USE line reads it).
+ * @returns {{candidates: RuleSubstitution[], marks: Array<{key: string, per: string}>}}
+ */
+export function ruleSubstitutions(actor, context = {}) {
+  const candidates = [];
+  const marks = [];
+  const keys = new Set();
+  if (!actor) return { candidates, marks };
+
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.substitutions;
+    if (typeof hook !== "function") continue;
+    const entries = rulesOfKind(actor, kind.id).map(e => ({ ...e, owner: actor }));
+    if (!entries.length) continue;
+
+    let unnamed = 0;
+    for (const { entry, result, touched } of callHook(kind, "substitutions", hook, entries, context, actor)) {
+      const extra = (entry && touched) ? traceMarks(entry, actor) : [];
+      // A Skip line's answer is already dropped by `callHook`; its state clears with this roll.
+      for (const m of extra) {
+        if (m.per === "state") addMark(marks, m);
+      }
+      for (const c of result) {
+        if (!c || (typeof c !== "object") || !c.item) continue;
+        const attribute = ((typeof c.attribute === "string") && Object.hasOwn(ATTRIBUTES, c.attribute)) ? c.attribute : null;
+        if ((c.attribute !== null) && (c.attribute !== undefined) && !attribute) continue;
+        const borrowed = (c.proficiency && (typeof c.proficiency === "object") && c.proficiency.constellation)
+          ? { constellation: String(c.proficiency.constellation), name: String(c.proficiency.name ?? c.proficiency.constellation) }
+          : null;
+        if (!attribute && !borrowed) continue;
+        let key = String(c.key ?? "") || `${kind.id}-${unnamed++}`;
+        if (keys.has(key)) {
+          let n = 2;
+          while (keys.has(`${key}-${n}`)) n += 1;
+          key = `${key}-${n}`;
+        }
+        keys.add(key);
+        const own = (c.mark && (typeof c.mark === "object") && c.mark.key && c.mark.per)
+          ? [{ key: String(c.mark.key), per: String(c.mark.per) }] : [];
+        candidates.push({
+          key,
+          item: c.item,
+          label: String(c.label ?? c.item.name ?? kind.id),
+          attribute,
+          proficiency: borrowed,
+          certain: c.certain !== false,
+          marks: [...own, ...extra.filter(m => m.per === "effect").map(m => ({ key: m.key, per: m.per }))]
+        });
+      }
+    }
+  }
+
+  return { candidates, marks };
 }
 
 /* -------------------------------------------- */

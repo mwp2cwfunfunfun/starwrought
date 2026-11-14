@@ -29,7 +29,7 @@ export { armClaim as armClaimLine } from "../rules/claims.mjs";
  * describe what owning a Talent makes the character and are not switched; `grant` is spent at
  * creation and `aura` is a ring on the map with its own toggle.
  */
-export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore"]);
+export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute"]);
 
 const L = key => game.i18n.localize(key);
 const F = (key, data) => game.i18n.format(key, data);
@@ -82,7 +82,10 @@ function lineRow(actor, item, rule, { error = "", claims = null } = {}) {
     state,
     stateLabel,
     icon: STATE_LOOK[state].icon,
-    stateHint: F("STARWROUGHT.Effects.stateHint", {
+    // A line the roll dialog OFFERS (0.21.0: a USE line's swap, ticked when it is better) reads
+    // the three states in its own words; the switch is also the one way to decline it on a roll
+    // made with no dialog.
+    stateHint: F((rule?.kind === "substitute") ? "STARWROUGHT.Effects.stateHintOffer" : "STARWROUGHT.Effects.stateHint", {
       state: stateLabel,
       next: L(`STARWROUGHT.Effects.state${next[0].toUpperCase()}${next.slice(1)}`)
     }),

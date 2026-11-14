@@ -9,10 +9,11 @@
  *   DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)
  *   IMMUNE: prone; LIMIT: encounter
  *   REROLL: diplomacy; IF: RESULT(critical failure)
+ *   USE: Presence, Origin, aid
  *
  * A MODIFIER tag (CHECK, ATK, DEF, INIT, SPEED) is `TAG: <value> <type>, <descriptor>`: a signed
  * whole number, the bonus type (situation, condition or gear; FG's `[bonus]`), then descriptors
- * by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE) take descriptors alone. The components:
+ * by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE) take descriptors alone. The components:
  * `IF: <condition>` (the owner, or the roll) and `IFT: <condition>` (the other party, or the
  * attack), `FOR: <who> [<N>]` (the recipients), `LIMIT: round | encounter`. The conditions:
  * `RANK(<Constellation> <op> <rank>)`, `RANK(roll = untrained)`, `SEEN`, `ALLIES(<op><N>[, <N>])`
@@ -37,7 +38,9 @@ import { THREATS, isLoreSlug } from "../config.mjs";
 /** The tags an effect line may begin with, each to the kind that reads it. Upper case in the document; case blind here. */
 export const EFFECT_TAGS = Object.freeze({
   check: "bonus", atk: "bonus", def: "bonus", init: "bonus", speed: "bonus",
-  immune: "prevent", mark: "mark", reroll: "reroll", ignore: "ignore"
+  immune: "prevent", mark: "mark", reroll: "reroll", ignore: "ignore",
+  // 0.21.0: `USE: <Attribute>, <Constellation>, <Maneuver>`, the terms a check is made with.
+  use: "substitute"
 });
 
 /** The modifier tags: a value and a bonus type come first. */
@@ -152,7 +155,9 @@ function readComponent(component, ops, context) {
       if (Object.hasOwn(EFFECT_TAGS, word.toLowerCase())) {
         throw new RuleSyntaxError(`"${word}" is a tag and begins its own line; one effect per line, its conditions after it as IF:, IFT:, FOR: and LIMIT:`);
       }
-      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT:`);
+      // A part with no colon is most often a descriptor that followed a semicolon (`USE: Presence;
+      // Origin; aid`), so the message says which mark does what (0.21.0).
+      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT:${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
   }
 }
 

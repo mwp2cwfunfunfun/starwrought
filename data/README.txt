@@ -154,6 +154,7 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               [EFFECT MARK: enemies]                                      name one creature on use
               [EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]    throw a check's die again
               [EFFECT IGNORE: terrain, mud, shallow water]                difficult terrain costs nothing
+              [EFFECT USE: Presence, Origin, aid]                         a check made with other terms
               [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]   the player's checkbox
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
         trailing period inside a block is tolerated. The converter copies the cell through as text
@@ -170,6 +171,20 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         the 0.10.0 prose form are refused, the message naming the document's map to the new shape.
         An AURA block may carry its effect after a semicolon (0.18.0), the ring as the effect's FOR:
               [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
+        USE (0.21.0; rulings 215 to 222) lets a check made from a Maneuver's own row be rolled with
+        another Attribute and another Constellation's Proficiency Bonus. Exactly three descriptors,
+        [EFFECT USE: <Attribute>, <Constellation>, <Maneuver>]:
+              [EFFECT USE: Presence, Origin, aid]     Presence and the Origin's Proficiency Bonus
+              [EFFECT USE: same, Origin, aid]         the Proficiency Bonus alone
+              [EFFECT USE: Presence, same, aid]       the Attribute alone
+        The Attribute is might, agility, wits or presence; the Constellation is Origin, a Skill or a
+        Defense (a Maneuver, a Lore and a group are refused); "same" in either place is the term
+        this check would use without this line, and "same, same" is refused. The third names a
+        MANEUVER by its row's name, never a Constellation, a Defense or a scope word, since a USE
+        never means every check. It takes IF: RANK(...) and LIMIT: alone. In Foundry the swap is
+        offered in the roll dialog only when the roll is made from that Maneuver's Item, ticked
+        when its total is strictly higher, one to a roll; checks only, characters only; the line
+        has On / Skip / Off on the sheet's Effects tab.
         RED CELLS (2026-11-08; Mike: "highlight those cells in red"): python assets/highlight_automation.py
         paints every Automation cell the grammar cannot read, and every Effect cell whose
         @Maneuver[Name] names no row, solid red (FF9999) with a cell comment giving the grammar's
@@ -303,8 +318,10 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     parsed by assets/parse_rules.mjs and build_foundry.mjs, which stop on a line they do not know
     (the content loop stores it as a red error line instead). An action's name is also what a
     talent's CHECK line names as its target, so a roll made from the action's row carries the
-    bonus. An action whose Effect says "Relevant Check" and names no check opens the Relevant
-    Check picker when it is used, carrying the action, so Aid's roll is Aid's (0.10.0).
+    bonus, and what a talent's USE line names third (0.21.0), so the swap of Attribute and
+    Proficiency Bonus is offered on a roll made from the action's row and on no other. An action
+    whose Effect says "Relevant Check" and names no check opens the Relevant Check picker when it
+    is used, carrying the action, so Aid's roll is Aid's (0.10.0).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.

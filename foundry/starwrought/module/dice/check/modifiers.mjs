@@ -8,14 +8,148 @@
  */
 
 import * as SW from "../../config.mjs";
-import { ruleModifiers } from "../../rules/engine.mjs";
+import { ruleModifiers, ruleSubstitutions } from "../../rules/engine.mjs";
 import { sceneContextFor, encounterContext } from "../../rules/scene.mjs";
+import { swapTerms, substitutionRecord, chooseVariant, mergeMarks } from "./substitute.mjs";
 
-/** The base terms plus the caller's own modifiers. */
+/**
+ * The base terms plus the caller's own modifiers.
+ *
+ * A CHECK MADE WITH OTHER TERMS (0.21.0; rulings 215 to 222; the `substitutions` hook point). A
+ * rule may offer to swap a check's Attribute Bonus and Proficiency Bonus for another pair
+ * (Cooperative Instinct: `[EFFECT USE: Presence, Origin, aid]`). When the rules offer any swap on
+ * this roll, the roll is assembled once with its own terms and once with each swap, every one in
+ * full, because another rule may read the rank the roll is made at; the variants are left on
+ * `cfg.substituteVariants` for the dialog, and one stands:
+ *
+ *   cfg.substitute undefined   the default rule: the swap whose total is strictly the best, else none
+ *   cfg.substitute null        none (the player unticked the box)
+ *   cfg.substitute "<key>"     that swap (the player ticked it)
+ *
+ * What stands is written back as the roll's own: its parts are returned, `cfg.rank` is the rank
+ * rolled, `cfg.ruleOffers` and `cfg.ruleMarks` are that variant's (with the swap's own marks, so a
+ * LIMIT is spent and a one-roll custom effect removed only when its swap is the one rolled), and
+ * `cfg.substituted` is the record the card keeps, null when the check kept its terms.
+ * `cfg.attribute` stays the check's OWN Attribute throughout, so a second assembly prices the same
+ * pair. A roll no rule offers a swap on is assembled exactly as before 0.21.0.
+ */
 export function assemble(actor, cfg) {
-  const parts = baseModifiers(actor, cfg);
-  parts.push(...(cfg.modifiers ?? []));
-  return parts;
+  const asked = substitutionsFor(actor, cfg);
+  if (!asked.candidates.length) {
+    cfg.substituteVariants = null;
+    cfg.substituted = null;
+    const parts = baseModifiers(actor, cfg);
+    parts.push(...(cfg.modifiers ?? []));
+    // A Skip line that would have offered a swap is spent by this roll all the same.
+    if (asked.marks.length) cfg.ruleMarks = mergeMarks(cfg.ruleMarks, asked.marks);
+    return parts;
+  }
+
+  const variants = [null, ...asked.candidates].map(candidate => {
+    const copy = { ...cfg, substituted: null };
+    const parts = baseModifiers(actor, copy, candidate);
+    parts.push(...(cfg.modifiers ?? []));
+    return {
+      key: candidate?.key ?? null,
+      label: candidate?.label ?? "",
+      certain: candidate ? (candidate.certain !== false) : true,
+      parts,
+      total: SW.resolveModifiers(parts).total,
+      attribute: copy.attribute,
+      rank: copy.rank,
+      handlingNote: copy.handlingNote === true,
+      ruleOffers: copy.ruleOffers ?? [],
+      ruleMarks: mergeMarks(copy.ruleMarks, asked.marks, candidate?.marks),
+      substituted: copy.substituted ?? null
+    };
+  });
+  const chosen = chooseVariant(variants, cfg.substitute);
+  if (chosen.attribute) cfg.attribute = chosen.attribute;
+  cfg.rank = chosen.rank;
+  if (chosen.handlingNote) cfg.handlingNote = true;
+  cfg.ruleOffers = chosen.ruleOffers;
+  cfg.ruleMarks = chosen.ruleMarks;
+  cfg.substituted = chosen.substituted;
+  cfg.substituteVariants = variants;
+  // A copy: the caller pushes the dialog's extras onto what it is given, and a variant's own list
+  // is what the dialog shows.
+  return [...chosen.parts];
+}
+
+/**
+ * The swaps the Automation rules offer on this roll (the `substitutions` hook point; ruling 221).
+ * A character's check in a Constellation, and nothing else: an adversary rolls flat, and a Strike,
+ * a Cast, a Defense roll and an Initiative are never swapped (ruling 220). A check made WITH a
+ * Defense (an Aid rolled with Awareness) is asked only when a Maneuver's Item is behind it: the
+ * Defense's Threshold and its roll against an attack never swap, so nothing else on that branch
+ * may. The rank handed over is the check's own, before any swap.
+ * @returns {{candidates: object[], marks: object[]}}
+ */
+function substitutionsFor(actor, cfg) {
+  const none = { candidates: [], marks: [] };
+  const sys = actor?.system;
+  if ((actor?.type === "npc") || (cfg.kind !== "check") || !cfg.slug || (typeof sys?.proficiency !== "function")) return none;
+  const defense = SW.DEFENSES[cfg.slug] ? sys.defenses?.[cfg.slug] : null;
+  if (defense && (cfg.item?.type !== "action")) return none;
+  const rank = defense ? defense.rank : sys.proficiency(cfg.slug)?.rank;
+  return ruleSubstitutions(actor, {
+    kind: cfg.kind, slug: cfg.slug, item: cfg.item ?? null, rank: rank ?? "untrained", encounter: encounterContext()
+  });
+}
+
+/**
+ * The terms a swap rolls for this character and the record of it (check/substitute.mjs holds the
+ * arithmetic; this reads the sheet). `own` is the check's own pair.
+ */
+function swapFor(actor, candidate, own) {
+  const sys = actor.system;
+  const terms = swapTerms(candidate, own, {
+    attributeBonus: key => sys.attributes?.[key]?.mod ?? 0,
+    proficiency: slug => {
+      const p = sys.proficiency(slug);
+      return { name: p.name, rank: p.rank, bonus: p.proficiency };
+    }
+  });
+  return { terms, record: substitutionRecord(candidate, terms, own) };
+}
+
+/**
+ * A swap in words, for the dialog's row and the card's note: only the terms that were swapped, on
+ * both sides. "Presence and Origin (Trained)" in place of "Wits and Crafting (Untrained)"; an
+ * Attribute alone, "Presence" in place of "Wits".
+ * @param {object} record  `cfg.substituted`, or a variant's.
+ * @returns {{talent: string, swap: string, own: string}}
+ */
+export function describeSubstitution(record) {
+  const attribute = key => (key && SW.ATTRIBUTES[key]) ? game.i18n.localize(SW.ATTRIBUTES[key].label) : "";
+  const ranked = (name, rank) => name ? `${name} (${game.i18n.localize(SW.RANKS[rank]?.label ?? SW.RANKS.untrained.label)})` : "";
+  const join = parts => {
+    const said = parts.filter(Boolean);
+    return (said.length === 2) ? game.i18n.format("STARWROUGHT.Roll.substituteAnd", { a: said[0], b: said[1] }) : (said[0] ?? "");
+  };
+  const swap = join([
+    record?.attribute ? attribute(record.attribute) : "",
+    record?.proficiency ? ranked(record.proficiency.name, record.proficiency.rank) : ""
+  ]);
+  const own = join([
+    record?.attribute ? attribute(record.from?.attribute) : "",
+    record?.proficiency ? ranked(record.from?.name, record.from?.rank) : ""
+  ]);
+  return { talent: String(record?.itemName ?? ""), swap, own };
+}
+
+/**
+ * The one line that says a swap: "Cooperative Instinct: Presence and Origin (Trained) in place of
+ * Wits and Crafting (Untrained)". The roll dialog's row is this line, and the card's note is this
+ * line with a full stop. A swap with nothing named on the check's side says the swap alone.
+ * @param {object} record
+ * @returns {string}
+ */
+export function substitutionLine(record) {
+  const said = describeSubstitution(record);
+  return said.own
+    ? game.i18n.format("STARWROUGHT.Roll.substituteOption", said)
+    : game.i18n.format("STARWROUGHT.Roll.substituteOptionBare", said);
 }
 
 /**
@@ -39,9 +173,14 @@ export function otherOf(cfg) {
  * bonuses the Automation rules on the character's Items grant to this roll (the `modifiers` hook
  * point, ruling 124). The rules' offers, modifiers a kind names but cannot decide, are left on
  * `cfg.ruleOffers` for prompt to show unticked; they are never applied here.
+ * @param {object} actor
+ * @param {object} cfg
+ * @param {object|null} [candidate]  A swap of the two base terms to assemble the roll with (0.21.0;
+ *                                   one answer of `ruleSubstitutions`), or null for the check's own.
+ *                                   `assemble` is the only caller that passes one.
  * @returns {Array}
  */
-export function baseModifiers(actor, cfg) {
+export function baseModifiers(actor, cfg, candidate = null) {
   const parts = [];
   const sys = actor.system;
 
@@ -65,13 +204,35 @@ export function baseModifiers(actor, cfg) {
   // Awareness and a Defense rolled as a check all carry it once and never twice (0.10.0).
   const defense = SW.DEFENSES[cfg.slug] ? sys.defenses?.[cfg.slug] : null;
   if (defense && Array.isArray(defense.modifiers)) {
-    parts.push(...defense.modifiers.map(m => ({ ...m })));
+    let own = defense.modifiers.map(m => ({ ...m }));
+    let rank = defense.rank;
+    cfg.substituted = null;
+    // A check made with this Defense from a Maneuver's Item, with other terms (0.21.0; an Aid
+    // rolled with Awareness under Cooperative Instinct). The Defense pass tagged its two base
+    // entries (`base`), and the swap replaces the tagged ones; everything else the Defense carries
+    // stays. A Defense roll, a Threshold read and an Initiative never come here with a candidate.
+    if (candidate && (cfg.kind === "check")) {
+      const { terms, record } = swapFor(actor, candidate, {
+        attribute: defense.attribute, slug: cfg.slug, name: sys.proficiency(cfg.slug)?.name ?? "", rank: defense.rank, value: defense.proficiency
+      });
+      const attributeEntry = candidate.attribute
+        ? { label: game.i18n.localize(SW.ATTRIBUTES[terms.attribute].label), value: terms.attributeValue, base: "attribute" }
+        : (own.find(m => m.base === "attribute") ?? null);
+      const proficiencyEntry = candidate.proficiency
+        ? { label: `${terms.name} (${game.i18n.localize(SW.RANKS[terms.rank]?.label ?? SW.RANKS.untrained.label)})`, value: terms.value, base: "proficiency" }
+        : (own.find(m => m.base === "proficiency") ?? null);
+      own = [attributeEntry, proficiencyEntry, ...own.filter(m => !m.base)].filter(Boolean);
+      rank = terms.rank;
+      cfg.substituted = record;
+    }
+    parts.push(...own);
     // Size touches only Evade and Guard, and sits outside the typed stack.
     if (defense.sizeMod) {
       parts.push({ label: game.i18n.localize("STARWROUGHT.Roll.size"), value: defense.sizeMod });
     }
     cfg.attribute = defense.attribute;
-    cfg.rank = defense.rank;
+    // The rank rolled: the borrowed Constellation's when a swap stands, and what the rules read.
+    cfg.rank = rank;
     // Initiative rolled with Awareness (the default) comes through here, and the sheet's
     // Initiative adjustment belongs on it as the tracker's formula has always had it
     // (`_getInitiativeFormula` folds `system.initiative.mod`, which includes it). The helm is
@@ -100,21 +261,32 @@ export function baseModifiers(actor, cfg) {
     prof.proficiency = SW.rankBonus(cfg.rankOverride);
     cfg.handlingNote = true;
   }
-  const attribute = cfg.attribute || prof?.attribute;
+  const ownAttribute = cfg.attribute || prof?.attribute;
+  // A check made with other terms (0.21.0; `assemble` above): the swap names the Attribute, the
+  // Constellation whose Proficiency Bonus is borrowed, or both, and what it does not name is the
+  // check's own. `cfg.attribute` stays the check's own Attribute; `cfg.rank` is the rank rolled,
+  // which is what every rule asked below reads (ruling 217).
+  const swap = (candidate && prof && (cfg.kind === "check"))
+    ? swapFor(actor, candidate, { attribute: ownAttribute || "", slug: cfg.slug, name: prof.name, rank: prof.rank, value: prof.proficiency })
+    : null;
+  const attribute = swap ? swap.terms.attribute : ownAttribute;
   if (attribute) {
     parts.push({
       label: game.i18n.localize(SW.ATTRIBUTES[attribute].label),
-      value: sys.attributes[attribute].mod
+      value: swap ? swap.terms.attributeValue : sys.attributes[attribute].mod
     });
-    cfg.attribute = attribute;
   }
+  if (ownAttribute) cfg.attribute = ownAttribute;
   if (prof) {
+    const name = swap ? swap.terms.name : prof.name;
+    const rank = swap ? swap.terms.rank : prof.rank;
     parts.push({
-      label: `${prof.name} (${game.i18n.localize(SW.RANKS[prof.rank].label)})`,
-      value: prof.proficiency
+      label: `${name} (${game.i18n.localize(SW.RANKS[rank]?.label ?? SW.RANKS.untrained.label)})`,
+      value: swap ? swap.terms.value : prof.proficiency
     });
-    cfg.rank = prof.rank;
+    cfg.rank = rank;
   }
+  cfg.substituted = swap ? swap.record : null;
 
   // The sheet's own catch-all adjustments. An Initiative rolled with a Constellation is a check
   // in that Constellation (Mike, 2026-10-02, ruling 111: "ALL active modifiers for any roll

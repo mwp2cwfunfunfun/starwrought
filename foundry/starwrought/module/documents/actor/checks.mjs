@@ -88,15 +88,25 @@ export const ChecksMixin = Base => class extends Base {
     // The number beside each Constellation is the one the roll dialog will open with, computed
     // by the check engine itself, so Load Strain on a Stealth check or a Frightened value shows
     // here and ranks the list the way the dice will see it.
-    const row = (slug, name, rank, attribute) => ({
-      slug,
-      name,
-      rank,
-      rankLabel: game.i18n.localize(SW.RANKS[rank].label),
-      glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "",
-      mod: SwCheck.previewTotal(this, { kind: "check", slug, item: passed.item ?? null }),
-      trained: rank !== "untrained"
-    });
+    // A swap of the base terms that would stand on the roll (0.21.0, ruling 218: Cooperative
+    // Instinct on an Aid) is in the number too, since the dialog opens with its box ticked; such a
+    // row is marked, and a line under the list names the Talent, because the number is then not
+    // the Constellation's own Attribute and rank that the row prints beside it.
+    const swapped = new Set();
+    const row = (slug, name, rank, attribute) => {
+      const preview = SwCheck.preview(this, { kind: "check", slug, item: passed.item ?? null });
+      if (preview.substituted?.itemName) swapped.add(preview.substituted.itemName);
+      return {
+        slug,
+        name,
+        rank,
+        rankLabel: game.i18n.localize(SW.RANKS[rank].label),
+        glyph: SW.ATTRIBUTES[attribute]?.glyph ?? "",
+        mod: preview.total,
+        swapped: !!preview.substituted,
+        trained: rank !== "untrained"
+      };
+    };
 
     // Every Constellation that ships (Enabled? = Yes, ruling 61), at this character's rank in it;
     // the character's own Constellations are added below, so an owned one that has since been
@@ -120,7 +130,15 @@ export const ChecksMixin = Base => class extends Base {
     const content = await renderTemplate("systems/starwrought/templates/dice/relevant-check.hbs", {
       trained: rows.filter(r => r.trained),
       untrained: rows.filter(r => !r.trained),
-      threshold: Number.isNumeric(passed.threshold) ? passed.threshold : ""
+      threshold: Number.isNumeric(passed.threshold) ? passed.threshold : "",
+      // The marked rows' explanation: with the roll dialog to come the box can be unticked there;
+      // on a Shift-click there is no dialog, and the Effects tab's switch is the way to decline.
+      swapNote: swapped.size
+        ? game.i18n.format(
+          (passed.dialog === false) ? "STARWROUGHT.Roll.relevantSubstitutedNoDialog" : "STARWROUGHT.Roll.relevantSubstituted",
+          { talents: [...swapped].join(", ") }
+        )
+        : ""
     });
     const answer = await DialogV2.wait({
       window: { title: game.i18n.localize("STARWROUGHT.Roll.relevantCheck"), icon: "fa-solid fa-scale-balanced" },

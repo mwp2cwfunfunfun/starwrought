@@ -1,4 +1,12 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0)
+
+**0.21.0 (2026-11-10).** The seventeenth kind, `substitute`, and the fifth hook point,
+`substitutions` (rulings 215 to 222). `[EFFECT USE: Presence, Origin, aid]`, the line of Cooperative
+Instinct on the Human sheet Mike is still writing, offers to make a check with another Attribute and
+another Constellation's Proficiency Bonus when the roll is made from the named Maneuver's own Item.
+The kind is `kinds/substitute.mjs` and the dispatcher `ruleSubstitutions` in `engine.mjs`; the check
+engine prices the swaps and chooses (`assemble` in `module/dice/check/modifiers.mjs`, its pure half
+in `module/dice/check/substitute.mjs`). The hook point's section is under "Hook points" below.
 
 **0.16.0 and 0.17.0 (2026-11-05).** The grammar has two layers in the shape of Fantasy Grounds' PF2
 automation, at Mike's direction, and since 0.17.0 every line of a cell is blocks in square brackets
@@ -37,10 +45,10 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `grammar.mjs` | The line structure of a cell and nothing else: `parseAutomation`, `summarize`, `ruleEntries`, and the plain-data check on what a kind returns. Re-exports the registry's words and `syntax.mjs`. |
 | `syntax.mjs` | What a kind file imports: `RuleSyntaxError`, `splitArgs`, `keyValues`. Imports nothing, so a kind never imports the grammar and no circle exists (0.10.1; the class alone as `errors.mjs` in 0.10.0). |
 | `features.mjs` | The bracketed line (0.16.0; AUTOMATION_GRAMMAR.md section 2): `isFeatureLine`, `readFeatureLine(text)` splitting `[KEYWORD data]` blocks and naming each block's kind (`FEATURE_KEYWORDS`; `[<Constellation> trained]` to `grant`; `[EFFECT ...]` (0.17.0) back with `effect: true` for the grammar to hand to the effect reader). Pure. |
-| `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). Pure. |
-| `operators.mjs` | The shared vocabularies and readings (the 0.13.0 reader `readLine` is gone with the form, 0.17.0): `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. `OPERATORS` stays for the document gate on section 9. Pure. |
+| `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). `EFFECT_TAGS` ends with `use: "substitute"` since 0.21.0: a tag that is not a modifier tag hands its kind descriptors alone. Pure. |
+| `operators.mjs` | The shared vocabularies and readings (the 0.13.0 reader `readLine` is gone with the form, 0.17.0): `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `readTargetName(written, resolve)` (0.21.0), the one reading of a target's name that `bonus`, `reroll` and `substitute` share (through 0.20.1 `bonus` and `reroll` each kept a copy): with the caller's resolver the canonical name, the slug and the type, the resolver's own record under `found` (its `group` and `parent` a kind's to read, never to store), or null when the resolver knows nothing by the name; without one the name as written, the slug made here (a Maneuver's glyphs never reach it) and a null type; the refusals stay each kind's own; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. `OPERATORS` stays for the document gate on section 9. Pure. |
 | `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)` (written here when this client may, else relayed as `rules:marks` over the system socket to the GM's client or an active owner's; `onRulesSocket` serves it, 0.18.1). The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
-| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the sixteen kinds. |
+| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the seventeen kinds. |
 | `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` in an `[EFFECT ...]` block. |
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
 | `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map, `[AURA ...]`; `toAuraField` is `system.aura`. No hook. |
@@ -49,10 +57,12 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/mark.mjs` | The `mark` kind (0.15.0): using the Talent names one creature; the `use` hook. Read back by `MARKED` (`markedHolds` in operators.mjs). |
 | `kinds/reroll.mjs` | The `reroll` kind (0.15.0): a button on the matching check card throws the die again; the `card` hook. |
 | `kinds/ignore.mjs` | The `ignore` kind (0.15.0): difficult terrain of named kinds costs nothing; no hook point. `ignoresTerrain(actor, kind)` is asked by the Difficult terrain region behavior (data/region-behaviors/difficult-terrain.mjs). |
+| `kinds/substitute.mjs` | The `substitute` kind (0.21.0): a check made with another Attribute and another Constellation's Proficiency Bonus, by the tag `USE` (`[EFFECT USE: <Attribute>, <Constellation>, <Maneuver>]`, exactly three descriptors, `same` keeping a term); the `substitutions` hook. |
 | `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |
 | `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor` (a read, writing nothing; its `marks` are the Skips the reading would spend), `spendSkips`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. |
 | `kinds/<kind>.mjs` | One file per kind, each exporting the definition below. |
-| `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. |
+| `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. `ruleSubstitutions(actor, context)` (0.21.0): the `substitutions` hook point's dispatcher, over the roller's own rules alone, answering `{ candidates, marks }`. |
+| `../dice/check/substitute.mjs` | Outside this folder (`module/dice/check/`): the pure half of the `substitutions` hook point's caller (0.21.0). `swapTerms` (the two terms a swap rolls), `substitutionRecord` (what the card's flags keep of it), `chooseVariant` (which variant of the roll stands) and `mergeMarks` (the roll's marks, each once). It imports nothing, so the self-test checks it from Node; `modifiers.mjs` beside it, which reads the actor and localizes labels, cannot be imported there. |
 
 Every one of them stays free of Foundry globals at module scope, because `assets/build_foundry.mjs`
 and `assets/test_rules.mjs` import them from plain Node. The build and the client parse a cell with
@@ -188,10 +198,20 @@ and, when it applies in an encounter, puts `mark: { key, per }` on the modifier 
 lift. `needsMoment(rule)` sorts the rules into the two halves the callers ask for: the sheet's
 Defense pass (`staticOnly`) takes the rules that need none of the scene, the Threat or the round,
 and a Defense roll or a Threshold read in the attack flow (`momentOnly`) takes the rest, so no
-rule is counted twice. Then the target: a scope applies by the roll's kind; a Constellation on its
-slug; a Maneuver when the roll carries its Item, and is **offered** unticked on a check made
-without one (ruling 122), never on an attack, a Defense or an Initiative. The label is the
-carrier's plain name, with the owner's name in parentheses when it is another token's Talent
+rule is counted twice. One static rule is answered under `momentOnly` as well (0.21.0, ruling
+222): a bonus to a MANEUVER, on a check rolled with a Defense Constellation from that Maneuver's
+Item, which the Defense pass could never have folded in (Humanity's +1 on an Aid made with
+Awareness, lost through 0.20.1). It is matched by the Item alone: the roll's kind is `check`, the
+roll carries an Item of type `action`, the rule's `to.type` is `"action"` (or null, a rule parsed
+without a resolver) and its `to.slug` is the slug of that Item's plain name; an untyped target
+whose slug is also the roll's own Constellation was the pass's and is left out. Nothing is offered
+on that branch, and a bonus to every check and a bonus to the Defense itself stay out of it as
+before; the wider question, whether a bonus to every check reaches a Defense rolled as a check
+(Wind, Recovery, a Search), is untouched and is an open decision. Then the target: a scope applies
+by the roll's kind; a Constellation on its slug; a Maneuver when the roll carries its Item, and is
+**offered** unticked on a check made without one (ruling 122), never on an attack, a Defense or an
+Initiative. The label is the carrier's plain name, with the owner's name in parentheses when it is
+another token's Talent
 ("Torchbearer Human (Tess)"); one Talent's lines on one target share `source: rule:<item>:<target>`.
 
 ## The contract of a kind
@@ -261,8 +281,8 @@ A hook point is a moment in the engine where every registered kind is asked one 
 its own rules on an Actor. The engine's call sites exist once per hook point; a kind takes part by
 naming the point in its `hooks`, and a new kind that wants an existing moment adds no engine code
 (ruling 124). A new moment is still defined with the first kind that needs it (ruling 119). There
-are four: `modifiers` (0.10.0, calculated), `prevent` (0.13.0, triggered), `use` and `card` (0.15.0,
-both triggered).
+are five: `modifiers` (0.10.0, calculated), `prevent` (0.13.0, triggered), `use` and `card` (0.15.0,
+both triggered) and `substitutions` (0.21.0, calculated).
 
 ### Calculated and triggered
 
@@ -272,12 +292,12 @@ below, and a kind's hook keeps to it.
 
 - **Calculated.** The engine asks a question and the hook answers with data: modifiers, an
   adjustment, a list of what applies. The hook writes no document, posts no card, and may be
-  called on any client and any number of times with the same answer. `modifiers` is one. A
-  failure is isolated to the kind that failed: the dispatcher reports it once and takes nothing
-  from that kind, and the roll or the sheet goes on with the rest. Stacking and ordering are the
-  caller's, through the rule the caller already has (`SW.resolveModifiers` for a roll: since PHB
-  v4.21 every bonus adds and a circumstance is counted once, by the modifier's `source`), never
-  the dispatcher's.
+  called on any client and any number of times with the same answer. `modifiers` is one and
+  `substitutions` (0.21.0) the other. A failure is isolated to the kind that failed: the
+  dispatcher reports it once and takes nothing from that kind, and the roll or the sheet goes on
+  with the rest. Stacking and ordering are the caller's, through the rule the caller already has
+  (`SW.resolveModifiers` for a roll: since PHB v4.21 every bonus adds and a circumstance is counted
+  once, by the modifier's `source`), never the dispatcher's.
 - **Triggered.** Something happened (a Critical Hit landed, a Wound was taken, a round ended) and
   a rule asks for an operation in answer: a condition set, Vigor restored, a card posted. Every
   client sees the event, so a triggered hook point must say, when it is defined, **which one
@@ -364,7 +384,10 @@ Calculated. `hooks.modifiers(entries, context, actor) -> Modifier[]`, dispatched
 a Threshold is read against, the defender a Strike's pairing resolves against, the roller whose
 check reads a Threshold; `MARKED`), `pairingOnly` (a Strike's pairing: only the rules about the
 other party) and `read` (a Threshold read with no dialog: a claim applies only when armed), and an
-offer may come back `ticked` with a `mark` the dialog files when the box stays ticked.
+offer may come back `ticked` with a `mark` the dialog files when the box stays ticked. Since
+0.21.0 the `rank` it carries is the rank ROLLED: the borrowed Constellation's when a substitution
+stands (ruling 217; the `substitutions` point below), so a `RANK(roll ...)` on any other kind's
+line reads the swap.
 
 - **When the engine calls it.** Twice in the system, once per roll each: in `baseModifiers`
   (`module/dice/check/modifiers.mjs`, the check engine's)
@@ -383,7 +406,8 @@ offer may come back `ticked` with a `mark` the dialog files when the box stays t
   check), each with its `owner` and `ownerToken`. `context`: `{ kind: "check" | "attack" |
   "defense" | "initiative", slug, item, rank, threat, scene, encounter, staticOnly, momentOnly }`
   (the typedef in engine.mjs): the roll's kind, the Constellation slug supplying the Proficiency
-  Bonus (`""` when none), the Item behind the roll or null, the roll's own rank, the Threat it
+  Bonus (`""` when none), the Item behind the roll or null, the rank the roll is made at (the
+  borrowed Constellation's when a swap stands, 0.21.0, ruling 217), the Threat it
   answers or null (`{ threat, melee, traits }`, the traits the attack's for `IF(Trait=...)`), the
   scene (`{ token, tokens: [{ actor, token }], relation(a, b), gap(a, b), sees(a, b) }`
   from `scene.mjs`, a fake in a test, null when unknown), the Combat and round, and which half of
@@ -399,13 +423,19 @@ offer may come back `ticked` with a `mark` the dialog files when the box stays t
   (`writeRuleMarks` in scene.mjs: `SwCheck.roll` for the roller's own, the attack coordinator for
   a Threshold read), never from a preview. An offer carries its marks as `marks` (and the first as
   `mark`), since a ticked claim on a one-roll custom effect spends the claim and the row alike
-  (0.18.1); the dialog files them with the roll.
+  (0.18.1); the dialog files them with the roll. Since 0.21.0 `prompt` returns the marks of the
+  boxes left ticked and `SwCheck.roll` adds them to the roll's own after any rebuild; through
+  0.20.1 they were written onto the config, and a rebuild, which assembles the roll again and sets
+  its marks afresh, dropped them (an armed claim was not spent, a one-roll custom effect not
+  removed).
 - **Who calls it with what** (0.13.0). `baseModifiers`' non-Defense branch asks for everything
   with the scene, the Threat (`cfg.threat`, set by `rollDefense` from the attack flow's Maneuver)
   and the encounter; its Defense branch and `SwActor#defenseThresholdFor` (the Combat Prompt's
   preview, the coordinator's reveal and resolution) ask `momentOnly`, since `prepareDefenses`
   folded the static rules into the Defense's own modifiers with `staticOnly`. The sheet's
-  Threshold is therefore the position-blind number, and its tooltip says so.
+  Threshold is therefore the position-blind number, and its tooltip says so. One static rule is
+  still answered under `momentOnly` (0.21.0, ruling 222; the `bonus` section above): a bonus to a
+  Maneuver, on a check rolled with a Defense Constellation from that Maneuver's Item.
 - **What the dispatcher does.** Walks `KINDS`; skips a kind without the hook and a kind with no
   entries on this actor; calls the hook inside try/catch, a throw reported once as
   `STARWROUGHT | the "<id>" kind's modifiers hook failed:` and contributing nothing, so a roll never
@@ -416,6 +446,70 @@ offer may come back `ticked` with a `mark` the dialog files when the box stays t
   circumstance, counted once, which is how the `bonus` kind keeps one Talent's lines on one target
   from adding: `source: "rule:<item>:<target>"`).
 
+### `substitutions` (0.21.0)
+
+Calculated. `hooks.substitutions(entries, context, actor) -> [{ key, item, label, attribute,
+proficiency, certain, mark? }]`, dispatched by `ruleSubstitutions(actor, context)` in `engine.mjs`,
+which returns `{ candidates, marks }`. Defined with the `substitute` kind (ruling 221), the fifth
+hook point and the second calculated one: "this check is about to be assembled; which of the
+owner's rules would swap its base terms?" A substitution replaces the roll's two base terms, the
+Attribute Bonus and the Proficiency Bonus (one of them when the line says `same`), and nothing else
+(ruling 216): the roll stays a check in its own Constellation, so the Flare preselection, Load
+Strain on Stealth, Constellation-targeted bonuses, rerolls and the road-roll memory are untouched.
+
+- **When the engine calls it.** Once per assembly of a character's check, before the base terms
+  are built: `assemble` in `module/dice/check/modifiers.mjs`. Checks only, characters only (ruling
+  220): never a Strike, a Cast, a Defense roll, a Threshold read or an Initiative, and an adversary
+  rolls flat; a check rolled with a Defense Constellation (an Aid made with Awareness) is asked
+  only when a Maneuver's Item is behind it. When a candidate comes back, `assemble` builds the roll
+  once with no swap and once with each candidate, every one in full, because another rule may read
+  the rank the roll is made at (Jack of All Trades' +1 on an Untrained roll is lost under a Trained
+  Origin), leaves the variants on `cfg.substituteVariants` for the roll dialog, and chooses with
+  `chooseVariant` (`module/dice/check/substitute.mjs`): `cfg.substitute` undefined is the default
+  rule, the swap whose assembled total is strictly the highest, else none (ruling 218; a tie or a
+  loss leaves the check as it was, and a roll with no dialog takes the default); `null` is no swap
+  (the player unticked the box); a key is that swap. One swap stands on a roll. What stands is
+  written back as the roll's own: `cfg.rank` the rank rolled, `cfg.substituted` the record the card
+  keeps, `cfg.attribute` the check's own Attribute throughout. Each assembly asks `ruleModifiers`
+  again at that variant's rank, which a calculated point allows. A roll no rule offers a swap on
+  is assembled as it was before 0.21.0.
+- **What it is handed.** `entries`: this kind's rules on the roller, `[{ rule, item, owner }]`,
+  from `rulesOfKind` (an Off line never arrives). OWN RULES ONLY: no other token's rules are added,
+  whatever the scene, since a swap is the owner's own roll and the kind refuses `FOR`. `context`:
+  `{ kind, slug, item, rank, encounter }`: the roll's kind, the check's own Constellation slug, the
+  Item behind the roll or null, the Combat and round for a `LIMIT`, and `rank`, the check's OWN
+  rank, before any swap, which a `RANK(roll ...)` on a `USE` line reads. Every other rule's
+  `RANK(roll ...)` reads the rank rolled, through `ruleModifiers`' context (ruling 217). `actor`:
+  the roller.
+- **What it may return.** An array of candidates that mirror the rule: `key`, stable per rule line
+  (the dialog's checkbox and the card's record name it; `use-<carrier>-<line>` from `substitute`);
+  `item`, the carrier; `label`, its plain name; `attribute`, a key of `SW.ATTRIBUTES`, or null when
+  the check keeps its own; `proficiency`, `{ constellation, name }`, or null likewise; `certain`,
+  true when the roll is known to be the check the rule names (always, in 0.21.0: a swap is offered
+  only from the Maneuver's own Item, ruling 219; an uncertain candidate is never the default); and
+  `mark: { key, per }`, the rule's `LIMIT`, when an encounter is running. The hook prices nothing,
+  chooses nothing and writes nothing.
+- **What the dispatcher does.** Answers empty for no actor; walks `KINDS`; skips a kind without
+  the hook and a kind with no rules on this actor; calls the hook inside try/catch, a throw
+  reported once as `STARWROUGHT | the "<id>" kind's substitutions hook failed:` and contributing
+  nothing; drops a candidate that is not an object, names no `item`, names an Attribute the system
+  does not have, or swaps nothing (no Attribute and no `proficiency.constellation`); reads
+  `certain` as true unless it is `false`; gives a keyless candidate a key of its own
+  (`<kind>-<n>`) and suffixes a key two candidates share, so the dialog's checkboxes never collide;
+  drops a mark without both its `key` and its `per`.
+- **Where the marks go.** They ride on the candidate, as an offered modifier's do: each candidate
+  comes back with `marks`, its own `LIMIT` mark and, on a one-roll custom effect, the row's removal
+  (`per: "effect"`), and the check engine files them only for the swap the die is thrown with
+  (`mergeMarks` onto the standing variant's `cfg.ruleMarks`, written by `SwCheck.roll` through
+  `writeRuleMarks`), never for a candidate left unticked and never from a preview. The top-level
+  `marks` is what the roll owes whichever way it goes: a Skip line that would have offered a swap
+  is dropped and its state cleared (`per: "state"`); a Skip line that would not have matched is
+  not spent.
+- **The name.** The hook must NOT be named `use`, though the tag is `USE`: `hooks.use` is the
+  triggered point above, which draws a Use control on the Talent's row (`usableByRule`) and runs
+  when the Talent is used, and a substitution is never used. The self-test asserts the kind's one
+  hook is `substitutions`.
+
 ## Adding a rule kind
 
 One at a time, with Mike (ruling 119). The first was `bonus`; the next is the aura, for
@@ -425,19 +519,30 @@ Torchbearer, and its syntax is his to settle. Each kind lands as one change with
    for every Talent that will ever use the word: the aura that serves Torchbearer must serve
    every aura in the book without a second kind, as `bonus` serves every typed bonus.
 2. **The registration.** Two lines at the foot of `kinds/index.mjs`: the import and
-   `registerKind(<id>)`.
+   `registerKind(<id>)`. An effect kind is named in two lists besides (0.21.0; `substitute` showed
+   both are needed and the second is easy to miss): its tag in `EFFECT_TAGS` in `effects.mjs`,
+   which is what makes the tag read and names the kind that parses it, and its id in
+   `EFFECT_KINDS` in `module/helpers/effects.mjs`, the kinds whose lines the Effects tab lists and
+   switches On / Skip / Off and the tracker's badge counts. The self-test fails unless
+   `EFFECT_KINDS` is exactly the kinds `EFFECT_TAGS` names.
 3. **The test.** In `assets/test_rules.mjs`: add the id to `SHIPPED_KINDS` (the self-test asserts
    the registry holds exactly that list, so a kind cannot ship unannounced; the unknown-kind
    checks use the reserved word `not-a-real-kind`, so no real kind's name is assumed unknown
    anywhere in the file), then checks of its own: the forms its `parse` accepts, the data it returns, the message of each thing it refuses,
    its `summary`, and its hooks through the dispatcher with a fake actor (`rulesActor` in the
-   `bonus` section is the model). `node assets/test_rules.mjs` must pass; `build_all.mjs` runs it
-   in every mode as the step `test_rules`, right before `build_foundry`.
+   `bonus` section is the model). A new effect tag also joins the two tag-list strings the
+   self-test matches whole, since both messages print every tag of `EFFECT_TAGS` in order (`"FOO"
+   is not an effect tag: write CHECK, ATK, ...` and `EFFECT wraps an effect line, ...`; 0.21.0 added
+   `, USE` to each), and its lines join `EFFECT_LINES`, each read bare and in its block alike.
+   `node assets/test_rules.mjs` must pass; `build_all.mjs` runs it in every mode as the step
+   `test_rules`, right before `build_foundry`.
 4. **The grammar document.** `AUTOMATION_GRAMMAR.md` in the project root: the kind's section under
-   "3. The kinds" (its shape, its arguments table, its examples, the operators it takes), any new
-   operator in the table of section 4, any new vocabulary, its messages in section 7, and a line
-   in section 8's history, in the same commit (Mike, 2026-11-05; the build fails without the
-   section). `data/README.txt` points at the document and repeats no syntax.
+   "4. The kinds, by their stored names" (the blocks that make it, the components it takes), its
+   row in section 0's table, its block's row in section 2 or its tag's row in section 3 (its shape,
+   its descriptors, its examples), any new component, condition or vocabulary in the tables of
+   section 3, what it does in play in section 7, its messages in section 8, and a line in section
+   10's history, in the same commit (Mike, 2026-11-05; the build fails without the section).
+   `data/README.txt` points at the document and repeats no syntax.
 5. **The hook.** A kind names the hook point(s) it speaks at in `hooks`, and the engine's call
    sites exist once per hook point, so a kind that wants a moment the engine already asks about
    (`modifiers`) adds no engine code: `bonus` is wired by its `hooks.modifiers` alone. A kind that
@@ -445,8 +550,9 @@ Torchbearer, and its syntax is his to settle. Each kind lands as one change with
    defines the hook point with it and not before: its dispatcher in `engine.mjs` in the shape of
    `ruleModifiers` (walk `KINDS`, skip the silent, try/catch the hook, validate what comes back),
    its call site(s) where the effect lives, and its section under "Hook points" above (its name,
-   when the engine calls it, what it is handed, what it may return). Every hook asks
-   `rulesOfKind` for the rules in play and never walks `actor.items`.
+   when the engine calls it, what it is handed, what it may return), as `substitute` did with
+   `substitutions` in 0.21.0. Every hook asks `rulesOfKind` for the rules in play and never walks
+   `actor.items`.
 6. **The docs.** A `CHANGELOG.md` entry under the system version it ships in, with the ruling that
    settled the syntax; a paragraph in `FEATURES.md`'s "Automation" section saying what the kind
    does on screen; `CLAUDE.md`'s standing paragraph on the framework names the kind.
@@ -465,3 +571,12 @@ time, from the Talent that wants each. The framework's job is to make each of th
 addition when its turn comes, and `bonus` was the first proof: one file, two lines in the
 registry, one dispatcher and two call sites, and nothing else in the system learned what a bonus
 is.
+
+**Not built with `substitute`** (0.21.0). A Constellation as the check a `USE` names: the parse
+refuses it and the hook passes over one stored by hand, since a Constellation's own checks bring
+the Initiative question of ruling 111 with the first Talent that wants them. Offers on plain
+checks: a check made without the Maneuver's Item is offered nothing (ruling 219), where a `bonus`
+to a Maneuver is offered unticked. `IF: UNSUBSTITUTED` as a condition. A flat Proficiency Bonus
+(Working Knowledge's "+3 instead of +0"), refused by name today; it would be a new member under
+the stored rule's `proficiency`, with no migration of the rules stored now. `FOR` and auras, and
+`CLAIM`, all three refused by name. Aid's own outcome bonus, which stays the card's text.

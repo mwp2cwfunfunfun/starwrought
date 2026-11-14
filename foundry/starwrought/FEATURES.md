@@ -2,9 +2,9 @@
 
 Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 November 2026, every
 tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
-onward; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, and the
-entries between carry 164 to 204). System version **0.20.0**. Developed against
-**Foundry VTT v14**, which is the manifest's verified version.
+to 214; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
+entries between carry 164 to 204, and the 0.21.0 entry has 215 to 222). System version **0.21.0**.
+Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
 [README.md](README.md); what changed and when is in [CHANGELOG.md](CHANGELOG.md).
@@ -2008,17 +2008,18 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the sixteen kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the seventeen kinds
 
-**What it is, and what it is not** (0.9.0 to 0.16.0; rulings 118 to 124, 164 to 188). Since 0.9.0
-every Talent sheet in `data/*.xlsx` may carry an **Automation** column, as the action sheets
-already did, and the system has a framework for reading it: the column is parsed, stored on the
-Item, indexed on the Actor and shown on the Item sheet. Sixteen kinds read it: five effect kinds
-that act in play (`bonus`, `prevent`, `mark`, `reroll`, `ignore`), two creation kinds (`grant`,
-`aura`) and nine feature kinds (`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`,
-`talent`, `choice`) that say what owning the Talent does to the character. Nothing else reads a
-rule: no Strike's commitment, no damage step, because no kind for them exists, and Mike's
-instruction stands ("we will build automation syntax hooks one at a time").
+**What it is, and what it is not** (0.9.0 to 0.16.0, and 0.21.0 for the seventeenth kind; rulings
+118 to 124, 164 to 188, 215 to 222). Since 0.9.0 every Talent sheet in `data/*.xlsx` may carry an
+**Automation** column, as the action sheets already did, and the system has a framework for
+reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
+sheet. Seventeen kinds read it: six effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`), two creation kinds (`grant`, `aura`) and nine feature kinds
+(`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
+what owning the Talent does to the character. Nothing else reads a rule: no Strike's commitment,
+no damage step, because no kind for them exists, and Mike's instruction stands ("we will build
+automation syntax hooks one at a time").
 
 **The shape is Fantasy Grounds'** (0.16.0; ruling 182; Mike: "I REALLY, REALLY like the
 FantasyGrounds effects automation ... can we use syntax substantially similar to this"). Two
@@ -2031,12 +2032,14 @@ enclosed in Brackets?"), a tag then components separated by semicolons (`[EFFECT
 condition, aid; IF: RANK(Origin >= trained)]`; `[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR:
 self+allies 0; IF: ALLIES(>=1, 0)]`; `[EFFECT IMMUNE: prone; LIMIT: encounter]`; `[EFFECT MARK:
 enemies]`; `[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]`; `[EFFECT IGNORE: terrain,
-mud, decking]`). `CHECK`, `ATK`, `DEF`, `INIT` and `SPEED` take a signed
-value and the bonus type (situation, condition, gear) and at most one descriptor; `IF:` is about
+mud, decking]`; and since 0.21.0 `[EFFECT USE: Presence, Origin, aid]`). `CHECK`, `ATK`, `DEF`,
+`INIT` and `SPEED` take a signed value and the bonus type (situation, condition, gear) and at most
+one descriptor; `USE` takes no value and exactly three descriptors; `IF:` is about
 the owner or the roll (`RANK(...)`, `SEEN`, `ALLIES(>=1, 0)`, `CLAIM(...)`, `RESULT(...)`), `IFT:`
 about the other party or the attack (`TRAIT(Fear)`, `MARKED`, `BLOW`, `MELEE`, `CHECK(intimidation)`),
 `FOR:` the recipients and `LIMIT:` the once-a-round or once-an-encounter. The stored rules are the
-ones the kinds have had since 0.13.0, so the engine's four hook points are untouched. **An aura
+ones the kinds have had since 0.13.0, so the engine's four hook points are untouched (a fifth,
+`substitutions`, came with the `substitute` kind in 0.21.0). **An aura
 carries its effect** (0.18.0; ruling 195; Mike: "the Effects should be within the AURA's
 brackets"): `[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` is the
 ring and what it does in one block, the ring being the effect's `FOR`, so "15 feet, allies" is said
@@ -2105,6 +2108,10 @@ active effects and their summaries on hover.
   you (a player attacking you, a Demoralize against your Guard), and the pin goes out when either
   resolves. Nothing is applied unasked and nothing is remembered past one roll. The sheet's
   Threshold tooltip lists the claims and every other rule the position-blind number leaves out.
+  Since 0.21.0 a roll the dialog rebuilds (a swap ticked or unticked, a Strike made as part of a
+  Maneuver, a Reaction that changes the Defense rolled) keeps the marks of the boxes left ticked;
+  through 0.20.1 the rebuild dropped them, so an armed claim was not spent and a custom effect
+  lasting one roll was not removed.
 - **A mark** (`mark`, `MARKED`; rulings 175 and 176). Oathbound's row has a **Use** control: with
   one enemy targeted it names that creature (said on the Talent's card, "Tess marks Bandit:
   Oathbound"), refused with a notice otherwise, and pays the Talent's cost in an encounter. The mark
@@ -2229,8 +2236,15 @@ remembered on the recipient (`flags.starwrought.rules`) by the client that resol
 by a preview; outside an encounter they apply every time. Allies and enemies are by token
 disposition as Support counts them; ranges edge to edge, `0ft` adjacency. A bonus to a Maneuver is
 applied when the roll is made from that Maneuver's Item and otherwise **offered** unticked in the
-roll dialog ("Humanity: Aid"; ruling 122), never on an attack, a Defense or an Initiative.
-Adversaries roll flat, and nothing of this reaches them.
+roll dialog ("Humanity: Aid"; ruling 122), never on an attack, a Defense or an Initiative. Since
+0.21.0 (ruling 222) it is applied as well when that Maneuver's check is rolled with a Defense
+Constellation from the Maneuver's Item: an Aid made with Awareness carries Humanity's +1, which was
+lost through 0.20.1, because a Defense rolled as a check rolls what the sheet folded into the
+Defense, and the sheet could never have folded in a bonus that belongs to a Maneuver. Nothing else
+moves on that roll: a bonus to the Defense itself is counted once as before, a bonus to every check
+stays out of it, and nothing is offered there. The wider question, whether a bonus to every check
+reaches a Defense rolled as a check (Wind, Recovery, a Search), is untouched and is an open
+decision. Adversaries roll flat, and nothing of this reaches them.
 
 **The `grant` kind** (0.13.0; ruling 168). `grant: <N>, <Scope> [, DIFFERENT]`: Talent Points at
 creation, the Scope Opening (a Root of a Constellation not yet opened), Calling, Skill, Lore,
@@ -2269,10 +2283,72 @@ enabled its row in `data/maneuvers.xlsx` on 2026-10-03, so an Aid used from the 
 the picker and the roll's card reads "Aid". The Item sheet's "Rolls a check" panel says so under
 its fields.
 
-**The hook points** (0.10.0 and 0.13.0; rulings 124 and 165). A kind that affects a roll names
-`modifiers` in its `hooks`: the engine asks every registered kind at the check assembly, the
-Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the rules
-that need the map, the Threat or the round), through one dispatcher (`ruleModifiers` in
+**The `substitute` kind** (0.21.0; rulings 215 to 222; Mike, 2026-11-10: "Replacing the
+Constellation AND the Attribute bonus for a check with something else"). `[EFFECT USE: <Attribute>,
+<Constellation>, <Maneuver>]`, exactly three descriptors (ruling 215): the Attribute the check is
+made with (`might`, `agility`, `wits` or `presence`), the Constellation whose Proficiency Bonus is
+borrowed (the Origin, a Skill, a Defense), and the Maneuver whose check is swapped, by the name the
+action sheets print. `same` in the first or the second place keeps "the term this check would use
+without this line", so `USE: same, Origin, aid` borrows the Proficiency alone and `USE: Presence,
+same, aid` the Attribute alone; `same, same` is refused. The components are `IF: RANK(...)` and
+`LIMIT:`. The example is Cooperative Instinct: "When you Aid, you may use Presence + Origin
+proficiency in place of the Attribute and proficiency normally used for that Aid check", written
+`[EFFECT USE: Presence, Origin, aid]`, which the Item sheet reads back as "may use Presence + Origin
+proficiency on checks to Aid". That Talent is on the Human sheet Mike is still writing by hand, not
+a shipped one: 0.21.0 carries the kind alone, no shipped cell uses it, and the pack content did not
+move.
+
+A substitution replaces the roll's two base terms, the Attribute Bonus and the Proficiency Bonus,
+and nothing else (ruling 216): the roll stays a check in its own Constellation, so the Flare
+preselection, Load Strain on Stealth, bonuses to that Constellation, rerolls and the road-roll
+memory are untouched. The rank the roll records, and that every other rule's `IF: RANK(roll ...)`
+reads, is the rank rolled, so the borrowed Constellation's when a swap stands (ruling 217): Jack of
+All Trades' +1 on an Untrained roll does not join an Aid made at a Trained Origin, as Mike's prose
+for it says (its +1 "does not apply to ... a check receiving a substituted proficiency bonus"). On
+the `USE` line itself `RANK(roll ...)` is the check's own rank, before any swap. Aid's "master with
+the check you attempted" is read at the rank rolled, which the card prints.
+
+**What the player sees** (ruling 218; Mike, 2026-11-10: "I like you recommendation of offering it,
+ticking it by default when it is a better pair"). On a check rolled from the Maneuver's own Item
+the roll dialog has a row for the swap, a checkbox above the other offers: "Cooperative Instinct:
+Presence and Origin (Trained) in place of Wits and Crafting (Untrained)", with the signed
+difference it makes to the total beside it. The box comes ticked when the swapped total is strictly
+higher; a tie or a loss is offered unticked. "Better" is judged on the whole assembled total, not
+on the two base numbers, because another rule may read the rank. The terms and the total above
+follow the box as it is ticked and unticked, and one swap stands on a roll: where two are offered,
+ticking one unticks the other. The other offers follow it too: a claim that reads the roll's rank
+(`IF: RANK(roll = untrained); IF: CLAIM(...)`) is shown under the terms it is offered on and
+hidden under a swap that borrows a Trained rank, and a ticked row counts only when the roll is
+made the way that offers it. With no dialog (Shift-click) the default applies, and Skip or Off on
+the Effects tab is how to decline there. The card's rows read the terms rolled ("Presence +2",
+"Origin (Trained) +3") and a note says what was replaced: "Cooperative Instinct: Presence and
+Origin (Trained) in place of Wits and Crafting (Untrained)." The card's flags keep the record
+(`flags.starwrought.substituted`: the swap's key, the Talent's name, the Attribute, the
+Constellation borrowed with its name and rank, and `from`, the Attribute and the Constellation with
+its rank that the check would have used), the Attribute rolled (`flags.starwrought.attribute`) and
+the rank rolled (`flags.starwrought.rank`), and a reroll of the card keeps the note. In the
+Relevant Check picker a row whose number includes a swap is marked with an asterisk, and one hint
+line under the list names the Talent. On the Effects tab a `USE` line is listed with On / Skip /
+Off like any effect line. A `LIMIT`, and the removal of a custom effect lasting one roll, are spent
+only when that swap is the one rolled.
+
+**What it never touches** (rulings 219 and 220). A swap is offered only from the Maneuver's own
+Item (Mike, 2026-11-10: "Only from Aid"): a check made without that Item is offered nothing, where
+a `bonus` to a Maneuver would be offered unticked. The check a `USE` names is a Maneuver; a
+Constellation, a Defense, a scope word (`Checks`, `Defenses`) and a Lore are refused in the cell,
+each with its own message. Checks only, characters only: never a Strike, a Cast, a Defense roll, a
+Threshold read or an Initiative, and an adversary rolls flat. What is not built is listed in
+section 9. Fixed on the way, with no ruling: a line that begins with the kind's own name
+(`substitute: Presence, Origin, aid`) is told that the word is the kind's name and that its tag is
+`USE`, with the line to write, rather than that it "is a feature"; and a tag typed without its
+colon (`use Presence, Origin, aid`) is told about the colon.
+
+**The hook points** (0.10.0, 0.13.0 and 0.21.0; rulings 124, 165 and 221). A kind that affects a
+roll names `modifiers` in its `hooks`: the engine asks every registered kind at the check assembly,
+the Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the
+rules that need the map, the Threat or the round, and since 0.21.0 the one static rule the Defense
+pass could never have folded in: a bonus to a Maneuver, on a check rolled with a Defense
+Constellation from that Maneuver's Item, ruling 222), through one dispatcher (`ruleModifiers` in
 `module/rules/engine.mjs`), handing each kind its own rules and the other tokens' rules whose `FOR`
 reaches the actor, with the roll's kind, Constellation, Item, rank, Threat (with the attack's
 traits since 0.14.0), scene (with a sight test since 0.14.0) and encounter;
@@ -2280,7 +2356,17 @@ a kind answers with modifiers, applied or offered, and the marks to remember. A 
 effect names `prevent`: asked by `setCondition` and the token palette's path and by the Expose
 offer (`rulePreventers`). A kind that throws is logged and contributes nothing, so a roll never
 dies over a rule. A second kind that wants either moment adds no engine code; a new moment is
-defined with the first kind that needs it, as both were.
+defined with the first kind that needs it, as both were. The fifth hook point, `substitutions`
+(0.21.0; ruling 221; the third and fourth, `use` and `card`, came with `mark` and `reroll` in
+0.15.0), was defined with the `substitute` kind and, like `modifiers`, only answers: as a
+character's check is assembled the engine asks every registered kind which of the roller's own
+rules would swap its two base terms (`ruleSubstitutions`, answering `{ candidates, marks }`),
+handing each kind the roll's kind, Constellation, Item, the check's own rank and the encounter. A
+kind answers with candidates; it prices nothing, chooses nothing and writes nothing: the check
+engine assembles the roll once with no swap and once with each candidate, and the swap whose total
+is strictly the highest stands unless the player says otherwise. A candidate's `LIMIT` mark and a
+one-roll custom effect's removal ride on the candidate and are filed only when that swap is the
+one rolled.
 
 **The build** (ruling 118; the pipeline step since 0.16.0, ruling 183). `assets/parse_rules.mjs`
 parses every Talent's, Maneuver's and Background's cell with the system's own grammar module
@@ -2320,7 +2406,7 @@ nothing reads it; the `bonus` entries are what the hook point reads.
 its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
 can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
 defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which
-registers the four. `module/rules/README.md` is the
+registers the seventeen. `module/rules/README.md` is the
 recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every
 step-running mode (`--check` builds nothing) of `build_all.mjs` before the Foundry build; it asserts
 the list of shipped kinds, so a kind cannot ship unannounced.
@@ -2503,6 +2589,15 @@ before; the sources and the index are.
   never refused. A Maneuver-targeted bonus is offered, never applied, on a check made without the
   Maneuver (ruling 122), and nothing of the framework reaches an adversary. Nothing generates code
   from a cell: the cell is data, and the engine is the only code.
+- **A substitution is offered from one place, and some of it is not built** (0.21.0; rulings 219
+  and 220; section 7). A `USE` line swaps a check's Attribute Bonus and Proficiency Bonus only on a
+  check a character rolls from the named Maneuver's own Item; a check made without that Item is
+  offered nothing, and no Strike, Cast, Defense roll, Threshold read or Initiative is ever swapped.
+  Not built: a Constellation as the check a `USE` names (it brings the Initiative question of
+  ruling 111 with the first Talent that wants it); offers on plain checks; `IF: UNSUBSTITUTED`; a
+  flat Proficiency Bonus (Working Knowledge's "+3 instead of +0"); `FOR` and auras; `CLAIM`. Aid's
+  own outcome bonus stays the card's text. No shipped Talent carries a `USE` line: Cooperative
+  Instinct is on a sheet Mike is still writing, and 0.21.0 builds no data.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

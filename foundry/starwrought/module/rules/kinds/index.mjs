@@ -43,7 +43,7 @@ export const KIND_WORD = /^[a-z][a-z-]*$/;
  * @property {string[]} aliases                                  Other words accepted before the colon.
  * @property {(args: string, context: object) => (object|void)} parse   The text after the colon, trimmed, to the rule's data.
  * @property {(rule: object) => string} summary                  One short line for the Item sheet.
- * @property {Object<string, Function>} hooks                    The engine hook points the kind speaks at (`modifiers` since 0.10.0; see ../engine.mjs).
+ * @property {Object<string, Function>} hooks                    The engine hook points the kind speaks at (`modifiers` since 0.10.0, then `prevent`, `use`, `card` and `substitutions`; see ../engine.mjs).
  */
 
 /**
@@ -157,6 +157,11 @@ import reroll from "./reroll.mjs";
 registerKind(reroll);
 import ignore from "./ignore.mjs";
 registerKind(ignore);
+
+// 0.21.0: Cooperative Instinct's `USE: Presence, Origin, aid`. `substitute` defines the
+// `substitutions` hook point (calculated): the terms a check is made with, offered in the dialog.
+import substitute from "./substitute.mjs";
+registerKind(substitute);
 
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
