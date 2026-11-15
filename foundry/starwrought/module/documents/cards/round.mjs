@@ -115,7 +115,10 @@ export async function postPersistentReminder(actor, source, round) {
 
 export async function postPreparedCard(actor, preparing, combat) {
   const cost = Number(preparing.cost) || SW.PREPARED_THRESHOLD;
-  const reserved = Number(actor.system.actions?.reserved) || Math.max(0, cost - 1);
+  // Two actions are spent as a preparation begins (PHB v4.24, `SW.PREPARE_SPEND`; ruling 205). The
+  // card said "1 spent" until 0.23.0, a number left from the book's earlier rule.
+  const reserved = Number(actor.system.actions?.reserved) || Math.max(0, cost - SW.PREPARE_SPEND);
+  const spent = Math.max(0, cost - reserved);
   const label = preparing.label || (preparing.strike ? localize(SW.STRIKE_KINDS[preparing.strike]?.label ?? "STARWROUGHT.Roll.strike") : localize("STARWROUGHT.Condition.preparing"));
   const content = cardHtml({
     root: "sw-prepared-card",
@@ -123,7 +126,7 @@ export async function postPreparedCard(actor, preparing, combat) {
     glyph: SW.ACTION_GLYPHS[cost] ?? "",
     title: localize("STARWROUGHT.Condition.preparing"),
     lines: [format("STARWROUGHT.Combat.preparedText", {
-      name: escapeHTML(actor.name), label: escapeHTML(label), cost, reserved, round: combat.round
+      name: escapeHTML(actor.name), label: escapeHTML(label), cost, spent, reserved, round: combat.round
     })],
     notes: [localize("STARWROUGHT.Combat.preparedNote")],
     buttons: [

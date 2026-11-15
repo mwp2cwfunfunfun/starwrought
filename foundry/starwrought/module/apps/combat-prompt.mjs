@@ -21,6 +21,13 @@
  *  - stale: a submit the coordinator rejected as stale shows "That attack has moved on" and the
  *    task refreshes from the live state.
  *
+ * Under the tasks, for whoever may control an attack (the GM; the coordinator with no GM
+ * connected), **Attacks in progress** (0.23.0, ruling 237): every unfinished attack in one line
+ * each, who at whom and where it stands, with Cancel. It is the GM's way out of an attack that is
+ * stuck where the GM has no task of their own (a player who never rolled, a defender whose token
+ * is gone). The list never opens the window; it keeps an open one open while an attack is
+ * unfinished, so a stuck attack stays in sight with its Cancel beside it.
+ *
  * Every choice travels as semantics only (defense, reaction, posture) and the coordinator computes
  * the Thresholds and revalidates against legalAnswers; nothing here is trusted by anyone else.
  * No requestAnimationFrame anywhere: a background tab gets no frames, so rendering happens on
@@ -30,6 +37,7 @@
 import * as SW from "../config.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 import { AttackWorkflow } from "../combat/attack-workflow.mjs";
+import { mayControl, statusLine } from "../combat/attack-card.mjs";
 import { legalAnswers, describeAnswer, postureNeedsZone } from "../helpers/answers.mjs";
 import { describe, meleeAnswers } from "../combat/attack-source.mjs";
 import { threatContext } from "../rules/scene.mjs";
@@ -93,7 +101,8 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     actions: {
       commit: SwCombatPrompt.#onCommit,
       roll: SwCombatPrompt.#onRoll,
-      choose: SwCombatPrompt.#onChoose
+      choose: SwCombatPrompt.#onChoose,
+      cancelAttack: SwCombatPrompt.#onCancelAttack
     }
   };
 
@@ -286,6 +295,7 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const tasks = [];
     for (const wf of workflows) {
+      this.#dropSpentDrafts(wf);
       const outstanding = this.#outstanding(wf);
       const locked = new Set();
       for (const o of outstanding) {
@@ -327,6 +337,43 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
       task.stale = (staleUntil && (staleUntil > Date.now())) ? game.i18n.localize("STARWROUGHT.Attack.stale") : null;
     });
     return tasks;
+  }
+
+  /**
+   * A draft is the choice being made, and it is done with once the choice is: the drafts of a
+   * target that shows committed, and every defend draft of an attack past its defense phase, are
+   * forgotten (0.23.0). Through 0.22.0 they were kept until the attack ended, so after the GM's
+   * Reset defenses the prompt came back with the old Defense already picked, against the rule that
+   * nothing is ever chosen for a defender (0.12.0, ruling 159); and that held for an answer the
+   * GM had committed for an absent player too, since no commitment of this client marked it.
+   */
+  #dropSpentDrafts(wf) {
+    const past = wf.phase !== "defending";
+    for (const target of wf.targets ?? []) {
+      if (!past && !target.committed) continue;
+      for (const mode of ["defend", "gm", "absent"]) this.#drafts.delete(taskKey(wf.id, mode, target.id));
+    }
+  }
+
+  /**
+   * The attacks this user may cancel (attack-card.mjs `mayControl`: the GM, or the coordinator with
+   * no GM connected), one line each for the list under the tasks: who, at whom, and where it stands.
+   */
+  #watchList() {
+    const rows = [];
+    for (const wf of this.#workflows()) {
+      if (!mayControl(game.user, wf)) continue;
+      const names = (wf.targets ?? []).map(t => t.name).filter(Boolean).join(", ");
+      let status = "";
+      try { status = statusLine(wf) ?? ""; } catch { status = ""; }
+      rows.push({
+        workflowId: wf.id,
+        text: this.#defendText(wf, names),
+        status,
+        disabled: this.#busy.has(taskKey(wf.id, "cancel", ""))
+      });
+    }
+    return rows;
   }
 
   /** Forget drafts, commitments and dismissals of workflows that have ended. */
@@ -657,9 +704,13 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
   async _prepareContext(options) {
     const tasks = this.#collectTasks();
     this.#tasks = new Map(tasks.map(t => [t.key, t]));
+    const watch = this.#watchList();
     return {
       tasks,
-      empty: tasks.length === 0,
+      watch,
+      // Nothing to answer, though attacks are still open: said above the list, in place of a task.
+      idle: (tasks.length === 0) && (watch.length > 0),
+      empty: (tasks.length === 0) && (watch.length === 0),
       keysHint: game.i18n.localize("STARWROUGHT.Prompt.keysHint")
     };
   }
@@ -722,7 +773,8 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     if (this.#closeTimer) return;
     this.#closeTimer = setTimeout(() => {
       this.#closeTimer = null;
-      if (this.rendered && !this.hasTasks()) this.close({ swAuto: true });
+      // An attack still in the GM's list keeps the window open (0.23.0): its Cancel is there.
+      if (this.rendered && !this.hasTasks() && !this.#watchList().length) this.close({ swAuto: true });
     }, AUTO_CLOSE_MS);
   }
 
@@ -815,7 +867,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     // No Defense is ever chosen by the system (0.12.0): a Commit with none picked does nothing.
     if (!draft.defense) return;
     const { reaction, posture } = SwCombatPrompt.#answerParts(draft);
-    if (posture && !posture.zone) return;
+    // A Zone is awaited only of a Posture that Exposes one of the defender's choice: Drop Flat
+    // Exposes nothing and Kneel names its own (0.23.0; through 0.22.0 this line waited for a Zone
+    // from every Posture, so Commit was enabled for those two and did nothing).
+    if (posture && !posture.zone && postureNeedsZone(this.#actorForTask(task), posture)) return;
 
     this.#busy.add(task.key);
     this.render();
@@ -857,6 +912,32 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
       ui.notifications.error(err.message);
     } finally {
       this.#busy.delete(task.key);
+      if (this.rendered) this.render();
+    }
+  }
+
+  /**
+   * Cancel an attack from the list under the tasks (0.23.0): the chat card's GM control, sent
+   * through the coordinator like every other mutation, so the Strike's actions are refunded when
+   * no die was thrown and the card says who cancelled. Asked of the coordinator directly rather
+   * than through documents/cards/attack.mjs, which imports this module.
+   */
+  static async #onCancelAttack(event, button) {
+    const workflowId = button.dataset.workflowId;
+    const wf = this.#workflows().find(w => w.id === workflowId);
+    if (!wf) return;
+    if (!mayControl(game.user, wf)) return void ui.notifications.warn(game.i18n.localize("STARWROUGHT.Attack.gmOnly"));
+    const key = taskKey(workflowId, "cancel", "");
+    if (this.#busy.has(key)) return;
+    this.#busy.add(key);
+    this.render();
+    try {
+      await AttackCoordinator.request("cancel", { workflowId, expectedRevision: wf.revision, payload: {} });
+    } catch (err) {
+      console.error("STARWROUGHT | the attack could not be cancelled", err);
+      ui.notifications.error(err.message);
+    } finally {
+      this.#busy.delete(key);
       if (this.rendered) this.render();
     }
   }

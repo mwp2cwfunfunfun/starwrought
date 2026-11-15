@@ -194,6 +194,12 @@ export class AttackCoordinator {
     // update; the flags are the persisted public state, so they refresh the local copy.
     Hooks.on("createChatMessage", message => AttackCoordinator.#syncFromMessage(message));
     Hooks.on("updateChatMessage", message => AttackCoordinator.#syncFromMessage(message));
+    // An unfinished attack ends with its card and with its Combat (0.23.0, ruling 237; Mike: "the
+    // Exchange window sometimes shows old attacks/defenses in it"). Through 0.22.0 neither was
+    // heard, so an attack whose card or encounter was gone stayed in every window for the session
+    // and came back at every reload.
+    Hooks.on("deleteChatMessage", message => AttackCoordinator.#onCardDeleted(message));
+    Hooks.on("deleteCombat", combat => AttackCoordinator.#onCombatDeleted(combat));
   }
 
   /**
@@ -201,18 +207,31 @@ export class AttackCoordinator {
    * `flags.starwrought.attackWorkflow.phase` is not complete or cancelled), restore this client's
    * private commitments from the `attackPrivate` setting, take up whatever this client should be
    * coordinating, and tell this client's prompt what is outstanding.
+   *
+   * Since 0.23.0 an unfinished attack is resumed only while it is not expired
+   * (`AttackWorkflow.expired`, rulings 237 and 238): declared in a Combat that still exists, or,
+   * with no Combat, coordinated right now by another connected user. Through 0.22.0 every
+   * unfinished card came back, however old ("it is always there. like if i load my world now, they
+   * will still be there"). An expired card is never loaded here; the client the election names
+   * for it writes "cancelled" onto the card, once, so every other client's log agrees. That is
+   * also the one-time cleaning of the cards left by earlier versions, which name no Combat.
    */
   static async rebuild() {
     AttackCoordinator.#workflows.clear();
     AttackCoordinator.#meta.clear();
     AttackCoordinator.#private.clear();
     const stored = setting("attackPrivate", {}) ?? {};
+    const expired = [];
 
     for (const message of game.messages) {
       const flags = message.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
       if (!flags?.id || TERMINAL_PHASES.includes(flags.phase)) continue;
       // A card is believed only from a hand that could have written it (review, 2026-10-01).
       if (!AttackCoordinator.#trustedCard(message, flags)) continue;
+      if (AttackWorkflow.expired(flags, AttackCoordinator.#factsFor(flags))) {
+        expired.push(message);
+        continue;
+      }
       const record = foundry.utils.deepClone(flags);
       record.messageId ||= message.id;
       record.log = Array.isArray(record.log) ? record.log : [];
@@ -236,6 +255,123 @@ export class AttackCoordinator {
     for (const workflow of AttackCoordinator.#workflows.values()) {
       Hooks.callAll(HOOK, { type: "prompt", workflow: AttackCoordinator.get(workflow.id) });
     }
+
+    // The expired cards, written last so nothing above waits on them. One writer each: the user
+    // the election names for the card. A card nobody connected may write is left as it is, unloaded,
+    // for the next load of a client that can.
+    for (const message of expired) {
+      const flags = message.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
+      if (AttackCoordinator.coordinatorFor(flags) !== game.user.id) continue;
+      await AttackCoordinator.#expireCard(message, "STARWROUGHT.Attack.expired");
+    }
+  }
+
+  /**
+   * The running Combat an attacker is a fighter in, by id, or "": the one this client views when
+   * the attacker is in it, else any started Combat that holds the attacker. Asked by membership and
+   * not through `actor.inEncounter`, which reads the VIEWED Combat alone: the coordinator is often
+   * the GM's client, and a GM looking at another scene must not stamp a fighter's attack as
+   * belonging to no encounter.
+   * @param {Actor} attacker
+   * @returns {string}
+   */
+  static #combatOf(attacker) {
+    const holds = combat => !!combat?.started && combat.combatants.some(c => c.actor?.id === attacker?.id);
+    if (holds(game.combat)) return game.combat.id;
+    return game.combats?.find(holds)?.id ?? "";
+  }
+
+  /**
+   * What `AttackWorkflow.expired` needs to know about this table, for a record or a card's flags:
+   * whether the Combat it names still exists, and whether another connected user is its stored
+   * coordinator (so the attack is live in that user's session, whatever this client remembers).
+   * @param {object} record
+   * @returns {{combatExists: boolean, heldElsewhere: boolean}}
+   */
+  static #factsFor(record) {
+    const holder = record?.coordinatorUserId ? game.users.get(record.coordinatorUserId) : null;
+    return {
+      combatExists: !!record?.combatId && !!game.combats?.get(record.combatId),
+      heldElsewhere: !!holder?.active && (holder.id !== game.user.id)
+    };
+  }
+
+  /**
+   * Write "cancelled" straight onto an unfinished card this client holds no record for (an expired
+   * one at load), the way `noteReroll` writes a finished one: the flags are read again first, so a
+   * card another client closed a moment ago is left alone and two writers are harmless. Nothing is
+   * refunded (ruling 237): the round its actions were paid in is gone.
+   * @param {ChatMessage} message
+   * @param {string} logKey  The line the card's log gets.
+   */
+  static async #expireCard(message, logKey) {
+    const doc = game.messages.get(message?.id);
+    const flags = doc?.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
+    if (!flags?.id || TERMINAL_PHASES.includes(flags.phase)) return;
+    if (!(doc.isAuthor || game.user.isGM)) return;
+    const next = foundry.utils.deepClone(flags);
+    next.phase = "cancelled";
+    next.revision = (next.revision ?? 0) + 1;
+    next.log = [...(Array.isArray(next.log) ? next.log : []), localize(logKey)];
+    next.messageId = doc.id;
+    try {
+      await updateAttackCard(next);
+    } catch (err) {
+      console.error(`STARWROUGHT | attack workflow ${flags.id}: the expired card could not be closed`, err);
+    }
+  }
+
+  /**
+   * An attack's chat card was deleted (one card, or Clear Chat Log): the attack is over on every
+   * client (ruling 237). The record is marked cancelled in memory first, so a resolution loop in
+   * flight stops at its next look, a catch-up waiting on the card's last update is dropped, and
+   * `#persist` writes no card back (it never re-creates one a workflow has already had). Nothing
+   * is refunded and nothing is said: deleting the card is the GM tidying up.
+   */
+  static #onCardDeleted(message) {
+    const id = message?.flags?.[SW.SYSTEM_ID]?.attackWorkflow?.id;
+    if (!id) return;
+    const timer = AttackCoordinator.#syncTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      AttackCoordinator.#syncTimers.delete(id);
+    }
+    const workflow = AttackCoordinator.#workflows.get(id);
+    if (!workflow || (workflow.messageId && (workflow.messageId !== message.id))) return;
+    AttackCoordinator.#drop(workflow);
+  }
+
+  /**
+   * A Combat was deleted: its unfinished attacks are cancelled (ruling 237). The coordinator of
+   * each writes the card, with no refund (the pool it would return to is gone with the encounter),
+   * and every other client learns it from the card as it learns everything. An attack nobody
+   * connected can write for is dropped here and expired at the next load of a client that can.
+   */
+  static async #onCombatDeleted(combat) {
+    for (const workflow of [...AttackCoordinator.#workflows.values()]) {
+      if (TERMINAL_PHASES.includes(workflow.phase) || !workflow.combatId || (workflow.combatId !== combat?.id)) continue;
+      const elected = AttackCoordinator.coordinatorFor(workflow);
+      if (elected === game.user.id) {
+        try {
+          await AttackCoordinator.#cancel(workflow, "STARWROUGHT.Attack.encounterEnded", { refund: false });
+        } catch (err) {
+          console.error(`STARWROUGHT | attack workflow ${workflow.id} could not be closed with its encounter`, err);
+        }
+      } else if (!elected) {
+        AttackCoordinator.#drop(workflow);
+      }
+    }
+  }
+
+  /**
+   * Take an attack out of this client's memory without writing its card, and tell the window: the
+   * card is gone, or nobody connected may write it.
+   */
+  static #drop(workflow) {
+    const pub = AttackCoordinator.get(workflow.id);
+    workflow.phase = "cancelled";
+    AttackCoordinator.#forget(workflow.id);
+    Hooks.callAll(HOOK, { type: "cancelled", workflow: pub ? { ...pub, phase: "cancelled" } : null });
   }
 
   /**
@@ -377,10 +513,20 @@ export class AttackCoordinator {
     });
   }
 
+  /**
+   * Is this record an attack still in play? Not finished, and its card still in the log: a card
+   * that was deleted takes its attack with it (0.23.0), while a card not yet posted (the instant
+   * between the record and its first write) is still to come.
+   */
+  static #inPlay(workflow) {
+    if (!workflow || TERMINAL_PHASES.includes(workflow.phase)) return false;
+    return !workflow.messageId || !!game.messages.get(workflow.messageId);
+  }
+
   /** Every live workflow, as this user may see them. */
   static live({ forUser = game.user } = {}) {
     return [...AttackCoordinator.#workflows.values()]
-      .filter(w => !TERMINAL_PHASES.includes(w.phase))
+      .filter(w => AttackCoordinator.#inPlay(w))
       .map(w => AttackCoordinator.get(w.id, { forUser }));
   }
 
@@ -388,6 +534,7 @@ export class AttackCoordinator {
   static outstanding(user = game.user) {
     const out = [];
     for (const workflow of AttackCoordinator.#workflows.values()) {
+      if (!AttackCoordinator.#inPlay(workflow)) continue;
       out.push(...AttackWorkflow.outstandingFor(workflow, user));
     }
     return out;
@@ -769,7 +916,9 @@ export class AttackCoordinator {
       initiatingUserId: user.id,
       attacker: snapshot(attacker, attackerToken),
       maneuver,
-      targets: targets.map(({ actor, tokenDoc }) => snapshot(actor, tokenDoc))
+      targets: targets.map(({ actor, tokenDoc }) => snapshot(actor, tokenDoc)),
+      // The encounter this attack belongs to (0.23.0, ruling 237). An attack ends with its Combat.
+      combatId: AttackCoordinator.#combatOf(attacker)
     });
     AttackCoordinator.#workflows.set(workflow.id, workflow);
     AttackCoordinator.#meta.set(workflow.id, { phaseRevision: 0 });
@@ -905,18 +1054,25 @@ export class AttackCoordinator {
   /* -------------------------------------------- */
 
   /**
-   * Cancel a Blow: the GM's control, or a declaration replaced by the attacker's next (0.5.3).
-   * Logged on the card, the private store dropped, the Strike's actions returned when no die was
-   * thrown, the card written and the cancellation broadcast, then forgotten.
+   * Cancel a Blow: the GM's control, or a declaration replaced by the attacker's next (0.5.3), or
+   * its encounter ending (0.23.0). Logged on the card, the private store dropped, the Strike's
+   * actions returned when no die was thrown, the card written and the cancellation broadcast,
+   * then forgotten.
+   * @param {object} workflow
+   * @param {string} [logKey]  The line the card's log gets.
+   * @param {object} [options]
+   * @param {boolean} [options.refund=true]  Give the Strike's actions back. False when the
+   *   encounter is over (ruling 237): through 0.22.0 the refund was skipped then only by which
+   *   Combat happened to be viewed, and could land in another encounter's pool.
    * @returns {Promise<object>} the public state
    */
-  static async #cancel(workflow, logKey = "STARWROUGHT.Attack.cancelled") {
+  static async #cancel(workflow, logKey = "STARWROUGHT.Attack.cancelled", { refund = true } = {}) {
     AttackWorkflow.transition(workflow, "cancelled");
     workflow.log.push(localize(logKey));
     AttackCoordinator.#bump(workflow, { phase: true });
     AttackCoordinator.#private.delete(workflow.id);
     await AttackCoordinator.#savePrivate();
-    await AttackCoordinator.#refundStrike(workflow);
+    if (refund) await AttackCoordinator.#refundStrike(workflow);
     await AttackCoordinator.#persist(workflow);
     const pub = AttackCoordinator.#public(workflow);
     await AttackCoordinator.#broadcast(workflow, "cancelled");
@@ -1487,6 +1643,9 @@ export class AttackCoordinator {
    * here as well.
    */
   static async #persist(workflow) {
+    // A workflow that has had a card never gets a second one (0.23.0): the card module creates a
+    // message it cannot find, under the same id, which would write a deleted card back into the log.
+    if (workflow.messageId && !game.messages.get(workflow.messageId)) return;
     const pub = AttackCoordinator.#public(workflow);
     let message = null;
     try {
@@ -1494,7 +1653,14 @@ export class AttackCoordinator {
     } catch (err) {
       console.error(`STARWROUGHT | attack workflow ${workflow.id}: the card could not be written`, err);
     }
-    if (!workflow.messageId) workflow.messageId = pub.messageId ?? message?.id ?? null;
+    // The card's id is kept only once the card exists (0.23.0). The card module names the id before
+    // it creates the message, so a create that failed used to leave the workflow holding the id of
+    // no message, harmlessly, since the next write tried again; with the guard above that id would
+    // now stop every later write and hide the attack from every window.
+    if (!workflow.messageId) {
+      const id = message?.id ?? pub.messageId ?? null;
+      if (id && game.messages.get(id)) workflow.messageId = id;
+    }
 
     const doc = workflow.messageId ? game.messages.get(workflow.messageId) : null;
     const stored = doc?.flags?.[SW.SYSTEM_ID]?.attackWorkflow;

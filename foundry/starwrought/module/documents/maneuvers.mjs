@@ -3,8 +3,9 @@
  *
  * A Maneuver is an action Item, authored on a sheet of `data/maneuvers.xlsx` and used from the
  * character's Maneuvers tab (a Basic Maneuver straight from the compendium, never copied). Most
- * of them the table resolves by hand: using one posts its card and the pips are the player's to
- * spend. A few the system does itself (Recenter clears the Exposed Zones and ends the Bind; Raise
+ * of them the table resolves by hand: using one posts its card or rolls its check, and since
+ * 0.23.0 pays its printed cost in an encounter (documents/item.mjs; through 0.22.0 the pips were
+ * the player's to spend). A few the system does itself (Recenter clears the Exposed Zones and ends the Bind; Raise
  * a Shield flips the shield), and through 0.10.0 those behaviours were reachable from a sheet
  * button, a card button and a compendium Macro, while the Maneuver Item of the same name, used,
  * posted a card and did nothing: the Action was the one face with no behaviour behind it (the
@@ -61,6 +62,32 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
   "raise-the-visor": async actor => visorOf(actor)?.toggleVisor(false) ?? null,
   "lower-visor": async actor => visorOf(actor)?.toggleVisor(true) ?? null,
   "raise-visor": async actor => visorOf(actor)?.toggleVisor(false) ?? null
+});
+
+/**
+ * The Maneuvers whose cost the system takes somewhere other than their own row (0.23.0, ruling
+ * 235), by the slug of the plain name, each with the line its card says in an encounter. Since
+ * 0.23.0 a Maneuver used from the sheet in an encounter pays its printed cost; these would pay
+ * twice, because the thing the player does next already pays:
+ *  - Strike: the weapon's row declares the Strike and pays for its kind (documents/actor/attack.mjs);
+ *  - Cast: the spell's own Cast pays (documents/actor/cast.mjs);
+ *  - Move, Step, Crawl, Rush, Leap, Squeeze: moving the token pays, as the Move, Step, Crawl or
+ *    Rush the drag reads (documents/movement.mjs). A Leap's own ❶ to ❸ and a Squeeze's are not
+ *    read by the drag; what it charges beyond that is the table's, on the pips.
+ * A Maneuver whose rule acts from a button on a card (a `reroll`, a `prevent`: Quick Tongue, Steady
+ * the Line) and one that carries an attack of its own are paid elsewhere too; documents/item.mjs
+ * reads those off the Item, since this module imports nothing.
+ * @type {Readonly<Record<string, string>>}
+ */
+export const PAID_ELSEWHERE = Object.freeze({
+  strike: "STARWROUGHT.Cost.paidByWeapon",
+  cast: "STARWROUGHT.Cost.paidBySpell",
+  move: "STARWROUGHT.Cost.paidByMoving",
+  step: "STARWROUGHT.Cost.paidByMoving",
+  crawl: "STARWROUGHT.Cost.paidByMoving",
+  rush: "STARWROUGHT.Cost.paidByMoving",
+  leap: "STARWROUGHT.Cost.paidByMoving",
+  squeeze: "STARWROUGHT.Cost.paidByMoving"
 });
 
 /** The worn Visored piece, or null with a notice. */

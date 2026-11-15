@@ -45,7 +45,7 @@ const DEFENDING_PHASES = Object.freeze(["declared", "defending"]);
  * never leak through this module.
  */
 const PUBLIC_KEYS = Object.freeze([
-  "id", "revision", "phase", "coordinatorUserId", "initiatingUserId",
+  "id", "revision", "phase", "coordinatorUserId", "initiatingUserId", "combatId",
   "attacker", "maneuver", "targets", "attackRoll", "log", "messageId"
 ]);
 const TARGET_KEYS = Object.freeze([
@@ -218,7 +218,7 @@ function rollKindLabel(rollType) {
  * Waiting for defenses / {n} of {total} defenders ready / Defenses revealed /
  * Waiting for {name} to roll {kind} / Resolving / Complete / Cancelled by the GM.
  */
-function statusLine(state) {
+export function statusLine(state) {
   const L = key => game.i18n.localize(key);
   const F = (key, data) => game.i18n.format(key, data);
   const targets = state.targets;
@@ -262,7 +262,9 @@ function statusLine(state) {
     case "complete":
       return L("STARWROUGHT.Attack.complete");
     case "cancelled":
-      return L("STARWROUGHT.Attack.cancelled");
+      // The plain word (0.23.0): an attack is cancelled by the GM, by the attacker's next
+      // declaration, by its encounter ending or by a reload, and the card's log says which.
+      return L("STARWROUGHT.Attack.cancelledStatus");
     case "resolving":
     default:
       return L("STARWROUGHT.Attack.resolving");

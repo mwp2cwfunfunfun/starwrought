@@ -6,7 +6,10 @@
 import * as SW from "../../config.mjs";
 import { SwItemData, describedFields } from "./base.mjs";
 import { costFields, migrateCost, prepareCost } from "./cost.mjs";
-import { auraFields, prepareAura, applyAuraRule } from "./aura.mjs";
+// `migrateAuraVisible` was called below and never imported from 0.17.0 to 0.22.0, so this model's
+// `migrateData` threw a ReferenceError on every document, which Foundry logs and swallows: the
+// Weapons to Melee step and the base model's migration never ran for a Talent.
+import { auraFields, prepareAura, applyAuraRule, migrateAuraVisible } from "./aura.mjs";
 import { rulesFields, prepareRules } from "./rules.mjs";
 // The `grant` rule kind (0.13.0): the Grants column's successor; the kind file is pure.
 import { toGrantField } from "../../rules/kinds/grant.mjs";

@@ -67,9 +67,12 @@ function zoneFields(extra = {}) {
 
 /**
  * Six actions a round (PHB v4.10). `value` is what is left to spend this round; `reserved` is
- * held back by a Prepared Maneuver (one spent now, the rest waiting for the next Opportunity);
- * `preparing` describes that Maneuver, or is null: {kind: "strike"|"maneuver", label, weaponId,
- * targetTokenId, cost, strike}. There is no reaction slot: a Reaction is paid from the same six.
+ * held back by a Prepared Maneuver (two spent now since PHB v4.24, the rest waiting for the next
+ * Opportunity); `preparing` describes that Maneuver, or is null: {kind: "strike"|"cast"|"maneuver",
+ * label, cost, ready, and what Finish needs to do it: weaponId, strike, targetTokenId, targetUuid
+ * for a Strike; talentId, cast, targetUuids for a Cast; itemUuid for a Maneuver used from the
+ * sheet (0.23.0)}. A free object, so a new key needs no schema. There is no reaction slot: a
+ * Reaction is paid from the same six.
  */
 function actionFields() {
   return new fields.SchemaField({

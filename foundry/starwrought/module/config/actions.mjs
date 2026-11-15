@@ -75,6 +75,24 @@ export function actionCostValue(key) {
   return ACTION_COSTS[key]?.value ?? 0;
 }
 
+/**
+ * The numbers of actions a Maneuver may be paid at (0.23.0, ruling 233): none for a passive row
+ * (an Activity, an Endeavor, a Talent that is not something you do), the one number for a single
+ * cost, every number of a range written "to" (Leap ❶ to ❸ is one, two or three; Reload ⓿ to ❻ is
+ * nought to six), and the two ends alone of one written "or". More than one option is a decision
+ * the player makes each time the Maneuver is used in an encounter: the system picks none.
+ * @param {{cost?: string|number, costMax?: string|number, costMode?: "to"|"or"}} [row]
+ * @returns {number[]} ascending, never repeated
+ */
+export function actionCostOptions({ cost, costMax = "", costMode = "to" } = {}) {
+  const low = ACTION_COSTS[cost];
+  if (!low || (String(cost) === "passive")) return [];
+  const high = ((costMax !== "") && (String(costMax) !== "passive")) ? ACTION_COSTS[costMax] : null;
+  if (!high || (high.value <= low.value)) return [low.value];
+  if (costMode === "or") return [low.value, high.value];
+  return Array.from({ length: high.value - low.value + 1 }, (_, i) => low.value + i);
+}
+
 const COST_TOKEN = /[⓿❶❷❸❹❺❻]|◆+|◇/g;
 const tokenValue = token => {
   if (token === "⓿" || token === "◇") return 0;

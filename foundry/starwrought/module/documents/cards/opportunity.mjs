@@ -120,7 +120,9 @@ async function settle(message, actor, line, decision) {
     actorUuid: actor.uuid,
     title: `<i class="fa-solid fa-hand"></i> ${localize("STARWROUGHT.Opportunity.title")}`,
     lines: [line],
-    notes: decision === "approved" ? [localize("STARWROUGHT.Opportunity.approvedNote")] : []
+    // The note names the actor (0.23.0: through 0.22.0 it was localized without its data and the
+    // card printed "{name}").
+    notes: decision === "approved" ? [format("STARWROUGHT.Opportunity.approvedNote", { name: escapeHTML(actor.name) })] : []
   });
   try {
     await message.update({ content, [`flags.${SW.SYSTEM_ID}.decision`]: decision });

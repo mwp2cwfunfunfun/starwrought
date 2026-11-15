@@ -3,7 +3,8 @@
 Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 November 2026, every
 tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
 to 214; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
-entries between carry 164 to 204, and the 0.21.0 entry has 215 to 222). System version **0.21.0**.
+entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
+the 0.23.0 entry 231 to 238). System version **0.23.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -582,10 +583,45 @@ is ⓿. Using a Maneuver Item that carries the Reaction trait from the
 sheet spends its cost (its own Reaction cost when the sheet gives the Reaction half one, otherwise
 the cost printed; no shipped Maneuver carries a separate Reaction cost yet).
 
-**What is spent automatically**: a Strike by its kind, a Reaction, Raise a Shield, Recenter, drawing
-or stowing a weapon, movement, and the first action of a preparation. Using a Basic Maneuver from
-the Maneuvers tab spends nothing by itself; the pips are the table's to click for anything the
-system cannot see being spent.
+**What is spent automatically**: a Strike by its kind, a Cast, a Reaction, Raise a Shield, Recenter,
+drawing or stowing a weapon, movement, the first two actions of a preparation, and, since 0.23.0
+(rulings 231 to 236; Mike: "Aid's ❶ is not spent by the system ... why not?"), **a Maneuver used
+from the Maneuvers tab**. Through 0.22.0 using one spent nothing and the pips were the table's to
+click; now, in an encounter, clicking a Maneuver's name pays the cost its row prints:
+
+- **One or two actions, with a roll** (Aid ❶): the roll dialog opens as before and the cost is paid
+  when the roll is made, with its own spend card, as a Strike's is. A dialog that is closed charges
+  nothing, and so does the Relevant Check picker when it is cancelled. Off-turn, the permit the GM
+  gave is spent at that same moment and not at the click, so a closed dialog keeps it.
+- **One or two actions, no roll** (Stand ❶, Take Cover ❶): paid at once, and the Maneuver's own
+  card carries the spend line, so the table reads one card.
+- **A range of costs** (Trip ❶ to ❷, Demoralize ❶ to ❸, Reload ⓿ to ❻; fourteen rows): a small
+  window asks first, one button per number the row may be paid at, and the system picks none, a
+  Shift-click included. Closing it does nothing at all: nothing is paid, and nothing is asked of the
+  GM when it is not your Opportunity.
+- **Three or more actions** (Brace an Object ❸, Field Patch ❹, a pick of ❸ or more) is **Prepared**,
+  by the book: two actions now, the rest reserved, the Preparing condition, and the Prepared card
+  with Abandon. At the next Opportunity Finish uses the Maneuver again, already paid, and that is
+  when its check is rolled or its card posted. A roll dialog closed at Finish loses nothing: the
+  Maneuver is still Prepared and Finish can be pressed again.
+- **⓿**, and a row with no cost (an Activity, an Endeavor), pay nothing.
+- **A row the system pays for another way** pays nothing and its card says who does: Strike (the
+  weapon's row), Cast (the spell's own Cast), Move, Step, Crawl, Rush, Leap and Squeeze (moving the
+  token, as the Move, Step, Crawl or Rush the drag measures; a Leap's own ❶ to ❸ is not read by the
+  drag and stays the table's), and a Maneuver whose rule pays from a button on a card (Quick
+  Tongue's reroll; a prevention carried by a Reaction). Such a row asks nothing of the GM off-turn
+  either, since it performs nothing: the Strike, the Cast and the drag ask for themselves.
+
+The speech bubble beside the name shows the card and pays nothing. A Maneuver you own (copied down,
+or granted by a Talent) follows the same rule. One use at a time: a second click on a Maneuver
+while its pick or its roll dialog is still open is ignored, so a double-click is one Maneuver.
+Outside an encounter nothing is asked, paid or Prepared. A Reaction keeps its own rule, above: paid
+the moment it is used; a Maneuver the sheet gives a Trigger but no ↺ is not a Reaction to the
+system and pays as any other. Not paid for by the
+row, and said here so nobody is surprised: Gain Control's row pays ❶ and the sheet's Take Control
+button is free, so use one; Interact's row pays ❶ and drawing or stowing from the Equipment tab
+pays its own Interact, so clicking both pays twice; the Pass row only shows its card (the tracker's
+Pass is the control).
 
 **Every spend is said in public chat.** When a player-controlled actor (a character, or any actor a
 player owns) spends actions in an encounter, a card names what it was in the book's glyph, how many
@@ -597,9 +633,12 @@ already post, so nothing is said twice. The GM's adversaries stay quiet unless t
 **An overspend is never prevented.** If a Strike happens with no actions left it still happens, and
 a card goes to chat saying it went over the budget, by how much, and that none are left. Putting
 armor on mid-fight, which the handbook prices in minutes, gets the same treatment: the system says
-how long it would take and gets out of the way. World setting `trackActions` turns the automatic
-spending off entirely; the Intercept offer below is a rules prompt, not a spend, and does not
-depend on it.
+how long it would take and gets out of the way. World setting `trackActions` turns off the spending
+the system infers: movement, and since 0.23.0 a Maneuver used from the Maneuvers tab (no window
+asks for a cost, nothing is paid, nothing is Prepared). A Strike, a Cast, a Reaction, Raise a
+Shield, Recenter and drawing or stowing a weapon are paid either way; through 0.22.0 this
+paragraph and the setting's own hint said the setting turned all of it off, which the code never
+did. The Intercept offer below is a rules prompt, not a spend, and does not depend on it.
 
 **A Maneuver outside your Opportunity waits for the GM** (0.19.0, ruling 202; Mike: "any actions a
 player attempts to make when it is not their turn should not be able to be carried out unless the
@@ -1054,9 +1093,40 @@ connected, the coordinating attacker) may Cancel, Reset defenses (everyone choos
 is revealed) or Resend prompts. Reset is offered only while the
 defenders are choosing: once a die has been paid for (a Strike's actions, a Reaction's ❶ charged
 before a Defense roll) only Cancel remains, and a reset closes again any Zone a revealed Posture
-had Exposed. Cancel keeps the attacker's spent actions: the declaration is the Maneuver. A closed
-prompt loses nothing: the card's button reopens it, and a reload rebuilds live attacks from the
-cards, the coordinator's private commitments from its own browser. Requests and replies travel the
+had Exposed. Cancel gives the Strike's actions back when no die has been thrown, and says so in a
+card (0.5.3; this paragraph said the opposite through 0.22.0). A closed prompt loses nothing: the
+card's button reopens it, and a reload rebuilds live attacks from the cards, the coordinator's
+private commitments from its own browser.
+
+**An unfinished attack ends with its encounter or its card** (0.23.0, rulings 237 and 238; Mike:
+"the Exchange window sometimes shows old attacks/defenses in it ... it is always there. like if i
+load my world now, they will still be there"). Through 0.22.0 a reload brought back every attack
+whose card was not finished, however old and whatever Combat it had belonged to, and nothing ended
+one when its Combat or its card was deleted, so the Combat Prompt (the window titled Combat) filled with attacks nobody could
+finish. Now an attack records the Combat it was declared in, and:
+
+- **At load** an unfinished attack is resumed only when it was declared in a Combat that still
+  exists. Any other is closed: its card reads Cancelled, with the reason in its log, and no window
+  lists it. Nothing is refunded, since the round it was paid in is gone. The one exception keeps a
+  live attack alive: an attack made outside an encounter is kept while the client coordinating it
+  is still connected, so a player who reloads in the middle of it does not drop it, and neither
+  does a GM who logs in while a player's client holds a Blow waiting for one. Such an attack does
+  not survive a reload of the client coordinating it. The first load on 0.23.0 closes the cards
+  earlier versions left behind, which name no Combat.
+- **Deleting a Combat** cancels its unfinished attacks, with no refund.
+- **Deleting an attack's card** (the one card, or Clear Chat Log) takes the attack out of every
+  window, and the card is not written back.
+- **Attacks in progress.** Under the GM's tasks the Combat Prompt lists every unfinished attack in
+  one line each (who, at whom, where it stands) with **Cancel**, which is the card's Cancel: the
+  Strike's actions come back when no die was thrown. It is the way out of an attack stuck where the
+  GM has no task of their own (a player who never rolled, a defender whose token is gone). The list
+  never opens the window; it keeps an open one open while an attack is unfinished. With no GM
+  connected the coordinating attacker sees it instead.
+- **After Reset defenses** a defender's prompt opens with nothing selected. Through 0.22.0 the
+  Defense picked before the reset came back already ticked, against the rule that nothing is ever
+  chosen for a defender.
+
+Requests and replies travel the
 system's socket addressed to one user, so the server delivers them to that client alone, and the
 coordinator reads who is asking from the server's own stamp on the message, never from the
 payload; a state broadcast is only a wake-up, and every client takes the state itself from the
@@ -1339,13 +1409,14 @@ Mike enables ships, and Aid is the one so far, since 2026-10-03, so the panel ca
 Watching, Deceiving & Helping and says so when nothing is enabled) reaches every character on the
 next build. Clicking a name uses it as that
 character: the card goes to chat with the character speaking, or, for a Maneuver that rolls a check,
-the roll dialog opens. Shift-click skips the dialog. Each row can also be sent to chat, opened, or
+the roll dialog opens; in an encounter that also pays its cost (0.23.0; section 2, "What is spent
+automatically"). Shift-click skips the roll dialog. Each row can also be sent to chat, opened, or
 copied down onto the sheet to become the character's own to edit. Below that is the list the
 character has picked up: dragged from the compendium, made on the tab, or copied down. The
 Reactions are Talents since PHB v4.21 and live on the Constellations tab; Intercept appears here as
-the book's Defense & Recovery Maneuvers do once its row is enabled. Using a Basic Maneuver spends nothing by itself
-unless it carries the Reaction trait, in which case its cost comes off the six, or unless it is one
-the system implements (0.10.1): a Maneuver named **Recenter** does what the Overview's Recenter
+the book's Defense & Recovery Maneuvers do once its row is enabled. Using a Maneuver in an encounter pays its
+printed cost since 0.23.0 (through 0.22.0 only one with the Reaction trait did); and a few the
+system implements outright (0.10.1): a Maneuver named **Recenter** does what the Overview's Recenter
 button does (the action spent, every Exposed Zone but a Posture's closed, the Bind ended, the
 card), and one named **Raise a Shield** raises the shield in hand, or says there is none. The
 Action is the entry point and the compendium's Recenter Macro uses it; both rows wait on their
@@ -1978,7 +2049,7 @@ are markers for the table.
 | Open Constellations automatically | on | When a Talent arrives on a character with no Constellation Item for it, fetch it so the sky is drawn |
 | Offer a Flare on a critical | on | Put the Flare button on critical chat cards |
 | One Maneuver per Opportunity on the map | on | At a combatant's own Opportunity a drag may be one Step, one Move, one Crawl or one straight Rush; a second Move's worth is refused before the token lands. Off, the move lands and its card counts the Moves |
-| Track the six-action round | on | Spend actions automatically for Strikes, Reactions, Raise a Shield, Recenter, drawing or stowing a weapon, and movement (a Step, one action per Move, or a Rush). Encounters only; the pips can always be corrected by hand |
+| Track the six-action round | on | Spend actions automatically for movement (a Step, one action per Move, or a Rush) and for a Maneuver used from the Maneuvers tab (0.23.0). Off, those two are paid on the pips; Strikes, Casts, Reactions, Raise a Shield, Recenter and drawing or stowing a weapon are paid either way. Encounters only; the pips can always be corrected by hand |
 | Remind about Recovery checks | on | Post a Recovery card to the owner at the start of each round while a character is Dying, which is when the check is made |
 | Show Total Reach on the map | on | Draw the reach bands around the token you control or hover over. Per client |
 | Colour the drag ruler by Moves | on | Colour the squares a drag crosses by which action pays for them: a Step, each Move, a Rush, or past what you have left. Per client |
@@ -2681,14 +2752,33 @@ before; the sources and the index are.
   pending result (Pay It Forward); a Condition given by a result; a result from a Maneuver that
   rolls no check; an adversary as the recipient; the `ALTER` properties beyond the six (a
   Maneuver's movement, range, limit, uses, slots), each refused as not read yet; and the Threshold
-  Aid opens on ("typically 15"), which is still typed. Aid's ❶ is not spent by the system: the pip
-  is clicked by hand. With no GM connected and the ally's player offline nobody can write the
+  Aid opens on ("typically 15"), which is still typed. Aid's ❶ is spent by the system since 0.23.0,
+  when the roll is made. With no GM connected and the ally's player offline nobody can write the
   result; with no GM connected the turn step that ends a round by Passes may be counted as an
   Opportunity, and two presses of one card for two recipients owned by different players can both
   land; a GM stepping the turn back and forward counts one twice; and the tracker's own Initiative
   die does not read a pending result. No shipped cell
   carries a `GIVE` or an `ALTER` line: Aid's row and the two Talents are on sheets Mike is still
   writing, and 0.22.0 builds no data.
+- **A Maneuver's cost is paid, never checked, and some rows are not the system's to pay** (0.23.0;
+  rulings 231 to 236; section 2). The system pays the number the row prints, or the one picked, and
+  reads nothing of the Maneuver's Requirements, its Trigger, its range or whether it could happen
+  at all; an overspend is said and never refused. A Leap and a Squeeze are charged by the drag as
+  the Move it measures, never at their own cost. Gain Control's row and the Take Control button are
+  two doors with one price between them, and so are Interact's row and the Equipment tab's draw or
+  stow: the system does not know which you used. The Pass row passes nothing. A Maneuver Prepared
+  from its row rolls its check at Finish with whatever is targeted then. With "Track the six-action
+  round" off none of this happens. An adversary's sheet shows its abilities' cards and pays nothing.
+  A row printed with a cost and a Reaction half of its own ("❶ (⓿↺)", which no shipped row is)
+  pays the half and never the cost.
+- **An attack that outlives its encounter is closed, not resumed** (0.23.0; rulings 237 and 238;
+  section 2). An attack made outside an encounter does not survive a reload of the client
+  coordinating it; an expired attack and one whose Combat was deleted refund nothing; deleting an
+  attack's card refunds nothing either, since the GM's Cancel is the control that does. A defender
+  whose token is deleted in the middle of an attack still leaves a row nobody can answer, and
+  Cancel is the way out. A roll dialog left open over a cancelled attack still charges a Reaction
+  if it is then rolled. Whether another client holds an attack is asked by user and not by
+  session, so one user in two tabs can close, and then reopen, an attack made outside an encounter.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

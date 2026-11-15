@@ -7,7 +7,10 @@
 import * as SW from "../../config.mjs";
 import { SwItemData, describedFields } from "./base.mjs";
 import { costFields, migrateCost, prepareCost } from "./cost.mjs";
-import { auraFields, prepareAura, applyAuraRule } from "./aura.mjs";
+// `migrateAuraVisible` was called below and never imported from 0.17.0 to 0.22.0, so this model's
+// `migrateData` threw a ReferenceError on every document, which Foundry logs and swallows: the
+// base model's migration never ran for a Maneuver.
+import { auraFields, prepareAura, applyAuraRule, migrateAuraVisible } from "./aura.mjs";
 import { rulesFields, prepareRules } from "./rules.mjs";
 
 const fields = foundry.data.fields;

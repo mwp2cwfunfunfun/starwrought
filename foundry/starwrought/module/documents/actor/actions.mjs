@@ -70,8 +70,8 @@ export const ActionsMixin = Base => class extends Base {
    * the action still resolves. Outside an encounter nothing is counted at all.
    * Every spend by a player-controlled actor is said in public chat (Mike, 2026-10-01): what it
    * was, how many actions it took, and how many are left this round. A caller whose own card
-   * already carries that line (a Move, Raise a Shield, Recenter) passes `announce: false` so the
-   * table reads it once. An adversary the GM runs stays quiet unless it overspends.
+   * already carries that line (a Move, Raise a Shield, Recenter, a Maneuver with no roll used
+   * from the sheet since 0.23.0) passes `announce: false` so the table reads it once. An adversary the GM runs stays quiet unless it overspends.
    * @param {number|string} cost   A number, or a key of SW.ACTION_COSTS (legacy "free"/"reaction" map).
    * @param {object} [options]
    * @param {string} [options.label]      What is being paid for.
@@ -229,11 +229,14 @@ export const ActionsMixin = Base => class extends Base {
    * @param {string} [config.cast]         "focused" or "committed" for a Cast.
    * @param {string[]} [config.targetUuids]  Every target a Cast was aimed at (0.12.0), so the
    *                                       finished preparation declares against them all.
+   * @param {string} [config.itemUuid]     The Maneuver's Item (0.23.0), for a Maneuver of three or
+   *                                       more actions used from the sheet: Finish uses it again,
+   *                                       already paid, and that is when its check is rolled.
    * @returns {Promise<object|null>} what is being prepared
    */
   async prepare({
     kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "",
-    strike = "", talentId = "", cast = "", targetUuids = []
+    strike = "", talentId = "", cast = "", targetUuids = [], itemUuid = ""
   } = {}) {
     if (!this.inEncounter || !this.system.actions) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.outsideEncounter"));
@@ -258,6 +261,7 @@ export const ActionsMixin = Base => class extends Base {
     const preparing = {
       kind, label, weaponId, targetTokenId, targetUuid, cost, strike, talentId, cast,
       targetUuids: Array.isArray(targetUuids) ? targetUuids.filter(Boolean) : [],
+      itemUuid: (typeof itemUuid === "string") ? itemUuid : "",
       ready: false
     };
     await this.update({
@@ -307,9 +311,36 @@ export const ActionsMixin = Base => class extends Base {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Prepared.notYet", { name: this.name, what: prep.label ?? "" }));
       return null;
     }
-    await this.update({ "system.actions.reserved": 0, "system.actions.preparing": null });
-    await this.setCondition("preparing", false);
-    if (this.isTurn) game.combat?.registerAction?.(this.combatant);
+    // The preparation is over: the reserve is spent and the condition comes off.
+    const settle = async () => {
+      await this.update({ "system.actions.reserved": 0, "system.actions.preparing": null });
+      await this.setCondition("preparing", false);
+      if (this.isTurn) game.combat?.registerAction?.(this.combatant);
+    };
+
+    // A Maneuver Prepared from its own Item (0.23.0, ruling 234): the Item is used again, already
+    // paid, and that is the roll or the card. It is used BEFORE the preparation is settled, so a
+    // roll dialog that is closed loses nothing: the Maneuver is still Prepared and Finish can be
+    // pressed again. (A Committed Strike and a Cast settle first, as they always have.) An Item
+    // that is gone falls through to the plain "finished" card.
+    if ((prep.kind === "maneuver") && prep.itemUuid) {
+      let item = null;
+      try { item = await fromUuid(prep.itemUuid); } catch { item = null; }
+      if (item && (typeof item.use === "function")) {
+        // The preparation must still be standing when the die is thrown: with the roll dialog
+        // open, an Abandon (the player's, a Wound's, the round's end) returns the reserve, and a
+        // roll made after that would be a Maneuver done for the two actions already lost. A
+        // second Finish while the dialog is open is refused by `use` itself (one use at a time).
+        const done = await item.use({
+          actor: this, prepared: true,
+          beforeRoll: () => this.system.actions?.preparing?.itemUuid === prep.itemUuid
+        });
+        if ((done === null) || (done === undefined)) return null;
+        await settle();
+        return done;
+      }
+    }
+    await settle();
 
     if (prep.kind === "strike" && prep.weaponId) {
       const targetUuid = prep.targetUuid

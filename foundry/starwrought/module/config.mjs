@@ -67,7 +67,7 @@ export {
 
 export {
   ACTIONS_PER_ROUND, ACTIONS_MAX, PREPARED_THRESHOLD, PREPARE_SPEND, ACTION_GLYPHS, REACTION_GLYPH, ACTION_COSTS,
-  LEGACY_ACTION_COSTS, actionCostValue, parseActionCost, costGlyphs
+  LEGACY_ACTION_COSTS, actionCostValue, actionCostOptions, parseActionCost, costGlyphs
 } from "./config/actions.mjs";
 
 export { DEFAULT_SPEED, STEP_DIVISOR, RUSH_MULTIPLIER, RUSH_COST, LEAP_STEPS, CRAWL_DIVISOR } from "./config/movement.mjs";

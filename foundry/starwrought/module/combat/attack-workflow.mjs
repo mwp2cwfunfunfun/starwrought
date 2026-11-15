@@ -125,7 +125,7 @@ export class AttackWorkflow {
    *          controllerUserIds: string[], id?: string}>} spec.targets
    * @returns {object}
    */
-  static create({ id, coordinatorUserId, initiatingUserId, attacker, maneuver, targets = [] }) {
+  static create({ id, coordinatorUserId, initiatingUserId, attacker, maneuver, targets = [], combatId = "" }) {
     // The source (0.12.0, attack-source.mjs): a weapon or an attack row is a Blow with a Strike;
     // a spell is a Cast with no Strike at all. A record from before 0.12.0 names no source and
     // reads as the Blow it was.
@@ -153,6 +153,9 @@ export class AttackWorkflow {
       phase: "declared",
       coordinatorUserId,
       initiatingUserId,
+      // The encounter the attack was declared in (0.23.0, ruling 237): the running Combat's id when
+      // the attacker is a fighter in it, else "". An attack ends with its Combat; `expired` reads it.
+      combatId: (typeof combatId === "string") ? combatId : "",
       attacker: attackerSnapshot,
       maneuver: {
         source,
@@ -431,6 +434,28 @@ export class AttackWorkflow {
   }
 
   /**
+   * Is an unfinished attack over (0.23.0, ruling 237; Mike: an unfinished attack is cancelled when
+   * its Combat is deleted, and a reload resumes only attacks of a Combat that still exists)? The one
+   * reading, asked when a world loads and when a Combat is deleted:
+   *  - a finished attack (complete or cancelled) is never expired, it is simply done;
+   *  - an attack declared in an encounter is expired once that Combat is gone;
+   *  - an attack with no Combat (declared outside an encounter, or written before 0.23.0) is expired
+   *    unless another connected user is coordinating it right now (ruling 238): a player who
+   *    reloads in the middle of someone else's attack must not drop it, and neither must a GM who
+   *    logs in while a player's client holds a Blow waiting for one.
+   * Pure: the caller says whether the Combat exists and who is connected.
+   * @param {object|null} record
+   * @param {{combatExists?: boolean, heldElsewhere?: boolean}} [facts]
+   * @returns {boolean}
+   */
+  static expired(record, { combatExists = false, heldElsewhere = false } = {}) {
+    if (!record) return true;
+    if (TERMINAL_PHASES.includes(record.phase)) return false;
+    if (record.combatId) return !combatExists;
+    return !heldElsewhere;
+  }
+
+  /**
    * The public projection of a workflow (brief, "Data shapes"): what the card's flags and the
    * state broadcast carry, and what a client may hold. Whatever else the coordinator keeps on its
    * record (a `private` map of commitments before the reveal, an adversary's Threshold) is left
@@ -448,6 +473,7 @@ export class AttackWorkflow {
       phase: workflow.phase,
       coordinatorUserId: workflow.coordinatorUserId ?? null,
       initiatingUserId: workflow.initiatingUserId ?? null,
+      combatId: workflow.combatId ?? "",
       attacker: clone(workflow.attacker),
       maneuver: clone(workflow.maneuver),
       targets: (workflow.targets ?? []).map(target => ({

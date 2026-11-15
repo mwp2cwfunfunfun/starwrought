@@ -54,12 +54,15 @@ import { terrainKindOf, terrainKindName, registerTerrainKinds } from "../foundry
 registerTerrainKinds([["Mud", "", 2, "#6b4a2b"], ["Shallow Water", "", 2, "#2f7fb8"], ["Decking", "", 2, "#9a7a4a"], ["Loose Stone", "", 2, "#7d7d7d"], ["Rubble", "", 2, "#5c5c5c"], ["Undergrowth", "", 2, "#3f7a3a"], ["Snow", "", 2, "#cfe3f2"], ["Ice", "", 2, "#9fd3e8"], ["Sand", "", 2, "#d8b56a"], ["Other", "", 2, "#8a6fb0"]]);
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
-import { slugify, plainName, resolveModifiers, ACTION_GLYPHS } from "../foundry/starwrought/module/config.mjs";
+import { slugify, plainName, resolveModifiers, ACTION_GLYPHS, actionCostOptions } from "../foundry/starwrought/module/config.mjs";
 // The attack flow's pure parts (0.12.0): the record's shape and the legal answers, both free of
 // Foundry globals at module scope, so the rule "no Defense is ever chosen by the system" has
 // checks the build runs.
 import { AttackWorkflow, ACTIONS, OUTSTANDING_KINDS } from "../foundry/starwrought/module/combat/attack-workflow.mjs";
 import { legalAnswers, isLegalAnswer } from "../foundry/starwrought/module/helpers/answers.mjs";
+// The Maneuvers the system implements and the ones it pays for elsewhere (0.23.0): the module
+// imports nothing, which this import is the check of.
+import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "../foundry/starwrought/module/documents/maneuvers.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -1463,6 +1466,78 @@ check("rollerFor is unchanged: a player attacker rolls once; a player defender o
   same(AttackWorkflow.rollerFor({ attacker: { isPlayer: true }, defender: { isPlayer: false } }).roller, "attacker", "player attacker");
   same(AttackWorkflow.rollerFor({ attacker: { isPlayer: false }, defender: { isPlayer: true } }).rollType, "defense", "player defender");
   same(AttackWorkflow.rollerFor({ attacker: { isPlayer: false }, defender: { isPlayer: false } }).isolated, true, "adversary against adversary");
+});
+
+/* -------------------------------------------- */
+/*  An attack ends with its Combat (0.23.0)     */
+/* -------------------------------------------- */
+
+check("AttackWorkflow.create and projectFor carry the Combat the attack was declared in (ruling 237)", () => {
+  const inFight = AttackWorkflow.create({ ...flowSpec({ weaponId: "w1", strike: "quick" }), combatId: "c1" });
+  same(inFight.combatId, "c1", "the record names its Combat");
+  same(AttackWorkflow.projectFor(inFight).combatId, "c1", "and the card's projection carries it, or every reload would expire the attack");
+  const outside = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "quick" }));
+  same([outside.combatId, AttackWorkflow.projectFor(outside).combatId], ["", ""], "an attack outside an encounter names none");
+  same(AttackWorkflow.create({ ...flowSpec({ weaponId: "w1" }), combatId: null }).combatId, "", "a combatId that is no string is none");
+  same(AttackWorkflow.projectFor({ id: "old", phase: "defending", targets: [] }).combatId, "", "a record from before 0.23.0 projects none");
+});
+
+check("AttackWorkflow.expired: an unfinished attack is over once its Combat is gone (rulings 237 and 238)", () => {
+  const wf = AttackWorkflow.create({ ...flowSpec({ weaponId: "w1", strike: "quick" }), combatId: "c1" });
+  AttackWorkflow.transition(wf, "defending");
+  same(AttackWorkflow.expired(wf, { combatExists: true }), false, "its Combat is still there");
+  same(AttackWorkflow.expired(wf, { combatExists: false }), true, "its Combat was deleted");
+  same(AttackWorkflow.expired(wf, { combatExists: false, heldElsewhere: true }), true, "a coordinator elsewhere does not keep an attack whose Combat is gone");
+  same(AttackWorkflow.expired(wf), true, "and with nothing said, the Combat is taken as gone");
+
+  const loose = AttackWorkflow.create(flowSpec({ weaponId: "w1", strike: "quick" }));
+  AttackWorkflow.transition(loose, "defending");
+  same(AttackWorkflow.expired(loose, {}), true, "no Combat, and nobody else coordinating it: a reload does not resume it");
+  same(AttackWorkflow.expired(loose, { heldElsewhere: true }), false, "no Combat, but another connected user coordinates it: kept");
+  same(AttackWorkflow.expired(loose, { combatExists: true }), true, "a Combat existing somewhere is not this attack's");
+  same(AttackWorkflow.expired({ id: "old", phase: "rolling", targets: [] }, {}), true, "a record from before 0.23.0 reads as one with no Combat");
+
+  for (const phase of ["complete", "cancelled"]) {
+    same(AttackWorkflow.expired({ ...wf, phase }, { combatExists: false }), false, `a ${phase} attack is done, not expired`);
+  }
+  same(AttackWorkflow.expired(null), true, "no record at all is nothing to keep");
+});
+
+/* -------------------------------------------- */
+/*  What a Maneuver may be paid at (0.23.0)     */
+/* -------------------------------------------- */
+
+check("actionCostOptions: one number for a single cost, every number of a range, the two ends of an \"or\", none for a passive row (ruling 233)", () => {
+  same(actionCostOptions({ cost: "1", costMax: "", costMode: "to" }), [1], "Aid, Stand: one cost");
+  same(actionCostOptions({ cost: "0", costMax: "", costMode: "to" }), [0], "Release, Pass: free is still one option");
+  same(actionCostOptions({ cost: "4" }), [4], "Field Patch, with no range written");
+  same(actionCostOptions({ cost: "1", costMax: "3", costMode: "to" }), [1, 2, 3], "Leap, Demoralize, Strike");
+  same(actionCostOptions({ cost: "1", costMax: "2", costMode: "to" }), [1, 2], "Trip, Shove, Sneak");
+  same(actionCostOptions({ cost: "2", costMax: "3", costMode: "to" }), [2, 3], "Disarm, Calm Animal");
+  same(actionCostOptions({ cost: "2", costMax: "4", costMode: "to" }), [2, 3, 4], "Cast");
+  same(actionCostOptions({ cost: "0", costMax: "6", costMode: "to" }), [0, 1, 2, 3, 4, 5, 6], "Reload");
+  same(actionCostOptions({ cost: "1", costMax: "6", costMode: "to" }), [1, 2, 3, 4, 5, 6], "Treat Persistent Damage");
+  same(actionCostOptions({ cost: "1", costMax: "3", costMode: "or" }), [1, 3], "\"one or three\" is the two ends alone");
+  same(actionCostOptions({ cost: "passive" }), [], "an Activity, an Endeavor");
+  same(actionCostOptions({ cost: "passive", costMax: "3" }), [], "a passive row has no range either");
+  same(actionCostOptions({ cost: "3", costMax: "3" }), [3], "a range of one number is that number");
+  same(actionCostOptions({ cost: "3", costMax: "1" }), [3], "a far end below the near end is ignored");
+  same(actionCostOptions({ cost: 2, costMax: 3 }), [2, 3], "numbers read as their keys");
+  same(actionCostOptions({ cost: "9" }), [], "a cost the table does not know is no option");
+  same(actionCostOptions(), [], "and nothing at all");
+});
+
+check("PAID_ELSEWHERE: the rows the system pays for another way are named by slug, say who pays, and are no built-in (ruling 235)", () => {
+  same(Object.keys(PAID_ELSEWHERE).sort(), ["cast", "crawl", "leap", "move", "rush", "squeeze", "step", "strike"], "the eight rows");
+  for (const [slug, key] of Object.entries(PAID_ELSEWHERE)) {
+    same(slugify(plainName(slug)), slug, `"${slug}" is the slug a row's plain name gives`);
+    must(/^STARWROUGHT\.Cost\.paidBy[A-Z][A-Za-z]+$/.test(key), `"${slug}" names the line its card says (${key})`);
+    must(!(slug in BUILT_IN_MANEUVERS), `"${slug}" is not also a built-in: a built-in pays itself and never reaches the table`);
+  }
+  same(PAID_ELSEWHERE[slugify(plainName("Strike ❶ to ❸"))], "STARWROUGHT.Cost.paidByWeapon", "the Strike row, by the name the sheet prints");
+  same(PAID_ELSEWHERE[slugify(plainName("Leap ❶ to ❸"))], "STARWROUGHT.Cost.paidByMoving", "the Leap row");
+  same(PAID_ELSEWHERE[slugify(plainName("Aid ❶"))], undefined, "Aid pays from its own row");
+  must(Object.isFrozen(PAID_ELSEWHERE), "the table is frozen");
 });
 
 const answerer = () => ({

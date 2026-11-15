@@ -168,5 +168,45 @@
     "question": "Drilled is enabled while the Weapon Familiarity it hands over free is not, and its Choice column is retired in favour of [CHOICE Weapon Group or Technical Weapon].",
     "recommendation": "Enable Weapon Familiarity and move the Choice cell into its Automation block.",
     "decidedBy": ""
+  },
+  {
+    "id": "track-actions-scope",
+    "since": "2026-11-14",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "World setting \"Track the six-action round\" (trackActions)",
+    "question": "The setting has only ever switched off the spending for movement, and since 0.23.0 for a Maneuver used from the sheet (ruling 236). Strikes, Casts, Reactions, Raise a Shield, Recenter and drawing or stowing a weapon are paid whether it is on or off, although its hint said otherwise until 0.23.0. Should Off stop those as well?",
+    "recommendation": "Leave it as it is. A Strike or a Cast is declared through the attack flow, which refunds on Cancel and reads the pool, so an unpaid Strike would be a second path to keep right; a table that wants no counting can ignore the pips, which nothing enforces.",
+    "decidedBy": ""
+  },
+  {
+    "id": "grapple-free-with-a-check",
+    "since": "2026-11-14",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx Athletics Actions, Grapple",
+    "question": "Grapple prints a cost of nought with an Athletics check against Evade, so since 0.23.0 it is the one Maneuver that rolls an attack-like check and pays nothing. Shove, Trip and Reposition beside it cost one or two.",
+    "recommendation": "Read as a slip: give Grapple the cost the book prints for it, and the row pays it the next time the content builds.",
+    "decidedBy": ""
+  },
+  {
+    "id": "trigger-rows-without-the-reaction-trait",
+    "since": "2026-11-14",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx Cost cells: Battle Cry, Lost in the Dark, Reliable Anchor, Steady the Line, Sure Seat, Quick Tongue, No Quarter, Grab an Edge",
+    "question": "These rows have a Trigger and no Reaction glyph in their Cost, so the system reads each as a plain Maneuver. Since 0.23.0 a plain Maneuver used from the sheet pays its cost, so the five that cost one action pay it from their row and wait for the GM off-turn (Quick Tongue pays from its card button; the two at nought pay nothing). The same is true of any row whose empty Cost cell reads as one action.",
+    "recommendation": "Write the cost with its Reaction glyph in each Cost cell (Battle Cry is nought with the glyph in the book). A Reaction is paid the moment it is used and never waits for the GM.",
+    "decidedBy": ""
+  },
+  {
+    "id": "cost-with-a-reaction-half",
+    "since": "2026-11-14",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/module/documents/item.mjs, the Reaction branch of a Maneuver's use",
+    "question": "A row printed with a cost and a Reaction half of its own, as Aid once was (one action, with a free Reaction), pays the Reaction half whenever it is used and never the printed cost. No shipped row is written so today.",
+    "recommendation": "If such a row returns: used at your own Opportunity it is the Maneuver and pays the printed cost; used at any other time it is the Reaction and pays the half. Say the word and it is a small change.",
+    "decidedBy": ""
   }
 ]

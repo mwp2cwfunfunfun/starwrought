@@ -3,9 +3,11 @@
  *
  * PHB v4.10: every combatant receives six actions at the start of each round and they expire at its
  * end. The system spends actions where it can see them being spent (`SwActor#spendActions`: a
- * Strike, Raise a Shield, Recenter, drawing or stowing a weapon) and everything else the table pays
- * by hand, with the pips on the sheet and the readout in the tracker. This module is the one spend
- * the system sees on the map: a token drag. (Recenter and Raise a Shield are also Maneuver Items;
+ * Strike, a Cast, Raise a Shield, Recenter, drawing or stowing a weapon, and since 0.23.0 a
+ * Maneuver used from the sheet, documents/item.mjs) and anything else the table pays by hand, with
+ * the pips on the sheet and the readout in the tracker. This module is the one spend the system
+ * sees on the map: a token drag, which is also what pays for the Move, Step, Crawl, Rush, Leap and
+ * Squeeze rows (`PAID_ELSEWHERE` in documents/maneuvers.mjs). (Recenter and Raise a Shield are also Maneuver Items;
  * which ones run the system's behaviour when used is documents/maneuvers.mjs, 0.10.1.)
  *
  * The grid is one foot and Speed is feet per Move ❶, so dragging a token is not "one square" but up

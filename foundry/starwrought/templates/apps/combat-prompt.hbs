@@ -1,6 +1,7 @@
 {{!-- The Combat Prompt (0.5.0 attack flow): every outstanding decision of this user, one section per
-      task. Context from SwCombatPrompt#_prepareContext: tasks[], empty, keysHint. Texts marked with
-      triple braces were escaped in code and carry the action glyphs in .sw-spend-glyph spans. --}}
+      task. Context from SwCombatPrompt#_prepareContext: tasks[], watch[], idle, empty, keysHint.
+      Texts marked with triple braces were escaped in code and carry the action glyphs in
+      .sw-spend-glyph spans. --}}
 <div class="sw-combat-prompt-body">
 
   {{#if empty}}
@@ -141,6 +142,28 @@
 
   </section>
   {{/each}}
+
+  {{#if watch.length}}
+  {{!-- Attacks in progress (0.23.0): every unfinished attack this user may cancel (the GM; the
+        coordinator with no GM connected), so one that is stuck where they have no task of their
+        own is in sight with its way out. Cancel is the chat card's GM control. --}}
+  <section class="sw-prompt-watch">
+    {{#if idle}}<p class="sw-prompt-nothing"><i class="fa-solid fa-circle-check"></i> {{localize "STARWROUGHT.Prompt.idle"}}</p>{{/if}}
+    <h4 class="sw-prompt-watch-heading">{{localize "STARWROUGHT.Prompt.watchHeading"}}</h4>
+    {{#each watch as |row|}}
+    <div class="sw-prompt-watch-row" data-workflow-id="{{row.workflowId}}">
+      <div class="sw-prompt-watch-text">
+        <p class="sw-prompt-text">{{{row.text}}}</p>
+        {{#if row.status}}<p class="sw-note">{{row.status}}</p>{{/if}}
+      </div>
+      <button type="button" data-action="cancelAttack" data-workflow-id="{{row.workflowId}}"
+              data-tooltip="STARWROUGHT.Prompt.watchCancelHint" {{#if row.disabled}}disabled{{/if}}>
+        <i class="fa-solid fa-ban"></i> {{localize "STARWROUGHT.Prompt.watchCancel"}}
+      </button>
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
   {{/if}}
 
 </div>

@@ -248,8 +248,9 @@ Hooks.once("ready", async () => {
   // declared Blow is a request to its coordinator (the active GM, else the attacker's user) and
   // every change comes back as a state broadcast; the handler sorts the three message types.
   // Then the live Blows are rebuilt from the chat log: every card whose
-  // `flags.starwrought.attackWorkflow.phase` is neither complete nor cancelled, with this client's
-  // private commitments restored from its own `attackPrivate` setting.
+  // `flags.starwrought.attackWorkflow.phase` is neither complete nor cancelled and whose attack is
+  // not expired (0.23.0: declared in a Combat that still exists, or held by another connected
+  // user), with this client's private commitments restored from its own `attackPrivate` setting.
   // One system socket, three listeners: `damage:*` (a player's Apply on a creature they cannot
   // write), `reroll:*` (a die read again on the GM's client) and `expose:*` (a Zone one side
   // chooses on the other side's body), all 0.5.3, go to chat.mjs; `party:*` (a player's Take from

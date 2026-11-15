@@ -8,10 +8,45 @@ import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
 // content.mjs imports config.mjs alone at module scope (its other imports are dynamic), so this
 // closes no circle; a static import of this file from there would, and must not be added.
 import { resolveRuleTarget } from "../helpers/content.mjs";
-// The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield.
-import { BUILT_IN_MANEUVERS } from "./maneuvers.mjs";
+// The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield; and the ones
+// whose cost it takes somewhere other than their row (0.23.0).
+import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "./maneuvers.mjs";
 import { relation as tokenRelation } from "../rules/scene.mjs";
 import { usableByRule } from "../rules/engine.mjs";
+import { kindOf } from "../rules/kinds/index.mjs";
+import { setting } from "../helpers/settings.mjs";
+
+/**
+ * Is this Maneuver's cost taken somewhere other than its own row (0.23.0, ruling 235)? The i18n
+ * key of the line its card says, or null. By name (`PAID_ELSEWHERE`: Strike, Cast, the movement
+ * rows); by an attack of its own, which `attackWith` pays for; or by a rule that acts from a
+ * button on a card, asked of the registry rather than a list of kinds (a `reroll`'s button, as
+ * Quick Tongue's; a `prevent`'s Reaction button): such a Maneuver pays when that button is pressed,
+ * so its row must not pay as well.
+ * @param {Item} item
+ * @returns {string|null}
+ */
+function paidElsewhere(item) {
+  const named = PAID_ELSEWHERE[SW.slugify(SW.plainName(item.name))];
+  if (named) return named;
+  if (item.system?.attack?.enabled) return "STARWROUGHT.Cost.paidByAttack";
+  // A `prevent` pays from the Expose card's button only when its carrier is a Reaction (the kind
+  // offers no button for any other, rules/kinds/prevent.mjs), so a carrier without the trait still
+  // pays from its row; a `card` kind's button pays whatever the carrier is.
+  const fromCard = (item.system?.rules ?? []).some(rule => {
+    const hooks = kindOf(rule?.kind)?.hooks;
+    return !!(hooks?.card || (hooks?.prevent && (item.system?.reaction === true)));
+  });
+  return fromCard ? "STARWROUGHT.Cost.paidFromCard" : null;
+}
+
+/**
+ * The Maneuvers in the middle of being used, as "<actor uuid>|<item uuid>" (0.23.0): `SwItem#use`
+ * holds a Maneuver to one use at a time for an actor, so a second click while the first is still
+ * asking something is ignored rather than paid for twice.
+ * @type {Set<string>}
+ */
+const USING = new Set();
 
 /** The target's relation to the user's actor, for a `mark` (0.15.0): by the two tokens' dispositions. */
 function relationTo(actor, targetToken) {
@@ -50,9 +85,24 @@ export class SwItem extends Item {
    * tab without ever being copied onto the character, so it has no `actor` of its own. The sheet
    * passes the character in `options.actor`, and that character is who rolls and who speaks.
    *
-   * A Maneuver with the Reaction trait (PHB v4.10) is paid from the same six actions the moment
-   * its Trigger occurs, so using one spends its cost; every other Maneuver is the table's to pay,
-   * with the pips, because the system cannot see most of them being used.
+   * **A Maneuver used in an encounter pays its printed cost (0.23.0, rulings 231 to 236; Mike:
+   * "Aid's ❶ is not spent by the system ... why not?").** Through 0.22.0 only a Reaction, a
+   * built-in and a Maneuver with a use rule paid, and every other was the table's to pay on the
+   * pips. Now, in an encounter and with the `trackActions` setting on:
+   *  - a range of costs (Leap ❶ to ❸) asks first, one button per number (apps/cost-picker.mjs),
+   *    before the Opportunity gate, so a closed pick never spends the GM's permit;
+   *  - one or two actions with a check are paid in the roll's `beforeRoll`, once the dialog has
+   *    settled: a closed dialog charges nothing;
+   *  - one or two with no check are paid at once and the Maneuver's card carries the spend line;
+   *  - three or more is Prepared, by the book (`actor.prepare`, kind "maneuver", remembering this
+   *    Item): Finish at the next Opportunity comes back here with `prepared: true`, which skips the
+   *    gate and the charge and makes the roll or posts the card;
+   *  - ⓿ and a passive row (an Activity, an Endeavor) pay nothing;
+   *  - a Maneuver the system pays for another way (`paidElsewhere`: Strike, Cast, the movement
+   *    rows, one whose rule pays from a card button) pays nothing here and its card says who does.
+   * Outside an encounter nothing is asked, paid or Prepared. A Maneuver with the Reaction trait
+   * (PHB v4.10) keeps its own rule: paid from the same six the moment its Trigger occurs, before
+   * any roll.
    *
    * A Maneuver's check names its Constellation (Search's Awareness) or names none: `check.enabled`
    * with a blank `constellation` is a Relevant Check (0.10.0; ruling 123), the book's term for a
@@ -68,6 +118,8 @@ export class SwItem extends Item {
    * @param {object} [options]
    * @param {Actor} [options.actor]   Who is using an unowned Item.
    * @param {string} [options.strike] For a weapon: quick | deliberate | committed.
+   * @param {boolean} [options.prepared]  For a Maneuver: Finish re-entering a Prepared one (0.23.0),
+   *                                      already paid, so nothing is asked, gated or charged.
    */
   async use(options = {}) {
     const { actor: given, ...rest } = options;
@@ -77,61 +129,18 @@ export class SwItem extends Item {
         if (!this.actor) return this.toMessage({ actor });
         return this.actor.rollAttack(this.id, rest);
       case "action": {
-        // A built-in Maneuver's method (Recenter, Raise a Shield, the visor) passes the Opportunity
-        // gate itself, so it is not asked twice.
-        const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
-        if (builtIn && actor) return builtIn(actor, this, rest);
-        // Outside the actor's Opportunity a Maneuver that is not a Reaction waits for the GM
-        // (0.19.0, the gate in documents/actor/actions.mjs); a Reaction is the book's own
-        // out-of-turn Maneuver and goes straight on.
-        if (actor && !this.system.reaction && (typeof actor.mayActNow === "function")
-          && !(await actor.mayActNow({ label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() }))) return null;
-        // A Maneuver whose rules act when it is used (0.16.0: Oathbound's `MARK`, granted by a
-        // Talent's `[MANEUVER Oathbound]`): paid and run as a Talent with such rules is.
-        if (actor && this.actor && usableByRule(this)) return this.#useWithRules(actor);
-        if (this.system.reaction && actor) {
-          // A Reaction with a cost of its own (Aid ❶ (⓿↺)) pays that one; otherwise the cost printed.
-          const own = this.system.reactionCost;
-          const key = (own !== undefined && own !== null && own !== "") ? own : this.system.cost;
-          const n = SW.actionCostValue(key);
-          if (n) {
-            // The plain name, so the glyph appended here is the only one (0.5.1, T16).
-            await actor.spendActions(n, { label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() });
-          }
+        // One use at a time for an actor and a Maneuver (0.23.0): a second click while the first
+        // is still asking (the cost pick, the roll dialog, Finish's dialog) is not a second
+        // Maneuver. Through 0.22.0 a double-click cost a duplicate card; now it would cost the
+        // actions twice.
+        const key = `${actor?.uuid ?? ""}|${this.uuid}`;
+        if (USING.has(key)) return null;
+        USING.add(key);
+        try {
+          return await this.#useManeuver(actor, rest);
+        } finally {
+          USING.delete(key);
         }
-        if (this.system.check.enabled && actor && !this.system.check.constellation) {
-          // A Relevant Check: the picker chooses the Constellation and says why, the Maneuver
-          // rides along as the roll's Item, and the card is called by the Maneuver's name. An
-          // adversary gets rollRelevantCheck's own warning and null (it carries Thresholds).
-          return actor.rollRelevantCheck(foundry.utils.mergeObject({
-            item: this,
-            label: SW.plainName(this.name),
-            subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
-            outcomes: this.#outcomeList(),
-            ...this.#allyFor(actor)
-          }, rest, { inplace: false }));
-        }
-        if (this.system.check.enabled && actor) {
-          // A check against a target's Threshold (0.15.0, ruling 179): a Maneuver whose check names
-          // a Defense (Demoralize against Guard), used with exactly one target, reads that target's
-          // live Threshold through the fold the attack flow uses (`defenseThresholdFor`, with the
-          // check's Constellation as the Threat and the roller as the other party, so
-          // `AGAINST(Intimidation)` and `MARKED` apply); the number prints for a character target
-          // or a GM roller and is withheld for an adversary as the flow withholds it.
-          const read = this.#targetThreshold(actor);
-          return SwCheck.roll(foundry.utils.mergeObject({
-            actor,
-            item: this,
-            kind: "check",
-            slug: this.system.check.constellation,
-            label: SW.plainName(this.name),
-            subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
-            outcomes: this.#outcomeList(),
-            ...this.#allyFor(actor),
-            ...(read ?? {})
-          }, rest, { inplace: false }));
-        }
-        return this.toMessage({ actor });
       }
       case "shield":
         return this.raise();
@@ -157,6 +166,157 @@ export class SwItem extends Item {
   }
 
   /* -------------------------------------------- */
+
+  /**
+   * Use a Maneuver (an action Item): the body of `use` for one, held to one call at a time per
+   * actor and Maneuver by `use` itself.
+   * @param {Actor|null} actor  Who is using it.
+   * @param {object} rest       The use options, minus `actor`.
+   */
+  async #useManeuver(actor, rest) {
+    // A built-in Maneuver's method (Recenter, Raise a Shield, the visor) passes the Opportunity
+    // gate itself, so it is not asked twice.
+    const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
+    if (builtIn && actor) return builtIn(actor, this, rest);
+    // `prepared` is this method's own word (Finish coming back) and never the roll's: the
+    // roll dialog reads `cfg.prepared` for a Committed Strike.
+    const { prepared = false, ...config } = rest;
+    const plain = SW.plainName(this.name);
+    // A Maneuver whose rules act when it is used (0.16.0: Oathbound's `MARK`, granted by a
+    // Talent's `[MANEUVER Oathbound]`) is paid and run as a Talent with such rules is.
+    const byRule = !!actor && !!this.actor && usableByRule(this);
+    const elsewhere = paidElsewhere(this);
+    // What this use will be paid at (0.23.0), asked BEFORE the gate: a range of costs is the
+    // player's pick, and a pick that is closed must not have spent the GM's permit.
+    const plan = (prepared || byRule) ? { n: 0, note: null, cancelled: false } : await this.#chargePlan(actor, elsewhere);
+    if (plan.cancelled) return null;
+    // The label carries the number chosen: a range row's own glyph is "❶ to ❸".
+    const label = `${plain} ${plan.n ? (SW.ACTION_GLYPHS[plan.n] ?? "") : (this.system.glyph ?? "")}`.trim();
+    const rolls = !!actor && !!this.system.check?.enabled;
+    // Outside the actor's Opportunity a Maneuver that is not a Reaction waits for the GM
+    // (0.19.0, the gate in documents/actor/actions.mjs); a Reaction is the book's own
+    // out-of-turn Maneuver and goes straight on, and so does Finish, which was never gated.
+    // A row that only shows its card because the system pays for it elsewhere performs
+    // nothing, so it asks nothing (0.23.0): the Strike, the Cast and the drag pass the gate
+    // themselves, and through 0.22.0 the row had already spent the GM's permit by then.
+    const gated = !!actor && !prepared && !this.system.reaction && !(elsewhere && !rolls)
+      && (typeof actor.mayActNow === "function");
+    // A Maneuver that rolls passes the gate when the roll is made (0.23.0): here it is only
+    // asked whether it may, so a roll dialog that is closed has not spent the permit either.
+    // Asked now when the answer is no, since the request card is what the click is for then.
+    const atRoll = gated && rolls && !byRule && (plan.n < SW.PREPARED_THRESHOLD);
+    if (gated && !(atRoll && actor.canActNow()) && !(await actor.mayActNow({ label }))) return null;
+    if (byRule) return this.#useWithRules(actor);
+    if (this.system.reaction && actor && !elsewhere) {
+      // A Reaction with a cost of its own pays that one; otherwise the cost printed. One whose
+      // rule pays from a card button is left to that button (0.23.0), or the row and the
+      // button would both pay.
+      const own = this.system.reactionCost;
+      const key = (own !== undefined && own !== null && own !== "") ? own : this.system.cost;
+      const n = SW.actionCostValue(key);
+      if (n) {
+        // The plain name, so the glyph appended here is the only one (0.5.1, T16).
+        await actor.spendActions(n, { label: `${plain} ${this.system.glyph ?? ""}`.trim() });
+      }
+    }
+    // Three or more actions is Prepared (PHB v4.24; ruling 234): two now, the rest reserved,
+    // and nothing rolls until Finish at the next Opportunity brings this Item back here. The
+    // label is the plain name: the sheet and the round's card print the cost beside it.
+    if (plan.n >= SW.PREPARED_THRESHOLD) {
+      return actor.prepare({
+        kind: "maneuver", label: plain, cost: plan.n, itemUuid: this.uuid,
+        targetUuid: SwCheck.currentTarget()?.document?.uuid ?? ""
+      });
+    }
+    // A Maneuver that rolls: the gate is passed and the cost paid once the dialog has settled,
+    // so a dialog that is closed spends nothing, neither actions nor the GM's permit (ruling
+    // 232). A caller's own `beforeRoll` runs first and may stop the roll; a permit that went
+    // to another Maneuver while this dialog stood open sends the request card and stops it too.
+    if (atRoll) {
+      const callers = config.beforeRoll;
+      config.beforeRoll = async cfg => {
+        if (typeof callers === "function") {
+          const go = await callers(cfg);
+          if (go === false) return false;
+        }
+        if (!(await actor.mayActNow({ label }))) return false;
+        if (plan.n) await actor.spendActions(plan.n, { label });
+        return true;
+      };
+    }
+    if (this.system.check.enabled && actor && !this.system.check.constellation) {
+      // A Relevant Check: the picker chooses the Constellation and says why, the Maneuver
+      // rides along as the roll's Item, and the card is called by the Maneuver's name. An
+      // adversary gets rollRelevantCheck's own warning and null (it carries Thresholds).
+      return actor.rollRelevantCheck(foundry.utils.mergeObject({
+        item: this,
+        label: plain,
+        subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
+        outcomes: this.#outcomeList(),
+        ...this.#allyFor(actor)
+      }, config, { inplace: false }));
+    }
+    if (this.system.check.enabled && actor) {
+      // A check against a target's Threshold (0.15.0, ruling 179): a Maneuver whose check names
+      // a Defense (Demoralize against Guard), used with exactly one target, reads that target's
+      // live Threshold through the fold the attack flow uses (`defenseThresholdFor`, with the
+      // check's Constellation as the Threat and the roller as the other party, so
+      // `AGAINST(Intimidation)` and `MARKED` apply); the number prints for a character target
+      // or a GM roller and is withheld for an adversary as the flow withholds it.
+      const read = this.#targetThreshold(actor);
+      return SwCheck.roll(foundry.utils.mergeObject({
+        actor,
+        item: this,
+        kind: "check",
+        slug: this.system.check.constellation,
+        label: plain,
+        subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
+        outcomes: this.#outcomeList(),
+        ...this.#allyFor(actor),
+        ...(read ?? {})
+      }, config, { inplace: false }));
+    }
+    // No check: the card is the Maneuver. One or two actions are paid here and said on the
+    // card itself, as Recenter and Raise a Shield say theirs, so the table reads one card; a
+    // row paid elsewhere says who pays; a Prepared one finished says it was paid already.
+    const lines = [];
+    if (plan.n && actor) {
+      await actor.spendActions(plan.n, { label, announce: false });
+      if (actor.announcesSpends) {
+        lines.push(`${game.i18n.format("STARWROUGHT.Actions.spent", { name: actor.name, spent: plan.n })} ${actor.actionsLeftLine?.() ?? ""}`.trim());
+      }
+    }
+    if (plan.note) lines.push(plan.note);
+    if (prepared) lines.push(game.i18n.localize("STARWROUGHT.Cost.preparedPaid"));
+    return this.toMessage({ actor, lines });
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * What a Maneuver's use will be paid at, and what its card should say about that (0.23.0;
+   * rulings 231, 233, 235, 236). Nothing is paid outside an encounter, with the `trackActions`
+   * setting off (the table has asked for no automatic spending), by a Reaction (its own branch pays
+   * at once, as before), by a passive row (an Activity, an Endeavor) or by a row the system pays
+   * another way, which says so on its card instead. A range of costs is asked of the player, and a
+   * closed pick comes back `cancelled`: the use stops there, before the gate.
+   * @param {Actor|null} actor
+   * @param {string|null} elsewhere  `paidElsewhere(this)`: the i18n key of who pays, or null.
+   * @returns {Promise<{n: number, note: string|null, cancelled: boolean}>}
+   */
+  async #chargePlan(actor, elsewhere) {
+    const none = { n: 0, note: null, cancelled: false };
+    if (!actor?.inEncounter || !actor.system?.actions) return none;
+    if (!setting("trackActions", true)) return none;
+    if (elsewhere) return { ...none, note: game.i18n.localize(elsewhere) };
+    if (this.system.reaction) return none;
+    const options = SW.actionCostOptions(this.system);
+    if (!options.length) return none;
+    if (options.length === 1) return { ...none, n: options[0] };
+    const { pickCost } = await import("../apps/cost-picker.mjs");
+    const n = await pickCost({ name: SW.plainName(this.name), options });
+    return (n === null) ? { ...none, cancelled: true } : { ...none, n };
+  }
 
   /**
    * Use a Talent or a Maneuver that carries a cost or a rule that acts on use (0.15.0, ruling 176;

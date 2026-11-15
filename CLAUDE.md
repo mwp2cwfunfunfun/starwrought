@@ -908,6 +908,68 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.23.0 (Mike, 2026-11-14; rulings 231 to 238): a Maneuver pays its own cost, and the Combat
+window forgets old attacks.** Planned first (`dazzling-floating-simon.md`; Mike's decisions by
+question: an unfinished attack ends with its Combat or its card and the GM gets a Cancel in the
+window, a range of costs asks each time, three or more is Prepared by the book, the name pays and
+the speech bubble only shows); no data and no handbook moved, and the rulings are system decisions
+in the 0.23.0 changelog entry. **A. A Maneuver used from the sheet in an encounter pays its printed
+cost** (ruling 231; Mike: "Aid's ❶ is not spent by the system ... why not?"; through 0.22.0 only a
+Reaction, a built-in and one with a use rule paid). `SwItem#use`, case "action", in this order: the
+built-in table; `#chargePlan` (nothing outside an encounter, with `trackActions` off (ruling 236),
+for a Reaction, a passive row or a row paid elsewhere; a range of costs opens `pickCost` in
+`module/apps/cost-picker.mjs`, one button per number of `SW.actionCostOptions`, pure, in
+`module/config/actions.mjs`, and a closed pick ends the use before the gate, so it never spends the
+GM's permit; ruling 233); the Opportunity gate, its label carrying the number chosen; a use-rule
+Maneuver (`#useWithRules`, unchanged); the Reaction branch (unchanged: paid at once); **three or
+more is Prepared** (ruling 234: `actor.prepare({ kind: "maneuver", itemUuid })`, and
+`finishPrepared` uses the Item again with `prepared: true` BEFORE it settles the preparation, so a
+roll dialog closed at Finish loses nothing); one or two with a check are paid in the roll's
+`beforeRoll`, after a caller's own, so a closed dialog charges nothing (ruling 232); one or two with
+no check are paid at once with `announce: false` and the Item's card carries the spend line.
+`prepared` is `use`'s own word and is stripped before the roll config, whose dialog reads a
+`prepared` of its own. **Rows paid elsewhere** (ruling 235): `PAID_ELSEWHERE` in
+`module/documents/maneuvers.mjs` (strike, cast, move, step, crawl, rush, leap, squeeze, each with
+the i18n line its card says; the module still imports nothing) and `paidElsewhere(item)` in
+`documents/item.mjs`, which also answers for an Item with `system.attack.enabled` and for one whose
+rules carry a kind with a `card` hook (Quick Tongue's `reroll`) or a `prevent` hook on a carrier
+with the Reaction trait, asked of the registry (the row would otherwise pay and the card's button
+pay again). A new Maneuver the system pays for another way is a row in that table. A row that only
+shows its card skips the Opportunity gate. **The gate is passed where the cost is paid**: a
+Maneuver that rolls asks `canActNow()` up front (and `mayActNow` only to send the request card
+when the answer is no) and passes `mayActNow` inside `beforeRoll`, so a closed dialog spends
+neither the actions nor the GM's permit. **One use at a time**: `use` holds a Maneuver in `USING`
+(actor uuid and Item uuid) around `#useManeuver`, so a double-click is one Maneuver and a second
+Finish under an open dialog is refused; `finishPrepared` hands the Item a `beforeRoll` that stops
+the roll when the preparation is no longer standing. **B. An unfinished attack ends
+with its Combat or its card** (rulings 237 and 238; Mike: "it is always there. like if i load my
+world now, they will still be there"). The attack record carries `combatId` (`#combatOf`: the started
+Combat the attacker is a fighter in, by membership and not by `inEncounter`, which reads the viewed
+Combat alone; `AttackWorkflow.create`, `projectFor`, and `PUBLIC_KEYS` in `attack-card.mjs`: a new
+field on the record reaches the card only when it is in all three).
+`AttackWorkflow.expired(record, { combatExists, heldElsewhere })`, pure, is the one reading: never
+a finished attack; a Combat gone; no Combat unless another connected user is the stored
+coordinator. `AttackCoordinator.rebuild()` never loads an expired card, and the client the
+election names (`coordinatorFor(flags) === game.user.id`) writes it cancelled with `#expireCard`
+(flags read again first; no refund); `register()` hears `deleteChatMessage` (`#onCardDeleted`: the
+record marked cancelled in memory, the pending catch-up dropped, `#drop`) and `deleteCombat`
+(`#onCombatDeleted`: the coordinator's `#cancel(..., { refund: false })`, else `#drop` when nobody
+connected may write the card); `#persist` never re-creates a card a workflow has had; `live()` and
+`outstanding()` go through `#inPlay`. A cancelled card's status is the plain "Cancelled"
+(`Attack.cancelledStatus`), the reason in its log. The Combat Prompt's **Attacks in progress**
+(`#watchList`, `mayControl`, the `cancelAttack` action asking the coordinator directly, since
+`documents/cards/attack.mjs` imports the prompt) never opens the window and keeps an open one
+open; `#dropSpentDrafts` forgets a draft once its target shows committed, so Reset defenses comes
+back with nothing selected. **Three older defects mended beside it** (found by the review):
+`migrateAuraVisible` was called and never imported in `data/items/talent.mjs` and `action.mjs`, so
+every Talent's and Maneuver's `migrateData` threw (swallowed by Foundry, logged) from 0.17.0 to
+0.22.0; the Combat Prompt's Commit waited for a Zone from every Posture, so it did nothing for
+Drop Flat and Kneel Behind the Shield (it asks `postureNeedsZone` now); two i18n keys were written
+twice. **Not built**: Pass from its row, Gain Control and Interact paid in two places, a Leap's
+own cost, a row printed with a cost and a Reaction half of its own (it pays the half), and
+`trackActions` over Strikes, Casts and Reactions (it has only ever gated movement in code; the
+hint and FEATURES now say so).
+
 **0.22.0 (Mike, 2026-11-14; rulings 223 to 230): what a Maneuver gives, and the Talents that
 change it.** Planned first (`dazzling-floating-simon.md`; Mike's decisions by question: the ally's
 Constellation named separately, a button on the card, Patient Assistance on a Success and a
@@ -1537,13 +1599,61 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   the Talents "Patient Assistance" and "Sure Assistance" on Tess with their `ALTER` cells, and
   tokens for Tess, Wren and a Bandit on Stonecutters' Quarter. It deleted its Combats, its
   testpc1 token and the 57 cards it posted, cleared every pending result and put the two Talents'
-  switches back to On. Nothing in the repository depends on them.
+  switches back to On. Nothing in the repository depends on them. The 0.23.0 drive (2026-11-14)
+  left those fixtures as they were, deleted its Combats and the cards it posted, and closed the
+  three attacks it had left unfinished on purpose.
+- **0.23.0 leaves to the table or to Mike:** Gain Control's row pays ❶ while the Take Control
+  button is free, and Interact's row pays ❶ while a draw or a stow from the Equipment tab pays its
+  own, so each is two doors with one price; the Pass row only shows its card; a Leap and a Squeeze
+  are charged by the drag as the Move it measures; Grapple prints ⓿ with an Athletics check against
+  Evade, which reads like a slip in the sheet; "Track the six-action round" gates movement and the
+  sheet's Maneuvers and nothing else, and whether it should gate Strikes, Casts and Reactions is
+  his; a defender whose token is deleted in the middle of an attack leaves a row nobody can answer
+  (the GM's Cancel clears it); a roll dialog left open over a cancelled attack still charges a
+  Reaction if it is then rolled; Clear Chat Log was not pressed in the live drive (card deletion,
+  alone and in a batch, was); one user in two tabs can close and reopen an attack made outside an
+  encounter (whether another client holds it is asked by user, not by session). **Rows with a
+  Trigger and no Reaction trait are charged as plain Maneuvers since 0.23.0**: Battle Cry, Lost in
+  the Dark, Reliable Anchor, Steady the Line and Sure Seat ship at a cost of one with no ↺ in the
+  sheet (Quick Tongue too, spared by its card button; No Quarter and Grab an Edge at ⓿), so each
+  pays ❶ from its row and is gated off-turn; a ↺ in the row's Cost cell is Mike's to write, and
+  the same holds for any row whose empty Cost cell reads as one action. A row printed with a cost
+  and a Reaction half ("❶ (⓿↺)") pays the half and never the cost: an open decision.
 - **0.19.0 leaves to the table or to Mike:** a Form Bind control for a Bind the GM narrates (the
   card forms them) and Close ❶ as a Maneuver (both declined for now); the out-of-turn permit is
   one Maneuver this round and a player with no GM connected waits; the glance shows an adversary's
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-14 (a Maneuver pays its own cost, and the Combat window forgets old attacks, system
+0.23.0; rulings 231 to 238 in the 0.23.0 changelog entry; planned in `dazzling-floating-simon.md`,
+Mike's decisions by question: Combat end or card deleted, ask each time, Prepared by the book, the
+name pays): "Using a Basic Maneuver from the Maneuvers tab spends nothing by itself", the system's
+rule since the tab existed, now a Maneuver used in an encounter paying the cost its row prints
+(when the roll is made; at once with the line on its own card when it has no roll; after a pick
+when the row prints a range; as a Prepared Maneuver finished from its own Item when it costs three
+or more), with the rows the system pays another way saying so and paying nothing; every unfinished
+attack card revived at every reload and opened in the Combat window, however old, now resumed only
+in the Combat it was declared in (`combatId` on the record, `AttackWorkflow.expired`), the rest
+closed on the elected client at load, which also closed the cards earlier versions left; an attack
+that outlived its Combat or its chat card, now cancelled with the one and dropped with the other,
+the card never written back; no way for the GM to end an attack stuck where the GM had no task,
+now Attacks in progress with Cancel under the tasks; the Defense picked before a Reset defenses
+coming back ticked, now forgotten once committed; the refund after a Combat's end decided by which
+Combat was viewed, now never given there. Fixed on the way: the Opportunity card's raw "{name}",
+"1 spent" and "the action spent is lost" on the Prepared cards, FEATURES saying Cancel keeps the
+spent actions and naming system 0.21.0, the `trackActions` hint claiming more than the code does,
+and three older defects the review found beside the change (every Talent's and Maneuver's
+`migrateData` throwing since 0.17.0 for want of an import; Commit doing nothing for Drop Flat and
+Kneel Behind the Shield; two language keys written twice). Checked by 157 self-test checks, `node
+--check`, `build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of
+Mike's uncommitted workbook), `build_foundry.mjs --no-compile`, an independent review of the diff
+(nine findings, none high, seven mended and two stated) and live in the test world with a GM tab
+and a player tab, before the review and again after its mends, the bug first reproduced there on
+0.22.0 with three attacks left unfinished (the 0.23.0 changelog entry lists what). Not driven: Clear Chat Log itself. No handbook moved and `data/SYNC.json` is
+untouched; Mike's two workbooks in progress were not converted, built, staged or written, and the
+pack content did not move.
 
 Cleared 2026-11-14 (what a Maneuver gives, and the Talents that change it, system 0.22.0; rulings
 223 to 230 in the 0.22.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions

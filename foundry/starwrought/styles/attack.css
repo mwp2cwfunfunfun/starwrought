@@ -12,7 +12,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-attack: "0.22.0"; }
+:root { --sw-css-version-attack: "0.23.0"; }
 
 /* --------------------------------------------------------------------------
    The attack flow (0.5.0): the Combat Prompt window and the attack card.
@@ -197,6 +197,37 @@
 .starwrought .sw-prompt-empty .sw-note { margin: 0; }
 .starwrought .sw-prompt-nothing { margin: 0; font-size: 0.9rem; color: var(--sw-gold); }
 .starwrought .sw-prompt-nothing .fa-circle-check { color: var(--sw-green); }
+
+/* Attacks in progress (0.23.0): the unfinished attacks the GM may cancel, one line each under the
+   tasks. Quieter than a task, since nothing here is asked of anyone. */
+.starwrought .sw-prompt-watch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--sw-line);
+}
+.starwrought .sw-prompt-watch-heading {
+  margin: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-prompt-watch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.starwrought .sw-prompt-watch-text { flex: 1; min-width: 0; }
+.starwrought .sw-prompt-watch-text p { margin: 0; font-size: 0.78rem; }
+.starwrought .sw-prompt-watch-row button {
+  flex: 0 0 auto;
+  width: auto;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
 
 /* --------------------------------------------------------------------------
    The attack card: the shared record of one attack, updated in place by the
