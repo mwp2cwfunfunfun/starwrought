@@ -97,6 +97,9 @@ class Cell:
         self.failures = []   # [(line, text, message)]
         self.rules = []
         self.root = False
+        # The cell says only "no automation" (N/A; 0.26.1): it reads, with no rules, and is counted
+        # as a row the author has looked at, never as one the grammar cannot read.
+        self.not_applicable = False
 
     @property
     def address(self):
@@ -297,6 +300,7 @@ def parse_cells(data):
     for c in automation:
         r = by_id[c.id]
         c.rules = r["rules"]
+        c.not_applicable = bool(r.get("notApplicable"))
         c.failures = [(e["line"], e["text"], e["message"]) for e in r["errors"]]
         # parse_rules.mjs: a [MANEUVER X] naming a row that is not enabled is an error on an enabled carrier.
         for rule in r["rules"]:
@@ -559,6 +563,13 @@ def write_report(path, data, vocab, changed, dry_run):
                  f"({MARK_RGB[2:]}) with a comment giving the grammar's message and the reason. A cell that reads again on a later "
                  f"run is cleared. The kinds the grammar has: {', '.join(vocab.get('kinds', []))}.")
     lines.append("")
+    # "N/A" (0.26.1): the author's mark that a row needs no automation. Never red; counted here.
+    marked = [c for c in data["cells"] if c.kind == "automation" and c.not_applicable]
+    automation = [c for c in data["cells"] if c.kind == "automation"]
+    lines.append(f"**{len(marked)} of the {len(automation)} Automation cells {'is' if len(marked) == 1 else 'are'} marked N/A** (no automation needed: `N/A`, `None` "
+                 f"or a dash, alone in the cell). They read as no rules and are never painted; "
+                 f"{len([c for c in automation if c.rules and not c.failures])} cells carry rules that read.")
+    lines.append("")
     counts = {}
     for c in red:
         for _, text, message in c.failures:
@@ -652,7 +663,9 @@ def main():
     for fname, events in changed.items():
         for e in events:
             print(f"  {fname}: {e}")
+    marked = len([c for c in data["cells"] if c.kind == "automation" and c.not_applicable])
     print(f"automation cells: {len(red)} of {len(data['cells'])} do not read"
+          + (f"; {marked} marked N/A" if marked else "")
           + (f"; {len(written)} workbook{'s' if len(written) != 1 else ''} written" if written else "; nothing written")
           + f"; report at {os.path.relpath(report, ROOT)}")
     return 0

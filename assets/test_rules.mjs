@@ -25,7 +25,9 @@
 
 import {
   parseAutomation, summarize, ruleEntries, splitArgs, keyValues, RuleSyntaxError, RESERVED_WORDS, LEGACY_REFUSAL,
-  KIND_WORD, kindOf, knownKinds
+  KIND_WORD, kindOf, knownKinds,
+  // "No automation" (0.26.1): the N/A mark, the whole-cell test and the one warning.
+  isNotApplicable, isNotApplicableCell, NOT_APPLICABLE_WITH_RULES
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
@@ -193,6 +195,38 @@ check("an empty, null or undefined cell parses to nothing", () => {
     const parsed = parseAutomation(text);
     same(parsed, { rules: [], errors: [], warnings: [] }, `parseAutomation(${String(text)})`);
   }
+});
+
+check("N/A in a cell is no automation: no rule, no error, never an unknown kind (0.26.1)", () => {
+  for (const text of ["N/A", "n/a", "N / A", "NA", "na", "N.A.", "N/A.", "None", "none", "-", "---", "\u2014", "\u2013", "[N/A]", "[ n/a ]", "[None]", "  N/A  ", "\r\nN/A\r\n", "# reviewed\nN/A\n\n"]) {
+    same(parseAutomation(text, { itemType: "action" }), { rules: [], errors: [], warnings: [] }, `parseAutomation(${JSON.stringify(text)})`);
+    must(isNotApplicableCell(text), `${JSON.stringify(text)} is a whole-cell mark`);
+  }
+  for (const line of ["N/A", "n/a", "NA", "N.A.", "None", "-", "[N/A]"]) must(isNotApplicable(line), `${line} is the mark`);
+  // What is NOT the mark: a word that merely contains it, an effect or a block that carries it.
+  for (const line of ["", "# N/A", "N/A for now", "nay", "nan", "n", "a", "banana", "[EFFECT N/A]", "[TRAIT None]", "CHECK: N/A", "none of the above", "[N/A][TRAIT Human]"]) {
+    must(!isNotApplicable(line), `${JSON.stringify(line)} is not the mark`);
+  }
+  must(!isNotApplicableCell(""), "an empty cell is empty, not marked");
+  must(!isNotApplicableCell("# only a comment"), "a cell of comments is not marked");
+  must(!isNotApplicableCell("N/A\n[TRAIT Human]"), "a cell with a rule beside the mark is not a whole-cell mark");
+  // The same in the custom effects field, whose lines are typed bare.
+  same(parseAutomation("N/A", { itemType: "effect" }), { rules: [], errors: [], warnings: [] }, "the custom effects field");
+});
+
+check("N/A inside a block or an effect is still a mistyped line, and N/A beside rules is warned about with the rules standing", () => {
+  must(parseAutomation("[EFFECT N/A]").errors.length === 1, "[EFFECT N/A] is an error");
+  must(parseAutomation("[EFFECT CHECK: N/A]").errors.length === 1, "an effect whose value is N/A is an error");
+  must(parseAutomation("N/A for now").errors.length === 1, "N/A with words after it is not the mark");
+  const both = parseAutomation("N/A\n[TRAIT Human]");
+  same(both.rules.map(r => [r.kind, r.line]), [["trait", 2]], "the rule stands, on its own line");
+  same(both.errors, [], "no error");
+  same(both.warnings, [{ line: 1, text: "N/A", message: NOT_APPLICABLE_WITH_RULES }], "one warning, naming the N/A line");
+  const twice = parseAutomation("[TRAIT Human]\nNone\n-\n");
+  same([twice.rules.length, twice.warnings.length, twice.warnings[0]?.line], [1, 1, 2], "two marks and a rule: one warning, at the first mark");
+  // A mark beside a line that does not read: the error speaks, and nothing more is said.
+  const broken = parseAutomation(`N/A\n${UNKNOWN_KIND}: 15 ft`);
+  same([broken.rules.length, broken.errors.length, broken.warnings.length], [0, 1, 0], "the unreadable line is the error");
 });
 
 check("an unknown kind is one error naming the word and the line", () => {

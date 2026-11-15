@@ -39,7 +39,7 @@
  */
 
 import { KIND_WORD, kindOf } from "./kinds/index.mjs";
-import { RuleSyntaxError } from "./syntax.mjs";
+import { RuleSyntaxError, isNotApplicable } from "./syntax.mjs";
 // 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
 import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
 import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS } from "./effects.mjs";
@@ -71,7 +71,10 @@ const BARE_CARRIER = "effect";
 // which imports nothing, so a kind file imports them from there and closes no circle with this
 // module; they are re-exported here for every other reader.
 export { KIND_WORD, kindOf, knownKinds } from "./kinds/index.mjs";
-export { RuleSyntaxError, splitArgs, keyValues } from "./syntax.mjs";
+export { RuleSyntaxError, splitArgs, keyValues, isNotApplicable, isNotApplicableCell } from "./syntax.mjs";
+
+/** What the pipeline is told when a cell says "N/A" and carries rules as well (0.26.1). */
+export const NOT_APPLICABLE_WITH_RULES = 'the cell says "no automation" (N/A) and also carries rules; the rules stand, so delete the N/A line, or the rules if the row needs none';
 
 /**
  * The words a parsed rule reserves for the framework. A kind's `parse` returns its own data and
@@ -87,7 +90,11 @@ export const RESERVED_WORDS = Object.freeze(["kind", "line", "text", "error"]);
  * Parse an Automation cell.
  *
  * Lines are split on `\r?\n` (Excel saves either) and trimmed; a blank line and a line beginning
- * with `#` are skipped and are never an error. On every other line the kind word is everything up
+ * with `#` are skipped and are never an error. So is a line that says only "no automation" (0.26.1;
+ * `N/A`, `None`, a dash; `isNotApplicable` in ./syntax.mjs): the author's mark that the row was
+ * looked at and needs none, never a rule and never a kind word nobody knows. A cell that carries
+ * such a line AND rules is warned about once (`NOT_APPLICABLE_WITH_RULES`), and the rules stand.
+ * On every other line the kind word is everything up
  * to the first `:` or whitespace, lower-cased, and the arguments are the rest with one optional
  * colon and the surrounding space removed. Line numbers count every line of the cell from 1,
  * blanks and comments included, so "line 3" is the third line the designer sees.
@@ -113,11 +120,19 @@ export function parseAutomation(text, context = {}) {
   const warnings = [];
   const lines = String(text ?? "").split(/\r?\n/);
   const bareIsTheForm = context?.itemType === BARE_CARRIER;
+  // The first line that says "no automation" (0.26.1), for the one warning below.
+  let notApplicable = null;
 
   lines.forEach((raw, index) => {
     const line = index + 1;
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("#")) return;
+    // "N/A": the row needs no automation. Skipped as a comment is, before anything reads the line
+    // as a kind word, an effect tag or a block.
+    if (isNotApplicable(trimmed)) {
+      notApplicable ??= { line, text: trimmed };
+      return;
+    }
     const warn = (message, text = trimmed) => warnings.push({ line, text, message });
 
     // An effect, from a block's inside or a bare line: the tag's kind reads it (./effects.mjs).
@@ -287,6 +302,12 @@ export function parseAutomation(text, context = {}) {
     }
     errors.push({ line, text: trimmed, message: unknownKindMessage(word) });
   });
+
+  // A cell cannot both need no automation and carry some: the likeliest slip is an N/A left behind
+  // when the rules were written. The rules stand; the pipeline says so once.
+  if (notApplicable && rules.length) {
+    warnings.push({ line: notApplicable.line, text: notApplicable.text, message: NOT_APPLICABLE_WITH_RULES });
+  }
 
   return { rules, errors, warnings };
 }

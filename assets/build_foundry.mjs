@@ -57,7 +57,7 @@ import {
 // the system's. grammar.mjs imports the kinds registry itself, so the registry is live here (the
 // `bonus` kind since 0.10.0); the index is also imported directly for the summary line's count of
 // kinds. Both are free of Foundry globals at module scope, as config.mjs is.
-import { parseAutomation } from "../foundry/starwrought/module/rules/grammar.mjs";
+import { parseAutomation, isNotApplicableCell } from "../foundry/starwrought/module/rules/grammar.mjs";
 // The rule targets' resolver (0.16.0): one module, imported here and by assets/parse_rules.mjs, so
 // the step that parses every cell and this build's fallback parse answer a name identically.
 import { buildResolver } from "./lib/rule_targets.mjs";
@@ -305,7 +305,9 @@ const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked:
  */
 function automationOf(text, context, preparsed) {
   const automation = String(text ?? "");
-  if (!automation.trim()) return { automation: "", rules: [] };
+  // A cell that says only "no automation" (N/A; 0.26.1) is an empty cell to the Item: the mark is
+  // the author's note on the sheet, and the Item's Automation box stays empty.
+  if (!automation.trim() || isNotApplicableCell(automation)) return { automation: "", rules: [] };
   let rules;
   if (Array.isArray(preparsed)) {
     rules = preparsed;

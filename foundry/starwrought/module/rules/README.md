@@ -128,10 +128,18 @@ naming the kind that reads the data; an effect block is `[EFFECT <tag>: <value> 
 
 ```
 # a line beginning with # is a comment; a blank line is nothing
+# a line that says only N/A (or None, or a dash) is the author's "no automation": skipped (0.26.1)
 [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]
 [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]
 [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 ```
+
+**"No automation" is not a kind** (0.26.1; `isNotApplicable` and `isNotApplicableCell` in
+`syntax.mjs`). Mike marks a row that needs none with `N/A` in its cell; the grammar skips such a
+line before anything reads it as a kind word, a tag or a block, so it can never be "unknown rule
+kind", and the build tools treat a cell that says nothing else as an empty one. A new kind must not
+take `na`, `none` or a dash as its word, tag or keyword. `N/A` beside rules is a warning
+(`NOT_APPLICABLE_WITH_RULES`) and the rules stand.
 
 A keyword or tag nobody answers to is an error naming the tags and the keywords. A kind's `parse`
 receives `context.form` (`"feature"` with `context.block`, or `"effect"` with `context.effect`, the

@@ -1,6 +1,7 @@
 /**
  * What a kind file needs from the grammar, in a module that imports nothing (0.10.0 as errors.mjs
- * with the error class alone; 0.10.1 with the two argument helpers beside it).
+ * with the error class alone; 0.10.1 with the two argument helpers beside it; 0.26.1 with the
+ * "no automation" words, which the build tools read from here too).
  *
  * grammar.mjs imports the registry, the registry imports every kind, and a kind that imported
  * grammar.mjs for any of these closed a circle that broke whenever the kind file was the first
@@ -28,6 +29,57 @@ export class RuleSyntaxError extends Error {
     this.line = line;
     this.text = text;
   }
+}
+
+/* -------------------------------------------- */
+/*  "No automation"                             */
+/* -------------------------------------------- */
+
+/**
+ * The words that say "this row needs no automation" (0.26.1). Mike, 2026-11-15: "For Maneuvers,
+ * Talents, etc. that do not require automation, I am going to put N/A in the Automation field. Make
+ * sure the engine doesn't confuse that with automation grammar."
+ *
+ * A line that is one of these, and nothing else, is no rule and no error: the grammar skips it as
+ * it skips a blank line and a `#` comment. They are the words the converter already reads as an
+ * empty cell (`blank_none` in assets/xlsx_to_trees.py: "none", "n/a", a dash, "---"), so the
+ * pipeline's two readers cannot disagree, with the spellings a hand will also type: `N/A` in any
+ * case, `NA`, `N.A.`, `None`, a run of dashes; each with or without a closing full stop, and with
+ * or without the square brackets every other line of a cell wears (`[N/A]`). It is a whole LINE:
+ * `[EFFECT N/A]` is a mistyped effect and is still refused as one.
+ */
+// The dash may be a hyphen or one of the two long dashes Word and Excel substitute for it
+// (written as escapes, so this file carries neither).
+const NOT_APPLICABLE = /^(?:n\s*\/\s*a\.?|n\.?a\.?|none\.?|[-\u2013\u2014]+)$/i;
+
+/**
+ * Does this line say "no automation" and nothing else?
+ * @param {string} line  One line of a cell.
+ * @returns {boolean}
+ */
+export function isNotApplicable(line) {
+  let text = String(line ?? "").trim();
+  const bracketed = text.match(/^\[([^\[\]]*)\]$/);
+  if (bracketed) text = bracketed[1].trim();
+  return NOT_APPLICABLE.test(text);
+}
+
+/**
+ * Is the whole cell a "no automation" mark: at least one such line, and nothing else but blank
+ * lines and `#` comments? The pipeline treats such a cell as an empty one (no rules, nothing
+ * stored, nothing counted), and the red-cell tool counts it as reviewed.
+ * @param {string} text  The cell.
+ * @returns {boolean}
+ */
+export function isNotApplicableCell(text) {
+  let marked = false;
+  for (const raw of String(text ?? "").split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    if (!isNotApplicable(line)) return false;
+    marked = true;
+  }
+  return marked;
 }
 
 /* -------------------------------------------- */

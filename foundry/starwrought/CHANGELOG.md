@@ -7,6 +7,91 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.26.1 (2026-11-15): N/A in an Automation cell means "no automation"
+
+Built from **Player's Handbook v4.25**, as Mike saved it after reviewing the 0.26.0 redline (the
+same edition number; `data/SYNC.json` records the file again, below). No ruling: nothing about the
+game changes. No data workbook was converted, built, staged or written; the one pack document
+that moves is the Grammar journal.
+
+Mike, 2026-11-15: "For Maneuvers, Talents, etc. that do not require automation, I am going to put
+N/A in the Automation field. Make sure the engine doesn't confuse that with automation grammar."
+Planned first (`dazzling-floating-simon.md`). Reading every place the cell is read showed where
+the mark was safe and where it was not:
+
+| Where N/A is typed | Through 0.26.0 |
+|---|---|
+| A sheet cell holding exactly `N/A`, `None` or a dash, read by the converter | Already an empty cell (`blank_none`, on tree, Background and action sheets alike). Nothing reached Foundry. |
+| The same cell, read by the red-cell tool | Painted **red** as "unknown rule kind", with a comment, and listed in `build-report.xlsx`: the tool reads the workbook itself and asks the grammar. |
+| Any other spelling in a sheet cell (`NA`, `N.A.`, `[N/A]`, `N/A` under a comment line) | Passed through as text; the grammar refused it; the release build stopped, and the content loop stored an error. |
+| A world Item's Automation box in Foundry | Stored as an error, red on the sheet. |
+
+(The plan's table said the converter passed an action sheet's `N/A` through. It does not: every
+column of an action row is read through the same `blank_none`. The red cell and the other
+spellings were the real gaps.)
+
+- **The grammar skips it.** A line that says only "no automation" is skipped as a blank line and
+  a `#` comment are, before anything reads it as a kind word, a tag or a block: no rule, no error,
+  never "unknown rule kind". The words are `N/A` in any case, `NA`, `N.A.`, `None` and a lone
+  dash, with or without a full stop or square brackets (`isNotApplicable` in
+  `module/rules/syntax.mjs`, which imports nothing).
+- **It is the whole line.** `[EFFECT N/A]`, `CHECK: N/A` and `N/A for now` are still mistyped
+  lines and are refused as before.
+- **N/A beside rules is warned about, and the rules stand.** The likeliest slip is an N/A left
+  behind when automation was written. The pipeline prints the warning once per cell and
+  `build-report.xlsx` lists it with what to do; Foundry ignores warnings, as it always has.
+- **A cell that says nothing else is an empty cell to the build** (`isNotApplicableCell`;
+  `parse_rules.mjs` and `build_foundry.mjs`): no rules, nothing counted, and the Item's Automation
+  box empty, whatever the spelling.
+- **The red-cell tool never paints it**, clears a red it painted on an earlier run, and says how
+  many cells are marked ("1 marked N/A"), in its last line and at the top of
+  `automation-cells-report.md`. A blank cell is a row not reached yet; an N/A cell is one that
+  has been.
+- `AUTOMATION_GRAMMAR.md` section 1, `data/README.txt` and the rules README say so. A new kind
+  must not take `na`, `none` or a dash as its word.
+
+### The handbook, as Mike saved it
+
+Between 0.26.0 and this release Mike went through the redline in
+`Starwrought_Players_Handbook_v4.25.docx` and saved it, so the build check reported the
+same-numbered file changed. Read against the committed file: **all fourteen tracked changes are
+accepted** and none is pending, and three places carry his own edits:
+
+- **Chapter 8**: the Subordinate Maneuver rule is a paragraph of its own under a new heading,
+  "Subordinate Maneuvers". Its words are unchanged.
+- **Supine**: the cell reads "Off-Guard; -2 Situation to Attacks (except melee Attacks against
+  adjacent creatures, Grapples included); +2 Situation to Evade vs. ranged Attacks. You cannot
+  Move, Step, Rush, Leap, or Crawl; forced movement affects you normally." and, on a second line,
+  "Stand ❶ to clear (you can stand directly from your back), or Roll Over ❶ to become Prone."
+  "Lying on your back." and Claude's sentence "Supine is not Prone ..." are not in it, so whether
+  a rule that names Prone also means Supine is unsaid.
+- **Prone**: a second line, "Stand ❶ to clear, or Roll Over ❶ to become Prone." **This reads like
+  a slip**: rolling over from Prone makes you Supine. It is his to mend; the system implements
+  neither Supine nor Roll Over (ruling 266).
+
+None of the three changes what the system does, so the file was recorded again with
+`node assets/build_all.mjs --check --accept-phb` (ruling 265 said this would be needed once).
+
+### Checked
+
+- `node assets/test_rules.mjs`: 186 checks pass (184 at 0.26.0). New: nineteen spellings each
+  read as no rules, no errors and no warnings, in a cell and in the custom effects field; what is
+  not the mark (`# N/A`, `N/A for now`, `banana`, `[EFFECT N/A]`, `[TRAIT None]`); a rule beside
+  the mark stands with one warning at the mark's line; a mark beside an unreadable line leaves the
+  error to speak.
+- `python assets/highlight_automation.py --dry-run`, its report sent to a scratch file: 152
+  Automation cells in the saved workbooks, one already marked N/A and not painted, no N/A line
+  called unreadable, nothing written.
+- `node --check`, `python assets/check_style.py` (one failure, the em-dash in Dwarf Lore B13 of
+  Mike's uncommitted workbook), `node assets/build_all.mjs --check`.
+- The handbook as saved, against the committed file: 2,504 paragraphs to 2,508, 53 tables in
+  both, no tracked change pending, three text changes (above).
+- Live, in the test world: `N/A` typed into a world Maneuver's Automation box saved with no red
+  row and "No rules."; `N/A` above a real line, and the line read; `[EFFECT N/A]` still red. The
+  test Item was deleted.
+
+---
+
 ## 0.26.0 (2026-11-15): Player's Handbook v4.25
 
 Built from **Player's Handbook v4.25** (Mike's edition of 15 November 2026, with the recommended

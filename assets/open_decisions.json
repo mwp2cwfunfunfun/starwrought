@@ -34,9 +34,9 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Rules decision",
-    "where": "PHB v4.25, Conditions table (a tracked change); data/maneuvers.xlsx, Drop Prone, Stand, Kip Up and a Roll Over row to come",
-    "question": "Mike's Supine rules are in the handbook's Conditions table as a tracked change (Off-Guard; -2 Situation to Attacks except melee against an adjacent creature; +2 Situation to Evade against ranged; no Move, Step, Rush, Leap or Crawl; Stand or Roll Over to clear), with one sentence of Claude's as its own insertion (\"Supine is not Prone: a rule that names one does not mean the other\"). The system still has Prone alone (ruling 266).",
-    "recommendation": "Accept or edit the cell in Word, add the Roll Over row (Cost 1, Traits Motion, Requirements \"You are Prone or Supine.\", Effect \"Change from Prone to Supine, or from Supine to Prone.\") and enable Drop Prone on the Basic Actions sheet, then have Supine built: a condition beside Prone, the attack penalty read against the gap to the target, the movement refusal in the drag, and Roll Over as a Maneuver the system implements.",
+    "where": "PHB v4.25, Conditions table (Mike's final wording, 2026-11-15); data/maneuvers.xlsx, Drop Prone, Stand, Kip Up and a Roll Over row to come",
+    "question": "Supine is defined in the handbook's Conditions table: Off-Guard; -2 Situation to Attacks except melee against an adjacent creature (Grapples included); +2 Situation to Evade against ranged; no Move, Step, Rush, Leap or Crawl; Stand or Roll Over to clear. Mike did not take the sentence saying Supine is not Prone, so whether a rule that names Prone also means Supine is unsaid. The Prone row now ends \"or Roll Over to become Prone\", which reads like a slip for Supine. The system still has Prone alone (ruling 266).",
+    "recommendation": "Mend the Prone row's last word in Word (Supine), add the Roll Over row (Cost 1, Traits Motion, Requirements \"You are Prone or Supine.\", Effect \"Change from Prone to Supine, or from Supine to Prone.\") and enable Drop Prone on the Basic Actions sheet, say whether a rule naming Prone reaches Supine, then have Supine built: a condition beside Prone, the attack penalty read against the gap to the target, the movement refusal in the drag, and Roll Over as a Maneuver the system implements.",
     "decidedBy": ""
   },
   {
@@ -241,8 +241,8 @@
   },
   {
     "since": "2026-11-15",
-    "status": "open",
-    "decidedBy": "",
+    "status": "decided",
+    "decidedBy": "Mike, 2026-11-15: all fourteen accepted in Word, with three edits of his own (a Subordinate Maneuvers heading in Chapter 8, the Supine cell reworked without the \"Supine is not Prone\" sentence, a second line in the Prone row); the file was recorded again with 0.26.1",
     "id": "v4.25-redline-in-the-edition",
     "category": "Handbook",
     "where": "Starwrought_Players_Handbook_v4.25.docx, fourteen paragraphs with tracked changes by Claude; the untouched file is backup/pre-0.26.0/",

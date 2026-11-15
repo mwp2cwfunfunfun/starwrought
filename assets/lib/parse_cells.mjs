@@ -17,14 +17,15 @@
  *             cells: [{ id, text, itemName, constellation, itemType, source }] }
  * Reply:    { vocabulary: { kinds, tags, keywords, conditions, components, terrainKinds, ranks,
  *                           sizes, grantScopes, defenses, threats },
- *             results: [{ id, rules, errors: [{ line, text, message }], warnings: [...] }] }
+ *             results: [{ id, rules, errors: [{ line, text, message }], warnings: [...],
+ *                         notApplicable }] }
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseAutomation } from "../../foundry/starwrought/module/rules/grammar.mjs";
+import { parseAutomation, isNotApplicableCell } from "../../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../../foundry/starwrought/module/rules/kinds/index.mjs";
 import { EFFECT_TAGS, CONDITIONS, COMPONENTS } from "../../foundry/starwrought/module/rules/effects.mjs";
 import { FEATURE_KEYWORD_LIST } from "../../foundry/starwrought/module/rules/features.mjs";
@@ -57,7 +58,12 @@ const results = (request.cells ?? []).map(cell => {
   const parsed = parseAutomation(String(cell.text ?? ""), {
     itemName: cell.itemName, constellation: cell.constellation, itemType: cell.itemType, source: cell.source, resolve
   });
-  return { id: cell.id, rules: parsed.rules, errors: parsed.errors, warnings: parsed.warnings };
+  // `notApplicable` (0.26.1): the cell says only "no automation" (N/A), the author's mark that
+  // the row was looked at and needs none. It reads, with no rules, and is counted apart.
+  return {
+    id: cell.id, rules: parsed.rules, errors: parsed.errors, warnings: parsed.warnings,
+    notApplicable: isNotApplicableCell(String(cell.text ?? ""))
+  };
 });
 
 const vocabulary = {

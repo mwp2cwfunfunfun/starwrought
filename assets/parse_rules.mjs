@@ -41,7 +41,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseAutomation, ruleEntries } from "../foundry/starwrought/module/rules/grammar.mjs";
+import { parseAutomation, ruleEntries, isNotApplicableCell } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { plainName, costGlyphs, registerTerrainKinds } from "../foundry/starwrought/module/config.mjs";
 import { buildResolver } from "./lib/rule_targets.mjs";
@@ -126,7 +126,9 @@ const unread = [];
  */
 function parseCell(carrier, context) {
   const text = String(carrier.automation ?? "");
-  if (!text.trim()) {
+  // An empty cell, or one that says only "no automation" (N/A; 0.26.1), carries no rules and is
+  // not counted. The converter blanks such a cell; a JSON written by hand may still hold it.
+  if (!text.trim() || isNotApplicableCell(text)) {
     delete carrier.rules;
     return;
   }

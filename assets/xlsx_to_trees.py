@@ -357,7 +357,12 @@ def action_bare(s):
 action_key = lambda s: action_bare(s).lower()
 
 def blank_none(s):
-    """'None', a dash, or nothing at all is an empty cell. Anything else is kept as written."""
+    """'None', 'N/A', a dash, or nothing at all is an empty cell. Anything else is kept as written.
+    On an Automation cell these are among the words the grammar reads as "no automation"
+    (`isNotApplicable` in foundry/starwrought/module/rules/syntax.mjs, 0.26.1), which also takes
+    the other spellings a hand types (NA, N.A., [N/A], N/A beside a comment line): a cell this
+    leaves as written for want of an exact match is skipped by the grammar all the same, so the
+    two never disagree about what such a cell means."""
     s = (s or "").strip()
     # "---" is how PHB v4.21's armor table prints a piece with no Traits.
     return "" if s.lower() in ("", "none", "n/a", "-", "—", "---") else s
@@ -523,6 +528,9 @@ def parse_actions_workbook(wb, fname, actions, warnings, errors, defined):
                             "traits": traits,
                             "prerequisites": pv("prereq"), "requirements": pv("req"),
                             "trigger": pv("trigger"), "description": cell_html(cellv("desc")) if pv("desc") else "",
+                            # `pv` blanks "N/A", "None" and a dash in every column, the Automation
+                            # cell included: the author's mark that the row needs none is an
+                            # empty cell here, as on a tree sheet and the Backgrounds sheet.
                             "effect": effect, "automation": pv("automation"),
                             "constellation": strip_lore(pv("constellation")),
                             "frequency": pv("frequency"), "range": pv("range"), "target": pv("target"),

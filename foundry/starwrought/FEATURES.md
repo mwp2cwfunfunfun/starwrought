@@ -7,7 +7,7 @@ project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244 and the 0.25.0 entry 245 to 251). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says: `data/*.xlsx` is
-their only source. System version **0.26.0**.
+their only source. System version **0.26.1**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2724,7 +2724,13 @@ textarea and, under it, **As read**: one row per rule with its kind word in a ta
 one-line summary ("+1 Condition bonus to Aid, while Origin is Trained"; "Expose does not land, for
 allies within 0 ft"), or a red row with the
 message for a line that did not parse or a kind the system does not know. With nothing stored it
-says "No rules." A GM who edits the textarea on a world Item or an owned copy sees the text save
+says "No rules." **`N/A` is "no automation", not a rule** (0.26.1; Mike: "For Maneuvers, Talents,
+etc. that do not require automation, I am going to put N/A in the Automation field. Make sure the
+engine doesn't confuse that with automation grammar."): a line that says only `N/A` (or `n/a`,
+`NA`, `None`, a lone dash, bracketed or not) is skipped as a comment is, so it is never a red row
+and never an "unknown rule kind"; a sheet cell that says nothing else reaches Foundry as an empty
+Automation box; and the red-cell tool counts such cells apart, as rows that have been looked at.
+A GM who edits the textarea on a world Item or an owned copy sees the text save
 and the list mark each line: the Item parses on update, resolving a `bonus` target against the
 Constellations and the Maneuvers the world knows, and stores the error entries beside the rules,
 and never refuses the edit (ruling 118). The text is the GM's to type; what the system makes of it

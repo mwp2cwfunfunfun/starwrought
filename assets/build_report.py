@@ -90,6 +90,9 @@ RULES = [
      "Delete the duplicate row; the row on '{1}' is the one that ships."),
     (r"also on sheet '([^']+)', whose row is not enabled", "Fix", "Data",
      "Two rows for one action: delete the disabled one on '{1}', or decide which should ship."),
+    (r'the cell says "no automation" \(N/A\) and also carries rules', "Fix", "Automation cell",
+     "The cell is marked N/A and has automation as well; the automation is what the build uses. Delete the N/A line, "
+     "or delete the rules if the row really needs none."),
     (r"Effect says 'within (\d+) feet' but no ring is set", "Fix", "Automation cell",
      "Write [AURA {1} all] (or allies, enemies) in the row's Automation cell so the ring draws on the map, or 'none' in an Aura "
      "cell if the circle is centred somewhere other than the carrier."),

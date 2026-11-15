@@ -172,7 +172,15 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]          on a MANEUVER'S row: it lets an ally Move now
               [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]   the player's checkbox
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
-        trailing period inside a block is tolerated. The converter copies the cell through as text
+        trailing period inside a block is tolerated.
+        N/A MEANS NO AUTOMATION (Mike, 2026-11-15; system 0.26.1): type N/A alone in the cell of a
+        row you have looked at and decided needs none. It is no rule and no error: the cell is an
+        empty one to the pipeline (nothing reaches the Foundry Item), highlight_automation.py never
+        paints it and counts it apart ("12 marked N/A"), and a blank cell stays what it was, a row
+        not reached yet. n/a, NA, N.A., None and a lone dash read the same, bracketed or not
+        ([N/A]). It is the whole line: N/A inside a block ([EFFECT N/A]) is still a mistyped
+        effect. A cell that says N/A and also carries rules WARNS, and the rules are used.
+        The converter copies the cell through as text
         and parses nothing; parse_rules.mjs parses it (below), and a line it does not know is an
         ERROR that stops the release build (node assets/build_all.mjs) naming the Constellation,
         the Talent and the line, before the sources are written. The content loop

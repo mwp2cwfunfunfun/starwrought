@@ -82,6 +82,14 @@ Every block the cell reads, one example each. Case never matters.
 - A line is one or more blocks in square brackets. A cell may hold any number of lines; a
   `[EFFECT ...]` block is best on a line of its own, for reading.
 - A blank line is nothing. A line beginning with `#` is a comment.
+- **`N/A` means the row needs no automation** (0.26.1). Type it alone in the cell of a Talent or a
+  Maneuver you have looked at and decided needs none. It is no rule and no error: the pipeline
+  treats the cell as empty, the Foundry Item's Automation box stays empty, and the red-cell tool
+  never paints it and counts it apart, so a blank cell is one you have not reached yet and an
+  `N/A` cell is one you have. `n/a`, `NA`, `N.A.`, `None` and a lone dash read the same, with or
+  without brackets (`[N/A]`). It is the whole line: `N/A` inside a block (`[EFFECT N/A]`) is a
+  mistyped effect and is still refused. A cell that says `N/A` and also carries rules is warned
+  about, and the rules are what the build uses.
 - Case does not matter anywhere: `[effect check: 1 Condition, Aid]`, `[trait human]` and
   `IF: rank(ORIGIN >= Trained)` all read.
 - Spaces are free around commas, colons and semicolons. One trailing period inside a block is tolerated.

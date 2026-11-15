@@ -920,6 +920,24 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.26.1 (Mike, 2026-11-15; no ruling): N/A in an Automation cell means "no automation".** Mike:
+"For Maneuvers, Talents, etc. that do not require automation, I am going to put N/A in the
+Automation field. Make sure the engine doesn't confuse that with automation grammar." Planned
+first (`dazzling-floating-simon.md`). **A line that says only "no automation" is skipped by the
+grammar as a blank line and a `#` comment are** (`isNotApplicable` in
+`module/rules/syntax.mjs`, pure; called first thing in `parseAutomation`'s line loop): `N/A` in
+any case, `NA`, `N.A.`, `None`, a lone dash, with or without a full stop or square brackets. It
+is the whole LINE: `[EFFECT N/A]`, `CHECK: N/A` and `N/A for now` are still mistyped lines.
+`N/A` beside rules is one warning (`NOT_APPLICABLE_WITH_RULES`, with its row in `RULES` in
+`build_report.py`) and the rules stand. A cell that says nothing else is an empty cell to the
+build (`isNotApplicableCell`; `parse_rules.mjs` and `automationOf` in `build_foundry.mjs`), so
+the Item's Automation box is empty. `highlight_automation.py` never paints such a cell, clears
+an old red, and counts them ("N marked N/A"; `notApplicable` in `lib/parse_cells.mjs`'s reply):
+**a blank cell is a row Mike has not reached, an N/A cell one he has**. The converter needed no
+change (`blank_none` already blanks an exact `N/A`, `None` or dash in every column of every
+sheet; the gaps were the red-cell tool, the other spellings, and a world Item's textarea). **A
+new kind must not take `na`, `none` or a dash as its word, tag or keyword.**
+
 **0.26.0 (Mike, 2026-11-15; rulings 252 to 268): the PHB v4.25 sync.** The first handbook sync
 since v4.24 (`v4.25-sync-report.md`; planned in `dazzling-floating-simon.md`, Mike's decisions by
 question, three before the plan and four on its first draft). v4.25 removed every Talent's and
@@ -1469,7 +1487,10 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   tree's), **Enabled?**, **Automation** (0.9.0; since 0.16.0 the two layers of
   `AUTOMATION_GRAMMAR.md`: feature lines in brackets and effect lines of a tag and components, one
   line per rule, copied through as text by the converter and parsed by `assets/parse_rules.mjs` and
-  `build_foundry.mjs`, which fail on a line they do not know; an Effect cell may carry
+  `build_foundry.mjs`, which fail on a line they do not know; **`N/A` alone in the cell is Mike's
+  mark that the row needs no automation** (0.26.1: skipped by the grammar, an empty cell to the
+  build, never red, counted apart by the red-cell tool; a blank cell is a row not reached yet);
+  an Effect cell may carry
   `@Maneuver[Name]`, expanded by the step), **Traits** (0.14.0, optional, comma separated:
   `system.traits` on the Talent, so a spell can carry the trait a defender's `IFT: TRAIT(...)`
   names). **Retired, still read where a sheet has them:** `Aura` (0.13.0; an `[AURA ...]` block is
@@ -1814,16 +1835,21 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   `AID`, `ACTION`, `CONDITION`, `TEMPVIGOR`, `PREPARE`, `BORROW`; the spec is its Grammar
   Extensions sheet): read it for what a Maneuver says and what he wants of it, and write each in
   the shipped grammar's shape, one kind at a time, as Pay It Forward was.
-- **PHB v4.25 is synced (0.26.0, 2026-11-15), with fourteen tracked changes of Claude's waiting in
-  the edition itself for Mike** (`v4.25-sync-report.md`; the untouched file is in
-  `backup/pre-0.26.0/`): the Subordinate Maneuver rule appended to Chapter 8's Maneuvers
-  paragraph (his ask), the cover to v4.25, Preparing to two actions in three places, the
+- **PHB v4.25 is synced (0.26.0, 2026-11-15), and Mike has accepted the redline** (recorded with
+  0.26.1; `v4.25-sync-report.md`; the file as he first saved it is in `backup/pre-0.26.0/`). The
+  sync left fourteen tracked changes of Claude's in the edition itself: the Subordinate Maneuver
+  rule in Chapter 8 (his ask), the cover to v4.25, Preparing to two actions in three places, the
   Modifiers paragraph's lost opening, "an Endeavor", "Attack Threshold", "Train Endeavor", the
   Exploration trait, "Serrovanians" for a Golarion people, the Counter sentence struck, Prone's
-  −2 typed, and **his Supine rules** in the Conditions table with one sentence of Claude's
-  ("Supine is not Prone ...") as its own insertion. The stamp is of the redlined file: when he
-  accepts or rejects and saves, `build_all.mjs --check` reports the file changed and
-  `--check --accept-phb` records it again. **Supine is not built** (ruling 266): the system has
+  −2 typed, and his Supine rules in the Conditions table. He accepted all fourteen in Word the
+  same day and edited three places: the Subordinate rule now sits under its own "Subordinate
+  Maneuvers" heading (its words unchanged); the Supine cell is in his final wording WITHOUT
+  Claude's "Supine is not Prone ..." sentence, so whether a rule that names Prone also means
+  Supine is unsaid; and the Prone row gained "Stand ❶ to clear, or Roll Over ❶ to become Prone.",
+  whose last word reads like a slip for Supine (his to mend). The file was recorded again with
+  `build_all.mjs --check --accept-phb`, which is the routine whenever he saves the edition:
+  compare it with the committed file first (accepted or not, what else changed), follow anything
+  that moves a rule, then stamp. **Supine is not built** (ruling 266): the system has
   Prone alone; building it is a condition (Off-Guard, −2 to Attacks except melee against an
   adjacent creature, +2 Evade against ranged, no movement but forced) and two rows of his,
   **Roll Over ❶** (Motion: "Change from Prone to Supine, or from Supine to Prone") and Drop
@@ -1955,6 +1981,19 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-15 (N/A in an Automation cell, system 0.26.1; no ruling; planned in
+`dazzling-floating-simon.md`): an `N/A` cell painted red by the red-cell tool and listed in the
+build report as an unknown rule kind, `NA`, `N.A.` or `[N/A]` stopping the release build, and
+`N/A` typed into a world Item's Automation box stored as an error, now a line the grammar skips
+as it skips a comment, a cell the build reads as empty, and a count of its own in the red-cell
+tool's report; `N/A` beside rules, now a warning with the rules standing. Also recorded: Mike's
+saved v4.25 with all fourteen tracked changes accepted and three edits of his own, compared with
+the committed file and stamped again. Checked by 186 self-test checks, a dry run of the red-cell
+tool on the saved workbooks (152 cells, one already marked N/A, none of them called unreadable,
+nothing written), `node --check`, the style check (one failure, the em-dash in Dwarf Lore B13),
+`build_all.mjs --check`, and live in the test world. Mike's three workbooks were not converted,
+built, staged or written.
 
 Cleared 2026-11-15 (the PHB v4.25 sync, system 0.26.0; rulings 252 to 268 in
 `v4.25-sync-report.md`; planned in `dazzling-floating-simon.md`, Mike's decisions by question:
