@@ -7,6 +7,317 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.22.0 (2026-11-14): what a Maneuver gives, and the Talents that change it
+
+Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved: the
+release carries two Automation rule kinds and nothing else ("The release carries the kinds alone",
+below). Mike, 2026-11-14, showed two Human Talents whose cells were `# PROPOSED` notes and asked:
+"Do we have automation grammar that allows for this?" Patient Assistance: "If Successful, the
+Situation bonus provided by your Aid lasts until the end of the recipient's second upcoming
+Opportunity, or until the encounter ends, whichever happens first." Sure Assistance: "A critical
+failure on your Aid check grants no penalty to your ally." It did not, and the reason sat under
+both: **Aid's own result was not automated.** The Aid row's Automation cell was empty, the +1 to
++4 for the ally and the -1 on a Critical Failure were prose on the card, applied by hand, so a
+Talent had nothing to change. His answer to that was "Yes, plan it": Aid's result as the next rule
+kind, with the two Talents on top. Planned before any code moved (`dazzling-floating-simon.md` in
+the plans folder; his four decisions by question, below), the design mapped by two readers and
+attacked against the real code by a third, which replaced three parts of the first draft: the
+result is not a custom effect row (the sheet's own form would destroy it), it is not a `CHECK:`
+line (a Defense would fold it into the Threshold on the sheet, and a Lore would refuse it), and
+nothing counts Opportunities. The rulings are system decisions, numbered on from 222, because they
+change what a player is asked. A minor bump: the eighteenth and nineteenth rule kinds and the sixth
+hook point.
+
+### Mike's decisions (2026-11-14, by question)
+
+1. **The ally's Constellation is named separately** when the result is given, opening on the one
+   the aider rolled (ruling 226). "Named separately."
+2. **A button on the card**, pressed by the aider or the GM, never automatic (ruling 226). "A
+   button on the card."
+3. **Patient Assistance lengthens a Success and a Critical Success** (ruling 225). "Success and
+   Critical Success."
+4. **A Critical Failure's -1 has the same window as a bonus**, and Patient Assistance does not
+   lengthen it (rulings 224 and 225). "Same window as a bonus."
+
+And from his sheet (Carry the Plan's text): **one Aid result pending per recipient**; a new one
+replaces the old (ruling 227).
+
+### The rulings
+
+- **Ruling 223, the GIVE shape.** `GIVE: <value> <type>, chosen | <Constellation>; IF:
+  RESULT(<degree>)`, written on the Maneuver's own row, because it is the Maneuver's own result: a
+  signed whole number and a bonus type, then one descriptor, `chosen` (the Constellation is named
+  when the result is given) or a Constellation by name. Exactly one `IF: RESULT(...)` says which
+  degree gives it; `IF: RANK(...)` reads the owner's rank and `RANK(roll ...)` the rank rolled
+  (ruling 217), which is how Aid's "master with the check you attempted" is said. The first line
+  that holds for a degree is that degree's result. A `GIVE` in a Talent's cell or on a custom
+  effect row is refused.
+- **Ruling 224, the windows.** `UNTIL:` on a `GIVE` line: `giver opportunity` (until the giver's
+  next Opportunity begins; what a line has when it says nothing), `recipient opportunity <N>`
+  (through the end of the recipient's Nth upcoming Opportunity) and `encounter`. Every window also
+  ends with the encounter. A penalty has the window of its own line, which for Aid is the window a
+  bonus has.
+- **Ruling 225, the ALTER shape, and what it reads.** `ALTER: <Maneuver>.<property>; VALUE:
+  <value>`, as Mike drafted it. Read in this release: `duration` (every result's window),
+  `beneficial-duration` (the window of the results that give a bonus, so Patient Assistance
+  lengthens a Success and a Critical Success and leaves the penalty alone), and the four results
+  by degree with `VALUE: nothing`. Any other property is refused as not read yet. His `PRESERVE:`
+  is dropped: an ALTER changes one property and leaves the rest, and it never touches the roll, so
+  a Critical Failure that gives nothing is still a Critical Failure and still offers a Flare.
+- **Ruling 226, given by a button, to a character the giver names, for a Constellation named
+  then.** Nothing is given by the roll. The check's card carries a button for the giver's owner
+  and the GM; pressing it names the recipient (the one character the giver had targeted, in one
+  click, or any other from a dialog) and, for a `chosen` result, the Constellation, opening on the
+  one the giver rolled. Recipients are characters, never the giver; an adversary rolls flat and
+  holds no such line.
+- **Ruling 227, one pending result of a Maneuver to a recipient, used by the next roll with the
+  Constellation.** A new Aid result replaces the one pending, whoever gave it. The recipient's
+  next roll with the Constellation carries it and it is gone: a check, a Maneuver's check, an
+  attack, a Defense roll, an Initiative. It is never part of a Threshold on the sheet, and reading
+  a Threshold neither carries it nor uses it up.
+- **Ruling 228, the window is counted from the press, on the result itself.** The result remembers
+  the Combat, the Combatant its window watches and how many of that fighter's Opportunities have
+  begun; nothing else in the system counts them. Outside an encounter a result lasts until it is
+  used, replaced or removed. A result given in a Combat applies only while that Combat is the
+  encounter, and goes when it is deleted. The turn step a completed circuit of Passes takes before
+  the next round is nobody's Opportunity; a lone fighter's step to itself, when nobody else has an
+  action left, is one. A total that is itself the roll and writes nothing after it (the tracker's
+  own Initiative die, a kept road roll) does not read a pending result, since it could never use
+  it up.
+- **Ruling 229, the `gives` hook point**, the sixth, calculated in category, defined with the
+  `give` kind (ruling 119): `ruleGives(actor, context) -> { table, notes, marks, traces }`, the
+  results by degree at the rank rolled. The give it feeds is a triggered moment. One client writes
+  it: the GM's when one is connected, else the recipient's player's, and the presser's own only
+  when it is that one, so two presses of one card are served in turn. The event is the check
+  card's id, and the give card that names it is the record. A give that cannot be written writes
+  nothing, posts nothing and tells the presser.
+- **Ruling 230, the Effects tab.** A pending result is listed read-only, with who gave it and when
+  it ends, and removing one by hand is the GM's (a player does not strike a penalty). A `GIVE`
+  line on a copy of a Maneuver the character owns and a Talent's `ALTER` line are switched On /
+  Skip / Off like any effect line, and a Skip, or a custom effect that lasts the next roll, is
+  spent only by a roll whose degree the line changes: not by another degree, not when an earlier
+  line stood in its place, and not when the result it would change was already gone. A reroll
+  that lands on the degree spends it then.
+
+### The three cells
+
+For Mike to paste; the release does not write them ("The release carries the kinds alone").
+
+```
+Aid (data/maneuvers.xlsx, Basic Actions)
+[EFFECT GIVE: 2 situation, chosen; IF: RESULT(critical success); IF: RANK(roll <= expert)]
+[EFFECT GIVE: 3 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = master)]
+[EFFECT GIVE: 4 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = legendary)]
+[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]
+[EFFECT GIVE: -1 situation, chosen; IF: RESULT(critical failure)]
+
+Patient Assistance (data/ancestries.xlsx, Human)
+[EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]
+
+Sure Assistance (data/ancestries.xlsx, Human)
+[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]
+```
+
+### The kinds, the engine and the screens
+
+- **The grammar.** `GIVE` and `ALTER` are the last entries of `EFFECT_TAGS`
+  (`module/rules/effects.mjs`); `GIVE` is a modifier tag (a value and a type first), `ALTER` takes
+  one descriptor. Two components are new, `UNTIL:` and `VALUE:`, each read after its own tag alone
+  and refused by name after any other (`CHECK does not take UNTIL`), in the reader rather than in
+  the kinds, because `bonus` reads its components without a refusal list. `IF: RESULT(...)` is read
+  by `GIVE` as well as `REROLL`. `readUntil`, `untilWords` and the shared bonus-type reader
+  `readBonusType` (through 0.21.0 `bonus`'s own) are in `module/rules/operators.mjs`.
+- **The kinds.** `module/rules/kinds/give.mjs` and `module/rules/kinds/alter.mjs`. Stored: `{ kind:
+  "give", value, type, to: { name, slug, type }, when, until }` and `{ kind: "alter", to, property,
+  nothing, until, when }`. Every slip is refused with what to write; the cells Mike drafted for
+  later Talents (`Move Together.movement`, `Aid.beneficial-uses`, `Working Knowledge.proficiency`)
+  are told the property is not read yet, before the Maneuver is looked up, and his `VALUE:
+  no-effect`, `PRESERVE: original-degree` and `recipient-opportunity-end(1)` are each told the
+  word that reads.
+- **The pure half.** `module/rules/given.mjs`: `buildTable(lines, alterations)`, `sameGiven`,
+  `pendingEntry`, `pendingRule`, `givenCarrier`, `settle`, `appliesNow`, and the words for the
+  button, the card and the tab. It imports the operators alone, so the self-test drives it from
+  Node. In the table the more particular property stands over the general one, whichever line
+  comes first (`beneficial-duration` over `duration`), of two changes to one property the later
+  stands, and a result names only the Talent whose change it wears.
+- **The `gives` hook point.** `ruleGives` in `module/rules/engine.mjs` hands each kind two sets of
+  its rules, marked with where each came from: the rules on the Item behind the roll (owned or
+  not, since a basic Maneuver is used straight from the compendium) and the roller's own. `give`
+  reads the first, `alter` the second. The hook is asked once per entry, and the dispatcher builds
+  the table with and without each traced entry, so a Skip or a one-roll custom effect is spent
+  only by a degree it changes. What the die did not spend rides on the card (`given.unspent`), and
+  a reroll that lands on its degree files it.
+- **The roll.** `SwCheck.roll` (`module/dice/check.mjs`) asks `ruleGives` for a character's check
+  made from an action Item, once the die has landed, and `cardFlags` writes `flags.given`: the
+  whole table, the notes, the Maneuver, the ally targeted and the Combat. `SwItem#use` passes the
+  one targeted token as `ally` when it is a character other than the roller; it is not
+  `targetUuid`, which would make the ally the roll's other party to `MARKED`. A reroll copies the
+  table across.
+- **The card.** `module/documents/cards/give.mjs` draws the widget in the chat render pass, from
+  the card's flags and the chat log: **Give Wren +1 to Crafting** with **Other...**, or **Give the
+  result...**; "Sure Assistance: a Critical Failure gives nothing" when a Talent emptied the
+  degree; "Changed by Patient Assistance" under a changed result; "Given to Wren: +1 Situation to
+  Crafting" once it is given; and, with no Threshold, that there is nothing to give. The dialog
+  lists the characters on the scene and the world's player characters, and the Constellations the
+  recipient may roll, its Lores included.
+- **The give.** `applyGive`, on the recipient's one writer (`writerFor`: the active GM's client,
+  else the recipient's first active owner's) and one card at a time there, re-reads the check
+  card, checks the asker owns its roller, takes who and which Constellation from the request and
+  nothing else, writes the pending result (`writeGiven` in `module/rules/effects-state.mjs`) and
+  posts the give card, spoken by the giver: "Tess gives Wren a +1 Situation bonus to the next
+  Crafting roll, until Tess's next Opportunity." A press on any other client is `give:apply` over
+  the system socket, answered `give:done` or `give:refused`. A card that was thrown again gives
+  nothing, whether or not the reroll could mark it. A roll its roller may not read (a blind roll)
+  shows that roller no button.
+- **The pending result.** `flags.starwrought.rules.given.<maneuver>` on the recipient.
+  `collectRules` indexes it as a one-roll carrier; the `give` kind answers `modifiers` for it on
+  the roll's slug, and nothing for the sheet's Defense pass, a Threshold read or a Strike's
+  pairing; `markUpdates` removes it with the roll that used it.
+- **The windows.** `onTurnChange` (`module/documents/combat.mjs`) settles them as an Opportunity
+  ends and as one begins, on each Actor's responsible client (`settleGivenResults`). A lone
+  fighter's step to itself writes no Combat update, so nobody else hears it: `settleLoneStep`
+  settles this client's Actors and tells the others over the socket (`rules:step`), since late in
+  a round, when everyone else is out of actions, that is the usual step. `deleteCombat` clears the
+  Combat's results, wherever their holders stand, an unlinked token's Actor included.
+- **The Effects tab** lists the pending results under the effect lines, read-only, with a bin for
+  the GM, and the tracker's badge counts them. `EFFECT_KINDS` gains `give` and `alter`.
+
+### What else changed
+
+- **A reroll of a check made from a compendium Maneuver** read the Item with `fromUuidSync`, which
+  answers the pack's index entry, so the new card had no Item text to print and could fail to
+  render. `rerollCheck` (`module/documents/cards/reroll.mjs`) now awaits the document.
+- **`onTurnChange` reads who ended and who began before its first await.** Core hands the hook its
+  own `previous` and `current` records and writes over them on the next turn change; the round's
+  end and the Pass count are now passed copies.
+- **The components message names the tag's own components** after `GIVE` and `ALTER` ("after the
+  tag come VALUE: and IF:"), so a part such as `PRESERVE:` is not sent looking for a `FOR`.
+- **`module/rules/README.md`** said of triggered hook points "None exists yet"; three did. It now
+  names them.
+- **A `reroll` rule's button was drawn on a card its viewer could not read.** On a blind roll the
+  roller's own client drew "Quick Tongue: reroll", which says the degree the card hides. The
+  kinds' offers and the Give button are now left off a card whose content the viewer may not see.
+
+### What the review found
+
+Two independent reviewers read the diff, one the grammar and the engine, one the Foundry side.
+Fourteen findings, none high, no crash and no hole in who may give what; twelve are mended and
+two stand as stated limits.
+
+- **A lone fighter's step missed other players' characters.** When the last fighter with actions
+  ended an Opportunity from a player's client, nothing told the GM's client, so a result that
+  fighter had given did not close. Now told over the socket (`rules:step`).
+- **"Already given" was checked, then written, in two steps.** The GM's own press and a player's
+  relayed one could both land. Now one client writes for a recipient, one card at a time.
+- **The tracker's own Initiative die carried a pending result and never removed it**, so the next
+  roll carried it again. It no longer reads one (`leavePending`); a kept road roll likewise.
+- **A reroll used a Skip, or a one-roll change, without spending it**, and three cases spent one
+  that had changed nothing: an alteration of a result another Talent had already emptied, the
+  second of two rows emptying one degree, and a Skip on a line an earlier line shadowed. The
+  dispatcher now compares the table with and without the entry, and the card keeps what is owed.
+- **A Constellation named in a cell read with no resolver became `chosen` in the table.** Latent
+  (every caller passes a resolver); mended in `buildTable`.
+- **Two changes to one Maneuver depended on the order of the lines**, and the card named a Talent
+  whose change had been written over. Now by property, as "The pure half" says.
+- **A message advised a line the parser refuses** (`GIVE: 1 situation, chosen`, with no degree).
+- **A rerolled card could keep its Give button** when the reroll's client could not mark it.
+- **An unlinked token's Actor** was never settled or cleared when it was not in the fight, and a
+  token's own world Actor was offered as a recipient. A token and the Actor it is drawn from are
+  one body now.
+- **A blind roll's Give button** said the degree to the roller who may not see it (above).
+- **A result held over from another encounter was counted as active** on the tab and the badge.
+- **Standing, and stated under "Known limits":** a GM stepping the turn backwards and forwards
+  counts an Opportunity twice; and on a table with no GM the note of a circuit's last step is set
+  too late to matter on the client that counts the Passes, which costs nothing there.
+
+### Not built, and said so
+
+- **Carry the Plan's two uses** of one result, and **Pay It Forward's** use of a pending result by
+  a second character: a pending result is one result, used once, by its holder.
+- **The other ALTER properties** Mike has drafted (a Maneuver's movement, range, limit, uses,
+  slots, a Talent's proficiency): each is refused as not read yet and comes with its Talent.
+- **A Condition given by a result**, a result given by **a Maneuver that rolls no check**, and
+  **an adversary as the recipient**.
+- **A Threshold that Aid opens on** ("typically 15"): it is still typed in the roll dialog. It
+  would be a third kind in one release; it follows as its own small step when Mike says so.
+- **Known limits.** With no GM connected and the recipient's player offline, nobody can write the
+  result, and the presser is told. With no GM connected a player's client cannot know that a
+  circuit of Passes completed, and counts the turn step before the next round as an Opportunity;
+  and two presses of one card for two recipients owned by different players are served by two
+  clients and can both land. A GM stepping the turn backwards and forwards counts an Opportunity
+  twice, so a window of two Opportunities or more can close one early. The tracker's own
+  Initiative die does not read a pending result: roll Initiative from the sheet or the party's
+  grid to use one. A result already given from a card that is then rerolled stays with whoever
+  got it; the reroll gives its own.
+- **Found and left alone:** Aid's ❶ is not spent by the system (the shipped row is no Reaction
+  and carries no rule that acts on use), so the pip is clicked by hand, as it was.
+
+### Checked
+
+- `node assets/test_rules.mjs`: 153 checks pass, 20 of them new: both kinds' forms, stored shapes
+  and every refusal by its exact message; `UNTIL` and `VALUE` refused by name after every other
+  tag; the table by degree and rank with each ALTER, both, Off and Skip; the precedence of two
+  changes; what spends a Skip or a one-roll effect and what does not; `settle` for a giver's and a
+  recipient's window, a lone fighter included; the pending result on a check, an attack, a Defense
+  roll, an Initiative and a Lore, and its silence for the sheet's pass, a Threshold read, a
+  Strike's pairing, the tracker's die and another Combat; the mark that removes it.
+- `node --check` on every changed module; `node assets/build_all.mjs --check` (the thirteen
+  stamps, the barrel, the grammar-document gate); `node assets/build_foundry.mjs --no-compile`
+  over the committed JSON (one document moves, the Grammar journal); `python
+  assets/build_features_docx.py`. `python assets/check_style.py` fails on one cell, the em-dash in
+  Dwarf Lore B13 of Mike's uncommitted workbook, and on nothing of this release.
+- Two independent reviewers ("What the review found", above).
+- Live, in the test world, with a GM tab and a player tab, a Combat of Tess, Wren and a Bandit, a
+  world copy of Aid carrying the five lines (a world basic Maneuver of the same name replaces the
+  printed one on every Actions tab, so the roll is made from an Item the roller does not own, as
+  the shipped one will be) and world copies of the two Talents on Tess:
+  - the cells read on the client, and the Item sheet's As read lines;
+  - the player's real path: target Wren, Actions tab, Aid, the picker, the roll dialog with a
+    Threshold of 15, and the card with **Give Wren +1 to Crafting** and **Other...**;
+  - every degree: a Success +1, a Critical Success +2 at an Untrained roll, a Failure with no
+    widget, a Critical Failure -1 with the Flare offer; no Threshold, the note; nobody targeted,
+    **Give the result...**;
+  - the dialog: the recipients, the Constellations opening on the one rolled, Guard chosen;
+  - the pending line on the Effects tab (seen), in the tracker's badge, left intact by a sheet
+    edit that rewrote the custom effects, removed by the GM's bin;
+  - used once: a Stealth roll leaves a Crafting result alone, the Crafting roll carries "Aid from
+    Tess +1" and the line is gone, the next roll has none; a Guard result leaves the Guard
+    Threshold on the sheet and a Threshold read unchanged and unspent, and the Guard roll uses it;
+    a reroll of the ally's roll keeps the +1 it was made with;
+  - a second Aid replaces the first, and the card says so;
+  - the windows: the default closes as the aider's next Opportunity begins; Patient Assistance
+    lasts through the end of the ally's second upcoming Opportunity; the turn step a circuit of
+    Passes takes is not counted; a lone fighter's step, pressed by a player, closes a result on a
+    character that player does not own; the Combat's end clears every result given in it, one
+    held by a character outside the fight included;
+  - Sure Assistance: no button, the note, the Flare offer still there; set to Skip, a Success
+    leaves it owed, and the reroll that lands on a Critical Failure gives the -1 and spends it;
+  - a reroll from a Failure to a Success offers its own result, with the Item's text on the new
+    card; the old card, a card given already, the roller, an adversary and a Constellation the
+    recipient cannot roll are each refused; two gives of one card at once, one lands;
+  - the player's tab: the button on the player's own roller's card and none on another's (a
+    forged press refused); the player's give written by the GM's client; a character the player
+    does not own, with a GM connected and with none (told, nothing written, the button stays); a
+    blind roll shows its roller no button and the GM the button; the tracker's Initiative total
+    leaves a pending Awareness bonus out.
+
+### The release carries the kinds alone
+
+`data/maneuvers.xlsx` and `data/ancestries.xlsx` are Mike's, mid-edit by hand, and were not
+converted, built, staged or written: the three cells above are his to paste, the pack content did
+not move, and the kinds were proven live on a world copy of Aid carrying the five lines and world
+copies of the two Talents. Those three were left in the test world on purpose, with tokens for
+Tess, Wren and a Bandit, so the Give button can be tried there before the sheets build; the world
+Item named "Aid" shadows the pack's Aid in that world and should be deleted once the shipped row
+carries the lines. Everything reported for his sheets in the 0.21.0 entry still stands (the
+em-dash in Dwarf Lore B13 that fails the style check, the 17 Human Talents naming Maneuvers with no
+row, the semicolon in Impossible Improvisation's Prerequisites). Of the sixteen `# PROPOSED` cells,
+two now have a line that reads (Patient Assistance, Sure Assistance, in the forms above; his
+drafted values do not read and say what does); the eleven other `ALTER` cells will show red with
+"the property is not read yet" when uncommented.
+
+---
+
 ## 0.21.0 (2026-11-10): the USE tag and the substitute kind
 
 Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved: the

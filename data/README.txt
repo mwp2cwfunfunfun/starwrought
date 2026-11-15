@@ -155,6 +155,8 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               [EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]    throw a check's die again
               [EFFECT IGNORE: terrain, mud, shallow water]                difficult terrain costs nothing
               [EFFECT USE: Presence, Origin, aid]                         a check made with other terms
+              [EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]     on a MANEUVER'S row: what a result gives an ally
+              [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]        a talent changes what a Maneuver gives
               [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]   the player's checkbox
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
         trailing period inside a block is tolerated. The converter copies the cell through as text
@@ -185,6 +187,16 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         offered in the roll dialog only when the roll is made from that Maneuver's Item, ticked
         when its total is strictly higher, one to a roll; checks only, characters only; the line
         has On / Skip / Off on the sheet's Effects tab.
+        ALTER (0.22.0; rulings 223 to 230) is a talent's change to one property of what a Maneuver
+        GIVES another character (the GIVE lines on the Maneuver's own row; see the action sheets,
+        below): [EFFECT ALTER: <Maneuver>.<property>; VALUE: <value>].
+              [EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]   Patient Assistance
+              [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]                      Sure Assistance
+        The properties read are duration and beneficial-duration (VALUE a window: giver opportunity,
+        recipient opportunity <N>, encounter) and the four results, critical-success, success,
+        failure and critical-failure (VALUE nothing). Any other property is refused as not read yet.
+        There is no PRESERVE: an ALTER changes one property and leaves the rest. A GIVE line in a
+        talent's cell is refused: it belongs on the Maneuver's row.
         RED CELLS (2026-11-08; Mike: "highlight those cells in red"): python assets/highlight_automation.py
         paints every Automation cell the grammar cannot read, and every Effect cell whose
         @Maneuver[Name] names no row, solid red (FF9999) with a cell comment giving the grammar's
@@ -322,6 +334,20 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     Proficiency Bonus is offered on a roll made from the action's row and on no other. An action
     whose Effect says "Relevant Check" and names no check opens the Relevant Check picker when it
     is used, carrying the action, so Aid's roll is Aid's (0.10.0).
+    GIVE (0.22.0; rulings 223 to 230) is written HERE, on the action's own row, and nowhere else:
+    what a result of the action's check gives ANOTHER character, one line for each degree that
+    gives something. Aid's row, whole:
+          [EFFECT GIVE: 2 situation, chosen; IF: RESULT(critical success); IF: RANK(roll <= expert)]
+          [EFFECT GIVE: 3 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = master)]
+          [EFFECT GIVE: 4 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = legendary)]
+          [EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]
+          [EFFECT GIVE: -1 situation, chosen; IF: RESULT(critical failure)]
+    A signed value and a bonus type, then "chosen" (the Constellation is named when the result is
+    given) or a Constellation by name; exactly one IF: RESULT(<degree>); IF: RANK(roll ...) is the
+    rank rolled, and the first line that holds for a degree is its result; UNTIL: <window> sets
+    how long it may be used (giver opportunity when left out). In Foundry the check's card carries
+    a Give button for the roller and the GM; the recipient's next roll with the Constellation
+    uses the result. A talent changes it with ALTER (the tree sheets' Automation, above).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.

@@ -32,6 +32,7 @@
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { isElected, responsibleFor } from "../helpers/authority.mjs";
+import { settleGivenResults, settleLoneStep } from "../rules/effects-state.mjs";
 import { setting } from "../helpers/settings.mjs";
 import { registerCardButtons } from "../helpers/cards.mjs";
 import {
@@ -79,7 +80,11 @@ export class SwCombatant extends Combatant {
     const mod = SwCheck.previewTotal(actor, {
       kind: "initiative",
       slug: this.initiativeConstellation,
-      modifiers: this.initiativeModifiers.map(m => ({ ...m }))
+      modifiers: this.initiativeModifiers.map(m => ({ ...m })),
+      // This total IS the roll, and nothing is written after it: a result pending on the
+      // character (0.22.0, an ally's Aid) is left where it is, since the tracker's die could
+      // carry it and never use it up. Roll Initiative from the sheet to use one.
+      leavePending: true
     });
     return `1d20 ${mod < 0 ? "-" : "+"} ${Math.abs(mod)}`;
   }
@@ -279,7 +284,13 @@ export class SwCombat extends Combat {
     // raised shield coming down, a Prepared card) runs here on this client; ending the round for a
     // lone holder is an explicit Pass or the GM's Next Round.
     if (next === turn) {
-      if (this.combatant) await beginOpportunity(this, this.combatant);
+      if (this.combatant) {
+        // No other client hears this step, so the windows of pending results are settled from
+        // here (0.22.0): one Opportunity of the lone holder's ended and its next began, on this
+        // client for the Actors it is responsible for and, told over the socket, on every other.
+        await settleLoneStep(this, this.combatant.id);
+        await beginOpportunity(this, this.combatant);
+      }
       return this;
     }
 
@@ -432,6 +443,11 @@ export function registerCombatTracking() {
  */
 async function onTurnChange(combat, previous, current) {
   if (!(combat instanceof SwCombat) || !combat.started) return;
+  // Whose Opportunity ended and whose begins, read before the first await: core hands this hook
+  // its own `previous` and `current` records and writes over them on the next turn change.
+  const endedId = previous.combatantId ?? null;
+  const beganId = current.combatantId ?? null;
+  const endedAt = { round: previous.round ?? 0, turn: previous.turn ?? null };
   try {
     const roundDelta = (current.round ?? 0) - (previous.round ?? 0);
     if (roundDelta < 0) {
@@ -439,22 +455,53 @@ async function onTurnChange(combat, previous, current) {
       return;
     }
     if (roundDelta > 0) {
-      if (previous.round > 0) await endRound(combat, previous.round);
-      await startRound(combat, current.round);
+      // The step a circuit of Passes took on its way to this round was nobody's Opportunity
+      // (below), so nothing ended with it.
+      const stepped = roundEndSteps.get(combat.id);
+      roundEndSteps.delete(combat.id);
+      const real = !(stepped && (stepped.combatantId === endedId) && (stepped.round === endedAt.round) && (stepped.turn === endedAt.turn));
+      if (endedId && real) await settleGivenResults(combat, { ended: endedId });
+      if (endedAt.round > 0) await endRound(combat, endedAt.round);
+      await startRound(combat, endedAt.round + roundDelta);
     } else {
       if (!movedForward(combat, previous, current)) return;
-      if (previous.combatantId && (previous.combatantId !== current.combatantId) && isElected()) {
-        const ended = await settleOpportunity(combat, previous);
-        // nextRound() is on its way; the turn change it causes does the rest.
-        if (ended) return;
+      // 0.22.0: a pending result's window may close as an Opportunity ends (rules/effects-state.mjs).
+      if (endedId) await settleGivenResults(combat, { ended: endedId });
+      if (endedId && (endedId !== beganId) && isElected()) {
+        const ended = await settleOpportunity(combat, { ...endedAt, combatantId: endedId });
+        // nextRound() is on its way; the turn change it causes does the rest. The combatant the
+        // turn stepped to on the way never had this Opportunity: remember the step, so the round
+        // change does not read it as one that ended.
+        if (ended) {
+          roundEndSteps.set(combat.id, { combatantId: beganId, round: current.round ?? 0, turn: current.turn ?? null });
+          return;
+        }
       }
     }
-    const combatant = combat.combatants.get(current.combatantId);
-    if (combatant) await beginOpportunity(combat, combatant);
+    const combatant = combat.combatants.get(beganId);
+    if (combatant) {
+      // ... and may count, or close, as one begins.
+      await settleGivenResults(combat, { began: beganId });
+      await beginOpportunity(combat, combatant);
+    }
   } catch (err) {
     console.error("STARWROUGHT | combat turn change failed", err);
   }
 }
+
+/**
+ * The turn step a completed circuit of Passes took before the round ended, by Combat id, on the
+ * elected client (0.22.0). `settleOpportunity` answers a full circuit with `nextRound()`, but the
+ * turn has by then moved to the next combatant, who gets no Opportunity from it: the elected
+ * client returns before beginning one. The round change that follows names that combatant as the
+ * one whose Opportunity ended, and a pending result's window, which counts Opportunities, must not
+ * read it so. With no GM connected the other clients cannot know the circuit completed and do
+ * count the step, which is one of that table's limits; and on such a table core fires this hook
+ * for the round change before the elected client has set the entry (a GM's client awaits its turn
+ * events first), which costs nothing, since that client never counted the step as begun and an
+ * end with nothing counted closes no window.
+ */
+const roundEndSteps = new Map();
 
 /**
  * Did the turn go forward? Within a round, forward is a higher turn index, or the wrap from the
@@ -594,6 +641,7 @@ async function endRound(combat, round) {
  */
 async function onCombatEnds(combat) {
   localStreaks.delete(combat.id);
+  roundEndSteps.delete(combat.id);
 }
 
 /**

@@ -30,7 +30,7 @@ import { usableByRule } from "../rules/engine.mjs";
 // CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0), its state
 // switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
 import { effectsContext, armClaimLine } from "../helpers/effects.mjs";
-import { cycleRuleState, addEffect, removeEffect } from "../rules/effects-state.mjs";
+import { cycleRuleState, addEffect, removeEffect, removeGiven } from "../rules/effects-state.mjs";
 
 /**
  * The `bonus` rules on a character that touch a Defense but need the moment to be read (0.15.0):
@@ -160,7 +160,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       removeEffect: SwCharacterSheet.#onRemoveEffect,
       // 0.17.0: a claim line's arm button, and the Grammar button that opens the grammar's journal.
       armClaimLine: SwCharacterSheet.#onArmClaimLine,
-      rulesJournal: SwCharacterSheet.#onRulesJournal
+      rulesJournal: SwCharacterSheet.#onRulesJournal,
+      // 0.22.0: the GM's Remove on a result pending on the character.
+      removeGiven: SwCharacterSheet.#onRemoveGiven
     }
   };
 
@@ -1209,6 +1211,16 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const id = target.closest("[data-effect-id]")?.dataset.effectId;
     if (!id) return false;
     return removeEffect(this.document, id);
+  }
+
+  /**
+   * Remove a result pending on the character (0.22.0): the GM's control on its line of the Effects
+   * tab; `removeGiven` refuses anyone else.
+   */
+  static async #onRemoveGiven(event, target) {
+    const key = target.closest("[data-given-key]")?.dataset.givenKey;
+    if (!key) return false;
+    return removeGiven(this.document, key);
   }
 
   /**

@@ -48,7 +48,7 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { RANKS, THREATS, DEGREES, isLoreSlug, flagKey, ruleCarrierKey, slugify, plainName } from "../config.mjs";
+import { RANKS, THREATS, DEGREES, isLoreSlug, flagKey, ruleCarrierKey, slugify, plainName, LEGACY_BONUS_TYPES } from "../config.mjs";
 
 /**
  * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), refused since 0.17.0. The
@@ -59,7 +59,85 @@ export const OPERATORS = Object.freeze(["IF", "FOR", "WHILE", "AGAINST", "SEEN",
 
 /** A fresh operator record, the shape every reader fills (the effect reader's components). */
 export function emptyOps() {
-  return { when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false, claim: null, marked: false };
+  return {
+    when: null, for: null, while: null, against: null, limit: null, different: false, visible: false, seen: false, claim: null, marked: false,
+    // 0.22.0: `UNTIL:` (a GIVE line's window, `{ who, n }`) and `VALUE:` (what an ALTER line's
+    // property becomes, the text as written). The effect reader lets each be written on its own
+    // tag alone, so no other kind ever sees one filled.
+    until: null, set: null
+  };
+}
+
+/** The three type words of PHB v3.3, lower-cased: where a bonus or penalty comes from. */
+export const BONUS_TYPES = Object.freeze(["situation", "condition", "gear"]);
+
+/**
+ * The bonus type word, checked; the retired words name the current one. One reading for `bonus`
+ * and `give` (0.22.0; through 0.21.0 it was `bonus`'s own).
+ * @param {string} word
+ * @returns {string}  One of BONUS_TYPES.
+ */
+export function readBonusType(word) {
+  const lower = String(word ?? "").toLowerCase();
+  if (BONUS_TYPES.includes(lower)) return lower;
+  if (Object.hasOwn(LEGACY_BONUS_TYPES, lower)) {
+    throw new RuleSyntaxError(`write ${titled(LEGACY_BONUS_TYPES[lower])}, not ${lower}: the book renamed the types in v3.3`);
+  }
+  if (lower === "untyped") throw new RuleSyntaxError("no Talent bonus is untyped; name situation, condition or gear after the value");
+  throw new RuleSyntaxError(`"${word}" is not a bonus type: write situation, condition or gear`);
+}
+
+/** The shapes a window is written in, for messages. */
+const UNTIL_SHAPES = "`giver opportunity`, `recipient opportunity <N>` or `encounter`";
+
+/**
+ * A window (0.22.0): how long a result a Maneuver GIVES stays pending on its recipient. Written
+ * after `UNTIL:` on a GIVE line and after `VALUE:` on an ALTER line that changes a duration.
+ *
+ *   giver opportunity [N]       until the giver's Nth next Opportunity BEGINS (N is 1 when left out)
+ *   recipient opportunity [N]   through the END of the recipient's Nth upcoming Opportunity
+ *   encounter                   until the encounter ends
+ *
+ * Every window also ends with the encounter; outside one, a result lasts until it is used,
+ * replaced or removed.
+ * @param {string} text
+ * @returns {{who: "giver"|"recipient"|"encounter", n: number}}
+ */
+export function readUntil(text) {
+  const words = String(text ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if ((words.length === 1) && (words[0] === "encounter")) return { who: "encounter", n: 0 };
+  if (["giver", "recipient"].includes(words[0]) && (words[1] === "opportunity") && (words.length <= 3)) {
+    const n = (words.length === 3) ? Number(words[2]) : 1;
+    if (Number.isInteger(n) && (n >= 1) && (n <= 9)) return { who: words[0], n };
+    throw new RuleSyntaxError(`"${words[2]}" is not a count of Opportunities: write a whole number from 1 to 9, as in \`recipient opportunity 2\``);
+  }
+  throw new RuleSyntaxError(`a window is written ${UNTIL_SHAPES}, not "${String(text ?? "").trim()}"`);
+}
+
+/** "second", "third": the ordinal a window's words print; a plain number above ninth. */
+function ordinal(n) {
+  return ["", "next", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth"][n] ?? `${n}th`;
+}
+
+/**
+ * A window in words, for a summary: "until the giver's next Opportunity", "through the
+ * recipient's second upcoming Opportunity", "until the encounter ends". `giver` and `recipient`
+ * may be names, so a card can say "until Tess's next Opportunity".
+ * @param {{who: string, n: number}|null} until
+ * @param {{giver?: string, recipient?: string}} [names]
+ * @returns {string}
+ */
+export function untilWords(until, { giver = "the giver", recipient = "the recipient" } = {}) {
+  const possessive = name => `${name}'s`;
+  if (!until || (until.who === "giver")) {
+    const n = Math.max(1, Number(until?.n) || 1);
+    return n === 1 ? `until ${possessive(giver)} next Opportunity` : `until ${possessive(giver)} ${ordinal(n)} Opportunity from now`;
+  }
+  if (until.who === "recipient") {
+    const n = Math.max(1, Number(until.n) || 1);
+    return n === 1 ? `through ${possessive(recipient)} next Opportunity` : `through ${possessive(recipient)} ${ordinal(n)} upcoming Opportunity`;
+  }
+  return "until the encounter ends";
 }
 
 /** The degree words `IF(Outcome=...)` reads, squeezed of spaces and lower-cased, to the keys of SW.DEGREES. */
@@ -327,7 +405,7 @@ export function readDegree(word) {
  * @returns {object}            The same ops.
  */
 export function refuseComponents(ops, tag, allowed) {
-  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED" };
+  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE" };
   const empty = emptyOps();
   for (const [key, value] of Object.entries(ops ?? {})) {
     if (allowed.includes(key)) continue;
@@ -343,7 +421,7 @@ export function refuseComponents(ops, tag, allowed) {
  */
 export function refuseOutcome(ops) {
   if (Array.isArray(ops?.when) && ops.when.some(w => w?.outcome)) {
-    throw new RuleSyntaxError("IF(Outcome=...) is only read by a kind that acts after the die (reroll)");
+    throw new RuleSyntaxError("IF(Outcome=...) is only read by a kind that acts after the die (reroll, give)");
   }
 }
 

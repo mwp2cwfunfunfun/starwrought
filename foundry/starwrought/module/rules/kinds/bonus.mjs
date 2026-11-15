@@ -55,13 +55,11 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled, readTargetName } from "../operators.mjs";
-import { slugify, plainName, LEGACY_BONUS_TYPES, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
+import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled, readTargetName, readBonusType } from "../operators.mjs";
+import { slugify, plainName, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
 
 const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
 
-/** The three type words of PHB v3.3, lower-cased. */
-const TYPES = Object.freeze(["situation", "condition", "gear"]);
 
 /**
  * The target words that are not a Constellation or a Maneuver: a scope of rolls. Keyed by the
@@ -86,16 +84,8 @@ function signed(value) {
 
 /* -------------------------------------------- */
 
-/** The type word, checked; the retired words name the current one. */
-function readType(word) {
-  const lower = String(word ?? "").toLowerCase();
-  if (TYPES.includes(lower)) return lower;
-  if (Object.hasOwn(LEGACY_BONUS_TYPES, lower)) {
-    throw new RuleSyntaxError(`write ${titled(LEGACY_BONUS_TYPES[lower])}, not ${lower}: the book renamed the types in v3.3`);
-  }
-  if (lower === "untyped") throw new RuleSyntaxError("no Talent bonus is untyped; name situation, condition or gear after the value");
-  throw new RuleSyntaxError(`"${word}" is not a bonus type: write situation, condition or gear`);
-}
+/** The type word, checked; the retired words name the current one (shared with `give` since 0.22.0). */
+const readType = readBonusType;
 
 /**
  * The target: a scope word, else the caller's resolver, else the slug made here. A Maneuver's

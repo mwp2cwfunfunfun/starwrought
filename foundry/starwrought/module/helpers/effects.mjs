@@ -16,7 +16,8 @@
 
 import * as SW from "../config.mjs";
 import { summarize } from "../rules/grammar.mjs";
-import { EFFECT_CARRIER_TYPE, ruleStateKey } from "../rules/engine.mjs";
+import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults } from "../rules/engine.mjs";
+import { pendingRule, pendingWindowWords, appliesNow } from "../rules/given.mjs";
 import { stateOf, RULE_STATES } from "../rules/effects-state.mjs";
 import { claimsOf, isArmed } from "../rules/claims.mjs";
 
@@ -27,9 +28,12 @@ export { armClaim as armClaimLine } from "../rules/claims.mjs";
  * The kinds whose rules are effects: something the engine does on a roll, a Condition, a Use or a
  * card. The feature kinds (trait, size, speed, vigor, sense, language, maneuver, talent, choice)
  * describe what owning a Talent makes the character and are not switched; `grant` is spent at
- * creation and `aura` is a ring on the map with its own toggle.
+ * creation and `aura` is a ring on the map with its own toggle. Since 0.22.0 `give` (the GIVE
+ * lines on a copy of a Maneuver the character owns) and `alter` (a Talent's change to what a
+ * Maneuver gives) are switched as any line; a result PENDING on the character is a `give` rule
+ * too, on a carrier of its own, and is listed apart without a switch (`givenContext`).
  */
-export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute"]);
+export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter"]);
 
 const L = key => game.i18n.localize(key);
 const F = (key, data) => game.i18n.format(key, data);
@@ -122,10 +126,13 @@ export function effectGroups(actor) {
   const claims = claimsOf(actor);
   for (const { rule, item } of index.all ?? []) {
     if (!EFFECT_KINDS.includes(rule?.kind)) continue;
+    // A result a Maneuver gave this character (0.22.0) is no line of the character's own: it has
+    // no switch and is listed apart (`givenContext`).
+    if (item?.given) continue;
     groupFor(item).rows.push(lineRow(actor, item, rule, { claims }));
   }
   for (const { rule, item, reason } of index.unknown ?? []) {
-    if (item?.type !== EFFECT_CARRIER_TYPE) continue;
+    if ((item?.type !== EFFECT_CARRIER_TYPE) || item.given) continue;
     groupFor(item).rows.push(lineRow(actor, item, rule, { error: String(reason ?? rule?.error ?? "") }));
   }
   for (const group of groups.values()) group.rows.sort((a, b) => a.line - b.line);
@@ -156,12 +163,17 @@ export function effectsContext(actor) {
     };
   });
   const items = groups.filter(g => !g.custom);
-  const active = groups.flatMap(g => g.rows).filter(r => !r.error && (r.state !== "off"));
+  const given = givenContext(actor);
+  // A result held over from another encounter is listed, dimmed, and not counted: no roll carries it.
+  const active = groups.flatMap(g => g.rows).filter(r => !r.error && (r.state !== "off")).length + given.filter(g => !g.stale).length;
   return {
     groups: items,
     custom,
-    count: active.length,
-    countLabel: active.length === 1 ? L("STARWROUGHT.Effects.activeOne") : F("STARWROUGHT.Effects.active", { n: active.length }),
+    // 0.22.0: what Maneuvers have given this character and it has not yet used.
+    given,
+    canRemoveGiven: !!game.user?.isGM,
+    count: active,
+    countLabel: active === 1 ? L("STARWROUGHT.Effects.activeOne") : F("STARWROUGHT.Effects.active", { n: active }),
     hasAny: items.length > 0,
     durations: {
       always: L("STARWROUGHT.Effects.durationAlways"),
@@ -187,5 +199,42 @@ export function effectsBadge(actor) {
       lines.push(`${group.name}: ${row.summary}${row.state === "skip" ? ` ${L("STARWROUGHT.Effects.skipped")}` : ""}`);
     }
   }
+  // A pending result (0.22.0) is live until a roll uses it or its window closes; one held over
+  // from another encounter is on the sheet for the GM to remove and is not live.
+  for (const row of givenContext(actor)) {
+    if (!row.stale) lines.push(`${row.name}: ${row.summary}, ${row.window}`);
+  }
   return lines.length ? { count: lines.length, lines } : null;
+}
+
+/**
+ * The results pending on a character (0.22.0), for the Effects tab and the tracker's badge: what a
+ * Maneuver gave it (Aid's bonus from an ally) and it has not yet used, each with who gave it, what
+ * it is a bonus to, and when it ends. Read-only: a result has no switch (it is used by not being
+ * declined, and a penalty is not the holder's to strike), and Remove is the GM's. A result of a
+ * Combat that is not the one viewed is listed as held over, since no roll will carry it.
+ * @param {Actor} actor
+ * @returns {Array<{key: string, name: string, summary: string, window: string, stale: boolean, tooltip: string}>}
+ */
+export function givenContext(actor) {
+  const out = [];
+  for (const entry of givenResults(actor)) {
+    const rule = pendingRule(entry);
+    const stale = !appliesNow(entry, encounterNow());
+    out.push({
+      key: String(entry.id),
+      name: String(entry.label ?? ""),
+      summary: summarize(rule),
+      window: stale ? L("STARWROUGHT.Given.heldOver") : pendingWindowWords(entry, { giver: entry.byName || undefined, recipient: actor?.name }),
+      stale,
+      tooltip: F("STARWROUGHT.Given.lineTooltip", { maneuver: entry.maneuverName ?? "", giver: entry.byName ?? "" })
+    });
+  }
+  return out;
+}
+
+/** The viewed Combat, as the rules' encounter context reads it; nothing to read from Node. */
+function encounterNow() {
+  const combat = globalThis.game?.combat ?? null;
+  return { combat: combat?.id ?? null, round: combat?.round ?? 0 };
 }

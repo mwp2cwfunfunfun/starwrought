@@ -20,7 +20,7 @@
 import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 // CHARACTER EFFECTS (0.16.0): the two marks the state switch and a one-roll custom effect ask for.
-import { markUpdates } from "./effects-state.mjs";
+import { markUpdates, onStepSocket } from "./effects-state.mjs";
 
 /** Is this token one the rules count? */
 function eligible(token) {
@@ -212,6 +212,9 @@ function relayMarks(actor, marks) {
  * @param {string} [senderId]  The emitting user's id, supplied by the server.
  */
 export async function onRulesSocket(message, senderId) {
+  // `rules:step` (0.22.0) is told to every client, not addressed to one: a lone fighter's next
+  // Opportunity, which no Combat update announces (./effects-state.mjs, `settleLoneStep`).
+  if (message?.type === "rules:step") return onStepSocket(message, senderId);
   if (!message || (typeof message !== "object") || (message.to !== game.user.id)) return;
   if ((message.type !== "rules:marks") || !((typeof senderId === "string") && game.users.has(senderId))) return;
   const actor = resolveActor(message.actorUuid);

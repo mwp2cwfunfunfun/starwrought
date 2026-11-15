@@ -28,8 +28,15 @@ import {
   KIND_WORD, kindOf, knownKinds
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleStateKey, usableByRule, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
-import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName } from "../foundry/starwrought/module/rules/operators.mjs";
+import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType } from "../foundry/starwrought/module/rules/operators.mjs";
+// 0.22.0: what a Maneuver gives. The table, the pending result and the window are pure data, and
+// the mark that removes a used result is read off a plain actor.
+import {
+  buildTable, sameGiven, pendingEntry, pendingRule, givenCarrier, settle, appliesNow, isGivenKey, givenFlagKey,
+  resultWords, windowWords, pendingWindowWords, ALTER_PROPERTIES
+} from "../foundry/starwrought/module/rules/given.mjs";
+import { markUpdates } from "../foundry/starwrought/module/rules/effects-state.mjs";
 // 0.17.0: the effect reader behind every tag (the operator reader's successor) and the feature
 // keyword list, each checked on its own as readLine was.
 import { readEffectLine, EFFECT_TAGS } from "../foundry/starwrought/module/rules/effects.mjs";
@@ -64,7 +71,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["aura", "bonus", "choice", "grant", "ignore", "language", "maneuver", "mark", "prevent", "reroll", "sense", "size", "speed", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "prevent", "reroll", "sense", "size", "speed", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -678,7 +685,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -1679,7 +1686,12 @@ const EFFECT_LINES = [
   // 0.21.0: the substitution, whole and with one term kept.
   "USE: Presence, Origin, aid",
   "USE: same, Origin, aid; IF: RANK(Origin >= expert); LIMIT: encounter",
-  "USE: Presence, same, aid; IF: RANK(roll = untrained)"
+  "USE: Presence, same, aid; IF: RANK(roll = untrained)",
+  // 0.22.0: a Talent's change to what a Maneuver gives. A GIVE line is not here: it reads on a
+  // Maneuver's row alone, neither in a Talent's cell nor on a custom effect row (its own section).
+  "ALTER: Aid.critical-failure; VALUE: nothing",
+  "ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2; IF: RANK(Origin >= expert)",
+  "ALTER: Aid.duration; VALUE: encounter"
 ];
 
 /** The same line read as a custom effect row (the bare form's one home since 0.18.0). */
@@ -1793,7 +1805,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   must(err("[EFFECT CHECK]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
@@ -2252,6 +2264,485 @@ check("0.21.0: a bonus to a Maneuver reaches a check rolled with a Defense from 
   same(ruleModifiers(rulesActor([toGuard]), { kind: "check", slug: "guard", item: aidItem, rank: "trained", momentOnly: true }).applied, [], "a bonus to the Defense itself was the sheet's pass's, and is not added again");
   const untyped = talentWith("Helpful", "[EFFECT CHECK: 1 condition, aid]", {});
   same(ruleModifiers(rulesActor([untyped]), { kind: "check", slug: "awareness", item: aidItem, rank: "trained", momentOnly: true }).applied.map(m => m.value), [1], "a rule parsed without a resolver matches the Maneuver by its slug too");
+});
+
+/* -------------------------------------------- */
+/*  0.22.0: the give and alter kinds, the gives hook point, the pending result */
+/* -------------------------------------------- */
+
+/** Aid's own row, as the Maneuver sheet's Automation cell holds it. */
+const AID_CELL = [
+  "[EFFECT GIVE: 2 situation, chosen; IF: RESULT(critical success); IF: RANK(roll <= expert)]",
+  "[EFFECT GIVE: 3 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = master)]",
+  "[EFFECT GIVE: 4 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = legendary)]",
+  "[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]",
+  "[EFFECT GIVE: -1 situation, chosen; IF: RESULT(critical failure)]"
+].join("\n");
+
+/** A Maneuver's row: an action Item carrying the rules its cell parses to, with the resolver. */
+function maneuverWith(name, cell, extra = {}) {
+  const parsed = parseAutomation(cell, { resolve, itemName: name, itemType: "action" });
+  must(parsed.errors.length === 0, `${name}'s cell should parse: ${parsed.errors.map(e => e.message).join("; ")}`);
+  return { type: "action", name, system: { rules: parsed.rules }, ...extra };
+}
+
+/** Parse one line on a Maneuver's row and return the rule, or the one error's message. */
+const onRowOf = { resolve: groupResolve, itemType: "action" };
+const giveRule = (cell, context = onRowOf) => bonusRule(cell, context);
+const giveError = (cell, context = onRowOf) => bonusError(cell, context);
+const alterError = (cell, context = { resolve: groupResolve, itemType: "talent" }) => bonusError(cell, context);
+
+const CHOSEN_TO = { name: "chosen", slug: "", type: "chosen" };
+const aidRow = maneuverWith("Aid ❶", AID_CELL);
+const patient = talentWith("Patient Assistance", "[EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]");
+const sure = talentWith("Sure Assistance", "[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]");
+
+check("give and alter: registered with their hooks, their tags, and no Use control", () => {
+  const give = kindOf("give");
+  const alter = kindOf("alter");
+  must(give && give.id === "give" && alter && alter.id === "alter", "both kinds are registered");
+  same([give.aliases, alter.aliases], [[], []], "no aliases");
+  same([Object.keys(give.hooks).sort(), Object.keys(alter.hooks)], [["gives", "modifiers"], ["gives"]], "give speaks at gives and modifiers, alter at gives");
+  must(EFFECT_TAGS.give === "give" && EFFECT_TAGS.alter === "alter", "the GIVE and ALTER tags name the kinds");
+  must(!usableByRule(aidRow) && !usableByRule(patient), "neither draws a Use control");
+});
+
+check("operators: readUntil reads the three windows, and untilWords says them", () => {
+  same(readUntil("giver opportunity"), { who: "giver", n: 1 }, "the default, written out");
+  same(readUntil("Giver  Opportunity 2"), { who: "giver", n: 2 }, "case and spaces free, a count");
+  same(readUntil("recipient opportunity 2"), { who: "recipient", n: 2 }, "Patient Assistance's window");
+  same(readUntil("recipient opportunity"), { who: "recipient", n: 1 }, "a count left out is 1");
+  same(readUntil("ENCOUNTER"), { who: "encounter", n: 0 }, "the encounter");
+  const shapes = "a window is written `giver opportunity`, `recipient opportunity <N>` or `encounter`, not";
+  throws(() => readUntil("forever"), new RegExp(`^${shapes.replace(/[<>]/g, "\\$&")} "forever"$`), "an unknown window");
+  throws(() => readUntil(""), /not ""$/, "nothing");
+  throws(() => readUntil("recipient opportunity 2 3"), /not "recipient opportunity 2 3"$/, "a word too many");
+  for (const bad of ["0", "two", "1.5", "12"]) throws(() => readUntil(`recipient opportunity ${bad}`), new RegExp(`^"${bad.replace(".", "\\.")}" is not a count of Opportunities: write a whole number from 1 to 9`), `a count of ${bad}`);
+  must(untilWords(null) === "until the giver's next Opportunity", "no window is the default's words");
+  must(untilWords({ who: "giver", n: 1 }, { giver: "Tess" }) === "until Tess's next Opportunity", "a name in place of the giver");
+  must(untilWords({ who: "giver", n: 2 }) === "until the giver's second Opportunity from now", "a later one of the giver's");
+  must(untilWords({ who: "recipient", n: 2 }, { recipient: "Wren" }) === "through Wren's second upcoming Opportunity", "the recipient's second");
+  must(untilWords({ who: "recipient", n: 1 }) === "through the recipient's next Opportunity", "the recipient's next");
+  must(untilWords({ who: "encounter", n: 0 }) === "until the encounter ends", "the encounter");
+  must(readBonusType("Situation") === "situation", "the bonus type is one reading for bonus and give");
+  throws(() => readBonusType("circumstance"), /^write Situation, not circumstance: the book renamed the types in v3\.3$/, "a retired type word");
+});
+
+check("give: every accepted form on a Maneuver's row, stored whole", () => {
+  const text = "[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]";
+  same(giveRule(text), {
+    value: 1, type: "situation", to: CHOSEN_TO, when: [{ outcome: "success", name: "Success" }], until: null,
+    kind: "give", line: 1, text
+  }, "Aid's Success line");
+  same(giveRule("[EFFECT give: -1 Situation, CHOSEN; if: result(critical failure).]").value, -1, "a penalty, the tag, the type and chosen case blind, a trailing period tolerated");
+  same(giveRule("[EFFECT GIVE: +2 condition, chosen; IF: RESULT(critical success); IF: RANK(roll <= expert)]").when,
+    [{ outcome: "critSuccess", name: "Critical Success" }, { roll: true, op: "<=", rank: "expert" }], "the degree and the rank rolled");
+  same(giveRule("[EFFECT GIVE: 1 gear, chosen; IF: RANK(Origin >= expert); IF: RESULT(success)]").when,
+    [{ constellation: "origin", name: "Origin", op: ">=", rank: "expert" }, { outcome: "success", name: "Success" }], "the owner's rank, in either order");
+  same(giveRule("[EFFECT GIVE: 1 situation, stealth; IF: RESULT(success)]").to, { name: "Stealth", slug: "stealth", type: "constellation" }, "a Constellation by name, resolved");
+  same(giveRule("[EFFECT GIVE: 1 situation, Guard; IF: RESULT(success)]").to, { name: "Guard", slug: "guard", type: "constellation" }, "a Defense is a Constellation");
+  same(giveRule("[EFFECT GIVE: 1 situation, stealth; IF: RESULT(success)]", { itemType: "action" }).to, { name: "stealth", slug: "stealth", type: null }, "without a resolver: the name as written, no type");
+  same(giveRule("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: recipient opportunity 2]").until, { who: "recipient", n: 2 }, "a window of the recipient's");
+  same(giveRule("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: giver opportunity]").until, { who: "giver", n: 1 }, "the default window, written out");
+  same(giveRule("[EFFECT GIVE: 1 situation, chosen; UNTIL: encounter; IF: RESULT(success)]").until, { who: "encounter", n: 0 }, "the encounter, before the condition");
+  same(aidRow.system.rules.map(r => [r.kind, r.value, r.when[0].outcome]), [["give", 2, "critSuccess"], ["give", 3, "critSuccess"], ["give", 4, "critSuccess"], ["give", 1, "success"], ["give", -1, "critFail"]], "Aid's five lines are five rules");
+  for (const rule of aidRow.system.rules) same(JSON.parse(JSON.stringify(rule)), rule, "a stored rule equals its JSON image");
+});
+
+check("give: it is written on the Maneuver's own row and nowhere else", () => {
+  const where = "GIVE is written on the Maneuver's own row: it says what a result of that Maneuver's check gives. A Talent changes it with ALTER, as in `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]`";
+  const line = "GIVE: 1 situation, chosen; IF: RESULT(success)";
+  must(giveError(`[EFFECT ${line}]`, { resolve, itemType: "talent" }) === where, "in a Talent's cell");
+  must(giveError(line, { resolve, itemType: "effect" }) === where, "on a custom effect row");
+  must(giveError(`[EFFECT ${line}]`, { resolve }) === where, "and with no carrier named at all");
+  const ring = parseAutomation(`[AURA 15 allies; ${line}]`, { resolve, itemType: "action" });
+  same(ring.errors.map(e => e.message), ["a give is what a Maneuver's check gives and cannot ride an [AURA ...] block; write it on the Maneuver's row as `[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]`"], "an AURA block: no FOR the author never wrote");
+  same(ring.rules.map(r => r.kind), ["aura"], "the ring itself still reads");
+});
+
+check("give: the refusals, each with a message the designer can act on", () => {
+  const ok = "; IF: RESULT(success)]";
+  must(giveError("[EFFECT GIVE: 1 situation, chosen]") === "GIVE says which result of the check gives it: add `IF: RESULT(<degree>)`, as in `GIVE: 1 situation, chosen; IF: RESULT(success)`", "no degree");
+  must(giveError("[EFFECT GIVE: 1 situation, chosen; IF: RANK(roll = master)]").startsWith("GIVE says which result of the check gives it"), "a rank is not a degree");
+  must(giveError("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); IF: RESULT(critical success)]") === "GIVE takes one `IF: RESULT(...)` (2 given): write one line for each degree", "two degrees on one line");
+  must(giveError(`[EFFECT GIVE: 1 situation${ok}`) === "GIVE names what the bonus is to after a comma: chosen (named when the result is given) or a Constellation, as in `GIVE: 1 situation, chosen; IF: RESULT(success)`", "no descriptor");
+  must(giveError(`[EFFECT GIVE: 1 situation, chosen, stealth${ok}`) === "GIVE takes one descriptor, chosen or a Constellation, not 2: `GIVE: <value> <type>, chosen | <Constellation>; IF: RESULT(<degree>)`", "two descriptors");
+  must(giveError(`[EFFECT GIVE: 1, chosen${ok}`) === "no Talent bonus is untyped; name situation, condition or gear after the value", "no type");
+  must(giveError(`[EFFECT GIVE: 1 circumstance, chosen${ok}`) === "write Situation, not circumstance: the book renamed the types in v3.3", "a retired type word");
+  must(giveError(`[EFFECT GIVE: 0 situation, chosen${ok}`) === "a bonus of 0 does nothing", "zero");
+  must(giveError(`[EFFECT GIVE: situation, chosen${ok}`) === 'GIVE is written `GIVE: <value> <type>, <descriptor>`, as in `GIVE: 1 situation, chosen; IF: RESULT(success)`: a signed whole number first, not "situation"', "no value, with GIVE's own example");
+  must(giveRule("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]").value === 1, "and that example is a line that reads");
+  must(giveError(`[EFFECT GIVE: 1 situation, Search${ok}`) === '"Search" is a Maneuver: GIVE names the Constellation the recipient rolls, or chosen for one named when the result is given', "a Maneuver as the Constellation");
+  must(giveError(`[EFFECT GIVE: 1 situation, Nobody${ok}`) === '"Nobody" is not a Constellation: GIVE names one, or chosen for one named when the result is given', "an unknown Constellation");
+  must(giveError(`[EFFECT GIVE: 1 situation, Lore${ok}`) === "a Lore is the character's own; write chosen, and the Lore is named when the result is given", "a Lore");
+  must(giveError(`[EFFECT GIVE: 1 situation, Archery${ok}`) === '"Archery" is a group and its Talents roll the parent; write Ranged instead', "a group names its parent");
+  must(giveError(`[EFFECT GIVE: 1 situation, checks${ok}`) === '"checks" is a scope word; GIVE names one Constellation, or chosen for one named when the result is given', "a scope word");
+});
+
+check("give: the components it has no use for are refused by name, and UNTIL and VALUE each belong to one tag", () => {
+  const line = "[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)";
+  must(giveError(`${line}; FOR: allies 15]`) === "GIVE does not take FOR", "FOR");
+  must(giveError(`${line}; IF: SEEN]`) === "GIVE does not take IF: SEEN", "SEEN");
+  must(giveError(`${line}; IF: ALLIES(>=1, 0)]`) === "GIVE does not take IF: ALLIES(...)", "a count");
+  must(giveError(`${line}; IFT: BLOW]`) === "GIVE does not take IFT: <Threat>", "a Threat");
+  must(giveError(`${line}; IFT: MARKED]`) === "GIVE does not take IFT: MARKED", "MARKED");
+  must(giveError(`${line}; IF: CLAIM(when asked)]`) === "GIVE does not take IF: CLAIM(...)", "a claim");
+  must(giveError(`${line}; LIMIT: encounter]`) === "GIVE does not take LIMIT", "LIMIT");
+  must(giveError(`${line}; IFT: TRAIT(Fear)]`) === "GIVE does not take IFT: TRAIT(...)", "a trait");
+  must(giveError(`${line}; UNTIL: encounter; UNTIL: encounter]`) === "UNTIL is given twice", "UNTIL twice");
+  must(giveError(`${line}; UNTIL: forever]`) === 'a window is written `giver opportunity`, `recipient opportunity <N>` or `encounter`, not "forever"', "a window that is none");
+  must(giveError(`${line}; VALUE: nothing]`) === "GIVE does not take VALUE", "VALUE is ALTER's");
+  must(giveError(`${line}; PRESERVE: this]`) === '"PRESERVE: this" is not a component: after the tag come IF: and UNTIL:', "an unknown component is told GIVE's own");
+  // The two new components after every other tag, by the tag's own name.
+  const onRow = cell => parseAutomation(cell, { resolve, itemType: "effect" }).errors[0]?.message ?? "";
+  for (const [cell, tag] of [["CHECK: 1 condition, aid", "CHECK"], ["DEF: 1 situation, guard", "DEF"], ["IMMUNE: prone", "IMMUNE"], ["USE: Presence, Origin, aid", "USE"], ["REROLL: diplomacy; IF: RESULT(critical failure)", "REROLL"]]) {
+    must(onRow(`${cell}; UNTIL: encounter`) === `${tag} does not take UNTIL`, `${tag} with UNTIL`);
+    must(onRow(`${cell}; VALUE: nothing`) === `${tag} does not take VALUE`, `${tag} with VALUE`);
+  }
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; UNTIL: encounter]") === "ALTER does not take UNTIL", "UNTIL is GIVE's");
+  must(/IF\(Outcome=\.\.\.\) is only read by a kind that acts after the die \(reroll, give\)/.test(onRow("CHECK: 1 condition, aid; IF: RESULT(success)")), "and a degree is still refused where no kind acts after the die, naming the two that do");
+});
+
+check("alter: every accepted form, stored whole", () => {
+  const text = "[EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]";
+  same(patient.system.rules, [{
+    to: { name: "Aid", slug: "aid", type: "action" }, property: "beneficial-duration", nothing: false, until: { who: "recipient", n: 2 }, when: null,
+    kind: "alter", line: 1, text
+  }], "Patient Assistance's cell");
+  same(bare(sure.system.rules[0]), { to: { name: "Aid", slug: "aid", type: "action" }, property: "critical-failure", nothing: true, until: null, when: null, kind: "alter", line: 1 }, "Sure Assistance's cell");
+  const all = cellRules("[EFFECT alter: aid ❶ . Duration; value: Encounter]")[0];
+  same([all.to, all.property, all.until], [{ name: "Aid", slug: "aid", type: "action" }, "duration", { who: "encounter", n: 0 }], "every result's window; the tag, the property and the value case blind, glyphs and spaces free");
+  for (const [word, key] of [["Critical Success", "critical-success"], ["success", "success"], ["FAILURE", "failure"], ["critical_failure", "critical-failure"]]) {
+    must(cellRules(`[EFFECT ALTER: Aid.${word}; VALUE: Nothing]`)[0].property === key, `${word} is the ${key} property`);
+  }
+  same(cellRules("[EFFECT ALTER: Steady the Line.duration; VALUE: giver opportunity 2]")[0].to, { name: "Steady the Line", slug: "steady-the-line", type: "action" }, "a Maneuver of several words");
+  same(cellRules("[EFFECT ALTER: Aid.critical-failure; VALUE: nothing; IF: RANK(Origin >= expert); IF: RANK(roll = trained)]")[0].when,
+    [{ constellation: "origin", name: "Origin", op: ">=", rank: "expert" }, { roll: true, op: "=", rank: "trained" }], "the owner's rank and the rank rolled");
+  same(bonusRule("[EFFECT ALTER: Aid.success; VALUE: nothing]", { itemType: "talent" }).to, { name: "Aid", slug: "aid", type: null }, "without a resolver: no type");
+  const row = parseAutomation("ALTER: Aid.critical-failure; VALUE: nothing", { resolve, itemType: "effect" });
+  same([row.errors, row.rules.map(bare)], [[], [bare(sure.system.rules[0])]], "the bare line on a custom effect row is the same rule");
+  same(JSON.parse(JSON.stringify(patient.system.rules[0])), patient.system.rules[0], "a stored rule equals its JSON image");
+});
+
+check("alter: the refusals, and the cells drafted for later versions say what is not read yet", () => {
+  const reads = "ALTER reads duration, beneficial-duration, critical-success, success, failure and critical-failure";
+  same(ALTER_PROPERTIES, ["duration", "beneficial-duration", "critical-success", "success", "failure", "critical-failure"], "the properties read");
+  // Mike's drafts (2026-11-14): the property is told first, whatever the Maneuver, so a cell for a
+  // later version reads as "not yet" and never as a misspelt name.
+  for (const [target, property] of [["Move Together", "movement"], ["Aid", "beneficial-uses"], ["Pay It Forward", "limit"], ["Torchbearer", "range"], ["Working Knowledge", "proficiency"], ["Borrowed Technique", "slots"]]) {
+    must(alterError(`[EFFECT ALTER: ${target}.${property}; VALUE: 2]`) === `the property "${property}" is not read yet: ${reads}`, `${target}.${property}`);
+  }
+  must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: no-effect; PRESERVE: original-degree]") === '"PRESERVE: original-degree" is not a component: after the tag come VALUE: and IF:', "his PRESERVE is no component, and the message names ALTER's own");
+  must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: no-effect]") === '"no-effect": a result is changed to nothing in this version, as in `ALTER: Aid.critical-failure; VALUE: nothing`', "his no-effect is told the word");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: recipient-opportunity-end(1)]") === 'a window is written `giver opportunity`, `recipient opportunity <N>` or `encounter`, not "recipient-opportunity-end(1)"', "his window is told the three that read");
+  must(alterError("[EFFECT ALTER: Aid.critical-failure]") === "ALTER says what the property becomes: add `VALUE: ...`, as in `ALTER: Aid.critical-failure; VALUE: nothing`", "no VALUE");
+  must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE:]") === "VALUE: says what the property becomes, as in `VALUE: nothing` or `VALUE: recipient opportunity 2`", "an empty VALUE");
+  must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: nothing; VALUE: nothing]") === "VALUE is given twice", "VALUE twice");
+  must(alterError("[EFFECT ALTER: Aid; VALUE: nothing]") === '"Aid": an alteration names the Maneuver, a dot, and the property it changes, as in `ALTER: Aid.critical-failure; VALUE: nothing`', "no property");
+  must(alterError("[EFFECT ALTER: .duration; VALUE: encounter]").startsWith('".duration": an alteration names the Maneuver'), "no Maneuver");
+  must(alterError("[EFFECT ALTER: Aidd.duration; VALUE: encounter]") === '"Aidd" names no Maneuver', "an unknown Maneuver");
+  must(alterError("[EFFECT ALTER: Stealth.duration; VALUE: encounter]") === '"Stealth" is a Constellation: ALTER changes what a Maneuver gives, as in `ALTER: Aid.critical-failure; VALUE: nothing`', "a Constellation");
+  must(alterError("[EFFECT ALTER: Aid.duration, Aid.success; VALUE: encounter]") === "an alteration is written `ALTER: <Maneuver>.<property>; VALUE: <value>`, as in `ALTER: Aid.critical-failure; VALUE: nothing` (2 descriptors given, 1 wanted: the Maneuver, a dot, the property)", "two properties on one line");
+  must(alterError("[EFFECT ALTER:; VALUE: nothing]").startsWith("an alteration is written `ALTER: <Maneuver>.<property>; VALUE: <value>`"), "none");
+  must(/IF\(Outcome=\.\.\.\) is only read by a kind that acts after the die/.test(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; IF: RESULT(success)]")), "a degree: the property names it");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; FOR: allies 15]") === "ALTER does not take FOR", "FOR");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; LIMIT: round]") === "ALTER does not take LIMIT", "LIMIT");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; IF: CLAIM(when asked)]") === "ALTER does not take IF: CLAIM(...)", "a claim");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; IFT: TRAIT(Fear)]") === "ALTER does not take IFT: TRAIT(...)", "a trait");
+  const ring = parseAutomation("[AURA 15 allies; ALTER: Aid.duration; VALUE: encounter]", { resolve, itemType: "talent" });
+  same(ring.errors.map(e => e.message), ["an alteration changes the owner's own Maneuver and cannot ride an [AURA ...] block; write it as its own `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]`"], "an AURA block");
+});
+
+check("give and alter: the summaries", () => {
+  const until = ", until the giver's next Opportunity";
+  must(summarize(aidRow.system.rules[3]) === `gives a +1 Situation bonus to the next roll with the Constellation chosen, on a Success${until}`, "Aid's Success");
+  must(summarize(aidRow.system.rules[0]) === `gives a +2 Situation bonus to the next roll with the Constellation chosen, on a Critical Success, while the rank rolled is at most Expert${until}`, "the rank rolled, in those words");
+  must(summarize(aidRow.system.rules[4]) === `gives a -1 Situation penalty to the next roll with the Constellation chosen, on a Critical Failure${until}`, "a penalty, with a plain minus");
+  must(summarize(giveRule("[EFFECT GIVE: 1 gear, stealth; IF: RESULT(success); UNTIL: recipient opportunity 2]")) === "gives a +1 Gear bonus to the next roll with Stealth, on a Success, through the recipient's second upcoming Opportunity", "a named Constellation and a window");
+  must(summarize(patient.system.rules[0]) === "Aid's results that give a bonus last through the recipient's second upcoming Opportunity", "Patient Assistance");
+  must(summarize(sure.system.rules[0]) === "Aid's Critical Failure gives nothing", "Sure Assistance");
+  must(summarize(cellRules("[EFFECT ALTER: Aid.duration; VALUE: encounter; IF: RANK(Origin >= expert)]")[0]) === "Aid's results last until the encounter ends, while Origin is at least Expert", "every result, with a condition");
+  must(summarize(pendingRule({ label: "Aid from Tess", value: 1, type: "situation", to: { slug: "crafting", name: "Crafting" } })) === "+1 Situation bonus to the next Crafting roll", "a pending result");
+  must(summarize(pendingRule({ label: "Aid from Tess", value: -1, type: "situation", to: { slug: "crafting", name: "Crafting" } })) === "-1 Situation penalty to the next Crafting roll", "a pending penalty");
+});
+
+/* The table (module/rules/given.mjs), then the same through the dispatcher. */
+
+const DEFAULT_WINDOW = { who: "giver", n: 1 };
+const result = (value, extra = {}) => ({ value, type: "situation", to: CHOSEN_TO, until: DEFAULT_WINDOW, altered: [], ...extra });
+const line = (degree, value, extra = {}) => ({ degree, value, type: "situation", to: CHOSEN_TO, until: null, ...extra });
+
+check("given: buildTable takes the first line for a degree and applies each alteration to its own property", () => {
+  const lines = [line("critSuccess", 2), line("critSuccess", 3), line("success", 1), line("critFail", -1)];
+  same(buildTable(lines), { table: { critSuccess: result(2), success: result(1), fail: null, critFail: result(-1) }, notes: {} }, "the first line for a degree stands; a degree no line names gives nothing");
+  same(buildTable([line("success", 1, { until: { who: "encounter", n: 0 } })]).table.success.until, { who: "encounter", n: 0 }, "a line's own window");
+  same(buildTable([line("success", 0), line("fail", NaN), { degree: "sideways", value: 1 }, null]).table, { critSuccess: null, success: null, fail: null, critFail: null }, "a line of nothing, or of no degree, is no line");
+  const longer = { property: "beneficial-duration", until: { who: "recipient", n: 2 }, label: "Patient Assistance" };
+  const patientTable = buildTable(lines, [longer]).table;
+  same([patientTable.critSuccess, patientTable.success], [result(2, { until: { who: "recipient", n: 2 }, altered: ["Patient Assistance"] }), result(1, { until: { who: "recipient", n: 2 }, altered: ["Patient Assistance"] })], "a longer bonus: the results above 0");
+  same(patientTable.critFail, result(-1), "and never the penalty (Mike: same window as a bonus has without it)");
+  same(buildTable(lines, [{ property: "duration", until: { who: "encounter", n: 0 }, label: "Lasting" }]).table.critFail, result(-1, { until: { who: "encounter", n: 0 }, altered: ["Lasting"] }), "duration reaches every result");
+  const nothing = { property: "critical-failure", nothing: true, label: "Sure Assistance" };
+  same(buildTable(lines, [nothing]), { table: { critSuccess: result(2), success: result(1), fail: null, critFail: null }, notes: { critFail: [{ label: "Sure Assistance", nothing: true }] } }, "a degree set to nothing, with the Talent's name for the card");
+  same(buildTable(lines, [{ property: "failure", nothing: true, label: "Idle" }]).notes, {}, "an alteration that changes nothing leaves no note");
+  const both = buildTable(lines, [longer, nothing]);
+  same([both.table.success.until, both.table.critFail, both.notes.critFail.length], [{ who: "recipient", n: 2 }, null, 1], "both Talents at once");
+  same(buildTable(lines, [longer, longer]).table.success.altered, ["Patient Assistance"], "a Talent is named once");
+  // The more particular property stands over the general one, whichever line comes first; of two
+  // changes to one property the later stands; a result names only the change it wears.
+  const every = { property: "duration", until: { who: "encounter", n: 0 }, label: "Lasting" };
+  for (const order of [[longer, every], [every, longer]]) {
+    const t = buildTable(lines, order).table;
+    same([t.success.until, t.success.altered, t.critFail.until, t.critFail.altered], [{ who: "recipient", n: 2 }, ["Patient Assistance"], { who: "encounter", n: 0 }, ["Lasting"]], "beneficial-duration over duration, in either order");
+  }
+  const shorter = { property: "beneficial-duration", until: { who: "giver", n: 2 }, label: "Brisk" };
+  same(buildTable(lines, [longer, shorter]).table.success, result(1, { until: { who: "giver", n: 2 }, altered: ["Brisk"] }), "two changes to one property: the later stands, and it alone is named");
+  // A Constellation named in a cell read with no resolver has a null type, and is still named.
+  const named = buildTable([line("success", 1, { to: { name: "stealth", slug: "stealth", type: null } })]).table.success;
+  same([named.to, resultWords(named)], [{ name: "stealth", slug: "stealth", type: null }, "+1 Situation to stealth"], "a null type is a named Constellation, not chosen");
+  same(buildTable([{ degree: "success", value: 1, type: "situation" }]).table.success.to, { name: "chosen", slug: "", type: "chosen" }, "a line with no `to` at all is chosen");
+  // sameGiven: what the engine asks to learn whether one rule changed a degree.
+  const plain = buildTable(lines), withSure = buildTable(lines, [nothing]), withPatient = buildTable(lines, [longer]);
+  same(["critSuccess", "success", "fail", "critFail"].map(d => sameGiven(plain, withSure, d)), [true, true, true, false], "Sure Assistance changes a Critical Failure alone");
+  same(["critSuccess", "success", "fail", "critFail"].map(d => sameGiven(plain, withPatient, d)), [false, false, true, true], "Patient Assistance changes the two results that give a bonus");
+});
+
+const aidGive = { kind: "check", slug: "crafting", item: aidRow, rank: "trained" };
+
+check("ruleGives: Aid's table at the rank rolled, from an Item the roller does not own", () => {
+  const actor = rulesActor([humanity], { human: "trained" });
+  same(ruleGives(actor, aidGive), { table: { critSuccess: result(2), success: result(1), fail: null, critFail: result(-1) }, notes: {}, marks: [], traces: [] }, "Trained: +2 on a Critical Success, +1, nothing, -1");
+  const crit = rank => ruleGives(actor, { ...aidGive, rank }).table.critSuccess.value;
+  same(["untrained", "trained", "expert", "master", "legendary"].map(crit), [2, 2, 2, 3, 4], "a master with the check attempted gives +3, a legendary +4");
+  same(ruleGives(actor, { ...aidGive, rank: undefined }).table.critSuccess, null, "no rank known: a line that reads the rank rolled does not hold, and the Success line still does");
+  same(ruleGives(actor, { ...aidGive, item: searchItem }), { table: null, notes: {}, marks: [], traces: [] }, "a Maneuver with no GIVE line gives nothing");
+  const unresolved = { type: "action", name: "Lend an Ear", system: { rules: parseAutomation("[EFFECT GIVE: 1 situation, stealth; IF: RESULT(success)]", { itemType: "action" }).rules } };
+  same(ruleGives(actor, { ...aidGive, item: unresolved }).table.success.to, { name: "stealth", slug: "stealth", type: null }, "a line parsed with no resolver keeps its named Constellation through the table");
+  same(ruleGives(actor, { ...aidGive, item: null }).table, null, "a check with no Item");
+  same(ruleGives(null, aidGive).table, null, "no roller");
+  same(ruleGives(actor, { ...aidGive, item: { ...aidRow, type: "talent" } }).table, null, "only a Maneuver's Item gives");
+  const owner = talentWith("Guild Hand", "[EFFECT CHECK: 1 condition, aid]");
+  const gated = maneuverWith("Lend a Hand", "[EFFECT GIVE: 2 situation, stealth; IF: RESULT(success); IF: RANK(Origin >= expert)]\n[EFFECT GIVE: 1 situation, stealth; IF: RESULT(success)]");
+  same(["trained", "expert"].map(origin => ruleGives(rulesActor([owner], { origin }), { ...aidGive, item: gated }).table.success.value), [1, 2], "the owner's rank chooses between two lines for one degree, the first that holds");
+  same(ruleGives(rulesActor([owner], null), { ...aidGive, item: gated }).table.success.value, 1, "an actor with no proficiency never meets a rank condition");
+});
+
+check("ruleGives: the roller's ALTER lines change the table, and only for the Maneuver they name", () => {
+  const withPatient = ruleGives(rulesActor([patient]), aidGive);
+  same([withPatient.table.critSuccess.until, withPatient.table.success, withPatient.table.critFail.until, withPatient.notes], [{ who: "recipient", n: 2 }, result(1, { until: { who: "recipient", n: 2 }, altered: ["Patient Assistance"] }), DEFAULT_WINDOW, {}], "Patient Assistance: the bonuses last longer, the penalty does not");
+  const withSure = ruleGives(rulesActor([sure]), aidGive);
+  same([withSure.table.critFail, withSure.notes, withSure.table.success], [null, { critFail: [{ label: "Sure Assistance", nothing: true }] }, result(1)], "Sure Assistance: a Critical Failure gives nothing, and says whose doing it is");
+  const both = ruleGives(rulesActor([patient, sure]), aidGive);
+  same([both.table.success.until, both.table.critFail], [{ who: "recipient", n: 2 }, null], "both");
+  const other = maneuverWith("Lend a Hand", "[EFFECT GIVE: 1 situation, stealth; IF: RESULT(success)]");
+  same(ruleGives(rulesActor([patient, sure]), { ...aidGive, item: other }).table.success, result(1, { to: { name: "Stealth", slug: "stealth", type: "constellation" } }), "another Maneuver is not Aid");
+  const seasoned = talentWith("Seasoned Hand", "[EFFECT ALTER: Aid.critical-failure; VALUE: nothing; IF: RANK(Origin >= expert)]");
+  same(["trained", "master"].map(origin => ruleGives(rulesActor([seasoned], { origin }), aidGive).table.critFail), [result(-1), null], "an ALTER's own rank condition");
+  const steady = talentWith("Steady Hand", "[EFFECT ALTER: Aid.critical-failure; VALUE: nothing; IF: RANK(roll >= expert)]");
+  same(["trained", "expert"].map(rank => ruleGives(rulesActor([steady]), { ...aidGive, rank }).table.critFail), [result(-1), null], "and the rank rolled");
+  // An ALTER on the roller never reaches a GIVE read as the roller's own: an owned copy of Aid is read once.
+  const ownedAid = { ...aidRow, id: "aidcopy1" };
+  same(ruleGives(rulesActor([ownedAid, sure]), { ...aidGive, item: ownedAid }).table, { critSuccess: result(2), success: result(1), fail: null, critFail: null }, "an owned copy of the Maneuver: its lines once, the Talent's change on top");
+});
+
+check("ruleGives: Off drops a line, Skip leaves it out once and clears only when the degree rolled would have read it, a one-roll effect is spent the same way", () => {
+  const state = (item, rule, value) => ({ starwrought: { rules: { state: { [ruleStateKey(item, rule)]: value } } } });
+  const sureId = { ...sure, id: "sure0001" };
+  const off = rulesActor([sureId]);
+  off.flags = state(sureId, sureId.system.rules[0], "off");
+  same([ruleGives(off, { ...aidGive, degree: "critFail" }).table.critFail, ruleGives(off, { ...aidGive, degree: "critFail" }).marks], [result(-1), []], "Off: the Talent changes nothing and nothing clears");
+  const skip = rulesActor([sureId]);
+  skip.flags = state(sureId, sureId.system.rules[0], "skip");
+  const key = ruleStateKey(sureId, sureId.system.rules[0]);
+  same([ruleGives(skip, { ...aidGive, degree: "critFail" }).table.critFail, ruleGives(skip, { ...aidGive, degree: "critFail" }).marks], [result(-1), [{ key, per: "state" }]], "Skip on a Critical Failure: the penalty stands this once, and the state clears");
+  same(ruleGives(skip, { ...aidGive, degree: "success" }).marks, [], "Skip on a Success: Sure Assistance would have read nothing, so it is not spent");
+  same(ruleGives(skip, { ...aidGive, degree: null }).marks, [], "and not by a check made against no Threshold");
+  // A one-roll custom effect carrying an ALTER.
+  const parsed = parseAutomation("ALTER: Aid.beneficial-duration; VALUE: encounter", { resolve, itemName: "Lingering", itemType: "effect" });
+  const row = { items: [], system: { effects: [{ id: "fx22", label: "Lingering", text: "ALTER: Aid.beneficial-duration; VALUE: encounter", duration: "roll", rules: parsed.rules }] } };
+  row.system.rules = collectRules(row);
+  const used = ruleGives(row, { ...aidGive, degree: "success" });
+  same([used.table.success.until, used.table.success.altered, used.marks], [{ who: "encounter", n: 0 }, ["Lingering"], [{ key: "fx22", per: "effect" }]], "applied on a Success, and the row goes with the roll");
+  same(ruleGives(row, { ...aidGive, degree: "critFail" }).marks, [], "a Critical Failure gives no bonus to lengthen: the row stays");
+  // The Maneuver's own lines carry a state only on a copy the roller owns.
+  const ownedAid = { ...aidRow, id: "aidcopy2" };
+  const success = ownedAid.system.rules[3];
+  const skipped = rulesActor([ownedAid]);
+  skipped.flags = state(ownedAid, success, "skip");
+  const once = ruleGives(skipped, { ...aidGive, item: ownedAid, degree: "success" });
+  same([once.table.success, once.marks], [null, [{ key: ruleStateKey(ownedAid, success), per: "state" }]], "a Skip on the copy's Success line: nothing given this once");
+  same(ruleGives(skipped, { ...aidGive, item: ownedAid, degree: "critSuccess" }).marks, [], "and not spent by another degree");
+  const stranger = rulesActor([]);
+  stranger.flags = state(ownedAid, success, "skip");
+  same(ruleGives(stranger, { ...aidGive, item: ownedAid, degree: "success" }).table.success, result(1), "an Item the roller does not own is always on, whatever the roller's flags say");
+});
+
+check("ruleGives: a line is spent only by a degree it changes, and what a die did not spend is kept for a reroll", () => {
+  const state = (item, rule, value) => ({ starwrought: { rules: { state: { [ruleStateKey(item, rule)]: value } } } });
+  const oneRoll = (id, text) => {
+    const parsed = parseAutomation(text, { resolve, itemName: id, itemType: "effect" });
+    must(parsed.errors.length === 0, `"${text}" should parse`);
+    return { id, label: id, text, duration: "roll", rules: parsed.rules };
+  };
+  const withRows = (items, rows) => { const a = { items, system: { effects: rows } }; a.system.rules = collectRules(a); return a; };
+  // A Skip the die did not spend comes back as a trace naming the degree it changes.
+  const sureId = { ...sure, id: "sure0002" };
+  const skip = rulesActor([sureId]);
+  skip.flags = state(sureId, sureId.system.rules[0], "skip");
+  const key = ruleStateKey(sureId, sureId.system.rules[0]);
+  const onSuccess = ruleGives(skip, { ...aidGive, degree: "success" });
+  same([onSuccess.marks, onSuccess.traces], [[], [{ degrees: ["critFail"], marks: [{ key, per: "state" }] }]], "a Success leaves Sure Assistance's Skip owed to a Critical Failure, which is what a reroll would land on");
+  same(ruleGives(skip, { ...aidGive, degree: "critFail" }).marks, [{ key, per: "state" }], "and a Critical Failure spends it");
+  // An alteration that changed nothing is not spent: Sure Assistance had already emptied the degree.
+  const lasting = withRows([sure], [oneRoll("fx31", "ALTER: Aid.duration; VALUE: encounter")]);
+  const cf = ruleGives(lasting, { ...aidGive, degree: "critFail" });
+  same([cf.table.critFail, cf.marks], [null, []], "a one-roll change to every window, on a Critical Failure that gives nothing: the row stays");
+  same(ruleGives(lasting, { ...aidGive, degree: "success" }).marks, [{ key: "fx31", per: "effect" }], "and goes with a Success, whose window it changed");
+  // Two one-roll rows that both empty one degree: the first did it, the second changed nothing.
+  const twice = withRows([], [oneRoll("fx41", "ALTER: Aid.critical-failure; VALUE: nothing"), oneRoll("fx42", "ALTER: Aid.critical-failure; VALUE: nothing")]);
+  const emptied = ruleGives(twice, { ...aidGive, degree: "critFail" });
+  same([emptied.table.critFail, emptied.notes.critFail.length, emptied.marks], [null, 1, [{ key: "fx41", per: "effect" }]], "one note, and one row spent");
+  // A Skip on a line an earlier line shadows: the line would not have been read, so it is not spent.
+  const lend = maneuverWith("Lend a Hand", "[EFFECT GIVE: 2 situation, stealth; IF: RESULT(success); IF: RANK(Origin >= expert)]\n[EFFECT GIVE: 1 situation, stealth; IF: RESULT(success)]", { id: "lend0001" });
+  const shadowed = rulesActor([lend], { origin: "expert" });
+  shadowed.flags = state(lend, lend.system.rules[1], "skip");
+  const stands = ruleGives(shadowed, { ...aidGive, item: lend, degree: "success" });
+  same([stands.table.success.value, stands.marks, stands.traces], [2, [], []], "the first line stands, and the shadowed line's Skip is left alone");
+  const reached = rulesActor([lend], { origin: "trained" });
+  reached.flags = state(lend, lend.system.rules[1], "skip");
+  const passed = ruleGives(reached, { ...aidGive, item: lend, degree: "success" });
+  same([passed.table.success, passed.marks], [null, [{ key: ruleStateKey(lend, lend.system.rules[1]), per: "state" }]], "where the skipped line would have been the result, it is left out and spent");
+});
+
+check("ruleGives: a hook that throws and a hook that answers badly contribute nothing", () => {
+  registerKind({ id: "explosive-give", parse: () => ({}), summary: () => "", hooks: { gives() { throw new Error("kaboom"); } } });
+  registerKind({ id: "sloppy-give", parse: () => ({}), summary: () => "", hooks: { gives: () => [null, "x", {}, { line: null }, { line: { degree: "sideways", value: 9 } }, { alteration: "soon" }, 7] } });
+  const volatile = { type: "talent", name: "Volatile", system: { rules: [{ kind: "explosive-give", line: 1, text: "x" }, { kind: "sloppy-give", line: 2, text: "y" }] } };
+  const errors = [];
+  const original = console.error;
+  console.error = (...args) => errors.push(args);
+  let answer;
+  try {
+    answer = ruleGives(rulesActor([volatile, sure]), aidGive);
+  } finally {
+    console.error = original;
+  }
+  same([answer.table.success, answer.table.critFail], [result(1), null], "the other kinds' answers still arrive");
+  must(errors.length === 1 && /the "explosive-give" kind's gives hook failed/.test(String(errors[0][0])), `the failure is reported once: ${JSON.stringify(errors.map(e => String(e[0])))}`);
+});
+
+/* The pending result: the entry, its carrier, the modifier it puts on a roll, the mark that removes it. */
+
+const TESS = { uuid: "Actor.tess", name: "Tess" };
+const entryFor = (options = {}) => pendingEntry({
+  result: result(1), to: { slug: "crafting", name: "Crafting" }, maneuver: { slug: "aid", name: "Aid" }, giver: TESS,
+  combat: "c1", giverCombatant: "cTess", recipientCombatant: "cWren", message: "msg1", ...options
+});
+
+/** An actor holding pending results, indexed as the data model indexes one. */
+function holding(...entries) {
+  const given = {};
+  for (const entry of entries) given[givenFlagKey(entry.id)] = entry;
+  const actor = { items: [], system: {}, flags: { starwrought: { rules: { given } } } };
+  actor.system.rules = collectRules(actor);
+  return actor;
+}
+
+check("given: pendingEntry is one result per Maneuver, with the window it can count", () => {
+  same(entryFor(), {
+    id: "given:aid", label: "Aid from Tess", value: 1, type: "situation", to: { slug: "crafting", name: "Crafting" },
+    by: "Actor.tess", byName: "Tess", maneuver: "aid", maneuverName: "Aid", combat: "c1",
+    until: { who: "giver", combatant: "cTess", n: 1, begun: 0 }, message: "msg1"
+  }, "the default window, counted against the giver's Combatant");
+  same(entryFor({ result: result(1, { until: { who: "recipient", n: 2 } }) }).until, { who: "recipient", combatant: "cWren", n: 2, begun: 0 }, "the recipient's window, against the recipient's");
+  same(entryFor({ result: result(1, { until: { who: "encounter", n: 0 } }) }).until, { who: "encounter", combatant: null, n: 0, begun: 0 }, "the encounter");
+  same(entryFor({ giverCombatant: null }).until, { who: "encounter", combatant: null, n: 0, begun: 0 }, "a giver with no Combatant cannot be counted: the encounter");
+  same(entryFor({ result: result(1, { until: { who: "recipient", n: 2 } }), recipientCombatant: null }).until.who, "encounter", "nor a recipient with none");
+  same([entryFor({ combat: null }).until, entryFor({ combat: null }).combat], [null, null], "outside an encounter there is no window");
+  same([isGivenKey("given:aid"), isGivenKey("fx1"), givenFlagKey("given:aid"), givenFlagKey("aid")], [true, false, "aid", "aid"], "the id and the flag key");
+  same(JSON.parse(JSON.stringify(entryFor())), entryFor(), "an entry equals its JSON image");
+  // Every entry carries every key, so a merge of the flag over an older entry leaves nothing of it.
+  same(Object.keys(entryFor({ combat: null })), Object.keys(entryFor()), "the same keys in and out of an encounter");
+});
+
+check("given: settle closes a giver's window as an Opportunity begins and a recipient's as its last one ends", () => {
+  const at = change => ({ combat: "c1", ...change });
+  const giver = entryFor();
+  same([settle(giver, at({ began: "cTess" })), settle(giver, at({ began: "cWren" })), settle(giver, at({ ended: "cTess" }))], ["expire", "keep", "keep"], "the default: until the giver's next Opportunity begins");
+  same(settle(giver, { combat: "c2", began: "cTess" }), "keep", "another Combat's turns are not this entry's");
+  const second = entryFor({ result: result(1, { until: { who: "giver", n: 2 } }) });
+  same([settle(second, at({ began: "cTess" })), settle({ ...second, until: { ...second.until, begun: 1 } }, at({ began: "cTess" }))], [{ begun: 1 }, "expire"], "the giver's second: counted, then closed");
+  // Patient Assistance: through the END of the recipient's second upcoming Opportunity.
+  const wren = entryFor({ result: result(1, { until: { who: "recipient", n: 2 } }) });
+  const counted = begun => ({ ...wren, until: { ...wren.until, begun } });
+  same(settle(counted(0), at({ ended: "cWren" })), "keep", "an Opportunity already running when the result was given is not one of the two");
+  same(settle(counted(0), at({ began: "cWren" })), { begun: 1 }, "the first begins");
+  same(settle(counted(1), at({ ended: "cWren" })), "keep", "the first ends: one to go");
+  same(settle(counted(1), at({ began: "cWren" })), { begun: 2 }, "the second begins");
+  same(settle(counted(2), at({ began: "cTess" })), "keep", "someone else's Opportunity changes nothing");
+  same(settle(counted(2), at({ ended: "cWren" })), "expire", "the second ends: the window closes");
+  same([settle(counted(0), at({ ended: "cWren", began: "cWren" })), settle(counted(1), at({ ended: "cWren", began: "cWren" })), settle(counted(2), at({ ended: "cWren", began: "cWren" }))], [{ begun: 1 }, { begun: 2 }, "expire"], "a lone fighter's turn change ends one Opportunity before it counts the next");
+  const one = entryFor({ result: result(1, { until: { who: "recipient", n: 1 } }) });
+  same([settle(one, at({ began: "cWren" })), settle({ ...one, until: { ...one.until, begun: 1 } }, at({ ended: "cWren" }))], [{ begun: 1 }, "expire"], "one Opportunity of the recipient's");
+  same(settle(entryFor({ result: result(1, { until: { who: "encounter", n: 0 } }) }), at({ began: "cTess", ended: "cWren" })), "keep", "the encounter's window closes with the Combat, not with a turn");
+  same(settle(entryFor({ combat: null }), at({ began: "cTess" })), "keep", "a result given outside an encounter has no window");
+  same([settle(null, at({ began: "cTess" })), settle({}, {})], ["keep", "keep"], "nothing in, nothing done");
+  same([appliesNow(giver, { combat: "c1", round: 3 }), appliesNow(giver, { combat: "c2", round: 1 }), appliesNow(giver, null), appliesNow(entryFor({ combat: null }), { combat: "c9", round: 1 }), appliesNow(entryFor({ combat: null }), null), appliesNow(null, null)],
+    [true, false, false, true, true, false], "a result of one Combat applies in that Combat alone; one given outside any applies anywhere");
+});
+
+check("given: the words for the button, the give card and the Effects tab", () => {
+  same([resultWords(result(1)), resultWords(result(1), "Crafting"), resultWords(result(-1), "Crafting"), resultWords(result(2, { type: "gear", to: { name: "Stealth", slug: "stealth", type: "constellation" } }))],
+    ["+1 Situation", "+1 Situation to Crafting", "-1 Situation to Crafting", "+2 Gear to Stealth"], "a result, before and after the Constellation is chosen");
+  same([windowWords(DEFAULT_WINDOW, { giver: "Tess", recipient: "Wren" }), windowWords({ who: "recipient", n: 2 }, { giver: "Tess", recipient: "Wren" }), windowWords({ who: "encounter", n: 0 }), windowWords(DEFAULT_WINDOW, { giver: "Tess", encounter: false })],
+    ["until Tess's next Opportunity", "through Wren's second upcoming Opportunity", "until the encounter ends", "until it is used"], "a window, by name, and none outside an encounter");
+  const wren = entryFor({ result: result(1, { until: { who: "recipient", n: 2 } }) });
+  const names = { giver: "Tess", recipient: "Wren" };
+  same([0, 1, 2].map(begun => pendingWindowWords({ ...wren, until: { ...wren.until, begun } }, names)), ["through Wren's second upcoming Opportunity", "through Wren's next Opportunity", "through Wren's Opportunity"], "a pending window is said from what is left of it");
+  same([pendingWindowWords(entryFor(), names), pendingWindowWords(entryFor({ combat: null }), names), pendingWindowWords(entryFor({ giverCombatant: null }), names)], ["until Tess's next Opportunity", "until it is used", "until the encounter ends"], "the giver's, none, and the encounter's");
+});
+
+check("collectRules indexes a pending result as a one-roll carrier, and the give kind puts it on the next roll with its Constellation", () => {
+  const wren = holding(entryFor());
+  same(givenResults(wren).map(e => e.id), ["given:aid"], "the entries, off the flags");
+  const entries = rulesOfKind(wren, "give");
+  same(entries.map(e => [e.item.id, e.item.name, e.item.type, e.item.effect.duration, e.rule]), [["given:aid", "Aid from Tess", "effect", "roll", pendingRule(entryFor())]], "one carrier, one resolved rule");
+  must(givenCarrier(entryFor()).given.id === "given:aid", "the carrier keeps its entry");
+  const inFight = { encounter: { combat: "c1", round: 2 } };
+  const applied = [{ label: "Aid from Tess", value: 1, type: "situation", source: "rule:given:aid:crafting" }];
+  const spent = [{ key: "given:aid", per: "effect" }];
+  const roll = ruleModifiers(wren, { kind: "check", slug: "crafting", item: null, rank: "trained", ...inFight });
+  same([roll.applied, roll.offered, roll.marks], [applied, [], spent], "a Crafting check: applied, never offered, and the result goes with the roll");
+  for (const kind of ["attack", "initiative"]) same(ruleModifiers(wren, { kind, slug: "crafting", item: null, ...inFight }).applied, applied, `${kind === "attack" ? "an" : "a"} ${kind} rolled with the Constellation`);
+  const guard = holding(entryFor({ to: { slug: "guard", name: "Guard" } }));
+  const guardRoll = ruleModifiers(guard, { kind: "defense", slug: "guard", item: null, momentOnly: true, ...inFight });
+  same([guardRoll.applied.map(m => m.value), guardRoll.marks], [[1], spent], "a Guard roll: applied and spent");
+  same(ruleModifiers(guard, { kind: "defense", slug: "guard", item: null, staticOnly: true }), { applied: [], offered: [], marks: [] }, "the sheet's Defense pass never folds it into the Threshold");
+  same(ruleModifiers(guard, { kind: "defense", slug: "guard", item: null, momentOnly: true, read: true, ...inFight }), { applied: [], offered: [], marks: [] }, "a Threshold read neither carries it nor spends it");
+  same(ruleModifiers(guard, { kind: "attack", slug: "guard", item: null, pairingOnly: true, ...inFight }), { applied: [], offered: [], marks: [] }, "nor does a Strike's pairing");
+  const awareness = holding(entryFor({ to: { slug: "awareness", name: "Awareness" } }));
+  same(ruleModifiers(awareness, { kind: "initiative", slug: "awareness", item: null, momentOnly: true, leavePending: true, ...inFight }), { applied: [], offered: [], marks: [] }, "the tracker's own Initiative die, a total nothing is written after, leaves it where it is");
+  same(ruleModifiers(awareness, { kind: "initiative", slug: "awareness", item: null, momentOnly: true, ...inFight }).marks, spent, "and an Initiative rolled from the sheet carries it and uses it up");
+  const lore = holding(entryFor({ to: { slug: "lore-circus", name: "Lore (Circus)" } }));
+  same(ruleModifiers(lore, { kind: "check", slug: "lore-circus", item: null, ...inFight }).applied.map(m => m.source), ["rule:given:aid:lore-circus"], "a Lore chosen when the result was given");
+  same(ruleModifiers(wren, { kind: "check", slug: "stealth", item: null, ...inFight }), { applied: [], offered: [], marks: [] }, "another Constellation's roll is not it");
+  same(ruleModifiers(wren, { kind: "move", slug: "", item: null, ...inFight }).applied, [], "nor a Move");
+  same(ruleModifiers(wren, { kind: "check", slug: "crafting", item: null, encounter: { combat: "c2", round: 1 } }), { applied: [], offered: [], marks: [] }, "another Combat: neither applied nor spent");
+  same(ruleModifiers(wren, { kind: "check", slug: "crafting", item: null, encounter: { combat: null, round: 0 } }).applied, [], "nor once its Combat is over");
+  same(ruleModifiers(holding(entryFor({ combat: null })), { kind: "check", slug: "crafting", item: null, ...inFight }).applied.map(m => m.value), [1], "a result given outside an encounter applies inside one");
+  const penalty = holding(entryFor({ result: result(-1) }));
+  same(ruleModifiers(penalty, { kind: "check", slug: "crafting", item: null, ...inFight }).applied.map(m => [m.label, m.value]), [["Aid from Tess", -1]], "a penalty is carried as a bonus is");
+  // The roller's own GIVE and ALTER lines are no modifiers: only a pending result is.
+  same(ruleModifiers(rulesActor([{ ...aidRow, id: "aidcopy3" }, patient, sure]), { kind: "check", slug: "crafting", item: aidRow, rank: "trained" }), { applied: [], offered: [], marks: [] }, "a Maneuver's GIVE lines and a Talent's ALTER lines put nothing on a roll");
+  same(ruleGives(wren, aidGive).table.success, result(1), "and a pending result is no line of the table when its holder Aids in turn");
+});
+
+check("markUpdates removes a used result's flag, and leaves a custom effect's row to its own id", () => {
+  const wren = holding(entryFor());
+  same(markUpdates(wren, [{ key: "given:aid", per: "effect" }]), { "flags.starwrought.rules.given.-=aid": null }, "the flag goes with the roll");
+  same(markUpdates(wren, [{ key: "given:search", per: "effect" }]), {}, "a result that is not there deletes nothing");
+  same(markUpdates(wren, [{ key: "given:aid", per: "state" }, { key: "given:aid", per: "round" }]), {}, "only the one-roll mark removes it");
+  same(markUpdates({ items: [], system: {}, flags: {} }, [{ key: "given:aid", per: "effect" }]), {}, "an actor holding nothing");
 });
 
 /* -------------------------------------------- */

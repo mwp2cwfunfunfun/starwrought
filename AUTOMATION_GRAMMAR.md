@@ -57,12 +57,16 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT REROLL: diplomacy]` | the card of a matching roll offers the die again | 3 |
 | `[EFFECT IGNORE: terrain, mud]` | difficult terrain of those kinds costs nothing | 3 |
 | `[EFFECT USE: Presence, Origin, aid]` | a check made from that Maneuver may be rolled with that Attribute and that Constellation's Proficiency Bonus in place of its own (`same` keeps a term) | 3 |
+| `[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]` | on a Maneuver's own row: that result of its check gives another character a bonus (or a penalty) on its next roll with a Constellation, named when it is given (`chosen`) or by the line | 3 |
+| `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` | on a Talent: one property of what that Maneuver gives is changed (a result to nothing, or a window with `Aid.beneficial-duration`) | 3 |
+| `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter` | 3 |
+| `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
 | `; IF: RANK(roll = untrained)` | ... while the rank the roll is made at is that (the borrowed Constellation's when a `USE` stands; on a `USE` line itself, the check's own rank before the swap) | 3 |
 | `; IF: SEEN` | ... for a recipient who can see the owner | 3 |
 | `; IF: ALLIES(>=1, 0)` | ... while that many allies stand within the range (`ENEMIES`, `ALL`) | 3 |
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
-| `; IF: RESULT(critical failure)` | ... on that degree (REROLL only) | 3 |
+| `; IF: RESULT(critical failure)` | ... on that degree (REROLL and GIVE only) | 3 |
 | `; IFT: TRAIT(Fear)` | ... against an attack carrying the trait | 3 |
 | `; IFT: MARKED` | ... against the creature the MARK named | 3 |
 | `; IFT: BLOW` (`BLAST`, `BLIGHT`, `BEGUILEMENT`, `MELEE`, `RANGED`) | ... against that Threat, or a Blow by its reach | 3 |
@@ -157,11 +161,11 @@ Trigger, Requirements and Effect from the row. A name that is no row fails the b
 [EFFECT TAG: <value> <type>, <descriptor>; <component>; <component> ...]
 ```
 
-The **tag** names what is modified. A **modifier tag** (`CHECK`, `ATK`, `DEF`, `INIT`, `SPEED`)
-takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the book's three;
-FG's `[bonus]`), then at most one descriptor after a comma. The other tags (`IMMUNE`, `MARK`,
-`REROLL`, `IGNORE`, `USE`) take descriptors alone; `USE` takes exactly three, and never a value or
-a type. No bonus is untyped.
+The **tag** names what is modified. A **modifier tag** (`CHECK`, `ATK`, `DEF`, `INIT`, `SPEED`,
+`GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
+book's three; FG's `[bonus]`), then at most one descriptor after a comma (`GIVE` exactly one). The
+other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`) take descriptors alone; `USE`
+takes exactly three and `ALTER` exactly one, and never a value or a type. No bonus is untyped.
 
 | tag | modifies | descriptor | stored kind |
 |---|---|---|---|
@@ -175,6 +179,8 @@ a type. No bonus is untyped.
 | `REROLL: diplomacy` | the card of a matching roll offers to throw the die again; no descriptor means any check | a Constellation | `reroll` |
 | `IGNORE: terrain, mud, decking` | difficult terrain of those kinds costs nothing; `IGNORE: terrain` alone every kind | `terrain`, then kinds | `ignore` |
 | `USE: Presence, Origin, aid` | the two base terms of a check made from a Maneuver's own Item, written `USE: <Attribute>, <Constellation>, <Maneuver>`: the Attribute Bonus and the Proficiency Bonus are the named Attribute's and the named Constellation's in place of the check's own, offered in the roll dialog; nothing else on the roll changes (0.21.0) | exactly three: an Attribute or `same`, a Constellation or `same`, then a Maneuver by name | `substitute` |
+| `GIVE: 1 situation, chosen` | what a result of this Maneuver's check gives ANOTHER character: a bonus or penalty on that character's next roll with a Constellation. Written on the Maneuver's own row, one line for each degree that gives something, each with `IF: RESULT(<degree>)` (0.22.0) | exactly one: `chosen` (the Constellation is named when the result is given) or a Constellation by name | `give` |
+| `ALTER: Aid.critical-failure` | one property of what a Maneuver gives, changed by a Talent: `ALTER: <Maneuver>.<property>; VALUE: <value>`. The properties read are in the Property vocabulary below (0.22.0) | exactly one: the Maneuver by name, a dot, the property | `alter` |
 
 A bonus to a Constellation moves its **Threshold as well as its roll** (section 7). A bonus to a
 Maneuver is applied when the roll is made from that Maneuver's Item and otherwise **offered**
@@ -193,6 +199,8 @@ default when the swapped total is strictly higher (rulings 218 and 219; section 
 | `FOR: allies 15` | who receives it: `self` (the default), `allies`, `enemies`, `all`, `self+allies`, within that range of the owner; `FOR: self` takes no range |
 | `LIMIT: round` | the first time it would apply to each recipient in a round, and not again until the next round |
 | `LIMIT: encounter` | the first time in an encounter, and not again until the next. Outside an encounter either applies every time, said on the card |
+| `UNTIL: recipient opportunity 2` | after `GIVE` alone: the window in which the result may be used (the Window vocabulary below). With none, `giver opportunity`. Every other tag refuses it by name |
+| `VALUE: nothing` | after `ALTER` alone: what the property becomes, `nothing` for a result and a window for a duration (`VALUE: recipient opportunity 2`). Every other tag refuses it by name |
 
 Both `IF:` and `IFT:` accept every condition (FG's own users mix them); the idiomatic prefix is the
 one in the table. Several `IF:`/`IFT:` components on one line must all hold.
@@ -206,7 +214,7 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | `ENEMIES(>=2, 15)` | how many enemies stand within the range | `IF:` |
 | `ALL(>=3, 5)` | how many creatures of either side stand within the range | `IF:` |
 | `CLAIM(when trading)` | the player decides: the bonus is a checkbox in the roll dialog with these words as its hint, unticked; the Effects tab's "Apply to next roll" and the pin on the Talent's row arm it for the next roll (ruling 174) | `IF:` |
-| `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` reads it | `IF:` |
+| `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again) and `GIVE` (the degree that gives the result) read it | `IF:` |
 | `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171) | `IFT:` |
 | `MARKED` | the other party is the creature this Talent's or Maneuver's `MARK` named (FG's `IFT: CUSTOM(Hunt Prey)`) | `IFT:` |
 | `BLOW` | the Threat answered is a Blow (a weapon's Strike, an adversary's attack row) | `IFT:` |
@@ -227,6 +235,21 @@ edge in feet; `0` is adjacency.
 **Attribute.** `might`, `agility`, `wits`, `presence`: the first descriptor of `USE`. The word
 `same` stands there, or in the second descriptor, for a term the check keeps: it means "the term
 this check would use without this line".
+
+**Window** (0.22.0). How long a result a Maneuver gave may be used, after `UNTIL:` on a `GIVE` line
+and after `VALUE:` on an `ALTER` of a duration. `giver opportunity` is until the giver's next
+Opportunity begins, and is what a `GIVE` has when it says nothing; `giver opportunity 2` waits for
+the second. `recipient opportunity 2` runs through the END of the recipient's second upcoming
+Opportunity (an Opportunity already running when the result is given is not counted). `encounter`
+is until the encounter ends. Every window also ends with the encounter, and outside an encounter a
+result lasts until it is used, replaced or removed.
+
+**Property** (0.22.0). What an `ALTER` may change of the results a Maneuver gives, after the dot:
+`duration` (every result's window), `beneficial-duration` (the window of the results that give a
+bonus, so a penalty keeps its own), and the four results by degree, `critical-success`, `success`,
+`failure`, `critical-failure`, each of which is changed to `nothing`. Any other property is refused
+as not read yet. Where two lines change one Maneuver, `beneficial-duration` stands over `duration`
+in either order, and of two changes to one property the later stands.
 
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
@@ -332,6 +355,131 @@ In play:
 - **On / Skip / Off** on the Effects tab switch the line like any effect line (section 6), and
   Skip or Off is how a swap is declined on a roll with no dialog.
 
+### `give`
+What a result of a Maneuver's check gives another character (0.22.0; rulings 223 to 230). Made by
+`[EFFECT GIVE: ...]`, and written **on the Maneuver's own row**, because it is the Maneuver's own
+result. It is for Aid (PHB v4.24): a Success gives the ally a +1 Situation bonus, a Critical Success
++2 (+3 "if you're a master with the check you attempted", +4 if legendary), a Critical Failure a -1
+Situation penalty. Through 0.21.0 that was prose on the card, applied by hand.
+
+```
+[EFFECT GIVE: <value> <type>, chosen | <Constellation>; IF: RESULT(<degree>); IF: RANK(...); UNTIL: <window>]
+
+[EFFECT GIVE: 2 situation, chosen; IF: RESULT(critical success); IF: RANK(roll <= expert)]
+[EFFECT GIVE: 3 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = master)]
+[EFFECT GIVE: 4 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = legendary)]
+[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]
+[EFFECT GIVE: -1 situation, chosen; IF: RESULT(critical failure)]        Aid's row, whole
+```
+
+- **The value and the type**, as on any modifier tag: a signed whole number, then `situation`,
+  `condition` or `gear`. A negative value is a penalty.
+- **One descriptor**: `chosen`, or a Constellation by name. `chosen` means the Constellation is
+  named when the result is given, opening on the one the giver rolled (Mike, 2026-11-14: "Named
+  separately"); a named Constellation fixes it. A Maneuver, a Lore, a group and a scope word are
+  refused (a Lore is reached through `chosen`).
+- **Exactly one `IF: RESULT(<degree>)`** says which result gives it (ruling 223). One line for
+  each degree that gives something; a degree with no line gives nothing.
+- **`IF: RANK(...)`** chooses between lines for one degree: the owner's rank in a Constellation,
+  or `RANK(roll ...)`, the rank ROLLED (ruling 217), which is how "a master with the check you
+  attempted" is written. **The first line that holds for a degree is its result**, so order the
+  lines for one degree from the narrowest condition to the widest.
+- **`UNTIL: <window>`** (section 3, Window). With none the window is `giver opportunity`.
+
+Refused by name: `FOR`, `IF: SEEN`, the counts, `IF: CLAIM(...)`, `LIMIT`, every condition about
+the other party, and a `GIVE` after the ring of an `[AURA ...]` block. A `GIVE` in a Talent's cell
+or on a custom effect row is refused in its own words: a Talent changes what a Maneuver gives with
+`ALTER`.
+
+**As read:** `gives a +1 Situation bonus to the next roll with the Constellation chosen, on a
+Success, until the giver's next Opportunity`.
+
+In play (rulings 226 to 229):
+
+- **Nothing is given by the roll.** The check's card carries the result of its degree, and for
+  the giver's owner and the GM a button: **Give Wren +1 to Crafting** when the giver had one
+  character targeted (one click), with **Other...** beside it, or **Give the result...** when
+  nobody was targeted. Other and Give the result open a dialog: who, and for a `chosen` result
+  which of that character's Constellations. Never automatic (Mike: "A button on the card").
+- **Pressing it puts one line on the recipient's Effects tab**, "Aid from Tess: +1 Situation bonus
+  to the next Crafting roll, until Tess's next Opportunity", and posts a card that says the same.
+  That card is the record: the button on the check card gives way to "Given to Wren: +1 Situation
+  to Crafting" on every client.
+- **One result of a Maneuver is pending on a character at a time.** A new Aid result replaces the
+  one pending, whoever gave it, and the give card says so.
+- **The recipient's next roll with that Constellation carries it, and it is gone**: a check, a
+  Maneuver's check, an attack, a Defense roll, an Initiative. It prints on the card as "Aid from
+  Tess +1". It is never part of a Threshold on the sheet, and reading a Threshold (an attack
+  resolved against it) neither carries it nor uses it up.
+- **Unused, it goes when its window closes**, or with the encounter. The window is counted from
+  the press of the button, so press it when the Aid is made. Outside an encounter a result lasts
+  until it is used, replaced or removed, and a result given in one encounter is never applied in
+  another.
+- **Recipients are characters, and never the giver.** An adversary rolls flat and holds no such
+  line.
+- **A check made against no Threshold has no degree**, and its card says there is nothing to give.
+- **A reroll gives its own result.** The first card's table holds every degree, so the new card
+  offers what its own degree gives, and the card that was thrown again gives nothing. A result
+  already given from the first card stays with whoever got it.
+- **One client writes it**: the GM's when a GM is connected, else the recipient's own player's,
+  so two presses of one card are served in turn and the second is told it was already given. With
+  neither connected nothing is given and the presser is told.
+- **A roll its roller may not read** (a blind roll) shows that roller no button: the button's
+  words would say the degree. The GM has it.
+- **The tracker's own Initiative die does not read a pending result.** Roll Initiative from the
+  sheet, or from the party's grid, to use one.
+
+### `alter`
+A Talent that changes one property of what a Maneuver gives (0.22.0; rulings 223 to 230). Made by
+`[EFFECT ALTER: ...]`, in the shape Mike drafted in the cells of two Human Talents before the kind
+existed (2026-11-14): Patient Assistance ("the Situation bonus provided by your Aid lasts until the
+end of the recipient's second upcoming Opportunity") and Sure Assistance ("A critical failure on
+your Aid check grants no penalty to your ally").
+
+```
+[EFFECT ALTER: <Maneuver>.<property>; VALUE: <value>; IF: RANK(...)]
+
+[EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]     Patient Assistance
+[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]                        Sure Assistance
+[EFFECT ALTER: Aid.duration; VALUE: encounter]                              every result of Aid
+```
+
+- **One descriptor**: the Maneuver by the name the action sheets print, a dot, the property
+  (section 3, Property). Case, spaces and a Maneuver's cost glyphs do not matter.
+- **`VALUE:`** says what the property becomes: a window for `duration` and `beneficial-duration`,
+  the word `nothing` for a result. It is read after `ALTER` alone.
+- **`IF: RANK(...)`**: the owner's rank, or `RANK(roll ...)`, the rank rolled.
+
+An `ALTER` changes one property and leaves the rest, so there is no `PRESERVE:`. It never touches
+the roll: a Critical Failure that gives nothing is still a Critical Failure, and still offers a
+Flare. A property not in the list is refused as **not read yet**, naming the ones that are, before
+the Maneuver is looked up, so a cell drafted for a later version says what is missing rather than
+what is misspelt. Refused by name: `FOR`, `LIMIT`, `IF: CLAIM(...)`, `IF: RESULT(...)` (the
+property names the degree), every condition about the other party, `UNTIL`, and an `ALTER` after
+the ring of an `[AURA ...]` block.
+
+**As read:** `Aid's results that give a bonus last through the recipient's second upcoming
+Opportunity`; `Aid's Critical Failure gives nothing`.
+
+In play:
+
+- **Read from everything the roller carries**: a Talent, an owned Maneuver, a custom effect. The
+  card of the Maneuver's check shows the changed result, and under its button "Changed by Patient
+  Assistance".
+- **A result changed to nothing** shows no button and the note "Sure Assistance: a Critical
+  Failure gives nothing", so the table can tell it from a degree that never gave anything.
+- **`beneficial-duration` reaches the results that give a bonus** (Mike: a Success and a Critical
+  Success). A penalty keeps its own window (Mike: "Same window as a bonus", the window a bonus has
+  without the Talent).
+- **Two changes to one Maneuver.** The more particular property stands over the general one,
+  whichever line comes first: `beneficial-duration` over `duration`. Of two changes to ONE
+  property the later line stands, and the card names only the Talent whose change it shows.
+- **On / Skip / Off** on the Effects tab, as any effect line (section 6). A Skip, and a custom
+  effect that lasts the next roll, is spent only by a roll whose degree the line CHANGES: Sure
+  Assistance set to Skip is not used up by a Success, and a change that altered nothing (a result
+  another Talent had already emptied) is not used up at all. A reroll reads the first card's
+  results, so a line the first die did not spend is spent by the reroll that lands on its degree.
+
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
 
@@ -429,6 +577,24 @@ Oathbound        ❶    [EFFECT MARK: enemies]
 Quick Tongue     ❶↺   [EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]
 ```
 
+### Aid, and two Talents that change it (0.22.0)
+
+```
+Aid  ❶                [EFFECT GIVE: 2 situation, chosen; IF: RESULT(critical success); IF: RANK(roll <= expert)]
+                      [EFFECT GIVE: 3 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = master)]
+                      [EFFECT GIVE: 4 situation, chosen; IF: RESULT(critical success); IF: RANK(roll = legendary)]
+                      [EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]
+                      [EFFECT GIVE: -1 situation, chosen; IF: RESULT(critical failure)]
+Patient Assistance    [EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]
+Sure Assistance       [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]
+```
+
+The five lines are Aid's row on the Basic Actions sheet of `data/maneuvers.xlsx`; the two Talents
+are the Human's. These cells are Mike's to paste: the 0.22.0 release carries the kinds, and both
+workbooks were in his hands when it was cut. What the system does not read of Aid, and the table
+does: its Threshold ("typically 15"), whether the help makes sense, and the ❶ it costs, which is
+clicked on the pip by hand.
+
 What the system does not read, and the table does: whom Oathbound may name ("a creature that has
 either formally challenged you, or that has broken a bargain or a truce with you"; the mark takes
 the targeted enemy); Quick Tongue's Requirements (a settlement, and not used there within a
@@ -462,6 +628,16 @@ Skip). **Off**: never offered. On a roll with no dialog (a Shift-click) a swap t
 ticked is applied, so Skip and Off are the ways to decline it there. A custom effect may be a `USE`
 line too (`USE: Presence, Origin, aid`), with the same three durations; one that lasts the next
 roll leaves only when its swap is the one rolled.
+
+**Pending results** (0.22.0) are a list of their own on the tab, under the effect lines: what
+another character's Maneuver has given this one and it has not yet used ("Aid from Tess: +1
+Situation bonus to the next Crafting roll, until Tess's next Opportunity"). A pending result has no
+switch. The next roll with its Constellation uses it, its window closes it, and the bin beside it
+is the GM's alone: a player does not strike a penalty a failed Aid left. It counts in the tab's
+total and in the tracker's badge. A `GIVE` line on a copy of a Maneuver the character owns, and an
+`ALTER` line on a Talent, are effect lines like any other and have On / Skip / Off; an `ALTER` may
+be a custom effect too (`ALTER: Aid.critical-failure; VALUE: nothing`). A `GIVE` may not: it is
+written on the Maneuver's row.
 
 ## 7. What a rule does in play, and what it does not
 
@@ -547,8 +723,35 @@ roll leaves only when its swap is the one rolled.
 - **What a substitution does not read yet** (0.21.0). Not built: a Constellation as the check a
   `USE` names (it brings the Initiative question of ruling 111 with the first Talent that wants
   it); offers on plain checks, made without the Maneuver's Item; `IF: UNSUBSTITUTED`; a flat
-  Proficiency Bonus (Working Knowledge's "+3 instead of +0"); `FOR` and auras; `CLAIM`; and Aid's
-  own outcome bonus, which stays the card's text.
+  Proficiency Bonus (Working Knowledge's "+3 instead of +0"); `FOR` and auras; `CLAIM`. Aid's own
+  outcome is read since 0.22.0 (the next entries).
+- **A Maneuver's result is given by a button, to one character, for one roll** (0.22.0; rulings
+  226 and 227; section 4, `give`). The check's card carries the result of its degree; the giver's
+  owner or the GM presses Give; the recipient holds one pending result of that Maneuver, which its
+  next roll with the Constellation carries and removes. A check, a Maneuver's check, an attack, a
+  Defense roll and an Initiative are rolls; the Threshold on the sheet and a Threshold read are
+  not, so a pending bonus to Guard helps a Guard ROLL and never the number an attacker reads.
+- **A window is counted on the result itself** (ruling 228). Nothing in the system counts
+  Opportunities, so a pending result remembers the Combat, the Combatant its window watches and
+  how many of that fighter's Opportunities have begun. `giver opportunity` closes as the giver's
+  next Opportunity begins; `recipient opportunity 2` closes as the second of the recipient's
+  upcoming Opportunities ends. The turn step a completed circuit of Passes takes on its way to the
+  next round is nobody's Opportunity and is not counted. A lone fighter's step to itself, when
+  nobody else has an action left, IS one: one Opportunity ended and the next began. Each
+  character's window is settled by the GM's client, else by its own player's.
+- **A change to what a Maneuver gives is read with the check** (ruling 225; section 4, `alter`).
+  The roller's `ALTER` lines are applied to the Maneuver's results when the check is made, and the
+  card keeps the whole table, every degree at the rank rolled, so a reroll and a reload read the
+  same answer. An `ALTER` never changes the roll or its degree.
+- **What a give does not read yet** (0.22.0). Not built: two uses of one result (Carry the Plan);
+  a second character using a pending result (Pay It Forward); a Condition given by a result; a
+  result given by a Maneuver that rolls no check; an adversary as the recipient; the `ALTER`
+  properties beyond the six (a Maneuver's movement, range, limit, uses, slots); and a Threshold a
+  Maneuver's check opens on (Aid's "typically 15"), which is still typed. With no GM connected the
+  turn step that ends a round by Passes may be counted as an Opportunity by a player's client, and
+  two presses of one card for two recipients owned by different players can both land. A GM
+  stepping the turn backwards and forwards again counts an Opportunity twice, so a window of two
+  Opportunities or more can close one early.
 - **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
   sight-blocking walls plus three statuses; light, sight range and hearing are the table's.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
@@ -573,7 +776,7 @@ roll leaves only when its swap is the one rolled.
 | `"substitute" is the kind's name, and its tag is USE: write \`[EFFECT USE: Presence, Origin, aid]\`` | a kind's stored name typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): an effect is written with its tag. On a custom effect row the message offers the bare `USE: Presence, Origin, aid` |
 | `USE is an effect tag and takes a colon: write \`[EFFECT USE: Presence, Origin, aid]\`` | a tag typed without its colon (`use Presence, Origin, aid`; 0.21.0); any tag is told the same in its own word (`CHECK is an effect tag and takes a colon: ...`), but `SPEED`, which is a feature keyword first |
 | `a [ has no closing ]` | a bracket left open |
-| `CHECK is written \`CHECK: <value> <type>, <descriptor>\` ... a signed whole number first` | the value is missing or not a number |
+| `CHECK is written \`CHECK: <value> <type>, <descriptor>\` ... a signed whole number first` | the value is missing or not a number. `GIVE` is told the same with its own example, `GIVE: 1 situation, chosen; IF: RESULT(success)` |
 | `no Talent bonus is untyped; name situation, condition or gear after the value` | the bonus type is missing |
 | `write condition, not status: the book renamed the types in v3.3` | the retired type words (circumstance, status, item) |
 | `CHECK takes one descriptor, a Constellation or a Maneuver, not N` | two descriptors after the comma |
@@ -585,12 +788,35 @@ roll leaves only when its swap is the one rolled.
 | `"<word>" is not a rank: write Untrained, Trained, Expert, Master or Legendary` | the rank word |
 | `"<name>" is a group and has no rank of its own; test <parent> instead` | `RANK(Dueling = expert)`: write the parent |
 | `"<word>" is not a Degree: write Critical Success, Success, Failure or Critical Failure` | the degree in RESULT |
-| `IF(Outcome=...) is only read by a kind that acts after the die (reroll)` | a RESULT condition on anything but REROLL |
+| `IF(Outcome=...) is only read by a kind that acts after the die (reroll, give)` | a RESULT condition on anything but REROLL and GIVE |
 | `"<word>" is not a Threat (...) or a Constellation` | the word after IFT: that is neither |
 | `a Threat is written bare: \`IFT: BLOW\`` | `IFT: CHECK(blow)` |
 | `<TAG> does not take <component>` | a component the tag has no use for (`IMMUNE does not take IF: CLAIM(...)`) |
 | `"<TAG>" is a tag and begins its own line; one effect per line` | two tags in one block |
-| `"<part>" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT: (descriptors are separated by commas; a semicolon begins a component)` | what follows a semicolon is none of the four. The words in parentheses are added (0.21.0) when the part has no colon: most often a descriptor that followed a semicolon (`USE: Presence; Origin; aid`) |
+| `"<part>" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT: (descriptors are separated by commas; a semicolon begins a component)` | what follows a semicolon is none of the four. The words in parentheses are added (0.21.0) when the part has no colon: most often a descriptor that followed a semicolon (`USE: Presence; Origin; aid`). After `GIVE` the list is `IF: and UNTIL:`, after `ALTER` it is `VALUE: and IF:` (0.22.0), so a `PRESERVE:` is not sent looking for a `FOR` |
+| `<TAG> does not take UNTIL` / `<TAG> does not take VALUE` | `UNTIL:` after any tag but `GIVE`, or `VALUE:` after any tag but `ALTER` (0.22.0) |
+| `UNTIL is given twice` / `VALUE is given twice` | one window, one value |
+| `a window is written \`giver opportunity\`, \`recipient opportunity <N>\` or \`encounter\`, not "<text>"` | the words after `UNTIL:`, or after `VALUE:` on an `ALTER` of a duration |
+| `"<word>" is not a count of Opportunities: write a whole number from 1 to 9, as in \`recipient opportunity 2\`` | the count in a window |
+| `GIVE is written on the Maneuver's own row: it says what a result of that Maneuver's check gives. A Talent changes it with ALTER, as in \`[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]\`` | a `GIVE` in a Talent's cell or on a custom effect row |
+| `GIVE says which result of the check gives it: add \`IF: RESULT(<degree>)\`, as in \`GIVE: 1 situation, chosen; IF: RESULT(success)\`` | a `GIVE` with no degree |
+| `GIVE takes one \`IF: RESULT(...)\` (<N> given): write one line for each degree` | two degrees on one line |
+| `GIVE names what the bonus is to after a comma: chosen (named when the result is given) or a Constellation, as in \`GIVE: 1 situation, chosen; IF: RESULT(success)\`` | a `GIVE` with no descriptor |
+| `GIVE takes one descriptor, chosen or a Constellation, not <N>` | two descriptors or more |
+| `"<name>" is not a Constellation: GIVE names one, or chosen for one named when the result is given` / `"<name>" is a Maneuver: GIVE names the Constellation the recipient rolls, or chosen ...` | the descriptor of `GIVE` |
+| `"<word>" is a scope word; GIVE names one Constellation, or chosen for one named when the result is given` | `checks`, `defenses`, `attacks`, `initiative` or `speed` as the descriptor |
+| `"<name>" is a group and its Talents roll the parent; write <parent> instead` | a group as the descriptor of `GIVE` |
+| `a Lore is the character's own; write chosen, and the Lore is named when the result is given` | a Lore as the descriptor of `GIVE` |
+| `GIVE does not take FOR` / `GIVE does not take LIMIT` / `GIVE does not take IF: SEEN` / `GIVE does not take IF: CLAIM(...)` / `GIVE does not take IFT: TRAIT(...)` | a component `GIVE` has no use for: it takes `IF: RESULT(...)`, `IF: RANK(...)` and `UNTIL:` alone |
+| `a give is what a Maneuver's check gives and cannot ride an [AURA ...] block; write it on the Maneuver's row as \`[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]\`` | a `GIVE` after the ring's semicolon |
+| `an alteration is written \`ALTER: <Maneuver>.<property>; VALUE: <value>\`, as in \`ALTER: Aid.critical-failure; VALUE: nothing\` (<N> descriptors given, 1 wanted: the Maneuver, a dot, the property)` | no descriptor, or a comma in it |
+| `"<text>": an alteration names the Maneuver, a dot, and the property it changes, as in \`ALTER: Aid.critical-failure; VALUE: nothing\`` | no dot, or nothing on one side of it |
+| `the property "<word>" is not read yet: ALTER reads duration, beneficial-duration, critical-success, success, failure and critical-failure` | a property of a later version (`Move Together.movement`, `Aid.beneficial-uses`): told before the Maneuver is looked up |
+| `"<name>" names no Maneuver` / `"<name>" is a Constellation: ALTER changes what a Maneuver gives, as in \`ALTER: Aid.critical-failure; VALUE: nothing\`` | the name before the dot |
+| `ALTER says what the property becomes: add \`VALUE: ...\`, as in \`ALTER: Aid.critical-failure; VALUE: nothing\`` / `VALUE: says what the property becomes, as in \`VALUE: nothing\` or \`VALUE: recipient opportunity 2\`` | no `VALUE:`, or an empty one |
+| `"<value>": a result is changed to nothing in this version, as in \`ALTER: <Maneuver>.<property>; VALUE: nothing\`` | any value but `nothing` on a result (`VALUE: no-effect`) |
+| `ALTER does not take FOR` / `ALTER does not take LIMIT` / `ALTER does not take IF: CLAIM(...)` / `ALTER does not take IFT: TRAIT(...)` | a component `ALTER` has no use for: it takes `VALUE:` and `IF: RANK(...)` alone. An `IF: RESULT(...)` gets the message above: the property names the degree |
+| `an alteration changes the owner's own Maneuver and cannot ride an [AURA ...] block; write it as its own \`[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]\`` | an `ALTER` after the ring's semicolon |
 | `FOR is written \`FOR: <who> [<N>]\`` / `FOR: self takes no range` | the recipients |
 | `LIMIT is written \`LIMIT: round\` or \`LIMIT: encounter\`` | the limit |
 | `a who is written self, allies, enemies, all or self+allies` | the FOR subject |
@@ -707,3 +933,19 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   colon, and a part after a semicolon that has no colon is told that commas separate descriptors.
   The release carries the kind alone: Cooperative Instinct is on Mike's Human sheet in progress,
   and no shipped cell uses `USE` yet.
+- **0.22.0** (2026-11-14): the `GIVE` and `ALTER` tags, the `give` and `alter` kinds and the
+  `UNTIL:` and `VALUE:` components, from Mike's question about Patient Assistance and Sure
+  Assistance ("Do we have automation grammar that allows for this?"). It did not, because Aid's own
+  result was prose on the card; so Aid's result is written first, on Aid's row, and the two Talents
+  change it. `GIVE: <value> <type>, chosen | <Constellation>; IF: RESULT(<degree>)` on the
+  Maneuver's own row, the first line that holds for a degree its result (ruling 223); the windows
+  `giver opportunity`, `recipient opportunity <N>` and `encounter` (224); `ALTER:
+  <Maneuver>.<property>; VALUE: <value>` in the shape Mike drafted, six properties read and every
+  other refused as not read yet, his `PRESERVE:` dropped because an alteration leaves the rest
+  alone (225); given by a button on the card, to a character the giver names, for a Constellation
+  named then (226); one pending result of a Maneuver to a recipient, used by the next roll with
+  the Constellation and never part of a Threshold (227); the window counted from the press, on the
+  result itself (228); the `gives` hook point, the sixth, and the give's three answers as a
+  triggered moment (229); the Effects tab's pending results, read-only, the bin the GM's (230).
+  `RESULT(...)` is read by `GIVE` as well as `REROLL`. The release carries the kinds alone: Aid's
+  row and the two Talents are on Mike's sheets in progress, and no shipped cell uses either tag yet.

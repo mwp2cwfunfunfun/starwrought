@@ -44,7 +44,9 @@
  */
 
 import { KINDS, kindOf } from "./kinds/index.mjs";
-import { flagKey, ruleCarrierKey, ATTRIBUTES } from "../config.mjs";
+import { flagKey, ruleCarrierKey, ATTRIBUTES, slugify, plainName } from "../config.mjs";
+// 0.22.0: what a Maneuver gives. The table and the pending result's carrier are pure data (./given.mjs).
+import { buildTable, sameGiven, givenCarrier, GIVE_DEGREES } from "./given.mjs";
 
 /**
  * The Item types that may carry rules. A Constellation Item is included now, before any carries
@@ -112,6 +114,18 @@ export function ruleStates(actor) {
 }
 
 /**
+ * The results pending on an actor (0.22.0): what Maneuvers have GIVEN it and it has not yet used,
+ * one per Maneuver, as stored under `flags.starwrought.rules.given`. A plain object in a test.
+ * @param {object} actor
+ * @returns {object[]}  The entries (./given.mjs, `pendingEntry`), in key order.
+ */
+export function givenResults(actor) {
+  const given = actor?.flags?.starwrought?.rules?.given;
+  if (!given || (typeof given !== "object")) return [];
+  return Object.keys(given).sort().map(key => given[key]).filter(e => e && (typeof e === "object") && e.id);
+}
+
+/**
  * @typedef {object} RuleEntry
  * @property {object} rule   An entry of the Item's `system.rules`.
  * @property {object} item   The Item that carries it (or an effect carrier, `effectCarrier`).
@@ -148,6 +162,11 @@ export function collectRules(actor) {
       if (effect && (typeof effect === "object") && effect.id) carriers.push(effectCarrier(effect));
     }
   }
+  // 0.22.0: a result a Maneuver GAVE this actor and that is still pending
+  // (`flags.starwrought.rules.given.<maneuver>`, written by documents/cards/give.mjs), read as a
+  // one-roll effect whose single rule is a resolved `give` (./given.mjs, `givenCarrier`). In the
+  // flags and not in `system.effects`, because the sheet's form rewrites those rows on every change.
+  for (const entry of givenResults(actor)) carriers.push(givenCarrier(entry));
 
   for (const item of carriers) {
     const rules = item.system?.rules;
@@ -329,6 +348,9 @@ function callHook(kind, point, hook, entries, context, actor) {
  * @property {boolean} [pairingOnly]    Answer only the rules about the other party (a Strike's pairing as it
  *                                      resolves; the blind die had everything else).
  * @property {boolean} [read]           A Threshold read with no dialog: a claim applies only when armed.
+ * @property {boolean} [leavePending]   This total is itself the roll and nothing is written after it (the
+ *                                      tracker's own Initiative die, 0.22.0): a result pending on the actor
+ *                                      is left where it is, neither carried nor used up.
  */
 
 /**
@@ -526,6 +548,123 @@ export function ruleSubstitutions(actor, context = {}) {
   }
 
   return { candidates, marks };
+}
+
+/* -------------------------------------------- */
+/*  The `gives` hook point (0.22.0)             */
+/* -------------------------------------------- */
+
+/**
+ * What each degree of a Maneuver's check gives another character (the `gives` hook point, defined
+ * with the `give` kind; rulings 223 to 230). Calculated in category (../README.md): the hooks
+ * answer with data on any client and nothing is written here. The check engine asks once, after
+ * the die, for a check made from an action Item, and writes the answer into the card's flags; the
+ * press of the card's button is the one moment anything is given (documents/cards/give.mjs).
+ *
+ * A kind takes part by declaring `hooks.gives(entries, context, actor)`. The entries are TWO sets
+ * of its own rules, each marked with where it came from:
+ *
+ *   from: "item"   the rules on the Item behind the roll, owned or not: a basic Maneuver is used
+ *                  straight from the compendium and is never on the roller, so the roller's index
+ *                  does not hold them. The `give` kind reads these (the Maneuver's own lines).
+ *   from: "own"    the roller's own rules, from `rulesOfKind` (an Off line never arrives). The
+ *                  `alter` kind reads these (a Talent's change to what that Maneuver gives).
+ *
+ * and an answer is a list of `{ line }` and `{ alteration }` (./given.mjs), which `buildTable`
+ * turns into the results by degree. The hook is asked once per entry, so the engine knows which
+ * entry said what: a Skip line's answer is left out of the table and its state clears, and a
+ * one-roll custom effect is removed, each ONLY when the line CHANGES what the degree rolled gives
+ * (`context.degree`): a line shadowed by an earlier one for the same degree, and an alteration of
+ * a result that was not there, change nothing and are not spent. The table itself is whole, every
+ * degree, because a reroll reads it for its own degree with no Item to ask. What this roll did not
+ * spend comes back as `traces`, each with the degrees it changes and the marks it owes, for the
+ * card to keep: a reroll that lands on one of those degrees files them then
+ * (documents/cards/reroll.mjs).
+ *
+ * @param {object} actor  The roller.
+ * @param {{item: object|null, rank?: string, degree?: string|null, encounter?: object|null}} context
+ *        `item` the Item behind the roll, `rank` the rank ROLLED (ruling 217), `degree` the degree
+ *        rolled, or null when the check was made against no Threshold.
+ * @returns {{table: Object<string, object|null>|null, notes: object, marks: Array<{key: string, per: string}>, traces: Array<{degrees: string[], marks: Array<{key: string, per: string}>}>}}
+ *          `table` is null when the Maneuver gives nothing on any degree.
+ */
+export function ruleGives(actor, context = {}) {
+  const marks = [];
+  const none = { table: null, notes: {}, marks, traces: [] };
+  const item = context?.item ?? null;
+  // Only a Maneuver's Item gives: the lines are written on its row and nowhere else.
+  if (!actor || !item || (item.type !== "action") || !Array.isArray(item.system?.rules)) return none;
+  const maneuver = slugify(plainName(item.name ?? ""));
+  const asked = { ...context, maneuver };
+
+  // The Item's own lines carry a state only when the Item is the roller's (a copy on the sheet,
+  // whose lines the Effects tab switches); a compendium Item's are always on.
+  const owned = (item.parent && (item.parent === actor)) || [...(actor.items ?? [])].includes(item);
+  const states = owned ? ruleStates(actor) : {};
+
+  // Every answer in the order it was asked for, each with the entry that gave it.
+  const answers = [];
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.gives;
+    if (typeof hook !== "function") continue;
+    const entries = [];
+    for (const rule of item.system.rules) {
+      if (!rule || (typeof rule !== "object") || rule.error || (kindOf(rule.kind)?.id !== kind.id)) continue;
+      const state = states[ruleStateKey(item, rule)];
+      if (state === "off") continue;
+      entries.push({ rule, item, owner: actor, from: "item", ...(state === "skip" ? { skip: true } : {}) });
+    }
+    for (const e of rulesOfKind(actor, kind.id)) entries.push({ ...e, owner: actor, from: "own" });
+
+    for (const entry of entries) {
+      let result;
+      try {
+        result = hook([entry], asked, actor);
+      } catch (error) {
+        console.error(`STARWROUGHT | the "${kind.id}" kind's gives hook failed:`, error);
+        continue;
+      }
+      if (!Array.isArray(result)) continue;
+      const answer = { entry, lines: [], alterations: [], skip: entry.skip === true };
+      for (const a of result) {
+        if (!a || (typeof a !== "object")) continue;
+        if (a.line && (typeof a.line === "object") && GIVE_DEGREES.includes(a.line.degree)) answer.lines.push(a.line);
+        else if (a.alteration && (typeof a.alteration === "object")) answer.alterations.push(a.alteration);
+      }
+      if (answer.lines.length || answer.alterations.length) answers.push(answer);
+    }
+  }
+
+  // What stands: every answer but a Skip line's, in order.
+  const tableOf = keep => {
+    const kept = answers.filter(keep);
+    return buildTable(kept.flatMap(a => a.lines), kept.flatMap(a => a.alterations));
+  };
+  const standing = tableOf(a => !a.skip);
+
+  // The traced entries, each with the degrees it CHANGES: a Skip line by what the table would
+  // give with it put back, a one-roll custom effect by what the table would give without it.
+  // So a line shadowed by an earlier one, and an alteration that changed nothing, touch nothing.
+  const traces = [];
+  for (const answer of answers) {
+    if (!needsTrace(answer.entry)) continue;
+    const other = answer.skip ? tableOf(a => !a.skip || (a === answer)) : tableOf(a => !a.skip && (a !== answer));
+    const degrees = GIVE_DEGREES.filter(d => !sameGiven(standing, other, d));
+    const own = traceMarks(answer.entry, actor);
+    if (degrees.length && own.length) traces.push({ degrees, marks: own });
+  }
+  const degree = context?.degree ?? null;
+  if (degree) {
+    for (const trace of traces) {
+      if (!trace.degrees.includes(degree)) continue;
+      for (const m of trace.marks) addMark(marks, m);
+    }
+  }
+
+  // A Maneuver whose every line is skipped still "gives": the card then says nothing, and the
+  // Skip is spent by the degree its line would have answered.
+  if (!answers.some(a => a.lines.length)) return none;
+  return { table: standing.table, notes: standing.notes, marks, traces };
 }
 
 /* -------------------------------------------- */

@@ -130,7 +130,17 @@ export async function rerollByRule(message, flags, button) {
 export async function rerollCheck(message, flags, { roll, reason = "", rule = null } = {}) {
   const roller = resolveActor(flags.actorUuid);
   if (!roller || !roll) return null;
-  const item = flags.itemUuid ? (fromUuidSync(flags.itemUuid) ?? null) : null;
+  // The Item behind the check, whole (0.22.0): a basic Maneuver is rolled straight from the
+  // compendium, where `fromUuidSync` answers the pack's index entry, which has no `system` for the
+  // new card to print its text from.
+  let item = null;
+  if (flags.itemUuid) {
+    try {
+      item = (await fromUuid(flags.itemUuid)) ?? null;
+    } catch {
+      item = null;
+    }
+  }
   const modifiers = Array.isArray(flags.modifiers) ? flags.modifiers : [];
   const natural = roll.dice[0]?.results?.[0]?.result ?? null;
 
@@ -164,6 +174,18 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     degree = SW.degreeOf(roll.total, threshold, natural);
     outcome = SW.ATTACK_OUTCOMES[degree];
   }
+  // What the Maneuver gives (0.22.0): the first card's table holds every degree at the rank
+  // rolled, so the new card carries it as it stands and offers the result of its own degree. A
+  // Skip line, or a one-roll custom effect, that the first die did not spend because it changes
+  // another degree is spent now if this die landed there; the rest stays owed on the new card.
+  const given = flags.given?.table ? foundry.utils.deepClone(flags.given) : null;
+  const dueMarks = [];
+  if (given && Array.isArray(given.unspent) && degree) {
+    for (const trace of given.unspent) {
+      if (Array.isArray(trace?.degrees) && trace.degrees.includes(degree)) dueMarks.push(...(trace.marks ?? []));
+    }
+    given.unspent = given.unspent.filter(trace => !(Array.isArray(trace?.degrees) && trace.degrees.includes(degree)));
+  }
   const label = message.content?.match(/<h3>([^<]*)<\/h3>/)?.[1] ?? (item ? SW.plainName(item.name) : roller.name);
   const cfg = {
     actor: roller,
@@ -175,6 +197,8 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     // modifiers, and the record of the swap, so the new card says it again.
     attribute: flags.attribute ?? null,
     substituted: flags.substituted ?? null,
+    // What the Maneuver gives (0.22.0), read above.
+    given,
     label: foundry.utils.unescapeHTML?.(label) ?? label,
     subtitle: "",
     threshold: withhold ? null : threshold,
@@ -196,6 +220,10 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     config: cfg
   };
   await SwCheck.postResult(result);
+  if (dueMarks.length) {
+    const { writeRuleMarks } = await import("../../rules/scene.mjs");
+    await writeRuleMarks(roller, dueMarks).catch(err => console.error("STARWROUGHT | the reroll's rule marks could not be written", err));
+  }
   if (message.isAuthor || game.user.isGM) {
     await message.update({ [`flags.${SW.SYSTEM_ID}.superseded`]: { by: result?.message?.id ?? null, reason } });
   }

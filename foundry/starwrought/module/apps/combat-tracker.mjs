@@ -216,7 +216,9 @@ function onActorChanged(actor, changes) {
   // state or a custom effect changes. The rules' other flags (a FIRST/ONCE mark, an armed claim, a
   // Talent's mark) draw nothing on the tracker and do not re-render it (0.18.1).
   const actions = combat.started && foundry.utils.hasProperty(changes, "system.actions");
-  const effects = foundry.utils.hasProperty(changes, "system.effects") || foundry.utils.hasProperty(changes, "flags.starwrought.rules.state");
+  // A result given, used or closed (0.22.0) is a line of the badge too.
+  const effects = foundry.utils.hasProperty(changes, "system.effects") || foundry.utils.hasProperty(changes, "flags.starwrought.rules.state")
+    || foundry.utils.hasProperty(changes, "flags.starwrought.rules.given");
   if (!actions && !effects) return;
   if (combat.getCombatantsByActor(actor).length) scheduleRender();
 }

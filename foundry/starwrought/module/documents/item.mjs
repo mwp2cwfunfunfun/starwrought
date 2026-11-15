@@ -107,7 +107,8 @@ export class SwItem extends Item {
             item: this,
             label: SW.plainName(this.name),
             subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
-            outcomes: this.#outcomeList()
+            outcomes: this.#outcomeList(),
+            ...this.#allyFor(actor)
           }, rest, { inplace: false }));
         }
         if (this.system.check.enabled && actor) {
@@ -126,6 +127,7 @@ export class SwItem extends Item {
             label: SW.plainName(this.name),
             subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
             outcomes: this.#outcomeList(),
+            ...this.#allyFor(actor),
             ...(read ?? {})
           }, rest, { inplace: false }));
         }
@@ -190,6 +192,26 @@ export class SwItem extends Item {
     }
     if (Object.keys(update).length && (actor.isOwner || game.user.isGM)) await actor.update(update, { swAnnounced: true });
     return this.toMessage({ actor, lines });
+  }
+
+  /**
+   * The ally a Maneuver that GIVES a result is made for (0.22.0), as roll config: the one token
+   * the user has targeted, when its Actor is a character other than the roller. The check card
+   * then offers the result to that character in one click (documents/cards/give.mjs); with no
+   * such target it asks who. Named `ally`, never `targetUuid`: a target is the roll's other
+   * party to the rules (`MARKED`, a Threshold read), and the ally of an Aid is neither.
+   * @param {Actor} actor  The roller.
+   * @returns {{ally: {uuid: string, name: string}}|{}}
+   */
+  #allyFor(actor) {
+    if (!(this.system.rules ?? []).some(r => r?.kind === "give")) return {};
+    const token = SwCheck.currentTarget();
+    const target = token?.actor;
+    if (!target || (target.type !== "character") || (target.uuid === actor?.uuid)) return {};
+    // A token's Actor and the world Actor it is drawn from are one body (an unlinked token reads
+    // its base Actor's flags): the roller's own token is no ally either way.
+    if ((target.id === actor?.id) && !(target.isToken && actor?.isToken)) return {};
+    return { ally: { uuid: target.uuid, name: token.name } };
   }
 
   /**

@@ -1754,12 +1754,14 @@ export async function beginEncounter(party, { keep = [] } = {}) {
     const unrolled = entry.combatants.filter(c => (c.initiative === null) || (c.initiative === undefined));
     if (!unrolled.length) continue;
     const scoutMods = entry.modifiers.map(m => ({ ...m }));
+    // `leavePending` (0.22.0): these totals are the Initiative itself and nothing is written
+    // after them, so a result pending on the member (an ally's Aid) is neither carried nor used.
     const value = Number.isNumeric(roll.natural)
       ? roll.natural + SwCheck.previewTotal(entry.actor, {
-        kind: "initiative", slug: roll.slug, modifiers: [...scoutMods, ...roll.modifiers.map(m => ({ ...m }))]
+        kind: "initiative", slug: roll.slug, modifiers: [...scoutMods, ...roll.modifiers.map(m => ({ ...m }))], leavePending: true
       })
-      : roll.total + SwCheck.previewTotal(entry.actor, { kind: "initiative", slug: roll.slug, modifiers: scoutMods })
-        - SwCheck.previewTotal(entry.actor, { kind: "check", slug: roll.slug });
+      : roll.total + SwCheck.previewTotal(entry.actor, { kind: "initiative", slug: roll.slug, modifiers: scoutMods, leavePending: true })
+        - SwCheck.previewTotal(entry.actor, { kind: "check", slug: roll.slug, leavePending: true });
     const delta = value - roll.total;
     for (const combatant of unrolled) await combat.setInitiative(combatant.id, value);
     entry.kept = { name: roll.name, total: roll.total, delta, value };

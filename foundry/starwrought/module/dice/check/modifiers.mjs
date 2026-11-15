@@ -246,7 +246,7 @@ export function baseModifiers(actor, cfg, candidate = null) {
     const moment = ruleModifiers(actor, {
       kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, rank: cfg.rank ?? "untrained",
       threat: cfg.threat ?? null, other: otherOf(cfg), scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext(),
-      momentOnly: true
+      momentOnly: true, leavePending: cfg.leavePending === true
     });
     parts.push(...moment.applied);
     cfg.ruleOffers = moment.offered;
@@ -355,7 +355,9 @@ export function baseModifiers(actor, cfg, candidate = null) {
   // once the die has landed (a preview writes none).
   const { applied, offered, marks } = ruleModifiers(actor, {
     kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, rank: cfg.rank ?? "untrained",
-    threat: cfg.threat ?? null, other: otherOf(cfg), scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext()
+    threat: cfg.threat ?? null, other: otherOf(cfg), scene: sceneContextFor(actor, cfg.token ?? null), encounter: encounterContext(),
+    // The tracker's own Initiative die (0.22.0): a total nothing is written after.
+    leavePending: cfg.leavePending === true
   });
   parts.push(...applied);
   cfg.ruleOffers = offered;

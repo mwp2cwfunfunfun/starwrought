@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.21.0"; }
+:root { --sw-css-version-character: "0.22.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -717,3 +717,9 @@
   background: rgba(212, 175, 55, 0.12);
   text-shadow: 0 0 6px var(--sw-gold);
 }
+
+/* Pending results (0.22.0): what another character's Maneuver gave this one and it has not yet
+   used. The kind slot holds where it came from ("Aid from Tess"), in the gold and unshouted; the
+   line has no switch, and the bin is the GM's. */
+.starwrought .sw-effects-given-title { margin-top: 0.5rem; }
+.starwrought .sw-given-line .sw-effect-kind { text-transform: none; letter-spacing: 0; color: var(--sw-gold); border-color: var(--sw-gold-dim); }

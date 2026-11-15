@@ -908,6 +908,89 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.22.0 (Mike, 2026-11-14; rulings 223 to 230): what a Maneuver gives, and the Talents that
+change it.** Planned first (`dazzling-floating-simon.md`; Mike's decisions by question: the ally's
+Constellation named separately, a button on the card, Patient Assistance on a Success and a
+Critical Success, the penalty's window a bonus's) and built as two rule kinds; no data and no
+handbook moved, and the rulings are system decisions in the 0.22.0 changelog entry. Mike showed
+Patient Assistance ("the Situation bonus provided by your Aid lasts until the end of the
+recipient's second upcoming Opportunity") and Sure Assistance ("A critical failure on your Aid
+check grants no penalty to your ally") and asked whether the grammar could say them. It could not,
+because **Aid's own result was prose on the card**; so Aid's result is written first, and the
+Talents change it. **`GIVE`** (ruling 223; kind `give`, `module/rules/kinds/give.mjs`), on the
+MANEUVER'S OWN ROW and nowhere else (`context.itemType === "action"`): `GIVE: <value> <type>,
+chosen | <Constellation>; IF: RESULT(<degree>)`, a modifier tag, one descriptor (`chosen`: the
+Constellation is named when the result is given), exactly one `IF: RESULT(...)`, `IF: RANK(roll
+...)` the rank ROLLED (ruling 217), the first line that holds for a degree its result; stored `{
+kind: "give", value, type, to: { name, slug, type }, when, until }`. **`UNTIL:`** (ruling 224), a
+component read after `GIVE` alone: `giver opportunity [N]` (the default; until the giver's Nth next
+Opportunity BEGINS), `recipient opportunity <N>` (through the END of the recipient's Nth upcoming
+Opportunity), `encounter`; `readUntil` and `untilWords` in `module/rules/operators.mjs`.
+**`ALTER`** (ruling 225; kind `alter`, `kinds/alter.mjs`), on a Talent (or a custom effect row), in
+the shape Mike drafted: `ALTER: <Maneuver>.<property>; VALUE: <value>`, **`VALUE:`** read after
+`ALTER` alone and stored as `ops.set`; properties read: `duration`, `beneficial-duration` (a
+window) and `critical-success`, `success`, `failure`, `critical-failure` (`VALUE: nothing`); any
+other is refused as not read yet BEFORE the Maneuver is looked up; his `PRESERVE:` is no component
+(an ALTER changes one property and never the roll, so a Critical Failure that gives nothing still
+Flares). Both components are refused by name after every other tag in `readComponent`
+(`effects.mjs`), since `bonus` reads its ops with no refusal list. **The pure half is
+`module/rules/given.mjs`**: `buildTable(lines, alterations)` (the first line for a degree; then
+the alterations by property, results set to nothing, `duration`, `beneficial-duration`, so the
+more particular stands whatever the order, and of two changes to one property the later),
+`sameGiven`, `pendingEntry`, `pendingRule`, `givenCarrier`, `settle`, `appliesNow`, the words.
+**The `gives` hook point** (ruling 229; the sixth, calculated): `ruleGives(actor, context) -> {
+table, notes, marks, traces }` in `module/rules/engine.mjs` hands each kind its rules on the Item
+behind the roll (`from: "item"`, owned or not, since a basic Maneuver is used straight from the
+compendium) and the roller's own (`from: "own"`); `give` reads the first, `alter` the second;
+asked once per entry, and the table built with and without each traced entry, so a Skip or a
+one-roll custom effect is spent only by a degree it CHANGES (never a shadowed line, never an
+alteration of a result already gone); what the die did not spend is `traces`, kept on the card as
+`given.unspent`, and `rerollCheck` files the marks of the ones the new die lands on. **The roll**:
+`SwCheck.roll` asks for a character's check from an action Item after the die and `cardFlags`
+writes `flags.starwrought.given { table, notes, maneuver, ally, combat, unspent }` (every degree at
+the rank rolled, so a reroll copies it); `SwItem#use` passes the one targeted character as `ally`
+(`#allyFor`), never `targetUuid`. **The give is triggered** (ruling 226;
+`module/documents/cards/give.mjs`): `drawGiveWidget` in the chat render pass (Give Wren +1 to
+Crafting / Other... / Give the result..., the notes, "Given to Wren: ..."; nothing on a card its
+viewer may not read, nor on one that was thrown again, `wasRerolled`), `giveFromCard` with its
+dialog, `applyGive` on the recipient's ONE writer (`writerFor`: the active GM's client, else the
+recipient's first active owner's; one card at a time there, `giving`; it re-reads the card, the
+asker must own its roller, who and which Constellation the only things taken from the request),
+`give:apply` / `give:done` / `give:refused` over the system socket through `onChatSocket`, and the
+give card (`flags.starwrought.kind: "given"`, `from` the check card's id), which IS the record that
+the result was given (`givenRecord`; `registerGiveCards` re-renders the check card when one is
+created or deleted). A token's Actor and the world Actor it is drawn from are one body (`sameBody`).
+**The pending result** (ruling 227) is `flags.starwrought.rules.given.<maneuver slug>` on the
+recipient, one per Maneuver, never a `system.effects` row (the sheet's form rewrites those);
+`collectRules` indexes it as a one-roll carrier with one resolved `give` rule (`pending: true`),
+the `give` kind's `modifiers` hook answers for it on the roll's slug and never under `staticOnly`,
+`read`, `pairingOnly` or `leavePending` (so it is never in the sheet's Threshold, a Threshold read
+never spends it, and a total that is itself the roll and writes nothing after, the tracker's own
+Initiative die in `SwCombatant#_getInitiativeFormula` and a kept road roll, never carries it), and
+`markUpdates` deletes the flag with the roll that used it. **The window** (ruling 228) is
+counted on the entry (`until { who, combatant, n, begun }`) from the press, in the encounter
+viewed: `onTurnChange` in `documents/combat.mjs` calls `settleGivenResults` (`rules/effects-state.mjs`)
+as an Opportunity ends and as one begins, each Actor's responsible client writing; the elected
+client remembers the turn step a completed circuit of Passes takes (`roundEndSteps`) and does not
+count it; a lone fighter's step to itself writes no Combat update, so `settleLoneStep` settles
+this client's Actors and tells the others (`rules:step`, `onStepSocket`, routed by
+`onRulesSocket`); `deleteCombat` clears the Combat's results (`holdersOf`: the fighters, the
+scene's tokens, the world's Actors); outside an encounter a result lasts until used, replaced or
+removed. **The Effects tab** (ruling 230): `givenContext` in `helpers/effects.mjs` lists the
+pending results read-only with a GM-only bin (`removeGiven`), one held over from another
+encounter dimmed and uncounted; `EFFECT_KINDS` gains `give` and `alter`. **Three defects fixed on
+the way, no ruling**: `rerollCheck` read the check's Item with `fromUuidSync`, which answers a
+pack's index entry for a compendium Maneuver, so a reroll's card had no Item text (now awaited);
+`onTurnChange` read `previous` and `current` after its awaits, which core rewrites on the next
+turn change; and a `reroll` rule's button was drawn for a roller on their own blind roll, saying
+the degree the card hid (the kinds' offers and the Give button are left off a card whose content
+the viewer may not see). **Not built**: Carry the Plan's two
+uses, Pay It Forward, a Condition given by a result, a give from a Maneuver with no check, an
+adversary as the recipient, the other ALTER properties, and a Threshold Aid opens on. **The
+release carries the kinds alone**: Aid's row and the two Talents are on Mike's sheets in progress,
+the three cells are in the changelog for him to paste, and `data/ancestries.xlsx` and
+`data/maneuvers.xlsx` were not converted, built, staged or written; the pack content did not move.
+
 **0.21.0 (Mike, 2026-11-10; rulings 215 to 222): the USE tag and the substitute kind.** Planned
 first (`dazzling-floating-simon.md`; Mike's decisions by question: offered and ticked when better,
 only from Aid, the kind alone) and built as one rule kind; no data and no handbook moved, and the
@@ -991,7 +1074,7 @@ or a Skip on a bonus to a Maneuver is no longer spent by a Defense rolled as a c
 `substitute`. **Not built**: a Constellation as the check a USE names (the Initiative question of
 ruling 111, with the first Talent that wants it), offers on plain checks, `IF: UNSUBSTITUTED`, a
 flat Proficiency Bonus (Working Knowledge's "+3 instead of +0"), `FOR` and auras, `CLAIM`, and
-Aid's own outcome bonus, which stays the card's text. **The release carries the kind alone**:
+Aid's own outcome bonus, which stayed the card's text until 0.22.0. **The release carries the kind alone**:
 Cooperative Instinct is a Talent on Mike's in-progress Human sheet, not a shipped one, and
 `data/ancestries.xlsx` and `data/maneuvers.xlsx`, which he is editing by hand, were not converted,
 built or staged; the pack content did not move.
@@ -1332,8 +1415,9 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Seventeen kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0): the effect kinds `bonus`,
-  `prevent`, `mark`, `reroll`, `ignore`, `substitute`, the creation kinds `grant` and `aura`, and
+  Nineteen kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  0.22.0): the effect kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`,
+  `alter`, the creation kinds `grant` and `aura`, and
   the feature kinds `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`,
   `choice`; the level-1 Human, the two Cultures, the
   three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
@@ -1345,8 +1429,12 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   as the check a USE names (it brings the Initiative question of ruling 111 with the first Talent
   that wants it; an open decision), offers on plain checks (a swap is offered only from the
   Maneuver's own Item), `IF: UNSUBSTITUTED`, a flat Proficiency Bonus (Working Knowledge's "+3
-  instead of +0"), `FOR` and auras, `CLAIM`, and Aid's own outcome bonus, which stays the card's
-  text. **The 0.13.0 form is refused since 0.17.0**
+  instead of +0"), `FOR` and auras, `CLAIM`; and, for `give` and `alter` (0.22.0), two uses of one
+  pending result (Carry the Plan), a second character using it (Pay It Forward), a Condition given
+  by a result, a result from a Maneuver that rolls no check, an adversary as the recipient, the
+  `ALTER` properties beyond the six (each refused as not read yet; eleven of Mike's drafted cells
+  name one), and a Threshold a Maneuver's check opens on (Aid's "typically 15", offered to Mike as
+  the next small step). **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
   (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
@@ -1374,8 +1462,8 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   still to be written, as the Steady the Line, Oathbound and Quick Tongue rows were. The Jack of All
   Trades rename gives the Talent a new document id; a character who owned "Jack of Trades" keeps
   the stale copy beside the new one after Sync content. Each new kind, by the recipe in
-  `module/rules/README.md`: its file, its hook point (`modifiers`, `prevent`, `use`, `card` or
-  `substitutions` if one serves it, else a new one defined with it; ruling 119), its checks in
+  `module/rules/README.md`: its file, its hook point (`modifiers`, `prevent`, `use`, `card`,
+  `substitutions` or `gives` if one serves it, else a new one defined with it; ruling 119), its checks in
   `assets/test_rules.mjs`, its
   section in `AUTOMATION_GRAMMAR.md`, its CHANGELOG and FEATURES prose. No survey of the Talents
   until Mike asks for one. Also his: whether the web app and the compendium docx should print the
@@ -1398,8 +1486,15 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Bloodline card prints a raw `@Maneuver[Glimmer]` marker today, because the Bloodline chassis
   text is copied before markers are expanded (a fix belongs with the next content build). The pack
   content did not move in 0.21.0, so Halfling Fortune, Unclouded Mind and Hold Your Ground, whose
-  stored error text lists the effect tags, show the longer list (with USE) the next time the
-  content loop runs.
+  stored error text lists the effect tags, show the longer list (with USE, and since 0.22.0 GIVE
+  and ALTER) the next time the content loop runs. **0.22.0 (2026-11-14) did not touch the two
+  workbooks either.** Three cells wait for him to paste, printed in the 0.22.0 changelog entry and
+  in `AUTOMATION_GRAMMAR.md` section 5: Aid's five `GIVE` lines (Basic Actions row of
+  `data/maneuvers.xlsx`, whose Automation cell is empty), and Patient Assistance's and Sure
+  Assistance's `ALTER` lines (the Human sheet), whose `# PROPOSED` drafts do not read as written
+  (`Aid.duration` with `recipient-opportunity-end(1)`, and `VALUE: no-effect; PRESERVE:
+  original-degree`): each is told the word that does. Until Aid's row carries its lines the two
+  Talents change nothing, and Aid's card offers no Give button.
 - **Whether a bonus reaches a Defense rolled as a check is open** (ruling 222's wider question; a
   row in `assets/open_decisions.json`). Ruling 222 is narrow: a bonus to a Maneuver applies to a
   check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid
@@ -1434,13 +1529,53 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   tokens, used an empty Combat for the encounter limit and deleted it, removed its probe copy of
   Cooperative Instinct from Tess and the sixteen Aid cards it rolled, and left one "Content synced"
   card (the Grammar journal). Tess's old "Jack of Trades" copy still carries its 0.13.0 cell and
-  its stored rule, which fires. Nothing in the repository depends on them.
+  its stored rule, which fires. **The 0.22.0 drive (2026-11-14) left three fixtures on purpose**,
+  so that Aid's Give button can be tried there before Mike's workbooks build: a WORLD action Item
+  named "Aid" (basic, flagged `testFixture`, carrying the five `GIVE` lines; a world basic Maneuver
+  of the same name replaces the printed one on every Actions tab, so it shadows the pack's Aid in
+  that world until it is deleted, and should be deleted once the shipped row carries the lines),
+  the Talents "Patient Assistance" and "Sure Assistance" on Tess with their `ALTER` cells, and
+  tokens for Tess, Wren and a Bandit on Stonecutters' Quarter. It deleted its Combats, its
+  testpc1 token and the 57 cards it posted, cleared every pending result and put the two Talents'
+  switches back to On. Nothing in the repository depends on them.
 - **0.19.0 leaves to the table or to Mike:** a Form Bind control for a Bind the GM narrates (the
   card forms them) and Close ❶ as a Maneuver (both declined for now); the out-of-turn permit is
   one Maneuver this round and a player with no GM connected waits; the glance shows an adversary's
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-14 (what a Maneuver gives, and the Talents that change it, system 0.22.0; rulings
+223 to 230 in the 0.22.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions
+by question: the ally's Constellation named separately, a button on the card, Patient Assistance on
+a Success and a Critical Success, the penalty's window a bonus's): Aid's +1 to +4 for the ally and
+its -1 on a Critical Failure, prose on the card and applied by hand, now five `GIVE` lines on Aid's
+own row (the `give` kind) read through the `gives` hook point, the sixth (`ruleGives`), into a
+table of results by degree on the check card's flags; Patient Assistance's and Sure Assistance's
+`# PROPOSED` cells, which the grammar could not say, now `[EFFECT ALTER: Aid.beneficial-duration;
+VALUE: recipient opportunity 2]` and `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` (the
+`alter` kind), with `UNTIL:` and `VALUE:` each read after its own tag alone; the result given by a
+button on the card for the aider's owner and the GM (`module/documents/cards/give.mjs`), in one
+click to the character targeted or through a dialog, written by one client for a recipient (the
+GM's, else the recipient's player's) and asked of it as `give:apply` from any other; one result of
+a Maneuver pending on a character
+(`flags.starwrought.rules.given`), used by its next roll with the Constellation and never part of
+a Threshold; its window counted on the entry and settled on the turn change, with the turn step a
+circuit of Passes takes left out; the Effects tab's Pending results, read-only, the bin the GM's.
+Fixed on the way: a reroll of a check made from a compendium Maneuver read the pack's index entry
+in place of the Item; `onTurnChange` read core's `previous` and `current` after its awaits; a
+`reroll` rule's button drawn for a roller on their own blind roll; the rules README's "None exists
+yet" of triggered hook points. Checked by 153 self-test checks, `node --check`, `build_all.mjs
+--check`, the style check (one failure, the em-dash in Dwarf Lore B13 of Mike's uncommitted
+workbook), `build_foundry.mjs --no-compile` (one document moves, the Grammar journal), an
+adversarial review by two agents (fourteen findings, none high, twelve mended and two stated as
+limits) and live in the test world with a GM tab and a player tab (the 0.22.0 changelog entry
+lists what). Not built, and said so in the changelog: Carry
+the Plan's two uses, Pay It Forward, a Condition given by a result, a give from a Maneuver with no
+check, an adversary as the recipient, the other ALTER properties, a Threshold Aid opens on. The
+release carries the kinds alone: Mike's two workbooks in progress were not converted, built,
+staged or written, the three cells are his to paste, and the pack content did not move. No
+handbook moved and `data/SYNC.json` is untouched.
 
 Cleared 2026-11-10 (the USE tag and the substitute kind, system 0.21.0; rulings 215 to 222 in the
 0.21.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:

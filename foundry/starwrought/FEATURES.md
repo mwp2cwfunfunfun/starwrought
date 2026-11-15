@@ -2008,14 +2008,15 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the seventeen kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the nineteen kinds
 
-**What it is, and what it is not** (0.9.0 to 0.16.0, and 0.21.0 for the seventeenth kind; rulings
-118 to 124, 164 to 188, 215 to 222). Since 0.9.0 every Talent sheet in `data/*.xlsx` may carry an
+**What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind and 0.22.0 for
+the eighteenth and nineteenth; rulings 118 to 124, 164 to 188, 215 to 230). Since 0.9.0 every
+Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Seventeen kinds read it: six effect kinds that act in play (`bonus`, `prevent`, `mark`,
-`reroll`, `ignore`, `substitute`), two creation kinds (`grant`, `aura`) and nine feature kinds
+sheet. Nineteen kinds read it: eight effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`, `give`, `alter`), two creation kinds (`grant`, `aura`) and nine feature kinds
 (`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character. Nothing else reads a rule: no Strike's commitment,
 no damage step, because no kind for them exists, and Mike's instruction stands ("we will build
@@ -2032,14 +2033,18 @@ enclosed in Brackets?"), a tag then components separated by semicolons (`[EFFECT
 condition, aid; IF: RANK(Origin >= trained)]`; `[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR:
 self+allies 0; IF: ALLIES(>=1, 0)]`; `[EFFECT IMMUNE: prone; LIMIT: encounter]`; `[EFFECT MARK:
 enemies]`; `[EFFECT REROLL: diplomacy; IF: RESULT(critical failure)]`; `[EFFECT IGNORE: terrain,
-mud, decking]`; and since 0.21.0 `[EFFECT USE: Presence, Origin, aid]`). `CHECK`, `ATK`, `DEF`,
-`INIT` and `SPEED` take a signed value and the bonus type (situation, condition, gear) and at most
-one descriptor; `USE` takes no value and exactly three descriptors; `IF:` is about
+mud, decking]`; since 0.21.0 `[EFFECT USE: Presence, Origin, aid]`; and since 0.22.0 `[EFFECT
+GIVE: 1 situation, chosen; IF: RESULT(success)]` on a Maneuver's row and `[EFFECT ALTER:
+Aid.critical-failure; VALUE: nothing]` on a Talent, with the components `UNTIL:` after `GIVE` and
+`VALUE:` after `ALTER`). `CHECK`, `ATK`, `DEF`,
+`INIT`, `SPEED` and `GIVE` take a signed value and the bonus type (situation, condition, gear) and at most
+one descriptor; `USE` takes no value and exactly three descriptors, `ALTER` exactly one; `IF:` is about
 the owner or the roll (`RANK(...)`, `SEEN`, `ALLIES(>=1, 0)`, `CLAIM(...)`, `RESULT(...)`), `IFT:`
 about the other party or the attack (`TRAIT(Fear)`, `MARKED`, `BLOW`, `MELEE`, `CHECK(intimidation)`),
 `FOR:` the recipients and `LIMIT:` the once-a-round or once-an-encounter. The stored rules are the
 ones the kinds have had since 0.13.0, so the engine's four hook points are untouched (a fifth,
-`substitutions`, came with the `substitute` kind in 0.21.0). **An aura
+`substitutions`, came with the `substitute` kind in 0.21.0, and a sixth, `gives`, with the `give`
+kind in 0.22.0). **An aura
 carries its effect** (0.18.0; ruling 195; Mike: "the Effects should be within the AURA's
 brackets"): `[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` is the
 ring and what it does in one block, the ring being the effect's `FOR`, so "15 feet, allies" is said
@@ -2343,6 +2348,68 @@ section 9. Fixed on the way, with no ruling: a line that begins with the kind's 
 `USE`, with the line to write, rather than that it "is a feature"; and a tag typed without its
 colon (`use Presence, Origin, aid`) is told about the colon.
 
+**The `give` and `alter` kinds** (0.22.0; rulings 223 to 230). Mike, 2026-11-14, of two Human
+Talents that change Aid: "Do we have automation grammar that allows for this?" It did not, because
+Aid's own result was prose on the card. So a Maneuver's row now says what each result of its check
+**gives another character**, and a Talent changes one property of that. On Aid's row, five lines:
+`[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]`, `[EFFECT GIVE: -1 situation, chosen;
+IF: RESULT(critical failure)]`, and three for a Critical Success, +2, +3 "if you're a master with
+the check you attempted" and +4 if legendary, told apart by `IF: RANK(roll ...)`, the rank rolled.
+`chosen` means the Constellation is named when the result is given; a Constellation by name fixes
+it. On a Talent: `[EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]` (Patient
+Assistance: "the Situation bonus provided by your Aid lasts until the end of the recipient's second
+upcoming Opportunity") and `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` (Sure
+Assistance: "A critical failure on your Aid check grants no penalty to your ally"). The Item sheet
+reads them back as "gives a +1 Situation bonus to the next roll with the Constellation chosen, on a
+Success, until the giver's next Opportunity", "Aid's results that give a bonus last through the
+recipient's second upcoming Opportunity" and "Aid's Critical Failure gives nothing". Those cells are
+on sheets Mike is still writing by hand: 0.22.0 carries the kinds alone, no shipped cell uses
+either tag, and the pack content did not move.
+
+**What the player sees** (rulings 226 and 227; Mike: "A button on the card", "Named separately").
+The aider may target the ally, then uses Aid as before; the picker and the roll dialog are
+unchanged. The card posts with its degree, and for the aider's owner and the GM it carries **Give
+Wren +1 to Crafting** when one character was targeted, with **Other...** beside it, or **Give the
+result...** when nobody was. Other and Give the result open a small dialog: who gets it, and which
+of that character's Constellations it is for, opening on the one the aider rolled (a Lore of the
+recipient's own is in the list). Nothing is given until the button is pressed. Pressing it puts one
+line on the ally's Effects tab, under **Pending results**: "Aid from Tess: +1 Situation bonus to
+the next Crafting roll, until Tess's next Opportunity", and posts a card, spoken by the aider:
+"Tess gives Wren a +1 Situation bonus to the next Crafting roll, until Tess's next Opportunity."
+On the check's card the button gives way to "Given to Wren: +1 Situation to Crafting", on every
+client. The ally's next roll with that Constellation lists "Aid from Tess +1" among its modifiers,
+and the line is gone: a check, a Maneuver's check, an attack, a Defense roll, an Initiative. A new
+Aid result replaces one still pending, whoever gave it (Mike's sheet: one pending per recipient),
+and the give card says so. With Patient Assistance the bonus reads "through Wren's second upcoming
+Opportunity" and the card adds "Changed by Patient Assistance". With Sure Assistance a Critical
+Failure's card has no button and says "Sure Assistance: a Critical Failure gives nothing"; it is
+still a Critical Failure, and still offers a Flare. A check rolled against no Threshold has no
+degree, and its card says there is nothing to give. A reroll offers the result of its own degree.
+
+**What it never touches, and when it ends** (rulings 224, 227 and 228). A pending result is used
+by a ROLL. It is never part of a Threshold on the sheet, in the Combat Prompt or on the attack
+card, and a Threshold read neither carries it nor uses it up: a pending bonus to Guard helps the
+ally's Guard roll against an adversary and does not change the number another player's attack is
+read against. Unused, it goes when its window closes: as the aider's next Opportunity begins, or
+with Patient Assistance as the second of the ally's upcoming Opportunities ends (an Opportunity
+already running when the button is pressed is not one of the two), and always with the encounter.
+The window is counted from the press, so press the button when the Aid is made. Outside an
+encounter a result lasts until it is used, replaced or removed, and a result given in one
+encounter is not applied in another. Recipients are characters, never the aider; an adversary
+holds no such line. Removing a pending result by hand is the GM's, from the bin on its line of the
+Effects tab. One client writes a give, the GM's when a GM is connected, else the recipient's own
+player's, so two presses of one card are served in turn and the second is told it was already
+given; with neither connected nothing is given and the presser is told. A roll its roller may not
+read (a blind roll) shows that roller no button. The tracker's own Initiative die does not read a
+pending result: roll Initiative from the sheet or the party's grid to use one. A lone fighter's
+step to itself, when nobody else has an action left, counts as an Opportunity ending and the next
+beginning. A `GIVE` line on a copy of a
+Maneuver the character owns and an `ALTER` line on a Talent have On / Skip / Off on the Effects
+tab, and a Skip is spent only by a roll whose degree the line changes; a reroll that lands on
+that degree spends it then. Where two Talents change one Maneuver, the more particular property
+stands (`beneficial-duration` over `duration`), and of two changes to one property the later
+line. What is not built is listed in section 9.
+
 **The hook points** (0.10.0, 0.13.0 and 0.21.0; rulings 124, 165 and 221). A kind that affects a
 roll names `modifiers` in its `hooks`: the engine asks every registered kind at the check assembly,
 the Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the
@@ -2366,7 +2433,16 @@ kind answers with candidates; it prices nothing, chooses nothing and writes noth
 engine assembles the roll once with no swap and once with each candidate, and the swap whose total
 is strictly the highest stands unless the player says otherwise. A candidate's `LIMIT` mark and a
 one-roll custom effect's removal ride on the candidate and are filed only when that swap is the
-one rolled.
+one rolled. The sixth, `gives` (0.22.0; ruling 229), was defined with the `give` kind and only
+answers too: once a character's check made from a Maneuver's Item has rolled, the engine asks every
+registered kind what each degree would give another character (`ruleGives`, answering `{ table,
+notes, marks }`), handing each kind the rules on the Item behind the roll, owned or not, and the
+roller's own. `give` answers with the Maneuver's lines and `alter` with the roller's changes; the
+whole table goes into the card's flags, so the button, a reroll and a reload read one record. The
+give itself is a triggered moment with its own three answers: one client writes it, the GM's when
+one is connected, else the recipient's player's, and the presser's own only when it is that one;
+the event is the check card's id, and the give card that names it is the record; a give that
+cannot be written writes nothing and tells the presser.
 
 **The build** (ruling 118; the pipeline step since 0.16.0, ruling 183). `assets/parse_rules.mjs`
 parses every Talent's, Maneuver's and Background's cell with the system's own grammar module
@@ -2406,7 +2482,7 @@ nothing reads it; the `bonus` entries are what the hook point reads.
 its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
 can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
 defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which
-registers the seventeen. `module/rules/README.md` is the
+registers the nineteen. `module/rules/README.md` is the
 recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every
 step-running mode (`--check` builds nothing) of `build_all.mjs` before the Foundry build; it asserts
 the list of shipped kinds, so a kind cannot ship unannounced.
@@ -2595,9 +2671,24 @@ before; the sources and the index are.
   offered nothing, and no Strike, Cast, Defense roll, Threshold read or Initiative is ever swapped.
   Not built: a Constellation as the check a `USE` names (it brings the Initiative question of
   ruling 111 with the first Talent that wants it); offers on plain checks; `IF: UNSUBSTITUTED`; a
-  flat Proficiency Bonus (Working Knowledge's "+3 instead of +0"); `FOR` and auras; `CLAIM`. Aid's
-  own outcome bonus stays the card's text. No shipped Talent carries a `USE` line: Cooperative
-  Instinct is on a sheet Mike is still writing, and 0.21.0 builds no data.
+  flat Proficiency Bonus (Working Knowledge's "+3 instead of +0"); `FOR` and auras; `CLAIM`. No
+  shipped Talent carries a `USE` line: Cooperative Instinct is on a sheet Mike is still writing,
+  and 0.21.0 builds no data.
+- **A Maneuver's result is given by hand, once, and some of it is not built** (0.22.0; rulings 226
+  to 228; section 7). Nothing is given by the roll: the aider or the GM presses the button on the
+  card, and the ally's next roll with the Constellation uses the result. It never moves a
+  Threshold. Not built: two uses of one result (Carry the Plan); a second character using a
+  pending result (Pay It Forward); a Condition given by a result; a result from a Maneuver that
+  rolls no check; an adversary as the recipient; the `ALTER` properties beyond the six (a
+  Maneuver's movement, range, limit, uses, slots), each refused as not read yet; and the Threshold
+  Aid opens on ("typically 15"), which is still typed. Aid's ❶ is not spent by the system: the pip
+  is clicked by hand. With no GM connected and the ally's player offline nobody can write the
+  result; with no GM connected the turn step that ends a round by Passes may be counted as an
+  Opportunity, and two presses of one card for two recipients owned by different players can both
+  land; a GM stepping the turn back and forward counts one twice; and the tracker's own Initiative
+  die does not read a pending result. No shipped cell
+  carries a `GIVE` or an `ALTER` line: Aid's row and the two Talents are on sheets Mike is still
+  writing, and 0.22.0 builds no data.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.

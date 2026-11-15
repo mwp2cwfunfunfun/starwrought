@@ -43,7 +43,7 @@ export const KIND_WORD = /^[a-z][a-z-]*$/;
  * @property {string[]} aliases                                  Other words accepted before the colon.
  * @property {(args: string, context: object) => (object|void)} parse   The text after the colon, trimmed, to the rule's data.
  * @property {(rule: object) => string} summary                  One short line for the Item sheet.
- * @property {Object<string, Function>} hooks                    The engine hook points the kind speaks at (`modifiers` since 0.10.0, then `prevent`, `use`, `card` and `substitutions`; see ../engine.mjs).
+ * @property {Object<string, Function>} hooks                    The engine hook points the kind speaks at (`modifiers` since 0.10.0, then `prevent`, `use`, `card`, `substitutions` and `gives`; see ../engine.mjs).
  */
 
 /**
@@ -162,6 +162,16 @@ registerKind(ignore);
 // `substitutions` hook point (calculated): the terms a check is made with, offered in the dialog.
 import substitute from "./substitute.mjs";
 registerKind(substitute);
+
+// 0.22.0: Aid's own outcome and the two Human Talents on top of it. `give` (the Maneuver's row:
+// `GIVE: 1 situation, chosen; IF: RESULT(success)`) defines the `gives` hook point (calculated):
+// what each degree of a Maneuver's check gives another character; it also answers `modifiers`,
+// for the result pending on its recipient. `alter` (a Talent: `ALTER: Aid.critical-failure;
+// VALUE: nothing`) answers `gives` with the roller's changes to that table.
+import give from "./give.mjs";
+registerKind(give);
+import alter from "./alter.mjs";
+registerKind(alter);
 
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.

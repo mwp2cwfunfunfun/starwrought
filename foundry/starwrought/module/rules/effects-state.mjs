@@ -23,8 +23,10 @@
 import { parseAutomation, ruleEntries } from "./grammar.mjs";
 import { resolveRuleTarget } from "../helpers/content.mjs";
 import { responsibleFor } from "../helpers/authority.mjs";
-import { EFFECT_DURATIONS, ruleStates } from "./engine.mjs";
-import { flagKey } from "../config.mjs";
+import { EFFECT_DURATIONS, ruleStates, givenResults } from "./engine.mjs";
+import { flagKey, SYSTEM_ID } from "../config.mjs";
+// 0.22.0: a result a Maneuver gave, pending on its recipient (./given.mjs is the pure half).
+import { settle, isGivenKey, givenFlagKey } from "./given.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
@@ -34,6 +36,9 @@ const STATE_PATH = "flags.starwrought.rules.state";
 
 /** The flag path of an armed claim (module/rules/claims.mjs writes it; a row's is cleared with the row). */
 const ARMED_PATH = "flags.starwrought.rules.armed";
+
+/** The flag path of the results pending on an actor, one per Maneuver (0.22.0). */
+export const GIVEN_PATH = "flags.starwrought.rules.given";
 
 /* -------------------------------------------- */
 /*  The state switch                            */
@@ -100,6 +105,11 @@ export function markUpdates(actor, marks) {
     if (!mark?.key) continue;
     const safe = flagKey(mark.key);
     if ((mark.per === "state") && (states[safe] !== undefined)) update[`${STATE_PATH}.-=${safe}`] = null;
+    else if ((mark.per === "effect") && isGivenKey(mark.key)) {
+      // A pending result used by a roll (0.22.0): its flag goes, as a one-roll row goes.
+      const key = givenFlagKey(mark.key);
+      if (actor?.flags?.starwrought?.rules?.given?.[key] !== undefined) update[`${GIVEN_PATH}.-=${key}`] = null;
+    }
     else if (mark.per === "effect") spent.add(String(mark.key));
   }
   if (spent.size) {
@@ -259,6 +269,135 @@ export function prepareEffectsUpdate(actor, changes) {
 }
 
 /* -------------------------------------------- */
+/*  Pending results (0.22.0)                    */
+/* -------------------------------------------- */
+
+/**
+ * Put a pending result on its recipient, replacing the one the same Maneuver left there (one Aid
+ * result pending per recipient). The caller has checked that this client may write the actor
+ * (documents/cards/give.mjs, the one caller). An entry always carries every key, `until` whole or
+ * null, so Foundry's merge of the flag leaves nothing of the entry it replaces.
+ * @param {object} actor
+ * @param {object} entry  A pending result (./given.mjs, `pendingEntry`).
+ */
+export async function writeGiven(actor, entry) {
+  if (!actor || !entry?.id) return;
+  await actor.update({ [`${GIVEN_PATH}.${givenFlagKey(entry.id)}`]: entry }, { swAnnounced: true });
+}
+
+/**
+ * Remove a pending result by hand. The GM's alone: a player who could strike a penalty an ally's
+ * failed Aid left would, and a bonus is given up by not rolling.
+ * @param {object} actor
+ * @param {string} key  The entry's id (`given:<maneuver>`) or its flag key.
+ * @returns {Promise<boolean>}
+ */
+export async function removeGiven(actor, key) {
+  if (!actor || !key) return false;
+  if (!game.user.isGM) {
+    ui.notifications.warn(game.i18n.localize("STARWROUGHT.Given.removeGm"));
+    return false;
+  }
+  const safe = givenFlagKey(key);
+  if (actor.flags?.starwrought?.rules?.given?.[safe] === undefined) return false;
+  await actor.update({ [`${GIVEN_PATH}.-=${safe}`]: null }, { swAnnounced: true });
+  return true;
+}
+
+/**
+ * Every Actor that may hold a pending result of this Combat: its combatants' Actors, the Actors of
+ * the tokens on its scene (an unlinked token's Actor is in no collection but its token's), and the
+ * world's Actors that carry any (a recipient need not be in the fight, or on the scene).
+ */
+function holdersOf(combat) {
+  const seen = new Set();
+  const out = [];
+  const add = actor => {
+    if (!actor || seen.has(actor.uuid)) return;
+    seen.add(actor.uuid);
+    if (givenResults(actor).length) out.push(actor);
+  };
+  for (const combatant of combat?.combatants ?? []) add(combatant?.actor);
+  for (const token of (combat?.scene ?? globalThis.canvas?.scene)?.tokens ?? []) add(token?.actor);
+  for (const actor of globalThis.game?.actors ?? []) add(actor);
+  return out;
+}
+
+/**
+ * A turn changed: settle the windows of the pending results of this Combat (./given.mjs,
+ * `settle`). Nothing in the system counts Opportunities, so the count rides on each entry and this
+ * is its one writer. Every client hears a turn change; each Actor's responsible client (the active
+ * GM, else its first active owner) writes that Actor, as the round's own hooks do. The one turn
+ * change no other client hears, a lone fighter's next Opportunity, is told to them by
+ * `settleLoneStep` below. Says nothing in chat: a window closing is not an event, and the line
+ * leaves the Effects tab.
+ * @param {Combat} combat
+ * @param {{ended?: string|null, began?: string|null}} change  Combatant ids.
+ */
+export async function settleGivenResults(combat, change = {}) {
+  if (!combat || (!change?.ended && !change?.began)) return;
+  for (const actor of holdersOf(combat)) {
+    try {
+      if (!responsibleFor(actor)) continue;
+      const update = {};
+      for (const entry of givenResults(actor)) {
+        const verdict = settle(entry, { combat: combat.id, ended: change.ended ?? null, began: change.began ?? null });
+        if (verdict === "keep") continue;
+        const key = givenFlagKey(entry.id);
+        if (verdict === "expire") update[`${GIVEN_PATH}.-=${key}`] = null;
+        else update[`${GIVEN_PATH}.${key}.until.begun`] = verdict.begun;
+      }
+      if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+    } catch (error) {
+      console.error(`STARWROUGHT | the pending results on ${actor?.name ?? "an actor"} could not be settled:`, error);
+    }
+  }
+}
+
+/** The system socket (starwrought.mjs routes `rules:*` to ./scene.mjs, which hands `rules:step` here). */
+const SOCKET = `system.${SYSTEM_ID}`;
+
+/**
+ * A lone fighter's next Opportunity (`SwCombat#nextTurn`, when nobody else can take one): the
+ * turn steps to the same Combatant and NO Combat update is written, so no other client hears a
+ * turn change. One Opportunity of that fighter's ended and its next began all the same, and a
+ * window watching it must be settled: this client settles the Actors it is responsible for and
+ * tells every other client to do the same for theirs (`rules:step`). Late in a round this is the
+ * common step, not a rare one: a fighter with no action left is passed over (0.19.0), so the last
+ * one with actions cycles to itself.
+ * @param {Combat} combat
+ * @param {string} combatantId  The lone holder.
+ */
+export async function settleLoneStep(combat, combatantId) {
+  if (!combat || !combatantId) return;
+  await settleGivenResults(combat, { ended: combatantId, began: combatantId });
+  try {
+    game.socket.emit(SOCKET, { type: "rules:step", combatId: combat.id, combatantId });
+  } catch (error) {
+    console.warn("STARWROUGHT | a lone fighter's step could not be told to the other clients:", error);
+  }
+}
+
+/**
+ * `rules:step`, on every other client: settle this client's own Actors for a lone fighter's step.
+ * The asker is the server's stamp and must be a GM or own the fighter; the Combat must be running,
+ * the fighter must be its current Combatant and nobody else may be able to take an Opportunity,
+ * which is what made the step a step to itself. Nothing in the payload but the two ids is read.
+ * @param {object} message
+ * @param {string} [senderId]  The emitting user's id, supplied by the server.
+ */
+export async function onStepSocket(message, senderId) {
+  const sender = (typeof senderId === "string") ? (game.users.get(senderId) ?? null) : null;
+  const combat = game.combats?.get(String(message?.combatId ?? "")) ?? null;
+  const combatant = combat?.combatants.get(String(message?.combatantId ?? "")) ?? null;
+  if (!sender || !combat?.started || !combatant || (combat.combatant?.id !== combatant.id)) return;
+  if (!(sender.isGM || combatant.actor?.testUserPermission(sender, "OWNER"))) return;
+  if ((typeof combat.canTakeOpportunity === "function")
+    && combat.turns.some(c => (c.id !== combatant.id) && combat.canTakeOpportunity(c))) return;
+  await settleGivenResults(combat, { ended: combatant.id, began: combatant.id });
+}
+
+/* -------------------------------------------- */
 /*  The encounter's end                         */
 /* -------------------------------------------- */
 
@@ -285,6 +424,20 @@ export async function endEncounterEffects(combat) {
       await actor.update(update, { swAnnounced: true });
     } catch (error) {
       console.error(`STARWROUGHT | the encounter effects on ${actor?.name ?? "an actor"} could not be cleared:`, error);
+    }
+  }
+  // 0.22.0: every window ends with the encounter. A result given in this Combat goes with it,
+  // wherever its recipient stands; one given outside any encounter is not this Combat's to end.
+  for (const actor of holdersOf(combat)) {
+    try {
+      if (!responsibleFor(actor)) continue;
+      const update = {};
+      for (const entry of givenResults(actor)) {
+        if (entry.combat && (entry.combat === combat.id)) update[`${GIVEN_PATH}.-=${givenFlagKey(entry.id)}`] = null;
+      }
+      if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+    } catch (error) {
+      console.error(`STARWROUGHT | the pending results on ${actor?.name ?? "an actor"} could not be cleared:`, error);
     }
   }
 }

@@ -37,6 +37,24 @@
     <p class="sw-empty">{{localize "STARWROUGHT.Effects.none"}}</p>
     {{/each}}
 
+    {{!-- GIVEN (0.22.0): what a Maneuver gave this character and it has not yet used (Aid's bonus
+          from an ally). Read-only: the next roll with the Constellation uses it, its window closes
+          it, and only the GM removes one by hand. --}}
+    {{#if effectsPanel.given.length}}
+    <h4 class="sw-subtitle sw-effects-given-title" data-tooltip="{{localize 'STARWROUGHT.Given.panelHint'}}">{{localize "STARWROUGHT.Given.panel"}}</h4>
+    <ol class="sw-effects-list sw-effects-given">
+      {{#each effectsPanel.given as |row|}}
+      <li class="sw-effect-line sw-given-line {{#if row.stale}}sw-effect-off{{/if}}" data-given-key="{{row.key}}" data-tooltip="{{row.tooltip}}">
+        <span class="sw-effect-kind">{{row.name}}</span>
+        <span class="sw-effect-summary">{{row.summary}}, {{row.window}}</span>
+        {{#if @root.effectsPanel.canRemoveGiven}}
+        <a class="sw-effect-state sw-given-remove" data-action="removeGiven" data-tooltip="{{localize 'STARWROUGHT.Given.remove'}}"><i class="fa-solid fa-trash"></i></a>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ol>
+    {{/if}}
+
     <h4 class="sw-subtitle sw-effects-custom-title">
       {{localize "STARWROUGHT.Effects.custom"}}
       <span class="sw-effects-custom-buttons">

@@ -10,12 +10,16 @@
  *   IMMUNE: prone; LIMIT: encounter
  *   REROLL: diplomacy; IF: RESULT(critical failure)
  *   USE: Presence, Origin, aid
+ *   GIVE: 1 situation, chosen; IF: RESULT(success)
+ *   ALTER: Aid.critical-failure; VALUE: nothing
  *
- * A MODIFIER tag (CHECK, ATK, DEF, INIT, SPEED) is `TAG: <value> <type>, <descriptor>`: a signed
- * whole number, the bonus type (situation, condition or gear; FG's `[bonus]`), then descriptors
- * by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE) take descriptors alone. The components:
+ * A MODIFIER tag (CHECK, ATK, DEF, INIT, SPEED, GIVE) is `TAG: <value> <type>, <descriptor>`: a
+ * signed whole number, the bonus type (situation, condition or gear; FG's `[bonus]`), then
+ * descriptors by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE, ALTER) take descriptors
+ * alone. The components:
  * `IF: <condition>` (the owner, or the roll) and `IFT: <condition>` (the other party, or the
- * attack), `FOR: <who> [<N>]` (the recipients), `LIMIT: round | encounter`. The conditions:
+ * attack), `FOR: <who> [<N>]` (the recipients), `LIMIT: round | encounter`, and (0.22.0) `UNTIL:
+ * <window>` after GIVE and `VALUE: <value>` after ALTER. The conditions:
  * `RANK(<Constellation> <op> <rank>)`, `RANK(roll = untrained)`, `SEEN`, `ALLIES(<op><N>[, <N>])`
  * (also ENEMIES, ALL), `CLAIM(<text>)`, `RESULT(<degree>)`, `TRAIT(<trait>)`, `MARKED`, a Threat
  * word (BLOW, BLAST, BLIGHT, BEGUILEMENT, MELEE, RANGED), `CHECK(<Constellation>)`. IF and IFT are
@@ -31,7 +35,7 @@
 import { RuleSyntaxError } from "./syntax.mjs";
 import {
   emptyOps, splitOperands, readRank, readRange, readWho, readDegree, readAgainst, splitComparison, traitKey,
-  WHO_FOR, WHO_WHILE, titled
+  WHO_FOR, WHO_WHILE, titled, readUntil
 } from "./operators.mjs";
 import { THREATS, isLoreSlug } from "../config.mjs";
 
@@ -40,14 +44,24 @@ export const EFFECT_TAGS = Object.freeze({
   check: "bonus", atk: "bonus", def: "bonus", init: "bonus", speed: "bonus",
   immune: "prevent", mark: "mark", reroll: "reroll", ignore: "ignore",
   // 0.21.0: `USE: <Attribute>, <Constellation>, <Maneuver>`, the terms a check is made with.
-  use: "substitute"
+  use: "substitute",
+  // 0.22.0: `GIVE: <value> <type>, chosen | <Constellation>; IF: RESULT(<degree>)` on a Maneuver's
+  // own row, what a degree of its check gives another character; and `ALTER: <Maneuver>.<property>;
+  // VALUE: <value>` on a Talent, which changes one property of what that Maneuver gives.
+  give: "give", alter: "alter"
 });
 
 /** The modifier tags: a value and a bonus type come first. */
-export const MODIFIER_TAGS = Object.freeze(["check", "atk", "def", "init", "speed"]);
+export const MODIFIER_TAGS = Object.freeze(["check", "atk", "def", "init", "speed", "give"]);
 
-/** The component words after the tag. */
-export const COMPONENTS = Object.freeze(["IF", "IFT", "FOR", "LIMIT"]);
+/**
+ * The component words after the tag. `UNTIL` is read on a GIVE line alone and `VALUE` on an ALTER
+ * line alone (0.22.0); every other tag refuses each by name.
+ */
+export const COMPONENTS = Object.freeze(["IF", "IFT", "FOR", "LIMIT", "UNTIL", "VALUE"]);
+
+/** The one tag each of the two 0.22.0 components may follow. */
+const COMPONENT_TAG = Object.freeze({ UNTIL: "give", VALUE: "alter" });
 
 /** The condition words inside IF and IFT. */
 export const CONDITIONS = Object.freeze(["RANK", "SEEN", "ALLIES", "ENEMIES", "ALL", "CLAIM", "RESULT", "TRAIT", "MARKED", "BLOW", "BLAST", "BLIGHT", "BEGUILEMENT", "MELEE", "RANGED", "CHECK"]);
@@ -87,7 +101,9 @@ export function readEffectLine(text, { context = {} } = {}) {
     const first = parts.shift() ?? "";
     const words = first.split(/\s+/).filter(Boolean);
     if (!words.length || !/^[+-]?\d+$/.test(words[0])) {
-      throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: <value> <type>, <descriptor>\`, as in \`${tag.toUpperCase()}: 1 condition${tag === "check" ? ", aid" : tag === "def" ? ", guard" : ""}\`: a signed whole number first, not "${first}"`);
+      // An example is a line that reads: a GIVE needs its degree (the review of 2026-11-14).
+      const example = tag === "give" ? "1 situation, chosen; IF: RESULT(success)" : `1 condition${tag === "check" ? ", aid" : tag === "def" ? ", guard" : ""}`;
+      throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: <value> <type>, <descriptor>\`, as in \`${tag.toUpperCase()}: ${example}\`: a signed whole number first, not "${first}"`);
     }
     value = Number(words[0]);
     if (value === 0) throw new RuleSyntaxError("a bonus of 0 does nothing");
@@ -99,7 +115,7 @@ export function readEffectLine(text, { context = {} } = {}) {
   }
 
   const ops = emptyOps();
-  for (const component of components.slice(1)) readComponent(component, ops, context);
+  for (const component of components.slice(1)) readComponent(component, ops, context, tag);
   return { tag, kind: EFFECT_TAGS[tag], value, type, descriptors, ops, components };
 }
 
@@ -123,12 +139,28 @@ export function splitComponents(line) {
   return parts.map(p => p.trim()).filter(p => p !== "");
 }
 
-/** One component after the tag into `ops`: `IF: ...`, `IFT: ...`, `FOR: ...`, `LIMIT: ...`. */
-function readComponent(component, ops, context) {
+/**
+ * One component after the tag into `ops`: `IF: ...`, `IFT: ...`, `FOR: ...`, `LIMIT: ...`, and
+ * (0.22.0) `UNTIL: ...` after GIVE and `VALUE: ...` after ALTER, each refused by name after any
+ * other tag, here rather than in the kinds because `bonus` reads its ops without a refusal list.
+ */
+function readComponent(component, ops, context, tag = "") {
   const match = component.match(/^([A-Za-z]+)\s*:\s*([\s\S]*)$/);
   const word = match?.[1]?.toUpperCase() ?? "";
   const inside = match?.[2]?.trim() ?? "";
+  if (Object.hasOwn(COMPONENT_TAG, word) && (COMPONENT_TAG[word] !== tag)) {
+    throw new RuleSyntaxError(`${tag.toUpperCase()} does not take ${word}`);
+  }
   switch (word) {
+    case "UNTIL":
+      if (ops.until) throw new RuleSyntaxError("UNTIL is given twice");
+      ops.until = readUntil(inside);
+      return;
+    case "VALUE":
+      if (ops.set !== null) throw new RuleSyntaxError("VALUE is given twice");
+      if (!inside) throw new RuleSyntaxError("VALUE: says what the property becomes, as in `VALUE: nothing` or `VALUE: recipient opportunity 2`");
+      ops.set = inside;
+      return;
     case "IF":
     case "IFT":
       if (!inside) throw new RuleSyntaxError(`${word}: names a condition, as in \`IF: RANK(Origin >= trained)\` or \`IFT: BLOW\``);
@@ -157,7 +189,9 @@ function readComponent(component, ops, context) {
       }
       // A part with no colon is most often a descriptor that followed a semicolon (`USE: Presence;
       // Origin; aid`), so the message says which mark does what (0.21.0).
-      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT:${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
+      // GIVE and ALTER (0.22.0) are told their own components, so a `PRESERVE:` after an ALTER is
+      // not sent looking for a FOR.
+      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come ${tag === "give" ? "IF: and UNTIL:" : tag === "alter" ? "VALUE: and IF:" : "IF:, IFT:, FOR: and LIMIT:"}${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
   }
 }
 

@@ -206,6 +206,11 @@ export function cardFlags(result, position) {
     // still the check's own Constellation (the Flare button names it); `rank` is the rank rolled,
     // the borrowed Constellation's; this says which rule swapped which term for what.
     if (cfg.substituted) flags.substituted = cfg.substituted;
+    // What this Maneuver's check gives another character (0.22.0): the results by degree at the
+    // rank rolled, the Talents that changed them, the Maneuver, the ally targeted and the Combat.
+    // The render pass draws the give button from it (documents/cards/give.mjs), and a reroll
+    // copies it across, since the table already holds every degree.
+    if (cfg.given?.table) flags.given = cfg.given;
     if (cfg.withholdThreshold === true) flags.withheldThreshold = true;
     if (cfg.targetDefenseKey) flags.targetDefense = cfg.targetDefenseKey;
     if (cfg.rerollOf) flags.rerollRule = cfg.rerollRule ?? null;

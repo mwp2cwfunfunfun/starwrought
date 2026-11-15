@@ -29,6 +29,10 @@ import { strikeCanCrit } from "./check/strike.mjs";
 // A rerolled spell card rebuilds its outcome rows from the Talent (0.12.0); the module imports
 // this one only dynamically, so there is no cycle.
 import { castOutcomes } from "../combat/attack-source.mjs";
+// 0.22.0: what a Maneuver's check gives another character (the `gives` hook point), asked once
+// the die has landed and written into the card's flags.
+import { ruleGives } from "../rules/engine.mjs";
+import { encounterContext } from "../rules/scene.mjs";
 
 
 
@@ -185,6 +189,32 @@ export class SwCheck {
         critDenied = true;
       }
       outcome = SW.ATTACK_OUTCOMES[degree];
+    }
+
+    // What this Maneuver's check GIVES another character (0.22.0; rulings 223 to 230): Aid's +1 to
+    // +4 for the ally and its -1 on a Critical Failure, read from the GIVE lines on the Maneuver's
+    // own Item and the roller's ALTER lines (the `gives` hook point). The whole table goes on the
+    // card, every degree at the rank rolled, so the card's button, a reroll to another degree and
+    // a reload all read one record; nothing is given here. A character's check alone: an
+    // adversary rolls flat and holds no such line.
+    if ((cfg.kind === "check") && (cfg.item?.type === "action") && (actor.type === "character")) {
+      const encounter = encounterContext();
+      const gives = ruleGives(actor, { kind: "check", slug: cfg.slug ?? "", item: cfg.item, rank: cfg.rank ?? "untrained", degree, encounter });
+      if (gives.table) {
+        cfg.given = {
+          table: gives.table,
+          notes: gives.notes,
+          maneuver: { slug: SW.slugify(SW.plainName(cfg.item.name)), name: SW.plainName(cfg.item.name) },
+          ally: (cfg.ally?.uuid && (cfg.ally.uuid !== actor.uuid)) ? { uuid: String(cfg.ally.uuid), name: String(cfg.ally.name ?? "") } : null,
+          combat: encounter.combat ?? null,
+          // What this die did not spend: a Skip line, or a one-roll custom effect, that changes a
+          // degree other than the one rolled. A reroll that lands on one of those degrees reads
+          // the same table, so it files these marks then (documents/cards/reroll.mjs).
+          unspent: gives.traces.filter(t => !degree || !t.degrees.includes(degree)).map(t => ({ degrees: [...t.degrees], marks: t.marks.map(m => ({ ...m })) }))
+        };
+      }
+      // A Skip spent, or a one-roll custom effect used, by the degree this die landed on.
+      if (gives.marks.length) cfg.ruleMarks = mergeMarks(cfg.ruleMarks, gives.marks);
     }
 
     // A check read against a target's Threshold the roller may not see (0.15.0, ruling 179: an

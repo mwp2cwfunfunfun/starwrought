@@ -33,6 +33,7 @@ import { onRulesSocket } from "./module/rules/scene.mjs";
 // Activity roll on their character (ruling 108).
 import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
 import { registerEffectsHooks } from "./module/rules/effects-state.mjs";
+import { registerGiveCards } from "./module/documents/cards/give.mjs";
 import { registerMovementTracking } from "./module/documents/movement.mjs";
 import { registerTrackerReadout } from "./module/apps/combat-tracker.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
@@ -258,7 +259,8 @@ Hooks.once("ready", async () => {
   // goes to module/rules/scene.mjs.
   game.socket.on(`system.${SW.SYSTEM_ID}`, (message, senderId) => {
     const type = String(message?.type ?? "");
-    if (/^(damage|reroll|expose):/.test(type)) return onChatSocket(message, senderId);
+    // `give:*` (0.22.0): a Maneuver's result given to another player's character, on a client that may write it.
+    if (/^(damage|reroll|expose|give):/.test(type)) return onChatSocket(message, senderId);
     if (/^party:/.test(type)) return onPartySocket(message, senderId);
     if (/^rules:/.test(type)) return onRulesSocket(message, senderId);
     return AttackCoordinator.onSocket(message, senderId);
@@ -292,6 +294,7 @@ Hooks.once("ready", async () => {
   // roller's own character. Registered here, once, beside the cache it reads.
   registerRoadHooks();
   registerEffectsHooks();   // CHARACTER EFFECTS (0.16.0): an encounter-long custom effect ends with its Combat.
+  registerGiveCards();      // 0.22.0: a check card's Give button follows the give card that answers it.
 
   // THE CONTENT LOOP (0.8.0): with the migration done and everything above in place, offer the GM
   // a Sync when the sources on disk are newer than what this world last synced. Not awaited: the

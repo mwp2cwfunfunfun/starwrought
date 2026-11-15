@@ -39,6 +39,8 @@ import {
   chargeReactionFromCard, recenterFromCard, onExposeSocket, preventExposeFromCard
 } from "./cards/position.mjs";
 import { pruneAttackThresholds, openAttackPrompt, rollFromAttackCard, gmAttackRequest } from "./cards/attack.mjs";
+// What a Maneuver's check gives another character (0.22.0): the widget, the press, the relay.
+import { drawGiveWidget, giveFromCard, onGiveSocket } from "./cards/give.mjs";
 
 /** The resolvers, under the names other modules imported from here through 0.10.0. */
 export { resolveActor, resolveTokenDoc, ownedActor } from "./cards/shared.mjs";
@@ -130,7 +132,9 @@ export function onRenderChatMessage(message, html) {
   // rule's button, drawn from the card's flags for the roller's owner and the GM, never on a
   // superseded card. Built here rather than by the card's template so a reload draws the same
   // buttons from the same record.
-  if ((flags.kind === "check") && !flags.superseded && flags.actorUuid) {
+  // Not on a card this viewer may not read (0.22.0: a blind roll, to its own roller): an offer
+  // that names the degree it answers would say what the card is hiding.
+  if ((flags.kind === "check") && !flags.superseded && flags.actorUuid && (message.isContentVisible !== false)) {
     const roller = resolveActor(flags.actorUuid);
     if (roller && (roller.isOwner || game.user.isGM)) {
       const offers = ruleCardOffers(roller, flags, { encounter: encounterContext() });
@@ -153,6 +157,11 @@ export function onRenderChatMessage(message, html) {
       }
     }
   }
+
+  // What this check gives another character (0.22.0; Aid's bonus for the ally): the give button,
+  // or the record that the result was given, for the roller's owner and the GM, drawn from the
+  // card's flags and the chat log after the kinds' offers so it sits under them.
+  drawGiveWidget(message, html, flags);
 
   // The GM controls (the attack card's Cancel, Reset defenses and Resend prompts) are the GM's,
   // or the coordinator's at a table with no GM connected. The content is the same on every
@@ -187,6 +196,7 @@ async function onCardButton(event, message, flags) {
       case "flare": return await flareFromCard(message, flags, button);
       case "reroll": return await rerollFromCard(message, flags);
       case "ruleReroll": return await rerollByRule(message, flags, button);
+      case "giveResult": return await giveFromCard(message, flags, button);
       case "expose":
       case "exposeZone": return await exposeFromCard(message, flags, button);
       case "preventExpose": return await preventExposeFromCard(message, flags, button);
@@ -278,12 +288,13 @@ export async function openGrammar(page = "At a glance") {
 /* -------------------------------------------- */
 
 /**
- * The chat cards' half of the system socket: starwrought.mjs routes `damage:*`, `reroll:*` and
- * `expose:*` here, `party:*` to party-socket.mjs (0.7.1) and everything else to the attack
- * coordinator. A message is for this client only when it is addressed to it; the asker is the
- * server's stamp, never a field of the payload; and each family answers its own prefix
- * (`onDamageSocket`, `onRerollSocket`, `onExposeSocket`), the GM's client replying to a `*:apply`
- * with `*:applied`/`*:done` or `*:refused`, addressed to the asker alone.
+ * The chat cards' half of the system socket: starwrought.mjs routes `damage:*`, `reroll:*`,
+ * `expose:*` and (0.22.0) `give:*` here, `party:*` to party-socket.mjs (0.7.1) and everything else
+ * to the attack coordinator. A message is for this client only when it is addressed to it; the
+ * asker is the server's stamp, never a field of the payload; and each family answers its own
+ * prefix (`onDamageSocket`, `onRerollSocket`, `onExposeSocket`, `onGiveSocket`), the GM's client
+ * (for a give, the recipient's owner's when no GM is connected) replying to a `*:apply` with
+ * `*:applied`/`*:done` or `*:refused`, addressed to the asker alone.
  * @param {object} message
  * @param {string} [senderId]  The emitting user's id, supplied by the server.
  */
@@ -294,4 +305,5 @@ export async function onChatSocket(message, senderId) {
   if (type.startsWith("damage:")) return onDamageSocket(message, sender);
   if (type.startsWith("reroll:")) return onRerollSocket(message, sender);
   if (type.startsWith("expose:")) return onExposeSocket(message, sender);
+  if (type.startsWith("give:")) return onGiveSocket(message, sender);
 }
