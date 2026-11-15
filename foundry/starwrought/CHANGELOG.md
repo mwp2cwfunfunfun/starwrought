@@ -7,6 +7,223 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.24.0 (2026-11-14): Move Together, and the Talent that changes it
+
+Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved, and
+the only pack document that moves is the Grammar journal. Mike, 2026-11-14, of the Human's
+Coordinated Footwork ("you may choose Step instead of Move for both participants"): "would you
+recommend changing the effect of this Talent, or programming in the additional automation
+grammar?" The answer was neither yet, because Move Together itself was not automated, and the one
+thing that bit in play was that the ally's drag on your Opportunity is off-turn and waited for the
+GM (0.19.0). His reply: "Plan it." Planned before any code moved (`dazzling-floating-simon.md`),
+the design checked against the code by a second reader first, which corrected eight points (one
+record on the user in place of a copy relayed to the ally; a record that would have come back to
+life at the user's next Opportunity in the same round; a bent drag losing its permission half
+way). A minor version: one new rule kind and one new `ALTER` property.
+
+**Mike's decisions, by question.** You pay at the click ("Pay at the click"). A drag made as part
+of Move Together is a Move however short, unless you own the Talent ("A Move, unless the Talent").
+A target that fails a requirement is warned about and the Maneuver still happens ("Warn and go
+on"); with nobody targeted it refuses. The tag word is PERMIT.
+
+### The two cells
+
+```
+Move Together ❶        [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]
+Coordinated Footwork   [EFFECT ALTER: Move Together.movement; VALUE: step]
+```
+
+**`PERMIT`** (kind `permit`, the twentieth; `module/rules/kinds/permit.mjs`), on a Maneuver's own
+row and nowhere else, as `GIVE` is: using this Maneuver lets the creature you target make one Move
+now, outside its Opportunity. One descriptor, what is permitted (`move`, the one word so far).
+`FOR:` is required and says who and how near in the grammar's existing words (`allies 0` is an
+adjacent ally, as Steady the Line writes it); `self` is refused. `LIMIT:` is the row's Frequency.
+`IF: RANK(...)` reads the owner's rank. Every other component is refused by name, and so is a
+PERMIT inside an `[AURA ...]` block. As read: "lets an adjacent ally you target make one Move now,
+outside its Opportunity, once a round".
+
+**`ALTER`** learns a seventh property, **`movement`**, with the one value `step`. The drafted cell
+on Mike's sheet (`VALUE: choose(Move, Step); APPLY: both-participants`) is told what to write.
+
+### What happens in play
+
+1. At your Opportunity, target the ally and use Move Together from "From your Talents". Nobody
+   targeted, yourself, a target who is not an ally, or a second use in the round: a notice, and
+   nothing is paid. An ally who is not adjacent, has no action left, is not conscious or is not in
+   the encounter: the card says so, and it still happens.
+2. You pay ❶, said on the Maneuver's own card, which also says who may Move.
+3. Your own next drag in that Opportunity is the Maneuver's Move: free, up to one Move (a longer
+   drag pays the rest), a Move though short, so it can draw an Intercept. Its card says it was paid
+   for when the Maneuver was used.
+4. The ally drags with no request to the GM: a Move, ❶ of the ally's own. The GM's drag of the
+   ally's token counts the same. When the ally ends farther from you than the row's range, the
+   move's card says so; nothing is enforced.
+5. If the ally does not move, the ally pays nothing. The permission ends with that Opportunity.
+6. With Coordinated Footwork, a drag within half Speed is a Step for either of you: ❶ as before,
+   nothing provoked, no difficult terrain. A longer drag is still a Move.
+7. The permission is one drag and nothing else: any other Maneuver off-turn still asks the GM, and
+   an approval the ally holds for something else is not used up.
+8. Outside an encounter: the card only. Nothing is paid, recorded or limited.
+
+### Rulings (239 to 244; system decisions, Mike's to overrule)
+
+- **239. The `PERMIT` shape**, on a Maneuver's own row: `PERMIT: <what>; FOR: <who> [<N>]`, with
+  `LIMIT:` and `IF: RANK(...)`.
+- **240. A permitted Move is one drag**, during the Opportunity the Maneuver was used in, paid by
+  the mover; the GM's drag of that token counts.
+- **241. The user's Move is paid at the click** and is one Move's worth; a longer drag pays the
+  rest.
+- **242. Inside the Maneuver a drag is a Move however short**, never a Rush; `ALTER: <Maneuver>
+  .movement; VALUE: step` lets a drag within half Speed be a Step for both. A Speed 0 crawl stays
+  a crawl.
+- **243. No target, yourself and a creature the `FOR` does not name are refused**, and so is a
+  second use within the `LIMIT`; the other requirements warn.
+- **244. One record, on the user**, read by the ally's client; no copy on the ally and no relay.
+
+### How it is built
+
+- **The record** (`module/rules/maneuver-move.mjs`, pure): `flags.starwrought.maneuverMove =
+  { nonce, combat, round, during, from, userTokenId, allyTokenId, allyName, range, step, moved }`
+  on the user. `during` is the combatant whose Opportunity was running when it was used (not
+  always the user's own: a GM-approved use is off-turn). It is live only while that Combat, round
+  and Opportunity are current (`recordLive`). The ally's client marks its own use on its own actor
+  (`flags.starwrought.maneuverMoved = { nonces: [...] }`, the uses it has moved for, the last six
+  kept; `usedNonces`, `withUsed`), and the user's drag sets `moved`.
+  `moveRoleFor` answers which role a token has under the live records; `asManeuverMove` re-reads a
+  classified drag as the Maneuver's (the forced kind, the Moves needed, the one prepaid).
+- **The `use` hook point grew** (`ruleUses` in `module/rules/engine.mjs`): the context carries the
+  scene, the target's token, the encounter's current combatant, a nonce and the owner's
+  alterations of the used Maneuver (`alterationsOf`; Off dropped; a line on Skip handed over as
+  `skipped` and a one-roll custom effect to be used up, each with the mark that says so); an
+  answer may carry `warn` and `marks`. `encounterContext()` in `module/rules/scene.mjs` returns
+  the current combatant's id.
+- **`SwItem#useWithRules`** (`module/documents/item.mjs`): the spend is said on the Item's own
+  card (`announce: false`, as the no-roll rows of 0.23.0) with the warnings beneath it; the
+  payment honours "Track the six-action round" (ruling 236; it ignored the setting); and the
+  Opportunity gate is passed after the rules have had their say, so a refused use spends no
+  approval. This holds for every Talent and Maneuver with a use rule (Oathbound's mark).
+- **The drag** (`module/documents/movement.mjs`): `maneuverMoveOf(token)` is the one answer for
+  the charge and the ruler. A live record for the dragged token skips the GM request and
+  `mayActNow` (so nothing else's approval is spent), forces the kind, takes one Move off the
+  user's charge, marks the record used with a synchronous guard (a second quick drag is not
+  free), and notes it on the move's card, the ally's end gap measured from the drag's
+  destination. Marking is done outside the tracking block, so with tracking off the Moves are
+  still counted as made.
+- **The ruler** (`module/canvas/ruler.mjs`) prices through the same helper: the label, the colour
+  (the prepaid Move is not painted as unaffordable, and reads "paid") and the one-Move cap.
+- **The clear** (`endManeuverMoves` in `module/rules/effects-state.mjs`): a record ends with the
+  Opportunity it was used in. On every turn change (a step, a new round, a rewind), each Actor's
+  responsible client takes off every record that is not of the Opportunity now running; on a lone
+  fighter's step to itself, which writes no Combat update, the stepping client does it for its
+  own Actors and the `rules:step` message of 0.22.0 has every other client do it for theirs; and
+  the Combat's end takes the records and the marks.
+
+### Mended on the way
+
+- **A bent drag off-turn** (present since 0.19.0). A drag with a Ctrl-click waypoint, or a path a
+  region splits, arrives as several pieces, and the "already charged" test ran after the
+  Opportunity gate. The second piece of a drag the GM had approved found the approval spent, asked
+  the GM again and was refused, leaving the token at its first waypoint, already charged for the
+  whole path. The test runs before the gate now.
+- **An approval used up by a drop that did not stand** (present since 0.19.0; found by the
+  review). The GM's approval of an off-turn drag was spent before the drag was measured, so a drop
+  the one-Move cap then refused, or a twitch under half a foot, used it up. It is spent when the
+  drag stands.
+
+### What the review found
+
+An independent reading of the diff, after the first live drive: eight findings, none high, all
+mended and each then driven live.
+
+1. The ally's "I have moved" mark was cleared at the ally's own next Opportunity, before the
+   record it answered had died, so after a GM's Previous Turn the ally could move again. The mark
+   now stays until the encounter ends (it is compared by nonce).
+2. A record was cleared only when its holder's next Opportunity began, on that fighter's
+   responsible client. A player ending the Opportunity of the last fighter with actions wrote no
+   Combat update, so nothing cleared it; and a fighter passed over kept one that woke again later
+   in the round. A record is now taken off when its Opportunity ends, whoever's it was.
+3. A started Combat on screen that the user was no part of wrote the record and the once-a-round
+   mark while paying nothing. It now counts nothing, as outside an encounter.
+4. A permitted token that was not a fighter was priced by the ruler as the Maneuver's Move while
+   its drop landed free. It has no role now, so the ruler and the charge agree.
+5. The clear at an Opportunity's start could delete a record written a moment earlier for that
+   same Opportunity on a slow client. The clear now leaves a record of the Opportunity running.
+6. Two fighters permitting the same ally in one Opportunity let it alternate for ever, since its
+   mark held one use. The mark is a short list.
+7. Skip on Coordinated Footwork's line was read as On and never spent. It is left out that once
+   and cleared by the use, and a one-roll custom effect carrying the line is used up.
+8. The approval spent by a refused drop (above).
+
+### Checked
+
+- `node assets/test_rules.mjs`: 168 checks pass (ten new: `permit` registered with its tag and in
+  `EFFECT_KINDS`, its forms and stored shape, its refusals by message, its `use` answers for each
+  refusal and each warning with the record and the round mark, a Combat the owner is no part of,
+  `ALTER`'s `movement` with its summary, the drafted cell's message and a Skip spent by the use,
+  `alterationsOf`, `recordLive` and `moveRoleFor` with the mark as a list, and `asManeuverMove`).
+- `node --check`; `python assets/check_style.py` (one failure, the em-dash in Dwarf Lore B13 of
+  Mike's uncommitted `data/ancestries.xlsx`); `node assets/build_foundry.mjs --no-compile`;
+  `python assets/build_features_docx.py`; `node assets/build_all.mjs --check`.
+- Live, in the test world, on copies of Move Together (a world Maneuver and Tess's own) and
+  Coordinated Footwork, as Aid was proven before its row was written. As the GM: the refusals
+  (nobody, yourself, the Bandit) with nothing paid; the main path (one card, ❶ at the click, the
+  record with every key, the round mark, a second use refused); Tess's 2 ft drag read as a Move
+  for 0 actions with the note, and a second drag an ordinary Step ❶; Wren dragged off-turn by the
+  GM for ❶ with the note and the used mark, and a further drag not counted again; the forced
+  short Move drawing an Intercept offer from the Bandit; the apart note; the record gone at the
+  next Opportunity (no free Move later in the round); the warnings on the card with the Maneuver
+  still happening; Coordinated Footwork (the record's `step`, short drags as Steps, no Intercept
+  offered; the drafted cell refused with `"APPLY: both-participants" is not a component`); with
+  tracking off (nothing spent, the Moves still marked); outside an encounter (the card only). As
+  the player Mike: the use paying; Wren's permitted drag, bent at a checkpoint, completing with
+  one charge and no request to the GM; a second Wren drag asking the GM; a Strike off-turn still
+  gated.
+- Live again after the review's mends, each of the eight. As the GM, with three fighters: the
+  record gone when the turn passed to Wren, Wren's mark kept, and nothing live after Previous
+  Turn; a record written for the Opportunity about to begin left alone by the change into it and
+  gone at the next; two records naming Wren in one Opportunity (one Move for each, ❶ each, a third
+  drag not counted); Skip on Coordinated Footwork's line (plain Moves that once, the switch back
+  to On, a Step at the next use); the last fighter with actions stepping to itself (the record
+  gone); the Combat deleted (records and marks gone); Tess outside the tracker (the card only,
+  nothing written or limited); Wren outside it (the warning, no role, the drag free). As the
+  player Mike: Tess as the last fighter with actions ending her Opportunity, the record cleared by
+  the GM's client; an approved off-turn drag of ten feet refused by the cap with the approval
+  kept, a twitch keeping it, a four-foot Move spending it and the next drag asking again; and the
+  whole of Move Together once more (❶ at the click, Tess's Step free, Wren's drag with no request
+  for ❶, a request Wren already had pending left alone).
+- **Not seen on screen: the ruler.** Core's ruler needs real pointer waypoints, which the hidden
+  pane cannot give. The label, the colour and the cap were checked through the helper the ruler
+  and the charge share, with the live tokens.
+
+### Not built, and known limits
+
+- Declaring both routes first, the order (you, then the ally), "can perceive your cue" and
+  whether the ally is willing: the card says who may Move, and the rest is the table's.
+- A mistaken use cannot be taken back: the once-a-round mark stays for the round.
+- A short Move forced by Move Together uses up a once-a-round Speed bonus as any Move does.
+- With the `PERMIT` line switched Off on the Effects tab, the click still pays and nothing is
+  permitted.
+- A GM who repositions the ally during that Opportunity uses the permission and charges the ally.
+- Each arrow-key nudge is its own movement, so the first nudge is the Maneuver's Move.
+- A record is cleared by its holder's responsible client (the GM's, else its first active
+  owner's). With neither connected at the moment its Opportunity ends, it stays until the
+  encounter does, and would read as live if that same fighter's Opportunity came again in the
+  round.
+- `permit` permits a Move and nothing else; a permitted Strike or Step is a word added when a
+  Maneuver wants one.
+
+### For Mike to paste
+
+The release carries the kind alone. `data/maneuvers.xlsx` and `data/ancestries.xlsx` are in
+progress and were not converted, built, staged or written. Two cells:
+
+- Move Together's row (Ancestry Actions sheet of `data/maneuvers.xlsx`), Automation:
+  `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]`
+- Coordinated Footwork (the Human sheet of `data/ancestries.xlsx`), Automation, in place of the
+  `# PROPOSED` draft: `[EFFECT ALTER: Move Together.movement; VALUE: step]`
+
+---
+
 ## 0.23.1 (2026-11-14): the Pass row Passes
 
 Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved and no

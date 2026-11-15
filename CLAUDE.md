@@ -908,6 +908,70 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.24.0 (Mike, 2026-11-14; rulings 239 to 244): Move Together, and the Talent that changes it.**
+Planned first (`dazzling-floating-simon.md`; Mike's decisions by question: pay at the click, a Move
+however short unless the Talent, warn and go on, the tag word PERMIT) and built as one rule kind
+and one `ALTER` property; no data and no handbook moved, and the rulings are system decisions in
+the 0.24.0 changelog entry. Mike asked whether Coordinated Footwork's Effect should change or the
+grammar should grow; neither could be answered until Move Together itself was automated, where the
+one thing that bit in play was the ally's off-turn drag waiting for the GM (0.19.0). **`PERMIT`**
+(ruling 239; kind `permit`, the twentieth, `module/rules/kinds/permit.mjs`), on the MANEUVER'S OWN
+ROW and nowhere else (`context.itemType === "action"`), on the existing `use` hook point:
+`PERMIT: move; FOR: allies 0; LIMIT: round`, one descriptor (`move`, `PERMIT_WHAT`), `FOR`
+required and never `self` (`PERMIT_WHO`), `LIMIT` the row's Frequency, `IF: RANK(...)` the owner's
+rank (never `roll`), refused inside an `[AURA ...]` block; stored `{ kind: "permit", what, for:
+{ who, range }, limit, when }`. **`ALTER` reads a seventh property, `movement`**, value `step`
+(`MOVEMENT_PROPERTY`, `MOVEMENT_VALUES` in `module/rules/given.mjs`; its own parse branch in
+`kinds/alter.mjs`, stored `movement: "step"`, left out of `buildTable` and of the `gives` hook).
+**The `use` hook point grew** (`ruleUses` in `module/rules/engine.mjs`): the context carries
+`scene`, the target's `token` and `tokenId`, `encounter.combatant` (`encounterContext()` in
+`module/rules/scene.mjs`), a `nonce` and `alterations` (`alterationsOf(actor, item)`: the owner's
+`alter` rules naming the used Maneuver, Off dropped, a line on Skip handed over `skipped` and a
+one-roll custom effect to be used up, each with the `marks` the kind hands back when the use
+counted; the used Item's own lines still read a Skip as On), and an answer may carry
+`refuse`, `warn` and `marks`. **`SwItem#useWithRules`** (`documents/item.mjs`) refuses before it
+gates (a refused use spends no GM permit), pays with `announce: false` and the spend line on the
+Item's own card with the warnings (`warns` in `templates/chat/item-card.hbs`), honours
+`trackActions`, applies the answer's `write` and files its `marks` (`writeRuleMarks`); this holds
+for every Item with a use rule. **The record is pure and lives on the USER alone** (ruling 244;
+`module/rules/maneuver-move.mjs`): `flags.starwrought.maneuverMove = { nonce, combat, round,
+during, from, userTokenId, allyTokenId, allyName, range, step, moved }`, live only while its
+Combat, round and `during` (the combatant whose Opportunity was running at the use) are current
+(`recordLive`); the ally's client writes `flags.starwrought.maneuverMoved = { nonces: [...] }` on
+its own actor (the uses it has moved for, the last six kept, `usedNonces` and `withUsed`: two
+fighters may permit one ally in an Opportunity) and the user's drag sets `moved`; no relay. `moveRoleFor` reads the role of a token under
+the live records and `asManeuverMove(move, held)` re-reads a classified drag (`kind`, `moves`,
+`prepaid`, `charge`, `forced`). **The drag** (rulings 240 to 242; `documents/movement.mjs`):
+`maneuverMoveOf(token)` is the one answer for the charge and the ruler; a live record skips the GM
+request and `mayActNow`, counts for the GM's drag of the ally's token, forces a Move however short
+(never a Rush; a Step within half Speed only with `step`; a Speed 0 crawl stays a crawl), takes
+one Move off the user's charge, marks the use with a synchronous guard (`begun`) outside the
+tracking block, and notes it on the move's card (`maneuverNotes`: paid for at the use, made
+outside the fighter's own Opportunity, and the ally's end gap when it is above the row's range,
+said and never enforced). `canvas/ruler.mjs` prices through the same helper (the label's "paid",
+the colour, the cap); a token that is not a fighter in the encounter has no role. **A record ends
+with the Opportunity it was used in**: `endManeuverMoves(combat, { current, round, ended })` in
+`module/rules/effects-state.mjs` takes off every record that is not of the Opportunity now
+running, on each Actor's responsible client, from `onTurnChange` (any change: a step, a new
+round, a rewind; a record written for the Opportunity that has just begun is left), from a lone
+fighter's step (`settleLoneStep` locally and `onStepSocket` on every other client, `current`
+null), and from `endEncounterEffects`, which takes the marks too; the ally's mark is never
+cleared before the Combat ends, since it is compared by nonce. **The owner must be in the fight**:
+`inFight` in the hook is a started Combat AND `actor.inEncounter`, else the card only.
+**Refused** (ruling 243): nobody
+targeted, yourself, a creature the `FOR` does not name, a second use within the `LIMIT`.
+**Warned, and it still happens**: a gap above the range, no action left, not conscious, not in the
+encounter. **Mended on the way, no ruling**: in `onTokenMoves` the "already charged" test for a
+path split by waypoints ran after the Opportunity gate, so the second piece of a GM-approved
+off-turn drag asked the GM again and the token stopped at its first waypoint already charged for
+the whole path (since 0.19.0); the test runs first; and the GM's approval of an off-turn drag was
+spent before the drag was measured, so a drop the cap refused or a twitch used it up (the review's
+find; `permit` in `onTokenMoves`, spent beside `charged.add`). **Not built**: the order and the declared
+routes, "can perceive your cue", willingness, a use taken back, a permitted Strike or Step as the
+descriptor. **The release carries the kind alone**: Move Together's row and Coordinated Footwork
+are on Mike's sheets in progress, the two cells are in the changelog for him to paste, and
+`data/ancestries.xlsx` and `data/maneuvers.xlsx` were not converted, built, staged or written.
+
 **0.23.0 (Mike, 2026-11-14; rulings 231 to 238): a Maneuver pays its own cost, and the Combat
 window forgets old attacks.** Planned first (`dazzling-floating-simon.md`; Mike's decisions by
 question: an unfinished attack ends with its Combat or its card and the GM gets a Cancel in the
@@ -1482,9 +1546,9 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Nineteen kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
-  0.22.0): the effect kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`,
-  `alter`, the creation kinds `grant` and `aura`, and
+  Twenty kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  0.22.0, `permit` since 0.24.0): the effect kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`,
+  `substitute`, `give`, `alter`, `permit`, the creation kinds `grant` and `aura`, and
   the feature kinds `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`,
   `choice`; the level-1 Human, the two Cultures, the
   three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
@@ -1499,9 +1563,12 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   instead of +0"), `FOR` and auras, `CLAIM`; and, for `give` and `alter` (0.22.0), two uses of one
   pending result (Carry the Plan), a second character using it (Pay It Forward), a Condition given
   by a result, a result from a Maneuver that rolls no check, an adversary as the recipient, the
-  `ALTER` properties beyond the six (each refused as not read yet; eleven of Mike's drafted cells
-  name one), and a Threshold a Maneuver's check opens on (Aid's "typically 15", offered to Mike as
-  the next small step). **The 0.13.0 form is refused since 0.17.0**
+  `ALTER` properties beyond the seven (each refused as not read yet; eleven of Mike's drafted
+  cells named one at 0.22.0, Coordinated Footwork's among his drafts now told what to write), and
+  a Threshold a Maneuver's check opens on (Aid's "typically 15", offered to Mike as
+  the next small step); and, for `permit` (0.24.0), anything permitted but a Move (a Strike, a
+  Step as the descriptor), the order and the declared routes of Move Together, "can perceive your
+  cue", willingness, and a use taken back. **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
   (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
@@ -1561,7 +1628,13 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Assistance's `ALTER` lines (the Human sheet), whose `# PROPOSED` drafts do not read as written
   (`Aid.duration` with `recipient-opportunity-end(1)`, and `VALUE: no-effect; PRESERVE:
   original-degree`): each is told the word that does. Until Aid's row carries its lines the two
-  Talents change nothing, and Aid's card offers no Give button.
+  Talents change nothing, and Aid's card offers no Give button. **0.24.0 (2026-11-14) did not
+  touch them either, and two more cells wait**, printed in the 0.24.0 changelog entry and in
+  `AUTOMATION_GRAMMAR.md` section 5: `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]` on Move
+  Together's row (Ancestry Actions sheet of `data/maneuvers.xlsx`) and `[EFFECT ALTER: Move
+  Together.movement; VALUE: step]` on Coordinated Footwork (the Human sheet), whose `# PROPOSED`
+  draft (`VALUE: choose(Move, Step); APPLY: both-participants`) is told what to write. Until Move
+  Together's row carries its line the ally's drag asks the GM as before.
 - **Whether a bonus reaches a Defense rolled as a check is open** (ruling 222's wider question; a
   row in `assets/open_decisions.json`). Ruling 222 is narrow: a bonus to a Maneuver applies to a
   check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid
@@ -1606,7 +1679,25 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   testpc1 token and the 57 cards it posted, cleared every pending result and put the two Talents'
   switches back to On. Nothing in the repository depends on them. The 0.23.0 drive (2026-11-14)
   left those fixtures as they were, deleted its Combats and the cards it posted, and closed the
-  three attacks it had left unfinished on purpose.
+  three attacks it had left unfinished on purpose. **The 0.24.0 drive (2026-11-14) left three
+  more fixtures on purpose**, so Move Together can be tried there before Mike's workbooks build:
+  a WORLD action Item "Move Together" (flagged `testFixture`, with the `PERMIT` cell), Tess's own
+  copy of it (the one her "From your Talents" panel uses) and the Talent "Coordinated Footwork" on
+  Tess with its `ALTER` cell (delete it, or switch its line Off, to see plain Moves). It deleted
+  its Combats and the 40 cards it posted (416 messages again), cleared the records, marks, request
+  and permit flags it left on Tess and Wren, and put the tokens back (Tess 1200,1200; Wren
+  1320,1200). Mike, the player user, owns Tess and Wren.
+- **0.24.0 leaves to the table or to Mike:** Move Together's declared routes, its order (you,
+  then the ally), "can perceive your cue" and the ally's willingness; a mistaken use, which cannot
+  be taken back (the once-a-round mark stays for the round); a short Move forced by the Maneuver
+  using up a once-a-round Speed bonus; the `PERMIT` line switched Off on the Effects tab, where
+  the click still pays and nothing is permitted; a GM who repositions the ally in that
+  Opportunity, which uses the permission and charges the ally; arrow-key nudges, each its own
+  movement, so the first is the Maneuver's Move; a record whose holder has no responsible client
+  connected when its Opportunity ends, which stays until the encounter does. **The ruler's label and colours
+  for a Maneuver's Move were not seen on screen** (core's ruler needs real pointer waypoints,
+  which the hidden pane cannot give): they were checked through `maneuverMoveOf` and
+  `asManeuverMove`, the helper the ruler and the charge share.
 - **0.23.0 leaves to the table or to Mike:** Gain Control's row pays ❶ while the Take Control
   button is free, and Interact's row pays ❶ while a draw or a stow from the Equipment tab pays its
   own, so each is two doors with one price; the Pass row Passes since 0.23.1, and its "Once per
@@ -1631,6 +1722,31 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-14 (Move Together, and the Talent that changes it, system 0.24.0; rulings 239 to
+244 in the 0.24.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by
+question: pay at the click, a Move however short unless the Talent, warn and go on, the tag word
+PERMIT): Move Together, of which nothing was automated and whose ally waited for the GM to
+approve an off-turn drag, now `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]` on its own row
+(the `permit` kind, the twentieth, on the `use` hook point): ❶ at the click on the Maneuver's own
+card, the user's next drag that Move already paid, the ally's drag with no request and ❶ of its
+own, each a Move however short, the refusals and the warnings, one record on the user that ends
+with its Opportunity; Coordinated Footwork's `# PROPOSED` cell, which the grammar could not say,
+now `[EFFECT ALTER: Move Together.movement; VALUE: step]`, `ALTER`'s seventh property; the ruler
+pricing through the helper the charge uses. Mended on the way: a bent off-turn drag stopped at
+its first waypoint already charged for the whole path (since 0.19.0); the GM's approval used up
+by a drop the cap refused; a use rule's Item gating before its refusal, announcing its spend on a
+second card and ignoring `trackActions`. Checked by 168 self-test checks, `node --check`,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of Mike's
+uncommitted workbook), `build_foundry.mjs --no-compile` (one document moves, the Grammar journal),
+an independent review of the diff (eight findings, none high, all mended) and live in the test
+world with a GM tab and a player tab, before the review and again after its mends (the 0.24.0
+changelog entry lists what). Not seen: the ruler's label and colours on screen. Not built, and
+said so in the changelog: the declared routes and their order, "can perceive your cue",
+willingness, a use taken back, anything permitted but a Move. The release carries the kind
+alone: Mike's two workbooks in progress were not converted, built, staged or written, the two
+cells are his to paste, and the pack content did not move. No handbook moved and
+`data/SYNC.json` is untouched.
 
 Cleared 2026-11-14 (the Pass row Passes, system 0.23.1; no ruling; planned in
 `dazzling-floating-simon.md`, Mike's decision by question: say why and do nothing when a Pass is

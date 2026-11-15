@@ -1,4 +1,15 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0)
+
+**0.24.0 (2026-11-14).** The twentieth kind, `permit`, and `alter`'s seventh property, `movement`
+(rulings 239 to 244). No new hook point: `permit` is the second kind to answer `use`, whose
+context and answer grew (the section under "Hook points" below). Mike asked whether Coordinated
+Footwork wanted a new Effect or new grammar; neither, until Move Together itself was automated. So
+a Maneuver's row may now say that using it lets the creature targeted make one Move outside its
+Opportunity (`[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]`, `kinds/permit.mjs`), and a
+Talent may change how that Move is read (`[EFFECT ALTER: Move Together.movement; VALUE: step]`).
+The use leaves one record on the owner; what a live record does to a drag is plain data in
+`maneuver-move.mjs`, read by `module/documents/movement.mjs` (the charge) and
+`module/canvas/ruler.mjs` (the label) through one helper, so the two cannot disagree.
 
 **0.22.0 (2026-11-14).** The eighteenth and nineteenth kinds, `give` and `alter`, and the sixth
 hook point, `gives` (rulings 223 to 230). Mike asked whether the grammar could say two Human
@@ -61,7 +72,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). `EFFECT_TAGS` ends with `use: "substitute"` since 0.21.0: a tag that is not a modifier tag hands its kind descriptors alone. Pure. |
 | `operators.mjs` | The shared vocabularies and readings (the 0.13.0 reader `readLine` is gone with the form, 0.17.0): `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `readTargetName(written, resolve)` (0.21.0), the one reading of a target's name that `bonus`, `reroll` and `substitute` share (through 0.20.1 `bonus` and `reroll` each kept a copy): with the caller's resolver the canonical name, the slug and the type, the resolver's own record under `found` (its `group` and `parent` a kind's to read, never to store), or null when the resolver knows nothing by the name; without one the name as written, the slug made here (a Maneuver's glyphs never reach it) and a null type; the refusals stay each kind's own; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. `OPERATORS` stays for the document gate on section 9. Pure. |
 | `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)` (written here when this client may, else relayed as `rules:marks` over the system socket to the GM's client or an active owner's; `onRulesSocket` serves it, 0.18.1). The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
-| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the nineteen kinds. |
+| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the twenty kinds. |
 | `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` in an `[EFFECT ...]` block. |
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
 | `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map, `[AURA ...]`; `toAuraField` is `system.aura`. No hook. |
@@ -72,7 +83,9 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/ignore.mjs` | The `ignore` kind (0.15.0): difficult terrain of named kinds costs nothing; no hook point. `ignoresTerrain(actor, kind)` is asked by the Difficult terrain region behavior (data/region-behaviors/difficult-terrain.mjs). |
 | `kinds/substitute.mjs` | The `substitute` kind (0.21.0): a check made with another Attribute and another Constellation's Proficiency Bonus, by the tag `USE` (`[EFFECT USE: <Attribute>, <Constellation>, <Maneuver>]`, exactly three descriptors, `same` keeping a term); the `substitutions` hook. |
 | `kinds/give.mjs` | The `give` kind (0.22.0): what a degree of a Maneuver's check gives another character, by the tag `GIVE` on the Maneuver's own row (`[EFFECT GIVE: <value> <type>, chosen \| <Constellation>; IF: RESULT(<degree>); UNTIL: <window>]`). Two hooks: `gives` (the Maneuver's lines, as `{ line }`) and `modifiers` (a result pending on its recipient, on the next roll with its Constellation). |
-| `kinds/alter.mjs` | The `alter` kind (0.22.0): a Talent's change to one property of what a Maneuver gives, by the tag `ALTER` (`[EFFECT ALTER: <Maneuver>.<property>; VALUE: <value>]`; six properties read, any other refused as not read yet). The `gives` hook, answering `{ alteration }`. |
+| `kinds/alter.mjs` | The `alter` kind (0.22.0): a Talent's change to one property of what a Maneuver gives, by the tag `ALTER` (`[EFFECT ALTER: <Maneuver>.<property>; VALUE: <value>]`; seven properties read, any other refused as not read yet). The `gives` hook, answering `{ alteration }`; its `movement` property (0.24.0) is passed over by that hook and read at use, through `ruleUses`. |
+| `kinds/permit.mjs` | The `permit` kind (0.24.0): using a Maneuver lets the creature targeted make one Move outside its Opportunity, by the tag `PERMIT` on the Maneuver's own row (`[EFFECT PERMIT: move; FOR: <who> [<N>]; LIMIT: round]`). The `use` hook: refusals, warnings, the record on the owner, the LIMIT's mark. |
+| `maneuver-move.mjs` | The pure half of it (0.24.0): `moveRecord`, `recordLive(record, encounter)`, `moveRoleFor(tokenId, { records, used, encounter })` (the user's own Move, the permitted one, or neither) and `asManeuverMove(move, held)` (a Move however short, never a Rush, a Step only with the alteration, the user's prepaid), `usedNonces` and `withUsed` (the ally's mark, a short list of the uses it has moved for). Imports nothing. The record is taken off its holder when its Opportunity ends by `endManeuverMoves` in `effects-state.mjs` (every turn change, a lone fighter's step, the Combat's end). |
 | `given.mjs` | The pure half of both (0.22.0): `buildTable(lines, alterations)` (the results by degree), `alterationTouches`, `pendingEntry` (what the recipient holds), `pendingRule` and `givenCarrier` (the one-roll carrier the engine indexes it through), `settle(entry, { combat, ended, began })` (what a turn change does to its window), `appliesNow`, and the words (`resultWords`, `windowWords`, `pendingWindowWords`). Imports `operators.mjs` alone. |
 | `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |
 | `effects-state.mjs` | The writes behind the Effects tab (0.16.0): a line's state, the custom effect rows, the marks `writeRuleMarks` hands it. Since 0.22.0 also the pending results: `writeGiven`, `removeGiven` (the GM's), `settleGivenResults(combat, { ended, began })` on the turn change, the clearing of a deleted Combat's results, and the `per: "effect"` mark that removes a result a roll used. Foundry globals only inside functions. |
@@ -363,14 +376,37 @@ offers yet because no Talent asks for it.
 
 Triggered. `hooks.use(entries, context, actor) -> RuleUse[]`, dispatched by `ruleUses(actor, item,
 context)` in `engine.mjs` with the rules ON THE USED ITEM alone, `context` `{ item, target: {
-actor, uuid, tokenUuid, name, relation } | null, encounter }`, each answer `{ item, write?, say?,
-refuse? }`. Defined with the `mark` kind (ruling 176). The three answers a triggered point owes:
+actor, uuid, tokenUuid, tokenId, token, name, relation, inEncounter } | null, encounter: { combat,
+round, combatant }, scene, alterations, nonce }`, each answer `{ item, write?, say?, refuse?,
+warn?, marks? }`. Defined with the `mark` kind (ruling 176); the second kind to answer it is
+`permit` (0.24.0), for which the context and the answer grew:
 
-- **Which client executes.** The owner's, in `SwItem#use` (documents/item.mjs, `#useTalent`): it
-  asks the kinds first, stops on a refusal with a notice and pays nothing, else pays the cost in
-  the Talent's name in an encounter, applies the writes to the owner and posts the Talent's card
-  with the kinds' lines under it. A Talent is used from its row's Use control, which the sheet shows
-  for a Talent with a cost or with a rule of a use-kind (`usableByRule`).
+- `scene` is `sceneContextFor(actor)` (the owner's token and `gap`), and the target carries its
+  TokenDocument, so a kind measures a distance without touching the canvas and stays pure.
+- `encounter.combatant` is the combatant whose Opportunity is running, and `nonce` names this use.
+- `alterations` is the owner's `alter` rules that name the used Maneuver (`alterationsOf`: Off
+  dropped, a rank condition checked against the owner), so a kind reads an `ALTER` of its Maneuver
+  without reading another kind's rules or importing the engine. A line on Skip comes `skipped`,
+  for the kind to leave out this once, and a one-roll custom effect comes to be used up; each
+  carries the `marks` that say so, which the kind hands back with a use that counted. (The used
+  Item's OWN lines still read a Skip as On: a use is deliberate.)
+- `warn` is lines the Item's card prints as warnings (the use still happens); `marks` is what to
+  file, `[{ key, per }]`, written with `writeRuleMarks`: a LIMIT as FIRST and ONCE are, a Skip
+  spent (`per: "state"`), a one-roll effect removed (`per: "effect"`).
+
+All of an answer's writes still land on the OWNER. `permit` needs another fighter to be able to
+act, and does it by a record on the owner that the other client reads (`maneuver-move.mjs`): no
+write to another actor, so no relay and no second executing client.
+
+The three answers a triggered point owes:
+
+- **Which client executes.** The owner's, in `SwItem#use` (documents/item.mjs, `#useWithRules`): it
+  asks the kinds first, stops on a refusal with a notice and pays nothing, passes the Opportunity
+  gate (after the refusals since 0.24.0, so a refused use spends no permit), else pays the cost in
+  the Item's name in an encounter (honouring `trackActions` since 0.24.0), applies the writes and
+  the marks to the owner and posts the Item's card with the spend, the kinds' lines and their
+  warnings under it. A Talent is used from its row's Use control, which the sheet shows for a
+  Talent with a cost or with a rule of a use-kind (`usableByRule`).
 - **What names the event.** The use itself: one press, one card, one write; a second press is a
   second use (a mark remade is the same creature named again).
 - **What a failure does.** A refusal stops the whole use before anything is paid; a hook that
@@ -692,7 +728,7 @@ the stored rule's `proficiency`, with no migration of the rules stored now. `FOR
 a second character using it (Pay It Forward): the entry is one result, used once, by its holder. A
 Condition given by a result. A result given by a Maneuver that rolls no check: the `gives` point is
 asked by a check. An adversary as the recipient: adversaries roll flat. The `ALTER` properties
-beyond the six (a Maneuver's movement, range, limit, uses, slots): each is refused as not read yet
+beyond the seven (a Maneuver's range, limit, uses, slots; `movement` is read since 0.24.0): each is refused as not read yet
 and comes with the Talent that wants it, as a new member of `given.mjs`'s property tables and a
 new clause of `buildTable`, or as another hook point's reading altogether. A Threshold a
 Maneuver's check opens on (Aid's "typically 15"). Known limits: with no GM connected a player's

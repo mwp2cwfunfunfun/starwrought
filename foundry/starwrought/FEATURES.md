@@ -4,7 +4,7 @@ Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 Novemb
 tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
 to 214; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
-the 0.23.0 entry 231 to 238). System version **0.23.1**.
+the 0.23.0 entry 231 to 238 and the 0.24.0 entry 239 to 244). System version **0.24.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -611,6 +611,9 @@ click; now, in an encounter, clicking a Maneuver's name pays the cost its row pr
   drag and stays the table's), and a Maneuver whose rule pays from a button on a card (Quick
   Tongue's reroll; a prevention carried by a Reaction). Such a row asks nothing of the GM off-turn
   either, since it performs nothing: the Strike, the Cast and the drag ask for themselves.
+- **A Maneuver that carries a Move of its own** (0.24.0; Move Together ❶, section 7): the cost is
+  paid at the click, and your next drag in that Opportunity is that Move, already paid. The ally
+  it names then drags off-turn with no request to the GM and pays its own ❶.
 
 The speech bubble beside the name shows the card and pays nothing. A Maneuver you own (copied down,
 or granted by a Talent) follows the same rule. One use at a time: a second click on a Maneuver
@@ -1196,6 +1199,15 @@ surprise. Everything else stays a warning: the red squares past your remaining a
 still lands, and the overspend is announced in chat. Client setting `showMoveBands`; a client
 that still carries the old `showStrideBands` value has it read once, at registration, to seed the
 new setting's default. A Crawl is labelled as such; its squares are the Move colours by count.
+
+**A Maneuver's own Move** (0.24.0; rulings 240 to 242; section 7). While Move Together's
+permission is live for a token, the ruler prices its drag as the charge will: a Move however
+short (a Step within half Speed only with Coordinated Footwork), never a Rush; for the one who
+used the Maneuver the first Move is already paid, so it is not painted red when no action is left
+and the label ends "· paid"; for the ally the one-Move cap is shown though it is not the ally's
+Opportunity. The ruler and the charge read one helper (`maneuverMoveOf` in
+`module/documents/movement.mjs`), so they cannot disagree; the ruler's side of it was proven
+through that helper and not seen on screen.
 
 The ruler extends whatever ruler class is configured rather than a fixed one, so it composes with a
 module that has already replaced it instead of quietly discarding that module's work.
@@ -2084,15 +2096,16 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the nineteen kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty kinds
 
-**What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind and 0.22.0 for
-the eighteenth and nineteenth; rulings 118 to 124, 164 to 188, 215 to 230). Since 0.9.0 every
+**What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
+the eighteenth and nineteenth and 0.24.0 for the twentieth; rulings 118 to 124, 164 to 188, 215 to
+230, 239 to 244). Since 0.9.0 every
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Nineteen kinds read it: eight effect kinds that act in play (`bonus`, `prevent`, `mark`,
-`reroll`, `ignore`, `substitute`, `give`, `alter`), two creation kinds (`grant`, `aura`) and nine feature kinds
+sheet. Twenty kinds read it: nine effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`), two creation kinds (`grant`, `aura`) and nine feature kinds
 (`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character. Nothing else reads a rule: no Strike's commitment,
 no damage step, because no kind for them exists, and Mike's instruction stands ("we will build
@@ -2486,6 +2499,60 @@ that degree spends it then. Where two Talents change one Maneuver, the more part
 stands (`beneficial-duration` over `duration`), and of two changes to one property the later
 line. What is not built is listed in section 9.
 
+**The `permit` kind, and a Maneuver's own Move** (0.24.0; rulings 239 to 244). Mike, 2026-11-14,
+of the Human's Coordinated Footwork: "would you recommend changing the effect of this Talent, or
+programming in the additional automation grammar?" Neither, until Move Together itself was
+automated: nothing of it was, and the one thing that bit in play was that the ally's drag on your
+Opportunity is off-turn and waited for the GM. His reply: "Plan it." So a Maneuver's own row may
+say that using it lets another creature Move, and a Talent may change how that Move is read:
+
+```
+Move Together ❶        [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]
+Coordinated Footwork   [EFFECT ALTER: Move Together.movement; VALUE: step]
+```
+
+- **Using it.** Target the ally and use Move Together from "From your Talents". Nobody targeted,
+  yourself, a target who is not an ally, and a second use in the round are refused with a notice
+  and nothing is paid. An ally who is not adjacent, has no action left, is unconscious or is not
+  in the encounter is warned about on the card, and it still happens (Mike: "Warn and go on").
+- **You pay at the click** (Mike: "Pay at the click"), on the Maneuver's own card. Your own next
+  drag in that Opportunity is the Maneuver's Move: free, up to one Move; a longer drag pays for
+  the rest. The move's card reads "1 Move(s), 0 action(s)" and says it was paid for.
+- **The ally drags with no request to the GM** and pays ❶ of its own. If the GM drags the ally's
+  token, it counts the same. It is one drag: a second drag, a Strike, any other Maneuver off-turn
+  still asks the GM, and an approval the ally already holds for something else is not used up.
+  If the ally never moves, it pays nothing.
+- **A Move, however short** (Mike: "A Move, unless the Talent"). A drag made as part of the
+  Maneuver is never read as a Step, so it can draw an Intercept, and never as a Rush. With
+  Coordinated Footwork a drag within half Speed is a Step for either of you: ❶ as before, nothing
+  provoked, no difficult terrain; a longer drag is still a Move.
+- **Where the ally ends.** When the ally ends farther from you than the Maneuver asks ("It must
+  finish adjacent to you"), its move's card says so. Said, not enforced.
+- **It lasts that Opportunity.** One record on the user names both tokens; the other client reads
+  it, so nothing is written on the ally but "I have moved for this one", and nothing is relayed.
+  The record is taken off when that Opportunity ends: the turn moves on (forwards, or back by the
+  GM's Previous Turn), the last fighter with actions steps to itself, or the encounter ends. So a
+  Move you did not make is not waiting for you later in the round. Two fighters may permit the
+  same ally in one Opportunity, and it moves once for each.
+- **You must be in the fight.** With a Combat on screen that your character is no part of,
+  nothing is paid, recorded or limited. An ally who is not a fighter in it is warned about, and
+  its drag is free and unpriced, as any drag of a token outside the tracker.
+- **Skip on Coordinated Footwork's line** (the Effects tab) makes the drags plain Moves that
+  once, and is spent by the use; Off leaves them Moves until it is switched back.
+- **The ruler agrees**: it prices the drag through the same helper as the charge, so a short drag
+  reads as a Move, the Move already paid is not painted red when you have no action left and is
+  labelled "paid", and the one-Move cap is shown for the ally's drag too.
+
+Mended on the way: a bent drag (a Ctrl-click waypoint, or a path a region splits) arrives as
+several pieces, and the "already charged" test ran after the Opportunity gate; so the second
+piece of a drag the GM had approved off-turn found the approval spent, asked the GM again and was
+refused, leaving the token at its first waypoint, already charged for the whole path. The test
+runs first now. The GM's approval of an off-turn drag is spent when the drag stands, so a drop the
+one-Move cap refuses, or a twitch under half a foot, no longer uses it up. And a Talent or
+Maneuver with a use rule (Oathbound) says its spend on its own card, in place of a second card,
+passes the Opportunity gate after its rules have had their say (a refused use spends no
+approval), and honours "Track the six-action round".
+
 **The hook points** (0.10.0, 0.13.0 and 0.21.0; rulings 124, 165 and 221). A kind that affects a
 roll names `modifiers` in its `hooks`: the engine asks every registered kind at the check assembly,
 the Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the
@@ -2558,7 +2625,7 @@ nothing reads it; the `bonus` entries are what the hook point reads.
 its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
 can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
 defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which
-registers the nineteen. `module/rules/README.md` is the
+registers the twenty. `module/rules/README.md` is the
 recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every
 step-running mode (`--check` builds nothing) of `build_all.mjs` before the Foundry build; it asserts
 the list of shipped kinds, so a kind cannot ship unannounced.
@@ -2772,11 +2839,24 @@ before; the sources and the index are.
   the Move it measures, never at their own cost. Gain Control's row and the Take Control button are
   two doors with one price between them, and so are Interact's row and the Equipment tab's draw or
   stow: the system does not know which you used. The Pass row Passes since 0.23.1, and counts no
-  Passes: its "Once per round" is the book's and nothing enforces it. A Maneuver Prepared
+  Passes: its "Once per round" is the book's and nothing enforces it (a `LIMIT: round` on a
+  Maneuver's own `PERMIT` line is the one Frequency the system holds, since 0.24.0). A Maneuver Prepared
   from its row rolls its check at Finish with whatever is targeted then. With "Track the six-action
   round" off none of this happens. An adversary's sheet shows its abilities' cards and pays nothing.
   A row printed with a cost and a Reaction half of its own ("❶ (⓿↺)", which no shipped row is)
   pays the half and never the cost.
+- **A permitted Move is a drag, and the rest of Move Together is the table's** (0.24.0; rulings
+  239 to 244; section 7). The system lets the ally drag, charges both Moves, calls them Moves and
+  says where the ally ends. It does not read that both routes are declared before either moves,
+  that you move first, that the ally can perceive your cue or that the ally is willing. A
+  mistaken use cannot be taken back: the once-a-round mark stays for the round. A short Move
+  forced by the Maneuver uses up a once-a-round Speed bonus as any Move does. A GM who repositions
+  the ally's token in that Opportunity uses the permission and charges the ally. Each arrow-key
+  nudge is its own movement, so the first nudge is the Maneuver's Move. With the `PERMIT`
+  line switched Off on the Effects tab the click still pays and nothing is permitted. The ruler's
+  label and colours for such a drag were proven through the helper it shares with the charge, and
+  not seen on screen. No shipped cell carries a `PERMIT` line: Move Together's row and Coordinated
+  Footwork are on sheets Mike is still writing, and 0.24.0 builds no data.
 - **An attack that outlives its encounter is closed, not resumed** (0.23.0; rulings 237 and 238;
   section 2). An attack made outside an encounter does not survive a reload of the client
   coordinating it; an expired attack and one whose Combat was deleted refund nothing; deleting an

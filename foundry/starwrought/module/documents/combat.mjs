@@ -32,7 +32,7 @@
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { isElected, responsibleFor } from "../helpers/authority.mjs";
-import { settleGivenResults, settleLoneStep } from "../rules/effects-state.mjs";
+import { settleGivenResults, settleLoneStep, endManeuverMoves } from "../rules/effects-state.mjs";
 import { setting } from "../helpers/settings.mjs";
 import { registerCardButtons } from "../helpers/cards.mjs";
 import {
@@ -448,8 +448,14 @@ async function onTurnChange(combat, previous, current) {
   const endedId = previous.combatantId ?? null;
   const beganId = current.combatantId ?? null;
   const endedAt = { round: previous.round ?? 0, turn: previous.turn ?? null };
+  const beganRound = current.round ?? 0;
+  const roundDelta = beganRound - endedAt.round;
+  const forward = (roundDelta === 0) ? movedForward(combat, previous, current) : (roundDelta > 0);
   try {
-    const roundDelta = (current.round ?? 0) - (previous.round ?? 0);
+    // 0.24.0: a Move made as part of a Maneuver ends with the Opportunity its Maneuver was used in
+    // (rules/effects-state.mjs). Whatever the change was (a step, a new round, a rewind), every
+    // record that is not of the Opportunity now running is taken off its holder.
+    await endManeuverMoves(combat, { current: beganId, round: beganRound });
     if (roundDelta < 0) {
       if (isElected()) await combat.setPassStreak(0);
       return;
@@ -464,7 +470,7 @@ async function onTurnChange(combat, previous, current) {
       if (endedAt.round > 0) await endRound(combat, endedAt.round);
       await startRound(combat, endedAt.round + roundDelta);
     } else {
-      if (!movedForward(combat, previous, current)) return;
+      if (!forward) return;
       // 0.22.0: a pending result's window may close as an Opportunity ends (rules/effects-state.mjs).
       if (endedId) await settleGivenResults(combat, { ended: endedId });
       if (endedId && (endedId !== beganId) && isElected()) {

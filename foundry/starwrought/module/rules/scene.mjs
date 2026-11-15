@@ -104,12 +104,14 @@ export function sceneContextFor(actor, token = null) {
 
 /**
  * The encounter the marks are filed under: the viewed Combat's id and round, or null when there
- * is none (outside an encounter a FIRST or ONCE applies every time, said on the card).
- * @returns {{combat: string|null, round: number}}
+ * is none (outside an encounter a FIRST or ONCE applies every time, said on the card). Since
+ * 0.24.0 it also names the combatant whose Opportunity is running (null before the encounter
+ * starts), which is what a Move made as part of a Maneuver is tied to (./maneuver-move.mjs).
+ * @returns {{combat: string|null, round: number, combatant: string|null}}
  */
 export function encounterContext() {
   const combat = globalThis.game?.combat ?? null;
-  return { combat: combat?.id ?? null, round: combat?.round ?? 0 };
+  return { combat: combat?.id ?? null, round: combat?.round ?? 0, combatant: (combat?.started ? combat.combatant?.id : null) ?? null };
 }
 
 /**

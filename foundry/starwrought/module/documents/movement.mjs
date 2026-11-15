@@ -39,6 +39,8 @@ import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 // A bonus to Speed (0.15.0, ruling 181): the Automation rules' `Speed` target, feet on a Move.
 import { ruleModifiers } from "../rules/engine.mjs";
 import { sceneContextFor, encounterContext, writeRuleMarks } from "../rules/scene.mjs";
+// A Move made as part of a Maneuver (0.24.0): the record a `PERMIT` leaves, read here and by the ruler.
+import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, moveRoleFor, asManeuverMove, withUsed } from "../rules/maneuver-move.mjs";
 
 const { escapeHTML } = foundry.utils;
 const localize = key => game.i18n.localize(key);
@@ -47,12 +49,61 @@ const format = (key, data) => game.i18n.format(key, data);
 /** Movement ids already charged, so a path split by a region checkpoint is paid for once. */
 const charged = new Set();
 
+/**
+ * The Maneuver's Moves this client has already begun, as "<nonce>:<token id>" (0.24.0): the flag
+ * that says so is written after the drag is let go, so a second quick drag would otherwise read
+ * the record as unused and be free as well.
+ */
+const begun = new Set();
+
 /** Register the hooks that charge a drag and offer the Intercept; the round's own hooks first. */
 export function registerMovementTracking() {
   registerCombatTracking();
   Hooks.on("preMoveToken", onTokenMoves);
-  Hooks.on("deleteCombat", () => charged.clear());
+  Hooks.on("deleteCombat", () => { charged.clear(); begun.clear(); });
   cardActions.set("intercept", onIntercept);
+}
+
+/**
+ * Is a drag of this token a Move made as part of a Maneuver (0.24.0; rulings 240 to 242)? The
+ * records are on the users of such Maneuvers (`flags.starwrought.maneuverMove`, written when a
+ * `PERMIT` line's Maneuver is used); every fighter of the encounter is asked, since the ally's
+ * client reads the user's record and holds none of its own. Null outside a started encounter on
+ * the token's scene, for a token that is not a fighter in it (its drags are never charged, so the
+ * ruler must not price one as the Maneuver's Move either), when no record is live in the running
+ * Opportunity, or when this token has already made its Move for it. One reading, for the charge
+ * below and for the ruler.
+ * @param {TokenDocument} token
+ * @returns {{role: "user"|"ally", record: object, holder: Actor}|null}
+ */
+export function maneuverMoveOf(token) {
+  const actor = token?.actor;
+  const combat = game.combat;
+  if (!actor || !combat?.started) return null;
+  if (combat.scene && (combat.scene.id !== token.parent?.id)) return null;
+  if (!combatantOf(token)) return null;
+  const records = [];
+  const holders = [];
+  for (const combatant of combat.combatants) {
+    const record = combatant.actor?.getFlag?.(SW.SYSTEM_ID, MOVE_RECORD_FLAG);
+    if (!record || records.includes(record)) continue;
+    records.push(record);
+    holders.push(combatant.actor);
+  }
+  if (!records.length) return null;
+  const used = actor.getFlag?.(SW.SYSTEM_ID, MOVE_USED_FLAG) ?? null;
+  const held = moveRoleFor(token.id, { records, used, encounter: encounterContext() });
+  if (!held || begun.has(`${held.record.nonce}:${token.id}`)) return null;
+  return { ...held, holder: holders[records.indexOf(held.record)] };
+}
+
+/** The token's combatant in the started encounter on its scene, whoever's Opportunity it is. */
+function combatantOf(token) {
+  const actor = token?.actor;
+  const combat = game.combat;
+  if (!actor || !combat?.started) return null;
+  if (combat.scene && (combat.scene.id !== token.parent?.id)) return null;
+  return combat.getCombatantsByToken(token.id)[0] ?? combat.getCombatantsByActor(actor)[0] ?? null;
 }
 
 /* -------------------------------------------- */
@@ -161,13 +212,31 @@ function onTokenMoves(token, movement, options) {
   const actor = token.actor;
   if (!actor?.system) return;
 
+  // A path a region or a waypoint splits into pieces arrives as several updates under one movement
+  // id or chain; the first carries the pending remainder, so it paid for the whole and passed
+  // the gate for the whole. Asked BEFORE the gate since 0.24.0: through 0.23.1 the later piece of
+  // an off-turn drag the GM had approved found the permit spent, asked the GM again and was
+  // refused, leaving the token at its first waypoint, already charged for the whole path.
+  if (charged.has(movement.id) || movement.chain?.some(id => charged.has(id))) return;
+
+  // A Move made as part of a Maneuver (0.24.0; ../rules/maneuver-move.mjs): the user's own, paid
+  // for when Move Together was used, or the ally's, permitted by it.
+  const held = maneuverMoveOf(token);
+
   // Only a Move at your own Opportunity is a Maneuver. Anything else (the GM repositioning a
   // token, a Step handed out by a Defense result, forced movement) costs nothing here. Since
   // 0.19.0 a player's drag of their combatant outside its Opportunity is refused and asks the GM
   // (the gate in documents/actor/actions.mjs; Mike, playtest); a drag the GM approved goes
   // through once, charged as a Move at the Opportunity would be.
   let combatant = opportunityOf(token);
-  if (!combatant) {
+  let permit = false;
+  if (!combatant && held) {
+    // The Maneuver's Move asks nobody: its Maneuver was the asking. The gate is not touched, so
+    // an approval the GM gave this fighter for something else is not spent on it; and the GM's own
+    // drag of the token counts as the Move too, where any other drag of the GM's is free.
+    combatant = combatantOf(token);
+    if (!combatant) return;
+  } else if (!combatant) {
     const waiting = combatantOutOfTurn(token);
     if (!waiting) return;
     if (!actor.canActNow()) {
@@ -175,14 +244,11 @@ function onTokenMoves(token, movement, options) {
         .catch(err => console.error("STARWROUGHT | the move's request could not be posted", err));
       return false;
     }
+    // The GM's approval is spent below, once the drag is known to stand (0.24.0): through 0.23.1
+    // it was spent here, so a drop the cap then refused, or a twitch under half a foot, used it up.
     combatant = waiting;
-    actor.mayActNow({ label: localize("STARWROUGHT.Opportunity.aMove") })
-      .catch(err => console.error("STARWROUGHT | the move's permit could not be spent", err));
+    permit = true;
   }
-
-  // A path a region splits into pieces arrives as several updates under one movement id; the
-  // first carries the pending remainder, so it pays for the whole.
-  if (charged.has(movement.id) || movement.chain?.some(id => charged.has(id))) return;
 
   const feet = pathFeet(movement);
   if (feet.cost < 0.5) return;
@@ -190,7 +256,10 @@ function onTokenMoves(token, movement, options) {
   const numbers = movementNumbers(actor);
   const straight = isStraight(token, movement, feet.distance);
   const terrain = feet.cost > feet.distance + 0.01;
-  const move = classifyMove(feet.cost, numbers, { terrain, straight });
+  // As the Maneuver's Move it is a Move however short (never a Rush; a Step only with the
+  // alteration), and the user's is one Move's worth cheaper.
+  const classified = classifyMove(feet.cost, numbers, { terrain, straight });
+  const move = held ? asManeuverMove(classified, held) : classified;
 
   // One Maneuver per Opportunity: a drag is one Step, one Move, one Crawl or one straight Rush.
   // A second Move's worth is refused before the token lands (the ruler painted those squares red
@@ -206,7 +275,15 @@ function onTokenMoves(token, movement, options) {
 
   charged.add(movement.id);
   if (charged.size > 500) charged.clear();
-  chargeMovement({ token, movement, actor, combatant, move, feet, numbers }).catch(err => {
+  if (permit) {
+    actor.mayActNow({ label: localize("STARWROUGHT.Opportunity.aMove") })
+      .catch(err => console.error("STARWROUGHT | the move's permit could not be spent", err));
+  }
+  if (held) {
+    begun.add(`${held.record.nonce}:${token.id}`);
+    if (begun.size > 500) begun.clear();
+  }
+  chargeMovement({ token, movement, actor, combatant, move, feet, numbers, held }).catch(err => {
     console.error("STARWROUGHT | could not charge a move", err);
   });
 }
@@ -252,22 +329,33 @@ export function moveCapped(move) {
   return ((move?.kind === "move") || (move?.kind === "crawl")) && (move.moves > 1);
 }
 
-/** Does the one-Maneuver cap bind this token right now: the setting on, and its own Opportunity? */
+/**
+ * Does the one-Maneuver cap bind this token right now: the setting on, and its own Opportunity, or
+ * (0.24.0) a Move it is making as part of a Maneuver, which is one Move wherever it is made.
+ */
 export function moveCapApplies(token) {
-  return setting("capMoves", true) && !!opportunityOf(token);
+  return setting("capMoves", true) && (!!opportunityOf(token) || !!maneuverMoveOf(token));
 }
 
 /** Spend the actions a move costs, say so, and offer the Intercepts it provokes. */
-async function chargeMovement({ token, movement, actor, combatant, move, feet, numbers }) {
+async function chargeMovement({ token, movement, actor, combatant, move, feet, numbers, held = null }) {
   // The move has been allowed to happen. spendActions announces an overspend in chat rather than
   // refusing: the token is where the player put it, and the arithmetic reports rather than rules.
   // The `trackActions` world setting switches off the spending and its card, nothing else.
   if (setting("trackActions", true)) {
     // The move's own card carries the actions-left line, so the spend posts no card of its own;
-    // it is awaited so the card reads the count after the spend.
-    await actor.spendActions?.(move.actions, { label: moveLabel(move, feet.cost), announce: false });
+    // it is awaited so the card reads the count after the spend. The user's Move as part of a
+    // Maneuver was paid for at the click (0.24.0), so only what lies beyond it is spent here.
+    const cost = held ? move.charge : move.actions;
+    if (cost > 0) await actor.spendActions?.(cost, { label: moveLabel(move, feet.cost), announce: false });
     game.combat?.registerAction?.(combatant);
-    await announceMove(actor, move, feet.cost, numbers);
+    await announceMove(actor, move, feet.cost, numbers, maneuverNotes(token, movement, held));
+  }
+
+  // The Maneuver's Move has been made (0.24.0): said on the record, whatever the tracking setting,
+  // or a table that counts by hand would be given the same Move again.
+  if (held) {
+    await markManeuverMove(actor, held).catch(err => console.error("STARWROUGHT | the Maneuver's Move could not be marked as made", err));
   }
 
   // A FIRST or ONCE `Speed` rule that lengthened this Move is remembered now (0.15.0, ruling 181):
@@ -279,6 +367,60 @@ async function chargeMovement({ token, movement, actor, combatant, move, feet, n
   // A Step never provokes an Intercept, and neither does a Crawl. A Move may; a Rush always does.
   // The offer is a rules prompt, not a spend, so it does not depend on the tracking setting.
   if ((move.kind === "move") || (move.kind === "rush")) offerIntercepts(token, movement, actor, move);
+}
+
+/**
+ * Say that the Maneuver's Move has been made (0.24.0, ruling 244): the user's on the record itself
+ * (`moved`, with every other key written again, since a flag update merges), the ally's on the
+ * ally's own actor (`maneuverMoved: { nonces }`, the uses it has moved for: two fighters may permit
+ * the same ally in one Opportunity, and a mark of one nonce would forget the first on the second),
+ * which is the one thing the ally's client may write. The mover's client writes when it may: the
+ * mover's owner, or the GM who dragged the token.
+ */
+async function markManeuverMove(actor, held) {
+  if (held.role === "user") {
+    const holder = held.holder ?? actor;
+    if (!(holder.isOwner || game.user.isGM)) return;
+    await holder.setFlag(SW.SYSTEM_ID, MOVE_RECORD_FLAG, { ...held.record, moved: true });
+    return;
+  }
+  if (!(actor.isOwner || game.user.isGM)) return;
+  await actor.setFlag(SW.SYSTEM_ID, MOVE_USED_FLAG, withUsed(actor.getFlag(SW.SYSTEM_ID, MOVE_USED_FLAG), held.record.nonce));
+}
+
+/**
+ * What the move's card says of the Maneuver it is part of (0.24.0): whose Maneuver, that the
+ * user's Move was paid for when it was used, and, for the one permitted, how far from the user it
+ * ends when that is farther than the Maneuver's `FOR` range (Move Together: "It must finish
+ * adjacent to you"). Said, not enforced. The end is measured from the drag's destination, since
+ * the document still holds the origin while this hook runs.
+ * @returns {{notes: string[], paid: boolean}|null}
+ */
+function maneuverNotes(token, movement, held) {
+  if (!held) return null;
+  const from = escapeHTML(held.record.from || localize("STARWROUGHT.Opportunity.aManeuver"));
+  const user = escapeHTML(held.holder?.name ?? "");
+  const notes = [];
+  if (held.role === "user") {
+    notes.push(format("STARWROUGHT.Actions.maneuverMoveUser", { from }));
+  } else {
+    notes.push(format("STARWROUGHT.Actions.maneuverMoveAlly", { from, user }));
+    const range = held.record.range;
+    const other = token.parent?.tokens?.get(held.record.userTokenId) ?? null;
+    if (Number.isFinite(range) && other) {
+      try {
+        const end = movement.pending?.waypoints?.at(-1) ?? movement.destination;
+        const here = footprint({ x: end.x, y: end.y, width: token.width, height: token.height });
+        const gap = cellGap(here, footprint(other)) * (token.parent.grid?.distance ?? 1);
+        if (gap > range + 1e-6) {
+          notes.push(format("STARWROUGHT.Actions.maneuverMoveApart", { feet: Math.round(gap), user, from }));
+        }
+      } catch (err) {
+        console.warn("STARWROUGHT | the end of the Maneuver's Move could not be measured", err);
+      }
+    }
+  }
+  return { notes, paid: held.role === "user" };
 }
 
 /** Feet, as cost (terrain counted) and as plain distance, for the whole path this move begins. */
@@ -318,8 +460,12 @@ function moveLabel(move, feet) {
   return format(key, { feet: Math.round(feet), moves: move.moves });
 }
 
-/** The card that says what the move cost, and why. Public for a player's character, the GM's for an adversary. */
-function announceMove(actor, move, feet, numbers) {
+/**
+ * The card that says what the move cost, and why. Public for a player's character, the GM's for an adversary.
+ * @param {{notes: string[], paid: boolean}|null} [maneuver]  What `maneuverNotes` says when the move
+ *        is part of a Maneuver (0.24.0): its lines, and whether the first Move was paid at the click.
+ */
+function announceMove(actor, move, feet, numbers, maneuver = null) {
   const name = escapeHTML(actor.name);
   const rounded = Math.round(feet);
   const g = SW.ACTION_GLYPHS;
@@ -327,6 +473,9 @@ function announceMove(actor, move, feet, numbers) {
   let title;
   let text;
   const notes = [];
+  // What the mover pays here: everything, or what lies beyond the Move the Maneuver's click paid.
+  const paid = maneuver?.paid === true;
+  const cost = paid ? (move.charge ?? move.actions) : move.actions;
   switch (move.kind) {
     case "crawl":
       // The final Legs Wound: Prone, cannot Stand, half the Speed the legs had an action (PHB
@@ -335,14 +484,14 @@ function announceMove(actor, move, feet, numbers) {
       title = move.moves > 1
         ? format("STARWROUGHT.Actions.crawlTitleMany", { n: move.moves })
         : localize("STARWROUGHT.Actions.crawlTitle");
-      text = format("STARWROUGHT.Actions.crawlText", { name, feet: rounded, crawl: numbers.crawl, cost: move.actions });
+      text = format("STARWROUGHT.Actions.crawlText", { name, feet: rounded, crawl: numbers.crawl, cost });
       notes.push(localize("STARWROUGHT.Actions.crawlNote"));
       if (move.moves > 1) notes.push(localize("STARWROUGHT.Actions.moveChainNote"));
       break;
     case "step":
       glyph = g[1];
       title = localize("STARWROUGHT.Actions.stepTitle");
-      text = format("STARWROUGHT.Actions.stepText", { name, feet: rounded, step: numbers.step });
+      text = format(paid ? "STARWROUGHT.Actions.stepTextPaid" : "STARWROUGHT.Actions.stepText", { name, feet: rounded, step: numbers.step });
       notes.push(localize("STARWROUGHT.Actions.stepNote"));
       break;
     case "rush":
@@ -356,7 +505,7 @@ function announceMove(actor, move, feet, numbers) {
       title = move.moves > 1
         ? format("STARWROUGHT.Actions.moveTitleMany", { n: move.moves })
         : localize("STARWROUGHT.Actions.moveTitle");
-      text = format("STARWROUGHT.Actions.moveText", { name, feet: rounded, speed: numbers.speed, moves: move.moves, cost: move.actions });
+      text = format("STARWROUGHT.Actions.moveText", { name, feet: rounded, speed: numbers.speed, moves: move.moves, cost });
       // A Move longer than the Speed (0.15.0, a `Speed` rule such as Riverfoot's): say where the feet came from.
       if (Number.isFinite(numbers.move) && (numbers.move !== numbers.speed)) {
         notes.push(format("STARWROUGHT.Actions.moveReachNote", { move: numbers.move, speed: numbers.speed, bonus: numbers.move - numbers.speed > 0 ? `+${numbers.move - numbers.speed}` : String(numbers.move - numbers.speed) }));
@@ -365,6 +514,8 @@ function announceMove(actor, move, feet, numbers) {
       if (move.rushInstead) notes.push(format("STARWROUGHT.Actions.rushInsteadNote", { rush: numbers.rush }));
       break;
   }
+  // The Maneuver this move is part of comes first among the notes (0.24.0).
+  if (maneuver?.notes?.length) notes.unshift(...maneuver.notes);
   // What the move cost and what is left this round, on the same card (Mike, 2026-10-01).
   const left = actor.actionsLeftLine?.() ?? "";
   return postCard(actor, cardHtml({

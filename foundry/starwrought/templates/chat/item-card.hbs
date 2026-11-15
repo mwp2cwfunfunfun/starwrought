@@ -56,4 +56,8 @@
   {{#each lines as |line|}}
   <p class="sw-card-note sw-use-note"><i class="fa-solid fa-bolt"></i> {{line}}</p>
   {{/each}}
+  {{!-- A requirement the table should look at (0.24.0): said, never enforced; the use happened. --}}
+  {{#each warns as |warn|}}
+  <p class="sw-card-note sw-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{warn}}</p>
+  {{/each}}
 </div>

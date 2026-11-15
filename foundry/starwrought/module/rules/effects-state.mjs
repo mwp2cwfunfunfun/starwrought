@@ -27,6 +27,8 @@ import { EFFECT_DURATIONS, ruleStates, givenResults } from "./engine.mjs";
 import { flagKey, SYSTEM_ID } from "../config.mjs";
 // 0.22.0: a result a Maneuver gave, pending on its recipient (./given.mjs is the pure half).
 import { settle, isGivenKey, givenFlagKey } from "./given.mjs";
+// 0.24.0: the record of a Move made as part of a Maneuver, which ends with its Opportunity.
+import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, recordLive } from "./maneuver-move.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
@@ -354,6 +356,42 @@ export async function settleGivenResults(combat, change = {}) {
   }
 }
 
+/**
+ * A Move made as part of a Maneuver ends with the Opportunity its Maneuver was used in (0.24.0;
+ * rulings 240 and 244; ./maneuver-move.mjs). The record says which Opportunity that was, but the
+ * same combatant comes round again within a round, and a rewind steps back onto one, so the
+ * liveness test alone would wake a record nobody used (a free Move for a user who never moved, a
+ * second leave for the ally). So every record of the Combat that is NOT of the Opportunity now
+ * running is taken off its holder: on every turn change (`current` the combatant whose Opportunity
+ * begins, so a record written for it a moment ago is left alone), on a lone fighter's step to
+ * itself (`current` null: its last Opportunity ended, whatever the ids say), and when the Combat
+ * ends (`ended`, which also takes the "I have moved" marks, kept until then because they are
+ * compared by nonce and an early clear would let the ally move twice). Each Actor's responsible
+ * client writes, as for the pending results above. Says nothing in chat.
+ * @param {Combat} combat
+ * @param {{current?: string|null, round?: number|null, ended?: boolean}} [now]
+ */
+export async function endManeuverMoves(combat, { current = null, round = null, ended = false } = {}) {
+  if (!combat) return;
+  const encounter = ended ? null : { combat: combat.id, round: round ?? combat.round ?? 0, combatant: current };
+  const seen = new Set();
+  for (const combatant of combat.combatants ?? []) {
+    const actor = combatant?.actor;
+    if (!actor || seen.has(actor.uuid)) continue;
+    seen.add(actor.uuid);
+    try {
+      const flags = actor.flags?.[SYSTEM_ID] ?? {};
+      const update = {};
+      if ((flags[MOVE_RECORD_FLAG] !== undefined) && !recordLive(flags[MOVE_RECORD_FLAG], encounter)) update[`flags.${SYSTEM_ID}.-=${MOVE_RECORD_FLAG}`] = null;
+      if (ended && (flags[MOVE_USED_FLAG] !== undefined)) update[`flags.${SYSTEM_ID}.-=${MOVE_USED_FLAG}`] = null;
+      if (!Object.keys(update).length || !responsibleFor(actor)) continue;
+      await actor.update(update, { swAnnounced: true });
+    } catch (error) {
+      console.error(`STARWROUGHT | the Maneuver's Move on ${actor?.name ?? "an actor"} could not be cleared:`, error);
+    }
+  }
+}
+
 /** The system socket (starwrought.mjs routes `rules:*` to ./scene.mjs, which hands `rules:step` here). */
 const SOCKET = `system.${SYSTEM_ID}`;
 
@@ -371,6 +409,8 @@ const SOCKET = `system.${SYSTEM_ID}`;
 export async function settleLoneStep(combat, combatantId) {
   if (!combat || !combatantId) return;
   await settleGivenResults(combat, { ended: combatantId, began: combatantId });
+  // 0.24.0: the Opportunity a Maneuver's Move belonged to has ended, though the ids did not change.
+  await endManeuverMoves(combat, { current: null });
   try {
     game.socket.emit(SOCKET, { type: "rules:step", combatId: combat.id, combatantId });
   } catch (error) {
@@ -395,6 +435,7 @@ export async function onStepSocket(message, senderId) {
   if ((typeof combat.canTakeOpportunity === "function")
     && combat.turns.some(c => (c.id !== combatant.id) && combat.canTakeOpportunity(c))) return;
   await settleGivenResults(combat, { ended: combatant.id, began: combatant.id });
+  await endManeuverMoves(combat, { current: null });
 }
 
 /* -------------------------------------------- */
@@ -440,6 +481,9 @@ export async function endEncounterEffects(combat) {
       console.error(`STARWROUGHT | the pending results on ${actor?.name ?? "an actor"} could not be cleared:`, error);
     }
   }
+  // 0.24.0: a Move made as part of a Maneuver ends with its encounter, and so do the marks that
+  // say who has moved for one.
+  await endManeuverMoves(combat, { ended: true });
 }
 
 let registered = false;

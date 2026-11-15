@@ -28,7 +28,9 @@ import {
   KIND_WORD, kindOf, knownKinds
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+// 0.24.0: the Move made as part of a Maneuver, pure, shared by the charge and the ruler.
+import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, MOVE_USED_KEPT, moveRecord, recordLive, moveRoleFor, asManeuverMove, usedNonces, withUsed } from "../foundry/starwrought/module/rules/maneuver-move.mjs";
 import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType } from "../foundry/starwrought/module/rules/operators.mjs";
 // 0.22.0: what a Maneuver gives. The table, the pending result and the window are pure data, and
 // the mark that removes a used result is read off a plain actor.
@@ -74,7 +76,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "prevent", "reroll", "sense", "size", "speed", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reroll", "sense", "size", "speed", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -619,7 +621,9 @@ const KNOWN = {
   search: { type: "action", slug: "search", name: "Search" },
   "steady-the-line": { type: "action", slug: "steady-the-line", name: "Steady the Line", enabled: true },
   oathbound: { type: "action", slug: "oathbound", name: "Oathbound", enabled: true },
-  "quick-tongue": { type: "action", slug: "quick-tongue", name: "Quick Tongue", enabled: true }
+  "quick-tongue": { type: "action", slug: "quick-tongue", name: "Quick Tongue", enabled: true },
+  // 0.24.0: the Maneuver a PERMIT is written on and Coordinated Footwork alters.
+  "move-together": { type: "action", slug: "move-together", name: "Move Together", enabled: true }
 };
 const resolve = name => KNOWN[slugify(plainName(name))] ?? null;
 
@@ -688,7 +692,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -1894,7 +1898,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   must(err("[EFFECT CHECK]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
@@ -2514,11 +2518,12 @@ check("alter: every accepted form, stored whole", () => {
 });
 
 check("alter: the refusals, and the cells drafted for later versions say what is not read yet", () => {
-  const reads = "ALTER reads duration, beneficial-duration, critical-success, success, failure and critical-failure";
-  same(ALTER_PROPERTIES, ["duration", "beneficial-duration", "critical-success", "success", "failure", "critical-failure"], "the properties read");
+  const reads = "ALTER reads duration, beneficial-duration, critical-success, success, failure, critical-failure and movement";
+  same(ALTER_PROPERTIES, ["duration", "beneficial-duration", "critical-success", "success", "failure", "critical-failure", "movement"], "the properties read");
   // Mike's drafts (2026-11-14): the property is told first, whatever the Maneuver, so a cell for a
-  // later version reads as "not yet" and never as a misspelt name.
-  for (const [target, property] of [["Move Together", "movement"], ["Aid", "beneficial-uses"], ["Pay It Forward", "limit"], ["Torchbearer", "range"], ["Working Knowledge", "proficiency"], ["Borrowed Technique", "slots"]]) {
+  // later version reads as "not yet" and never as a misspelt name. (`Move Together.movement` was
+  // one of them until 0.24.0 read it.)
+  for (const [target, property] of [["Aid", "beneficial-uses"], ["Pay It Forward", "limit"], ["Torchbearer", "range"], ["Working Knowledge", "proficiency"], ["Borrowed Technique", "slots"]]) {
     must(alterError(`[EFFECT ALTER: ${target}.${property}; VALUE: 2]`) === `the property "${property}" is not read yet: ${reads}`, `${target}.${property}`);
   }
   must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: no-effect; PRESERVE: original-degree]") === '"PRESERVE: original-degree" is not a component: after the tag come VALUE: and IF:', "his PRESERVE is no component, and the message names ALTER's own");
@@ -2832,6 +2837,222 @@ check("markUpdates removes a used result's flag, and leaves a custom effect's ro
   same(markUpdates(wren, [{ key: "given:search", per: "effect" }]), {}, "a result that is not there deletes nothing");
   same(markUpdates(wren, [{ key: "given:aid", per: "state" }, { key: "given:aid", per: "round" }]), {}, "only the one-roll mark removes it");
   same(markUpdates({ items: [], system: {}, flags: {} }, [{ key: "given:aid", per: "effect" }]), {}, "an actor holding nothing");
+});
+
+/* -------------------------------------------- */
+/*  0.24.0: the permit kind, ALTER's movement, and the Move made as part of a Maneuver */
+/* -------------------------------------------- */
+
+const MOVE_TOGETHER_CELL = "[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]";
+const moveTogether = { ...maneuverWith("Move Together ❶", MOVE_TOGETHER_CELL), id: "mt1" };
+const footwork = { ...talentWith("Coordinated Footwork", "[EFFECT ALTER: Move Together.movement; VALUE: step]"), id: "cf1" };
+const permitError = (cell, context = onRowOf) => bonusError(cell, context);
+
+/** The owner of Move Together, as the engine reads an actor. */
+function mover(items = [moveTogether], flags = {}) {
+  const actor = rulesActor(items, { origin: "trained" });
+  actor.name = "Tess";
+  actor.uuid = "Actor.tess";
+  actor.flags = flags;
+  return actor;
+}
+
+/** The context `SwItem#useWithRules` hands a `use` hook, with Wren targeted in round 2 of Combat c1. */
+function useContext({ gap = 0, relation = "ally", actions = 2, statuses = [], inEncounter = true, encounter = { combat: "c1", round: 2, combatant: "cmb-tess" }, target = true } = {}) {
+  return {
+    target: target ? {
+      actor: { statuses: new Set(statuses), system: { actions: { value: actions } } },
+      uuid: relation === "self" ? "Actor.tess" : "Actor.wren", tokenUuid: "Scene.s.Token.w", tokenId: "w", token: { id: "w" },
+      name: relation === "enemy" ? "Bandit" : "Wren", relation, inEncounter
+    } : null,
+    encounter,
+    scene: { token: { id: "t" }, gap: () => gap },
+    nonce: "n1"
+  };
+}
+
+check("permit: registered at the use hook, with the PERMIT tag, and it draws a Use control", () => {
+  const kind = kindOf("permit");
+  must(kind && kind.id === "permit", "kindOf('permit')");
+  same([kind.aliases, Object.keys(kind.hooks)], [[], ["use"]], "no aliases, one hook");
+  must(EFFECT_TAGS.permit === "permit", "the PERMIT tag names the kind");
+  must(usableByRule(moveTogether), "a Maneuver with a PERMIT line is used, so its row shows the Use control");
+  must(!usableByRule(footwork), "an ALTER of a Maneuver's movement draws none: alter has no use hook");
+  same(Object.keys(kindOf("alter").hooks), ["gives"], "alter still speaks at gives alone");
+});
+
+check("permit: every accepted form on a Maneuver's row, stored whole, and its summary", () => {
+  same(moveTogether.system.rules, [{
+    what: "move", for: { who: "allies", range: 0 }, limit: { per: "round" }, when: null,
+    kind: "permit", line: 1, text: MOVE_TOGETHER_CELL
+  }], "Move Together's cell");
+  const loose = giveRule("[EFFECT permit: MOVE; for: All; limit: Encounter; IF: RANK(Origin >= expert)]");
+  same([loose.what, loose.for, loose.limit, loose.when], ["move", { who: "all", range: null }, { per: "encounter" }, [{ constellation: "origin", name: "Origin", op: ">=", rank: "expert" }]], "case blind; any creature, no range; once an encounter; the owner's rank");
+  same(giveRule("[EFFECT PERMIT: move; FOR: enemies 10]").limit, null, "no LIMIT is no limit");
+  must(summarize(moveTogether.system.rules[0]) === "lets an adjacent ally you target make one Move now, outside its Opportunity, once a round", `the summary: "${summarize(moveTogether.system.rules[0])}"`);
+  must(summarize(loose) === "lets a creature you target make one Move now, outside its Opportunity, once an encounter, while Origin is at least Expert", `with a rank: "${summarize(loose)}"`);
+  must(summarize(giveRule("[EFFECT PERMIT: move; FOR: allies 10]")) === "lets an ally within 10 ft you target make one Move now, outside its Opportunity", "a range in feet");
+  same(JSON.parse(JSON.stringify(moveTogether.system.rules[0])), moveTogether.system.rules[0], "a stored rule equals its JSON image");
+});
+
+check("permit: the refusals, each by its message", () => {
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0]", { resolve, itemType: "talent" }) === "PERMIT is written on the Maneuver's own row: it is what using that Maneuver lets another creature do", "in a Talent's cell");
+  must(permitError("[EFFECT PERMIT: move]") === "PERMIT says who may be permitted: add `FOR: allies 0` (an adjacent ally), as in `PERMIT: move; FOR: allies 0; LIMIT: round`", "no FOR");
+  must(permitError("[EFFECT PERMIT: move; FOR: self]") === 'PERMIT is for another creature (FOR: allies, enemies, all), not "self": nobody needs leave at their own Opportunity', "FOR: self");
+  must(permitError("[EFFECT PERMIT: move; FOR: self+allies 0]").startsWith("PERMIT is for another creature"), "FOR: self+allies");
+  must(permitError("[EFFECT PERMIT: strike; FOR: allies 0]") === '"strike": PERMIT permits a move in this version, as in `PERMIT: move; FOR: allies 0; LIMIT: round`', "another Maneuver is not read yet");
+  must(permitError("[EFFECT PERMIT: move, ally; FOR: allies 0]") === "a permission is written `PERMIT: <what>; FOR: <who> [<N>]`, as in `PERMIT: move; FOR: allies 0; LIMIT: round` (2 descriptors given, 1 wanted: what is permitted)", "the ally is said with FOR, not as a descriptor");
+  must(permitError("[EFFECT PERMIT:; FOR: allies 0]").startsWith("a permission is written `PERMIT: <what>; FOR: <who> [<N>]`"), "nothing permitted");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IF: RANK(roll = trained)]").startsWith("PERMIT acts when the Maneuver is used, before any roll"), "the rank rolled");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IFT: TRAIT(Fear)]") === "PERMIT does not take IFT: TRAIT(...)", "a trait");
+  must(/IF\(Outcome=\.\.\.\) is only read by a kind that acts after the die/.test(permitError("[EFFECT PERMIT: move; FOR: allies 0; IF: RESULT(success)]")), "a degree");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IF: CLAIM(when asked)]") === "PERMIT does not take IF: CLAIM(...)", "a claim");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IFT: MARKED]") === "PERMIT does not take IFT: MARKED", "a mark");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; UNTIL: encounter]") === "PERMIT does not take UNTIL", "UNTIL is GIVE's");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; VALUE: step]") === "PERMIT does not take VALUE", "VALUE is ALTER's");
+  // An aura block keeps its ring and refuses the effect inside it.
+  const ridden = parseAutomation("[AURA 15 allies; PERMIT: move]", onRowOf);
+  must((ridden.errors.length === 1) && ridden.rules.every(r => r.kind !== "permit"), `it cannot ride an aura's ring: ${ridden.errors.map(e => e.message).join("; ")}`);
+});
+
+check("permit: used with an adjacent ally targeted, it writes one record on the owner and files the limit (rulings 240, 243, 244)", () => {
+  const tess = mover();
+  const uses = ruleUses(tess, moveTogether, useContext());
+  same(uses.length, 1, "one answer");
+  const [use] = uses;
+  same([use.refuse, use.warn], ["", []], "no refusal, no warning");
+  same(use.write, { "flags.starwrought.maneuverMove": {
+    nonce: "n1", combat: "c1", round: 2, during: "cmb-tess", from: "Move Together",
+    userTokenId: "t", allyTokenId: "w", allyName: "Wren", range: 0, step: false, moved: false
+  } }, "the record: on the owner, naming both tokens, the Opportunity it was used in and how near the ally should end");
+  same(use.marks, [{ key: "mt1:1", per: "round" }], "the LIMIT is filed as FIRST and ONCE are");
+  must(use.say === "Tess's own Move is paid for: the next drag of Tess's token is it. Wren may then make one Move now, outside its Opportunity, paying for it itself. Each is a Move, however short.", `the card's line: "${use.say}"`);
+});
+
+check("permit: nobody, yourself, a non-ally and a second use in the round are refused, with nothing written (ruling 243)", () => {
+  const refusal = (actor, context) => { const [u] = ruleUses(actor, moveTogether, context); return [u.refuse, u.write, u.marks]; };
+  same(refusal(mover(), useContext({ target: false })), ["Move Together: target exactly one creature first, the one who moves with you.", null, []], "nobody targeted");
+  same(refusal(mover(), useContext({ relation: "self" })), ["Move Together: target the creature who moves with you, not Tess.", null, []], "yourself");
+  same(refusal(mover(), useContext({ relation: "enemy" })), ["Move Together is for an adjacent ally; Bandit is not one.", null, []], "an enemy");
+  const spent = { starwrought: { rules: { round: { "mt1:1": { combat: "c1", round: 2 } } } } };
+  same(refusal(mover([moveTogether], spent), useContext()), ["Move Together: already used this round.", null, []], "a second use in round 2");
+  same(ruleUses(mover([moveTogether], spent), moveTogether, useContext({ encounter: { combat: "c1", round: 3, combatant: "cmb-tess" } }))[0].refuse, "", "the next round, it is used again");
+  same(ruleUses(mover([moveTogether], spent), moveTogether, useContext({ encounter: { combat: "c2", round: 2, combatant: "cmb-tess" } }))[0].refuse, "", "and in another encounter");
+});
+
+check("permit: a requirement the machine can read is a warning, and the Maneuver still happens (Mike: \"Warn and go on\")", () => {
+  const warned = context => { const [u] = ruleUses(mover(), moveTogether, context); return [u.warn, u.refuse, !!u.write]; };
+  same(warned(useContext({ gap: 4 })), [["Wren is 4 ft from Tess: Move Together asks for an adjacent ally."], "", true], "a gap above the FOR range");
+  same(warned(useContext({ actions: 0 })), [["Wren has no action left to Move with."], "", true], "no action left");
+  same(warned(useContext({ statuses: ["unconscious"] })), [["Wren is not conscious."], "", true], "unconscious");
+  same(warned(useContext({ inEncounter: false })), [["Wren is not in the encounter, so its Move is not counted."], "", true], "not a fighter in the encounter");
+  same(warned(useContext({ gap: 4, actions: 0, statuses: ["dying"] }))[0].length, 3, "every warning that holds is said");
+  const outside = ruleUses(mover(), moveTogether, useContext({ encounter: { combat: null, round: 0, combatant: null } }))[0];
+  same([outside.refuse, outside.write, outside.marks, outside.say], ["", null, [], "Wren may Move with Tess. Outside an encounter nothing is counted."], "outside an encounter nothing is written or limited");
+});
+
+check("alter: the movement property is VALUE: step, read at use and never by what a Maneuver gives (ruling 242)", () => {
+  const text = "[EFFECT ALTER: Move Together.movement; VALUE: step]";
+  same(footwork.system.rules, [{
+    to: { name: "Move Together", slug: "move-together", type: "action" }, property: "movement", nothing: false, until: null, movement: "step", when: null,
+    kind: "alter", line: 1, text
+  }], "Coordinated Footwork's cell");
+  must(!("movement" in patient.system.rules[0]), "an alteration of any other property keeps the shape it had");
+  must(summarize(footwork.system.rules[0]) === "a drag within half Speed made as part of Move Together is a Step", `the summary: "${summarize(footwork.system.rules[0])}"`);
+  must(alterError("[EFFECT ALTER: Move Together.movement; VALUE: choose(Move, Step)]") === '"choose(Move, Step)": a Maneuver\'s movement is changed to `step` in this version, as in `ALTER: Move Together.movement; VALUE: step` (a drag within half Speed made as part of the Maneuver is then a Step, for everyone who moves in it)', "his drafted value is told the word");
+  must(alterError("[EFFECT ALTER: Move Together.movement; VALUE: choose(Move, Step); APPLY: both-participants]") === '"APPLY: both-participants" is not a component: after the tag come VALUE: and IF:', "his APPLY is no component");
+  same(kindOf("alter").hooks.gives([{ rule: footwork.system.rules[0], item: footwork, from: "own" }], { maneuver: "move-together", rank: "trained" }, mover()), [], "the gives hook passes it over");
+
+  same(alterationsOf(mover([moveTogether, footwork]), moveTogether), [{ property: "movement", movement: "step", nothing: false, until: null, label: "Coordinated Footwork", skipped: false, marks: [] }], "the owner's alteration of the used Maneuver");
+  same(alterationsOf(mover([moveTogether, footwork]), aidRow), [], "another Maneuver's alterations are not this one's");
+  same(alterationsOf(mover([moveTogether, patient]), moveTogether), [], "nor is an alteration of Aid Move Together's");
+
+  const record = actor => ruleUses(actor, moveTogether, useContext())[0].write["flags.starwrought.maneuverMove"];
+  same([record(mover()).step, record(mover([moveTogether, footwork])).step], [false, true], "with Coordinated Footwork the record says a short drag is a Step");
+  must(ruleUses(mover([moveTogether, footwork]), moveTogether, useContext())[0].say.endsWith("A drag within half Speed is a Step for either of them."), "and the card says so");
+  const stateKey = ruleStateKey(footwork, footwork.system.rules[0]);
+  same(record(mover([moveTogether, footwork], { starwrought: { rules: { state: { [stateKey]: "off" } } } })).step, false, "switched Off on the Effects tab, it changes nothing");
+  // Skip leaves the alteration out this once, and the use that counted clears it (the review's
+  // finding: read as On, it made Steps anyway and stayed Skip for good).
+  const skipping = () => mover([moveTogether, footwork], { starwrought: { rules: { state: { [stateKey]: "skip" } } } });
+  same(record(skipping()).step, false, "on Skip the drags are plain Moves this once");
+  same(ruleUses(skipping(), moveTogether, useContext())[0].marks, [{ key: "mt1:1", per: "round" }, { key: stateKey, per: "state" }], "and the Skip is spent with the use, beside the LIMIT");
+  same(ruleUses(skipping(), moveTogether, useContext({ relation: "enemy" }))[0].marks, [], "a refused use spends no Skip");
+  same(ruleUses(skipping(), moveTogether, useContext({ encounter: { combat: null, round: 0, combatant: null } }))[0].marks, [], "nor does a use outside an encounter");
+  same(alterationsOf(skipping(), moveTogether).map(a => [a.skipped, a.marks]), [[true, [{ key: stateKey, per: "state" }]]], "the engine hands the Skip over with its mark");
+  const ranked = { ...talentWith("Sure Feet", "[EFFECT ALTER: Move Together.movement; VALUE: step; IF: RANK(Origin >= expert)]"), id: "sf1" };
+  same(record(mover([moveTogether, ranked])).step, false, "a rank the owner has not reached");
+});
+
+check("the Maneuver's Move: a record is live only in the Opportunity it was used in, for the two tokens it names (ruling 240)", () => {
+  const record = moveRecord({ nonce: "n1", combat: "c1", round: 2, during: "cmb-tess", from: "Move Together", userTokenId: "t", allyTokenId: "w", allyName: "Wren" });
+  same(Object.keys(record), ["nonce", "combat", "round", "during", "from", "userTokenId", "allyTokenId", "allyName", "range", "step", "moved"], "every key is written every time");
+  same([record.range, moveRecord({ range: 0 }).range, moveRecord({ range: 10 }).range], [null, 0, 10], "no range, adjacent, a range in feet");
+  must(MOVE_RECORD_FLAG === "maneuverMove" && MOVE_USED_FLAG === "maneuverMoved", "the two flags");
+  const now = { combat: "c1", round: 2, combatant: "cmb-tess" };
+  must(recordLive(record, now), "live in its Opportunity");
+  for (const [other, why] of [[{ ...now, combatant: "cmb-wren" }, "the next fighter's Opportunity"], [{ ...now, round: 3 }, "the next round"], [{ ...now, combat: "c2" }, "another Combat"], [{ combat: null, round: 0, combatant: null }, "no encounter"]]) {
+    must(!recordLive(record, other), `not live in ${why}`);
+  }
+  must(!recordLive(null, now) && !recordLive({ ...record, nonce: "" }, now) && !recordLive({ ...record, during: null }, now), "nothing, no nonce, no Opportunity: not live");
+
+  const facts = { records: [record], used: null, encounter: now };
+  same(moveRoleFor("t", facts)?.role, "user", "the user's own token");
+  same(moveRoleFor("w", facts)?.role, "ally", "the ally's token");
+  same(moveRoleFor("b", facts), null, "any other token");
+  same(moveRoleFor("t", { ...facts, records: [{ ...record, moved: true }] }), null, "the user has made their Move");
+  same(moveRoleFor("w", { ...facts, records: [{ ...record, moved: true }] })?.role, "ally", "which leaves the ally's standing");
+  same(moveRoleFor("w", { ...facts, used: "n1" }), null, "the ally has moved for this use");
+  same(moveRoleFor("w", { ...facts, used: "n0" })?.role, "ally", "an older use's mark does not spend this one");
+  same(moveRoleFor("w", { ...facts, encounter: { ...now, combatant: "cmb-wren" } }), null, "a record that is not live permits nothing");
+  same(moveRoleFor("", facts), null, "no token");
+
+  // The ally's mark is a list of uses: two fighters may permit the same ally in one Opportunity,
+  // and a mark of one nonce forgot the first on the second, so the ally could alternate for ever.
+  const second = { ...record, nonce: "n2", userTokenId: "b" };
+  const both = { records: [record, second], encounter: now };
+  same(moveRoleFor("w", { ...both, used: withUsed(null, "n1") })?.record.nonce, "n2", "moved for the first, the second still stands");
+  same(moveRoleFor("w", { ...both, used: withUsed(withUsed(null, "n1"), "n2") }), null, "moved for both, nothing stands");
+  same([usedNonces(null), usedNonces("n1"), usedNonces(["n1", "", 3]), usedNonces({ nonce: "n0" }), usedNonces({ nonces: ["n1", "n2"] })], [[], ["n1"], ["n1"], ["n0"], ["n1", "n2"]], "a mark read in every shape it has had");
+  same(withUsed({ nonces: ["n1", "n2"] }, "n1"), { nonces: ["n2", "n1"] }, "a use is on the list once");
+  let long = null;
+  for (let i = 0; i < MOVE_USED_KEPT + 3; i++) long = withUsed(long, `u${i}`);
+  same([long.nonces.length, long.nonces.at(-1)], [MOVE_USED_KEPT, `u${MOVE_USED_KEPT + 2}`], "the last few are kept");
+});
+
+check("permit: a Combat on screen that the owner is no part of counts nothing, and no Opportunity running says so", () => {
+  const bystander = mover();
+  bystander.inEncounter = false;
+  const [use] = ruleUses(bystander, moveTogether, useContext());
+  same([use.refuse, use.write, use.marks, use.say], ["", null, [], "Wren may Move with Tess. Outside an encounter nothing is counted."], "the owner is not a fighter: nothing is paid, so nothing is written or limited");
+  const spent = { starwrought: { rules: { round: { "mt1:1": { combat: "c1", round: 2 } } } } };
+  const out = mover([moveTogether], spent);
+  out.inEncounter = false;
+  same(ruleUses(out, moveTogether, useContext())[0].refuse, "", "and an old mark of that Combat refuses nothing there");
+  const [idle] = ruleUses(mover(), moveTogether, useContext({ encounter: { combat: "c1", round: 2, combatant: null } }));
+  same([idle.write, idle.marks, idle.say], [null, [], "Wren may Move with Tess. Nobody's Opportunity is running, so the Moves are not counted."], "a started Combat with nobody's Opportunity running");
+});
+
+check("the Maneuver's Move: a Move however short, never a Rush, a Step only with the alteration, and the user's is paid (rulings 241, 242)", () => {
+  const record = moveRecord({ nonce: "n1", combat: "c1", round: 2, during: "cmb-tess", userTokenId: "t", allyTokenId: "w" });
+  const user = { role: "user", record };
+  const ally = { role: "ally", record };
+  const stepping = { role: "ally", record: { ...record, step: true } };
+  const step = { kind: "step", actions: 1, moves: 1, rushInstead: false };
+  const move = { kind: "move", actions: 1, moves: 1, rushInstead: false };
+  const far = { kind: "move", actions: 2, moves: 2, rushInstead: false };
+  const rush = { kind: "rush", actions: 2, moves: 3, rushInstead: false };
+  const crawl = { kind: "crawl", actions: 2, moves: 2, rushInstead: false };
+  const read = (m, held) => { const r = asManeuverMove(m, held); return [r.kind, r.actions, r.forced, r.prepaid, r.charge]; };
+  same(read(step, ally), ["move", 1, true, 0, 1], "the ally's short drag is a Move, and the ally pays 1");
+  same(read(step, user), ["move", 1, true, 1, 0], "the user's short drag is a Move, already paid");
+  same(read(move, user), ["move", 1, false, 1, 0], "the user's Move within Speed costs nothing more");
+  same(read(far, user), ["move", 2, false, 1, 1], "a longer drag pays for the second Move");
+  same(read(rush, ally), ["move", 3, true, 0, 3], "a straight long drag is no Rush: as many Moves as it needs, for the cap to refuse");
+  same(read(crawl, user), ["crawl", 2, false, 1, 1], "a Speed 0 crawl stays a crawl, one of them paid");
+  same(read(step, stepping), ["step", 1, false, 0, 1], "with the alteration a short drag is a Step");
+  same(read(step, { role: "user", record: { ...record, step: true } }), ["step", 1, false, 1, 0], "for the user too, and still paid");
+  same(read(rush, stepping), ["move", 3, true, 0, 3], "the alteration frees a Step, never a Rush");
 });
 
 /* -------------------------------------------- */

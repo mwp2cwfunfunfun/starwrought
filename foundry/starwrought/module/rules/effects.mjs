@@ -48,7 +48,10 @@ export const EFFECT_TAGS = Object.freeze({
   // 0.22.0: `GIVE: <value> <type>, chosen | <Constellation>; IF: RESULT(<degree>)` on a Maneuver's
   // own row, what a degree of its check gives another character; and `ALTER: <Maneuver>.<property>;
   // VALUE: <value>` on a Talent, which changes one property of what that Maneuver gives.
-  give: "give", alter: "alter"
+  give: "give", alter: "alter",
+  // 0.24.0: `PERMIT: move; FOR: allies 0` on a Maneuver's own row: using it lets the creature
+  // targeted make one Move now, outside its Opportunity.
+  permit: "permit"
 });
 
 /** The modifier tags: a value and a bonus type come first. */

@@ -48,8 +48,19 @@ export const DEGREE_PROPERTIES = Object.freeze({
 /** The two duration properties: every result's window, and the window of the results that give a bonus. */
 export const DURATION_PROPERTIES = Object.freeze(["duration", "beneficial-duration"]);
 
+/**
+ * The one property that is not about what a Maneuver GIVES (0.24.0): how the Move made as part of
+ * the Maneuver is read on the map. `VALUE: step` lets a drag within half Speed be a Step
+ * (Coordinated Footwork, of Move Together). `buildTable` below never looks at it: it is read when
+ * the Maneuver is used, by the `permit` kind (./kinds/permit.mjs), through the engine's `ruleUses`.
+ */
+export const MOVEMENT_PROPERTY = "movement";
+
+/** The values the movement property may be given. One word so far. */
+export const MOVEMENT_VALUES = Object.freeze(["step"]);
+
 /** Every property an ALTER reads in this version, as a message lists them. */
-export const ALTER_PROPERTIES = Object.freeze([...DURATION_PROPERTIES, ...Object.keys(DEGREE_PROPERTIES)]);
+export const ALTER_PROPERTIES = Object.freeze([...DURATION_PROPERTIES, ...Object.keys(DEGREE_PROPERTIES), MOVEMENT_PROPERTY]);
 
 /** The window a GIVE line has when it names none: until the giver's next Opportunity begins. */
 export const DEFAULT_UNTIL = Object.freeze({ who: "giver", n: 1 });

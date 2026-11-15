@@ -47,6 +47,8 @@ import { KINDS, kindOf } from "./kinds/index.mjs";
 import { flagKey, ruleCarrierKey, ATTRIBUTES, slugify, plainName } from "../config.mjs";
 // 0.22.0: what a Maneuver gives. The table and the pending result's carrier are pure data (./given.mjs).
 import { buildTable, sameGiven, givenCarrier, GIVE_DEGREES } from "./given.mjs";
+// 0.24.0: the owner's rank against an alteration's condition, when a Maneuver is used (pure).
+import { rankMeets } from "./operators.mjs";
 
 /**
  * The Item types that may carry rules. A Constellation Item is included now, before any carries
@@ -774,6 +776,10 @@ export function usableByRule(item) {
 export function ruleUses(actor, item, context = {}) {
   const out = [];
   if (!actor || !item) return out;
+  // The owner's alterations of the used Maneuver (0.24.0): an `ALTER: <Maneuver>.<property>` on one
+  // of the owner's Talents changes what using it does, so a `use` hook is handed them and no kind
+  // reads another kind's rules for itself. Asked once, only when a hook is about to be called.
+  let alterations = null;
   for (const kind of KINDS.values()) {
     const hook = kind.hooks?.use;
     if (typeof hook !== "function") continue;
@@ -781,9 +787,10 @@ export function ruleUses(actor, item, context = {}) {
     // deliberate and a custom effect's carrier is no Item to use (0.16.0).
     const entries = rulesOfKind(actor, kind.id).filter(e => (e?.item === item) && (e.item?.type !== EFFECT_CARRIER_TYPE)).map(e => ({ ...e, owner: actor, skip: false }));
     if (!entries.length) continue;
+    alterations ??= alterationsOf(actor, item);
     let result;
     try {
-      result = hook(entries, { ...context, item }, actor);
+      result = hook(entries, { ...context, item, alterations }, actor);
     } catch (error) {
       console.error(`STARWROUGHT | the "${kind.id}" kind's use hook failed:`, error);
       continue;
@@ -792,8 +799,52 @@ export function ruleUses(actor, item, context = {}) {
     for (const u of result) {
       if (!u || (typeof u !== "object") || !u.item) continue;
       const write = (u.write && (typeof u.write === "object") && !Array.isArray(u.write)) ? u.write : null;
-      out.push({ item: u.item, write, say: u.say ? String(u.say) : "", refuse: u.refuse ? String(u.refuse) : "" });
+      // 0.24.0: `warn`, lines the Item's card prints as warnings (a requirement the table should
+      // look at; the use still happens), and `marks`, a LIMIT to file as FIRST and ONCE are filed.
+      const warn = Array.isArray(u.warn) ? u.warn.map(w => String(w ?? "")).filter(Boolean) : [];
+      const marks = Array.isArray(u.marks) ? u.marks.filter(m => m && (typeof m.key === "string") && (typeof m.per === "string")).map(m => ({ key: m.key, per: m.per })) : [];
+      out.push({ item: u.item, write, say: u.say ? String(u.say) : "", refuse: u.refuse ? String(u.refuse) : "", warn, marks });
     }
+  }
+  return out;
+}
+
+/**
+ * The owner's `alter` rules that name this Maneuver, as a `use` hook reads them (0.24.0): the
+ * property, and what it is set to. An Off line is gone. A Skip line comes back `skipped`, for the
+ * hook to leave out this once, and a custom effect that lasts one roll comes back to be applied
+ * and used up; each carries the `marks` that say so (a `per: "state"` mark clears the Skip, a
+ * `per: "effect"` mark removes the row), which the hook hands back with a use that counted, so a
+ * refused use or one outside an encounter spends neither. (The used Item's OWN lines still read a
+ * Skip as On: a Use is deliberate.) A line with a rank condition holds when the owner's rank
+ * meets it; one about the rank rolled cannot hold, since a use has no roll.
+ * @param {object} actor
+ * @param {object} item  The Maneuver being used.
+ * @returns {Array<{property: string, movement: string|null, nothing: boolean, until: object|null, label: string, skipped: boolean, marks: Array<{key: string, per: string}>}>}
+ */
+export function alterationsOf(actor, item) {
+  const slug = slugify(plainName(item?.name ?? ""));
+  if (!slug) return [];
+  const out = [];
+  for (const entry of rulesOfKind(actor, "alter")) {
+    const rule = entry?.rule;
+    if (!rule?.to?.slug || (rule.to.slug !== slug) || (rule.to.type === "constellation")) continue;
+    const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
+    let holds = true;
+    for (const w of whens) {
+      if (!w?.constellation || w.roll || w.trait || w.outcome || (typeof actor?.system?.proficiency !== "function")) { holds = false; break; }
+      if (!rankMeets(actor.system.proficiency(w.constellation)?.rank ?? "untrained", w.op ?? "=", w.rank)) { holds = false; break; }
+    }
+    if (!holds) continue;
+    out.push({
+      property: String(rule.property ?? "").trim().toLowerCase(),
+      movement: rule.movement ?? null,
+      nothing: rule.nothing === true,
+      until: rule.until ?? null,
+      label: plainName(entry.item?.name ?? ""),
+      skipped: entry.skip === true,
+      marks: needsTrace(entry) ? traceMarks(entry, actor).map(m => ({ key: m.key, per: m.per })) : []
+    });
   }
   return out;
 }

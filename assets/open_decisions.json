@@ -26,7 +26,7 @@
     "category": "Automation cell",
     "where": "data/ancestries.xlsx, the Human sheet in progress (Mike's, uncommitted)",
     "question": "16 Automation cells on the Human sheet hold only '# PROPOSED' notes naming tags the grammar does not have (ALTER, PREPARE, CONDITION and extra IF conditions), Jack of All Trades' and Quick Study's among them, so those Talents automate nothing once the sheet builds; and Torchbearer Human's cell no longer carries the Rally Aura. Which comes first?",
-    "recommendation": "Pick the next kind from them with Claude, one at a time (ruling 119), from the Talent that wants it most; the others stay '#' notes, which the grammar reads as comments, until their kind exists.",
+    "recommendation": "Pick the next kind from them with Claude, one at a time (ruling 119), from the Talent that wants it most; the others stay '#' notes, which the grammar reads as comments, until their kind exists. Five cells can be pasted today, printed in the 0.22.0 and 0.24.0 changelog entries and in AUTOMATION_GRAMMAR.md section 5: Aid's five GIVE lines, Patient Assistance's and Sure Assistance's ALTER lines (0.22.0), '[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]' on Move Together's row and '[EFFECT ALTER: Move Together.movement; VALUE: step]' on Coordinated Footwork (0.24.0).",
     "decidedBy": ""
   },
   {

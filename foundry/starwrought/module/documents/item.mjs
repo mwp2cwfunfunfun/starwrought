@@ -154,10 +154,13 @@ export class SwItem extends Item {
         }
         if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) {
           // A Talent used as a Maneuver (0.15.0) passes the Opportunity gate (0.19.0) unless it is
-          // a Reaction or a Posture, the book's out-of-turn Maneuvers.
-          if (!this.system.reaction && (typeof actor.mayActNow === "function")
-            && !(await actor.mayActNow({ label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() }))) return null;
-          return this.#useWithRules(actor);
+          // a Reaction or a Posture, the book's out-of-turn Maneuvers. Asked here only when the
+          // answer is no (the request card is what the click is for then); passed inside
+          // `#useWithRules`, after the rules' own refusals, so a refused use spends no permit (0.24.0).
+          const label = `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim();
+          const gated = !this.system.reaction && (typeof actor.mayActNow === "function");
+          if (gated && !actor.canActNow() && !(await actor.mayActNow({ label }))) return null;
+          return this.#useWithRules(actor, { gate: gated, label });
         }
         return this.toMessage({ actor });
       default:
@@ -205,8 +208,12 @@ export class SwItem extends Item {
     // asked whether it may, so a roll dialog that is closed has not spent the permit either.
     // Asked now when the answer is no, since the request card is what the click is for then.
     const atRoll = gated && rolls && !byRule && (plan.n < SW.PREPARED_THRESHOLD);
-    if (gated && !(atRoll && actor.canActNow()) && !(await actor.mayActNow({ label }))) return null;
-    if (byRule) return this.#useWithRules(actor);
+    // A Maneuver with a use rule passes the gate inside `#useWithRules`, after its rules have had
+    // their say (0.24.0): through 0.23.1 a use the rules then refused (Move Together with nobody
+    // targeted) had already spent the GM's permit.
+    const late = atRoll || (gated && byRule);
+    if (gated && !(late && actor.canActNow()) && !(await actor.mayActNow({ label }))) return null;
+    if (byRule) return this.#useWithRules(actor, { gate: gated, label });
     if (this.system.reaction && actor && !elsewhere) {
       // A Reaction with a cost of its own pays that one; otherwise the cost printed. One whose
       // rule pays from a card button is left to that button (0.23.0), or the row and the
@@ -325,33 +332,61 @@ export class SwItem extends Item {
    * the cost in the Item's name is paid in an encounter (the Reaction half's own when it has one),
    * the writes land on the owner, and the Item's card goes out with the kinds' lines under it. An
    * Item with no `use` rules still pays and posts.
+   *
+   * Since 0.24.0 (Move Together's `PERMIT`): the hooks are handed the scene and the target's token
+   * (so a kind can measure a gap without touching the canvas), the running Opportunity, and a nonce
+   * that names this use; an answer may carry `warn` lines, printed on the card as warnings while
+   * the use still happens, and `marks`, a LIMIT filed as FIRST and ONCE are; the Opportunity gate
+   * is passed here, after the refusals, so a refused use spends no permit; the payment honours the
+   * `trackActions` setting (ruling 236; through 0.23.1 this path paid whatever the setting said);
+   * and the spend is said on the Item's own card, as a no-roll Maneuver's is since 0.23.0, in
+   * place of a second card.
+   * @param {Actor} actor
+   * @param {object} [options]
+   * @param {boolean} [options.gate=false]  Pass the Opportunity gate once the rules have not refused.
+   * @param {string} [options.label]        The Maneuver as the gate and the spend name it.
    */
-  async #useWithRules(actor) {
+  async #useWithRules(actor, { gate = false, label = "" } = {}) {
     const { ruleUses } = await import("../rules/engine.mjs");
-    const { encounterContext } = await import("../rules/scene.mjs");
+    const { encounterContext, sceneContextFor, writeRuleMarks } = await import("../rules/scene.mjs");
     const targetToken = SwCheck.currentTarget();
     const target = targetToken ? {
       actor: targetToken.actor, uuid: targetToken.actor?.uuid ?? null, tokenUuid: targetToken.document.uuid,
-      name: targetToken.name, relation: relationTo(actor, targetToken)
+      tokenId: targetToken.document.id, token: targetToken.document,
+      name: targetToken.name, relation: relationTo(actor, targetToken),
+      inEncounter: !!targetToken.actor?.inEncounter
     } : null;
-    const uses = ruleUses(actor, this, { target, encounter: encounterContext() });
+    const encounter = encounterContext();
+    const uses = ruleUses(actor, this, { target, encounter, scene: sceneContextFor(actor), nonce: foundry.utils.randomID() });
     const refused = uses.find(u => u.refuse);
     if (refused) return void ui.notifications.warn(refused.refuse);
+    const named = label || `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim();
+    if (gate && (typeof actor.mayActNow === "function") && !(await actor.mayActNow({ label: named }))) return null;
 
+    const lines = [];
     const own = this.system.reactionCost;
     const key = (this.system.reaction && own !== undefined && own !== null && own !== "") ? own : this.system.cost;
     const n = SW.actionCostValue(key);
-    if (n && actor.inEncounter && (typeof actor.spendActions === "function")) {
-      await actor.spendActions(n, { label: `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim() });
+    if (n && actor.inEncounter && setting("trackActions", true) && (typeof actor.spendActions === "function")) {
+      await actor.spendActions(n, { label: named, announce: false });
+      if (actor.announcesSpends) {
+        lines.push(`${game.i18n.format("STARWROUGHT.Actions.spent", { name: actor.name, spent: n })} ${actor.actionsLeftLine?.() ?? ""}`.trim());
+      }
     }
     const update = {};
-    const lines = [];
+    const warns = [];
+    const marks = [];
     for (const u of uses) {
       if (u.write) Object.assign(update, u.write);
       if (u.say) lines.push(u.say);
+      if (u.warn?.length) warns.push(...u.warn);
+      if (u.marks?.length) marks.push(...u.marks);
     }
-    if (Object.keys(update).length && (actor.isOwner || game.user.isGM)) await actor.update(update, { swAnnounced: true });
-    return this.toMessage({ actor, lines });
+    if (actor.isOwner || game.user.isGM) {
+      if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+      if (marks.length) await writeRuleMarks(actor, marks, encounter);
+    }
+    return this.toMessage({ actor, lines, warns });
   }
 
   /**
@@ -492,8 +527,10 @@ export class SwItem extends Item {
    * @param {object} [options]
    * @param {Actor} [options.actor]  Who speaks, when the Item is not owned (a Basic Maneuver).
    * @param {string[]} [options.lines]  Lines said under the card (0.15.0: what a Use did).
+   * @param {string[]} [options.warns]  Warnings said under those (0.24.0: a requirement the table
+   *                                    should look at; the use happened all the same).
    */
-  async toMessage({ actor = null, lines = [] } = {}) {
+  async toMessage({ actor = null, lines = [], warns = [] } = {}) {
     const speaker = this.actor ?? actor;
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
     const enrich = html => TextEditor.enrichHTML(html ?? "", { rollData: this.getRollData(), relativeTo: this });
@@ -510,7 +547,8 @@ export class SwItem extends Item {
       subtitle: this.#subtitle(),
       traits: this.system.traits ?? [],
       outcomes: this.#outcomeList(),
-      lines: Array.isArray(lines) ? lines.filter(Boolean) : []
+      lines: Array.isArray(lines) ? lines.filter(Boolean) : [],
+      warns: Array.isArray(warns) ? warns.filter(Boolean) : []
     });
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: speaker }),

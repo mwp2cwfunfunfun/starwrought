@@ -58,7 +58,8 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT IGNORE: terrain, mud]` | difficult terrain of those kinds costs nothing | 3 |
 | `[EFFECT USE: Presence, Origin, aid]` | a check made from that Maneuver may be rolled with that Attribute and that Constellation's Proficiency Bonus in place of its own (`same` keeps a term) | 3 |
 | `[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]` | on a Maneuver's own row: that result of its check gives another character a bonus (or a penalty) on its next roll with a Constellation, named when it is given (`chosen`) or by the line | 3 |
-| `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` | on a Talent: one property of what that Maneuver gives is changed (a result to nothing, or a window with `Aid.beneficial-duration`) | 3 |
+| `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` | on a Talent: one property of that Maneuver is changed (a result to nothing, a window with `Aid.beneficial-duration`, or its movement to a Step with `Move Together.movement; VALUE: step`) | 3 |
+| `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]` | on a Maneuver's own row: using it lets the adjacent ally you target make one Move now, outside its Opportunity, once a round | 3 |
 | `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter` | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
@@ -180,7 +181,8 @@ takes exactly three and `ALTER` exactly one, and never a value or a type. No bon
 | `IGNORE: terrain, mud, decking` | difficult terrain of those kinds costs nothing; `IGNORE: terrain` alone every kind | `terrain`, then kinds | `ignore` |
 | `USE: Presence, Origin, aid` | the two base terms of a check made from a Maneuver's own Item, written `USE: <Attribute>, <Constellation>, <Maneuver>`: the Attribute Bonus and the Proficiency Bonus are the named Attribute's and the named Constellation's in place of the check's own, offered in the roll dialog; nothing else on the roll changes (0.21.0) | exactly three: an Attribute or `same`, a Constellation or `same`, then a Maneuver by name | `substitute` |
 | `GIVE: 1 situation, chosen` | what a result of this Maneuver's check gives ANOTHER character: a bonus or penalty on that character's next roll with a Constellation. Written on the Maneuver's own row, one line for each degree that gives something, each with `IF: RESULT(<degree>)` (0.22.0) | exactly one: `chosen` (the Constellation is named when the result is given) or a Constellation by name | `give` |
-| `ALTER: Aid.critical-failure` | one property of what a Maneuver gives, changed by a Talent: `ALTER: <Maneuver>.<property>; VALUE: <value>`. The properties read are in the Property vocabulary below (0.22.0) | exactly one: the Maneuver by name, a dot, the property | `alter` |
+| `ALTER: Aid.critical-failure` | one property of a Maneuver, changed by a Talent: `ALTER: <Maneuver>.<property>; VALUE: <value>`. The properties read are in the Property vocabulary below (0.22.0; `movement` since 0.24.0) | exactly one: the Maneuver by name, a dot, the property | `alter` |
+| `PERMIT: move` | using this Maneuver lets the creature you target make one Move now, outside its Opportunity, paying for it itself; your own next drag is the Maneuver's Move, already paid. Written on the Maneuver's own row, with `FOR:` saying who may be permitted and how near (`FOR: allies 0` is an adjacent ally) and `LIMIT:` its Frequency (0.24.0) | exactly one: what is permitted (`move`) | `permit` |
 
 A bonus to a Constellation moves its **Threshold as well as its roll** (section 7). A bonus to a
 Maneuver is applied when the roll is made from that Maneuver's Item and otherwise **offered**
@@ -247,9 +249,12 @@ result lasts until it is used, replaced or removed.
 **Property** (0.22.0). What an `ALTER` may change of the results a Maneuver gives, after the dot:
 `duration` (every result's window), `beneficial-duration` (the window of the results that give a
 bonus, so a penalty keeps its own), and the four results by degree, `critical-success`, `success`,
-`failure`, `critical-failure`, each of which is changed to `nothing`. Any other property is refused
-as not read yet. Where two lines change one Maneuver, `beneficial-duration` stands over `duration`
-in either order, and of two changes to one property the later stands.
+`failure`, `critical-failure`, each of which is changed to `nothing`. Since 0.24.0 one more, which
+is not about what the Maneuver gives: `movement`, changed to `step`, so that a drag within half
+Speed made as part of the Maneuver is a Step for everyone who moves in it (Coordinated Footwork, of
+Move Together). Any other property is refused as not read yet. Where two lines change one
+Maneuver, `beneficial-duration` stands over `duration` in either order, and of two changes to one
+property the later stands.
 
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
@@ -442,12 +447,20 @@ your Aid check grants no penalty to your ally").
 [EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient opportunity 2]     Patient Assistance
 [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]                        Sure Assistance
 [EFFECT ALTER: Aid.duration; VALUE: encounter]                              every result of Aid
+[EFFECT ALTER: Move Together.movement; VALUE: step]                         Coordinated Footwork
 ```
 
 - **One descriptor**: the Maneuver by the name the action sheets print, a dot, the property
   (section 3, Property). Case, spaces and a Maneuver's cost glyphs do not matter.
 - **`VALUE:`** says what the property becomes: a window for `duration` and `beneficial-duration`,
-  the word `nothing` for a result. It is read after `ALTER` alone.
+  the word `nothing` for a result, the word `step` for `movement`. It is read after `ALTER` alone.
+- **`movement`** (0.24.0; ruling 242) is the one property that is not about what the Maneuver
+  gives. It is read when the Maneuver is USED, by the `permit` kind below: with it, a drag within
+  half Speed made as part of that Maneuver is a Step (one action, nothing provoked, no difficult
+  terrain), for the user and for the one permitted alike; a longer drag is still a Move. Mike's
+  draft of the cell, `VALUE: choose(Move, Step); APPLY: both-participants`, is told the word and
+  that `APPLY:` is no component: the Step is always for both, and it is a choice only in that a
+  short drag is one.
 - **`IF: RANK(...)`**: the owner's rank, or `RANK(roll ...)`, the rank rolled.
 
 An `ALTER` changes one property and leaves the rest, so there is no `PRESERVE:`. It never touches
@@ -479,6 +492,72 @@ In play:
   Assistance set to Skip is not used up by a Success, and a change that altered nothing (a result
   another Talent had already emptied) is not used up at all. A reroll reads the first card's
   results, so a line the first die did not spend is spent by the reroll that lands on its degree.
+  A `movement` line is read when its Maneuver is used: on Skip it is left out that once (the drags
+  are plain Moves) and the Skip is spent by a use that counted, never by a refused use or one
+  outside an encounter; Off is Off; a custom effect that lasts the next roll is used up the same way.
+
+### `permit`
+Using this Maneuver lets the creature you target make one Move now, outside its Opportunity
+(0.24.0; rulings 239 to 244). Made by `[EFFECT PERMIT: ...]` on a Maneuver's own row, from the
+Human's Move Together (Mike, 2026-11-14): "You Move up to your Speed. The chosen ally may then
+spend ❶ of its own actions to immediately Move up to its Speed as part of this same Maneuver. It
+must finish adjacent to you." Through 0.23.1 the ally's drag on your Opportunity waited for the GM,
+as any Maneuver outside an Opportunity does. The word is Mike's choice: a permit is what the GM's
+Approve gives a player off-turn, and this is the same thing given by a Maneuver.
+
+```
+[EFFECT PERMIT: <what>; FOR: <who> [<N>]; LIMIT: round | encounter; IF: RANK(...)]
+
+[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]                          Move Together ❶
+```
+
+- **One descriptor**, what is permitted: `move`, the one word in this version.
+- **`FOR:`** is required and says who may be permitted and how near, in the words the grammar
+  already has: `allies`, `enemies` or `all`, with a range in feet. `FOR: allies 0` is an adjacent
+  ally, as Steady the Line writes it. `self` and `self+allies` are refused: nobody needs leave at
+  their own Opportunity.
+- **`LIMIT: round`** (or `encounter`) is the Maneuver's Frequency.
+- **`IF: RANK(...)`** reads the owner's rank. `RANK(roll ...)` is refused: there is no roll.
+
+Written on a Maneuver's own row and nowhere else, as `GIVE` is. Refused by name: `UNTIL`,
+`VALUE`, `IF: CLAIM(...)`, `IF: RESULT(...)`, every condition about the other party, and a
+`PERMIT` after the ring of an `[AURA ...]` block.
+
+**As read:** `lets an adjacent ally you target make one Move now, outside its Opportunity, once a
+round`.
+
+In play, in an encounter:
+
+- **Used with one creature targeted.** The Maneuver's row shows the Use control. **Refused, with
+  nothing paid**: nobody targeted, yourself, a target who is not one the `FOR` names, and a second
+  use within the `LIMIT`. **Warned on the card, and it still happens** (Mike: "Warn and go on"): a
+  target farther than the `FOR` range, with no action left, unconscious or dying, or not in the
+  encounter. Tokens that look adjacent are sometimes a foot apart.
+- **You pay at the click** (Mike's choice), on the Maneuver's own card. Your own next drag in that
+  Opportunity is the Maneuver's Move, already paid: one Move's worth, so a longer drag pays for
+  the rest.
+- **The one permitted** drags its token with no request to the GM, and pays for the Move from its
+  own actions. The GM's own drag of that token counts as the Move too. One drag: any other
+  Maneuver off-turn still asks the GM, and an approval the GM gave that fighter for something else
+  is not used up.
+- **A Move, however short** (ruling 242): a drag made as part of the Maneuver is never a Step and
+  never a Rush, so it can provoke an Intercept, and the one-Maneuver cap holds it to one Move. A
+  fighter at Speed 0 still crawls. An `ALTER` of the Maneuver's `movement` to `step` (above) lets a
+  drag within half Speed be a Step for both.
+- **Where it ends.** When the one permitted ends farther from you than the `FOR` range, its move's
+  card says so (Move Together: "It must finish adjacent to you"). Said, not enforced.
+- **It lasts the Opportunity it was used in.** One record on the user names both tokens; it is
+  taken off when that Opportunity ends (the turn moves on, forwards or back; a lone fighter steps
+  to itself; the encounter ends). If the one permitted never moves, it pays nothing. Two fighters
+  may permit the same ally in one Opportunity: it moves once for each.
+- **You must be in the fight.** With a Combat on screen that you are no part of, nothing is paid,
+  recorded or limited, as outside an encounter. A permitted creature that is not a fighter in it
+  is warned about on the card and its drag is free, as any drag of a token outside the tracker.
+- **Outside an encounter** nothing is paid, recorded or limited: the card only. With "Track the
+  six-action round" off nothing is spent, and the Moves are still marked as made.
+- **On / Skip / Off** on the Effects tab: Off, the Maneuver permits nothing (the click still pays,
+  and so does the drag); Skip on the `PERMIT` line itself is read as On, as for every line that
+  acts on use (a Skip on a Talent's `ALTER` of its movement is honoured; see `alter`).
 
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
@@ -592,8 +671,21 @@ Sure Assistance       [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]
 The five lines are Aid's row on the Basic Actions sheet of `data/maneuvers.xlsx`; the two Talents
 are the Human's. These cells are Mike's to paste: the 0.22.0 release carries the kinds, and both
 workbooks were in his hands when it was cut. What the system does not read of Aid, and the table
-does: its Threshold ("typically 15"), whether the help makes sense, and the ❶ it costs, which is
-clicked on the pip by hand.
+does: its Threshold ("typically 15") and whether the help makes sense. (Its ❶ is paid when the roll
+is made since 0.23.0.)
+
+### Move Together, and the Talent that changes it (0.24.0)
+
+```
+Move Together  ❶      [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]
+Coordinated Footwork  [EFFECT ALTER: Move Together.movement; VALUE: step]
+```
+
+The first line is Move Together's row on the Ancestry Actions sheet of `data/maneuvers.xlsx`; the
+second is the Human Talent's cell. Both are Mike's to paste: the 0.24.0 release carries the kind,
+and both workbooks were in his hands when it was cut. What the system does not read of Move
+Together, and the table does: that both routes are declared before either moves, that you move
+first, that the ally can perceive your cue, and that the ally is willing.
 
 What the system does not read, and the table does: whom Oathbound may name ("a creature that has
 either formally challenged you, or that has broken a bargain or a truce with you"; the mark takes
@@ -746,12 +838,19 @@ written on the Maneuver's row.
 - **What a give does not read yet** (0.22.0). Not built: two uses of one result (Carry the Plan);
   a second character using a pending result (Pay It Forward); a Condition given by a result; a
   result given by a Maneuver that rolls no check; an adversary as the recipient; the `ALTER`
-  properties beyond the six (a Maneuver's movement, range, limit, uses, slots); and a Threshold a
+  properties beyond the seven (a Maneuver's range, limit, uses, slots); and a Threshold a
   Maneuver's check opens on (Aid's "typically 15"), which is still typed. With no GM connected the
   turn step that ends a round by Passes may be counted as an Opportunity by a player's client, and
   two presses of one card for two recipients owned by different players can both land. A GM
   stepping the turn backwards and forwards again counts an Opportunity twice, so a window of two
   Opportunities or more can close one early.
+- **What a permit does not read** (0.24.0). It permits a Move and nothing else. Not read, and the
+  table's: that routes are declared first, the order of the two Moves, whether the cue can be
+  perceived, whether the ally is willing. A mistaken use cannot be taken back, since the
+  once-a-round mark stays for the round. A short Move forced by the Maneuver uses up a
+  once-a-round Speed bonus as any Move does. A GM who repositions the permitted token during that
+  Opportunity uses the permission and charges it. Each arrow-key nudge is its own movement, so the
+  first nudge is the Maneuver's Move.
 - **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
   sight-blocking walls plus three statuses; light, sight range and hearing are the table's.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
@@ -811,12 +910,21 @@ written on the Maneuver's row.
 | `a give is what a Maneuver's check gives and cannot ride an [AURA ...] block; write it on the Maneuver's row as \`[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]\`` | a `GIVE` after the ring's semicolon |
 | `an alteration is written \`ALTER: <Maneuver>.<property>; VALUE: <value>\`, as in \`ALTER: Aid.critical-failure; VALUE: nothing\` (<N> descriptors given, 1 wanted: the Maneuver, a dot, the property)` | no descriptor, or a comma in it |
 | `"<text>": an alteration names the Maneuver, a dot, and the property it changes, as in \`ALTER: Aid.critical-failure; VALUE: nothing\`` | no dot, or nothing on one side of it |
-| `the property "<word>" is not read yet: ALTER reads duration, beneficial-duration, critical-success, success, failure and critical-failure` | a property of a later version (`Move Together.movement`, `Aid.beneficial-uses`): told before the Maneuver is looked up |
+| `the property "<word>" is not read yet: ALTER reads duration, beneficial-duration, critical-success, success, failure, critical-failure and movement` | a property of a later version (`Aid.beneficial-uses`, `Working Knowledge.proficiency`): told before the Maneuver is looked up |
+| `"<value>": a Maneuver's movement is changed to \`step\` in this version, as in \`ALTER: <Maneuver>.movement; VALUE: step\` (a drag within half Speed made as part of the Maneuver is then a Step, for everyone who moves in it)` | any value but `step` on `movement` (`VALUE: choose(Move, Step)`) |
 | `"<name>" names no Maneuver` / `"<name>" is a Constellation: ALTER changes what a Maneuver gives, as in \`ALTER: Aid.critical-failure; VALUE: nothing\`` | the name before the dot |
 | `ALTER says what the property becomes: add \`VALUE: ...\`, as in \`ALTER: Aid.critical-failure; VALUE: nothing\`` / `VALUE: says what the property becomes, as in \`VALUE: nothing\` or \`VALUE: recipient opportunity 2\`` | no `VALUE:`, or an empty one |
 | `"<value>": a result is changed to nothing in this version, as in \`ALTER: <Maneuver>.<property>; VALUE: nothing\`` | any value but `nothing` on a result (`VALUE: no-effect`) |
 | `ALTER does not take FOR` / `ALTER does not take LIMIT` / `ALTER does not take IF: CLAIM(...)` / `ALTER does not take IFT: TRAIT(...)` | a component `ALTER` has no use for: it takes `VALUE:` and `IF: RANK(...)` alone. An `IF: RESULT(...)` gets the message above: the property names the degree |
 | `an alteration changes the owner's own Maneuver and cannot ride an [AURA ...] block; write it as its own \`[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]\`` | an `ALTER` after the ring's semicolon |
+| `PERMIT is written on the Maneuver's own row: it is what using that Maneuver lets another creature do` | a `PERMIT` in a Talent's cell or on a custom effect row |
+| `a permission is written \`PERMIT: <what>; FOR: <who> [<N>]\`, as in \`PERMIT: move; FOR: allies 0; LIMIT: round\` (<N> descriptors given, 1 wanted: what is permitted)` | no descriptor, or two (`PERMIT: move, ally`: the ally is said with `FOR`) |
+| `"<word>": PERMIT permits a move in this version, as in \`PERMIT: move; FOR: allies 0; LIMIT: round\`` | anything but `move` |
+| `PERMIT says who may be permitted: add \`FOR: allies 0\` (an adjacent ally), as in \`PERMIT: move; FOR: allies 0; LIMIT: round\`` | no `FOR:` |
+| `PERMIT is for another creature (FOR: allies, enemies, all), not "<who>": nobody needs leave at their own Opportunity` | `FOR: self` or `FOR: self+allies` |
+| `PERMIT acts when the Maneuver is used, before any roll: \`IF: RANK(roll ...)\` has no roll to read; name a Constellation, as in \`IF: RANK(Origin >= expert)\`` | the rank rolled on a `PERMIT` |
+| `PERMIT does not take UNTIL` / `PERMIT does not take VALUE` / `PERMIT does not take IF: CLAIM(...)` / `PERMIT does not take IFT: TRAIT(...)` / `PERMIT does not take IFT: MARKED` | a component `PERMIT` has no use for: it takes `FOR:`, `LIMIT:` and `IF: RANK(...)` alone |
+| `a permission is given when its Maneuver is used and cannot ride an [AURA ...] block; write it as its own \`[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]\`` | a `PERMIT` after the ring's semicolon |
 | `FOR is written \`FOR: <who> [<N>]\`` / `FOR: self takes no range` | the recipients |
 | `LIMIT is written \`LIMIT: round\` or \`LIMIT: encounter\`` | the limit |
 | `a who is written self, allies, enemies, all or self+allies` | the FOR subject |
@@ -949,3 +1057,16 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   triggered moment (229); the Effects tab's pending results, read-only, the bin the GM's (230).
   `RESULT(...)` is read by `GIVE` as well as `REROLL`. The release carries the kinds alone: Aid's
   row and the two Talents are on Mike's sheets in progress, and no shipped cell uses either tag yet.
+- **0.24.0** (2026-11-14): the `PERMIT` tag and the `permit` kind, and `ALTER`'s seventh property,
+  `movement`, from Mike's question about Coordinated Footwork ("would you recommend changing the
+  effect of this Talent, or programming in the additional automation grammar?"). Neither, until
+  Move Together itself was automated; so Move Together is written first, on its own row, and the
+  Talent changes it. `PERMIT: move; FOR: allies 0; LIMIT: round` (ruling 239), the ally said with
+  the grammar's existing `FOR`; a permitted Move is one drag, in the Opportunity the Maneuver was
+  used in, paid by the mover (240); the user pays at the click and their own next drag is that
+  Move (241); inside the Maneuver a drag is a Move however short, and `ALTER: <Maneuver>.movement;
+  VALUE: step` lets a short one be a Step for both (242); nobody, yourself, a non-ally and a second
+  use in the round refuse, the other requirements warn (243); one record on the user, read by the
+  other client, no copy and no relay (244). No new hook point: `permit` answers `use`, whose
+  answer may now carry warnings and a LIMIT to file. The release carries the kind alone: Move
+  Together's row and the Talent are on Mike's sheets in progress.

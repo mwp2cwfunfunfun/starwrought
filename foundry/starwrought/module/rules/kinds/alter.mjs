@@ -14,9 +14,17 @@
  *   duration               every result's window                      VALUE: a window (`readUntil`)
  *   beneficial-duration    the window of the results that give a bonus VALUE: a window
  *   critical-success, success, failure, critical-failure               VALUE: nothing
+ *   movement               how the Move made as part of it is read     VALUE: step
+ *
+ * `movement` (0.24.0; ruling 242; Coordinated Footwork, of Move Together) is the one property that
+ * is not about what the Maneuver gives: `[EFFECT ALTER: Move Together.movement; VALUE: step]` lets
+ * a drag within half Speed made as part of that Maneuver be a Step, for everyone who moves in it.
+ * It stores `movement: "step"`, is skipped by the `gives` hook below, and is read when the Maneuver
+ * is used: the engine's `ruleUses` hands the owner's alterations to the kinds' `use` hooks, so
+ * this kind gains no `use` hook of its own and draws no Use control.
  *
  * Any other property is refused as not read yet, naming these, before the Maneuver is looked up:
- * the cells Mike has drafted for later Talents (`Move Together.movement`, `Aid.beneficial-uses`,
+ * the cells Mike has drafted for later Talents (`Aid.beneficial-uses`,
  * `Working Knowledge.proficiency`) then say what is missing rather than what is misspelt. His
  * `PRESERVE:` is not a component: an ALTER changes one property and leaves the rest, so the degree
  * rolled is the degree rolled (a Critical Failure that gives nothing still Flares). `IF: RANK(...)`
@@ -44,7 +52,7 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, refuseComponents, refuseOutcome, summarizeOperators, readTargetName, readUntil, untilWords } from "../operators.mjs";
-import { ALTER_PROPERTIES, DEGREE_PROPERTIES, DURATION_PROPERTIES, propertyKey, degreeName } from "../given.mjs";
+import { ALTER_PROPERTIES, DEGREE_PROPERTIES, DURATION_PROPERTIES, MOVEMENT_PROPERTY, MOVEMENT_VALUES, propertyKey, degreeName } from "../given.mjs";
 import { plainName, ruleCarrierKey } from "../../config.mjs";
 
 const SHAPE = "ALTER: <Maneuver>.<property>; VALUE: <value>";
@@ -113,6 +121,14 @@ export default {
     if (DURATION_PROPERTIES.includes(property)) {
       return { to, property, nothing: false, until: readUntil(value), when: ops.when };
     }
+    // The Maneuver's movement (0.24.0): the one property that is not about what it gives. Its key
+    // is stored on this branch alone, so every other alteration keeps the shape it had.
+    if (property === MOVEMENT_PROPERTY) {
+      if (!MOVEMENT_VALUES.includes(value.toLowerCase())) {
+        throw new RuleSyntaxError(`"${value}": a Maneuver's movement is changed to \`step\` in this version, as in \`ALTER: ${to.name}.movement; VALUE: step\` (a drag within half Speed made as part of the Maneuver is then a Step, for everyone who moves in it)`);
+      }
+      return { to, property, nothing: false, until: null, movement: value.toLowerCase(), when: ops.when };
+    }
     if (value.toLowerCase() !== NOTHING) {
       throw new RuleSyntaxError(`"${value}": a result is changed to nothing in this version, as in \`ALTER: ${to.name}.${property}; VALUE: nothing\``);
     }
@@ -129,6 +145,7 @@ export default {
     const property = propertyKey(rule?.property);
     let what;
     if (Object.hasOwn(DEGREE_PROPERTIES, property)) what = `${maneuver} ${degreeName(DEGREE_PROPERTIES[property])} gives nothing`;
+    else if (property === MOVEMENT_PROPERTY) what = `a drag within half Speed made as part of ${rule?.to?.name ?? "the Maneuver"} is a Step`;
     else what = `${maneuver} results${property === "beneficial-duration" ? " that give a bonus" : ""} last ${untilWords(rule?.until ?? null)}`;
     return `${what}${tail ? `, ${tail}` : ""}`;
   },
@@ -151,6 +168,8 @@ export default {
         if ((entry?.from !== "own") || !rule?.to?.slug || (rule.to.slug !== maneuver)) continue;
         // A rule stored by hand that names a Constellation is passed over (the parse refuses it).
         if (rule.to.type === "constellation") continue;
+        // The movement property changes nothing a Maneuver gives (0.24.0): it is read at use.
+        if (propertyKey(rule.property) === MOVEMENT_PROPERTY) continue;
         let holds = true;
         for (const w of whensOf(rule)) {
           if (w?.roll === true) {

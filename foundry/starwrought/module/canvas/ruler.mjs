@@ -21,8 +21,10 @@
  */
 
 import * as SW from "../config.mjs";
-import { movementNumbers, classifyMove, opportunityOf, moveCapped, moveCapApplies } from "../documents/movement.mjs";
+import { movementNumbers, classifyMove, opportunityOf, moveCapped, moveCapApplies, maneuverMoveOf } from "../documents/movement.mjs";
 import { setting } from "../helpers/settings.mjs";
+// A Move made as part of a Maneuver (0.24.0): the ruler prices the drag as the charge will.
+import { asManeuverMove } from "../rules/maneuver-move.mjs";
 
 /**
  * One colour per Move, first to twelfth (the system's ceiling, SW.ACTIONS_MAX). Gold first; the
@@ -127,14 +129,20 @@ export function registerMoveRuler() {
       // Difficult terrain costs more than its length, and a Step cannot enter it.
       const terrain = travelled > distance + 0.01;
       const straight = isStraight(start, waypoint, distance);
-      return { ...classifyMove(travelled, movementNumbers(actor), { terrain, straight }), feet: travelled };
+      const classified = classifyMove(travelled, movementNumbers(actor), { terrain, straight });
+      // A Move made as part of a Maneuver (0.24.0) is read as the charge will read it: a Move
+      // however short, never a Rush, and the user's first Move already paid. Through the one
+      // helper documents/movement.mjs uses, so the label and the charge cannot disagree.
+      const held = maneuverMoveOf(this.token?.document ?? this.token);
+      return { ...(held ? asManeuverMove(classified, held) : classified), feet: travelled, held: !!held };
     }
 
     /** The colour a waypoint's squares should take, or null to leave core's alone. */
     #colorAt(waypoint) {
       const move = this.#moveAt(waypoint);
       if (!move) return null;
-      if (move.actions > actionsLeft(this.token)) return OVER_BUDGET;
+      // What the drag will really spend: a Maneuver's Move already paid costs the user nothing more.
+      if ((move.charge ?? move.actions) > actionsLeft(this.token, move.held)) return OVER_BUDGET;
       if (this.#capped(move)) return OVER_BUDGET;
       if (move.kind === "step") return STEP_COLOR;
       if (move.kind === "rush") return RUSH_COLOR;
@@ -196,13 +204,15 @@ function isStraight(start, waypoint, distance) {
  */
 function labelFor(move, capped = false) {
   const g = SW.ACTION_GLYPHS;
-  if (move.kind === "step") return `${g[1]} ${game.i18n.localize("STARWROUGHT.Actions.stepTitle")}`;
+  // The Move a Maneuver's click paid for (0.24.0): said, so the glyph is not read as a second charge.
+  const paid = (move.prepaid > 0) ? ` · ${game.i18n.localize("STARWROUGHT.Actions.movePaidLabel")}` : "";
+  if (move.kind === "step") return `${g[1]} ${game.i18n.localize("STARWROUGHT.Actions.stepTitle")}${paid}`;
   if (move.kind === "rush") return `${g[3]} ${game.i18n.localize("STARWROUGHT.Actions.rushTitle")}`;
   const glyph = move.moves > 1 ? `${g[1]}×${move.moves}` : g[1];
   const name = (move.kind === "crawl") ? ` ${game.i18n.localize("STARWROUGHT.Actions.crawlTitle")}` : "";
   if (capped) return `${glyph}${name} · ${game.i18n.localize("STARWROUGHT.Actions.moveCapLabel")}`;
-  if (move.kind === "crawl") return `${glyph}${name}`;
-  if (!move.rushInstead) return glyph;
+  if (move.kind === "crawl") return `${glyph}${name}${paid}`;
+  if (!move.rushInstead) return `${glyph}${paid}`;
   return `${glyph} (${g[3]} ${game.i18n.localize("STARWROUGHT.Actions.rushTitle")}?)`;
 }
 
@@ -210,13 +220,16 @@ function labelFor(move, capped = false) {
  * How many actions the mover still has to spend on this.
  * The full six (or the creature's own count) whenever the question does not apply: no encounter,
  * not this token's Opportunity, or tracking switched off. The ruler is then showing what a round's
- * worth of movement would look like.
+ * worth of movement would look like. A Move made as part of a Maneuver (0.24.0) is charged
+ * whoever's Opportunity it is, so it is measured against what the mover really has.
+ * @param {Token} token
+ * @param {boolean} [held=false]  The drag is a Maneuver's Move.
  */
-function actionsLeft(token) {
+function actionsLeft(token, held = false) {
   const actor = token?.actor;
   const full = Number.isFinite(actor?.actionsPerRound) ? actor.actionsPerRound : SW.ACTIONS_PER_ROUND;
   if (!actor?.system?.actions) return full;
   if (!setting("trackActions", true)) return full;
-  if (!opportunityOf(token?.document ?? token)) return full;
+  if (!held && !opportunityOf(token?.document ?? token)) return full;
   return Math.max(0, Number(actor.system.actions.value) || 0);
 }

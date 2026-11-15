@@ -157,6 +157,7 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               [EFFECT USE: Presence, Origin, aid]                         a check made with other terms
               [EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]     on a MANEUVER'S row: what a result gives an ally
               [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]        a talent changes what a Maneuver gives
+              [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]          on a MANEUVER'S row: it lets an ally Move now
               [EFFECT CHECK: 2 situation, diplomacy; IF: CLAIM(when trading)]   the player's checkbox
         Blank lines are nothing, a line beginning with "#" is a comment, case never matters, one
         trailing period inside a block is tolerated. The converter copies the cell through as text
@@ -197,6 +198,11 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         failure and critical-failure (VALUE nothing). Any other property is refused as not read yet.
         There is no PRESERVE: an ALTER changes one property and leaves the rest. A GIVE line in a
         talent's cell is refused: it belongs on the Maneuver's row.
+        ALTER also reads the property movement (0.24.0; rulings 239 to 244), with the one value
+        step, for a Maneuver whose row carries a PERMIT line (the action sheets, below):
+              [EFFECT ALTER: Move Together.movement; VALUE: step]                       Coordinated Footwork
+        A drag within half Speed made as part of that Maneuver is then a Step for both movers.
+        There is no APPLY: and no choose(...): the one line covers both.
         RED CELLS (2026-11-08; Mike: "highlight those cells in red"): python assets/highlight_automation.py
         paints every Automation cell the grammar cannot read, and every Effect cell whose
         @Maneuver[Name] names no row, solid red (FF9999) with a cell comment giving the grammar's
@@ -348,6 +354,17 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     how long it may be used (giver opportunity when left out). In Foundry the check's card carries
     a Give button for the roller and the GM; the recipient's next roll with the Constellation
     uses the result. A talent changes it with ALTER (the tree sheets' Automation, above).
+    PERMIT (0.24.0; rulings 239 to 244) is written HERE too, on the action's own row: using the
+    action lets the creature you target make one Move now, outside its Opportunity. Move
+    Together's row:
+          [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]
+    One descriptor, what is permitted (move, the one word so far). FOR: is required and says who
+    and how near (allies 0 is an adjacent ally; self is refused). LIMIT: round or encounter is the
+    row's Frequency. IF: RANK(...) reads the owner's rank. In Foundry the user pays the row's cost
+    at the click and their own next drag is that Move, already paid; the target then drags with no
+    request to the GM and pays its own action; each is a Move however short, unless a talent's
+    ALTER makes a short one a Step. Nobody targeted, yourself, the wrong kind of creature and a
+    second use within the LIMIT are refused; the other requirements are warned about on the card.
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.

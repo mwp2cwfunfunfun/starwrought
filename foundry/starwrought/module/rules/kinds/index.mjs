@@ -173,6 +173,13 @@ registerKind(give);
 import alter from "./alter.mjs";
 registerKind(alter);
 
+// 0.24.0: Move Together's `PERMIT: move; FOR: allies 0; LIMIT: round`. `permit` (the Maneuver's own
+// row) answers the `use` hook point: using the Maneuver lets the creature targeted make one Move
+// now, outside its Opportunity. The record it leaves is read by the map (../maneuver-move.mjs), and
+// `alter` gained the `movement` property for Coordinated Footwork's Step.
+import permit from "./permit.mjs";
+registerKind(permit);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";
