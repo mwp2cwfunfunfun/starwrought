@@ -1540,6 +1540,20 @@ check("PAID_ELSEWHERE: the rows the system pays for another way are named by slu
   must(Object.isFrozen(PAID_ELSEWHERE), "the table is frozen");
 });
 
+check("BUILT_IN_MANEUVERS: the Pass row is the actor's own Pass, under the slug its name gives (0.23.1)", () => {
+  const slug = slugify(plainName("Pass ⓿"));
+  same(slug, "pass", "the row's slug");
+  must(typeof BUILT_IN_MANEUVERS[slug] === "function", "Pass is a built-in: the row Passes, it does not only show its card");
+  must(typeof BUILT_IN_MANEUVERS[slugify(plainName("Pass"))] === "function", "and under the name the pack ships, with no glyph");
+  // The row is another door to the one method: what the built-in returns is what `pass` returns.
+  const calls = [];
+  const actor = { pass: () => { calls.push("pass"); return "passed"; } };
+  same(BUILT_IN_MANEUVERS.pass(actor, {}, {}), "passed", "it answers with the actor's own Pass");
+  same(calls, ["pass"], "called once, with nothing else done beside it");
+  must(!("pass" in PAID_ELSEWHERE), "Pass is not also a row paid elsewhere");
+  for (const name of ["recenter", "raise-a-shield", "pass"]) must(name in BUILT_IN_MANEUVERS, `"${name}" is still a built-in`);
+});
+
 const answerer = () => ({
   type: "character",
   items: [],

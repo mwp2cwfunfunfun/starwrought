@@ -7,6 +7,61 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.23.1 (2026-11-14): the Pass row Passes
+
+Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved and no
+pack document moved. Mike, 2026-11-14, asked what a line in the 0.23.0 notes meant ("The Pass row
+still only posts its card; the tracker's Pass is the control"), and then: "plan it." Planned
+before any code moved (`dazzling-floating-simon.md`). No ruling: it is the
+principle of 0.10.1 ("Actions like Recenter should be an Action first") applied to one more row. A
+patch.
+
+**What was wrong.** The Maneuvers tab lists Pass ⓿ among the Basic Maneuvers, and clicking its name
+only put the Pass card in chat: the Opportunity did not end, the turn did not move and the Combat
+did not count it toward a full circuit of Passes. The real Pass was a separate control in two
+places, the button beside the action pips on the sheet and the combat tracker's, both calling
+`SwActor#pass()`. Since 0.23.0 most rows do something real when clicked, so a click on the Pass row
+read as a Pass and was not one.
+
+**What it does now.** `BUILT_IN_MANEUVERS` in `module/documents/maneuvers.mjs` gains `pass`, the
+actor's own method, so the row is a third door to the one Pass:
+
+- **At your own Opportunity** the row Passes: the Pass card, the turn moves on, and a full circuit
+  of Passes ends the round. A double-click is one Pass (0.23.0 holds a Maneuver to one use at a
+  time).
+- **When a Pass is not possible** it says why and does nothing, by Mike's choice ("Say why, do
+  nothing"), as the sheet's own button and the Raise a Shield row behave: "It is not your
+  Opportunity.", "This character is not in the current encounter.", "... cannot Pass while
+  Preparing. Finish it or abandon it first."
+- The speech bubble beside the name still shows the card and nothing else.
+- Pass is not a Maneuver: it asks nothing of the GM and costs nothing, as before.
+
+No new strings; the method, its three refusals and its card are reused as they were.
+
+### Checked
+
+- `node assets/test_rules.mjs`: 158 checks pass (one new: `pass` is a built-in under the slug the
+  row's name gives, answers with the actor's own Pass, and is not also a row paid elsewhere).
+- `node --check`; `python assets/check_style.py` (one failure, the em-dash in Dwarf Lore B13 of
+  Mike's uncommitted `data/ancestries.xlsx`); `node assets/build_foundry.mjs --no-compile`;
+  `python assets/build_features_docx.py`; `node assets/build_all.mjs --check`.
+- Live, in the test world, from the Pass row on the Maneuvers tab. As the GM: outside an encounter
+  (the notice, no card); the speech bubble (the card only); off-turn (the notice); at Tess's
+  Opportunity with a double-click (one Pass card, the turn to Wren); Wren's row, then the Bandit's
+  own Pass, ending round 1 and beginning round 2; while Preparing (the notice); the sheet's Pass
+  button and the tracker's Pass, both still working. As the player Mike: the row of a character
+  whose Opportunity it was not (the notice), and Wren's row at her Opportunity (the Pass card,
+  the turn to the Bandit), since a Pass writes to the Combat.
+
+### Noticed
+
+- The row says "Frequency: Once per round". Nothing counts Passes per fighter, on the row or on
+  the other two controls; the round ends on a full circuit of them.
+- Restarting Foundry by stopping its processes leaves a lock in `Config/` that the next start
+  refuses for about ten seconds ("already locked by another process"); a second start clears it.
+
+---
+
 ## 0.23.0 (2026-11-14): a Maneuver pays its own cost, and the Combat window forgets old attacks
 
 Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved and no

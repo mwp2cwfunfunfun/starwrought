@@ -965,7 +965,12 @@ back with nothing selected. **Three older defects mended beside it** (found by t
 every Talent's and Maneuver's `migrateData` threw (swallowed by Foundry, logged) from 0.17.0 to
 0.22.0; the Combat Prompt's Commit waited for a Zone from every Posture, so it did nothing for
 Drop Flat and Kneel Behind the Shield (it asks `postureNeedsZone` now); two i18n keys were written
-twice. **Not built**: Pass from its row, Gain Control and Interact paid in two places, a Leap's
+twice. **0.23.1 (Mike, 2026-11-14: "plan it"; no ruling): the Pass row Passes.**
+`BUILT_IN_MANEUVERS.pass` in `documents/maneuvers.mjs` is `actor.pass()`, so the row is a third
+door to the one Pass beside the sheet's button and the tracker's; when a Pass is not possible
+(not the actor's Opportunity, no encounter, Preparing) the method says why and does nothing, and
+so does the row, by Mike's choice, the speech bubble being the door that shows the card. **Not
+built**: Gain Control and Interact paid in two places, a Leap's
 own cost, a row printed with a cost and a Reaction half of its own (it pays the half), and
 `trackActions` over Strikes, Casts and Reactions (it has only ever gated movement in code; the
 hint and FEATURES now say so).
@@ -1604,7 +1609,8 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   three attacks it had left unfinished on purpose.
 - **0.23.0 leaves to the table or to Mike:** Gain Control's row pays ❶ while the Take Control
   button is free, and Interact's row pays ❶ while a draw or a stow from the Equipment tab pays its
-  own, so each is two doors with one price; the Pass row only shows its card; a Leap and a Squeeze
+  own, so each is two doors with one price; the Pass row Passes since 0.23.1, and its "Once per
+  round" is counted by nothing, on the row or on the other two Pass controls; a Leap and a Squeeze
   are charged by the drag as the Move it measures; Grapple prints ⓿ with an Athletics check against
   Evade, which reads like a slip in the sheet; "Track the six-action round" gates movement and the
   sheet's Maneuvers and nothing else, and whether it should gate Strikes, Casts and Reactions is
@@ -1625,6 +1631,15 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-14 (the Pass row Passes, system 0.23.1; no ruling; planned in
+`dazzling-floating-simon.md`, Mike's decision by question: say why and do nothing when a Pass is
+not possible): the Pass ⓿ row of the Basic Maneuvers, which only put its card in chat and so read
+as a Pass that was not one, now the actor's own Pass through the built-in table. Checked by 158
+self-test checks, the gates, and live from the row as the GM and as a player (outside an
+encounter, off-turn, at the Opportunity with a double-click, a full circuit ending the round,
+while Preparing, the speech bubble, and the sheet's and the tracker's Pass still working). No
+handbook and no data moved.
 
 Cleared 2026-11-14 (a Maneuver pays its own cost, and the Combat window forgets old attacks, system
 0.23.0; rulings 231 to 238 in the 0.23.0 changelog entry; planned in `dazzling-floating-simon.md`,

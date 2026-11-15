@@ -111,8 +111,8 @@ export class SwItem extends Item {
    * (ruling 122: a `bonus ... to Aid` applies to a roll made from Aid's Item, and is only offered
    * on a check made without it).
    *
-   * A Maneuver the system implements (Recenter, Raise a Shield; documents/maneuvers.mjs, by the
-   * slug of its plain name) runs that behaviour when used (0.10.1): the Action is the entry
+   * A Maneuver the system implements (Recenter, Raise a Shield, the visor, and Pass since 0.23.1;
+   * documents/maneuvers.mjs, by the slug of its plain name) runs that behaviour when used (0.10.1): the Action is the entry
    * point, the sheet button and the Macro are other doors to the same method. The behaviour pays
    * its own action and posts its own card, so nothing here does either for it.
    * @param {object} [options]

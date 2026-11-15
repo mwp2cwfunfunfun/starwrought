@@ -4,7 +4,7 @@ Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 Novemb
 tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
 to 214; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
-the 0.23.0 entry 231 to 238). System version **0.23.0**.
+the 0.23.0 entry 231 to 238). System version **0.23.1**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -620,8 +620,8 @@ the moment it is used; a Maneuver the sheet gives a Trigger but no ↺ is not a 
 system and pays as any other. Not paid for by the
 row, and said here so nobody is surprised: Gain Control's row pays ❶ and the sheet's Take Control
 button is free, so use one; Interact's row pays ❶ and drawing or stowing from the Equipment tab
-pays its own Interact, so clicking both pays twice; the Pass row only shows its card (the tracker's
-Pass is the control).
+pays its own Interact, so clicking both pays twice. (The Pass row, which only showed its card
+through 0.23.0, Passes since 0.23.1; section 3.)
 
 **Every spend is said in public chat.** When a player-controlled actor (a character, or any actor a
 player owns) spends actions in an encounter, a card names what it was in the book's glyph, how many
@@ -1418,9 +1418,14 @@ the book's Defense & Recovery Maneuvers do once its row is enabled. Using a Mane
 printed cost since 0.23.0 (through 0.22.0 only one with the Reaction trait did); and a few the
 system implements outright (0.10.1): a Maneuver named **Recenter** does what the Overview's Recenter
 button does (the action spent, every Exposed Zone but a Posture's closed, the Bind ended, the
-card), and one named **Raise a Shield** raises the shield in hand, or says there is none. The
-Action is the entry point and the compendium's Recenter Macro uses it; both rows wait on their
-`Enabled?` cells like every other.
+card), one named **Raise a Shield** raises the shield in hand, or says there is none, and since
+0.23.1 one named **Pass** Passes: at your own Opportunity it is the Pass of the sheet's button and
+the tracker's (the Pass card, the turn moving on, the round ending on a full circuit of Passes),
+and when a Pass is not possible (it is not your Opportunity, there is no encounter, you are
+Preparing) it says why and does nothing. Through 0.23.0 the Pass row only put its card in chat,
+which read as a Pass and was not one; the speech bubble beside the name is the door that shows
+the card. The Action is the entry point and the compendium's Recenter Macro uses it; the rows
+wait on their `Enabled?` cells like every other.
 
 A Maneuver Item carries a **Description** (the flavour line), an **Effect** (the rules),
 Prerequisites, Requirements, a Trigger, its cost range, the Reaction trait with its own cost, and
@@ -2766,7 +2771,8 @@ before; the sources and the index are.
   at all; an overspend is said and never refused. A Leap and a Squeeze are charged by the drag as
   the Move it measures, never at their own cost. Gain Control's row and the Take Control button are
   two doors with one price between them, and so are Interact's row and the Equipment tab's draw or
-  stow: the system does not know which you used. The Pass row passes nothing. A Maneuver Prepared
+  stow: the system does not know which you used. The Pass row Passes since 0.23.1, and counts no
+  Passes: its "Once per round" is the book's and nothing enforces it. A Maneuver Prepared
   from its row rolls its check at Finish with whatever is targeted then. With "Track the six-action
   round" off none of this happens. An adversary's sheet shows its abilities' cards and pays nothing.
   A row printed with a cost and a Reaction half of its own ("❶ (⓿↺)", which no shipped row is)

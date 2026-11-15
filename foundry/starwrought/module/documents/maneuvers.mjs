@@ -5,7 +5,8 @@
  * character's Maneuvers tab (a Basic Maneuver straight from the compendium, never copied). Most
  * of them the table resolves by hand: using one posts its card or rolls its check, and since
  * 0.23.0 pays its printed cost in an encounter (documents/item.mjs; through 0.22.0 the pips were
- * the player's to spend). A few the system does itself (Recenter clears the Exposed Zones and ends the Bind; Raise
+ * the player's to spend). A few the system does itself (Recenter clears the Exposed Zones and ends the Bind; Pass
+ * declines the Opportunity, since 0.23.1; Raise
  * a Shield flips the shield), and through 0.10.0 those behaviours were reachable from a sheet
  * button, a card button and a compendium Macro, while the Maneuver Item of the same name, used,
  * posted a card and did nothing: the Action was the one face with no behaviour behind it (the
@@ -35,6 +36,17 @@
 export const BUILT_IN_MANEUVERS = Object.freeze({
   /** Recenter ❶ (PHB v4.10): the actor's own method, which spends the action and posts the card. */
   recenter: actor => actor.recenter(),
+
+  /**
+   * Pass ⓿ (0.23.1; Mike, 2026-11-14, of the row that only showed its card: "plan it"): the
+   * actor's own Pass, the one the sheet's Pass button and the combat tracker's call. At the
+   * actor's Opportunity it posts the Pass card, registers the Pass with the Combat and moves the
+   * turn on, or ends the round on a full circuit of Passes. When a Pass is not possible (it is not
+   * the actor's Opportunity, there is no encounter, the actor is Preparing) the method says why
+   * and does nothing, and so does the row, by Mike's choice: the speech bubble beside the name is
+   * the door that only shows the card. Pass is not a Maneuver: no gate, no cost.
+   */
+  pass: actor => actor.pass(),
 
   /**
    * Raise a Shield ❶ (PHB v4.10): the shield in hand is raised through its own method, which
