@@ -420,11 +420,15 @@ export class SwDamage {
     // Reaching 0 Vigor is Spent: still on your feet, nothing left between the blows and the body.
     if (result.droppedTo0) await actor.setCondition("spent", true);
 
-    // The Zone's critical effect, until the target Recenters. Off-Guard is a condition the system
-    // tracks; the Arms, Legs and Head effects are announced on the card for the table to hold.
+    // The Zone's Critical Hit effect, until the target Recenters (PHB v4.25, the Critical Hit
+    // Effect table). Tracked on the Zone since 0.26.0 (`system.zones.<zone>.critical`): the Arms'
+    // -2 to Attack rolls, the Legs' halved Speed and the Head's lost Reactions are computed from
+    // it, the Torso's Off-Guard is the condition it always was, and a Recenter ends all four.
+    // Through 0.25.0 the Arms, Legs and Head effects were a line on the card for the table to hold.
     if (critical && !graze && total > 0) {
       result.critEffect = SW.ZONE_CRITICALS[zone]?.effect ?? "";
-      if (zone === "torso") await actor.setCondition("offGuard", true);
+      if (typeof actor.setCriticalEffect === "function") await actor.setCriticalEffect(zone, true, { announced: true });
+      else if (zone === "torso") await actor.setCondition("offGuard", true);
     }
 
     // Damage while Dying raises the value by 1, or by 2 from a Critical Hit. A Dying body is past

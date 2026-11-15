@@ -73,6 +73,15 @@ export function prepareOffense(data) {
       value: ARMS_WOUND_PENALTY, type: "situation"
     });
   }
+  // The Arms' Critical Hit effect, until a Recenter (0.26.0; PHB v4.25: "The target takes a -2
+  // Situation penalty to Attack rolls until it Recenters"). A second effect beside an Arms Wound,
+  // so both count (Mike, 2026-11-15: -4): no `source` joins them.
+  if (data.zones.arms.critical) {
+    data.attackModifiers.push({
+      label: game.i18n.format("STARWROUGHT.ZoneCrit.label", { zone: game.i18n.localize(SW.ZONES.arms.label) }),
+      value: SW.ARMS_CRITICAL_PENALTY, type: "situation"
+    });
+  }
   const fatigued = data.parent.conditionValue("fatigued") ?? 0;
   if (fatigued) {
     data.attackModifiers.push({
@@ -127,7 +136,9 @@ export function weaponProficiency(data, slug) {
 export function prepareReactions(data, held) {
   const rigid = held.some(w => w.system.rigid)
     || data.parent.items.some(i => (i.type === "shield") && i.system.held);
-  const blocked = data.zones.head.wounded ? SW.ZONE_CRITICALS.head.first : null;
+  // The Head's Critical Hit effect blocks them too, until a Recenter (0.26.0).
+  const blocked = data.zones.head.wounded ? SW.ZONE_CRITICALS.head.first
+    : (data.zones.head.critical ? SW.ZONE_CRITICALS.head.effect : null);
   const owned = blocked ? {} : ownedReactions(data.parent);
   const out = { owned, rigid, blocked };
   for (const key of Object.keys(SW.REACTIONS)) out[key] = key in owned;

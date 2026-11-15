@@ -252,7 +252,7 @@ kids.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 240
   children: [new TextRun({ text: "You are what you do.", font: HEAD, size: 22, italics: true, color: EMBER })] }));
 kids.push(callout("HOW TO USE THIS", [
   "This book is generated from the game data, not written by hand. Every Constellation, Talent, Maneuver and reference table below is read straight out of assets/trees.json, assets/roster.json and assets/actions.json, so it is never out of step with the app, the Foundry system, or the character sheet.",
-  "The rules themselves live in the Player's Handbook (v4.24), which is written by hand. The short paragraphs between the tables restate it; where the two ever disagree, the handbook wins and this file needs a rebuild.",
+  "The rules themselves live in the Player's Handbook (v4.25), which is written by hand. The short paragraphs between the tables restate it; where the two ever disagree on a rule, the handbook wins and this file needs a rebuild. What each Talent and each Maneuver says is no longer in the handbook: since v4.25 the spreadsheets these tables are read from are their only source.",
 ], PAPER, TEAL));
 kids.push(para([run("Contents: ", { bold: true }), run("the character-creation menus (Ancestries and Bloodlines, Cultures, Backgrounds, Callings, Defenses), then every Constellation in the game with its full Talent list and star map, then the reference appendices: conditions and Zones, Vigor and Wounds, traits, Maneuvers and Activities, equipment, and the damage tables.")]));
 kids.push(new Paragraph({ children: [new TableOfContents("Contents", { hyperlink: true, headingStyleRange: "1-3" })] }));

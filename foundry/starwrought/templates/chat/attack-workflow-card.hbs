@@ -27,19 +27,9 @@
   {{!-- Where the Exchange stands, in one line. --}}
   <p class="sw-attack-status sw-attack-status-{{phase}}">{{status}}</p>
 
-  {{!-- A player attacker rolls Attack once and that one roll is read against every defender's
-       Threshold (brief, "Who rolls"), so the total is printed once, here, not per target. --}}
-  {{#if attackRoll}}<p class="sw-attack-roll"><i class="fa-solid fa-dice-d20"></i> {{attackRoll}}</p>{{/if}}
-
-  {{#if attackerButton}}
-  <div class="sw-card-buttons">
-    <button type="button" data-sw-action="{{attackerButton.action}}" data-workflow-id="{{workflowId}}"
-            data-target-id="{{attackerButton.targetId}}" data-owner-uuid="{{attackerUuid}}">
-      <i class="{{attackerButton.icon}}"></i> {{attackerButton.label}}
-    </button>
-  </div>
-  {{/if}}
-
+  {{!-- One die for each defender (0.26.0; PHB v4.25, Area Attacks): every row prints its own roll
+       and carries its own Roll button. Through 0.25.0 a player attacker's one roll was printed
+       once, here, above one button. --}}
   <ul class="sw-attack-targets">
     {{#each targets as |t|}}
     <li class="sw-attack-target{{#if t.outcome}} sw-attack-outcome-{{t.outcome.key}}{{/if}}" data-target-id="{{t.id}}">
@@ -52,15 +42,18 @@
         {{#if t.threshold}}<span class="sw-attack-vs" data-sw-threshold-for="{{t.actorUuid}}">{{t.threshold}}</span>{{/if}}
       </div>
       {{#if t.answer}}<p class="sw-card-note sw-attack-answer">{{t.answer}}</p>{{/if}}
-      {{!-- A player-controlled defender of an adversary's Blow rolls Defense; that roll is theirs. --}}
+      {{!-- The pairing's die: the attacker's Attack roll against this defender, or the Defense roll
+           of a player-controlled defender of an adversary's Blow. --}}
       {{#if t.roll}}<p class="sw-card-note sw-attack-roll"><i class="fa-solid fa-dice-d20"></i> {{t.roll}}</p>{{/if}}
       {{#if t.outcome}}
       <div class="sw-card-outcome sw-outcome-{{t.outcome.key}} sw-attack-outcome-{{t.outcome.key}}">{{t.outcome.label}}</div>
       {{/if}}
+      {{!-- The button is for whoever acts for its owner: the defender for a choice or a Defense
+           roll, the ATTACKER for an Attack roll at this defender. --}}
       {{#if t.button}}
       <div class="sw-card-buttons">
         <button type="button" data-sw-action="{{t.button.action}}" data-workflow-id="{{@root.workflowId}}"
-                data-target-id="{{t.id}}" data-owner-uuid="{{t.actorUuid}}">
+                data-target-id="{{t.id}}" data-owner-uuid="{{t.button.ownerUuid}}"{{#if t.button.tooltip}} data-tooltip="{{t.button.tooltip}}"{{/if}}>
           <i class="{{t.button.icon}}"></i> {{t.button.label}}
         </button>
       </div>

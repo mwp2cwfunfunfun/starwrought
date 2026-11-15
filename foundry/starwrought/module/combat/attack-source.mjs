@@ -212,7 +212,10 @@ export function meleeAnswers(maneuver) {
  * Controlled penalty (0.19.0; PHB v4.24, The Bind: "Attacks with the Controlled implement take a
  * −2 Situation penalty") while a foe Controls the implement the row attacks with: the row whose
  * name is the Bind's `mine`, or the adversary's only row when the names do not match. A character's
- * Strike takes the same penalty as a modifier (documents/actor/attack.mjs).
+ * Strike takes the same penalty as a modifier (documents/actor/attack.mjs). And less the Arms'
+ * Critical Hit effect while it runs (0.26.0; PHB v4.25: "-2 Situation penalty to Attack rolls
+ * until it Recenters"; `system.zones.arms.critical`), which a character's attack modifiers carry
+ * (data/character/offense.mjs).
  */
 export function attackThreshold(attacker, maneuver) {
   const item = maneuver?.attackId ? attacker.items.get(maneuver.attackId) : null;
@@ -221,7 +224,9 @@ export function attackThreshold(attacker, maneuver) {
   const value = item?.system?.attack?.threshold ?? row?.threshold ?? row?.thresholds?.[0];
   const n = Number(value);
   const base = Number.isFinite(n) ? n : 10;
-  return base + (controlledPenaltyFor(attacker, item?.name ?? row?.name ?? maneuver?.weaponName, rows.length) ? SW.CONTROLLED_PENALTY : 0);
+  return base
+    + (controlledPenaltyFor(attacker, item?.name ?? row?.name ?? maneuver?.weaponName, rows.length) ? SW.CONTROLLED_PENALTY : 0)
+    + (attacker.system.zones?.arms?.critical ? SW.ARMS_CRITICAL_PENALTY : 0);
 }
 
 /**
@@ -328,14 +333,30 @@ export function resolveArgs(attacker, maneuver) {
  *  - A weapon: `rollAttack` with the Strike locked (`blind`, `workflow`).
  *  - A spell: `castSpell` with the Cast locked, already paid at the declaration.
  *  - An attack row (adversary against adversary): a flat d20 for the GM, no Threshold.
+ *
+ * One die for each defender since 0.26.0, so the dialog says whose it is: the defender's name
+ * from the attack's own record, on the Target's Defense line and in the window's title (the
+ * token named by a uuid may be on another scene, where the roll would otherwise read the user's
+ * current target, and an adversary's flat roll named nobody).
  * @param {Actor} attacker
  * @param {object} maneuver
  * @param {object} target     The pairing's target row.
  * @param {{id: string, targetId: string}} link
+ * @param {object} [options]
+ * @param {boolean} [options.dialog=true]  False rolls with no dialog (a Shift-click).
+ * @param {boolean} [options.first=true]   Is this the attack's first die? What is said once for
+ *   the attack (a Grabbed fighter's Unwieldy weapon) is said with it.
  * @returns {Promise<object|null>}
  */
-export async function rollBlind(attacker, maneuver, target, link) {
+export async function rollBlind(attacker, maneuver, target, link, { dialog = true, first = true } = {}) {
   const targetUuid = target.tokenUuid || target.actorUuid;
+  const named = describe(maneuver);
+  const against = {
+    targetName: target.name ?? "",
+    dialogTitle: target.name
+      ? game.i18n.format("STARWROUGHT.Attack.rollTitle", { attack: named.name || attacker.name, target: target.name })
+      : undefined
+  };
   if (maneuver.source === "spell") {
     if (typeof attacker.castSpell !== "function") return null;
     return attacker.castSpell(maneuver.spell?.talentId, {
@@ -343,9 +364,10 @@ export async function rollBlind(attacker, maneuver, target, link) {
       prepared: true,
       blind: true,
       targetUuid,
-      dialog: true,
+      dialog,
       postCard: false,
-      workflow: link
+      workflow: link,
+      ...against
     });
   }
   if (maneuver.weaponId && attacker.items.get(maneuver.weaponId)) {
@@ -356,11 +378,13 @@ export async function rollBlind(attacker, maneuver, target, link) {
       reaction: maneuver.reaction ?? null,
       thrown: (maneuver.thrown === null || maneuver.thrown === undefined) ? undefined : !!maneuver.thrown,
       targetUuid,
-      dialog: true,
+      dialog,
       lockStrike: true,
       postCard: false,
       blind: true,
-      workflow: link
+      firstDie: first,
+      workflow: link,
+      ...against
     });
   }
   // Adversary against adversary: a flat d20 for the GM, the Strike locked, no Threshold.
@@ -374,11 +398,21 @@ export async function rollBlind(attacker, maneuver, target, link) {
     subtitle: `${localize(kind.label)} ${SW.ACTION_GLYPHS[kind.cost] ?? ""}`.trim(),
     strike: maneuver.strike,
     lockStrike: true,
-    dialog: true,
+    dialog,
     postCard: false,
+    // An adversary rolls flat; the Arms' Critical Hit effect still reaches its die (0.26.0).
+    modifiers: attacker.system.zones?.arms?.critical
+      ? [{
+        label: game.i18n.format("STARWROUGHT.ZoneCrit.label", { zone: localize(SW.ZONES.arms.label) }),
+        value: SW.ARMS_CRITICAL_PENALTY, type: "situation"
+      }]
+      : [],
     flatBonus: 0,
     threshold: null,
+    // The defender committed in the prompt: the dialog names them and shows no Defense (0.26.0).
+    targetDefense: target.name ? { key: null, label: "", threshold: null, unavailable: null, hidden: true } : null,
     defenseForced: true,
-    workflow: link
+    workflow: link,
+    ...against
   });
 }

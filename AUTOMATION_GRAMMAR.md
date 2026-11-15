@@ -859,8 +859,8 @@ written on the Maneuver's row.
   Threshold, wherever one is shown (the party's Skills grid, the Relevant Check picker), is 10 plus
   the check's own modifier, so it moves too. **Both of the player's paths are covered:** a player
   defending against an adversary's attack rolls their Defense, and the roll carries the bonus (and
-  writes the LIMIT mark); a player attacking a player rolls once against the defender's Threshold,
-  and the Threshold the coordinator reads carries it. A rule that needs the attack (`IFT:` Threats,
+  writes the LIMIT mark); a player attacking a player rolls against the defender's Threshold (one
+  die for each defender since 0.26.0), and the Threshold the coordinator reads carries it. A rule that needs the attack (`IFT:` Threats,
   `IFT: TRAIT`, `IFT: CHECK`), the map (`FOR` reaching others, `ALLIES(...)`, `SEEN`), the other
   party (`IFT: MARKED`) or the round (`LIMIT`) is read at those moments and nowhere they are unknown.
 - **Position is read where a token is known.** The sheet's Defense Threshold is computed without
@@ -882,9 +882,13 @@ written on the Maneuver's row.
   both go out when either resolves. Nothing is applied unasked, and nothing is remembered past that
   one roll.
 - **The other party is read per pairing** (ruling 175). A Defense roll and a Threshold read know
-  the attacker; a Strike's one blind die knows nobody, so a rule about the defender (`IFT: MARKED`)
-  is read as each pairing resolves and added to that pairing's total, listed on its card and kept
-  for a reroll of it. A Strike with no target rolls against a typed Threshold and has no other party.
+  the attacker; a Strike's blind die knows nobody (it is thrown before any Threshold is read; one
+  for each defender since 0.26.0, where through 0.25.0 one die was read against them all), so a
+  rule about the defender (`IFT: MARKED`) is read as each pairing resolves and added to that
+  pairing's total, listed on its card and kept for a reroll of it. **Each of those dice is its own
+  roll**: the attacker's own `LIMIT:` line, a pending result an ally gave and an armed claim are
+  used by the first die and are gone for the next, and the dice are thrown one at a time so that
+  holds. Outside an encounter a `LIMIT: round` line has no round to count and every die carries it. A Strike with no target rolls against a typed Threshold and has no other party.
 - **A mark names one creature** (ruling 176). `flags.starwrought.rules.marks.<carrier>` on the owner:
   the targeted token, its name and the Combat it was made in. It holds while that Combat is the
   viewed one; made outside an encounter it holds until the next encounter starts or the Maneuver is

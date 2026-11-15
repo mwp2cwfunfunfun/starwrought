@@ -1,8 +1,8 @@
 {
   "_comment": "The Player's Handbook version the rest of the repository has been synced to. assets/build_all.mjs compares this against the highest-numbered Starwrought_Players_Handbook_v*.docx and refuses to pass when they differ, because a handbook change is not finished until the spreadsheets, the web app, the Foundry system, its FEATURES.md and its CHANGELOG.md have all caught up.",
-  "phb": "4.24",
-  "syncedOn": "2026-11-08",
-  "syncedBy": "foundry system v0.20.0",
+  "phb": "4.25",
+  "syncedOn": "2026-11-15",
+  "syncedBy": "foundry system v0.26.0",
   "consumers": [
     "data/*.xlsx",
     "Starwrought_App.html",
@@ -11,6 +11,6 @@
     "foundry/starwrought/FEATURES.md",
     "foundry/starwrought/CHANGELOG.md"
   ],
-  "phbFile": "Starwrought_Players_Handbook_v4.24.docx",
-  "phbSha256": "8fdd186cad6ea20ff7188614b89c857632c039df8659eaea80eea2333bd07264"
+  "phbFile": "Starwrought_Players_Handbook_v4.25.docx",
+  "phbSha256": "50d7b2998753a460a2b28383a49d1d82de286d33b9275da6989b5039802c60f5"
 }

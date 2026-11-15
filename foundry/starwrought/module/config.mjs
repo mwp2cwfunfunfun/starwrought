@@ -43,7 +43,7 @@ export {
 export { DEGREES, DEGREE_ORDER, ATTACK_OUTCOMES, degreeOf, invertDegree } from "./config/degrees.mjs";
 
 export {
-  ZONES, DEFAULT_ZONE, ZONE_CRITICALS, WOUND_CAPACITY, TORSO_WOUND_BLEED,
+  ZONES, DEFAULT_ZONE, ZONE_CRITICALS, ARMS_CRITICAL_PENALTY, WOUND_CAPACITY, TORSO_WOUND_BLEED,
   PHYSICAL_DAMAGE, DAMAGE_TYPES, DAMAGE_ABBR, DELIVERIES, ARMOR_TYPES, LEGACY_ARMOR_TYPES
 } from "./config/zones.mjs";
 
@@ -70,7 +70,10 @@ export {
   LEGACY_ACTION_COSTS, actionCostValue, actionCostOptions, parseActionCost, costGlyphs
 } from "./config/actions.mjs";
 
-export { DEFAULT_SPEED, STEP_DIVISOR, RUSH_MULTIPLIER, RUSH_COST, LEAP_STEPS, CRAWL_DIVISOR } from "./config/movement.mjs";
+export {
+  DEFAULT_SPEED, STEP_DIVISOR, RUSH_MULTIPLIER, RUSH_COST, LEAP_STEPS, CRAWL_DIVISOR,
+  combineFactors, applyFactors, combineDifficulties, speedAfterLegs
+} from "./config/movement.mjs";
 
 export { AURA_AUDIENCES, AURA_COLORS, REACH_COLORS } from "./config/auras.mjs";
 

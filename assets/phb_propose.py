@@ -24,6 +24,8 @@ table row:
                 text of one of its cells ("=Berserker") or of several that must all sit in it
                 (["Berserker", "Rage"]); the cell is the `col`th of that row. For a cell that says
                 "3" like a dozen others. `old` None rewrites the cell.
+                A cell whose paragraph is empty (no run at all) takes `old` None and is filled:
+                the text is inserted in the formatting of the last run of the cell above it.
   row           (row_anchor, position, cells): a new table row "before" or "after" the row named
                 the way `cell` names one (["Comfort", "You can sleep in it without waking
                 fatigued."]), cut from that row's own XML so it keeps the cell widths, borders,
@@ -32,6 +34,10 @@ table row:
                 paragraph holding one run. The row mark (w:trPr/w:ins), each paragraph mark and
                 each run are marked inserted, so Word shows the row as one insertion and Reject
                 removes it whole.
+  insert        (anchor, before, text): an inserted run and nothing struck, for one letter or a
+                few lost words. `before` None puts it at the start of the paragraph, in the first
+                run's formatting; otherwise `before` must occur once in the paragraph's visible
+                text and begin inside one run, which is split there.
   append        (anchor, addition): an inserted run at the end of the paragraph.
   insert_after  (anchor, text): a new paragraph after the anchor's, in the anchor's style and
                 numbering, its paragraph mark and text both marked inserted.
@@ -41,7 +47,17 @@ table row:
         python assets/phb_propose.py <in.docx> <out.docx> --proposal attended
         python assets/phb_propose.py <in.docx> <out.docx> --proposal on-the-road
         python assets/phb_propose.py <in.docx> <out.docx> --proposal downtime
+        python assets/phb_propose.py <edition.docx> --in-place --backup backup/pre-0.26.0 --proposal v4.25-redline
   Several proposals stack into one file, applied in the order given.
+
+--in-place (Mike, 2026-11-15, on the v4.25 sync: "please redline the actual Word doc with
+recommended changes"; the v4.24 Preparing proposal, a copy beside the edition, was never merged):
+the tracked changes are written into the edition itself, so Mike accepts or rejects in the file he
+works in. The untouched edition is first copied to the folder `--backup` names (required; an
+existing backup of the same name is never overwritten), the result is written to a temporary
+file and parsed as XML before it replaces the edition, and the run is refused while Word holds
+the file open (its `~$` lock file, or a write that the system denies). The drift check then sees
+the same-numbered file changed, which is true: `build_all.mjs --accept-phb` records it.
 
 The proposals are the PROPOSALS table below, one entry per proposal this script has produced, so
 a reviewer can read what is being proposed without opening Word.
@@ -550,6 +566,89 @@ PROPOSALS["thresholds"] = {
     "insert_after": [],
 }
 
+PROPOSALS["v4.25-redline"] = {
+    # The v4.25 redline (Mike, 2026-11-15, on the v4.25 sync's plan; system 0.26.0): "also for the
+    # next release, redline the PHB with the Subordinate Maneuvers rule", in Chapter 8's Maneuvers
+    # paragraph by his choice; and, of the defects the sync found, "please redline the actual Word
+    # doc with recommended changes". Written with --in-place, into the edition itself. Every edit
+    # is a recommendation: the Subordinate rule is his own (system 0.25.0, standing); Preparing's
+    # two actions is the v4.24 proposal he never merged (Chapter 2 and the Prepared trait already
+    # say two; the system spends two since 0.20.0); Supine's Effects cell is a placeholder for him
+    # to rewrite, and the system implements nothing of it until he settles what Supine does
+    # (ruling 213). The cover still reads v4.23 in the v4.25 file, hence "from".
+    "from": "4.23",
+    "replace": [
+        # The cover's edition line: "v4.2" and "3" are two runs, so only the digit moves.
+        ("PLAYTEST EDITION v4.23", "3", "5"),
+        # Chapter 4's procedure, two places in one paragraph.
+        ("Preparing a three-action (or greater) Maneuver", "Spend one now", "Spend two now"),
+        ("Preparing a three-action (or greater) Maneuver", "losing the action already spent",
+         "losing the actions already spent"),
+        # The Glossary's Prepared entry.
+        ("A Maneuver of three or more actions: one action now", "one action now", "two actions now"),
+        # Area Attacks: the run reads "Attack  threshold", two spaces and a small t.
+        ("Unless the Talent specifies otherwise, make one roll per creature", "Attack  threshold", "Attack Threshold"),
+        # Chapter 3: a Golarion people. Serrovane is the book's own Culture. The plural first, so
+        # the singular is then the one "Varisian" left in the paragraph's visible text.
+        ("Culture is deliberately separate from Ancestry", "Varisians", "Serrovanians"),
+        ("Culture is deliberately separate from Ancestry", "Varisian", "Serrovanian"),
+        # Counter left the book in v4.21, and the sentences either side already say this.
+        ("Reactions cannot trigger other Reactions.", " You cannot Counter a Counter or an Intercept.", ""),
+        # Chapter 5's Flares: Train is an Endeavor since v4.24.
+        ("Downtime training: work with a teacher, rival, or manual", "Train Activity", "Train Endeavor"),
+    ],
+    "rewrite": [],
+    "cell": [
+        (["Preparing"], 1, "one action spent", "two actions spent"),
+        # The Exploration trait says half Speed; the Activities give Full, Half or Double.
+        (["Exploration"], 1, "you can Move up to half your Speed.",
+         "you travel at the Speed the Activity lists: Full, Half, or Double your Travel Speed."),
+        # The Supine row's Effects cell is empty. Mike's own rules for it (2026-11-15, sent while
+        # the sync was being built: "here are some potential Supine rules; review them and include
+        # them in the redline with any suggested changes"), written in the table's one-cell style,
+        # each piece in the formatting of the run of the Prone row above that it matches (0 a
+        # condition's name, 1 plain, 2 a trait, 4 a Defense, 8 an action glyph). Two insertions,
+        # so the second can be rejected alone: his rules (with Roll Over, the Maneuver he asked
+        # for, named as the way to Prone), then one sentence of Claude's, so that a rule naming
+        # Prone is not read to mean Supine. Filled BEFORE the Prone row below is touched, whose
+        # runs it borrows.
+        (["Supine"], 1, None, [
+            [
+                ("Lying on your back. ", 1), ("Off-Guard", 0), ("; -2 Situation to ", 1), ("Attacks", 2),
+                (", except melee ", 1), ("Attacks", 2),
+                (" against adjacent creatures (Grapples included); +2 Situation to ", 1), ("Evade", 4),
+                (" vs. ranged ", 1), ("Attacks", 2),
+                (". You cannot Move, Step, Rush, Leap, or Crawl; forced movement affects you normally. Stand ", 1),
+                ("❶", 8), (" to clear (you can stand directly from your back), or Roll Over ", 1), ("❶", 8),
+                (" to become ", 1), ("Prone", 0), (".", 1),
+            ],
+            [
+                (" ", 1), ("Supine", 0), (" is not ", 1), ("Prone", 0),
+                (": a rule that names one does not mean the other.", 1),
+            ],
+        ]),
+        # Prone's own -2 is untyped beside Supine's; the table types every other number.
+        (["Prone"], 1, ", -2 to ", ", -2 Situation to "),
+    ],
+    "row": [],
+    "insert": [
+        # The Modifiers paragraph lost its opening words between v4.24 and v4.25.
+        ("count each underlying circumstance or effect only once", None, "When calculating Modifiers, "),
+        # "Ordinary rest is not a Endeavor": the "a" is a run of its own.
+        ("Ordinary rest is not a", " Endeavor. While a night", "n"),
+    ],
+    "append": [
+        (
+            "A Maneuver has a listed action cost and may have Traits, Requirements, and a Trigger",
+            " When a Maneuver has you perform another Maneuver as part of it, that second Maneuver is"
+            " subordinate: you pay only the listed cost of the Maneuver you are performing, and the"
+            " subordinate Maneuver costs no additional actions unless stated otherwise. It keeps its own"
+            " Requirements, checks, and effects."
+        ),
+    ],
+    "insert_after": [],
+}
+
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
 ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
 CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)
@@ -715,10 +814,114 @@ def cell_replace_tracked(xml, row_anchor, col, old, new, rev):
     start = row_start + cells[col].start() + cm.start()
     end = start + len(cm.group(0))
     label = "%s, cell %d" % ("/".join(n.lstrip("=") for n in names), col)
-    # `old` None: the whole cell is rewritten, for a header Word has split into runs.
+    # `old` None: the whole cell is rewritten, for a header Word has split into runs; or, when the
+    # cell's paragraph holds no run at all, filled, in the formatting of the cell above it.
     if old is None:
+        if not RUN_RE.search(cm.group(0)):
+            return fill_at(xml, start, end, new, rev, above_rprs(xml, row_start, col), label)
         return rewrite_at(xml, start, end, new, rev, label)
     return replace_at(xml, start, end, old, new, rev, label)
+
+
+def above_rprs(xml, row_start, col):
+    """The formatting of each run in the `col`th cell of the row before the one at row_start."""
+    starts = [m.start() for m in ROW_START_RE.finditer(xml, 0, row_start)]
+    if not starts:
+        return []
+    row_end = xml.find("</w:tr>", starts[-1])
+    if (row_end < 0) or (row_end > row_start):
+        return []
+    cells = list(CELL_RE.finditer(xml[starts[-1]: row_end]))
+    if col >= len(cells):
+        return []
+    out = []
+    for run in RUN_RE.findall(cells[col].group(0)):
+        rpr = RPR_RE.search(run)
+        out.append(rpr.group(0) if rpr else "")
+    return out
+
+
+def fill_at(xml, start, end, text, rev, rprs=(), label=""):
+    """
+    Inserted text in the empty paragraph that spans xml[start:end]. `text` is a string, set in the
+    formatting of the last run of the cell above (`rprs`, one per run of that cell); or a list of
+    groups, each a list of (text, k) pieces where k names the run of the cell above whose
+    formatting the piece takes (a condition's name in the condition's style, a glyph in the
+    glyph's), and each group is one insertion, so a reviewer can accept one and reject another.
+    """
+    paragraph = xml[start:end]
+    if RUN_RE.search(paragraph):
+        raise SystemExit("the paragraph for %r is not empty; replace or rewrite it" % (label or "?")[:40])
+    rprs = list(rprs)
+    plain = rprs[-1] if rprs else ""
+    if isinstance(text, str):
+        groups = [[(text, None)]]
+    else:
+        groups = text
+    inserted = ""
+    for group in groups:
+        runs = ""
+        for piece, k in group:
+            if (k is not None) and not (0 <= k < len(rprs)):
+                raise SystemExit("the cell above %r has %d runs, no run %r to take formatting from" % ((label or "?")[:40], len(rprs), k))
+            runs += run_of(plain if k is None else rprs[k], piece)
+        inserted += rev.ins(runs)
+    if paragraph.endswith("/>"):
+        edited = paragraph[:-2] + ">" + inserted + "</w:p>"
+    else:
+        edited = paragraph[: paragraph.rfind("</w:p>")] + inserted + "</w:p>"
+    return xml[:start] + edited + xml[end:]
+
+
+def insert_tracked(xml, anchor, before, text, rev):
+    """
+    An inserted run and nothing struck. `before` None: at the start of the paragraph, in the first
+    run's formatting. Otherwise `before` must occur once in the paragraph's visible text and begin
+    inside one run, which is split there; the insertion takes that run's formatting.
+    """
+    match = one_paragraph(xml, anchor)
+    paragraph = match.group(0)
+    runs = list(RUN_RE.finditer(paragraph))
+    if not runs:
+        raise SystemExit("no runs in the paragraph for anchor %r" % anchor[:60])
+    if before is None:
+        rpr = RPR_RE.search(runs[0].group(0))
+        rpr = rpr.group(0) if rpr else ""
+        at = runs[0].start()
+        edited = paragraph[:at] + rev.ins(run_of(rpr, text)) + paragraph[at:]
+        return xml[: match.start()] + edited + xml[match.end():]
+    if visible(paragraph).count(before) != 1:
+        raise SystemExit("%r appears %d times in the paragraph for %r, wanted 1"
+                         % (before[:50], visible(paragraph).count(before), anchor[:40]))
+    # Where `before` begins in the paragraph's text, run by run. A struck run holds w:delText, which
+    # TEXT_RE does not read, so the running text is what a reader sees.
+    texts = ["".join(unescape(t.group(2)) for t in TEXT_RE.finditer(rm.group(0))) for rm in runs]
+    at = "".join(texts).find(before)
+    if at < 0:
+        raise SystemExit("%r was not found run by run in the paragraph for %r" % (before[:50], anchor[:40]))
+    seen = 0
+    for rm, run_text in zip(runs, texts):
+        if not (seen <= at < seen + len(run_text)):
+            seen += len(run_text)
+            continue
+        offset = at - seen
+        run = rm.group(0)
+        if len(list(TEXT_RE.finditer(run))) != 1:
+            raise SystemExit("the run where %r begins holds more than one text; edit it by hand" % before[:40])
+        rpr = RPR_RE.search(run)
+        rpr = rpr.group(0) if rpr else ""
+        rest = HARMLESS_RE.sub("", TEXT_RE.sub("", run[run.find(">") + 1: run.rfind("</w:r>")].replace(rpr, "", 1)))
+        if rest.strip():
+            raise SystemExit("the run holding %r carries more than text (%r); edit it by hand" % (before[:40], rest[:80]))
+        pre, post = run_text[:offset], run_text[offset:]
+        pieces = []
+        if pre:
+            pieces.append(run_of(rpr, pre))
+        pieces.append(rev.ins(run_of(rpr, text)))
+        pieces.append(run_of(rpr, post))
+        edited = paragraph[: rm.start()] + "".join(pieces) + paragraph[rm.end():]
+        return xml[: match.start()] + edited + xml[match.end():]
+    raise SystemExit("%r begins in no single run of the paragraph for %r" % (before[:50], anchor[:40]))
 
 
 def rewrite_tracked(xml, anchor, new, rev):
@@ -861,19 +1064,51 @@ def main():
             names.extend(n for n in a.split("=", 1)[1].split(",") if n)
             argv.remove(a)
     force = "--force" in argv
+    in_place = "--in-place" in argv
+    backup = None
+    if "--backup" in argv:
+        i = argv.index("--backup")
+        if i + 1 >= len(argv):
+            raise SystemExit(__doc__ + "\n--backup needs a folder")
+        backup = argv[i + 1]
+        del argv[i: i + 2]
     args = [a for a in argv if not a.startswith("--")]
     src = args[0] if len(args) > 0 else None
-    dest = args[1] if len(args) > 1 else None
+    dest = src if in_place else (args[1] if len(args) > 1 else None)
     unknown = [n for n in names if n not in PROPOSALS]
     if not src or not dest or not names or unknown:
         raise SystemExit(__doc__ + "\nknown proposals: " + ", ".join(sorted(PROPOSALS)))
 
-    if os.path.abspath(src) == os.path.abspath(dest):
-        raise SystemExit("source and destination are the same file; a proposal is a new file")
-    if EDITION_PATTERN.match(os.path.basename(dest)):
-        raise SystemExit("%s would be taken for an edition by build_all.mjs; name a proposal <name>_proposal.docx" % dest)
-    if os.path.exists(dest) and not force:
-        raise SystemExit("%s already exists; pass --force to replace it" % dest)
+    if in_place:
+        # The edition itself (see the docstring): backed up first, never written while Word has it.
+        if not backup:
+            raise SystemExit("--in-place needs --backup <folder>: the untouched edition is copied there first")
+        folder, base = os.path.split(os.path.abspath(src))
+        if os.path.exists(os.path.join(folder, "~$" + base[2:])):
+            raise SystemExit("%s is open in Word (its ~$ lock file is there); close it and run again" % base)
+        try:
+            with open(src, "r+b"):
+                pass
+        except OSError as err:
+            raise SystemExit("%s cannot be opened for writing (%s); close it and run again" % (base, err))
+        kept = os.path.join(backup, base)
+        # The backup is another file than the edition: a --backup that names the edition's own
+        # folder would compare the edition with itself, pass, and leave no copy at all.
+        if os.path.abspath(kept) == os.path.abspath(src):
+            raise SystemExit("--backup names the edition's own folder; give another one (backup/pre-<version>)")
+        # A backup is never overwritten. One that already holds this very file (the edition was
+        # put back from it, to redline again) is simply the backup.
+        if os.path.exists(kept):
+            with open(kept, "rb") as a, open(src, "rb") as b:
+                if a.read() != b.read():
+                    raise SystemExit("%s already exists and differs from %s; a backup is never overwritten" % (kept, base))
+    else:
+        if os.path.abspath(src) == os.path.abspath(dest):
+            raise SystemExit("source and destination are the same file; a proposal is a new file (or pass --in-place)")
+        if EDITION_PATTERN.match(os.path.basename(dest)):
+            raise SystemExit("%s would be taken for an edition by build_all.mjs; name a proposal <name>_proposal.docx" % dest)
+        if os.path.exists(dest) and not force:
+            raise SystemExit("%s already exists; pass --force to replace it" % dest)
 
     with zipfile.ZipFile(src) as z:
         entries = [(i, z.read(i.filename)) for i in z.infolist()]
@@ -903,6 +1138,9 @@ def main():
             xml = row_insert_tracked(xml, row_anchor, position, cells, rev)
             shown = "/".join(row_anchor) if isinstance(row_anchor, (list, tuple)) else row_anchor
             print("  row:            %s row %s: %r" % (position, shown[:56], cells))
+        for anchor, before_text, text in proposal.get("insert", []):
+            xml = insert_tracked(xml, anchor, before_text, text, rev)
+            print("  inserted in:    %s...: %r" % (anchor.strip()[:44], text))
         for anchor, addition in proposal.get("append", []):
             xml = append_tracked(xml, anchor, addition, rev)
             print("  appended to:    %s..." % anchor.strip()[:56])
@@ -917,6 +1155,23 @@ def main():
             if info.filename == "word/document.xml":
                 data = xml.encode("utf-8")
             out.writestr(info, data)
+    if in_place:
+        # The result must still be XML before it takes the edition's place, and the untouched
+        # edition must be safe in the backup folder first.
+        import shutil
+        from xml.dom import minidom
+        try:
+            with zipfile.ZipFile(tmp) as z:
+                minidom.parseString(z.read("word/document.xml"))
+        except Exception as err:
+            os.remove(tmp)
+            raise SystemExit("the redlined document.xml does not parse (%s); the edition is untouched" % err)
+        os.makedirs(backup, exist_ok=True)
+        if not os.path.exists(kept):
+            shutil.copy2(src, kept)
+            print("backed up %s" % kept)
+        else:
+            print("backup already holds this file: %s" % kept)
     os.replace(tmp, dest)
     print("wrote %s" % dest)
 

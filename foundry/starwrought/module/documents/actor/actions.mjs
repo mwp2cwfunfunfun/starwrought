@@ -345,10 +345,12 @@ export const ActionsMixin = Base => class extends Base {
     if (prep.kind === "strike" && prep.weaponId) {
       const targetUuid = prep.targetUuid
         || (prep.targetTokenId ? (canvas.tokens?.get(prep.targetTokenId)?.document.uuid ?? "") : "");
+      // The Strike declares against every target it was aimed at (0.26.0), as a Cast does.
       return this.rollAttack(prep.weaponId, {
         strike: SW.STRIKE_KINDS[prep.strike] ? prep.strike : "committed",
         prepared: true,
-        targetUuid
+        targetUuid,
+        targetUuids: Array.isArray(prep.targetUuids) ? prep.targetUuids : []
       });
     }
     if (prep.kind === "cast" && prep.talentId && (typeof this.castSpell === "function")) {

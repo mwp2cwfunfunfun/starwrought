@@ -1,11 +1,13 @@
 # STARWROUGHT for Foundry VTT: what it actually does
 
-Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 November 2026, every
-tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
-to 214; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
+Rules content built from **Player's Handbook v4.25** (Mike's edition of 15 November 2026, with the
+recommended changes this sync redlined into it read as accepted; `v4.25-sync-report.md` in the
+project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
+`v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
-the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244 and the 0.25.0 entry 245 to 251). System
-version **0.25.0**.
+the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244 and the 0.25.0 entry 245 to 251). Since
+v4.25 the handbook no longer prints what each Talent and each Maneuver says: `data/*.xlsx` is
+their only source. System version **0.26.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -192,7 +194,8 @@ anything it depends on changes.
   next step.
 - **Proficiency Rank** from points in the Constellation and character level: Trained +3 (1 point,
   level 1), Expert +6 (4 points, level 5), Master +9 (9 points, level 10), Legendary +12 (16
-  points, level 15). Untrained is +0. The next rank's remaining cost, in points and in levels, is
+  points, level 15). Untrained is +0. (PHB v4.25's table counts "Talents in Constellation"; every
+  Talent costs one point, so the two counts are the same number.) The next rank's remaining cost, in points and in levels, is
   shown beside each Constellation.
 - **The Origin is pooled.** Ancestry, Bloodline and Culture are authored as separate skies but
   progress as one Constellation, so their points share a rank. Since 0.11.0 the Origin is a
@@ -462,9 +465,22 @@ came before Resistance and the doubling before Protection.
   Committed Hit lands on the Torso or on an Exposed Zone of the attacker's choice. A Graze goes
   where the defender says. A Critical Hit goes where the attacker chooses, and the picker opens on
   an Exposed Zone when the Strike was Deliberate or Committed, because that is where it Wounds.
-- **Zone critical effects.** A Critical Hit on the Torso sets Off-Guard. The Arms, Legs and Head
-  effects (−2 to attacks, Speed halved, no Reactions, until Recenter) are printed on the applied
-  card for the table to hold.
+- **Zone critical effects, tracked until a Recenter** (0.26.0; rulings 258 to 260; Mike: "why not?
+  let's do it!"). A Critical Hit that does damage sets the struck Zone's Critical Hit effect, a
+  mark on the Zone (`system.zones.<zone>.critical`), and the system holds it from there: the
+  **Arms'** −2 Situation is on every attack roll (and on an adversary's Attack Threshold and flat
+  roll), beside an Arms Wound's own −2, so −4 with both; the **Legs'** halved Speed is the Speed
+  (a third with a Legs Wound, by the book's Multipliers and Divisors); the **Head's** lost
+  Reactions are gone from the Combat window, as with a Head Wound (the window says which it is);
+  the **Torso's** is Off-Guard, the condition, as it always was. **Recenter ends all four** and
+  its card names the Zones. The Off-Guard that goes is the Critical Hit's own: one already on the
+  body when the blow landed (the GM's, from the token palette) stays, and so does a Torso Wound's;
+  a Talent that prevents Off-Guard prevents the Torso's effect with it. Each Zone on both sheets
+  has a small burst beside the Exposed toggle, amber while the effect runs, which sets or ends it
+  by hand, said in chat when a player presses it: the book says an area Attack does not
+  automatically gain these effects, and the system cannot yet tell an area Attack from another,
+  so that switch is the GM's remedy. Through 0.25.0 only the Torso's Off-Guard was set,
+  nothing ended it, and the other three were a line on the applied card for the table to hold.
 - **Wounds and Spent**, after the Vigor is spent: the blow that empties your Vigor makes you
   **Spent** (a token status), not Dying. Then, each trigger firing on its own: any Hit that lands
   while you were already Spent Wounds the Zone struck (two Wounds from a Critical Hit); a Critical
@@ -1069,12 +1085,30 @@ commitments live only with the coordinator.
 Zone is Exposed, and the roll step begins.
 
 **Roll.** The player rolls. A player-controlled attacker (a character, or anyone a player owns)
-rolls Attack once, in the usual roll dialog with the Strike locked, and that one roll is read
-against each defender's Threshold. A player-controlled defender of an adversary's Blow rolls
-Defense against the adversary's Attack Threshold, which the player never sees. Player against
-player is not an opposed roll: the attacking player rolls, the defending player's committed
-Threshold answers. Adversary against adversary is the GM rolling the attacker flat against the
-defender's Threshold. The prompt carries the Roll button; the card carries it too, for recovery.
+rolls Attack **once for each defender** (0.26.0; ruling 252; PHB v4.25, Area Attacks: "the PC
+rolls once per target", and Mike's ruling that any attack at several targets, a spell, a sweep or
+a bomb, is read the same way): one Roll row per defender in the Combat window and one Roll Attack
+button on each row of the card, each opening the usual roll dialog with the Strike locked and the
+defender named in its title, each die read against that defender's Threshold alone. Through
+0.25.0 one die was read against every defender. The dice of one roller are thrown **one at a
+time**: a second dialog opens only once the first die has been handed in, so a bonus that applies
+once (a once-a-round line, a result an ally gave, an armed claim) is used by the first die and is
+gone for the next (ruling 254); a second click on a die already being thrown joins it. A
+Shift-click rolls with no dialog, as on the sheet. The Strike or Cast is still paid once, when it
+is declared. A player-controlled defender of an adversary's Blow rolls Defense against the
+adversary's Attack Threshold, which the player never sees. Player against player is not an opposed
+roll: the attacking player rolls, the defending player's committed Threshold answers. Adversary
+against adversary is the GM rolling the attacker flat against each defender's Threshold, one die
+each. With no player present for the attacker, the GM rolls from the card's rows. The prompt
+carries the Roll buttons; the card carries them too, for recovery.
+
+**What three dice change.** Support and Unwieldy are read for each die's own defender (through
+0.25.0 the first target's stood for all). Three targets are three chances of a Critical Hit, and
+three Flare offers, from one Maneuver. A weapon Controlled in a Bind and swept at the Bind partner
+and another takes its −2 by the order the dice are thrown, since striking the partner ends the
+Bind: the table's to order. Outside an encounter a once-a-round bonus has no round to count, so
+every die gets it, as two separate rolls always have. A card left mid-attack by 0.25.0 still
+resolves with its one die.
 
 **Resolve.** Each pairing gets the same resolution card an attack produces today: the Defense and
 answer, the outcome, Position offers (Expose, Bind, give ground, Step, the Riposte; none for a
@@ -1230,14 +1264,39 @@ to the block is in the game after the content loop and a Sync, with no code chan
 naming a kind the block lacks fails the build. Foundry then charges the cost along every
 token's path, splits the ruler at the region's edge and slows the token's animation inside it; the
 drag ruler's label names the kinds crossed ("12 ft ❶×2 · difficult: mud"), a Step cannot enter it
-and a Move pays for the cost, as the movement tracker has always read terrain. Overlapping regions
-multiply. **A Talent that ignores a kind** (`[EFFECT IGNORE: terrain, mud, ...]`; Riverfoot) makes the region
+and a Move pays for the cost, as the movement tracker has always read terrain. **Overlapping
+regions combine as the book's Multipliers and Divisors do** (0.26.0; rulings 255 and 256; PHB
+v4.25, Chapter 8): each region is one effect, 1 plus every region's increase, so two regions at
+×2 cost ×3 (×4 through 0.25.0, when they multiplied), whatever their kinds. **A Talent that ignores a kind** (`[EFFECT IGNORE: terrain, mud, ...]`; Riverfoot) makes the region
 answer nothing for that token: not split, not charged, not slowed, not labelled, and a Step into
 it is a Step. **Every player has an overlay**: the token controls' toggle (and the client setting
 "Show difficult terrain on the map") fills every Difficult terrain region on the scene in its
 kind's colour with the kind and the cost named, on this client only. A region the GM hides carries
 no terrain for anyone in Foundry, so a terrain region is never hidden to keep it secret; the
 overlay is the players' to switch off.
+
+### Target what is inside a template
+
+**A template you draw targets what stands inside it** (0.26.0; ruling 263; Mike: "is there
+functionality to place/move Area templates around, to automatically include targets?"). Foundry
+v14 folded measured templates into Regions: in the Regions controls anyone may draw a circle, a
+cone, a line, a ring, an emanation or a rectangle in template mode (a player's controls open in
+that mode), then move it and turn it. The system adds the one step core leaves out. When you draw
+a template, or move, turn or reshape one of yours, **your targets become the tokens inside it**,
+so your next Strike or Cast declares at every one of them and rolls once for each. The Regions
+controls' **Target what is inside** button does the same by hand, for the selected Region (any
+Region: the GM may aim with a hand-drawn one) or, with none selected, your newest template; a
+macro may call `game.starwrought.targetInside(region)`. "Inside" is Foundry's own test for a token
+in a Region. A token with no actor behind it and a party's token are left out. **A player never
+targets what they cannot see**: a token the GM has hidden, or one their vision does not reach, so
+a template drawn over a closed room names nobody in it. For the GM the automatic step leaves a
+hidden token out (the next attack would put its name on a public card), and the button and the
+macro, pressed on purpose, take it. Your own token is not left out, since a blast centred on you
+catches you, and one press of T lets a target go. A Region that carries a behavior (Difficult terrain, a teleport) is never
+treated as a template. The client setting "Target what is inside a template you draw or move"
+turns the automatic step off. **This is aiming, not an area Attack's rules**: a spell's own shape
+and size are still its Talent's words, no Cast places a template or removes one, and deleting the
+template afterwards is yours (section 9).
 
 ### Reach while dragging
 
@@ -1737,12 +1796,17 @@ at the end of the member's line (" Rolled Stealth 17 on the road."). Nothing com
 record except a kept Initiative.
 
 **The party's Travel Speed** (ruling 102), the tab's top line, display only: each member's Speed
-(`system.moveSpeed`, so a Speed adjustment counts) times their Activity's multiplier (Full 1, Half
-½, Double 2), the lowest of those times the terrain (normal 1, Difficult ½, Greater Difficult ⅓;
-PHB P343 to P344), through the book's three formulae (`SW.TRAVEL`: feet a minute × 40, rounded;
-miles an hour ÷ 2, floored as the character's own figure is; miles a day × 4, rounded). "120 feet
+(`system.moveSpeed`, so a Speed adjustment counts) under their Activity's pace (Full, Half,
+Double) and the terrain (Difficult halves, Greater Difficult cuts to a third; PHB v4.25,
+Exploration Mode), the two **combined as the book's Multipliers and Divisors are** (0.26.0;
+rulings 255 and 257): a half-pace Activity over Difficult Terrain is a third of the Speed, over
+Greater Difficult a quarter, and Hustle over Difficult Terrain is the plain Speed, where through
+0.25.0 the terrain multiplied the slowest figure in sequence (a quarter, a sixth). The lowest
+member's figure is the party's, through the book's three formulae (`SW.TRAVEL`: feet a minute ×
+40; miles an hour ÷ 2; miles a day × 4), each rounded down ("Round down the final result"; feet a
+minute and miles a day were rounded to the nearest through 0.25.0). "120 feet
 a minute · 1 mile an hour · 12 miles a day", then "Wren sets the pace (Search, Half)" naming the
-pacesetter (the lowest effective Speed; the first on ties), the ten-minutes-per-location note while
+pacesetter (the lowest Speed under the terrain, which the terrain can change; the first on ties), the ten-minutes-per-location note while
 anyone Searches (P346), and the terrain, a select for the GM (`system.travel.terrain`, the party's
 one field for this phase) and a word for a player. Nothing moves a token at any pace (section 9),
 and a party with no members prints blanks and zeros.
@@ -1961,10 +2025,10 @@ disabled. When the card hid its Threshold (an adversary's, inside the attack flo
 thrown on the roller's client and read on the active GM's client over the socket, which checks
 that the die is a Roll of the first card's own formula and that the asker owns the roller, reads
 the Threshold again from actor data, and answers with the outcome; with no GM connected the player
-is told so. Inside the flow a player attacker's one die resolved against every defender, so
-rerolling any of those cards rerolls them all with the one new die, each against its own
-Threshold. The attack card that carried the pairings' outcomes follows the new cards, with a line
-in its log. Rerolling a card that was itself rerolled rerolls the newest; a superseded card refuses.
+is told so. **A reroll is one pairing's** (0.26.0; ruling 253): every die fills its own pairing,
+so the card that is rerolled is the only one thrown again (through 0.25.0 a player attacker's one
+die had filled every pairing, and rerolling one card rerolled them all). The attack card that
+carried the pairing's outcome follows the new card, its row's total too, with a line in its log. Rerolling a card that was itself rerolled rerolls the newest; a superseded card refuses.
 The reroll is of the die, not of what the table did with it: damage already applied, a Zone
 Exposed, a Bind formed or a Constellation Flared from the first result all stand, and the GM
 unwinds them by hand; the new card offers its Position again. An adversary's Threshold is read
@@ -2076,6 +2140,7 @@ are markers for the table.
 | Show pinned auras | on | Draw every combatant's Visible ranges on the map while an encounter runs. Off, only the hover preview draws. Per client |
 | Range ring contrast | Normal | How boldly the reach and aura rings are drawn. Every ring has a dark halo under its outline so it reads on a pale floor; Strong thickens the lines and deepens the fills. Per client |
 | Show every Constellation | off | On the sheet's Constellations tab, list every shipping Constellation the character has not opened as a dimmed row with a Flare control, so one can be Flared from the sheet. Per client; the tab's toolbar button is the switch, and the setting has no entry in Configure Settings |
+| Target what is inside a template you draw or move | on | When you draw a template in the Regions controls, or move or turn one of yours, the tokens inside it become your targets (0.26.0). Off, the Regions controls' Target what is inside button still does it by hand. Per client |
 | Show a glance card beside a hovered token | on | Rest the mouse on any token you can see and a card shows what anyone standing near could see: what it holds, the armor on each Zone, the Zones Exposed or Wounded, its conditions; Protection and Vigor for its owner and the GM alone (0.19.0). Per client; the LIMITED sheet shows the same panel whatever this says |
 
 The `trackMap` setting is gone with the Multiple Attack Penalty; a world that still stores a value
@@ -2784,6 +2849,19 @@ before; the sources and the index are.
   second damage type are the Talent's text on the card; a spell's range is the Talent's text too
   (no range note on the card). An adversary casts no spell through the system: its magic is the
   GM's narration, and a character's Defense answers it from the sheet.
+- **An area is aimed, not ruled** (0.26.0; rulings 252, 260 and 263). A template you draw targets
+  what is inside it and the attack then rolls once for each target, but a spell's own shape and
+  size are its Talent's words (no Cast places a template or removes one), no Talent can yet
+  "specify otherwise" and ask for one roll for all its targets, and the system cannot tell an area
+  Attack from another: the book's "an area Attack does not automatically gain these
+  location-specific effects" is the GM's to apply, with the Critical Hit switch on the Zone.
+- **One Reaction at a time is the table's** (0.26.0; ruling 262; PHB v4.25; Mike's choice). The
+  attack flow takes one answer per attack, which is the one Trigger the system can identify.
+  Elsewhere it cannot tell which Trigger a Reaction answers (an Intercept, a Reaction row used from
+  the sheet), so a second Reaction to one Trigger is neither refused nor remarked on.
+- **Supine is in the book and not in the system** (0.26.0; ruling 266). Mike's Supine rules are in
+  the handbook's Conditions table as a tracked change; the system has Prone alone, no Roll Over,
+  and reads a rule that names Prone as Prone only, until Supine is built.
 - **Nothing answers for a defender but a commitment** (0.12.0, rulings 159 and 162). With no GM
   connected an adversary's Blow waits for one; an absent player's character waits for the GM's
   explicit answer; a Strike or Cast with no target rolls against a typed Threshold because there is
@@ -2940,9 +3018,12 @@ before; the sources and the index are.
 - **A Prepared Rush is charged at once.** A drag is a move already made, so a Rush-length drag pays
   its three actions on the drop and the telegraphing the Prepared trait implies is left to the
   table.
-- **Persistent Damage is a reminder.** The end-of-round card rolls it, but the amount is applied on
-  the sheet by hand: the damage pipeline is built around a Zone and its Protection, and Persistent
-  Damage has neither.
+- **Persistent Damage is rolled and applied from its card, and nothing puts it on a creature.** The
+  end-of-round card rolls each effect and applies it through the damage pipeline as Pervasive
+  damage (0.11.0). Two effects of one type are two effects (0.26.0; ruling 261; PHB v4.25): a
+  Torso Wound's bleed and another bleed each get their own card. But there is no sheet field or
+  control for a Persistent Damage effect beyond the Torso Wound's: a flag or a macro puts one on,
+  and the Endure check to end one is the table's to act on.
 - **A treated Wound is removed rather than bound.** The book keeps a bound Wound on the count for a
   week; the system takes it off the Zone on a successful Treat and says so on the card.
 - **Ten minutes of rest is a button, not a clock.** The book's Fatigued N "ends after ten minutes

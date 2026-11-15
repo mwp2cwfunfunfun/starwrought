@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.25.0"; }
+:root { --sw-css-version-character: "0.26.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -292,6 +292,15 @@
 .starwrought .sw-zone-wound-effect { font-size: 0.62rem; color: #e08a84; line-height: 1.3; }
 .starwrought .sw-zone-flag { font-size: 0.62rem; color: var(--sw-blood); text-transform: uppercase; letter-spacing: 0.08em; }
 .starwrought .sw-zone-flag small { text-transform: none; letter-spacing: 0; color: var(--sw-ink-dim); }
+/* A Zone's Critical Hit effect (0.26.0): the burst is dim until the effect runs, then amber, with
+   the effect's words under the Zone. On the character's Zone the burst sits beside the Exposed
+   toggle, at the right of the head; on the adversary's row it follows the Zone's name. */
+.starwrought .sw-zone-crit-toggle { color: var(--sw-ink-dim); opacity: 0.5; margin-left: 0.3rem; }
+.starwrought .sw-zone-head .sw-zone-crit-toggle { margin-left: auto; margin-right: 0.4rem; }
+.starwrought .sw-zone-crit-toggle:hover { opacity: 1; }
+.starwrought .sw-zone-crit-toggle.active { color: #e0a84a; opacity: 1; }
+.starwrought .sw-zone-crit-effect { font-size: 0.62rem; color: #e0a84a; line-height: 1.3; }
+.starwrought .sw-row-critical .sw-zone-cell { color: #e0a84a; }
 
 /* Wounds, per Zone: pips against the Zone's capacity. The last pip is the final Wound, drawn as
    a diamond because it is the one that changes everything. Treat rolls the Endure check; the

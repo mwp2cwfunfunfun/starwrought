@@ -33,6 +33,7 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       itemDelete: SwNpcSheet.#onItemDelete,
       itemCreate: SwNpcSheet.#onItemCreate,
       toggleZone: SwNpcSheet.#onToggleZone,
+      toggleCritical: SwNpcSheet.#onToggleCritical,
       recenter: SwNpcSheet.#onRecenter,
       treatWound: SwNpcSheet.#onTreatWound,
       adjustWound: SwNpcSheet.#onAdjustWound,
@@ -125,6 +126,9 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ...sys.zones[key],
       key,
       label: game.i18n.localize(SW.ZONES[key].label),
+      // The Zone's Critical Hit effect, and whether it is running (0.26.0).
+      crit: game.i18n.localize(SW.ZONE_CRITICALS[key].effect),
+      critical: !!sys.zones[key]?.critical,
       wounds: zoneWounds(actor, key)
     }));
 
@@ -229,6 +233,12 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onToggleZone(event, target) {
     const zone = target.dataset.zone;
     return this.document.setExposed(zone, !this.document.system.zones[zone].exposed);
+  }
+
+  /** Set or end a Zone's Critical Hit effect by hand (0.26.0); a Recenter ends it too. */
+  static async #onToggleCritical(event, target) {
+    const zone = target.dataset.zone;
+    return this.document.setCriticalEffect(zone, !this.document.system.zones[zone].critical);
   }
 
   static async #onRecenter() {

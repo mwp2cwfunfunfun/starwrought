@@ -168,6 +168,13 @@ function damageLabel(type) {
  * the effect is "made lasting: it does not clear when you Recenter, only when the Wound is
  * treated". Ruling: the bleed runs at the end of every round while the Wound stands, and the
  * ordinary Endure check to end Persistent Damage does not close it; treating the Wound does.
+ *
+ * Two effects of one type are two effects (0.26.0; PHB v4.25, Persistent Damage: "an effect that
+ * causes 1d4 Persistent Bleed can be applied to a creature that already has a 1d6 Persistent
+ * Bleed. These are treated as two, independent effects"): the Torso Wound's bleed is listed
+ * beside any other bleed the actor carries, each with its own end-of-round card. Through 0.25.0
+ * it was left out when another bleed row was present, the one place the old "keep the higher"
+ * sentence had been read into the code.
  */
 export function persistentDamageOf(actor) {
   const rows = [];
@@ -196,7 +203,7 @@ export function persistentDamageOf(actor) {
 
   const torso = actor.system.zones?.torso;
   const wounds = Number(torso?.wounds) || 0;
-  if ((wounds > 0) && !rows.some(r => r.type === "bleed")) {
+  if (wounds > 0) {
     const capacity = Number(torso.capacity) || SW.WOUND_CAPACITY[actor.system.size] || 2;
     const bleeding = Math.min(wounds, Math.max(0, capacity - 1));
     const die = SW.TORSO_WOUND_BLEED.replace(/^\d+/, "");

@@ -36,7 +36,10 @@ import { ARMS_WOUND_PENALTY, unavailableEvade } from "./shared.mjs";
  */
 export function prepareDefenses(data) {
   const statuses = data.parent.statuses ?? new Set();
-  const offGuard = statuses.has("offGuard") ? SW.OFF_GUARD_PENALTY : 0;
+  // Off-Guard, the condition; or the Torso's Critical Hit effect, which is Off-Guard until a
+  // Recenter (0.26.0: read off the Zone too, so the effect stands exactly as long as the Zone's
+  // mark does, whatever the token palette did to the status).
+  const offGuard = (statuses.has("offGuard") || data.zones.torso.critical) ? SW.OFF_GUARD_PENALTY : 0;
   const frightened = -(data.parent.conditionValue("frightened") ?? 0);
   // Fatigued N (PHB v4.21, Conditions): -N Condition to all four Defenses and to attack rolls
   // (the offense pass). Through v4.15 it touched Evade and Guard only.

@@ -42,7 +42,6 @@
  "Automation cell|ancestries.xlsx / Human / I8|Common Purpose|\"Common Purpose\" is not a Maneuver: a [MANEUVER ...] names a row of data/maneuvers.xlsx [[MANEUVER Common Purpose]]": "2026-11-10",
  "Automation cell|ancestries.xlsx / Human / I9|Timely Aid|\"Timely Aid\" is not a Maneuver: a [MANEUVER ...] names a row of data/maneuvers.xlsx [[MANEUVER Timely Aid]]": "2026-11-10",
  "Automation cell|maneuvers.xlsx / Ancestry Actions / O3|Quench the Ember|\"EFFECT:\" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or `[<Constellation> trained]`; an effect goes in `[EFFECT <tag>: ": "2026-11-08",
- "Handbook|Starwrought_Players_Handbook_v4.25.docx||the repository is synced to v4.24 and Starwrought_Players_Handbook_v4.25.docx is on the shelf": "2026-11-15",
  "Index|cultures.xlsx||'Murovian' (row 6) is in _Tree Index but has no sheet; the row stays until its sheet exists": "2026-11-10",
  "Index|maneuvers.xlsx||'Avert Gaze' (row 39) is in _Tree Index but no sheet has a row for it": "2026-11-10",
  "Index|maneuvers.xlsx||'Counter' (row 26) is in _Tree Index but no sheet has a row for it": "2026-11-10",

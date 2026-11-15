@@ -273,7 +273,7 @@ async function onCardButton(event, message, flags) {
       case "recenter": return await recenterFromCard(button);
       // The attack card (0.5.0): recovery, never decision.
       case "attackOpenPrompt": return await openAttackPrompt(button);
-      case "attackRoll": return await rollFromAttackCard(button);
+      case "attackRoll": return await rollFromAttackCard(button, event);
       case "attackCancel": return await gmAttackRequest(flags, button, "cancel");
       case "attackReset": return await gmAttackRequest(flags, button, "resetDefenses");
       case "attackResend": return await gmAttackRequest(flags, button, "resendPrompts");

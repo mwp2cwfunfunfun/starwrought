@@ -800,8 +800,13 @@ export class AttackCoordinator {
       const spec = ACTIONS[message.action];
       if (!spec) return { ...base, ok: false, reason: "wrongPhase" };
 
-      // 2. The request was made against the current state.
-      if (!AttackCoordinator.#revisionCurrent(workflow, message.expectedRevision, message.action)) {
+      // 2. The request was made against the current state. A die is measured against the answer
+      // it was thrown at, not the phase line (0.26.0): the attacker throws one for each defender,
+      // and a sibling's die, or another GM taking the attack up, makes none of them wrong.
+      const current = (message.action === "submitRoll")
+        ? AttackCoordinator.#rollCurrent(workflow, message)
+        : AttackCoordinator.#revisionCurrent(workflow, message.expectedRevision, message.action);
+      if (!current) {
         return { ...base, ok: false, reason: "stale", revision: workflow.revision, public: AttackCoordinator.#public(workflow) };
       }
       // 3. The phase allows the action.
@@ -847,6 +852,19 @@ export class AttackCoordinator {
     if (expected > workflow.revision) return false;
     const meta = AttackCoordinator.#metaFor(workflow);
     return expected >= meta.phaseRevision;
+  }
+
+  /**
+   * Is a submitted die still good (0.26.0)? Read against the reveal of the pairing it was thrown
+   * for (`AttackWorkflow.rollCurrent`); a submission that names no pairing, an older client's or a
+   * macro's, falls back to the phase line.
+   */
+  static #rollCurrent(workflow, message) {
+    const expected = message.expectedRevision;
+    if (!Number.isInteger(expected) || (expected > workflow.revision)) return false;
+    const target = AttackWorkflow.targetOf(workflow, message.payload?.targetId);
+    if (target?.revealed) return AttackWorkflow.rollCurrent(target, expected);
+    return AttackCoordinator.#revisionCurrent(workflow, expected, message.action);
   }
 
   static #metaFor(workflow) {
@@ -1015,8 +1033,10 @@ export class AttackCoordinator {
 
   /**
    * A roll from the roller's client (brief, "The roll and the resolution"): the die thrown blind,
-   * handed over as `{ roll: Roll JSON, total, natural, formula, modifiers }`. A player attacker's
-   * one roll fills every pairing the attacker rolls; a defender's fills its own.
+   * handed over as `{ roll: Roll JSON, total, natural, formula, modifiers }`. Every die fills its
+   * own pairing and no other (0.26.0; PHB v4.25, Area Attacks: "the PC rolls once per target";
+   * through 0.25.0 a player attacker's one roll filled every pairing the attacker rolled). A
+   * submission that names no pairing fills the first one still waiting on the attacker.
    */
   static async #submitRoll(workflow, payload, user) {
     let target = AttackWorkflow.targetOf(workflow, payload.targetId);
@@ -1034,16 +1054,10 @@ export class AttackCoordinator {
     const rollData = normalizeRollData(payload.rollData);
     if (!rollData) return { ok: false, reason: "badRoll" };
 
-    const summary = { total: rollData.total, natural: rollData.natural, formula: rollData.formula };
-    if (target.roller === "attacker") {
-      workflow.attackRoll = rollData;
-      for (const t of workflow.targets) {
-        if ((t.roller === "attacker") && !t.roll) t.roll = { ...summary };
-      }
-    } else {
-      // The whole roll, so a coordinator rebuilt from the card can still read it against the Threshold.
-      target.roll = rollData;
-    }
+    // The whole roll, on its own pairing, so a coordinator rebuilt from the card can still read it
+    // against the Threshold. `workflow.attackRoll` is never written again: it is read only for a
+    // card from before 0.26.0 (`AttackWorkflow.rollDataFor`).
+    target.roll = rollData;
     AttackCoordinator.#bump(workflow);
     await AttackCoordinator.#persist(workflow);
     await AttackCoordinator.#broadcast(workflow, "state");
@@ -1434,35 +1448,15 @@ export class AttackCoordinator {
   }
 
   /**
-   * The resolution cards one die filled (0.5.3). Inside the attack flow a player attacker rolls
-   * once against every defender, so a reroll of that die is a reroll of every pairing it filled:
-   * the ids of all the attacker-rolled pairings' cards of the same Blow, this one included. A
-   * defender's die fills its own pairing alone, and a card no attack card knows (the plain path)
-   * is its own set.
-   * @param {string} messageId  A resolution card's id.
-   * @returns {string[]}
-   */
-  static siblingResolutions(messageId) {
-    if (!messageId) return [];
-    for (const doc of game.messages.contents) {
-      const pub = doc.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
-      const target = pub?.targets?.find(t => t.resolutionMessageId === messageId);
-      if (!target) continue;
-      if (target.roller !== "attacker") return [messageId];
-      const ids = pub.targets
-        .filter(t => (t.roller === "attacker") && t.resolutionMessageId)
-        .map(t => t.resolutionMessageId);
-      return ids.includes(messageId) ? ids : [messageId, ...ids];
-    }
-    return [messageId];
-  }
-
-  /**
    * A pairing's resolution card was rerolled (0.5.3): the attack card that carried its outcome
    * follows the new card. Runs on every client from the `starwrought.reroll` hook; only one that
    * may write the card (its author, or a GM) does so, and only once the Blow is complete, so this
-   * is a note in the record and never a step of the flow: the row's outcome and resolution card
-   * move, the revision advances, the log says so.
+   * is a note in the record and never a step of the flow: the row's outcome, its printed total
+   * (0.26.0) and its resolution card move, the revision advances, the log says so.
+   *
+   * A reroll is one pairing's (0.26.0): every die fills its own pairing, so there are no sibling
+   * cards to throw again with it. Through 0.25.0 `siblingResolutions` named every card a player
+   * attacker's one die had filled (0.5.3; ruling 155), and they were rerolled together.
    */
   static async noteReroll({ oldId, result, reason = "" } = {}) {
     const newId = result?.message?.id ?? null;
@@ -1480,6 +1474,11 @@ export class AttackCoordinator {
       const outcome = result?.outcome;
       target.outcome = (typeof outcome === "string") ? outcome : (outcome?.key ?? target.outcome ?? null);
       target.resolutionMessageId = newId;
+      // The row prints the die that stands: the new one, as a summary (the first die's Roll data
+      // would be the wrong die to keep).
+      if (Number.isFinite(result?.total)) {
+        target.roll = { total: result.total, natural: result.natural ?? null, formula: target.roll?.formula ?? "" };
+      }
       next.revision = (next.revision ?? 0) + 1;
       next.log = [...(next.log ?? []), reason
         ? format("STARWROUGHT.Attack.rerolled", { name: target.name ?? "", reason })
@@ -1630,6 +1629,11 @@ export class AttackCoordinator {
     const outcome = result?.outcome;
     target.outcome = (typeof outcome === "string") ? outcome : (outcome?.key ?? null);
     target.resolutionMessageId = result?.message?.id ?? null;
+    // The row's printed total is the pairing's own (0.26.0): the die with the modifiers read for
+    // this defender at resolution, which the die alone did not carry.
+    if (Number.isFinite(result?.total) && target.roll && (target.roll.total !== result.total)) {
+      target.roll = { ...target.roll, total: result.total };
+    }
   }
 
   /* -------------------------------------------- */
@@ -1666,7 +1670,11 @@ export class AttackCoordinator {
     const stored = doc?.flags?.[SW.SYSTEM_ID]?.attackWorkflow;
     if (doc && (stored?.revision !== workflow.revision) && (doc.isAuthor || game.user.isGM)) {
       try {
-        await doc.update({ [`flags.${SW.SYSTEM_ID}.attackWorkflow`]: { ...pub, messageId: workflow.messageId } });
+        // The state as it stands NOW (0.26.0): the workflow may have moved on while the card was
+        // being written (two dice submitted close together), and the snapshot taken before that
+        // write would put the flags a revision behind, where clients ignore the broadcast.
+        const fresh = AttackCoordinator.#public(workflow);
+        await doc.update({ [`flags.${SW.SYSTEM_ID}.attackWorkflow`]: { ...fresh, messageId: workflow.messageId } });
       } catch (err) {
         console.error(`STARWROUGHT | attack workflow ${workflow.id}: the flags could not be written`, err);
       }
@@ -1703,23 +1711,70 @@ export class AttackCoordinator {
    *    the brief flags to revise.
    *  - A defender's roll: `rollDefense` with the committed answer, which forces kind "defense",
    *    folds the Reaction's or Posture's +2 and pays the Reaction before the die.
+   *
+   * One die at a time for each roller (0.26.0): a player attacker throws one die for each
+   * defender, and each die is its own roll, so a bonus that applies once (a `LIMIT: round` line,
+   * a pending result an ally gave, an armed claim) must be used up by the first before the second
+   * is built. The dice of one roller therefore queue on this client, each waiting for the
+   * coordinator's reply to the one before; a second click on a pairing already being rolled joins
+   * the first instead of throwing a die the coordinator would refuse.
    * @param {string} workflowId
    * @param {string|null} [targetId]  Omitted, the first pairing awaiting the attacker's die.
+   * @param {object} [options]
+   * @param {boolean} [options.dialog=true]  False rolls with no dialog (a Shift-click, the
+   *   sheets' convention): the roll's own modifiers, no offers ticked.
    * @returns {Promise<object|null>} the coordinator's reply, or null when nothing was rolled
    */
-  static async rollFor(workflowId, targetId = null) {
+  static rollFor(workflowId, targetId = null, { dialog = true } = {}) {
     const workflow = AttackCoordinator.#workflows.get(workflowId);
-    if (!workflow || (workflow.phase !== "rolling")) {
+    const target = AttackCoordinator.#awaitingRoll(workflow, targetId);
+    if (!target) {
       ui.notifications.warn(localize("STARWROUGHT.Attack.stale"));
-      return null;
+      return Promise.resolve(null);
     }
+    const key = `${workflow.id}|${target.id}`;
+    const joined = AttackCoordinator.#rolling.get(key);
+    if (joined) return joined;
+
+    const rollerUuid = (target.roller === "attacker") ? workflow.attacker.actorUuid : target.actorUuid;
+    const before = AttackCoordinator.#rollQueues.get(rollerUuid) ?? Promise.resolve();
+    const run = before.then(() => AttackCoordinator.#rollNow(workflow.id, target.id, { dialog }));
+    AttackCoordinator.#rolling.set(key, run);
+    // The queue's tail never rejects, so one failed die does not stop the dice behind it.
+    const tail = run.catch(err => console.error("STARWROUGHT | an attack flow roll failed", err)).then(() => {
+      AttackCoordinator.#rolling.delete(key);
+      if (AttackCoordinator.#rollQueues.get(rollerUuid) === tail) AttackCoordinator.#rollQueues.delete(rollerUuid);
+    });
+    AttackCoordinator.#rollQueues.set(rollerUuid, tail);
+    return run;
+  }
+
+  /** The dice being thrown on this client, by pairing, and each roller's queue of them (0.26.0). */
+  static #rolling = new Map();
+  static #rollQueues = new Map();
+
+  /** The pairing a roll is for: the one named, else the first still waiting; null when none waits. */
+  static #awaitingRoll(workflow, targetId) {
+    if (!workflow || (workflow.phase !== "rolling")) return null;
     let target = targetId ? AttackWorkflow.targetOf(workflow, targetId) : null;
     if (!target) {
       target = workflow.targets.find(t => (t.roller === "attacker") && !t.roll)
         ?? workflow.targets.find(t => !t.roll) ?? null;
     }
-    if (!target || target.roll) {
+    return (target && !target.roll) ? target : null;
+  }
+
+  /** One die, thrown and handed to the coordinator. The state is read again: the die may have queued. */
+  static async #rollNow(workflowId, targetId, { dialog = true } = {}) {
+    const workflow = AttackCoordinator.#workflows.get(workflowId);
+    const target = AttackCoordinator.#awaitingRoll(workflow, targetId);
+    if (!target) {
       ui.notifications.warn(localize("STARWROUGHT.Attack.stale"));
+      return null;
+    }
+    // Nobody to read the die: say so before it is thrown, not after its bonuses are spent.
+    if (!AttackCoordinator.coordinatorFor(workflow)) {
+      ui.notifications.warn(localize(REASONS.noCoordinator ?? REASONS.error));
       return null;
     }
 
@@ -1739,7 +1794,8 @@ export class AttackCoordinator {
       if (!attacker.isOwner) return void ui.notifications.warn(localize("STARWROUGHT.Attack.notYours"));
       // The attacker's die, by what the attack is (attack-source.mjs): a weapon's Strike, a
       // spell's Cast, or the flat d20 of an adversary against an adversary.
-      result = await rollBlind(attacker, maneuver, target, link);
+      const first = !workflow.targets.some(t => (t.roller === "attacker") && t.roll);
+      result = await rollBlind(attacker, maneuver, target, link, { dialog, first });
     } else {
       if (!defender) return void ui.notifications.warn(localize("STARWROUGHT.Notify.noActor"));
       if (!defender.isOwner) return void ui.notifications.warn(localize("STARWROUGHT.Attack.notYours"));
@@ -1755,7 +1811,7 @@ export class AttackCoordinator {
         threat: threatContext(maneuver),
         attacker: attackerToken?.object ?? attacker ?? undefined,
         postCard: false,
-        dialog: true
+        dialog
       });
     }
 

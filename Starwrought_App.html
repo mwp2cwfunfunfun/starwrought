@@ -186,7 +186,7 @@
 </head>
 <body>
 <header>
-  <span class="logo">STARWROUGHT &#10022;</span><span class="ver">COMPANION · Playtest v4.24</span>
+  <span class="logo">STARWROUGHT &#10022;</span><span class="ver">COMPANION · Playtest v4.25</span>
   <nav class="tabs">
     <button class="tab" data-t="chars">Characters</button>
     <button class="tab" data-t="wizard">Create</button>
@@ -14753,7 +14753,7 @@ const TORVA = {id:"sample-mira", name:"Mira of the Long Road", level:1, mileston
  sparks:{}, languages:["Common","Reachspeak"],
  gear:"Full leather harness, cap to leggings - rapier - chalk, sash and juggling knives - circus poster of her old troupe",
  notesTxt:"Circus Lore covers troupes, rigging, and crowds. Sixteen gold of leather, helm to legguards: Protection 2 on every Zone and Load 0 on every piece, so the Load Strain is nothing and there is no Wind check. Dueling is a Combat Style, a group within Melee: it shares her Melee rank and its point counts toward it.",
- created:"chargen v4.24",
+ created:"chargen v4.25",
  log:["Created via chargen: Human (Versatile) - Kestrel Reach - Acrobat - Ambusher. Three Origin roots granted by the choices; the Ambusher Calling, her first, granted Melee Training; eleven points placed: background bought Athletics, Acrobatics, and Lore (Circus); the Calling point bought the Ambusher Calling and its Training brought Stealth with it; the two Defense points opened Awareness and Evade; three Comets took Driven, Dueling Training, and Kip Up. Driven's Calling point bought Surprise Attacker, and Versatile Human's Opening Talent Point opened Guard. Endure stays Untrained: it rolls Might alone, and its Threshold is 3 lower for it. All four attributes lit."]};
 
 // ---------- shell ----------
@@ -14852,7 +14852,7 @@ function reactionGrant(c,d,nm){
 }
 // The sheet's labels come from sheet_spec.json, which the printed sheets read too; these few are the v4.24
 // readings of lines the spec still carries in their v4.12 form (the spec is the sheet generator's to move).
-const SHEET_V424={version:"Playtest v4.24",
+const SHEET_V424={version:"Playtest v4.25",
   melee_ranged:"Melee: any melee Strike. Ranged: any ranged Strike, a thrown weapon included. Weapon dice by rank: 1 Trained, 2 Expert, 3 Master, 4 Legendary; a Quick Strike or a Graze rolls one.",
   attacks:"atk = d20 + Strike Attribute + Melee or Ranged proficiency  |  Strike Attribute: Might, or Agility if Finesse (melee); Agility, or Might if Thrown (ranged)  |  no multiple attack penalty",
   reactions:"tick the ones your Talents grant; each costs its printed actions, on anyone's Opportunity. One answer per attack: a Reaction, or a ⓿↺ Posture.",
@@ -16127,7 +16127,7 @@ function vWiki(){
       ["Miss the Threshold","Failure"],
       ["Miss by 10+","Critical failure, and a possible &#9889; Flare"],
       ["Natural 20 / Natural 1","Step the result one degree up / down"]])}
-    <h3>Ranks</h3>${tbl(["Proficiency Rank","Proficiency","Min. points in the Constellation","Min. level"],[
+    <h3>Ranks</h3>${tbl(["Proficiency Rank","Proficiency","Min. Talents in the Constellation","Min. level"],[
       ["Untrained","+0","—","—"],["Trained","+3","1","Level 1"],["Expert","+6","4","Level 5"],["Master","+9","9","Level 10"],["Legendary","+12","16","Level 15"]])}
     ${P("One ladder and one gate schedule for every Constellation. Rising in rank needs <b>both</b> the points and the level. Every Constellation begins with a root: buying it is what makes you Trained, and nothing in a Constellation can be bought before it. Many Talents are tier-gated: an Expert Talent requires Expert rank.")}
     <div class="callout"><b>Constellations and groups.</b> ${link("Melee")} and ${link("Ranged")} are separate martial Constellations, and each magical discipline (${magicParents().map(link).join(", ")||"none in the data yet"}) is a Constellation of its own. A <b>Combat Style</b> is a group of Talents within Melee or Ranged, and a <b>magical specialty</b> a group within its discipline: a group shares its Constellation's Proficiency Rank and has none of its own, and every Talent you buy in it counts toward that rank once the Constellation's root is yours. Its Talents must still be bought for their effects, and a Talent feeds its Attribute once. Your Ancestry, Bloodline, and Culture likewise contribute to one shared <b>Origin</b> rank. When you Strike, roll Melee for a melee Strike and Ranged for a ranged one, a thrown dagger included; when you Cast, roll the spell's discipline.</div>
@@ -16286,7 +16286,7 @@ function vWiki(){
     +P("Your Travel Speed is <b>Speed × 40 feet per minute</b>, <b>Speed ÷ 2 miles per hour</b>, or <b>Speed × 4 miles per day</b>. Exploration Mode Activities (such as Avoid Notice) halve it, except Hustle, which doubles it. Difficult Terrain halves it; Greater Difficult Terrain cuts it to one-third. As a rule of thumb, it takes about 10 minutes to proceed through a location while performing Activities such as Search, be it a ballroom, a dungeon corridor, or a forest clearing.")
     +sheetTables("Exploration")
     +`<h3>Downtime Mode</h3>`
-    +P("You spend days, and the GM typically tells you how many you have before the world begins to move quickly again. One activity per day: an activity that takes a week is the same choice made on seven consecutive days, and interrupting it loses the days already spent unless the GM says otherwise. Ordinary rest is not a Downtime Activity: a night's sleep already restores some of your Vigor but none of your Wounds; Downtime is for the things a night's rest cannot fix.")
+    +P("You spend days, and the GM typically tells you how many you have before the world begins to move quickly again. One activity per day: an activity that takes a week is the same choice made on seven consecutive days, and interrupting it loses the days already spent unless the GM says otherwise. Ordinary rest is not an Endeavor: a night's sleep already restores some of your Vigor but none of your Wounds; Downtime is for the things a night's rest cannot fix.")
     +sheetTables("Downtime");
 
   if(wikiSec==="Combat") h+=`
@@ -16451,7 +16451,7 @@ function vWiki(){
     <h3>Level-up checklist</h3>
     ${P("+Vigor equal to your Ancestry Vigor. Check the rank gates (Expert at level 5, Master at 10, Legendary at 15) and spend your Comet. Recompute Attributes if points moved. A new rank in Melee or Ranged is another weapon die on a Deliberate or Committed Strike (1 / 2 / 3 / 4 at Trained / Expert / Master / Legendary), and a new rank in a magical discipline another Damage Die.")}
     <h3>Also Flares</h3>
-    ${P("<b>GM awards</b> for meaningful achievements no die roll captured: carrying the survivor out of the fire Flares Athletics, no check required. <b>Downtime training</b>: a week with a teacher, rival, or manual (the Train Activity) records a Flare for the training pursued. This is the deliberate path to growth you haven't stumbled into at the table.")}
+    ${P("<b>GM awards</b> for meaningful achievements no die roll captured: carrying the survivor out of the fire Flares Athletics, no check required. <b>Downtime training</b>: a week with a teacher, rival, or manual (the Train Endeavor) records a Flare for the training pursued. This is the deliberate path to growth you haven't stumbled into at the table.")}
     <h3>Retraining</h3>
     ${P("A <b>month</b> of Downtime moves 1 already spent Talent Point anywhere legal. You cannot retrain away from a Talent in your Origin Constellation, a Root Talent, a Talent that another Talent you own requires, or one that would drop your Proficiency Rank. Characters are maps of what you've done, but maps get redrawn.")}`;
 

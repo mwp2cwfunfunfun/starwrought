@@ -55,24 +55,30 @@ export const PARTY_TYPE = "party";
  * Activities (such as Avoid Notice) halve the Travel Speed, except Hustle which doubles it"; Travel
  * is the full figure; the Activities table's Speed column says which).
  * Keyed by the row's Movement Speed word, lowercased; the Activity Item derives `multiplier` from it,
- * and the party's Travel Speed is the lowest member's Speed × multiplier, through the book's three
- * formulae in TRAVEL (ruling 102).
+ * and the party's Travel Speed is the lowest member's Speed under their Activity and the terrain,
+ * through the book's three formulae in TRAVEL (ruling 102).
+ *
+ * `effect` (0.26.0) is the same pace as one effect of the book's Multipliers and Divisors
+ * (`combineFactors` in movement.mjs: `{ times }` or `{ over }`, null for none): an Activity's pace
+ * and the terrain's MEET on the Travel Speed, so a half-speed Activity over Difficult Terrain is
+ * a third, not the quarter multiplying them in sequence gave through 0.25.0. `multiplier` stays,
+ * for the Item's derived field and a single pace shown alone.
  */
 export const ACTIVITY_SPEEDS = Object.freeze({
-  full: { label: "STARWROUGHT.Travel.full", multiplier: 1 },
-  half: { label: "STARWROUGHT.Travel.half", multiplier: 0.5 },
-  double: { label: "STARWROUGHT.Travel.double", multiplier: 2 }
+  full: { label: "STARWROUGHT.Travel.full", multiplier: 1, effect: null },
+  half: { label: "STARWROUGHT.Travel.half", multiplier: 0.5, effect: Object.freeze({ over: 2 }) },
+  double: { label: "STARWROUGHT.Travel.double", multiplier: 2, effect: Object.freeze({ times: 2 }) }
 });
 
 /**
- * Terrain (PHB v4.15, P343 to P344: "Difficult Terrain halves it; Greater Difficult Terrain cuts it
- * to one-third"). A select on the party (`system.travel.terrain`) and a word on the card, display
- * only (ruling 102).
+ * Terrain (PHB v4.25, Exploration Mode: "Travelling through Difficult Terrain halves it.
+ * Travelling through Greater Difficult Terrain cuts it to one-third"). A select on the party
+ * (`system.travel.terrain`) and a word on the card, display only (ruling 102). `effect` as above.
  */
 export const TERRAIN = Object.freeze({
-  normal: { label: "STARWROUGHT.Travel.terrainNormal", multiplier: 1 },
-  difficult: { label: "STARWROUGHT.Travel.terrainDifficult", multiplier: 0.5 },
-  greater: { label: "STARWROUGHT.Travel.terrainGreater", multiplier: 1 / 3 }
+  normal: { label: "STARWROUGHT.Travel.terrainNormal", multiplier: 1, effect: null },
+  difficult: { label: "STARWROUGHT.Travel.terrainDifficult", multiplier: 0.5, effect: Object.freeze({ over: 2 }) },
+  greater: { label: "STARWROUGHT.Travel.terrainGreater", multiplier: 1 / 3, effect: Object.freeze({ over: 3 }) }
 });
 
 /**

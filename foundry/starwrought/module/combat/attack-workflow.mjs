@@ -290,8 +290,10 @@ export class AttackWorkflow {
 
   /**
    * Who throws the die for a pairing (brief, "Who rolls"; PHB v4.10: the players roll everything).
-   *  - A player-controlled attacker rolls Attack, once, whoever the targets are; that one roll is
-   *    read against every defender's Threshold. Player against player is not an opposed roll.
+   *  - A player-controlled attacker rolls Attack, once for each defender (0.26.0; PHB v4.25, Area
+   *    Attacks: "the PC rolls once per target", and Mike's ruling that every attack at several
+   *    targets is read the same way; through 0.25.0 one die was read against every defender).
+   *    Player against player is not an opposed roll.
    *  - An adversary's Blow at a player-controlled defender: the defender rolls Defense against the
    *    adversary's Attack Threshold.
    *  - Adversary against adversary: isolated. The GM rolls the attacker's Attack flat (the
@@ -329,12 +331,32 @@ export class AttackWorkflow {
   }
 
   /**
-   * The roll a pairing resolves with: the attacker's one roll for every pairing the attacker rolls,
-   * the defender's own for a Defense roll.
+   * The roll a pairing resolves with: the pairing's own die, whoever threw it (0.26.0: the
+   * attacker throws one for each defender). A record from before 0.26.0 kept the attacker's one
+   * die on the workflow and a summary on each row; that die still reads for a card the upgrade
+   * caught between its roll and its resolution.
    */
   static rollDataFor(workflow, target) {
     if (!workflow || !target) return null;
+    if (target.roll?.roll) return target.roll;
     return (target.roller === "attacker") ? (workflow.attackRoll ?? null) : (target.roll ?? null);
+  }
+
+  /**
+   * Is a die thrown against `expected` still good for this pairing (0.26.0)? A die is built
+   * against the answer the reveal made public, so it is stale only when that answer is newer than
+   * the revision it was thrown at: a sibling's die landing first, or another GM taking the attack
+   * up, moves the workflow's revision and changes nothing this die was read against. (Reset
+   * defenses is refused once the dice are being thrown, so the answer cannot change under an open
+   * roll dialog.)
+   * @param {object} target
+   * @param {number} expected  The workflow's revision when the roll began.
+   * @returns {boolean}
+   */
+  static rollCurrent(target, expected) {
+    const revealedAt = target?.revealed?.revision;
+    if (!Number.isInteger(expected) || !Number.isInteger(revealedAt)) return false;
+    return expected >= revealedAt;
   }
 
   /* -------------------------------------------- */
@@ -348,8 +370,8 @@ export class AttackWorkflow {
    *    `gmDefend` for each uncommitted adversary defender, the GM's to declare; `gmDefendAbsent`
    *    (0.12.0) for the GM on each uncommitted player-controlled defender the GM does not control,
    *    so an absent player's character is answered for explicitly, never by a default.
-   *  - `rolling`: `rollAttack`, once, while any pairing waits on the attacker's die (one roll fills
-   *    every pairing the attacker rolls); `rollDefense` for each pairing whose defender rolls.
+   *  - `rolling`: `rollAttack` for each pairing that waits on the attacker's die (0.26.0: one die
+   *    for each defender); `rollDefense` for each pairing whose defender rolls.
    *  - Any other phase: nothing. The coordinator does the resolving.
    * @param {object} workflow            A workflow record or its public projection.
    * @param {{id: string, isGM: boolean}} user
@@ -374,15 +396,12 @@ export class AttackWorkflow {
     }
 
     if (workflow.phase === "rolling") {
-      let attackListed = false;
       for (const target of workflow.targets) {
         if (target.roll || target.outcome) continue;
         if (target.roller === "attacker") {
-          // The attacker's roll is one die for every pairing they roll: list it once.
-          if (attackListed || workflow.attackRoll) continue;
+          // One die for each defender (0.26.0), so one row for each pairing still waiting.
           if (controls(user, workflow.attacker)) {
             out.push({ workflowId, kind: "rollAttack", targetId: target.id });
-            attackListed = true;
           }
         } else if (controls(user, target)) {
           out.push({ workflowId, kind: "rollDefense", targetId: target.id });

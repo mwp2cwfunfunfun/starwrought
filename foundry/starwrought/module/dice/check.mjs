@@ -490,7 +490,9 @@ export class SwCheck {
 
     await toMessage(result);
     Hooks.callAll("starwrought.check", result);
-    return { message: result.message, outcome: outcome?.key ?? null, degree, critDenied, threshold };
+    // `total` is the pairing's own (the die and its pairing modifiers), which the attack card's
+    // row prints once the pairing has resolved (0.26.0).
+    return { message: result.message, outcome: outcome?.key ?? null, degree, critDenied, threshold, total, natural };
   }
 
   /* -------------------------------------------- */

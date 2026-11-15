@@ -34,9 +34,9 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Rules decision",
-    "where": "PHB v4.24, Conditions table; Drop Prone, Stand, Kip Up",
-    "question": "Supine is in the Conditions table with an empty Effects cell, and Drop Prone, Stand and Kip Up name it. What does Supine do (Prone's -2 to Attacks and Off-Guard? a different Evade clause?), or should the word go?",
-    "recommendation": "Define it in the book in one line (if it is Prone face-up with no mechanical difference, say so and the system treats it as Prone); the system adds nothing until the cell is filled (ruling 213).",
+    "where": "PHB v4.25, Conditions table (a tracked change); data/maneuvers.xlsx, Drop Prone, Stand, Kip Up and a Roll Over row to come",
+    "question": "Mike's Supine rules are in the handbook's Conditions table as a tracked change (Off-Guard; -2 Situation to Attacks except melee against an adjacent creature; +2 Situation to Evade against ranged; no Move, Step, Rush, Leap or Crawl; Stand or Roll Over to clear), with one sentence of Claude's as its own insertion (\"Supine is not Prone: a rule that names one does not mean the other\"). The system still has Prone alone (ruling 266).",
+    "recommendation": "Accept or edit the cell in Word, add the Roll Over row (Cost 1, Traits Motion, Requirements \"You are Prone or Supine.\", Effect \"Change from Prone to Supine, or from Supine to Prone.\") and enable Drop Prone on the Basic Actions sheet, then have Supine built: a condition beside Prone, the attack penalty read against the gap to the target, the movement refusal in the drag, and Roll Over as a Maneuver the system implements.",
     "decidedBy": ""
   },
   {
@@ -52,22 +52,22 @@
   {
     "id": "necromancer-root-text",
     "since": "2026-11-08",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "PHB v4.24, Chapter 6, Death Echo",
     "question": "Death Echo's text says 'you also gain 6 Vigor' while the Chapter 3 table and the Root's [VIGOR opening 8] say 8. The system reads 8 (ruling 212).",
     "recommendation": "Change the root text to 8 in Word (the proposal tool could not place it: the sentence is shared by three Roots).",
-    "decidedBy": ""
+    "decidedBy": "v4.25 took every Talent's text out of the book (ruling 264); the data's 8 is the only figure left"
   },
   {
     "id": "v4.24-redlines",
     "since": "2026-11-08",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "Starwrought_Players_Handbook_v4.24_preparing_proposal.docx; ..._consistency_proposal.docx",
     "question": "Two redlines wait: Chapter 4's Preparing procedure and the Preparing condition to two actions with the cover to v4.24; the typos, the Modifiers paragraph and Chapter 4's 'Downtime Activities' to 'Endeavors'.",
     "recommendation": "Accept them in Word (Track Changes, author Claude) and save as the next edition; the sync then follows by the handbook rule. Also by hand: 'forced movemt' (Blade Brake), 'side by sid' (the Lore blurb), the lowercase 'count each', the duplicate '### Kestrel Reach' heading in Chapter 3.",
-    "decidedBy": ""
+    "decidedBy": "ruling 265 (0.26.0): what was still wanted of both is among the tracked changes in v4.25 itself; the two v4.24 proposal files are spent"
   },
   {
     "id": "granted-rows-typed-maneuver",
@@ -122,22 +122,22 @@
   {
     "id": "cover-v4-23",
     "since": "2026-11-08",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "Starwrought_Players_Handbook_v4.24.docx, cover table",
     "question": "The cover still reads PLAYTEST EDITION v4.23 in the v4.24 file.",
     "recommendation": "Accept the preparing proposal (it rewrites the line) or change it by hand; the drift check reads the file name, so nothing blocks.",
-    "decidedBy": ""
+    "decidedBy": "ruling 265 (0.26.0): the cover's digit is a tracked change in v4.25 itself"
   },
   {
     "id": "exploration-trait-vs-travel",
     "since": "2026-11-08",
-    "status": "open",
+    "status": "decided",
     "category": "Rules decision",
     "where": "PHB v4.24, Traits table (Exploration) and the Activities table",
     "question": "The Exploration trait says 'you can Move up to half your Speed' while Travel is Full and Hustle Double in the Activities table.",
     "recommendation": "Reword the trait to defer to the table's Speed column ('your Travel Speed is the Activity's Speed'); the system reads the table.",
-    "decidedBy": ""
+    "decidedBy": "ruling 265 (0.26.0): the Exploration trait's sentence is a tracked change in v4.25 itself, for Mike to accept or reword"
   },
   {
     "id": "caster-callings-disabled",
@@ -212,12 +212,12 @@
   {
     "id": "phb-v4-25-unsynced",
     "since": "2026-11-15",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "Starwrought_Players_Handbook_v4.25.docx on the shelf; data/SYNC.json says 4.24",
     "question": "v4.25 is on the shelf with every Talent's details (Chapter 6) and every Maneuver's details (Chapter 8) removed, to be built from the sheets once they are final. The repository is synced to v4.24, so every build reports handbook drift. Mike chose to build system 0.25.0 first and sync after.",
     "recommendation": "Plan the v4.25 sync next, on its own: read v4.25 against v4.24 as accepted, carry what changed in the general rules, and rewrite the standing rule 'when the two disagree, the handbook wins' so that the sheets are the one source for Talents and Maneuvers.",
-    "decidedBy": ""
+    "decidedBy": "the v4.25 sync, system 0.26.0, rulings 252 to 268 (v4.25-sync-report.md)"
   },
   {
     "id": "named-effects-step-two",
@@ -232,11 +232,41 @@
   {
     "id": "subordinate-rule-in-the-handbook",
     "since": "2026-11-15",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "Chapter 4 of the handbook, beside 'A Strike made as part of another Maneuver'; ruling 245 (0.25.0)",
     "question": "The Subordinate Maneuver rule is Mike's and the system runs on it since 0.25.0: a Maneuver performed as part of another is done at the first Maneuver's listed cost and costs no additional actions, unless otherwise specified. The handbook has no sentence for it.",
     "recommendation": "Have Claude leave it as one tracked-change sentence against the current edition, for Mike to accept or reject, once v4.25 is synced.",
-    "decidedBy": ""
+    "decidedBy": "ruling 265 (0.26.0): a tracked change in Chapter 8's Maneuvers paragraph of v4.25 itself, Mike's choice of place"
+  },
+  {
+    "since": "2026-11-15",
+    "status": "open",
+    "decidedBy": "",
+    "id": "v4.25-redline-in-the-edition",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.25.docx, fourteen paragraphs with tracked changes by Claude; the untouched file is backup/pre-0.26.0/",
+    "question": "The sync redlined v4.25 itself, by Mike's instruction: the Subordinate Maneuver rule (Chapter 8), the cover's v4.25, Preparing's two actions in three places, the Modifiers paragraph's opening words, \"an Endeavor\", \"Attack Threshold\", \"Train Endeavor\", the Exploration trait, \"Serrovanians\" for a Golarion people, the Counter sentence struck, Prone's -2 typed, and the Supine cell. The sync read them as accepted and stamped the redlined file.",
+    "recommendation": "Accept or reject each in Word and save. The next build then reports the same-numbered file changed; `node assets/build_all.mjs --check --accept-phb` records it. A rejected change that the system already acts on (only the Subordinate rule and Preparing's two actions are rules) should be said, so the system can follow."
+  },
+  {
+    "since": "2026-11-15",
+    "status": "open",
+    "decidedBy": "",
+    "id": "area-attacks-as-data",
+    "category": "Automation",
+    "where": "data/magic.xlsx (the Targets column is prose); module/canvas/area-targets.mjs; PHB v4.25, Area Attacks",
+    "question": "0.26.0 aims an area and rules none of it: a template you draw targets what is inside, and the attack rolls once for each target. The book's own clauses wait for data: \"Unless the Talent specifies otherwise\" (no Talent can ask for one roll for all), a spell's own shape and size, and \"an area Attack does not automatically gain these location-specific effects\" (the system cannot tell an area Attack from another, so its Critical Hit effect is the GM's to switch off).",
+    "recommendation": "Plan it on its own when the first area spell is authored: two columns on the spell rows (Area: shape and size; Rolls: each or one), the Cast placing the template and removing it when the attack ends, and the Critical Hit effect withheld for an attack that came from one."
+  },
+  {
+    "since": "2026-11-15",
+    "status": "open",
+    "decidedBy": "",
+    "id": "0.26.0-claudes-readings",
+    "category": "Rules decision",
+    "where": "v4.25-sync-report.md, rulings 256 and 260",
+    "question": "Two readings the sync made that the book does not settle. 256: two overlapping Difficult regions of the SAME kind are two effects (x3), as two of different kinds are. 260: every Critical Hit that does damage sets its Zone's effect, an area Attack's included, and the Zone's switch on the sheet is the GM's remedy.",
+    "recommendation": "Leave both unless play says otherwise; 256 is the one most likely to be argued (one circumstance counted once would make two mud regions x2)."
   }
 ]

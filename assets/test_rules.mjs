@@ -59,6 +59,10 @@ registerTerrainKinds([["Mud", "", 2, "#6b4a2b"], ["Shallow Water", "", 2, "#2f7f
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
 import { slugify, plainName, resolveModifiers, ACTION_GLYPHS, actionCostOptions } from "../foundry/starwrought/module/config.mjs";
+// Multipliers and Divisors, the Legs' Speed and the Arms' Critical Hit penalty (0.26.0; PHB v4.25).
+import {
+  combineFactors, applyFactors, combineDifficulties, speedAfterLegs, ARMS_CRITICAL_PENALTY, ACTIVITY_SPEEDS, TERRAIN
+} from "../foundry/starwrought/module/config.mjs";
 // The attack flow's pure parts (0.12.0): the record's shape and the legal answers, both free of
 // Foundry globals at module scope, so the rule "no Defense is ever chosen by the system" has
 // checks the build runs.
@@ -1470,10 +1474,140 @@ check("waitingForGm: with no GM connected an uncommitted adversary waits; with o
   same(AttackWorkflow.waitingForGm(wf, { gmActive: false }), [], "committed, nothing waits");
 });
 
-check("rollerFor is unchanged: a player attacker rolls once; a player defender of an adversary's Blow rolls Defense", () => {
+check("rollerFor is unchanged: a player attacker rolls the Attack; a player defender of an adversary's Blow rolls Defense", () => {
   same(AttackWorkflow.rollerFor({ attacker: { isPlayer: true }, defender: { isPlayer: false } }).roller, "attacker", "player attacker");
   same(AttackWorkflow.rollerFor({ attacker: { isPlayer: false }, defender: { isPlayer: true } }).rollType, "defense", "player defender");
   same(AttackWorkflow.rollerFor({ attacker: { isPlayer: false }, defender: { isPlayer: false } }).isolated, true, "adversary against adversary");
+});
+
+/* -------------------------------------------- */
+/*  One die for each defender (0.26.0)          */
+/* -------------------------------------------- */
+
+const THREE = [
+  { actorUuid: "Actor.b1", tokenUuid: "", name: "Bandit", isPlayer: false, controllerUserIds: [] },
+  { actorUuid: "Actor.b2", tokenUuid: "", name: "Cutpurse", isPlayer: false, controllerUserIds: [] },
+  { actorUuid: "Actor.c", tokenUuid: "", name: "Wren", isPlayer: true, controllerUserIds: ["p2"] }
+];
+/** A whole submitted roll, as the roller's client hands it over. */
+const die = (total, natural) => ({ roll: { class: "Roll", total, terms: [] }, total, natural, formula: "1d20 + 3", modifiers: [] });
+/** A workflow in its rolling phase, every defender's answer revealed at the revision given. */
+function rollingFlow(spec, revealedAt = 4) {
+  const wf = AttackWorkflow.create(spec);
+  for (const phase of ["defending", "revealed", "rolling"]) AttackWorkflow.transition(wf, phase);
+  for (const t of wf.targets) {
+    t.committed = true;
+    t.revealed = { defense: "evade", reaction: null, posture: null, revision: revealedAt };
+  }
+  wf.revision = revealedAt + 1;
+  return wf;
+}
+
+check("outstandingFor in rolling: a player attacker has one Roll for each defender, and each die takes one off (PHB v4.25, Area Attacks)", () => {
+  const wf = rollingFlow(flowSpec({ weaponId: "w1", strike: "deliberate" }, THREE));
+  const mine = () => AttackWorkflow.outstandingFor(wf, { id: "p1", isGM: false });
+  same(mine().map(o => [o.kind, o.targetId]), [["rollAttack", "t1"], ["rollAttack", "t2"], ["rollAttack", "t3"]], "three dice, each named for its defender");
+  same(AttackWorkflow.outstandingFor(wf, { id: "p2", isGM: false }), [], "a defender of a player's attack rolls nothing");
+  same(AttackWorkflow.outstandingFor(wf, { id: "gm", isGM: true }), [], "and the GM gets no task for a player's attacker (the card's rows are the GM's way in)");
+  wf.targets[1].roll = die(17, 14);
+  same(mine().map(o => o.targetId), ["t1", "t3"], "a die thrown takes its own pairing off the list");
+  must(!AttackWorkflow.allRolled(wf), "two of three is not every die");
+  wf.targets[0].roll = die(9, 6);
+  wf.targets[2].roll = die(21, 18);
+  same(mine(), [], "nothing left to roll");
+  must(AttackWorkflow.allRolled(wf), "and resolution may begin");
+});
+
+check("outstandingFor in rolling: an adversary's attack at a character and an adversary is one Defense roll for the player and one Attack roll for the GM", () => {
+  const wf = rollingFlow({
+    id: "wf2", coordinatorUserId: "gm", initiatingUserId: "gm",
+    attacker: { actorUuid: "Actor.o", tokenUuid: "", name: "Ogre", isPlayer: false, controllerUserIds: [] },
+    maneuver: { attackId: "row1", weaponName: "Club", strike: "deliberate" },
+    targets: [THREE[2], THREE[0]]
+  });
+  same(wf.targets.map(t => t.roller), ["defender", "attacker"], "who rolls each pairing");
+  same(AttackWorkflow.outstandingFor(wf, { id: "p2", isGM: false }).map(o => [o.kind, o.targetId]), [["rollDefense", "t1"]], "Wren's player");
+  same(AttackWorkflow.outstandingFor(wf, { id: "gm", isGM: true }).map(o => [o.kind, o.targetId]), [["rollAttack", "t2"]], "the GM, for the adversary at the adversary");
+});
+
+check("rollDataFor: every pairing resolves with its own die; a card from before 0.26.0 still reads its one shared die", () => {
+  const wf = rollingFlow(flowSpec({ weaponId: "w1", strike: "quick" }, THREE));
+  wf.targets[0].roll = die(12, 9);
+  wf.targets[1].roll = die(20, 17);
+  same([AttackWorkflow.rollDataFor(wf, wf.targets[0]).total, AttackWorkflow.rollDataFor(wf, wf.targets[1]).total], [12, 20], "two pairings, two dice");
+  same(AttackWorkflow.rollDataFor(wf, wf.targets[2]), null, "a pairing with no die yet resolves with nothing");
+  same(wf.attackRoll, null, "and the record's shared die is never set");
+  const pub = AttackWorkflow.projectFor(wf);
+  same([pub.targets[0].roll.total, pub.targets[1].roll.total, pub.targets[2].roll, pub.attackRoll], [12, 20, null, null], "the card's projection carries each die on its own row");
+  // The old shape: the die on the workflow, a summary on each row the attacker rolled.
+  const old = rollingFlow(flowSpec({ weaponId: "w1", strike: "quick" }, THREE));
+  old.attackRoll = die(15, 12);
+  for (const t of old.targets) t.roll = { total: 15, natural: 12, formula: "1d20 + 3" };
+  same(old.targets.map(t => AttackWorkflow.rollDataFor(old, t).roll.total), [15, 15, 15], "the shared die reads for every row");
+  same(AttackWorkflow.outstandingFor(old, { id: "p1", isGM: false }), [], "and nothing is offered to be rolled again");
+  same(AttackWorkflow.rollDataFor(null, wf.targets[0]), null, "no workflow, no die");
+});
+
+check("rollCurrent: a die is stale only when the answer it was thrown at is older than the reveal, never because a sibling's die landed first", () => {
+  const wf = rollingFlow(flowSpec({ weaponId: "w1", strike: "quick" }, THREE), 4);
+  const t = wf.targets[0];
+  must(AttackWorkflow.rollCurrent(t, 5), "thrown at the revision the dice began at");
+  wf.revision = 9; // two sibling dice and a re-adoption later
+  must(AttackWorkflow.rollCurrent(t, 5), "the workflow moving on does not make it stale");
+  must(AttackWorkflow.rollCurrent(t, 4), "the reveal's own revision is current");
+  must(!AttackWorkflow.rollCurrent(t, 3), "a die from before the reveal is stale");
+  t.revealed.revision = 12; // Reset defenses, and a second reveal
+  must(!AttackWorkflow.rollCurrent(t, 5), "a new reveal makes the old die stale");
+  must(!AttackWorkflow.rollCurrent({ revealed: null }, 5), "nothing revealed, nothing to roll against");
+  must(!AttackWorkflow.rollCurrent(t, undefined), "a submission with no revision is refused");
+});
+
+/* -------------------------------------------- */
+/*  Multipliers and Divisors (0.26.0; v4.25)    */
+/* -------------------------------------------- */
+
+check("combineFactors: effects add their increase above 1 (two doublings triple, two halvings are a third), and a multiplier meets a divisor in that order", () => {
+  same(combineFactors([{ times: 2 }, { times: 2 }]), { multiplier: 3, divisor: 1 }, "two effects that each double");
+  same(combineFactors([{ over: 2 }, { over: 2 }]), { multiplier: 1, divisor: 3 }, "two effects that each halve");
+  same(combineFactors([{ over: 2 }, { over: 3 }]), { multiplier: 1, divisor: 4 }, "a half and a third");
+  same(combineFactors([{ times: 2 }, { over: 2 }]), { multiplier: 2, divisor: 2 }, "a doubling and a halving");
+  same(combineFactors([null, undefined, {}, { times: 1 }, { over: 0 }, { times: "x" }]), { multiplier: 1, divisor: 1 }, "what is no effect changes nothing");
+  same(applyFactors(6, [{ over: 2 }, { over: 2 }]), 2, "Speed 6 under two halvings is 2, not 1.5");
+  same(Math.floor(applyFactors(7, [{ times: 2 }, { over: 3 }])), 4, "7 doubled then cut to a third, rounded down at the end");
+});
+
+check("combineDifficulties: two overlapping regions at x2 cost x3; quicker ground divides; impassable stays so", () => {
+  same(combineDifficulties([2, 2]), 3, "two Difficult regions");
+  same(combineDifficulties([2, 3]), 4, "Difficult over Greater Difficult");
+  same(combineDifficulties([2]), 2, "one region is its own cost");
+  same(combineDifficulties([]), 1, "open ground");
+  same(combineDifficulties([2, 0.5]), 1, "a road through the mud");
+  same(combineDifficulties([2, Infinity]), Infinity, "impassable stays impassable (the terrain data stores it as null)");
+  same(combineDifficulties([2, 0]), 0, "a region of 0 makes the ground free, as multiplying did");
+  same(combineDifficulties([0, Infinity]), Infinity, "and impassable wins over free");
+  same(combineDifficulties([1, NaN, -2, null, undefined, "", "2"]), 2, "only a real cost counts, a numeric string among them");
+});
+
+check("the Travel Speed's effects: an Activity's pace and the terrain's meet (a half pace over Difficult Terrain is a third)", () => {
+  same([ACTIVITY_SPEEDS.full.effect, ACTIVITY_SPEEDS.half.effect, ACTIVITY_SPEEDS.double.effect], [null, { over: 2 }, { times: 2 }], "the three paces");
+  same([TERRAIN.normal.effect, TERRAIN.difficult.effect, TERRAIN.greater.effect], [null, { over: 2 }, { over: 3 }], "the three terrains");
+  const speed = (pace, ground) => applyFactors(6, [ACTIVITY_SPEEDS[pace].effect, TERRAIN[ground].effect]);
+  same([speed("half", "difficult"), speed("half", "greater"), speed("double", "difficult"), speed("double", "greater"), speed("full", "greater")],
+    [2, 1.5, 6, 4, 2], "Speed 6 under each pair");
+  same(speed("full", "normal"), 6, "neither is the plain Speed");
+});
+
+check("speedAfterLegs: the Critical Hit's halving and a Wound's meet at a third; a further Wound halves what is left; the final Wound is 0", () => {
+  same(speedAfterLegs(6, {}), { speed: 6, beforeFinal: 6 }, "sound Legs");
+  same(speedAfterLegs(6, { critical: true }).speed, 3, "the Critical Hit effect alone");
+  same(speedAfterLegs(6, { wounds: 1 }).speed, 3, "one Wound alone, as through 0.25.0");
+  same(speedAfterLegs(6, { critical: true, wounds: 1 }).speed, 2, "both: a third, not a quarter");
+  same(speedAfterLegs(7, { critical: true, wounds: 1 }).speed, 2, "rounded down");
+  same(speedAfterLegs(12, { wounds: 2 }).speed, 3, "a Large creature's second Wound halves what was left, as through 0.25.0");
+  same(speedAfterLegs(12, { critical: true, wounds: 2 }).speed, 2, "a third, then halved");
+  same(speedAfterLegs(6, { wounds: 2, final: true }), { speed: 0, beforeFinal: 3 }, "the final Wound: Speed 0, and a Crawl measured from the Speed before it");
+  same(speedAfterLegs(6, { wounds: 1, final: true }), { speed: 0, beforeFinal: 6 }, "a capacity of one: the first Wound is the final one");
+  same(ARMS_CRITICAL_PENALTY, -2, "the Arms' Critical Hit effect");
 });
 
 /* -------------------------------------------- */

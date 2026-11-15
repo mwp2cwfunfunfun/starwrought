@@ -241,14 +241,15 @@ export function statusLine(state) {
     case "revealed":
       return L("STARWROUGHT.Attack.revealed");
     case "rolling": {
-      // Who still has a die to throw: the attacker once for every pairing they roll, each
-      // player-controlled defender of an adversary's Blow for their own (brief, "Who rolls").
+      // Who still has a die to throw: the attacker while any pairing they roll waits for its die
+      // (0.26.0: one for each defender), each player-controlled defender of an adversary's Blow
+      // for their own (brief, "Who rolls").
       const groups = new Map();
       const add = (kind, name) => {
         if (!groups.has(kind)) groups.set(kind, []);
         if (!groups.get(kind).includes(name)) groups.get(kind).push(name);
       };
-      if (!state.attackRoll && targets.some(t => (t.roller === "attacker") && !t.outcome)) {
+      if (targets.some(t => (t.roller === "attacker") && !t.roll && !t.outcome)) {
         add(rollKindLabel("attack"), state.attacker?.name ?? "");
       }
       for (const t of targets) {
@@ -272,43 +273,40 @@ export function statusLine(state) {
 }
 
 /**
- * The per-user button on a target row: the one action that is this defender's right now.
- * Choose Defense while uncommitted, Open prompt once committed (to see the locked choice and who
- * is awaited), Roll Defense when the roll is theirs. The GM owns everything, so the GM sees them
- * all; that is the system's rule for every card.
+ * The per-user button on a target row: the one action this pairing waits on right now. Choose
+ * Defense while uncommitted, Open prompt once committed (to see the locked choice and who is
+ * awaited), then the pairing's die: Roll Defense when the defender throws it, Roll Attack when
+ * the attacker does (0.26.0: one die for each defender, so the button the attacker had above the
+ * list through 0.25.0 is one on each row). `ownerUuid` names the actor the button acts for, which
+ * is what the render hook prunes by and the click checks: the DEFENDER for a choice or a Defense
+ * roll, the ATTACKER for an Attack roll. The GM owns everything, so the GM sees them all; that is
+ * the system's rule for every card.
  */
 function targetButton(state, target) {
   const L = key => game.i18n.localize(key);
   if (!isLive(state)) return null;
+  const mine = target.actorUuid;
   if (DEFENDING_PHASES.includes(state.phase)) {
     return target.committed
-      ? { action: "attackOpenPrompt", label: L("STARWROUGHT.Attack.openPrompt"), icon: "fa-solid fa-window-restore" }
-      : { action: "attackOpenPrompt", label: L("STARWROUGHT.Attack.chooseDefense"), icon: "fa-solid fa-shield-halved" };
+      ? { action: "attackOpenPrompt", label: L("STARWROUGHT.Attack.openPrompt"), icon: "fa-solid fa-window-restore", ownerUuid: mine }
+      : { action: "attackOpenPrompt", label: L("STARWROUGHT.Attack.chooseDefense"), icon: "fa-solid fa-shield-halved", ownerUuid: mine };
   }
   if (state.phase === "revealed") {
-    return { action: "attackOpenPrompt", label: L("STARWROUGHT.Attack.openPrompt"), icon: "fa-solid fa-window-restore" };
+    return { action: "attackOpenPrompt", label: L("STARWROUGHT.Attack.openPrompt"), icon: "fa-solid fa-window-restore", ownerUuid: mine };
   }
-  if ((state.phase === "rolling") && (target.roller === "defender") && !target.roll && !target.outcome) {
-    return { action: "attackRoll", label: L("STARWROUGHT.Attack.rollDefense"), icon: "fa-solid fa-dice-d20" };
+  if ((state.phase === "rolling") && !target.roll && !target.outcome) {
+    if (target.roller === "defender") {
+      return {
+        action: "attackRoll", label: L("STARWROUGHT.Attack.rollDefense"), icon: "fa-solid fa-dice-d20",
+        ownerUuid: mine, tooltip: L("STARWROUGHT.Attack.rollShiftHintDefense")
+      };
+    }
+    return {
+      action: "attackRoll", label: L("STARWROUGHT.Attack.rollAttack"), icon: "fa-solid fa-dice-d20",
+      ownerUuid: state.attacker?.actorUuid ?? "", tooltip: L("STARWROUGHT.Attack.rollShiftHint")
+    };
   }
   return null;
-}
-
-/**
- * The attacker's button: Roll Attack, once, while any pairing waits on the attacker's die. The
- * target id it carries is the first such pairing; the coordinator reads the one roll against every
- * pairing the attacker rolls (brief, "Who rolls").
- */
-function attackerButton(state) {
-  if (state.phase !== "rolling" || state.attackRoll) return null;
-  const pending = state.targets.find(t => (t.roller === "attacker") && !t.outcome);
-  if (!pending) return null;
-  return {
-    action: "attackRoll",
-    label: game.i18n.localize("STARWROUGHT.Attack.rollAttack"),
-    icon: "fa-solid fa-dice-d20",
-    targetId: pending.id
-  };
 }
 
 /**
@@ -365,7 +363,7 @@ export function attackCardContext(state, { forUser = null } = {}) {
       ? thresholdVisibleTo(forUser, state, target)
       : (target.isPlayer && (target.threshold !== null) && (target.threshold !== undefined) && (target.threshold !== "")));
     let button = targetButton(state, target);
-    if (button && forUser && !canActFor(forUser, target.actorUuid)) button = null;
+    if (button && forUser && !canActFor(forUser, button.ownerUuid)) button = null;
 
     return {
       id: target.id,
@@ -376,9 +374,14 @@ export function attackCardContext(state, { forUser = null } = {}) {
       committed: target.committed,
       status,
       answer: revealed ? answerText(revealed) : "",
-      // A defender's own Defense roll; the attacker's one roll is printed once, above the list.
-      roll: (target.roll && (target.roller === "defender"))
-        ? F("STARWROUGHT.Attack.rolled", { kind: rollKindLabel(target.rollType ?? "defense"), total: target.roll.total })
+      // The pairing's own die (0.26.0): the attacker's Attack roll at this defender, or the
+      // defender's Defense roll. (A card from before 0.26.0 carries the attacker's one total as a
+      // summary on each row, which reads the same here.)
+      roll: (target.roll && Number.isFinite(Number(target.roll.total)))
+        ? F("STARWROUGHT.Attack.rolled", {
+          kind: rollKindLabel((target.roller === "defender") ? (target.rollType ?? "defense") : "attack"),
+          total: target.roll.total
+        })
         : "",
       outcome: target.outcome ? { key: target.outcome, label: L(outcomeLabelKey(target.outcome)) } : null,
       threshold: showThreshold ? F("STARWROUGHT.Attack.vs", { threshold: target.threshold }) : "",
@@ -387,8 +390,6 @@ export function attackCardContext(state, { forUser = null } = {}) {
     };
   });
 
-  let attackerBtn = attackerButton(state);
-  if (attackerBtn && forUser && !canActFor(forUser, attackerUuid)) attackerBtn = null;
   let gm = gmControls(state);
   if (gm && forUser && !mayControl(forUser, state)) gm = null;
 
@@ -408,10 +409,6 @@ export function attackCardContext(state, { forUser = null } = {}) {
       targets: state.targets.map(t => t.name).join(", ")
     }),
     status: statusLine(state),
-    attackRoll: state.attackRoll
-      ? F("STARWROUGHT.Attack.rolled", { kind: rollKindLabel("attack"), total: state.attackRoll.total })
-      : "",
-    attackerButton: attackerBtn,
     targets,
     log: state.log.map(line => (typeof line === "string") ? line : (line?.text ?? "")).filter(Boolean),
     gm

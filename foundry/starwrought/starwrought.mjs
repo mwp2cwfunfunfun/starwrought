@@ -55,6 +55,8 @@ import { registerBindSync } from "./module/documents/bind.mjs";
 import { registerTokenHud } from "./module/apps/token-hud.mjs";
 // THE GLANCE (0.19.0): the hover card beside a token, what anyone standing near could see.
 import { registerGlance, hideGlance } from "./module/canvas/glance.mjs";
+// TARGET WHAT IS INSIDE A TEMPLATE (0.26.0)
+import { registerAreaTargets, targetInside } from "./module/canvas/area-targets.mjs";
 import { SwCharacterSheet } from "./module/apps/actor-sheet.mjs";
 import { SwNpcSheet } from "./module/apps/npc-sheet.mjs";
 import { SwPartySheet } from "./module/apps/party-sheet.mjs";
@@ -107,6 +109,12 @@ Hooks.once("init", async () => {
      * pack sources `node assets/build_all.mjs --content` wrote, for a macro or the console. GM only.
      */
     syncContent: () => ContentSync.open(),
+    /**
+     * Target what is inside a template (0.26.0): the tokens inside the Region given (else the
+     * selected Regions, else your newest template) become your targets, for the next Strike or
+     * Cast to declare at. `game.starwrought.targetInside(region)`.
+     */
+    targetInside,
     /** Which Player's Handbook the shipped content was built from. */
     rules: rulesVersion
   };
@@ -209,6 +217,7 @@ Hooks.once("init", async () => {
   registerExposedStatuses();
   registerTokenHud();
   registerGlance(); // THE GLANCE (0.19.0)
+  registerAreaTargets(); // TARGET WHAT IS INSIDE A TEMPLATE (0.26.0)
   registerHandlebarsHelpers();
   // THE TERRAIN KINDS (0.18.0): the roster's terrainKinds block, from content/terrain.json, into
   // the registry before the world's regions are built, so a Kind select, the overlay and the ruler
@@ -824,6 +833,19 @@ function registerExposedStatuses() {
  * the toggle reads its state from the flag then; auras.mjs rebuilds them when the flag changes.
  */
 Hooks.on("getSceneControlButtons", controls => {
+  // TARGET WHAT IS INSIDE A TEMPLATE (0.26.0): a button in the Regions controls, every user's
+  // (a player's controls open in template mode), for the selected Region or their newest template.
+  const regionTools = controls.regions?.tools;
+  if (regionTools) {
+    regionTools.swTargetInside = {
+      name: "swTargetInside",
+      title: "STARWROUGHT.Template.target",
+      icon: "fa-solid fa-bullseye",
+      order: Object.keys(regionTools).length,
+      button: true,
+      onChange: () => targetInside()
+    };
+  }
   const tools = controls.tokens?.tools;
   if (!tools) return;
   // TERRAIN ON THE MAP (0.15.0): every player's own switch for the Difficult terrain overlay
@@ -1094,6 +1116,16 @@ function registerSettings() {
 
   // THE GLANCE (0.19.0; Mike, playtest): the hover card beside a token, for every user who can
   // see it. Off, the LIMITED sheet still shows the same panel.
+  // TARGET WHAT IS INSIDE A TEMPLATE (0.26.0): each user's own switch for the automatic step.
+  game.settings.register(SW.SYSTEM_ID, "templateTargets", {
+    name: "STARWROUGHT.Settings.templateTargets",
+    hint: "STARWROUGHT.Settings.templateTargetsHint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
   game.settings.register(SW.SYSTEM_ID, "showGlance", {
     name: "STARWROUGHT.Settings.showGlance",
     hint: "STARWROUGHT.Settings.showGlanceHint",

@@ -85,6 +85,8 @@ const FIELDS = Object.freeze({
 const DEFENSE_BONUS = /^system\.bonuses\.defenses\.(\w+)$/;
 const COIN = /^system\.currency\.(\w+)$/;
 const EXPOSED = /^system\.zones\.(\w+)\.exposed$/;
+// A Zone's Critical Hit effect switched by hand (0.26.0): said as a Zone Exposed by hand is.
+const CRITICAL = /^system\.zones\.(\w+)\.critical$/;
 
 /**
  * The lines one actor update produces, read against the actor as it stands before the change.
@@ -102,10 +104,17 @@ export function auditLines(actor, changes) {
     const defense = path.match(DEFENSE_BONUS);
     const coin = path.match(COIN);
     const zone = path.match(EXPOSED);
-    if (!field && !defense && !coin && !zone) continue;
+    const critical = path.match(CRITICAL);
+    if (!field && !defense && !coin && !zone && !critical) continue;
 
     const previous = getProperty(actor, path);
     if (same(previous, next)) continue;
+
+    if (critical) {
+      const label = SW.ZONES[critical[1]] ? localize(SW.ZONES[critical[1]].label) : critical[1];
+      lines.push(escapeHTML(format(next ? "STARWROUGHT.Audit.criticalOn" : "STARWROUGHT.Audit.criticalOff", { zone: label })));
+      continue;
+    }
 
     if (zone) {
       const label = SW.ZONES[zone[1]] ? localize(SW.ZONES[zone[1]].label) : zone[1];

@@ -69,9 +69,15 @@
     </h3>
     <div class="sw-zone-grid">
       {{#each zones as |zone|}}
-      <div class="sw-zone {{#if zone.exposed}}sw-zone-exposed{{/if}} {{#if zone.wounds.wounded}}sw-zone-wounded{{/if}}">
+      <div class="sw-zone {{#if zone.exposed}}sw-zone-exposed{{/if}} {{#if zone.wounds.wounded}}sw-zone-wounded{{/if}} {{#if zone.critical}}sw-zone-critical{{/if}}">
         <div class="sw-zone-head">
           <span class="sw-zone-name">{{zone.label}}</span>
+          {{!-- The Zone's Critical Hit effect (0.26.0): set by a Critical Hit, ended by a Recenter,
+               switched here by hand. --}}
+          <a class="sw-zone-toggle sw-zone-crit-toggle {{#if zone.critical}}active{{/if}}" data-action="toggleCritical" data-zone="{{zone.key}}"
+             data-tooltip="{{#if zone.critical}}{{localize 'STARWROUGHT.ZoneCrit.endHint'}}{{else}}{{localize 'STARWROUGHT.ZoneCrit.setHint'}}{{/if}}: {{zone.crit}}">
+            <i class="fa-solid fa-burst"></i>
+          </a>
           <a class="sw-zone-toggle" data-action="toggleZone" data-zone="{{zone.key}}"
              data-tooltip="{{#if zone.exposed}}{{localize 'STARWROUGHT.Zone.closeHint'}}{{else}}{{localize 'STARWROUGHT.Zone.openHint'}}{{/if}}">
             {{#if zone.exposed}}<i class="fa-solid fa-heart-crack"></i>{{else}}<i class="fa-solid fa-shield"></i>{{/if}}
@@ -88,6 +94,7 @@
           {{#if zone.piece}}{{zone.piece.name}}{{else}}<em>{{localize "STARWROUGHT.Protection.unarmored"}}</em>{{/if}}
         </div>
         {{#if zone.wounds.effect}}<div class="sw-zone-wound-effect">{{zone.wounds.effect}}</div>{{/if}}
+        {{#if zone.critical}}<div class="sw-zone-crit-effect"><i class="fa-solid fa-burst"></i> {{zone.crit}}</div>{{/if}}
         {{#if zone.exposed}}
         <div class="sw-zone-flag">
           {{!-- The badge opens the rules page for Exposed (0.5.1, T6). --}}

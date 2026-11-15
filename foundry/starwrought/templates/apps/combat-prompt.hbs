@@ -111,11 +111,12 @@
     {{/if}}
 
     {{#if task.isRoll}}
-    {{!-- The players roll: the attacker once for every defender, or a defender against an adversary's
-          Attack Threshold (brief, "Who rolls"). The Strike is already locked. --}}
+    {{!-- The players roll: the attacker once for each defender (0.26.0, one task for each die), or
+          a defender against an adversary's Attack Threshold (brief, "Who rolls"). The Strike is
+          already locked. --}}
     <div class="sw-prompt-roll">
       {{#each task.lines as |line|}}<p class="sw-prompt-line">{{{line}}}</p>{{/each}}
-      <button type="button" class="sw-primary" data-action="roll" data-tooltip="{{localize 'STARWROUGHT.Prompt.rollNow'}}" {{#if task.disabled}}disabled{{/if}}>
+      <button type="button" class="sw-primary" data-action="roll" data-tooltip="{{#if task.hint}}{{task.hint}}{{else}}{{localize 'STARWROUGHT.Prompt.rollNow'}}{{/if}}" {{#if task.disabled}}disabled{{/if}}>
         <i class="fa-solid fa-dice-d20"></i> {{task.button}}
       </button>
     </div>

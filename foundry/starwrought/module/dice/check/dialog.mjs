@@ -182,7 +182,8 @@ export async function prompt(cfg, parts) {
   });
 
   const answer = await DialogV2.wait({
-    window: { title: cfg.label, icon: "fa-solid fa-dice-d20" },
+    // The attack flow's dice name their defender in the title (0.26.0: one die for each).
+    window: { title: cfg.dialogTitle ?? cfg.label, icon: "fa-solid fa-dice-d20" },
     classes: ["starwrought", "check-dialog"],
     position: { width: 440 },
     content,

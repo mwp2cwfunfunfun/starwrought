@@ -1057,6 +1057,11 @@ export function travelMultiplier(item) {
   return Number(SW.ACTIVITY_SPEEDS?.[explorationOf(item).travel]?.multiplier) || 1;
 }
 
+/** The Activity's pace as one effect of the book's Multipliers and Divisors (0.26.0), or null. */
+export function travelEffect(item) {
+  return SW.ACTIVITY_SPEEDS?.[explorationOf(item).travel]?.effect ?? null;
+}
+
 /** An Activity's name as a slug, for the four the book writes in prose. */
 function activitySlug(item) {
   return item ? SW.slugify(item.name) : "";
@@ -1485,14 +1490,18 @@ export async function setActivity(actor, { activityId, constellation } = {}) {
 }
 
 /**
- * The party's Travel Speed (ruling 102), display only. Each member's `moveSpeed` (after the Legs'
- * Wounds, as the character's own figures read it) times their Activity's multiplier; the lowest,
- * times the terrain (`SW.TERRAIN`: normal 1, Difficult one half, Greater Difficult one third;
- * PHB P343 to P344); then the book's three figures through `SW.TRAVEL`, miles an hour rounded
- * down as the character's are (Math Conventions: an odd Speed never prints a half mile), the
- * other two rounded. The pacesetter is the slowest member, the first on a tie; `searching` says
- * whether anyone Searches, for the ten-minutes note (P346). No members: zero figures and no
- * pacesetter. Nothing here moves a token.
+ * The party's Travel Speed (ruling 102), display only. Each member's `moveSpeed` (after the Legs,
+ * as the character's own figures read it) under their Activity's pace AND the terrain
+ * (`SW.TERRAIN`: Difficult halves, Greater Difficult cuts to a third), combined as the book's
+ * Multipliers and Divisors are since 0.26.0 (PHB v4.25, Chapter 8; `SW.applyFactors`): the two
+ * effects meet on the Travel Speed, so a half-speed Activity over Difficult Terrain is a third
+ * and Hustle over it is the plain Speed, where through 0.25.0 the terrain multiplied the slowest
+ * member's figure in sequence (a quarter). The lowest member's figure is the party's; then the
+ * book's three figures through `SW.TRAVEL`, each rounded down ("Round down the final result";
+ * feet a minute and miles a day were rounded to the nearest through 0.25.0). The pacesetter is
+ * the slowest member under the terrain, the first on a tie; `searching` says whether anyone
+ * Searches, for the ten-minutes note. No members: zero figures and no pacesetter. Nothing here
+ * moves a token.
  * @param {Actor} party
  * @param {Item[]} activities
  * @returns {{speed: number, feetPerMinute: number, milesPerHour: number, milesPerDay: number,
@@ -1503,23 +1512,32 @@ export async function setActivity(actor, { activityId, constellation } = {}) {
 export function partyTravel(party, activities) {
   const terrain = String(party?.system?.travel?.terrain ?? "normal");
   const terrainMultiplier = Number(SW.TERRAIN?.[terrain]?.multiplier) || 1;
+  const terrainEffect = SW.TERRAIN?.[terrain]?.effect ?? null;
   const members = memberActors(party).map(actor => {
     const pick = activityOf(actor, activities);
     const multiplier = travelMultiplier(pick.item);
-    const speed = (Number(actor.system.moveSpeed) || 0) * multiplier;
-    return { actor, ...pick, multiplier, speed };
+    const base = Number(actor.system.moveSpeed) || 0;
+    // `speed` is the member's pace alone, as their row reads; `travel` is the same Speed under
+    // the Activity's pace and the terrain's together, the two effects that meet (0.26.0).
+    const speed = base * multiplier;
+    const travel = SW.applyFactors(base, [travelEffect(pick.item), terrainEffect]);
+    return { actor, ...pick, multiplier, speed, travel };
   });
   if (!members.length) {
     return { speed: 0, feetPerMinute: 0, milesPerHour: 0, milesPerDay: 0, pacesetter: null, terrain, terrainMultiplier, searching: false, members };
   }
+  // The slowest under the terrain: combining can change who that is (Speed 7 at half pace is
+  // slower than Speed 4 at full on open ground, and faster over Difficult Terrain).
   let slowest = members[0];
-  for (const member of members) if (member.speed < slowest.speed) slowest = member;
-  const speed = slowest.speed * terrainMultiplier;
+  for (const member of members) if (member.travel < slowest.travel) slowest = member;
+  const speed = slowest.travel;
+  // "Round down the final result." The epsilon keeps a figure that is whole on paper whole here.
+  const down = n => Math.floor(n + 1e-9);
   return {
     speed,
-    feetPerMinute: Math.round(speed * SW.TRAVEL.feetPerMinute),
-    milesPerHour: Math.floor(speed * SW.TRAVEL.milesPerHour),
-    milesPerDay: Math.round(speed * SW.TRAVEL.milesPerDay),
+    feetPerMinute: down(speed * SW.TRAVEL.feetPerMinute),
+    milesPerHour: down(speed * SW.TRAVEL.milesPerHour),
+    milesPerDay: down(speed * SW.TRAVEL.milesPerDay),
     pacesetter: { actor: slowest.actor, item: slowest.item, multiplier: slowest.multiplier, speed: slowest.speed },
     terrain,
     terrainMultiplier,

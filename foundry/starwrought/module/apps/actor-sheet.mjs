@@ -111,6 +111,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // NAMING A LORE (0.18.0): a leftover Lore template's row names its field.
       nameLore: SwCharacterSheet.#onNameLore,
       toggleZone: SwCharacterSheet.#onToggleZone,
+      toggleCritical: SwCharacterSheet.#onToggleCritical,
       recenter: SwCharacterSheet.#onRecenter,
       rest: SwCharacterSheet.#onRest,
       recovery: SwCharacterSheet.#onRecovery,
@@ -353,6 +354,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         material: z.material,
         materialLabel: game.i18n.localize(z.materialLabel ?? SW.ARMOR_TYPES.none.label),
         crit: game.i18n.localize(SW.ZONE_CRITICALS[key].effect),
+        // The Zone's Critical Hit effect is running, until a Recenter (0.26.0).
+        critical: !!z.critical,
         wounds: zoneWounds(actor, key)
       };
     });
@@ -1073,6 +1076,12 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onToggleZone(event, target) {
     const zone = target.dataset.zone;
     return this.document.setExposed(zone, !this.document.system.zones[zone].exposed);
+  }
+
+  /** Set or end a Zone's Critical Hit effect by hand (0.26.0); a Recenter ends it too. */
+  static async #onToggleCritical(event, target) {
+    const zone = target.dataset.zone;
+    return this.document.setCriticalEffect(zone, !this.document.system.zones[zone].critical);
   }
 
   /** Raise or lower a Visored piece's visor (PHB v4.21): the Item's own method pays the action and says so. */

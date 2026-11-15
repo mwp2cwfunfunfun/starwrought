@@ -9,7 +9,9 @@ import * as SW from "../../config.mjs";
 export const PositionMixin = Base => class extends Base {
   /**
    * Recenter ❶ (PHB v4.10): gather yourself, clear every Exposed Zone on you (except one Exposed
-   * by a Posture, which lasts to the end of the round) and end any Bind you are in.
+   * by a Posture, which lasts to the end of the round) and end any Bind you are in. Since 0.26.0
+   * it also ends every Zone's Critical Hit effect (PHB v4.25: each lasts "until it Recenters"),
+   * the Torso's Off-Guard with them, and the card names the ones it ended.
    */
   async recenter() {
     // A Maneuver: outside this actor's Opportunity it waits for the GM (0.19.0).
@@ -18,20 +20,75 @@ export const PositionMixin = Base => class extends Base {
     await this.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.recenter"), announce: false });
     const updates = {};
     let kept = 0;
+    const ended = [];
     for (const zone of Object.keys(SW.ZONES)) {
+      if (this.system.zones?.[zone]?.critical) {
+        updates[`system.zones.${zone}.critical`] = false;
+        ended.push(zone);
+      }
       if (this.system.zones?.[zone]?.postureExposed) { kept++; continue; }
       updates[`system.zones.${zone}.exposed`] = false;
     }
     await this.update(updates, { swAnnounced: true });
+    // The Torso's effect is Off-Guard, the condition: the one the Critical Hit put on goes with
+    // the effect. (A Torso Wound's Off-Guard is the Wound's own, read off the Zone, and stays; so
+    // does an Off-Guard that was there before the Critical Hit landed.)
+    if (ended.includes("torso")) await this._endCriticalOffGuard();
     const hadBind = !!this.system.bind?.state;
     if (hadBind) await this.endBind({ announce: false });
+    const endedLine = ended.length
+      ? " " + game.i18n.format("STARWROUGHT.Action.recenterCritical", {
+        zones: ended.map(zone => game.i18n.localize(SW.ZONES[zone].label)).join(", ")
+      })
+      : "";
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
       content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">❶</span> ${game.i18n.localize("STARWROUGHT.Action.recenter")}</h3>
-        <p>${game.i18n.format("STARWROUGHT.Action.recenterText", { name: this.name })}${
+        <p>${game.i18n.format("STARWROUGHT.Action.recenterText", { name: this.name })}${endedLine}${
           kept ? " " + game.i18n.localize("STARWROUGHT.Action.recenterPosture") : ""}
         <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p></div>`
     });
+  }
+
+  /**
+   * Set or end one Zone's Critical Hit effect (0.26.0; PHB v4.25, the Critical Hit Effect table).
+   * The Zone is the record; the Arms' -2 to Attack rolls, the Legs' halved Speed and the Head's
+   * lost Reactions are derived from it, and the Torso's Off-Guard is the condition, set and
+   * cleared with it. The damage pipeline sets it on a Critical Hit, Recenter clears it, and the
+   * sheet's switch does either (a GM ruling that an area Attack's Critical Hit gains no such
+   * effect, which the system cannot tell).
+   * @param {string} zone
+   * @param {boolean} [on=true]
+   *
+   * The Torso's Off-Guard is the Critical Hit's OWN: put on only when the body is not Off-Guard
+   * already, flagged as the Critical Hit's (`flags.starwrought.criticalHit`), and taken off again
+   * only when it carries that flag, so an Off-Guard the GM set from the token palette for another
+   * reason outlives the Recenter. A Talent that prevents Off-Guard prevents the Torso's effect with
+   * it: the Zone is not marked.
+   * @param {object} [options]
+   * @param {boolean} [options.announced=false]  The caller's card already says it (the damage
+   *   card). A switch by hand is left to the audit, which says it as it says a Zone Exposed.
+   */
+  async setCriticalEffect(zone, on = true, { announced = false } = {}) {
+    if (!(zone in SW.ZONES)) return;
+    const want = !!on;
+    if (zone === "torso") {
+      if (!want) await this._endCriticalOffGuard();
+      else if (!this.statuses?.has("offGuard")) {
+        const effect = await this.setCondition("offGuard", true, { flags: { [SW.SYSTEM_ID]: { criticalHit: true } } });
+        if (!effect) return this.system.zones?.[zone];
+      }
+    }
+    if (!!this.system.zones?.[zone]?.critical !== want) {
+      await this.update({ [`system.zones.${zone}.critical`]: want }, { swAnnounced: !!announced });
+    }
+    return this.system.zones?.[zone];
+  }
+
+  /** Take off the Off-Guard a Torso Critical Hit put on, and no other. */
+  async _endCriticalOffGuard() {
+    const ours = this.effects.some(e => e.statuses?.has("offGuard") && e.getFlag(SW.SYSTEM_ID, "criticalHit"));
+    if (ours) await this.setCondition("offGuard", false);
   }
 
   /**

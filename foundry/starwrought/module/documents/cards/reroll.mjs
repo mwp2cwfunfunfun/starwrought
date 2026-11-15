@@ -4,9 +4,10 @@
  * The roller's owner or the GM clicks; a small dialog takes the reason and offers a Hero Point; the
  * new d20 is thrown on the clicking client with the first die's formula, and read where the
  * Threshold can be known and the old card marked: here when the card showed its Threshold and this
- * client may update it, else on the active GM's client over the system socket. Inside the attack
- * flow one die filled every pairing, so the set of sibling resolution cards is rerolled with the
- * one new die. Through 0.10.0 this lived in documents/chat.mjs.
+ * client may update it, else on the active GM's client over the system socket. A reroll is one
+ * pairing's (0.26.0): every die fills its own pairing, the attacker's too, so there are no sibling
+ * cards to throw again with it (through 0.25.0 a player attacker's one die filled every pairing,
+ * and they were rerolled as a set; ruling 155). Through 0.10.0 this lived in documents/chat.mjs.
  */
 
 import * as SW from "../../config.mjs";
@@ -57,20 +58,18 @@ export async function rerollFromCard(message, flags) {
     modifiers: flags.modifiers ?? []
   };
 
-  // One die, every pairing it filled: inside the attack flow a player attacker's single roll
-  // resolves against every defender, so rerolling one of those cards rerolls them all, with the
-  // one new die. The coordinator authored those cards, so the set goes to the GM's client unless
-  // this is the GM.
-  const siblings = AttackCoordinator.siblingResolutions(message.id);
+  // One die, one pairing (0.26.0): this card alone is thrown again. The coordinator authored the
+  // attack flow's cards, so the reading goes to the GM's client unless this is the GM, or the
+  // card showed its Threshold and this client may mark it.
   const gm = game.users.activeGM;
   if (game.user.isGM) {
-    const result = await rerollSet(siblings, { rollData, reason, clicked: message.id });
+    const result = await rerollSet([message.id], { rollData, reason, clicked: message.id });
     if (!result) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.noThreshold"));
     if (answer.heroPoint) await spendHeroPointFor(roller);
     return notifyReroll(outcomeLabel(result));
   }
   const shown = Number.isNumeric(flags.threshold) ? Number(flags.threshold) : null;
-  if ((siblings.length === 1) && (shown !== null) && (message.isAuthor || !gm)) {
+  if ((shown !== null) && (message.isAuthor || !gm)) {
     const result = await SwCheck.rerollCard(message, { rollData, reason, threshold: shown });
     if (result && !message.isAuthor) ui.notifications.warn(game.i18n.localize("STARWROUGHT.Reroll.notMarked"));
     if (result && answer.heroPoint) await spendHeroPointFor(roller);
@@ -361,8 +360,8 @@ async function rerollForUser(request, userId) {
   if (!roller || !user || !roller.testUserPermission(user, "OWNER")) return { type: "reroll:refused", reason: "notYours" };
   const rollData = rerollData(request.rollData, chat.rolls?.[0]?.formula ?? "");
   if (!rollData) return { type: "reroll:refused", reason: "noCard" };
-  // The one die fills every pairing it filled the first time (the attack flow's multi-target Strike).
-  const result = await rerollSet(AttackCoordinator.siblingResolutions(chat.id), {
+  // The card's own pairing, and no other (0.26.0: every die fills one).
+  const result = await rerollSet([chat.id], {
     rollData, reason: String(request.reason ?? "").slice(0, 80), clicked: chat.id
   });
   if (!result) return { type: "reroll:refused", reason: "noThreshold" };

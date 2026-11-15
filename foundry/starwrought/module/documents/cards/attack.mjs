@@ -49,15 +49,17 @@ export async function openAttackPrompt(button) {
 }
 
 /**
- * Roll Attack or Roll Defense. The roller's own client throws the die blind (no Threshold) and
- * hands the result to the coordinator, which reads it against every pairing (brief, "The roll and
- * the resolution"); `AttackCoordinator.rollFor` is that whole step.
+ * Roll Attack or Roll Defense, for the row's pairing (0.26.0: one die for each defender). The
+ * roller's own client throws the die blind (no Threshold) and hands the result to the coordinator,
+ * which reads it against that pairing (brief, "The roll and the resolution");
+ * `AttackCoordinator.rollFor` is that whole step. A Shift-click rolls with no dialog, the sheets'
+ * convention.
  */
-export async function rollFromAttackCard(button) {
+export async function rollFromAttackCard(button, event = null) {
   const { workflowId, targetId } = button.dataset;
   if (!workflowId) return;
   if (!actsForAttackButton(button)) return;
-  return AttackCoordinator.rollFor(workflowId, targetId || null);
+  return AttackCoordinator.rollFor(workflowId, targetId || null, { dialog: !event?.shiftKey });
 }
 
 /**

@@ -59,6 +59,14 @@ function zoneFields(extra = {}) {
     exposed: new fields.BooleanField({ initial: false }),
     /** Exposed by a Posture: it lasts to the end of the round, and Recenter does not clear it. */
     postureExposed: new fields.BooleanField({ initial: false }),
+    /**
+     * The Zone's Critical Hit effect is running (0.26.0; PHB v4.25, the Critical Hit Effect
+     * table: Arms −2 Situation to Attack rolls, Legs Speed halved, Torso Off-Guard, Head no
+     * Reactions, each "until it Recenters"). Set by the damage pipeline when a Critical Hit lands
+     * on the Zone, cleared by Recenter, switched by hand on the sheet. Through 0.25.0 only the
+     * Torso's Off-Guard was set, and nothing ended it.
+     */
+    critical: new fields.BooleanField({ initial: false }),
     /** The Wounds this Zone carries. Its capacity is derived from Size (PHB v4.10, Wounds). */
     wounds: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
     bonus: new fields.NumberField({ required: true, integer: true, initial: 0 })
@@ -381,7 +389,10 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
   /* -------------------------------------------- */
 
   /**
-   * Speed in feet per Move, and what it buys (PHB v4.21, Motion; Load and Load Strain). Each Legs
+   * Speed in feet per Move, and what it buys (PHB v4.21, Motion; Load and Load Strain). The Legs'
+   * Critical Hit effect halves it until a Recenter and the first Legs Wound halves it: where both
+   * stand they meet as the book's Multipliers and Divisors do, at a third (0.26.0; PHB v4.25;
+   * `SW.speedAfterLegs`). Each further Legs
    * Wound short of the last halves what Speed is left ("a second Legs Wound halves what Speed it
    * had left"); the final Legs Wound is Prone and cannot Stand, so 0. A Step is half Speed; a Rush
    * ❷ three times Speed less Load Strain; Leap ❶ half Speed, ❷ Speed, ❸ one and a half times it,
@@ -391,16 +402,12 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
    * @param {number} loadStrain  The wearer's Load Strain.
    */
   _prepareMovement(base, loadStrain = 0) {
-    let speed = Math.max(0, base);
     const legs = this.zones.legs;
-    this.cannotStand = false;
-    // What the legs allowed before the last Wound: halved once per Wound short of the final one.
-    for (let i = 0; i < Math.max(0, legs.wounds - (legs.final ? 1 : 0)); i++) speed = Math.floor(speed / 2);
-    const beforeFinal = speed;
-    if (legs.final) {
-      speed = 0;
-      this.cannotStand = true;
-    }
+    // What the Legs allow, and what they allowed before the last Wound (config/movement.mjs).
+    const { speed, beforeFinal } = SW.speedAfterLegs(base, {
+      critical: !!legs.critical, wounds: legs.wounds, final: !!legs.final
+    });
+    this.cannotStand = !!legs.final;
     this.moveSpeed = speed;
     this.step = Math.floor(speed / SW.STEP_DIVISOR);
     this.rush = Math.max(0, (speed * SW.RUSH_MULTIPLIER) - loadStrain);
@@ -926,8 +933,10 @@ export class SwNpcData extends SwActorData {
     this.defenses.evade.unavailable = unavailableEvade(statuses);
 
     // An adversary's Reactions are the GM's to declare, so every answer stands available unless
-    // a Head Wound forbids them. No stance since 0.12.0: the GM chooses its Defense per attack.
-    const blocked = this.zones.head.wounded ? SW.ZONE_CRITICALS.head.first : null;
+    // a Head Wound, or the Head's Critical Hit effect until a Recenter (0.26.0), forbids them. No
+    // stance since 0.12.0: the GM chooses its Defense per attack.
+    const blocked = this.zones.head.wounded ? SW.ZONE_CRITICALS.head.first
+      : (this.zones.head.critical ? SW.ZONE_CRITICALS.head.effect : null);
     const owned = blocked ? {} : ownedReactions(this.parent);
     this.reactions = { owned, rigid: true, blocked };
     for (const key of Object.keys(SW.REACTIONS)) this.reactions[key] = key in owned;

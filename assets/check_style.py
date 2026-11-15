@@ -152,7 +152,16 @@ if os.path.isdir(FOUNDRY):
         walk_json(p)
 
 # ── the handbook, advisory only ─────────────────────────────────────────────────────────────────
-books = sorted(glob.glob(os.path.join(ROOT, "Starwrought_Players_Handbook_v*.docx")))
+# The newest EDITION, by its number (build_all.mjs's pattern and order): a plain sort of the folder
+# would read "..._v4.25_redline_proposal.docx" as newer than "..._v4.25.docx", and "v4.9" as newer
+# than "v4.10" (0.26.0).
+EDITION_RE = re.compile(r"^Starwrought_Players_Handbook_v([\d.]+)\.docx$", re.I)
+books = []
+for p in glob.glob(os.path.join(ROOT, "Starwrought_Players_Handbook_v*.docx")):
+    m = EDITION_RE.match(os.path.basename(p))
+    if m:
+        books.append((tuple(int(n) for n in m.group(1).split(".") if n.isdigit()), p))
+books = [p for _, p in sorted(books)]
 if books:
     book = books[-1]
     try:

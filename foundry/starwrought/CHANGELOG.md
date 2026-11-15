@@ -7,6 +7,300 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.26.0 (2026-11-15): Player's Handbook v4.25
+
+Built from **Player's Handbook v4.25** (Mike's edition of 15 November 2026, with the recommended
+changes this sync redlined into it read as accepted; `v4.25-sync-report.md` in the project root
+has the whole account and the rulings, 252 to 268). `data/SYNC.json` is stamped v4.25. No data
+workbook was converted, built, staged or written: `data/ancestries.xlsx`, `data/maneuvers.xlsx`
+and `data/callings.xlsx` are Mike's, in progress. The pack documents that move are the Grammar
+journal and the content stamp.
+
+Mike, 2026-11-15: "Plan the sync", and "also for the next release, redline the PHB with the
+Subordinate Maneuvers rule." Of v4.25 itself: "I removed ALL Talent details in Chapter 6 as well
+as ALL of the Maneuver details from Chapter 8 from the PHB; it is a lot of work to keep it
+consistent with the talent spreadsheets in the data folder. Once all of the spreadsheets are
+finalized, I will use them to build that part of the PHB." Planned before any code moved
+(`dazzling-floating-simon.md`): the book read against v4.24 with v4.24's tracked changes taken as
+accepted, the system surveyed for what each changed sentence touches, three decisions asked
+before the plan and four more on its first draft, and the attack flow's part checked against the
+code by a second reader, whose eleven corrections were folded in (the largest: dice must be thrown
+one at a time, or two open dialogs both carry a once-only bonus).
+
+### What v4.25 changed
+
+**Removed.** Chapter 6 (every Constellation's Talents: 586 lines and 82 tables) is one paragraph
+and a placeholder. Chapter 8's Maneuver, Activity and Endeavor details are a placeholder. So
+**`data/*.xlsx` is the only source for what a Talent, a Maneuver, an Activity or an Endeavor
+says** (ruling 264); the handbook stays authoritative for the general rules and for the tables it
+still prints. `CLAUDE.md` and `data/README.txt` say so.
+
+**Seven changed sentences**, and what each did here:
+
+| The book | The system |
+|---|---|
+| Area Attacks: "make one roll per creature ... the PC rolls once per target" | One die for each defender, for every attack a player makes at several targets (below) |
+| Persistent Damage: two effects of one type "are treated as two, independent effects" | A Torso Wound's bleed is listed beside another bleed (ruling 261) |
+| Reactions: "you may only use one Reaction at a time" | Left to the table, Mike's choice (ruling 262) |
+| Multipliers and Divisors: a divisor example and an order | Combined where two effects meet on one value (below) |
+| Chapter 5: four weapon-capability paragraphs gone | Nothing in the repository named them (ruling 268) |
+| Downtime Mode: "Endeavor", "Retraining or Training" | The web app's two sentences |
+| The Proficiency table: "Minimum Talents in Constellation" | The web app's column header; the counts are the same number |
+
+### One die for each defender (rulings 252 to 254, 267)
+
+Mike, asked whether the new sentence was for area spells alone: "ANY attack (whether it is a
+spell, or a cleave/sweep attack with a weapon, or an alchemical bomb, etc.) with multiple targets
+should be treated in this same way." Through 0.25.0 a player attacker threw one die and it was
+read against every defender (ruling 155).
+
+- **A die for each pairing.** The Combat window lists one Roll row per defender, named for the
+  defender and showing that defender's revealed answer; the attack card has a Roll Attack button
+  on each row, shown to the attacker's owner and the GM, and each row prints its own roll. The
+  one attacker button and the roll line above the list are gone. The roll dialog's title names
+  the defender ("Shortsword: against Bandit"), read from the attack's own record, for a weapon, a
+  spell and an adversary's flat roll alike. An adversary's Blow at player characters is unchanged
+  (each player rolls Defense); adversary against adversary is one flat die per defender, the GM's.
+- **Dice are thrown one at a time** (ruling 254). Each die is its own roll, so a bonus that
+  applies once (a `LIMIT: round` line, a result an ally gave, an armed claim, a custom effect
+  lasting one roll) is used by the first die and is gone for the next. `rollFor` queues one
+  roller's dice on that roller's client and opens the next dialog only when the die before it has
+  been handed in; a second click on a die already being thrown joins it. Outside an encounter a
+  once-a-round bonus has no round to count, so every die gets it, as two separate rolls always have.
+- **A die is stale only against its own reveal.** A sibling's die landing first, or another GM
+  taking the attack up, no longer makes a die "moved on" after it has been thrown.
+- **A reroll is one pairing's** (ruling 253). The card rerolled is the only one thrown again, and
+  the attack card's row follows it, its printed total included. This reverses ruling 155 and
+  0.5.3's "rerolls them all", which followed from the one die.
+- **Paid once.** The Strike or Cast is paid when it is declared, as before; a cancel returns it
+  only while no die has been thrown.
+- **Shift-click rolls with no dialog**, on the Combat window and on the card, as on the sheet.
+- **A Prepared Committed Strike keeps every target** (ruling 267). It remembered one and Finished
+  against the first alone; a Prepared Cast already kept them all.
+- **What several dice change.** Support and Unwieldy are read for each die's own defender (the
+  first target's stood for all). Three targets are three chances of a Critical Hit, and three
+  Flare offers, from one Maneuver. Pay It Forward's button is on the one card whose die used the
+  Aid. The "not holding it" warning is said where the Strike is declared and the Grabbed card
+  with the first die, not once per die.
+- **A card left mid-attack by 0.25.0** still resolves with its one die, and offers no second roll.
+
+### Multipliers and Divisors (rulings 255 to 257)
+
+Mike: "Where two effects meet". The rule is applied where two effects meet on one value, and
+nowhere else.
+
+- **Overlapping Difficult terrain** is 1 plus each region's increase: two regions at ×2 cost ×3,
+  where they multiplied (×4). Each region is one effect, whatever its kind (ruling 256, a reading
+  of Claude's: two overlapping regions of the same kind are ×3 too).
+- **The party's Travel Speed.** An Activity's pace and the terrain's meet: a half-pace Activity
+  over Difficult Terrain is a third of the Speed, over Greater Difficult a quarter, and Hustle
+  over Difficult Terrain is the plain Speed. Each member's figure is combined first and the
+  slowest under the terrain sets the pace; the three printed figures round down (ruling 257; feet
+  a minute and miles a day were rounded to the nearest).
+- **The Legs.** The Critical Hit effect's halving and a Legs Wound's are two effects: a third.
+- **Left as the book words them:** a second Legs Wound "halves what Speed it had left"; a Step,
+  a Crawl, a Leap and a Rush take their own fraction of the Speed you have; the damage order
+  keeps its own halving and Critical doubling.
+
+### The Critical Hit effects, tracked until a Recenter (rulings 258 to 260)
+
+Not in the first plan. Mike, of the line that listed it as not built: "why not? let's do it!"
+Through 0.25.0 a Critical Hit to the Torso set Off-Guard and nothing ended it, and the Arms, Legs
+and Head effects were a line on the applied card "for the table to hold".
+
+- Each Zone carries a mark, `system.zones.<zone>.critical`, on characters and adversaries alike.
+  The damage pipeline sets it when a Critical Hit that is not a Graze does damage.
+- **Arms:** −2 Situation on attack rolls (a character's), on the Attack Threshold and the flat
+  roll (an adversary's). With an Arms Wound: −4. Mike, asked: "-4, two effects".
+- **Legs:** the Speed is halved, and everything measured from it; a third with a Legs Wound.
+- **Head:** no Reactions, the same block a Head Wound sets, so the Combat window offers the basic
+  Defense alone.
+- **Torso:** Off-Guard, the condition, as before; now read off the Zone as well, so it stands
+  exactly as long as the mark does.
+- **Recenter ends all four** and its card names the Zones. The Off-Guard the Critical Hit itself
+  put on goes with the Torso's effect (ruling 259); one that was already there (the GM's, from
+  the token palette) and a Torso Wound's own stay. A Talent that prevents Off-Guard prevents the
+  Torso's effect with it.
+- **A switch on each Zone** of both sheets, a small burst beside the Exposed toggle, amber while
+  the effect runs, sets or ends it by hand. That is the GM's remedy for the book's "an area Attack
+  does not automatically gain these location-specific effects", which the system cannot yet tell
+  (ruling 260). A switch a player presses is said in chat ("Adjusted: Critical Hit effect on the
+  Arms on"), as a Zone Exposed by hand is.
+- The Combat window's line for a defender with no Reactions says which it is: a Head Wound, or
+  "A Critical Hit to the Head: no Reactions until you Recenter".
+
+### Target what is inside a template (ruling 263)
+
+Not in the first plan either. Mike: "for Areas on the map... is there functionality to place/move
+Area templates around, to automatically include targets?" Foundry v14 folded measured templates
+into Regions: anyone may draw one in the Regions controls' template mode and move it. The system
+adds the step core leaves out.
+
+- When you draw a template, or move, turn or reshape one of yours, **your targets become the
+  tokens inside it**. Your next Strike or Cast then declares at all of them and rolls once for
+  each. A client setting turns the automatic step off.
+- The Regions controls have a **Target what is inside** button, for the selected Region or your
+  newest template; `game.starwrought.targetInside(region)` does it from a macro.
+- "Inside" is Foundry's own test. **A player never targets what they cannot see**: a token the GM
+  has hidden, or one their vision does not reach, so a template drawn over a closed room names
+  nobody in it. The GM's automatic step leaves a hidden token out, since the next attack would
+  put its name on a public card; the GM's button and the macro, pressed on purpose, take it. Your
+  own token is not left out. A Region that carries a behavior (Difficult terrain) is never
+  treated as a template.
+- This aims an area and rules none of it: a spell's own shape and size are still its Talent's
+  words, and no Cast places a template or removes one.
+
+### The redline, in the handbook itself (rulings 265 and 266)
+
+Mike, of the defects the plan listed as his: "please redline the actual Word doc with recommended
+changes." Asked where, since the earlier proposals were separate copies and the v4.24 Preparing
+one was never merged: in v4.25 itself. `assets/phb_propose.py --in-place` copies the untouched
+edition to `backup/pre-0.26.0/`, refuses while Word holds the file, parses the result before it
+replaces the edition, and leaves every change a tracked change by the author Claude. Fourteen
+paragraphs, each checked against the backup (with every change rejected the text is the backup's):
+
+| Where | Recommended change |
+|---|---|
+| Chapter 8, the Maneuvers paragraph | Appended, Mike's rule: "When a Maneuver has you perform another Maneuver as part of it, that second Maneuver is subordinate: you pay only the listed cost of the Maneuver you are performing, and the subordinate Maneuver costs no additional actions unless stated otherwise. It keeps its own Requirements, checks, and effects." |
+| The cover | v4.23 to v4.25 |
+| Chapter 4, Preparing; the Glossary's Prepared; the Preparing condition | Two actions, where Chapter 2 and the Prepared trait already say two |
+| Chapter 2, Modifiers | The lost opening words: "When calculating Modifiers, " |
+| Chapter 4, Downtime Mode | "an Endeavor" |
+| Chapter 4, Area Attacks | "Attack Threshold" |
+| Chapter 5, Flares | "the Train Endeavor" |
+| Chapter 4, Reactions | "You cannot Counter a Counter or an Intercept." struck; Counter left the book in v4.21 |
+| Chapter 3, Culture | "Serrovanians" and "Serrovanian" for a Golarion people |
+| The Exploration trait | "you travel at the Speed the Activity lists: Full, Half, or Double your Travel Speed." |
+| The Conditions table, Prone | "-2 Situation to Attacks", typed as Supine's is |
+| The Conditions table, Supine | Mike's rules, below |
+
+**Supine** (ruling 266). Mike sent rules for the empty cell while the sync was being built:
+"review them and include them in the redline with any suggested changes." They are in the cell as
+he wrote them, in the table's one-cell style and in the Prone row's own formatting: "Lying on your
+back. Off-Guard; -2 Situation to Attacks, except melee Attacks against adjacent creatures
+(Grapples included); +2 Situation to Evade vs. ranged Attacks. You cannot Move, Step, Rush, Leap,
+or Crawl; forced movement affects you normally. Stand ❶ to clear (you can stand directly from your
+back), or Roll Over ❶ to become Prone." Three suggestions of Claude's: Roll Over named in the cell
+as the way to Prone; Prone's own −2 typed Situation beside it; and one sentence as its own
+insertion, so it can be rejected alone, "Supine is not Prone: a rule that names one does not mean
+the other", since Hold Your Ground's immunity, the final Legs Wound and the Unconscious row all
+name Prone. His Roll Over ❶ (Motion: "Change from Prone to Supine, or from Supine to Prone") and
+Drop Prone's choice are rows for `data/maneuvers.xlsx`, where a Maneuver now lives; the book no
+longer lists them. **The system implements none of it**: it has Prone alone until Supine is built.
+
+The sync read the file with these changes as accepted; each is wording or something the system
+already does. The stamp records the redlined file, so when Mike accepts or rejects and saves, the
+build reports the same-numbered file changed once and `node assets/build_all.mjs --check
+--accept-phb` records it again.
+
+### Also
+
+- **Persistent Damage** (ruling 261): `persistentDamageOf` no longer leaves out a Torso Wound's
+  bleed when another bleed is present. "Keep the higher" was implemented nowhere else.
+- **Words players see.** The web app: "Min. Talents in the Constellation", "an Endeavor", "the
+  Train Endeavor", "Playtest v4.25". The compendium's opening sentence names v4.25 for the rules
+  and the spreadsheets for the Talents and Maneuvers. The Activity hint no longer cites a table
+  the book dropped.
+- **Two tools.** `assets/check_style.py` picks the handbook edition by its number (a plain sort
+  of the folder read a proposal file, or v4.9, as newer). `assets/phb_propose.py` gains
+  `--in-place`, an `insert` edit (a few lost words, nothing struck) and an empty table cell
+  filled in the run formatting of the cell above.
+- **Mended on the way.** The attack card's fallback write could put its flags a revision behind
+  when two dice were submitted close together, where clients ignore the broadcast (traced by the
+  second reader, not seen in play). A row's total did not follow a reroll.
+
+### The review
+
+An independent reader went through the diff once the code was complete, with the installed
+Foundry's own source beside it. It found no defect in the attack flow (the queue, the staleness
+test, who sees which button, a card left by 0.25.0, the Prepared Strike and the Legs' Speed with
+no Critical Hit all traced sound) and six elsewhere, none blocking, all mended:
+
+1. **A player's template could target, and name, tokens the player cannot see.** The first cut
+   left out only tokens the GM had hidden; vision was never asked. Now a player's template takes
+   what core would let them target by a click, and the GM's automatic step leaves a hidden token
+   out (ruling 263).
+2. **A Critical Hit effect switched by hand by a player was silent.** The audit knew a Zone
+   Exposed and not a Zone's Critical Hit effect; it says both now.
+3. **Ending the Torso's effect took off any Off-Guard**, the GM's own included, and a Talent that
+   prevented Off-Guard left the Zone marked and the −2 standing. The Off-Guard is now the Critical
+   Hit's own (ruling 259).
+4. **The Combat window called a Head Critical Hit effect a Head Wound.**
+5. **`phb_propose.py --in-place --backup .`** would have compared the edition with itself and
+   replaced it with no copy kept. A backup folder that is the edition's own is refused.
+6. **Overlapping terrain at the two ends**: an impassable region would have failed the terrain
+   data's own field, and a region of 0 (free ground) was read as no effect. Impassable is stored
+   as core stores it, and free stays free.
+
+### Checked
+
+- An independent review of the diff (above): six findings, none blocking, all mended.
+- `node assets/test_rules.mjs`: 184 checks pass (176 at 0.25.0). New: one Roll for each defender
+  and each die taking its own pairing off the list; an adversary's attack at a character and an
+  adversary; every pairing resolving with its own die, and a card from before 0.26.0 with its
+  shared one; a die stale only against its reveal; `combineFactors`, `combineDifficulties`, the
+  Travel Speed's pairs, and the Legs' Speed with a Critical Hit, a Wound, both, and the final one.
+- `node --check` on every changed module; the language file parses with no key written twice;
+  `python assets/check_style.py` (one failure, the em-dash in Dwarf Lore B13 of Mike's uncommitted
+  workbook).
+- The redline against its backup: 2,504 paragraphs and 53 tables in both, fourteen paragraphs
+  changed, every other entry of the package byte for byte the same, the text with every change
+  rejected equal to the backup's, the only revision author Claude.
+- Live, in the test world, with a GM tab and a player tab, the server restarted on 0.26.0:
+  - A Deliberate Strike by Tess at three targets: paid once (6 to 4), three Roll buttons on the
+    card each marked for the attacker, the status line naming Tess; two rows asked for at once
+    opened one dialog, titled "Shortsword: against Wren", and the second ("against Bandit") only
+    after the first die was in; a second request for the same row was the same roll; a third die
+    with no dialog; three dice (15, 4, 11), three cards, each row printing its own roll.
+  - A reroll of one of the three: that card alone superseded, its row's total and outcome
+    following, the other two untouched.
+  - A Quick Cast at two: paid once, two dice, two spell cards.
+  - An adversary's Blow at two characters and an adversary: two Roll Defense buttons for the
+    characters and one Roll Attack for the GM; the GM's dialog titled "Club: against Bandit 2".
+  - A cancel before any die returned the action; a cancel after one die of two did not.
+  - A custom effect lasting one roll, +5 to attacks, with two dice asked for together: the first
+    die carried it and the second did not.
+  - A Committed Strike aimed at two tokens, Prepared, its targets released, then Finished:
+    declared at both and resolved with two dice.
+  - As the player: Roll Attack on each row of their own attack and no Threshold shown; on the
+    adversary's Blow, Roll Defense on their own row and no button on the GM's; the Combat window
+    with "Tess rolls Attack against Bandit" and "against Bandit 2", one rolled through the dialog
+    and one with Shift, both read by the GM's client over the socket.
+  - The Critical Hit effects on a character: Arms −2, Speed 6 to 3, Reactions blocked, Evade 13
+    to 11 with Off-Guard; with an Arms Wound −4 and with a Legs Wound Speed 2; Recenter ending all
+    four with its card naming them, the Wounds' own effects left. On an adversary, through the
+    damage pipeline: the Arms' mark set and its Attack Threshold 14 to 12, the Torso's with
+    Off-Guard, both ended by Recenter. The switch on the sheet, seen on screen.
+  - Two overlapping Difficult regions: the terrain read ×3 with both kinds named, and a real move
+    of 7 feet through them cost 13.
+  - The Travel Speed with a temporary party at Speed 6: Avoid Notice over Difficult Terrain 2,
+    over Greater Difficult 1.5, Hustle over Difficult 6, over Greater Difficult 4.
+  - A Torso Wound's bleed listed beside another bleed and a fire.
+  - A template drawn in template mode: flagged, its two tokens targeted; moved, the targets
+    followed; a Difficult terrain region edited, the targets left alone; the tool with nothing
+    selected took the newest template; the setting off, a move targeted nothing.
+  - After the review's mends, both tabs reloaded. As the player, whose Regions controls open in
+    template mode: a template over all three tokens targeted the three; with the Bandit hidden
+    by the GM, a move and the button both targeted the other two, the macro asked for hidden
+    tokens included. As the GM: the automatic step left the hidden Bandit out and the button took
+    it. A Critical Hit effect switched by the player posted "Adjusted: Critical Hit effect on the
+    Arms on" and "off". The Torso's effect put on a flagged Off-Guard and took it off again;
+    with Off-Guard already on from the palette, the Zone was marked, and after Recenter the mark
+    was gone and that Off-Guard stayed.
+  - No console error from the system in either tab. The world was left as it was found: 417
+    messages, no Combat, the three tokens in place, the probe token, regions and party deleted.
+
+### Not built
+
+- A way for a Talent to "specify otherwise" and ask for one roll for all its targets. None does.
+- A spell's own area: its shape and size as data, the Cast placing the template and removing it.
+- Telling an area Attack from another, so its Critical Hit effect is the GM's to switch off.
+- Anything holding one Reaction at a time beyond the attack's one answer.
+- Supine, Roll Over, and Drop Prone's choice.
+- Chapter 6 and the Maneuver reference built from the spreadsheets, the later task Mike named.
+
+---
+
 ## 0.25.0 (2026-11-15): Pay It Forward, the Subordinate Maneuver rule, and the Talent that changes it
 
 Built from **Player's Handbook v4.24** (`data/SYNC.json` untouched). **v4.25 is on the shelf and is

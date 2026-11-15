@@ -55,11 +55,17 @@ export const AttackMixin = Base => class extends Base {
     const {
       strike: askedStrike, prepared = false, free: askedFree = false, thrown: askedThrown,
       targetUuid: askedTarget, targetTokenId, reaction: asReaction = null,
+      // Every target a finished preparation remembered (0.26.0), as a Cast's always were.
+      targetUuids: askedTargets = [],
+      // Is this the attack's first die (0.26.0)? The flow throws one for each defender, and what
+      // is said once for the attack is said with the first.
+      firstDie = true,
       modifiers: givenModifiers, blind = false, ...rest
     } = options;
 
     // Striking with something you are not holding is worth saying out loud, and nothing more.
-    if (!weapon.system.held) {
+    // Said where the Strike is declared; the flow's dice, one for each defender, do not repeat it.
+    if (!weapon.system.held && !blind) {
       ui.notifications.warn(game.i18n.format("STARWROUGHT.Actions.notHeld", { name: weapon.name }));
     }
 
@@ -83,10 +89,12 @@ export const AttackMixin = Base => class extends Base {
 
     // Your named target first, then your Foundry target, then the one target this token is
     // remembered as having, so a reload does not cost you the Threshold along with the arrow.
+    // The flow's blind roll is for the one defender it names (0.26.0: one die for each): a
+    // defender whose token is not on the viewed scene is nobody here, never the user's target.
     let targetToken = targetTokenId ? (canvas.tokens?.get(targetTokenId) ?? null) : null;
     if (!targetToken && askedTarget) targetToken = this.#tokenFor(askedTarget);
-    if (!targetToken) targetToken = SwCheck.currentTarget();
-    if (!targetToken) {
+    if (!targetToken && !blind) targetToken = SwCheck.currentTarget();
+    if (!targetToken && !blind) {
       const remembered = this.tokenOnScene()?.getFlag(SW.SYSTEM_ID, "targets")?.ids ?? [];
       const only = (remembered.length === 1) ? canvas.tokens?.get(remembered[0]) : null;
       if (only?.actor) targetToken = only;
@@ -99,8 +107,12 @@ export const AttackMixin = Base => class extends Base {
     // caller named. With several, the first stands in as the reference for reach and the thrown
     // inference below.
     const declaring = !blind;
-    const targets = declaring ? this.declaredTargets({ targetTokenId, targetUuid: askedTarget }) : [];
-    if (declaring && targets.length && !targetToken) targetToken = targets[0];
+    // A finished preparation's targets stand, every one still on the scene (0.26.0; through
+    // 0.25.0 a Prepared Committed Strike remembered one and Finished against it alone).
+    const kept = declaring ? (askedTargets ?? []).map(uuid => this.#tokenFor(uuid)).filter(t => t?.actor) : [];
+    const targets = !declaring ? []
+      : (kept.length ? kept : this.declaredTargets({ targetTokenId, targetUuid: askedTarget }));
+    if (declaring && targets.length && (!targetToken || kept.length)) targetToken = targets[0];
 
     const targetActor = targetToken?.actor ?? null;
     const attackerToken = this.tokenOnScene();
@@ -175,7 +187,7 @@ export const AttackMixin = Base => class extends Base {
     // the Combat Prompt, revealed by the coordinator and read there against this die on the flow's
     // blind roll, which the dialog says in so many words. With no target there is no defender, and
     // the dialog's typed Threshold stands.
-    const targetDefense = targetActor
+    const targetDefense = (targetActor || blind)
       ? { key: null, label: "", threshold: null, unavailable: null, hidden: true }
       : null;
 
@@ -193,7 +205,8 @@ export const AttackMixin = Base => class extends Base {
           type: "situation"
         });
       }
-      if (this.statuses?.has("grabbed")) await this.#announceGrabbed(weapon);
+      // Once for the attack: with the first of the flow's dice, not with each.
+      if (this.statuses?.has("grabbed") && (!blind || firstDie)) await this.#announceGrabbed(weapon);
     }
 
     // Support (PHB v4.10, Allies in the Exchange): +1 Situation to a melee attack per other
@@ -291,6 +304,8 @@ export const AttackMixin = Base => class extends Base {
               weaponId,
               targetTokenId: targetToken?.id ?? "",
               targetUuid: targetToken?.document?.uuid ?? "",
+              // Every target it was aimed at (0.26.0), for Finish to declare against.
+              targetUuids: targets.map(t => t.document?.uuid ?? "").filter(Boolean),
               strike: cfg.strike
             });
             return false;

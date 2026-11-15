@@ -61,6 +61,16 @@ records the version the repository is synced to; `build_all.mjs` exits 1 while t
 shelf is newer, and refuses to stamp a new version until the changelog and the features file both
 name it. The Foundry system carries the stamp into the game as `game.starwrought.rules.phb`.
 
+**Since PHB v4.25 the rule has two halves (Mike, 2026-11-15; ruling 264).** "I removed ALL Talent
+details in Chapter 6 as well as ALL of the Maneuver details from Chapter 8 from the PHB; it is a
+lot of work to keep it consistent with the talent spreadsheets in the data folder. Once all of the
+spreadsheets are finalized, I will use them to build that part of the PHB." So: **the handbook is
+authoritative for the general rules and for the tables it still prints** (Chapters 1 to 5, 7 and
+8's general rules, the Conditions and Traits tables, Chapter 5's equipment), and a change there
+moves everything downstream as above; **`data/*.xlsx` is the ONLY source for what a Talent, a
+Maneuver, an Activity or an Endeavor says**, a change there is the content loop's and never a
+handbook sync, and no handbook redline is proposed for one.
+
 The individual steps, from the project root, in this order. They need `openpyxl`, `matplotlib`,
 `reportlab`, `python-docx`, and the `docx` npm package; all are installed.
 
@@ -330,8 +340,10 @@ or Guard for a Blow; a Blast Evade or Endure, a Blight Endure or Awareness, a Be
 or Guard, or the sheet's `Defenses` column) and an answer (nothing, an owned Reaction, or a ⓿↺
 Posture Talent with the Zone it Exposes; against a Reaction Strike the basic Defense alone) in
 private; all reveal at once; then the players roll: a player-controlled attacker rolls Attack once
-against every defender's Threshold, a player-controlled defender of an adversary's Blow rolls
-Defense against the Attack Threshold, and player against player is never an opposed roll. **No
+FOR EACH defender, each die against that defender's Threshold alone (0.26.0, ruling 252; PHB
+v4.25; one die against them all through 0.25.0), a player-controlled defender of an adversary's
+Blow rolls Defense against the Attack Threshold, and player against player is never an opposed
+roll. **No
 Defense is ever chosen by the system** (Mike, 2026-11-05: "no applying a default, ever"; ruling
 159): there is no standing stance (0.12.0 removed `system.stance`, the chips, the HUD button and
 every reader; the migration deletes the field), the prompt opens with nothing selected and Commit
@@ -908,6 +920,58 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.26.0 (Mike, 2026-11-15; rulings 252 to 268): the PHB v4.25 sync.** The first handbook sync
+since v4.24 (`v4.25-sync-report.md`; planned in `dazzling-floating-simon.md`, Mike's decisions by
+question, three before the plan and four on its first draft). v4.25 removed every Talent's and
+every Maneuver's details from the book (the HANDBOOK RULE's two halves, above; ruling 264) and
+changed seven sentences. **One die for each defender** (ruling 252; Area Attacks, and Mike: "ANY
+attack ... with multiple targets should be treated in this same way"): every pairing the attacker
+rolls keeps its own whole roll on `target.roll` (`AttackWorkflow.rollDataFor`; `workflow.attackRoll`
+is never written again and is read only for a card 0.25.0 left mid-attack); `outstandingFor` lists
+one `rollAttack` per waiting pairing; `#submitRoll` fills the named pairing alone; a die is stale
+only against its own reveal (`AttackWorkflow.rollCurrent`, `#rollCurrent` in the coordinator), not
+the phase line; `AttackCoordinator.rollFor(workflowId, targetId, { dialog })` QUEUES one roller's
+dice on the roller's client (`#rolling` by pairing, `#rollQueues` by roller, `#rollNow` the die),
+so a once-only bonus is used by the first die before the second is built (ruling 254), and a
+second click on a pairing joins the first; the card has a Roll Attack button on each row whose
+`ownerUuid` is the ATTACKER (the one attacker button and the header roll line are gone), the
+Combat Prompt one task per die; `rollBlind(attacker, maneuver, target, link, { dialog, first })`
+names the defender in the dialog (`targetName`, `cfg.dialogTitle`); a Shift-click rolls with no
+dialog. **A reroll is one pairing's** (ruling 253; `siblingResolutions` is gone; reverses ruling
+155 and 0.5.3). **A Prepared Committed Strike keeps every target** (ruling 267;
+`preparing.targetUuids`, `rollAttack`'s `targetUuids`). **Multipliers and Divisors combine where
+two effects meet on one value, and nowhere else** (rulings 255 to 257; `combineFactors`,
+`applyFactors`, `combineDifficulties`, `speedAfterLegs` in `module/config/movement.mjs`, pure):
+overlapping Difficult terrain (`SwTerrainData.resolveTerrainEffects`: two at ×2 are ×3), the
+party's Travel Speed (`partyTravel`: `ACTIVITY_SPEEDS` and `TERRAIN` carry an `effect`, each
+member's figure combined first, the three printed figures rounded down), and the Legs; a Step, a
+Crawl, a Leap, a Rush, a second Legs Wound and the damage order are left as the book words them.
+**The Critical Hit effects are tracked until a Recenter** (rulings 258 to 260):
+`system.zones.<zone>.critical` on the shared actor model, set by the damage pipeline through
+`SwActor#setCriticalEffect` (`documents/actor/position.mjs`), cleared by `recenter()`, switched
+by hand from the burst on each Zone of both sheets (`toggleCritical`); Arms −2 Situation
+(`SW.ARMS_CRITICAL_PENALTY`: a character's `attackModifiers`, an adversary's `attackThreshold` and
+flat roll; −4 beside an Arms Wound, Mike's answer), Legs the Speed (a third with a Wound), Head
+`reactions.blocked`, Torso Off-Guard (the condition, and read off the Zone in `prepareDefenses`;
+the Off-Guard is the Critical Hit's OWN, put on only when none is there, flagged
+`flags.starwrought.criticalHit` on the effect, and taken off by `_endCriticalOffGuard` only when
+flagged, so the GM's palette Off-Guard outlives a Recenter; ruling 259). A switch by hand goes
+through the audit (`CRITICAL` in `documents/audit.mjs`).
+**Persistent Damage**: two effects of one type are two (ruling 261; `persistentDamageOf` no
+longer hides the Torso Wound's bleed beside another). **One Reaction at a time** is left to the
+table (ruling 262, Mike's choice). **Target what is inside a template** (ruling 263;
+`module/canvas/area-targets.mjs`): Foundry v14's templates are Regions drawn in template mode; the
+system flags one as it is created (`flags.starwrought.template`, `preCreateRegion`), and when its
+maker draws, moves or reshapes it their targets become the tokens inside (`tokensInside`,
+`TokenDocument#testInsideRegion`; client setting `templateTargets`), with a Regions-controls
+button and `game.starwrought.targetInside()` for the same by hand; a Region with a behavior is
+never a template; a player never targets what they cannot see (`token.hidden`, or
+`!token.object.visible`), and the GM's automatic step leaves a hidden token out while the button
+takes it (`hidden` option). **The redline is in the edition itself** (ruling 265; `phb_propose.py
+--in-place`, `PROPOSALS["v4.25-redline"]`, backup in `backup/pre-0.26.0/`): fourteen paragraphs,
+the Subordinate Maneuver rule in Chapter 8 among them and **Mike's Supine rules** in the
+Conditions table (ruling 266: redlined, NOT built; the system has Prone alone and no Roll Over).
+
 **0.25.0 (Mike, 2026-11-15; rulings 245 to 251): Pay It Forward, the Subordinate Maneuver rule,
 and the first named Effect.** Planned first (`dazzling-floating-simon.md`; Mike's decisions by
 question: a general Subordinate Maneuver rule with the tag word SUBORDINATE, named Effects in two
@@ -1327,7 +1391,9 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
 
 ## Where the source of truth lives
 
-- **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the rules.**
+- **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the general
+  rules and for the tables it still prints; since v4.25 it no longer says what a Talent or a
+  Maneuver does, and `data/*.xlsx` is their only source** (the HANDBOOK RULE, above; ruling 264).
   It is hand-authored in Word. `assets/phb_edit.py` exists for the cases where Claude is asked to
   change it: it appends a sentence to a named paragraph in that paragraph's own run formatting,
   substitutes a literal inside one paragraph, or renames a word wherever it qualifies a bonus or
@@ -1341,7 +1407,19 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   is the other tool** (2026-10-02): the same surgical edits, but left as Word tracked changes (author
   "Claude") in a `<name>_proposal.docx` for Mike to accept or reject, its `PROPOSALS` table one entry
   per proposal made; a proposal is not an edition, the drift check ignores the name, and the sync
-  follows only once Mike accepts into a numbered handbook. Mike also edits the current edition in
+  follows only once Mike accepts into a numbered handbook. **Since the v4.25 sync a redline goes
+  into the edition itself** (Mike, 2026-11-15: "please redline the actual Word doc with
+  recommended changes"; the separate v4.24 Preparing proposal was never merged; ruling 265):
+  `python assets/phb_propose.py <edition.docx> --in-place --backup backup/pre-<version> --proposal
+  <name>` copies the untouched edition to the backup folder first (never overwriting a backup that
+  differs), refuses while Word holds the file open, parses the result as XML before it replaces
+  the edition, and leaves every change a tracked change by the author Claude for Mike to accept
+  or reject where he works. The sync then reads the file with those changes as accepted (each
+  must be wording or something the system already does) and stamps the redlined file; when Mike
+  accepts or rejects and saves, the drift check reports the same-numbered file changed and
+  `build_all.mjs --check --accept-phb` records it again. Its edits also include `insert` (a few
+  lost words or one letter, nothing struck) and an empty table cell filled in the run formatting
+  of the cell above. Mike also edits the current edition in
   place as well as accepting redlines (v4.13's Wind bullet was rewritten in the v4.12 file on the
   shelf), so `build_all.mjs` records the edition's SHA-256 in `data/SYNC.json` at `--accept-phb`
   and reports drift when the same-numbered file changes, not only when a higher number appears.
@@ -1357,8 +1435,10 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   change is a change to `handbook-style.md` and the conventions table at the top of the script,
   never a hand edit of runs.
   Check for a newer one before starting a sync; v3.1 landed while the
-  v3.0 sync was still being written. `data/*.xlsx` derives from it and is authoritative for the app;
-  when the two disagree, the handbook wins and the sheets need a pass.
+  v3.0 sync was still being written. `data/*.xlsx` is authoritative for the app; where the book
+  still prints the same thing (a general rule, a Chapter 3 or Chapter 5 table) and the two
+  disagree, the handbook wins and the sheets need a pass; for a Talent's or a Maneuver's own text
+  there is nothing in the book to disagree with since v4.25, and the sheet is the word.
 - **`assets/build_phb.js` deliberately does not regenerate the handbook.** That would put rules prose
   in two places and guarantee drift. It builds `Starwrought_Constellation_Compendium.docx`: the
   creation menus, all 30 constellations, and the reference appendices, every table read from
@@ -1734,21 +1814,33 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   `AID`, `ACTION`, `CONDITION`, `TEMPVIGOR`, `PREPARE`, `BORROW`; the spec is its Grammar
   Extensions sheet): read it for what a Maneuver says and what he wants of it, and write each in
   the shipped grammar's shape, one kind at a time, as Pay It Forward was.
-- **PHB v4.25 is on the shelf, UNSYNCED (2026-11-15), and Talent and Maneuver details have left
-  the book.** Mike: "I removed ALL Talent details in Chapter 6 as well as ALL of the Maneuver
-  details from Chapter 8 from the PHB; it is a lot of work to keep it consistent with the talent
-  spreadsheets in the data folder. Once all of the spreadsheets are finalized, I will use them to
-  build that part of the PHB." So `data/*.xlsx` is the ONLY source for what a Talent or a Maneuver
-  says, the standing rule "when the two disagree, the handbook wins" no longer applies to them
-  (general rules are still the book's), and no redline is proposed for a single Talent's or
-  Maneuver's text. `Starwrought_Players_Handbook_v4.25.docx` is untracked (1,088 paragraphs, 52
-  tables against v4.24's 144, Chapter 6 a placeholder, no tracked changes, the cover still reading
-  v4.23); `data/SYNC.json` says 4.24, so `build_all.mjs --check` exits 1 on handbook drift alone.
-  Mike chose by question to build 0.25.0 first and sync after: **the v4.25 sync is the next piece
-  of work, planned on its own**, and it rewrites "Where the source of truth lives" above. The
-  0.25.0 changelog entry names v4.25 as unsynced; `FEATURES.md` does not name it, so the stamp's
-  two-file gate still holds. Building Chapter 6 and the Maneuver reference from the sheets is a
-  later task he named; `assets/build_phb.js` is the nearest generator.
+- **PHB v4.25 is synced (0.26.0, 2026-11-15), with fourteen tracked changes of Claude's waiting in
+  the edition itself for Mike** (`v4.25-sync-report.md`; the untouched file is in
+  `backup/pre-0.26.0/`): the Subordinate Maneuver rule appended to Chapter 8's Maneuvers
+  paragraph (his ask), the cover to v4.25, Preparing to two actions in three places, the
+  Modifiers paragraph's lost opening, "an Endeavor", "Attack Threshold", "Train Endeavor", the
+  Exploration trait, "Serrovanians" for a Golarion people, the Counter sentence struck, Prone's
+  −2 typed, and **his Supine rules** in the Conditions table with one sentence of Claude's
+  ("Supine is not Prone ...") as its own insertion. The stamp is of the redlined file: when he
+  accepts or rejects and saves, `build_all.mjs --check` reports the file changed and
+  `--check --accept-phb` records it again. **Supine is not built** (ruling 266): the system has
+  Prone alone; building it is a condition (Off-Guard, −2 to Attacks except melee against an
+  adjacent creature, +2 Evade against ranged, no movement but forced) and two rows of his,
+  **Roll Over ❶** (Motion: "Change from Prone to Supine, or from Supine to Prone") and Drop
+  Prone's choice, on `data/maneuvers.xlsx`, where a Maneuver now lives. Still in the book and
+  his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
+  "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
+  named; `assets/build_phb.js` is the nearest generator.
+- **0.26.0 leaves to the table or to Mike:** a Talent that "specifies otherwise" and asks for one
+  roll for all its targets (no column says so; none exists); a spell's own area (its shape and
+  size as data, the Cast placing the template and removing it: columns for `data/magic.xlsx`,
+  planned on its own); telling an area Attack from another, so its Critical Hit effect is the
+  GM's to switch off on the Zone; one Reaction at a time beyond the attack's one answer (his
+  choice, ruling 262); the order of the dice when a Controlled weapon is swept at the Bind
+  partner and another; two overlapping regions of the SAME kind, which count as two effects (×3;
+  ruling 256, Claude's reading, his to overrule); a Persistent Damage
+  effect other than a Torso Wound's bleed, which still has no sheet field or control; an
+  adversary's Off-Guard, which has never moved its typed Thresholds.
 - **Whether a bonus reaches a Defense rolled as a check is open** (ruling 222's wider question; a
   row in `assets/open_decisions.json`). Ruling 222 is narrow: a bonus to a Maneuver applies to a
   check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid
@@ -1811,7 +1903,14 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   the button is on that card. It deleted its two Combats and the 36 cards it posted (417
   messages, the one above 416 being a "Content synced" card from the 0.24.0 session), its probe
   Items, and the marks and the request flag it left on Tess; the tokens were never moved. The
-  server was restarted for the 0.25.0 manifest and left running, the GM joined.
+  server was restarted for the 0.25.0 manifest and left running, the GM joined. **The 0.26.0
+  drive (2026-11-15) left nothing**: the world was launched on the 0.26.0 manifest (Foundry asked
+  to migrate and made its own backup of the world first), and the drive's probe token (a second
+  Bandit), its regions, its temporary party Actor, its Combats and the cards it posted were all
+  deleted (417 messages again); the Bandit's Prone is older than the drive and was left. To try
+  0.26.0 there: target two or three tokens and Strike (one Roll row each in the Combat window);
+  in the Regions controls draw a circle over tokens as a player and watch the targets follow it;
+  press the burst beside a Zone's shield for a Critical Hit effect and Recenter to end it.
 - **0.25.0 leaves to the table or to Mike:** that the ally Aided by Pay It Forward is willing and
   that Aid's own requirements are met; "immediately after that check", read as the rest of that
   Opportunity (ruling 248), so a Move or another Maneuver between the check and the Aid is not
@@ -1856,6 +1955,41 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-15 (the PHB v4.25 sync, system 0.26.0; rulings 252 to 268 in
+`v4.25-sync-report.md`; planned in `dazzling-floating-simon.md`, Mike's decisions by question:
+every multi-target attack rolls once per target, multipliers where two effects meet, the
+Subordinate rule in Chapter 8; then on the plan's first draft: redline the Word file itself,
+templates in this sync, one Reaction at a time left to the table, the Critical Hit effects
+tracked with the Arms' −2 stacking; and his Supine rules sent while it was being built): the
+handbook drift every build had reported since v4.25 landed, now synced and stamped; "the
+handbook wins" for a Talent's or a Maneuver's own text, now the spreadsheets as their only
+source, the HANDBOOK RULE in two halves; a player attacker's one die read against every
+defender, now one die for each, queued one at a time on the roller's client, stale only against
+its own reveal, with a Roll button on each row of the card and a task for each in the Combat
+window, a reroll one pairing's, and a Prepared Committed Strike keeping every target;
+multipliers applied in sequence (overlapping Difficult terrain ×4, a half-pace Activity over
+Difficult Terrain a quarter), now combined where two effects meet; the Arms, Legs and Head
+Critical Hit effects "for the table to hold" and a Torso Off-Guard nothing ended, now a mark on
+each Zone the system computes from and Recenter ends, with a switch on both sheets; a Torso
+Wound's bleed hidden beside another bleed, now listed; no use of Foundry's templates, now the
+tokens inside one becoming its maker's targets; the Subordinate Maneuver rule with no sentence
+in the book, the v4.24 Preparing redline never merged, the cover's v4.23, the Modifiers
+fragment, "a Endeavor", a Golarion people in Chapter 3 and Supine's empty cell, now fourteen
+tracked changes in v4.25 itself (`phb_propose.py --in-place`, the untouched file in
+`backup/pre-0.26.0/`); `check_style.py` reading a proposal file as the edition. Checked by 184
+self-test checks, `node --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of
+Mike's uncommitted workbook), the smoke test on the rebuilt app, the redline diffed against its
+backup, a second reader on the attack-flow design before the plan was shown (eleven
+corrections), an independent review of the diff (no defect in the attack flow; six findings
+elsewhere, none blocking, all mended: a player's template naming tokens they cannot see, a silent
+manual switch, the Torso's Off-Guard taking the GM's own with it, a Head Critical Hit called a
+Head Wound, a backup folder that was the edition's own, impassable and free terrain in an
+overlap) and live in the test world with a GM tab and a player tab, before the review and again
+for its mends (the 0.26.0 changelog entry lists what). Not built, and said so: a Talent that
+"specifies otherwise", a spell's own area, telling an area Attack from another, Supine and Roll
+Over, Chapter 6 from the sheets. Mike's three workbooks in progress were not converted, built,
+staged or written; the stamp was made with `--check --accept-phb`.
 
 Cleared 2026-11-15 (Pay It Forward, the Subordinate Maneuver rule and the first named Effect,
 system 0.25.0; rulings 245 to 251 in the 0.25.0 changelog entry; planned in

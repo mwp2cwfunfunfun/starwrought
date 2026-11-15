@@ -596,7 +596,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
       answers: chosen ? answers : [],
       zones,
       zone: draft.zone,
-      headWound: (chosen && actor.system?.reactions?.blocked) ? game.i18n.localize("STARWROUGHT.Prompt.headWound") : null,
+      // Why no Reaction is offered: a Head Wound, or the Head's Critical Hit effect until a
+      // Recenter (0.26.0), which blocks them the same way and is not a Wound.
+      headWound: !(chosen && actor.system?.reactions?.blocked) ? null
+        : game.i18n.localize(actor.system.zones?.head?.wounded ? "STARWROUGHT.Prompt.headWound" : "STARWROUGHT.Prompt.headCritical"),
       meleeHint: legal.reactions.some(r => SW.REACTIONS[r]?.melee)
         ? game.i18n.format("STARWROUGHT.Prompt.meleeOnlyNote", {
           names: legal.reactions.filter(r => SW.REACTIONS[r]?.melee).map(r => game.i18n.localize(SW.REACTIONS[r].label)).join(", ")
@@ -637,7 +640,11 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     };
   }
 
-  /** The rollAttack and rollDefense modes: the revealed answers, then one button. */
+  /**
+   * The rollAttack and rollDefense modes: the pairing's revealed answer, then one button. One
+   * task for each die (0.26.0): the attacker throws one for each defender, so a rollAttack task
+   * is for the one defender it names, as a rollDefense task always was.
+   */
   #rollTask(wf, o, target, mode) {
     const isAttack = mode === "rollAttack";
     const key = taskKey(wf.id, mode, o.targetId);
@@ -650,10 +657,9 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
       return defense ? game.i18n.format("STARWROUGHT.Prompt.defenseAndAnswer", { defense, answer }) : answer;
     };
     if (isAttack) {
-      lines.push(this.#defendText(wf, (wf.targets ?? []).map(t => t.name).join(", ")));
-      for (const t of wf.targets ?? []) {
-        if (!t.revealed) continue;
-        lines.push(glyphed(game.i18n.format("STARWROUGHT.Prompt.revealedLine", { name: t.name, answer: describe(t) })));
+      lines.push(this.#defendText(wf, target?.name));
+      if (target?.revealed) {
+        lines.push(glyphed(game.i18n.format("STARWROUGHT.Prompt.revealedLine", { name: target.name, answer: describe(target) })));
       }
     } else {
       lines.push(this.#defendText(wf, target?.name));
@@ -668,7 +674,10 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     return {
       key, kind: mode, isRoll: true,
       workflowId: wf.id, targetId: o.targetId, revision: wf.revision,
-      title: game.i18n.format(isAttack ? "STARWROUGHT.Attack.attackerRolls" : "STARWROUGHT.Attack.defenderRolls", { name: roller?.name ?? "" }),
+      title: isAttack
+        ? game.i18n.format("STARWROUGHT.Attack.attackerRollsAt", { name: roller?.name ?? "", target: target?.name ?? "" })
+        : game.i18n.format("STARWROUGHT.Attack.defenderRolls", { name: roller?.name ?? "" }),
+      hint: game.i18n.localize(isAttack ? "STARWROUGHT.Attack.rollShiftHint" : "STARWROUGHT.Attack.rollShiftHintDefense"),
       text: null,
       lines,
       button: game.i18n.localize(isAttack ? "STARWROUGHT.Attack.rollAttack" : "STARWROUGHT.Attack.rollDefense")
@@ -906,7 +915,8 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     this.#busy.add(task.key);
     this.render();
     try {
-      await AttackCoordinator.rollFor(task.workflowId, task.targetId);
+      // A Shift-click rolls with no dialog, the sheets' convention (0.26.0).
+      await AttackCoordinator.rollFor(task.workflowId, task.targetId, { dialog: !event?.shiftKey });
     } catch (err) {
       console.error("STARWROUGHT | the roll could not be made", err);
       ui.notifications.error(err.message);

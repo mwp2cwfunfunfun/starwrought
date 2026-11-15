@@ -15,6 +15,18 @@ sheets missing from their file's index are ignored with a warning. A workbook op
   filled cells are never touched; a workbook is saved only when a cell changed, after a copy to
   backup/index-<date>/. --dry-run reports only. A workbook open in Excel is skipped.
 
+THESE WORKBOOKS ARE THE ONLY SOURCE FOR TALENTS AND MANEUVERS (Mike, 2026-11-15; PHB v4.25)
+  "I removed ALL Talent details in Chapter 6 as well as ALL of the Maneuver details from Chapter 8
+  from the PHB; it is a lot of work to keep it consistent with the talent spreadsheets in the data
+  folder. Once all of the spreadsheets are finalized, I will use them to build that part of the
+  PHB." So what a Talent, a Maneuver, an Activity or an Endeavor says is whatever its row here
+  says: there is no handbook text for it to disagree with, a change to a row is the content loop's
+  and never a handbook sync, and no handbook redline is proposed for one. The handbook is still
+  the word for the general rules and for the tables it still prints (the Conditions and Traits
+  tables, Chapter 3's creation tables, Chapter 5's equipment): where a sheet restates one of
+  those and the two disagree, the handbook wins and the sheet needs a pass. A new Maneuver that a
+  rule in the book names (Roll Over, for Supine) is a row here, not a paragraph there.
+
 ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   Add rows to a sheet, a sheet to a workbook, or a whole new workbook in this folder. A new
   workbook needs its own "_Tree Index" sheet naming the trees inside it, as the first paragraph

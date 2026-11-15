@@ -87,8 +87,16 @@
       </thead>
       <tbody>
         {{#each zones as |zone|}}
-        <tr class="{{#if zone.exposed}}sw-row-exposed{{/if}} {{#if zone.wounds.wounded}}sw-row-wounded{{/if}}">
-          <td class="sw-zone-cell">{{zone.label}}</td>
+        <tr class="{{#if zone.exposed}}sw-row-exposed{{/if}} {{#if zone.wounds.wounded}}sw-row-wounded{{/if}} {{#if zone.critical}}sw-row-critical{{/if}}">
+          <td class="sw-zone-cell">
+            {{zone.label}}
+            {{!-- The Zone's Critical Hit effect (0.26.0): set by a Critical Hit, ended by a Recenter,
+                 switched here by hand. --}}
+            <a class="sw-zone-crit-toggle {{#if zone.critical}}active{{/if}}" data-action="toggleCritical" data-zone="{{zone.key}}"
+               data-tooltip="{{#if zone.critical}}{{localize 'STARWROUGHT.ZoneCrit.endHint'}}{{else}}{{localize 'STARWROUGHT.ZoneCrit.setHint'}}{{/if}}: {{zone.crit}}">
+              <i class="fa-solid fa-burst"></i>
+            </a>
+          </td>
           <td><input type="number" name="system.zones.{{zone.key}}.protection" value="{{zone.protection}}" min="0"></td>
           <td class="sw-wounds-cell">
             {{> "systems/starwrought/templates/actor/wounds.hbs" zone.wounds}}

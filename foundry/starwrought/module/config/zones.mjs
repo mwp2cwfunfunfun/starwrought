@@ -30,6 +30,15 @@ export const ZONE_CRITICALS = Object.freeze({
 });
 
 /**
+ * The Arms' Critical Hit effect (PHB v4.25, the Critical Hit Effect table: "The target takes a -2
+ * Situation penalty to Attack rolls until it Recenters"). Tracked since 0.26.0
+ * (`system.zones.arms.critical`): on a character's attack rolls, on an adversary's Attack
+ * Threshold and flat roll. It stands beside an Arms Wound's own -2 as a second effect (Mike,
+ * 2026-11-15: -4 with both).
+ */
+export const ARMS_CRITICAL_PENALTY = -2;
+
+/**
  * How many Wounds a Zone carries before its final effect (PHB v4.10, Wound capacity): Medium or
  * smaller 2, Large 3, Huge 4, Gargantuan 5. A creature template may add to it (`system.woundBonus`).
  */
