@@ -194,7 +194,7 @@ export default {
      * @param {Array<{rule: object, item: object}>} entries  This kind's rules on the roller; only a
      *        pending result's (`rule.pending`, on a carrier with `given`) is ever answered.
      * @param {object} context  The roll (../engine.mjs, RollContext).
-     * @returns {Array<{label: string, value: number, type: string, source: string}>}
+     * @returns {Array<{label: string, value: number, type: string, source: string, given?: string, givenFrom?: string}>}
      */
     modifiers(entries, context = {}) {
       const out = [];
@@ -210,8 +210,18 @@ export default {
         const pending = entry?.item?.given;
         if (!rule?.pending || !pending || (rule.to?.slug !== slug)) continue;
         if (!appliesNow(pending, context?.encounter)) continue;
-        // One pending result is one circumstance (PHB v4.21's stacking): its own source.
-        out.push({ label: String(entry.item.name ?? "Given result"), value: rule.value, type: rule.type, source: `rule:${ruleCarrierKey(entry.item)}:${slug}` });
+        // One pending result is one circumstance (PHB v4.21's stacking): its own source. `given`
+        // (0.25.0) names the Maneuver whose result this is, which the roll's card keeps, so a card
+        // knows its roll used the result up (./subordinate.mjs offers Pay It Forward on it).
+        // `givenFrom` names WHICH result: the card of the check that gave it, which the used
+        // Effect remembers too, so the offer is drawn on the card of that roll and no other (the
+        // review of 2026-11-15: an older card that had used another Aid showed the button as well).
+        out.push({
+          label: String(entry.item.name ?? "Given result"), value: rule.value, type: rule.type,
+          source: `rule:${ruleCarrierKey(entry.item)}:${slug}`,
+          ...(pending.maneuver ? { given: String(pending.maneuver) } : {}),
+          ...(pending.message ? { givenFrom: String(pending.message) } : {})
+        });
       }
       return out;
     }

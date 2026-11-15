@@ -203,6 +203,11 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
               [EFFECT ALTER: Move Together.movement; VALUE: step]                       Coordinated Footwork
         A drag within half Speed made as part of that Maneuver is then a Step for both movers.
         There is no APPLY: and no choose(...): the one line covers both.
+        ALTER also reads the property limit (0.25.0; rulings 245 to 251), with the value round or
+        encounter, for a Maneuver whose row carries a LIMIT: (the action sheets, below):
+              [EFFECT ALTER: Pay It Forward.limit; VALUE: round]                        Reciprocal Effort
+        It REPLACES the row's own limit and never adds a use; a row with no LIMIT: stays unlimited.
+        Write the word alone: "owner round" is refused, since a limit is always its owner's.
         RED CELLS (2026-11-08; Mike: "highlight those cells in red"): python assets/highlight_automation.py
         paints every Automation cell the grammar cannot read, and every Effect cell whose
         @Maneuver[Name] names no row, solid red (FF9999) with a cell comment giving the grammar's
@@ -365,6 +370,20 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     request to the GM and pays its own action; each is a Move however short, unless a talent's
     ALTER makes a short one a Step. Nobody targeted, yourself, the wrong kind of creature and a
     second use within the LIMIT are refused; the other requirements are warned about on the card.
+    SUBORDINATE (0.25.0; rulings 245 to 251) is written HERE too, on the action's own row: using
+    the action performs another Maneuver as part of it. THE SUBORDINATE MANEUVER RULE (Mike,
+    2026-11-15): the Maneuver performed is done at THIS row's listed cost and its own cost is never
+    charged, unless the row says otherwise (no row does yet). Pay It Forward's row:
+          [EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]
+    One descriptor, the Maneuver performed, by name. IF: EFFECT(<Maneuver>, used) is the trigger,
+    when the row has one: a roll of yours at your own Opportunity has just used up a bonus another
+    creature's Maneuver of that name gave you (a NAMED EFFECT, the first; the plain EFFECT(<name>)
+    and IFT: EFFECT(...) are not read yet). LIMIT: round or encounter is the row's Frequency, which
+    a talent's ALTER of its limit replaces. IF: RANK(...) reads the owner's rank. In Foundry the
+    row and a button on the card of the roll that used the bonus up both open the subordinate
+    Maneuver's own roll, named for this row; nothing is spent until that roll is made. With no
+    trigger, or within the LIMIT, the use is refused. For this to work Aid's own row must carry
+    its GIVE lines, or no Aid gives a result to use up.
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.

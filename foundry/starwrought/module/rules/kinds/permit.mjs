@@ -37,15 +37,19 @@
  * limited: the answer is the say line alone.
  *
  * The alteration `ALTER: <Maneuver>.movement; VALUE: step` (./alter.mjs; Coordinated Footwork) is
- * handed in by the engine as `context.alterations` and sets the record's `step`.
+ * handed in by the engine as `context.alterations` and sets the record's `step`. Since 0.25.0 an
+ * `ALTER: <Maneuver>.limit` is read the same way (`limitOf` in ../given.mjs): it replaces the
+ * row's LIMIT for the spent test and the mark.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE (the build imports it from Node). It
- * imports ../syntax.mjs, ../operators.mjs and ../maneuver-move.mjs (all pure) and the config.
+ * imports ../syntax.mjs, ../operators.mjs, ../maneuver-move.mjs and ../given.mjs (all pure) and the
+ * config.
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { rankMeets, refuseComponents, refuseOutcome, summarizeOperators, whoMatches } from "../operators.mjs";
+import { rankMeets, refuseComponents, refuseOutcome, summarizeOperators, whoMatches, limitKey, limitSpent } from "../operators.mjs";
 import { MOVE_RECORD_FLAG, moveRecord } from "../maneuver-move.mjs";
+import { limitOf } from "../given.mjs";
 import { plainName, ruleCarrierKey } from "../../config.mjs";
 
 const SHAPE = "PERMIT: <what>; FOR: <who> [<N>]";
@@ -60,21 +64,6 @@ export const PERMIT_WHO = Object.freeze(["allies", "enemies", "all"]);
 /** The conditions of a rule as a list, whatever shape `when` was stored in. */
 function whensOf(rule) {
   return Array.isArray(rule?.when) ? rule.when : (rule?.when ? [rule.when] : []);
-}
-
-/** The key the rule's LIMIT mark is filed under, as the `bonus` and `substitute` kinds key theirs. */
-function limitKey(carrier, rule) {
-  return `${carrier?.id ?? carrier?.name ?? "rule"}:${rule?.line ?? 0}`;
-}
-
-/** Has the owner spent this rule's LIMIT in the encounter as it stands? */
-function limitSpent(actor, key, rule, encounter) {
-  const combat = encounter?.combat ?? null;
-  if (!rule?.limit || !combat) return false;
-  const held = actor?.flags?.starwrought?.rules?.[rule.limit.per]?.[key] ?? null;
-  if (!held) return false;
-  if (rule.limit.per === "round") return (held.combat === combat) && (held.round === (encounter.round ?? 0));
-  return (held === combat) || (held.combat === combat);
 }
 
 /** "an adjacent ally", "an ally within 10 ft", "a creature". */
@@ -176,9 +165,12 @@ export default {
           out.push({ item: carrier, refuse: `${name} is for ${whoWords(rule)}; ${who} is not one.` });
           continue;
         }
+        // The limit that stands (0.25.0): the row's own, unless the owner's `ALTER: <Maneuver>.limit`
+        // replaces it. The marks a Skip or a one-roll effect owes ride with a use that counted.
         const key = limitKey(carrier, rule);
-        if (inFight && limitSpent(actor, key, rule, encounter)) {
-          out.push({ item: carrier, refuse: `${name}: already used this ${rule.limit.per}.` });
+        const limit = limitOf(rule, context?.alterations);
+        if (inFight && limitSpent(actor, key, limit.per, encounter)) {
+          out.push({ item: carrier, refuse: `${name}: already used this ${limit.per}.` });
           continue;
         }
 
@@ -229,7 +221,7 @@ export default {
           write: { [`flags.starwrought.${MOVE_RECORD_FLAG}`]: record },
           say: `${owner}'s own Move is paid for: the next drag of ${owner}'s token is it. ${who} may then make one Move now, outside its Opportunity, paying for it itself.${step ? " A drag within half Speed is a Step for either of them." : " Each is a Move, however short."}`
         };
-        const marks = [...(rule.limit ? [{ key, per: rule.limit.per }] : []), ...spent];
+        const marks = [...(limit.per ? [{ key, per: limit.per }] : []), ...spent, ...limit.marks];
         if (marks.length) action.marks = marks;
         out.push(action);
       }

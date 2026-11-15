@@ -145,6 +145,11 @@ export default {
         to = { name: SCOPES[slug].name, slug, type: "scope" };
       }
       refuseOutcome(e.ops);
+      // 0.25.0: this kind reads its ops without a refusal list, so the one condition it has no
+      // reading for is refused here by name rather than dropped in silence.
+      if (e.ops.used) {
+        throw new RuleSyntaxError(`${TAG} does not read IF: EFFECT(...) yet: a bonus that depends on a named Effect comes with the named Effects a Maneuver can give a target`);
+      }
       return {
         value: e.value, type, to, when: e.ops.when, for: e.ops.for, while: e.ops.while, against: e.ops.against, seen: e.ops.seen, limit: e.ops.limit,
         claim: e.ops.claim, marked: e.ops.marked

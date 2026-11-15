@@ -24,7 +24,7 @@ import { LEGACY_SPEED_FLOOR, migrateSpeed } from "./module/data/legacy.mjs";
 import { SwActor } from "./module/documents/actor.mjs";
 import { SwItem } from "./module/documents/item.mjs";
 import { SwCombat, SwCombatant } from "./module/documents/combat.mjs";
-import { onRenderChatMessage, onChatSocket } from "./module/documents/chat.mjs";
+import { onRenderChatMessage, onChatSocket, registerRuleOfferCards } from "./module/documents/chat.mjs";
 // THE PARTY'S LOOT (0.7.1): a player's Take from the loot and Give to the party, served on the
 // active GM's client over the same socket (party-sheet-plan.md, part 6; ruling 97).
 import { onPartySocket } from "./module/documents/party-socket.mjs";
@@ -296,6 +296,7 @@ Hooks.once("ready", async () => {
   registerRoadHooks();
   registerEffectsHooks();   // CHARACTER EFFECTS (0.16.0): an encounter-long custom effect ends with its Combat.
   registerGiveCards();      // 0.22.0: a check card's Give button follows the give card that answers it.
+  registerRuleOfferCards(); // 0.25.0: a card's rule buttons follow the roller's used Effects and limits.
 
   // THE CONTENT LOOP (0.8.0): with the migration done and everything above in place, offer the GM
   // a Sync when the sources on disk are newer than what this world last synced. Not awaited: the

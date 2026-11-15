@@ -12,17 +12,19 @@
  *   USE: Presence, Origin, aid
  *   GIVE: 1 situation, chosen; IF: RESULT(success)
  *   ALTER: Aid.critical-failure; VALUE: nothing
+ *   SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter
  *
  * A MODIFIER tag (CHECK, ATK, DEF, INIT, SPEED, GIVE) is `TAG: <value> <type>, <descriptor>`: a
  * signed whole number, the bonus type (situation, condition or gear; FG's `[bonus]`), then
- * descriptors by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE, ALTER) take descriptors
- * alone. The components:
+ * descriptors by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE, ALTER, PERMIT,
+ * SUBORDINATE) take descriptors alone. The components:
  * `IF: <condition>` (the owner, or the roll) and `IFT: <condition>` (the other party, or the
  * attack), `FOR: <who> [<N>]` (the recipients), `LIMIT: round | encounter`, and (0.22.0) `UNTIL:
  * <window>` after GIVE and `VALUE: <value>` after ALTER. The conditions:
  * `RANK(<Constellation> <op> <rank>)`, `RANK(roll = untrained)`, `SEEN`, `ALLIES(<op><N>[, <N>])`
  * (also ENEMIES, ALL), `CLAIM(<text>)`, `RESULT(<degree>)`, `TRAIT(<trait>)`, `MARKED`, a Threat
- * word (BLOW, BLAST, BLIGHT, BEGUILEMENT, MELEE, RANGED), `CHECK(<Constellation>)`. IF and IFT are
+ * word (BLOW, BLAST, BLIGHT, BEGUILEMENT, MELEE, RANGED), `CHECK(<Constellation>)`, and (0.25.0)
+ * `EFFECT(<name>, used)`, stored under `ops.used` and read by SUBORDINATE alone. IF and IFT are
  * both accepted for every condition, as FG's own users mix them; the document says which is
  * idiomatic. The reader fills the same `ops` record the 0.13.0 reader filled, so every kind's hook
  * reads what it always read.
@@ -35,7 +37,7 @@
 import { RuleSyntaxError } from "./syntax.mjs";
 import {
   emptyOps, splitOperands, readRank, readRange, readWho, readDegree, readAgainst, splitComparison, traitKey,
-  WHO_FOR, WHO_WHILE, titled, readUntil
+  WHO_FOR, WHO_WHILE, titled, readUntil, readTargetName
 } from "./operators.mjs";
 import { THREATS, isLoreSlug } from "../config.mjs";
 
@@ -51,7 +53,10 @@ export const EFFECT_TAGS = Object.freeze({
   give: "give", alter: "alter",
   // 0.24.0: `PERMIT: move; FOR: allies 0` on a Maneuver's own row: using it lets the creature
   // targeted make one Move now, outside its Opportunity.
-  permit: "permit"
+  permit: "permit",
+  // 0.25.0: `SUBORDINATE: <Maneuver>` on a Maneuver's own row: using it performs the named
+  // Maneuver as part of it, at this row's own cost (Mike's Subordinate Maneuver rule).
+  subordinate: "subordinate"
 });
 
 /** The modifier tags: a value and a bonus type come first. */
@@ -67,7 +72,10 @@ export const COMPONENTS = Object.freeze(["IF", "IFT", "FOR", "LIMIT", "UNTIL", "
 const COMPONENT_TAG = Object.freeze({ UNTIL: "give", VALUE: "alter" });
 
 /** The condition words inside IF and IFT. */
-export const CONDITIONS = Object.freeze(["RANK", "SEEN", "ALLIES", "ENEMIES", "ALL", "CLAIM", "RESULT", "TRAIT", "MARKED", "BLOW", "BLAST", "BLIGHT", "BEGUILEMENT", "MELEE", "RANGED", "CHECK"]);
+export const CONDITIONS = Object.freeze(["RANK", "SEEN", "ALLIES", "ENEMIES", "ALL", "CLAIM", "RESULT", "TRAIT", "MARKED", "BLOW", "BLAST", "BLIGHT", "BEGUILEMENT", "MELEE", "RANGED", "CHECK", "EFFECT"]);
+
+/** The one state `EFFECT(<name>, <state>)` reads in this version: a roll has just used the Effect up. */
+export const EFFECT_STATES = Object.freeze(["used"]);
 
 const CALL = /^([A-Za-z]+)\s*\(([\s\S]*)\)$/;
 
@@ -280,6 +288,37 @@ function readCondition(inside, ops, context, prefix) {
       if (arg == null) throw new RuleSyntaxError("CHECK is written `CHECK(<Constellation>)`, as in `IFT: CHECK(intimidation)`");
       if (Object.hasOwn(THREATS, arg.toLowerCase())) throw new RuleSyntaxError(`a Threat is written bare: \`IFT: ${arg.toUpperCase()}\``);
       ops.against = readAgainst(arg, context);
+      return;
+    }
+    case "EFFECT": {
+      // 0.25.0, named Effects, step one (Mike, 2026-11-15: "other modifiers/effects can be applied
+      // IF that custom Effect field is on the target"; built in two steps by his choice). The one
+      // form read now is `EFFECT(<name>, used)`: a roll of the owner's has just used up the Effect
+      // of that name, which is the Maneuver that gave it (Aid). The forms of step two are told so.
+      if (ops.used) throw new RuleSyntaxError("EFFECT is given twice");
+      const example = "`IF: EFFECT(Aid, used)`";
+      // An empty part (`EFFECT(, used)`) is a slip in the shape, not a name: the splitter drops it,
+      // which would read the state as the name.
+      if ((arg == null) || !arg.trim() || /^\s*,|,\s*,|,\s*$/.test(arg)) throw new RuleSyntaxError(`EFFECT is written \`EFFECT(<name>, used)\`, as in ${example}`);
+      const parts = splitOperands(arg).map(p => p.trim());
+      const written = parts[0] ?? "";
+      if (!written || (parts.length > 2)) throw new RuleSyntaxError(`EFFECT is written \`EFFECT(<name>, used)\`, as in ${example}`);
+      if (prefix === "IFT") {
+        throw new RuleSyntaxError(`IFT: EFFECT(...), an Effect on the other party, is not read yet: it comes with the named Effects a Maneuver can give a target. What is read is ${example}`);
+      }
+      if (parts.length === 1) {
+        throw new RuleSyntaxError(`EFFECT(${written}), an Effect you hold now, is not read yet: it comes with the named Effects a Maneuver can give a target. Write \`EFFECT(${written}, used)\` for a roll of yours that has just used it up`);
+      }
+      const state = parts[1].toLowerCase();
+      if (!EFFECT_STATES.includes(state)) {
+        throw new RuleSyntaxError(`"${parts[1]}": the one state read is \`used\`, as in \`EFFECT(${written}, used)\``);
+      }
+      const read = readTargetName(written, context?.resolve);
+      if (!read || !read.slug) throw new RuleSyntaxError(`"${written}" names no Maneuver: a used Effect is named for the Maneuver that gave it, as in ${example}`);
+      if (read.type === "constellation") {
+        throw new RuleSyntaxError(`"${read.name}" is a Constellation: a used Effect is named for the Maneuver that gave it, as in ${example}`);
+      }
+      ops.used = { name: read.name, slug: read.slug };
       return;
     }
     default:

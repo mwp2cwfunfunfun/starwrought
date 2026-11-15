@@ -803,7 +803,12 @@ export function ruleUses(actor, item, context = {}) {
       // look at; the use still happens), and `marks`, a LIMIT to file as FIRST and ONCE are filed.
       const warn = Array.isArray(u.warn) ? u.warn.map(w => String(w ?? "")).filter(Boolean) : [];
       const marks = Array.isArray(u.marks) ? u.marks.filter(m => m && (typeof m.key === "string") && (typeof m.per === "string")).map(m => ({ key: m.key, per: m.per })) : [];
-      out.push({ item: u.item, write, say: u.say ? String(u.say) : "", refuse: u.refuse ? String(u.refuse) : "", warn, marks });
+      // 0.25.0: `perform`, the Maneuver this use performs as part of itself (the `subordinate`
+      // kind; Mike's Subordinate Maneuver rule). The Item's own use then posts no card and pays
+      // nothing itself: documents/item.mjs hands the cost and the marks to the subordinate's use.
+      const perform = (u.perform && (typeof u.perform === "object") && u.perform.slug)
+        ? { slug: String(u.perform.slug), name: String(u.perform.name ?? u.perform.slug) } : null;
+      out.push({ item: u.item, write, say: u.say ? String(u.say) : "", refuse: u.refuse ? String(u.refuse) : "", warn, marks, perform });
     }
   }
   return out;
@@ -820,7 +825,7 @@ export function ruleUses(actor, item, context = {}) {
  * meets it; one about the rank rolled cannot hold, since a use has no roll.
  * @param {object} actor
  * @param {object} item  The Maneuver being used.
- * @returns {Array<{property: string, movement: string|null, nothing: boolean, until: object|null, label: string, skipped: boolean, marks: Array<{key: string, per: string}>}>}
+ * @returns {Array<{property: string, movement: string|null, per: string|null, nothing: boolean, until: object|null, label: string, skipped: boolean, marks: Array<{key: string, per: string}>}>}
  */
 export function alterationsOf(actor, item) {
   const slug = slugify(plainName(item?.name ?? ""));
@@ -839,6 +844,8 @@ export function alterationsOf(actor, item) {
     out.push({
       property: String(rule.property ?? "").trim().toLowerCase(),
       movement: rule.movement ?? null,
+      // 0.25.0: the limit a `limit` alteration sets ("round" | "encounter"), null on every other.
+      per: rule.per ?? null,
       nothing: rule.nothing === true,
       until: rule.until ?? null,
       label: plainName(entry.item?.name ?? ""),
@@ -857,7 +864,9 @@ export function alterationsOf(actor, item) {
  * @typedef {object} RuleCardOffer
  * @property {object} item      The Talent offering.
  * @property {string} label     The button's text ("Quick Tongue ❶↺: reroll").
- * @property {string} action    The button's `data-action`, which the chat dispatch knows ("ruleReroll").
+ * @property {string} action    The button's `data-action`, which the chat dispatch knows ("ruleReroll",
+ *                              and since 0.25.0 "ruleUse": use the offering Item, the row's own path).
+ * @property {string} [icon]    The button's icon, a Font Awesome class list; the reroll's when absent.
  */
 
 /**
@@ -879,7 +888,18 @@ export function ruleCardOffers(actor, flags, extra = {}) {
     if (typeof hook !== "function") continue;
     // As in `ruleUses`: Off dropped, Skip read as On (a button is pressed on purpose), and a custom
     // effect's carrier offers no button, having no Item to pay or to name on the card (0.16.0).
-    const entries = rulesOfKind(actor, kind.id).filter(e => e.item?.type !== EFFECT_CARRIER_TYPE).map(e => ({ ...e, owner: actor, skip: false }));
+    // 0.25.0: a Maneuver's entries carry the owner's alterations of it (`ALTER: <Maneuver>.limit`),
+    // as a `use` hook is handed them, so an offer and the use it leads to read one limit.
+    // Whatever the carrier is, as `ruleUses` hands them (an `ALTER` names its Maneuver by name, so
+    // a carrier nothing alters gets an empty list).
+    const altered = new Map();
+    const alterationsFor = item => {
+      if (!item) return [];
+      if (!altered.has(item)) altered.set(item, alterationsOf(actor, item));
+      return altered.get(item);
+    };
+    const entries = rulesOfKind(actor, kind.id).filter(e => e.item?.type !== EFFECT_CARRIER_TYPE)
+      .map(e => ({ ...e, owner: actor, skip: false, alterations: alterationsFor(e.item) }));
     if (!entries.length) continue;
     let result;
     try {
@@ -891,7 +911,9 @@ export function ruleCardOffers(actor, flags, extra = {}) {
     if (!Array.isArray(result)) continue;
     for (const o of result) {
       if (!o || (typeof o !== "object") || !o.item || !o.action) continue;
-      out.push({ item: o.item, label: String(o.label ?? o.item.name ?? kind.id), action: String(o.action) });
+      // 0.25.0: an offer may name its icon (a Font Awesome class list); the reroll's is the default.
+      const icon = (typeof o.icon === "string") && /^[a-z0-9 -]+$/i.test(o.icon) ? o.icon : "";
+      out.push({ item: o.item, label: String(o.label ?? o.item.name ?? kind.id), action: String(o.action), ...(icon ? { icon } : {}) });
     }
   }
   return out;

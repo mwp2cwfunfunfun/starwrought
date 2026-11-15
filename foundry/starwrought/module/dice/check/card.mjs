@@ -190,7 +190,15 @@ export function cardFlags(result, position) {
   // again too), the adversary's attack row behind a Defense card (its Threshold is read again, on
   // the GM's client), the pairing's own modifiers (0.15.0, ruling 175), and which card this one
   // replaced, and why.
-  flags.modifiers = (result.modifiers ?? []).map(m => ({ label: m.label, value: m.value, type: m.type ?? null, ...(m.source ? { source: m.source } : {}) }));
+  // `given` (0.25.0): a modifier that was a result a Maneuver gave the roller names that Maneuver,
+  // so the card knows its roll used the result up (Pay It Forward's button is offered on it).
+  flags.modifiers = (result.modifiers ?? []).map(m => ({
+    label: m.label, value: m.value, type: m.type ?? null,
+    ...(m.source ? { source: m.source } : {}),
+    ...(m.given ? { given: String(m.given) } : {}),
+    // Which result it was: the id of the card whose check gave it.
+    ...(m.givenFrom ? { givenFrom: String(m.givenFrom) } : {})
+  }));
   if (cfg.rerollOf) {
     flags.rerollOf = cfg.rerollOf;
     flags.rerollReason = cfg.rerollReason ?? "";

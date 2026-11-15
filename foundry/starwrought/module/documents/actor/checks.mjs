@@ -75,6 +75,7 @@ export const ChecksMixin = Base => class extends Base {
    *                                 player still confirms or changes it, and it is not passed on.
    * @param {Item} [options.item]    The Maneuver behind the roll, when there is one.
    * @param {string} [options.label] What the card is called; "Relevant Check" when not given.
+   * @param {string} [options.note]  A line set after the picker's subtitle on the card (0.25.0).
    */
   async rollRelevantCheck(options = {}) {
     if (this.type !== "character") {
@@ -83,7 +84,9 @@ export const ChecksMixin = Base => class extends Base {
     }
     // The picker's opening value is taken out of what goes on to the roll: `rollCheck` merges its
     // options over the chosen slug, so a `slug` left in them would roll it whatever the player picked.
-    const { slug: preselect = "", ...passed } = options;
+    // `note` (0.25.0) is this method's own too: a line set beside the picker's subtitle (an Aid
+    // made as part of Pay It Forward says so there), never a key of the roll's config.
+    const { slug: preselect = "", note = "", ...passed } = options;
     const sys = this.system;
     // The number beside each Constellation is the one the roll dialog will open with, computed
     // by the check engine itself, so Load Strain on a Stealth check or a Frightened value shows
@@ -169,8 +172,9 @@ export const ChecksMixin = Base => class extends Base {
       ...passed,
       // A Maneuver's name when one was used (Aid), else the book's term for the roll.
       label: passed.label ?? game.i18n.localize("STARWROUGHT.Roll.relevantCheck"),
-      // The card's subtitle is the approval surface: which Constellation, and the reason given.
-      subtitle: why ? `${chosen.name}: ${why}` : chosen.name
+      // The card's subtitle is the approval surface: which Constellation, and the reason given;
+      // then the caller's note, when it has one (0.25.0: whose part a subordinate Maneuver is).
+      subtitle: [why ? `${chosen.name}: ${why}` : chosen.name, String(note ?? "").trim()].filter(Boolean).join(" · ")
     };
     if (Number.isNumeric(answer.threshold)) opts.threshold = Number(answer.threshold);
     return this.rollCheck(chosen.slug, opts);

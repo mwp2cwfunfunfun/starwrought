@@ -45,6 +45,63 @@ import { drawGiveWidget, giveFromCard, onGiveSocket } from "./cards/give.mjs";
 /** The resolvers, under the names other modules imported from here through 0.10.0. */
 export { resolveActor, resolveTokenDoc, ownedActor } from "./cards/shared.mjs";
 
+/**
+ * The cards a rule kind may offer a button on (the `card` hook point): the card of a check since
+ * 0.15.0, and since 0.25.0 the card of a Strike or a Cast and of a Defense roll too.
+ */
+const RULE_OFFER_CARDS = Object.freeze(["check", "attack", "defense"]);
+
+/**
+ * A kind's `ruleUse` button (0.25.0; rules/kinds/subordinate.mjs: Pay It Forward on the card of
+ * the roll that used an Aid up): use the offering Item as its row on the sheet does. Nothing is
+ * decided here. The Item's use asks the kinds again, so a button that has gone stale (the
+ * Opportunity over, the limit spent, the Item gone) is refused or does nothing, exactly as the
+ * row would be.
+ * @param {HTMLElement} button  Carries `data-actor-uuid` (the roller) and `data-item-id`.
+ */
+async function useByRule(button) {
+  const roller = ownedActor(button);
+  if (!roller) return;
+  const item = roller.items.get(button.dataset.itemId);
+  if (!item) return void ui.notifications.warn(game.i18n.localize("STARWROUGHT.Subordinate.itemGone"));
+  return item.use({ actor: roller });
+}
+
+/** How far back in the chat log a card's rule buttons are kept in step with the roller's state. */
+const OFFER_REDRAW_DEPTH = 40;
+
+let offersRegistered = false;
+
+/**
+ * Keep a card's rule buttons in step with the roller (0.25.0). The kinds' offers are computed
+ * when a card is drawn, from the roller's state at that moment, and a card is not drawn again by
+ * itself: Pay It Forward's button would stay on the card after the Maneuver was used, or after
+ * the Opportunity ended, until something else redrew the log. A stale button can do nothing (the
+ * press asks the kinds again and is refused), but it reads as an offer that is not one. So when a
+ * roller's used Effects change (`flags.starwrought.rules.used`: one left by a roll, spent by the
+ * Maneuver it triggered, or swept as its Opportunity ended; a limit is filed in the same update
+ * as the spend), the roller's recent roll cards that carry a result a Maneuver gave are drawn
+ * again, on every client. Only on that change and only those cards: a redraw resets what a card
+ * holds unsaved (a Zone picked and not yet Exposed), and no other offer depends on this state.
+ * Idempotent; called once at ready.
+ */
+export function registerRuleOfferCards() {
+  if (offersRegistered) return;
+  offersRegistered = true;
+  Hooks.on("updateActor", (actor, changes) => {
+    if (!foundry.utils.hasProperty(changes ?? {}, `flags.${SW.SYSTEM_ID}.rules.used`)) return;
+    try {
+      for (const message of game.messages.contents.slice(-OFFER_REDRAW_DEPTH)) {
+        const flags = message.flags?.[SW.SYSTEM_ID];
+        if (!flags || flags.superseded || !RULE_OFFER_CARDS.includes(flags.kind)) continue;
+        if (!Array.isArray(flags.modifiers) || !flags.modifiers.some(m => m?.given)) continue;
+        if (resolveActor(flags.actorUuid)?.uuid !== actor.uuid) continue;
+        Promise.resolve(ui.chat?.updateMessage?.(message)).catch(() => {});
+      }
+    } catch { /* the chat log is not there to redraw */ }
+  });
+}
+
 /** Wire up a rendered chat card. */
 export function onRenderChatMessage(message, html) {
   // A card title that opens a Rules Reference page (0.5.1, T6: the Bind and Exposed cards). Those
@@ -134,7 +191,11 @@ export function onRenderChatMessage(message, html) {
   // buttons from the same record.
   // Not on a card this viewer may not read (0.22.0: a blind roll, to its own roller): an offer
   // that names the degree it answers would say what the card is hiding.
-  if ((flags.kind === "check") && !flags.superseded && flags.actorUuid && (message.isContentVisible !== false)) {
+  // Since 0.25.0 an Attack card and a Defense card are asked too (the cards of a Strike, a Cast and
+  // a Defense roll, never the attack flow's own workflow card): a roll of any of the three may use
+  // up a result another creature's Aid gave, which is what Pay It Forward's button answers
+  // (rules/kinds/subordinate.mjs). The `reroll` kind still answers a check card alone.
+  if (RULE_OFFER_CARDS.includes(flags.kind) && !flags.superseded && flags.actorUuid && (message.isContentVisible !== false)) {
     const roller = resolveActor(flags.actorUuid);
     if (roller && (roller.isOwner || game.user.isGM)) {
       const offers = ruleCardOffers(roller, flags, { encounter: encounterContext() });
@@ -147,7 +208,7 @@ export function onRenderChatMessage(message, html) {
           button.dataset.swAction = o.action;
           button.dataset.itemId = o.item.id;
           button.dataset.actorUuid = roller.uuid;
-          button.innerHTML = `<i class="fa-solid fa-rotate-right"></i> ${foundry.utils.escapeHTML(o.label)}`;
+          button.innerHTML = `<i class="${o.icon ?? "fa-solid fa-rotate-right"}"></i> ${foundry.utils.escapeHTML(o.label)}`;
           row.append(button);
         }
         const card = html.querySelector(".starwrought") ?? html;
@@ -196,6 +257,7 @@ async function onCardButton(event, message, flags) {
       case "flare": return await flareFromCard(message, flags, button);
       case "reroll": return await rerollFromCard(message, flags);
       case "ruleReroll": return await rerollByRule(message, flags, button);
+      case "ruleUse": return await useByRule(button);
       case "giveResult": return await giveFromCard(message, flags, button);
       case "expose":
       case "exposeZone": return await exposeFromCard(message, flags, button);

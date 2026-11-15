@@ -7,6 +7,271 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.25.0 (2026-11-15): Pay It Forward, the Subordinate Maneuver rule, and the Talent that changes it
+
+Built from **Player's Handbook v4.24** (`data/SYNC.json` untouched). **v4.25 is on the shelf and is
+not synced by this release**: Mike, 2026-11-15, "I removed ALL Talent details in Chapter 6 as well
+as ALL of the Maneuver details from Chapter 8 from the PHB ... Once all of the spreadsheets are
+finalized, I will use them to build that part of the PHB." He chose by question to build this
+first and sync after, so `build_all.mjs --check` reports handbook drift until that sync is done;
+nothing here leans on the book, since Aid and the Talents are read from the sheets. No data moved,
+and the only pack document that moves is the Grammar journal.
+
+Mike, 2026-11-14, of the Human's Reciprocal Effort ("You may use Pay It Forward once per round
+instead of once per encounter"): "how about this one". Nothing could be typed in its cell, for two
+reasons: Pay It Forward itself had no automation, and `ALTER` read no `limit`. His reply: "Plan
+it." Pay It Forward's text is in his draft workbook (cost ⓿, once per encounter; "Requirements
+You are acting at your own Opportunity and have just finished a check that consumed a beneficial
+Aid result from another creature. Effect Immediately after that check resolves, Aid one other
+willing ally as a ⓿ Maneuver. Make the normal Aid check and meet its normal requirements. You
+cannot target yourself. This does not use another Opportunity and is not a Reaction. A carried,
+unconsumed Aid result does not activate this Talent."). Planned before any code moved
+(`dazzling-floating-simon.md`), the design checked against the code by a second reader first,
+which corrected nine points (a record that would have woken at the fighter's next Opportunity in
+the round; a condition stored where every other kind would have read it as a rank that held; an
+altered limit stored under the key the summary reads as the line's own). A minor version: one new
+rule kind, one new condition and one new `ALTER` property.
+
+**Mike's decisions, by question.** A general rule, in his words: "any time a maneuver says to
+perform another maneuver as part of it, it is at the original maneuver's listed cost (i.e. costs
+0 additional actions) unless otherwise specified", with the tag word SUBORDINATE. Named Effects,
+his Fantasy Grounds idea ("using a Maneuver can grant a custom Effect on a target (with a specific
+duration), and other modifiers/effects can be applied IF that custom Effect field is on the
+target"), built in two steps ("Two steps"). The recipient is "Anyone but you". With no trigger
+the click is refused ("Refuse").
+
+### The two cells
+
+```
+Pay It Forward ⓿       [EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]
+Reciprocal Effort      [EFFECT ALTER: Pay It Forward.limit; VALUE: round]
+```
+
+**`SUBORDINATE`** (kind `subordinate`, the twenty-first; `module/rules/kinds/subordinate.mjs`), on
+a Maneuver's own row and nowhere else, as `GIVE` and `PERMIT` are: using this Maneuver performs
+the named Maneuver as part of it. The named Maneuver keeps its own check, results and
+requirements; its own cost is never charged, and the cost printed on this row is the only one
+paid. One descriptor, the Maneuver. `IF: EFFECT(<name>, used)` is its trigger when it has one,
+`LIMIT:` its Frequency, `IF: RANK(...)` the owner's rank. Every other component is refused by
+name, and so is a SUBORDINATE inside an `[AURA ...]` block. As read: "performs Aid as part of this
+Maneuver, at this Maneuver's own cost, once a roll of yours at this Opportunity has used up Aid,
+once an encounter".
+
+**`EFFECT(<name>, used)`**, a new condition and step one of named Effects: a roll of yours, at
+your own Opportunity that is still running, has used up the Effect of that name, and it was a
+bonus another creature gave you. The name is the Maneuver whose result it was. Read by
+`SUBORDINATE` alone; every other kind refuses it by name. The plain `EFFECT(<name>)` and `IFT:
+EFFECT(...)` are told they come with step two.
+
+**`ALTER`** learns an eighth property, **`limit`**, with `VALUE: round` or `VALUE: encounter`. It
+replaces the `LIMIT:` on the Maneuver's own row and never adds a use. The drafted cell on Mike's
+sheet (`VALUE: owner round`) is told to write `round`. Move Together's `LIMIT: round` is alterable
+by the same property.
+
+### What happens in play
+
+1. Wren Aids Tess and gives the result, as since 0.22.0.
+2. At her own Opportunity Tess makes a roll that uses the bonus up: a check, a Strike, a Cast. She
+   now holds the Effect **Aid from Wren (used)**, listed on her Effects tab under Pending results
+   until her Opportunity ends.
+3. The card of that roll shows a button, **Pay It Forward ⓿: Aid**, for Tess's player and the GM.
+   The row in "From your Talents" does the same thing.
+4. Either one opens Aid's own roll: the Relevant Check picker, Cooperative Instinct's swap,
+   Humanity's +1. Aid's ❶ is not charged. The card says "As part of Pay It Forward ⓿".
+5. Aid's card offers Give as any Aid does. Tess cannot pick herself; she may pick Wren.
+6. Nothing is spent until the Aid roll is made. A closed dialog costs nothing and uses nothing up.
+   Once rolled, the once-per-encounter use is spent and the used Effect goes.
+7. Refused, with a notice: no roll of yours at this Opportunity used up another creature's Aid (a
+   result still carried, a penalty, a roll on someone else's Opportunity and an Initiative do not
+   count); already used this encounter, or this round with Reciprocal Effort.
+8. Outside an encounter the row performs Aid and nothing is counted. No button is offered there.
+
+### Rulings (245 to 251; system decisions, Mike's to overrule)
+
+- **245. The Subordinate Maneuver rule** (Mike's) and the `SUBORDINATE` shape, on a Maneuver's own
+  row: the subordinate is done at the parent's listed cost and never its own.
+- **246. "Performed" is the subordinate's own use**, under the parent's name, on one card;
+  nothing, the limit included, is spent until its roll is made.
+- **247. Named Effects, step one**: `EFFECT(<name>, used)`, and what leaves a used Effect (a bonus
+  from another creature, used up by your roll at your own Opportunity). A penalty leaves nothing.
+- **248. "Immediately after that check" is read as "for the rest of that Opportunity."** The
+  system cannot tell what else was done in between.
+- **249. With no trigger, or within the limit, the use is refused** (Mike's). The recipient is
+  anyone but you (Mike's), kept by Aid's own Give step.
+- **250. `ALTER ... limit` replaces the limit and never adds a use**; `SUBORDINATE` and `PERMIT`
+  both honour it.
+- **251. Two doors, one path**: the row, and a button on the card of the roll that used the bonus
+  up. A Strike at three defenders shows three buttons; the limit refuses the rest.
+
+### How it is built
+
+- **The kind** (`module/rules/kinds/subordinate.mjs`): `hooks.use` answers a refusal or `{ item,
+  perform: { slug, name }, marks }`; `hooks.card` offers the button when a modifier of the card
+  is the used result, the Effect is held and the limit is unspent. No new hook point: `ruleUses`
+  passes `perform` through, and `ruleCardOffers` passes an offer's `icon` and hands each
+  Maneuver's entries the owner's alterations of it (`module/rules/engine.mjs`).
+- **The condition** (`module/rules/effects.mjs`, `readCondition`): stored under its own key,
+  `ops.used = { name, slug }` (`emptyOps` in `module/rules/operators.mjs`), never in `when`, where
+  every kind reads rank conditions and one with no rank would have held for an Untrained owner.
+  A kind with a refusal list refuses it for free; `bonus` has none and refuses it in one line.
+- **The used Effect** (`module/rules/given.mjs`, pure: `usedEntry`, `usedLive`, `usedOf`,
+  `usedEffects`): `flags.starwrought.rules.used.<maneuver> = { id, label, maneuver, maneuverName,
+  by, byName, value, type, to, from, combat, round, during }` (`from` is the card of the check
+  that gave the result). `markUpdates` in
+  `module/rules/effects-state.mjs`, which already deleted a pending result a roll used, writes it
+  in the same update when the moment qualifies; the moment (`combat, round, combatant, own`) is
+  worked out by `momentFor` in `module/rules/scene.mjs` from `actor.isTurn` and handed in, since
+  `markUpdates` is driven from Node. A check, a blind Strike, a Defense roll and marks relayed to
+  another client all pass through that one place. The record is held only for its Opportunity
+  (`usedLive`) and is taken off by the sweep that ends a Maneuver's Move (`endManeuverMoves`:
+  every turn change, a lone fighter's step, the Combat's end) and by the Maneuver it triggers (a
+  `per: "effect"` mark, `used:<maneuver>`).
+- **A card knows its roll used the result, and which result**: the pending result's modifier
+  carries `given: <maneuver>` and `givenFrom: <the give's card>` (`module/rules/kinds/give.mjs`)
+  and `cardFlags` keeps both (`module/dice/check/card.mjs`). The button is drawn only where the
+  modifier and the used Effect name the same give. A reroll copies the flags as they are.
+- **`ALTER`'s `limit`** (`module/rules/kinds/alter.mjs`): stored flat as `per`, since a `limit`
+  key would read as the ALTER's own to the summary; left out of the results table and of the
+  `gives` hook. `limitOf(rule, alterations)` in `given.mjs` gives the limit that stands and the
+  marks a Skip or a one-roll effect owes; `limitKey` and `limitSpent` moved to `operators.mjs`,
+  shared by `permit` and `subordinate`.
+- **`SwItem`** (`module/documents/item.mjs`): on an answer with `perform`, `#useWithRules` posts
+  no card and pays nothing; `#performSubordinate` finds the Maneuver (`#findManeuver`: the
+  actor's own copy, the Basic Maneuvers, the world, the pack) and uses it with `partOf: { label,
+  cost, marks, gated, note }`. `#useManeuver` takes `partOf` out beside `prepared`: the parent's
+  cost replaces the Maneuver's own, the gate and the spend carry the parent's name, and the marks
+  are filed where the cost is paid (the roll's `beforeRoll`, or at once with no roll). A
+  subordinate with use rules of its own goes through `#useWithRules` the same way. `paidElsewhere`
+  no longer answers for a kind that also has a `use` hook, or Pay It Forward's row would have
+  said it is paid from a card and skipped the Opportunity gate.
+- **The card** (`module/documents/chat.mjs`): the kinds' offers are drawn on Attack and Defense
+  cards as well as check cards; the new action `ruleUse` uses the offering Item, which is the
+  row's own path; and `registerRuleOfferCards` draws a roller's recent cards that carry a given
+  result again when its used Effects change, so the button goes when the Maneuver is used or the
+  Opportunity ends. `rollRelevantCheck` (`module/documents/actor/checks.mjs`) takes a `note`, set
+  after the picker's subtitle.
+- **The Effects tab** (`module/helpers/effects.mjs`, `givenContext`): a used Effect is listed
+  under Pending results, read-only, the bin the GM's (`removeUsed`), and is not counted among the
+  lines that act on a roll.
+
+### Mended on the way
+
+- **A use the rules refuse no longer asks the GM first.** Off-turn, a Talent or Maneuver with a
+  use rule sent its request card to the GM before its rules had their say, so Move Together with
+  nobody targeted asked for leave it could not use (0.24.0 had stopped it SPENDING an approval,
+  not asking for one). The rules answer first now; the request goes out only for a use they
+  allow. Pay It Forward off-turn, which its trigger can never allow, is simply refused.
+- **A button that outlived its offer.** A card's rule buttons are computed when the card is
+  drawn. Found in the first live drive: Pay It Forward's stayed on the card after the Maneuver
+  was used. The roller's cards are drawn again when its used Effects change.
+
+### What the review found
+
+An independent reading of the diff, after the first live drive: seven findings, none blocking,
+all low, all mended, and each that can be driven was then driven live.
+
+1. The button was drawn on any card of the roller's that had used an Aid while a used Effect was
+   held, so an older card (a Defense roll off-turn that had used another Aid) showed it too. The
+   modifier and the used Effect now both name the give, and only the card of that roll offers.
+2. On a row with two `SUBORDINATE` lines the second, which is not performed, still had its limit
+   filed and its used Effect spent. Nothing of it is counted now.
+3. A used Effect whose holder left the Combat (its Combatant or token removed) was never taken
+   off, since the sweep walks the fighters. The Combat's end now takes every used Effect of that
+   Combat, wherever its holder is.
+4. One batch of marks that both left a used Effect and spent the old one of the same Maneuver
+   would have asked Foundry to set and delete one key. No caller builds that batch; it is
+   hardened, and the Effect just left stands.
+5. A `SUBORDINATE` whose rank condition failed answered nothing, so the use fell through to a
+   plain one: the row's cost paid for a card that performed nothing. It is refused, saying which
+   rank is wanted.
+6. The redraw ran on any change to the roller's rule bookkeeping (every FIRST and ONCE mark),
+   resetting what a card held unsaved. It runs when the used Effects change, and at no other
+   time.
+7. A card's offer read the owner's alterations only for a Maneuver, while a use read them for
+   any Item. Both read them the same way now.
+
+### Checked
+
+- `node assets/test_rules.mjs`: 176 checks pass (eight new: `subordinate` registered with its two
+  hooks, its tag and in `EFFECT_KINDS`; its forms, stored shape and summaries; its refusals by
+  message; `EFFECT(<name>, used)` under its own key, the forms of step two, and every other
+  kind's refusal; what leaves a used Effect and how long it is held, with `markUpdates` writing
+  and spending it; the `use` answers for each refusal, the marks, a rank not reached, outside a
+  fight; `ALTER`'s `limit` with `limitOf`, `limitKey`, `limitSpent`, Skip and Off, and `permit`
+  honouring it; the `card` offers, tied to the give).
+- `node --check`; `python assets/check_style.py` (one failure, the em-dash in Dwarf Lore B13 of
+  Mike's uncommitted `data/ancestries.xlsx`); `node assets/build_foundry.mjs --no-compile` (one
+  document moves, the Grammar journal); `python assets/build_features_docx.py`;
+  `node assets/build_all.mjs --check`, which exits 1 on handbook drift alone (v4.25 unsynced)
+  with the stamps, the barrel and the grammar gate passing.
+- Live, in the test world, on fixtures (the world Aid with its `GIVE` lines; Pay It Forward as a
+  world Maneuver and Tess's own; Reciprocal Effort on Tess). As the GM: Wren's Aid given to Tess;
+  Tess's Crafting check at her Opportunity using it, with the used Effect written, listed on the
+  Effects tab and the button on the card (seen on screen); the button opening Aid's picker;
+  Cancel spending nothing; the roll made with 6 of 6 actions before and after, Humanity's +1 on
+  it, the card reading "As part of Pay It Forward ⓿", the limit filed and the Effect gone; Give
+  offering Wren and not Tess; a second use refused ("already used this encounter"); with
+  Reciprocal Effort the button back, the limit filed by the round, a second use in the round
+  refused and the next round allowed; the Effect swept when the turn moved on; a check made on
+  Wren's Opportunity leaving no Effect, no button and a refusal; a Critical Failure's penalty
+  swallowed leaving nothing; a Strike in the attack flow using an Aid to Melee, with the Effect
+  left and the button on the Attack card; the row on the sheet opening the picker, and a
+  double-click opening one; a parent costing ❶ paying it when the roll was made and Aid's own
+  never; a built-in subordinate refused with nothing spent; the Combat deleted with the Effect
+  cleared; outside an encounter the row performing Aid with the notice and nothing written. As
+  the player Mike: the button drawn, the roll made as Tess with nothing charged, the limit and
+  the Effect settled, and Give on the Aid card.
+- Live again after the review's mends. As the player, off-turn: Pay It Forward refused with no
+  request card; Move Together with nobody targeted refused first; Move Together with Wren
+  targeted still asking the GM. As the GM: an Aid used off-turn and another used at Tess's own
+  Opportunity, the button on the second card alone, before and after a redraw; a rank not reached
+  refused with nothing paid; a row with two lines performing the first and filing nothing of the
+  second; Tess's Combatant deleted while she held the Effect, and the Combat's end taking it.
+
+### Not built, and known limits
+
+- **Named Effects, step two**: a Maneuver that puts a named Effect on its target for a duration,
+  `EFFECT(<name>)` without `used`, `IFT: EFFECT(...)`, and `CHECK`, `DEF` and `ATK` lines reading
+  either. Planned on its own.
+- One `SUBORDINATE` line per row. A subordinate that is a built-in (Recenter, Raise a Shield), a
+  Strike, a Cast or a movement row, a parent whose own cost is three or more, and a subordinate
+  that names one of its own, are each told they are not performed yet, with nothing spent.
+- "Unless otherwise specified": no row charges extra yet, so the grammar has no word for it.
+- Choosing the subordinate when the Maneuver is used (Shared Demonstration), one Aid check for
+  several allies (Common Purpose, United Effort), Aid before an ally's roll (Timely Aid), Back on
+  Track.
+- The system does not check that the ally is willing or that Aid's own requirements are met.
+- A used Effect is taken off by its holder's responsible client (the GM's, else its first active
+  owner's). With neither connected when its Opportunity ends it stays listed, dimmed and held for
+  nothing, until the encounter ends.
+- A parent row that costs one or two posts its spend card beside the subordinate's card, as any
+  rolled Maneuver does since 0.23.0. Pay It Forward, at ⓿, posts the one.
+- A `PERMIT` whose rank condition fails still falls through to a plain use (the row's cost, its
+  card, nothing permitted). No row writes one; `SUBORDINATE` refuses in that case.
+- The client reads an `ALTER` against the Maneuvers of the Actions pack and the world. One that
+  names a Maneuver existing only as a character's own Item is "names no Maneuver".
+
+### Offered, not in this release
+
+The Subordinate Maneuver rule as one sentence for the handbook, as a tracked change against v4.25
+for Mike to accept or reject. It would sit in Chapter 4 beside "A Strike made as part of another
+Maneuver still uses the appropriate Melee or Ranged Proficiency."
+
+### For Mike to add
+
+The release carries the kind alone. `data/maneuvers.xlsx` and `data/ancestries.xlsx` are in
+progress and were not converted, built, staged or written. Three things:
+
+- Aid's row (Basic Actions sheet of `data/maneuvers.xlsx`), whose Automation cell is still empty:
+  the five `GIVE` lines printed in the 0.22.0 entry. Without them no Aid gives a result to use up.
+- Pay It Forward's row, which is not yet on the Ancestry Actions sheet (its text is in the draft
+  workbook: Cost 0, Frequency "Once per encounter"), Automation:
+  `[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]`
+- Reciprocal Effort (the Human sheet of `data/ancestries.xlsx`), Automation, in place of the
+  `# PROPOSED` draft: `[EFFECT ALTER: Pay It Forward.limit; VALUE: round]`
+
+---
+
 ## 0.24.0 (2026-11-14): Move Together, and the Talent that changes it
 
 Built from **Player's Handbook v4.24**, unchanged (`data/SYNC.json` untouched). No data moved, and

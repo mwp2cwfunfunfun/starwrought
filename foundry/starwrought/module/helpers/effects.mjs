@@ -17,7 +17,7 @@
 import * as SW from "../config.mjs";
 import { summarize } from "../rules/grammar.mjs";
 import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults } from "../rules/engine.mjs";
-import { pendingRule, pendingWindowWords, appliesNow } from "../rules/given.mjs";
+import { pendingRule, pendingWindowWords, appliesNow, usedEffects, usedLive } from "../rules/given.mjs";
 import { stateOf, RULE_STATES } from "../rules/effects-state.mjs";
 import { claimsOf, isArmed } from "../rules/claims.mjs";
 
@@ -33,7 +33,7 @@ export { armClaim as armClaimLine } from "../rules/claims.mjs";
  * Maneuver gives) are switched as any line; a result PENDING on the character is a `give` rule
  * too, on a carrier of its own, and is listed apart without a switch (`givenContext`).
  */
-export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter", "permit"]);
+export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter", "permit", "subordinate"]);
 
 const L = key => game.i18n.localize(key);
 const F = (key, data) => game.i18n.format(key, data);
@@ -165,7 +165,8 @@ export function effectsContext(actor) {
   const items = groups.filter(g => !g.custom);
   const given = givenContext(actor);
   // A result held over from another encounter is listed, dimmed, and not counted: no roll carries it.
-  const active = groups.flatMap(g => g.rows).filter(r => !r.error && (r.state !== "off")).length + given.filter(g => !g.stale).length;
+  // A used Effect (0.25.0) is listed with them and counted with neither: it changes no roll.
+  const active = groups.flatMap(g => g.rows).filter(r => !r.error && (r.state !== "off")).length + given.filter(g => !g.stale && !g.used).length;
   return {
     groups: items,
     custom,
@@ -202,7 +203,7 @@ export function effectsBadge(actor) {
   // A pending result (0.22.0) is live until a roll uses it or its window closes; one held over
   // from another encounter is on the sheet for the GM to remove and is not live.
   for (const row of givenContext(actor)) {
-    if (!row.stale) lines.push(`${row.name}: ${row.summary}, ${row.window}`);
+    if (!row.stale && !row.used) lines.push(`${row.name}: ${row.summary}, ${row.window}`);
   }
   return lines.length ? { count: lines.length, lines } : null;
 }
@@ -214,7 +215,7 @@ export function effectsBadge(actor) {
  * declined, and a penalty is not the holder's to strike), and Remove is the GM's. A result of a
  * Combat that is not the one viewed is listed as held over, since no roll will carry it.
  * @param {Actor} actor
- * @returns {Array<{key: string, name: string, summary: string, window: string, stale: boolean, tooltip: string}>}
+ * @returns {Array<{key: string, name: string, summary: string, window: string, stale: boolean, used?: boolean, tooltip: string}>}
  */
 export function givenContext(actor) {
   const out = [];
@@ -230,11 +231,26 @@ export function givenContext(actor) {
       tooltip: F("STARWROUGHT.Given.lineTooltip", { maneuver: entry.maneuverName ?? "", giver: entry.byName ?? "" })
     });
   }
+  // 0.25.0, named Effects, step one: what a roll of the character's has just used up ("Aid from
+  // Wren (used)"), held until the Opportunity it was left in ends. It is no modifier, so it is
+  // listed here and never counted among the lines that act on a roll (`used`).
+  for (const record of usedEffects(actor)) {
+    const live = usedLive(record, encounterNow());
+    out.push({
+      key: String(record.id),
+      name: String(record.label ?? ""),
+      summary: L("STARWROUGHT.Used.summary"),
+      window: live ? L("STARWROUGHT.Used.window") : L("STARWROUGHT.Given.heldOver"),
+      stale: !live,
+      used: true,
+      tooltip: F("STARWROUGHT.Used.lineTooltip", { maneuver: record.maneuverName ?? "", giver: record.byName ?? "" })
+    });
+  }
   return out;
 }
 
 /** The viewed Combat, as the rules' encounter context reads it; nothing to read from Node. */
 function encounterNow() {
   const combat = globalThis.game?.combat ?? null;
-  return { combat: combat?.id ?? null, round: combat?.round ?? 0 };
+  return { combat: combat?.id ?? null, round: combat?.round ?? 0, combatant: (combat?.started ? combat.combatant?.id : null) ?? null };
 }

@@ -4,7 +4,8 @@ Rules content built from **Player's Handbook v4.24** (Mike's edition of 8 Novemb
 tracked change read as accepted; `v4.24-sync-report.md` in the project root has the rulings, 205
 to 214; `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
-the 0.23.0 entry 231 to 238 and the 0.24.0 entry 239 to 244). System version **0.24.0**.
+the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244 and the 0.25.0 entry 245 to 251). System
+version **0.25.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2096,16 +2097,17 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-one kinds
 
 **What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
-the eighteenth and nineteenth and 0.24.0 for the twentieth; rulings 118 to 124, 164 to 188, 215 to
-230, 239 to 244). Since 0.9.0 every
+the eighteenth and nineteenth, 0.24.0 for the twentieth and 0.25.0 for the twenty-first; rulings
+118 to 124, 164 to 188, 215 to 230, 239 to 251). Since 0.9.0 every
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Twenty kinds read it: nine effect kinds that act in play (`bonus`, `prevent`, `mark`,
-`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`), two creation kinds (`grant`, `aura`) and nine feature kinds
+sheet. Twenty-one kinds read it: ten effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`), two creation kinds
+(`grant`, `aura`) and nine feature kinds
 (`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character. Nothing else reads a rule: no Strike's commitment,
 no damage step, because no kind for them exists, and Mike's instruction stands ("we will build
@@ -2553,6 +2555,53 @@ Maneuver with a use rule (Oathbound) says its spend on its own card, in place of
 passes the Opportunity gate after its rules have had their say (a refused use spends no
 approval), and honours "Track the six-action round".
 
+**The `subordinate` kind, the Subordinate Maneuver rule and the first named Effect** (0.25.0;
+rulings 245 to 251). Mike, 2026-11-14, of the Human's Reciprocal Effort ("You may use Pay It
+Forward once per round instead of once per encounter"), asked what to type in its cell. Nothing
+could be typed: Pay It Forward itself had no automation. His reply: "Plan it." Two decisions of
+his shaped it. The first is a general rule, in his words: "any time a maneuver says to perform
+another maneuver as part of it, it is at the original maneuver's listed cost (i.e. costs 0
+additional actions) unless otherwise specified." The second is named Effects, his Fantasy Grounds
+idea, built in two steps. So a Maneuver's own row may say that using it performs another Maneuver,
+and a Talent may replace its limit:
+
+```
+Pay It Forward ⓿       [EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]
+Reciprocal Effort      [EFFECT ALTER: Pay It Forward.limit; VALUE: round]
+```
+
+- **The trigger is a named Effect the system leaves.** Wren Aids Tess and gives the result. When
+  a roll of Tess's uses that bonus up at her own Opportunity (a check, a Strike, a Cast), she
+  holds **Aid from Wren (used)**, listed on her Effects tab under Pending results until her
+  Opportunity ends. A bonus she still carries, a penalty a roll swallowed, a roll made on someone
+  else's Opportunity and an Initiative leave nothing. `IF: EFFECT(Aid, used)` reads it.
+- **Two doors, one path.** The card of that roll shows a button for Tess's player and the GM,
+  "Pay It Forward ⓿: Aid"; the row in "From your Talents" does the same thing. Only the card of
+  the roll that used that bonus shows it, and it goes when the Maneuver is used or the Opportunity
+  ends. With no such Effect held, or within the limit, the use is refused with a notice (Mike:
+  "Refuse"); off-turn the refusal comes before any request to the GM.
+- **What opens is Aid's own roll**: the Relevant Check picker, the roll dialog with whatever
+  Tess's Talents put on an Aid, and Aid's card, which says "As part of Pay It Forward ⓿" and
+  offers Give as any Aid does. Pay It Forward posts no card of its own. Tess cannot pick herself;
+  she may pick Wren (Mike: "Anyone but you").
+- **The cost is the row's and never Aid's.** Aid's ❶ is not charged. A row that printed ❷ would
+  pay ❷ once, when the subordinate's roll is made.
+- **Nothing is spent until that roll is made.** A roll dialog that is closed has paid nothing,
+  has not used the once-per-encounter limit and has left the used Effect where it was. Once
+  rolled, the limit is filed and the used Effect goes: one bonus used, one Pay It Forward.
+- **With Reciprocal Effort** the limit is counted by the round in place of the encounter. It
+  replaces the limit and never adds a use. On Skip the row's own limit stands that once; Off, it
+  stands until switched back. The same property alters Move Together's once a round.
+- **"Immediately after that check"** is read as the rest of that Opportunity: the system cannot
+  tell what else was done in between.
+- **Outside an encounter** the row performs Aid and nothing is asked or counted, and no button is
+  offered.
+
+Not performed yet, each told so with nothing spent: a subordinate that is a built-in (Recenter,
+Raise a Shield), a Strike, a Cast or a movement row; a parent whose own cost is three or more; two
+`SUBORDINATE` lines on one row. Step two of named Effects (a Maneuver granting one to a target,
+and bonus lines reading `IF:` or `IFT: EFFECT(<name>)`) is not built.
+
 **The hook points** (0.10.0, 0.13.0 and 0.21.0; rulings 124, 165 and 221). A kind that affects a
 roll names `modifiers` in its `hooks`: the engine asks every registered kind at the check assembly,
 the Defense pass (the static rules), the Defense roll and the attack flow's Threshold reads (the
@@ -2625,7 +2674,7 @@ nothing reads it; the `bonus` entries are what the hook point reads.
 its word, its aliases, `parse` (its argument syntax and validation, with a message a game designer
 can act on), `summary` (its line for the sheet) and `hooks` (the engine points it speaks at,
 defined with the kind and not before), registered in `module/rules/kinds/index.mjs`, which
-registers the twenty. `module/rules/README.md` is the
+registers the twenty-one. `module/rules/README.md` is the
 recipe for adding one, and `assets/test_rules.mjs` is the framework's self-test, run by every
 step-running mode (`--check` builds nothing) of `build_all.mjs` before the Foundry build; it asserts
 the list of shipped kinds, so a kind cannot ship unannounced.
@@ -2839,8 +2888,9 @@ before; the sources and the index are.
   the Move it measures, never at their own cost. Gain Control's row and the Take Control button are
   two doors with one price between them, and so are Interact's row and the Equipment tab's draw or
   stow: the system does not know which you used. The Pass row Passes since 0.23.1, and counts no
-  Passes: its "Once per round" is the book's and nothing enforces it (a `LIMIT: round` on a
-  Maneuver's own `PERMIT` line is the one Frequency the system holds, since 0.24.0). A Maneuver Prepared
+  Passes: its "Once per round" is the book's and nothing enforces it (a `LIMIT:` on a Maneuver's
+  own `PERMIT` line, since 0.24.0, or `SUBORDINATE` line, since 0.25.0, is the one Frequency the
+  system holds). A Maneuver Prepared
   from its row rolls its check at Finish with whatever is targeted then. With "Track the six-action
   round" off none of this happens. An adversary's sheet shows its abilities' cards and pays nothing.
   A row printed with a cost and a Reaction half of its own ("❶ (⓿↺)", which no shipped row is)
@@ -2857,6 +2907,22 @@ before; the sources and the index are.
   label and colours for such a drag were proven through the helper it shares with the charge, and
   not seen on screen. No shipped cell carries a `PERMIT` line: Move Together's row and Coordinated
   Footwork are on sheets Mike is still writing, and 0.24.0 builds no data.
+- **A subordinate Maneuver is performed, and the rest of it is the table's** (0.25.0; rulings 245
+  to 251; section 7). The system opens the subordinate's own roll at the parent's cost, counts the
+  limit and reads the trigger. It does not read that the ally is willing or that the subordinate's
+  own requirements are met, and "immediately after that check" is the rest of the Opportunity.
+  Not performed, and told so with nothing spent: a built-in, a Strike, a Cast or a movement row as
+  the subordinate; a parent whose own cost is three or more; a second `SUBORDINATE` line on a row;
+  a subordinate with one of its own. Not built: a subordinate chosen when the Maneuver is used
+  (Shared Demonstration), one Aid check for several allies (Common Purpose, United Effort), Aid
+  before an ally's roll (Timely Aid), Back on Track, and a row that charges extra for its
+  subordinate ("unless otherwise specified" has no word yet). **Named Effects are at step one**:
+  the system leaves "Aid from Wren (used)" and `IF: EFFECT(Aid, used)` reads it; a Maneuver that
+  puts a named Effect on its target, the plain `EFFECT(<name>)`, `IFT: EFFECT(...)` and bonus
+  lines reading either are step two. A used Effect whose holder has no client connected when its
+  Opportunity ends stays listed, dimmed and held for nothing, until the encounter ends. No shipped
+  cell carries a `SUBORDINATE` line: Pay It Forward has no row yet, Aid's row has no `GIVE` lines
+  yet, and 0.25.0 builds no data.
 - **An attack that outlives its encounter is closed, not resumed** (0.23.0; rulings 237 and 238;
   section 2). An attack made outside an encounter does not survive a reload of the client
   coordinating it; an expired attack and one whose Combat was deleted refund nothing; deleting an

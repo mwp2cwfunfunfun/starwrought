@@ -180,6 +180,14 @@ registerKind(alter);
 import permit from "./permit.mjs";
 registerKind(permit);
 
+// 0.25.0: Pay It Forward's `SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter`, and Mike's
+// Subordinate Maneuver rule behind it: a Maneuver performed as part of another is paid by the
+// parent's listed cost. `subordinate` (the Maneuver's own row) answers the `use` hook point (the
+// row) and the `card` hook point (a button on the card of the roll that used the Aid up); `alter`
+// gained the `limit` property for Reciprocal Effort.
+import subordinate from "./subordinate.mjs";
+registerKind(subordinate);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";

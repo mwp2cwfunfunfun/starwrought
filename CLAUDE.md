@@ -908,6 +908,81 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.25.0 (Mike, 2026-11-15; rulings 245 to 251): Pay It Forward, the Subordinate Maneuver rule,
+and the first named Effect.** Planned first (`dazzling-floating-simon.md`; Mike's decisions by
+question: a general Subordinate Maneuver rule with the tag word SUBORDINATE, named Effects in two
+steps, the recipient anyone but you, no trigger refused) and built as one rule kind, one condition
+and one `ALTER` property; no data and no handbook moved, and the rulings are system decisions in
+the 0.25.0 changelog entry. Mike asked what to type in Reciprocal Effort's cell ("You may use Pay
+It Forward once per round instead of once per encounter"); nothing could be typed until Pay It
+Forward itself was automated, and its text was in no file of the repository (it is in his draft
+workbook, `C:\Users\Dad\Downloads\StarWrought_Human_Talents.xlsx`, Talent Maneuvers sheet: ⓿, once
+per encounter, "have just finished a check that consumed a beneficial Aid result from another
+creature ... Aid one other willing ally as a ⓿ Maneuver"). **THE SUBORDINATE MANEUVER RULE (Mike,
+standing): "any time a maneuver says to perform another maneuver as part of it, it is at the
+original maneuver's listed cost (i.e. costs 0 additional actions) unless otherwise specified."**
+**`SUBORDINATE`** (ruling 245; kind `subordinate`, the twenty-first,
+`module/rules/kinds/subordinate.mjs`), on the MANEUVER'S OWN ROW and nowhere else: `SUBORDINATE:
+<Maneuver>; IF: EFFECT(<name>, used); LIMIT: round | encounter; IF: RANK(...)`, one descriptor (a
+Maneuver; a Constellation and the row itself refused), stored `{ kind: "subordinate", to: { name,
+slug, type }, used: { name, slug } | null, limit, when }`; two hooks on existing points, `use`
+(a refusal, or `{ item, perform: { slug, name }, marks }`) and `card` (a `ruleUse` button).
+**`EFFECT(<name>, used)`** (ruling 247; `readCondition` in `module/rules/effects.mjs`, `CONDITIONS`,
+`EFFECT_STATES`): NAMED EFFECTS, STEP ONE of two (Mike's Fantasy Grounds idea: "using a Maneuver
+can grant a custom Effect on a target (with a specific duration), and other modifiers/effects can
+be applied IF that custom Effect field is on the target"). Stored under its OWN ops key, `ops.used
+= { name, slug }` (`emptyOps`, `refuseComponents` in `module/rules/operators.mjs`), never in
+`when`, where a condition with no rank holds for an Untrained owner; read by `subordinate` alone,
+refused by every other kind (`bonus` in one line of its own), the plain `EFFECT(<name>)` and `IFT:
+EFFECT(...)` refused as step two. **The used Effect** (`module/rules/given.mjs`, pure: `usedEntry`,
+`usedLive`, `usedOf`, `usedEffects`, `isUsedKey`, `usedFlagKey`): `flags.starwrought.rules.used
+.<maneuver> = { id: "used:<maneuver>", label, maneuver, maneuverName, by, byName, value, type, to,
+from, combat, round, during }` (`from` the card of the check that gave the result), written by `markUpdates(actor, marks, moment)` in
+`module/rules/effects-state.mjs` in the same update that deletes a pending result a roll used,
+only when the moment qualifies (an encounter, an Opportunity running, the roller's OWN, a bonus,
+given by another); the moment is `momentFor` in `module/rules/scene.mjs` (`actor.isTurn`), handed
+in because `markUpdates` is driven from Node. Every roll passes through that one place (a check, a
+blind Strike, a Defense roll, relayed marks). Held only for its Opportunity; taken off by
+`endManeuverMoves` (the 0.24.0 sweep: every turn change, a lone fighter's step, the Combat's end)
+and by the Maneuver it triggers (a `per: "effect"` mark `used:<maneuver>`); `removeUsed` is the
+GM's bin; the Combat's end also takes every used Effect of that Combat from a holder who left the
+fight. **A card knows its roll used a result, and which**: the `give` kind's modifier carries
+`given: <maneuver>` and `givenFrom: <the give's card id>`, `cardFlags`
+(`module/dice/check/card.mjs`) keeps both, and the button is offered only where `givenFrom` and
+the used Effect's `from` agree. **`ALTER`'s eighth property,
+`limit`** (ruling 250; `LIMIT_PROPERTY`, `LIMIT_VALUES` in `given.mjs`), `VALUE: round | encounter`,
+stored FLAT as `per` (a `limit` key would read as the ALTER's own to `summarizeOperators`),
+replaces the row's `LIMIT:` and never adds a use; `limitOf(rule, alterations)` is the limit that
+stands, `limitKey` and `limitSpent` are in `operators.mjs` since this release, shared by `permit`
+and `subordinate`, so Move Together's limit is alterable too. **Performing** (ruling 246;
+`module/documents/item.mjs`): on an answer with `perform`, `#useWithRules` posts no card and pays
+nothing; `#performSubordinate` finds the Maneuver (`#findManeuver`: the actor's own, the Basic
+Maneuvers, the world, the pack) and uses it with `partOf: { label, cost, marks, gated, note }`;
+`#useManeuver` takes `partOf` out beside `prepared`: the PARENT's cost replaces the Maneuver's
+own, the gate and the spend carry the parent's name, and the marks are filed where the cost is
+paid (the roll's `beforeRoll`, or at once with no roll), so a closed dialog spends nothing;
+`paidElsewhere` no longer answers for a kind that also has a `use` hook; `rollRelevantCheck` takes
+a `note`. **The card** (ruling 251; `module/documents/chat.mjs`): the kinds' offers are drawn on
+Attack and Defense cards as well as check cards (`RULE_OFFER_CARDS`), an offer may name its
+`icon`, `ruleUse` uses the offering Item (`useByRule`), and `registerRuleOfferCards` redraws a
+roller's recent cards that carry a given result when `flags.starwrought.rules.used` changes (and
+at no other time: a redraw resets what a card holds unsaved), so a button goes when the Maneuver
+is used or the Opportunity ends. **Refused** (ruling 249): in a fight, no used Effect held, a
+second use within the limit, and a rank the line asks for that the owner has not reached (with no
+answer the use fell through to a plain one). **A use the rules refuse no longer asks the GM
+first** (mended on the way): off-turn, `#useManeuver` and the Talent path leave the request card
+to `#useWithRules`, after the refusals, so Move Together with nobody targeted is refused and
+asks for nothing. **"Immediately after that check"**
+is the rest of that Opportunity (ruling 248). **Not built**: named Effects, step two (a Maneuver
+granting one to a target; bonus lines reading `IF:` or `IFT: EFFECT(<name>)`); a built-in, a
+Strike, a Cast or a movement row as the subordinate; a Prepared parent; two `SUBORDINATE` lines on
+a row; a subordinate chosen at use; one Aid for several allies. **The client's resolver wants the
+Maneuver in the pack or the world**: an `ALTER` naming a Maneuver that exists only as a
+character's own Item is "names no Maneuver" (seen live; the test world has a world fixture).
+**The release carries the kind alone**: Pay It Forward has no row, Aid's row has no `GIVE` lines
+and Reciprocal Effort's cell is a draft, all on Mike's sheets in progress, and
+`data/ancestries.xlsx` and `data/maneuvers.xlsx` were not converted, built, staged or written.
+
 **0.24.0 (Mike, 2026-11-14; rulings 239 to 244): Move Together, and the Talent that changes it.**
 Planned first (`dazzling-floating-simon.md`; Mike's decisions by question: pay at the click, a Move
 however short unless the Talent, warn and go on, the tag word PERMIT) and built as one rule kind
@@ -1546,9 +1621,10 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Twenty kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
-  0.22.0, `permit` since 0.24.0): the effect kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`,
-  `substitute`, `give`, `alter`, `permit`, the creation kinds `grant` and `aura`, and
+  Twenty-one kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0): the effect kinds `bonus`, `prevent`,
+  `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, the creation
+  kinds `grant` and `aura`, and
   the feature kinds `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`,
   `choice`; the level-1 Human, the two Cultures, the
   three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
@@ -1561,14 +1637,22 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   that wants it; an open decision), offers on plain checks (a swap is offered only from the
   Maneuver's own Item), `IF: UNSUBSTITUTED`, a flat Proficiency Bonus (Working Knowledge's "+3
   instead of +0"), `FOR` and auras, `CLAIM`; and, for `give` and `alter` (0.22.0), two uses of one
-  pending result (Carry the Plan), a second character using it (Pay It Forward), a Condition given
+  pending result (Carry the Plan), a Condition given
   by a result, a result from a Maneuver that rolls no check, an adversary as the recipient, the
-  `ALTER` properties beyond the seven (each refused as not read yet; eleven of Mike's drafted
-  cells named one at 0.22.0, Coordinated Footwork's among his drafts now told what to write), and
+  `ALTER` properties beyond the eight (each refused as not read yet; eleven of Mike's drafted
+  cells named one at 0.22.0; Coordinated Footwork's and Reciprocal Effort's are now told what to
+  write), and
   a Threshold a Maneuver's check opens on (Aid's "typically 15", offered to Mike as
   the next small step); and, for `permit` (0.24.0), anything permitted but a Move (a Strike, a
   Step as the descriptor), the order and the declared routes of Move Together, "can perceive your
-  cue", willingness, and a use taken back. **The 0.13.0 form is refused since 0.17.0**
+  cue", willingness, and a use taken back; and, for `subordinate` (0.25.0), a built-in, a Strike,
+  a Cast or a movement row as the subordinate, a Prepared parent, two `SUBORDINATE` lines on one
+  row, a subordinate chosen when the Maneuver is used (Shared Demonstration), one Aid check for
+  several allies (Common Purpose, United Effort), Aid before an ally's roll (Timely Aid), Back on
+  Track, a row that charges extra for its subordinate ("unless otherwise specified" has no word
+  yet), and NAMED EFFECTS, STEP TWO, which Mike chose to plan on its own: a Maneuver that puts a
+  named Effect on its target for a duration, the plain `EFFECT(<name>)`, `IFT: EFFECT(...)`, and
+  `CHECK`, `DEF` and `ATK` lines reading either. **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
   (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
@@ -1634,7 +1718,37 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Together's row (Ancestry Actions sheet of `data/maneuvers.xlsx`) and `[EFFECT ALTER: Move
   Together.movement; VALUE: step]` on Coordinated Footwork (the Human sheet), whose `# PROPOSED`
   draft (`VALUE: choose(Move, Step); APPLY: both-participants`) is told what to write. Until Move
-  Together's row carries its line the ally's drag asks the GM as before.
+  Together's row carries its line the ally's drag asks the GM as before. **By 2026-11-15 his saved
+  workbooks carry four of those five** (read, never written): Move Together's `PERMIT` line, and
+  Patient Assistance's, Sure Assistance's and Coordinated Footwork's `ALTER` lines. **Aid's row
+  still has an empty Automation cell**, so no Aid gives a result on shipped content. **0.25.0
+  (2026-11-15) did not touch the workbooks either, and three things wait**, printed in the 0.25.0
+  changelog entry and in `AUTOMATION_GRAMMAR.md` section 5: Aid's five `GIVE` lines; Pay It
+  Forward's ROW, which is on no sheet of `data/maneuvers.xlsx` yet (its text is in his draft
+  workbook: Cost 0, Frequency "Once per encounter"), with `[EFFECT SUBORDINATE: Aid; IF:
+  EFFECT(Aid, used); LIMIT: encounter]`; and `[EFFECT ALTER: Pay It Forward.limit; VALUE: round]`
+  on Reciprocal Effort (the Human sheet), whose `# PROPOSED` draft (`VALUE: owner round`) is told
+  to write `round`. **Mike's draft workbook** (`C:\Users\Dad\Downloads\StarWrought_Human_Talents
+  .xlsx`, outside the repository) holds all twenty draft Human Maneuvers on its Talent Maneuvers
+  sheet, each with a `# PROPOSED H1` cell in a grammar of his own drafting (`TRIGGER`, `SELECT`,
+  `AID`, `ACTION`, `CONDITION`, `TEMPVIGOR`, `PREPARE`, `BORROW`; the spec is its Grammar
+  Extensions sheet): read it for what a Maneuver says and what he wants of it, and write each in
+  the shipped grammar's shape, one kind at a time, as Pay It Forward was.
+- **PHB v4.25 is on the shelf, UNSYNCED (2026-11-15), and Talent and Maneuver details have left
+  the book.** Mike: "I removed ALL Talent details in Chapter 6 as well as ALL of the Maneuver
+  details from Chapter 8 from the PHB; it is a lot of work to keep it consistent with the talent
+  spreadsheets in the data folder. Once all of the spreadsheets are finalized, I will use them to
+  build that part of the PHB." So `data/*.xlsx` is the ONLY source for what a Talent or a Maneuver
+  says, the standing rule "when the two disagree, the handbook wins" no longer applies to them
+  (general rules are still the book's), and no redline is proposed for a single Talent's or
+  Maneuver's text. `Starwrought_Players_Handbook_v4.25.docx` is untracked (1,088 paragraphs, 52
+  tables against v4.24's 144, Chapter 6 a placeholder, no tracked changes, the cover still reading
+  v4.23); `data/SYNC.json` says 4.24, so `build_all.mjs --check` exits 1 on handbook drift alone.
+  Mike chose by question to build 0.25.0 first and sync after: **the v4.25 sync is the next piece
+  of work, planned on its own**, and it rewrites "Where the source of truth lives" above. The
+  0.25.0 changelog entry names v4.25 as unsynced; `FEATURES.md` does not name it, so the stamp's
+  two-file gate still holds. Building Chapter 6 and the Maneuver reference from the sheets is a
+  later task he named; `assets/build_phb.js` is the nearest generator.
 - **Whether a bonus reaches a Defense rolled as a check is open** (ruling 222's wider question; a
   row in `assets/open_decisions.json`). Ruling 222 is narrow: a bonus to a Maneuver applies to a
   check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid
@@ -1686,7 +1800,27 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Tess with its `ALTER` cell (delete it, or switch its line Off, to see plain Moves). It deleted
   its Combats and the 40 cards it posted (416 messages again), cleared the records, marks, request
   and permit flags it left on Tess and Wren, and put the tokens back (Tess 1200,1200; Wren
-  1320,1200). Mike, the player user, owns Tess and Wren.
+  1320,1200). Mike, the player user, owns Tess and Wren. **The 0.25.0 drive (2026-11-15) left
+  three more fixtures on purpose** (flagged `testFixture: "0.25.0"`), so Pay It Forward can be
+  tried there before Mike's row exists: a WORLD action Item "Pay It Forward" (cost 0, with the
+  `SUBORDINATE` cell; the client's resolver needs the Maneuver in the world or the pack for an
+  `ALTER` to name it), Tess's own copy of it (listed under "Maneuvers and Activities", since no
+  Talent granted it) and the Talent "Reciprocal Effort" on Tess with its `ALTER` cell (delete it,
+  or switch its line Off, for once an encounter). To try it: with the world "Aid" fixture, Wren
+  Aids Tess and presses Give; at Tess's Opportunity she rolls a check with that Constellation;
+  the button is on that card. It deleted its two Combats and the 36 cards it posted (417
+  messages, the one above 416 being a "Content synced" card from the 0.24.0 session), its probe
+  Items, and the marks and the request flag it left on Tess; the tokens were never moved. The
+  server was restarted for the 0.25.0 manifest and left running, the GM joined.
+- **0.25.0 leaves to the table or to Mike:** that the ally Aided by Pay It Forward is willing and
+  that Aid's own requirements are met; "immediately after that check", read as the rest of that
+  Opportunity (ruling 248), so a Move or another Maneuver between the check and the Aid is not
+  seen; a used Effect whose holder has no responsible client connected when its Opportunity ends,
+  which stays listed, dimmed and held for nothing, until the encounter ends; a parent row that
+  costs one or two, which posts its spend card beside the subordinate's card (two cards, as any
+  rolled Maneuver since 0.23.0; Pay It Forward at ⓿ posts one); the button on an Attack card,
+  which appears once for each defender of one roll, the limit refusing the rest; and the Threshold
+  the free Aid opens on, typed in the picker as for every Aid.
 - **0.24.0 leaves to the table or to Mike:** Move Together's declared routes, its order (you,
   then the ally), "can perceive your cue" and the ally's willingness; a mistaken use, which cannot
   be taken back (the once-a-round mark stays for the round); a short Move forced by the Maneuver
@@ -1722,6 +1856,33 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-15 (Pay It Forward, the Subordinate Maneuver rule and the first named Effect,
+system 0.25.0; rulings 245 to 251 in the 0.25.0 changelog entry; planned in
+`dazzling-floating-simon.md`, Mike's decisions by question: a general Subordinate Maneuver rule
+with the tag word SUBORDINATE, named Effects in two steps, the recipient anyone but you, no
+trigger refused, and Pay It Forward before the v4.25 sync): Pay It Forward, of which nothing was
+automated and whose text was in no file of the repository, now `[EFFECT SUBORDINATE: Aid; IF:
+EFFECT(Aid, used); LIMIT: encounter]` on its own row (the `subordinate` kind, the twenty-first, on
+the `use` and `card` hook points): a roll at your own Opportunity that uses up another creature's
+Aid leaves the Effect "Aid from Wren (used)" for that Opportunity, the card of that roll and the
+row both open Aid's own roll at the row's cost, and nothing is spent until that roll is made;
+Reciprocal Effort's `# PROPOSED` cell, which the grammar could not say, now `[EFFECT ALTER: Pay It
+Forward.limit; VALUE: round]`, `ALTER`'s eighth property, which `permit` honours too. Mended on
+the way: a use the rules refuse asked the GM for leave first when made off-turn; a card's rule
+button outlived its offer. Checked by 176 self-test checks, `node --check`, the style check (one
+failure, the em-dash in Dwarf Lore B13 of Mike's uncommitted workbook), `build_foundry.mjs
+--no-compile` (one document moves, the Grammar journal), `build_all.mjs --check` (exit 1 on
+handbook drift alone, v4.25 unsynced; the stamps, the barrel and the grammar gate pass), an
+independent review of the diff (seven findings, none blocking, all mended) and live in the test
+world with a GM tab and a player tab, before the review and again after its mends, the cards and
+the Effects tab seen on screen (the 0.25.0 changelog entry lists what). Not built, and said so in
+the changelog: named Effects, step two; a built-in, a Strike, a Cast or a movement row as the
+subordinate; a Prepared parent; two subordinates on a row; a subordinate chosen at use; one Aid
+for several allies. The release carries the kind alone: Mike's two workbooks in progress were not
+converted, built, staged or written, three things are his to add (Aid's `GIVE` lines, Pay It
+Forward's row, Reciprocal Effort's cell), and the pack content did not move. No handbook was
+synced: v4.25 is on the shelf and `data/SYNC.json` is untouched.
 
 Cleared 2026-11-14 (Move Together, and the Talent that changes it, system 0.24.0; rulings 239 to
 244 in the 0.24.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by

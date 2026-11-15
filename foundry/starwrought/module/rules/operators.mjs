@@ -64,7 +64,11 @@ export function emptyOps() {
     // 0.22.0: `UNTIL:` (a GIVE line's window, `{ who, n }`) and `VALUE:` (what an ALTER line's
     // property becomes, the text as written). The effect reader lets each be written on its own
     // tag alone, so no other kind ever sees one filled.
-    until: null, set: null
+    until: null, set: null,
+    // 0.25.0: `IF: EFFECT(<name>, used)`, `{ name, slug }`: a roll of the owner's has just used up
+    // the Effect of that name. Under its own key and never in `when`, where every kind reads rank
+    // conditions: a kind with no use for it then refuses it by name (`refuseComponents`).
+    used: null
   };
 }
 
@@ -405,7 +409,7 @@ export function readDegree(word) {
  * @returns {object}            The same ops.
  */
 export function refuseComponents(ops, tag, allowed) {
-  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE" };
+  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE", used: "IF: EFFECT(...)" };
   const empty = emptyOps();
   for (const [key, value] of Object.entries(ops ?? {})) {
     if (allowed.includes(key)) continue;
@@ -536,6 +540,37 @@ export function markedHolds(rule, entry, context) {
   return false;
 }
 
+/**
+ * The key a rule's LIMIT mark is filed under: the carrier and the line, as the `bonus` and
+ * `substitute` kinds key theirs. One reading for the kinds that act when a Maneuver is used
+ * (`permit`, `subordinate`; 0.25.0, through 0.24.0 it was `permit`'s own).
+ * @param {object} carrier  The Item that carries the rule.
+ * @param {object} rule
+ * @returns {string}
+ */
+export function limitKey(carrier, rule) {
+  return `${carrier?.id ?? carrier?.name ?? "rule"}:${rule?.line ?? 0}`;
+}
+
+/**
+ * Has the owner spent a LIMIT in the encounter as it stands? `per` is the limit that stands for
+ * this use, which an `ALTER: <Maneuver>.limit` may have changed (./given.mjs, `limitOf`), so it is
+ * handed in and never read off the rule here. Outside an encounter nothing is limited.
+ * @param {object} actor
+ * @param {string} key      `limitKey(carrier, rule)`.
+ * @param {string|null} per "round" | "encounter" | null (no limit).
+ * @param {{combat: string|null, round?: number}|null} encounter
+ * @returns {boolean}
+ */
+export function limitSpent(actor, key, per, encounter) {
+  const combat = encounter?.combat ?? null;
+  if (!per || !combat) return false;
+  const held = actor?.flags?.starwrought?.rules?.[per]?.[flagKey(key)] ?? null;
+  if (!held) return false;
+  if (per === "round") return (held.combat === combat) && (held.round === (encounter.round ?? 0));
+  return (held === combat) || (held.combat === combat);
+}
+
 /** Does a comparison hold? `=` equality; the rest as written. */
 export function compare(left, op, right) {
   switch (op) {
@@ -589,6 +624,11 @@ export function summarizeOperators(rule) {
     else bits.push(rule.against.reach ? `against a ${rule.against.reach} Blow` : `against a ${titled(rule.against.threat)}`);
   }
   if (rule?.marked) bits.push("against the creature you marked");
+  // 0.25.0: `IF: EFFECT(<name>, used)`. An object alone: a hand-stored rule with any other value
+  // under the key says nothing here.
+  if (rule?.used && (typeof rule.used === "object")) {
+    bits.push(`once a roll of yours at this Opportunity has used up ${rule.used.name ?? rule.used.slug ?? "the Effect"}`);
+  }
   if (rule?.limit) bits.push(rule.limit.per === "round" ? "the first time each round" : "once each encounter");
   if (rule?.claim) bits.push(`when you claim it (${rule.claim.text})`);
   return bits.join(", ");

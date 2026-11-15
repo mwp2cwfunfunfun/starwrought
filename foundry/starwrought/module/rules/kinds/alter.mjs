@@ -15,6 +15,14 @@
  *   beneficial-duration    the window of the results that give a bonus VALUE: a window
  *   critical-success, success, failure, critical-failure               VALUE: nothing
  *   movement               how the Move made as part of it is read     VALUE: step
+ *   limit                  how often the Maneuver may be used          VALUE: round | encounter
+ *
+ * `limit` (0.25.0; ruling 250; Reciprocal Effort, of Pay It Forward: "You may use Pay It Forward
+ * once per round instead of once per encounter") replaces the LIMIT on the Maneuver's own row and
+ * never adds a use; a row with no LIMIT stays unlimited. It stores `per: "round"`, flat, since a
+ * `limit` key on this rule would read as the ALTER's own limit. Like `movement` it is read when the
+ * Maneuver is used, by the kinds on the `use` and `card` hook points (`permit`, `subordinate`),
+ * through `limitOf` in ../given.mjs.
  *
  * `movement` (0.24.0; ruling 242; Coordinated Footwork, of Move Together) is the one property that
  * is not about what the Maneuver gives: `[EFFECT ALTER: Move Together.movement; VALUE: step]` lets
@@ -37,6 +45,8 @@
  *     property: "beneficial-duration",
  *     nothing: true | false,                                      // a degree property set to nothing
  *     until: { who, n } | null,                                   // a duration property's window
+ *     movement: "step",                                           // on a movement alteration alone
+ *     per: "round" | "encounter",                                 // on a limit alteration alone
  *     when: [...] | null }
  *
  * THE HOOK, `hooks.gives(entries, context, actor)` on the `gives` hook point (../engine.mjs,
@@ -52,7 +62,7 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, refuseComponents, refuseOutcome, summarizeOperators, readTargetName, readUntil, untilWords } from "../operators.mjs";
-import { ALTER_PROPERTIES, DEGREE_PROPERTIES, DURATION_PROPERTIES, MOVEMENT_PROPERTY, MOVEMENT_VALUES, propertyKey, degreeName } from "../given.mjs";
+import { ALTER_PROPERTIES, DEGREE_PROPERTIES, DURATION_PROPERTIES, MOVEMENT_PROPERTY, MOVEMENT_VALUES, LIMIT_PROPERTY, LIMIT_VALUES, propertyKey, degreeName } from "../given.mjs";
 import { plainName, ruleCarrierKey } from "../../config.mjs";
 
 const SHAPE = "ALTER: <Maneuver>.<property>; VALUE: <value>";
@@ -129,6 +139,18 @@ export default {
       }
       return { to, property, nothing: false, until: null, movement: value.toLowerCase(), when: ops.when };
     }
+    // The Maneuver's own LIMIT (0.25.0; ruling 250). Stored flat as `per`, on this branch alone:
+    // a `limit` key would read as this rule's OWN limit to `summarizeOperators`.
+    if (property === LIMIT_PROPERTY) {
+      const word = value.toLowerCase().replace(/\s+/g, " ");
+      if (!LIMIT_VALUES.includes(word)) {
+        // The drafted `VALUE: owner round`: a limit is always its owner's, so the word alone is written.
+        const last = word.split(" ").at(-1);
+        const hint = LIMIT_VALUES.includes(last) ? `; write \`VALUE: ${last}\` (a limit is always its owner's)` : "";
+        throw new RuleSyntaxError(`"${value}": a Maneuver's limit is changed to \`round\` or \`encounter\`, as in \`ALTER: ${to.name}.limit; VALUE: round\`${hint}`);
+      }
+      return { to, property, nothing: false, until: null, per: word, when: ops.when };
+    }
     if (value.toLowerCase() !== NOTHING) {
       throw new RuleSyntaxError(`"${value}": a result is changed to nothing in this version, as in \`ALTER: ${to.name}.${property}; VALUE: nothing\``);
     }
@@ -146,6 +168,7 @@ export default {
     let what;
     if (Object.hasOwn(DEGREE_PROPERTIES, property)) what = `${maneuver} ${degreeName(DEGREE_PROPERTIES[property])} gives nothing`;
     else if (property === MOVEMENT_PROPERTY) what = `a drag within half Speed made as part of ${rule?.to?.name ?? "the Maneuver"} is a Step`;
+    else if (property === LIMIT_PROPERTY) what = `${rule?.to?.name ?? "the Maneuver"} may be used once ${rule?.per === "round" ? "a round" : "an encounter"}, in place of its own limit`;
     else what = `${maneuver} results${property === "beneficial-duration" ? " that give a bonus" : ""} last ${untilWords(rule?.until ?? null)}`;
     return `${what}${tail ? `, ${tail}` : ""}`;
   },
@@ -168,8 +191,9 @@ export default {
         if ((entry?.from !== "own") || !rule?.to?.slug || (rule.to.slug !== maneuver)) continue;
         // A rule stored by hand that names a Constellation is passed over (the parse refuses it).
         if (rule.to.type === "constellation") continue;
-        // The movement property changes nothing a Maneuver gives (0.24.0): it is read at use.
-        if (propertyKey(rule.property) === MOVEMENT_PROPERTY) continue;
+        // The movement property changes nothing a Maneuver gives (0.24.0), nor does its limit
+        // (0.25.0): each is read when the Maneuver is used.
+        if ([MOVEMENT_PROPERTY, LIMIT_PROPERTY].includes(propertyKey(rule.property))) continue;
         let holds = true;
         for (const w of whensOf(rule)) {
           if (w?.roll === true) {

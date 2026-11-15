@@ -31,17 +31,19 @@ import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/i
 import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
 // 0.24.0: the Move made as part of a Maneuver, pure, shared by the charge and the ruler.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, MOVE_USED_KEPT, moveRecord, recordLive, moveRoleFor, asManeuverMove, usedNonces, withUsed } from "../foundry/starwrought/module/rules/maneuver-move.mjs";
-import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType } from "../foundry/starwrought/module/rules/operators.mjs";
+import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType, limitKey, limitSpent } from "../foundry/starwrought/module/rules/operators.mjs";
 // 0.22.0: what a Maneuver gives. The table, the pending result and the window are pure data, and
 // the mark that removes a used result is read off a plain actor.
 import {
   buildTable, sameGiven, pendingEntry, pendingRule, givenCarrier, settle, appliesNow, isGivenKey, givenFlagKey,
-  resultWords, windowWords, pendingWindowWords, ALTER_PROPERTIES
+  resultWords, windowWords, pendingWindowWords, ALTER_PROPERTIES,
+  // 0.25.0: the used Effect a roll leaves, and the limit an alteration may replace.
+  usedEntry, usedLive, usedOf, usedEffects, isUsedKey, usedFlagKey, limitOf, LIMIT_VALUES
 } from "../foundry/starwrought/module/rules/given.mjs";
 import { markUpdates } from "../foundry/starwrought/module/rules/effects-state.mjs";
 // 0.17.0: the effect reader behind every tag (the operator reader's successor) and the feature
 // keyword list, each checked on its own as readLine was.
-import { readEffectLine, EFFECT_TAGS } from "../foundry/starwrought/module/rules/effects.mjs";
+import { readEffectLine, EFFECT_TAGS, CONDITIONS, EFFECT_STATES } from "../foundry/starwrought/module/rules/effects.mjs";
 // 0.21.0: the pure half of a check made with other terms, and the list of kinds the Effects tab
 // switches (the module's top level names no Foundry global, so it imports here).
 import { swapTerms, substitutionRecord, chooseVariant, mergeMarks } from "../foundry/starwrought/module/dice/check/substitute.mjs";
@@ -76,7 +78,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reroll", "sense", "size", "speed", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -623,7 +625,9 @@ const KNOWN = {
   oathbound: { type: "action", slug: "oathbound", name: "Oathbound", enabled: true },
   "quick-tongue": { type: "action", slug: "quick-tongue", name: "Quick Tongue", enabled: true },
   // 0.24.0: the Maneuver a PERMIT is written on and Coordinated Footwork alters.
-  "move-together": { type: "action", slug: "move-together", name: "Move Together", enabled: true }
+  "move-together": { type: "action", slug: "move-together", name: "Move Together", enabled: true },
+  // 0.25.0: the Maneuver a SUBORDINATE is written on and Reciprocal Effort alters.
+  "pay-it-forward": { type: "action", slug: "pay-it-forward", name: "Pay It Forward", enabled: true }
 };
 const resolve = name => KNOWN[slugify(plainName(name))] ?? null;
 
@@ -692,7 +696,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -1898,7 +1902,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   must(err("[EFFECT CHECK]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
@@ -2518,12 +2522,12 @@ check("alter: every accepted form, stored whole", () => {
 });
 
 check("alter: the refusals, and the cells drafted for later versions say what is not read yet", () => {
-  const reads = "ALTER reads duration, beneficial-duration, critical-success, success, failure, critical-failure and movement";
-  same(ALTER_PROPERTIES, ["duration", "beneficial-duration", "critical-success", "success", "failure", "critical-failure", "movement"], "the properties read");
+  const reads = "ALTER reads duration, beneficial-duration, critical-success, success, failure, critical-failure, movement and limit";
+  same(ALTER_PROPERTIES, ["duration", "beneficial-duration", "critical-success", "success", "failure", "critical-failure", "movement", "limit"], "the properties read");
   // Mike's drafts (2026-11-14): the property is told first, whatever the Maneuver, so a cell for a
   // later version reads as "not yet" and never as a misspelt name. (`Move Together.movement` was
-  // one of them until 0.24.0 read it.)
-  for (const [target, property] of [["Aid", "beneficial-uses"], ["Pay It Forward", "limit"], ["Torchbearer", "range"], ["Working Knowledge", "proficiency"], ["Borrowed Technique", "slots"]]) {
+  // one of them until 0.24.0 read it, and `Pay It Forward.limit` until 0.25.0 did.)
+  for (const [target, property] of [["Aid", "beneficial-uses"], ["Torchbearer", "range"], ["Working Knowledge", "proficiency"], ["Borrowed Technique", "slots"], ["Rallying Word", "options-per-recipient"]]) {
     must(alterError(`[EFFECT ALTER: ${target}.${property}; VALUE: 2]`) === `the property "${property}" is not read yet: ${reads}`, `${target}.${property}`);
   }
   must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: no-effect; PRESERVE: original-degree]") === '"PRESERVE: original-degree" is not a component: after the tag come VALUE: and IF:', "his PRESERVE is no component, and the message names ALTER's own");
@@ -2803,7 +2807,9 @@ check("collectRules indexes a pending result as a one-roll carrier, and the give
   same(entries.map(e => [e.item.id, e.item.name, e.item.type, e.item.effect.duration, e.rule]), [["given:aid", "Aid from Tess", "effect", "roll", pendingRule(entryFor())]], "one carrier, one resolved rule");
   must(givenCarrier(entryFor()).given.id === "given:aid", "the carrier keeps its entry");
   const inFight = { encounter: { combat: "c1", round: 2 } };
-  const applied = [{ label: "Aid from Tess", value: 1, type: "situation", source: "rule:given:aid:crafting" }];
+  // `given` (0.25.0) names the Maneuver whose result the modifier is, for the roll's card to keep.
+  // `givenFrom` names which result: the card of the check that gave it (the entry's `message`).
+  const applied = [{ label: "Aid from Tess", value: 1, type: "situation", source: "rule:given:aid:crafting", given: "aid", givenFrom: "msg1" }];
   const spent = [{ key: "given:aid", per: "effect" }];
   const roll = ruleModifiers(wren, { kind: "check", slug: "crafting", item: null, rank: "trained", ...inFight });
   same([roll.applied, roll.offered, roll.marks], [applied, [], spent], "a Crafting check: applied, never offered, and the result goes with the roll");
@@ -2963,7 +2969,7 @@ check("alter: the movement property is VALUE: step, read at use and never by wha
   must(alterError("[EFFECT ALTER: Move Together.movement; VALUE: choose(Move, Step); APPLY: both-participants]") === '"APPLY: both-participants" is not a component: after the tag come VALUE: and IF:', "his APPLY is no component");
   same(kindOf("alter").hooks.gives([{ rule: footwork.system.rules[0], item: footwork, from: "own" }], { maneuver: "move-together", rank: "trained" }, mover()), [], "the gives hook passes it over");
 
-  same(alterationsOf(mover([moveTogether, footwork]), moveTogether), [{ property: "movement", movement: "step", nothing: false, until: null, label: "Coordinated Footwork", skipped: false, marks: [] }], "the owner's alteration of the used Maneuver");
+  same(alterationsOf(mover([moveTogether, footwork]), moveTogether), [{ property: "movement", movement: "step", per: null, nothing: false, until: null, label: "Coordinated Footwork", skipped: false, marks: [] }], "the owner's alteration of the used Maneuver");
   same(alterationsOf(mover([moveTogether, footwork]), aidRow), [], "another Maneuver's alterations are not this one's");
   same(alterationsOf(mover([moveTogether, patient]), moveTogether), [], "nor is an alteration of Aid Move Together's");
 
@@ -3053,6 +3059,266 @@ check("the Maneuver's Move: a Move however short, never a Rush, a Step only with
   same(read(step, stepping), ["step", 1, false, 0, 1], "with the alteration a short drag is a Step");
   same(read(step, { role: "user", record: { ...record, step: true } }), ["step", 1, false, 1, 0], "for the user too, and still paid");
   same(read(rush, stepping), ["move", 3, true, 0, 3], "the alteration frees a Step, never a Rush");
+});
+
+/* -------------------------------------------- */
+/*  0.25.0: the subordinate kind, EFFECT(<name>, used), the used Effect, ALTER's limit */
+/* -------------------------------------------- */
+
+const PIF_CELL = "[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]";
+const PIF_EXAMPLE = "`SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter`";
+const payItForward = maneuverWith("Pay It Forward ⓿", PIF_CELL, { id: "pif1" });
+payItForward.system.glyph = "⓿";
+const reciprocal = { ...talentWith("Reciprocal Effort", "[EFFECT ALTER: Pay It Forward.limit; VALUE: round]"), id: "re1" };
+const subError = (cell, context = onRowOf) => bonusError(cell, context);
+
+/** Tess's Opportunity in round 2 of Combat c1, and the bonus Wren's Aid gave her. */
+const PIF_NOW = { combat: "c1", round: 2, combatant: "cmb-tess" };
+const fromWren = pendingEntry({
+  result: result(1), to: { slug: "crafting", name: "Crafting" }, maneuver: { slug: "aid", name: "Aid" }, giver: { uuid: "Actor.wren", name: "Wren" },
+  combat: "c1", giverCombatant: "cWren", recipientCombatant: "cmb-tess", message: "msg1"
+});
+const usedByTess = usedEntry(fromWren, { ...PIF_NOW, own: true }, "Actor.tess");
+
+/** Tess, holding the used Effect (and whatever else the test names under `flags.starwrought.rules`). */
+function holdingUsed(items = [payItForward], rules = {}) {
+  return mover(items, { starwrought: { rules: { used: { aid: usedByTess }, ...rules } } });
+}
+
+/** The context of a use with nobody targeted, at Tess's Opportunity. */
+const pifContext = (encounter = PIF_NOW) => useContext({ target: false, encounter });
+
+check("subordinate: registered at the use and card hooks, with the SUBORDINATE tag, and it draws a Use control", () => {
+  const kind = kindOf("subordinate");
+  must(kind && kind.id === "subordinate", "kindOf('subordinate')");
+  same([kind.aliases, Object.keys(kind.hooks)], [[], ["use", "card"]], "no aliases, two hooks");
+  must(EFFECT_TAGS.subordinate === "subordinate", "the SUBORDINATE tag names the kind");
+  must(CONDITIONS.includes("EFFECT") && EFFECT_STATES.join() === "used", "EFFECT is a condition word, and `used` its one state");
+  must(usableByRule(payItForward), "a Maneuver with a SUBORDINATE line is used, so its row shows the Use control");
+  must(!usableByRule(reciprocal), "an ALTER of a Maneuver's limit draws none");
+});
+
+check("subordinate: every accepted form on a Maneuver's row, stored whole, and its summary", () => {
+  same(payItForward.system.rules, [{
+    to: { name: "Aid", slug: "aid", type: "action" }, used: { name: "Aid", slug: "aid" }, limit: { per: "encounter" }, when: null,
+    kind: "subordinate", line: 1, text: PIF_CELL
+  }], "Pay It Forward's cell");
+  const loose = giveRule("[EFFECT subordinate: AID ❶; if: effect(aid, USED); limit: Round; IF: RANK(Origin >= expert)]");
+  same([loose.to, loose.used, loose.limit, loose.when], [{ name: "Aid", slug: "aid", type: "action" }, { name: "Aid", slug: "aid" }, { per: "round" }, [{ constellation: "origin", name: "Origin", op: ">=", rank: "expert" }]], "case blind, glyphs free; once a round; the owner's rank");
+  const plain = giveRule("[EFFECT SUBORDINATE: Search]");
+  same([plain.to, plain.used, plain.limit, plain.when], [{ name: "Search", slug: "search", type: "action" }, null, null, null], "no trigger and no LIMIT: the Maneuver is simply performed");
+  same(bonusRule("[EFFECT SUBORDINATE: Aid ❶; IF: EFFECT(Aid ❶, used)]", { itemType: "action" }).used, { name: "Aid ❶", slug: "aid" }, "without a resolver: the name as written, the slug glyph-free");
+  must(summarize(payItForward.system.rules[0]) === "performs Aid as part of this Maneuver, at this Maneuver's own cost, once a roll of yours at this Opportunity has used up Aid, once an encounter", `the summary: "${summarize(payItForward.system.rules[0])}"`);
+  must(summarize(loose) === "performs Aid as part of this Maneuver, at this Maneuver's own cost, while Origin is at least Expert, once a roll of yours at this Opportunity has used up Aid, once a round", `with a rank: "${summarize(loose)}"`);
+  must(summarize(plain) === "performs Search as part of this Maneuver, at this Maneuver's own cost", `bare: "${summarize(plain)}"`);
+  same(JSON.parse(JSON.stringify(payItForward.system.rules[0])), payItForward.system.rules[0], "a stored rule equals its JSON image");
+});
+
+check("subordinate: the refusals, each by its message", () => {
+  must(subError("[EFFECT SUBORDINATE: Aid]", { resolve, itemType: "talent" }) === "SUBORDINATE is written on the Maneuver's own row: it is the Maneuver that using that row performs as part of itself", "in a Talent's cell");
+  must(subError("[EFFECT SUBORDINATE:]").startsWith("a subordinate Maneuver is written `SUBORDINATE: <Maneuver>`"), "no Maneuver");
+  must(subError("[EFFECT SUBORDINATE: Aid, Search]") === `a subordinate Maneuver is written \`SUBORDINATE: <Maneuver>\`, as in ${PIF_EXAMPLE} (2 descriptors given, 1 wanted: the Maneuver performed; a row that performs two writes two lines, which is not read yet)`, "two Maneuvers on one line");
+  must(subError("[EFFECT SUBORDINATE: Aidd]") === `"Aidd" names no Maneuver: SUBORDINATE names the Maneuver performed, as in ${PIF_EXAMPLE}`, "an unknown Maneuver");
+  must(subError("[EFFECT SUBORDINATE: Stealth]") === `"Stealth" is a Constellation: SUBORDINATE names the Maneuver performed, as in ${PIF_EXAMPLE}`, "a Constellation");
+  must(subError("[EFFECT SUBORDINATE: Pay It Forward]", { ...onRowOf, itemName: "Pay It Forward ⓿" }) === "Pay It Forward cannot be its own subordinate: name the Maneuver it performs", "itself");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: RANK(roll = trained)]").startsWith("SUBORDINATE acts when the Maneuver is used, before any roll of its own"), "the rank rolled");
+  must(subError("[EFFECT SUBORDINATE: Aid; IFT: TRAIT(Fear)]") === "SUBORDINATE does not take IFT: TRAIT(...)", "a trait");
+  must(/IF\(Outcome=\.\.\.\) is only read by a kind that acts after the die/.test(subError("[EFFECT SUBORDINATE: Aid; IF: RESULT(success)]")), "a degree");
+  must(subError("[EFFECT SUBORDINATE: Aid; FOR: allies 0]") === "SUBORDINATE does not take FOR", "FOR");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: CLAIM(when asked)]") === "SUBORDINATE does not take IF: CLAIM(...)", "a claim");
+  must(subError("[EFFECT SUBORDINATE: Aid; IFT: MARKED]") === "SUBORDINATE does not take IFT: MARKED", "a mark");
+  must(subError("[EFFECT SUBORDINATE: Aid; UNTIL: encounter]") === "SUBORDINATE does not take UNTIL", "UNTIL is GIVE's");
+  must(subError("[EFFECT SUBORDINATE: Aid; VALUE: free]") === "SUBORDINATE does not take VALUE", "VALUE is ALTER's");
+  const ridden = parseAutomation("[AURA 15 allies; SUBORDINATE: Aid]", onRowOf);
+  must((ridden.errors.length === 1) && ridden.rules.every(r => r.kind !== "subordinate"), `it cannot ride an aura's ring: ${ridden.errors.map(e => e.message).join("; ")}`);
+});
+
+check("EFFECT(<name>, used) is read under its own key by SUBORDINATE alone; the forms of step two and every other kind say so", () => {
+  const ops = readEffectLine("SUBORDINATE: Aid; IF: EFFECT(Aid, used)", { context: { resolve } }).ops;
+  same([ops.used, ops.when], [{ name: "Aid", slug: "aid" }, null], "its own key, never a rank condition");
+  const later = "it comes with the named Effects a Maneuver can give a target";
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid)]") === `EFFECT(Aid), an Effect you hold now, is not read yet: ${later}. Write \`EFFECT(Aid, used)\` for a roll of yours that has just used it up`, "the plain form is step two");
+  must(subError("[EFFECT SUBORDINATE: Aid; IFT: EFFECT(Aid, used)]") === `IFT: EFFECT(...), an Effect on the other party, is not read yet: ${later}. What is read is \`IF: EFFECT(Aid, used)\``, "an Effect on the other party is step two");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, spent)]") === '"spent": the one state read is `used`, as in `EFFECT(Aid, used)`', "another state");
+  for (const [inside, why] of [["EFFECT", "bare"], ["EFFECT()", "empty"], ["EFFECT(Aid, used, twice)", "three parts"], ["EFFECT(, used)", "no name"]]) {
+    must(subError(`[EFFECT SUBORDINATE: Aid; IF: ${inside}]`) === "EFFECT is written `EFFECT(<name>, used)`, as in `IF: EFFECT(Aid, used)`", `${why}: "${inside}"`);
+  }
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aidd, used)]") === '"Aidd" names no Maneuver: a used Effect is named for the Maneuver that gave it, as in `IF: EFFECT(Aid, used)`', "an unknown name");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Stealth, used)]") === '"Stealth" is a Constellation: a used Effect is named for the Maneuver that gave it, as in `IF: EFFECT(Aid, used)`', "a Constellation");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); IF: EFFECT(Search, used)]") === "EFFECT is given twice", "twice");
+  // Every other kind refuses it by name: under its own key it can never hold by accident as a
+  // rank condition would for an Untrained owner.
+  const onRow = cell => parseAutomation(cell, { resolve, itemType: "effect" }).errors[0]?.message ?? "";
+  for (const [cell, tag] of [["CHECK: 1 condition, aid", "CHECK"], ["DEF: 1 situation, guard", "DEF"]]) {
+    must(onRow(`${cell}; IF: EFFECT(Aid, used)`) === `${tag} does not read IF: EFFECT(...) yet: a bonus that depends on a named Effect comes with the named Effects a Maneuver can give a target`, `${tag}: a bonus line is told when`);
+  }
+  for (const [cell, tag] of [["IMMUNE: prone", "IMMUNE"], ["USE: Presence, Origin, aid", "USE"], ["REROLL: diplomacy; IF: RESULT(critical failure)", "REROLL"], ["MARK: enemies", "MARK"], ["IGNORE: terrain", "IGNORE"]]) {
+    must(onRow(`${cell}; IF: EFFECT(Aid, used)`) === `${tag} does not take IF: EFFECT(...)`, `${tag} refuses it`);
+  }
+  must(giveError("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); IF: EFFECT(Aid, used)]") === "GIVE does not take IF: EFFECT(...)", "GIVE");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IF: EFFECT(Aid, used)]") === "PERMIT does not take IF: EFFECT(...)", "PERMIT");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; IF: EFFECT(Aid, used)]") === "ALTER does not take IF: EFFECT(...)", "ALTER");
+});
+
+check("the used Effect: what leaves one, and that it is held only for the Opportunity it was left in (ruling 247)", () => {
+  same(usedByTess, {
+    id: "used:aid", label: "Aid from Wren (used)", maneuver: "aid", maneuverName: "Aid", by: "Actor.wren", byName: "Wren",
+    value: 1, type: "situation", to: { slug: "crafting", name: "Crafting" }, from: "msg1", combat: "c1", round: 2, during: "cmb-tess"
+  }, "the record: named for the result it was, who gave it, which give it was, and the Opportunity it was left in");
+  must(usedEntry({ ...fromWren, message: null }, { ...PIF_NOW, own: true }, "Actor.tess").from === null, "a result with no card behind it names none");
+  const own = { ...PIF_NOW, own: true };
+  for (const [entry, moment, holder, why] of [
+    [fromWren, { ...PIF_NOW, own: false }, "Actor.tess", "a roll on another fighter's Opportunity"],
+    [fromWren, { ...PIF_NOW, combatant: null, own: true }, "Actor.tess", "nobody's Opportunity running (an Initiative)"],
+    [fromWren, { combat: null, round: 0, combatant: null, own: false }, "Actor.tess", "no encounter"],
+    [fromWren, null, "Actor.tess", "no moment at all"],
+    [{ ...fromWren, value: -1 }, own, "Actor.tess", "a penalty the roll swallowed"],
+    [fromWren, own, "Actor.wren", "a result one gave oneself"],
+    [{ ...fromWren, by: "" }, own, "Actor.tess", "a result with no giver"],
+    [null, own, "Actor.tess", "no result"]
+  ]) must(usedEntry(entry, moment, holder) === null, `${why} leaves nothing`);
+
+  must(usedLive(usedByTess, PIF_NOW), "held in its Opportunity");
+  for (const [other, why] of [[{ ...PIF_NOW, combatant: "cmb-wren" }, "the next fighter's Opportunity"], [{ ...PIF_NOW, round: 3 }, "the next round"], [{ ...PIF_NOW, combat: "c2" }, "another Combat"], [{ ...PIF_NOW, combatant: null }, "nobody's Opportunity"], [{ combat: null, round: 0, combatant: null }, "no encounter"], [null, "nothing"]]) {
+    must(!usedLive(usedByTess, other), `not held in ${why}`);
+  }
+  must(!usedLive(null, PIF_NOW) && !usedLive({ ...usedByTess, during: "" }, PIF_NOW), "nothing, and a record with no Opportunity: not held");
+
+  same([isUsedKey("used:aid"), isUsedKey("given:aid"), usedFlagKey("used:aid"), usedFlagKey("aid")], [true, false, "aid", "aid"], "the key, by id or by slug");
+  const tess = holdingUsed();
+  same([usedOf(tess, "aid"), usedOf(tess, "search"), usedEffects(tess).map(e => e.id), usedEffects(mover())], [usedByTess, null, ["used:aid"], []], "read off the flags");
+
+  // The one writer: the mark that removes a pending result a roll used.
+  const holder = holding(fromWren);
+  holder.uuid = "Actor.tess";
+  const spent = [{ key: "given:aid", per: "effect" }];
+  same(markUpdates(holder, spent, own), { "flags.starwrought.rules.given.-=aid": null, "flags.starwrought.rules.used.aid": usedByTess }, "used at her own Opportunity: the result goes and the used Effect is left");
+  same(markUpdates(holder, spent, { ...PIF_NOW, own: false }), { "flags.starwrought.rules.given.-=aid": null }, "used off-turn: the result goes and nothing is left");
+  same(markUpdates(holder, spent), { "flags.starwrought.rules.given.-=aid": null }, "with no moment handed in, as before 0.25.0");
+  const swallowed = holding({ ...fromWren, value: -1 });
+  swallowed.uuid = "Actor.tess";
+  same(markUpdates(swallowed, spent, own), { "flags.starwrought.rules.given.-=aid": null }, "a penalty leaves nothing");
+  same(markUpdates(tess, [{ key: "used:aid", per: "effect" }]), { "flags.starwrought.rules.used.-=aid": null }, "the Maneuver it triggers spends it");
+  same(markUpdates(mover(), [{ key: "used:aid", per: "effect" }]), {}, "one that is not held deletes nothing");
+  // One batch that leaves an Effect and spends the old one of the same Maneuver: the newer stands,
+  // and Foundry is never asked to set and delete one key.
+  const both = holding(fromWren);
+  both.uuid = "Actor.tess";
+  both.flags.starwrought.rules.used = { aid: { ...usedByTess, from: "msg0" } };
+  for (const batch of [[{ key: "used:aid", per: "effect" }, ...spent], [...spent, { key: "used:aid", per: "effect" }]]) {
+    same(markUpdates(both, batch, own), { "flags.starwrought.rules.given.-=aid": null, "flags.starwrought.rules.used.aid": usedByTess }, "a batch with both marks, in either order, leaves the new Effect");
+  }
+});
+
+check("subordinate: used with the trigger held, it answers the Maneuver to perform and the marks to file (rulings 245, 246, 249)", () => {
+  const [use] = ruleUses(holdingUsed(), payItForward, pifContext());
+  same([use.refuse, use.perform, use.write, use.say, use.warn], ["", { slug: "aid", name: "Aid" }, null, "", []], "it performs Aid, writes nothing and says nothing: the subordinate's roll is the Maneuver");
+  same(use.marks, [{ key: "pif1:1", per: "encounter" }, { key: "used:aid", per: "effect" }], "the LIMIT, and the used Effect it spends, for the subordinate's roll to file");
+
+  const refusal = (actor, context = pifContext()) => { const [u] = ruleUses(actor, payItForward, context); return [u.refuse, u.perform, u.marks]; };
+  const noTrigger = "Pay It Forward: no roll of Tess's at this Opportunity has used up another creature's Aid.";
+  same(refusal(mover([payItForward])), [noTrigger, null, []], "no used Effect: refused (Mike: \"Refuse\")");
+  same(refusal(holdingUsed(), pifContext({ ...PIF_NOW, combatant: "cmb-wren" })), [noTrigger, null, []], "one left in an Opportunity that is over");
+  same(refusal(holdingUsed(), pifContext({ ...PIF_NOW, round: 3 })), [noTrigger, null, []], "nor the same fighter's next Opportunity");
+  same(refusal(holdingUsed([payItForward], { encounter: { "pif1:1": { combat: "c1" } } })), ["Pay It Forward: already used this encounter.", null, []], "a second use in the encounter");
+  same(refusal(holdingUsed([payItForward], { encounter: { "pif1:1": { combat: "c0" } } }))[0], "", "another encounter's use refuses nothing");
+
+  const outside = ruleUses(mover([payItForward]), payItForward, pifContext({ combat: null, round: 0, combatant: null }))[0];
+  same([outside.refuse, outside.perform, outside.marks, outside.say], ["", { slug: "aid", name: "Aid" }, [], "Aid is made as part of Pay It Forward. Outside an encounter nothing is counted."], "outside an encounter it is performed, and nothing is asked or counted");
+  const bystander = mover([payItForward]);
+  bystander.inEncounter = false;
+  same(ruleUses(bystander, payItForward, pifContext())[0].refuse, "", "nor in a Combat the owner is no part of");
+
+  const ranked = maneuverWith("Seasoned Hand ⓿", "[EFFECT SUBORDINATE: Aid; IF: RANK(Origin >= expert)]", { id: "sh1" });
+  same(ruleUses(mover([ranked]), ranked, pifContext()).map(u => [u.refuse, u.perform]), [["Seasoned Hand performs Aid only while Origin is at least Expert.", null]], "a rank the owner has not reached is refused, saying so, never a plain use that pays for nothing");
+  same(ruleUses(rulesActor([ranked], { origin: "expert" }), ranked, pifContext()).map(u => [u.refuse, u.perform]), [["", { slug: "aid", name: "Aid" }]], "and at the rank it is performed");
+  const drill = maneuverWith("Drill ❶", "[EFFECT SUBORDINATE: Search; LIMIT: round]", { id: "dr1" });
+  const [drilled] = ruleUses(mover([drill]), drill, pifContext());
+  same([drilled.refuse, drilled.perform, drilled.marks], ["", { slug: "search", name: "Search" }, [{ key: "dr1:1", per: "round" }]], "a row with no trigger is performed on its limit alone");
+  const free = maneuverWith("Look Again ❶", "[EFFECT SUBORDINATE: Search]", { id: "la1" });
+  same(ruleUses(mover([free]), free, pifContext())[0].marks, [], "and one with neither files nothing");
+});
+
+check("alter: the limit property replaces a Maneuver's LIMIT and never adds a use (ruling 250)", () => {
+  const text = "[EFFECT ALTER: Pay It Forward.limit; VALUE: round]";
+  same(reciprocal.system.rules, [{
+    to: { name: "Pay It Forward", slug: "pay-it-forward", type: "action" }, property: "limit", nothing: false, until: null, per: "round", when: null,
+    kind: "alter", line: 1, text
+  }], "Reciprocal Effort's cell");
+  must(!("per" in patient.system.rules[0]) && !("per" in footwork.system.rules[0]), "an alteration of any other property keeps the shape it had");
+  must(summarize(reciprocal.system.rules[0]) === "Pay It Forward may be used once a round, in place of its own limit", `the summary: "${summarize(reciprocal.system.rules[0])}"`);
+  must(summarize(bonusRule("[EFFECT ALTER: Move Together.limit; VALUE: Encounter]", { resolve, itemType: "talent" })) === "Move Together may be used once an encounter, in place of its own limit", "the other value, case blind");
+  must(alterError("[EFFECT ALTER: Pay It Forward.limit; VALUE: owner round]") === '"owner round": a Maneuver\'s limit is changed to `round` or `encounter`, as in `ALTER: Pay It Forward.limit; VALUE: round`; write `VALUE: round` (a limit is always its owner\'s)', "his drafted value is told the word");
+  must(alterError("[EFFECT ALTER: Pay It Forward.limit; VALUE: day]") === '"day": a Maneuver\'s limit is changed to `round` or `encounter`, as in `ALTER: Pay It Forward.limit; VALUE: round`', "a value that is neither");
+  same(LIMIT_VALUES, ["round", "encounter"], "the two values, which are LIMIT's own words");
+  same(kindOf("alter").hooks.gives([{ rule: reciprocal.system.rules[0], item: reciprocal, from: "own" }], { maneuver: "pay-it-forward", rank: "trained" }, mover()), [], "the gives hook passes it over");
+
+  same(alterationsOf(holdingUsed([payItForward, reciprocal]), payItForward), [{ property: "limit", movement: null, per: "round", nothing: false, until: null, label: "Reciprocal Effort", skipped: false, marks: [] }], "the owner's alteration of the used Maneuver");
+  const change = (per, extra = {}) => ({ property: "limit", per, ...extra });
+  same(limitOf({ limit: { per: "encounter" } }), { per: "encounter", marks: [] }, "no alteration: the row's own");
+  same(limitOf({ limit: { per: "encounter" } }, [change("round")]), { per: "round", marks: [] }, "replaced");
+  same(limitOf({ limit: null }, [change("round")]), { per: null, marks: [] }, "a row with no LIMIT stays unlimited: an alteration replaces, it never adds");
+  same(limitOf({ limit: { per: "encounter" } }, [change("round"), change("encounter")]), { per: "encounter", marks: [] }, "of two the later stands");
+  same(limitOf({ limit: { per: "encounter" } }, [change("round", { skipped: true, marks: [{ key: "s", per: "state" }] })]), { per: "encounter", marks: [{ key: "s", per: "state" }] }, "a line on Skip is left out this once and its mark handed back");
+  same(limitOf({ limit: { per: "round" } }, [{ property: "movement", movement: "step" }, change("week")]), { per: "round", marks: [] }, "another property, and a value that is no limit, change nothing");
+
+  const tess = (rules = {}) => holdingUsed([payItForward, reciprocal], rules);
+  same(ruleUses(tess(), payItForward, pifContext())[0].marks, [{ key: "pif1:1", per: "round" }, { key: "used:aid", per: "effect" }], "with Reciprocal Effort the use is filed by the round");
+  same(ruleUses(tess({ round: { "pif1:1": { combat: "c1", round: 2 } } }), payItForward, pifContext())[0].refuse, "Pay It Forward: already used this round.", "a second use in the round is refused");
+  same(ruleUses(tess({ round: { "pif1:1": { combat: "c1", round: 1 } } }), payItForward, pifContext())[0].refuse, "", "and the next round it is used again");
+  same(ruleUses(tess({ encounter: { "pif1:1": { combat: "c1" } } }), payItForward, pifContext())[0].refuse, "", "the encounter's old mark no longer holds it: the limit was replaced");
+  const stateKey = ruleStateKey(reciprocal, reciprocal.system.rules[0]);
+  same(ruleUses(tess({ state: { [stateKey]: "off" } }), payItForward, pifContext())[0].marks[0], { key: "pif1:1", per: "encounter" }, "switched Off on the Effects tab, the row's own limit stands");
+  same(ruleUses(tess({ state: { [stateKey]: "skip" } }), payItForward, pifContext())[0].marks, [{ key: "pif1:1", per: "encounter" }, { key: "used:aid", per: "effect" }, { key: stateKey, per: "state" }], "on Skip it is left out this once, and the use that counted clears the Skip");
+
+  // The same property on Move Together: PERMIT reads the limit that stands.
+  const paired = { ...talentWith("Tireless Pair", "[EFFECT ALTER: Move Together.limit; VALUE: encounter]"), id: "tp1" };
+  same(ruleUses(mover([moveTogether, paired]), moveTogether, useContext())[0].marks, [{ key: "mt1:1", per: "encounter" }], "PERMIT files the altered limit");
+  const spentRound = { starwrought: { rules: { round: { "mt1:1": { combat: "c1", round: 2 } } } } };
+  same(ruleUses(mover([moveTogether, paired], spentRound), moveTogether, useContext())[0].refuse, "", "and tests the altered limit, not the row's");
+
+  same([limitKey({ id: "x1" }, { line: 3 }), limitKey({ name: "Row" }, {})], ["x1:3", "Row:0"], "the key: the carrier and the line");
+  const marked = { flags: { starwrought: { rules: { round: { "x1:3": { combat: "c1", round: 2 } }, encounter: { "x1:3": { combat: "c1" } } } } } };
+  same([limitSpent(marked, "x1:3", "round", PIF_NOW), limitSpent(marked, "x1:3", "round", { ...PIF_NOW, round: 3 }), limitSpent(marked, "x1:3", "encounter", PIF_NOW), limitSpent(marked, "x1:3", "encounter", { ...PIF_NOW, combat: "c2" }), limitSpent(marked, "x1:3", null, PIF_NOW), limitSpent(marked, "x1:3", "round", { combat: null })],
+    [true, false, true, false, false, false], "spent this round, not the next; this encounter, not another; no limit and no encounter are never spent");
+});
+
+check("subordinate: the card of the roll that used the result up offers the Maneuver, and no other card does (ruling 251)", () => {
+  const aided = { label: "Aid from Wren", value: 1, type: "situation", source: "rule:given:aid:crafting", given: "aid", givenFrom: "msg1" };
+  const card = (extra = {}) => ({ kind: "check", slug: "crafting", degree: "success", modifiers: [{ label: "Crafting", value: 3, type: null }, aided], ...extra });
+  const offers = (actor, flags = card(), encounter = PIF_NOW) => ruleCardOffers(actor, flags, { encounter }).map(o => [o.item.id, o.label, o.action, o.icon]);
+  const button = [["pif1", "Pay It Forward ⓿: Aid", "ruleUse", "fa-solid fa-people-arrows"]];
+  same(offers(holdingUsed()), button, "the check that used the Aid up");
+  same([offers(holdingUsed(), card({ kind: "attack" })), offers(holdingUsed(), card({ kind: "defense" }))], [button, button], "a Strike's card and a Defense roll's too");
+  same(offers(holdingUsed(), card({ kind: "initiative" })), [], "no other kind of card");
+  same(offers(holdingUsed(), card({ modifiers: [{ label: "Crafting", value: 3, type: null }] })), [], "a card whose roll used no result");
+  same(offers(holdingUsed(), card({ modifiers: [{ ...aided, value: -1 }] })), [], "a penalty the roll swallowed");
+  same(offers(holdingUsed(), card({ modifiers: [{ ...aided, given: "search" }] })), [], "another Maneuver's result");
+  // The card of ANOTHER roll that used ANOTHER Aid (an earlier one, off-turn or in an Opportunity
+  // gone by): the result it names is not the one the used Effect remembers.
+  same(offers(holdingUsed(), card({ modifiers: [{ ...aided, givenFrom: "msg0" }] })), [], "an older card that used a different Aid offers nothing");
+  const { givenFrom: _none, ...unnamed } = aided;
+  same(offers(holdingUsed(), card({ modifiers: [unnamed] })), button, "a card that names no give is matched on the Maneuver alone");
+  same(offers(mover([payItForward], { starwrought: { rules: { used: { aid: { ...usedByTess, from: null } } } } }), card()), button, "and so is a used Effect that names none");
+  same(offers(mover([payItForward])), [], "the Effect is not held (used already, or never left)");
+  same(offers(holdingUsed(), card(), { ...PIF_NOW, combatant: "cmb-wren" }), [], "the Opportunity is over: an old card offers nothing");
+  same(offers(holdingUsed(), card(), { combat: null, round: 0, combatant: null }), [], "outside an encounter");
+  const bystander = holdingUsed();
+  bystander.inEncounter = false;
+  same(offers(bystander), [], "a Combat the roller is no part of");
+  same(offers(holdingUsed([payItForward], { encounter: { "pif1:1": { combat: "c1" } } })), [], "the limit is spent");
+  same(offers(holdingUsed([payItForward, reciprocal], { encounter: { "pif1:1": { combat: "c1" } } })), button, "with Reciprocal Effort the encounter's mark no longer holds it");
+  same(offers(holdingUsed([payItForward, reciprocal], { round: { "pif1:1": { combat: "c1", round: 2 } } })), [], "but this round's does");
+  const drill = maneuverWith("Drill ❶", "[EFFECT SUBORDINATE: Search; LIMIT: round]", { id: "dr1" });
+  same(offers(holdingUsed([drill])), [], "a row with no trigger is tied to no card");
+  // An icon is a class list and nothing else: the render pass writes it into the button.
+  const odd = registerKind({ id: "odd-offer", parse: () => ({}), summary: () => "", hooks: { card: () => [{ item: payItForward, label: "x", action: "ruleUse", icon: 'fa" onclick="x' }] } });
+  try {
+    const oddItem = { type: "action", id: "odd1", name: "Odd", system: { rules: [{ kind: "odd-offer", line: 1, text: "" }] } };
+    same(ruleCardOffers(mover([oddItem]), card(), { encounter: PIF_NOW }).map(o => o.icon), [undefined], "an icon that is not a class list is dropped");
+  } finally {
+    KINDS.delete(odd.id);
+  }
 });
 
 /* -------------------------------------------- */

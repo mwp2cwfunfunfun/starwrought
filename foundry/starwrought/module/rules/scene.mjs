@@ -253,6 +253,27 @@ async function writeMarksOn(actor, marks, encounter) {
       ? { combat: encounter.combat, round: encounter.round ?? 0 }
       : { combat: encounter.combat };
   }
-  Object.assign(update, markUpdates(actor, marks));
+  Object.assign(update, markUpdates(actor, marks, momentFor(actor, encounter)));
   if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+}
+
+/**
+ * The moment a set of marks is written in, for `markUpdates` (0.25.0): the encounter, the fighter
+ * whose Opportunity is running, and whether that Opportunity is this actor's own. A pending result
+ * a roll uses up leaves a used Effect only at the roller's own Opportunity (./given.mjs,
+ * `usedEntry`; Pay It Forward: "You are acting at your own Opportunity"). A caller's encounter that
+ * names no combatant is completed from the viewed Combat when it is the same one. Null outside an
+ * encounter.
+ * @param {Actor} actor
+ * @param {{combat: string|null, round?: number, combatant?: string|null}|null} encounter
+ * @returns {{combat: string, round: number, combatant: string|null, own: boolean}|null}
+ */
+function momentFor(actor, encounter) {
+  if (!encounter?.combat) return null;
+  const now = encounterContext();
+  const same = now.combat === encounter.combat;
+  const combatant = encounter.combatant ?? (same ? now.combatant : null);
+  // `isTurn` reads the viewed Combat: it can speak only for that one, and only for its running fighter.
+  const own = !!combatant && same && (now.combatant === combatant) && (actor?.isTurn === true);
+  return { combat: encounter.combat, round: encounter.round ?? 0, combatant: combatant ?? null, own };
 }

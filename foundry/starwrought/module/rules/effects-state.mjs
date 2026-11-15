@@ -26,7 +26,8 @@ import { responsibleFor } from "../helpers/authority.mjs";
 import { EFFECT_DURATIONS, ruleStates, givenResults } from "./engine.mjs";
 import { flagKey, SYSTEM_ID } from "../config.mjs";
 // 0.22.0: a result a Maneuver gave, pending on its recipient (./given.mjs is the pure half).
-import { settle, isGivenKey, givenFlagKey } from "./given.mjs";
+// 0.25.0: the used Effect a roll leaves when it uses one up (named Effects, step one).
+import { settle, isGivenKey, givenFlagKey, usedEntry, usedLive, usedEffects, isUsedKey, usedFlagKey } from "./given.mjs";
 // 0.24.0: the record of a Move made as part of a Maneuver, which ends with its Opportunity.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, recordLive } from "./maneuver-move.mjs";
 
@@ -41,6 +42,13 @@ const ARMED_PATH = "flags.starwrought.rules.armed";
 
 /** The flag path of the results pending on an actor, one per Maneuver (0.22.0). */
 export const GIVEN_PATH = "flags.starwrought.rules.given";
+
+/**
+ * The flag path of the used Effects on an actor, one per Maneuver (0.25.0; ./given.mjs, the used
+ * Effect): what a roll left when it used up a bonus another creature's Maneuver gave, held until
+ * the Opportunity it was left in ends.
+ */
+export const USED_PATH = "flags.starwrought.rules.used";
 
 /* -------------------------------------------- */
 /*  The state switch                            */
@@ -95,11 +103,23 @@ export async function cycleRuleState(actor, key) {
  * The update entries for the marks of this module's two kinds on one actor: a `state` mark deletes
  * the line's state (a Skip spent), an `effect` mark removes the one-roll effect's row. Every other
  * mark is `writeRuleMarks`' own and is left alone. Pure over the actor; the caller writes.
+ *
+ * Since 0.25.0 a pending result that a roll uses up may LEAVE a used Effect behind
+ * (`flags.starwrought.rules.used.<maneuver>`; ./given.mjs, `usedEntry`), which is what `IF:
+ * EFFECT(<Maneuver>, used)` reads. Whether it does is the moment's to say (an encounter, an
+ * Opportunity running, the roller's own), so the caller hands the moment in: this function is
+ * driven from Node and names no Combat. Every roll that uses a result up passes through here (a
+ * check, a blind Strike, a Defense roll, marks relayed to another client), which is why the record
+ * is written here and nowhere else. A used Effect is spent in turn by the Maneuver it triggers,
+ * through a `per: "effect"` mark of its own (`used:<maneuver>`).
  * @param {object} actor
  * @param {Array<{key: string, per: string}>} marks
+ * @param {{combat: string|null, round?: number, combatant?: string|null, own?: boolean}|null} [moment]
+ *        The encounter as the marks are written, and whether the Opportunity running is this
+ *        actor's own; null (or no Combat) leaves no used Effect.
  * @returns {object}  Entries for `actor.update`.
  */
-export function markUpdates(actor, marks) {
+export function markUpdates(actor, marks, moment = null) {
   const update = {};
   const states = ruleStates(actor);
   const spent = new Set();
@@ -110,9 +130,29 @@ export function markUpdates(actor, marks) {
     else if ((mark.per === "effect") && isGivenKey(mark.key)) {
       // A pending result used by a roll (0.22.0): its flag goes, as a one-roll row goes.
       const key = givenFlagKey(mark.key);
-      if (actor?.flags?.starwrought?.rules?.given?.[key] !== undefined) update[`${GIVEN_PATH}.-=${key}`] = null;
+      const entry = actor?.flags?.starwrought?.rules?.given?.[key];
+      if (entry !== undefined) {
+        update[`${GIVEN_PATH}.-=${key}`] = null;
+        // And it may leave the used Effect (0.25.0). Every key is written every time, so Foundry's
+        // merge of the flag leaves nothing of an older record of the same Maneuver.
+        const used = usedEntry(entry, moment, actor?.uuid ?? "");
+        if (used) update[`${USED_PATH}.${usedFlagKey(used.id)}`] = used;
+      }
+    }
+    else if ((mark.per === "effect") && isUsedKey(mark.key)) {
+      // A used Effect spent by the Maneuver it triggered (0.25.0; Pay It Forward).
+      const key = usedFlagKey(mark.key);
+      if (actor?.flags?.starwrought?.rules?.used?.[key] !== undefined) update[`${USED_PATH}.-=${key}`] = null;
     }
     else if (mark.per === "effect") spent.add(String(mark.key));
+  }
+  // One batch that both leaves a used Effect and spends the one of the same Maneuver would ask
+  // Foundry to set and delete one key. No caller builds that batch (the spend is filed before the
+  // roll, the roll's own marks after it), and if one ever does, the Effect just left is the newer
+  // fact and stands (the review of 2026-11-15).
+  for (const path of Object.keys(update)) {
+    if (!path.startsWith(`${USED_PATH}.`) || path.startsWith(`${USED_PATH}.-=`)) continue;
+    delete update[`${USED_PATH}.-=${path.slice(USED_PATH.length + 1)}`];
   }
   if (spent.size) {
     const rows = effectsOf(actor);
@@ -307,6 +347,25 @@ export async function removeGiven(actor, key) {
 }
 
 /**
+ * Remove a used Effect by hand (0.25.0). The GM's alone, as a pending result's bin is: it is the
+ * record that lets a Maneuver be used, and a player has no reason to strike their own.
+ * @param {object} actor
+ * @param {string} key  The record's id (`used:<maneuver>`) or its flag key.
+ * @returns {Promise<boolean>}
+ */
+export async function removeUsed(actor, key) {
+  if (!actor || !key) return false;
+  if (!game.user.isGM) {
+    ui.notifications.warn(game.i18n.localize("STARWROUGHT.Given.removeGm"));
+    return false;
+  }
+  const safe = usedFlagKey(key);
+  if (actor.flags?.starwrought?.rules?.used?.[safe] === undefined) return false;
+  await actor.update({ [`${USED_PATH}.-=${safe}`]: null }, { swAnnounced: true });
+  return true;
+}
+
+/**
  * Every Actor that may hold a pending result of this Combat: its combatants' Actors, the Actors of
  * the tokens on its scene (an unlinked token's Actor is in no collection but its token's), and the
  * world's Actors that carry any (a recipient need not be in the fight, or on the scene).
@@ -368,6 +427,11 @@ export async function settleGivenResults(combat, change = {}) {
  * ends (`ended`, which also takes the "I have moved" marks, kept until then because they are
  * compared by nonce and an early clear would let the ally move twice). Each Actor's responsible
  * client writes, as for the pending results above. Says nothing in chat.
+ *
+ * Since 0.25.0 the same sweep takes off a USED EFFECT (./given.mjs; `flags.starwrought.rules.used`),
+ * which is tied to an Opportunity in the same way and for the same reason: "Aid from Wren (used)"
+ * lasts the Opportunity it was left in, and a record whose Combat, round and fighter happen to
+ * match again must not wake.
  * @param {Combat} combat
  * @param {{current?: string|null, round?: number|null, ended?: boolean}} [now]
  */
@@ -384,6 +448,10 @@ export async function endManeuverMoves(combat, { current = null, round = null, e
       const update = {};
       if ((flags[MOVE_RECORD_FLAG] !== undefined) && !recordLive(flags[MOVE_RECORD_FLAG], encounter)) update[`flags.${SYSTEM_ID}.-=${MOVE_RECORD_FLAG}`] = null;
       if (ended && (flags[MOVE_USED_FLAG] !== undefined)) update[`flags.${SYSTEM_ID}.-=${MOVE_USED_FLAG}`] = null;
+      // 0.25.0: a used Effect that is not of the Opportunity now running goes too.
+      for (const record of usedEffects(actor)) {
+        if (!usedLive(record, encounter)) update[`${USED_PATH}.-=${usedFlagKey(record.id)}`] = null;
+      }
       if (!Object.keys(update).length || !responsibleFor(actor)) continue;
       await actor.update(update, { swAnnounced: true });
     } catch (error) {
@@ -484,6 +552,31 @@ export async function endEncounterEffects(combat) {
   // 0.24.0: a Move made as part of a Maneuver ends with its encounter, and so do the marks that
   // say who has moved for one.
   await endManeuverMoves(combat, { ended: true });
+  // 0.25.0: a used Effect of this Combat goes with it wherever its holder is by now. The sweep
+  // above walks the fighters; one whose Combatant or token was removed while it held the Effect
+  // is no fighter any more, and its record would otherwise stay listed for good (the review of
+  // 2026-11-15).
+  const seen = new Set();
+  const holders = [];
+  const consider = actor => {
+    if (!actor || seen.has(actor.uuid)) return;
+    seen.add(actor.uuid);
+    if (usedEffects(actor).some(record => record.combat === combat.id)) holders.push(actor);
+  };
+  for (const token of (combat?.scene ?? globalThis.canvas?.scene)?.tokens ?? []) consider(token?.actor);
+  for (const actor of globalThis.game?.actors ?? []) consider(actor);
+  for (const actor of holders) {
+    try {
+      if (!responsibleFor(actor)) continue;
+      const update = {};
+      for (const record of usedEffects(actor)) {
+        if (record.combat === combat.id) update[`${USED_PATH}.-=${usedFlagKey(record.id)}`] = null;
+      }
+      if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+    } catch (error) {
+      console.error(`STARWROUGHT | the used Effects on ${actor?.name ?? "an actor"} could not be cleared:`, error);
+    }
+  }
 }
 
 let registered = false;

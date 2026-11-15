@@ -26,7 +26,7 @@
     "category": "Automation cell",
     "where": "data/ancestries.xlsx, the Human sheet in progress (Mike's, uncommitted)",
     "question": "16 Automation cells on the Human sheet hold only '# PROPOSED' notes naming tags the grammar does not have (ALTER, PREPARE, CONDITION and extra IF conditions), Jack of All Trades' and Quick Study's among them, so those Talents automate nothing once the sheet builds; and Torchbearer Human's cell no longer carries the Rally Aura. Which comes first?",
-    "recommendation": "Pick the next kind from them with Claude, one at a time (ruling 119), from the Talent that wants it most; the others stay '#' notes, which the grammar reads as comments, until their kind exists. Five cells can be pasted today, printed in the 0.22.0 and 0.24.0 changelog entries and in AUTOMATION_GRAMMAR.md section 5: Aid's five GIVE lines, Patient Assistance's and Sure Assistance's ALTER lines (0.22.0), '[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]' on Move Together's row and '[EFFECT ALTER: Move Together.movement; VALUE: step]' on Coordinated Footwork (0.24.0).",
+    "recommendation": "Pick the next kind from them with Claude, one at a time (ruling 119), from the Talent that wants it most; the others stay '#' notes, which the grammar reads as comments, until their kind exists. Cells that can be written today are printed in the 0.22.0, 0.24.0 and 0.25.0 changelog entries and in AUTOMATION_GRAMMAR.md section 5. Four are already on the saved sheets (Patient Assistance, Sure Assistance, Coordinated Footwork, Move Together's row). Three things wait: Aid's five GIVE lines on its row (0.22.0; its Automation cell is still empty, so no Aid gives a result), a ROW for Pay It Forward on the Ancestry Actions sheet (Cost 0, Frequency 'Once per encounter', text from the draft workbook) with '[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]', and '[EFFECT ALTER: Pay It Forward.limit; VALUE: round]' on Reciprocal Effort (0.25.0).",
     "decidedBy": ""
   },
   {
@@ -207,6 +207,36 @@
     "where": "foundry/starwrought/module/documents/item.mjs, the Reaction branch of a Maneuver's use",
     "question": "A row printed with a cost and a Reaction half of its own, as Aid once was (one action, with a free Reaction), pays the Reaction half whenever it is used and never the printed cost. No shipped row is written so today.",
     "recommendation": "If such a row returns: used at your own Opportunity it is the Maneuver and pays the printed cost; used at any other time it is the Reaction and pays the half. Say the word and it is a small change.",
+    "decidedBy": ""
+  },
+  {
+    "id": "phb-v4-25-unsynced",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.25.docx on the shelf; data/SYNC.json says 4.24",
+    "question": "v4.25 is on the shelf with every Talent's details (Chapter 6) and every Maneuver's details (Chapter 8) removed, to be built from the sheets once they are final. The repository is synced to v4.24, so every build reports handbook drift. Mike chose to build system 0.25.0 first and sync after.",
+    "recommendation": "Plan the v4.25 sync next, on its own: read v4.25 against v4.24 as accepted, carry what changed in the general rules, and rewrite the standing rule 'when the two disagree, the handbook wins' so that the sheets are the one source for Talents and Maneuvers.",
+    "decidedBy": ""
+  },
+  {
+    "id": "named-effects-step-two",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Automation",
+    "where": "module/rules/effects.mjs, the EFFECT condition; module/rules/given.mjs, the used Effect (0.25.0, ruling 247)",
+    "question": "Named Effects were built in two steps by Mike's choice. Step one ships: the system leaves 'Aid from Wren (used)' when a roll uses a bonus up, and IF: EFFECT(Aid, used) reads it. Step two is his Fantasy Grounds idea in full: a Maneuver puts a named Effect on its target for a duration, and CHECK, DEF and ATK lines apply IF: EFFECT(<name>) on the owner or IFT: EFFECT(<name>) on the other party.",
+    "recommendation": "Plan it on its own when the first row wants it (Unbroken Courage and Rallying Word's options are candidates). It needs a tag for granting an Effect, a writer for another player's character (the Give relay is the model) and a decision on whether Oathbound's MARK folds into it.",
+    "decidedBy": ""
+  },
+  {
+    "id": "subordinate-rule-in-the-handbook",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Chapter 4 of the handbook, beside 'A Strike made as part of another Maneuver'; ruling 245 (0.25.0)",
+    "question": "The Subordinate Maneuver rule is Mike's and the system runs on it since 0.25.0: a Maneuver performed as part of another is done at the first Maneuver's listed cost and costs no additional actions, unless otherwise specified. The handbook has no sentence for it.",
+    "recommendation": "Have Claude leave it as one tracked-change sentence against the current edition, for Mike to accept or reject, once v4.25 is synced.",
     "decidedBy": ""
   }
 ]

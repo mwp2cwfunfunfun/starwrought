@@ -30,7 +30,7 @@ import { usableByRule } from "../rules/engine.mjs";
 // CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0), its state
 // switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
 import { effectsContext, armClaimLine } from "../helpers/effects.mjs";
-import { cycleRuleState, addEffect, removeEffect, removeGiven } from "../rules/effects-state.mjs";
+import { cycleRuleState, addEffect, removeEffect, removeGiven, removeUsed } from "../rules/effects-state.mjs";
 
 /**
  * The `bonus` rules on a character that touch a Defense but need the moment to be read (0.15.0):
@@ -1220,6 +1220,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onRemoveGiven(event, target) {
     const key = target.closest("[data-given-key]")?.dataset.givenKey;
     if (!key) return false;
+    // A used Effect (0.25.0) is listed with the pending results and removed by the same control.
+    if (key.startsWith("used:")) return removeUsed(this.document, key);
     return removeGiven(this.document, key);
   }
 

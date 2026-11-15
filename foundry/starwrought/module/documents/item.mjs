@@ -7,7 +7,7 @@ import { SwCheck } from "../dice/check.mjs";
 import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
 // content.mjs imports config.mjs alone at module scope (its other imports are dynamic), so this
 // closes no circle; a static import of this file from there would, and must not be added.
-import { resolveRuleTarget } from "../helpers/content.mjs";
+import { resolveRuleTarget, loadBasicActions } from "../helpers/content.mjs";
 // The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield; and the ones
 // whose cost it takes somewhere other than their row (0.23.0).
 import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "./maneuvers.mjs";
@@ -35,6 +35,10 @@ function paidElsewhere(item) {
   // pays from its row; a `card` kind's button pays whatever the carrier is.
   const fromCard = (item.system?.rules ?? []).some(rule => {
     const hooks = kindOf(rule?.kind)?.hooks;
+    // A kind that also acts when the Item is used (0.25.0: `subordinate`, whose card button uses
+    // the Item) is paid on that one path, whichever door opened it: its button is no second place
+    // of payment, and its row must not say that it is.
+    if (hooks?.use) return false;
     return !!(hooks?.card || (hooks?.prevent && (item.system?.reaction === true)));
   });
   return fromCard ? "STARWROUGHT.Cost.paidFromCard" : null;
@@ -154,13 +158,13 @@ export class SwItem extends Item {
         }
         if (actor && this.actor && ((this.system.cost !== "passive") || usableByRule(this))) {
           // A Talent used as a Maneuver (0.15.0) passes the Opportunity gate (0.19.0) unless it is
-          // a Reaction or a Posture, the book's out-of-turn Maneuvers. Asked here only when the
-          // answer is no (the request card is what the click is for then); passed inside
-          // `#useWithRules`, after the rules' own refusals, so a refused use spends no permit (0.24.0).
+          // a Reaction or a Posture, the book's out-of-turn Maneuvers. The gate is asked and
+          // passed inside `#useWithRules`, after the rules' own refusals, so a refused use spends
+          // no permit (0.24.0) and asks the GM for none (0.25.0; through 0.24.0 the request card
+          // went out here first, even for a use the rules would then refuse).
           const label = `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim();
           const gated = !this.system.reaction && (typeof actor.mayActNow === "function");
-          if (gated && !actor.canActNow() && !(await actor.mayActNow({ label }))) return null;
-          return this.#useWithRules(actor, { gate: gated, label });
+          return this.#useWithRules(actor, { gate: gated, label, dialog: rest.dialog });
         }
         return this.toMessage({ actor });
       default:
@@ -179,22 +183,35 @@ export class SwItem extends Item {
   async #useManeuver(actor, rest) {
     // A built-in Maneuver's method (Recenter, Raise a Shield, the visor) passes the Opportunity
     // gate itself, so it is not asked twice.
-    const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
-    if (builtIn && actor) return builtIn(actor, this, rest);
     // `prepared` is this method's own word (Finish coming back) and never the roll's: the
-    // roll dialog reads `cfg.prepared` for a Committed Strike.
-    const { prepared = false, ...config } = rest;
+    // roll dialog reads `cfg.prepared` for a Committed Strike. `partOf` (0.25.0) is the same:
+    // this Maneuver is being performed as part of another (`#performSubordinate`), which names
+    // the spend, sets the cost and hands over the marks to file once the use stands.
+    const { prepared = false, partOf = null, ...config } = rest;
     const plain = SW.plainName(this.name);
+    const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
+    if (builtIn && actor) {
+      // A built-in pays and posts for itself, so it cannot be handed another Maneuver's cost yet
+      // (`#performSubordinate` refuses it first; this is the guard for any other caller).
+      if (partOf) return void ui.notifications.warn(game.i18n.format("STARWROUGHT.Subordinate.notYet", { parent: partOf.label, name: plain }));
+      return builtIn(actor, this, rest);
+    }
     // A Maneuver whose rules act when it is used (0.16.0: Oathbound's `MARK`, granted by a
     // Talent's `[MANEUVER Oathbound]`) is paid and run as a Talent with such rules is.
     const byRule = !!actor && !!this.actor && usableByRule(this);
     const elsewhere = paidElsewhere(this);
     // What this use will be paid at (0.23.0), asked BEFORE the gate: a range of costs is the
-    // player's pick, and a pick that is closed must not have spent the GM's permit.
-    const plan = (prepared || byRule) ? { n: 0, note: null, cancelled: false } : await this.#chargePlan(actor, elsewhere);
+    // player's pick, and a pick that is closed must not have spent the GM's permit. A subordinate
+    // (0.25.0; Mike's Subordinate Maneuver rule) is paid at its parent's listed cost and never
+    // its own: ⓿ for an Aid made as part of Pay It Forward.
+    const plan = (prepared || byRule) ? { n: 0, note: null, cancelled: false }
+      : partOf ? { n: this.#subordinateCost(actor, partOf), note: null, cancelled: false }
+        : await this.#chargePlan(actor, elsewhere);
     if (plan.cancelled) return null;
-    // The label carries the number chosen: a range row's own glyph is "❶ to ❸".
-    const label = `${plain} ${plan.n ? (SW.ACTION_GLYPHS[plan.n] ?? "") : (this.system.glyph ?? "")}`.trim();
+    // The label carries the number chosen: a range row's own glyph is "❶ to ❸". A subordinate is
+    // named for its parent, which is what the table is paying for.
+    const label = partOf ? String(partOf.label ?? plain)
+      : `${plain} ${plan.n ? (SW.ACTION_GLYPHS[plan.n] ?? "") : (this.system.glyph ?? "")}`.trim();
     const rolls = !!actor && !!this.system.check?.enabled;
     // Outside the actor's Opportunity a Maneuver that is not a Reaction waits for the GM
     // (0.19.0, the gate in documents/actor/actions.mjs); a Reaction is the book's own
@@ -202,8 +219,11 @@ export class SwItem extends Item {
     // A row that only shows its card because the system pays for it elsewhere performs
     // nothing, so it asks nothing (0.23.0): the Strike, the Cast and the drag pass the gate
     // themselves, and through 0.22.0 the row had already spent the GM's permit by then.
-    const gated = !!actor && !prepared && !this.system.reaction && !(elsewhere && !rolls)
-      && (typeof actor.mayActNow === "function");
+    // A subordinate is gated as its PARENT is (0.25.0): the parent's use passed nothing on the
+    // way here, so that the one gate is passed where the cost is paid.
+    const gated = !!actor && (typeof actor.mayActNow === "function") && (partOf
+      ? (partOf.gated === true)
+      : (!prepared && !this.system.reaction && !(elsewhere && !rolls)));
     // A Maneuver that rolls passes the gate when the roll is made (0.23.0): here it is only
     // asked whether it may, so a roll dialog that is closed has not spent the permit either.
     // Asked now when the answer is no, since the request card is what the click is for then.
@@ -211,10 +231,12 @@ export class SwItem extends Item {
     // A Maneuver with a use rule passes the gate inside `#useWithRules`, after its rules have had
     // their say (0.24.0): through 0.23.1 a use the rules then refused (Move Together with nobody
     // targeted) had already spent the GM's permit.
-    const late = atRoll || (gated && byRule);
-    if (gated && !(late && actor.canActNow()) && !(await actor.mayActNow({ label }))) return null;
-    if (byRule) return this.#useWithRules(actor, { gate: gated, label });
-    if (this.system.reaction && actor && !elsewhere) {
+    // Since 0.25.0 it is not ASKED here either: `#useWithRules` sends the request card itself when
+    // the answer is no, after the refusals, so a use the rules refuse outright (Pay It Forward
+    // off-turn, which its trigger can never allow) no longer asks the GM for leave it cannot use.
+    if (gated && !byRule && !(atRoll && actor.canActNow()) && !(await actor.mayActNow({ label }))) return null;
+    if (byRule) return this.#useWithRules(actor, { gate: gated, label, dialog: config.dialog, partOf });
+    if (this.system.reaction && actor && !elsewhere && !partOf) {
       // A Reaction with a cost of its own pays that one; otherwise the cost printed. One whose
       // rule pays from a card button is left to that button (0.23.0), or the row and the
       // button would both pay.
@@ -229,7 +251,7 @@ export class SwItem extends Item {
     // Three or more actions is Prepared (PHB v4.24; ruling 234): two now, the rest reserved,
     // and nothing rolls until Finish at the next Opportunity brings this Item back here. The
     // label is the plain name: the sheet and the round's card print the cost beside it.
-    if (plan.n >= SW.PREPARED_THRESHOLD) {
+    if ((plan.n >= SW.PREPARED_THRESHOLD) && !partOf) {
       return actor.prepare({
         kind: "maneuver", label: plain, cost: plan.n, itemUuid: this.uuid,
         targetUuid: SwCheck.currentTarget()?.document?.uuid ?? ""
@@ -239,18 +261,24 @@ export class SwItem extends Item {
     // so a dialog that is closed spends nothing, neither actions nor the GM's permit (ruling
     // 232). A caller's own `beforeRoll` runs first and may stop the roll; a permit that went
     // to another Maneuver while this dialog stood open sends the request card and stops it too.
-    if (atRoll) {
+    // A subordinate that rolls (0.25.0): the same moment files what its parent handed over (the
+    // parent's LIMIT, the used Effect it spends), so a closed dialog has spent none of it either.
+    if (atRoll || (partOf && rolls)) {
       const callers = config.beforeRoll;
       config.beforeRoll = async cfg => {
         if (typeof callers === "function") {
           const go = await callers(cfg);
           if (go === false) return false;
         }
-        if (!(await actor.mayActNow({ label }))) return false;
+        if (atRoll && !(await actor.mayActNow({ label }))) return false;
         if (plan.n) await actor.spendActions(plan.n, { label });
+        if (partOf) await this.#fileSubordinateMarks(actor, partOf);
         return true;
       };
     }
+    // What the card says of the cost: the Maneuver's own glyph and group, or (a subordinate) the
+    // Maneuver it is part of, since that is who paid.
+    const subtitle = partOf?.note ? String(partOf.note) : `${this.system.glyph} ${this.system.category}`.trim();
     if (this.system.check.enabled && actor && !this.system.check.constellation) {
       // A Relevant Check: the picker chooses the Constellation and says why, the Maneuver
       // rides along as the roll's Item, and the card is called by the Maneuver's name. An
@@ -258,7 +286,10 @@ export class SwItem extends Item {
       return actor.rollRelevantCheck(foundry.utils.mergeObject({
         item: this,
         label: plain,
-        subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
+        subtitle,
+        // The picker writes the subtitle itself (the Constellation and the reason given), so a
+        // subordinate's line rides beside it as a note.
+        ...(partOf?.note ? { note: String(partOf.note) } : {}),
         outcomes: this.#outcomeList(),
         ...this.#allyFor(actor)
       }, config, { inplace: false }));
@@ -277,7 +308,7 @@ export class SwItem extends Item {
         kind: "check",
         slug: this.system.check.constellation,
         label: plain,
-        subtitle: `${this.system.glyph} ${this.system.category}`.trim(),
+        subtitle,
         outcomes: this.#outcomeList(),
         ...this.#allyFor(actor),
         ...(read ?? {})
@@ -295,7 +326,40 @@ export class SwItem extends Item {
     }
     if (plan.note) lines.push(plan.note);
     if (prepared) lines.push(game.i18n.localize("STARWROUGHT.Cost.preparedPaid"));
+    // A subordinate with no roll (0.25.0): it stands the moment it is used, so what its parent
+    // handed over is filed here, and its card says whose part it is.
+    if (partOf && actor) {
+      await this.#fileSubordinateMarks(actor, partOf);
+      if (partOf.note) lines.push(String(partOf.note));
+    }
     return this.toMessage({ actor, lines });
+  }
+
+  /**
+   * What a subordinate Maneuver is paid at (0.25.0; ruling 245): its PARENT's listed cost, which
+   * `#performSubordinate` hands over, and nothing outside an encounter or with the `trackActions`
+   * setting off, as every sheet Maneuver (`#chargePlan`).
+   * @param {Actor|null} actor
+   * @param {{cost?: number}} partOf
+   * @returns {number}
+   */
+  #subordinateCost(actor, partOf) {
+    if (!actor?.inEncounter || !actor.system?.actions || !setting("trackActions", true)) return 0;
+    return Math.max(0, Number(partOf?.cost) || 0);
+  }
+
+  /**
+   * File what a parent Maneuver handed its subordinate (0.25.0): the parent's LIMIT, a Skip or a
+   * one-roll effect its alteration owes, the used Effect it spends. Called where the subordinate's
+   * use stands (its roll's `beforeRoll`, or at once when it has no roll), never before.
+   * @param {Actor} actor
+   * @param {{marks?: Array<{key: string, per: string}>}} partOf
+   */
+  async #fileSubordinateMarks(actor, partOf) {
+    const marks = Array.isArray(partOf?.marks) ? partOf.marks : [];
+    if (!marks.length || !(actor.isOwner || game.user.isGM)) return;
+    const { writeRuleMarks } = await import("../rules/scene.mjs");
+    await writeRuleMarks(actor, marks).catch(err => console.error("STARWROUGHT | the subordinate Maneuver's rule marks could not be written", err));
   }
 
   /* -------------------------------------------- */
@@ -341,12 +405,22 @@ export class SwItem extends Item {
    * `trackActions` setting (ruling 236; through 0.23.1 this path paid whatever the setting said);
    * and the spend is said on the Item's own card, as a no-roll Maneuver's is since 0.23.0, in
    * place of a second card.
+   *
+   * Since 0.25.0 (Pay It Forward's `SUBORDINATE`; Mike's Subordinate Maneuver rule): an answer may
+   * carry `perform`, the Maneuver this use performs as part of itself. Then this Item posts no card
+   * and pays nothing here: `#performSubordinate` finds the Maneuver and uses it with this Item's
+   * cost, name and marks (`partOf`), so the one roll is the subordinate's, under the parent's name,
+   * and nothing is spent until that roll is made. And an Item with use rules may itself BE a
+   * subordinate (`partOf` handed in): it is then paid at its parent's cost and files its parent's
+   * marks with its own.
    * @param {Actor} actor
    * @param {object} [options]
    * @param {boolean} [options.gate=false]  Pass the Opportunity gate once the rules have not refused.
    * @param {string} [options.label]        The Maneuver as the gate and the spend name it.
+   * @param {boolean} [options.dialog]      Handed on to a subordinate's roll (false on a Shift-click).
+   * @param {object|null} [options.partOf]  This Item is being performed as part of another.
    */
-  async #useWithRules(actor, { gate = false, label = "" } = {}) {
+  async #useWithRules(actor, { gate = false, label = "", dialog = undefined, partOf = null } = {}) {
     const { ruleUses } = await import("../rules/engine.mjs");
     const { encounterContext, sceneContextFor, writeRuleMarks } = await import("../rules/scene.mjs");
     const targetToken = SwCheck.currentTarget();
@@ -361,12 +435,19 @@ export class SwItem extends Item {
     const refused = uses.find(u => u.refuse);
     if (refused) return void ui.notifications.warn(refused.refuse);
     const named = label || `${SW.plainName(this.name)} ${this.system.glyph ?? ""}`.trim();
+    const own = this.system.reactionCost;
+    const key = (this.system.reaction && own !== undefined && own !== null && own !== "") ? own : this.system.cost;
+    // A subordinate is paid at its parent's listed cost and never its own (0.25.0, ruling 245).
+    const n = partOf ? Math.max(0, Number(partOf.cost) || 0) : SW.actionCostValue(key);
+    // This use performs another Maneuver as part of itself (0.25.0): before the gate and before
+    // any payment, since both belong to the subordinate's roll.
+    if (uses.some(u => u.perform)) {
+      if (partOf) return void ui.notifications.warn(game.i18n.format("STARWROUGHT.Subordinate.nested", { parent: partOf.label, name: SW.plainName(this.name) }));
+      return this.#performSubordinate(actor, uses, { gate, named, cost: n, dialog });
+    }
     if (gate && (typeof actor.mayActNow === "function") && !(await actor.mayActNow({ label: named }))) return null;
 
     const lines = [];
-    const own = this.system.reactionCost;
-    const key = (this.system.reaction && own !== undefined && own !== null && own !== "") ? own : this.system.cost;
-    const n = SW.actionCostValue(key);
     if (n && actor.inEncounter && setting("trackActions", true) && (typeof actor.spendActions === "function")) {
       await actor.spendActions(n, { label: named, announce: false });
       if (actor.announcesSpends) {
@@ -382,11 +463,97 @@ export class SwItem extends Item {
       if (u.warn?.length) warns.push(...u.warn);
       if (u.marks?.length) marks.push(...u.marks);
     }
+    // As a subordinate (0.25.0): the parent's marks are filed with this use, which has now stood,
+    // and the card says whose part it is.
+    if (partOf) {
+      if (Array.isArray(partOf.marks)) marks.push(...partOf.marks);
+      if (partOf.note) lines.push(String(partOf.note));
+    }
     if (actor.isOwner || game.user.isGM) {
       if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
       if (marks.length) await writeRuleMarks(actor, marks, encounter);
     }
     return this.toMessage({ actor, lines, warns });
+  }
+
+  /**
+   * Perform another Maneuver as part of this one (0.25.0; rulings 245 and 246; Mike's Subordinate
+   * Maneuver rule: "any time a maneuver says to perform another maneuver as part of it, it is at
+   * the original maneuver's listed cost ... unless otherwise specified"). The `subordinate` kind's
+   * `use` hook has answered `perform` and has not refused (rules/kinds/subordinate.mjs). This Item
+   * posts no card of its own: the subordinate's use is the Maneuver, with this Item's name on the
+   * spend and the card, this Item's cost in place of its own, and this use's marks (the LIMIT, the
+   * used Effect it spends) filed where that use stands. So for an Aid made as part of Pay It
+   * Forward, a roll dialog that is closed has paid nothing and used nothing up.
+   *
+   * What this version does not perform, each told so by name and nothing done: a built-in (Recenter,
+   * Raise a Shield: it pays and posts for itself), a row the system pays another way (a Strike, a
+   * Cast, a Move: the drag or the weapon pays), and a parent whose own cost is three or more (it
+   * would be Prepared, and Finish does not come back through here yet).
+   * @param {Actor} actor
+   * @param {Array<object>} uses   `ruleUses`' answers for this use, none a refusal.
+   * @param {object} options
+   * @param {boolean} options.gate   Whether the parent passes the Opportunity gate.
+   * @param {string} options.named   The parent as the gate and the spend name it ("Pay It Forward ⓿").
+   * @param {number} options.cost    The parent's listed cost.
+   * @param {boolean} [options.dialog]
+   */
+  async #performSubordinate(actor, uses, { gate, named, cost, dialog }) {
+    const performs = uses.filter(u => u.perform);
+    const perform = performs[0].perform;
+    const F = (key, data) => game.i18n.format(key, data);
+    if (performs.length > 1) ui.notifications.warn(F("STARWROUGHT.Subordinate.oneOnly", { parent: named, name: perform.name }));
+    const target = await this.#findManeuver(actor, perform.slug);
+    if (!target) return void ui.notifications.warn(F("STARWROUGHT.Subordinate.missing", { parent: named, name: perform.name }));
+    const sub = SW.plainName(target.name);
+    const counted = !!actor?.inEncounter && setting("trackActions", true);
+    if (BUILT_IN_MANEUVERS[perform.slug] || paidElsewhere(target) || (counted && (cost >= SW.PREPARED_THRESHOLD))) {
+      return void ui.notifications.warn(F("STARWROUGHT.Subordinate.notYet", { parent: named, name: sub }));
+    }
+    // What the kinds had to say goes to the user as notices: there is no card of this Item's own.
+    const update = {};
+    const marks = [];
+    for (const u of uses) {
+      // A second SUBORDINATE line is not performed in this version, so nothing of it is counted:
+      // its limit and the used Effect it would spend stay as they are (the review of 2026-11-15).
+      if (u.perform && (u !== performs[0])) continue;
+      if (u.write) Object.assign(update, u.write);
+      for (const warn of u.warn ?? []) ui.notifications.warn(warn);
+      if (u.say) ui.notifications.info(u.say);
+      if (u.marks?.length) marks.push(...u.marks);
+    }
+    // Another kind's write on the same row (a MARK beside the SUBORDINATE) is that kind's own act
+    // at the use, as it always was; the marks wait for the subordinate's roll.
+    if (Object.keys(update).length && (actor.isOwner || game.user.isGM)) await actor.update(update, { swAnnounced: true });
+    return target.use({
+      actor,
+      ...((dialog === undefined) ? {} : { dialog }),
+      partOf: { label: named, cost, marks, gated: gate === true, note: F("STARWROUGHT.Subordinate.partOf", { parent: named }) }
+    });
+  }
+
+  /**
+   * The Maneuver of this name for this actor (0.25.0): the actor's own copy (one a Talent granted,
+   * or a GM's), else the Basic Maneuver every character has (helpers/content.mjs: the Actions
+   * pack's, with a world Item of the same name standing in for the printed one), else any world
+   * Maneuver, else the pack's document by its index.
+   * @param {Actor} actor
+   * @param {string} slug  `slugify(plainName(name))`.
+   * @returns {Promise<Item|null>}
+   */
+  async #findManeuver(actor, slug) {
+    const slugOf = name => SW.slugify(SW.plainName(name ?? ""));
+    const is = item => (item?.type === "action") && (slugOf(item.name) === slug);
+    const owned = actor?.items?.find(is);
+    if (owned) return owned;
+    const basic = (await loadBasicActions()).find(is);
+    if (basic) return basic;
+    const world = game.items?.find(is);
+    if (world) return world;
+    const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
+    if (!pack) return null;
+    const entry = (await pack.getIndex()).find(e => slugOf(e.name) === slug);
+    return entry ? pack.getDocument(entry._id) : null;
   }
 
   /**

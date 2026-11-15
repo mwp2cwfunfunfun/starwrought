@@ -58,8 +58,9 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT IGNORE: terrain, mud]` | difficult terrain of those kinds costs nothing | 3 |
 | `[EFFECT USE: Presence, Origin, aid]` | a check made from that Maneuver may be rolled with that Attribute and that Constellation's Proficiency Bonus in place of its own (`same` keeps a term) | 3 |
 | `[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success)]` | on a Maneuver's own row: that result of its check gives another character a bonus (or a penalty) on its next roll with a Constellation, named when it is given (`chosen`) or by the line | 3 |
-| `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` | on a Talent: one property of that Maneuver is changed (a result to nothing, a window with `Aid.beneficial-duration`, or its movement to a Step with `Move Together.movement; VALUE: step`) | 3 |
+| `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` | on a Talent: one property of that Maneuver is changed (a result to nothing, a window with `Aid.beneficial-duration`, its movement to a Step with `Move Together.movement; VALUE: step`, or how often it may be used with `Pay It Forward.limit; VALUE: round`) | 3 |
 | `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]` | on a Maneuver's own row: using it lets the adjacent ally you target make one Move now, outside its Opportunity, once a round | 3 |
+| `[EFFECT SUBORDINATE: Aid; LIMIT: encounter]` | on a Maneuver's own row: using it performs that Maneuver as part of it, at this row's own cost and never the other's (the Subordinate Maneuver rule) | 3 |
 | `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter` | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
@@ -68,6 +69,7 @@ Every block the cell reads, one example each. Case never matters.
 | `; IF: ALLIES(>=1, 0)` | ... while that many allies stand within the range (`ENEMIES`, `ALL`) | 3 |
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
 | `; IF: RESULT(critical failure)` | ... on that degree (REROLL and GIVE only) | 3 |
+| `; IF: EFFECT(Aid, used)` | ... once a roll of yours at your own Opportunity has used up a bonus another creature's Aid gave you (SUBORDINATE only) | 3 |
 | `; IFT: TRAIT(Fear)` | ... against an attack carrying the trait | 3 |
 | `; IFT: MARKED` | ... against the creature the MARK named | 3 |
 | `; IFT: BLOW` (`BLAST`, `BLIGHT`, `BEGUILEMENT`, `MELEE`, `RANGED`) | ... against that Threat, or a Blow by its reach | 3 |
@@ -165,8 +167,9 @@ Trigger, Requirements and Effect from the row. A name that is no row fails the b
 The **tag** names what is modified. A **modifier tag** (`CHECK`, `ATK`, `DEF`, `INIT`, `SPEED`,
 `GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
 book's three; FG's `[bonus]`), then at most one descriptor after a comma (`GIVE` exactly one). The
-other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`) take descriptors alone; `USE`
-takes exactly three and `ALTER` exactly one, and never a value or a type. No bonus is untyped.
+other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`, `PERMIT`, `SUBORDINATE`) take
+descriptors alone; `USE` takes exactly three and `ALTER`, `PERMIT` and `SUBORDINATE` exactly one,
+and never a value or a type. No bonus is untyped.
 
 | tag | modifies | descriptor | stored kind |
 |---|---|---|---|
@@ -181,8 +184,16 @@ takes exactly three and `ALTER` exactly one, and never a value or a type. No bon
 | `IGNORE: terrain, mud, decking` | difficult terrain of those kinds costs nothing; `IGNORE: terrain` alone every kind | `terrain`, then kinds | `ignore` |
 | `USE: Presence, Origin, aid` | the two base terms of a check made from a Maneuver's own Item, written `USE: <Attribute>, <Constellation>, <Maneuver>`: the Attribute Bonus and the Proficiency Bonus are the named Attribute's and the named Constellation's in place of the check's own, offered in the roll dialog; nothing else on the roll changes (0.21.0) | exactly three: an Attribute or `same`, a Constellation or `same`, then a Maneuver by name | `substitute` |
 | `GIVE: 1 situation, chosen` | what a result of this Maneuver's check gives ANOTHER character: a bonus or penalty on that character's next roll with a Constellation. Written on the Maneuver's own row, one line for each degree that gives something, each with `IF: RESULT(<degree>)` (0.22.0) | exactly one: `chosen` (the Constellation is named when the result is given) or a Constellation by name | `give` |
-| `ALTER: Aid.critical-failure` | one property of a Maneuver, changed by a Talent: `ALTER: <Maneuver>.<property>; VALUE: <value>`. The properties read are in the Property vocabulary below (0.22.0; `movement` since 0.24.0) | exactly one: the Maneuver by name, a dot, the property | `alter` |
+| `ALTER: Aid.critical-failure` | one property of a Maneuver, changed by a Talent: `ALTER: <Maneuver>.<property>; VALUE: <value>`. The properties read are in the Property vocabulary below (0.22.0; `movement` since 0.24.0, `limit` since 0.25.0) | exactly one: the Maneuver by name, a dot, the property | `alter` |
 | `PERMIT: move` | using this Maneuver lets the creature you target make one Move now, outside its Opportunity, paying for it itself; your own next drag is the Maneuver's Move, already paid. Written on the Maneuver's own row, with `FOR:` saying who may be permitted and how near (`FOR: allies 0` is an adjacent ally) and `LIMIT:` its Frequency (0.24.0) | exactly one: what is permitted (`move`) | `permit` |
+| `SUBORDINATE: Aid` | using this Maneuver performs the named Maneuver as part of it. The named Maneuver keeps its own check, results and requirements; its own cost is never charged, and the cost printed on THIS row is the only one paid (the Subordinate Maneuver rule, below). Written on the Maneuver's own row, with `IF: EFFECT(<name>, used)` its trigger when it has one and `LIMIT:` its Frequency (0.25.0) | exactly one: the Maneuver performed, by name | `subordinate` |
+
+**The Subordinate Maneuver rule** (Mike, 2026-11-15; ruling 245). When a Maneuver says to perform
+another Maneuver as part of it, the other is done at the first Maneuver's listed cost: it costs no
+additional actions, unless the row says otherwise. So an Aid made as part of Pay It Forward ⓿ costs
+nothing, whatever Aid's own row prints. Everything else about the subordinate Maneuver stands: its
+check, its results, its requirements. No row says otherwise yet, so the grammar has no word for an
+extra cost; one comes with the first row that charges it.
 
 A bonus to a Constellation moves its **Threshold as well as its roll** (section 7). A bonus to a
 Maneuver is applied when the roll is made from that Maneuver's Item and otherwise **offered**
@@ -217,6 +228,7 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | `ALL(>=3, 5)` | how many creatures of either side stand within the range | `IF:` |
 | `CLAIM(when trading)` | the player decides: the bonus is a checkbox in the roll dialog with these words as its hint, unticked; the Effects tab's "Apply to next roll" and the pin on the Talent's row arm it for the next roll (ruling 174) | `IF:` |
 | `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again) and `GIVE` (the degree that gives the result) read it | `IF:` |
+| `EFFECT(Aid, used)` | a named Effect (0.25.0, step one of two): a roll of yours, made at your own Opportunity that is still running, has used up the Effect of that name, and it was a bonus another creature gave you. The name is the Maneuver whose result it was. Only `SUBORDINATE` reads it. The plain `EFFECT(<name>)` (an Effect you hold now) and `IFT: EFFECT(...)` (one on the other party) are refused as not read yet: they come with the named Effects a Maneuver can give a target | `IF:` |
 | `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171) | `IFT:` |
 | `MARKED` | the other party is the creature this Talent's or Maneuver's `MARK` named (FG's `IFT: CUSTOM(Hunt Prey)`) | `IFT:` |
 | `BLOW` | the Threat answered is a Blow (a weapon's Strike, an adversary's attack row) | `IFT:` |
@@ -252,9 +264,23 @@ bonus, so a penalty keeps its own), and the four results by degree, `critical-su
 `failure`, `critical-failure`, each of which is changed to `nothing`. Since 0.24.0 one more, which
 is not about what the Maneuver gives: `movement`, changed to `step`, so that a drag within half
 Speed made as part of the Maneuver is a Step for everyone who moves in it (Coordinated Footwork, of
-Move Together). Any other property is refused as not read yet. Where two lines change one
-Maneuver, `beneficial-duration` stands over `duration` in either order, and of two changes to one
-property the later stands.
+Move Together). Since 0.25.0 another: `limit`, changed to `round` or `encounter`, which replaces the
+`LIMIT:` on the Maneuver's own row (Reciprocal Effort, of Pay It Forward: once a round in place of
+once an encounter); it never adds a use, and a row with no `LIMIT:` stays unlimited. Any other
+property is refused as not read yet. Where two lines change one Maneuver, `beneficial-duration`
+stands over `duration` in either order, and of two changes to one property the later stands.
+
+**Named Effect** (0.25.0, step one). Mike, 2026-11-15, after Fantasy Grounds: "using a Maneuver can
+grant a custom Effect on a target (with a specific duration), and other modifiers/effects can be
+applied IF that custom Effect field is on the target." Built in two steps by his choice. Step one
+is an Effect the SYSTEM leaves: when a roll of yours uses up a bonus another creature's Maneuver
+gave you, at your own Opportunity, you hold an Effect named for that result with "(used)" after it
+(**Aid from Wren (used)**) until that Opportunity ends, listed on the Effects tab under Pending
+results. `IF: EFFECT(<Maneuver>,
+used)` reads it. A penalty a roll swallowed, a roll on another fighter's Opportunity, an Initiative,
+and a result the GM binned or whose window closed leave nothing. Step two, not built: a Maneuver
+that puts a named Effect on its target for a duration, and `CHECK`, `DEF` and `ATK` lines reading
+`IF: EFFECT(<name>)` on the owner and `IFT: EFFECT(<name>)` on the other party.
 
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
@@ -448,12 +474,21 @@ your Aid check grants no penalty to your ally").
 [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]                        Sure Assistance
 [EFFECT ALTER: Aid.duration; VALUE: encounter]                              every result of Aid
 [EFFECT ALTER: Move Together.movement; VALUE: step]                         Coordinated Footwork
+[EFFECT ALTER: Pay It Forward.limit; VALUE: round]                          Reciprocal Effort
 ```
 
 - **One descriptor**: the Maneuver by the name the action sheets print, a dot, the property
   (section 3, Property). Case, spaces and a Maneuver's cost glyphs do not matter.
 - **`VALUE:`** says what the property becomes: a window for `duration` and `beneficial-duration`,
-  the word `nothing` for a result, the word `step` for `movement`. It is read after `ALTER` alone.
+  the word `nothing` for a result, the word `step` for `movement`, `round` or `encounter` for
+  `limit`. It is read after `ALTER` alone.
+- **`limit`** (0.25.0; ruling 250) is how often the Maneuver may be used, from Reciprocal Effort
+  (Mike's draft: "You may use Pay It Forward once per round instead of once per encounter"). It
+  REPLACES the `LIMIT:` on the Maneuver's own row and never adds a use, so a use is counted by the
+  round in place of the encounter, and a row with no `LIMIT:` stays unlimited. Like `movement` it
+  is read when the Maneuver is USED, by `subordinate` and `permit` alike, so Move Together's
+  `LIMIT: round` can be altered the same way. Mike's drafted value, `owner round`, is told to
+  write `round`: a limit is always its owner's.
 - **`movement`** (0.24.0; ruling 242) is the one property that is not about what the Maneuver
   gives. It is read when the Maneuver is USED, by the `permit` kind below: with it, a drag within
   half Speed made as part of that Maneuver is a Step (one action, nothing provoked, no difficult
@@ -495,6 +530,7 @@ In play:
   A `movement` line is read when its Maneuver is used: on Skip it is left out that once (the drags
   are plain Moves) and the Skip is spent by a use that counted, never by a refused use or one
   outside an encounter; Off is Off; a custom effect that lasts the next roll is used up the same way.
+  A `limit` line is read the same way: on Skip the row's own limit stands that once.
 
 ### `permit`
 Using this Maneuver lets the creature you target make one Move now, outside its Opportunity
@@ -516,12 +552,13 @@ Approve gives a player off-turn, and this is the same thing given by a Maneuver.
   already has: `allies`, `enemies` or `all`, with a range in feet. `FOR: allies 0` is an adjacent
   ally, as Steady the Line writes it. `self` and `self+allies` are refused: nobody needs leave at
   their own Opportunity.
-- **`LIMIT: round`** (or `encounter`) is the Maneuver's Frequency.
+- **`LIMIT: round`** (or `encounter`) is the Maneuver's Frequency. A Talent's `ALTER:
+  <Maneuver>.limit` replaces it (0.25.0; see `alter`).
 - **`IF: RANK(...)`** reads the owner's rank. `RANK(roll ...)` is refused: there is no roll.
 
 Written on a Maneuver's own row and nowhere else, as `GIVE` is. Refused by name: `UNTIL`,
-`VALUE`, `IF: CLAIM(...)`, `IF: RESULT(...)`, every condition about the other party, and a
-`PERMIT` after the ring of an `[AURA ...]` block.
+`VALUE`, `IF: CLAIM(...)`, `IF: RESULT(...)`, `IF: EFFECT(...)`, every condition about the other
+party, and a `PERMIT` after the ring of an `[AURA ...]` block.
 
 **As read:** `lets an adjacent ally you target make one Move now, outside its Opportunity, once a
 round`.
@@ -558,6 +595,75 @@ In play, in an encounter:
 - **On / Skip / Off** on the Effects tab: Off, the Maneuver permits nothing (the click still pays,
   and so does the drag); Skip on the `PERMIT` line itself is read as On, as for every line that
   acts on use (a Skip on a Talent's `ALTER` of its movement is honoured; see `alter`).
+
+### `subordinate`
+Using this Maneuver performs another Maneuver as part of it (0.25.0; rulings 245 to 251). Made by
+`[EFFECT SUBORDINATE: ...]` on a Maneuver's own row. The rule behind it is Mike's (2026-11-15):
+"any time a maneuver says to perform another maneuver as part of it, it is at the original
+maneuver's listed cost (i.e. costs 0 additional actions) unless otherwise specified" (section 3,
+the Subordinate Maneuver rule). The first row is the Human's Pay It Forward ⓿ (his draft):
+"Requirements You are acting at your own Opportunity and have just finished a check that consumed
+a beneficial Aid result from another creature. Effect Immediately after that check resolves, Aid
+one other willing ally as a ⓿ Maneuver. Make the normal Aid check and meet its normal requirements.
+You cannot target yourself."
+
+```
+[EFFECT SUBORDINATE: <Maneuver>; IF: EFFECT(<name>, used); LIMIT: round | encounter; IF: RANK(...)]
+
+[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]          Pay It Forward ⓿
+```
+
+- **One descriptor**, the Maneuver performed, by the name the action sheets print. A Constellation
+  and the row's own Maneuver are refused.
+- **`IF: EFFECT(<name>, used)`** is the trigger, when the row has one (section 3, Named Effect): a
+  roll of yours at your own Opportunity, still running, has used up a bonus another creature's
+  Maneuver of that name gave you. A row with no trigger is performed whenever it is used.
+- **`LIMIT: encounter`** (or `round`) is the Maneuver's Frequency, which a Talent's `ALTER:
+  <Maneuver>.limit` replaces (Reciprocal Effort).
+- **`IF: RANK(...)`** reads the owner's rank. `RANK(roll ...)` is refused: the row has no roll of
+  its own.
+
+Written on a Maneuver's own row and nowhere else, as `GIVE` and `PERMIT` are. Refused by name:
+`FOR`, `UNTIL`, `VALUE`, `IF: CLAIM(...)`, `IF: RESULT(...)`, every condition about the other
+party, and a `SUBORDINATE` after the ring of an `[AURA ...]` block.
+
+**As read:** `performs Aid as part of this Maneuver, at this Maneuver's own cost, once a roll of
+yours at this Opportunity has used up Aid, once an encounter`.
+
+In play, in an encounter:
+
+- **Two doors, one path** (ruling 251). The Maneuver's row shows the Use control, and the card of
+  the roll that used the bonus up shows a button for the roller's owner and the GM ("Pay It Forward
+  ⓿: Aid"), on a check's card, a Strike's or a Cast's, or a Defense roll's. Only the card of the
+  roll that used THAT bonus up shows it: an older card that used another Aid does not. The button
+  does what the row does, and it goes when the Maneuver is used or the Opportunity ends. A Strike
+  at three defenders posts three cards and three buttons; the limit refuses the rest.
+- **What is performed is the subordinate Maneuver's own use** (ruling 246): for Aid, the Relevant
+  Check picker, the roll dialog with whatever your Talents put on an Aid (Cooperative Instinct's
+  swap, Humanity's bonus), and Aid's card with its Give button. The card says "As part of Pay It
+  Forward ⓿". Pay It Forward posts no card of its own.
+- **The cost is this row's and never the subordinate's** (ruling 245): Aid's ❶ is not charged.
+  A row that printed ❷ would pay ❷, once, when the subordinate's roll is made.
+- **Nothing is spent until that roll is made.** A roll dialog that is closed has paid nothing, has
+  not used the limit and has left the used Effect where it was. Once rolled, the limit is filed
+  and the used Effect is spent: one bonus used, one Pay It Forward.
+- **Refused, with a notice** (Mike: "Refuse"): the trigger does not hold (no roll of yours at this
+  Opportunity used up another creature's bonus; a result you still carry does not count), a
+  second use within the limit, and a rank the line asks for that you have not reached. Off-turn
+  the refusal comes first: the GM is not asked for leave the Maneuver could not use.
+- **"Immediately after that check"** is read as the rest of that Opportunity (ruling 248): the
+  system cannot tell what else was done in between.
+- **Who is Aided** is chosen on Aid's own card, as for any Aid. You cannot pick yourself; you may
+  pick the creature whose Aid you used (Mike: "Anyone but you").
+- **Outside an encounter**, and in a Combat you are no part of, the Maneuver is performed and
+  nothing is asked or counted. No button is offered there.
+- **On / Skip / Off** on the Effects tab: Off, the click only shows the Maneuver's card; Skip on
+  the `SUBORDINATE` line itself is read as On, as for every line that acts on use.
+
+What this version does not perform, each told so with nothing spent: a subordinate that is a
+built-in (Recenter, Raise a Shield, the visor, Pass), one the system pays another way (a Strike, a
+Cast, a Move, a Step, a Leap), a parent row whose own cost is three or more (it would be Prepared),
+a second `SUBORDINATE` line on one row, and a subordinate that names a subordinate of its own.
 
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
@@ -686,6 +792,20 @@ second is the Human Talent's cell. Both are Mike's to paste: the 0.24.0 release 
 and both workbooks were in his hands when it was cut. What the system does not read of Move
 Together, and the table does: that both routes are declared before either moves, that you move
 first, that the ally can perceive your cue, and that the ally is willing.
+
+### Pay It Forward, and the Talent that changes it (0.25.0)
+
+```
+Pay It Forward  ⓿     [EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]
+Reciprocal Effort     [EFFECT ALTER: Pay It Forward.limit; VALUE: round]
+```
+
+The first line is Pay It Forward's row, which is not yet on the Ancestry Actions sheet of
+`data/maneuvers.xlsx` (its text is in Mike's draft workbook); the second is the Human Talent's
+cell. Both are Mike's to add: the 0.25.0 release carries the kind, and both workbooks were in his
+hands when it was cut. Pay It Forward needs Aid's own five `GIVE` lines above to be on Aid's row,
+since without them no Aid gives a result to use up. What the system does not read of Pay It
+Forward, and the table does: that the ally is willing, and that Aid's own requirements are met.
 
 What the system does not read, and the table does: whom Oathbound may name ("a creature that has
 either formally challenged you, or that has broken a bargain or a truce with you"; the mark takes
@@ -836,9 +956,9 @@ written on the Maneuver's row.
   card keeps the whole table, every degree at the rank rolled, so a reroll and a reload read the
   same answer. An `ALTER` never changes the roll or its degree.
 - **What a give does not read yet** (0.22.0). Not built: two uses of one result (Carry the Plan);
-  a second character using a pending result (Pay It Forward); a Condition given by a result; a
-  result given by a Maneuver that rolls no check; an adversary as the recipient; the `ALTER`
-  properties beyond the seven (a Maneuver's range, limit, uses, slots); and a Threshold a
+  a Condition given by a result; a result given by a Maneuver that rolls no check; an adversary as
+  the recipient; the `ALTER` properties beyond the eight (a Maneuver's range, uses, slots); and a
+  Threshold a
   Maneuver's check opens on (Aid's "typically 15"), which is still typed. With no GM connected the
   turn step that ends a round by Passes may be counted as an Opportunity by a player's client, and
   two presses of one card for two recipients owned by different players can both land. A GM
@@ -851,6 +971,23 @@ written on the Maneuver's row.
   once-a-round Speed bonus as any Move does. A GM who repositions the permitted token during that
   Opportunity uses the permission and charges it. Each arrow-key nudge is its own movement, so the
   first nudge is the Maneuver's Move.
+- **A subordinate Maneuver is its own use under its parent's name** (0.25.0; rulings 245 and 246;
+  section 4, `subordinate`). The parent row posts no card and pays nothing of its own: the cost,
+  the limit and the used Effect are all settled when the subordinate's roll is made, so a closed
+  dialog has spent nothing. The parent's cost is the only one paid.
+- **A used Effect is left by the roll that used a bonus up, and lasts that Opportunity** (ruling
+  247; section 3, Named Effect). It is written with the roll's own bookkeeping, by the roller's
+  client or the one that writes for it, for a check, a Strike, a Cast and a Defense roll alike. It
+  is taken off when its Opportunity ends (the turn moves on, forwards or back; a lone fighter steps
+  to itself; the encounter ends) and when the Maneuver it triggers is used. The GM may bin it.
+- **What a subordinate does not read** (0.25.0). Not performed, and told so: a built-in, a Strike,
+  a Cast or a movement row as the subordinate; a Prepared parent; two subordinates on one row; a
+  subordinate chosen when the Maneuver is used (Shared Demonstration); one Aid check for several
+  allies (Common Purpose, United Effort); Aid before an ally's roll (Timely Aid). Not read, and the
+  table's: that the ally is willing, and that the subordinate's own requirements are met. A used
+  Effect whose holder has no client connected to take it off when its Opportunity ends stays
+  listed, dimmed, until the encounter ends; it is held for nothing by then. A roll made by the GM
+  for a player's character leaves the Effect as that player's own roll would.
 - **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
   sight-blocking walls plus three statuses; light, sight range and hearing are the table's.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
@@ -1070,3 +1207,19 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   other client, no copy and no relay (244). No new hook point: `permit` answers `use`, whose
   answer may now carry warnings and a LIMIT to file. The release carries the kind alone: Move
   Together's row and the Talent are on Mike's sheets in progress.
+- **0.25.0** (2026-11-15): the `SUBORDINATE` tag and the `subordinate` kind, the `EFFECT(<name>,
+  used)` condition, and `ALTER`'s eighth property, `limit`, from Mike's question about Reciprocal
+  Effort's cell. Nothing could be typed there until Pay It Forward itself was automated, so it is
+  written first, on its own row. The Subordinate Maneuver rule is his ("any time a maneuver says
+  to perform another maneuver as part of it, it is at the original maneuver's listed cost"), and
+  so is the tag word (ruling 245); the subordinate's own use is the Maneuver, under the parent's
+  name, and nothing is spent until its roll is made (246); named Effects, his Fantasy Grounds
+  idea, in two steps by his choice, step one being the Effect a roll leaves when it uses up a
+  bonus another creature gave (247); "immediately after that check" read as the rest of that
+  Opportunity (248); no trigger and a second use refuse, and the recipient is anyone but you
+  (249, both his); `ALTER: <Maneuver>.limit` replaces a limit and never adds a use, for
+  `SUBORDINATE` and `PERMIT` alike (250); the row and a button on the card of the roll that used
+  the bonus up are two doors to one path (251). No new hook point: `subordinate` answers `use`
+  and `card`, whose offers are now drawn on Attack and Defense cards too. The release carries the
+  kind alone: Pay It Forward's row, Aid's `GIVE` lines and Reciprocal Effort's cell are Mike's to
+  add.

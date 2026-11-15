@@ -59,8 +59,20 @@ export const MOVEMENT_PROPERTY = "movement";
 /** The values the movement property may be given. One word so far. */
 export const MOVEMENT_VALUES = Object.freeze(["step"]);
 
+/**
+ * The Maneuver's own LIMIT (0.25.0; ruling 250): how often it may be used. `VALUE: round` makes a
+ * once-an-encounter Maneuver once a round (Reciprocal Effort, of Pay It Forward: "You may use Pay
+ * It Forward once per round instead of once per encounter"). Like `movement` it is not about what
+ * the Maneuver gives, so `buildTable` never looks at it: the kinds that act when a Maneuver is used
+ * read it through `limitOf` below.
+ */
+export const LIMIT_PROPERTY = "limit";
+
+/** The values the limit property may be given: the words `LIMIT:` itself reads. */
+export const LIMIT_VALUES = Object.freeze(["round", "encounter"]);
+
 /** Every property an ALTER reads in this version, as a message lists them. */
-export const ALTER_PROPERTIES = Object.freeze([...DURATION_PROPERTIES, ...Object.keys(DEGREE_PROPERTIES), MOVEMENT_PROPERTY]);
+export const ALTER_PROPERTIES = Object.freeze([...DURATION_PROPERTIES, ...Object.keys(DEGREE_PROPERTIES), MOVEMENT_PROPERTY, LIMIT_PROPERTY]);
 
 /** The window a GIVE line has when it names none: until the giver's next Opportunity begins. */
 export const DEFAULT_UNTIL = Object.freeze({ who: "giver", n: 1 });
@@ -291,6 +303,146 @@ export function appliesNow(entry, encounter) {
   if (!entry) return false;
   if (!entry.combat) return true;
   return entry.combat === (encounter?.combat ?? null);
+}
+
+/* -------------------------------------------- */
+/*  The used Effect (0.25.0)                    */
+/* -------------------------------------------- */
+
+/**
+ * NAMED EFFECTS, STEP ONE (0.25.0; ruling 247; Mike, 2026-11-15, after Fantasy Grounds: "using a
+ * Maneuver can grant a custom Effect on a target ... and other modifiers/effects can be applied IF
+ * that custom Effect field is on the target", built in two steps by his choice). The first named
+ * Effect is one the SYSTEM leaves: when a roll uses up a bonus that another creature's Maneuver
+ * gave the roller, at the roller's own Opportunity, the roller holds the Effect "<that result>
+ * (used)" until that Opportunity ends, at `flags.starwrought.rules.used.<maneuver>`. The condition
+ * `IF: EFFECT(<Maneuver>, used)` reads it (./effects.mjs), and Pay It Forward is the first
+ * Maneuver it triggers (./kinds/subordinate.mjs). A Maneuver that grants a named Effect to a
+ * target, and `EFFECT(<name>)` on a bonus line, are step two.
+ */
+
+/** The id prefix, and the mark key prefix, of a used Effect: one per Maneuver per holder. */
+export const USED_PREFIX = "used:";
+
+/** Is this id, or mark key, a used Effect's? */
+export function isUsedKey(key) {
+  return String(key ?? "").startsWith(USED_PREFIX);
+}
+
+/** The flag key of a used Effect under `flags.starwrought.rules.used`: the Maneuver's slug. */
+export function usedFlagKey(key) {
+  return String(key ?? "").slice(isUsedKey(key) ? USED_PREFIX.length : 0).replace(/\./g, "-");
+}
+
+/**
+ * The used Effect a roll leaves when it uses up a pending result, or null when it leaves none.
+ *
+ * It leaves one only when every part of Pay It Forward's Requirements holds ("You are acting at
+ * your own Opportunity and have just finished a check that consumed a beneficial Aid result from
+ * another creature"): in an encounter, with an Opportunity running, that Opportunity the roller's
+ * own (`moment.own`), the result a bonus, and its giver somebody else. A penalty a roll swallowed,
+ * a roll made on another fighter's Opportunity, an Initiative rolled before the first Opportunity
+ * and a roll outside an encounter leave nothing.
+ * @param {object} entry   The pending result being used up (`pendingEntry`).
+ * @param {{combat: string|null, round?: number, combatant?: string|null, own?: boolean}|null} moment
+ *        The encounter as the roll resolves, and whether the Opportunity running is the roller's.
+ * @param {string} [holder]  The roller's uuid: a result one gave oneself leaves nothing.
+ * @returns {object|null}
+ */
+export function usedEntry(entry, moment, holder = "") {
+  if (!entry || (typeof entry !== "object")) return null;
+  if (!moment?.combat || !moment.combatant || (moment.own !== true)) return null;
+  if (!(Number(entry.value) > 0)) return null;
+  const by = String(entry.by ?? "");
+  if (!by || (by === String(holder ?? ""))) return null;
+  const slug = String(entry.maneuver ?? "");
+  if (!slug) return null;
+  const maneuverName = String(entry.maneuverName ?? titled(slug));
+  return {
+    id: `${USED_PREFIX}${slug}`,
+    label: `${String(entry.label ?? "").trim() || maneuverName} (used)`,
+    maneuver: slug,
+    maneuverName,
+    by,
+    byName: String(entry.byName ?? ""),
+    value: Number(entry.value) || 0,
+    type: String(entry.type ?? "situation"),
+    to: { slug: String(entry.to?.slug ?? ""), name: String(entry.to?.name ?? "") },
+    // Which result it was: the card of the check that gave it (`pendingEntry`'s `message`). The
+    // roll's own card carries the same id on the modifier (`givenFrom`), which is how a button is
+    // drawn on the card of the roll that used THIS result and on no other.
+    from: entry.message ? String(entry.message) : null,
+    combat: String(moment.combat),
+    round: Number(moment.round) || 0,
+    during: String(moment.combatant)
+  };
+}
+
+/**
+ * Is a used Effect still held? Only during the Opportunity it was left in: the same Combat, the
+ * same round, the same fighter's Opportunity running. (The record is also taken off as that
+ * Opportunity ends, ../effects-state.mjs; this is the reading in between, and the one that holds
+ * when the client that should have swept it was away.)
+ * @param {object|null} record
+ * @param {{combat: string|null, round?: number, combatant?: string|null}|null} encounter
+ * @returns {boolean}
+ */
+export function usedLive(record, encounter) {
+  if (!record || (typeof record !== "object") || !record.during) return false;
+  if (!encounter?.combat || !encounter.combatant) return false;
+  return (record.combat === encounter.combat)
+    && ((Number(record.round) || 0) === (Number(encounter.round) || 0))
+    && (record.during === encounter.combatant);
+}
+
+/**
+ * The used Effects on an actor, as stored under `flags.starwrought.rules.used`, in key order. A
+ * plain object in a test.
+ * @param {object} actor
+ * @returns {object[]}
+ */
+export function usedEffects(actor) {
+  const used = actor?.flags?.starwrought?.rules?.used;
+  if (!used || (typeof used !== "object")) return [];
+  return Object.keys(used).sort().map(key => used[key]).filter(e => e && (typeof e === "object") && e.id);
+}
+
+/** The used Effect of one Maneuver on an actor, or null. */
+export function usedOf(actor, slug) {
+  const key = usedFlagKey(slug);
+  if (!key) return null;
+  const record = actor?.flags?.starwrought?.rules?.used?.[key] ?? null;
+  return (record && (typeof record === "object")) ? record : null;
+}
+
+/* -------------------------------------------- */
+/*  The limit (0.25.0)                          */
+/* -------------------------------------------- */
+
+/**
+ * The LIMIT that stands for one use of a Maneuver's rule: the rule's own, unless one of the
+ * owner's alterations names the Maneuver's `limit` (`ALTER: Pay It Forward.limit; VALUE: round`,
+ * Reciprocal Effort). It REPLACES the limit and never adds a use ("This replaces the original
+ * frequency; it does not provide a separate extra use"), so a rule with no LIMIT of its own stays
+ * unlimited. Of two alterations the later stands. A line on Skip is left out this once; its
+ * marks, and a one-roll custom effect's, are handed back for the use that counted to file.
+ * @param {object} rule  The Maneuver's rule (`rule.limit` is `{ per }` or null).
+ * @param {Array<{property: string, per?: string|null, skipped?: boolean, marks?: object[]}>} [alterations]
+ *        The owner's alterations of the Maneuver (../engine.mjs, `alterationsOf`).
+ * @returns {{per: string|null, marks: Array<{key: string, per: string}>}}
+ */
+export function limitOf(rule, alterations = []) {
+  const own = LIMIT_VALUES.includes(rule?.limit?.per) ? rule.limit.per : null;
+  if (!own) return { per: null, marks: [] };
+  let per = own;
+  const marks = [];
+  for (const change of alterations ?? []) {
+    if (!change || (propertyKey(change.property) !== LIMIT_PROPERTY) || !LIMIT_VALUES.includes(change.per)) continue;
+    if (Array.isArray(change.marks)) marks.push(...change.marks);
+    if (change.skipped === true) continue;
+    per = change.per;
+  }
+  return { per, marks };
 }
 
 /* -------------------------------------------- */
