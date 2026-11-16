@@ -30,6 +30,20 @@
      data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
   {{/if}}
   <div class="sw-item-controls">
+    {{!-- STRIKE (0.29.0, ruling 295): Quick, Deliberate, Committed, as a weapon's row has. A click
+          asks what to Strike with (the weapons in hand, the Unarmed Strike last; one choice asks
+          nothing) and the Strike runs as from that weapon's row. The row's name is a Deliberate
+          Strike; shift-click skips the roll dialog. --}}
+    {{#if isStrike}}{{#if editable}}
+    <span class="sw-strike-buttons">
+      <a class="sw-strike-button sw-strike-quick" data-action="strikeWith" data-strike="quick"
+         data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "quick")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.quick"}}</span></a>
+      <a class="sw-strike-button sw-strike-deliberate" data-action="strikeWith" data-strike="deliberate"
+         data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "deliberate")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
+      <a class="sw-strike-button sw-strike-committed" data-action="strikeWith" data-strike="committed"
+         data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "committed")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.committed"}}</span></a>
+    </span>
+    {{/if}}{{/if}}
     {{#if isBasic}}
     <a data-action="basicChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
     <a data-action="basicView" data-tooltip="STARWROUGHT.Sheet.view"><i class="fa-solid fa-eye"></i></a>

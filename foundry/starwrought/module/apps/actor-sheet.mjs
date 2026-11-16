@@ -13,7 +13,7 @@ import { SwChargen } from "./chargen.mjs";
 import { askToNameLore } from "./lore-name.mjs";
 import { loadBasicActions, enabledConstellations } from "../helpers/content.mjs";
 // The header's live state and the tooltips, shared with the adversary and party sheets (0.10.1).
-import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip } from "../helpers/actor-context.mjs";
+import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip, weaponNumbers } from "../helpers/actor-context.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // THE GLANCE (0.19.0): the panel a LIMITED user's sheet shows alone.
 import { glanceData } from "../canvas/glance.mjs";
@@ -34,6 +34,8 @@ import { cycleRuleState, addEffect, removeEffect, removeGiven, removeUsed } from
 // THE MANEUVERS TAB (0.28.0): which Maneuvers apply now, the Favorites first, no row twice.
 import { situationOf, statusOf } from "../helpers/situation.mjs";
 import { arrangeManeuvers } from "../rules/requires.mjs";
+// 0.29.0: the hand-correction of a ranged weapon's shots, and the chooser behind the Strike row.
+import { nextLoaded } from "../data/items/weapon-traits.mjs";
 
 /** The character flag that holds the Favorites (0.28.0): the slugs of the bookmarked Maneuvers, in the order marked. */
 const FAVORITES_FLAG = "favoriteManeuvers";
@@ -171,6 +173,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // THE MANEUVERS TAB (0.28.0): only what applies, or every Maneuver; and the bookmark.
       toggleAllManeuvers: SwCharacterSheet.#onToggleAllManeuvers,
       toggleFavorite: SwCharacterSheet.#onToggleFavorite,
+      // 0.29.0: the Loaded chip on a ranged weapon's row, and the Strike row's three buttons.
+      toggleLoaded: SwCharacterSheet.#onToggleLoaded,
+      strikeWith: SwCharacterSheet.#onStrikeWith,
       setCarry: SwCharacterSheet.#onSetCarry,
       wearArmor: SwCharacterSheet.#onWearArmor,
       setActions: SwCharacterSheet.#onSetActions,
@@ -843,8 +848,12 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         .map(i => ({ id: i.id, name: i.name, protection: i.system.protection }));
     }
 
-    inventory.held.sort((a, b) => a.name.localeCompare(b.name));
+    // What is in hand, the bare fist last: it is always there, and it is never the first thing a
+    // player is looking for on this list.
+    inventory.held.sort((a, b) => ((a.natural ? 1 : 0) - (b.natural ? 1 : 0)) || a.name.localeCompare(b.name));
     inventory.stowed.sort((a, b) => a.name.localeCompare(b.name));
+    // "Nothing in hand" is still said when the only thing there is the fist (0.29.0).
+    inventory.emptyHanded = inventory.held.every(row => row.natural);
     inventory.inEncounter = actor.inEncounter;
     return inventory;
   }
@@ -892,27 +901,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   #weaponRow(item) {
     const actor = this.document;
     const sys = actor.system;
-    const slugKey = item.system.isRanged ? "ranged" : "melee";
-    const training = sys[slugKey] ?? { rank: "untrained", proficiency: 0, dice: 1 };
-    // Handling still applies: Practiced drops a rank without Familiarity, Technical drops to Untrained.
-    const rank = actor.weaponRank?.(item) ?? training.rank ?? "untrained";
-
-    const strike = sys.strikeAttributeFor?.(item) ?? { attribute: item.system.attackAttribute, source: "weapon" };
-    const attribute = strike.attribute in SW.ATTRIBUTES ? strike.attribute : "might";
-    const attributeLabel = game.i18n.localize(SW.ATTRIBUTES[attribute].label);
-    const standing = SW.resolveModifiers(sys.attackModifiers ?? []).total;
-    const attackMod = sys.attributes[attribute].mod + SW.rankBonus(rank) + sys.bonuses.attack + standing;
-
-    // The dice are the rank's (PHB v4.21), the rank Handling leaves this weapon with.
-    const dice = SW.weaponDice(rank);
-    const might = item.system.flags.mechanical ? 0 : sys.attributes.might.mod;
-    const flat = might;
-    const die = item.system.effectiveDie;
-    const full = flat ? `${dice}d${die}+${flat}` : `${dice}d${die}`;
-    // A Thrown weapon's throw is Might (PHB v4.21), said in the tooltip when it would differ.
-    const thrownNote = (item.system.flags?.thrown && !item.system.isRanged && (attribute !== "might"))
-      ? ` ${game.i18n.localize("STARWROUGHT.Strike.attributeThrown")}`
-      : "";
+    // The numbers are the shared helper's (0.29.0), which the Strike chooser prints too, so the
+    // row and the chooser can never disagree about a weapon.
+    const { slugKey, rank, attribute, attributeLabel, attackMod, thrownNote, damage, quickDamage, reach } = weaponNumbers(actor, item);
 
     return {
       ...this.#carryRow(item),
@@ -924,19 +915,38 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       strikeAttributeGlyph: SW.ATTRIBUTES[attribute].glyph,
       strikeAttributeAbbr: game.i18n.localize(SW.ATTRIBUTES[attribute].abbr),
       strikeAttributeHint: game.i18n.format("STARWROUGHT.Strike.attributeFromWeapon", { attribute: attributeLabel }) + thrownNote,
-      damage: `${full} ${game.i18n.localize(SW.DAMAGE_TYPES[item.system.effectiveType].label)}`,
-      quickDamage: `1d${die}`,
+      damage,
+      quickDamage,
       // Total Reach is your Natural Reach plus the weapon's. A ranged weapon shows its range.
-      reach: item.system.isRanged
-        ? `${item.system.range} ft`
-        : `${item.system.reach + sys.reach} ft`,
+      reach,
       reachHint: item.system.isRanged
         ? game.i18n.localize("STARWROUGHT.Field.rangeHint")
         : game.i18n.format("STARWROUGHT.Field.totalReachHint", {
             natural: sys.reach, weapon: item.system.reach, total: item.system.reach + sys.reach
           }),
       traits: item.system.totalTraits,
-      defaultStrike: SW.DEFAULT_STRIKE
+      defaultStrike: SW.DEFAULT_STRIKE,
+      // A natural weapon (the Unarmed Strike every character has since 0.29.0) is always in hand:
+      // its row has no stow control.
+      natural: !!item.system.natural,
+      // AMMUNITION (0.29.0): the chip on a ranged weapon that takes ammunition, Loaded or Empty
+      // (a Repeating Crossbow "3 of 5"), which a click corrects by hand.
+      ...this.#loadedChip(item)
+    };
+  }
+
+  /** The Loaded chip of a weapon row: nothing for a weapon that takes no ammunition. */
+  #loadedChip(item) {
+    const sys = item.system;
+    if (!sys.takesAmmunition) return { takesAmmunition: false };
+    const several = sys.magazine > 1;
+    return {
+      takesAmmunition: true,
+      isLoaded: !!sys.isLoaded,
+      loadedLabel: several
+        ? game.i18n.format("STARWROUGHT.Loaded.count", { n: sys.shots, max: sys.magazine })
+        : game.i18n.localize(sys.isLoaded ? "STARWROUGHT.Loaded.loaded" : "STARWROUGHT.Loaded.empty"),
+      loadedTip: game.i18n.format("STARWROUGHT.Loaded.chipHint", { cost: SW.ACTION_GLYPHS[sys.reloadCost] ?? String(sys.reloadCost) })
     };
   }
 
@@ -1076,6 +1086,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         isTalent: source === "talent",
         isOwn: source === "own",
         slug: status.slug,
+        // The Strike row carries the three Strike buttons a weapon's row has (0.29.0, ruling 295).
+        isStrike: status.slug === "strike",
         uuid: owned ? "" : item.uuid,
         itemId: owned ? item.id : "",
         name: item.name,
@@ -1427,6 +1439,37 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (!weaponId) return;
     const strike = target.dataset.strike in SW.STRIKE_KINDS ? target.dataset.strike : SW.DEFAULT_STRIKE;
     return this.document.rollAttack(weaponId, { strike, dialog: !event.shiftKey });
+  }
+
+  /**
+   * STRIKE FROM THE MANEUVERS TAB (0.29.0, ruling 295; Mike: "There should be 1/2/3 action buttons
+   * on the Strike row ... when you click on it, you can choose what you want to Strike with"). The
+   * button names the Strike, the chooser names the weapon (the fist, and each weapon in hand; one
+   * choice asks nothing), and the Strike itself is the weapon row's own: `rollAttack`.
+   */
+  static async #onStrikeWith(event, target) {
+    const strike = target.dataset.strike in SW.STRIKE_KINDS ? target.dataset.strike : SW.DEFAULT_STRIKE;
+    const dialog = !event.shiftKey;
+    // The row's own Item, used: the Strike Maneuver is a built-in (documents/maneuvers.mjs), so the
+    // buttons, the row's name and a macro are doors to the one `strikeWith`, held to one use at a
+    // time as every Maneuver is. A row whose Item cannot be found still Strikes.
+    const row = target.closest("[data-item-id], [data-uuid]");
+    const item = row?.dataset.itemId ? this.document.items.get(row.dataset.itemId)
+      : (row?.dataset.uuid ? await fromUuid(row.dataset.uuid) : null);
+    if (item?.type === "action") return item.use({ actor: this.document, strike, dialog });
+    return this.document.strikeWith({ strike, dialog });
+  }
+
+  /**
+   * The Loaded chip on a ranged weapon's row (0.29.0): correct the count by hand. An empty weapon
+   * is made full; anything else gives up one shot, so one click flips a bow and a few step a
+   * Repeating Crossbow down (`nextLoaded`). The Reload Maneuver is what loads it in play; this is
+   * the table's word, as an armor piece's Adjusted tick is, and costs nothing.
+   */
+  static async #onToggleLoaded(event, target) {
+    const item = this.#getItem(target);
+    if (!item || (item.type !== "weapon") || !item.system.takesAmmunition) return null;
+    return item.update({ "system.loaded": nextLoaded({ magazine: item.system.magazine, shots: item.system.shots }) });
   }
 
   static async #onItemUse(event, target) {

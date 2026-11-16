@@ -21,6 +21,16 @@
         <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Field.trainingHint'}}">{{thing.trainingLabel}} · {{thing.rankLabel}}</span>
         <span class="sw-item-tag" data-tooltip="{{localize 'STARWROUGHT.Field.damageHint' quick=thing.quickDamage}}">{{thing.damage}}</span>
         <span class="sw-item-tag" data-tooltip="{{thing.reachHint}}">{{localize "STARWROUGHT.Field.reach"}} {{thing.reach}}</span>
+        {{!-- AMMUNITION (0.29.0): Loaded or Empty on a weapon that takes ammunition; a click
+              corrects the count by hand (the Reload Maneuver is what loads it in play). --}}
+        {{#if thing.takesAmmunition}}
+        {{#if @root.editable}}
+        <a class="sw-item-tag sw-loaded-chip {{#if thing.isLoaded}}sw-good-tag{{else}}sw-empty-chip{{/if}}" data-action="toggleLoaded"
+           data-tooltip="{{thing.loadedTip}}"><i class="fa-solid {{#if thing.isLoaded}}fa-circle-check{{else}}fa-circle-xmark{{/if}}"></i> {{thing.loadedLabel}}</a>
+        {{else}}
+        <span class="sw-item-tag sw-loaded-chip {{#if thing.isLoaded}}sw-good-tag{{else}}sw-empty-chip{{/if}}"><i class="fa-solid {{#if thing.isLoaded}}fa-circle-check{{else}}fa-circle-xmark{{/if}}"></i> {{thing.loadedLabel}}</span>
+        {{/if}}
+        {{/if}}
         {{else if thing.isShield}}
         <a class="sw-item-name" data-action="itemUse" data-tooltip="STARWROUGHT.Action.raiseShieldHint">{{thing.name}}</a>
         <span class="sw-item-tag">{{localize "STARWROUGHT.Defense.guard"}} {{swSigned thing.bonus}}</span>
@@ -44,18 +54,22 @@
                data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "committed")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.committed"}}</span></a>
           </span>
           {{/if}}
+          {{!-- A natural weapon is always in hand (0.29.0): a fist is not put away. --}}
+          {{#unless thing.natural}}
           <a data-action="setCarry" data-state="worn" data-tooltip="STARWROUGHT.Carry.stowHint">
             <i class="fa-solid fa-arrow-down"></i>
           </a>
+          {{/unless}}
           <a data-action="itemChat"><i class="fa-solid fa-comment"></i></a>
           <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
           <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
         </div>
         {{#if thing.traits}}<span class="sw-item-traits">{{thing.traits}}</span>{{/if}}
       </li>
-      {{else}}
-      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.emptyHanded"}}</li>
       {{/each}}
+      {{#if inventory.emptyHanded}}
+      <li class="sw-empty">{{localize "STARWROUGHT.Sheet.emptyHanded"}}</li>
+      {{/if}}
     </ol>
   </div>
 

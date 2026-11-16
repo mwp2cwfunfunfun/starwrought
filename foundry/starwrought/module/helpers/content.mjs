@@ -350,6 +350,39 @@ export function invalidateBasicActions() {
 
 /* -------------------------------------------- */
 
+/** The name the Equipment compendium prints for the weapon every character has (0.29.0). */
+export const UNARMED_STRIKE_NAME = "Unarmed Strike";
+
+/**
+ * THE UNARMED STRIKE, READY TO GIVE (0.29.0, ruling 294; Mike, by question: "Give every character
+ * one now"). The Equipment compendium's Unarmed Strike as plain Item data, for the one-time update
+ * that gives it to every existing character (starwrought.mjs, `migrateWorld`) and for a character's
+ * creation (documents/actor.mjs, `_preCreate`). A world weapon of the same name stands over the
+ * printed one, as a GM's rewrite of a Basic Maneuver does. Null when neither can be read (the pack
+ * missing, not compiled, or hidden from this user): the caller gives nothing, and a drag from the
+ * compendium still can (the one-time step leaves the world's stamp short when it could not read
+ * the pack, so it alone tries again). The copy is the character's own to edit (a better fist).
+ * @returns {Promise<object|null>}
+ */
+export async function unarmedStrikeData() {
+  const named = item => (item?.type === "weapon") && SW.sameName(item.name, UNARMED_STRIKE_NAME);
+  let source = [...(game.items ?? [])].find(named) ?? null;
+  if (!source) {
+    const pack = game.packs.get(`${SW.SYSTEM_ID}.equipment`);
+    if (!pack) return null;
+    const index = pack.index?.size ? pack.index : await pack.getIndex();
+    const entry = [...index].find(named);
+    source = entry ? await pack.getDocument(entry._id) : null;
+  }
+  if (!source) return null;
+  const data = game.items.fromCompendium(source, { clearFolder: true });
+  delete data._id;
+  delete data.folder;
+  return data;
+}
+
+/* -------------------------------------------- */
+
 let chassisIndex = null;
 const CHASSIS_PATH = "systems/starwrought/content/chassis.json";
 

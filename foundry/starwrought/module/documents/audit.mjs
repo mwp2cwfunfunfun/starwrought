@@ -231,6 +231,18 @@ function onPreUpdateItem(item, changes, options, userId) {
       item: item.name, from: Number(item.system.quantity) || 0, to: Number(quantity) || 0
     })));
   }
+  // The shots in a ranged weapon, corrected by hand (0.29.0): the Equipment row's chip or the
+  // weapon's own sheet. The system's own writes (a Strike's shot, a Reload, a cancelled attack's
+  // shot coming back) say so on their own cards and pass `swAnnounced`.
+  const loaded = changes.system?.loaded;
+  if ((loaded !== undefined) && (item.type === "weapon") && item.system.takesAmmunition) {
+    const to = (loaded === null) ? item.system.magazine : Math.max(0, Math.min(item.system.magazine, Number(loaded) || 0));
+    if (to !== item.system.shots) {
+      lines.push(escapeHTML(format("STARWROUGHT.Audit.loaded", {
+        item: item.name, from: item.system.shots, to, max: item.system.magazine
+      })));
+    }
+  }
   if (lines.length) options.swAudit = lines;
 }
 

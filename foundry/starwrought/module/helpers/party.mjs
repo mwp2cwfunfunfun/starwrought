@@ -615,7 +615,9 @@ export function coinText(copper) {
 
 /** Is this Item one a party can hold: a weapon, a piece of armor, a shield or gear (SW.PHYSICAL_TYPES)? */
 export function isLoot(item) {
-  return !!item && (item.documentName === "Item") && SW.PHYSICAL_TYPES.includes(item.type);
+  // Never a natural weapon (0.29.0): every character has an Unarmed Strike, and a fist is not
+  // something a character hands to the party.
+  return !!item && (item.documentName === "Item") && SW.PHYSICAL_TYPES.includes(item.type) && !item.system?.natural;
 }
 
 /**

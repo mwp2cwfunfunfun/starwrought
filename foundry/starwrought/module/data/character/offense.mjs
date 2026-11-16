@@ -11,6 +11,7 @@
 import * as SW from "../../config.mjs";
 import { ARMS_WOUND_PENALTY } from "./shared.mjs";
 import { ownedReactions } from "../../helpers/answers.mjs";
+import { longestMelee } from "../items/weapon-traits.mjs";
 
 /** Attack-side numbers that do not depend on which weapon is in hand, and what the body can do. */
 export function prepareOffense(data) {
@@ -52,9 +53,13 @@ export function prepareOffense(data) {
     const reach = weapon.system.isRanged ? 0 : (data.reach + (weapon.system.reach ?? 0));
     return Math.max(longest, reach);
   }, held.length ? 0 : data.reach);
-  data.reachWeapon = held
-    .filter(w => !w.system.isRanged)
-    .sort((a, b) => (b.system.reach ?? 0) - (a.system.reach ?? 0))[0] ?? null;
+  // The melee weapon that sets it, which is also what a Riposte and an Intercept Strike with: the
+  // longest, and on a tie a real weapon before the bare fist (0.29.0, ruling 294; weapon-traits.mjs,
+  // `longestMelee`). Every character has an Unarmed Strike in hand now, a dagger and a fist tie on
+  // reach, and through a plain sort the one added to the sheet first would have won.
+  data.reachWeapon = longestMelee(held.map(w => ({
+    item: w, ranged: !!w.system.isRanged, natural: !!w.system.natural, reach: w.system.reach ?? 0
+  })))?.item ?? null;
 
   // Unwieldy N: a -2 Situation penalty against anything within N feet, and no attack at all
   // while Grabbed. It is the inner edge of what a long weapon is good for.

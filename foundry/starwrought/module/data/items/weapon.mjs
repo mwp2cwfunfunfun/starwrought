@@ -6,7 +6,7 @@
 import * as SW from "../../config.mjs";
 import { SwItemData, describedFields } from "./base.mjs";
 import { physicalFields, migrateCarryState, prepareCarry } from "./physical.mjs";
-import { parseWeaponTraits } from "./weapon-traits.mjs";
+import { parseWeaponTraits, ammunitionOf, isNaturalGroup } from "./weapon-traits.mjs";
 
 const fields = foundry.data.fields;
 
@@ -36,7 +36,14 @@ export class SwWeaponData extends SwItemData {
       /** Held in two hands right now, which matters for the Two-Hand dX trait. */
       twoHands: new fields.BooleanField({ initial: false }),
       /** Using the Versatile trait's alternate damage type right now. */
-      versatileActive: new fields.BooleanField({ initial: false })
+      versatileActive: new fields.BooleanField({ initial: false }),
+      /**
+       * The shots in it (0.29.0; rulings 290 to 292), for a ranged weapon with the Reload trait.
+       * Null means "never set" and reads as full (`ammunitionOf`), so a weapon made before 0.29.0
+       * starts loaded. A Strike with it in an encounter uses one; the Reload Maneuver fills it; the
+       * Equipment row's chip corrects it by hand.
+       */
+      loaded: new fields.NumberField({ required: false, nullable: true, integer: true, min: 0, initial: null })
     });
   }
 
@@ -73,9 +80,32 @@ export class SwWeaponData extends SwItemData {
 
     // A rigid implement can Parry, form a Bind and take Control. A Flexible weapon cannot, and a
     // bare hand (the Natural Weapons group) cannot without a Talent (PHB v4.10, The Bind).
-    this.natural = /natural\s+weapons?/i.test(this.group);
+    this.natural = isNaturalGroup(this.group);
     this.rigid = !this.flags.flexible && !this.natural;
     this.totalTraits = this.traits.join(", ");
+
+    // A NATURAL WEAPON IS ALWAYS IN HAND (0.29.0, ruling 294): a fist is never sheathed or packed,
+    // whatever carry state the Item was saved with (the compendium's Unarmed Strike says
+    // "carried"). It takes no hand (`freeHands`), and every reader that asks what is in hand is
+    // told it is natural, so a real weapon is always preferred to it.
+    if (this.natural) {
+      this.held = true;
+      this.worn = false;
+      this.stowed = false;
+      this.equipped = true;
+    }
+
+    // AMMUNITION (0.29.0): what the weapon holds to shoot, from its Reload and Capacity traits and
+    // the stored count (weapon-traits.mjs, `ammunitionOf`).
+    const ammunition = ammunitionOf(this.flags, this.loaded);
+    this.takesAmmunition = ammunition.takes;
+    this.magazine = ammunition.magazine;
+    this.shots = ammunition.shots;
+    /** Ready to shoot: a shot is in it, or it takes none. */
+    this.isLoaded = ammunition.loaded;
+    this.isFull = ammunition.full;
+    /** The Reload Maneuver's cost for this weapon, in actions (its Reload N). */
+    this.reloadCost = ammunition.reload;
   }
 
   /**

@@ -920,6 +920,79 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.29.0 (Mike, 2026-11-15; rulings 290 to 296): Strike from the Maneuvers tab, loaded weapons, an
+Unarmed Strike for everyone, and "in sight".** Mike, on writing Strike's `[REQUIRES ...]` cell: "I
+can foresee many situations in the future where we need some sort of 'if you can see an ally' or
+'if you can see an enemy' ... For a ranged weapon, it must also be loaded. There should be 1/2/3
+action buttons on the Strike row on the Maneuvers tab... when you click on it, you can choose what
+you want to Strike with". Planned first (`dazzling-floating-simon.md`; his decisions by question:
+loading tracked fully, an empty weapon warns and goes on, ammunition counted too as ITS OWN NEXT
+STEP, every character given an Unarmed Strike now). **Loaded** (rulings 290, 291, 293): a ranged
+weapon with the Reload trait takes ammunition; the pure half is in
+`module/data/items/weapon-traits.mjs` (`ammunitionOf`, `shotPlan`, `nextLoaded`), the weapon model
+stores `system.loaded` (null is "never set" and reads as FULL, so nothing was migrated) and derives
+`takesAmmunition`, `magazine` (its Capacity, else 1), `shots`, `isLoaded`, `isFull`, `reloadCost`;
+`PRESERVED_PATHS` in `helpers/content-sync.mjs` keeps `loaded`. A Strike uses a shot ONLY IN AN
+ENCOUNTER and only where it is certain, never on the blind per-defender dice and never for a
+throw; an empty weapon is a notice and one "Not loaded" card (`#announceUnloaded`) and the Strike
+goes on. **A declared Strike's shot has ONE WRITER, the coordinator** (the review's mend): the
+record carries `maneuver.shot` and `maneuver.unloaded` (`resolveSource`, `maneuverFrom`,
+`AttackWorkflow.create`), the shot is taken in `#handleDeclare` as the record is registered and
+given back by `#refundStrike`, both through `#queueShot` in `combat/attack-coordinator.mjs` (a
+chain for each weapon, each write reading the count when its turn comes; a new declaration waits
+for a write in flight before `resolveSource` reads the count), and the attacker's client only
+posts the card the record asks for. A Strike with no target has no record, so its shot is taken
+on the attacker's client in `beforeRoll` (`settleShot` in `documents/actor/attack.mjs`). **"In an
+encounter" for a shot is membership of a running Combat** (`#combatOf`, the record's `combatId`;
+`AttackCoordinator.encounterOf(actor)` for a caller outside), never `actor.inEncounter`, which
+reads the Combat a client VIEWS; the refund of actions asks the record the same way since 0.29.0.
+`rollAttack` holds a weapon to one Strike at a time (`STRIKING`; never the flow's blind dice or a
+Reaction's Strike). **A full weapon is stored as null** (`SwItem#_preUpdate` writes a count at or
+above the magazine as "never set"), so read `system.shots` and never `_source.system.loaded`.
+**Every write of `system.loaded` the system makes passes `{ swAnnounced: true }`**; a player's
+hand change is an Adjusted line (`STARWROUGHT.Audit.loaded` in `documents/audit.mjs`). The chip on
+the Equipment row is `toggleLoaded`. **Reload** (ruling 292): `BUILT_IN_MANEUVERS.reload` is
+`SwActor#reloadWeapon({ item, weaponId, prepared })` in `documents/actor/carrying.mjs`: the weapon
+in hand that takes ammunition and is not full (`reloadOptions`; `pickReloadWeapon` when two), the
+gate, THAT WEAPON'S Reload N as the cost (never a pick), Prepared at three with the weapon
+remembered in `preparing.weaponId`, and **`loadWeapon(weapon)`, the one place a weapon is loaded,
+which is where ammunition will be taken**; free outside an encounter or with `trackActions` off;
+`ENGINE_REQUIRES.reload` is `weapon unloaded`; `CHARACTER_BUILT_INS` in `documents/maneuvers.mjs`
+passes an adversary by (it has no weapon Items, so its Reload row stays a plain Maneuver). **The fist** (ruling 294): every character has the
+Equipment compendium's Unarmed Strike (`unarmedStrikeData` in `helpers/content.mjs`, a world
+weapon of the name standing over the pack's), given once by `migrateWorld`'s 0.29.0 step (the
+first step that CREATES documents, so the elected GM client alone gives, `isElected`; the
+stamp stops at 0.28.0 when the pack cannot be read or the client was not the elected one, so the
+step runs again, and nothing else ever gives a missing fist) and at creation by
+`SwActor._preCreate` (`updateSource({ items: [one new Item] })`), never to a character that
+`hasNaturalWeapon`. **A natural weapon is always in hand** (the weapon model sets `held` at
+prepare whatever the stored state), takes no hand, is refused by `setCarryState` at no cost, is
+never loot (`isLoot`), is left out of the glance, and **never stands in front of a real weapon**:
+`longestMelee` (the longest reach, a real weapon before a natural one on a tie), `strikeOptions`
+and `reloadOptions` in `weapon-traits.mjs` are the one place the
+order of weapons in hand is decided, read by `reachWeapon` (`data/character/offense.mjs`),
+`interceptWeapon` (`documents/movement.mjs`) and the Riposte (`documents/cards/position.mjs`).
+**A new reader of "which weapon is in hand" goes through those helpers.** A character holding
+only a bow now has its Natural Reach (2 ft), counts for Support and is offered an Intercept as an
+unarmed Quick Strike. **Strike** (ruling 295): `BUILT_IN_MANEUVERS.strike` is
+`SwActor#strikeWith({ strike, weaponId, dialog })` for a character (an adversary still gets the
+card), the chooser is `module/apps/strike-picker.mjs` (`pickStrikeWeapon`, one button for each
+weapon in hand, one choice asking nothing; `strikeOptionLabel` over `weaponNumbers` in
+`helpers/actor-context.mjs`), and then the weapon row's own `rollAttack`; Strike left
+`PAID_ELSEWHERE` (eight rows now) and `Cost.paidByWeapon` is retired; the row's three buttons are
+`strikeWith` in the sheet, which uses the row's own Item. **The words** (ruling 296; no new kind):
+`foe|ally|creature in sight` (`range: "sight"`: any token the nearness reading already counts),
+`weapon loaded`, `ranged weapon loaded`, `weapon unloaded` (states read before a trait;
+`WEAPON_STATES`), and `weapon` with no trait named is never a natural weapon. **The handbook was
+not touched**: the Reload [N] cell that the plan called empty nests a one-cell table ("After
+firing, you must spend N Interact actions before the weapon can fire again"), which python-docx's
+`cell.text` does not read; **look in the raw XML before calling a handbook cell empty.** Mended on
+the way: the Strike pills on a weapon's row were dim until hovered (a child's opacity cannot
+exceed its parent's; `styles/character.css` undims the controls group that holds them with
+`:has`). The release carries no new content: Strike's cell is printed in the 0.29.0 changelog
+entry and `AUTOMATION_GRAMMAR.md` section 5 for Mike to paste, the Reload block printed with
+0.28.0 is withdrawn, and his workbooks were not converted, built, staged or written.
+
 **0.28.0 (Mike, 2026-11-15; rulings 281 to 289): the Maneuvers tab: even pips, only what applies,
 Favorites.** Mike, with a screenshot of the tab: "Some of the action pips are different sizes";
 "Many actions that should unavailable based on the situation are there. I would like to only show
@@ -1986,7 +2059,24 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
-- **0.28.0 leaves to the table or to Mike** (the Maneuvers tab): **the twenty-eight
+- **0.29.0 leaves to the table or to Mike** (Strike, loading, the fist): **AMMUNITION IS THE NEXT
+  STEP, and it is planned on its own** (Mike, by question: "Count ammunition too"): the book and
+  the data have no arrows, bolts or bullets, so it opens with questions for him (the items and
+  which weapon takes which, bundle size and price, refuse or warn with none left, recovery), and
+  `loadWeapon` in `documents/actor/carrying.mjs` is where it is taken. **Strike's cell waits for
+  him to paste** (the 0.29.0 changelog entry and `AUTOMATION_GRAMMAR.md` section 5: `[REQUIRES foe
+  in reach or ranged weapon loaded or weapon thrown]`, `[REQUIRES foe in sight]`, `[REQUIRES not
+  restrained]`, `[REQUIRES not unconscious]`); until then the tab always lists Strike. Rulings
+  292, 293 and 294 are Claude's readings and his to overrule (Reload at the weapon's own cost and
+  free outside an encounter; the chip's free correction; an archer with a fist threatening at 2
+  ft, and the Finesse fist always rolling Agility). No ranged weapon is enabled in
+  `data/equipment.xlsx`, so loading acts on nothing shipped. Not built: the Crossbow Fighting
+  Talents that bend reloading (Practiced Loader, Crank and Move, Snap Shot, Covered Reload), a
+  Cast chooser, ammunition on an adversary's attack rows, a weapon reloading itself when an
+  encounter ends. The Reload [N] trait says "N Interact actions" where the sheet has a Reload
+  Maneuver: a wording pass in Word, by hand (the cell nests a table the redline tool refuses).
+- **0.28.0 leaves to the table or to Mike** (the Maneuvers tab; since 0.29.0 the Reload block of
+  the list below is WITHDRAWN, Reload's condition being in code, so twenty-seven remain): **the twenty-eight
   `[REQUIRES ...]` blocks wait for him to paste** into `data/maneuvers.xlsx` (the 0.28.0 changelog
   entry and `AUTOMATION_GRAMMAR.md` section 5 print them; Reload, Crawl, Drop Prone, Stand, Steady
   the Line, Move Together, Rescue Haul, Escape, Tumble Through, Kip Up, Calm Animal, Direct Animal,
@@ -2128,7 +2218,26 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   `showAllManeuvers` was left off. To try 0.28.0 there: open Wren's Maneuvers tab, toggle Prone on
   her token and watch Stand appear; drag the Bandit beside Tess and watch Feint appear on hers;
   press the bookmark on a row; press Show every Maneuver. Tess cannot be made Prone outside an
-  encounter (Stubborn Footing prevents it every time there).
+  encounter (Stubborn Footing prevents it every time there). **The 0.29.0 drive (2026-11-15)
+  found Foundry stopped** and the world one "Content synced" card further on (421 messages, Mike's
+  Combat with testpc8 still the active one), started it for the 0.29.0 manifest, and the one-time
+  step gave all eleven characters the Unarmed Strike, which stays: it is the feature. Its own
+  Combats, its probe characters, the test weapons it lent Tess (a bow, three crossbows, Bolas)
+  and the 41 cards it posted over two passes were removed (421 messages again, the tokens where
+  they were, Tess's Shortsword back in hand, Mike's Combat the active one), and Sync content was
+  then run for the Grammar journal, which left one "Content synced" card (422). Foundry was left
+  running on 0.29.0, the GM joined. **It left one fixture on purpose**
+  (flagged `testFixture: "0.29.0"`): a WORLD action Item "Strike", a copy of the pack's row with
+  the four `[REQUIRES ...]` blocks of the 0.29.0 changelog entry, so the cell can be tried before
+  the workbook carries it; it shadows the pack's Strike in that world until deleted, and should be
+  deleted once the shipped row carries the blocks. No ranged weapon ships enabled, so to try
+  loading there make a world weapon with the traits `Ranged 120` and `Reload 1`, put it in Tess's
+  hand in an encounter and Strike: the chip on its Equipment row goes Empty, the Maneuvers tab
+  lists Reload, and the next Strike posts the "Not loaded" card. To try the rest: open WREN's
+  Maneuvers tab (the Bandit is in Wren's reach; with the fixture's cell Tess, a sword in hand and
+  no foe in reach, does not list Strike, which is the cell working) and press ❶ on the Strike row:
+  the chooser lists the Shortsword and the Unarmed Strike; hide the Bandit, or drag it away, and
+  watch Strike leave the tab.
 - **0.25.0 leaves to the table or to Mike:** that the ally Aided by Pay It Forward is willing and
   that Aid's own requirements are met; "immediately after that check", read as the rest of that
   Opportunity (ruling 248), so a Move or another Maneuver between the check and the Aid is not
@@ -2173,6 +2282,39 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-15 (Strike from the Maneuvers tab, loaded weapons, an Unarmed Strike for everyone
+and "in sight", system 0.29.0; rulings 290 to 296 in the 0.29.0 changelog entry; planned in
+`dazzling-floating-simon.md`, Mike's decisions by question: loading tracked fully, warn and go on,
+count ammunition too as its own next step, give every character an Unarmed Strike now): the Strike
+row that only showed its card, now three buttons, a chooser of what is in hand and the weapon
+row's own Strike; a character with empty hands having nothing to Strike with, now the Unarmed
+Strike every character has, always in hand and never in front of a real weapon; the Reload and
+Capacity traits read into numbers nothing used, now a count on the weapon that a Strike in an
+encounter uses and a cancelled attack returns; an empty weapon, now said and never refused; a
+Reload row that asked how many actions and touched no weapon, now loading the weapon in hand at
+that weapon's own cost, Prepared at three; "a foe you can see" written as `foe within 1000`, now
+`foe in sight`, with `weapon loaded` and `weapon unloaded` beside it; the Strike pills dim until
+hovered, now at full strength. Also recorded: Mike's saved v4.25 with the four Bind redlines
+accepted and nothing else changed, compared with the committed file and stamped again. The plan's
+one handbook redline was NOT made: the Reload [N] cell it called empty nests a table that already
+says what the system does. Checked by 213 self-test checks, `node --check` on every module, the
+style check (one failure, the em-dash in Dwarf Lore B13 of Mike's uncommitted workbook),
+`build_all.mjs --check`, `build_foundry.mjs --no-compile` (one document moves, the Grammar
+journal), a second reader on the design before the build (four guards adopted: stowing a fist
+costs nothing, the fist is no loot, the glance leaves it out, Strike is the Maneuver's own
+behaviour), an independent review of the diff (no blocking defect; two faults in how a shot was
+counted and five smaller things, all mended but one stated: the shot's writer is now the
+coordinator alone and "in an encounter" is membership, a weapon is held to one Strike at a time,
+Reload is a character's built-in alone, the elected GM alone gives the fist, a full weapon is
+stored as never set, the longest weapon is the reach weapon) and live in the test world with a GM
+tab and a player tab, before the review and again for its mends (the 0.29.0 changelog entry lists
+what, and what was not driven: a Riposte with the fist, a Committed ranged Strike, two GM clients
+together, a player-created character). Mended beside it, older than the release: a Blow the GM
+cancelled while viewing another Combat returned no actions. Not built, and said so: ammunition
+(the next step), the Crossbow Fighting Talents, a Cast chooser. The release carries no content:
+Strike's cell is Mike's to paste, his three workbooks were not converted, built, staged or
+written, and one pack document moved.
 
 Cleared 2026-11-15 (the Maneuvers tab, system 0.28.0; rulings 281 to 289 in the 0.28.0 changelog
 entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: the conditions

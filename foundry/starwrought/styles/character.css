@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.28.0"; }
+:root { --sw-css-version-character: "0.29.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -489,7 +489,14 @@
 .starwrought .sw-strike-button:hover { background: rgba(255, 216, 103, 0.14); border-color: var(--sw-gold); }
 .starwrought .sw-strike-button span { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .starwrought .sw-strike-committed { border-style: dashed; }
-.starwrought .sw-item-row .sw-item-controls .sw-strike-buttons { opacity: 1; }
+/* The Strike pills are a row's main control and read at full strength, at rest as on hover
+   (0.29.0). A child cannot be brighter than its parent, so a controls group that holds the pills
+   is not dimmed and its other controls are. Through 0.28.0 the rule here set the pills' own
+   opacity to 1, which did nothing inside sheet.css's dimmed group: the pills were dim until the
+   row was hovered. */
+.starwrought .sw-item-row .sw-item-controls:has(.sw-strike-buttons) { opacity: 1; }
+.starwrought .sw-item-row .sw-item-controls:has(.sw-strike-buttons) > :not(.sw-strike-buttons) { opacity: 0.35; }
+.starwrought .sw-item-row:hover .sw-item-controls:has(.sw-strike-buttons) > :not(.sw-strike-buttons) { opacity: 1; }
 
 /* The gold numeral at the Maneuvers tab's size, the word small beside it (0.5.1, T1). */
 .starwrought .sw-strike-button .sw-action-glyph { font-size: 1.45rem; min-width: 0; letter-spacing: 0; line-height: 1.1; padding: 0.1rem 0; }
@@ -658,6 +665,11 @@
 /* The visor and the Fitted tick on a worn piece (Equipment tab): dim until on. */
 .starwrought .sw-visor-toggle, .starwrought .sw-adjusted-toggle { color: var(--sw-ink-dim); opacity: 0.55; }
 .starwrought .sw-visor-toggle.sw-on, .starwrought .sw-adjusted-toggle.sw-on { color: var(--sw-gold); opacity: 1; }
+/* THE LOADED CHIP (0.29.0): what a ranged weapon holds, on its Equipment row. Green while a shot
+   is in it (sheet.css's sw-good-tag), red when it is empty; a click corrects the count by hand. */
+.starwrought a.sw-loaded-chip { cursor: pointer; }
+.starwrought a.sw-loaded-chip:hover { border-color: var(--sw-gold); }
+.starwrought .sw-empty-chip { color: #e08a84; border-color: var(--sw-blood); }
 
 /* The Comet badge (the Deferred badge of 0.7.0, renamed): a shooting star in the gold. */
 .starwrought .sw-comet-badge { border-color: var(--sw-gold); background: linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(212, 175, 55, 0.05)); }

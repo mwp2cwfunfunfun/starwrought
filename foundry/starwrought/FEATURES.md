@@ -6,9 +6,9 @@ project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
-entry 269 to 280 and the 0.28.0 entry 281 to 289). Since
+entry 269 to 280, the 0.28.0 entry 281 to 289 and the 0.29.0 entry 290 to 296). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says: `data/*.xlsx` is
-their only source. System version **0.28.0**.
+their only source. System version **0.29.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -622,18 +622,24 @@ click; now, in an encounter, clicking a Maneuver's name pays the cost its row pr
   gave is spent at that same moment and not at the click, so a closed dialog keeps it.
 - **One or two actions, no roll** (Stand ❶, Take Cover ❶): paid at once, and the Maneuver's own
   card carries the spend line, so the table reads one card.
-- **A range of costs** (Trip ❶ to ❷, Demoralize ❶ to ❸, Reload ⓿ to ❻; fourteen rows): a small
+- **A range of costs** (Trip ❶ to ❷, Demoralize ❶ to ❸; thirteen rows): a small
   window asks first, one button per number the row may be paid at, and the system picks none, a
   Shift-click included. Closing it does nothing at all: nothing is paid, and nothing is asked of the
   GM when it is not your Opportunity.
+- **Reload ⓿ to ❻ pays the weapon's own cost** (0.29.0, ruling 292): the row's range is the span
+  of the book's weapons, and the number is the Reload of the weapon being loaded (a bow ❶, a Light
+  Crossbow ❷, a Heavy Crossbow ❸), never a pick. See "Loaded, and Reload" under Where your
+  equipment is.
+- **Strike ❶ to ❸ is run from its own row** (0.29.0, ruling 295): its three buttons ask what to
+  Strike with, and the Strike pays as it does from a weapon's row (section 3).
 - **Three or more actions** (Brace an Object ❸, Field Patch ❹, a pick of ❸ or more) is **Prepared**,
   by the book: two actions now, the rest reserved, the Preparing condition, and the Prepared card
   with Abandon. At the next Opportunity Finish uses the Maneuver again, already paid, and that is
   when its check is rolled or its card posted. A roll dialog closed at Finish loses nothing: the
   Maneuver is still Prepared and Finish can be pressed again.
 - **⓿**, and a row with no cost (an Activity, an Endeavor), pay nothing.
-- **A row the system pays for another way** pays nothing and its card says who does: Strike (the
-  weapon's row), Cast (the spell's own Cast), Move, Step, Crawl, Rush, Leap and Squeeze (moving the
+- **A row the system pays for another way** pays nothing and its card says who does: Cast (the
+  spell's own Cast), Move, Step, Crawl, Rush, Leap and Squeeze (moving the
   token, as the Move, Step, Crawl or Rush the drag measures; a Leap's own ❶ to ❸ is not read by the
   drag and stays the table's), and a Maneuver whose rule pays from a button on a card (Quick
   Tongue's reroll; a prevention carried by a Reaction). Such a row asks nothing of the GM off-turn
@@ -762,6 +768,51 @@ each point of Protection; an **Attended** piece (the Breastplate, since 0.6.2) n
 8 alone", because it fastens behind the shoulder and alone takes twice as long to put on, though it
 comes off in the usual time (see Armor and load). Putting away an implement that is in a Bind ends
 the Bind.
+
+**Every character has an Unarmed Strike** (0.29.0, ruling 294; Mike: "Give every character one
+now"). It is the Equipment compendium's (1d4 bludgeoning; Agile, Close, Finesse, Nonlethal), and a
+copy of the character's own to edit. Existing characters were given it once, the first time the GM
+opened the world on 0.29.0; a new character is made with it; a character that already has a
+natural weapon gets no second. It is **always in hand** and takes no hand: its row sits under In
+hand with the three Strike buttons and no control to put it away, and the tab says "Nothing in
+hand" when the fist is all there is. It cannot be given to the party's loot, and the glance a
+stranger sees leaves it out. **The fist never stands in front of a weapon**: wherever the system
+asks which weapon is in hand (Total Reach, a Riposte, an Intercept), a real weapon is taken first
+and the fist only when there is no other. One thing follows that is new: a character holding only
+a bow has its own Natural Reach (2 ft) where the sheet read 0, so that character counts for an
+ally's Support, draws a reach ring, and is offered an Intercept (an unarmed Quick Strike) when a
+foe passes.
+
+**Loaded, and Reload** (0.29.0, rulings 290 to 293; Mike: "For a ranged weapon, it must also be
+loaded"). A ranged weapon with the Reload trait takes ammunition: every bow, crossbow and sling
+in the book. Bolas has no Reload and never needs loading. It holds its Capacity, or one shot.
+
+- **The chip.** On the Equipment tab the weapon's row says **Loaded** or **Empty**, and a weapon
+  with Capacity "3 of 5". A weapon starts loaded, and every weapon made before 0.29.0 reads as
+  loaded.
+- **A Strike in an encounter uses one shot**, when the Strike is certain: as it is declared, or as
+  it is rolled when nobody is targeted. A throw uses none. An attack the GM cancels before any die
+  gives the shot back with the actions, and the card says so. "In an encounter" is being a
+  fighter in a running Combat, whichever Combat anybody is looking at. A declared Strike's shot
+  is written by the one client that holds the attack's record (the GM's, when one is connected),
+  taken and returned in order, so a second click or a replaced declaration costs one shot.
+- **An empty weapon warns and goes on** (ruling 291; Mike's choice). The Strike still happens: you
+  get a notice, and one "Not loaded" card tells the table. Whether it stands is the table's call.
+- **Reload loads it.** The Reload Maneuver loads the weapon in hand that needs it, and asks which
+  when two do. Its cost is that weapon's own Reload: ❶ for a bow or a sling, ❷ for a Light or Hand
+  Crossbow, ❸ for a Heavy or a Repeating Crossbow, which is Prepared as any three-action Maneuver
+  is (two actions now, the rest reserved, and Finish at your next Opportunity loads it; Abandon
+  loads nothing). A Capacity weapon is filled whole. With nothing in hand to reload, it says so
+  and does nothing. The Maneuvers tab lists Reload only while something in hand can be loaded.
+- **Outside an encounter nothing is counted**, as with actions: a Strike uses no shot, and Reload
+  loads for nothing. With "Track the six-action round" off, shots are still counted in an
+  encounter and Reload is free.
+- **By hand.** A click on the chip corrects the count: an empty weapon is made full, anything else
+  gives up one shot. The weapon's own sheet has the number. Neither costs anything. A player's
+  correction is said in the Adjusted card ("loaded 4 to 3 of 5").
+- **Not counted yet:** ammunition itself. Arrows, bolts and bullets are not items in the book or
+  the data, so a Reload never runs out. That is the next step, and one function, the one that
+  loads a weapon, is where it will be taken.
 
 ### Armor and load
 
@@ -1548,7 +1599,26 @@ dialog, and a tooltip saying whether it came from the weapon or a Combat Style; 
 Style field is where the book's "write it on your sheet" lives), Melee or Ranged and the
 rank that applies after Handling, its damage (the Quick Strike's in the tooltip) and its reach, and
 three Strike buttons: ❶ Quick, ❷ Deliberate, ❸ Committed. Clicking the name uses the default Strike.
-Shift-click skips the dialog.
+Shift-click skips the dialog. The buttons read at full strength since 0.29.0; through 0.28.0 they
+were dim until the row was hovered, against the stylesheet's own intent. A ranged weapon that takes
+ammunition also carries its Loaded chip (section 2, Where your equipment is). One Strike at a
+time with a weapon (0.29.0): a second click while the first is still declaring, or while its roll
+dialog is open, is ignored, so a double-click is one Strike.
+
+**Strike from the Maneuvers tab** (0.29.0, ruling 295; Mike: "There should be 1/2/3 action buttons
+on the Strike row on the Maneuvers tab... when you click on it, you can choose what you want to
+Strike with (eg unarmed, the weapon in your left hand, the weapon in your right hand, etc.)"). The
+Strike row carries the same three buttons. A click asks **Strike with what?**: one button for each
+weapon in hand, the real ones first and the Unarmed Strike last, each reading what the Equipment
+row says of it ("Shortsword: +5, 2d6+2 Slashing, reach 4 ft"; a Quick Strike shows its one die;
+an empty ranged weapon adds "not loaded" and may still be chosen). With one thing to Strike with
+nothing is asked. Then the Strike runs exactly as it does from that weapon's row: the same
+declaration, cost, Opportunity gate, attack flow and cards. Clicking the row's name is a
+Deliberate Strike; the speech bubble still only shows the card; a Shift-click skips the roll
+dialog; closing the chooser does nothing at all. The system does not know a left hand from a
+right: two weapons in hand are two named choices. A weapon that is worn or packed is not offered
+(draw it first). An adversary has attack rows and no weapons, so for one the Strike row is still
+its card.
 
 **The Maneuvers tab lists what applies now** (0.28.0; rulings 281 to 289; Mike, with a screenshot of
 the tab: "Many actions that should unavailable based on the situation are there. I would like to
@@ -1566,11 +1636,14 @@ every sheet. A dimmed row still answers a click: the tab is a view and refuses n
   Opportunity"), so off-turn the tab is Reactions and Favorites.
 - **Its own conditions** are `[REQUIRES ...]` blocks in the Automation cell of the Maneuver's row
   (section 7): `[REQUIRES prone or supine]` on Stand, `[REQUIRES free hand or weapon
-  grapple][REQUIRES creature in reach]` on Grapple. The five Maneuvers the system itself runs need
+  grapple][REQUIRES creature in reach]` on Grapple. Six Maneuvers the system itself runs need
   nothing written: Cast is left out with no spell, Close with no Control, Gain Control with no Bind
-  or one you already Control, Raise a Shield with no shield in hand, Pass outside an encounter.
+  or one you already Control, Raise a Shield with no shield in hand, Pass outside an encounter,
+  and since 0.29.0 Reload with nothing in hand to load. Since 0.29.0 a block can also ask whether
+  you can see somebody (`foe in sight`, `ally in sight`, `creature in sight`) and whether a weapon
+  in hand is loaded (`ranged weapon loaded`) or could be (`weapon unloaded`).
   **A row with no block is always listed**; the blocks for the rows that can have one are in the
-  0.28.0 changelog entry, for Mike to paste.
+  0.28.0 changelog entry, and Strike's in the 0.29.0 entry, for Mike to paste.
 - **Only when the system knows.** A condition is met, not met, or cannot be told (your token is
   not on the map, a hand the system is unsure of, you are Blinded). Only "not met" leaves a row
   out. Who is near is every other token on the scene your character can see, edge to edge: a foe
@@ -3165,6 +3238,15 @@ before; the sources and the index are.
   the Controller that ends nearer the foe; a Disarm, "after its first benefit is used" and two
   adversaries contesting a Bind are by hand; an undo of a move does not bring a Bind back (Form a
   Bind does); and a Cast was not driven live, since no spell ships enabled.
+- **What loading leaves to the table** (0.29.0): ammunition is not counted, so a Reload never runs
+  out (the next step); an empty weapon is never refused, only said; a weapon does not reload
+  itself when an encounter ends; outside an encounter and with the six-action round untracked
+  Reload costs nothing; the Crossbow Fighting Talents that bend reloading (Practiced Loader, Crank
+  and Move, Snap Shot, Covered Reload) are not enabled and not built; an adversary's attack rows
+  have no ammunition. `in sight` is line of sight and two statuses, as every sight reading
+  is: light and sight range are not read, and a Blinded character's rows stay listed. Cast has no
+  chooser of its own yet. No ranged weapon is enabled in `data/equipment.xlsx`, so loading acts on
+  nothing shipped until a bow's row says Yes.
 - **What the Maneuvers tab leaves to the table** (0.28.0): it lists and it never refuses, so a
   Maneuver used when it does not apply is the table's. A row with no `[REQUIRES ...]` block is
   always listed, and the blocks are Mike's to paste. Not read: Size limits ("no more than one

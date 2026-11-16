@@ -7,6 +7,294 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.29.0 (2026-11-15): Strike from the Maneuvers tab, loaded weapons, an Unarmed Strike for everyone, and "in sight"
+
+Built from **Player's Handbook v4.25**; no rule in the handbook moved. Rulings 290 to 296. No rule
+kind is new: the `requires` kind reads three more words, and `AUTOMATION_GRAMMAR.md` carries them
+(sections 4, 5, 7, 8 and 10). No data workbook was converted, built, staged or written, and one
+pack document moves: the Automation Grammar journal. Strike's cell is printed below for Mike to
+paste.
+
+Mike, 2026-11-15, on how to write Strike's `[REQUIRES ...]` cell: "I can foresee many situations
+in the future where we need some sort of 'if you can see an ally' or 'if you can see an enemy'
+etc. / For a ranged weapon, it must also be loaded. / There should be 1/2/3 action buttons on the
+Strike row on the Maneuvers tab... when you click on it, you can choose what you want to Strike
+with (eg unarmed, the weapon in your left hand, the weapon in your right hand, etc.)." Planned
+first (`dazzling-floating-simon.md`); his decisions by question: loading is tracked fully; a
+Strike with an empty weapon warns and goes on; ammunition is counted too, as its own step after
+this one; every character is given an Unarmed Strike now.
+
+| | Through 0.28.0 | 0.29.0 |
+|---|---|---|
+| The Strike row on the Maneuvers tab | Showed its card and said the weapon's row pays | Three buttons, ❶ Quick, ❷ Deliberate, ❸ Committed; a click asks what to Strike with, and the Strike runs |
+| A character with empty hands | Nothing to Strike with | The Unarmed Strike every character has, always in hand |
+| A bow after a Strike | Nothing: the Reload and Capacity traits were numbers nothing used | Empty, in an encounter; the row's chip says so |
+| A Strike with an empty bow | The same as any Strike | Still happens; a notice, and a "Not loaded" card |
+| Reload | Asked "how many actions?", paid, showed its text, touched no weapon | Loads the weapon in hand for that weapon's own Reload cost; three actions is Prepared |
+| "A foe you can see" in a `[REQUIRES ...]` block | `foe within 1000`, for want of a word | `foe in sight` |
+| The Strike buttons on a weapon's row | Dim until the row was hovered | Full strength |
+
+### The rulings
+
+- **290. A ranged weapon is loaded or it is not, and the system keeps count** (Mike: "For a ranged
+  weapon, it must also be loaded"; by question, "Track it fully"). A ranged weapon with the Reload
+  trait takes ammunition: every bow, crossbow and sling in the book. Bolas has no Reload and never
+  needs loading. The weapon holds its Capacity, or one shot. The count is the weapon's own
+  (`system.loaded`); a weapon that never had it written is full, so every weapon made before
+  0.29.0 starts loaded and nothing is migrated. A Strike with it **in an encounter** uses one
+  shot at the moment the Strike is certain: as the declaration stands, or as a Strike with no
+  target is rolled. A throw uses none, and the attack flow's dice, one for each defender, use none
+  beyond the declaration's. An attack cancelled before any die gives the shot back with the
+  actions. Outside an encounter nothing is counted, as with actions; "in an encounter" is being a
+  fighter in a running Combat, whichever Combat anybody is looking at.
+- **291. An empty weapon warns and goes on** (Mike, by question). The Strike still happens: the
+  player gets a notice, and one "Not loaded" card tells the table. Whether it stands is the
+  table's call. Nothing is refused, here as everywhere.
+- **292. Reload loads the weapon, at the weapon's own cost** (Claude's reading of the Reload [N]
+  trait, "After firing, you must spend N Interact actions before the weapon can fire again", and
+  of the Maneuver's ⓿ to ❻ as the span of the book's weapons). The Reload Maneuver loads the
+  weapon in hand that takes ammunition and is not full, and asks which when two do. Its cost is
+  that weapon's Reload: never a number the player picks. Three or more is Prepared, as any such
+  Maneuver is (two actions now, the rest reserved); Finish at the next Opportunity loads it, and
+  Abandon loads nothing. A Capacity weapon is filled whole (PHB: "Reloading its full capacity
+  takes the listed Reload actions"). With nothing in hand to reload it says so and does nothing.
+  Outside an encounter, and with "Track the six-action round" off, it loads for nothing.
+- **293. The count is corrected by hand, and a player's correction is said** (Claude's). The
+  Loaded chip on the weapon's Equipment row: a click fills an empty weapon, and takes one shot
+  from any other. The weapon's own sheet has the number. Neither costs anything. A player's change
+  is a line of the Adjusted card ("loaded 4 to 3 of 5"), as every hand change is; the system's own
+  writes are said by the Strike's, the refund's and the Reload's cards and nowhere else. A content
+  refresh of the owned copy keeps the count.
+- **294. Every character has an Unarmed Strike, and it is always in hand** (Mike, by question:
+  "Give every character one now"). The Equipment compendium's Unarmed Strike (1d4 bludgeoning;
+  Agile, Close, Finesse, Nonlethal), the character's own copy to edit. Existing characters get it
+  once, when the GM first opens the world on 0.29.0; a new character is made with it; one that
+  already has a natural weapon gets no second. A natural weapon is in hand whatever its carry
+  state says, takes no hand, has no control to put it away (and trying costs nothing), is never
+  party loot, and is left out of the glance. **It never stands in front of a real weapon**: Total
+  Reach's weapon, a Riposte and an Intercept take a real weapon first and the fist only when there
+  is no other (a dagger and a fist tie on reach, and the dagger is taken whichever was added to
+  the sheet first). What follows, and is new: a character holding only a
+  bow has its Natural Reach (2 ft) where the sheet read 0, so it counts for Support, draws a reach
+  ring, and is offered an Intercept as an unarmed Quick Strike.
+- **295. Strike is run from its own row** (Mike). The Strike row has the three Strike buttons a
+  weapon's row has. A click asks what to Strike with: each weapon in hand, the real ones first by
+  name, the Unarmed Strike last, each with its attack modifier, the Strike's damage and its reach
+  or range, and "not loaded" where that is so. One choice asks nothing. Then the Strike is the
+  weapon row's own, with the same declaration, cost, gate and cards. The row's name is a
+  Deliberate Strike; the speech bubble still only shows the card; closing the chooser does
+  nothing at all. The system does not know a left hand from a right: two weapons in hand are two
+  named choices. Strike is a Maneuver the system runs now, as Reload, Recenter and Pass are, so a
+  macro that uses the Strike Item Strikes; for an adversary, which has attack rows and no weapons,
+  the row is still its card.
+- **296. `in sight`, `loaded` and `unloaded`** (Mike: "I can foresee many situations in the future
+  where we need some sort of 'if you can see an ally' or 'if you can see an enemy'"). Three more
+  words for a `[REQUIRES ...]` block. `foe in sight`, `ally in sight`, `creature in sight`: the
+  character can see such a token, at any distance, by the reading every nearness word already
+  uses (a clear line past the walls; the other not Hidden or Undetected; a token hidden from the
+  players never; for a Blinded character the system does not guess). `weapon loaded` and `ranged
+  weapon loaded`: such a weapon in hand is ready to shoot. `weapon unloaded`: a weapon in hand
+  takes ammunition and is not full. The two are not opposites: a Repeating Crossbow at 3 of 5 is
+  both. `weapon` and `melee weapon` with no trait named mean a held object and never the fist; a
+  trait named (`weapon thrown`, `weapon grapple`) counts the fist for a trait it carries.
+
+### For Mike to paste: Strike
+
+Strike's Automation cell on the Basic Actions sheet of `data/maneuvers.xlsx`, in place of the
+`N/A`. Four blocks, every one of which must hold: something to Strike with that can reach, a foe
+the character can see, and a body that can act.
+
+```
+[REQUIRES foe in reach or ranged weapon loaded or weapon thrown]
+[REQUIRES foe in sight]
+[REQUIRES not restrained]
+[REQUIRES not unconscious]
+```
+
+This is his rule as he gave it ("EITHER an enemy is within total reach, or visible, if a ranged
+weapon is equipped; AND you are not Restrained/Unconscious"), with "loaded" added as he asked.
+A foe in reach is always one the character can see, so the second block costs the melee case
+nothing. Reload needs no cell: the system runs it and lists it only while a weapon in hand can
+be loaded. **The `[REQUIRES weapon reload]` printed for Reload with 0.28.0 is withdrawn; do not
+paste it.**
+
+### How it is built
+
+- **`module/data/items/weapon-traits.mjs`** (pure, driven by the self-test): `ammunitionOf(flags,
+  loaded)` (what the weapon holds), `shotPlan(ammunition, { inEncounter, thrown })` (what a Strike
+  does to the count: `uses`, `left`, `warn`), `nextLoaded` (the chip's click), `isNaturalGroup`,
+  `hasNaturalWeapon`, and the one place the order of weapons in hand is decided: `longestMelee`,
+  `strikeOptions`, `reloadOptions`.
+- **`module/data/items/weapon.mjs`**: the `loaded` field (nullable; null is "never set") and the
+  derived `takesAmmunition`, `magazine`, `shots`, `isLoaded`, `isFull`, `reloadCost`; a natural
+  weapon is `held` at prepare, whatever its stored state. `loaded` joins the fields a content
+  refresh keeps (`helpers/content-sync.mjs`).
+- **The Strike's shot has one writer.** A declared Strike's is the **coordinator's**
+  (`combat/attack-coordinator.mjs`): the attack record carries `maneuver.shot` and
+  `maneuver.unloaded` (`resolveSource` and `maneuverFrom` in `combat/attack-source.mjs`,
+  `AttackWorkflow.create`), the shot is taken as the record is registered and given back by
+  `#refundStrike`, both through `#queueShot`, one write after another for a weapon, each reading
+  the count as it stands when its turn comes; a new declaration waits for a write in flight before
+  it reads the count. "In an encounter" is the record's `combatId`, membership of a running
+  Combat (`#combatOf`, and `AttackCoordinator.encounterOf` for a caller outside), never the Combat
+  a client happens to view. The attacker's client (`module/documents/actor/attack.mjs`) says "not
+  loaded" from the record (`#announceUnloaded`) and writes nothing for a declared Strike; a Strike
+  with no target has no record, so its shot is taken there, in `beforeRoll` (`settleShot`). The
+  flow's blind dice use nothing. `rollAttack` holds a weapon to one Strike at a time (`STRIKING`);
+  `strikeWith({ strike, weaponId, dialog })` is the chooser and then `rollAttack`.
+- **Reload** (`module/documents/actor/carrying.mjs`): `reloadWeapon({ item, weaponId, prepared
+  })` finds the weapon, asks which, gates, pays or Prepares (the preparation remembers the
+  weapon), loads and posts the card; `loadWeapon(weapon)` is **the one place a weapon is loaded**,
+  where ammunition will later be taken. `setCarryState` does nothing for a natural weapon.
+- **`module/documents/maneuvers.mjs`**: `BUILT_IN_MANEUVERS.strike` and `.reload`;
+  `CHARACTER_BUILT_INS` (Reload: for an adversary, which has no weapon Items, the row stays the
+  plain Maneuver it was); `ENGINE_REQUIRES.reload` (`weapon unloaded`); Strike leaves
+  `PAID_ELSEWHERE`, and the language key `Cost.paidByWeapon` is retired.
+- **`module/apps/strike-picker.mjs`** (new): `pickStrikeWeapon`, `pickReloadWeapon`,
+  `strikeOptionLabel`; one button for each choice, stacked (`styles/chat.css`).
+- **The sheet** (`module/apps/actor-sheet.mjs`, `templates/actor/maneuver-row.hbs`,
+  `templates/actor/equipment.hbs`, `templates/item/details/weapon.hbs`): the Strike row's buttons
+  (`strikeWith`, which uses the row's own Item), the Loaded chip (`toggleLoaded`), the field on
+  the weapon's sheet, "Nothing in hand" when only the fist is there. `weaponNumbers` in
+  `helpers/actor-context.mjs` is the one reading of a weapon's numbers for the row and the
+  chooser.
+- **The words** (`module/rules/requires.mjs`, `module/helpers/situation.mjs`): `in sight` is a
+  nearness with `range: "sight"`; `loaded` and `unloaded` are states read before a trait; each
+  weapon in hand carries `natural`, `takesAmmunition`, `loaded` and `full`.
+- **The fist** (`module/helpers/content.mjs`, `unarmedStrikeData`; `starwrought.mjs`,
+  `migrateWorld`'s 0.29.0 step; `module/documents/actor.mjs`, `_preCreate`): the compendium's
+  Item, a world weapon of the same name standing over it. When the compendium cannot be read the
+  step says so and the world's stamp stops at 0.28.0, so the next load tries that step again. It
+  is the first step that creates documents, so the elected GM client alone gives
+  (`helpers/authority.mjs`), and any other GM client leaves the stamp short the same way.
+- **A full weapon is stored as "never set"** (`SwItem#_preUpdate`): a count at or above the
+  magazine is written as null, which reads as full whatever the magazine is, so the weapon
+  sheet's field cannot pin a bow at 1 of 1 before it is given Capacity.
+- **Every reader of "what is in hand"** told about the fist: `data/character/offense.mjs`
+  (`reachWeapon`), `documents/movement.mjs` (`interceptWeapon`), `documents/cards/position.mjs`
+  (the Riposte), `canvas/glance.mjs`, `helpers/party.mjs` (`isLoot`), `documents/audit.mjs` (the
+  `loaded` line).
+- **`styles/character.css`**: the Strike pills read at full strength. A child cannot be brighter
+  than its parent, so the rule that set the pills' own opacity to 1 inside the dimmed controls
+  group did nothing through 0.28.0; the group that holds them is now undimmed and its other controls
+  are dimmed.
+
+### The handbook
+
+- **No redline.** The plan said the Reload [N] row of Chapter 5's Weapon Traits table was empty
+  and proposed one tracked change. It is not empty: the cell nests a one-cell table that reads
+  "After firing, you must spend N Interact actions before the weapon can fire again", which a
+  reader of the cell's own paragraphs does not see. That is the reading built, so the book was not
+  touched. The trait says "Interact actions" where `data/maneuvers.xlsx` has a Reload Maneuver;
+  whether the trait should name the Maneuver is Mike's.
+- **The Bind redline, accepted.** Mike saved v4.25 with all four tracked changes of
+  `PROPOSALS["bind"]` accepted and nothing else changed (compared paragraph by paragraph with the
+  committed file); recorded again with `build_all.mjs --check --accept-phb`.
+
+### Left to the table, and not built
+
+- **Ammunition** is not counted: arrows, bolts and bullets are not items in the book or the data,
+  so a Reload never runs out. It is the next step, by Mike's choice, and it needs questions
+  answered first (what a bundle is, what it costs, whether a shot can be recovered).
+- An empty weapon is said and never refused. A weapon does not reload itself when an encounter
+  ends. An adversary's attack rows have no ammunition.
+- The Crossbow Fighting Talents that bend reloading (Practiced Loader, Crank and Move, Snap Shot,
+  Covered Reload) are not enabled and not built.
+- No ranged weapon is enabled in `data/equipment.xlsx`, so loading acts on nothing shipped until
+  a bow's row says Yes.
+- Cast could have the same buttons with a spell chooser. Not built.
+- The Unarmed Strike is Finesse, so it rolls Agility whether or not that is the higher: the
+  book's own reading of the trait (ruling 129), now met by every character.
+- `in sight` is line of sight and two statuses; light and sight range are not read.
+- A character that ends up with no Unarmed Strike (deleted; made by a player while the Equipment
+  compendium was hidden from players; an old export imported over a character) is given none
+  later: the chooser says to drag one in from the Equipment compendium.
+- A weapon left empty when a fight ends is still empty at the next: Reload between fights costs
+  nothing, and a Strike with an empty weapon is said outside an encounter too.
+- A Reload of three or more needs the Reload row (it ships) to be Prepared; with no such row in
+  the world or the pack it is paid whole and loads at once.
+
+### The review
+
+An independent reader went over the whole diff with the change's intent and none of its
+conclusions. No blocking defect; two situational faults in how a shot was counted, and five
+smaller things. All mended but the last, which is stated.
+
+1. **Whether a Strike used a shot was decided by the Combat the coordinator was viewing.** A GM
+   looking at another Combat made a player's bow bottomless, and the reverse case handed back a
+   shot never spent. The file already guarded `combatId` against exactly this. Mended: the
+   decision is membership of a running Combat, on the record.
+2. **Two clients wrote the count as absolute numbers**: the attacker's after the declaration's
+   reply, the coordinator's refund from its own copy. A second declaration that replaced the
+   first before the first's write landed returned nothing and then took a second shot, and a
+   weapon row's Strike button had no one-at-a-time hold. Mended: the coordinator is the one
+   writer for a declared Strike, through a chain for each weapon, and `rollAttack` holds a
+   weapon to one Strike at a time.
+3. **Two comments promised a missing fist on "the GM's next load"**; the step runs once. Mended:
+   the comments say what happens, and the chooser's message says where the fist is.
+4. **Reload on an adversary only warned** ("nothing in hand to reload"), where through 0.28.0
+   the row asked, paid and showed. Mended: the built-in is a character's alone.
+5. **Two GM clients opening the world together would each give a fist.** Mended: the elected
+   client alone gives.
+6. **Smaller.** A Prepared Reload abandoned under an open "Reload which?" still loaded (mended);
+   the weapon sheet pinned a never-set count (mended: a full weapon is stored as never set); a
+   shot-only refund was headed "Actions returned" (mended: "Shot returned"); a natural weapon
+   longer than the real one beside it would have set Total Reach while the dagger was named
+   (mended: the longest is the weapon, and only a tie goes to the real one); a stale comment in
+   the situation reader (mended).
+7. **Stated, not changed:** an archer with a fist in hand has Total Reach, with what follows for
+   Support, the reach ring and Intercept. That is ruling 294, and it is Mike's to overrule.
+
+Mended beside it, older than the release: a Blow the GM cancelled while looking at another
+Combat returned no actions, since the refund asked `attacker.inEncounter` on the GM's client; it
+asks the record's `combatId` now.
+
+### Verified
+
+213 self-test checks (7 new: the three words and their refusals; what a weapon holds; what a
+Strike does to the count; the order of weapons in hand, with a claw longer than a dagger; who
+already has a natural weapon; the Strike built-in; Reload as a character's alone; and two
+widened: the eight rows paid elsewhere, the engine's six), `node --check` on all 173 modules,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of Mike's
+uncommitted workbook), `build_foundry.mjs --no-compile` (one document moves, the Grammar
+journal). Foundry was found stopped and started for the 0.29.0 manifest.
+
+**Driven live, a GM tab and a player tab.** The one-time step: eleven characters given one
+Unarmed Strike each, said once, the stamp at 0.29.0; a new character made with it; a copy given
+no second; a dagger added after the fist still the reach weapon. The Strike row: its three
+buttons at full strength; the chooser with a sword and the fist; one choice asking nothing; the
+row's name a Deliberate Strike; a second click under an open chooser ignored; a closed chooser
+doing nothing; the speech bubble showing the card; a player's Strike from the row through the
+GM's Combat window to the die. Loading, with world weapons (none ships enabled): no shot used
+outside an encounter; a shot used at the declaration in one; the chip Loaded, Empty and "4 of
+5"; a player's click on the chip as an Adjusted line; the field on the weapon's sheet; an empty
+weapon's notice and "Not loaded" card with the Strike still declared; a cancelled attack
+returning the action and the shot, and only the action when the weapon was empty; Reload listed
+only with something to load, ❶ for a bow, "Reload which?" with two empty crossbows, ❷ for the
+light one, ❸ Prepared for the heavy one and loaded at Finish, a Prepared Reload abandoned
+loading nothing. `[REQUIRES ...]`: Strike's four blocks on a world copy, the row leaving the tab
+when the foe was hidden and when the weapon was empty with nobody in reach, and back; a repeater
+at 3 of 5 both `loaded` and `unloaded`. The fist: no control to put it away, left out of the
+glance, refused as loot, and offered as an Intercept to a character holding only a crossbow.
+**After the review's mends, again:** with the GM viewing another Combat, the player's Strike
+still used a shot, and the GM's cancel (after a reload of the GM's client, the attack rebuilt
+from its card) returned the action and the shot; two Strikes started at once were one
+declaration and one shot; a second declaration replacing the first cost one shot, the first's
+returned; an empty weapon's card posted from the record; a Strike with no target using its shot
+on the attacker's client; a full count stored as never set.
+
+**Not driven:** a Riposte with the fist, a Committed Strike with a ranged weapon Prepared and
+Finished, two GM clients opening the world together, a character created by a player (the test
+player may not create Actors), an adversary's Reload row (none exists), and the chooser's Quick
+damage on a character whose full damage differs from one die (the test characters' do not).
+
+The test world was left with one fixture on purpose, a world copy of Strike carrying the four
+blocks, and the eleven Unarmed Strikes, which are the feature. The drive's Combats, test
+weapons, probe characters and cards were removed, and Mike's own Combat and character were left
+as found.
+
+---
+
 ## 0.28.0 (2026-11-15): the Maneuvers tab: even pips, only what applies, Favorites
 
 Built from **Player's Handbook v4.25**; no handbook moved. Rulings 281 to 289. One rule kind is

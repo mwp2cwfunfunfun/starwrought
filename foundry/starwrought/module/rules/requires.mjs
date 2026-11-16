@@ -25,8 +25,13 @@
  *   rigid                     a rigid implement in hand
  *   free hand, holding        a hand is free (an estimate); anything is in hand
  *   weapon, melee weapon, ranged weapon, weapon <trait>
- *   foe | ally | creature, then adjacent | in reach | within <feet>
+ *   weapon loaded, ranged weapon loaded, weapon unloaded   (0.29.0: ready to shoot; to reload)
+ *   foe | ally | creature, then adjacent | in reach | in sight | within <feet>
  *   encounter                 a fighter in a running encounter
+ *
+ * `in sight` (0.29.0; Mike: "I can foresee many situations ... 'if you can see an ally' or 'if you
+ * can see an enemy'") is sight alone, at any distance. The list of who is near already holds only
+ * the tokens the character can see, so the word asks whether one of the right kind is in it.
  *
  * THREE ANSWERS, NOT TWO. A word is true, false, or cannot be told (null): the character's token
  * is not on the scene, a hand the system cannot be sure of, a fact the caller did not give. A block
@@ -57,9 +62,16 @@ const EXAMPLE = "[REQUIRES prone or supine]";
 /** The words a block may use besides a Condition's name, as the refusal lists them. */
 export const REQUIRE_WORDS = Object.freeze([
   "supine", "bind", "spell", "shield", "shield raised", "rigid", "free hand", "holding",
-  "weapon", "melee weapon", "ranged weapon", "weapon <trait>",
-  "foe adjacent", "foe in reach", "foe within <feet>", "ally ...", "creature ...", "encounter"
+  "weapon", "melee weapon", "ranged weapon", "weapon <trait>", "weapon loaded", "weapon unloaded",
+  "foe adjacent", "foe in reach", "foe in sight", "foe within <feet>", "ally ...", "creature ...", "encounter"
 ]);
+
+/**
+ * The two words after `weapon` that are a state and not a trait (0.29.0): `loaded`, the weapon is
+ * ready to shoot (a shot is in it, or it needs none), and `unloaded`, it takes ammunition and is
+ * not full. Read before the trait reading, which would otherwise take them for traits.
+ */
+export const WEAPON_STATES = Object.freeze(["loaded", "unloaded"]);
 
 /** Whom a nearness word is about, by the word written. */
 const NEAR_WHO = Object.freeze({
@@ -106,19 +118,21 @@ function readBareTerm(words, written) {
   if (m) {
     const term = { test: "weapon" };
     if (m[1]) term.reach = m[1];
-    if (m[2]) term.trait = m[2];
+    if (WEAPON_STATES.includes(m[2])) term.state = m[2];
+    else if (m[2]) term.trait = m[2];
     return term;
   }
 
-  m = words.match(/^([a-z]+) (adjacent|in reach|within (\d+) ?(?:ft\.?|feet|foot)?)$/);
+  m = words.match(/^([a-z]+) (adjacent|in reach|in sight|within (\d+) ?(?:ft\.?|feet|foot)?)$/);
   if (m && Object.hasOwn(NEAR_WHO, m[1])) {
     const who = NEAR_WHO[m[1]];
     if (m[2] === "adjacent") return { test: "near", who, range: 0 };
     if (m[2] === "in reach") return { test: "near", who, range: "reach" };
+    if (m[2] === "in sight") return { test: "near", who, range: "sight" };
     return { test: "near", who, range: Number(m[3]) };
   }
   if (Object.hasOwn(NEAR_WHO, words.split(" ")[0])) {
-    throw new RuleSyntaxError(`"${written}": say how near, as in \`foe adjacent\`, \`foe in reach\` or \`ally within 30\``);
+    throw new RuleSyntaxError(`"${written}": say how near, as in \`foe adjacent\`, \`foe in reach\`, \`foe in sight\` or \`ally within 30\``);
   }
 
   const id = conditionIdOf(words);
@@ -191,6 +205,8 @@ export function termWords(term) {
     case "encounter": return noun("encounter");
     case "weapon": {
       const kind = term.reach ? `${term.reach} weapon` : "weapon";
+      if (term.state === "loaded") return noun(`loaded ${kind} in hand`);
+      if (term.state === "unloaded") return noun(`${kind} in hand to reload`);
       const trait = term.trait ? ` with the ${term.trait[0].toUpperCase()}${term.trait.slice(1)} trait` : " in hand";
       return noun(`${kind}${trait}`);
     }
@@ -198,6 +214,7 @@ export function termWords(term) {
       const who = nearNoun(term.who);
       if (term.range === 0) return noun(`adjacent ${who}`);
       if (term.range === "reach") return noun(`${who} in reach`);
+      if (term.range === "sight") return noun(`${who} in sight`);
       return noun(`${who} within ${term.range} ft`);
     }
     default: return "";
@@ -222,7 +239,9 @@ export function requireWords(rule) {
  * @property {{held: boolean, raised: boolean}} [shield]
  * @property {boolean|null} [rigid]     A rigid implement is in hand.
  * @property {{free: boolean|null, holding: boolean}} [hands]  `freeHands` below.
- * @property {Array<{reach: "melee"|"ranged", traits: string[]}>} [weapons]  The weapons in hand.
+ * @property {Array<{reach: "melee"|"ranged", traits: string[], natural?: boolean, takesAmmunition?: boolean, loaded?: boolean, full?: boolean}>} [weapons]
+ *   The weapons in hand: `natural` for the bare fist, which takes no hand and is no "weapon in
+ *   hand"; `takesAmmunition`, `loaded` (a shot is in it, or it needs none) and `full` since 0.29.0.
  * @property {Array<{relation: string, gap: number, inReach: boolean}>|null} [near]  The other
  *   tokens the character can see, each with its relation to the character's (ally, enemy, neutral),
  *   the gap in feet, edge to edge, and whether that is within the character's reach; null when the
@@ -255,8 +274,19 @@ function bare(term, s) {
     case "encounter": return (typeof s?.encounter === "boolean") ? s.encounter : null;
     case "weapon": {
       if (!Array.isArray(s?.weapons)) return null;
-      return s.weapons.some(w => (!term.reach || (w?.reach === term.reach))
-        && (!term.trait || (w?.traits ?? []).includes(term.trait)));
+      return s.weapons.some(w => {
+        if (term.reach && (w?.reach !== term.reach)) return false;
+        // A trait is asked of everything in hand, the bare fist included (a natural weapon may
+        // carry Grapple). Every other weapon word means a held OBJECT: since 0.29.0 every
+        // character has an Unarmed Strike in hand, and "a weapon in hand" must not always be true.
+        if (term.trait) return (w?.traits ?? []).includes(term.trait);
+        if (w?.natural) return false;
+        // `loaded`: ready to shoot, which a weapon that takes no ammunition always is.
+        if (term.state === "loaded") return w?.loaded !== false;
+        // `unloaded`: it takes ammunition and is not full, so Reload has something to do.
+        if (term.state === "unloaded") return !!w?.takesAmmunition && (w?.full === false);
+        return true;
+      });
     }
     case "near": {
       if (!Array.isArray(s?.near)) return null;
@@ -264,6 +294,8 @@ function bare(term, s) {
         if ((term.who === "enemy") && (t?.relation !== "enemy")) return false;
         if ((term.who === "ally") && (t?.relation !== "ally")) return false;
         if (term.range === "reach") return !!t?.inReach;
+        // `in sight`: the list holds only the tokens the character can see, at any distance.
+        if (term.range === "sight") return true;
         return Number(t?.gap) <= term.range;
       });
     }

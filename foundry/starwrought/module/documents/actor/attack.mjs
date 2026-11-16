@@ -12,6 +12,18 @@ import { gapBetween } from "../../canvas/geometry.mjs";
 import { AttackCoordinator } from "../../combat/attack-coordinator.mjs";
 // The Bind's rules (0.27.0), pure: which implement is the bound one, and what an attack ends.
 import { usesBoundImplement, attackBindPlan } from "../../combat/bind-rules.mjs";
+// AMMUNITION (0.29.0), pure: what a Strike does to the shots in a ranged weapon.
+import { shotPlan } from "../../data/items/weapon-traits.mjs";
+
+/**
+ * The Strikes in the middle of being declared or rolled, as "<actor uuid>|<weapon id>" (0.29.0; the
+ * review's finding): a weapon row's Strike button had no one-at-a-time hold, so a double-click was
+ * two declarations, the second replacing the first, and since 0.29.0 that is two shots in flight.
+ * The Maneuvers tab's Strike row is held by `SwItem#use`; this holds every other door. The flow's
+ * blind dice and a Reaction's Strike are never held: they answer something already in play.
+ * @type {Set<string>}
+ */
+const STRIKING = new Set();
 
 /** @param {typeof Actor} Base */
 export const AttackMixin = Base => class extends Base {
@@ -52,6 +64,21 @@ export const AttackMixin = Base => class extends Base {
    * defender: the Strike rolls at once against the Threshold typed in the dialog.
    */
   async rollAttack(weaponId, options = {}) {
+    // One Strike at a time with a weapon (0.29.0): a second click while the first is still
+    // declaring, or its roll dialog is still open, is not a second Strike.
+    if (options.blind || options.reaction) return this.#rollAttack(weaponId, options);
+    const key = `${this.uuid}|${weaponId}`;
+    if (STRIKING.has(key)) return null;
+    STRIKING.add(key);
+    try {
+      return await this.#rollAttack(weaponId, options);
+    } finally {
+      STRIKING.delete(key);
+    }
+  }
+
+  /** The body of `rollAttack`, which holds a weapon to one Strike at a time. */
+  async #rollAttack(weaponId, options = {}) {
     const weapon = this.items.get(weaponId);
     if (!weapon || weapon.type !== "weapon") return null;
     const {
@@ -129,6 +156,39 @@ export const AttackMixin = Base => class extends Base {
     const slug = thrown ? SW.RANGED_SLUG : (weapon.system.strikeSlug ?? (ranged ? SW.RANGED_SLUG : SW.MELEE_SLUG));
     const rank = this.weaponRank(weapon, slug);
 
+    // AMMUNITION (0.29.0; rulings 290 and 291; Mike: "For a ranged weapon, it must also be
+    // loaded"). What this Strike does to the shots in the weapon is `shotPlan`'s to say, read
+    // again at each moment since the count may have changed under an open dialog: a shot is used
+    // in an encounter, an empty weapon is WARNED ABOUT AND NEVER REFUSED (Mike: "Warn and go on"),
+    // a throw and a weapon that takes no ammunition use nothing. Said early as a notice, so a
+    // player about to Prepare three actions behind an empty crossbow knows; said on a card and
+    // counted when the Strike is certain, never on the flow's blind dice. WHO COUNTS: a declared
+    // Strike's shot is the coordinator's to take and to give back, on the client that holds the
+    // attack's record (attack-coordinator.mjs, `#queueShot`), and this client only says "not
+    // loaded" when the record does; a Strike with no target has no record, so its shot is taken
+    // here (`settleShot`, below). "In an encounter" is membership of a running Combat, the rule
+    // the declaration reads, and not the Combat this client happens to view.
+    const shotNow = () => shotPlan(
+      { takes: !!weapon.system.takesAmmunition, shots: Number(weapon.system.shots) || 0 },
+      { inEncounter: !!AttackCoordinator.encounterOf(this), thrown }
+    );
+    if (!blind && !prepared && shotNow().warn) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.Loaded.emptyNotice", { name: this.name, weapon: weapon.name }));
+    }
+    /**
+     * A Strike with NO DECLARATION behind it is certain: the shot leaves the weapon, or the table
+     * is told there was none. Nothing else writes this Strike's shot.
+     */
+    const settleShot = async () => {
+      const plan = shotNow();
+      if (plan.warn) await this.#announceUnloaded(weapon);
+      if (plan.uses && weapon.isOwner) {
+        // swAnnounced: the Strike's own card is the record; the audit speaks only of a count
+        // corrected by hand.
+        await weapon.update({ "system.loaded": plan.left }, { swAnnounced: true });
+      }
+    };
+
     // DECLARE rather than roll. A Committed Strike ❸ in an encounter still Prepares as today
     // (PHB v4.10: one action now, the rest reserved) and declares when finishPrepared re-enters
     // here with `prepared: true`; the dialog it opens may still change the Strike, and beforeRoll
@@ -144,7 +204,12 @@ export const AttackMixin = Base => class extends Base {
       const pub = await AttackCoordinator.declare({
         attacker: this, weaponId, strike: kindKey, targets, prepared, free, thrown, reaction: reactionStrike
       });
-      if (!pub || paid) return pub;
+      if (!pub) return pub;
+      // The declaration stands, and the coordinator took the shot as it recorded the Blow, for a
+      // Strike that pays here and for one already paid (a finished preparation, a Reaction's)
+      // alike. The record says when the weapon was empty: the Strike goes on, and the table is told.
+      if (pub.maneuver?.unloaded) await this.#announceUnloaded(weapon);
+      if (paid) return pub;
       if (reactionStrike === "intercept") {
         // Intercept ❶↺: the Reaction's own cost, in place of the Strike's, paid as the Blow is
         // declared and returned by the coordinator if the Blow is cancelled before the die.
@@ -333,6 +398,9 @@ export const AttackMixin = Base => class extends Base {
           }
           await this.spendActions(kind.cost, { label: `${kindLabel(cfg.strike)}: ${weapon.name}` });
         }
+        // A Strike with no declaration behind it is certain here (0.29.0): its shot leaves the
+        // weapon. The flow's blind dice belong to a declared attack, whose shot left as it declared.
+        if (!blind) await settleShot();
         // The Bind rules (PHB v4.25, Ending a Bind), for a Strike the attack flow does not carry: a
         // blind die is one pairing of a declared attack, whose Binds the coordinator ends once,
         // for every source and every defender, before the first result card (0.27.0; through
@@ -363,6 +431,31 @@ export const AttackMixin = Base => class extends Base {
     // resolution cards are the record.
     if (blind) config.postCard = false;
     return SwCheck.roll(config);
+  }
+
+  /**
+   * STRIKE, FROM THE MANEUVER (0.29.0, ruling 295; Mike: "There should be 1/2/3 action buttons on
+   * the Strike row on the Maneuvers tab... when you click on it, you can choose what you want to
+   * Strike with (eg unarmed, the weapon in your left hand, the weapon in your right hand, etc.)").
+   * The Strike Maneuver's own behaviour (documents/maneuvers.mjs, `BUILT_IN_MANEUVERS.strike`), so
+   * the row's name, its three buttons and a macro are doors to one thing: choose what to Strike
+   * with (apps/strike-picker.mjs: the weapons in hand, the Unarmed Strike last; one choice asks
+   * nothing), then the weapon row's own Strike, `rollAttack`, which gates, declares and pays.
+   * @param {object} [options]
+   * @param {string} [options.strike]    quick | deliberate | committed. Default SW.DEFAULT_STRIKE.
+   * @param {string} [options.weaponId]  The weapon, when the caller already knows.
+   * @param {boolean} [options.dialog]   Passed to the roll (a Shift-click skips its dialog).
+   * @returns {Promise<object|null>}
+   */
+  async strikeWith({ strike, weaponId = "", dialog } = {}) {
+    const kind = SW.STRIKE_KINDS[strike] ? strike : SW.DEFAULT_STRIKE;
+    let id = weaponId;
+    if (!id) {
+      const { pickStrikeWeapon } = await import("../../apps/strike-picker.mjs");
+      id = await pickStrikeWeapon(this, { strike: kind });
+    }
+    if (!id) return null;
+    return this.rollAttack(id, { strike: kind, ...((dialog === undefined) ? {} : { dialog }) });
   }
 
   /**
@@ -477,6 +570,23 @@ export const AttackMixin = Base => class extends Base {
         <h3><i class="fa-solid fa-triangle-exclamation"></i> ${
           game.i18n.localize("STARWROUGHT.Roll.unwieldyGrabbedTitle")}</h3>
         <p>${body}</p></div>`,
+      whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
+    });
+  }
+
+  /**
+   * "It was not loaded" (0.29.0, ruling 291). A Strike with an empty ranged weapon is said to the
+   * table the way an overspent action is, and never refused: the roll goes on, and the table
+   * decides whether the shot was there after all (the Equipment row's chip corrects the count).
+   */
+  async #announceUnloaded(weapon) {
+    const body = game.i18n.format("STARWROUGHT.Loaded.emptyStrike", { name: this.name, weapon: weapon.name });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `<div class="starwrought action-card sw-overspend">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> ${
+          game.i18n.localize("STARWROUGHT.Loaded.emptyTitle")}</h3>
+        <p>${foundry.utils.escapeHTML(body)}</p></div>`,
       whisper: this.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
     });
   }

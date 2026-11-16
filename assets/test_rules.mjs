@@ -77,8 +77,10 @@ import {
 } from "../foundry/starwrought/module/combat/bind-rules.mjs";
 // The Maneuvers the system implements and the ones it pays for elsewhere (0.23.0): the module
 // imports nothing, which this import is the check of.
-import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE, ENGINE_REQUIRES } from "../foundry/starwrought/module/documents/maneuvers.mjs";
+import { BUILT_IN_MANEUVERS, CHARACTER_BUILT_INS, PAID_ELSEWHERE, ENGINE_REQUIRES } from "../foundry/starwrought/module/documents/maneuvers.mjs";
 import { readRequires, requireWords, termWords, checkCondition, availability, requiresFor, maneuverStatus, freeHands, arrangeManeuvers, STATUS_REASONS } from "../foundry/starwrought/module/rules/requires.mjs";
+// 0.29.0: what a ranged weapon holds to shoot, and what a Strike does to it.
+import { parseWeaponTraits, splitTraits, ammunitionOf, shotPlan, nextLoaded, longestMelee, strikeOptions, reloadOptions, isNaturalGroup, hasNaturalWeapon } from "../foundry/starwrought/module/data/items/weapon-traits.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -1890,7 +1892,8 @@ check("actionCostOptions: one number for a single cost, every number of a range,
 });
 
 check("PAID_ELSEWHERE: the rows the system pays for another way are named by slug, say who pays, and are no built-in (ruling 235)", () => {
-  same(Object.keys(PAID_ELSEWHERE).sort(), ["cast", "close", "crawl", "leap", "move", "rush", "squeeze", "step", "strike"], "the nine rows");
+  // Strike left the table in 0.29.0 (ruling 295): its row Strikes now, as a built-in.
+  same(Object.keys(PAID_ELSEWHERE).sort(), ["cast", "close", "crawl", "leap", "move", "rush", "squeeze", "step"], "the eight rows");
   // Close (0.27.0, ruling 277): the Controller's Step toward the foe is the Close, so the drag pays.
   same(PAID_ELSEWHERE[slugify(plainName("Close ❶"))], "STARWROUGHT.Cost.paidByClosing", "the Close row, by the name the sheet prints");
   for (const [slug, key] of Object.entries(PAID_ELSEWHERE)) {
@@ -1898,10 +1901,44 @@ check("PAID_ELSEWHERE: the rows the system pays for another way are named by slu
     must(/^STARWROUGHT\.Cost\.paidBy[A-Z][A-Za-z]+$/.test(key), `"${slug}" names the line its card says (${key})`);
     must(!(slug in BUILT_IN_MANEUVERS), `"${slug}" is not also a built-in: a built-in pays itself and never reaches the table`);
   }
-  same(PAID_ELSEWHERE[slugify(plainName("Strike ❶ to ❸"))], "STARWROUGHT.Cost.paidByWeapon", "the Strike row, by the name the sheet prints");
+  same(PAID_ELSEWHERE[slugify(plainName("Strike ❶ to ❸"))], undefined, "the Strike row pays from its own buttons since 0.29.0");
   same(PAID_ELSEWHERE[slugify(plainName("Leap ❶ to ❸"))], "STARWROUGHT.Cost.paidByMoving", "the Leap row");
   same(PAID_ELSEWHERE[slugify(plainName("Aid ❶"))], undefined, "Aid pays from its own row");
   must(Object.isFrozen(PAID_ELSEWHERE), "the table is frozen");
+});
+
+check("BUILT_IN_MANEUVERS: the Strike row Strikes for a character and shows its card for an adversary (0.29.0, ruling 295)", () => {
+  const slug = slugify(plainName("Strike ❶ to ❸"));
+  same(slug, "strike", "the row's slug");
+  must(typeof BUILT_IN_MANEUVERS[slug] === "function", "Strike is a built-in: the row Strikes, it does not only show its card");
+  const calls = [];
+  const character = { type: "character", strikeWith: options => { calls.push(options); return "struck"; } };
+  same(BUILT_IN_MANEUVERS.strike(character, {}, { strike: "quick", dialog: false }), "struck", "it answers with the actor's own Strike");
+  same(calls, [{ strike: "quick", dialog: false }], "handing over the kind the button named and the dialog switch, and nothing else");
+  calls.length = 0;
+  BUILT_IN_MANEUVERS.strike(character, {}, {});
+  same(calls, [{ strike: undefined }], "the row's name names no kind (the actor's method reads that as the default) and no dialog switch");
+  // An adversary has attack rows and no weapons: the row is still its card.
+  const shown = [];
+  const item = { toMessage: options => { shown.push(options); return "card"; } };
+  const npc = { type: "npc", strikeWith: () => { throw new Error("an adversary does not Strike from the row"); } };
+  same(BUILT_IN_MANEUVERS.strike(npc, item, { strike: "quick" }), "card", "an adversary gets the card");
+  same(shown, [{ actor: npc }], "posted as that adversary");
+  must(!("strike" in PAID_ELSEWHERE), "Strike is not also a row paid elsewhere");
+});
+
+check("BUILT_IN_MANEUVERS: Reload is a character's alone, so an adversary's Reload row stays a plain Maneuver (0.29.0)", () => {
+  must(typeof BUILT_IN_MANEUVERS.reload === "function", "Reload is a built-in");
+  same([...CHARACTER_BUILT_INS], ["reload"], "the one built-in an adversary is passed by for: it loads a weapon Item, and an adversary has none");
+  for (const slug of CHARACTER_BUILT_INS) must(slug in BUILT_IN_MANEUVERS, `"${slug}" names a built-in`);
+  must(!CHARACTER_BUILT_INS.has("strike"), "Strike is not listed: for an adversary the built-in itself shows the card, since the plain path would charge for it");
+  // The built-in hands the row and Finish's word to the actor's own method.
+  const calls = [];
+  const actor = { type: "character", reloadWeapon: options => { calls.push(options); return "loaded"; } };
+  const row = { name: "Reload" };
+  same(BUILT_IN_MANEUVERS.reload(actor, row, { prepared: true, dialog: false }), "loaded", "it answers with the actor's own Reload");
+  same(BUILT_IN_MANEUVERS.reload(actor, row, {}), "loaded", "and again from the row");
+  same(calls, [{ item: row, prepared: true }, { item: row, prepared: false }], "the row, and whether Finish is coming back; nothing else");
 });
 
 check("BUILT_IN_MANEUVERS: the Pass row is the actor's own Pass, under the slug its name gives (0.23.1)", () => {
@@ -3785,6 +3822,115 @@ check("requires: the words in English, for the tab's tooltip and the sheet's As 
   same(termWords({ test: "nonsense" }), "", "a term nobody knows says nothing");
 });
 
+check("requires: sight alone, and a weapon loaded or to reload (0.29.0)", () => {
+  // In sight: the character can see such a token, at any distance.
+  same([anyOf("[REQUIRES foe in sight]"), anyOf("[REQUIRES ally in sight]"), anyOf("[REQUIRES creature in sight]"), anyOf("[REQUIRES not foe in sight]")],
+    [[{ test: "near", who: "enemy", range: "sight" }], [{ test: "near", who: "ally", range: "sight" }], [{ test: "near", who: "any", range: "sight" }], [{ test: "near", who: "enemy", range: "sight", not: true }]], "who is in sight");
+  const words = cell => requireWords(requiresRule(cell));
+  same([words("[REQUIRES foe in sight]"), words("[REQUIRES ally in sight]"), words("[REQUIRES not creature in sight]")], ["a foe in sight", "an ally in sight", "no creature in sight"], "said in English");
+  must(/`foe in sight`/.test(requiresError("[REQUIRES foe]")), "the distance message names the word");
+  const seen = (relation, gap) => ({ relation, gap, inReach: false });
+  const at = (cell, near) => checkCondition(anyOf(cell)[0], { near });
+  same([at("[REQUIRES foe in sight]", [seen("enemy", 400)]), at("[REQUIRES foe in sight]", [seen("ally", 2)]), at("[REQUIRES foe in sight]", []), at("[REQUIRES foe in sight]", null), at("[REQUIRES not foe in sight]", null)],
+    [true, false, false, null, null], "a foe seen at any distance; an ally is no foe; nobody seen is known; no token on the map is not");
+  same([at("[REQUIRES ally in sight]", [seen("ally", 90)]), at("[REQUIRES creature in sight]", [seen("neutral", 90)]), at("[REQUIRES ally in sight]", [seen("neutral", 90)])], [true, true, false], "an ally, and a creature of any kind");
+
+  // Loaded and unloaded are states of the weapon in hand, read before the trait reading.
+  same([anyOf("[REQUIRES weapon loaded]"), anyOf("[REQUIRES ranged weapon loaded]"), anyOf("[REQUIRES weapon unloaded]"), anyOf("[REQUIRES not ranged weapon loaded]")],
+    [[{ test: "weapon", state: "loaded" }], [{ test: "weapon", reach: "ranged", state: "loaded" }], [{ test: "weapon", state: "unloaded" }], [{ test: "weapon", reach: "ranged", state: "loaded", not: true }]], "the two states, never a trait called loaded");
+  same([words("[REQUIRES ranged weapon loaded]"), words("[REQUIRES weapon loaded]"), words("[REQUIRES weapon unloaded]"), words("[REQUIRES not ranged weapon loaded]")],
+    ["a loaded ranged weapon in hand", "a loaded weapon in hand", "a weapon in hand to reload", "no loaded ranged weapon in hand"], "said in English");
+  const bow = (extra = {}) => ({ reach: "ranged", traits: ["ranged", "reload"], takesAmmunition: true, loaded: true, full: true, ...extra });
+  const bolas = { reach: "ranged", traits: ["ranged", "nonlethal", "trip"], takesAmmunition: false, loaded: true, full: true };
+  const sword = { reach: "melee", traits: ["versatile"], takesAmmunition: false, loaded: true, full: true };
+  const fist = { reach: "melee", traits: ["agile", "close", "finesse", "nonlethal"], natural: true, takesAmmunition: false, loaded: true, full: true };
+  const with_ = (cell, weapons) => checkCondition(anyOf(cell)[0], { weapons });
+  same([with_("[REQUIRES ranged weapon loaded]", [bow()]), with_("[REQUIRES ranged weapon loaded]", [bow({ loaded: false, full: false })]), with_("[REQUIRES ranged weapon loaded]", [bolas]), with_("[REQUIRES ranged weapon loaded]", [sword]), with_("[REQUIRES ranged weapon loaded]", []), with_("[REQUIRES ranged weapon loaded]", undefined)],
+    [true, false, true, false, false, null], "a bow with a shot; an empty one; one that needs no loading; a sword is no ranged weapon; empty hands; not known");
+  same([with_("[REQUIRES weapon unloaded]", [bow()]), with_("[REQUIRES weapon unloaded]", [bow({ loaded: false, full: false })]), with_("[REQUIRES weapon unloaded]", [bow({ loaded: true, full: false })]), with_("[REQUIRES weapon unloaded]", [bolas, sword])],
+    [false, true, true, false], "to reload: empty, or a Capacity weapon part spent; never a full one, never one that takes no ammunition");
+  // The bare fist is in every hand since 0.29.0: it is no "weapon in hand", and a trait still asks it.
+  same([with_("[REQUIRES weapon]", [fist]), with_("[REQUIRES melee weapon]", [fist]), with_("[REQUIRES weapon loaded]", [fist]), with_("[REQUIRES weapon]", [fist, sword]), with_("[REQUIRES weapon finesse]", [fist])],
+    [false, false, false, true, true], "the fist is no weapon in hand, loaded or otherwise; a trait is asked of it as of anything");
+  // Strike's cell, as printed for the sheet.
+  const strike = parseAutomation("[REQUIRES foe in reach or ranged weapon loaded or weapon thrown]\n[REQUIRES foe in sight]\n[REQUIRES not restrained]\n[REQUIRES not unconscious]", onRowOf);
+  same([strike.errors.length, strike.rules.map(summarize)], [0, ["needs: a foe in reach or a loaded ranged weapon in hand or a weapon with the Thrown trait", "needs: a foe in sight", "needs: not Restrained", "needs: not Unconscious"]], "Strike's four blocks read");
+  const strikes = extra => availability(strike.rules, { conditions: [], weapons: [fist], near: [], ...extra }).ok;
+  same([strikes({ near: [{ relation: "enemy", gap: 1, inReach: true }] }), strikes({ near: [{ relation: "enemy", gap: 40, inReach: false }] }), strikes({ weapons: [fist, bow()], near: [{ relation: "enemy", gap: 40, inReach: false }] }), strikes({ weapons: [fist, bow({ loaded: false, full: false })], near: [{ relation: "enemy", gap: 40, inReach: false }] }), strikes({ weapons: [fist, bow()], near: [] }), strikes({ near: [{ relation: "enemy", gap: 1, inReach: true }], conditions: ["restrained"] })],
+    [true, false, true, false, false, false], "a foe in reach; out of reach with only fists; out of reach with a loaded bow; with an empty bow; nobody in sight; Restrained");
+});
+
+check("loaded: what a ranged weapon holds, from its Reload and Capacity traits (rulings 290 to 292)", () => {
+  const ammo = (traits, loaded) => ammunitionOf(parseWeaponTraits(splitTraits(traits)), loaded);
+  // The book's ranged weapons, by their Trait lines.
+  same(ammo("Ranged 120, Reload 1, Two-Handed, Unwieldy 10"), { takes: true, magazine: 1, shots: 1, loaded: true, full: true, reload: 1 }, "a Shortbow never written to reads as loaded");
+  same(ammo("Ranged 120, Reload 1, Two-Handed, Unwieldy 10", 0), { takes: true, magazine: 1, shots: 0, loaded: false, full: false, reload: 1 }, "and empty once it has shot");
+  same([ammo("Ranged 100, Mechanical, Reload 2, Two-Handed").reload, ammo("Ranged 140, Mechanical, Reload 3, Armor-Piercing 1, Two-Handed").reload, ammo("Ranged 60, Reload 1").reload], [2, 3, 1], "the Reload Maneuver's cost is the weapon's own Reload");
+  same(ammo("Ranged 80, Mechanical, Capacity 5, Reload 3, Two-Handed"), { takes: true, magazine: 5, shots: 5, loaded: true, full: true, reload: 3 }, "a Repeating Crossbow holds five");
+  same(ammo("Ranged 80, Mechanical, Capacity 5, Reload 3, Two-Handed", 3), { takes: true, magazine: 5, shots: 3, loaded: true, full: false, reload: 3 }, "three of five: loaded, and not full");
+  same([ammo("Ranged 80, Capacity 5, Reload 3", 9).shots, ammo("Ranged 80, Capacity 5, Reload 3", -2).shots, ammo("Ranged 80, Capacity 5, Reload 3", 2.9).shots, ammo("Ranged 80, Capacity 5, Reload 3", "x").shots], [5, 0, 2, 5], "a count out of range is held to the magazine; nonsense reads as full");
+  // What takes none.
+  const none = { takes: false, magazine: 0, shots: 0, loaded: true, full: true, reload: 0 };
+  same([ammo("Ranged 30, Nonlethal, Trip"), ammo("Agile, Close, Finesse, Thrown 10 ft"), ammo("Versatile P"), ammo("Reload 1"), ammunitionOf(null), ammunitionOf(undefined, 0)], [none, none, none, none, none, none], "Bolas, a thrown dagger, a sword, a Reload on a weapon that is not ranged, and no weapon at all take none and are always ready");
+});
+
+check("loaded: a Strike uses a shot in an encounter, warns when empty, and never refuses (rulings 290 and 291)", () => {
+  const bow = shots => ({ takes: true, magazine: 1, shots, loaded: shots > 0, full: shots >= 1, reload: 1 });
+  const repeater = shots => ({ takes: true, magazine: 5, shots, loaded: shots > 0, full: shots >= 5, reload: 3 });
+  const sword = { takes: false, magazine: 0, shots: 0, loaded: true, full: true, reload: 0 };
+  const fight = { inEncounter: true };
+  same(shotPlan(bow(1), fight), { uses: true, left: 0, warn: false }, "a loaded bow in an encounter: the shot goes");
+  same(shotPlan(bow(0), fight), { uses: false, left: 0, warn: true }, "an empty bow: the Strike still happens, and is warned about");
+  same(shotPlan(bow(1), { inEncounter: false }), { uses: false, left: 1, warn: false }, "outside an encounter nothing is counted");
+  same(shotPlan(bow(0), { inEncounter: false }), { uses: false, left: 0, warn: true }, "but an empty weapon is said to be empty anywhere");
+  same([shotPlan(repeater(5), fight), shotPlan(repeater(1), fight)], [{ uses: true, left: 4, warn: false }, { uses: true, left: 0, warn: false }], "a Repeating Crossbow counts down");
+  same([shotPlan(sword, fight), shotPlan(bow(0), { inEncounter: true, thrown: true }), shotPlan(null, fight), shotPlan(undefined)], [{ uses: false, left: 0, warn: false }, { uses: false, left: 0, warn: false }, { uses: false, left: 0, warn: false }, { uses: false, left: 0, warn: false }], "a sword, a throw and no weapon use nothing and warn of nothing");
+  // The correction by hand on the Equipment row.
+  same([nextLoaded(bow(1)), nextLoaded(bow(0)), nextLoaded(repeater(5)), nextLoaded(repeater(1)), nextLoaded(repeater(0)), nextLoaded(null)], [0, 1, 4, 0, 5, 1], "one click flips a bow; a Repeating Crossbow steps down and wraps to full");
+});
+
+check("in hand: the fist never stands in front of a weapon (ruling 294)", () => {
+  const fist = { id: "f", name: "Unarmed Strike", natural: true, held: true, reach: 0 };
+  const dagger = { id: "d", name: "Dagger", held: true, reach: 0 };
+  const sword = { id: "s", name: "Shortsword", held: true, reach: 2 };
+  const spear = { id: "p", name: "Spear", held: true, reach: 4 };
+  const bow = { id: "b", name: "Shortbow", held: true, ranged: true, reach: 0, takesAmmunition: true, full: false };
+  const packed = { id: "x", name: "Axe", held: false, reach: 2 };
+  const id = w => w?.id ?? null;
+  // The weapon that sets Total Reach, and so the one a Riposte and an Intercept Strike with.
+  same([id(longestMelee([fist, dagger])), id(longestMelee([dagger, fist]))], ["d", "d"], "a dagger and a fist tie on reach: the dagger, whichever was added to the sheet first");
+  same([id(longestMelee([fist, sword, spear])), id(longestMelee([spear, fist, sword]))], ["p", "p"], "the longer weapon");
+  same([id(longestMelee([fist])), id(longestMelee([bow, fist])), id(longestMelee([bow])), id(longestMelee([])), id(longestMelee(null))], ["f", "f", null, null, null], "the fist when it is all there is in melee; nothing with only a bow, or nothing");
+  // The weapon named is always the one whose reach Total Reach is: a natural weapon that reaches
+  // further than the real one beside it (a claw, should one be authored) is the longest, and only
+  // a tie goes to the real weapon.
+  const claw = { id: "c", name: "Claws", natural: true, held: true, reach: 4 };
+  same([id(longestMelee([dagger, claw])), id(longestMelee([claw, spear])), id(longestMelee([spear, claw]))], ["c", "p", "p"], "the longer reach first; a real weapon before a natural one where they tie");
+  // The chooser behind the Strike row: what is in hand, real weapons first, the fist last.
+  same(strikeOptions([fist, sword, packed, dagger, bow]).map(id), ["d", "b", "s", "f"], "by name, the fist last, a packed weapon not offered");
+  same(strikeOptions([{ id: "f2", name: "Unarmed Strike", natural: true, held: false }]).map(id), ["f2"], "a natural weapon is offered whatever its carry state says");
+  same([strikeOptions([]).length, strikeOptions(null).length], [0, 0], "nothing to Strike with");
+  // What Reload may load.
+  same(reloadOptions([sword, bow, { id: "c", name: "Crossbow", held: true, takesAmmunition: true, full: true }, { id: "w", name: "Arbalest", held: false, takesAmmunition: true, full: false }, { id: "a", name: "Arbalest", held: true, takesAmmunition: true, full: false }]).map(id), ["a", "b"], "in hand, takes ammunition, not full; by name");
+  same(reloadOptions(null), [], "nothing");
+});
+
+check("in hand: who already has a natural weapon, so nobody is given a second Unarmed Strike (ruling 294)", () => {
+  same([isNaturalGroup("Natural Weapons"), isNaturalGroup("natural weapon"), isNaturalGroup("Natural  Weapons")], [true, true, true], "the group, however it is spaced or cased");
+  same([isNaturalGroup("Knives"), isNaturalGroup(""), isNaturalGroup(null), isNaturalGroup(undefined)], [false, false, false, false], "any other group, or none");
+  // Stored Item data, as a character's `_source.items` holds it before anything is prepared.
+  const fist = { type: "weapon", name: "Unarmed Strike", system: { group: "Natural Weapons" } };
+  const claws = { type: "weapon", name: "Claws", system: { group: "Natural Weapons" } };
+  const dagger = { type: "weapon", name: "Dagger", system: { group: "Knives" } };
+  const talent = { type: "talent", name: "Natural Weapons", system: { group: "Natural Weapons" } };
+  must(hasNaturalWeapon([dagger, fist]), "the Unarmed Strike is one");
+  must(hasNaturalWeapon([claws]), "so are claws: a character with any natural weapon is given no fist");
+  must(!hasNaturalWeapon([dagger]), "a dagger is not");
+  must(!hasNaturalWeapon([talent]), "nor an Item of another type that only names the group");
+  must(!hasNaturalWeapon([]) && !hasNaturalWeapon(null) && !hasNaturalWeapon([null, {}]), "nothing, and holes in the list");
+  must(hasNaturalWeapon(new Set([fist])), "any iterable is read: an Actor's Items as well as an array");
+});
+
 /** A character's situation, as module/helpers/situation.mjs builds it; every fact known. */
 const situation = (extra = {}) => ({
   conditions: [], bind: null, spells: 0, shield: { held: false, raised: false }, rigid: false,
@@ -3842,7 +3988,11 @@ check("requires: the engine's own Maneuvers carry their conditions in code, and 
     must(blocks.length > 0, `${slug} names a condition`);
     for (const data of blocks) readRequires(data);
   }
-  same(Object.keys(ENGINE_REQUIRES).sort(), ["cast", "close", "gain-control", "pass", "raise-a-shield"], "the five");
+  same(Object.keys(ENGINE_REQUIRES).sort(), ["cast", "close", "gain-control", "pass", "raise-a-shield", "reload"], "the six (Reload since 0.29.0)");
+  same(requiresFor([], ENGINE_REQUIRES.reload).map(requireWords), ["a weapon in hand to reload"], "Reload: something in hand to load");
+  const reloadable = weapons => availability(requiresFor([], ENGINE_REQUIRES.reload), { weapons }).ok;
+  same([reloadable([{ reach: "ranged", traits: [], takesAmmunition: true, loaded: false, full: false }]), reloadable([{ reach: "ranged", traits: [], takesAmmunition: true, loaded: true, full: true }]), reloadable([{ reach: "melee", traits: [], takesAmmunition: false, loaded: true, full: true }]), reloadable([])],
+    [true, false, false, false], "listed with an empty bow in hand; not with a full one, a sword, or empty hands");
   const engine = slug => requiresFor([], ENGINE_REQUIRES[slug]);
   same(engine("gain-control").map(requireWords), ["in a Bind", "not Controlling a weapon"], "Gain Control: a Bind you do not Control");
   same(engine("close").map(requireWords), ["Controlling a weapon"], "Close: said in full, since \"Needs: Controlling\" reads oddly");

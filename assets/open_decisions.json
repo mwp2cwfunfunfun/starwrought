@@ -1,12 +1,52 @@
 [
   {
+    "id": "ammunition-counted",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "module/documents/actor/carrying.mjs, loadWeapon (the one place a weapon is loaded); data/equipment.xlsx (no ammunition rows); PHB v4.25 Chapter 5 (no arrows, bolts or bullets printed)",
+    "question": "0.29.0 tracks whether a ranged weapon is loaded and Mike chose to count ammunition too, as its own step. The book and the data have no ammunition: no item, no price, no bundle size. So a Reload never runs out today.",
+    "recommendation": "Plan it next, with four answers from Mike first: what the ammunition items are (arrows, bolts, sling bullets) and which weapon takes which; the bundle size and price; whether a Reload with none left is refused or warned (the empty weapon's rule is warn and go on); and whether a shot can be recovered after a fight. Then a gear row for each, a link from weapon to ammunition, and loadWeapon takes it from the pack.",
+    "decidedBy": ""
+  },
+  {
+    "id": "strike-requires-cell",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx, Basic Actions sheet, the Strike row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.29.0) and AUTOMATION_GRAMMAR.md section 5",
+    "question": "Strike's conditions are a cell for Mike to paste: [REQUIRES foe in reach or ranged weapon loaded or weapon thrown] [REQUIRES foe in sight] [REQUIRES not restrained] [REQUIRES not unconscious]. Until the row carries it the Maneuvers tab always lists Strike. The [REQUIRES weapon reload] printed for Reload with 0.28.0 is withdrawn: Reload's condition is in code now.",
+    "recommendation": "Paste the four blocks in place of the N/A and run sync_content.cmd. Do not paste the Reload block from the 0.28.0 list.",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.29.0-claudes-readings",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.29.0, rulings 292, 293 and 294",
+    "question": "Three readings 0.29.0 makes that Mike did not rule on. 292: Reload costs the weapon's own Reload N (the trait's \"N Interact actions\"), is Prepared at three, and costs nothing outside an encounter or with the six-action round untracked. 293: the count is corrected by a click on the chip at no cost. 294: with an Unarmed Strike always in hand, a character holding only a bow has a reach of 2 ft where the sheet read 0, so it counts for Support, draws a reach ring and is offered an Intercept as an unarmed Quick Strike; and the Unarmed Strike, being Finesse, always rolls Agility.",
+    "recommendation": "Leave 292 and 293. On 294, say so if an archer with both hands on a bow should threaten nothing: the remedy would be a Two-Handed weapon in hand switching the fist off for reach and Intercept, which is one check in longestMelee's callers.",
+    "decidedBy": ""
+  },
+  {
+    "id": "reload-trait-names-interact",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.25.docx, Chapter 5, Weapon Traits, Reload [N] (the text is in a table nested in the cell); data/maneuvers.xlsx, the Reload row",
+    "question": "The Reload [N] trait says \"After firing, you must spend N Interact actions before the weapon can fire again\", while data/maneuvers.xlsx has a Reload Maneuver of its own (none to six actions). The system pays the Reload Maneuver at N. The two agree on the cost and differ on the name.",
+    "recommendation": "One wording pass in Word when convenient: \"you must Reload (N actions) before the weapon can fire again\". The cell nests a table, which the redline tool will not edit, so it is a hand edit.",
+    "decidedBy": ""
+  },
+  {
     "id": "maneuver-requires-cells",
     "since": "2026-11-15",
     "status": "open",
     "category": "Data",
     "where": "data/maneuvers.xlsx, the Automation cells of 28 rows; the blocks are printed in foundry/starwrought/CHANGELOG.md (0.28.0) and AUTOMATION_GRAMMAR.md section 5",
     "question": "The Maneuvers tab lists only what applies now, and a Maneuver's own conditions are a [REQUIRES ...] block in its row's Automation cell. Until a row has its block the tab always lists it. Twenty-eight rows have a block written for them (Stand and Kip Up: [REQUIRES prone or supine]; Grapple: [REQUIRES free hand or weapon grapple][REQUIRES creature in reach]; and the rest), and three more are a judgement about how the table plays (Release, Sneak, Battle Cry).",
-    "recommendation": "Paste the 28 in place of the N/A or empty cells and run sync_content.cmd; leave Release, Sneak and Battle Cry unwritten unless the table tracks what they ask (a Grab held with an empty hand, Hidden as a Condition on the token).",
+    "recommendation": "Paste the 28 in place of the N/A or empty cells and run sync_content.cmd; leave Release, Sneak and Battle Cry unwritten unless the table tracks what they ask (a Grab held with an empty hand, Hidden as a Condition on the token). Since 0.29.0 the Reload block of that list is withdrawn (Reload's condition is in code), so 27 remain; Strike's cell is its own row here.",
     "decidedBy": ""
   },
   {
@@ -22,12 +62,12 @@
   {
     "id": "bind-redline-0-27-0",
     "since": "2026-11-15",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "Starwrought_Players_Handbook_v4.25.docx, four tracked changes by Claude (assets/phb_propose.py, PROPOSALS[\"bind\"]); the file before them is in backup/pre-0.27.0/",
     "question": "Four tracked changes wait in the edition: under Binds, \"A Quick Strike that is Stopped forms at most a neutral Bind.\" (ruling 272); under Ending a Bind, \"A Cast is such an attack. A shield that holds the Control is the exception ...\" (rulings 270 and 273); and the Conditions table's Bound [X] and Controlled [X] rows brought into line with Ending a Bind. Accept or reject each?",
     "recommendation": "Accept all four in Word and save; the next build reports the same-numbered file changed, and Claude compares it with the committed copy and records it again.",
-    "decidedBy": ""
+    "decidedBy": "Mike, 2026-11-15: all four accepted in Word with nothing else changed (compared paragraph by paragraph with the committed file); recorded again with 0.29.0"
   },
   {
     "id": "bind-claudes-readings",

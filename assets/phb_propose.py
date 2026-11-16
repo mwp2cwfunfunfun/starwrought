@@ -689,6 +689,12 @@ PROPOSALS["bind"] = {
     "insert_after": [],
 }
 
+# No "reload" proposal (system 0.29.0): the Reload [N] row of Chapter 5's Weapon Traits table looks
+# empty to a reader of the cell's own paragraphs (python-docx's `cell.text`), but the cell nests a
+# one-cell table that says "After firing, you must spend N Interact actions before the weapon can
+# fire again." That is the reading the system tracks, so the book needed no change. A row that
+# nests a table is refused by `one_row` in any case: such a cell is edited by hand.
+
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
 ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
 CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)

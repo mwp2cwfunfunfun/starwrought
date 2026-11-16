@@ -66,7 +66,9 @@ export function glanceData(actor, { full = false } = {}) {
   const sys = actor.system ?? {};
 
   const held = items
-    .filter(i => SW.PHYSICAL_TYPES.includes(i.type) && (i.type !== "armor") && i.system?.held)
+    // Never the bare fist (0.29.0): every character has an Unarmed Strike in hand, and a stranger
+    // sees a sword or empty hands, not "Unarmed Strike" on everyone.
+    .filter(i => SW.PHYSICAL_TYPES.includes(i.type) && (i.type !== "armor") && i.system?.held && !i.system?.natural)
     .map(i => ({ id: i.id, name: i.name, img: i.img, type: i.type, raised: (i.type === "shield") && !!i.system.raised }))
     .sort((a, b) => a.name.localeCompare(b.name));
 

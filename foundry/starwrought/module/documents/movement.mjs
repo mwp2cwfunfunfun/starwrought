@@ -44,6 +44,8 @@ import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, moveRoleFor, asManeuverMove, withUsed
 // The Bind (0.27.0, ruling 269): a fighter's own movement ends it, but for a Close and the larger of two far apart.
 import { movementBindPlan, sizeGap, isLarger } from "../combat/bind-rules.mjs";
 import { resolveActor as resolveBindPartner } from "./bind.mjs";
+// 0.29.0: a real weapon before the bare fist, wherever "the melee weapon in hand" is asked.
+import { longestMelee } from "../data/items/weapon-traits.mjs";
 
 const { escapeHTML } = foundry.utils;
 const localize = key => game.i18n.localize(key);
@@ -645,9 +647,10 @@ function offerIntercepts(token, movement, actor, move) {
 function interceptWeapon(actor) {
   const derived = actor.system.reachWeapon;
   if (derived?.id && actor.items.has(derived.id)) return derived;
-  return actor.items
+  // The same order the data model uses (0.29.0): the longest, a real weapon before the fist on a tie.
+  return longestMelee(actor.items
     .filter(i => (i.type === "weapon") && i.system.held && !i.system.isRanged)
-    .sort((a, b) => (b.system.reach ?? 0) - (a.system.reach ?? 0))[0] ?? null;
+    .map(i => ({ item: i, natural: !!i.system.natural, reach: i.system.reach ?? 0 })))?.item ?? null;
 }
 
 /** An adversary's longest-reaching attack, with the Threshold the mover's Defense roll meets. */

@@ -79,8 +79,12 @@ import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/ha
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
   loadChassisIndex, invalidateChassisIndex, chassisByName,
-  invalidateBasicActions, loadTerrainKinds
+  invalidateBasicActions, loadTerrainKinds, unarmedStrikeData
 } from "./module/helpers/content.mjs";
+// THE UNARMED STRIKE (0.29.0): who already has a natural weapon, for the one-time gift, and the
+// one client that gives it.
+import { hasNaturalWeapon } from "./module/data/items/weapon-traits.mjs";
+import { isElected } from "./module/helpers/authority.mjs";
 
 /* -------------------------------------------- */
 /*  Init                                        */
@@ -402,13 +406,20 @@ const LEGACY_CALLING_VIGOR = Object.freeze({
  * Defense is ever chosen by the system: every one is committed in the Combat Prompt. (The 0.4.1
  * step that moved a Reaction stance to its Defense, and the 0.11.0 step's stance line, went with
  * the field.)
+ *
+ * 0.29.0 (ruling 294; Mike, by question: "Give every character one now"): every character that
+ * has no natural weapon is given the Equipment compendium's Unarmed Strike, so an empty-handed
+ * character has something to Strike with. The world's characters first, then the unlinked tokens
+ * that still lack one (a token drawn from a character that has just been given one already has
+ * it). New characters get theirs at creation (documents/actor.mjs). When the compendium cannot be
+ * read the step says so and the stamp stops at 0.28.0, so the next load tries that step again.
  */
 async function migrateWorld() {
   if (!game.user.isGM) return;
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0") && !needs("0.18.1")) {
+  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0") && !needs("0.18.1") && !needs("0.29.0")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -634,7 +645,59 @@ async function migrateWorld() {
     }
   }
 
-  await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  // 0.29.0 (ruling 294): the Unarmed Strike for every character that has no natural weapon.
+  let fists = 0;
+  let fistMissing = false;
+  // This is the first step that CREATES documents, and every GM client that loads the world runs
+  // `migrateWorld`: two GMs opening it together would each see no fist and each give one. So the
+  // elected client alone gives (helpers/authority.mjs: the active GM), and any other GM leaves the
+  // stamp short, as when the pack cannot be read, so that a later load of its own tries the step
+  // again and finds the fists already there.
+  let fistDeferred = false;
+  if (needs("0.29.0") && !isElected()) {
+    fistDeferred = true;
+  } else if (needs("0.29.0")) {
+    let fist = null;
+    try {
+      fist = await unarmedStrikeData();
+    } catch (error) {
+      console.warn("STARWROUGHT | the Unarmed Strike could not be read from the Equipment compendium:", error);
+    }
+    if (!fist) {
+      fistMissing = true;
+    } else {
+      // `swAuto`: the system's own gift, so nothing the creation hooks ask of a player is asked.
+      const give = async actor => {
+        if ((actor?.type !== "character") || hasNaturalWeapon(actor.items)) return;
+        await actor.createEmbeddedDocuments("Item", [foundry.utils.deepClone(fist)], { swAnnounced: true, swAuto: true });
+        fists++;
+      };
+      for (const actor of game.actors) await give(actor);
+      for (const scene of game.scenes) {
+        for (const token of scene.tokens) if (!token.actorLink && token.actor) await give(token.actor);
+      }
+    }
+  }
+
+  // The stamp names the release the world last ran under. When the Unarmed Strike could not be
+  // given (no compendium to read) the stamp stops at the release before it, so the next load runs
+  // that one step again and none of the older ones.
+  if (fistMissing || fistDeferred) {
+    const before = "0.28.0";
+    await game.settings.set(SW.SYSTEM_ID, "systemVersion", foundry.utils.isNewerVersion(done, before) ? done : before);
+    if (fistMissing) {
+      const message = game.i18n.format("STARWROUGHT.Migration.unarmedMissing", { version: game.system.version });
+      console.warn(`STARWROUGHT | ${message}`);
+      ui.notifications.warn(message, { permanent: true });
+    }
+  } else {
+    await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  }
+  if (fists > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.unarmed", { version: game.system.version, count: fists });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
+  }
   if (unnamedLores > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.unnamedLores", { version: game.system.version, count: unnamedLores });
     console.log(`STARWROUGHT | ${message}`);

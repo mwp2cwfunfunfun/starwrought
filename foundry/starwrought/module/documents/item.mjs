@@ -10,7 +10,7 @@ import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
 import { resolveRuleTarget, loadBasicActions } from "../helpers/content.mjs";
 // The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield; and the ones
 // whose cost it takes somewhere other than their row (0.23.0).
-import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "./maneuvers.mjs";
+import { BUILT_IN_MANEUVERS, CHARACTER_BUILT_INS, PAID_ELSEWHERE } from "./maneuvers.mjs";
 import { relation as tokenRelation } from "../rules/scene.mjs";
 import { usableByRule } from "../rules/engine.mjs";
 import { kindOf } from "../rules/kinds/index.mjs";
@@ -20,7 +20,7 @@ import { readTargetThreshold } from "../helpers/threshold-read.mjs";
 
 /**
  * Is this Maneuver's cost taken somewhere other than its own row (0.23.0, ruling 235)? The i18n
- * key of the line its card says, or null. By name (`PAID_ELSEWHERE`: Strike, Cast, the movement
+ * key of the line its card says, or null. By name (`PAID_ELSEWHERE`: Cast, the movement
  * rows); by an attack of its own, which `attackWith` pays for; or by a rule that acts from a
  * button on a card, asked of the registry rather than a list of kinds (a `reroll`'s button, as
  * Quick Tongue's; a `prevent`'s Reaction button): such a Maneuver pays when that button is pressed,
@@ -104,7 +104,7 @@ export class SwItem extends Item {
    *    Item): Finish at the next Opportunity comes back here with `prepared: true`, which skips the
    *    gate and the charge and makes the roll or posts the card;
    *  - ⓿ and a passive row (an Activity, an Endeavor) pay nothing;
-   *  - a Maneuver the system pays for another way (`paidElsewhere`: Strike, Cast, the movement
+   *  - a Maneuver the system pays for another way (`paidElsewhere`: Cast, the movement
    *    rows, one whose rule pays from a card button) pays nothing here and its card says who does.
    * Outside an encounter nothing is asked, paid or Prepared. A Maneuver with the Reaction trait
    * (PHB v4.10) keeps its own rule: paid from the same six the moment its Trigger occurs, before
@@ -117,7 +117,7 @@ export class SwItem extends Item {
    * (ruling 122: a `bonus ... to Aid` applies to a roll made from Aid's Item, and is only offered
    * on a check made without it).
    *
-   * A Maneuver the system implements (Recenter, Raise a Shield, the visor, and Pass since 0.23.1;
+   * A Maneuver the system implements (Recenter, Raise a Shield, the visor, Pass since 0.23.1, Strike and Reload since 0.29.0;
    * documents/maneuvers.mjs, by the slug of its plain name) runs that behaviour when used (0.10.1): the Action is the entry
    * point, the sheet button and the Macro are other doors to the same method. The behaviour pays
    * its own action and posts its own card, so nothing here does either for it.
@@ -191,7 +191,10 @@ export class SwItem extends Item {
     // the spend, sets the cost and hands over the marks to file once the use stands.
     const { prepared = false, partOf = null, ...config } = rest;
     const plain = SW.plainName(this.name);
-    const builtIn = BUILT_IN_MANEUVERS[SW.slugify(SW.plainName(this.name))];
+    const slug = SW.slugify(SW.plainName(this.name));
+    // A built-in that is a character's alone (Reload: it loads a weapon Item) is passed by for an
+    // adversary, whose row stays the plain Maneuver it was (0.29.0).
+    const builtIn = (CHARACTER_BUILT_INS.has(slug) && (actor?.type !== "character")) ? null : BUILT_IN_MANEUVERS[slug];
     if (builtIn && actor) {
       // A built-in pays and posts for itself, so it cannot be handed another Maneuver's cost yet
       // (`#performSubordinate` refuses it first; this is the guard for any other caller).
@@ -801,6 +804,18 @@ export class SwItem extends Item {
   async _preUpdate(changed, options, user) {
     const allowed = await super._preUpdate(changed, options, user);
     if (allowed === false) return false;
+    // A FULL WEAPON IS STORED AS "NEVER SET" (0.29.0; the review's finding). The weapon's sheet
+    // submits its Loaded field with every save, which would pin a weapon nobody ever emptied at
+    // its magazine of that day (1 of 1), so a Capacity trait added later left it at 1 of 5. Null
+    // reads as full whatever the magazine is, so a count at or above the magazine is written as
+    // null: by the sheet, the chip, Reload and the refund alike.
+    if (this.type === "weapon") {
+      const loaded = foundry.utils.getProperty(changed, "system.loaded");
+      const magazine = Number(this.system?.magazine) || 0;
+      if ((typeof loaded === "number") && (magazine > 0) && (loaded >= magazine)) {
+        foundry.utils.setProperty(changed, "system.loaded", null);
+      }
+    }
     const text = foundry.utils.getProperty(changed, "system.automation") ?? changed["system.automation"];
     if (typeof text !== "string") return;
     const parsed = parseAutomation(text, {

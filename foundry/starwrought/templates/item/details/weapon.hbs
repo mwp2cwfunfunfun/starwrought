@@ -20,6 +20,11 @@
       <input type="checkbox" name="system.twoHands" {{checked system.twoHands}}></label>
     <label class="sw-field"><span>{{localize "STARWROUGHT.Field.versatileActive"}}</span>
       <input type="checkbox" name="system.versatileActive" {{checked system.versatileActive}}></label>
+    {{!-- AMMUNITION (0.29.0): the shots in a ranged weapon with the Reload trait, of its magazine. --}}
+    {{#if system.takesAmmunition}}
+    <label class="sw-field" data-tooltip="{{localize 'STARWROUGHT.Loaded.fieldHint'}}"><span>{{localize "STARWROUGHT.Loaded.field" max=system.magazine}}</span>
+      <input type="number" name="system.loaded" value="{{system.shots}}" min="0" max="{{system.magazine}}" step="1"></label>
+    {{/if}}
   </div>
   <p class="sw-note">{{localize "STARWROUGHT.Hint.weaponTraits"}}</p>
   {{#if bindTraits.length}}

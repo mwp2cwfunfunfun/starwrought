@@ -18,7 +18,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-chat: "0.28.0"; }
+:root { --sw-css-version-chat: "0.29.0"; }
 
 /* --------------------------------------------------------------------------
    Chat cards
@@ -254,6 +254,14 @@
    since 0.10.1; through 0.10.0 they shared `sw-choice` with the wizard's cards, whose later rule
    dressed them. The Combat Prompt's options (attack.css) copy this look. */
 .starwrought .sw-strike-choice, .starwrought .sw-reaction-choice { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.3rem 0; }
+/* THE STRIKE AND RELOAD CHOOSERS (0.29.0, module/apps/strike-picker.mjs): one button for each
+   weapon, stacked, so the pick is one click and a label can run as long as it needs ("Shortsword:
+   +5, 2d6+2 Slashing, reach 4 ft"). */
+.starwrought.sw-strike-picker .form-footer { flex-direction: column; align-items: stretch; gap: 0.35rem; }
+.starwrought.sw-strike-picker .form-footer button {
+  justify-content: flex-start; text-align: left; white-space: normal;
+  height: auto; min-height: 2rem; padding: 0.3rem 0.6rem; line-height: 1.25;
+}
 .starwrought .sw-dialog-option {
   flex: 1 1 8rem; text-align: left; padding: 0.35rem 0.5rem; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px;
   background: rgba(255, 255, 255, 0.04); cursor: pointer; font-size: 0.78rem; line-height: 1.3;

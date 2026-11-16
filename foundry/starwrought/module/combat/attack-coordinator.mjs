@@ -284,6 +284,67 @@ export class AttackCoordinator {
   }
 
   /**
+   * The same answer for a caller outside the coordinator (0.29.0): is this actor a fighter in a
+   * running Combat, by membership? A Strike with no target asks it on the attacker's own client
+   * before it uses a shot, so that the two doors to "does this Strike use a shot" (this one, and
+   * the declaration's `resolveSource`) read one rule.
+   * @param {Actor} actor
+   * @returns {string}  The Combat's id, or "".
+   */
+  static encounterOf(actor) {
+    return AttackCoordinator.#combatOf(actor);
+  }
+
+  /* -------------------------------------------- */
+  /*  Shots (0.29.0)                              */
+  /* -------------------------------------------- */
+
+  /**
+   * The shot writes in flight, by weapon uuid: the tail of each weapon's chain.
+   * @type {Map<string, Promise<boolean>>}
+   */
+  static #shotQueue = new Map();
+
+  /**
+   * THE COORDINATOR IS THE ONE WRITER OF A DECLARED STRIKE'S SHOT (0.29.0; the review's finding).
+   * The first build had the attacker's client take the shot after the declaration's reply and the
+   * coordinator give it back from its own copy of the count: two clients writing absolute numbers,
+   * so a second declaration that replaced the first before the first's write had landed gave
+   * nothing back and then took a second shot. Now the take and the give-back are both written
+   * here, on the client that holds the record, one after another for a weapon (a chain for each),
+   * each reading the count as it stands when its turn comes. A take is queued in the same
+   * synchronous stretch that registers the record, so a cancellation of that record, which must
+   * find it registered, is always queued behind it.
+   * @param {Item} weapon   The attacker's weapon.
+   * @param {number} delta  -1 to take a shot, +1 to give one back.
+   * @returns {Promise<boolean>}  Whether the count moved.
+   */
+  static #queueShot(weapon, delta) {
+    const key = weapon?.uuid;
+    if (!key) return Promise.resolve(false);
+    const run = async () => {
+      try {
+        if (!weapon.isOwner || !weapon.system?.takesAmmunition) return false;
+        const magazine = Number(weapon.system.magazine) || 0;
+        const shots = Number(weapon.system.shots) || 0;
+        const next = Math.max(0, Math.min(magazine, shots + delta));
+        if (next === shots) return false;
+        // swAnnounced: the attack's own cards are the record; the audit speaks only of a count
+        // corrected by hand.
+        await weapon.update({ "system.loaded": next }, { swAnnounced: true });
+        return true;
+      } catch (error) {
+        console.error("STARWROUGHT | a shot could not be written:", error);
+        return false;
+      }
+    };
+    const tail = (AttackCoordinator.#shotQueue.get(key) ?? Promise.resolve(false)).then(run, run);
+    AttackCoordinator.#shotQueue.set(key, tail);
+    tail.then(() => { if (AttackCoordinator.#shotQueue.get(key) === tail) AttackCoordinator.#shotQueue.delete(key); });
+    return tail;
+  }
+
+  /**
    * What `AttackWorkflow.expired` needs to know about this table, for a record or a card's flags:
    * whether the Combat it names still exists, and whether another connected user is its stored
    * coordinator (so the attack is live in that user's session, whatever this client remembers).
@@ -923,10 +984,25 @@ export class AttackCoordinator {
     }
     if (!targets.length) return { ok: false, reason: "noTargets" };
 
+    // SHOTS (0.29.0): a shot write for this weapon still in flight (the take of a Blow just
+    // declared, the give-back of one just replaced) lands before the count is read below. Nothing
+    // is awaited when nothing is in flight, so from here to the record's registration is one
+    // synchronous stretch.
+    const shotKey = payload.weaponId ? (attacker.items.get(payload.weaponId)?.uuid ?? "") : "";
+    for (let pending = AttackCoordinator.#shotQueue.get(shotKey); pending; pending = AttackCoordinator.#shotQueue.get(shotKey)) {
+      await pending;
+      if (AttackCoordinator.#shotQueue.get(shotKey) === pending) AttackCoordinator.#shotQueue.delete(shotKey);
+    }
+
     // What the attack is (0.12.0, attack-source.mjs): read from the attacker's own Items, so the
     // Threat, the permitted Defenses and the cost are never the declaring client's to say.
     const attackerToken = resolveTokenDoc(payload.attackerTokenUuid) ?? attacker.tokenOnScene?.() ?? null;
-    const source = resolveSource(attacker, payload, { attackerToken, targetDoc: targets[0].tokenDoc ?? null });
+    // The encounter this attack belongs to (0.23.0, ruling 237), by membership. It also says
+    // whether a Strike uses a shot (0.29.0): only in an encounter.
+    const combatId = AttackCoordinator.#combatOf(attacker);
+    const source = resolveSource(attacker, payload, {
+      attackerToken, targetDoc: targets[0].tokenDoc ?? null, inEncounter: !!combatId
+    });
     if (source.error) return { ok: false, reason: source.error, reasonData: source.errorData };
     const maneuver = maneuverFrom(source, payload);
 
@@ -937,8 +1013,8 @@ export class AttackCoordinator {
       attacker: snapshot(attacker, attackerToken),
       maneuver,
       targets: targets.map(({ actor, tokenDoc }) => snapshot(actor, tokenDoc)),
-      // The encounter this attack belongs to (0.23.0, ruling 237). An attack ends with its Combat.
-      combatId: AttackCoordinator.#combatOf(attacker)
+      // An attack ends with its Combat.
+      combatId
     });
     AttackCoordinator.#workflows.set(workflow.id, workflow);
     AttackCoordinator.#meta.set(workflow.id, { phaseRevision: 0 });
@@ -948,6 +1024,13 @@ export class AttackCoordinator {
     // defender waits for one, and the card says so.
     AttackWorkflow.transition(workflow, "defending");
     AttackCoordinator.#bump(workflow, { phase: true });
+    // The shot leaves the weapon as the Blow is declared (0.29.0, ruling 290), queued here with
+    // no await since the record was registered, so a replacement's give-back queues behind it.
+    // The record keeps what happened: a shot that could not be taken is not one to give back.
+    if (workflow.maneuver.shot) {
+      const took = source.weapon ? await AttackCoordinator.#queueShot(source.weapon, -1) : false;
+      if (!took) workflow.maneuver.shot = false;
+    }
     await AttackCoordinator.#persist(workflow);
     await AttackCoordinator.#broadcast(workflow, "prompt");
     await AttackCoordinator.#advanceIfReady(workflow);
@@ -1105,24 +1188,43 @@ export class AttackCoordinator {
     const maneuver = workflow.maneuver ?? {};
     if (workflow.attackRoll || (workflow.targets ?? []).some(t => t.roll)) return;
     const attacker = resolveActor(workflow.attacker?.actorUuid);
-    if (!attacker?.isOwner || !attacker.inEncounter || !attacker.system?.actions) return;
+    if (!attacker?.isOwner) return;
+    // The shot comes back with the Strike (0.29.0): the record says whether the declaration took
+    // one, for a Strike that paid and for one already paid (a finished preparation, a Reaction's)
+    // alike. Queued behind that take (`#queueShot`), and never more than the weapon holds. It does
+    // not wait on which Combat this client views: the record is the word.
+    let shotBack = "";
+    const weapon = (maneuver.shot && maneuver.weaponId) ? attacker.items.get(maneuver.weaponId) : null;
+    if (weapon && (await AttackCoordinator.#queueShot(weapon, +1))) {
+      shotBack = format("STARWROUGHT.Loaded.shotBack", { weapon: foundry.utils.escapeHTML(weapon.name) });
+    }
     // What it cost (attack-source.mjs): the Strike's or the Cast's actions, Intercept's ❶↺,
-    // nothing for a Prepared or free one or a Riposte.
-    const cost = costOf(maneuver);
-    if (!cost) return;
+    // nothing for a Prepared or free one or a Riposte. Actions are returned to a fighter whose
+    // attack was declared in a Combat that is still running: asked of the record (`combatId`,
+    // 0.23.0) and not of `attacker.inEncounter`, which reads the Combat THIS client views, so
+    // through 0.28.0 a GM looking at another Combat cancelled a player's Blow and returned nothing.
+    const counted = !!workflow.combatId && !!game.combats?.get(workflow.combatId)?.started && !!attacker.system?.actions;
+    const cost = counted ? costOf(maneuver) : 0;
+    if (!cost && !shotBack) return;
     const per = Number(attacker.actionsPerRound) || SW.ACTIONS_PER_ROUND;
-    const value = Math.min(per, (attacker.system.actions.value ?? 0) + cost);
-    await attacker.update({ "system.actions.value": value }, { swAnnounced: true });
+    const value = Math.min(per, (attacker.system?.actions?.value ?? 0) + cost);
+    if (cost) await attacker.update({ "system.actions.value": value }, { swAnnounced: true });
     const named = describe(maneuver);
+    const lines = [];
+    if (cost) {
+      lines.push(format("STARWROUGHT.Attack.refunded", {
+        name: foundry.utils.escapeHTML(attacker.name),
+        strike: `${named.kindLabel} ${named.glyph}`.trim(),
+        n: cost, left: value, per
+      }));
+    }
+    if (shotBack) lines.push(shotBack);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: attacker }),
       content: `<div class="starwrought action-card sw-refund-card">
-        <h3><i class="fa-solid fa-rotate-left"></i> ${localize("STARWROUGHT.Attack.refundedTitle")}</h3>
-        <p>${format("STARWROUGHT.Attack.refunded", {
-          name: foundry.utils.escapeHTML(attacker.name),
-          strike: `${named.kindLabel} ${named.glyph}`.trim(),
-          n: cost, left: value, per
-        })}</p></div>`,
+        <h3><i class="fa-solid fa-rotate-left"></i> ${
+          localize(cost ? "STARWROUGHT.Attack.refundedTitle" : "STARWROUGHT.Loaded.shotBackTitle")}</h3>
+        ${lines.map(line => `<p>${line}</p>`).join("")}</div>`,
       whisper: attacker.hasPlayerOwner ? [] : ChatMessage.getWhisperRecipients("GM").map(u => u.id)
     });
   }

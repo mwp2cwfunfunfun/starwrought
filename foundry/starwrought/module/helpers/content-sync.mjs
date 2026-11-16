@@ -60,7 +60,9 @@ const FETCH_BATCH = 24;
  * too, and copyUpdate keeps it (the review of 0.8.0).
  */
 const PRESERVED_PATHS = Object.freeze([
-  "quantity", "state", "raised", "choice.value", "style", "twoHands", "versatileActive", "attack", "uses.value", "uses.max"
+  "quantity", "state", "raised", "choice.value", "style", "twoHands", "versatileActive", "attack", "uses.value", "uses.max",
+  // The shots in a ranged weapon (0.29.0): the character's own, never the book's.
+  "loaded"
 ]);
 
 /* -------------------------------------------- */

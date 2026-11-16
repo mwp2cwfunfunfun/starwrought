@@ -14,6 +14,52 @@ import { momentaryFor } from "../combat/bind-rules.mjs";
 
 
 /**
+ * A weapon's numbers for the character wielding it, as a row prints them (0.29.0; the Equipment
+ * tab's weapon row worked them out for itself through 0.28.0, and the Strike chooser needs the
+ * same): Melee or Ranged Proficiency after Handling and Familiarity, plus the Strike Attribute
+ * (the weapon's own), with the standing attack modifiers the data model derives (the first Arms
+ * Wound's -2 Situation) folded in, so the number agrees with the roll dialog's preview. No level
+ * term: a check is Attribute + Proficiency + bonuses. The dice are the rank's.
+ * @param {Actor} actor
+ * @param {Item} item  A weapon Item.
+ * @returns {{slugKey: "melee"|"ranged", rank: string, attribute: string, attributeLabel: string,
+ *            attackMod: number, damage: string, quickDamage: string, reach: string, thrownNote: string}}
+ */
+export function weaponNumbers(actor, item) {
+  const sys = actor.system;
+  const slugKey = item.system.isRanged ? "ranged" : "melee";
+  const training = sys[slugKey] ?? { rank: "untrained", proficiency: 0, dice: 1 };
+  // Handling still applies: Practiced drops a rank without Familiarity, Technical drops to Untrained.
+  const rank = actor.weaponRank?.(item) ?? training.rank ?? "untrained";
+
+  const strike = sys.strikeAttributeFor?.(item) ?? { attribute: item.system.attackAttribute, source: "weapon" };
+  const attribute = strike.attribute in SW.ATTRIBUTES ? strike.attribute : "might";
+  const attributeLabel = game.i18n.localize(SW.ATTRIBUTES[attribute].label);
+  const standing = SW.resolveModifiers(sys.attackModifiers ?? []).total;
+  const attackMod = (sys.attributes?.[attribute]?.mod ?? 0) + SW.rankBonus(rank) + (sys.bonuses?.attack ?? 0) + standing;
+
+  // The dice are the rank's (PHB v4.21), the rank Handling leaves this weapon with.
+  const dice = SW.weaponDice(rank);
+  const flat = item.system.flags?.mechanical ? 0 : (sys.attributes?.might?.mod ?? 0);
+  const die = item.system.effectiveDie;
+  const full = flat ? `${dice}d${die}+${flat}` : `${dice}d${die}`;
+  // A Thrown weapon's throw is Might (PHB v4.21), said in the tooltip when it would differ.
+  const thrownNote = (item.system.flags?.thrown && !item.system.isRanged && (attribute !== "might"))
+    ? ` ${game.i18n.localize("STARWROUGHT.Strike.attributeThrown")}`
+    : "";
+  const damageType = game.i18n.localize(SW.DAMAGE_TYPES[item.system.effectiveType].label);
+  return {
+    slugKey, rank, attribute, attributeLabel, attackMod, thrownNote,
+    damage: `${full} ${damageType}`,
+    quickDamage: `1d${die}`,
+    // The type's own word, for a reader that prints the Quick die with it (the Strike chooser).
+    damageType,
+    // Total Reach is your Natural Reach plus the weapon's. A ranged weapon shows its range.
+    reach: item.system.isRanged ? `${item.system.range} ft` : `${(item.system.reach ?? 0) + (sys.reach ?? 0)} ft`
+  };
+}
+
+/**
  * The six actions as pips, one state each: `free` (yours to spend now), `reserved` (spoken for by
  * a Prepared Maneuver: one action spent, the rest held until the next Opportunity), `spent`. The
  * one computation behind the sheet's pips and the combat tracker's (0.10.1; through 0.10.0 the

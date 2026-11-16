@@ -25,6 +25,8 @@
 import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 import { usesBoundImplement } from "./bind-rules.mjs";
+// AMMUNITION (0.29.0), pure: whether this Strike uses a shot from a ranged weapon.
+import { shotPlan } from "../data/items/weapon-traits.mjs";
 
 const localize = key => game.i18n.localize(key);
 
@@ -47,7 +49,7 @@ export const SOURCES = Object.freeze(["weapon", "attack", "spell"]);
  * @param {TokenDocument|null} [context.targetDoc]      The first target, the reference for reach.
  * @returns {object} the source, or `{ error }` with a REASONS key (noWeapon, noSpell, npcCast)
  */
-export function resolveSource(attacker, payload = {}, { attackerToken = null, targetDoc = null } = {}) {
+export function resolveSource(attacker, payload = {}, { attackerToken = null, targetDoc = null, inEncounter = null } = {}) {
   const reaction = REACTION_STRIKES.includes(payload.reaction) ? payload.reaction : null;
 
   if (payload.talentId) {
@@ -117,6 +119,21 @@ export function resolveSource(attacker, payload = {}, { attackerToken = null, ta
     ranged = !!weapon.system.isRanged || thrown;
   }
 
+  // AMMUNITION (0.29.0): does this Strike use a shot from the weapon, and was the weapon empty?
+  // Read here, off the attacker's own Item on the coordinator's client, as the cost is; the record
+  // keeps both answers, so the coordinator takes the shot it says, a Blow cancelled before any die
+  // gives back that shot and no other (`#refundStrike`), and the attacker's client says "not
+  // loaded" from the record and never from a count of its own. `inEncounter` is the caller's word
+  // (the coordinator's: is the attacker a fighter in a running Combat, by membership), since
+  // `attacker.inEncounter` reads the Combat this client happens to VIEW, and a GM looking at
+  // another scene must not make a player's bow bottomless.
+  const plan = weapon ? shotPlan(
+    { takes: !!weapon.system.takesAmmunition, shots: Number(weapon.system.shots) || 0 },
+    { inEncounter: (inEncounter === null) ? !!attacker.inEncounter : !!inEncounter, thrown: !!thrown }
+  ) : { uses: false, warn: false };
+  const shot = !!plan.uses;
+  const unloaded = !!plan.warn;
+
   const name = weapon?.name ?? attackItem?.name ?? attackRow?.name ?? "";
   const glyph = SW.ACTION_GLYPHS[strikeKind.cost] ?? "";
   const reactionLabel = reaction ? `${localize(SW.REACTIONS[reaction].label)}: ` : "";
@@ -126,6 +143,7 @@ export function resolveSource(attacker, payload = {}, { attackerToken = null, ta
     weapon, attackItem, attackRow,
     name,
     ranged, thrown, melee: !ranged,
+    shot, unloaded,
     threat: "blow",
     defenses: [...SW.THREATS.blow.defenses],
     reaction,
@@ -160,6 +178,10 @@ export function maneuverFrom(source, payload = {}) {
     free: !!payload.free || (source.reaction === "riposte"),
     attackId: (source.attackItem?.id ?? source.attackRow?.id) ?? null,
     ranged: !!source.ranged,
+    // Whether the Strike uses a shot from a ranged weapon, and whether that weapon was empty when
+    // it was declared (0.29.0).
+    shot: !!source.shot,
+    unloaded: !!source.unloaded,
     reaction: source.reaction ?? null,
     basicOnly: !!source.basicOnly,
     threat: source.threat,

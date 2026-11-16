@@ -202,9 +202,15 @@ export async function stepFromCard(button) {
 export async function reactionStrikeFromCard(button, reaction) {
   const actor = ownedActor(button);
   if (!actor) return;
+  // A real weapon before the bare fist (0.29.0, ruling 294): `reachWeapon` already orders them so,
+  // and the fallbacks, for an actor whose data has not been prepared, ask the same. With nothing
+  // else in melee the Riposte is an unarmed Quick Strike, where through 0.28.0 it was refused.
+  const inHand = actor.items.filter(i => (i.type === "weapon") && i.system.held);
   const weapon = actor.system.reachWeapon
-    ?? actor.items.find(i => (i.type === "weapon") && i.system.held && !i.system.isRanged)
-    ?? actor.items.find(i => (i.type === "weapon") && i.system.held);
+    ?? inHand.find(i => !i.system.isRanged && !i.system.natural)
+    ?? inHand.find(i => !i.system.isRanged)
+    ?? inHand.find(i => !i.system.natural)
+    ?? inHand[0];
   if (!weapon) return ui.notifications.warn(game.i18n.format("STARWROUGHT.Reaction.noWeapon", { name: actor.name }));
   return actor.rollAttack(weapon.id, {
     reaction,

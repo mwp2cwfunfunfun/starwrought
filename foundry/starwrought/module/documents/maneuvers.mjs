@@ -58,6 +58,27 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
   "gain-control": (actor, item, options) => actor.gainControl({ item, ...((options?.dialog === undefined) ? {} : { dialog: options.dialog }) }),
 
   /**
+   * Strike ❶ to ❸ (0.29.0, ruling 295): a character chooses what to Strike with (the weapons in
+   * hand, the Unarmed Strike last) and the weapon row's own Strike runs, which gates, declares and
+   * pays for its kind (documents/actor/attack.mjs, `strikeWith`). `strike` is the button pressed
+   * on the row (Quick, Deliberate or Committed); the row's name is a Deliberate Strike. Through
+   * 0.28.0 the row only showed its card and said the weapon's row pays. An adversary has attack
+   * rows and no weapons, so for one the row is still its card.
+   */
+  strike: (actor, item, options) => ((actor.type === "character") && (typeof actor.strikeWith === "function")
+    ? actor.strikeWith({ strike: options?.strike, ...((options?.dialog === undefined) ? {} : { dialog: options.dialog }) })
+    : item.toMessage({ actor })),
+
+  /**
+   * Reload ⓿ to ❻ (0.29.0; rulings 292 and 293): the actor's own method, which finds the weapon in
+   * hand that needs loading (asking which, when two do), passes the gate, pays THAT WEAPON'S
+   * Reload cost (Prepared at three), loads it and posts the Reload card
+   * (documents/actor/carrying.mjs, `reloadWeapon`). Through 0.28.0 the row asked how many actions,
+   * paid and showed its text. `prepared` is Finish coming back for a Reload of three or more.
+   */
+  reload: (actor, item, options) => actor.reloadWeapon({ item, prepared: options?.prepared === true }),
+
+  /**
    * Raise a Shield ❶ (PHB v4.10): the shield in hand is raised through its own method, which
    * spends the action and posts the card. With two shields in hand the first is raised, as the
    * equipment tab's row would raise that one; with none the player is told, since the Maneuver
@@ -86,6 +107,17 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
 });
 
 /**
+ * The built-ins that are a CHARACTER'S alone (0.29.0; the review's finding), by slug: for any
+ * other actor `SwItem#use` passes them by and uses the row as a plain Maneuver. Reload loads a
+ * weapon Item in hand, and an adversary has attack rows and no weapons: through 0.28.0 its Reload
+ * row asked the cost, paid and showed its text, and it still does. (Strike is not listed: for an
+ * adversary the built-in itself shows the card, since the plain path would charge for a Strike
+ * the attack row then charges for.)
+ * @type {ReadonlySet<string>}
+ */
+export const CHARACTER_BUILT_INS = Object.freeze(new Set(["reload"]));
+
+/**
  * The Maneuvers whose cost the system takes somewhere other than their own row (0.23.0, ruling
  * 235), by the slug of the plain name, each with the line its card says in an encounter. Since
  * 0.23.0 a Maneuver used from the sheet in an encounter pays its printed cost; these would pay
@@ -103,7 +135,8 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
  * @type {Readonly<Record<string, string>>}
  */
 export const PAID_ELSEWHERE = Object.freeze({
-  strike: "STARWROUGHT.Cost.paidByWeapon",
+  // Strike left this table in 0.29.0: its row Strikes now (`BUILT_IN_MANEUVERS.strike`), and a
+  // built-in pays for itself.
   cast: "STARWROUGHT.Cost.paidBySpell",
   move: "STARWROUGHT.Cost.paidByMoving",
   step: "STARWROUGHT.Cost.paidByMoving",
@@ -120,8 +153,8 @@ export const PAID_ELSEWHERE = Object.freeze({
  * What the Maneuvers the system itself runs need before they can be used (0.28.0), by the slug of
  * the plain name: each entry is the data of one or more `[REQUIRES ...]` blocks, in the grammar's
  * own words (module/rules/requires.mjs), every one of which must hold. The Maneuvers tab reads a
- * row's own `[REQUIRES ...]` blocks; these five rows are engine code with an `N/A` in the cell
- * (Cast, Close, Gain Control, Raise a Shield, Pass), so their conditions are said here, where the
+ * row's own `[REQUIRES ...]` blocks; these six rows are engine code with an `N/A` in the cell
+ * (Cast, Close, Gain Control, Raise a Shield, Pass, and Reload since 0.29.0), so their conditions are said here, where the
  * behaviour is, and the tab lists them correctly with no cell written. A row that does carry a
  * block of its own is read from the cell and never from here: the sheet is the author.
  *
@@ -129,7 +162,9 @@ export const PAID_ELSEWHERE = Object.freeze({
  *  - Close: you Control a foe's weapon (the row's Requirements; `settleBindOnMove` reads the Step);
  *  - Gain Control: you are in a Bind you do not already Control (`gainControl` refuses otherwise);
  *  - Raise a Shield: a shield in hand (the entry above warns without one);
- *  - Pass: a fighter in a running encounter (`actor.pass()` says why and does nothing otherwise).
+ *  - Pass: a fighter in a running encounter (`actor.pass()` says why and does nothing otherwise);
+ *  - Reload: a weapon in hand that takes ammunition and is not full (`reloadWeapon` says there is
+ *    nothing to reload otherwise).
  *
  * Strings and not parsed rules, so this module still imports nothing; the self-test reads every
  * one through `readRequires` and holds each key to a row the system runs or pays for.
@@ -140,7 +175,9 @@ export const ENGINE_REQUIRES = Object.freeze({
   close: Object.freeze(["controlling"]),
   "gain-control": Object.freeze(["bind", "not controlling"]),
   "raise-a-shield": Object.freeze(["shield"]),
-  pass: Object.freeze(["encounter"])
+  pass: Object.freeze(["encounter"]),
+  // Reload (0.29.0): a weapon in hand that takes ammunition and is not full.
+  reload: Object.freeze(["weapon unloaded"])
 });
 
 /** The worn Visored piece, or null with a notice. */

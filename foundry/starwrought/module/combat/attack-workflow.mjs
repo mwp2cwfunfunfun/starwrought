@@ -176,6 +176,13 @@ export class AttackWorkflow {
         // Whether the Blow is ranged: a melee-only Reaction (Slip the Line, Parry, Deflecting
         // Palms; PHB v4.21) answers a melee Blow alone. A Cast is never melee.
         ranged: (source === "spell") ? true : !!maneuver?.ranged,
+        // 0.29.0: the Strike used a shot from a ranged weapon (attack-source.mjs, `resolveSource`).
+        // The coordinator takes it from the weapon as the Blow is declared and gives it back when
+        // the Blow is cancelled before any die: one writer, in the order of the records. `unloaded`
+        // is the other answer: the weapon was empty, the Strike goes on, and the attacker's client
+        // says so on a card.
+        shot: (source === "weapon") && !!maneuver?.shot,
+        unloaded: (source === "weapon") && !!maneuver?.unloaded,
         // 0.12.0: a Reaction Strike (Intercept, the Riposte) is answered by a basic Defense alone
         // (a Reaction never triggers a Reaction); the Threat names the two Defenses that answer.
         reaction,

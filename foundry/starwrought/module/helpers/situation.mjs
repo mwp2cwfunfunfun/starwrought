@@ -60,9 +60,11 @@ function nearOf(actor) {
   if (!own || (own.parent !== canvas.scene)) return null;
   // A Blinded fighter sees nobody, and may still reach for somebody: not known either way.
   if (actor.statuses?.has("blinded")) return null;
-  // "In reach" is the longer of the body's own reach and the reach of what is in hand. The sheet's
-  // Total Reach alone would not do: it reads 0 for a character whose only weapon in hand is a
-  // ranged one (a bow reaches nothing in melee), and the free hand beside it still reaches.
+  // "In reach" is the longer of the body's own reach and the reach of what is in hand. Through
+  // 0.28.0 the sheet's Total Reach alone would not do: it read 0 for a character whose only weapon
+  // in hand was a ranged one. Since 0.29.0 every character has an Unarmed Strike in hand, so Total
+  // Reach is never below the body's own; the longer of the two is kept for a character with no
+  // natural weapon (the fist deleted, an adversary read the same way).
   const reaches = reachesOf(actor);
   const reach = Math.max(Number(reaches.total) || 0, Number(reaches.natural) || 0);
   const near = [];
@@ -116,7 +118,17 @@ export function situationOf(actor) {
       ...shields.map(() => ({ type: "shield" })),
       ...gear.map(() => ({ type: "gear" }))
     ]),
-    weapons: weapons.map(w => ({ reach: w.system.isRanged ? "ranged" : "melee", traits: traitWords(w) })),
+    // Each weapon in hand, with what the weapon words ask of it (0.29.0): `natural` for the bare
+    // fist every character has, which is no "weapon in hand"; whether it takes ammunition, is
+    // ready to shoot (`loaded`: a shot in it, or it needs none) and is full.
+    weapons: weapons.map(w => ({
+      reach: w.system.isRanged ? "ranged" : "melee",
+      traits: traitWords(w),
+      natural: !!w.system.natural,
+      takesAmmunition: !!w.system.takesAmmunition,
+      loaded: w.system.isLoaded !== false,
+      full: w.system.isFull !== false
+    })),
     encounter,
     tracking: !!setting("trackActions", true),
     actionsLeft: Math.max(0, Number(actor.system?.actions?.value) || 0),

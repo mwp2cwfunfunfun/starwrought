@@ -713,11 +713,14 @@ The words:
 | `rigid` | a rigid implement is in hand: a weapon that is neither Flexible nor a natural weapon, or a shield |
 | `free hand` | a hand is free. An estimate: a weapon or a shield in hand is a hand (two for a weapon held in two, none for a natural weapon), and gear marked In hand is probably one. When the system cannot tell, the row is shown |
 | `holding` | anything is in hand |
-| `weapon`, `melee weapon`, `ranged weapon` | a weapon is in hand, of that kind |
-| `weapon <trait>`, `melee weapon <trait>` | a weapon in hand carries the trait, matched on the trait's first word: `weapon reload`, `weapon thrown`, `weapon grapple`, `weapon trip`, `weapon disarm`, `weapon shove` |
+| `weapon`, `melee weapon`, `ranged weapon` | a weapon is in hand, of that kind. A held object: the Unarmed Strike every character has (0.29.0) is never one |
+| `weapon <trait>`, `melee weapon <trait>` | a weapon in hand carries the trait, matched on the trait's first word: `weapon reload`, `weapon thrown`, `weapon grapple`, `weapon trip`, `weapon disarm`, `weapon shove`. The Unarmed Strike counts here, for a trait it carries |
+| `weapon loaded`, `ranged weapon loaded` | such a weapon in hand is ready to shoot (0.29.0): it has a shot in it, or it needs no loading (Bolas). A melee weapon needs none either, so `ranged weapon loaded` is the usual word |
+| `weapon unloaded` | a weapon in hand takes ammunition and is not full (0.29.0): something the Reload Maneuver could load. Not the opposite of `loaded`: a Repeating Crossbow at 3 of 5 is both |
 | `foe adjacent`, `ally adjacent`, `creature adjacent` | such a token touches the character's on the map |
 | `foe in reach` (`ally`, `creature`) | such a token is within the character's reach |
 | `foe within 30` (`ally`, `creature`; any number of feet) | such a token is within that many feet, edge to edge |
+| `foe in sight` (`ally`, `creature`) | the character can see such a token, at any distance (0.29.0). Sight is the reading every nearness word already uses: a clear line between the two tokens past the walls, and the other not Hidden or Undetected. For a Blinded character the system does not guess, and the row stays listed |
 | `encounter` | the character is a fighter in a running encounter |
 
 `foe` is a token of the opposite disposition, `ally` one of the same, `creature` any other token.
@@ -737,8 +740,10 @@ the reach of what is in hand.
 card reads it. The sheet's As read list says `needs: Prone or Supine`.
 
 **The Maneuvers the system itself runs need no block:** Cast (`spell`), Close (`controlling`), Gain
-Control (`bind`, and `not controlling`), Raise a Shield (`shield`) and Pass (`encounter`) carry
-theirs in code. A `[REQUIRES ...]` block in such a row's cell replaces the built-in one.
+Control (`bind`, and `not controlling`), Raise a Shield (`shield`), Pass (`encounter`) and, since
+0.29.0, Reload (`weapon unloaded`) carry theirs in code. A `[REQUIRES ...]` block in such a row's
+cell replaces the built-in one. Strike is run by the system too (0.29.0: its row has the three
+Strike buttons and asks what to Strike with), and its conditions are a cell, printed in section 5.
 
 **Not read, and the table's:** Size limits ("no more than one Size larger"), cover and concealment,
 tools and supplies, mounts and animals, "can hear you", "willing", what a Reaction's Trigger needs,
@@ -904,7 +909,6 @@ Until a row has its block the Maneuvers tab always lists it.
 
 ```
 Basic Actions
-  Reload                    [REQUIRES weapon reload]
   Crawl                     [REQUIRES prone]
   Drop Prone                [REQUIRES not prone]
   Stand                     [REQUIRES prone or supine]
@@ -957,8 +961,21 @@ Three more that read, and are a judgement about how the table plays:
   Battle Cry                [REQUIRES foe within 30]        its Range; its Trigger is still the table's
 ```
 
-Cast, Close, Gain Control, Raise a Shield and Pass need nothing written: the system runs them and
-knows what they need. Rows whose requirement is judgement stay listed always: Take Cover, Hide (cover
+**Strike** (0.29.0), four blocks in the one cell, every one of which must hold: something to
+Strike with that can reach (a foe in reach, or a ranged weapon that is loaded, or a weapon to
+throw), a foe the character can see, and a body that can act.
+
+```
+  Strike                    [REQUIRES foe in reach or ranged weapon loaded or weapon thrown]
+                            [REQUIRES foe in sight]
+                            [REQUIRES not restrained]
+                            [REQUIRES not unconscious]
+```
+
+Cast, Close, Gain Control, Raise a Shield, Pass and Reload need nothing written: the system runs
+them and knows what they need. (The `[REQUIRES weapon reload]` printed for Reload with 0.28.0 is
+withdrawn: Reload is listed only while a weapon in hand can be loaded, which the trait alone does
+not say.) Rows whose requirement is judgement stay listed always: Take Cover, Hide (cover
 and concealment), Squeeze, Balance, Climb, Swim (the place), Brace an Object, Field Patch, Disable
 Device, Pick Lock, Stabilize's supplies (tools), Aid ("willing"), Quench the Ember (the system has no
 word for a kind of Persistent Damage), Sure Seat (a mount), Grab an Edge (Releasing an item is part
@@ -1157,6 +1174,14 @@ written on the Maneuver's row.
   Combat window is not a row of the tab.
 - **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
   sight-blocking walls plus three statuses; light, sight range and hearing are the table's.
+  `[REQUIRES foe in sight]` (0.29.0) is the same reading, asked by the Maneuvers tab of every
+  other token on the scene.
+- **A loaded weapon is the weapon's own count, and nothing refuses an empty one** (0.29.0). The
+  `loaded` and `unloaded` words read the count on the weapon in hand: a Strike with it in an
+  encounter uses a shot, the Reload Maneuver fills it for that weapon's Reload cost, and the chip
+  on its Equipment row corrects it by hand. A Strike with an empty weapon still happens and its
+  card says so. Outside an encounter nothing is counted. Ammunition itself (arrows, bolts) is not
+  counted yet.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
   every clause with no line for it is the table's.
 - **Adversaries.** A rule on an adversary's Item is indexed but no adversary roll asks for
@@ -1178,7 +1203,7 @@ written on the Maneuver's row.
 | `REQUIRES is a block of its own, not an effect: write \`[REQUIRES prone]\`` | a feature keyword wrapped in `[EFFECT ...]` (0.28.0); every keyword is told the same in its own word |
 | `REQUIRES is written on the Maneuver's own row: it says when that Maneuver can be used, and the Maneuvers tab lists the row only then` | a `[REQUIRES ...]` block on a Talent or a custom effect |
 | `"<word>" is not something REQUIRES can check: write a Condition (...), supine, bind, spell, shield, shield raised, rigid, free hand, holding, weapon, ...` | a word section 4's table does not list |
-| `"<words>": say how near, as in \`foe adjacent\`, \`foe in reach\` or \`ally within 30\`` | `foe`, `ally` or `creature` with no distance, or one that is none |
+| `"<words>": say how near, as in \`foe adjacent\`, \`foe in reach\`, \`foe in sight\` or \`ally within 30\`` | `foe`, `ally` or `creature` with no distance, or one that is none |
 | `REQUIRES joins alternatives with \`or\`, and a condition that must ALSO hold is a second block` / `REQUIRES has no \`and\`` | a comma, a semicolon or an `and` inside the block |
 | `"<words>": one \`not\` is enough` / `an \`or\` has nothing beside it` | a doubled `not`; a dangling `or` |
 | `TRAIT is a feature and is written in brackets: \`[TRAIT Human]\`` | a feature keyword typed as a line, without its brackets |
@@ -1408,3 +1433,13 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   refused, the list is a view (289). A feature block, not an effect: no tag, no hook point, no
   switch on the Effects tab. Fixed on the way: a feature keyword wrapped in `[EFFECT ...]` is told
   its own block. The release carries the kind alone: the blocks in section 5 are Mike's to paste.
+- **0.29.0** (2026-11-15): three new words for `[REQUIRES ...]`, from Mike's question of how to
+  write Strike's cell ("I can foresee many situations in the future where we need some sort of 'if
+  you can see an ally' or 'if you can see an enemy'", and "For a ranged weapon, it must also be
+  loaded"): `foe in sight` with `ally` and `creature` (ruling 296), `weapon loaded` with `ranged
+  weapon loaded`, and `weapon unloaded` (rulings 290 to 293: loading is tracked on the weapon, a
+  Strike in an encounter uses a shot, an empty weapon warns and goes on, Reload loads for the
+  weapon's own cost). `weapon` with no trait named is a held object and never the Unarmed Strike
+  every character now has (294). Reload joins the Maneuvers the system runs, so its block is in
+  code and the one printed with 0.28.0 is withdrawn; Strike's cell is printed in section 5 (295).
+  No new kind, tag or hook point.

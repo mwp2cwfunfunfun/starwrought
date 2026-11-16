@@ -39,6 +39,9 @@ import { CastMixin } from "./actor/cast.mjs";
 import { LoreMixin } from "./actor/lore.mjs";
 // CHARACTER EFFECTS (0.16.0): a custom effect's text is parsed on write, as a Talent's cell is.
 import { prepareEffectsUpdate } from "../rules/effects-state.mjs";
+// THE UNARMED STRIKE (0.29.0): every character is created with the compendium's.
+import { unarmedStrikeData } from "../helpers/content.mjs";
+import { hasNaturalWeapon } from "../data/items/weapon-traits.mjs";
 
 /**
  * The sections, in the order they are layered over Foundry's Actor. The order carries no meaning
@@ -150,6 +153,22 @@ export class SwActor extends Composed {
     prototypeToken.width = space;
     prototypeToken.height = space;
     this.updateSource({ prototypeToken });
+
+    // EVERY CHARACTER HAS AN UNARMED STRIKE (0.29.0, ruling 294; Mike, by question: "Give every
+    // character one now"): a new character is made with the compendium's, so an empty-handed
+    // character has something to Strike with. One that already has a natural weapon (a copy, an
+    // import, the wizard's own data) gets no second. Only the new Item is handed to `updateSource`,
+    // which adds it beside whatever Items the character was created with. A pack that cannot be
+    // read costs the character nothing but the fist, and nothing gives it later (the world's
+    // one-time step has run): the Strike chooser says to drag one in from the Equipment compendium.
+    if ((this.type === "character") && !hasNaturalWeapon(this._source.items)) {
+      try {
+        const fist = await unarmedStrikeData();
+        if (fist) this.updateSource({ items: [{ ...fist, _id: foundry.utils.randomID() }] });
+      } catch (error) {
+        console.warn("STARWROUGHT | the Unarmed Strike could not be given at creation:", error);
+      }
+    }
   }
 
   /** @inheritdoc */
