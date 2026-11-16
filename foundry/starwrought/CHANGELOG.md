@@ -7,6 +7,274 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.28.0 (2026-11-15): the Maneuvers tab: even pips, only what applies, Favorites
+
+Built from **Player's Handbook v4.25**; no handbook moved. Rulings 281 to 289. One rule kind is
+new, `requires`, the twenty-second, and `AUTOMATION_GRAMMAR.md` carries it (sections 0, 2, 4, 5, 7,
+8 and 10). No data workbook was converted, built, staged or written, and one pack document moves:
+the Automation Grammar journal. The blocks the Maneuvers want are printed below for Mike to paste.
+
+Mike, 2026-11-15, with a screenshot of the Maneuvers tab: "1. Some of the action pips are different
+sizes. 2. (a) Many actions that should unavailable based on the situation are there. I would like
+to only show Maneuvers that the system detects are applicable, but still allow the player to click
+a button to see all Maneuvers ... For example, if you are not Prone or Supine, you cannot Stand. If
+you have no Spells, you cannot Cast. If nobody is within your reach, you cannot Grapple. etc. (b) I
+also want players to be able to 'Favorite' maneuvers; these are always at the top of the list and
+are always visible." Planned first (`dazzling-floating-simon.md`); his decisions by question: the
+conditions are written in the sheets; a row is also left out for the wrong mode, a cost that cannot
+be paid, and not your Opportunity; Favorites are the character's.
+
+| | Through 0.27.0 | 0.28.0 |
+|---|---|---|
+| A cost on a sheet | A font glyph: ⓿ from another font than ❶ to ❻ and so another size, and the "to" of "⓿ to ❻" drawn at the glyph's size | A drawn disc for each number, all one size, and small words between them |
+| The Maneuvers tab | Every Basic Maneuver, always (67 rows on the test character) | The ones that apply now; a button lists the rest, dimmed, each saying why |
+| Stand, with the character on its feet | Listed | Left out, once its row carries `[REQUIRES prone or supine]` |
+| Cast with no spell; Close with no Control; Gain Control with no Bind; Raise a Shield with none in hand; Pass outside an encounter | Listed | Left out, with nothing to write |
+| Search, Train and the other Activities and Endeavors, in an encounter | Listed | Left out |
+| A Maneuver you cannot pay for, or one outside your Opportunity | Listed | Left out |
+| A Maneuver you use all the time | Wherever its group is | Bookmarked: first on the tab, and never left out |
+
+### The pips (no ruling)
+
+The cost glyphs are font characters. ⓿, ⓫ and ⓬ come from another Unicode block than ❶ to ❿, so a
+browser borrows them from another font at another size; and a range's whole cost ("⓿ to ❻") was one
+string in one large span, so its "to" was drawn at the glyph's size. `costParts(text)` in
+`module/config/actions.mjs` takes a printed cost apart (a pip for each number, the Reaction mark,
+the words), `costPipsHtml` writes the parts as markup, and the `swCostPips` Handlebars helper hands
+it to the templates: each number is `<b class="sw-cost-pip">`, a disc the stylesheet sizes in `em`
+(`styles/sheet.css`), the Reaction mark an icon, and "to", "or" and brackets small text. No font
+decides a size any more. Applied wherever a sheet draws a cost as a mark of its own: the Maneuvers
+tab's rows, the six action pips in both sheets' headers, the Pass and Recenter buttons, the Strike
+and Cast buttons, a Talent's row, the Item window's header and its Cast buttons, the adversary
+sheet's abilities, and the title of a Maneuver's chat card. On the test character every disc on
+the tab measures 20 px, the header's 19.4 px and a button's 16 px. The names on the tab line up in
+one column, since the cost now sits in a column as wide as a range.
+
+`system.glyph` is unchanged, and so is everything that reads it as text: tooltips, the Combat
+window, the roll dialog, and the chat lines that say what was spent ("❶ Step"), where ⓿ can still
+look larger. A card already in the log keeps the glyph it was posted with. A cost printed inside a
+small caption stays the font's glyph: the Overview's movement labels ("❶ Speed") and Strike kinds,
+the Item window's field labels and the adversary's Reaction chips. Those are ❶ to ❹, one font and
+one size, so they were never uneven; they are a second look for a cost, and not the fault Mike saw.
+
+### The rulings
+
+- **281. The Maneuvers tab lists what applies now** (Mike). By default a row that does not apply is
+  left out; **Show every Maneuver** at the top of the tab lists them all, the rest dimmed, each with
+  why on the row and every reason on hover ("Needs: Prone or Supine", "Costs ❷, 1 action left",
+  "Not your Opportunity"). The toolbar says how many are left out. The choice is the user's on that
+  device, on every sheet (the client setting `showAllManeuvers`, with no entry in the settings
+  window: the tab's button is the switch, as "Show every Constellation" is).
+- **282. The conditions are written in the sheets** (Mike: "In your sheets"). A Maneuver's
+  Requirements are prose. The part a machine can check is a `[REQUIRES ...]` block in the row's
+  Automation cell: every block must hold, `or` inside one gives alternatives, `not` turns a word
+  round. The five Maneuvers the system itself runs carry theirs in code and need nothing written
+  (`ENGINE_REQUIRES` in `module/documents/maneuvers.mjs`): Cast `spell`, Close `controlling`, Gain
+  Control `bind` and `not controlling`, Raise a Shield `shield`, Pass `encounter`. A block in such a
+  row's cell replaces the built-in one.
+- **283. A row is left out only when the system knows** (Claude's reading of "that the system
+  detects"). Every word is true, false or cannot be told. A block fails only when every alternative
+  in it is known false. `not` of "cannot tell" is still "cannot tell". So a character with no
+  token on the map keeps every Maneuver that asks who is near, and a hand the system is unsure of
+  hides nothing.
+- **284. The wrong mode** (Mike). In an encounter, an Exploration Activity and a Downtime Endeavor
+  are left out: by the Item's group, or by an Exploration or Downtime trait on a Skill sheet's row
+  (Treat Wounds, Survey Workmanship, Train Animal, Convalescent Care). Outside an encounter
+  everything is listed.
+- **285. Cannot afford it** (Mike). In an encounter with the six-action round tracked, a row whose
+  cheapest cost is above the actions left is left out. A range is judged by its low end; a Reaction
+  half with a cost of its own counts as a way to pay (Aid ❶, or ⓿↺). With "Track the six-action
+  round" off nothing is counted.
+- **286. Not your Opportunity** (Mike). In an encounter, outside the character's Opportunity, with
+  no approval of the GM's standing for an off-turn Maneuver, everything but a Reaction is left out.
+  A Reaction, for the tab, is a row with the Reaction flag, the Reaction trait, or a Trigger. Some
+  rows carry a Trigger with no ↺ in their Cost cell (Battle Cry, Sure Seat, Steady the Line): the
+  tab keeps them listed, though the engine still charges and gates them as plain Maneuvers, the
+  open point of 0.23.0. The GM's Approve brings the rest back until it is used.
+- **287. What the system can see** (Claude's). The character's Conditions; the Bind; the spells
+  owned; a shield in hand and whether it is Raised; a rigid implement in hand; the weapons in hand
+  with their reach and traits. A **free hand** is an estimate: a weapon or a shield is a hand (two
+  for a weapon held in two, none for a natural weapon), and gear marked In hand is probably one, so
+  the answer is yes when everything in hand leaves a hand, no when weapons and shields alone fill
+  both, and "cannot tell" between. **Who is near** is every other token on the viewed scene that
+  the CHARACTER can see (the walls between the two tokens, and the Hidden and Undetected statuses),
+  edge to edge in feet; "in reach" is the longer of the character's own reach and the reach of
+  what is in hand (the sheet's Total Reach alone reads 0 with only a bow in hand, and the free hand
+  beside it still reaches). A token hidden from the players, a party token and a dead body are not
+  counted, and a Blinded character is "cannot tell". So a foe the players cannot see never makes
+  Grapple appear. **The GM sees what the player sees**: nothing asks who is looking.
+- **288. Favorites** (Mike: "always at the top of the list and ... always visible"). A bookmark on
+  every row. Favorites are listed first, in a panel of their own, in the order they were marked,
+  and are never left out: one that does not apply is dimmed and says why. A Favorite is listed
+  there and not again in its group. They are the character's (`flags.starwrought
+  .favoriteManeuvers`, the slugs of the Maneuvers), so they follow it to every device and the GM
+  sees them; by slug, so a Favorite holds whether the row is the Basic one or a copy on the sheet.
+- **289. Nothing is refused, and a Maneuver is listed once** (Claude's). The tab is a view. A
+  dimmed row answers a click as any row does, and no roll, cost or card reads a `[REQUIRES ...]`
+  block; a Maneuver used when it does not apply is the table's. Where a character owns a copy of a
+  Basic Maneuver (copied down to edit, or granted by a Talent), the copy is listed and the Basic
+  row of the same name is not. A panel with nothing to list says "None applies right now. N
+  hidden."
+
+### The block
+
+```
+[REQUIRES <condition> or <condition> ...]
+```
+
+On a Maneuver's own row and nowhere else (refused on a Talent and on a custom effect). The words:
+a Condition's name (`prone`, `grabbed`, `restrained`, `hidden`, `off-guard`, `controlling`, ...);
+`supine` (accepted, and never true until Supine is built, so a cell is written once); `bind`;
+`spell`; `shield`, `shield raised`; `rigid`; `free hand`; `holding`; `weapon`, `melee weapon`,
+`ranged weapon`, `weapon <trait>`; `foe`, `ally` or `creature` followed by `adjacent`, `in reach`
+or `within <feet>`; `encounter`. A word it does not know is refused with the list. The stored
+rule: `{ kind: "requires", line, text, any: [{ test, not?, ... }] }`. As read: `needs: Prone or
+Supine`. A feature block: no tag, no hook point, no switch on the Effects tab. Fixed on the way: a
+feature keyword wrapped in `[EFFECT ...]` (`[EFFECT REQUIRES: prone]`, `[EFFECT TRAIT Human]`) is
+told its own block in place of the list of tags.
+
+### For Mike to paste: what each Maneuver needs
+
+Each goes in the row's Automation cell on `data/maneuvers.xlsx`, in place of an `N/A` or an empty
+cell, or on a line of its own beside the row's other blocks. Until a row has its block the tab
+always lists it.
+
+```
+Basic Actions
+  Reload                    [REQUIRES weapon reload]
+  Crawl                     [REQUIRES prone]
+  Drop Prone                [REQUIRES not prone]
+  Stand                     [REQUIRES prone or supine]
+
+Ancestry and Culture Actions
+  Steady the Line           [REQUIRES ally adjacent]
+  Move Together             [REQUIRES ally adjacent]
+  Rescue Haul               [REQUIRES free hand][REQUIRES creature adjacent]
+
+Acrobatics, Animal Handling, Athletics
+  Escape                    [REQUIRES grabbed or restrained]
+  Tumble Through            [REQUIRES foe adjacent]
+  Kip Up                    [REQUIRES prone or supine]
+  Calm Animal               [REQUIRES creature within 15]
+  Direct Animal             [REQUIRES creature within 30]
+  Disarm                    [REQUIRES free hand or weapon disarm][REQUIRES creature in reach]
+  Grapple                   [REQUIRES free hand or weapon grapple][REQUIRES creature in reach]
+  Reposition                [REQUIRES creature in reach]
+  Shove                     [REQUIRES free hand or weapon shove][REQUIRES creature in reach]
+  Trip                      [REQUIRES free hand or weapon trip][REQUIRES creature in reach]
+  Reliable Anchor           [REQUIRES free hand]
+
+Diplomacy, Guile, Insight
+  Rally                     [REQUIRES ally within 30]
+  Talk Them Down            [REQUIRES creature within 30]
+  Command the Field         [REQUIRES ally within 30]
+  Feint                     [REQUIRES foe in reach]
+  Feinting Step             [REQUIRES foe in reach]
+  Anticipate                [REQUIRES creature within 30]
+
+Medicine, Performance
+  Stabilize                 [REQUIRES creature adjacent]
+  Treat Persistent Damage   [REQUIRES creature adjacent]
+  Bolster                   [REQUIRES ally within 15]
+  Captivate                 [REQUIRES creature within 30]
+```
+
+Grapple, Disarm, Shove, Trip and Reposition say `creature`, since they may be tried on anyone in
+reach; Feint says `foe`, as its Requirements do. Three more read, and are a judgement about how the
+table plays: Release `[REQUIRES holding]` (but a Grab held with an empty hand is not something the
+system sees), Sneak `[REQUIRES hidden or undetected]` (only if the table sets those Conditions on
+the token), Battle Cry `[REQUIRES foe within 30]` (its Range; its Trigger is still the table's).
+Rows whose requirement is judgement stay listed always: cover and concealment (Take Cover, Hide),
+the place (Squeeze, Balance, Climb, Swim), tools and supplies, a mount, "willing", a settlement,
+Quench the Ember (no word for a kind of Persistent Damage), and every Size limit.
+
+Seen in the sheets and not changed: Grapple's row has Cost 0 with the Reaction trait and no
+Trigger, so the tab reads it as a free Reaction; Quench the Ember's cell (`[EFFECT: End Persistent
+Fire Damage; LIMIT: encounter]`) names no tag and is one of the red cells.
+
+### How it is built
+
+- `module/rules/requires.mjs`, pure and in the self-test: `readRequires` (the words),
+  `requireWords` (the same in English), `checkCondition` (true, false, null), `availability`,
+  `requiresFor(rules, engine)`, `maneuverStatus(row, situation)` (the four reasons), `freeHands`,
+  `arrangeManeuvers` (Favorites first, no row twice). `module/rules/kinds/requires.mjs` wraps the
+  reading as the kind. `conditionIdOf` moved from the `prevent` kind into
+  `module/config/conditions.mjs`, so both kinds read a Condition's name one way.
+- `module/helpers/situation.mjs`, the one Foundry-aware reader: `situationOf(actor)` (the
+  Conditions, the Bind, what is in hand, who is near, the encounter, the actions, the Opportunity,
+  a standing approval), `maneuverRow(item)` and `statusOf(item, situation)`.
+- `module/apps/actor-sheet.mjs`: one builder for the whole tab (`#maneuverRows`,
+  `#prepareManeuvers`) in place of three; `templates/actor/maneuver-row.hbs`, one partial for
+  every row; the toolbar and the Favorites panel in `templates/actor/actions.hbs`.
+- **The tab keeps itself current.** The sheet already redraws for the character's own changes. It
+  now also listens, while it is open, for the Combat (made, changed, ended; a Combatant's change),
+  for tokens on the scene (made, deleted, moved, hidden, their disposition, which of the
+  character's is selected), for another creature's Conditions (a foe that dies or goes Hidden
+  beside the character), for walls and doors, and for a world setting; it waits 150 ms for a burst
+  to settle (a timer, never an animation frame), works the list out again and redraws the tab only
+  when the list changed. A token dragged far from the character redraws nothing. Who is near is
+  worked out only when a row asks, and once for the whole tab.
+
+### Left to the table, and not built
+
+Size limits ("no more than one Size larger"), cover and concealment, tools and supplies, mounts and
+animals, "can hear you", "willing", whether a Reaction's Trigger has happened, and anything about
+the creature TARGETED rather than who is near. Recenter is always listed, since it is always legal.
+A row can leave the list while it is being looked at (a token steps out of reach, the Opportunity
+passes); a Favorite never does. Outside the Opportunity the tab is short on purpose: Reactions and
+Favorites; a click there still asks the GM, as before. The adversary sheet's abilities are not
+filtered. The Reaction Talents offered in the Combat window (Parry, Sidestep, Kneel Behind the
+Shield) are Talents and not rows of the tab, so a `[REQUIRES ...]` block cannot be written on
+them. Supine, a hand count that knows an Arms Wound, hearing, light and sight range are not read.
+A Move that Move Together permits is not known to the tab: the ally's Move row still says "Not
+your Opportunity" in that Opportunity, though the drag is allowed and is what the Maneuver is.
+
+### The review
+
+An independent review of the diff found no defect in the grammar, the three answers, the four
+reasons, the hand count, the sheet's handlers, the escaping or the stylesheet's order, and nine
+things elsewhere, none severe. Mended: "in reach" read 0 for a character whose only weapon in hand
+is a ranged one, so a block naming reach would have hidden Grapple and Feint from an archer with a
+foe beside them; the watch did not hear another creature's Conditions or a wall, so a foe killed
+or gone Hidden beside the character stayed counted until something moved; a LIMITED user's glance
+sheet could be asked for a part it does not have (a warning on the screen), here and in the
+Constellations toggle since 0.19.0; who is near was worked out on every render of every tab, and
+is now worked out only when a row asks; the document said "the viewer" where the code reads the
+character; `[REQUIRE ...]`, the singular, read as a block while two messages did not know it, and
+is no keyword now; a lit bookmark dimmed when its own row was hovered; the Recenter buttons and
+the Item window's Cast buttons still printed the font glyph. Stated and not changed: the ally's
+permitted Move above, and the small captions that keep the glyph. Two more were found on a second
+read before the review reported and mended first: two Maneuvers of one name on a sheet were
+listed as one, and a redraw of another tab could make a stale list look current.
+
+### Verified
+
+206 self-test checks (11 new: the cost splitter and its markup; the kind, every word and every
+refusal; the words in English; the three answers; a block failing only when every alternative is
+known false; the engine's five; the four reasons; the hand count; the arrangement), `node --check`,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of Mike's
+uncommitted workbook), `build_foundry.mjs --no-compile` (one document moves, the Grammar journal).
+Live in the test world with a GM tab and a player tab, on Tess, Wren and the Bandit, with world
+copies of Stand, Grapple and Feint carrying their blocks: every disc measured equal on the tab, in
+the header, on the Strike and Cast buttons, in the Item window, on the adversary sheet and on a new
+card; Cast, Close, Gain Control, Raise a Shield and Pass left out and back as the character gained
+what they need; Stand appearing as Wren went Prone and leaving as she stood; Feint appearing as the
+Bandit was moved beside Tess, leaving when it was hidden from the players, and returning when it
+was shown, on the player's sheet with no click; a far token's move redrawing nothing; in an
+encounter, the Activities and Endeavors left out, Rush and Cast left out at one action ("Costs ❷, 1
+action left"), only the free Maneuvers at none, only the Reactions outside the Opportunity, and
+everything back with the GM's approval standing; the toggle and its count; a Favorite marked by the
+GM seen by the player, unmarked and marked by the player seen by the GM, listed first, dimmed with
+both its reasons on hover, and still used from its dimmed row (the card posted, ❶ spent). The
+player and the GM saw the same list throughout. Driven again for the review's mends: a foe one
+foot from a character holding only a sling counted as in reach; Feint leaving as the foe beside
+Tess was marked dead and returning as it was not, and the same for a wall drawn between them and
+taken down; two Maneuvers of one name both listed; a redraw of another tab during the wait not
+hiding a change; the Recenter button's pip. Not driven: a LIMITED user's sheet, the bookmark's
+hover, a door. Mike's own Combat and character in that world were left as found.
+
+---
+
 ## 0.27.0 (2026-11-15): the Bind, automated
 
 Built from **Player's Handbook v4.25**, which this release redlines in place (four tracked changes

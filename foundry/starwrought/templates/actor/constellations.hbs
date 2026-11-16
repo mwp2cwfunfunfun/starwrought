@@ -122,7 +122,7 @@
           <span class="sw-talent-label">
             <a class="sw-talent-name" data-action="itemEdit" data-tooltip="{{talent.tip}}" data-tooltip-class="sw-tooltip-rich" data-tooltip-direction="RIGHT">{{swPlainName talent.name}}</a>
             {{#if talent.root}}<em class="sw-root-mark" data-tooltip="STARWROUGHT.Field.rootHint">✧</em>{{/if}}
-            {{#if talent.glyph}}<span class="sw-action-glyph">{{talent.glyph}}</span>{{/if}}
+            {{#if talent.glyph}}<span class="sw-action-glyph">{{swCostPips talent.glyph}}</span>{{/if}}
           </span>
           {{!-- AURAS (0.5.1): the ring, on a Talent that carries one; lit when Visible. --}}
           {{#with (lookup @root.auraByItem talent.id) as |aura|}}
@@ -142,7 +142,7 @@
             {{!-- The Cast Maneuver (PHB v4.21): ❷ Quick, ❸ Focused, ❹ Committed, on a spell Talent. --}}
             <span class="sw-cast-buttons">
               {{#each talent.spell.casts as |c|}}
-              <a class="sw-cast-button" data-action="castSpell" data-cast="{{c.key}}" data-tooltip="{{c.hint}}"><span class="sw-action-glyph">{{c.glyph}}</span></a>
+              <a class="sw-cast-button" data-action="castSpell" data-cast="{{c.key}}" data-tooltip="{{c.hint}}"><span class="sw-action-glyph">{{swCostPips c.glyph}}</span></a>
               {{/each}}
             </span>
             {{/if}}

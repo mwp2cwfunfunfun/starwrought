@@ -1,5 +1,25 @@
 [
   {
+    "id": "maneuver-requires-cells",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Data",
+    "where": "data/maneuvers.xlsx, the Automation cells of 28 rows; the blocks are printed in foundry/starwrought/CHANGELOG.md (0.28.0) and AUTOMATION_GRAMMAR.md section 5",
+    "question": "The Maneuvers tab lists only what applies now, and a Maneuver's own conditions are a [REQUIRES ...] block in its row's Automation cell. Until a row has its block the tab always lists it. Twenty-eight rows have a block written for them (Stand and Kip Up: [REQUIRES prone or supine]; Grapple: [REQUIRES free hand or weapon grapple][REQUIRES creature in reach]; and the rest), and three more are a judgement about how the table plays (Release, Sneak, Battle Cry).",
+    "recommendation": "Paste the 28 in place of the N/A or empty cells and run sync_content.cmd; leave Release, Sneak and Battle Cry unwritten unless the table tracks what they ask (a Grab held with an empty hand, Hidden as a Condition on the token).",
+    "decidedBy": ""
+  },
+  {
+    "id": "maneuvers-tab-claudes-readings",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.28.0, rulings 283, 286, 287 and 289; module/rules/requires.mjs, module/helpers/situation.mjs",
+    "question": "Four readings the Maneuvers tab makes that Mike did not rule on. 283: a row is left out only when the system KNOWS it does not apply (no token on the map, an unsure hand count and a Blinded character hide nothing). 286: a row with a Trigger and no Reaction mark in its Cost cell (Battle Cry, Sure Seat, Steady the Line) is kept on the list off-turn as a Reaction, though the engine still gates and charges it as a plain Maneuver. 287: who is near is every other token the character's own token can see, edge to edge, never one hidden from the players, a party token or a dead body; a free hand is an estimate. 289: nothing is refused (a dimmed row can be used), and an owned copy of a Basic Maneuver is listed in place of the Basic row.",
+    "recommendation": "Leave all four. 286 goes away when the rows' Cost cells carry the Reaction mark, which also settles the open point of 0.23.0 for the engine.",
+    "decidedBy": ""
+  },
+  {
     "id": "bind-redline-0-27-0",
     "since": "2026-11-15",
     "status": "open",

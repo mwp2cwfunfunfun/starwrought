@@ -46,11 +46,11 @@
                  glyph is the large gold one (0.5.1, T1). --}}
             <span class="sw-strike-buttons">
               <a class="sw-strike-button sw-strike-quick" data-action="attackWith" data-strike="quick"
-                 data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}"><span class="sw-action-glyph">{{swStrikeGlyph "quick"}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.quick"}}</span></a>
+                 data-tooltip="{{localize 'STARWROUGHT.Strike.quickHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "quick")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.quick"}}</span></a>
               <a class="sw-strike-button sw-strike-deliberate" data-action="attackWith" data-strike="deliberate"
-                 data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}"><span class="sw-action-glyph">{{swStrikeGlyph "deliberate"}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
+                 data-tooltip="{{localize 'STARWROUGHT.Strike.deliberateHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "deliberate")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.deliberate"}}</span></a>
               <a class="sw-strike-button sw-strike-committed" data-action="attackWith" data-strike="committed"
-                 data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}"><span class="sw-action-glyph">{{swStrikeGlyph "committed"}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.committed"}}</span></a>
+                 data-tooltip="{{localize 'STARWROUGHT.Strike.committedHint'}}"><span class="sw-action-glyph">{{swCostPips (swStrikeGlyph "committed")}}</span> <span class="sw-strike-word">{{localize "STARWROUGHT.Strike.committed"}}</span></a>
             </span>
           </td>
           <td class="sw-item-controls">
@@ -73,7 +73,7 @@
           {{localize "STARWROUGHT.Field.wounds"}} {{woundCount}}
         </span>
         <button type="button" class="sw-inline-button" data-action="recenter"
-                data-tooltip="STARWROUGHT.Action.recenterHint">{{swActionGlyph 1}} {{localize "STARWROUGHT.Action.recenter"}}</button>
+                data-tooltip="STARWROUGHT.Action.recenterHint">{{swCostPips (swActionGlyph 1)}} {{localize "STARWROUGHT.Action.recenter"}}</button>
       </span>
     </h3>
     <table class="sw-armor-table">
@@ -126,7 +126,7 @@
       {{#each reactions.abilities as |ability|}}
       <li class="sw-item-row sw-action-row" data-item-id="{{ability.id}}">
         <img src="{{ability.img}}" alt="{{ability.name}}">
-        <span class="sw-action-glyph">{{ability.glyph}}</span>
+        <span class="sw-action-glyph">{{swCostPips ability.glyph}}</span>
         <a class="sw-item-name" data-action="itemChat">{{swPlainName ability.name}}</a>
         <div class="sw-item-controls">
           <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>

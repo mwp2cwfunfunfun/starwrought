@@ -202,7 +202,16 @@ export function parseAutomation(text, context = {}) {
       for (const block of blocks) {
         if (block.effect) {
           if (!effectTagOf(block.data)) {
-            errors.push({ line, text: block.text, message: `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}` });
+            // A feature keyword wrapped in EFFECT (`[EFFECT REQUIRES: prone]`, 0.28.0) is told its
+            // own block rather than the list of tags, none of which it is.
+            const inner = splitLine(block.data);
+            const keyword = FEATURE_KEYWORD_LIST.find(k => (k !== "EFFECT") && (k.toLowerCase() === inner.word));
+            errors.push({
+              line, text: block.text,
+              message: keyword
+                ? `${keyword} is a block of its own, not an effect: write \`[${keyword} ${inner.args || "..."}]\``
+                : `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}`
+            });
           } else if (looksLegacy(splitLine(block.data).args)) {
             errors.push({ line, text: block.text, message: LEGACY_REFUSAL });
           } else {

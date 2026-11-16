@@ -1,0 +1,50 @@
+{{!-- One Maneuver on the Maneuvers tab (0.28.0). Context: a row from SwCharacterSheet's
+      #maneuverRows (its source, slug, cost, tags, whether it applies now and why not), plus
+      `editable` handed in by the caller. A Basic row is used straight from the compendium
+      (data-uuid); a Talent's or the character's own is an Item on the sheet (data-item-id).
+      A row that does not apply is dimmed and says why; it can still be used. --}}
+<li class="sw-item-row sw-action-row{{#unless applicable}} sw-inapplicable{{/unless}}" data-slug="{{slug}}"
+    {{#if uuid}}data-uuid="{{uuid}}"{{/if}}{{#if itemId}} data-item-id="{{itemId}}"{{/if}}>
+  {{!-- FAVORITES (ruling 288): the bookmark. Listed first and never left out; saved on the character. --}}
+  {{#if editable}}
+  <a class="sw-favorite{{#if favorite}} sw-favorite-on{{/if}}" data-action="toggleFavorite"
+     data-tooltip="{{#if favorite}}STARWROUGHT.Maneuvers.favoriteRemove{{else}}STARWROUGHT.Maneuvers.favoriteAdd{{/if}}"><i class="{{#if favorite}}fa-solid{{else}}fa-regular{{/if}} fa-bookmark"></i></a>
+  {{else}}{{#if favorite}}
+  <span class="sw-favorite sw-favorite-on"><i class="fa-solid fa-bookmark"></i></span>
+  {{/if}}{{/if}}
+  <img src="{{img}}" alt="{{name}}">
+  <span class="sw-action-glyph" data-tooltip="{{costLabel}}" aria-label="{{costLabel}}">{{swCostPips glyph}}</span>
+  <a class="sw-item-name" data-action="{{#if isBasic}}basicUse{{else}}itemUse{{/if}}"{{#if isBasic}} data-tooltip="{{hint}}"{{/if}}>{{swPlainName name}}</a>
+  {{#if tag}}<span class="sw-item-tag"{{#if tagTip}} data-tooltip="{{tagTip}}"{{/if}}>{{tag}}</span>{{/if}}
+  {{#each traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
+  {{#if isBasic}}{{#if requirements}}
+  <span class="sw-item-tag" data-tooltip="{{requirements}}">{{localize "STARWROUGHT.Field.requirements"}}</span>
+  {{/if}}{{/if}}
+  {{!-- Why it does not apply now: the first reason on the row, every reason on hover. --}}
+  {{#unless applicable}}
+  <span class="sw-item-tag sw-why" data-tooltip="{{reasonTip}}"><i class="fa-solid fa-ban"></i> {{reason}}</span>
+  {{/unless}}
+  {{!-- AURAS (0.5.1): the ring, on a Maneuver that carries one; lit when Visible. --}}
+  {{#if aura}}
+  <a class="sw-aura-toggle {{#if aura.visible}}sw-aura-on{{/if}}" data-action="toggleAura" data-key="{{aura.key}}"
+     data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
+  {{/if}}
+  <div class="sw-item-controls">
+    {{#if isBasic}}
+    <a data-action="basicChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
+    <a data-action="basicView" data-tooltip="STARWROUGHT.Sheet.view"><i class="fa-solid fa-eye"></i></a>
+    {{#if editable}}
+    <a data-action="basicAdopt" data-tooltip="STARWROUGHT.Sheet.basicAdopt"><i class="fa-solid fa-copy"></i></a>
+    {{/if}}
+    {{/if}}
+    {{#if isTalent}}
+    <a data-action="itemChat" data-tooltip="STARWROUGHT.Sheet.toChat"><i class="fa-solid fa-comment"></i></a>
+    <a data-action="itemEdit" data-tooltip="STARWROUGHT.Sheet.view"><i class="fa-solid fa-eye"></i></a>
+    {{/if}}
+    {{#if isOwn}}
+    <a data-action="itemChat"><i class="fa-solid fa-comment"></i></a>
+    <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
+    <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
+    {{/if}}
+  </div>
+</li>

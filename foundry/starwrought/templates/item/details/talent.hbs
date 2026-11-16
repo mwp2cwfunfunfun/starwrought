@@ -85,7 +85,7 @@
     {{#if spell.castable}}
     <span class="sw-panel-buttons">
       {{#each spell.casts as |c|}}
-      <a class="sw-inline-button" data-action="castSpell" data-cast="{{c.key}}" data-tooltip="{{c.hint}}">{{c.glyph}} {{c.label}}</a>
+      <a class="sw-inline-button" data-action="castSpell" data-cast="{{c.key}}" data-tooltip="{{c.hint}}">{{swCostPips c.glyph}} {{c.label}}</a>
       {{/each}}
     </span>
     {{/if}}

@@ -5,9 +5,10 @@ recommended changes this sync redlined into it read as accepted; `v4.25-sync-rep
 project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
-the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244 and the 0.25.0 entry 245 to 251). Since
+the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
+entry 269 to 280 and the 0.28.0 entry 281 to 289). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says: `data/*.xlsx` is
-their only source. System version **0.27.0**.
+their only source. System version **0.28.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -1549,6 +1550,56 @@ rank that applies after Handling, its damage (the Quick Strike's in the tooltip)
 three Strike buttons: ❶ Quick, ❷ Deliberate, ❸ Committed. Clicking the name uses the default Strike.
 Shift-click skips the dialog.
 
+**The Maneuvers tab lists what applies now** (0.28.0; rulings 281 to 289; Mike, with a screenshot of
+the tab: "Many actions that should unavailable based on the situation are there. I would like to
+only show Maneuvers that the system detects are applicable, but still allow the player to click a
+button to see all Maneuvers"). By default a Maneuver that does not apply right now is left out, and
+the top of the tab says how many are ("18 Maneuvers do not apply right now and are hidden.").
+**Show every Maneuver** beside that lists them all, the rest dimmed, each saying why on its row,
+with every reason on hover; **Applicable only** goes back. The choice is yours on that device, on
+every sheet. A dimmed row still answers a click: the tab is a view and refuses nothing.
+
+- **Four things leave a Maneuver out.** Its own conditions (below). In an encounter, an Exploration
+  Activity or a Downtime Endeavor. In an encounter with the six-action round tracked, a cheapest
+  cost above the actions you have left ("Costs ❷, 1 action left"). In an encounter outside your
+  Opportunity, with no approval of the GM's standing, anything but a Reaction ("Not your
+  Opportunity"), so off-turn the tab is Reactions and Favorites.
+- **Its own conditions** are `[REQUIRES ...]` blocks in the Automation cell of the Maneuver's row
+  (section 7): `[REQUIRES prone or supine]` on Stand, `[REQUIRES free hand or weapon
+  grapple][REQUIRES creature in reach]` on Grapple. The five Maneuvers the system itself runs need
+  nothing written: Cast is left out with no spell, Close with no Control, Gain Control with no Bind
+  or one you already Control, Raise a Shield with no shield in hand, Pass outside an encounter.
+  **A row with no block is always listed**; the blocks for the rows that can have one are in the
+  0.28.0 changelog entry, for Mike to paste.
+- **Only when the system knows.** A condition is met, not met, or cannot be told (your token is
+  not on the map, a hand the system is unsure of, you are Blinded). Only "not met" leaves a row
+  out. Who is near is every other token on the scene your character can see, edge to edge: a foe
+  hidden from the players, a party token and a dead body are not counted, so a hidden foe never
+  makes Grapple appear. "In reach" is the longer of your own reach and the reach of what is in
+  your hands. The GM's copy of your sheet lists what yours does.
+- **Favorites.** The bookmark at the left of every row. Favorites are listed first, in a panel of
+  their own, in the order you marked them, and are never left out: one that does not apply is
+  dimmed and says why. A Favorite is listed there and not again in its group. They are saved on the
+  character, so they follow it to every device and the GM sees them.
+- **It keeps itself current.** The list is worked out again when your Conditions, gear, Bind or
+  actions change, when the Opportunity moves, when a token on the scene moves, appears or is
+  hidden, when another creature's Conditions change (a foe beside you dies, or goes Hidden), and
+  when a wall or a door changes; the tab redraws only when the list changed. So a row can leave
+  while you are looking at it (a foe steps out of reach). A Favorite never does.
+- **A Maneuver is listed once.** Where the character owns a copy of a Basic Maneuver (copied down,
+  or granted by a Talent), the copy is listed and the Basic row of the same name is not.
+
+**Every cost is a drawn pip** (0.28.0; Mike: "Some of the action pips are different sizes"). The
+cost glyphs are font characters, and ⓿ comes from another font than ❶ to ❻, at another size; the
+"to" of "⓿ to ❻" was drawn as large as the glyphs. Each number is now a gold disc the stylesheet
+draws, all one size, with "to", "or" and brackets as small text and the Reaction mark an icon:
+on this tab, on the six action pips in the header, on the Pass and Recenter buttons, on the Strike
+and Cast buttons, on a Talent's row, in the Item window, on the adversary sheet's abilities and in
+the title of a Maneuver's card. The names on the tab line up in one column. Chat lines that say
+what was spent ("❶ Step") keep the font glyph, a card already in the log is not redrawn, and a
+cost printed inside a small caption (the Overview's "❶ Speed", the Strike kinds) is still the
+font's: those are ❶ to ❹, which were never uneven.
+
 **The Maneuvers tab** (the tab keeps its id `actions` in code). It opens with the **Basic
 Maneuvers**: what every character can do, grouped by category in the book's order and foldable,
 read straight from the Maneuvers compendium rather than copied onto the sheet, so a rewrite in
@@ -2238,19 +2289,28 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-one kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-two kinds
 
 **What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
-the eighteenth and nineteenth, 0.24.0 for the twentieth and 0.25.0 for the twenty-first; rulings
-118 to 124, 164 to 188, 215 to 230, 239 to 251). Since 0.9.0 every
+the eighteenth and nineteenth, 0.24.0 for the twentieth, 0.25.0 for the twenty-first and 0.28.0
+for the twenty-second; rulings 118 to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289). Since
+0.9.0 every
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Twenty-one kinds read it: ten effect kinds that act in play (`bonus`, `prevent`, `mark`,
+sheet. Twenty-two kinds read it: ten effect kinds that act in play (`bonus`, `prevent`, `mark`,
 `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`), two creation kinds
-(`grant`, `aura`) and nine feature kinds
+(`grant`, `aura`), nine feature kinds
 (`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
-what owning the Talent does to the character. Nothing else reads a rule: no Strike's commitment,
+what owning the Talent does to the character, and `requires` (0.28.0), a block on a Maneuver's own
+row that says what the Maneuver needs before it can be used: `[REQUIRES prone or supine]`,
+`[REQUIRES free hand or weapon grapple][REQUIRES creature in reach]`. Every block on the row must
+hold, `or` inside one gives alternatives, `not` turns a word round; the words are a Condition's
+name, `supine`, `bind`, `spell`, `shield`, `shield raised`, `rigid`, `free hand`, `holding`,
+`weapon` (with `melee`, `ranged` or a trait), `foe`, `ally` or `creature` with `adjacent`, `in
+reach` or `within <feet>`, and `encounter`. It acts at no roll and refuses nothing: the character
+sheet's Maneuvers tab reads it and lists the row only while it holds (section 3), and the Item
+window's As read line says `needs: Prone or Supine`. Nothing else reads a rule: no Strike's commitment,
 no damage step, because no kind for them exists, and Mike's instruction stands ("we will build
 automation syntax hooks one at a time").
 
@@ -3105,6 +3165,17 @@ before; the sources and the index are.
   the Controller that ends nearer the foe; a Disarm, "after its first benefit is used" and two
   adversaries contesting a Bind are by hand; an undo of a move does not bring a Bind back (Form a
   Bind does); and a Cast was not driven live, since no spell ships enabled.
+- **What the Maneuvers tab leaves to the table** (0.28.0): it lists and it never refuses, so a
+  Maneuver used when it does not apply is the table's. A row with no `[REQUIRES ...]` block is
+  always listed, and the blocks are Mike's to paste. Not read: Size limits ("no more than one
+  Size larger"), cover and concealment, tools and supplies, mounts and animals, "can hear you",
+  "willing", whether a Reaction's Trigger has happened, anything about the creature targeted
+  rather than who is near, a hand lost to an Arms Wound, and Supine, which the word accepts and
+  nothing sets. A free hand is an estimate. A row with a Trigger and no ↺ in its Cost cell is kept
+  on the list off-turn, though the engine still gates it as a plain Maneuver. A Move that Move
+  Together permits is not known to the tab: the ally's Move row still says "Not your Opportunity",
+  though the drag is allowed. The adversary sheet's abilities are not filtered, and the Reaction
+  Talents offered in the Combat window are not rows of the tab.
 - **A Prepared Rush is charged at once.** A drag is a move already made, so a Rush-length drag pays
   its three actions on the drop and the telegraphing the Prepared trait implies is left to the
   table.

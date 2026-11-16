@@ -116,6 +116,33 @@ export const PAID_ELSEWHERE = Object.freeze({
   close: "STARWROUGHT.Cost.paidByClosing"
 });
 
+/**
+ * What the Maneuvers the system itself runs need before they can be used (0.28.0), by the slug of
+ * the plain name: each entry is the data of one or more `[REQUIRES ...]` blocks, in the grammar's
+ * own words (module/rules/requires.mjs), every one of which must hold. The Maneuvers tab reads a
+ * row's own `[REQUIRES ...]` blocks; these five rows are engine code with an `N/A` in the cell
+ * (Cast, Close, Gain Control, Raise a Shield, Pass), so their conditions are said here, where the
+ * behaviour is, and the tab lists them correctly with no cell written. A row that does carry a
+ * block of its own is read from the cell and never from here: the sheet is the author.
+ *
+ *  - Cast: a spell to cast (documents/actor/cast.mjs asks the same of the Talent);
+ *  - Close: you Control a foe's weapon (the row's Requirements; `settleBindOnMove` reads the Step);
+ *  - Gain Control: you are in a Bind you do not already Control (`gainControl` refuses otherwise);
+ *  - Raise a Shield: a shield in hand (the entry above warns without one);
+ *  - Pass: a fighter in a running encounter (`actor.pass()` says why and does nothing otherwise).
+ *
+ * Strings and not parsed rules, so this module still imports nothing; the self-test reads every
+ * one through `readRequires` and holds each key to a row the system runs or pays for.
+ * @type {Readonly<Record<string, readonly string[]>>}
+ */
+export const ENGINE_REQUIRES = Object.freeze({
+  cast: Object.freeze(["spell"]),
+  close: Object.freeze(["controlling"]),
+  "gain-control": Object.freeze(["bind", "not controlling"]),
+  "raise-a-shield": Object.freeze(["shield"]),
+  pass: Object.freeze(["encounter"])
+});
+
 /** The worn Visored piece, or null with a notice. */
 function visorOf(actor) {
   const piece = actor.items.find(i => (i.type === "armor") && i.system.worn && i.system.visored);

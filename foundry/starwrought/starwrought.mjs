@@ -1102,7 +1102,32 @@ function registerSettings() {
     default: false,
     onChange: () => {
       for (const app of foundry.applications.instances.values()) {
+        // Never a LIMITED user's sheet (0.28.0, found beside the Maneuvers toggle below): it is
+        // the glance alone since 0.19.0, and asking it for this part was a warning on the screen.
+        if (app.document?.limited && !game.user.isGM) continue;
         if (app.rendered && app.constructor?.PARTS?.constellations) app.render({ parts: ["constellations"] });
+      }
+    }
+  });
+
+  // The Maneuvers tab's toggle (0.28.0, ruling 281; Mike: "only show Maneuvers that the system
+  // detects are applicable, but still allow the player to click a button to see all Maneuvers").
+  // Off, the default, lists what applies now and the Favorites; on, every Maneuver with the rest
+  // dimmed. No config entry, as the Constellations toggle above: the tab's own button reads and
+  // writes it, for this user on this device. A change redraws the Maneuvers part of every
+  // character sheet this client has open.
+  game.settings.register(SW.SYSTEM_ID, "showAllManeuvers", {
+    name: "STARWROUGHT.Settings.showAllManeuvers",
+    hint: "STARWROUGHT.Settings.showAllManeuversHint",
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+    onChange: () => {
+      for (const app of foundry.applications.instances.values()) {
+        // Never a LIMITED user's sheet, which is the glance alone and has no such part.
+        if (app.document?.limited && !game.user.isGM) continue;
+        if (app.rendered && (typeof app.constructor?.showAllManeuvers === "function")) app.render({ parts: ["actions"] });
       }
     }
   });

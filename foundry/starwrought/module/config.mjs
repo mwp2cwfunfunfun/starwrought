@@ -67,7 +67,8 @@ export {
 
 export {
   ACTIONS_PER_ROUND, ACTIONS_MAX, PREPARED_THRESHOLD, PREPARE_SPEND, ACTION_GLYPHS, REACTION_GLYPH, ACTION_COSTS,
-  LEGACY_ACTION_COSTS, actionCostValue, actionCostOptions, parseActionCost, costGlyphs
+  LEGACY_ACTION_COSTS, actionCostValue, actionCostOptions, parseActionCost, costGlyphs,
+  costParts, costPipsHtml
 } from "./config/actions.mjs";
 
 export {
@@ -85,7 +86,7 @@ export {
 
 export { TYPE_ICONS, FEATURE_TYPES, PHYSICAL_TYPES, CARRY_STATES, ACTIVE_STATE } from "./config/items.mjs";
 
-export { CONDITIONS, ZONE_CONDITIONS, statusEffectId } from "./config/conditions.mjs";
+export { CONDITIONS, ZONE_CONDITIONS, statusEffectId, conditionIdOf, conditionWords } from "./config/conditions.mjs";
 
 export { BONUS_TYPES, LEGACY_BONUS_TYPES, bonusType, resolveModifiers } from "./config/modifiers.mjs";
 

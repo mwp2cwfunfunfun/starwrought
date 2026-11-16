@@ -155,3 +155,57 @@ export function costGlyphs({ cost, costMax = "", costMode = "to", reaction = fal
   }
   return `${range}${REACTION_GLYPH}`.trim();
 }
+
+/** The number behind each cost glyph, so a printed cost can be read back: "❷" is 2. */
+const GLYPH_NUMBERS = Object.freeze(Object.fromEntries(
+  Object.entries(ACTION_GLYPHS).map(([n, glyph]) => [glyph, Number(n)])
+));
+
+/**
+ * A printed cost, taken apart (0.28.0): "⓿ to ❻" is a pip of 0, the word "to", a pip of 6;
+ * "❶ (⓿↺)" is a pip, an opening bracket, a pip, the Reaction mark, a closing bracket.
+ *
+ * Why: the glyphs are font characters, and ⓿ ⓫ ⓬ come from another Unicode block than ❶ to ❿, so
+ * a browser borrows them from another font at another size; and the "to" inside the string was
+ * drawn at the glyph's size. The sheets draw each part themselves (`costPipsHtml`), so no font can
+ * make one pip larger than the next. `system.glyph` stays the text: labels, tooltips and chat
+ * lines read it.
+ * @param {string} text  What `costGlyphs` returned, or any text holding cost glyphs.
+ * @returns {Array<{pip: number}|{react: true}|{join: string}>}
+ */
+export function costParts(text) {
+  const parts = [];
+  let join = "";
+  const flush = () => {
+    const word = join.trim();
+    if (word) parts.push({ join: word });
+    join = "";
+  };
+  for (const char of String(text ?? "")) {
+    if (char in GLYPH_NUMBERS) { flush(); parts.push({ pip: GLYPH_NUMBERS[char] }); }
+    else if (char === REACTION_GLYPH) { flush(); parts.push({ react: true }); }
+    else if (/[()]/.test(char)) { flush(); parts.push({ join: char }); }
+    else if (/\s/.test(char)) flush();
+    else join += char;
+  }
+  flush();
+  return parts;
+}
+
+const HTML_ESCAPES = Object.freeze({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" });
+
+/**
+ * A printed cost as the sheets draw it (0.28.0): each number a disc the stylesheet sizes, the
+ * Reaction mark an icon, and "to", "or" and the brackets small text between them. A string of
+ * markup, built here so the self-test can read it; the `swCostPips` helper hands it to a template.
+ * @param {string} text
+ * @returns {string}
+ */
+export function costPipsHtml(text) {
+  return costParts(text).map(part => {
+    if ("pip" in part) return `<b class="sw-cost-pip">${part.pip}</b>`;
+    if (part.react) return `<i class="fa-solid fa-rotate-left sw-cost-react"></i>`;
+    const word = part.join.replace(/[&<>"']/g, char => HTML_ESCAPES[char]);
+    return `<small class="sw-cost-join">${word}</small>`;
+  }).join("");
+}

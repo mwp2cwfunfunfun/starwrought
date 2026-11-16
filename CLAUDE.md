@@ -920,6 +920,73 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.28.0 (Mike, 2026-11-15; rulings 281 to 289): the Maneuvers tab: even pips, only what applies,
+Favorites.** Mike, with a screenshot of the tab: "Some of the action pips are different sizes";
+"Many actions that should unavailable based on the situation are there. I would like to only show
+Maneuvers that the system detects are applicable, but still allow the player to click a button to
+see all Maneuvers ... if you are not Prone or Supine, you cannot Stand. If you have no Spells, you
+cannot Cast. If nobody is within your reach, you cannot Grapple"; and "I also want players to be
+able to 'Favorite' maneuvers; these are always at the top of the list and are always visible."
+Planned first (`dazzling-floating-simon.md`; his decisions by question: the conditions written in
+the sheets, also hidden for the wrong mode, a cost that cannot be paid and not your Opportunity,
+Favorites on the character). **Every cost on a sheet is a drawn pip** (no ruling): `costParts` and
+`costPipsHtml` in `module/config/actions.mjs` (pure, in the barrel), the `swCostPips` Handlebars
+helper, `.sw-cost-pip` (a disc sized in `em`, the numeral cut dark with `-webkit-text-fill-color`
+so `color` stays the disc's), `.sw-cost-join` and `.sw-cost-react` in `styles/sheet.css`; used at
+every `.sw-action-glyph` site, in `action-pips.hbs` and on the Pass, Recenter and Item-window Cast
+buttons; `system.glyph` is unchanged and every tooltip, dialog and spend line still reads it as
+text, as do the small captions (the Overview's movement labels and Strike kinds), which were
+never uneven. **A cost on a sheet goes through `{{swCostPips <glyph text>}}`.** **The `requires` kind, the twenty-second**
+(ruling 282): a feature block on a MANEUVER'S OWN ROW and nowhere else, `[REQUIRES <condition> or
+<condition>]`, every block on the row to hold, `or` for alternatives, `not` for a word turned
+round; the words are a Condition's name (`conditionIdOf` in `module/config/conditions.mjs`, shared
+with `prevent`), `supine` (accepted, known false until built), `bind`, `spell`, `shield`, `shield
+raised`, `rigid`, `free hand`, `holding`, `weapon` with `melee`, `ranged` or a trait, `foe`,
+`ally` or `creature` with `adjacent`, `in reach` or `within <feet>`, and `encounter`; stored `{
+kind: "requires", any: [{ test, not?, ... }] }`; `REQUIRES` sits before `EFFECT` in
+`FEATURE_KEYWORD_LIST`; **no hook and no hook point**, never in `EFFECT_TAGS` or `EFFECT_KINDS`.
+**Everything the tab decides is one pure module, `module/rules/requires.mjs`** (`readRequires`,
+`requireWords`, `checkCondition`, `availability`, `requiresFor`, `maneuverStatus`, `freeHands`,
+`arrangeManeuvers`), driven by the self-test. **Three answers, not two** (ruling 283): a word is
+true, false or null ("cannot tell"); a block fails only when every alternative is known false;
+`not` of null is null; so a row is left out only when the system knows. **The four reasons**
+(rulings 284 to 286; `maneuverStatus`, `STATUS_REASONS`): `requires`; `mode` (in an encounter, an
+Exploration Activity or a Downtime Endeavor, by `isExploration` / `isDowntime` or the trait);
+`opportunity` (in an encounter, not the turn, no permit, anything but a Reaction, which for the
+tab is the flag, the trait or a Trigger); `cost` (in an encounter with `trackActions` on, the
+cheapest of `actionCostOptions` and a Reaction's own cost above the actions left). **The engine's
+five** carry their conditions as the same words in code: `ENGINE_REQUIRES` in
+`module/documents/maneuvers.mjs` (cast `spell`; close `controlling`; gain-control `bind`, `not
+controlling`; raise-a-shield `shield`; pass `encounter`); a block in the cell replaces them.
+**The situation is read in one place**, `module/helpers/situation.mjs` (`situationOf`,
+`maneuverRow`, `statusOf`; ruling 287): `actor.statuses`, `system.bind.state`, spell Talents, held
+shields, weapons and gear, `freeHands`, and who is near (every other token on the viewed scene the
+CHARACTER's token can see by `canSeeToken`, never a `hidden` token, a party token or a dead body,
+null with no token on the scene or while Blinded; `gapBetween`; "in reach" the longer of
+`reachesOf(actor).total` and `.natural`, since `totalReach` is 0 with only a ranged weapon in
+hand; a lazy getter, worked out only when a row asks and once for the tab), the
+encounter, the actions left, `isTurn` and `hasPermit`, never `canActNow()`, which is true for any
+GM: **the GM sees what the player sees**. **The tab** (`module/apps/actor-sheet.mjs`):
+`#maneuverRows` builds every row once (the Talents' Maneuvers, the character's own, then the
+Basic ones, so an owned copy stands over the Basic row of its name), `#prepareManeuvers` arranges
+them (`context.maneuvers`; the old `basicActions`, `talentActions` and `actionItems` are gone),
+`templates/actor/maneuver-row.hbs` is the one row partial, the toolbar's button is
+`toggleAllManeuvers` over the client setting `showAllManeuvers` (no config entry, the
+Constellations toggle's pattern; ruling 281), and the bookmark is `toggleFavorite` over
+`flags.starwrought.favoriteManeuvers` on the character, slugs in the order marked, written with
+`swAnnounced` (ruling 288). **It watches** while open (`#watchManeuvers`, released in `_onClose`;
+`MANEUVER_WATCH_HOOKS`): the Combat and Combatant hooks, `createToken`, `deleteToken`,
+`controlToken`, `canvasReady`, the three ActiveEffect hooks (another creature's Conditions), the
+three Wall hooks, `createSetting` and `updateSetting`, and `updateToken` for x, y, size, hidden,
+disposition; a 150 ms `setTimeout`, then a fresh signature of the rows against the one last drawn
+(kept in `_onRender` only when the `actions` part was among the parts rendered, since every
+render prepares the whole context), and a render of the `actions` part only when they differ,
+never on a LIMITED user's sheet, which is the glance alone. **Nothing is refused** (ruling 289): a
+dimmed row is used as any row. **Only a Basic row gives way to a row of its name**
+(`arrangeManeuvers`, `isBasic`): two Items of one name on a sheet are both listed. The release carries the kind alone: the
+twenty-eight blocks are printed in the 0.28.0 changelog entry and in `AUTOMATION_GRAMMAR.md`
+section 5 for Mike to paste, and his workbooks were not converted, built, staged or written.
+
 **0.27.0 (Mike, 2026-11-15; rulings 269 to 280): the Bind, automated.** Mike asked "what
 automation do we have around creating, closing, controlling, and/or breaking a bind?", then "Plan
 it" (`dazzling-floating-simon.md`; his decisions by question: only a fighter's own movement ends
@@ -1783,12 +1850,13 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Twenty-one kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
-  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0): the effect kinds `bonus`, `prevent`,
-  `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, the creation
-  kinds `grant` and `aura`, and
+  Twenty-two kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0): the effect
+  kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`,
+  `subordinate`, the creation kinds `grant` and `aura`,
   the feature kinds `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`,
-  `choice`; the level-1 Human, the two Cultures, the
+  `choice`, and `requires`, the block on a Maneuver's own row that the Maneuvers tab reads; the
+  level-1 Human, the two Cultures, the
   three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
   Fantasy Grounds shape. What the grammar does not yet read: a `prevent` of a Condition on an ally
   as a Reaction (no Talent asks for it; the Expose Reaction is built); adversaries' rolls (flat);
@@ -1918,6 +1986,29 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.28.0 leaves to the table or to Mike** (the Maneuvers tab): **the twenty-eight
+  `[REQUIRES ...]` blocks wait for him to paste** into `data/maneuvers.xlsx` (the 0.28.0 changelog
+  entry and `AUTOMATION_GRAMMAR.md` section 5 print them; Reload, Crawl, Drop Prone, Stand, Steady
+  the Line, Move Together, Rescue Haul, Escape, Tumble Through, Kip Up, Calm Animal, Direct Animal,
+  Disarm, Grapple, Reposition, Shove, Trip, Reliable Anchor, Rally, Talk Them Down, Command the
+  Field, Feint, Feinting Step, Anticipate, Stabilize, Treat Persistent Damage, Bolster, Captivate;
+  and three that are a judgement, Release, Sneak and Battle Cry); until a row has its block the
+  tab always lists it. Rulings 283, 287 and 289 are Claude's readings and his to overrule (a row
+  left out only when the system knows; what counts as near and as a free hand; nothing refused and
+  a Maneuver listed once). Not read: Size limits, cover and concealment, tools and supplies,
+  mounts and animals, "can hear you", "willing", a Reaction's Trigger, anything about the creature
+  targeted rather than who is near, a hand lost to an Arms Wound, and Supine (the word reads and
+  nothing sets it; when Supine is built `bare()` in `module/rules/requires.mjs` is its one line).
+  A row with a Trigger and no ↺ in its Cost cell is a Reaction to the tab and a plain Maneuver to
+  the engine (the 0.23.0 open point; a ↺ in the cell settles both). Grapple's row reads Cost 0
+  with the Reaction trait, so the tab lists it off-turn as a free Reaction. The Reaction Talents
+  (Parry, Sidestep, Kneel Behind the Shield, Deflecting Palms) are Talents offered in the Combat
+  window and not rows of the tab, so their Requirements have no block; the adversary sheet's
+  abilities are not filtered. A Move that Move Together permits is not known to the tab (the
+  record is on the user; the ally's Move row still says "Not your Opportunity" while the drag is
+  allowed). Chat lines that say what was spent keep the font glyphs, so ⓿ can still look larger
+  there, and the small captions on the Overview keep theirs. A button's pip is smaller than a
+  row's, as its glyph was. Not driven live: a LIMITED user's sheet, the bookmark's hover, a door.
 - **0.27.0 leaves to the table or to Mike** (the Bind): the four tracked changes of
   `PROPOSALS["bind"]` wait in `Starwrought_Players_Handbook_v4.25.docx` for him to accept or
   reject (compare with the committed file and re-stamp when he saves, as for every redline);
@@ -2022,7 +2113,22 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   the three tokens back at 1200, 1320 and 1440; the Bandit's Prone left as found). To try 0.27.0
   there: start a Combat, target the Bandit and press Form a Bind on Tess's sheet; drag Tess a
   Step away (the Bind ends on the move's card); Form it again, press Gain Control on the Bind
-  line, and Step toward the Bandit for a Close.
+  line, and Step toward the Bandit for a Close. **The 0.28.0 drive (2026-11-15) found the world
+  used by Mike since** (a character testpc8 with its token, a started Combat holding it alone, and
+  two Cast cards; 420 messages) and left all of that as found: its own Combat was deleted and his
+  made the active one again, the Bandit put back at 1440,1200, the two cards it posted deleted
+  (420 messages again), Tess's Favorites flag removed. **It left three fixtures on purpose**
+  (flagged `testFixture: "0.28.0"`), so the filter can be tried there before the workbook carries
+  the blocks: WORLD action Items "Stand" (`[REQUIRES prone or supine]`), "Grapple" (`[REQUIRES
+  free hand or weapon grapple][REQUIRES creature in reach]`) and "Feint" (`[REQUIRES foe in
+  reach]`), each a copy of the pack's row with the block added; a world basic Maneuver of the same
+  name replaces the printed one on every Maneuvers tab, so they shadow the pack's rows in that
+  world until deleted, and should be deleted once the shipped rows carry the blocks. Foundry was
+  restarted for the 0.28.0 manifest and left running, the GM joined; the pane's own client setting
+  `showAllManeuvers` was left off. To try 0.28.0 there: open Wren's Maneuvers tab, toggle Prone on
+  her token and watch Stand appear; drag the Bandit beside Tess and watch Feint appear on hers;
+  press the bookmark on a row; press Show every Maneuver. Tess cannot be made Prone outside an
+  encounter (Stubborn Footing prevents it every time there).
 - **0.25.0 leaves to the table or to Mike:** that the ally Aided by Pay It Forward is willing and
   that Aid's own requirements are met; "immediately after that check", read as the rest of that
   Opportunity (ruling 248), so a Move or another Maneuver between the check and the Aid is not
@@ -2067,6 +2173,32 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-15 (the Maneuvers tab, system 0.28.0; rulings 281 to 289 in the 0.28.0 changelog
+entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: the conditions
+written in the sheets, also hidden for the wrong mode, a cost that cannot be paid and not your
+Opportunity, Favorites on the character): the cost glyphs of different sizes (⓿ from another font
+than ❶ to ❻, and the "to" of a range drawn as large as the glyphs), now a drawn disc for each
+number wherever a sheet marks a cost; the Maneuvers tab listing every Basic Maneuver whatever the
+character could do, now the ones that apply, with a button for the rest dimmed and saying why; a
+Maneuver's Requirements as prose nothing could check, now `[REQUIRES ...]` blocks on the
+Maneuver's own row (the `requires` kind, the twenty-second, with no hook) and the engine's five in
+code; Activities and Endeavors listed in an encounter, a Maneuver listed that could not be paid
+for or was not the character's to perform, now left out; no way to keep a Maneuver to hand, now
+Favorites on the character, first and never left out; the tab stale until the character's own
+document changed, now watching the Combat, the scene's tokens, other creatures' Conditions and
+the walls, and redrawing only when the list changed. Mended on the way: a feature keyword wrapped
+in `[EFFECT ...]` told the list of tags; the Constellations toggle asking a LIMITED user's glance
+sheet for a part it does not have (since 0.19.0). Checked by 206 self-test checks, `node --check`,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of Mike's
+uncommitted workbook), `build_foundry.mjs --no-compile` (one document moves, the Grammar journal),
+an independent review of the diff (nine findings, none severe: eight mended, one of them in part,
+and one stated; two more found and mended on a second read before it reported) and live in the test world with a GM
+tab and a player tab, before the review and again for its mends (the 0.28.0 changelog entry lists
+what). Not built, and said so: Size limits, cover, tools, mounts, hearing, a Reaction's Trigger,
+Supine, a block on a Reaction Talent, the adversary sheet. The release carries the kind alone:
+Mike's three workbooks were not converted, built, staged or written, the twenty-eight blocks are
+his to paste, and one pack document moved. No handbook moved and `data/SYNC.json` is untouched.
 
 Cleared 2026-11-15 (the Bind, automated, system 0.27.0; rulings 269 to 280 in the 0.27.0
 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: their own

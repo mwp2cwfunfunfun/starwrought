@@ -37,32 +37,21 @@
 
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, whoMatches, compare, hasTrait, againstHolds, markedHolds, refuseOutcome, refuseComponents, summarizeOperators } from "../operators.mjs";
-import { CONDITIONS } from "../../config.mjs";
+import { CONDITIONS, conditionIdOf } from "../../config.mjs";
 
 const SHAPE = "IMMUNE: <Condition or expose>; <component>; ...";
 const EXAMPLE = "IMMUNE: prone; LIMIT: encounter";
 
-/** The word for the Expose effect, and the condition ids by their lower-cased, squeezed names. */
+/** The word for the Expose effect. A Condition is read by its name (`conditionIdOf`, the config's). */
 export const EXPOSE = "expose";
-const CONDITION_WORDS = (() => {
-  const out = new Map();
-  for (const [id, config] of Object.entries(CONDITIONS)) {
-    // The Exposed-by-Zone statuses are mirrors of a Zone, never an effect a rule names; "Expose" is.
-    if (config.zone) continue;
-    out.set(id.toLowerCase(), id);
-    // The i18n key's last word is the English name ("STARWROUGHT.Condition.offGuard" -> "offguard").
-    const word = String(config.name ?? "").split(".").at(-1).toLowerCase();
-    if (word) out.set(word, id);
-  }
-  return out;
-})();
 
 /** The effect word, checked: "Expose", or a Condition. */
 function readEffect(word) {
   const key = String(word ?? "").trim().toLowerCase().replace(/[\s-]+/g, "");
   if (!key) throw new RuleSyntaxError(`a prevent is written \`${SHAPE}\`, as in \`${EXAMPLE}\``);
   if ((key === "expose") || (key === "exposed")) return EXPOSE;
-  if (CONDITION_WORDS.has(key)) return CONDITION_WORDS.get(key);
+  const id = conditionIdOf(key);
+  if (id) return id;
   throw new RuleSyntaxError(`"${String(word ?? "").trim()}" is not a Condition or Expose`);
 }
 

@@ -15,7 +15,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-sheet: "0.27.0"; }
+:root { --sw-css-version-sheet: "0.28.0"; }
 
 /* --------------------------------------------------------------------------
    Frame
@@ -293,6 +293,10 @@
 /* The cost of a Maneuver, in the book's glyph. Large and bright on purpose (Mike, 2026-10-01): the
    count is the one thing a player reads off this list in a fight. */
 .starwrought .sw-action-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
   color: var(--sw-gold);
   font-size: 1.45rem;
   line-height: 1;
@@ -300,8 +304,55 @@
   text-align: center;
   letter-spacing: -0.08em;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* A COST DRAWN AS PIPS (0.28.0; Mike: "Some of the action pips are different sizes"). The glyphs
+   are font characters: ⓿ comes from another Unicode block than ❶ to ❻, so the browser borrowed it
+   from another font at another size, and the "to" of "⓿ to ❻" was drawn at the glyph's size.
+   `swCostPips` writes each number as a disc and the words as small text, and these rules size
+   them, so no font decides. The disc takes the colour of the text around it (gold in a cost, the
+   header strip's three states); the numeral is cut dark with the text fill, which leaves `color`
+   free to be the disc's. Sized in em: of the text it sits in, and smaller inside the large cost
+   glyph, whose own size stays what it was for a card already in the log. */
+.starwrought .sw-cost-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: currentColor;
+  -webkit-text-fill-color: var(--sw-night);
+  font-family: var(--font-sans, "Signika", "Segoe UI", sans-serif);
+  font-size: 0.76em;
+  font-style: normal;
+  font-weight: 800;
+  font-variant-numeric: lining-nums;
+  line-height: 1;
+  letter-spacing: 0;
+  text-indent: 0;
+  text-shadow: none;
+  text-transform: none;
+  vertical-align: middle;
+}
+.starwrought .sw-action-glyph .sw-cost-pip { font-size: 0.54em; }
+/* On a button (Pass, Recenter, the Item window's Cast): a little larger than the label beside it. */
+.starwrought .sw-inline-button .sw-cost-pip { font-size: 0.9em; }
+.starwrought .sw-cost-join {
+  font-size: 0.72em;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-shadow: none;
+  text-transform: none;
+  color: var(--sw-ink-dim);
+}
+.starwrought .sw-action-glyph .sw-cost-join { font-size: 0.48em; }
+.starwrought .sw-cost-react { font-size: 0.8em; text-shadow: none; }
+.starwrought .sw-action-glyph .sw-cost-react { font-size: 0.62em; }
 
 .starwrought .sw-trait {
   display: inline-flex;

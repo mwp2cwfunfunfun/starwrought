@@ -25,6 +25,15 @@ export function registerHandlebarsHelpers() {
       return SW.ACTION_COSTS[cost]?.glyph ?? "";
     },
 
+    /**
+     * A printed cost drawn as even pips (0.28.0): "⓿ to ❻" as two discs with a small "to" between
+     * them, whatever font the glyphs would have come from. Takes the glyph text (`system.glyph`,
+     * `swStrikeGlyph`, `swActionGlyph`); the markup is `SW.costPipsHtml`'s.
+     */
+    swCostPips(text) {
+      return new Handlebars.SafeString(SW.costPipsHtml(typeof text === "string" ? text : ""));
+    },
+
     /** The glyph for a number of actions: ⓿ ❶ ❷ ❸ ❹ ❺ ❻. */
     swActionGlyph(n) {
       return SW.ACTION_GLYPHS[Number(n)] ?? "";
@@ -106,6 +115,8 @@ export function preloadTemplates() {
     "systems/starwrought/templates/actor/party-road.hbs",
     "systems/starwrought/templates/actor/party-notes.hbs",
     "systems/starwrought/templates/actor/action-pips.hbs",
+    // THE MANEUVERS TAB (0.28.0): one row, in the Favorites and in each of the three panels.
+    "systems/starwrought/templates/actor/maneuver-row.hbs",
     "systems/starwrought/templates/actor/bind-line.hbs",
     "systems/starwrought/templates/actor/wounds.hbs",
     // THE GLANCE (0.19.0): the hover card's body, and the LIMITED sheet that wraps it.

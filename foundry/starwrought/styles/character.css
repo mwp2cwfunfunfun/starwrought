@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.27.0"; }
+:root { --sw-css-version-character: "0.28.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -158,13 +158,17 @@
 }
 .starwrought .sw-pips { display: flex; gap: 0.15rem; align-items: center; }
 .starwrought .sw-pip {
+  display: inline-flex;
   font-size: 1.15rem;
   line-height: 1;
   color: var(--sw-gold);
-  text-shadow: 0 0 6px rgba(227, 178, 60, 0.45);
 }
-.starwrought .sw-pip-spent { color: var(--sw-edge); text-shadow: none; }
-.starwrought .sw-pip-reserved { color: var(--sw-reserved); text-shadow: 0 0 6px rgba(155, 107, 214, 0.5); cursor: default; }
+/* Each pip is a drawn disc since 0.28.0 (sheet.css, `.sw-cost-pip`), so its glow is the disc's. */
+.starwrought .sw-pip .sw-cost-pip { font-size: 0.66em; box-shadow: 0 0 6px rgba(227, 178, 60, 0.45); }
+.starwrought .sw-pip-spent { color: var(--sw-edge); }
+.starwrought .sw-pip-spent .sw-cost-pip { box-shadow: none; }
+.starwrought .sw-pip-reserved { color: var(--sw-reserved); cursor: default; }
+.starwrought .sw-pip-reserved .sw-cost-pip { box-shadow: 0 0 6px rgba(155, 107, 214, 0.5); }
 .starwrought .sw-reserved { font-size: 0.65rem; color: var(--sw-reserved); white-space: nowrap; }
 .starwrought .sw-actions-buttons { display: flex; align-items: center; gap: 0.3rem; margin-left: auto; }
 .starwrought .sw-actions-reset { font-size: 0.7rem; color: var(--sw-ink-dim); }
@@ -488,7 +492,7 @@
 .starwrought .sw-item-row .sw-item-controls .sw-strike-buttons { opacity: 1; }
 
 /* The gold numeral at the Maneuvers tab's size, the word small beside it (0.5.1, T1). */
-.starwrought .sw-strike-button .sw-action-glyph { font-size: 1.45rem; min-width: 0; letter-spacing: 0; line-height: 1.1; }
+.starwrought .sw-strike-button .sw-action-glyph { font-size: 1.45rem; min-width: 0; letter-spacing: 0; line-height: 1.1; padding: 0.1rem 0; }
 .starwrought .sw-strike-button .sw-strike-word { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* Carry state, and the armor Zones you can fill from the pack. */
@@ -599,6 +603,25 @@
 }
 .starwrought .sw-action-row .sw-item-name { cursor: pointer; }
 .starwrought .sw-action-row .sw-item-name:hover { color: var(--sw-gold); }
+
+/* THE MANEUVERS TAB (0.28.0). The toolbar says how many Maneuvers do not apply now, beside the
+   button that lists them. A row that does not apply is dimmed and carries why; it still answers a
+   click, so the dimming lifts on hover. The bookmark is faint until the row is hovered or it is a
+   Favorite, so thirty rows do not shout thirty bookmarks. */
+.starwrought .sw-maneuver-toolbar { align-items: center; margin-bottom: 0.35rem; }
+/* The cost sits in a column as wide as a range ("0 to 6"), so the names line up under one another. */
+.starwrought .sw-action-row .sw-action-glyph { min-width: 3.7rem; justify-content: flex-start; }
+.starwrought .sw-toolbar-note { margin-right: auto; font-size: 0.72rem; font-style: italic; color: var(--sw-ink-dim); }
+.starwrought .sw-action-row.sw-inapplicable > * { opacity: 0.45; }
+.starwrought .sw-action-row.sw-inapplicable:hover > * { opacity: 0.85; }
+.starwrought .sw-action-row.sw-inapplicable > .sw-why,
+.starwrought .sw-action-row.sw-inapplicable > .sw-favorite-on { opacity: 0.9; }
+.starwrought .sw-why { font-style: italic; border-style: dashed; white-space: normal; }
+.starwrought .sw-favorite { flex: 0 0 auto; font-size: 0.8rem; color: var(--sw-ink-dim); opacity: 0.3; }
+.starwrought a.sw-favorite { cursor: pointer; }
+.starwrought .sw-action-row:hover .sw-favorite:not(.sw-favorite-on) { opacity: 0.8; }
+.starwrought .sw-favorite.sw-favorite-on { color: var(--sw-gold); opacity: 1; }
+.starwrought .sw-favorite-actions .sw-panel-title .fa-bookmark { color: var(--sw-gold); font-size: 0.8em; }
 
 /* A Defense still Untrained: its Attribute alone answers. (The stance chips that sat here through
    0.11.0 are gone: no Defense stands ready since 0.12.0; it is chosen in the Combat Prompt.) */

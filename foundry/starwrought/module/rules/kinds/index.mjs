@@ -188,6 +188,12 @@ registerKind(permit);
 import subordinate from "./subordinate.mjs";
 registerKind(subordinate);
 
+// 0.28.0: what a Maneuver needs before it can be used, `[REQUIRES prone or supine]` on the
+// Maneuver's own row. `requires` has no hook: the Maneuvers tab reads the rule off the row and
+// lists it only while it holds (../requires.mjs, `maneuverStatus`).
+import requires from "./requires.mjs";
+registerKind(requires);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";

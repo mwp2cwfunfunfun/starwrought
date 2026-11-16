@@ -12,7 +12,7 @@
       {{#each abilities as |ability|}}
       <li class="sw-item-row sw-action-row" data-item-id="{{ability.id}}">
         <img src="{{ability.img}}" alt="{{ability.name}}">
-        <span class="sw-action-glyph">{{ability.system.glyph}}</span>
+        <span class="sw-action-glyph">{{swCostPips ability.system.glyph}}</span>
         <a class="sw-item-name" data-action="itemChat">{{swPlainName ability.name}}</a>
         {{#each ability.system.traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}
         {{!-- AURAS (0.5.1): the ring, on an ability that carries one; lit when Visible. --}}

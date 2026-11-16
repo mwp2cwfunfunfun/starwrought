@@ -8,6 +8,7 @@
  *   [POINT Calling]  [POINT 2 Skill different]  [POINT Opening]
  *   [MANEUVER Steady the Line]  [TALENT Weapon Familiarity]  [CHOICE Weapon Group]
  *   [AURA 15 allies]  [VIGOR opening 12]  [SENSES Low-light vision]
+ *   [REQUIRES prone or supine]                    (0.28.0: on a Maneuver's row, when it can be used)
  *   [EFFECT IMMUNE: prone; LIMIT: encounter]      (0.17.0: an effect line, in FG's own block)
  *
  * A line that begins with `[` is a feature line; it may hold any number of blocks. Each block is
@@ -38,14 +39,16 @@ export const FEATURE_KEYWORDS = Object.freeze({
   maneuver: "maneuver",
   talent: "talent",
   choice: "choice",
-  aura: "aura"
+  aura: "aura",
+  // 0.28.0: what a Maneuver needs before it can be used, on the Maneuver's own row.
+  requires: "requires"
 });
 
 /** The block that wraps an effect line (0.17.0). */
 export const EFFECT_KEYWORD = "effect";
 
 /** The keywords as the document lists them, one per kind, for messages. */
-export const FEATURE_KEYWORD_LIST = Object.freeze(["TRAIT", "SIZE", "SPEED", "VIGOR", "SENSES", "LANGUAGE", "POINT", "MANEUVER", "TALENT", "CHOICE", "AURA", "EFFECT"]);
+export const FEATURE_KEYWORD_LIST = Object.freeze(["TRAIT", "SIZE", "SPEED", "VIGOR", "SENSES", "LANGUAGE", "POINT", "MANEUVER", "TALENT", "CHOICE", "AURA", "REQUIRES", "EFFECT"]);
 
 /** Is this trimmed line a feature line? */
 export function isFeatureLine(line) {

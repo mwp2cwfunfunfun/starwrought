@@ -31,6 +31,34 @@ import { usableByRule } from "../rules/engine.mjs";
 // switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
 import { effectsContext, armClaimLine } from "../helpers/effects.mjs";
 import { cycleRuleState, addEffect, removeEffect, removeGiven, removeUsed } from "../rules/effects-state.mjs";
+// THE MANEUVERS TAB (0.28.0): which Maneuvers apply now, the Favorites first, no row twice.
+import { situationOf, statusOf } from "../helpers/situation.mjs";
+import { arrangeManeuvers } from "../rules/requires.mjs";
+
+/** The character flag that holds the Favorites (0.28.0): the slugs of the bookmarked Maneuvers, in the order marked. */
+const FAVORITES_FLAG = "favoriteManeuvers";
+
+/** How long the Maneuvers tab waits after a Combat or a token changes before it looks again (ms). */
+const MANEUVER_WATCH_DELAY = 150;
+
+/**
+ * The hooks that may change which Maneuvers apply without touching the character's own document:
+ * the Combat and its fighters (the encounter, the Opportunity); the tokens on the scene and which
+ * of the character's is selected (who is near); ANOTHER creature's Conditions (a foe that dies,
+ * or goes Hidden, beside the character is no longer counted); the walls and doors (sight); and a
+ * world setting (`trackActions` decides whether a cost can leave a row out). All of them only ask
+ * for a look, which redraws nothing unless the list changed.
+ */
+const MANEUVER_WATCH_HOOKS = Object.freeze([
+  "createCombat", "updateCombat", "deleteCombat", "createCombatant", "updateCombatant", "deleteCombatant",
+  "createToken", "deleteToken", "controlToken", "canvasReady",
+  "createActiveEffect", "updateActiveEffect", "deleteActiveEffect",
+  "createWall", "updateWall", "deleteWall",
+  "createSetting", "updateSetting"
+]);
+
+/** The token changes that move who is near whom; anything else on a token is not looked at. */
+const TOKEN_WATCH_KEYS = Object.freeze(["x", "y", "width", "height", "hidden", "disposition", "elevation"]);
 
 /**
  * The `bonus` rules on a character that touch a Defense but need the moment to be read (0.15.0):
@@ -140,6 +168,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       basicChat: SwCharacterSheet.#onBasicChat,
       basicView: SwCharacterSheet.#onBasicView,
       basicAdopt: SwCharacterSheet.#onBasicAdopt,
+      // THE MANEUVERS TAB (0.28.0): only what applies, or every Maneuver; and the bookmark.
+      toggleAllManeuvers: SwCharacterSheet.#onToggleAllManeuvers,
+      toggleFavorite: SwCharacterSheet.#onToggleFavorite,
       setCarry: SwCharacterSheet.#onSetCarry,
       wearArmor: SwCharacterSheet.#onWearArmor,
       setActions: SwCharacterSheet.#onSetActions,
@@ -218,6 +249,15 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** Put the caret back in the filter box after a re-render the typing caused. */
   #refocusFilter = false;
 
+  /**
+   * THE MANEUVERS TAB (0.28.0): what the tab last drew (a signature of which Maneuvers apply), the
+   * hooks that watch the Combat and the scene while the sheet is open, and the timer that lets a
+   * burst of them settle before the list is worked out again.
+   */
+  #maneuverDrawn = "";
+  #maneuverHooks = null;
+  #maneuverTimer = null;
+
   /* -------------------------------------------- */
 
   /**
@@ -242,6 +282,15 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
    */
   _onRender(context, options) {
     super._onRender?.(context, options);
+    // THE MANEUVERS TAB (0.28.0): watch the Combat and the scene while the sheet is open. Not for
+    // a LIMITED user's sheet, which is the glance alone and has no tab to keep current. What the
+    // tab shows is remembered only when the tab was among the parts drawn: every render prepares
+    // the whole context, and a render of another part must not make a stale tab look current.
+    if (!(this.document.limited && !game.user.isGM)) {
+      this.#watchManeuvers();
+      const parts = options?.parts;
+      if (!Array.isArray(parts) || parts.includes("actions")) this.#maneuverDrawn = context?.maneuvers?.signature ?? "";
+    }
     const input = this.element?.querySelector(".sw-constellation-filter");
     if (!input) return;
     input.value = this.#filter;
@@ -260,6 +309,12 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const end = input.value.length;
       try { input.setSelectionRange(end, end); } catch { /* a search input in some browsers refuses */ }
     }
+  }
+
+  /** @inheritdoc The Maneuvers tab's watch (0.28.0) is released with the window. */
+  _onClose(options) {
+    super._onClose?.(options);
+    this.#unwatchManeuvers();
   }
 
   #onFilterInput(input) {
@@ -377,15 +432,6 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.filter = this.#filter; // THE FILTER (0.19.0)
     context.inventory = this.#prepareInventory();
     context.strikes = this.#prepareStrikes();
-    // TALENT MANEUVERS (0.16.0): the Maneuvers a Talent granted (`flags.starwrought.grantedBy`)
-    // sit under their own heading, named for the Talent; the rest are the character's own.
-    const actions = actor.items.filter(i => i.type === "action").sort((a, b) => a.name.localeCompare(b.name));
-    const grantedBy = item => item.getFlag(SW.SYSTEM_ID, "grantedBy");
-    context.actionItems = actions.filter(i => !grantedBy(i));
-    context.talentActions = actions.filter(i => grantedBy(i)).map(i => ({
-      item: i, talentName: SW.plainName(actor.items.get(grantedBy(i))?.name ?? "")
-    }));
-    context.basicActions = await this.#prepareBasicActions();
     context.effects = actor.effects.map(e => ({
       id: e.id, name: e.name, img: e.img, disabled: e.disabled,
       description: e.description, isSuppressed: e.isSuppressed,
@@ -407,6 +453,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     // AURAS (0.5.1): the ring toggle beside each Talent or Maneuver row that carries an aura,
     // looked up by Item id in the templates, and the body's own ranges for the Ranges line.
     context.auraByItem = auraRowsByItem(actor);
+
+    // THE MANEUVERS TAB (0.28.0): the Favorites, the Basic Maneuvers, the Talents' and the
+    // character's own, each row knowing whether it applies now and why not. After the auras, whose
+    // toggle a row carries.
+    context.maneuvers = await this.#prepareManeuvers(context.auraByItem);
     context.ranges = reachRangeRows(actor);
 
     // Movement, in feet (PHB v4.21): a Move, a Step, a Rush ❷, the three Leaps, a Crawl.
@@ -972,30 +1023,201 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return (rows ?? []).map(r => `${r.type} ${r.value}`).join(", ");
   }
 
+  /* -------------------------------------------- */
+  /*  The Maneuvers tab (0.28.0)                  */
+  /* -------------------------------------------- */
+
   /**
-   * The Basic Maneuvers, grouped by category for the Maneuvers tab. They come from the compendium
-   * and are never copied onto the character, so what the sheet shows is what the book says today.
+   * Whether this user's sheets list every Maneuver, or only the ones that apply now (0.28.0,
+   * ruling 281; Mike: "only show Maneuvers that the system detects are applicable, but still allow
+   * the player to click a button to see all Maneuvers"). A client setting, as the Constellations
+   * tab's toggle is, so it is this user's across every sheet; read defensively for a build
+   * without it.
+   * @returns {boolean}
    */
-  async #prepareBasicActions() {
-    const groups = new Map();
-    for (const item of await loadBasicActions()) {
-      const key = item.system.category || game.i18n.localize("STARWROUGHT.Section.basicActions");
-      if (!groups.has(key)) {
-        groups.set(key, { key, label: key, collapsed: this.#collapsed.has(`basic:${key}`), actions: [] });
-      }
-      const flavour = String(item.system.description ?? "").replace(/<[^>]+>/g, "").trim();
-      groups.get(key).actions.push({
-        uuid: item.uuid,
+  static showAllManeuvers() {
+    try {
+      return !!game.settings.get(SW.SYSTEM_ID, "showAllManeuvers");
+    } catch {
+      return false;
+    }
+  }
+
+  /** The character's Favorites (ruling 288): the slugs of the bookmarked Maneuvers, in the order marked. */
+  #favorites() {
+    const list = this.document.getFlag(SW.SYSTEM_ID, FAVORITES_FLAG);
+    return Array.isArray(list) ? list.filter(slug => (typeof slug === "string") && slug) : [];
+  }
+
+  /**
+   * Every Maneuver the tab may list, each knowing whether it applies now and why not: the
+   * character's own copies first (the Talents' Maneuvers, then the ones picked up), then the Basic
+   * Maneuvers, which come from the compendium and are never copied onto the character, so what
+   * the sheet shows is what the book says today. In that order because a Maneuver is listed once
+   * and the first row of a name stands (`arrangeManeuvers`): a copy on the sheet is the
+   * character's own to edit, and it replaces the Basic row of the same name.
+   * @param {object} [auras]  `auraRowsByItem(actor)`: the ring toggle a row carries, by Item id.
+   * @returns {Promise<object[]>}
+   */
+  async #maneuverRows(auras = {}) {
+    const actor = this.document;
+    // Read once: every row is judged against the same moment.
+    const situation = situationOf(actor);
+    const esc = foundry.utils.escapeHTML;
+    const useHint = game.i18n.localize("STARWROUGHT.Sheet.basicUseHint");
+    const row = (item, source, extra = {}) => {
+      const sys = item.system;
+      const status = statusOf(item, situation);
+      const flavour = String(sys.description ?? "").replace(/<[^>]+>/g, "").trim();
+      const owned = source !== "basic";
+      return {
+        source,
+        isBasic: !owned,
+        isTalent: source === "talent",
+        isOwn: source === "own",
+        slug: status.slug,
+        uuid: owned ? "" : item.uuid,
+        itemId: owned ? item.id : "",
         name: item.name,
         img: item.img,
-        glyph: item.system.glyph,
-        costLabel: item.system.costLabel,
-        traits: item.system.traits ?? [],
-        requirements: item.system.requirements,
-        hint: flavour || game.i18n.localize("STARWROUGHT.Sheet.basicUseHint")
-      });
+        glyph: sys.glyph,
+        costLabel: sys.costLabel,
+        traits: sys.traits ?? [],
+        requirements: sys.requirements ?? "",
+        hint: flavour || useHint,
+        category: sys.category || "",
+        tag: "",
+        tagTip: "",
+        aura: owned ? (auras?.[item.id] ?? null) : null,
+        applicable: status.applicable,
+        // The first reason is printed on a dimmed row; all of them are its tooltip, which Foundry
+        // reads as HTML, so each is escaped here.
+        reason: status.reasons[0] ?? "",
+        reasonTip: status.reasons.map(text => esc(text)).join("<br>"),
+        ...extra
+      };
+    };
+    const rows = [];
+    const owned = actor.items.filter(i => i.type === "action").sort((a, b) => a.name.localeCompare(b.name));
+    const granted = [];
+    const picked = [];
+    for (const item of owned) {
+      // TALENT MANEUVERS (0.16.0): the Maneuvers a Talent granted (`flags.starwrought.grantedBy`)
+      // sit under their own heading, named for the Talent; the rest are the character's own.
+      const by = item.getFlag(SW.SYSTEM_ID, "grantedBy");
+      if (by) {
+        granted.push(row(item, "talent", {
+          tag: SW.plainName(actor.items.get(by)?.name ?? ""),
+          tagTip: game.i18n.localize("STARWROUGHT.Hint.grantedByTalent")
+        }));
+      } else {
+        picked.push(row(item, "own", { tag: item.system.category || "" }));
+      }
     }
-    return [...groups.values()];
+    rows.push(...granted, ...picked);
+    for (const item of await loadBasicActions()) rows.push(row(item, "basic"));
+    return rows;
+  }
+
+  /**
+   * What the tab last drew, as one string: every Maneuver with whether it applies and why not.
+   * The watch below compares a fresh one with it and redraws the tab only when they differ.
+   */
+  static #maneuverSignature(rows) {
+    return rows.map(r => `${r.slug}|${r.applicable ? 1 : 0}|${r.reasonTip}`).join("\n");
+  }
+
+  /**
+   * The Maneuvers tab: the toolbar's count, the Favorites, and the three panels (0.28.0).
+   * @param {object} [auras]
+   */
+  async #prepareManeuvers(auras = {}) {
+    const rows = await this.#maneuverRows(auras);
+    // What this context would draw; `_onRender` keeps it once the tab has in fact been drawn.
+    const signature = SwCharacterSheet.#maneuverSignature(rows);
+    const showAll = SwCharacterSheet.showAllManeuvers();
+    const arranged = arrangeManeuvers(rows, this.#favorites(), { showAll });
+    const listed = source => arranged.rest.filter(r => r.source === source);
+    const left = source => arranged.left.filter(r => r.source === source).length;
+    const count = (one, many, n) => (n === 1 ? game.i18n.localize(one) : game.i18n.format(many, { n }));
+    // A panel with nothing listed says why: nothing applies (and how many are left out), or
+    // nothing is there at all. A panel whose every row is a Favorite says nothing.
+    const empty = (source, none = "") => {
+      if (listed(source).length) return "";
+      const n = left(source);
+      if (n) return count("STARWROUGHT.Maneuvers.noneApplyOne", "STARWROUGHT.Maneuvers.noneApply", n);
+      return rows.some(r => r.source === source) ? "" : none;
+    };
+
+    // The Basic Maneuvers, grouped by category as the compendium folders are.
+    const fallback = game.i18n.localize("STARWROUGHT.Section.basicActions");
+    const groups = new Map();
+    for (const r of listed("basic")) {
+      const key = r.category || fallback;
+      if (!groups.has(key)) groups.set(key, { key, label: key, collapsed: this.#collapsed.has(`basic:${key}`), actions: [] });
+      groups.get(key).actions.push(r);
+    }
+
+    const hidden = arranged.hidden;
+    return {
+      signature,
+      showAll,
+      hidden,
+      hiddenNote: !hidden ? ""
+        : showAll ? count("STARWROUGHT.Maneuvers.dimmedNoteOne", "STARWROUGHT.Maneuvers.dimmedNote", hidden)
+          : count("STARWROUGHT.Maneuvers.hiddenNoteOne", "STARWROUGHT.Maneuvers.hiddenNote", hidden),
+      // In the Favorites panel a Basic row says which group it is from; the others keep their tag.
+      favorites: arranged.favorites.map(r => (r.isBasic ? { ...r, tag: r.category } : r)),
+      basic: { groups: [...groups.values()], empty: empty("basic", game.i18n.localize("STARWROUGHT.Sheet.noBasicActions")) },
+      talent: { show: rows.some(r => r.isTalent), rows: listed("talent"), empty: empty("talent") },
+      own: { rows: listed("own"), empty: empty("own", game.i18n.localize("STARWROUGHT.Sheet.noActions")) }
+    };
+  }
+
+  /**
+   * WATCHING (0.28.0). The sheet redraws for the character's own changes (Conditions, Items, the
+   * Bind, the actions); which Maneuvers apply also turns on things that are not the character's:
+   * the Combat (an encounter begun or ended, the Opportunity moving on) and the tokens on the
+   * scene (who is adjacent, in reach, within 30 feet). So while the sheet is open it listens for
+   * those, waits a moment for a burst to settle (a timer, as the party sheet's, never an animation
+   * frame), works the list out again and redraws the tab ONLY when the list changed: a token
+   * dragged across the map far from the character redraws nothing.
+   */
+  #watchManeuvers() {
+    if (this.#maneuverHooks) return;
+    const hooks = [];
+    const look = () => this.#queueManeuverLook();
+    for (const hook of MANEUVER_WATCH_HOOKS) hooks.push([hook, Hooks.on(hook, look)]);
+    hooks.push(["updateToken", Hooks.on("updateToken", (doc, changes) => {
+      if (TOKEN_WATCH_KEYS.some(key => key in (changes ?? {}))) look();
+    })]);
+    this.#maneuverHooks = hooks;
+  }
+
+  #unwatchManeuvers() {
+    for (const [hook, id] of this.#maneuverHooks ?? []) Hooks.off(hook, id);
+    this.#maneuverHooks = null;
+    if (this.#maneuverTimer) {
+      clearTimeout(this.#maneuverTimer);
+      this.#maneuverTimer = null;
+    }
+  }
+
+  #queueManeuverLook() {
+    if (this.#maneuverTimer) return;
+    this.#maneuverTimer = setTimeout(async () => {
+      this.#maneuverTimer = null;
+      if (!this.rendered) return;
+      // A sheet whose viewer has since been cut down to LIMITED is the glance alone: it has no
+      // Maneuvers part to draw, and asking for one is a warning on the screen.
+      if (this.document.limited && !game.user.isGM) return;
+      try {
+        const fresh = SwCharacterSheet.#maneuverSignature(await this.#maneuverRows());
+        if (fresh !== this.#maneuverDrawn) await this.render({ parts: ["actions"] });
+      } catch (err) {
+        console.error("STARWROUGHT | the Maneuvers tab could not look again", err);
+      }
+    }, MANEUVER_WATCH_DELAY);
   }
 
   /* -------------------------------------------- */
@@ -1334,6 +1556,42 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     delete data._id;
     data.system.basic = false;
     return this.document.createEmbeddedDocuments("Item", [data]);
+  }
+
+  /* -------------------------------------------- */
+  /*  The Maneuvers tab's two switches (0.28.0)   */
+  /* -------------------------------------------- */
+
+  /**
+   * The tab's toggle (ruling 281): only the Maneuvers that apply now, or every Maneuver with the
+   * rest dimmed. A client setting, so it is this user's on every sheet and device session; the
+   * setting's onChange redraws any other character sheet this client has open, and this one is
+   * redrawn here in case the setting was already what was asked for.
+   */
+  static async #onToggleAllManeuvers() {
+    const next = !SwCharacterSheet.showAllManeuvers();
+    try {
+      await game.settings.set(SW.SYSTEM_ID, "showAllManeuvers", next);
+    } catch (err) {
+      console.error("STARWROUGHT | the Maneuvers toggle could not be saved", err);
+    }
+    return this.render({ parts: ["actions"] });
+  }
+
+  /**
+   * The bookmark on a Maneuver's row (ruling 288; Mike: "these are always at the top of the list
+   * and are always visible"). The Favorites are the character's, so they follow it to every
+   * device and the GM sees them: the slugs of the bookmarked Maneuvers under one flag, in the
+   * order they were marked. By slug, so a Favorite holds whether the row is the Basic one or a
+   * copy on the sheet. `swAnnounced`: a bookmark is no change the audit should speak of.
+   */
+  static async #onToggleFavorite(event, target) {
+    if (!this.isEditable) return null;
+    const slug = target.closest("[data-slug]")?.dataset.slug;
+    if (!slug) return null;
+    const current = this.#favorites();
+    const next = current.includes(slug) ? current.filter(s => s !== slug) : [...current, slug];
+    return this.document.update({ [`flags.${SW.SYSTEM_ID}.${FAVORITES_FLAG}`]: next }, { swAnnounced: true });
   }
 
   /* -------------------------------------------- */

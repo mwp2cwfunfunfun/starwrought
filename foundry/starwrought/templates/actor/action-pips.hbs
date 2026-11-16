@@ -6,7 +6,7 @@
   <div class="sw-pips">
     {{#each pips as |pip|}}
     <a class="sw-pip sw-pip-{{pip.state}}" data-action="setActions" data-value="{{pip.value}}"
-       data-state="{{pip.state}}" data-tooltip="{{pip.tooltip}}">{{pip.glyph}}</a>
+       data-state="{{pip.state}}" data-tooltip="{{pip.tooltip}}"><b class="sw-cost-pip">{{pip.value}}</b></a>
     {{/each}}
   </div>
   {{#if reserved}}
@@ -18,7 +18,7 @@
     <button type="button" class="sw-inline-button sw-pass" data-action="pass"
             data-tooltip="{{localize 'STARWROUGHT.Actions.passHint'}}"
             {{#unless isTurn}}disabled{{/unless}}{{#if preparing}} disabled{{/if}}>
-      {{passGlyph}} {{localize "STARWROUGHT.Actions.pass"}}
+      {{swCostPips passGlyph}} {{localize "STARWROUGHT.Actions.pass"}}
     </button>
     <button type="button" class="sw-inline-button sw-end-opportunity" data-action="endOpportunity"
             data-tooltip="{{localize 'STARWROUGHT.Actions.endOpportunityHint'}}"

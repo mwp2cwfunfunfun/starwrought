@@ -60,7 +60,7 @@ import { terrainKindOf, terrainKindName, registerTerrainKinds } from "../foundry
 registerTerrainKinds([["Mud", "", 2, "#6b4a2b"], ["Shallow Water", "", 2, "#2f7fb8"], ["Decking", "", 2, "#9a7a4a"], ["Loose Stone", "", 2, "#7d7d7d"], ["Rubble", "", 2, "#5c5c5c"], ["Undergrowth", "", 2, "#3f7a3a"], ["Snow", "", 2, "#cfe3f2"], ["Ice", "", 2, "#9fd3e8"], ["Sand", "", 2, "#d8b56a"], ["Other", "", 2, "#8a6fb0"]]);
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
-import { slugify, plainName, resolveModifiers, ACTION_GLYPHS, actionCostOptions } from "../foundry/starwrought/module/config.mjs";
+import { slugify, plainName, resolveModifiers, ACTION_GLYPHS, actionCostOptions, costGlyphs, costParts, costPipsHtml } from "../foundry/starwrought/module/config.mjs";
 // Multipliers and Divisors, the Legs' Speed and the Arms' Critical Hit penalty (0.26.0; PHB v4.25).
 import {
   combineFactors, applyFactors, combineDifficulties, speedAfterLegs, ARMS_CRITICAL_PENALTY, ACTIVITY_SPEEDS, TERRAIN
@@ -77,7 +77,8 @@ import {
 } from "../foundry/starwrought/module/combat/bind-rules.mjs";
 // The Maneuvers the system implements and the ones it pays for elsewhere (0.23.0): the module
 // imports nothing, which this import is the check of.
-import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "../foundry/starwrought/module/documents/maneuvers.mjs";
+import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE, ENGINE_REQUIRES } from "../foundry/starwrought/module/documents/maneuvers.mjs";
+import { readRequires, requireWords, termWords, checkCondition, availability, requiresFor, maneuverStatus, freeHands, arrangeManeuvers, STATUS_REASONS } from "../foundry/starwrought/module/rules/requires.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -89,7 +90,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -3683,6 +3684,252 @@ check("subordinate: the card of the roll that used the result up offers the Mane
   } finally {
     KINDS.delete(odd.id);
   }
+});
+
+/* -------------------------------------------- */
+/*  The Maneuvers tab (0.28.0)                  */
+/* -------------------------------------------- */
+
+console.log("\nThe Maneuvers tab (0.28.0)");
+
+check("pips: a printed cost is taken apart into numbers, the Reaction mark and small words", () => {
+  same(costParts("❶"), [{ pip: 1 }], "one action");
+  same(costParts("⓿ to ❻"), [{ pip: 0 }, { join: "to" }, { pip: 6 }], "a range: the word is its own part");
+  same(costParts("❶ or ❸"), [{ pip: 1 }, { join: "or" }, { pip: 3 }], "an either-or");
+  same(costParts("❶↺"), [{ pip: 1 }, { react: true }], "a Reaction with its cost");
+  same(costParts("⓿↺"), [{ pip: 0 }, { react: true }], "a Posture");
+  same(costParts("❶ (⓿↺)"), [{ pip: 1 }, { join: "(" }, { pip: 0 }, { react: true }, { join: ")" }], "a cost with a Reaction half of its own");
+  same(costParts("⓫⓬"), [{ pip: 11 }, { pip: 12 }], "the system's own glyphs above ten");
+  same([costParts(""), costParts(null), costParts(undefined)], [[], [], []], "a passive Talent prints nothing");
+  // Every shape `costGlyphs` can print comes back as the numbers it was given.
+  for (const cost of ["0", "1", "2", "3", "6"]) {
+    same(costParts(costGlyphs({ cost })), [{ pip: Number(cost) }], `cost ${cost}`);
+    same(costParts(costGlyphs({ cost, reaction: true })), [{ pip: Number(cost) }, { react: true }], `cost ${cost} as a Reaction`);
+  }
+  same(costParts(costGlyphs({ cost: "1", costMax: "3", costMode: "or" })).map(p => p.pip ?? p.join), [1, "or", 3], "costGlyphs' own either-or");
+  same(costParts(costGlyphs({ cost: "1", reaction: true, reactionCost: "0" })).length, 5, "costGlyphs' own Reaction half");
+  for (const [n, glyph] of Object.entries(ACTION_GLYPHS)) same(costParts(glyph), [{ pip: Number(n) }], `the glyph for ${n}`);
+});
+
+check("pips: the markup is discs, an icon and small text, and nothing a cost says is trusted", () => {
+  same(costPipsHtml("⓿ to ❻"), '<b class="sw-cost-pip">0</b><small class="sw-cost-join">to</small><b class="sw-cost-pip">6</b>', "a range");
+  same(costPipsHtml("❶↺"), '<b class="sw-cost-pip">1</b><i class="fa-solid fa-rotate-left sw-cost-react"></i>', "a Reaction");
+  same(costPipsHtml(""), "", "nothing for no cost");
+  same(costPipsHtml('❶ <img src=x onerror="y">'), '<b class="sw-cost-pip">1</b><small class="sw-cost-join">&lt;img</small><small class="sw-cost-join">src=x</small><small class="sw-cost-join">onerror=&quot;y&quot;&gt;</small>', "text that is not a cost is escaped");
+  must(!/[⓿❶❷❸❹❺❻↺]/.test(costPipsHtml("⓿ to ❻ (❶↺)")), "no font glyph is left for a font to size");
+});
+
+const requiresRule = (cell, context = onRowOf) => bonusRule(cell, context);
+const requiresError = (cell, context = onRowOf) => bonusError(cell, context);
+const anyOf = cell => requiresRule(cell).any;
+
+check("requires: the kind is registered with no hook, read from its block on a Maneuver's own row", () => {
+  const kind = kindOf("requires");
+  must(kind, "the requires kind is registered");
+  same(Object.keys(kind.hooks ?? {}), [], "it has no hook: the tab reads the rule off the row");
+  must(!EFFECT_KINDS.includes("requires"), "it is no effect: the Effects tab has no switch for it");
+  same([FEATURE_KEYWORD_LIST.includes("REQUIRES"), FEATURE_KEYWORD_LIST.at(-1)], [true, "EFFECT"], "the keyword is listed, and EFFECT stays last");
+  const rule = requiresRule("[REQUIRES prone or supine]");
+  same([rule.kind, rule.line, rule.text], ["requires", 1, "[REQUIRES prone or supine]"], "the stored rule");
+  same(rule.any, [{ test: "condition", id: "prone" }, { test: "supine" }], "its alternatives");
+  same(summarize(rule), "needs: Prone or Supine", "As read");
+  same(requiresRule("[requires PRONE]").any, [{ test: "condition", id: "prone" }], "case never matters");
+  must(/"REQUIRE" is not a feature keyword: write .*REQUIRES, EFFECT/.test(requiresError("[REQUIRE prone]")), "one keyword, one spelling: the singular is told the list");
+  const two = parseAutomation("[REQUIRES free hand or weapon grapple][REQUIRES foe in reach]", onRowOf);
+  same([two.errors.length, two.rules.map(r => r.kind), two.rules.map(summarize)], [0, ["requires", "requires"], ["needs: a free hand or a weapon with the Grapple trait", "needs: a foe in reach"]], "two blocks on a line are two rules");
+  must(/Maneuver's own row/.test(requiresError("[REQUIRES prone]", { resolve, itemType: "talent" })), "refused on a Talent");
+  must(/Maneuver's own row/.test(requiresError("[REQUIRES prone]", { resolve, itemType: "effect" })), "and on a custom effect row");
+  same(parseAutomation("[REQUIRES prone]", {}).errors.length, 0, "with no carrier named (the self-test, a bare parse) it reads");
+  must(/is a feature and is written in brackets/.test(requiresError("requires: prone")), "typed as a line it is told the brackets");
+});
+
+check("requires: every word reads, and a word nobody knows is told the list", () => {
+  same(anyOf("[REQUIRES grabbed or restrained]"), [{ test: "condition", id: "grabbed" }, { test: "condition", id: "restrained" }], "Conditions by the book's name");
+  same([anyOf("[REQUIRES off-guard]"), anyOf("[REQUIRES Off Guard]"), anyOf("[REQUIRES offGuard]")].map(a => a[0].id), ["offGuard", "offGuard", "offGuard"], "a two-word Condition, however it is spaced");
+  same(anyOf("[REQUIRES controlling]"), [{ test: "condition", id: "controlling" }], "the Bind's Conditions are Conditions");
+  same(anyOf("[REQUIRES not prone]"), [{ test: "condition", id: "prone", not: true }], "not");
+  same(anyOf("[REQUIRES bind]"), [{ test: "bind" }], "a Bind of any kind");
+  same([anyOf("[REQUIRES spell]"), anyOf("[REQUIRES spells]")], [[{ test: "spell" }], [{ test: "spell" }]], "a spell");
+  same([anyOf("[REQUIRES shield]"), anyOf("[REQUIRES shield raised]"), anyOf("[REQUIRES raised shield]")], [[{ test: "shield" }], [{ test: "shield", raised: true }], [{ test: "shield", raised: true }]], "a shield, and one Raised");
+  same([anyOf("[REQUIRES rigid]"), anyOf("[REQUIRES free hand]"), anyOf("[REQUIRES holding]"), anyOf("[REQUIRES encounter]")].map(a => a[0].test), ["rigid", "freeHand", "holding", "encounter"], "the single words");
+  same([anyOf("[REQUIRES weapon]"), anyOf("[REQUIRES melee weapon]"), anyOf("[REQUIRES ranged weapon]"), anyOf("[REQUIRES weapon reload]"), anyOf("[REQUIRES melee weapon trip]")],
+    [[{ test: "weapon" }], [{ test: "weapon", reach: "melee" }], [{ test: "weapon", reach: "ranged" }], [{ test: "weapon", trait: "reload" }], [{ test: "weapon", reach: "melee", trait: "trip" }]], "a weapon in hand, by reach and by trait");
+  same([anyOf("[REQUIRES foe adjacent]"), anyOf("[REQUIRES foe in reach]"), anyOf("[REQUIRES ally within 30]"), anyOf("[REQUIRES creature within 15 ft]"), anyOf("[REQUIRES enemies within 30ft]"), anyOf("[REQUIRES allies adjacent]")],
+    [[{ test: "near", who: "enemy", range: 0 }], [{ test: "near", who: "enemy", range: "reach" }], [{ test: "near", who: "ally", range: 30 }], [{ test: "near", who: "any", range: 15 }], [{ test: "near", who: "enemy", range: 30 }], [{ test: "near", who: "ally", range: 0 }]], "who is near, and how near");
+  same(anyOf("[REQUIRES not foe adjacent]"), [{ test: "near", who: "enemy", range: 0, not: true }], "nobody near");
+  same(anyOf("[REQUIRES prone.]"), [{ test: "condition", id: "prone" }], "one trailing period is tolerated");
+
+  must(/is not something REQUIRES can check: write a Condition \(.*prone.*\), supine, bind, spell, shield/.test(requiresError("[REQUIRES flying]")), "an unknown word is told the list");
+  must(/say how near/.test(requiresError("[REQUIRES foe]")), "a creature with no distance");
+  must(/say how near/.test(requiresError("[REQUIRES ally nearby]")), "or a distance that is none");
+  must(/second block/.test(requiresError("[REQUIRES prone, supine]")), "a comma is told `or` and the second block");
+  must(/no `and`/.test(requiresError("[REQUIRES free hand and foe in reach]")), "an `and` is told the second block");
+  must(/one `not` is enough/.test(requiresError("[REQUIRES not not prone]")), "a doubled not");
+  must(/has nothing beside it/.test(requiresError("[REQUIRES prone or ]")), "an `or` with nothing after it");
+  must(/REQUIRES is written/.test(requiresError("[REQUIRES]")), "an empty block");
+  same(bonusError("[EFFECT REQUIRES: prone]", onRowOf), "REQUIRES is a block of its own, not an effect: write `[REQUIRES prone]`", "wrapped in EFFECT it is told its own block");
+  same(bonusError("[EFFECT TRAIT Human]", onRowOf), "TRAIT is a block of its own, not an effect: write `[TRAIT Human]`", "and so is every other feature keyword");
+  // Exposed-by-Zone statuses are mirrors of a Zone and never a Condition a cell names.
+  must(/is not something REQUIRES can check/.test(requiresError("[REQUIRES exposedHead]")), "a Zone's mirror status is no Condition here");
+});
+
+check("requires: the words in English, for the tab's tooltip and the sheet's As read list", () => {
+  const words = cell => requireWords(requiresRule(cell));
+  same([words("[REQUIRES prone or supine]"), words("[REQUIRES not prone]"), words("[REQUIRES off-guard]")], ["Prone or Supine", "not Prone", "Off-Guard"], "Conditions");
+  same([words("[REQUIRES bind]"), words("[REQUIRES not bind]"), words("[REQUIRES spell]"), words("[REQUIRES not spell]")], ["in a Bind", "not in a Bind", "a spell", "no spell"], "a Bind and a spell");
+  same([words("[REQUIRES shield]"), words("[REQUIRES shield raised]"), words("[REQUIRES rigid]"), words("[REQUIRES free hand]"), words("[REQUIRES holding]"), words("[REQUIRES not holding]")],
+    ["a shield in hand", "a Raised shield", "a rigid implement in hand", "a free hand", "something in hand", "nothing in hand"], "what is in hand");
+  same([words("[REQUIRES weapon]"), words("[REQUIRES ranged weapon]"), words("[REQUIRES weapon reload]")], ["a weapon in hand", "a ranged weapon in hand", "a weapon with the Reload trait"], "weapons");
+  same([words("[REQUIRES foe adjacent]"), words("[REQUIRES ally in reach]"), words("[REQUIRES creature within 30]"), words("[REQUIRES not foe adjacent]"), words("[REQUIRES encounter]")],
+    ["an adjacent foe", "an ally in reach", "a creature within 30 ft", "no adjacent foe", "an encounter"], "who is near");
+  same(termWords({ test: "nonsense" }), "", "a term nobody knows says nothing");
+});
+
+/** A character's situation, as module/helpers/situation.mjs builds it; every fact known. */
+const situation = (extra = {}) => ({
+  conditions: [], bind: null, spells: 0, shield: { held: false, raised: false }, rigid: false,
+  hands: { free: true, holding: false }, weapons: [], near: [], encounter: false,
+  tracking: true, actionsLeft: 6, isTurn: true, permit: false, ...extra
+});
+const holds = (cell, s) => checkCondition(anyOf(cell)[0], s);
+
+check("requires: a word is true, false, or cannot be told, and `not` of unknown stays unknown", () => {
+  same([holds("[REQUIRES prone]", situation({ conditions: ["prone"] })), holds("[REQUIRES prone]", situation()), holds("[REQUIRES prone]", {})], [true, false, null], "a Condition: held, not held, not known");
+  same(holds("[REQUIRES prone]", situation({ conditions: new Set(["prone"]) })), true, "the Conditions as a Set read too");
+  same([holds("[REQUIRES not prone]", situation({ conditions: ["prone"] })), holds("[REQUIRES not prone]", situation()), holds("[REQUIRES not prone]", {})], [false, true, null], "not: turned round, and unknown stays unknown");
+  same([holds("[REQUIRES supine]", situation()), holds("[REQUIRES supine]", {}), holds("[REQUIRES not supine]", {})], [false, false, true], "Supine is known false until it is built");
+  same([holds("[REQUIRES bind]", situation({ bind: "neutral" })), holds("[REQUIRES bind]", situation({ bind: "controlled" })), holds("[REQUIRES bind]", situation()), holds("[REQUIRES bind]", {})], [true, true, false, null], "a Bind of any kind");
+  same([holds("[REQUIRES spell]", situation({ spells: 2 })), holds("[REQUIRES spell]", situation()), holds("[REQUIRES spell]", {})], [true, false, null], "a spell");
+  same([holds("[REQUIRES shield]", situation({ shield: { held: true, raised: false } })), holds("[REQUIRES shield raised]", situation({ shield: { held: true, raised: false } })), holds("[REQUIRES shield raised]", situation({ shield: { held: true, raised: true } })), holds("[REQUIRES shield raised]", situation({ shield: { held: false, raised: true } })), holds("[REQUIRES shield]", {})],
+    [true, false, true, false, null], "a shield in hand, and Raised only while in hand");
+  same([holds("[REQUIRES rigid]", situation({ rigid: true })), holds("[REQUIRES rigid]", situation()), holds("[REQUIRES rigid]", {})], [true, false, null], "a rigid implement");
+  same([holds("[REQUIRES free hand]", situation()), holds("[REQUIRES free hand]", situation({ hands: { free: false, holding: true } })), holds("[REQUIRES free hand]", situation({ hands: { free: null, holding: true } })), holds("[REQUIRES not free hand]", situation({ hands: { free: null, holding: true } }))],
+    [true, false, null, null], "a free hand, and a hand count the system is unsure of");
+  const bow = { reach: "ranged", traits: ["ranged", "reload", "two-handed"] };
+  const dagger = { reach: "melee", traits: ["agile", "finesse", "thrown"] };
+  same([holds("[REQUIRES weapon]", situation({ weapons: [dagger] })), holds("[REQUIRES weapon]", situation()), holds("[REQUIRES weapon]", {})], [true, false, null], "a weapon in hand");
+  same([holds("[REQUIRES ranged weapon]", situation({ weapons: [dagger] })), holds("[REQUIRES ranged weapon]", situation({ weapons: [dagger, bow] })), holds("[REQUIRES weapon reload]", situation({ weapons: [bow] })), holds("[REQUIRES weapon reload]", situation({ weapons: [dagger] })), holds("[REQUIRES melee weapon thrown]", situation({ weapons: [dagger] })), holds("[REQUIRES melee weapon reload]", situation({ weapons: [dagger, bow] }))],
+    [false, true, true, false, true, false], "by reach, by trait, and both on one weapon");
+  const foe = (gap, inReach = false) => ({ relation: "enemy", gap, inReach });
+  const friend = gap => ({ relation: "ally", gap, inReach: gap <= 2 });
+  same([holds("[REQUIRES foe adjacent]", situation({ near: [foe(0)] })), holds("[REQUIRES foe adjacent]", situation({ near: [foe(1)] })), holds("[REQUIRES foe adjacent]", situation({ near: [friend(0)] })), holds("[REQUIRES foe adjacent]", situation()), holds("[REQUIRES foe adjacent]", situation({ near: null }))],
+    [true, false, false, false, null], "an adjacent foe; nobody on the map is known; no token on the map is not");
+  same([holds("[REQUIRES foe in reach]", situation({ near: [foe(4, true)] })), holds("[REQUIRES foe in reach]", situation({ near: [foe(4, false)] })), holds("[REQUIRES ally within 30]", situation({ near: [friend(30)] })), holds("[REQUIRES ally within 30]", situation({ near: [friend(31)] })), holds("[REQUIRES creature within 15]", situation({ near: [{ relation: "neutral", gap: 10, inReach: false }] })), holds("[REQUIRES ally within 15]", situation({ near: [{ relation: "neutral", gap: 10, inReach: false }] }))],
+    [true, false, true, false, true, false], "reach is the caller's reading; feet are the gap; a creature is anyone, an ally is not a neutral");
+  same([holds("[REQUIRES encounter]", situation({ encounter: true })), holds("[REQUIRES encounter]", situation()), holds("[REQUIRES encounter]", {})], [true, false, null], "an encounter");
+  same(checkCondition({ test: "nonsense" }, situation()), null, "a term nobody knows cannot be told");
+});
+
+check("requires: a block fails only when every alternative is known false (ruling 283)", () => {
+  const rules = cell => parseAutomation(cell, onRowOf).rules;
+  const stand = rules("[REQUIRES prone or supine]");
+  same(availability(stand, situation()).ok, false, "standing up while standing: known not to apply");
+  same(availability(stand, situation({ conditions: ["prone"] })).ok, true, "Prone: it applies");
+  same(availability(stand, {}), { ok: true, failed: [], unknown: true }, "nothing known: shown, and said to be unknown");
+  const grapple = rules("[REQUIRES free hand or weapon grapple][REQUIRES foe in reach]");
+  same(availability(grapple, situation({ near: [{ relation: "enemy", gap: 0, inReach: true }] })).ok, true, "a free hand and a foe in reach");
+  same(availability(grapple, situation()).failed.map(requireWords), ["a foe in reach"], "nobody in reach: the second block fails, and is named");
+  same(availability(grapple, situation({ hands: { free: false, holding: true }, weapons: [{ reach: "melee", traits: [] }] })).failed.map(requireWords), ["a free hand or a weapon with the Grapple trait", "a foe in reach"], "both blocks can fail");
+  same(availability(grapple, situation({ hands: { free: false, holding: true }, weapons: [{ reach: "melee", traits: ["grapple"] }], near: [{ relation: "enemy", gap: 0, inReach: true }] })).ok, true, "hands full, but the weapon has the trait");
+  same(availability(grapple, situation({ hands: { free: null, holding: true }, weapons: [], near: [{ relation: "enemy", gap: 0, inReach: true }] })), { ok: true, failed: [], unknown: true }, "a hand the system is unsure of does not hide the row");
+  same(availability(grapple, situation({ near: null })).ok, true, "no token on the map: nothing about the map hides a row");
+  same([availability([], situation()).ok, availability(null, situation()).ok, availability([{ kind: "requires", any: [] }], situation()).ok], [true, true, true], "no block, or an empty one, always holds");
+});
+
+check("requires: the engine's own Maneuvers carry their conditions in code, and a cell replaces them", () => {
+  for (const [slug, blocks] of Object.entries(ENGINE_REQUIRES)) {
+    must(Object.hasOwn(BUILT_IN_MANEUVERS, slug) || Object.hasOwn(PAID_ELSEWHERE, slug), `${slug} is a Maneuver the system runs or pays for`);
+    must(blocks.length > 0, `${slug} names a condition`);
+    for (const data of blocks) readRequires(data);
+  }
+  same(Object.keys(ENGINE_REQUIRES).sort(), ["cast", "close", "gain-control", "pass", "raise-a-shield"], "the five");
+  const engine = slug => requiresFor([], ENGINE_REQUIRES[slug]);
+  same(engine("gain-control").map(requireWords), ["in a Bind", "not Controlling a weapon"], "Gain Control: a Bind you do not Control");
+  same(engine("close").map(requireWords), ["Controlling a weapon"], "Close: said in full, since \"Needs: Controlling\" reads oddly");
+  same([availability(engine("cast"), situation()).ok, availability(engine("cast"), situation({ spells: 1 })).ok], [false, true], "Cast needs a spell");
+  same([availability(engine("close"), situation()).ok, availability(engine("close"), situation({ conditions: ["controlling"], bind: "controlling" })).ok], [false, true], "Close needs a Control");
+  same([availability(engine("gain-control"), situation()).ok, availability(engine("gain-control"), situation({ bind: "neutral", conditions: ["bound"] })).ok, availability(engine("gain-control"), situation({ bind: "controlled", conditions: ["controlled"] })).ok, availability(engine("gain-control"), situation({ bind: "controlling", conditions: ["controlling"] })).ok],
+    [false, true, true, false], "Gain Control: no Bind, a neutral one, a Controlled one, one already Controlled");
+  same([availability(engine("raise-a-shield"), situation()).ok, availability(engine("raise-a-shield"), situation({ shield: { held: true, raised: true } })).ok], [false, true], "Raise a Shield needs one in hand, and stays to lower it");
+  same([availability(engine("pass"), situation()).ok, availability(engine("pass"), situation({ encounter: true })).ok], [false, true], "Pass needs an encounter");
+  const own = parseAutomation("[REQUIRES prone]", onRowOf).rules;
+  same(requiresFor(own, ENGINE_REQUIRES.cast).map(requireWords), ["Prone"], "a block in the cell replaces the engine's");
+  same(requiresFor([{ kind: "bonus" }, { error: "x", kind: "requires" }], ENGINE_REQUIRES.cast).map(requireWords), ["a spell"], "other rules and error entries are not blocks");
+  same([requiresFor(null).length, requiresFor(undefined, undefined).length], [0, 0], "a row with neither has none");
+});
+
+check("the tab: the four reasons a Maneuver is left out (rulings 284 to 286)", () => {
+  same(STATUS_REASONS, ["requires", "mode", "opportunity", "cost"], "the reasons, in the order they are said");
+  const stand = { requires: parseAutomation("[REQUIRES prone or supine]", onRowOf).rules, mode: "encounter", reaction: false, costs: [1], reactionCost: null };
+  const plain = { requires: [], mode: "encounter", reaction: false, costs: [1], reactionCost: null };
+  const fight = (extra = {}) => situation({ encounter: true, ...extra });
+  same(maneuverStatus(plain, situation()), { applicable: true, reasons: [] }, "a row with no block, outside an encounter");
+  same(maneuverStatus(stand, situation()), { applicable: false, reasons: [{ code: "requires", needs: "Prone or Supine" }] }, "its own conditions, with what it needs");
+  same(maneuverStatus(stand, situation({ conditions: ["prone"] })).applicable, true, "met");
+  // The wrong mode: only in an encounter.
+  const search = { ...plain, mode: "exploration", costs: [] };
+  const train = { ...plain, mode: "downtime", costs: [] };
+  same([maneuverStatus(search, situation()).applicable, maneuverStatus(train, situation()).applicable], [true, true], "Activities and Endeavors are listed outside an encounter");
+  same([maneuverStatus(search, fight()).reasons, maneuverStatus(train, fight()).reasons], [[{ code: "mode", mode: "exploration" }], [{ code: "mode", mode: "downtime" }]], "and left out in one");
+  // Not your Opportunity.
+  same(maneuverStatus(plain, fight({ isTurn: false })).reasons, [{ code: "opportunity" }], "outside the Opportunity");
+  same(maneuverStatus(plain, fight({ isTurn: false, permit: true })).applicable, true, "the GM's approval standing");
+  same(maneuverStatus({ ...plain, reaction: true }, fight({ isTurn: false })).applicable, true, "a Reaction is the book's out-of-turn Maneuver");
+  same(maneuverStatus(plain, situation({ isTurn: false })).applicable, true, "outside an encounter there is no Opportunity to wait for");
+  same(maneuverStatus(plain, fight({ isTurn: false, tracking: false })).reasons, [{ code: "opportunity" }], "the gate does not depend on the tracking setting");
+  // Cannot afford it.
+  same(maneuverStatus({ ...plain, costs: [2] }, fight({ actionsLeft: 1 })).reasons, [{ code: "cost", cost: 2, left: 1 }], "two actions with one left");
+  same(maneuverStatus({ ...plain, costs: [1, 2, 3] }, fight({ actionsLeft: 1 })).applicable, true, "a range is judged by its cheapest");
+  same(maneuverStatus({ ...plain, costs: [1, 3] }, fight({ actionsLeft: 0 })).reasons, [{ code: "cost", cost: 1, left: 0 }], "and named for it");
+  same(maneuverStatus({ ...plain, costs: [0] }, fight({ actionsLeft: 0 })).applicable, true, "a free Maneuver is always affordable");
+  same(maneuverStatus({ ...plain, reaction: true, costs: [1], reactionCost: 0 }, fight({ actionsLeft: 0, isTurn: false })).applicable, true, "a Reaction half with a cost of its own is a way to pay");
+  same(maneuverStatus({ ...plain, reaction: true, costs: [1], reactionCost: null }, fight({ actionsLeft: 0, isTurn: false })).reasons, [{ code: "cost", cost: 1, left: 0 }], "a Reaction with no action left");
+  same(maneuverStatus({ ...plain, costs: [2] }, fight({ actionsLeft: 1, tracking: false })).applicable, true, "with the six-action round not tracked nothing is counted");
+  same(maneuverStatus({ ...plain, costs: [2] }, situation({ actionsLeft: 0 })).applicable, true, "nor outside an encounter");
+  same(maneuverStatus({ ...plain, costs: [] }, fight({ actionsLeft: 0 })).applicable, true, "a row with no cost (a passive one) is never unaffordable");
+  // Several at once, in order.
+  same(maneuverStatus({ ...stand, costs: [2] }, fight({ isTurn: false, actionsLeft: 1 })).reasons.map(r => r.code), ["requires", "opportunity", "cost"], "every reason is said, in order");
+  // Unknown never hides.
+  same(maneuverStatus(stand, { encounter: true }).applicable, true, "a situation that knows nothing hides nothing");
+  same(maneuverStatus(null, null), { applicable: true, reasons: [] }, "nor does no row at all");
+});
+
+check("the tab: a hand is free only when the system is sure (ruling 287)", () => {
+  const sword = { type: "weapon" };
+  const greatsword = { type: "weapon", twoHands: true };
+  const fist = { type: "weapon", natural: true };
+  const shield = { type: "shield" };
+  const torch = { type: "gear" };
+  const hands = held => { const h = freeHands(held); return [h.free, h.holding]; };
+  same(hands([]), [true, false], "empty hands");
+  same(hands([fist]), [true, false], "a natural weapon is no hand and nothing held");
+  same(hands([sword]), [true, true], "one weapon");
+  same(hands([sword, shield]), [false, true], "sword and shield");
+  same(hands([greatsword]), [false, true], "a weapon in two hands");
+  same(hands([sword, sword]), [false, true], "two weapons");
+  same(hands([torch]), [true, true], "one piece of gear leaves a hand");
+  same(hands([sword, torch]), [null, true], "a weapon and a piece of gear: cannot tell (a pack is marked the same way)");
+  same(hands([torch, torch, torch]), [null, true], "gear alone never proves the hands full");
+  same(hands([sword, shield, torch]), [false, true], "weapons and shields alone fill both");
+  same(hands(null), [true, false], "nothing given");
+  same(freeHands([sword], 1).free, false, "a one-handed body");
+});
+
+check("the tab: Favorites first, no Maneuver twice, and only what applies unless all are asked for (ruling 288)", () => {
+  const row = (slug, applicable = true, extra = {}) => ({ slug, applicable, ...extra });
+  const rows = [row("aid", true, { source: "own" }), row("stand", false), row("strike"), row("aid", true, { source: "basic", isBasic: true }), row("grapple", false), row("cast", false)];
+  // Two Items on the sheet that share a name are both the character's: neither gives way.
+  const twins = arrangeManeuvers([row("new-maneuver", true, { id: "a" }), row("new-maneuver", true, { id: "b" }), row("new-maneuver", true, { id: "c", isBasic: true })]);
+  same(twins.rest.map(r => r.id), ["a", "b"], "only a Basic row gives way to a row of its name; two owned rows of one name are both listed");
+  same(arrangeManeuvers([row("x", true, { id: "a" }), row("x", false, { id: "b" })], ["x"]).favorites.map(r => r.id), ["a", "b"], "and both are Favorites when the name is one");
+  const plain = arrangeManeuvers(rows);
+  same([plain.favorites, plain.rest.map(r => [r.slug, r.source ?? null, r.favorite]), plain.hidden], [[], [["aid", "own", false], ["strike", null, false]], 3], "what applies, the first row of a name standing, and how many are left out");
+  const all = arrangeManeuvers(rows, [], { showAll: true });
+  same([all.rest.map(r => r.slug), all.hidden], [["aid", "stand", "strike", "grapple", "cast"], 3], "every Maneuver, the count unchanged");
+  const fav = arrangeManeuvers(rows, ["grapple", "aid", "gone"]);
+  same([fav.favorites.map(r => [r.slug, r.applicable, r.favorite]), fav.rest.map(r => r.slug), fav.hidden], [[["grapple", false, true], ["aid", true, true]], ["strike"], 2], "Favorites in the order marked, never left out, not listed twice, and not counted as hidden; a Favorite that is no row is nothing");
+  same([plain.left.map(r => r.slug), all.left.map(r => r.slug), fav.left.map(r => r.slug)], [["stand", "grapple", "cast"], ["stand", "grapple", "cast"], ["stand", "cast"]], "the rows left out, whichever way the list is shown");
+  same(arrangeManeuvers(null), { favorites: [], rest: [], left: [], hidden: 0 }, "no rows");
 });
 
 /* -------------------------------------------- */

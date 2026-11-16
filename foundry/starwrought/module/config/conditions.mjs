@@ -69,6 +69,36 @@ export const CONDITIONS = Object.freeze({
   exposedLegs: { id: "exposedLegs", name: "STARWROUGHT.Condition.exposedLegs", img: "icons/svg/leg.svg", zone: "legs", rulesPage: "Exposed", statusId: "starwroughtxLegs" }
 });
 
+/**
+ * A Condition by the name a cell writes (0.28.0; the `prevent` kind's own reading since 0.13.0,
+ * shared with `requires`): the id, or the English name that ends its i18n key, case, spaces and
+ * hyphens ignored, so `prone`, `Off-Guard`, `off guard` and `offGuard` all read. The Exposed-by-Zone
+ * statuses are mirrors of a Zone and never a Condition a rule names. Null for a word that is none.
+ * @param {string} word
+ * @returns {string|null}  A key of CONDITIONS.
+ */
+export function conditionIdOf(word) {
+  const key = String(word ?? "").trim().toLowerCase().replace(/[\s-]+/g, "");
+  return (key && CONDITION_WORDS.get(key)) || null;
+}
+
+/** The names a cell may write a Condition by, in order, for a message: "prone, grabbed, ...". */
+export function conditionWords() {
+  return Object.values(CONDITIONS).filter(c => !c.zone).map(c => String(c.name ?? c.id).split(".").at(-1).toLowerCase());
+}
+
+const CONDITION_WORDS = (() => {
+  const out = new Map();
+  for (const [id, config] of Object.entries(CONDITIONS)) {
+    if (config.zone) continue;
+    out.set(id.toLowerCase(), id);
+    // The i18n key's last word is the English name ("STARWROUGHT.Condition.offGuard" -> "offguard").
+    const word = String(config.name ?? "").split(".").at(-1).toLowerCase();
+    if (word) out.set(word, id);
+  }
+  return out;
+})();
+
 /** Zone key -> the Exposed condition that mirrors it. */
 export const ZONE_CONDITIONS = Object.freeze(Object.fromEntries(
   Object.values(CONDITIONS).filter(c => c.zone).map(c => [c.zone, c.id])

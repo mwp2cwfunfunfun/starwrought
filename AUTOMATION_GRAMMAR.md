@@ -47,6 +47,7 @@ Every block the cell reads, one example each. Case never matters.
 | `[CHOICE Weapon Group]` | a pick the Talent demands at creation | 2 |
 | `[AURA 15 allies]` | a ring on the map, preview-only until shown | 2 |
 | `[AURA 15 allies; DEF: 1 situation; IF: SEEN]` | a ring that carries its effect: the ring is the effect's FOR | 2 |
+| `[REQUIRES prone or supine]` | on a Maneuver's own row: what the Maneuver needs before it can be used; the Maneuvers tab lists the row only while it holds | 2 |
 | `[EFFECT CHECK: 1 condition, aid]` | a bonus to checks of a Constellation or Maneuver (none named: every check) | 3 |
 | `[EFFECT ATK: 1 condition]` | a bonus to every Strike and Cast | 3 |
 | `[EFFECT DEF: 1 situation, guard]` | a bonus to a Defense (none named: all four) | 3 |
@@ -151,6 +152,7 @@ Each block is one rule.
 | `[CHOICE Weapon Group]` | a build-time pick the Talent demands (the Choice column's successor) | `choice` |
 | `[AURA 15 allies]` | the ring on the map: range in feet, whom it is about (`allies`, `enemies`, `all`). Every ring is preview-only until its owner shows it from the Auras window (0.17.0; the old `visible` word is refused) | `aura` |
 | `[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` | the ring **carrying its effect** (0.18.0): after the semicolon, one effect line (section 3) whose `FOR` is the ring, so "15 feet, allies" is said once; a `FOR:` inside the block is refused. Stored as two rules, the ring and the effect. A second effect on the same ring is a second block with the same range and audience, drawn once; two rings on one Talent draw the first | `aura`, and the effect's kind |
+| `[REQUIRES prone or supine]` | on a **Maneuver's own row**: what the Maneuver needs before it can be used (0.28.0). The Maneuvers tab lists the row only while every block on it holds; `or` inside a block gives alternatives, `not` turns a word round, and a second block is a condition that must also hold. The words are in section 4 | `requires` |
 | `[EFFECT ...]` | an effect block: section 3 | the tag's kind |
 
 **The chassis is written on the Root.** The Human's `[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]`
@@ -673,6 +675,75 @@ built-in (Recenter, Raise a Shield, the visor, Pass), one the system pays anothe
 Cast, a Move, a Step, a Leap), a parent row whose own cost is three or more (it would be Prepared),
 a second `SUBORDINATE` line on one row, and a subordinate that names a subordinate of its own.
 
+### `requires`
+
+What a Maneuver needs before it can be used (0.28.0; rulings 281 to 289). Mike, of the Maneuvers
+tab: "I would like to only show Maneuvers that the system detects are applicable ... if you are not
+Prone or Supine, you cannot Stand. If you have no Spells, you cannot Cast. If nobody is within your
+reach, you cannot Grapple." A Maneuver's Requirements column is prose, which nothing can check; a
+`[REQUIRES ...]` block says the part of it a machine can.
+
+```
+[REQUIRES <condition> or <condition> ...]
+
+[REQUIRES prone or supine]                                     Stand, Kip Up
+[REQUIRES free hand or weapon grapple][REQUIRES creature in reach]  Grapple
+[REQUIRES grabbed or restrained]                               Escape
+[REQUIRES not prone]                                           Drop Prone
+```
+
+- **Where.** On a Maneuver's own row (an action sheet's Automation cell), and nowhere else: on a
+  Talent or a custom effect it is refused. A Maneuver a Talent grants is a copy of its row, so it
+  carries the block too. It sits beside the row's other blocks, on the same line or its own.
+- **Every block must hold.** `[REQUIRES free hand or weapon grapple][REQUIRES creature in reach]` is "a
+  free hand or a Grapple weapon, AND somebody in reach".
+- **`or` gives alternatives** inside one block. There is no `and` and no comma: a condition that
+  must also hold is a second block.
+- **`not` turns one word round:** `not prone`, `not controlling`, `not foe adjacent`.
+
+The words:
+
+| word | true when |
+|---|---|
+| a Condition's name: `prone`, `grabbed`, `restrained`, `hidden`, `undetected`, `off-guard`, `controlling`, `controlled`, `bound`, ... | the character has that Condition. Spaces, hyphens and case do not matter |
+| `supine` | accepted now, and never true until Supine is built, so `[REQUIRES prone or supine]` can be written once |
+| `bind` | the character is in a Bind, of any kind (`bound` is the neutral Bind alone) |
+| `spell` | the character owns a spell |
+| `shield`, `shield raised` | a shield is in hand; it is in hand and Raised |
+| `rigid` | a rigid implement is in hand: a weapon that is neither Flexible nor a natural weapon, or a shield |
+| `free hand` | a hand is free. An estimate: a weapon or a shield in hand is a hand (two for a weapon held in two, none for a natural weapon), and gear marked In hand is probably one. When the system cannot tell, the row is shown |
+| `holding` | anything is in hand |
+| `weapon`, `melee weapon`, `ranged weapon` | a weapon is in hand, of that kind |
+| `weapon <trait>`, `melee weapon <trait>` | a weapon in hand carries the trait, matched on the trait's first word: `weapon reload`, `weapon thrown`, `weapon grapple`, `weapon trip`, `weapon disarm`, `weapon shove` |
+| `foe adjacent`, `ally adjacent`, `creature adjacent` | such a token touches the character's on the map |
+| `foe in reach` (`ally`, `creature`) | such a token is within the character's reach |
+| `foe within 30` (`ally`, `creature`; any number of feet) | such a token is within that many feet, edge to edge |
+| `encounter` | the character is a fighter in a running encounter |
+
+`foe` is a token of the opposite disposition, `ally` one of the same, `creature` any other token.
+`enemy`, `enemies`, `foes`, `allies` and `creatures` read the same.
+
+**The system hides a row only when it knows.** Each word is true, false, or cannot be told: the
+character's token is not on the map, a hand the system is unsure of. A block fails only when every
+alternative in it is known false; anything it cannot tell leaves the row listed. A token the
+character cannot see is not counted (a wall between the two tokens, or the Hidden or Undetected
+Condition on the other), and neither is a token hidden from the players, a dead body or a party
+token; so a hidden foe never makes Grapple appear. Nothing asks who is looking at the sheet: the
+GM's copy lists what the player's does. "In reach" is the longer of the character's own reach and
+the reach of what is in hand.
+
+**It decides what is listed, and refuses nothing.** The block is read by the Maneuvers tab alone
+(section 7). A player who shows every Maneuver may still use one whose block fails; no roll, cost or
+card reads it. The sheet's As read list says `needs: Prone or Supine`.
+
+**The Maneuvers the system itself runs need no block:** Cast (`spell`), Close (`controlling`), Gain
+Control (`bind`, and `not controlling`), Raise a Shield (`shield`) and Pass (`encounter`) carry
+theirs in code. A `[REQUIRES ...]` block in such a row's cell replaces the built-in one.
+
+**Not read, and the table's:** Size limits ("no more than one Size larger"), cover and concealment,
+tools and supplies, mounts and animals, "can hear you", "willing", what a Reaction's Trigger needs,
+and anything about the creature TARGETED rather than who is near.
+
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
 
@@ -822,6 +893,77 @@ month); Broker's Eye's "always know an item's fair price"; and which agreement, 
 manipulation is in front of the player, which is what `CLAIM` asks them. Iron Etiquette's two
 lines are one Talent, so an Intimidation match and a ticked claim together are +1, not +2 (PHB
 v4.21's stacking collapses one source).
+
+### What each Maneuver needs (0.28.0)
+
+The `[REQUIRES ...]` block for every row of `data/maneuvers.xlsx` whose Requirements, Target or
+Effect names something the system can check. They are Mike's to paste: the 0.28.0 release carries
+the kind, and the workbook was in his hands when it was cut. Each goes in the row's Automation
+cell, in place of an `N/A` or an empty cell, or on a line of its own beside the row's other blocks.
+Until a row has its block the Maneuvers tab always lists it.
+
+```
+Basic Actions
+  Reload                    [REQUIRES weapon reload]
+  Crawl                     [REQUIRES prone]
+  Drop Prone                [REQUIRES not prone]
+  Stand                     [REQUIRES prone or supine]
+
+Ancestry and Culture Actions
+  Steady the Line           [REQUIRES ally adjacent]
+  Move Together             [REQUIRES ally adjacent]
+  Rescue Haul               [REQUIRES free hand][REQUIRES creature adjacent]
+
+Acrobatics, Animal Handling, Athletics
+  Escape                    [REQUIRES grabbed or restrained]
+  Tumble Through            [REQUIRES foe adjacent]
+  Kip Up                    [REQUIRES prone or supine]
+  Calm Animal               [REQUIRES creature within 15]
+  Direct Animal             [REQUIRES creature within 30]
+  Disarm                    [REQUIRES free hand or weapon disarm][REQUIRES creature in reach]
+  Grapple                   [REQUIRES free hand or weapon grapple][REQUIRES creature in reach]
+  Reposition                [REQUIRES creature in reach]
+  Shove                     [REQUIRES free hand or weapon shove][REQUIRES creature in reach]
+  Trip                      [REQUIRES free hand or weapon trip][REQUIRES creature in reach]
+  Reliable Anchor           [REQUIRES free hand]
+
+Diplomacy, Guile, Insight
+  Rally                     [REQUIRES ally within 30]
+  Talk Them Down            [REQUIRES creature within 30]
+  Command the Field         [REQUIRES ally within 30]
+  Feint                     [REQUIRES foe in reach]
+  Feinting Step             [REQUIRES foe in reach]
+  Anticipate                [REQUIRES creature within 30]
+
+Medicine, Performance
+  Stabilize                 [REQUIRES creature adjacent]
+  Treat Persistent Damage   [REQUIRES creature adjacent]
+  Bolster                   [REQUIRES ally within 15]
+  Captivate                 [REQUIRES creature within 30]
+```
+
+Steady the Line and Move Together already carry an effect block; the `[REQUIRES ...]` block goes
+beside it. Grapple, Disarm, Shove, Trip and Reposition say `creature`, since the book lets them be
+tried on anyone in reach; Feint says `foe`, as its Requirements do ("An enemy is within your
+reach"). Reposition has no hand block, because its other way in ("already Grabbing or Restraining
+the target") is something the system cannot see.
+
+Three more that read, and are a judgement about how the table plays:
+
+```
+  Release                   [REQUIRES holding]              hides Release with empty hands; but a Grab held
+                                                            with an empty hand is not something the system sees
+  Sneak                     [REQUIRES hidden or undetected] only if the table sets those Conditions on the token
+  Battle Cry                [REQUIRES foe within 30]        its Range; its Trigger is still the table's
+```
+
+Cast, Close, Gain Control, Raise a Shield and Pass need nothing written: the system runs them and
+knows what they need. Rows whose requirement is judgement stay listed always: Take Cover, Hide (cover
+and concealment), Squeeze, Balance, Climb, Swim (the place), Brace an Object, Field Patch, Disable
+Device, Pick Lock, Stabilize's supplies (tools), Aid ("willing"), Quench the Ember (the system has no
+word for a kind of Persistent Damage), Sure Seat (a mount), Grab an Edge (Releasing an item is part
+of it), Quick Tongue (a settlement), Look Harmless (the party sheet already warns), and every Size
+limit.
 
 ## 6. Character Effects
 
@@ -1000,6 +1142,19 @@ written on the Maneuver's row.
   Effect whose holder has no client connected to take it off when its Opportunity ends stays
   listed, dimmed, until the encounter ends; it is held for nothing by then. A roll made by the GM
   for a player's character leaves the Effect as that player's own roll would.
+- **A `[REQUIRES ...]` block decides what the Maneuvers tab lists, and nothing else** (0.28.0;
+  section 4). By default the tab shows only the Maneuvers that apply now; **Show every Maneuver**
+  at its top shows the rest dimmed, each with why on hover ("Needs: Prone or Supine"). A row is
+  left out for four reasons: a block of its own that fails; in an encounter, an Exploration
+  Activity or a Downtime Endeavor; in an encounter with the six-action round tracked, a cheapest
+  cost above the actions left; and in an encounter outside the character's Opportunity with no
+  approval of the GM's standing, anything but a Reaction. A Favorite (the bookmark on a row) is
+  listed first and never left out. The list is worked out again when the character's Conditions,
+  gear, Bind or actions change, when the Opportunity moves, when a token on the scene moves, when
+  another creature's Conditions change, and when a wall or a door changes.
+  Nothing is refused by it: a Maneuver shown with the button can be used. It is the character
+  sheet's alone; an adversary's abilities are not filtered, and a Reaction Talent offered in the
+  Combat window is not a row of the tab.
 - **Sight is read, hearing is not.** `SEEN` is line of sight between token centres against
   sight-blocking walls plus three statuses; light, sight range and hearing are the table's.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
@@ -1019,7 +1174,13 @@ written on the Maneuver's row.
 | `after the ring, an AURA block carries one effect, \`[AURA <N> <who>; <tag>: ...]\`` | what follows the ring's semicolon is no effect line |
 | `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: CHECK, ATK, ...` | the word after EFFECT is no tag |
 | `EFFECT is written \`[EFFECT <tag>: ...]\`, as in \`[EFFECT IMMUNE: prone; LIMIT: encounter]\`` | an empty `[EFFECT]` |
-| `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, EFFECT, or [<Constellation> trained]` | the block's first word |
+| `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, EFFECT, or [<Constellation> trained]` | the block's first word |
+| `REQUIRES is a block of its own, not an effect: write \`[REQUIRES prone]\`` | a feature keyword wrapped in `[EFFECT ...]` (0.28.0); every keyword is told the same in its own word |
+| `REQUIRES is written on the Maneuver's own row: it says when that Maneuver can be used, and the Maneuvers tab lists the row only then` | a `[REQUIRES ...]` block on a Talent or a custom effect |
+| `"<word>" is not something REQUIRES can check: write a Condition (...), supine, bind, spell, shield, shield raised, rigid, free hand, holding, weapon, ...` | a word section 4's table does not list |
+| `"<words>": say how near, as in \`foe adjacent\`, \`foe in reach\` or \`ally within 30\`` | `foe`, `ally` or `creature` with no distance, or one that is none |
+| `REQUIRES joins alternatives with \`or\`, and a condition that must ALSO hold is a second block` / `REQUIRES has no \`and\`` | a comma, a semicolon or an `and` inside the block |
+| `"<words>": one \`not\` is enough` / `an \`or\` has nothing beside it` | a doubled `not`; a dangling `or` |
 | `TRAIT is a feature and is written in brackets: \`[TRAIT Human]\`` | a feature keyword typed as a line, without its brackets |
 | `"substitute" is the kind's name, and its tag is USE: write \`[EFFECT USE: Presence, Origin, aid]\`` | a kind's stored name typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): an effect is written with its tag. On a custom effect row the message offers the bare `USE: Presence, Origin, aid` |
 | `USE is an effect tag and takes a colon: write \`[EFFECT USE: Presence, Origin, aid]\`` | a tag typed without its colon (`use Presence, Origin, aid`; 0.21.0); any tag is told the same in its own word (`CHECK is an effect tag and takes a colon: ...`), but `SPEED`, which is a feature keyword first |
@@ -1235,3 +1396,15 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   and `card`, whose offers are now drawn on Attack and Defense cards too. The release carries the
   kind alone: Pay It Forward's row, Aid's `GIVE` lines and Reciprocal Effort's cell are Mike's to
   add.
+- **0.28.0** (2026-11-15): the `[REQUIRES ...]` block and the `requires` kind, from Mike's
+  screenshot of the Maneuvers tab ("Many actions that should unavailable based on the situation
+  are there ... if you are not Prone or Supine, you cannot Stand"). The tab lists only what applies
+  and a button shows the rest (ruling 281); the conditions are written in the sheets, on the
+  Maneuver's own row, his choice, with the five Maneuvers the system runs carrying theirs in code
+  (282); a word is true, false or cannot be told, and a row is left out only when the system knows
+  (283); also left out, by his choice: the wrong mode (284), a cost that cannot be paid (285) and
+  anything but a Reaction outside the Opportunity (286); what the system can see of hands and of
+  who is near (287); Favorites on the character, first and never left out (288); nothing is
+  refused, the list is a view (289). A feature block, not an effect: no tag, no hook point, no
+  switch on the Effects tab. Fixed on the way: a feature keyword wrapped in `[EFFECT ...]` is told
+  its own block. The release carries the kind alone: the blocks in section 5 are Mike's to paste.
