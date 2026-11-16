@@ -320,7 +320,14 @@ export class SwCheck {
     // The attacker's rules about this defender (0.15.0, ruling 175; `MARKED`), read per pairing
     // by the coordinator and added to the die's total here; listed on the card and kept in the
     // flags so a reroll adds them again.
-    pairingModifiers = null
+    pairingModifiers = null,
+    // What outlives a Bind for this attack (0.27.0, ruling 276; combat/bind-rules.mjs). The
+    // attack ended its attacker's Bind before this card, so the two things the Bind was still owed
+    // ride here and into the flags: the Zone the attacker's Control held open on this defender
+    // ("A Strike against the other Bind participant resolves before the Bind ends": the card's
+    // damage may be placed there), and whether the attack was made with a Controlled implement (an
+    // adversary's Attack Threshold, read again by a reroll).
+    controlZone = null, controlledAttack = false
   } = {}) {
     if (!rollData) throw new Error("STARWROUGHT | resolveAgainst needs the roll's data.");
     // The roller may have sent its whole submission rather than the bare Roll data.
@@ -470,7 +477,12 @@ export class SwCheck {
       attackId: attackId ?? null,
       rerollOf: rerollOf ?? null,
       rerollReason: rerollReason ?? "",
-      pairingModifiers: pairing
+      pairingModifiers: pairing,
+      // 0.27.0: what the attack kept of a Bind it ended (above). A spell places no damage on a
+      // Zone by the Strike rules, so it keeps none.
+      controlZone: (!isSpell && (controlZone in SW.ZONES)) ? controlZone : null,
+      controlZoneName: defenderName,
+      controlledAttack: !!controlledAttack
     };
 
     const applied = [...(Array.isArray(modifiers) ? modifiers : []), ...pairing];
@@ -692,7 +704,10 @@ export class SwCheck {
       // pressed still owes the ❶, so that card's state carries over and the charge runs as usual.
       reactionCharged: flags.reactionCharged ? true : null,
       rerollOf: message.id,
-      rerollReason: reason
+      rerollReason: reason,
+      // 0.27.0: copied, never worked out again: the Bind they came from is gone.
+      controlZone: flags.controlZone ?? null,
+      controlledAttack: !!flags.controlledAttack
     });
 
     if (message.isAuthor || game.user.isGM) {

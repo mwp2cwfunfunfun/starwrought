@@ -7,6 +7,224 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.27.0 (2026-11-15): the Bind, automated
+
+Built from **Player's Handbook v4.25**, which this release redlines in place (four tracked changes
+of Claude's, below; the file as Mike had saved it is in `backup/pre-0.27.0/`). Rulings 269 to 280.
+No data workbook was converted, built, staged or written, and no pack document moves: Gain
+Control and Close are engine code, as Strike and Cast are, and their rows' Automation cells stay
+`N/A`. `AUTOMATION_GRAMMAR.md` does not move: no rule kind changes.
+
+Mike, 2026-11-15: "what automation do we have around creating, closing, controlling, and/or
+breaking a bind?", then "Plan it" (`dazzling-floating-simon.md`; his decisions by question).
+Reading the code beside the book found that once a Bind existed the system kept only part of it
+honest:
+
+| What happens | Through 0.26.1 | 0.27.0 |
+|---|---|---|
+| A bound fighter Moves, Steps, Rushes or Crawls | Nothing | The Bind ends, said on the move's card |
+| The Controller Steps toward the foe (Close ❶) | Nothing ended a Bind, and the Close row charged ❶ beside the Step's ❶ | A Close: the Bind holds, one ❶ |
+| An adversary attacks (another attack, at its partner, at a third-party Controller) | Nothing: the three rules lived in a character's weapon Strike alone | The same rules for every attack |
+| A Cast by a bound fighter, or at a Controller | Nothing | Ends the Bind |
+| A Strike at a third party with the bound implement | Nothing | The Bind ends with it |
+| The Controller Strikes the partner | The Bind ended at the die, and the Zone it held open closed before the damage (since 0.19.0) | That card's damage may still be placed on the Zone |
+| Gain Control ❶ | The row paid ❶ and showed its text | Rolled, and applied from the card |
+| A Parry that Stops a Deliberate or Committed Strike | Control outright, on a Graze as well as a Miss (ruling 131) | Follows the Talent: see ruling 271 |
+
+### The rulings
+
+- **269. Only a fighter's own movement ends its Bind** (Mike: "Their own movement"; PHB: "Either
+  participant Moves or Steps, unless an ability expressly preserves the Bind"). A drag the system
+  counts as that fighter's Move, Step, Rush or Crawl in a started encounter ends it. Giving ground
+  3 feet, a Shove and a GM repositioning a token do not: the table presses End Bind for those.
+- **270. The shield exception** (Mike). "Ending a Bind" says an attack with an unbound weapon ends
+  the Bind before the roll; Chapter 5 says "a shield that Controls a foe's weapon opens a Zone for
+  the sword in your other hand". Both stand: while your shield holds the Control, your Strike at
+  that foe with another weapon is read as a Strike with the bound implement, which resolves
+  before the Bind ends. Any other attack with an unbound weapon ends the Bind first.
+- **271. Parry follows its Talent**, replacing ruling 131 (Mike: "A free Gain Control roll"). The
+  Talent: "If the Strike is a Graze or a Miss, you may immediately attempt to Gain Control of the
+  attacking weapon." A Miss hands Control to any Guard with a rigid implement, as the book says.
+  Where the Bind a Parry leaves is neutral (a Graze, or a Quick Strike's Miss) the card offers
+  **Gain Control ⓿**, at no further cost by the Subordinate Maneuver rule. Riposte stands beside a
+  Parry's Stop, whichever it was.
+- **272. A Quick Strike that is Stopped forms at most a neutral Bind** (Mike: "Keep the old
+  rule"). The sentence was the book's through v4.15 and was lost in v4.21. Without it "Miss. The
+  defender gains Control" would Expose a Quick striker, against the Glossary's "a Quick Strike
+  never". The system never changed; the sentence is redlined back.
+- **273. A Cast is an attack** (Mike). A bound fighter who Casts ends their own Bind before the
+  roll; a third party's Cast at a Controller ends that Control.
+- **274. Gain Control's Failure makes the Bind neutral**, even when the foe held Control (Mike:
+  the row read literally, "Failure A neutral Bind forms").
+- **275. Gain Control is a Melee check against the partner's Guard Threshold.** An adversary rolls
+  nothing in this system, so for an adversary's Gain Control the partner rolls Guard against the
+  adversary's Attack Threshold and the degree is read from the other side, as a Defense roll is
+  (Mike chose to build it). Two adversaries settle it by hand.
+- **276. A Strike that "resolves before the Bind ends" keeps the Zone on its own card** (Claude's,
+  Mike's to overrule). Every Bind an attack ends is ended before its first result card; the Zone
+  the attacker's Control held open rides on that pairing's card, and the card's damage may be
+  placed there, at Protection 0, with the Wound on a Critical Hit. A damage button may never be
+  pressed, so the Bind cannot wait for it.
+- **277. Close needs no click** (Claude's). The Controller's Step that ends nearer the foe IS the
+  Close: the same ❶ as a Step, and never worse. The Close row says the drag pays.
+- **278. Momentary Control** (Mike chose to build it; PHB, Size and Binds). Two or more Sizes
+  apart, the smaller fighter's Control falls back to a neutral Bind at the end of its next
+  Opportunity, and the larger fighter's movement does not end the Bind. "After its first benefit
+  is used" is left to the table, with Make neutral.
+- **279. A Bind can be formed by hand** (Mike, who declined it at 0.19.0: automatic endings make a
+  way back more useful). Neutral, with the one token targeted; the dialog names both implements.
+- **280. Gain Control takes no -2 for a Controlled implement, and a fighter who already Controls
+  cannot use it** (Claude's, Mike's to overrule). The row carries the Attack trait and the book
+  puts the -2 on "attacks with the Controlled implement"; Gain Control is read as the contest for
+  the line, as the Example of Play rolls it, so a Controlled fighter is not handicapped twice.
+
+### How it works
+
+- **One pure module decides everything**: `module/combat/bind-rules.mjs` (no Foundry global, so the
+  self-test drives it): `usesBoundImplement`, `attackBindPlan`, `movementBindPlan`, `bindOffer`,
+  `gainControlOutcome`, `sizeGap`, `isLarger`, `momentaryFor`, `momentaryStep`. The callers write
+  what it says.
+- **Attacks, at one moment for every source.** With every die in and before the first result
+  card, the coordinator builds the attack's Bind plan once (`AttackCoordinator.#planBinds`, then
+  `#endPlannedBinds`):
+  the attacker's Bind ends (the bound implement, another weapon, a Cast), and a defender who
+  Controls someone else loses the line. The plan is kept on the attack record (`workflow.bind`,
+  in `AttackWorkflow.create`, `projectFor` and the card's `PUBLIC_KEYS`), so a sweep at a third
+  party and at the partner reads one answer and a coordinator rebuilt mid-resolution does not
+  decide again. A Strike or a Cast with no target keeps the attacker's own rule, through the
+  same plan (`rollAttack`, `castSpell`).
+- **What outlives the Bind rides on the card**: `controlZone` and `controlledAttack` in the flags
+  of every Attack and Defense card. The damage roll offers the Zone and the Apply reads it as
+  Exposed (`SwDamage.roll`, `SwDamage.apply`, `zoneProtection({ exposed })`), on this client or
+  through the GM's relay, for the card's own target only. A reroll copies both and never works
+  them out again; an adversary's Attack Threshold is read with the card's answer
+  (`attackThreshold(attacker, maneuver, { controlled })`).
+- **Every automated end names its Bind** (`endBind({ id, reason })`): one that lands late cannot
+  clear a Bind formed a moment later from the new card. The card says why (`Bind.endedBy.*`).
+- **Movement** (`settleBindOnMove` in `documents/movement.mjs`): asked for every drag the system
+  counts as the fighter's own, whatever the `trackActions` setting. A Close is the Controller's
+  Step that ends nearer the partner, centre to centre. `close` joins `PAID_ELSEWHERE`.
+- **Gain Control** is `SwActor#gainControl` (`documents/actor/bind.mjs`), a built-in
+  (`BUILT_IN_MANEUVERS["gain-control"]`) and a button on the Bind line. The partner is the Bind
+  partner, so nothing is targeted; the gate is passed and the ❶ paid when the roll is made. The
+  result is drawn under the check card from its flags and the Bind as it stands
+  (`documents/cards/gain-control.mjs`): Take Control for the side it favours, shown to that side's
+  owner and the GM, or the Bind made neutral; the roller's own side is written at once. An
+  adversary posts a request card whose Roll Guard button the partner's owner presses.
+- **"Off-Guard until its next Opportunity"** (a Critical Success) is the first condition in the
+  system with an expiry of its own. A one-shot token on the Bind record (`pressed`) makes the
+  Controlled side put a flagged Off-Guard on itself, so the pair-keeper carries it to a body the
+  roller does not own, as it carries the Zone; the turn-change sweep takes it off as that
+  fighter's Opportunity begins (`settleBindWindows` in `rules/effects-state.mjs`), and no other
+  Off-Guard is touched.
+- **Momentary Control**: the Controller carries `flags.starwrought.momentaryControl`, counted in
+  the same sweep; both sheets' Bind lines say so while it runs.
+- **The Bind line** (both sheets): Gain Control, Take Control, **Make neutral** (the Controller
+  lets go; `releaseControl`), End Bind. With no Bind, in an encounter: **Form a Bind**.
+- **What a Stop offers** is `bindOffer`, read by `dice/check/position.mjs`.
+
+### Mended on the way
+
+- **A new Zone on a Control that already stood never reached a partner the writer did not own.**
+  The pair-keeper compared the state and the partner alone; it compares the Bind's identity, its
+  Zone and the Critical Success token too (the sweep at load still compares state alone, so the
+  two sides cannot rewrite each other).
+- **An adversary's roll against another adversary never took the -2** for a Controlled implement.
+- **`FEATURES.md` said a partner you do not own needs its owner's click.** The GM's client, or the
+  partner's owner's, has written that side since 0.5.1.
+
+- **`STARWROUGHT.Notify.noItem`** was used by a spell card's damage button and was in no language
+  file; it is now.
+
+### Mended after the review
+
+An independent reader went through the diff (no defect in the attack rules, the movement rule or
+the pair-keeper; seven findings in what surrounds them, all mended and driven again):
+
+- **A Gain Control card could be applied again.** A Bind keeps its identity through Take Control
+  and Make neutral, so an old Success offered its button once more the moment the Control was
+  lost: a free Control with no roll. A result is now written once. The Bind card the write posts
+  names the check card (`flags.starwrought.gainControlApplied`, `appliedRecord`), the button is
+  offered only while nothing has been written from the card, the result changes something, and
+  the Bind is still as it stood when the die was thrown; a reroll's card is read against the
+  Bind as it stands (`gainControlForReroll`).
+- **The adversary's Attack Threshold was printed when the GM pressed Roll Guard.** It is withheld
+  whoever rolls, as the attack flow withholds it on every Defense card.
+- **Gain Control from the Bind line was not held to one use at a time.** A double-click paid and
+  rolled twice. One at a time for a fighter now (`GAINING`), and one write for a card at a time.
+- **A blind Gain Control roll acted on its result** on the roller's client (the Zone picker
+  opening said the degree). It waits for the GM's button.
+- **An adversary's move that ended a neutral Bind was said only on its move card**, which is
+  whispered to the GM. The Bind's own card says it in public.
+- **The Off-Guard was only ever taken off by a turn change.** Outside an encounter it is not put
+  on (the card still says it), and the encounter's end reaches a body that has left the tracker.
+- **The attack's plan reached the card after the Binds had ended.** It is written first
+  (`#planBinds`, then `#endPlannedBinds`); a coordinator rebuilt in between runs the ends again,
+  which names each Bind and so repeats nothing.
+
+### The handbook
+
+`python assets/phb_propose.py Starwrought_Players_Handbook_v4.25.docx --in-place --backup
+backup/pre-0.27.0 --proposal bind`: four tracked changes by Claude, for Mike to accept or reject.
+
+- **Binds**: after "Miss. The defender gains Control of the attacking implement.", "A Quick
+  Strike that is Stopped forms at most a neutral Bind." (ruling 272).
+- **Ending a Bind**: after "...the Bind ends before the attack roll.", "A Cast is such an attack.
+  A shield that holds the Control is the exception: its bearer's Strike with another weapon
+  against that foe resolves before the Bind ends, as a Strike with the bound implement does."
+  (rulings 270 and 273).
+- **Conditions, Bound [X]**: "or when a Strike between you resolves" becomes "or when either of
+  you attacks", as Ending a Bind has it.
+- **Conditions, Controlled [X]**: "Recenter ❶ or Step to end it." becomes "Recenter ❶, Move, or
+  Step to end it."
+
+Rulings 269, 271 and 274 to 280 change no sentence of the book: it says "Moves or Steps"
+already, and Gain Control, Close and Parry are Maneuver and Talent text, which lives in
+`data/*.xlsx` since v4.25.
+
+### Worth knowing
+
+- **A held shield is always the implement that Binds.** The system names a shield before any
+  weapon when you Guard. A neutral Bind on your shield ends when you Strike with your sword (the
+  book's rule), and a foe who Controls your shield puts no -2 on your sword. Form a Bind lets you
+  name the sword instead; the card's button does not.
+- **Close is inferred**: any Step by the Controller that ends nearer the foe keeps the Bind.
+- **Adversaries are typed numbers.** Off-Guard on an adversary is a token status that moves no
+  Threshold, as before, and an adversary's Strike has no damage card, so the Zone it may still
+  use is a line on its result card for the GM.
+- **With no GM connected**, an end on a body nobody present owns is named in the attack card's
+  log and waits.
+- **An undo of a move does not bring the Bind back.** Form a Bind does.
+
+### Left to the table
+
+Giving ground, a Shove and a GM's repositioning (End Bind); one Bind for each fighter, where the
+book allows one for each implement; a Disarm (a dropped or put-away implement ends the Bind
+already); "after its first benefit is used"; two adversaries contesting a Bind; and the Talents
+that bend these rules (Winding, Feeling, Catch the Blade, Clinch), none enabled yet.
+
+### Verification
+
+- `node assets/test_rules.mjs`: 195 checks, nine of them new (every rule above from plain data,
+  the attack record keeping its plan, the Close and Gain Control rows).
+- `node --check`, `python assets/check_style.py`, `node assets/build_all.mjs --check`.
+- The redline read against its backup: the same 2,351 paragraphs, four insertions, two deletions.
+- An independent review of the diff (seven findings, none in the attack or movement rules; all
+  mended, above), and the mended paths driven again.
+- Live in the test world with a GM tab and a player tab, the die pinned: each kind of movement,
+  a Close, a GM's off-turn drag and giving ground; an adversary's attack, a third party, an ally,
+  the carried -2, the Controller's Strike with its damage through the GM's relay, the shield
+  exception; Gain Control at all four results, for a player (the Threshold withheld) and for an
+  adversary (the player's Guard roll); a Parry's Graze, Miss and free Gain Control; the Off-Guard
+  ending (at the partner's next Opportunity, at the encounter's end, and never put on outside
+  one), and outliving a GM's own; a momentary Control; Form a Bind; both sheets' Bind lines; an
+  old card not offering its result twice; two Gain Controls at once being one.
+  **Not driven**: a Cast (no spell ships enabled), a blind Gain Control roll, a reroll of a Gain
+  Control card (only a `reroll` rule throws a check's die again), and a table with no GM
+  connected.
+
+---
+
 ## 0.26.1 (2026-11-15): N/A in an Automation cell means "no automation"
 
 Built from **Player's Handbook v4.25**, as Mike saved it after reviewing the 0.26.0 redline (the

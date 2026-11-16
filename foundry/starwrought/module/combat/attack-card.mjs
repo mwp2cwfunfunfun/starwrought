@@ -45,7 +45,7 @@ const DEFENDING_PHASES = Object.freeze(["declared", "defending"]);
  * never leak through this module.
  */
 const PUBLIC_KEYS = Object.freeze([
-  "id", "revision", "phase", "coordinatorUserId", "initiatingUserId", "combatId",
+  "id", "revision", "phase", "coordinatorUserId", "initiatingUserId", "combatId", "bind",
   "attacker", "maneuver", "targets", "attackRoll", "log", "messageId"
 ]);
 const TARGET_KEYS = Object.freeze([

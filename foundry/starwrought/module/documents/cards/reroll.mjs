@@ -14,6 +14,8 @@ import * as SW from "../../config.mjs";
 import { SwCheck } from "../../dice/check.mjs";
 import { AttackCoordinator } from "../../combat/attack-coordinator.mjs";
 import { resolveActor, SOCKET, replyTo } from "./shared.mjs";
+// An adversary's Gain Control, rolled as its partner's Guard (0.27.0): the Threshold to read again.
+import { gainControlThreshold, gainControlForReroll } from "./gain-control.mjs";
 
 const REROLL_REFUSALS = {
   noCard: "STARWROUGHT.Reroll.refusedNoCard",
@@ -167,6 +169,18 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     }
   }
 
+  // An adversary's Gain Control, rolled as the partner's Guard (0.27.0, ruling 275): the withheld
+  // number is the adversary's Attack Threshold, which no Defense read gives back.
+  if ((threshold === null) && flags.withheldThreshold && flags.gainControl?.inverted) {
+    const again = gainControlThreshold(flags.gainControl);
+    if (Number.isFinite(again)) {
+      threshold = again;
+      // Withheld whoever rerolls, as on the first card: it is public, and an adversary's Attack
+      // Threshold is never printed on a card the table reads.
+      withhold = true;
+    }
+  }
+
   let degree = null;
   let outcome = null;
   if (Number.isNumeric(threshold)) {
@@ -198,6 +212,10 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     substituted: flags.substituted ?? null,
     // What the Maneuver gives (0.22.0), read above.
     given,
+    // A Gain Control's record (0.27.0): the new card's degree is read for the same Bind.
+    // Its `state` is the side its user holds NOW: the first card's result may be written already,
+    // and the new die's is offered against the Bind as it stands.
+    gainControl: gainControlForReroll(flags.gainControl ?? null),
     label: foundry.utils.unescapeHTML?.(label) ?? label,
     subtitle: "",
     threshold: withhold ? null : threshold,

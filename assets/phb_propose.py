@@ -649,6 +649,46 @@ PROPOSALS["v4.25-redline"] = {
     "insert_after": [],
 }
 
+PROPOSALS["bind"] = {
+    # The Bind redline (Mike, 2026-11-15, "Plan it", on what the system automates around a Bind;
+    # system 0.27.0, rulings 269 to 280). Written with --in-place, into the v4.25 edition he had
+    # accepted the day's first redline into. Four places where his rulings change or restore what
+    # the book says; every one a tracked change for him to accept or reject:
+    #  - ruling 272: "A Quick Strike that is Stopped forms at most a neutral Bind" was the book's
+    #    through v4.15 and was lost in the v4.21 reorganisation; without it "Miss. The defender
+    #    gains Control" would Expose a Quick striker, against the Glossary's "a Quick Strike never";
+    #  - rulings 270 and 273: the shield exception (Chapter 5 already says "a shield that Controls
+    #    a foe's weapon opens a Zone for the sword in your other hand", which Ending a Bind denied)
+    #    and "a Cast is an attack";
+    #  - the Conditions table's Bound and Controlled rows, which disagreed with Ending a Bind (the
+    #    Bound row ended only on "a Strike between you", the Controlled row forgot a Move).
+    # Rulings 269, 271 and 274 to 280 change no sentence of the book: the book says "Moves or
+    # Steps" already, and Gain Control, Close and Parry are Maneuver and Talent text, which lives
+    # in data/*.xlsx since v4.25.
+    "from": "4.25",
+    "replace": [],
+    "rewrite": [],
+    "cell": [
+        (["Bound [X]"], 1, ", or when a Strike between you resolves", ", or when either of you attacks"),
+        (["Controlled [X]"], 1, " or Step to end it.", ", Move, or Step to end it."),
+    ],
+    "row": [],
+    "insert": [],
+    "append": [
+        (
+            "Miss. The defender gains Control of the attacking implement",
+            " A Quick Strike that is Stopped forms at most a neutral Bind."
+        ),
+        (
+            "If a participant attacks with an unbound weapon or limb, the Bind ends before the attack roll",
+            " A Cast is such an attack. A shield that holds the Control is the exception: its bearer's"
+            " Strike with another weapon against that foe resolves before the Bind ends, as a Strike with"
+            " the bound implement does."
+        ),
+    ],
+    "insert_after": [],
+}
+
 PARA_RE =re.compile(r"<w:p\b[^>]*/>|<w:p\b[^>]*>.*?</w:p>", re.S)
 ROW_START_RE = re.compile(r"<w:tr\b[^>]*>")
 CELL_RE = re.compile(r"<w:tc\b[^>]*>.*?</w:tc>", re.S)

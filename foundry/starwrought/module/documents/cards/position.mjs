@@ -11,6 +11,8 @@ import * as SW from "../../config.mjs";
 import { SwCheck } from "../../dice/check.mjs";
 import { resolveActor, resolveTokenDoc, ownedActor, zoneFrom, resolveTargets, SOCKET, replyTo } from "./shared.mjs";
 import { promptForZone } from "../../apps/zone-picker.mjs";
+// Parry's free Gain Control (0.27.0): whether this card's attempt has been made already.
+import { answerTo } from "./gain-control.mjs";
 
 /**
  * Expose a Zone on an actor from a card: the attacker after a Miss or a Weighted Graze (the
@@ -138,6 +140,37 @@ export async function formBindFromCard(message, flags, button) {
   // leaving the player to find out from the sheet (0.5.1, T4).
   if (!bind?.state) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.notFormed"));
   if (control) await recordExposed(message, partner, zone);
+}
+
+/**
+ * Parry's free Gain Control (0.27.0, ruling 271; the Talent: "If the Strike is a Graze or a Miss,
+ * you may immediately attempt to Gain Control of the attacking weapon"). The card offers it where
+ * the Bind a Parry leaves is neutral (`bindOffer`, combat/bind-rules.mjs). Pressed by the defender:
+ * the neutral Bind is formed if the button beside this one has not formed it, then the defender's
+ * own Gain Control runs with the cost and the Opportunity gate waived, since the Parry was both
+ * (Mike's Subordinate Maneuver rule: a Maneuver performed as part of another costs nothing more).
+ * Once for a card: the roll it makes names this card, and the button goes when one does.
+ */
+export async function gainControlFromCard(message, flags, button) {
+  const defender = ownedActor(button, "controllerUuid");
+  if (!defender) return;
+  const partner = resolveActor(button.dataset.partnerUuid);
+  if (!partner) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noTarget"));
+  if (partner === defender) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.samePartner"));
+  if (answerTo(message.id)) return ui.notifications.info(game.i18n.localize("STARWROUGHT.GainControl.answered"));
+
+  const current = defender.system.bind;
+  if (!(current?.state && (current.partnerUuid === partner.uuid))) {
+    const formed = await defender.formBind(partner, {
+      state: "neutral", mine: button.dataset.mine ?? "", theirs: button.dataset.theirs ?? ""
+    });
+    if (!formed?.state) return ui.notifications.warn(game.i18n.localize("STARWROUGHT.Bind.notFormed"));
+  }
+  return defender.gainControl({
+    free: true,
+    from: message.id,
+    note: game.i18n.localize("STARWROUGHT.GainControl.partOfParry")
+  });
 }
 
 /** An Evade that Grazed gives 3 feet of ground, directly away from the attacker. */

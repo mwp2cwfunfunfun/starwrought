@@ -156,6 +156,11 @@ export class AttackWorkflow {
       // The encounter the attack was declared in (0.23.0, ruling 237): the running Combat's id when
       // the attacker is a fighter in it, else "". An attack ends with its Combat; `expired` reads it.
       combatId: (typeof combatId === "string") ? combatId : "",
+      // What this attack does to the Binds around it (0.27.0; combat/bind-rules.mjs,
+      // `attackBindPlan`): null until every die is in, then decided once, before the first result
+      // card, and kept here so each pairing reads the same answer and a coordinator rebuilt in the
+      // middle of the resolution does not decide it again from Binds that are already gone.
+      bind: null,
       attacker: attackerSnapshot,
       maneuver: {
         source,
@@ -493,6 +498,9 @@ export class AttackWorkflow {
       coordinatorUserId: workflow.coordinatorUserId ?? null,
       initiatingUserId: workflow.initiatingUserId ?? null,
       combatId: workflow.combatId ?? "",
+      // The Bind plan (0.27.0): who was Bound, why each Bind ended and which Zone a Control held
+      // open. Nothing in it is secret, and a reload must find it.
+      bind: workflow.bind ? clone(workflow.bind) : null,
       attacker: clone(workflow.attacker),
       maneuver: clone(workflow.maneuver),
       targets: (workflow.targets ?? []).map(target => ({

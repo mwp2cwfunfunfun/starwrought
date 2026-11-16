@@ -10,6 +10,8 @@ import { SwCheck } from "../../dice/check.mjs";
 import { SwDamage } from "../../dice/damage.mjs";
 import { gapBetween } from "../../canvas/geometry.mjs";
 import { AttackCoordinator } from "../../combat/attack-coordinator.mjs";
+// The Bind's rules (0.27.0), pure: which implement is the bound one, and what an attack ends.
+import { usesBoundImplement, attackBindPlan } from "../../combat/bind-rules.mjs";
 
 /** @param {typeof Actor} Base */
 export const AttackMixin = Base => class extends Base {
@@ -224,8 +226,27 @@ export const AttackMixin = Base => class extends Base {
     }
 
     // Your partner's attacks with the Controlled weapon take a −2 Situation penalty (The Bind).
+    // "The Controlled weapon" is the bound implement, read by the one rule the attack's Bind plan
+    // reads (combat/bind-rules.mjs, 0.27.0). In the attack flow this die is thrown before the
+    // attack ends the Bind, so the Bind is read as it stands.
     const bind = this.system.bind;
-    const controlledWeapon = (bind?.state === "controlled") && SW.sameName(bind.mine, weapon.name);
+    const controlledWeapon = (bind?.state === "controlled") && usesBoundImplement(bind, { source: "weapon", name: weapon.name });
+    // The Binds a Strike with no declaration behind it ends (0.27.0): decided in `beforeRoll`, once
+    // the Strike is certain, and written in two halves, as the book words them. A declared Strike's
+    // are the coordinator's, decided once for the whole attack (attack-coordinator.mjs).
+    let bindPlan = null;
+    const endBinds = async when => {
+      for (const end of bindPlan?.ends ?? []) {
+        const mine = end.uuid === this.uuid;
+        // "If a participant attacks with an unbound weapon or limb, the Bind ends before the attack
+        // roll"; with the bound implement the Strike resolves first, and a Controller struck by a
+        // third party loses the line as the blow resolves.
+        const before = mine && (end.reason === "unbound");
+        if (before !== (when === "before")) continue;
+        const actor = mine ? this : targetActor;
+        if (actor?.isOwner) await actor.endBind({ id: end.bindId, reason: end.reason });
+      }
+    };
     if (controlledWeapon) {
       modifiers.push({
         label: game.i18n.format("STARWROUGHT.Roll.controlledWeapon", { weapon: weapon.name }),
@@ -312,23 +333,30 @@ export const AttackMixin = Base => class extends Base {
           }
           await this.spendActions(kind.cost, { label: `${kindLabel(cfg.strike)}: ${weapon.name}` });
         }
-        // "Attacking with an uncontrolled weapon or limb ends the Bind before the roll."
-        if (bind?.state && bind.mine && !SW.sameName(bind.mine, weapon.name)) await this.endBind();
+        // The Bind rules (PHB v4.25, Ending a Bind), for a Strike the attack flow does not carry: a
+        // blind die is one pairing of a declared attack, whose Binds the coordinator ends once,
+        // for every source and every defender, before the first result card (0.27.0; through
+        // 0.26.1 they were ended here, at each die, for a character's weapon alone).
+        if (!blind) {
+          bindPlan = attackBindPlan({
+            attacker: {
+              uuid: this.uuid,
+              bind: this.system.bind,
+              shields: this.items.filter(i => (i.type === "shield") && i.system.held).map(i => i.name)
+            },
+            defenders: targetActor ? [{ id: "t1", uuid: targetActor.uuid, bind: targetActor.system.bind }] : [],
+            maneuver: { source: "weapon", name: weapon.name }
+          });
+          await endBinds("before");
+        }
         return true;
       },
 
-      // The blow has resolved: a Bind between the two ends, and a Controller struck by a third
-      // party loses the line. (A committed Reaction's ❶ is charged by the coordinator's
-      // resolution, never here.) Writes land only where this client owns the actor; the card
-      // offers the rest to whoever does.
+      // The blow has resolved: the Bind its bound implement was in ends, and a Controller struck by
+      // a third party loses the line. (A committed Reaction's ❶ is charged by the coordinator's
+      // resolution, never here.) Writes land only where this client owns the actor.
       afterRoll: async () => {
-        if (!targetActor) return;
-        const mine = this.system.bind;
-        if (mine?.state && (mine.partnerUuid === targetActor.uuid)) await this.endBind();
-        const theirs = targetActor.system.bind;
-        if ((theirs?.state === "controlling") && (theirs.partnerUuid !== this.uuid) && targetActor.isOwner) {
-          await targetActor.endBind();
-        }
+        await endBinds("after");
       }
     }, rest, { inplace: false });
     // The blind roll never posts, whatever a caller's passthrough says: the coordinator's

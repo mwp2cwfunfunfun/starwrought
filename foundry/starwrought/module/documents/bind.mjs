@@ -55,8 +55,15 @@ export function registerBindSync() {
  * just ended, when the writer could not and this client is the one elected to.
  * @param {Actor} actor
  * @param {{paired?: boolean, previousPartner?: string}} mark  The update's `swBind` option.
+ * @param {object} [options]
+ * @param {boolean} [options.strict=true]  Mirror a change WITHIN a Bind too (0.27.0): the Zone a
+ *   Control Exposes, the token of a Critical Success on Gain Control, a new identity. True as an
+ *   update reaches this client, where the side just written is the one to follow; false for the
+ *   sweep, which looks at both sides in turn and must not let each rewrite the other. Through
+ *   0.26.1 the test was the state and the partner alone, so a new Zone on a Control that already
+ *   stood never reached a partner the writer did not own.
  */
-export function pickUpMirror(actor, { paired = true, previousPartner = "" } = {}) {
+export function pickUpMirror(actor, { paired = true, previousPartner = "" } = {}, { strict = true } = {}) {
   if (paired) return;
   const bind = actor.system?.bind;
   const partner = resolveActor(bind?.state ? bind.partnerUuid : previousPartner);
@@ -76,9 +83,16 @@ export function pickUpMirror(actor, { paired = true, previousPartner = "" } = {}
       return;
     }
     const want = MIRROR[bind.state];
-    if ((theirs?.state === want) && (theirs.partnerUuid === actor.uuid)) return;
-    // The Control's Zone (0.19.0) rides along, so the Controlled side's write opens it here.
-    partner.formBind(actor, { state: want, mine: bind.theirs, theirs: bind.mine, id: bind.id, zone: bind.zone ?? "", announce: false, pair: false })
+    const sameWithin = !strict || (((theirs?.id ?? "") === (bind.id ?? ""))
+      && ((theirs?.zone ?? "") === (bind.zone ?? ""))
+      && ((theirs?.pressed ?? "") === (bind.pressed ?? "")));
+    if ((theirs?.state === want) && (theirs.partnerUuid === actor.uuid) && sameWithin) return;
+    // The Control's Zone (0.19.0) and a Critical Success's token (0.27.0) ride along, so the
+    // Controlled side's write opens the one and puts on the other here.
+    partner.formBind(actor, {
+      state: want, mine: bind.theirs, theirs: bind.mine, id: bind.id, zone: bind.zone ?? "", pressed: bind.pressed ?? "",
+      announce: false, pair: false
+    })
       .catch(err => console.error(`STARWROUGHT | ${partner.name}: the Bind's other side could not be written`, err));
     return;
   }
@@ -116,6 +130,6 @@ export function keepPaired() {
     if (!token.actorLink && token.actor) actors.push(token.actor);
   }
   for (const actor of actors) {
-    if (actor.system?.bind?.state) pickUpMirror(actor, { paired: false });
+    if (actor.system?.bind?.state) pickUpMirror(actor, { paired: false }, { strict: false });
   }
 }

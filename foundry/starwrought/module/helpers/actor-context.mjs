@@ -9,6 +9,8 @@
 
 import * as SW from "../config.mjs";
 import { chassisByName } from "./content.mjs";
+// Whether a Control is a momentary one (0.27.0, ruling 278), pure.
+import { momentaryFor } from "../combat/bind-rules.mjs";
 
 
 /**
@@ -126,13 +128,23 @@ export function bindContext(actor) {
   const condition = SW.CONDITIONS[BIND_KEYS[state]];
   // The Zone the Control opened (0.19.0), named on the line while it holds.
   const zone = (bind.zone in SW.ZONES) ? game.i18n.localize(SW.ZONES[bind.zone].label) : "";
+  // A momentary Control (0.27.0, ruling 278): two or more Sizes apart with the smaller fighter
+  // Controlling. Said on both sides' lines while it runs; the Controller's flag counts the window.
+  const partnerActor = partner?.actor ?? ((partner?.documentName === "Actor") ? partner : null);
+  const controller = (state === "controlling") ? actor : ((state === "controlled") ? partnerActor : null);
+  const controlled = (state === "controlling") ? partnerActor : ((state === "controlled") ? actor : null);
+  const momentary = !!controller && !!controlled && momentaryFor(controller.system?.size, controlled.system?.size);
   return {
     state,
     text: game.i18n.format(`STARWROUGHT.Bind.${state}`, args) + (zone ? ` ${game.i18n.format("STARWROUGHT.Bind.zoneLine", { zone })}` : ""),
     conditionLabel: game.i18n.localize(condition.name),
     img: condition.img,
-    // Take Control (0.19.0) is offered while this side does not hold the line.
-    canTakeControl: state !== "controlling"
+    momentaryLine: momentary ? game.i18n.format("STARWROUGHT.Bind.momentaryLine", { name: controller.name }) : "",
+    // Take Control (0.19.0) is offered while this side does not hold the line, and so is Gain
+    // Control ❶ (0.27.0), the roll for it; the Controller may let go of it (Make neutral).
+    canTakeControl: state !== "controlling",
+    canGainControl: state !== "controlling",
+    canRelease: state === "controlling"
   };
 }
 

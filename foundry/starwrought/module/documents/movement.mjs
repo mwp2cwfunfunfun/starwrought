@@ -41,6 +41,9 @@ import { ruleModifiers } from "../rules/engine.mjs";
 import { sceneContextFor, encounterContext, writeRuleMarks } from "../rules/scene.mjs";
 // A Move made as part of a Maneuver (0.24.0): the record a `PERMIT` leaves, read here and by the ruler.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, moveRoleFor, asManeuverMove, withUsed } from "../rules/maneuver-move.mjs";
+// The Bind (0.27.0, ruling 269): a fighter's own movement ends it, but for a Close and the larger of two far apart.
+import { movementBindPlan, sizeGap, isLarger } from "../combat/bind-rules.mjs";
+import { resolveActor as resolveBindPartner } from "./bind.mjs";
 
 const { escapeHTML } = foundry.utils;
 const localize = key => game.i18n.localize(key);
@@ -339,17 +342,31 @@ export function moveCapApplies(token) {
 
 /** Spend the actions a move costs, say so, and offer the Intercepts it provokes. */
 async function chargeMovement({ token, movement, actor, combatant, move, feet, numbers, held = null }) {
+  const tracking = setting("trackActions", true);
+
+  // The Bind (0.27.0; PHB v4.25, Ending a Bind: "Either participant Moves or Steps, unless an
+  // ability expressly preserves the Bind"; ruling 269). This is a fighter's own movement, the one
+  // kind that ends its Bind, and it does so whatever the tracking setting says: with no move card
+  // to carry the line, the Bind's own card says it.
+  // The Bind's own card says the ending when the move's card cannot: with tracking off there is
+  // none, and an adversary's is whispered to the GM (`tableFor`), where a player whose Bind just
+  // ended would read nothing (the review of 2026-11-15).
+  const bound = await settleBindOnMove({ token, movement, actor, move, announce: !tracking || !actor.announcesSpends })
+    .catch(err => { console.error("STARWROUGHT | the Bind could not be settled for a move", err); return null; });
+
   // The move has been allowed to happen. spendActions announces an overspend in chat rather than
   // refusing: the token is where the player put it, and the arithmetic reports rather than rules.
   // The `trackActions` world setting switches off the spending and its card, nothing else.
-  if (setting("trackActions", true)) {
+  if (tracking) {
     // The move's own card carries the actions-left line, so the spend posts no card of its own;
     // it is awaited so the card reads the count after the spend. The user's Move as part of a
     // Maneuver was paid for at the click (0.24.0), so only what lies beyond it is spent here.
     const cost = held ? move.charge : move.actions;
     if (cost > 0) await actor.spendActions?.(cost, { label: moveLabel(move, feet.cost), announce: false });
     game.combat?.registerAction?.(combatant);
-    await announceMove(actor, move, feet.cost, numbers, maneuverNotes(token, movement, held));
+    const said = maneuverNotes(token, movement, held);
+    const notes = bound?.note ? { notes: [...(said?.notes ?? []), bound.note], paid: said?.paid === true } : said;
+    await announceMove(actor, move, feet.cost, numbers, notes, { close: bound?.close === true });
   }
 
   // The Maneuver's Move has been made (0.24.0): said on the record, whatever the tracking setting,
@@ -367,6 +384,58 @@ async function chargeMovement({ token, movement, actor, combatant, move, feet, n
   // A Step never provokes an Intercept, and neither does a Crawl. A Move may; a Rush always does.
   // The offer is a rules prompt, not a spend, so it does not depend on the tracking setting.
   if ((move.kind === "move") || (move.kind === "rush")) offerIntercepts(token, movement, actor, move);
+}
+
+/**
+ * What a fighter's own movement does to the Bind it is in (0.27.0; rulings 269, 277, 278), on the
+ * mover's client, which may write the mover (its owner dragged it, or the GM did):
+ *  - a CLOSE: the Controller's Step that ends nearer the foe keeps the Bind (the row: "Step toward
+ *    that foe. The Bind does not end due to this movement"). No click names it; the Step is the
+ *    Close, at the Step's own cost, which is why the Close row pays nothing by itself
+ *    (`PAID_ELSEWHERE`, documents/maneuvers.mjs);
+ *  - the larger of two fighters two or more Sizes apart keeps the Bind ("The larger creature can
+ *    Move without first breaking the Bind");
+ *  - any other Move, Step, Rush or Crawl ends it, by the Bind's identity, so a drag that lands late
+ *    cannot clear a Bind formed since.
+ * Reached only for a drag the system counts as the fighter's own movement (`onTokenMoves`): giving
+ * ground, an undo, a GM's off-turn repositioning and a token outside the encounter never get here,
+ * and those are the table's, with End Bind.
+ *
+ * "Nearer" is centre to centre: adjacent fighters' footprints cannot get nearer on the grid, and a
+ * Step that walks round the foe at the same distance is no Close.
+ * @returns {Promise<{note: string, close: boolean}|null>}  The line for the move's card.
+ */
+async function settleBindOnMove({ token, movement, actor, move, announce = false }) {
+  const bind = actor.system?.bind;
+  if (!bind?.state || !actor.isOwner) return null;
+  const partner = resolveBindPartner(bind.partnerUuid);
+  const other = partner?.getActiveTokens?.(false, true).find(t => t.parent === token.parent) ?? null;
+  let towardPartner = false;
+  if (other) {
+    try {
+      const end = movement.pending?.waypoints?.at(-1) ?? movement.destination;
+      const from = token.getCenterPoint(movement.origin);
+      const to = token.getCenterPoint(end);
+      const there = other.getCenterPoint();
+      const gap = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+      towardPartner = gap(to, there) < gap(from, there) - 0.5;
+    } catch (err) {
+      console.warn("STARWROUGHT | whether the move closes on the Bind's partner could not be measured", err);
+    }
+  }
+  const plan = movementBindPlan({
+    bind,
+    kind: move.kind,
+    towardPartner,
+    sizeGap: sizeGap(actor.system.size, partner?.system?.size),
+    moverIsLarger: isLarger(actor.system.size, partner?.system?.size)
+  });
+  const names = { name: escapeHTML(actor.name), partner: escapeHTML(partner?.name ?? localize("STARWROUGHT.Bind.unknownPartner")) };
+  if (plan.close) return { note: format("STARWROUGHT.Bind.closeKept", names), close: true };
+  if (plan.larger) return { note: format("STARWROUGHT.Bind.largerMoves", names), close: false };
+  if (!plan.ends) return null;
+  const ended = await actor.endBind({ id: bind.id ?? "", reason: "moved", announce });
+  return ended ? { note: format("STARWROUGHT.Bind.endedByMove", names), close: false } : null;
 }
 
 /**
@@ -464,8 +533,10 @@ function moveLabel(move, feet) {
  * The card that says what the move cost, and why. Public for a player's character, the GM's for an adversary.
  * @param {{notes: string[], paid: boolean}|null} [maneuver]  What `maneuverNotes` says when the move
  *        is part of a Maneuver (0.24.0): its lines, and whether the first Move was paid at the click.
+ *        Since 0.27.0 the line saying what the move did to the mover's Bind rides in the same list.
+ * @param {{close?: boolean}} [options]  The Step is a Close (0.27.0): the card is titled for it.
  */
-function announceMove(actor, move, feet, numbers, maneuver = null) {
+function announceMove(actor, move, feet, numbers, maneuver = null, { close = false } = {}) {
   const name = escapeHTML(actor.name);
   const rounded = Math.round(feet);
   const g = SW.ACTION_GLYPHS;
@@ -490,7 +561,8 @@ function announceMove(actor, move, feet, numbers, maneuver = null) {
       break;
     case "step":
       glyph = g[1];
-      title = localize("STARWROUGHT.Actions.stepTitle");
+      // A Close ❶ is the Controller's Step toward the foe (0.27.0, ruling 277).
+      title = localize(close ? "STARWROUGHT.Bind.close" : "STARWROUGHT.Actions.stepTitle");
       text = format(paid ? "STARWROUGHT.Actions.stepTextPaid" : "STARWROUGHT.Actions.stepText", { name, feet: rounded, step: numbers.step });
       notes.push(localize("STARWROUGHT.Actions.stepNote"));
       break;

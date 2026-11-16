@@ -70,6 +70,11 @@ import {
 // checks the build runs.
 import { AttackWorkflow, ACTIONS, OUTSTANDING_KINDS } from "../foundry/starwrought/module/combat/attack-workflow.mjs";
 import { legalAnswers, isLegalAnswer } from "../foundry/starwrought/module/helpers/answers.mjs";
+// The Bind's rules (0.27.0): pure, so every decision the callers write is checked here.
+import {
+  usesBoundImplement, attackBindPlan, movementBindPlan, bindOffer, gainControlOutcome,
+  sizeGap, isLarger, momentaryFor, momentaryStep, BIND_END_REASONS
+} from "../foundry/starwrought/module/combat/bind-rules.mjs";
 // The Maneuvers the system implements and the ones it pays for elsewhere (0.23.0): the module
 // imports nothing, which this import is the check of.
 import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "../foundry/starwrought/module/documents/maneuvers.mjs";
@@ -1680,6 +1685,186 @@ check("AttackWorkflow.expired: an unfinished attack is over once its Combat is g
 });
 
 /* -------------------------------------------- */
+/*  The Bind's rules (0.27.0)                   */
+/* -------------------------------------------- */
+
+// Two fighters and a bystander, as the callers hand them over: uuids and each side's own record.
+const FIGHTER = "Actor.tess", FOE = "Actor.bandit", OTHER = "Actor.wren";
+const bindOf = (state, partnerUuid, extra = {}) => ({ state, partnerUuid, mine: "Longsword", theirs: "Claw", id: "b1", zone: "", ...extra });
+
+check("AttackWorkflow: the attack's Bind plan is on the record and survives the card (0.27.0)", () => {
+  const wf = AttackWorkflow.create({ ...flowSpec({ weaponId: "w1", strike: "deliberate" }), combatId: "c1" });
+  same(wf.bind, null, "undecided until every die is in");
+  same(AttackWorkflow.projectFor(wf).bind, null, "and projected as undecided");
+  wf.bind = { ends: [{ uuid: FIGHTER, bindId: "b1", reason: "strike" }], controlledAttack: true, zones: { t1: "torso" } };
+  const pub = AttackWorkflow.projectFor(wf);
+  same(pub.bind, wf.bind, "the projection carries the plan, or a coordinator rebuilt mid-resolution would decide again from Binds already ended");
+  must(pub.bind !== wf.bind && pub.bind.zones !== wf.bind.zones, "as a copy, not the record's own object");
+  same(AttackWorkflow.projectFor({ id: "old", phase: "resolving", targets: [] }).bind, null, "a record from before 0.27.0 projects none");
+});
+
+check("usesBoundImplement: the weapon the Bind names, a spell never, an adversary's only row always (rulings 270 and 273)", () => {
+  const bind = bindOf("neutral", FOE);
+  same(usesBoundImplement(bind, { source: "weapon", name: "Longsword" }), true, "the weapon named as the Bind's own");
+  same(usesBoundImplement(bind, { source: "weapon", name: " longsword " }), true, "names as a player types them");
+  same(usesBoundImplement(bind, { source: "weapon", name: "Dagger" }), false, "another weapon is an unbound one");
+  same(usesBoundImplement(bind, { source: "spell", name: "Longsword" }), false, "a Cast is never made with the bound implement");
+  same(usesBoundImplement({ ...bind, mine: "" }, { source: "weapon", name: "Dagger" }), true, "a Bind that names no implement holds whatever attacks");
+  same(usesBoundImplement({ ...bind, mine: "Claw" }, { source: "attack", name: "Bite", rowCount: 1 }), true, "an adversary with one row attacks with it");
+  same(usesBoundImplement({ ...bind, mine: "Claw" }, { source: "attack", name: "Bite", rowCount: 2 }), false, "with two rows the names decide");
+  same(usesBoundImplement({ ...bind, mine: "Claw" }, { source: "attack", name: "Claw", rowCount: 2 }), true, "the row the Bind names");
+  same(usesBoundImplement({ state: "" }, { name: "Longsword" }), false, "no Bind, no bound implement");
+  same(usesBoundImplement(null), false, "nor with nothing at all");
+});
+
+check("attackBindPlan: the attacker's Bind ends for any attack, and says why (PHB v4.25, Ending a Bind)", () => {
+  const defenders = [{ id: "t1", uuid: FOE, bind: bindOf("neutral", FIGHTER) }];
+  const withIt = attackBindPlan({ attacker: { uuid: FIGHTER, bind: bindOf("neutral", FOE) }, defenders, maneuver: { source: "weapon", name: "Longsword" } });
+  same(withIt.ends, [{ uuid: FIGHTER, bindId: "b1", reason: "strike" }], "the bound implement: the Strike resolves, then the Bind ends");
+  same([withIt.controlledAttack, withIt.zones], [false, {}], "a neutral Bind leaves nothing on the card");
+  const other = attackBindPlan({ attacker: { uuid: FIGHTER, bind: bindOf("neutral", FOE) }, defenders, maneuver: { source: "weapon", name: "Dagger" } });
+  same(other.ends[0].reason, "unbound", "another weapon: the Bind ends before the roll");
+  const cast = attackBindPlan({ attacker: { uuid: FIGHTER, bind: bindOf("neutral", FOE) }, defenders, maneuver: { source: "spell", name: "Flame Seed" } });
+  same(cast.ends[0].reason, "cast", "a Cast is an attack (ruling 273)");
+  const away = attackBindPlan({ attacker: { uuid: FIGHTER, bind: bindOf("neutral", FOE) }, defenders: [{ id: "t1", uuid: OTHER, bind: null }], maneuver: { source: "weapon", name: "Longsword" } });
+  same(away.ends, [{ uuid: FIGHTER, bindId: "b1", reason: "strike" }], "the bound implement at a third party ends the Bind too");
+  same(attackBindPlan({ attacker: { uuid: FIGHTER, bind: null }, defenders, maneuver: { source: "weapon", name: "Longsword" } }).ends, [], "an attacker in no Bind ends none");
+  for (const end of [...withIt.ends, ...other.ends, ...cast.ends]) must(BIND_END_REASONS.includes(end.reason), `"${end.reason}" is a reason the card can say`);
+});
+
+check("attackBindPlan: a Controller's Strike at the partner resolves first, and the shield exception (rulings 270 and 276)", () => {
+  const partner = { id: "t1", uuid: FOE, bind: bindOf("controlled", FIGHTER, { mine: "Claw", theirs: "Longsword", zone: "torso" }) };
+  const controlling = bindOf("controlling", FOE, { zone: "torso" });
+  const own = attackBindPlan({ attacker: { uuid: FIGHTER, bind: controlling }, defenders: [partner], maneuver: { source: "weapon", name: "Longsword" } });
+  same(own.zones, { t1: "torso" }, "the bound weapon at the Controlled partner: the Zone rides on that pairing's card");
+  same(own.ends, [{ uuid: FIGHTER, bindId: "b1", reason: "strike" }], "and the Bind ends once, from the attacker's side");
+
+  const dagger = attackBindPlan({ attacker: { uuid: FIGHTER, bind: controlling, shields: [] }, defenders: [partner], maneuver: { source: "weapon", name: "Dagger" } });
+  same([dagger.zones, dagger.ends[0].reason], [{}, "unbound"], "another weapon: the Bind ends first and the Zone is gone");
+
+  const byShield = bindOf("controlling", FOE, { mine: "Round Shield", zone: "legs" });
+  const sword = attackBindPlan({ attacker: { uuid: FIGHTER, bind: byShield, shields: ["Round Shield"] }, defenders: [partner], maneuver: { source: "weapon", name: "Longsword" } });
+  same([sword.zones, sword.ends[0].reason], [{ t1: "legs" }, "strike"], "a shield holds the Control: the sword in the other hand resolves first");
+  const elsewhere = attackBindPlan({ attacker: { uuid: FIGHTER, bind: byShield, shields: ["Round Shield"] }, defenders: [{ id: "t1", uuid: OTHER, bind: null }], maneuver: { source: "weapon", name: "Longsword" } });
+  same([elsewhere.zones, elsewhere.ends[0].reason], [{}, "unbound"], "the exception is for a Strike at that foe, not at someone else");
+  const spell = attackBindPlan({ attacker: { uuid: FIGHTER, bind: byShield, shields: ["Round Shield"] }, defenders: [partner], maneuver: { source: "spell", name: "Flame Seed" } });
+  same([spell.zones, spell.ends[0].reason], [{}, "cast"], "and for a Strike, not a Cast");
+  const neutralShield = attackBindPlan({ attacker: { uuid: FIGHTER, bind: bindOf("neutral", FOE, { mine: "Round Shield" }), shields: ["Round Shield"] }, defenders: [partner], maneuver: { source: "weapon", name: "Longsword" } });
+  same(neutralShield.ends[0].reason, "unbound", "a shield in a neutral Bind is no exception: nothing is Controlled");
+
+  // A sweep at a third party and the partner: decided once, so the partner's Zone is still read.
+  const sweep = attackBindPlan({
+    attacker: { uuid: FIGHTER, bind: controlling },
+    defenders: [{ id: "t1", uuid: OTHER, bind: null }, { ...partner, id: "t2" }],
+    maneuver: { source: "weapon", name: "Longsword" }
+  });
+  same([sweep.zones, sweep.ends.length], [{ t2: "torso" }, 1], "a sweep: the Zone for the partner's pairing, one end for the attack");
+});
+
+check("attackBindPlan: a Controlled implement's -2 rides on the attack, and a third party breaks a Control (PHB v4.25)", () => {
+  const controlled = bindOf("controlled", FOE, { zone: "arms" });
+  const plan = attackBindPlan({
+    attacker: { uuid: FIGHTER, bind: controlled },
+    defenders: [{ id: "t1", uuid: OTHER, bind: null }, { id: "t2", uuid: FOE, bind: bindOf("controlling", FIGHTER, { mine: "Claw", zone: "arms" }) }],
+    maneuver: { source: "weapon", name: "Longsword" }
+  });
+  same(plan.controlledAttack, true, "the Controlled implement takes the -2 against every defender of the attack");
+  same(plan.zones, {}, "the Controlled side has no Zone to exploit");
+  same(plan.ends, [{ uuid: FIGHTER, bindId: "b1", reason: "strike" }], "the partner is no third party: the one Bind ends from the attacker's side");
+  same(attackBindPlan({ attacker: { uuid: FIGHTER, bind: controlled }, defenders: [], maneuver: { source: "weapon", name: "Dagger" } }).controlledAttack, false, "another weapon takes no -2");
+  same(attackBindPlan({ attacker: { uuid: FOE, bind: bindOf("controlled", FIGHTER, { mine: "Claw" }) }, defenders: [], maneuver: { source: "attack", name: "Bite", rowCount: 1 } }).controlledAttack, true, "an adversary's only row is the Controlled one");
+
+  const third = attackBindPlan({
+    attacker: { uuid: OTHER, bind: null },
+    defenders: [{ id: "t1", uuid: FIGHTER, bind: bindOf("controlling", FOE, { id: "b7" }) }],
+    maneuver: { source: "weapon", name: "Dagger" }
+  });
+  same(third.ends, [{ uuid: FIGHTER, bindId: "b7", reason: "thirdParty" }], "a third party attacks the fighter who has Control");
+  const ally = attackBindPlan({
+    attacker: { uuid: OTHER, bind: null },
+    defenders: [{ id: "t1", uuid: FOE, bind: bindOf("controlled", FIGHTER) }],
+    maneuver: { source: "weapon", name: "Dagger" }
+  });
+  same(ally.ends, [], "an ally attacking the Controlled creature breaks nothing");
+  const byCast = attackBindPlan({
+    attacker: { uuid: OTHER, bind: null },
+    defenders: [{ id: "t1", uuid: FIGHTER, bind: bindOf("controlling", FOE) }, { id: "t2", uuid: FIGHTER, bind: bindOf("controlling", FOE) }],
+    maneuver: { source: "spell", name: "Flame Seed" }
+  });
+  same(byCast.ends, [{ uuid: FIGHTER, bindId: "b1", reason: "thirdParty" }], "a third party's Cast does too, and a body named twice ends once");
+  same(attackBindPlan({ attacker: { uuid: OTHER, bind: null }, defenders: [{ id: "t1", uuid: FIGHTER, bind: bindOf("neutral", FOE) }], maneuver: {} }).ends, [], "a neutral Bind is not broken by a third party");
+});
+
+check("movementBindPlan: a fighter's own movement ends its Bind, but for a Close and the larger of two far apart (rulings 269, 277, 278)", () => {
+  const neutral = bindOf("neutral", FOE), controlling = bindOf("controlling", FOE), controlled = bindOf("controlled", FOE);
+  for (const kind of ["move", "step", "rush", "crawl"]) {
+    same(movementBindPlan({ bind: neutral, kind }).ends, true, `a ${kind} ends a neutral Bind`);
+    same(movementBindPlan({ bind: controlled, kind, towardPartner: true }).ends, true, `a Controlled fighter's ${kind} ends it, toward the foe or not`);
+  }
+  same(movementBindPlan({ bind: controlling, kind: "step", towardPartner: true }), { ends: false, close: true, larger: false }, "the Controller's Step toward the foe is a Close");
+  same(movementBindPlan({ bind: controlling, kind: "step", towardPartner: false }).ends, true, "a Step away is no Close");
+  same(movementBindPlan({ bind: controlling, kind: "move", towardPartner: true }).ends, true, "a Move toward the foe is no Close: Close is a Step");
+  same(movementBindPlan({ bind: neutral, kind: "step", towardPartner: true }).ends, true, "nor is a Step with nothing Controlled");
+  same(movementBindPlan({ bind: neutral, kind: "move", sizeGap: 2, moverIsLarger: true }), { ends: false, close: false, larger: true }, "two Sizes apart, the larger can Move without breaking the Bind");
+  same(movementBindPlan({ bind: neutral, kind: "move", sizeGap: 2, moverIsLarger: false }).ends, true, "the smaller cannot");
+  same(movementBindPlan({ bind: neutral, kind: "move", sizeGap: 1, moverIsLarger: true }).ends, true, "one Size apart binds normally");
+  same(movementBindPlan({ bind: { state: "" }, kind: "move" }), { ends: false, close: false, larger: false }, "no Bind, nothing to end");
+});
+
+check("bindOffer: a Graze forms a neutral Bind, a Miss hands over Control, and Parry follows its Talent (rulings 271 and 272)", () => {
+  const guard = { defense: "guard", rigid: true, bindable: true };
+  same(bindOffer({ ...guard, outcome: "graze", controllable: true }), { mode: "neutral", gainControl: false, riposte: false }, "a Graze: a neutral Bind");
+  same(bindOffer({ ...guard, outcome: "miss", controllable: true }), { mode: "control", gainControl: false, riposte: false }, "a Miss: the defender gains Control");
+  same(bindOffer({ ...guard, outcome: "miss", controllable: false }).mode, "neutral", "a Quick Strike that is Stopped forms at most a neutral Bind");
+  same(bindOffer({ ...guard, outcome: "graze", controllable: true, parried: true }), { mode: "neutral", gainControl: true, riposte: false }, "a Parry's Graze: the neutral Bind and a free Gain Control");
+  same(bindOffer({ ...guard, outcome: "miss", controllable: false, parried: true }).gainControl, true, "and so does a Parried Quick Strike's Miss");
+  same(bindOffer({ ...guard, outcome: "miss", controllable: true, parried: true }), { mode: "control", gainControl: false, riposte: false }, "a Parry's Miss takes Control outright: nothing to attempt");
+  same(bindOffer({ ...guard, outcome: "graze", controllable: true, parried: true, ownsRiposte: true }).riposte, true, "Riposte stands beside a Parry's Stop");
+  same(bindOffer({ ...guard, outcome: "miss", controllable: true, parried: false, ownsRiposte: true }).riposte, false, "but only after a Parry");
+  same(bindOffer({ ...guard, outcome: "hit", controllable: true }), null, "a Hit is not Stopped");
+  same(bindOffer({ ...guard, defense: "evade", outcome: "miss", controllable: true }), null, "an Evade binds nothing");
+  same(bindOffer({ ...guard, rigid: false, outcome: "miss", controllable: true }), null, "nor a Guard with nothing rigid in hand");
+  same(bindOffer({ ...guard, bindable: false, outcome: "miss", controllable: true }), null, "nor an attack that offers nothing to bind");
+});
+
+check("gainControlOutcome: the row's four results, and an adversary's read from the other side (rulings 274 and 275)", () => {
+  same(gainControlOutcome("critSuccess", { state: "neutral" }), { degree: "critSuccess", state: "controlling", pressed: true, changed: true }, "a Critical Success: Control, and the target Off-Guard");
+  same(gainControlOutcome("success", { state: "controlled" }), { degree: "success", state: "controlling", pressed: false, changed: true }, "a Success: Control");
+  same(gainControlOutcome("fail", { state: "controlled" }), { degree: "fail", state: "neutral", pressed: false, changed: true }, "a Failure breaks the foe's Control (ruling 274)");
+  same(gainControlOutcome("fail", { state: "neutral" }).changed, false, "a Failure on a neutral Bind changes nothing");
+  same(gainControlOutcome("critFail", { state: "neutral" }).state, "controlled", "a Critical Failure: the target Controls your weapon");
+  // The adversary used it; the player rolled Guard: a Guard that beats the Threshold by ten is the
+  // adversary's Critical Failure.
+  same(gainControlOutcome("critSuccess", { state: "neutral", inverted: true }).state, "controlled", "the player's Critical Success is the adversary's Critical Failure");
+  same(gainControlOutcome("success", { state: "controlled", inverted: true }).state, "neutral", "the player's Success is the adversary's Failure");
+  same(gainControlOutcome("fail", { state: "neutral", inverted: true }), { degree: "success", state: "controlling", pressed: false, changed: true }, "the player's Failure is the adversary's Success");
+  same(gainControlOutcome("critFail", { state: "neutral", inverted: true }).pressed, true, "the player's Critical Failure leaves the player Off-Guard");
+  same(gainControlOutcome("nonsense"), null, "a degree nobody rolled is no result");
+});
+
+check("Size and Binds: the Sizes between two, a momentary Control and its window (ruling 278)", () => {
+  same([sizeGap("medium", "medium"), sizeGap("small", "large"), sizeGap("huge", "medium"), sizeGap("tiny", "gargantuan")], [0, 2, 2, 5], "counted on the table's order");
+  same(sizeGap("medium", "colossal"), 0, "a Size the table does not know counts as Medium");
+  same([isLarger("large", "small"), isLarger("small", "large"), isLarger("medium", "medium")], [true, false, false], "which is the larger");
+  same(momentaryFor("small", "large"), true, "the smaller Controls a creature two Sizes larger: momentary");
+  same(momentaryFor("medium", "large"), false, "one Size apart binds normally");
+  same(momentaryFor("large", "small"), false, "the larger's Control is an ordinary one");
+
+  const record = { bindId: "b1", combat: "c1", combatant: "tess", begun: false };
+  const now = { combat: "c1", bindId: "b1", controlling: true };
+  same(momentaryStep(record, { ...now, ended: "tess" }), null, "the Opportunity it was taken in ending is not the next one");
+  same(momentaryStep(record, { ...now, began: "bandit" }), null, "nor is someone else's beginning");
+  same(momentaryStep(record, { ...now, began: "tess" }), "begin", "the Controller's next Opportunity begins: the window runs");
+  same(momentaryStep({ ...record, begun: true }, { ...now, ended: "bandit" }), null, "someone else's Opportunity ending is not the end");
+  same(momentaryStep({ ...record, begun: true }, { ...now, ended: "tess" }), "release", "that Opportunity ends: the Control falls back to a neutral Bind");
+  same(momentaryStep(record, { ...now, controlling: false }), "drop", "the Control is gone already: forget the record");
+  same(momentaryStep(record, { ...now, bindId: "b2" }), "drop", "another Bind's record is no one's");
+  same(momentaryStep(record, { ...now, over: true }), "release", "the encounter ended: a momentary Control does not outlive it");
+  same(momentaryStep(record, { ...now, combat: "c2" }), "release", "nor does it follow the fighter into another");
+  same(momentaryStep(null, now), null, "no record, nothing to count");
+});
+
+/* -------------------------------------------- */
 /*  What a Maneuver may be paid at (0.23.0)     */
 /* -------------------------------------------- */
 
@@ -1704,7 +1889,9 @@ check("actionCostOptions: one number for a single cost, every number of a range,
 });
 
 check("PAID_ELSEWHERE: the rows the system pays for another way are named by slug, say who pays, and are no built-in (ruling 235)", () => {
-  same(Object.keys(PAID_ELSEWHERE).sort(), ["cast", "crawl", "leap", "move", "rush", "squeeze", "step", "strike"], "the eight rows");
+  same(Object.keys(PAID_ELSEWHERE).sort(), ["cast", "close", "crawl", "leap", "move", "rush", "squeeze", "step", "strike"], "the nine rows");
+  // Close (0.27.0, ruling 277): the Controller's Step toward the foe is the Close, so the drag pays.
+  same(PAID_ELSEWHERE[slugify(plainName("Close ❶"))], "STARWROUGHT.Cost.paidByClosing", "the Close row, by the name the sheet prints");
   for (const [slug, key] of Object.entries(PAID_ELSEWHERE)) {
     same(slugify(plainName(slug)), slug, `"${slug}" is the slug a row's plain name gives`);
     must(/^STARWROUGHT\.Cost\.paidBy[A-Z][A-Za-z]+$/.test(key), `"${slug}" names the line its card says (${key})`);
@@ -1728,6 +1915,15 @@ check("BUILT_IN_MANEUVERS: the Pass row is the actor's own Pass, under the slug 
   same(calls, ["pass"], "called once, with nothing else done beside it");
   must(!("pass" in PAID_ELSEWHERE), "Pass is not also a row paid elsewhere");
   for (const name of ["recenter", "raise-a-shield", "pass"]) must(name in BUILT_IN_MANEUVERS, `"${name}" is still a built-in`);
+  // Gain Control (0.27.0): the row is the actor's own method, as Recenter's is, and pays itself.
+  const gained = [];
+  const fighter = { gainControl: options => { gained.push(options); return "rolled"; } };
+  const row = { name: "Gain Control ❶" };
+  same(BUILT_IN_MANEUVERS[slugify(plainName(row.name))](fighter, row, {}), "rolled", "the Gain Control row runs the actor's own Gain Control");
+  same(gained, [{ item: row }], "handed the row, and no dialog word of its own");
+  BUILT_IN_MANEUVERS["gain-control"](fighter, row, { dialog: false });
+  same(gained[1], { item: row, dialog: false }, "a Shift-click's no-dialog rides through");
+  must(!("gain-control" in PAID_ELSEWHERE), "Gain Control is not also a row paid elsewhere");
 });
 
 const answerer = () => ({

@@ -7,7 +7,7 @@ project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244 and the 0.25.0 entry 245 to 251). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says: `data/*.xlsx` is
-their only source. System version **0.26.1**.
+their only source. System version **0.27.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -332,9 +332,13 @@ sheet can see, so they stay with the table.
     shield, or a weapon that is neither Flexible nor a bare hand) and the attack itself can be
     bound: a melee weapon or natural attack that is neither Flexible nor Unparryable, and not an
     arrow or a throw. When it cannot, the card says what offered nothing to bind. A Miss against a
-    Deliberate or Committed Strike, or a Parry that Stopped one, takes Control; anything else forms
-    a neutral Bind. Taking Control also asks which Zone of the partner's to Expose, and after a
-    Parry the **riposte** button appears: a Quick Strike ⓿ back. The card records both weapons,
+    Deliberate or Committed Strike takes Control; anything else forms a neutral Bind (a Quick
+    Strike that is Stopped forms at most a neutral one, ruling 272). Taking Control also asks
+    which Zone of the partner's to Expose. After a **Parry** (0.27.0, ruling 271; through 0.26.1 a
+    Parry that Stopped a Deliberate or Committed Strike took Control outright, on a Graze too)
+    the neutral Bind comes with **Gain Control ⓿**, the Talent's "you may immediately attempt to
+    Gain Control" at no further cost, and the **riposte** button appears beside either: a Quick
+    Strike ⓿ back. The card records both weapons,
     the defender's implement and the weapon that was Stopped, so the Bind knows which weapon is
     Controlled.
   - **Give ground 3 ft / Step**: when the defender Evaded. A Graze gives 3 feet directly away from
@@ -381,9 +385,14 @@ sheet can see, so they stay with the table.
 - **Support.** +1 Situation to a melee attack for each other conscious ally whose Total Reach
   includes the target, to a maximum of +4 (PHB v4.21). Allies are tokens of the attacker's
   disposition on the scene; a hidden, Dying, unconscious or dead one grants nothing.
-- **Controlled.** An attack with a weapon a foe Controls takes −2 Situation. Attacking with a weapon
-  other than the one in the Bind ends the Bind before the roll; a Strike between the two partners
-  ends it after; a Controller struck by a third party loses the line.
+- **Controlled.** An attack with a weapon a foe Controls takes −2 Situation. **Every attack ends
+  its attacker's Bind** (0.27.0; PHB v4.25, Ending a Bind; rulings 270, 273, 276): with the bound
+  implement the Strike resolves first, with another weapon or a Cast the Bind ends first, and a
+  Controller attacked by a third party loses the line. The same for a character's Strike, an
+  adversary's attack, a Cast and a Reaction Strike, decided once for the whole attack before its
+  first result card. Through 0.26.1 only a character's weapon Strike did any of this. The shield
+  exception: while your shield holds the Control, your Strike at that foe with another weapon
+  resolves first too. See "The Bind, kept honest", below.
 - **There is no Multiple Attack Penalty.** Nothing counts attacks per turn. Tempo is paid in
   actions.
 - **The Unwieldy penalty is applied, not just drawn.** A Strike with an Unwieldy N weapon against a
@@ -638,9 +647,11 @@ while its pick or its roll dialog is still open is ignored, so a double-click is
 Outside an encounter nothing is asked, paid or Prepared. A Reaction keeps its own rule, above: paid
 the moment it is used; a Maneuver the sheet gives a Trigger but no ↺ is not a Reaction to the
 system and pays as any other. Not paid for by the
-row, and said here so nobody is surprised: Gain Control's row pays ❶ and the sheet's Take Control
-button is free, so use one; Interact's row pays ❶ and drawing or stowing from the Equipment tab
-pays its own Interact, so clicking both pays twice. (The Pass row, which only showed its card
+row, and said here so nobody is surprised: Interact's row pays ❶ and drawing or stowing from the
+Equipment tab pays its own Interact, so clicking both pays twice. Gain Control's row rolls and pays
+since 0.27.0 (through 0.26.1 it paid ❶ and the contest was the table's); the sheet's Take Control
+button stays free, for a contest settled at the table. Close's row pays nothing: the Step you drag
+toward the foe is the Close. (The Pass row, which only showed its card
 through 0.23.0, Passes since 0.23.1; section 3.)
 
 **Every spend is said in public chat.** When a player-controlled actor (a character, or any actor a
@@ -1381,7 +1392,68 @@ description, and there is exactly one of them per Bind: condition effects are cr
 static ids the token palette uses, so a rules-set Bound shows lit in the palette and a click there
 toggles it rather than laying a twin beside it. A Bind formed from a card by a player whose partner
 they do not own is picked up by the partner's owning client (the GM when connected), so both sides
-are written.
+are written. Since 0.27.0 the same pickup carries a change within a Bind that already stands (a
+new Zone, a Critical Success's token), which through 0.26.1 never reached a partner the writer
+did not own.
+
+### The Bind, kept honest (0.27.0; rulings 269 to 280)
+
+Once a Bind exists the system keeps it for every kind of attacker and every kind of movement.
+Every decision is in one pure module, `module/combat/bind-rules.mjs`, which the self-test drives.
+
+**What ends a Bind, by itself:**
+
+| The book's reason | The system |
+|---|---|
+| A participant uses the bound implement to Strike | Ends with the attack, before its first result card. The −2 and the Zone a Control held open ride on that card. |
+| A participant attacks with an unbound weapon or limb, or Casts | Ends before the result. The shield exception: your Strike at the foe your shield Controls resolves first. |
+| A third party attacks the fighter who has Control | Ends. An ally attacking the Controlled creature breaks nothing. |
+| Either participant Moves or Steps | Ends for a drag the system counts as that fighter's own Move, Step, Rush or Crawl in an encounter. A Close and the larger of two fighters two or more Sizes apart keep it. |
+| Either Recenters | Ends. |
+| The implement is dropped or put away | Ends, from the Equipment tab. A Disarm is by hand. |
+
+Giving ground, a Shove, a GM's off-turn repositioning and any move outside an encounter end
+nothing: the table presses End Bind. Each automatic end names the Bind it decided about, so one
+that lands late cannot clear a Bind formed a moment later, and its card says why.
+
+**A Strike that resolves first keeps the Zone** (ruling 276). The attack card says "X's Legs was
+held Exposed by the Control this attack ended", the damage card offers that Zone, and the Apply
+reads its Protection as 0 and Wounds it on a Critical Hit, on this client or through the GM's
+relay. An adversary's Strike has no damage card, so for it the line is the GM's to apply.
+
+**Close ❶** (ruling 277) needs no click: the Controller's Step that ends nearer the foe is the
+Close. The move's card is titled Close, the Bind holds, and one ❶ is spent. The Close row says so
+and pays nothing.
+
+**Gain Control ❶** (rulings 274, 275, 280): from the Maneuvers tab or the Bind line. The partner
+is the Bind partner, so nothing is targeted. A character rolls Melee against the partner's Guard
+Threshold (an adversary's number withheld, as for any such check), with no −2 for a Controlled
+implement; the gate is passed and the ❶ paid when the roll is made. Under the check card: what the
+degree means, and one button for the side it favours, shown to whoever may write that side and to
+the GM. A Success opens the Zone picker at once for the roller; a Critical Success also leaves the
+partner Off-Guard until their next Opportunity (the Gain Control's own Off-Guard, taken off as
+that Opportunity begins; another Off-Guard is left alone); a Failure makes the Bind neutral even
+if the foe held Control; a Critical Failure hands the partner's side a Take Control button. An
+adversary rolls nothing: it pays, and a request card has its partner roll Guard against its
+Attack Threshold (never printed, whoever rolls), read from the other side. A fighter who already
+Controls cannot use it. A result is written once: the Bind card its write posts names the check
+card, and the button is offered only while nothing has been written from that card and the Bind
+is still as it stood at the roll, so an old card cannot hand out a second Control. One Gain
+Control at a time for a fighter. Outside an encounter the Off-Guard is not put on, since there is
+no Opportunity to end it at; a blind roll's result waits for the GM's button.
+
+**Parry** (ruling 271): a Miss hands Control to any Guard with a rigid implement. Where a Parry's
+Stop leaves a neutral Bind (a Graze, or a Quick Strike's Miss) the card adds **Gain Control ⓿**:
+it forms the neutral Bind if the button beside it has not, then rolls at no cost and with no
+Opportunity gate, once for a card. Riposte, when owned, stands beside either. A Quick Strike that
+is Stopped forms at most a neutral Bind (ruling 272).
+
+**Size** (ruling 278): two or more Sizes apart, the smaller fighter's Control is momentary. Both
+sheets' Bind lines say so, and it falls back to a neutral Bind when the Controller's next
+Opportunity ends. "After its first benefit is used" is the table's, with Make neutral.
+
+**Form a Bind** (ruling 279): on both sheets, in an encounter, while in no Bind. Target the one
+token, press, and name both implements; the dialog suggests what each fighter has in hand.
 
 ### Exposed on the token
 
@@ -1426,7 +1498,11 @@ Wounds carried and Dying, and, when you are in one, the **Bind line**: neutral, 
 Controlled, both implements named and the Zone the Control Exposes, with an End Bind button and,
 while this side does not hold the line, **Take Control** (0.19.0, ruling 203): the Zone picker,
 then the record, the partner's Zone opened by the partner's own side of the Bind and closed when
-the Control ends.
+the Control ends. Since 0.27.0 the line also carries **Gain Control** (the roll for the line; an
+adversary's asks its partner for a Guard roll), **Make neutral** for the Controller (the Control
+ends and the Bind stays), and a note while a Control is a momentary one; and with no Bind, in an
+encounter, the line is one quiet button, **Form a Bind** (the token you have targeted, both
+implements named in a small dialog). The adversary sheet's line is the same.
 
 Overview carries the four Attributes with their point counts and how far to the next bonus, the
 four Defenses (click to roll; Untrained ones marked), the four Zones with their Protection, an
@@ -2969,9 +3045,8 @@ before; the sources and the index are.
   rulings 231 to 236; section 2). The system pays the number the row prints, or the one picked, and
   reads nothing of the Maneuver's Requirements, its Trigger, its range or whether it could happen
   at all; an overspend is said and never refused. A Leap and a Squeeze are charged by the drag as
-  the Move it measures, never at their own cost. Gain Control's row and the Take Control button are
-  two doors with one price between them, and so are Interact's row and the Equipment tab's draw or
-  stow: the system does not know which you used. The Pass row Passes since 0.23.1, and counts no
+  the Move it measures, never at their own cost. Interact's row and the Equipment tab's draw or
+  stow are two doors with one price between them: the system does not know which you used. The Pass row Passes since 0.23.1, and counts no
   Passes: its "Once per round" is the book's and nothing enforces it (a `LIMIT:` on a Maneuver's
   own `PERMIT` line, since 0.24.0, or `SUBORDINATE` line, since 0.25.0, is the one Frequency the
   system holds). A Maneuver Prepared
@@ -3018,9 +3093,18 @@ before; the sources and the index are.
 - **"Expose a plausible Zone" is a picker, not a rule the engine resolves.** GM judgement inside a
   formula cannot be automated, so the card offers the attacker a Zone picker on the Results the
   book names and the GM can veto on the card.
-- **Bind writes on a partner you do not own need the owner's click.** Form Bind, Take Control and
-  the Zone a Controller opens on the partner are written on both actors only when one client owns
-  both; otherwise the card says the other side is for its owner to set.
+- **A Bind's other side needs its owner, or the GM, connected.** Form Bind, Take Control, the Zone
+  a Controller opens and every automatic end are written on both actors when one client owns both;
+  otherwise the GM's client, or the partner's owner's, writes the other side as the change reaches
+  it (since 0.5.1; this line said "the owner's click" through 0.26.1, which was never so). With
+  neither connected that side waits, and an attack that should end such a Bind names it in the
+  attack card's log.
+- **What the Bind's automation leaves to the table** (0.27.0): giving ground, a Shove and a GM's
+  repositioning end no Bind; a fighter holds one Bind, where the book allows one for each
+  implement; a held shield is always the implement that Binds from a card; a Close is any Step by
+  the Controller that ends nearer the foe; a Disarm, "after its first benefit is used" and two
+  adversaries contesting a Bind are by hand; an undo of a move does not bring a Bind back (Form a
+  Bind does); and a Cast was not driven live, since no spell ships enabled.
 - **A Prepared Rush is charged at once.** A drag is a move already made, so a Rush-length drag pays
   its three actions on the drop and the telegraphing the Prepared trait implies is left to the
   table.

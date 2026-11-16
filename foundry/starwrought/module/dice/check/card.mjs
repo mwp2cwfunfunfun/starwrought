@@ -121,6 +121,13 @@ export async function cardContext(result, position) {
     // Grabbed), if they did. The card is where the answer is revealed, so the reason belongs here.
     defenseNote: cfg.defenseNote ?? "",
     rangeNote: cfg.rangeNote ?? "",
+    // The Zone the attacker's Control held open (0.27.0): the Bind ended as the attack resolved,
+    // and this attack's damage may still be placed there.
+    controlZoneNote: (isExchange && cfg.controlZone && result.outcome?.damage)
+      ? game.i18n.format("STARWROUGHT.Bind.controlZoneNote", {
+        name: cfg.controlZoneName ?? "", zone: game.i18n.localize(SW.ZONES[cfg.controlZone].label)
+      })
+      : "",
     // The Reaction behind the Defense: the roller's own on a Defense card, the defender's
     // committed one on an attack card. The ❶ is charged to the defender when the attack resolves;
     // when the rolling client does not own them, the card offers the button to whoever does.
@@ -206,6 +213,12 @@ export function cardFlags(result, position) {
   if (isExchange) {
     flags.attackId = cfg.attackId ?? null;
     if (Array.isArray(cfg.pairingModifiers) && cfg.pairingModifiers.length) flags.pairingModifiers = cfg.pairingModifiers;
+    // What the attack kept of a Bind it ended (0.27.0, ruling 276): the Zone its Control held
+    // open on this defender, which this card's damage may still be placed on, and whether the
+    // attack was made with a Controlled implement (a reroll of a Defense card reads the
+    // adversary's Threshold with it). Always written, so a reroll can tell "no" from "not said".
+    flags.controlZone = cfg.controlZone ?? null;
+    flags.controlledAttack = !!cfg.controlledAttack;
   }
   // A check's own extras and the Threshold it was withheld (0.15.0): a reroll of the check keeps
   // its formula and reads the Threshold again from the target when the card could not print it.
@@ -219,6 +232,11 @@ export function cardFlags(result, position) {
     // The render pass draws the give button from it (documents/cards/give.mjs), and a reroll
     // copies it across, since the table already holds every degree.
     if (cfg.given?.table) flags.given = cfg.given;
+    // A Gain Control (0.27.0): the Bind it was rolled for, the two fighters, the side of the one
+    // who used it before the roll, and whether the degree is read from the other side (an
+    // adversary's, rolled as the partner's Guard). documents/cards/gain-control.mjs draws the
+    // result and its button from this and the Bind as it stands; a reroll copies it.
+    if (cfg.gainControl) flags.gainControl = cfg.gainControl;
     if (cfg.withholdThreshold === true) flags.withheldThreshold = true;
     if (cfg.targetDefenseKey) flags.targetDefense = cfg.targetDefenseKey;
     if (cfg.rerollOf) flags.rerollRule = cfg.rerollRule ?? null;

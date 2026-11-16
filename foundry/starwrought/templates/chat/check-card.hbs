@@ -26,6 +26,10 @@
   {{!-- A Strike at a target the weapon cannot reach: said, never refused, for the GM to rule on. --}}
   {{#if rangeNote}}<p class="sw-card-note sw-warn sw-range-note"><i class="fa-solid fa-ruler-horizontal"></i> {{rangeNote}}</p>{{/if}}
 
+  {{!-- The Zone the attacker's Control held open (0.27.0): the Bind ended as the attack resolved,
+        and this attack's damage may still be placed there. --}}
+  {{#if controlZoneNote}}<p class="sw-card-note sw-control-zone-note"><i class="fa-solid fa-link"></i> {{controlZoneNote}}</p>{{/if}}
+
   {{#if threshold}}
   <div class="sw-card-threshold">
     <span>{{#if thresholdLabel}}{{thresholdLabel}}{{else}}{{localize "STARWROUGHT.Field.threshold"}}{{/if}}</span>
@@ -170,6 +174,16 @@
               data-tooltip="{{#if (eq position.bind.mode 'control')}}STARWROUGHT.Bind.takeControlHint{{else}}STARWROUGHT.Bind.formHint{{/if}}">
         <i class="fa-solid fa-link"></i> {{localize position.bind.label}}
       </button>
+      {{!-- Parry's free Gain Control (0.27.0, ruling 271): the neutral Bind is formed if the button
+            beside this one has not formed it, then the defender rolls for the line at no cost. --}}
+      {{#if position.bind.gainControl}}
+      <button type="button" data-sw-action="gainControlFree"
+              data-controller-uuid="{{position.defenderUuid}}" data-partner-uuid="{{position.attackerUuid}}"
+              data-mine="{{position.bind.implement}}" data-theirs="{{position.bind.theirs}}"
+              data-tooltip="STARWROUGHT.GainControl.freeHint">
+        <i class="fa-solid fa-hand-fist"></i> {{localize "STARWROUGHT.GainControl.free"}}
+      </button>
+      {{/if}}
       {{/if}}{{/if}}
       {{#if position.riposte}}
       <button type="button" data-sw-action="riposte" data-actor-uuid="{{position.defenderUuid}}"

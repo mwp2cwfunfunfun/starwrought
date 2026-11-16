@@ -118,7 +118,16 @@ function bindFields() {
      * closes it when the Control ends ("Exposure caused specifically by Control ends when that
      * Control ends"); through 0.18.1 the Zone was opened once from the card and never tied to it.
      */
-    zone: new fields.StringField({ initial: "" })
+    zone: new fields.StringField({ initial: "" }),
+    /**
+     * A one-shot token for a Control gained by a Critical Success on Gain Control (0.27.0; the
+     * row: "the target is Off-Guard until its next Opportunity"), the same on both sides, blank
+     * otherwise. The CONTROLLED side's own write puts a flagged Off-Guard on itself when it sees a
+     * token it has not seen, so the pair-keeper carries the condition to a body the roller does
+     * not own, as it carries the Zone. The condition's own flag is what ends it; this is only the
+     * courier.
+     */
+    pressed: new fields.StringField({ initial: "" })
   });
 }
 
@@ -267,16 +276,19 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
    *   Zone's Protection is 0 only against a Deliberate or Committed Strike; a Quick Strike meets it
    *   in full. Omitted, the default Strike is assumed; null means the damage is not a Strike at all
    *   (a Blast, a fall), and Exposure does nothing for it.
+   * @param {boolean} [options.exposed]     Read the Zone as Exposed whatever it shows (0.27.0): the
+   *   Zone a Control held open for the Strike that ended the Bind ("A Strike against the other Bind
+   *   participant resolves before the Bind ends"), which the damage card remembers.
    * @returns {{value: number, steps: Array<{label: string, value: number}>}}
    */
-  zoneProtection(zone, { type = null, ignore = 0, strike = SW.DEFAULT_STRIKE } = {}) {
+  zoneProtection(zone, { type = null, ignore = 0, strike = SW.DEFAULT_STRIKE, exposed = false } = {}) {
     void type;
     const steps = [];
     const z = this.zones?.[zone];
     const kind = strike === null ? null : (SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE]);
 
     // 1. If the Zone is Exposed and the Strike is Deliberate or Committed, its Protection is 0.
-    if (z?.exposed && kind?.ignoresExposedProtection) {
+    if ((z?.exposed || exposed) && kind?.ignoresExposedProtection) {
       steps.push({ label: game.i18n.localize("STARWROUGHT.Protection.exposed"), value: 0 });
       return { value: 0, steps };
     }

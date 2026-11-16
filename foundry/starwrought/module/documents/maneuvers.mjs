@@ -49,6 +49,15 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
   pass: actor => actor.pass(),
 
   /**
+   * Gain Control ❶ (0.27.0; rulings 274, 275, 280): the actor's own method, which finds the Bind
+   * partner, passes the gate and pays when the roll is made, rolls Melee against the partner's
+   * Guard and writes the result from the card (documents/actor/bind.mjs, `gainControl`). Engine
+   * code, as Strike and Cast are, so the row's Automation cell is `N/A`. Through 0.26.1 the row
+   * paid ❶ and showed its text.
+   */
+  "gain-control": (actor, item, options) => actor.gainControl({ item, ...((options?.dialog === undefined) ? {} : { dialog: options.dialog }) }),
+
+  /**
    * Raise a Shield ❶ (PHB v4.10): the shield in hand is raised through its own method, which
    * spends the action and posts the card. With two shields in hand the first is raised, as the
    * equipment tab's row would raise that one; with none the player is told, since the Maneuver
@@ -85,7 +94,9 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
  *  - Cast: the spell's own Cast pays (documents/actor/cast.mjs);
  *  - Move, Step, Crawl, Rush, Leap, Squeeze: moving the token pays, as the Move, Step, Crawl or
  *    Rush the drag reads (documents/movement.mjs). A Leap's own ❶ to ❸ and a Squeeze's are not
- *    read by the drag; what it charges beyond that is the table's, on the pips.
+ *    read by the drag; what it charges beyond that is the table's, on the pips;
+ *  - Close (0.27.0): the Step you drag toward the foe whose weapon you Control is the Close, and
+ *    the drag pays and keeps the Bind (documents/movement.mjs, `settleBindOnMove`).
  * A Maneuver whose rule acts from a button on a card (a `reroll`, a `prevent`: Quick Tongue, Steady
  * the Line) and one that carries an attack of its own are paid elsewhere too; documents/item.mjs
  * reads those off the Item, since this module imports nothing.
@@ -99,7 +110,10 @@ export const PAID_ELSEWHERE = Object.freeze({
   crawl: "STARWROUGHT.Cost.paidByMoving",
   rush: "STARWROUGHT.Cost.paidByMoving",
   leap: "STARWROUGHT.Cost.paidByMoving",
-  squeeze: "STARWROUGHT.Cost.paidByMoving"
+  squeeze: "STARWROUGHT.Cost.paidByMoving",
+  // Close ❶ (0.27.0, ruling 277): the Controller's Step toward the foe IS the Close, so the drag
+  // pays and keeps the Bind. Through 0.26.1 the row paid ❶ and the Step then paid ❶ again.
+  close: "STARWROUGHT.Cost.paidByClosing"
 });
 
 /** The worn Visored piece, or null with a notice. */

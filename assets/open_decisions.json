@@ -1,5 +1,45 @@
 [
   {
+    "id": "bind-redline-0-27-0",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.25.docx, four tracked changes by Claude (assets/phb_propose.py, PROPOSALS[\"bind\"]); the file before them is in backup/pre-0.27.0/",
+    "question": "Four tracked changes wait in the edition: under Binds, \"A Quick Strike that is Stopped forms at most a neutral Bind.\" (ruling 272); under Ending a Bind, \"A Cast is such an attack. A shield that holds the Control is the exception ...\" (rulings 270 and 273); and the Conditions table's Bound [X] and Controlled [X] rows brought into line with Ending a Bind. Accept or reject each?",
+    "recommendation": "Accept all four in Word and save; the next build reports the same-numbered file changed, and Claude compares it with the committed copy and records it again.",
+    "decidedBy": ""
+  },
+  {
+    "id": "bind-claudes-readings",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "System 0.27.0, rulings 276, 277 and 280 (foundry/starwrought/CHANGELOG.md)",
+    "question": "Three rulings of 0.27.0 are Claude's readings, not Mike's answers. 276: a Strike that \"resolves before the Bind ends\" keeps the Zone the Control held open on its own result card, and the Bind ends before that card (a damage button may never be pressed). 277: Close needs no click, any Step by the Controller that ends nearer the foe is the Close. 280: Gain Control takes no -2 for a Controlled implement, and a fighter who already Controls cannot use it. Do they stand?",
+    "recommendation": "Let all three stand. 276 and 277 remove a decision and a click with no cost; for 280, say so if a Controlled fighter's Gain Control should be the harder roll, and the -2 is one line.",
+    "decidedBy": ""
+  },
+  {
+    "id": "bind-one-per-fighter",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "module/documents/actor/bind.mjs (one Bind for each fighter); module/documents/actor/wounds.mjs, rigidImplement (a held shield before any weapon)",
+    "question": "The book says \"Track no more than one Bind per implement\", so a fighter with a sword and a shield could hold two. The system holds one Bind for each fighter, and when a card forms it the implement is the shield if one is held. So a neutral Bind on the shield ends when its bearer Strikes with the sword, and a foe who Controls the shield puts no -2 on the sword. Is one Bind for each fighter enough, and should the defender choose which implement Guarded?",
+    "recommendation": "Keep one Bind for each fighter until play asks for two. Add the implement choice to the card's Form a Bind and Take Control only if shield-bearers find the shield-first rule costs them; Form a Bind on the sheet already lets the player name the sword.",
+    "decidedBy": ""
+  },
+  {
+    "id": "attack-trait-checks",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "Gain Control (module/documents/actor/bind.mjs) and the other Maneuvers with the Attack trait that roll a check: Disarm, Grapple, Trip, Shove",
+    "question": "A Maneuver with the Attack trait that rolls a check (Gain Control's Melee, Disarm's Athletics) takes none of the attacker's attack penalties today: an Arms Wound's -2 to attacks, Fatigued, the Arms' Critical Hit effect. An adversary's Gain Control does take the Arms' Critical Hit effect, since it reads the Attack Threshold. Should the Attack trait bring those penalties onto the check?",
+    "recommendation": "Yes, as one rule for every Attack-trait check, decided once: it would make an injured arm matter in a grapple and in the Bind alike. Until then none applies, which is how every such Maneuver has always rolled.",
+    "decidedBy": ""
+  },
+  {
     "id": "bonus-on-defense-rolled-as-check",
     "since": "2026-11-10",
     "status": "open",

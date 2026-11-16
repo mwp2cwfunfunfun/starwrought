@@ -15,6 +15,8 @@ import { relation as tokenRelation } from "../rules/scene.mjs";
 import { usableByRule } from "../rules/engine.mjs";
 import { kindOf } from "../rules/kinds/index.mjs";
 import { setting } from "../helpers/settings.mjs";
+// A check read against another creature's Threshold (0.15.0; shared with Gain Control since 0.27.0).
+import { readTargetThreshold } from "../helpers/threshold-read.mjs";
 
 /**
  * Is this Maneuver's cost taken somewhere other than its own row (0.23.0, ruling 235)? The i18n
@@ -586,33 +588,13 @@ export class SwItem extends Item {
     const defense = this.system.check?.defense;
     if (!defense || !SW.DEFENSES[defense]) return null;
     const token = SwCheck.currentTarget();
-    const target = token?.actor;
-    if (!target || (typeof target.defenseThresholdFor !== "function")) return null;
-    let read;
-    try {
-      read = target.defenseThresholdFor({
-        defense, permitted: Object.keys(SW.DEFENSES),
-        threat: { threat: "check", melee: false, traits: this.system.traits ?? [], check: this.system.check.constellation || null },
-        attacker: actor.tokenOnScene?.() ?? actor
-      });
-    } catch (err) {
-      console.warn("STARWROUGHT | the target's Threshold could not be read", err);
-      return null;
-    }
-    if (!Number.isFinite(Number(read?.threshold))) return null;
-    const withhold = (target.type !== "character") && !game.user.isGM;
-    const label = `${token.name} ${game.i18n.localize(SW.DEFENSES[read.key ?? defense].label)}`;
-    return {
-      threshold: Number(read.threshold),
-      thresholdLabel: label,
-      targetDefense: { key: read.key ?? defense, label: withhold ? "" : `${label} ${read.threshold}`, threshold: withhold ? null : Number(read.threshold), unavailable: read.unavailable ?? null, hidden: withhold },
-      targetDefenseKey: read.key ?? defense,
-      targetUuid: token.document.uuid,
-      targetName: token.name,
-      targetActor: target,
-      targetMarks: read.marks ?? [],
-      withholdThreshold: withhold
-    };
+    if (!token?.actor) return null;
+    // The read itself is shared with Gain Control since 0.27.0 (helpers/threshold-read.mjs).
+    return readTargetThreshold({
+      roller: actor, token, defense,
+      check: this.system.check.constellation || null,
+      traits: this.system.traits ?? []
+    });
   }
 
   /* -------------------------------------------- */

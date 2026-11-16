@@ -3,13 +3,27 @@
   <img class="sw-bind-icon" src="{{img}}" alt="{{conditionLabel}}">
   <a class="sw-bind-state sw-rules-link" data-action="rulesPage" data-page="The Bind"
      data-tooltip="STARWROUGHT.Rules.openBind">{{conditionLabel}}</a>
-  <span class="sw-bind-text">{{text}}</span>
+  <span class="sw-bind-text">{{text}}{{#if momentaryLine}} <em class="sw-bind-momentary">{{momentaryLine}}</em>{{/if}}</span>
   {{#if @root.editable}}
+  {{#if canGainControl}}
+  {{!-- Gain Control ❶ (0.27.0): the roll for the line, Melee against the partner's Guard; an adversary asks its partner for a Guard roll. --}}
+  <button type="button" class="sw-inline-button" data-action="gainControl"
+          data-tooltip="{{localize 'STARWROUGHT.GainControl.hint'}}">
+    <i class="fa-solid fa-dice-d20"></i> {{localize "STARWROUGHT.GainControl.label"}}
+  </button>
+  {{/if}}
   {{#if canTakeControl}}
   {{!-- Take Control by hand (0.19.0): a neutral Bind, or the partner's Control contested and won at the table. --}}
   <button type="button" class="sw-inline-button" data-action="takeControl"
           data-tooltip="{{localize 'STARWROUGHT.Bind.takeControlSheetHint'}}">
     <i class="fa-solid fa-hand-fist"></i> {{localize "STARWROUGHT.Bind.takeControl"}}
+  </button>
+  {{/if}}
+  {{#if canRelease}}
+  {{!-- Make neutral (0.27.0): the Controller lets go of the line; the Bind stays. Also how the table ends a momentary Control "after its first benefit". --}}
+  <button type="button" class="sw-inline-button" data-action="releaseControl"
+          data-tooltip="{{localize 'STARWROUGHT.Bind.releaseHint'}}">
+    <i class="fa-solid fa-scale-balanced"></i> {{localize "STARWROUGHT.Bind.release"}}
   </button>
   {{/if}}
   <button type="button" class="sw-inline-button" data-action="endBind"

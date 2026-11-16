@@ -920,6 +920,67 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.27.0 (Mike, 2026-11-15; rulings 269 to 280): the Bind, automated.** Mike asked "what
+automation do we have around creating, closing, controlling, and/or breaking a bind?", then "Plan
+it" (`dazzling-floating-simon.md`; his decisions by question: only a fighter's own movement ends
+a Bind, the shield exception, Parry follows its Talent, the Quick Strike rule kept, a Cast is an
+attack, Gain Control's Failure makes the Bind neutral, and three extras built: Form a Bind by
+hand, an adversary's Gain Control, momentary Control by Size). **Every Bind decision is one pure
+module, `module/combat/bind-rules.mjs`** (`usesBoundImplement`, `attackBindPlan`,
+`movementBindPlan`, `bindOffer`, `gainControlOutcome`, `sizeGap`, `isLarger`, `momentaryFor`,
+`momentaryStep`, `BIND_END_REASONS`, `MOMENTARY_FLAG`, `PRESSED_FLAG`), driven by the self-test;
+the callers only write. **Attacks** (rulings 270, 273, 276): with every die in and before the
+first result card, `AttackCoordinator.#planBinds` builds the plan ONCE for the whole attack and
+`#endPlannedBinds` writes it after the card holds it
+(`workflow.bind`, in `AttackWorkflow.create`, `projectFor` and `PUBLIC_KEYS`: the attacker's Bind
+ends for the bound implement, another weapon or a Cast; a defender Controlling someone else loses
+the line; the shield exception reads the shield-bearer's Strike at the Controlled partner as one
+with the bound implement), ends every Bind it may write by identity (`endBind({ id, reason })`)
+and names the rest in the attack card's log; what outlives the Bind rides on each card's flags,
+`controlZone` (the Zone the attacker's Control held open: `SwDamage.roll` offers it,
+`SwDamage.apply` and `zoneProtection({ exposed })` read it as Exposed, for the card's own target,
+through the GM's relay too) and `controlledAttack` (an adversary's Threshold:
+`attackThreshold(attacker, maneuver, { controlled })`, `thresholdForCard`); a reroll copies both.
+A Strike or a Cast with no target runs the same plan in `rollAttack` and `castSpell`. Through
+0.26.1 the three rules lived in a character's weapon Strike alone, at the blind die, so the Zone
+closed before the Controller's own damage. **Movement** (rulings 269, 277, 278):
+`settleBindOnMove` in `documents/movement.mjs`, from `chargeMovement` and outside the
+`trackActions` block, for every drag the system counts as the fighter's own (never `swNoCost`,
+an undo, a GM's off-turn drag, a token outside the encounter); a **Close** is the Controller's
+Step that ends nearer the partner, centre to centre, with no click (`close` is in
+`PAID_ELSEWHERE`, which ended a double charge); the larger of two fighters two or more Sizes
+apart keeps the Bind. **Gain Control** (rulings 274, 275, 280): `SwActor#gainControl({ item,
+free, note, from, dialog })` in `documents/actor/bind.mjs`, `BUILT_IN_MANEUVERS["gain-control"]`
+and a Bind-line button; a character's Melee check against the partner's Guard
+(`helpers/threshold-read.mjs`, `readTargetThreshold`, which `SwItem` shares), gate and ❶ at the
+roll; an adversary posts a request card (`GAIN_CONTROL_REQUEST`) and its partner rolls Guard
+(`kind: "check"`, slug guard) against `attackThreshold(..., { controlled: false })`, read through
+`gainControlOutcome(..., { inverted })`; the card's flags carry `gainControl { bindId, userUuid,
+partnerUuid, state, inverted, from }` and `documents/cards/gain-control.mjs` draws the result and
+the one button from them and the live Bind (`drawGainControlWidget`, `applyGainControl`,
+`rollGuardFromCard`, `answerTo`, `registerGainControlCards`). **A result is written once** (the
+review): the Bind card the write posts carries `flags.starwrought.gainControlApplied` (the check
+card's id; `appliedRecord`, the `applies` option of `takeControl`, `releaseControl` and
+`formBind`), and the button is offered only while none exists, the result changes something and
+the Bind is still in the state the roll began from (`gc.state`; `gainControlForReroll` sets it to
+the live state for a reroll's card); `GAINING` holds a fighter to one Gain Control at a time; the
+adversary's Attack Threshold is withheld whoever rolls; a blind roll is not auto-applied. **The
+Bind record gained
+`pressed`** (a one-shot token: the Controlled side's `#writeBind` puts a flagged Off-Guard on
+itself, `flags.starwrought.pressed` on the effect, only in an encounter, taken off by
+`settleBindWindows` in `rules/effects-state.mjs` as that fighter's Opportunity begins and at the
+encounter's end, which also reaches a body that left the tracker: the first condition with an
+expiry of its own), and the Controller of a momentary Control carries
+`flags.starwrought.momentaryControl`, counted in the same sweep and ended with
+`releaseControl()` (also the Bind line's Make neutral). **`pickUpMirror` is strict on a live
+update** (id, Zone and `pressed` too) and lenient in the load sweep. **Parry** (ruling 271,
+replacing 131): `bindOffer` in `dice/check/position.mjs`; a Parry's neutral Bind adds the
+`gainControlFree` button (`gainControlFromCard`: forms the Bind if absent, then
+`gainControl({ free: true })`, once for a card). **Form a Bind by hand** (ruling 279):
+`formBindByHand` and `apps/bind-picker.mjs`, on both sheets' header while in an encounter and in
+no Bind. **The handbook**: `PROPOSALS["bind"]`, four tracked changes in v4.25 itself (backup in
+`backup/pre-0.27.0/`). Not driven live: a Cast (no spell ships enabled) and a table with no GM.
+
 **0.26.1 (Mike, 2026-11-15; no ruling): N/A in an Automation cell means "no automation".** Mike:
 "For Maneuvers, Talents, etc. that do not require automation, I am going to put N/A in the
 Automation field. Make sure the engine doesn't confuse that with automation grammar." Planned
@@ -1857,6 +1918,24 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.27.0 leaves to the table or to Mike** (the Bind): the four tracked changes of
+  `PROPOSALS["bind"]` wait in `Starwrought_Players_Handbook_v4.25.docx` for him to accept or
+  reject (compare with the committed file and re-stamp when he saves, as for every redline);
+  rulings 276, 277 and 280 are Claude's readings and his to overrule (the Zone kept on the
+  card, Close with no click, no -2 on Gain Control); giving ground, a Shove and a GM's
+  repositioning end no Bind; a fighter holds ONE Bind, where the book allows one for each
+  implement ("Track no more than one Bind per implement"); a held shield is always the implement
+  a card's Bind names (`rigidImplement`), so a shield-bearer's neutral Bind ends on a sword
+  Strike and a foe Controlling the shield puts no -2 on the sword (Form a Bind lets the player
+  name the sword); a Disarm, "after its first benefit is used" and two adversaries contesting a
+  Bind are by hand; Off-Guard on an adversary moves no Threshold and an adversary's Strike has no
+  damage card, so the Zone it may still use is a line for the GM; with no GM connected an end on
+  a body nobody present owns waits; an undo of a move does not bring a Bind back. The Talents
+  that bend these rules are not enabled and not built: **Winding** ("your Strikes against that
+  foe do not end the Bind"), **Feeling** (a Critical Failure on Gain Control leaves a neutral
+  Bind), **Catch the Blade**, **Clinch**. Whether an Attack-trait check (Gain Control, Disarm,
+  Grapple, Trip) should take the attacker's attack penalties (an Arms Wound, Fatigued) is unsaid:
+  none does today.
 - **0.26.0 leaves to the table or to Mike:** a Talent that "specifies otherwise" and asks for one
   roll for all its targets (no column says so; none exists); a spell's own area (its shape and
   size as data, the Cast placing the template and removing it: columns for `data/magic.xlsx`,
@@ -1936,7 +2015,14 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   deleted (417 messages again); the Bandit's Prone is older than the drive and was left. To try
   0.26.0 there: target two or three tokens and Strike (one Roll row each in the Combat window);
   in the Regions controls draw a circle over tokens as a player and watch the targets follow it;
-  press the burst beside a Zone's shield for a Critical Hit effect and Recenter to end it.
+  press the burst beside a Zone's shield for a Critical Hit effect and Recenter to end it. **The
+  0.27.0 drive (2026-11-15) left nothing**: Foundry was found stopped and was started for the
+  0.27.0 manifest (no migration was asked), and the drive's Combat, its probe shield, the Size and
+  Protection it lent the Bandit and the 163 cards it posted were all removed (417 messages again,
+  the three tokens back at 1200, 1320 and 1440; the Bandit's Prone left as found). To try 0.27.0
+  there: start a Combat, target the Bandit and press Form a Bind on Tess's sheet; drag Tess a
+  Step away (the Bind ends on the move's card); Form it again, press Gain Control on the Bind
+  line, and Step toward the Bandit for a Close.
 - **0.25.0 leaves to the table or to Mike:** that the ally Aided by Pay It Forward is willing and
   that Aid's own requirements are met; "immediately after that check", read as the rest of that
   Opportunity (ruling 248), so a Move or another Maneuver between the check and the Aid is not
@@ -1957,9 +2043,9 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   for a Maneuver's Move were not seen on screen** (core's ruler needs real pointer waypoints,
   which the hidden pane cannot give): they were checked through `maneuverMoveOf` and
   `asManeuverMove`, the helper the ruler and the charge share.
-- **0.23.0 leaves to the table or to Mike:** Gain Control's row pays ❶ while the Take Control
-  button is free, and Interact's row pays ❶ while a draw or a stow from the Equipment tab pays its
-  own, so each is two doors with one price; the Pass row Passes since 0.23.1, and its "Once per
+- **0.23.0 leaves to the table or to Mike:** Interact's row pays ❶ while a draw or a stow from
+  the Equipment tab pays its own, so it is two doors with one price (Gain Control's row was the
+  other such pair until 0.27.0 made it roll); the Pass row Passes since 0.23.1, and its "Once per
   round" is counted by nothing, on the row or on the other two Pass controls; a Leap and a Squeeze
   are charged by the drag as the Move it measures; Grapple prints ⓿ with an Athletics check against
   Evade, which reads like a slip in the sheet; "Track the six-action round" gates movement and the
@@ -1975,12 +2061,41 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   pays ❶ from its row and is gated off-turn; a ↺ in the row's Cost cell is Mike's to write, and
   the same holds for any row whose empty Cost cell reads as one action. A row printed with a cost
   and a Reaction half ("❶ (⓿↺)") pays the half and never the cost: an open decision.
-- **0.19.0 leaves to the table or to Mike:** a Form Bind control for a Bind the GM narrates (the
-  card forms them) and Close ❶ as a Maneuver (both declined for now); the out-of-turn permit is
+- **0.19.0 leaves to the table or to Mike:** (a Form Bind control and Close ❶ as a Maneuver,
+  both declined then, are built since 0.27.0); the out-of-turn permit is
   one Maneuver this round and a player with no GM connected waits; the glance shows an adversary's
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-15 (the Bind, automated, system 0.27.0; rulings 269 to 280 in the 0.27.0
+changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: their own
+movement, the shield exception, a free Gain Control roll after a Parry, the Quick Strike rule
+kept, a Cast is an attack, a Failure makes the Bind neutral, and Form a Bind, an adversary's Gain
+Control and momentary Control all built): no movement ending a Bind, now a fighter's own Move,
+Step, Rush or Crawl ending it, with a Close and the larger of two far apart keeping it; the three
+attack rules living in a character's weapon Strike alone, now one plan for every attack of every
+source, decided once before the first result card; the Controller's own Strike losing the Zone it
+opened, now the Zone kept on that card for its damage; Gain Control's row paying ❶ and showing
+its text, now rolled and applied from the card, for a character and for an adversary; Close
+charged twice, now the Step itself; a Parry's Stop taking Control outright (ruling 131), now the
+Talent's free Gain Control where the Bind is neutral; no way to form a Bind but a card, now Form a
+Bind on both sheets; Size and Binds unbuilt, now a momentary Control counted and the larger
+fighter's movement kept; a new Zone on a standing Control never reaching a partner the writer
+did not own; an adversary's flat roll never taking the Controlled -2; FEATURES saying a partner
+needs its owner's click. Four tracked changes in v4.25 itself (`PROPOSALS["bind"]`, the file
+before them in `backup/pre-0.27.0/`), stamped with `--check --accept-phb`. Checked by 195
+self-test checks, `node --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of
+Mike's uncommitted workbook), `build_all.mjs --check`, a second reader on the design before the
+plan was shown (the plan once per attack, the id-guarded end, the strict mirror, the windows in
+the sweep), an independent review of the diff (seven findings, none in the attack or movement
+rules, all mended: an old Gain Control card offering its result again, the adversary's Threshold
+printed for a GM roller, a double-click rolling twice, a blind roll acted on, an adversary's move
+ending a Bind unsaid to players, the Off-Guard with nothing to end it outside an encounter, the
+plan written after the ends) and live in the test world with a GM tab and a player tab, before
+the review and again for its mends (the 0.27.0 changelog entry lists what). Not driven: a Cast, a
+blind Gain Control roll, a reroll of a Gain Control card, a table with no GM. Mike's three
+workbooks were not converted, built, staged or written, and no pack document moved.
 
 Cleared 2026-11-15 (N/A in an Automation cell, system 0.26.1; no ruling; planned in
 `dazzling-floating-simon.md`): an `N/A` cell painted red by the red-cell tool and listed in the

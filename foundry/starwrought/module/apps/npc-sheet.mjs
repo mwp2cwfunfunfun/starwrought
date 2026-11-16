@@ -39,6 +39,9 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       adjustWound: SwNpcSheet.#onAdjustWound,
       endBind: SwNpcSheet.#onEndBind,
       takeControl: SwNpcSheet.#onTakeControl,
+      gainControl: SwNpcSheet.#onGainControl,
+      releaseControl: SwNpcSheet.#onReleaseControl,
+      formBindByHand: SwNpcSheet.#onFormBindByHand,
       rulesPage: SwNpcSheet.#onRulesPage,
       setActions: SwNpcSheet.#onSetActions,
       resetActions: SwNpcSheet.#onResetActions,
@@ -114,6 +117,8 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       hint: game.i18n.localize(def.hint)
     }));
     context.bind = bindContext(actor);
+    // Form a Bind by hand (0.27.0, ruling 279): offered in an encounter while in none.
+    context.canFormBind = !context.bind && this.isEditable && !!actor.inEncounter;
     context.actions = actionsContext(actor);
     context.vigor = vigorContext(actor);
     context.spent = sys.spent ?? ((sys.vigor?.value ?? 1) === 0);
@@ -265,6 +270,21 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** Take Control of the Bind by hand (0.19.0): the Zone picker, then the record and the Exposure. */
   static async #onTakeControl() {
     return this.document.takeControl();
+  }
+
+  /** Gain Control ❶ (0.27.0, ruling 275): an adversary pays and asks its partner for a Guard roll. */
+  static async #onGainControl() {
+    return this.document.gainControl();
+  }
+
+  /** Make neutral (0.27.0): the Controller lets go of the line; the Bind stays. */
+  static async #onReleaseControl() {
+    return this.document.releaseControl();
+  }
+
+  /** Form a Bind by hand (0.27.0, ruling 279): with the one token targeted, the implement picked. */
+  static async #onFormBindByHand() {
+    return this.document.formBindByHand();
   }
 
   /** The bind line and a condition row open their Rules Reference page (0.5.1, T6). */

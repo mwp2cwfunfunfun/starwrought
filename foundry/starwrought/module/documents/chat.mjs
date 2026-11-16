@@ -35,12 +35,14 @@ import { ruleCardOffers } from "../rules/engine.mjs";
 import { encounterContext } from "../rules/scene.mjs";
 import { flareFromCard } from "./cards/flare.mjs";
 import {
-  exposeFromCard, formBindFromCard, giveGroundFromCard, stepFromCard, reactionStrikeFromCard,
+  exposeFromCard, formBindFromCard, gainControlFromCard, giveGroundFromCard, stepFromCard, reactionStrikeFromCard,
   chargeReactionFromCard, recenterFromCard, onExposeSocket, preventExposeFromCard
 } from "./cards/position.mjs";
 import { pruneAttackThresholds, openAttackPrompt, rollFromAttackCard, gmAttackRequest } from "./cards/attack.mjs";
 // What a Maneuver's check gives another character (0.22.0): the widget, the press, the relay.
 import { drawGiveWidget, giveFromCard, onGiveSocket } from "./cards/give.mjs";
+// Gain Control (0.27.0): the result under its check card, its button, and an adversary's request.
+import { drawGainControlWidget, drawGainControlRequest, applyGainControlFromCard, rollGuardFromCard, answerTo } from "./cards/gain-control.mjs";
 
 /** The resolvers, under the names other modules imported from here through 0.10.0. */
 export { resolveActor, resolveTokenDoc, ownedActor } from "./cards/shared.mjs";
@@ -224,6 +226,16 @@ export function onRenderChatMessage(message, html) {
   // card's flags and the chat log after the kinds' offers so it sits under them.
   drawGiveWidget(message, html, flags);
 
+  // Gain Control (0.27.0): what the check's degree means for the Bind, with the one button for
+  // the side it favours, drawn from the card's flags and the Bind as it stands; and an adversary's
+  // request for its partner's Guard roll, which loses its button once answered.
+  drawGainControlWidget(message, html, flags);
+  drawGainControlRequest(message, html, flags);
+  // Parry's free Gain Control is one attempt for a card: the button goes once a roll names it.
+  if (html.querySelector("[data-sw-action='gainControlFree']") && answerTo(message.id)) {
+    for (const el of html.querySelectorAll("[data-sw-action='gainControlFree']")) el.remove();
+  }
+
   // The GM controls (the attack card's Cancel, Reset defenses and Resend prompts) are the GM's,
   // or the coordinator's at a table with no GM connected. The content is the same on every
   // client; the row is not.
@@ -259,6 +271,9 @@ async function onCardButton(event, message, flags) {
       case "ruleReroll": return await rerollByRule(message, flags, button);
       case "ruleUse": return await useByRule(button);
       case "giveResult": return await giveFromCard(message, flags, button);
+      case "gainControlApply": return await applyGainControlFromCard(message);
+      case "gainControlGuard": return await rollGuardFromCard(message, flags);
+      case "gainControlFree": return await gainControlFromCard(message, flags, button);
       case "expose":
       case "exposeZone": return await exposeFromCard(message, flags, button);
       case "preventExpose": return await preventExposeFromCard(message, flags, button);

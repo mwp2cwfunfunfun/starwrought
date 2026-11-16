@@ -18,7 +18,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-chat: "0.26.1"; }
+:root { --sw-css-version-chat: "0.27.0"; }
 
 /* --------------------------------------------------------------------------
    Chat cards
@@ -210,6 +210,13 @@
 .starwrought .sw-card-give { margin-top: 0.4rem; }
 .starwrought .sw-card-give .sw-given-done { color: var(--sw-green); }
 .starwrought .sw-card-give .sw-given-altered { font-style: italic; }
+
+/* Gain Control (0.27.0): what the check's degree means for the Bind, under the outcome, with the
+   one button for the side it favours; and the Zone a Control held open for the attack that ended
+   the Bind, on that attack's result card. */
+.starwrought .sw-card-gain-control { margin-top: 0.4rem; }
+.starwrought .sw-card-gain-control .sw-gain-control-result { font-weight: 600; }
+.starwrought .sw-control-zone-note { color: var(--sw-gold); }
 
 /* --------------------------------------------------------------------------
    The roll dialogs.

@@ -24,6 +24,7 @@
 
 import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
+import { usesBoundImplement } from "./bind-rules.mjs";
 
 const localize = key => game.i18n.localize(key);
 
@@ -216,23 +217,37 @@ export function meleeAnswers(maneuver) {
  * Critical Hit effect while it runs (0.26.0; PHB v4.25: "-2 Situation penalty to Attack rolls
  * until it Recenters"; `system.zones.arms.critical`), which a character's attack modifiers carry
  * (data/character/offense.mjs).
+ *
+ * `controlled` (0.27.0): the attack's own answer, when the caller has one. An attack ends its
+ * attacker's Bind as it resolves (combat/bind-rules.mjs), before any result card, so the
+ * coordinator and a reroll hand over what the attack was when its dice were thrown; left out, the
+ * Bind is read as it stands (a preview, a card from before 0.27.0).
+ * @param {Actor} attacker
+ * @param {object} maneuver
+ * @param {{controlled?: boolean}} [options]
+ * @returns {number}
  */
-export function attackThreshold(attacker, maneuver) {
+export function attackThreshold(attacker, maneuver, { controlled } = {}) {
   const item = maneuver?.attackId ? attacker.items.get(maneuver.attackId) : null;
   const rows = attacker.system.attacks ?? [];
   const row = maneuver?.attackId ? rows.find(a => a.id === maneuver.attackId) : null;
   const value = item?.system?.attack?.threshold ?? row?.threshold ?? row?.thresholds?.[0];
   const n = Number(value);
   const base = Number.isFinite(n) ? n : 10;
+  const penalised = (typeof controlled === "boolean")
+    ? controlled
+    : controlledPenaltyFor(attacker, item?.name ?? row?.name ?? maneuver?.weaponName, rows.length);
   return base
-    + (controlledPenaltyFor(attacker, item?.name ?? row?.name ?? maneuver?.weaponName, rows.length) ? SW.CONTROLLED_PENALTY : 0)
+    + (penalised ? SW.CONTROLLED_PENALTY : 0)
     + (attacker.system.zones?.arms?.critical ? SW.ARMS_CRITICAL_PENALTY : 0);
 }
 
 /**
  * Does the Controlled penalty reach this attack of this attacker? Yes while the attacker's Bind
  * says Controlled and the attack is made with the Bound implement: the row named as the Bind's
- * `mine`, or, when no row carries that name, the attacker's one and only row.
+ * `mine`, or, when no row carries that name, the attacker's one and only row. The one reading of
+ * "the bound implement" is `usesBoundImplement` (combat/bind-rules.mjs, 0.27.0), which the attack's
+ * Bind plan asks too.
  * @param {Actor} attacker
  * @param {string} attackName
  * @param {number} rowCount
@@ -241,8 +256,7 @@ export function attackThreshold(attacker, maneuver) {
 export function controlledPenaltyFor(attacker, attackName, rowCount = 0) {
   const bind = attacker?.system?.bind;
   if (bind?.state !== "controlled") return false;
-  if (bind.mine && attackName && SW.sameName(bind.mine, attackName)) return true;
-  return !bind.mine || (rowCount <= 1);
+  return usesBoundImplement(bind, { source: "attack", name: attackName ?? "", rowCount });
 }
 
 /**
@@ -400,13 +414,24 @@ export async function rollBlind(attacker, maneuver, target, link, { dialog = tru
     lockStrike: true,
     dialog,
     postCard: false,
-    // An adversary rolls flat; the Arms' Critical Hit effect still reaches its die (0.26.0).
-    modifiers: attacker.system.zones?.arms?.critical
-      ? [{
-        label: game.i18n.format("STARWROUGHT.ZoneCrit.label", { zone: localize(SW.ZONES.arms.label) }),
-        value: SW.ARMS_CRITICAL_PENALTY, type: "situation"
-      }]
-      : [],
+    // An adversary rolls flat; the Arms' Critical Hit effect still reaches its die (0.26.0), and so
+    // does the -2 for an implement a foe Controls (0.27.0: the Threshold a player's Defense reads
+    // has carried it since 0.19.0, and this die never did). The Bind is read live: every die is
+    // thrown before the attack ends it.
+    modifiers: [
+      ...(attacker.system.zones?.arms?.critical
+        ? [{
+          label: game.i18n.format("STARWROUGHT.ZoneCrit.label", { zone: localize(SW.ZONES.arms.label) }),
+          value: SW.ARMS_CRITICAL_PENALTY, type: "situation"
+        }]
+        : []),
+      ...(controlledPenaltyFor(attacker, maneuver.weaponName, (attacker.system.attacks ?? []).length)
+        ? [{
+          label: game.i18n.format("STARWROUGHT.Roll.controlledWeapon", { weapon: maneuver.weaponName || localize("STARWROUGHT.Bind.weapon") }),
+          value: SW.CONTROLLED_PENALTY, type: "situation"
+        }]
+        : [])
+    ],
     flatBonus: 0,
     threshold: null,
     // The defender committed in the prompt: the dialog names them and shows no Defense (0.26.0).

@@ -34,6 +34,8 @@ import { onRulesSocket } from "./module/rules/scene.mjs";
 import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
 import { registerEffectsHooks } from "./module/rules/effects-state.mjs";
 import { registerGiveCards } from "./module/documents/cards/give.mjs";
+// Gain Control (0.27.0): its card's button follows the Bind it speaks of.
+import { registerGainControlCards } from "./module/documents/cards/gain-control.mjs";
 import { registerMovementTracking } from "./module/documents/movement.mjs";
 import { registerTrackerReadout } from "./module/apps/combat-tracker.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
@@ -306,6 +308,7 @@ Hooks.once("ready", async () => {
   registerEffectsHooks();   // CHARACTER EFFECTS (0.16.0): an encounter-long custom effect ends with its Combat.
   registerGiveCards();      // 0.22.0: a check card's Give button follows the give card that answers it.
   registerRuleOfferCards(); // 0.25.0: a card's rule buttons follow the roller's used Effects and limits.
+  registerGainControlCards(); // 0.27.0: a Gain Control card's button follows the Bind, and a request its answer.
 
   // THE CONTENT LOOP (0.8.0): with the migration done and everything above in place, offer the GM
   // a Sync when the sources on disk are newer than what this world last synced. Not awaited: the

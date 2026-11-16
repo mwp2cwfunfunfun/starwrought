@@ -30,6 +30,8 @@ import { flagKey, SYSTEM_ID } from "../config.mjs";
 import { settle, isGivenKey, givenFlagKey, usedEntry, usedLive, usedEffects, isUsedKey, usedFlagKey } from "./given.mjs";
 // 0.24.0: the record of a Move made as part of a Maneuver, which ends with its Opportunity.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, recordLive } from "./maneuver-move.mjs";
+// The Bind's two windows (0.27.0), counted on the same change of Opportunity; pure.
+import { momentaryStep, MOMENTARY_FLAG, PRESSED_FLAG } from "../combat/bind-rules.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
@@ -397,6 +399,10 @@ function holdersOf(combat) {
  */
 export async function settleGivenResults(combat, change = {}) {
   if (!combat || (!change?.ended && !change?.began)) return;
+  // The Bind's two windows are counted on the same change of Opportunity (0.27.0), from here so
+  // that every path that settles the pending results settles them too: the turn change, a lone
+  // fighter's step and its socket echo.
+  await settleBindWindows(combat, change);
   for (const actor of holdersOf(combat)) {
     try {
       if (!responsibleFor(actor)) continue;
@@ -411,6 +417,90 @@ export async function settleGivenResults(combat, change = {}) {
       if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
     } catch (error) {
       console.error(`STARWROUGHT | the pending results on ${actor?.name ?? "an actor"} could not be settled:`, error);
+    }
+  }
+}
+
+/**
+ * The Bind's two windows, counted on a change of Opportunity (0.27.0; combat/bind-rules.mjs):
+ *
+ *  - "Off-Guard until its next Opportunity", which a Critical Success on Gain Control puts on its
+ *    target: the flagged Off-Guard (`flags.starwrought.pressed` on the effect) is taken off as that
+ *    fighter's Opportunity begins, and no other Off-Guard is touched;
+ *  - a momentary Control (ruling 278: two or more Sizes apart, the smaller fighter Controlling),
+ *    which "ends ... at the end of the controller's next Opportunity": the Controller's
+ *    `flags.starwrought.momentaryControl` is marked as that Opportunity begins, and when it ends the
+ *    Control falls back to a neutral Bind (`releaseControl`), with a card.
+ *
+ * Both end with the encounter (`over`). Each fighter's responsible client writes it, as for the
+ * pending results. The first condition in the system with an expiry of its own, which is why it
+ * is counted here and not in `beginOpportunity`: that runs on one client, and a lone fighter's
+ * step runs it on the clicking client alone.
+ * @param {Combat} combat
+ * @param {{ended?: string|null, began?: string|null}} [change]  Combatant ids.
+ * @param {{over?: boolean}} [options]  The encounter itself has ended.
+ */
+export async function settleBindWindows(combat, change = {}, { over = false } = {}) {
+  if (!combat) return;
+  const pressedOn = actor => actor.effects?.find?.(e => e.statuses?.has("offGuard") && e.getFlag?.(SYSTEM_ID, PRESSED_FLAG)) ?? null;
+  const seen = new Set();
+  const actors = [];
+  const add = (actor, mustBeOfThisCombat = false) => {
+    if (!actor || seen.has(actor.uuid)) return;
+    if (mustBeOfThisCombat) {
+      // A fighter who left the tracker while it held a window: only what THIS Combat left on it.
+      const mine = (pressedOn(actor)?.getFlag?.(SYSTEM_ID, PRESSED_FLAG)?.combat === combat.id)
+        || (actor.flags?.[SYSTEM_ID]?.[MOMENTARY_FLAG]?.combat === combat.id);
+      if (!mine) return;
+    }
+    seen.add(actor.uuid);
+    actors.push(actor);
+  };
+  for (const combatant of combat.combatants ?? []) add(combatant?.actor);
+  // The encounter's end also reaches a body that is no longer in the tracker (its Combatant or
+  // its token removed before its next Opportunity), as the pending results' sweep does: its
+  // window would otherwise never close (the review of 2026-11-15).
+  if (over) {
+    for (const token of (combat.scene ?? globalThis.canvas?.scene)?.tokens ?? []) add(token?.actor, true);
+    for (const actor of globalThis.game?.actors ?? []) add(actor, true);
+  }
+  for (const actor of actors) {
+    try {
+      const pressed = pressedOn(actor);
+      const record = actor.flags?.[SYSTEM_ID]?.[MOMENTARY_FLAG] ?? null;
+      if (!pressed && !record) continue;
+      if (!responsibleFor(actor)) continue;
+      // Every Combatant of this body: a linked Actor may stand in the fight more than once.
+      const ids = (combat.combatants ?? []).filter(c => c.actor?.uuid === actor.uuid).map(c => c.id);
+      const began = ids.includes(change?.began) ? change.began : null;
+      const ended = ids.includes(change?.ended) ? change.ended : null;
+
+      if (pressed && (over || began)) await actor.setCondition("offGuard", false);
+
+      if (record) {
+        const bind = actor.system?.bind;
+        // Any Combatant of this body is the Controller's, so the record is counted against "this
+        // fighter" rather than against the one id it was written with.
+        const SELF = "self";
+        const step = momentaryStep({ ...record, combatant: SELF }, {
+          combat: combat.id,
+          began: began ? SELF : null,
+          ended: ended ? SELF : null,
+          bindId: bind?.id ?? "",
+          controlling: bind?.state === "controlling",
+          over
+        });
+        if (step === "begin") {
+          await actor.update({ [`flags.${SYSTEM_ID}.${MOMENTARY_FLAG}.begun`]: true }, { swAnnounced: true });
+        } else if (step === "drop") {
+          await actor.update({ [`flags.${SYSTEM_ID}.-=${MOMENTARY_FLAG}`]: null }, { swAnnounced: true });
+        } else if (step === "release") {
+          // The Controller's own write forgets the record as it stops Controlling.
+          await actor.releaseControl?.({ id: record.bindId ?? "", note: game.i18n.localize("STARWROUGHT.Bind.momentaryOver") });
+        }
+      }
+    } catch (error) {
+      console.error(`STARWROUGHT | the Bind's windows on ${actor?.name ?? "an actor"} could not be settled:`, error);
     }
   }
 }
@@ -552,6 +642,9 @@ export async function endEncounterEffects(combat) {
   // 0.24.0: a Move made as part of a Maneuver ends with its encounter, and so do the marks that
   // say who has moved for one.
   await endManeuverMoves(combat, { ended: true });
+  // 0.27.0: the Bind's two windows close with the encounter: a Gain Control's Off-Guard goes, and
+  // a momentary Control falls back to a neutral Bind.
+  await settleBindWindows(combat, {}, { over: true });
   // 0.25.0: a used Effect of this Combat goes with it wherever its holder is by now. The sweep
   // above walks the fighters; one whose Combatant or token was removed while it held the Effect
   // is no fighter any more, and its record would otherwise stay listed for good (the review of

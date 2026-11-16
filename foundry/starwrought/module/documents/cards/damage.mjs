@@ -39,7 +39,10 @@ export async function rollDamageFromCard(message, flags, outcome) {
     slug: flags.slug ?? "",
     rank: flags.rank ?? null,
     thrown: !!flags.thrown,
-    targetUuid: flags.targetUuid ?? ""
+    targetUuid: flags.targetUuid ?? "",
+    // The Zone the attacker's Control held open, kept on the attack card when the attack ended
+    // the Bind (0.27.0, ruling 276): this damage may still be placed there.
+    controlZone: flags.controlZone ?? null
   });
 }
 
@@ -74,7 +77,11 @@ export async function applyDamageFromCard(message, flags, button, event) {
 
 /** Spend one damage card on one Actor, and post what the body felt. */
 async function applyCard(actor, flags, { zone, multiplier }) {
+  // The Zone a Control held open is the card's own target's (0.27.0): a Shift-click that puts the
+  // damage on another body does not carry that body's Zone open with it.
+  const named = flags.controlZone ? resolveActor(flags.targetUuid) : null;
   const result = await SwDamage.apply(actor, {
+    exposedZone: (named && (named === actor)) ? flags.controlZone : null,
     base: flags.base,
     deadly: flags.deadly,
     type: flags.damageType,

@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.26.1"; }
+:root { --sw-css-version-character: "0.27.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -552,6 +552,8 @@
 /* The Bind: one line under the vitals, coloured by who holds the line. */
 .starwrought .sw-bind {
   display: flex;
+  /* 0.27.0: the line carries up to four buttons, so it may wrap. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   padding: 0.3rem 0.6rem;
@@ -565,6 +567,12 @@
 .starwrought .sw-bind-text { flex: 1; }
 .starwrought .sw-bind-controlling { border-color: var(--sw-gold-dim); background: linear-gradient(90deg, rgba(255, 216, 103, 0.12), transparent 70%); }
 .starwrought .sw-bind-controlled { border-color: var(--sw-blood); background: linear-gradient(90deg, rgba(180, 69, 63, 0.18), transparent 70%); }
+/* 0.27.0: a momentary Control says so in the line's text; and with no Bind in an encounter the
+   line is one quiet button, Form a Bind, with no frame of its own. */
+.starwrought .sw-bind-momentary { color: var(--sw-ink-dim); }
+.starwrought .sw-bind-none { justify-content: flex-end; padding: 0; border: none; background: none; }
+.starwrought .sw-quiet-button { opacity: 0.6; }
+.starwrought .sw-quiet-button:hover, .starwrought .sw-quiet-button:focus { opacity: 1; }
 .starwrought .sw-reaction-chip { color: var(--sw-agility); border-color: #3a6b62; }
 
 /* The Overview's banner while creation is unfinished: the one way into the wizard. */

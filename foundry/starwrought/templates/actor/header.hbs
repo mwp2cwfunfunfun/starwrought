@@ -158,6 +158,14 @@
 
     {{#if bind}}
     {{> "systems/starwrought/templates/actor/bind-line.hbs" bind}}
-    {{/if}}
+    {{else}}{{#if canFormBind}}
+    {{!-- Form a Bind by hand (0.27.0, ruling 279): a Bind the GM narrates, or one ended by mistake. Quiet, and only in an encounter. --}}
+    <div class="sw-bind sw-bind-none">
+      <button type="button" class="sw-inline-button sw-quiet-button" data-action="formBindByHand"
+              data-tooltip="{{localize 'STARWROUGHT.Bind.formByHandHint'}}">
+        <i class="fa-solid fa-link"></i> {{localize "STARWROUGHT.Bind.formByHand"}}
+      </button>
+    </div>
+    {{/if}}{{/if}}
   </div>
 </header>

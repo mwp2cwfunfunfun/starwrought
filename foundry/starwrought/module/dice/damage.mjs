@@ -37,7 +37,10 @@ export class SwDamage {
    */
   static async roll({
     actor, weapon, outcome = "hit", strike = SW.DEFAULT_STRIKE, targetUuid = "", bonus = 0, precision = "",
-    slug = "", thrown = false, rank = null
+    slug = "", thrown = false, rank = null,
+    // The Zone the attacker's Control held open on the target, from the attack card (0.27.0,
+    // ruling 276): the Bind ended as the attack resolved, and this damage may still go there.
+    controlZone = null
   } = {}) {
     const sys = actor.system;
     const kind = SW.STRIKE_KINDS[strike] ?? SW.STRIKE_KINDS[SW.DEFAULT_STRIKE];
@@ -98,7 +101,8 @@ export class SwDamage {
     // where the attacker says; a Hit lands on the Torso, or on an Exposed Zone if the Strike was
     // Deliberate or Committed. A Quick Strike lands on the Torso and nowhere else.
     const target = targetUuid ? (fromUuidSync(targetUuid)?.actor ?? null) : null;
-    const exposedZones = Object.keys(SW.ZONES).filter(z => target?.system?.zones?.[z]?.exposed);
+    const remembered = (controlZone in SW.ZONES) ? controlZone : null;
+    const exposedZones = Object.keys(SW.ZONES).filter(z => target?.system?.zones?.[z]?.exposed || (z === remembered));
     let zoneLocked = false;
     let zoneNote = "";
     let offered = Object.keys(SW.ZONES);
@@ -165,7 +169,9 @@ export class SwDamage {
           nonlethal: !!flags.nonlethal,
           targetUuid,
           actorUuid: actor.uuid,
-          weaponId: weapon.id
+          weaponId: weapon.id,
+          // 0.27.0: the Zone the attacker's Control held open, for the Apply to read as Exposed.
+          controlZone: remembered
         }
       }
     };
@@ -301,7 +307,12 @@ export class SwDamage {
   static async apply(actor, {
     base = 0, deadly = 0, type = "untyped", zone = SW.DEFAULT_ZONE,
     critical = false, graze = false, strike = SW.DEFAULT_STRIKE, armorPiercing = 0,
-    massive = false, nonlethal = false, multiplier = 1, delivery = "zoned"
+    massive = false, nonlethal = false, multiplier = 1, delivery = "zoned",
+    // A Zone to read as Exposed for this damage whatever the body shows (0.27.0, ruling 276): the
+    // one the attacker's Control held open, which closed when the attack ended the Bind and which
+    // the damage card remembers ("A Strike against the other Bind participant resolves before the
+    // Bind ends").
+    exposedZone = null
   } = {}) {
     const sys = actor.system;
     const steps = [];
@@ -348,10 +359,11 @@ export class SwDamage {
     //    lesson). Protection alone can never reduce positive damage below 1. An Exposed Zone is 0
     //    against a Deliberate or Committed Strike only; a Quick Strike meets it in full. A
     //    Pervasive Attack and Persistent Damage ignore ordinary Protection.
-    const exposed = !!sys.zones?.[zone]?.exposed;
+    const remembered = !!exposedZone && (exposedZone === zone);
+    const exposed = !!sys.zones?.[zone]?.exposed || remembered;
     const protection = pervasive
       ? { value: 0, steps: [{ label: game.i18n.localize("STARWROUGHT.Damage.pervasive"), value: 0 }] }
-      : sys.zoneProtection(zone, { type, ignore: armorPiercing, strike });
+      : sys.zoneProtection(zone, { type, ignore: armorPiercing, strike, exposed: remembered });
     if (protection.value && total > 0) {
       const before = total;
       total = Math.max(1, total - protection.value);

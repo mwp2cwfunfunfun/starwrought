@@ -38,6 +38,8 @@ import { AttackSocket, SOCKET } from "./attack-socket.mjs";
 import { resolveSource, maneuverFrom, costOf, meleeAnswers, attackThreshold, describe, resolveArgs, rollBlind } from "./attack-source.mjs";
 import { threatContext, writeRuleMarks, sceneContextFor, encounterContext } from "../rules/scene.mjs";
 import { ruleModifiers } from "../rules/engine.mjs";
+// What an attack does to the Binds around it (0.27.0), pure.
+import { attackBindPlan } from "./bind-rules.mjs";
 
 /** The socket channel, defined by the transport (attack-socket.mjs) and re-exported for callers. */
 export { SOCKET };
@@ -1384,8 +1386,8 @@ export class AttackCoordinator {
   }
 
   /** An adversary's Attack Threshold: the attack row's own number (attack-source.mjs). */
-  static #attackThreshold(attacker, maneuver) {
-    return attackThreshold(attacker, maneuver);
+  static #attackThreshold(attacker, maneuver, options = {}) {
+    return attackThreshold(attacker, maneuver, options);
   }
 
   /**
@@ -1442,7 +1444,11 @@ export class AttackCoordinator {
       // and the default 10 would be a guess dressed as a Threshold.
       if (!flags.attackId) return null;
       const attacker = resolveActor(flags.attackerUuid);
-      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId }) : null;
+      // The card says whether the attack was made with a Controlled implement (0.27.0): the Bind
+      // ended as the attack resolved, so reading it again would read 2 too high. A card from
+      // before 0.27.0 says nothing and is read live, as it always was.
+      const controlled = (typeof flags.controlledAttack === "boolean") ? { controlled: flags.controlledAttack } : {};
+      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId }, controlled) : null;
     }
     return null;
   }
@@ -1521,9 +1527,97 @@ export class AttackCoordinator {
     return run;
   }
 
+  /**
+   * What this attack does to the Binds around it (0.27.0; PHB v4.25, Ending a Bind; rulings 270,
+   * 273, 276), decided ONCE, with every die in and before the first result card: the attacker's own
+   * Bind ends (the bound implement, another weapon, a Cast), and a defender who Controls someone
+   * else loses the line to this third party. Every attack of every source passes through here; the
+   * rules lived in a character's weapon Strike alone through 0.26.1, so an adversary's attack, a
+   * Cast and an adversary's Intercept ended nothing.
+   *
+   * The plan is kept on the record (`workflow.bind`) for three reasons: each pairing reads the
+   * same answer (a sweep at a third party and at the partner must not find the Bind gone when the
+   * partner's pairing is read); what outlives the Bind for this attack (the Controlled implement's
+   * -2 on an adversary's Threshold, the Zone a Control held open) rides from it onto each card;
+   * and a coordinator rebuilt in the middle of the resolution does not decide again from Binds
+   * that have already ended.
+   *
+   * Every end names the Bind it decided about (`endBind({ id })`), so one that lands late cannot
+   * clear a Bind formed a moment later from the new card. This client writes what it may: the GM's
+   * writes everything; with no GM connected the attacker's player's writes its own, and an end on
+   * a body nobody here owns is named in the attack card's log and waits.
+   *
+   * Two steps, so the plan is on the card BEFORE any Bind is ended (the review of 2026-11-15):
+   * `#planBinds` decides and `#endPlannedBinds` writes. A coordinator rebuilt between the two
+   * finds the plan, and runs the ends again while no pairing has resolved; an end names its Bind,
+   * so a repeat does nothing.
+   * @param {object} workflow
+   * @returns {boolean}  Whether a plan was built just now.
+   */
+  static #planBinds(workflow) {
+    if (workflow.bind) return false;
+    const attacker = resolveActor(workflow.attacker.actorUuid);
+    const maneuver = workflow.maneuver ?? {};
+    const actorOf = target => resolveActor(target.actorUuid);
+    const plan = attackBindPlan({
+      attacker: {
+        uuid: attacker?.uuid ?? "",
+        bind: attacker?.system?.bind ?? null,
+        shields: attacker?.items?.filter(i => (i.type === "shield") && i.system.held).map(i => i.name) ?? []
+      },
+      defenders: workflow.targets.map(target => {
+        const actor = actorOf(target);
+        return { id: target.id, uuid: actor?.uuid ?? "", bind: actor?.system?.bind ?? null };
+      }),
+      maneuver: {
+        source: maneuver.source ?? "weapon",
+        name: maneuver.weaponName ?? "",
+        rowCount: (attacker?.system?.attacks ?? []).length
+      }
+    });
+    workflow.bind = plan;
+    return true;
+  }
+
+  /** End the Binds the attack's plan names, by identity, where this client may write the body. */
+  static async #endPlannedBinds(workflow) {
+    for (const end of workflow.bind?.ends ?? []) {
+      const actor = resolveActor(end.uuid);
+      const bind = actor?.system?.bind;
+      // Nothing to end, or another Bind by now (this one ended, and a new one formed since).
+      if (!bind?.state || (end.bindId && ((bind.id ?? "") !== end.bindId))) continue;
+      if (!actor.isOwner) {
+        const line = format("STARWROUGHT.Bind.notWritten", { name: actor.name });
+        if (!workflow.log.includes(line)) workflow.log.push(line);
+        continue;
+      }
+      try {
+        await actor.endBind({ id: end.bindId, reason: end.reason });
+      } catch (err) {
+        console.error(`STARWROUGHT | attack workflow ${workflow.id}: ${actor.name}'s Bind could not be ended`, err);
+      }
+    }
+  }
+
   /** The resolution loop itself; #finishResolving sees that only one runs per workflow. */
   static async #finishResolvingNow(workflow) {
     const showPcThresholds = !!setting("attackShowPcThresholds", false);
+    // The Binds this attack ends, before the first card (0.27.0). The plan is written to the card
+    // BEFORE anything is ended: a coordinator rebuilt in between would otherwise decide again, from
+    // Binds that are gone, and lose what rides on the cards. The ends run for a plan built just
+    // now, and again for one found on a rebuilt record while no pairing has resolved (a repeat
+    // ends nothing: each names its Bind).
+    if (workflow.phase === "resolving") {
+      const fresh = AttackCoordinator.#planBinds(workflow);
+      if (fresh && workflow.bind.ends.length) {
+        AttackCoordinator.#bump(workflow);
+        await AttackCoordinator.#persist(workflow);
+        await AttackCoordinator.#broadcast(workflow, "state");
+      }
+      const untouched = !workflow.targets.some(t => t.outcome || t.resolutionMessageId);
+      if (fresh || untouched) await AttackCoordinator.#endPlannedBinds(workflow);
+    }
+    if (workflow.phase !== "resolving") return;
     for (const target of workflow.targets) {
       if (workflow.phase !== "resolving") return;
       if (target.outcome || target.resolutionMessageId) continue;
@@ -1599,7 +1693,9 @@ export class AttackCoordinator {
       }
     } else {
       kind = "defense";
-      threshold = AttackCoordinator.#attackThreshold(attacker, maneuver);
+      // The Controlled implement's -2 is the plan's (0.27.0): the Bind it came from ended before
+      // this card, so a live read would lose it for every defender of the attack.
+      threshold = AttackCoordinator.#attackThreshold(attacker, maneuver, { controlled: !!workflow.bind?.controlledAttack });
       showThreshold = false;
       speakerActor = defender;
     }
@@ -1623,7 +1719,12 @@ export class AttackCoordinator {
       threshold,
       showThreshold,
       speakerActor,
-      pairingModifiers
+      pairingModifiers,
+      // What outlives the Bind for this attack (0.27.0, ruling 276): the Zone the attacker's
+      // Control held open on this defender, and whether the attack was made with a Controlled
+      // implement. Both ride on the card, since the Bind itself ended before it.
+      controlZone: workflow.bind?.zones?.[target.id] ?? null,
+      controlledAttack: !!workflow.bind?.controlledAttack
     });
 
     const outcome = result?.outcome;

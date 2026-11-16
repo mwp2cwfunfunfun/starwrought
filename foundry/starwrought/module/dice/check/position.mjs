@@ -9,6 +9,8 @@
 
 import * as SW from "../../config.mjs";
 import { exposePreventers } from "../../rules/prevent.mjs";
+// What a Stopped Blow offers the defender (0.27.0), pure.
+import { bindOffer } from "../../combat/bind-rules.mjs";
 
 /**
  * Settle Position (PHB v4.10, The Exchange, step 5): what the card offers once the Result is
@@ -19,7 +21,8 @@ import { exposePreventers } from "../../rules/prevent.mjs";
  *    choice (PHB v4.21: a Quick Strike's Miss costs nothing). A Guard with a rigid implement
  *    takes Control (a Quick Strike can only be bound). An Evade may Step.
  *  - Graze: Weighted (Committed) Exposes the attacker. A Guard with a rigid implement forms a
- *    neutral Bind, or Control if it was a Parry against a Deliberate or Committed Strike. An
+ *    neutral Bind; after a Parry the defender may also attempt Gain Control at no further cost
+ *    (0.27.0, ruling 271; through 0.26.1 a Parry's Graze took Control outright). An
  *    Evade gives 3 feet directly away, or what its Reaction offers on a Stop (SW.REACTIONS
  *    `onStop`): a Step of its own choosing after a Sidestep, a Move to any space adjacent to the
  *    attacker after a Slip the Line.
@@ -27,8 +30,8 @@ import { exposePreventers } from "../../rules/prevent.mjs";
  *    that is neither Flexible nor Unparryable. Otherwise the card says why not.
  *  - Hit or Critical Hit: a Committed Strike may Expose a plausible Zone on any Hit; a Deliberate
  *    Strike may on a Critical Hit.
- *  - Parry that Stops a Deliberate or Committed Strike: Control, and the riposte Quick Strike
- *    when the defender owns Riposte (PHB v4.21: a Talent of its own).
+ *  - Parry that Stops a Strike: the riposte Quick Strike beside the Bind's buttons when the
+ *    defender owns Riposte (PHB v4.21: a Talent of its own; "instead of Controlling").
  */
 /** The Expose preventers of a body, or none when the rules cannot be read (a card never dies over a rule). */
 function safePreventers(actor, tokenDoc) {
@@ -87,10 +90,23 @@ export function position(cfg, result) {
     const attackFlags = cfg.item?.system?.flags ?? {};
     const bindable = !isAttack
       || !(attackFlags.flexible || attackFlags.unparryable || (cfg.slug === SW.RANGED_SLUG));
-    if ((defense === "guard") && rigid && bindable) {
-      const control = kind.controllable && ((outcome === "miss") || (rule?.onStop === "control"));
+    // What the Stop offers is decided in one place, pure and tested (combat/bind-rules.mjs,
+    // `bindOffer`; 0.27.0, rulings 271 and 272): a Graze forms a neutral Bind and a Miss hands
+    // over Control, for any Guard with a rigid implement; a Quick Strike that is Stopped forms at
+    // most a neutral Bind; and a Parry follows its Talent, so where the Bind it leaves is neutral
+    // the card adds Gain Control at no further cost, with Riposte beside it when owned. Through
+    // 0.26.1 a Parry that Stopped a Deliberate or Committed Strike took Control outright (ruling
+    // 131) and Riposte was offered only beside that Control.
+    const offer = bindOffer({
+      outcome, defense, rigid: !!rigid, bindable,
+      controllable: !!kind.controllable,
+      parried: rule?.onStop === "control",
+      ownsRiposte
+    });
+    if (offer) {
+      const control = offer.mode === "control";
       pos.bind = {
-        mode: control ? "control" : "neutral",
+        mode: offer.mode,
         implement: rigid.name ?? "",
         // The weapon that was Stopped, so the Bind records what is held and not whatever the
         // attacker happens to hold first: the Controlled −2 and the "uncontrolled weapon ends
@@ -98,11 +114,13 @@ export function position(cfg, result) {
         // A Defense card inside the attack flow names the attack it resolved (`attackName`,
         // 0.5.1), so the Bind records "Bite" rather than "weapon".
         theirs: isAttack ? (cfg.item?.name ?? "") : (cfg.attackName ?? ""),
-        label: control ? "STARWROUGHT.Bind.takeControl" : "STARWROUGHT.Bind.form"
+        label: control ? "STARWROUGHT.Bind.takeControl" : "STARWROUGHT.Bind.form",
+        // Parry's free Gain Control (ruling 271): the defender's own button beside Form a Bind.
+        gainControl: offer.gainControl
       };
       // Riposte (PHB v4.21, a Guard Talent): after a successful Parry, a Quick Strike back instead
-      // of Controlling the weapon. Offered beside Control; the defender picks one.
-      pos.riposte = control && (rule?.onStop === "control") && ownsRiposte;
+      // of Controlling the weapon. Offered beside the Bind's buttons; the defender picks one.
+      pos.riposte = offer.riposte;
     } else if (isAttack && !bindable && (defense === "guard") && rigid) {
       // The Guard would have offered a Bind; say why it does not.
       pos.bindNote = game.i18n.format("STARWROUGHT.Bind.cannotBind", { weapon: cfg.item?.name ?? "" });

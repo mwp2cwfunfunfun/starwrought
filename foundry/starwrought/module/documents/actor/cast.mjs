@@ -139,8 +139,11 @@ export const CastMixin = Base => class extends Base {
       // A Cast with no defender pays here; the flow's blind roll paid at the declaration, and a
       // finished preparation when it began.
       beforeRoll: async () => {
-        if (prepared || blind) return true;
-        await this.spendActions(kind.cost, { label: `${castLabel}: ${name}` });
+        if (!(prepared || blind)) await this.spendActions(kind.cost, { label: `${castLabel}: ${name}` });
+        // A Cast is an attack (0.27.0, ruling 273): a bound caster's Bind ends before the roll. A
+        // declared Cast's Binds are the coordinator's, decided once for the whole attack; this is
+        // the Cast with no defender behind it.
+        if (!blind && this.system.bind?.state) await this.endBind({ id: this.system.bind.id ?? "", reason: "cast" });
         return true;
       }
     }, rest, { inplace: false });

@@ -126,6 +126,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       adjustWound: SwCharacterSheet.#onAdjustWound,
       endBind: SwCharacterSheet.#onEndBind,
       takeControl: SwCharacterSheet.#onTakeControl,
+      gainControl: SwCharacterSheet.#onGainControl,
+      releaseControl: SwCharacterSheet.#onReleaseControl,
+      formBindByHand: SwCharacterSheet.#onFormBindByHand,
       rulesPage: SwCharacterSheet.#onRulesPage,
       strike: SwCharacterSheet.#onStrike,
       itemUse: SwCharacterSheet.#onItemUse,
@@ -335,6 +338,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ].join("\n")
     }));
     context.bind = bindContext(actor);
+    // Form a Bind by hand (0.27.0, ruling 279): offered in an encounter while in none.
+    context.canFormBind = !context.bind && this.isEditable && !!actor.inEncounter;
     context.lockedTips = lockedTips(actor);
     context.traitChips = traitChips(actor);
     // Wind (PHB v4.12, ruling 74): the Load Strain field says whether this fighter is exempt, with
@@ -1161,6 +1166,21 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /** Take Control of the Bind by hand (0.19.0): the Zone picker, then the record and the Exposure. */
   static async #onTakeControl() {
     return this.document.takeControl();
+  }
+
+  /** Gain Control ❶ (0.27.0): the roll for the line, against the Bind partner's Guard. */
+  static async #onGainControl(event) {
+    return this.document.gainControl({ ...(event?.shiftKey ? { dialog: false } : {}) });
+  }
+
+  /** Make neutral (0.27.0): the Controller lets go of the line; the Bind stays. */
+  static async #onReleaseControl() {
+    return this.document.releaseControl();
+  }
+
+  /** Form a Bind by hand (0.27.0, ruling 279): with the one token targeted, the implement picked. */
+  static async #onFormBindByHand() {
+    return this.document.formBindByHand();
   }
 
   /** The bind line, the EXPOSED badge and a condition row open their Rules Reference page (0.5.1, T6). */

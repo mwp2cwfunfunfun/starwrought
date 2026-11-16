@@ -24,6 +24,21 @@ export const SIZES = Object.freeze({
   gargantuan: { label: "STARWROUGHT.Size.gargantuan", space: 15, reach: 12, evade: -2, guard: 0 }
 });
 
+/** The Sizes from smallest to largest, for counting the Sizes between two creatures. */
+export const SIZE_ORDER = Object.freeze(Object.keys(SIZES));
+
+/**
+ * Size and Binds (PHB v4.25): two or more Sizes apart, the smaller creature's Control is momentary
+ * and the larger creature can Move without breaking the Bind (ruling 278).
+ */
+export const MOMENTARY_SIZE_GAP = 2;
+
+/**
+ * Gain Control's Requirement: the target is "no more than one Size larger than you". A warning on
+ * the card, never a refusal (Requirements warn everywhere in the system).
+ */
+export const GAIN_CONTROL_SIZE_GAP = 1;
+
 /** Cover grades, by the number of Zones the obstacle stands in front of. */
 export const COVER = Object.freeze({
   none: { label: "STARWROUGHT.Cover.none", zones: 0, bonus: 0 },
