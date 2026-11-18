@@ -130,6 +130,12 @@
           {{#if effect.readAs.unread}}<i class="fa-solid fa-triangle-exclamation"></i> {{localize "STARWROUGHT.Effects.unread"}}{{else}}{{effect.readAs.words}}{{/if}}
         </span>
         {{/if}}
+        {{!-- An Effect a Maneuver applied (0.32.0): who put it there, with what, and until when. --}}
+        {{#if effect.applied}}
+        <span class="sw-item-tag sw-effect-applied" data-tooltip="{{effect.applied.tip}}">
+          <i class="fa-solid fa-person-rays"></i> {{effect.applied.words}}
+        </span>
+        {{/if}}
         {{!-- A condition with a rules page (the Bind, Exposed) opens it from its row (0.5.1, T6). --}}
         {{#if effect.rulesPage}}
         <a class="sw-rules-link sw-effect-rules" data-action="rulesPage" data-page="{{effect.rulesPage}}"

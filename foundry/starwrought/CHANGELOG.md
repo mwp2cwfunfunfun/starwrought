@@ -7,6 +7,303 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.32.0 (2026-11-17): a Maneuver puts Effects on, and takes them off
+
+Built from **Player's Handbook v4.25**, which did not move. Rulings 311 to 321. One kind is new,
+`apply`, the twenty-fourth, with two tags (`APPLY`, `REMOVE`), one condition (`COST(<n>)`), one
+word (`mine`) and the seventh hook point (`applies`); `AUTOMATION_GRAMMAR.md` carries them
+(sections 0, 3, 4, 5, 7, 8 and 10). None of the four workbooks Mike is editing was converted,
+built, staged or written, so the release carries the kind alone: the cells for his rows are
+printed below and in the grammar document's section 5 for him to paste. Of the pack content the
+Grammar journal alone moved.
+
+This is the writing half of named Effects, planned with 0.31.0 (`dazzling-floating-simon.md`).
+Mike, 2026-11-15, after Fantasy Grounds: "using a Maneuver can grant a custom Effect on a target
+(with a specific duration), and other modifiers/effects can be applied IF that custom Effect field
+is on the target." His decisions by question, 2026-11-17: the tags are **APPLY and REMOVE**; an
+Effect on yourself lands **at once** and one on another creature is **a button on the card**.
+Then: "Build 0.32.0".
+
+```
+[EFFECT APPLY: <Effect>[, self | target]; UNTIL: <window>; IF: RESULT(<degree>); IF: COST(<n>)]
+[EFFECT REMOVE: <Effect>[, self | target]; IF: RESULT(<degree>); IF: COST(<n>)]
+```
+
+| | Through 0.31.0 | 0.32.0 |
+|---|---|---|
+| Trip's Prone, Demoralize's Frightened, a Grapple's Grabbed | Prose on the card, put on by hand | A button on the check's card, "Apply to Bandit: Prone", pressed once by the roller's owner or the GM |
+| "You overcommit and are Off-Guard until your next Opportunity" | By hand, and by hand again to take it off | Lands on the roller as the card is posted, and goes as that Opportunity begins |
+| Stand, Drop Prone | Showed their card | Take Prone off, and put it on, as they are used |
+| A named Effect ("Taking Cover") | Made by hand on the Effects tab | A Maneuver's row applies it; the Effects tab says who put it there, with what, and until when |
+| A result that depends on the actions paid (Trip ❶ against ❷) | Nothing could say it | `IF: COST(2)` |
+| "Wrong-Footed to you" | Nothing could say it | `IFT: EFFECT(wrong-footed, mine)` on a bonus line |
+| How long an Effect lasts | Not counted for anything but an Aid's result | `UNTIL:`, counted on the Effect, closed on the turn change it names |
+| A window's edge | A giver's at the Opportunity's beginning, a recipient's at its end | The same, or written out after APPLY: `giver opportunity end`, `recipient opportunity start` |
+| A named Effect on the hover card | The owner and the GM | An applied one for everyone; a hand-made one for the owner and the GM |
+
+### The rulings
+
+- **311. The tags are APPLY and REMOVE, one kind** (Mike). On a Maneuver's own row and nowhere
+  else, as `GIVE` is: they say what using that Maneuver does. The Effect is a Condition by its
+  name (`frightened 2` for one with a value) or a name of your own, which is a named Effect.
+- **312. On yourself at once; on another creature by a button** (Mike). The roller's own lines
+  land on the roller's own client as the check's card is posted. A target's lines wait for the
+  button on that card, for the roller's owner and the GM. One client writes for a creature: the
+  GM's when a GM is connected, else its owner's; a player's press is carried to it. A small card
+  records what was applied, and the button gives way to its words on every screen, so a result
+  is applied once. **Never automatic from a blind roll**: the roller may not know the degree, so
+  the GM's card has the button for the roller's own lines too.
+- **313. A Condition already on by other means is left alone** (Claude's). The GM's hand, a
+  Critical Hit and a Bind put Conditions on. An APPLY adds nothing to one of those, and its
+  window takes nothing off: the card says "already ... by other means". The system knows its own
+  by a record on the effect (`flags.starwrought.applied`: who, which Maneuver, the Combat, the
+  window, the card).
+- **314. Of two APPLYs of one Effect, the later one's window stands** (Claude's).
+- **315. Your own act with no check is not prevented** (Claude's). Dropping Prone by choice is
+  not stopped by an `IMMUNE` line and does not use it up. Anything by degree is: Stubborn Footing
+  refuses the Prone from a Trip, with its own card, as it refuses one from the token palette.
+- **316. A window is counted in an encounter** (Claude's). A line with `UNTIL:` is not applied
+  outside one, and its card says so. "In an encounter" is a started Combat that the creature
+  using the Maneuver, or the one the Effect goes on, is a fighter in, whatever the writing
+  client has on screen: a Combat on screen that neither is part of counts nothing for them, and
+  one they are fighting in counts though nobody is viewing it. Every window ends with the
+  encounter.
+- **317. A Condition's value: the higher is kept, and it takes no window** (Claude's).
+  `frightened 2` on a creature already Frightened 3 changes nothing; on one Frightened 1 it
+  raises it. `UNTIL:` beside a Condition with a value is refused: those move by their own rule.
+- **318. `IF: COST(<n>)`** (Claude's, for his rows: Trip, Grapple, Disarm and Demoralize print a
+  table of results for each cost). The cost is what the use was paid at. Where nothing is paid
+  (outside an encounter, or with action tracking off) a row with one cost reads that cost, and a
+  row with a range whose lines wait on the cost asks which version this use is. A Prepared
+  Maneuver applies at Finish, with the cost it was Prepared at.
+- **319. `mine`** (Claude's, for his "Wrong-Footed to you"). `EFFECT(<name>, mine)` on a bonus
+  line holds only for an Effect the creature rolling applied. One put on by any other means is
+  nobody's.
+- **320. An applied Effect is public** (the second half of ruling 309). Its card announced it, so
+  the hover card lists it for everyone, as it lists a Condition. A hand-made one stays the
+  owner's and the GM's.
+- **321. A target line needs a check, and a row the system runs another way applies nothing**
+  (Claude's). `APPLY: ..., target` with no `IF: RESULT` is refused: the button lives on the
+  check's card. A built-in (Strike, Recenter, Raise a Shield, Reload, Pass, Gain Control) and a
+  row another act pays for (Cast, Move, Step, Crawl, Rush, Leap, Squeeze, Close) never reach
+  their lines. So Rush's Off-Guard is still by hand. The build warns about such a line.
+
+### The cells, for Mike to paste
+
+`data/actions_maneuvers.xlsx`, each block on a line of its own in the row's Automation cell.
+`AUTOMATION_GRAMMAR.md` section 5 has the same list with notes.
+
+```
+  Stand ❶          [EFFECT REMOVE: prone]
+  Drop Prone ⓿     [EFFECT APPLY: prone]
+  Take Cover ❶     [EFFECT APPLY: Taking Cover]
+
+  Trip ❶ to ❷      [EFFECT APPLY: prone, target; IF: RESULT(critical success)]
+                   [EFFECT APPLY: prone, target; IF: RESULT(success)]
+                   [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(failure); IF: COST(2)]
+
+  Shove ❶ to ❷     [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(failure); IF: COST(2)]
+
+  Disarm ❷ to ❸    [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(failure); IF: COST(3)]
+
+  Grapple          [EFFECT APPLY: restrained, target; UNTIL: giver opportunity; IF: RESULT(critical success)]
+                   [EFFECT APPLY: grabbed, target; UNTIL: giver opportunity; IF: RESULT(success)]
+                   [EFFECT APPLY: prone, target; IF: RESULT(critical success); IF: COST(2)]
+                   [EFFECT APPLY: prone, target; IF: RESULT(success); IF: COST(2)]
+                   [EFFECT APPLY: prone; IF: RESULT(success); IF: COST(2)]
+                   [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure); IF: COST(1)]
+                   [EFFECT APPLY: prone; IF: RESULT(critical failure); IF: COST(2)]
+
+  Demoralize       [EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]
+  ❶ to ❸           [EFFECT APPLY: frightened 1, target; IF: RESULT(success); IF: COST(1)]
+                   [EFFECT APPLY: frightened 3, target; IF: RESULT(critical success); IF: COST(3)]
+                   [EFFECT APPLY: heedless, target; UNTIL: giver opportunity; IF: RESULT(critical success); IF: COST(3)]
+                   [EFFECT APPLY: frightened 2, target; IF: RESULT(success); IF: COST(3)]
+
+  Feint ❶          [EFFECT APPLY: wrong-footed, target; UNTIL: giver opportunity end; IF: RESULT(critical success)]
+                   [EFFECT APPLY: wrong-footed, target; UNTIL: giver opportunity; IF: RESULT(success)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+
+  Escape ❶ to ❷    [EFFECT REMOVE: grabbed; IF: RESULT(critical success)]
+                   [EFFECT REMOVE: restrained; IF: RESULT(critical success)]
+                   [EFFECT REMOVE: grabbed; IF: RESULT(success)]
+                   [EFFECT REMOVE: restrained; IF: RESULT(success)]
+```
+
+Three things about his rows as they are saved, found while writing these: Grapple's Cost cell
+reads 0, so its `COST` lines wait for it to read "1 to 2"; Drop Prone's row is not enabled; and
+Trip, Shove, Disarm and Grapple read "vs. Evade or Guard", of which the system reads Evade by
+itself (the first Defense named), so a target who would answer with Guard needs the Threshold
+typed.
+
+### In the code
+
+- **New, pure:** `module/rules/applied.mjs` (`linesFor`, `needsCost`, `appliedWindow`,
+  `appliedRecord`, `settleApplied`, `appliedBy`, `effectCensus`, the words). **The kind:**
+  `module/rules/kinds/apply.mjs`, with one hook, `applies`. It has no `use` hook (that would send
+  every row carrying it down the use-rule path, which never rolls its check) and no `card` hook
+  (that would make the row "paid elsewhere").
+- **The grammar:** `module/rules/effects.mjs` (the two tags; `UNTIL` after `GIVE` or `APPLY`,
+  with edges after `APPLY` alone; the `COST` condition; `mine`); `module/rules/operators.mjs`
+  (`readUntil` with `edges`, `untilEdge`, `untilWords`, `emptyOps().cost`, `effectHolds` with
+  `by`); `module/rules/effect-list.mjs` (`listHas` with `mine`; a Condition's own record on the
+  list); `module/rules/kinds/bonus.mjs` (`COST` refused; `lists.by`).
+- **The hook point:** `ruleApplies` in `module/rules/engine.mjs`.
+- **The writes:** `module/rules/effects-state.mjs` (`applyEffectTo`, `removeEffectFrom`,
+  `removeAppliedFrom`, `settleAppliedEffects`, called where the pending results are settled and
+  at the encounter's end); `module/documents/actor/conditions.mjs` (`setCondition`'s `applied`,
+  `raise` and `only` options, each decided inside the write queue); `module/rules/given.mjs`
+  (`settle` reads the edge, with today's meanings as the defaults).
+- **The use and the roll:** `module/documents/item.mjs` (`#applyCost`, `#applyTarget`,
+  `#applyOnUse`; `paid` from Finish); `module/documents/actor/actions.mjs`;
+  `module/dice/check.mjs` and `check/card.mjs` (`flags.starwrought.applies`);
+  `module/documents/cards/reroll.mjs`.
+- **The card:** new `module/documents/cards/apply.mjs` (`applyLinesTo`, `applyOwnFromCard`,
+  `drawApplyWidget`, `applyFromCard`, `applyLines`, the `effect:*` messages, the record card);
+  routed in `module/documents/chat.mjs` and `starwrought.mjs`.
+- **Screens:** `module/helpers/effects.mjs` (`effectAppliedTag`; `apply` in `EFFECT_KINDS`),
+  `templates/actor/effects.hbs`, both actor sheets, `styles/chat.css`, `styles/character.css`,
+  `lang/en.json` (`STARWROUGHT.Applied.*`).
+- **The build:** `assets/build_foundry.mjs` runs `effectCensus` over every cell it read and
+  prints three warnings, each with its row in `RULES` in `assets/build_report.py`: a named
+  Effect that is read and never applied, an APPLY on a row the system runs another way, and a
+  line that waits on a result on a row that rolls no check. The kind's own warning (a name that
+  begins with a Condition's) has its row too. Two open decisions were added to
+  `assets/open_decisions.json`: this release's readings, and the next step it points at.
+
+### Found by the live drive, and mended
+
+- **A Combat on screen that the creature is no part of counted a window.** With Mike's own
+  Combat the viewed one, a line with a window used by Tess, who is not in it, was applied "until
+  the encounter ends" in his fight. A window now needs a Combat that the user or the recipient is
+  a fighter in (ruling 316).
+- **A raised value read "stays Frightened 3."** It reads "is Frightened 3."
+- **"Tess is Off-Guard until Tess's next Opportunity."** A creature the sentence has already
+  named is "their" the second time.
+
+### The review, after the build
+
+An independent reader took the finished change and found no crash and no double application on
+any path, and that a stored GIVE or ALTER window settles and prints exactly as before (all four
+APPLY windows were walked for one and two Opportunities, applied in the user's own Opportunity
+and in another's, and for a lone fighter: none is off by one). Eleven smaller things. Mended:
+
+- **A window was counted only in the Combat the WRITING client had on screen.** The one writer
+  for a target is usually the GM's client; if the GM was viewing another scene or another
+  Combat, a line with a window was refused as "none is running" though both creatures were
+  fighting, and the record card had already used the button up. The Combat is now found by
+  membership among every started Combat, the one the check was rolled in first (ruling 316).
+- **A Condition that was switched off blocked or faked an APPLY.** The Effects tab's toggle
+  switches any effect off, a Condition's included, and such a Condition is not on the creature.
+  The APPLY found the effect, left it alone and said "already ... by other means", or wrote its
+  value onto it and said "is Frightened 2" while it stayed off. Any write that puts a Condition
+  on now switches its effect on again, and an APPLY makes a switched-off one its own. (The
+  first half is older than this release: `setCondition` had always merged onto a switched-off
+  effect and left it off.)
+- **A forgotten comma was accepted.** `[EFFECT APPLY: prone target; IF: RESULT(success)]` read
+  as a named Effect called "prone target" on the user, with no error anywhere. Refused, with
+  where the comma goes. A name that merely begins with a Condition's name (`frightened two`)
+  still reads as a named Effect, and the build now says so.
+- **A private roll's record card was hidden from the roller.** It is posted by the writer (the
+  GM's client), and a player who had rolled privately to the GM was neither its author nor one
+  of its recipients, so their card kept a button that could only say "already applied". The
+  roll's author is added to the whisper. The give card of 0.22.0 had the same shape and is
+  mended with it.
+- **A window's end could take off an Effect a later APPLY had just refreshed.** The check that
+  the Effect was "still the one looked at" compared it with itself. The record the verdict was
+  made on is now handed into the Condition's own write queue, where a refresh queued ahead has
+  already landed, and the count is written only on the window it was made for.
+- **Two values written in one moment could leave the lower.** A Condition's value is now raised
+  inside its write queue, never lowered, and one already on keeps whose it was.
+- **A relayed request could name any creature.** A card that names its target is held to it; a
+  request chooses the creature only when the roll had none targeted, or the one it had is gone.
+- **The roller's own side had two possible writers** in the moment before its record arrived:
+  the roller's client, and a GM pressing the button. The button for the roller's own side is
+  now drawn, and served, for a blind roll alone, which is the one the roller's client leaves.
+- **A Maneuver performed as part of another read the wrong cost** where the parent costs
+  nothing, and **a Reaction read its printed cost** where the row prints a Reaction half. Each
+  now reads what it is paid at.
+- **REMOVE could say "no longer Prone" while the creature stayed Prone**, when the status came
+  from an effect of the GM's carrying several. It says something else holds it there.
+- **The build accepted a line that could never stand**: `IF: RESULT` on a row that rolls no
+  check. It warns now, with a row in the build report.
+
+Stated, not changed: a row with a `SUBORDINATE` line applies none of its own APPLY lines (its
+use is the other Maneuver's, so they belong on that row); a line on a row with an attack of its
+own, or one paid from a card button, applies nothing and the census does not know those rows.
+
+### Verified
+
+- `node assets/test_rules.mjs`: 227 checks pass (eight are new, with the review's cases in them:
+  the kind and its forms, its refusals and the forgotten comma, the lines by degree and cost,
+  `ruleApplies` with Off and Skip, the record and what each turn change does to a window, GIVE's
+  windows settling as before, `mine`, the words and the census with its three warnings).
+  `node --check` on all 177 modules. `node assets/build_all.mjs --check` passes. The style check
+  has its one known failure, the em-dash in Dwarf Lore B13 of `data/talents_ancestries.xlsx`.
+  `build_foundry.mjs --no-compile`: the Grammar journal alone moves.
+- **Live in the test world on 0.32.0**, a GM tab and a player tab, with the real actors and
+  test rows carrying the cells above:
+  - outside an encounter: Tess Dropped Prone though Stubborn Footing would refuse a Prone, Stood
+    ("Tess is no longer Prone."), and Took Cover; the named Effect raised her Guard from 16 to
+    17 through a Talent's `IF: EFFECT(Taking Cover)`;
+  - in an encounter, as the player: Demoralize ❶ on a Critical Failure offered nothing; on a
+    Critical Success the card offered "Apply to Bandit: Frightened 2", the press was written by
+    the GM's client, the record card followed and the button gave way to its words; a second
+    press, and a forged request sent straight to the GM, were both told "already applied";
+  - Trip at the Bandit, who was Prone by the GM's hand: "already has Prone by other means";
+  - Trip on a Critical Failure put Off-Guard on Tess at once, with its window; a reroll took it
+    back and the new card offered the target's Prone;
+  - Feint put Wrong-Footed on the Bandit through the end of Tess's next Opportunity, and
+    `IFT: EFFECT(wrong-footed, mine)` gave Tess +1 against the Bandit and nothing against Wren;
+  - an Off-Guard the GM put on Wren by hand was left alone by Wren's own overcommit and was
+    still there after her window would have closed;
+  - Wren's Trip at Tess offered "Apply to Tess: Prone"; pressed, Stubborn Footing refused it
+    with its card, and the record said "Prone is prevented on Tess.";
+  - as Tess's next Opportunity began her Off-Guard went; as it ended the Bandit's Wrong-Footed
+    went; neither posted a card;
+  - Demoralize ❸ was Prepared, and at Finish its card carried the cost 3 and offered "Frightened
+    3; Heedless until Tess's next Opportunity", which the GM pressed;
+  - a blind Trip applied nothing by itself and showed the player no widget; the GM's card had
+    the button for Tess's own Off-Guard;
+  - an applied "Taking Cover" on the Bandit showed on a stranger's hover card, and a hand-made
+    effect beside it did not; the Effects tab showed the Applied tag with its tooltip;
+  - the encounter's end took every Effect with a window and left the ones with none;
+  - outside an encounter, with a Combat on screen that Tess was no part of: the cost was asked
+    (Trip prints a range and its lines wait on it), and the Off-Guard was not applied, with the
+    card saying why; a Trip with nobody targeted said it had no result to apply;
+  - after the review, with both tabs reloaded: the Bandit's Prone switched off, a Trip's button
+    put Prone on it and the effect was on again and the line's; with a Combat started that
+    neither client was viewing, a Feint rolled privately to the GM applied Wrong-Footed with its
+    window counted in that Combat, and the player saw the record; a forged request naming Wren
+    for a card that named the Bandit was refused, and so was one for the roller's own side of a
+    roll that was not blind; that Combat's end took the Wrong-Footed off.
+- **Not driven:** a table with no GM connected (the owner's client as the one writer); a Skip
+  or an Off on an owned copy's line (the self-test drives it); a REMOVE by degree (Escape); the
+  build warnings on real data (the self-test drives the census); two values written in one
+  moment; a subordinate's and a Reaction's cost.
+- The test world was left as found: Mike's Combat with testpc8 the active one at round 4, the
+  tokens where they were, the Bandit Prone as it was, every probe and its 49 cards removed (431
+  messages). Sync content was then run for the Grammar journal; it also brought the 31 Equipment
+  Items that world had not yet taken from the equipment build of 0.31.0, and left one "Content
+  synced" card (432 messages). Left on purpose, so the cells can be tried before the workbook carries them: world
+  Maneuvers Trip, Demoralize, Take Cover and Drop Prone (flagged `testFixture: "0.32.0"`), the
+  APPLY and REMOVE lines added to the world Feint and Stand of 0.28.0, and the Talent "Applied
+  Reader (0.32.0 fixture)" on Tess.
+
+### Not built
+
+An Effect that carries its own lines, so that a Basic Maneuver's row can give "it takes -2 to its
+next Attack against you" to anyone (Talk Them Down, Anticipate, Bolster). "Wrong-Footed TO a
+creature" on yourself, and the Wrong-Footed Condition's own effect. A window that ends with
+another creature's Opportunity on an Effect that is on you. Ends that are events ("until you
+Move, Step or Attack"). A result applied to each of several creatures (Hide, Sneak, Break Them).
+Damage, pushes and movement. A Condition's value compared. A target who chooses between two
+Defenses. An adversary's row applying by degree. A reroll taking back what the first die put on
+ANOTHER creature.
+
 ## 0.31.0 (2026-11-17): Effects are read by name
 
 Built from **Player's Handbook v4.25**, which did not move. Rulings 305 to 310. No kind, tag or

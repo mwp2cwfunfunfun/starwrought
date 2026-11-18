@@ -31,7 +31,9 @@ import { strikeCanCrit } from "./check/strike.mjs";
 import { castOutcomes } from "../combat/attack-source.mjs";
 // 0.22.0: what a Maneuver's check gives another character (the `gives` hook point), asked once
 // the die has landed and written into the card's flags.
-import { ruleGives } from "../rules/engine.mjs";
+import { ruleGives, ruleApplies } from "../rules/engine.mjs";
+// 0.32.0: which of a Maneuver's APPLY and REMOVE lines stand for a degree and a cost (pure).
+import { linesFor } from "../rules/applied.mjs";
 import { encounterContext } from "../rules/scene.mjs";
 
 
@@ -217,6 +219,31 @@ export class SwCheck {
       if (gives.marks.length) cfg.ruleMarks = mergeMarks(cfg.ruleMarks, gives.marks);
     }
 
+    // What this Maneuver PUTS ON a creature, and takes off (0.32.0; rulings 311 to 321): Trip's
+    // Prone on a Success, an overcommit's Off-Guard on a Critical Failure, read from the APPLY and
+    // REMOVE lines on the Maneuver's own Item (the `applies` hook point). Asked only when the
+    // Maneuver's own use handed over `applies` (the cost paid and the creature targeted;
+    // documents/item.mjs), so a row the system runs another way applies nothing. Every line goes
+    // on the card, whatever its degree, with the cost and the target, so the card's button, a
+    // reroll to another degree and a reload all read one record. Nothing is written here: the
+    // roller's own lines land once the card is posted, below; a target's wait for the button.
+    if ((cfg.kind === "check") && (cfg.item?.type === "action") && (actor.type === "character") && cfg.applies) {
+      const asked = ruleApplies(actor, { item: cfg.item, rank: cfg.rank ?? "untrained" });
+      const cost = cfg.applies.cost ?? null;
+      if (asked.lines.length) {
+        cfg.applied = {
+          lines: asked.lines,
+          maneuver: { slug: SW.slugify(SW.plainName(cfg.item.name)), name: SW.plainName(cfg.item.name) },
+          target: cfg.applies.target?.uuid ? { uuid: String(cfg.applies.target.uuid), name: String(cfg.applies.target.name ?? "") } : null,
+          cost,
+          combat: encounterContext().combat ?? null
+        };
+      }
+      // A line on Skip is passed over once, by the die it would have stood for.
+      const spent = asked.skipped.filter(s => linesFor([s.line], { degree, cost }).length).flatMap(s => s.marks);
+      if (spent.length) cfg.ruleMarks = mergeMarks(cfg.ruleMarks, spent);
+    }
+
     // A check read against a target's Threshold the roller may not see (0.15.0, ruling 179: an
     // adversary's, as the attack flow withholds it): the degree is read above, the number is not
     // printed, and the marks the read asked for are written on the target when this client may.
@@ -257,8 +284,26 @@ export class SwCheck {
     if (cfg.postCard === false) return result;
 
     await toMessage(result);
+    await SwCheck.#applyOwnLines(result);
     Hooks.callAll("starwrought.check", result);
     return result;
+  }
+
+  /**
+   * The roller's own APPLY and REMOVE lines land once the card is posted (0.32.0, ruling 312;
+   * Mike: "Auto on self, button for others"): the card's id is what the Effect's record names, so
+   * a reroll can take back what this die put on. The work is the card family's
+   * (documents/cards/apply.mjs); a failure there is logged and never costs the roll.
+   * @param {object} result  A posted result (`result.message` is the card).
+   */
+  static async #applyOwnLines(result) {
+    if (!result?.config?.applied?.lines?.length || !result.message) return;
+    try {
+      const { applyOwnFromCard } = await import("../documents/cards/apply.mjs");
+      await applyOwnFromCard(result.message);
+    } catch (error) {
+      console.error("STARWROUGHT | what the Maneuver applies to its user could not be written:", error);
+    }
   }
 
   /* -------------------------------------------- */
@@ -526,6 +571,9 @@ export class SwCheck {
    */
   static async postResult(result) {
     await toMessage(result);
+    // A reroll's card carries the first card's APPLY lines (0.32.0): the roller's own land for
+    // the new degree, after what the first die put on is taken back (cards/apply.mjs).
+    await SwCheck.#applyOwnLines(result);
     Hooks.callAll("starwrought.check", result);
     return result;
   }

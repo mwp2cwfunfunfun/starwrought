@@ -333,6 +333,8 @@ export const ActionsMixin = Base => class extends Base {
         // second Finish while the dialog is open is refused by `use` itself (one use at a time).
         const done = await item.use({
           actor: this, prepared: true,
+          // The cost it was Prepared at (0.32.0): the row's `IF: COST(<n>)` lines read it.
+          paid: Number.isInteger(Number(prep.cost)) ? Number(prep.cost) : null,
           beforeRoll: () => this.system.actions?.preparing?.itemUuid === prep.itemUuid
         });
         if ((done === null) || (done === undefined)) return null;

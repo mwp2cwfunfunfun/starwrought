@@ -437,8 +437,8 @@ ACTIONS WORKBOOKS (actions_maneuvers.xlsx, actions_activities.xlsx, actions_ende
   EFFECTS BY NAME (0.31.0; Mike, 2026-11-17: "REQUIRES should just look for a string in that
     Effects list"). A creature's Effects are its Conditions (prone, off-guard, and the Bind's
     bound, controlling and controlled among them) and every other active effect on it, by its
-    name: a NAMED EFFECT, which for now is put on by hand in Foundry (the plus beside Active
-    Effects on a sheet's Effects tab). Three ways to read one:
+    name: a NAMED EFFECT, put on by a Maneuver's APPLY line (below) or by hand in Foundry (the
+    plus beside Active Effects on a sheet's Effects tab). Three ways to read one:
           [REQUIRES effect Taking Cover]             on an action's row: listed only with that Effect
           [REQUIRES bind, neutral]                   ... only in a neutral Bind (controlling, controlled)
           [REQUIRES creature adjacent with dying]    ... only beside a creature that has it
@@ -448,6 +448,24 @@ ACTIONS WORKBOOKS (actions_maneuvers.xlsx, actions_activities.xlsx, actions_ende
     SPEED lines read EFFECT(<name>). A bare word in [REQUIRES ...] is still a Condition or a known
     word, so a named Effect there always has the word "effect" in front, and a typo is an error.
     A Condition's name is reserved: EFFECT(prone) is always the Condition.
+  PUTTING EFFECTS ON (0.32.0; Mike, 2026-11-17: the tags are APPLY and REMOVE). On an action's
+    own row, what using it puts on a creature or takes off, one block to a line:
+          [EFFECT APPLY: prone, target; IF: RESULT(success)]            Trip: the target is Prone
+          [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+          [EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]
+          [EFFECT APPLY: Taking Cover]                                  Take Cover: a named Effect
+          [EFFECT REMOVE: prone]                                        Stand
+    The Effect is a Condition (a number after one that carries a value) or a name of your own.
+    After it, "self" (the default: whoever uses the action) or "target" (the one creature it is
+    used on). IF: RESULT(<degree>) is the result of the action's check; with none the line stands
+    whenever the action is used. IF: COST(<n>) is the number of actions it was paid with, for a
+    row that prints a table for each cost. UNTIL: says how long: giver opportunity (until the
+    user's next Opportunity begins), giver opportunity end, recipient opportunity (through the
+    end of the next Opportunity of the creature the Effect is on), recipient opportunity start,
+    encounter; with none, until something takes it off. In Foundry an Effect on the user lands
+    at once and one on a target is a button on the check's card. A target line needs
+    IF: RESULT(...). A line that reads what you put on a creature: IFT: EFFECT(wrong-footed, mine).
+    Not for the rows the system runs itself (Strike, Cast, Recenter, Reload, Move, Step, Rush).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.

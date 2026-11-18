@@ -47,7 +47,7 @@ import { fileURLToPath } from "node:url";
 // they cannot drift: a slug that disagrees is a Talent that stops matching its Constellation.
 // This is why module/config.mjs must stay free of Foundry globals at module scope.
 import {
-  slugify, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE,
+  slugify, plainName, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE,
   // The terrain kinds' registry (0.18.0): the roster's `terrainKinds` block is registered before any
   // Automation cell is parsed, so `[EFFECT IGNORE: terrain, mud]` is checked against the roster.
   registerTerrainKinds, terrainKindRecord, terrainKinds, TERRAIN_COLOUR_PATTERN
@@ -73,6 +73,9 @@ import { traitKey } from "../foundry/starwrought/module/rules/operators.mjs";
 // The system's own Trait-line splitter (0.10.1), pure as the grammar is, so the build and the
 // client read a Trait cell the same way; through 0.10.0 this file carried a copy of it.
 import { splitTraits } from "../foundry/starwrought/module/data/items/weapon-traits.mjs";
+// The Effects census (0.32.0): pure, and the two tables of Maneuvers the system runs another way.
+import { effectCensus } from "../foundry/starwrought/module/rules/applied.mjs";
+import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "../foundry/starwrought/module/documents/maneuvers.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -276,7 +279,7 @@ function freeTalentOf(row, rules, source) {
 /* -------------------------------------------- */
 
 /** What the Automation cells added up to, for the summary line: rules, documents carrying any, kinds used. */
-const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), unread: 0, unreadDocuments: 0 };
+const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), unread: 0, unreadDocuments: 0, carriers: [] };
 
 /**
  * An Item's `automation` and `rules` from the cell the converter copied through (0.9.0; rulings
@@ -330,6 +333,11 @@ function automationOf(text, context, preparsed) {
   if (parsedRules.length) {
     automationTally.rules += parsedRules.length;
     automationTally.documents += 1;
+    // The Effects census (0.32.0) reads every carrier's rules once the documents are built.
+    automationTally.carriers.push({
+      source: context.source, name: context.itemName, type: context.itemType, rules: parsedRules,
+      ...(typeof context.rolls === "boolean" ? { rolls: context.rolls } : {})
+    });
     for (const rule of parsedRules) {
       automationTally.kinds.add(rule.kind);
       // `IF(Trait=<Trait>)` (0.14.0): remembered, and checked at the end against every trait a
@@ -1285,7 +1293,9 @@ for (const a of shippedSheetActions) {
       ...(actionAutomation = automationOf(a.automation, {
         itemName: a.name, constellation: actionGroup(a), itemType: "action",
         source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`,
-        resolve: resolveRuleTarget
+        resolve: resolveRuleTarget,
+        // For the Effects census (0.32.0): does the Maneuver roll a check of its own?
+        rolls: !modeOf(a) && !!checkOf(a).check?.enabled
       }, a.rules)),
       // An action's ring may be an `aura:` line too (0.13.0), as a Talent's.
       ...auraOf(a, actionAutomation.rules),
@@ -1877,6 +1887,16 @@ if (automationTally.traitsAsked.size) {
     if (carried.has(trait)) continue;
     console.warn(`  WARNING: IF(Trait=${askers[0].match(/\(([^)]*)\)$/)?.[1] ?? trait}): no shipping weapon, attack or Talent carries the trait "${trait}" yet `
       + `(asked by ${askers.map(a => a.replace(/ \([^)]*\)$/, "")).join(", ")}); the rule fires when one is authored`);
+  }
+}
+
+// The Effects census (0.32.0): a named Effect a line reads that no Maneuver applies, and an APPLY
+// or REMOVE on a row the system runs another way (a built-in, or one another act pays for), whose
+// lines would apply nothing (ruling 321). Warnings, never failures: the cells read.
+{
+  const runsElsewhere = slug => Object.hasOwn(BUILT_IN_MANEUVERS, slug) || Object.hasOwn(PAID_ELSEWHERE, slug);
+  for (const warning of effectCensus(automationTally.carriers, { runsElsewhere, slugOf: name => slugify(plainName(name)) })) {
+    console.warn(`  WARNING: ${warning}`);
   }
 }
 

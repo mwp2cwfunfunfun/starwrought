@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.31.0"; }
+:root { --sw-css-version-character: "0.32.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -780,4 +780,6 @@
    with a warning mark when no line can read the name as it stands. */
 .starwrought .sw-effect-readas { font-family: var(--font-monospace, monospace); font-size: 0.72rem; white-space: nowrap; }
 .starwrought .sw-effect-readas.sw-effect-unread { font-family: inherit; color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+/* An Effect a Maneuver applied (0.32.0): its tag says who, with what and until when on hover. */
+.starwrought .sw-effect-applied { font-size: 0.72rem; white-space: nowrap; color: var(--sw-green); }
 .starwrought .sw-given-line .sw-effect-kind { text-transform: none; letter-spacing: 0; color: var(--sw-gold); border-color: var(--sw-gold-dim); }

@@ -18,7 +18,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-chat: "0.31.0"; }
+:root { --sw-css-version-chat: "0.32.0"; }
 
 /* --------------------------------------------------------------------------
    Chat cards
@@ -210,6 +210,9 @@
 .starwrought .sw-card-give { margin-top: 0.4rem; }
 .starwrought .sw-card-give .sw-given-done { color: var(--sw-green); }
 .starwrought .sw-card-give .sw-given-altered { font-style: italic; }
+/* What a Maneuver's check puts on a creature (0.32.0): the Apply button, then the record's words. */
+.starwrought .sw-card-effects { margin-top: 0.4rem; }
+.starwrought .sw-card-effects .sw-applied-done { color: var(--sw-green); }
 
 /* Gain Control (0.27.0): what the check's degree means for the Bind, under the outcome, with the
    one button for the side it favours; and the Zone a Control held open for the attack that ended

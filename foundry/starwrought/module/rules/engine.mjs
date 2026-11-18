@@ -670,6 +670,78 @@ export function ruleGives(actor, context = {}) {
 }
 
 /* -------------------------------------------- */
+/*  The `applies` hook point (0.32.0)           */
+/* -------------------------------------------- */
+
+/**
+ * What using a Maneuver puts on a creature, and takes off (the `applies` hook point, the seventh,
+ * defined with the `apply` kind; rulings 311 to 321). Calculated in category (../README.md): the
+ * hooks answer with data on any client and nothing is written here. `SwItem#use` asks for a
+ * Maneuver with no check, as its cost is paid; the check engine asks once, after the die, for a
+ * check made from an action Item, and writes the lines into the card's flags. What lands on the
+ * creature using the Maneuver is written by that caller at once; what lands on another creature
+ * waits for the press of the card's button (documents/cards/apply.mjs).
+ *
+ * A kind takes part by declaring `hooks.applies(entries, context, actor)`. The entries are its
+ * own rules ON THE ITEM behind the use, owned or not (a Basic Maneuver is used straight from the
+ * compendium and is in nobody's index), and an answer is a list of `{ line }` (./applied.mjs):
+ * every line whose rank conditions hold, each with the degree and the cost it waits on, which the
+ * caller chooses from with `linesFor`. The answer is whole, every degree, because a reroll reads
+ * it for its own degree with no Item to ask.
+ *
+ * A line switched Off on an owned copy never arrives. A line on Skip is left out of `lines` and
+ * comes back under `skipped` with the mark that clears its state, for the caller to file when the
+ * line would have stood for this use.
+ *
+ * @param {object} actor  The creature using the Maneuver.
+ * @param {{item: object|null, rank?: string|null}} context
+ *        `item` the Maneuver's Item, `rank` the rank ROLLED (ruling 217), null for a use with no check.
+ * @returns {{lines: object[], skipped: Array<{line: object, marks: Array<{key: string, per: string}>}>}}
+ */
+export function ruleApplies(actor, context = {}) {
+  const out = { lines: [], skipped: [] };
+  const item = context?.item ?? null;
+  // Only a Maneuver's Item applies: the lines are written on its row and nowhere else.
+  if (!actor || !item || (item.type !== "action") || !Array.isArray(item.system?.rules)) return out;
+  const maneuver = slugify(plainName(item.name ?? ""));
+  const asked = { ...context, maneuver };
+
+  // The Item's own lines carry a state only when the Item is the user's (a copy on the sheet).
+  const owned = (item.parent && (item.parent === actor)) || [...(actor.items ?? [])].includes(item);
+  const states = owned ? ruleStates(actor) : {};
+
+  const valid = line => !!line && (typeof line === "object")
+    && ((line.op === "apply") || (line.op === "remove"))
+    && !!line.effect && (typeof line.effect === "object") && !!line.effect.slug
+    && ((line.degree === null) || (line.degree === undefined) || GIVE_DEGREES.includes(line.degree));
+
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.applies;
+    if (typeof hook !== "function") continue;
+    for (const rule of item.system.rules) {
+      if (!rule || (typeof rule !== "object") || rule.error || (kindOf(rule.kind)?.id !== kind.id)) continue;
+      const state = states[ruleStateKey(item, rule)];
+      if (state === "off") continue;
+      const entry = { rule, item, owner: actor, from: "item", ...(state === "skip" ? { skip: true } : {}) };
+      let result;
+      try {
+        result = hook([entry], asked, actor);
+      } catch (error) {
+        console.error(`STARWROUGHT | the "${kind.id}" kind's applies hook failed:`, error);
+        continue;
+      }
+      if (!Array.isArray(result)) continue;
+      for (const a of result) {
+        if (!valid(a?.line)) continue;
+        if (entry.skip) out.skipped.push({ line: a.line, marks: traceMarks(entry, actor) });
+        else out.lines.push(a.line);
+      }
+    }
+  }
+  return out;
+}
+
+/* -------------------------------------------- */
 /*  The `prevent` hook point (0.13.0)           */
 /* -------------------------------------------- */
 

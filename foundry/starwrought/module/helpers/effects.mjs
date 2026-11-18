@@ -18,7 +18,8 @@ import * as SW from "../config.mjs";
 import { summarize } from "../rules/grammar.mjs";
 import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults } from "../rules/engine.mjs";
 import { pendingRule, pendingWindowWords, appliesNow, usedEffects, usedLive } from "../rules/given.mjs";
-import { stateOf, RULE_STATES } from "../rules/effects-state.mjs";
+import { stateOf, RULE_STATES, appliedOf } from "../rules/effects-state.mjs";
+import { untilWords } from "../rules/operators.mjs";
 import { claimsOf, isArmed } from "../rules/claims.mjs";
 import { conditionTitle, readEffectName } from "../rules/effect-list.mjs";
 
@@ -34,7 +35,7 @@ export { armClaim as armClaimLine } from "../rules/claims.mjs";
  * Maneuver gives) are switched as any line; a result PENDING on the character is a `give` rule
  * too, on a carrier of its own, and is listed apart without a switch (`givenContext`).
  */
-export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter", "permit", "subordinate"]);
+export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter", "permit", "subordinate", "apply"]);
 
 const L = key => game.i18n.localize(key);
 const F = (key, data) => game.i18n.format(key, data);
@@ -66,6 +67,32 @@ export function effectReadAs(effect) {
     // The reason quotes the effect's own name, and a tooltip is read back as HTML: escaped here.
     return { words: "", tip: F("STARWROUGHT.Effects.readAsNone", { reason: foundry.utils.escapeHTML(String(error?.message ?? "")) }), unread: true };
   }
+}
+
+/**
+ * The tag an Effect that a Maneuver APPLIED wears on a sheet's Effects list (0.32.0;
+ * module/rules/applied.mjs): who put it there, with which Maneuver, and until when. Null for an
+ * effect put on by any other means, which has no such record.
+ * @param {ActiveEffect|object} effect
+ * @returns {{words: string, tip: string}|null}
+ */
+export function effectAppliedTag(effect) {
+  const record = appliedOf(effect);
+  if (!record) return null;
+  const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
+  const until = record.until;
+  const window = until
+    ? F("STARWROUGHT.Applied.tagWindow", {
+      window: esc(untilWords((until.who === "encounter") ? { who: "encounter", n: 0 } : until, {
+        giver: record.byName || L("STARWROUGHT.Applied.theGiver"),
+        recipient: effect?.parent?.name || L("STARWROUGHT.Applied.theTarget")
+      }))
+    })
+    : L("STARWROUGHT.Applied.tagNoWindow");
+  return {
+    words: L("STARWROUGHT.Applied.tag"),
+    tip: F("STARWROUGHT.Applied.tagHint", { maneuver: esc(record.maneuverName || record.maneuver), giver: esc(record.byName), window })
+  };
 }
 
 /** The three states as the switch shows them: label, icon and the next state's name for the hint. */

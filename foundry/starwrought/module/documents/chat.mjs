@@ -41,6 +41,8 @@ import {
 import { pruneAttackThresholds, openAttackPrompt, rollFromAttackCard, gmAttackRequest } from "./cards/attack.mjs";
 // What a Maneuver's check gives another character (0.22.0): the widget, the press, the relay.
 import { drawGiveWidget, giveFromCard, onGiveSocket } from "./cards/give.mjs";
+// What a Maneuver's check puts on a creature (0.32.0): the widget, the press, the relay.
+import { drawApplyWidget, applyFromCard, onApplySocket } from "./cards/apply.mjs";
 // Gain Control (0.27.0): the result under its check card, its button, and an adversary's request.
 import { drawGainControlWidget, drawGainControlRequest, applyGainControlFromCard, rollGuardFromCard, answerTo } from "./cards/gain-control.mjs";
 
@@ -226,6 +228,11 @@ export function onRenderChatMessage(message, html) {
   // card's flags and the chat log after the kinds' offers so it sits under them.
   drawGiveWidget(message, html, flags);
 
+  // What this check puts on a creature, and takes off (0.32.0; Trip's Prone, an overcommit's
+  // Off-Guard): the record of what was applied, else the button for a target's lines, for the
+  // roller's owner and the GM, drawn from the card's flags and the chat log.
+  drawApplyWidget(message, html, flags);
+
   // Gain Control (0.27.0): what the check's degree means for the Bind, with the one button for
   // the side it favours, drawn from the card's flags and the Bind as it stands; and an adversary's
   // request for its partner's Guard roll, which loses its button once answered.
@@ -271,6 +278,7 @@ async function onCardButton(event, message, flags) {
       case "ruleReroll": return await rerollByRule(message, flags, button);
       case "ruleUse": return await useByRule(button);
       case "giveResult": return await giveFromCard(message, flags, button);
+      case "applyEffects": return await applyFromCard(message, flags, button);
       case "gainControlApply": return await applyGainControlFromCard(message);
       case "gainControlGuard": return await rollGuardFromCard(message, flags);
       case "gainControlFree": return await gainControlFromCard(message, flags, button);
@@ -366,11 +374,12 @@ export async function openGrammar(page = "At a glance") {
 
 /**
  * The chat cards' half of the system socket: starwrought.mjs routes `damage:*`, `reroll:*`,
- * `expose:*` and (0.22.0) `give:*` here, `party:*` to party-socket.mjs (0.7.1) and everything else
- * to the attack coordinator. A message is for this client only when it is addressed to it; the
- * asker is the server's stamp, never a field of the payload; and each family answers its own
- * prefix (`onDamageSocket`, `onRerollSocket`, `onExposeSocket`, `onGiveSocket`), the GM's client
- * (for a give, the recipient's owner's when no GM is connected) replying to a `*:apply` with
+ * `expose:*`, (0.22.0) `give:*` and (0.32.0) `effect:*` here, `party:*` to party-socket.mjs (0.7.1)
+ * and everything else to the attack coordinator. A message is for this client only when it is
+ * addressed to it; the asker is the server's stamp, never a field of the payload; and each family
+ * answers its own prefix (`onDamageSocket`, `onRerollSocket`, `onExposeSocket`, `onGiveSocket`,
+ * `onApplySocket`), the GM's client
+ * (for a give or an applied Effect, the recipient's owner's when no GM is connected) replying to a `*:apply` with
  * `*:applied`/`*:done` or `*:refused`, addressed to the asker alone.
  * @param {object} message
  * @param {string} [senderId]  The emitting user's id, supplied by the server.
@@ -383,4 +392,5 @@ export async function onChatSocket(message, senderId) {
   if (type.startsWith("reroll:")) return onRerollSocket(message, sender);
   if (type.startsWith("expose:")) return onExposeSocket(message, sender);
   if (type.startsWith("give:")) return onGiveSocket(message, sender);
+  if (type.startsWith("effect:")) return onApplySocket(message, sender);
 }

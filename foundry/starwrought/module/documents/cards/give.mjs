@@ -99,7 +99,7 @@ export function givenRecord(messageId) {
  * @param {object} flags
  * @returns {boolean}
  */
-function wasRerolled(message, flags) {
+export function wasRerolled(message, flags) {
   if (flags?.superseded) return true;
   for (const other of game.messages?.contents ?? []) {
     if (other.flags?.[SW.SYSTEM_ID]?.rerollOf === message?.id) return true;
@@ -112,7 +112,7 @@ function wasRerolled(message, flags) {
  * drawn from: an unlinked token reads its base Actor's flags, so a result written on the one is
  * held by the other. Two unlinked tokens of one Actor are two bodies.
  */
-function sameBody(a, b) {
+export function sameBody(a, b) {
   if (!a || !b) return false;
   if (a.uuid === b.uuid) return true;
   return (a.id === b.id) && !(a.isToken && b.isToken);
@@ -125,7 +125,7 @@ function sameBody(a, b) {
  * @param {Actor} recipient
  * @returns {User|null}
  */
-function writerFor(recipient) {
+export function writerFor(recipient) {
   const users = game.users;
   return users.activeGM ?? users.find(u => u.active && recipient.testUserPermission(u, "OWNER")) ?? null;
 }
@@ -479,9 +479,13 @@ async function giveOnce(request, userId) {
   const content = `<div class="starwrought action-card sw-given-card"><h3>${esc(maneuver.name)}</h3>${
     lines.map(l => `<p>${l}</p>`).join("")}${notes.map(n => `<p class="sw-card-note">${n}</p>`).join("")}</div>`;
   try {
-    // Seen by whoever saw the check: a whispered roll gives in a whisper.
+    // Seen by whoever saw the check: a whispered roll gives in a whisper, with the roll's own
+    // author added (0.32.0's review): the give card is posted by the WRITER, and a player who
+    // rolled privately to the GM would otherwise never see it and keep a dead button.
+    const whisper = Array.isArray(chat.whisper) ? [...chat.whisper] : [];
+    if (whisper.length && !chat.blind && chat.author?.id && !whisper.includes(chat.author.id)) whisper.push(chat.author.id);
     await postCard(roller, content, {
-      whisper: Array.isArray(chat.whisper) ? [...chat.whisper] : [],
+      whisper,
       flags: { kind: GIVEN_CARD, from: chat.id, recipientUuid: recipient.uuid, recipientName: recipient.name, giverUuid: roller.uuid, maneuver: maneuver.slug, words }
     });
   } catch (error) {

@@ -408,5 +408,25 @@
     "where": "v4.25-sync-report.md, rulings 256 and 260",
     "question": "Two readings the sync made that the book does not settle. 256: two overlapping Difficult regions of the SAME kind are two effects (x3), as two of different kinds are. 260: every Critical Hit that does damage sets its Zone's effect, an area Attack's included, and the Zone's switch on the sheet is the GM's remedy.",
     "recommendation": "Leave both unless play says otherwise; 256 is the one most likely to be argued (one circumstance counted once would make two mud regions x2)."
+  },
+  {
+    "since": "2026-11-17",
+    "status": "open",
+    "decidedBy": "",
+    "id": "0.32.0-claudes-readings",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.32.0, rulings 313 to 318, 320 and 321",
+    "question": "Readings 0.32.0 made so that APPLY and REMOVE could be built. 313: a Condition already on by other means (the GM's hand, a Critical Hit, a Bind) is left alone, nothing added and nothing taken off by a window. 314: of two APPLYs of one Effect the later window stands. 315: Dropping Prone by choice is not stopped by an IMMUNE line and does not use it up; a Prone by a Trip's result is. 316: an Effect with a window is put on only in an encounter the user or the recipient is fighting in. 317: frightened 2 on a creature already Frightened 3 changes nothing. 318: outside an encounter a row with a range of costs asks which version this use is. 320: an applied named Effect shows on everyone's hover card. 321: APPLY on a target needs IF: RESULT, and a row the system runs another way (Strike, Rush's drag) applies nothing.",
+    "recommendation": "Leave them unless play says otherwise. The two most likely to be argued are 313 (a Demoralize does nothing to a creature the GM already made Frightened by hand at a lower value: it raises it, but puts no window on it) and 321 (Rush's Off-Guard is still by hand)."
+  },
+  {
+    "since": "2026-11-17",
+    "status": "open",
+    "decidedBy": "",
+    "id": "effects-that-carry-lines",
+    "category": "Automation",
+    "where": "data/actions_maneuvers.xlsx (Talk Them Down, Anticipate, Bolster, Feint, Tumble Through); AUTOMATION_GRAMMAR.md section 5, Putting Effects on",
+    "question": "APPLY puts an Effect on a creature, but a Basic Maneuver's row cannot make that Effect DO anything for everyone: 'it takes -2 to its next Attack against you' needs a line on the creature that reads the Effect, and such a line lives on a Talent or an owned Maneuver. The same gap leaves the Wrong-Footed Condition's own effect (Off-Guard against that creature only) to the table, though Feint now records who Wrong-Footed whom.",
+    "recommendation": "Plan it as the next step in two parts. First the small one: treat Wrong-Footed applied by X as Off-Guard against X in the Defense read, since the record now says who. Then an Effect that carries its own lines, written on the APPLY line's row, so Talk Them Down and Anticipate can be automated from a Basic row."
   }
 ]

@@ -30,7 +30,9 @@ import {
   isNotApplicable, isNotApplicableCell, NOT_APPLICABLE_WITH_RULES
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, ruleApplies, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
+// 0.32.0: what a Maneuver puts on a creature. The lines, the record, the window and the build's census are pure.
+import { linesFor, needsCost, appliedWindow, appliedRecord, isAppliedRecord, sameApplication, settleApplied, appliedBy, effectWords, lineWords, effectCensus } from "../foundry/starwrought/module/rules/applied.mjs";
 // 0.24.0: the Move made as part of a Maneuver, pure, shared by the charge and the ruler.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, MOVE_USED_KEPT, moveRecord, recordLive, moveRoleFor, asManeuverMove, usedNonces, withUsed } from "../foundry/starwrought/module/rules/maneuver-move.mjs";
 import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType, limitKey, limitSpent, effectHolds, readsOtherEffects, effectConditions, emptyOps } from "../foundry/starwrought/module/rules/operators.mjs";
@@ -93,7 +95,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -743,7 +745,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -2081,7 +2083,7 @@ check("0.31.0: EFFECT(<name>) is read into its own key, the roller's after IF an
   throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(exposed head)"), /Exposed Zone/, "an Exposed Zone is no Effect");
   throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(Rock or Roll)"), /joins conditions/, "a name that holds `or`");
   throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(none)"), /cannot be an Effect's name/, "a word that means something else");
-  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(prone, mine)"), /the one state read is `used`/, "another second word");
+  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(prone, theirs)"), /the second word is `used` \(a roll of yours has just used the Effect up\) or `mine` \(you put it there\)/, "another second word");
   // The review of 0.31.0.
   throws(() => readEffectLine("ATK: 1 situation; IF: EFFECT(not prone)"), /`not` goes in front of the whole condition/, "`not` is no part of a name: a bonus line has none yet");
   throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(Fatigued 2)"), /a Condition's value is not compared yet/, "a value is not compared");
@@ -2436,7 +2438,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   must(err("[EFFECT CHECK]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
@@ -3521,7 +3523,7 @@ check("alter: the movement property is VALUE: step, read at use and never by wha
   must(!("movement" in patient.system.rules[0]), "an alteration of any other property keeps the shape it had");
   must(summarize(footwork.system.rules[0]) === "a drag within half Speed made as part of Move Together is a Step", `the summary: "${summarize(footwork.system.rules[0])}"`);
   must(alterError("[EFFECT ALTER: Move Together.movement; VALUE: choose(Move, Step)]") === '"choose(Move, Step)": a Maneuver\'s movement is changed to `step` in this version, as in `ALTER: Move Together.movement; VALUE: step` (a drag within half Speed made as part of the Maneuver is then a Step, for everyone who moves in it)', "his drafted value is told the word");
-  must(alterError("[EFFECT ALTER: Move Together.movement; VALUE: choose(Move, Step); APPLY: both-participants]") === '"APPLY: both-participants" is not a component: after the tag come VALUE: and IF:', "his APPLY is no component");
+  must(alterError("[EFFECT ALTER: Move Together.movement; VALUE: choose(Move, Step); APPLY: both-participants]") === '"APPLY" is a tag and begins its own line; one effect per line, its conditions after it as IF:, IFT:, FOR: and LIMIT:', "his APPLY is a tag of its own since 0.32.0, and no component");
   same(kindOf("alter").hooks.gives([{ rule: footwork.system.rules[0], item: footwork, from: "own" }], { maneuver: "move-together", rank: "trained" }, mover()), [], "the gives hook passes it over");
 
   same(alterationsOf(mover([moveTogether, footwork]), moveTogether), [{ property: "movement", movement: "step", per: null, nothing: false, until: null, label: "Coordinated Footwork", skipped: false, marks: [] }], "the owner's alteration of the used Maneuver");
@@ -3648,7 +3650,7 @@ check("subordinate: registered at the use and card hooks, with the SUBORDINATE t
   must(kind && kind.id === "subordinate", "kindOf('subordinate')");
   same([kind.aliases, Object.keys(kind.hooks)], [[], ["use", "card"]], "no aliases, two hooks");
   must(EFFECT_TAGS.subordinate === "subordinate", "the SUBORDINATE tag names the kind");
-  must(CONDITIONS.includes("EFFECT") && EFFECT_STATES.join() === "used", "EFFECT is a condition word, and `used` its one state");
+  must(CONDITIONS.includes("EFFECT") && EFFECT_STATES.join() === "used,mine", "EFFECT is a condition word, and `used` and `mine` its second words");
   must(usableByRule(payItForward), "a Maneuver with a SUBORDINATE line is used, so its row shows the Use control");
   must(!usableByRule(reciprocal), "an ALTER of a Maneuver's limit draws none");
 });
@@ -3695,8 +3697,8 @@ check("EFFECT(<name>, used) is read under its own key by SUBORDINATE alone, and 
   // it as a component it has no use for, by name.
   must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid)]") === "SUBORDINATE does not take EFFECT(<name>)", "the plain form is another condition, which SUBORDINATE does not take");
   must(subError("[EFFECT SUBORDINATE: Aid; IFT: EFFECT(Aid, used)]") === "IFT: EFFECT(Aid, used) is not read: a used Effect is your own roll's, so it is written `IF: EFFECT(Aid, used)`", "a used Effect is never the other party's");
-  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, spent)]") === '"spent": the one state read is `used`, as in `EFFECT(Aid, used)`; an Effect a creature has now is written `EFFECT(Aid)`', "another state");
-  const shape = "EFFECT is written `EFFECT(<name>)` or `EFFECT(<name>, used)`, as in `IF: EFFECT(Taking Cover)`, `IFT: EFFECT(prone)` or `IF: EFFECT(Aid, used)`";
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, spent)]") === '"spent": the second word is `used` (a roll of yours has just used the Effect up) or `mine` (you put it there); an Effect a creature has now is written `EFFECT(Aid)`', "another state");
+  const shape = "EFFECT is written `EFFECT(<name>)`, `EFFECT(<name>, mine)` or `EFFECT(<name>, used)`, as in `IF: EFFECT(Taking Cover)`, `IFT: EFFECT(prone)`, `IFT: EFFECT(wrong-footed, mine)` or `IF: EFFECT(Aid, used)`";
   for (const [inside, why] of [["EFFECT", "bare"], ["EFFECT()", "empty"], ["EFFECT(Aid, used, twice)", "three parts"], ["EFFECT(, used)", "no name"]]) {
     must(subError(`[EFFECT SUBORDINATE: Aid; IF: ${inside}]`) === shape, `${why}: "${inside}"`);
   }
@@ -4407,6 +4409,250 @@ check("the tab: Favorites first, no Maneuver twice, and only what applies unless
   same([fav.favorites.map(r => [r.slug, r.applicable, r.favorite]), fav.rest.map(r => r.slug), fav.hidden], [[["grapple", false, true], ["aid", true, true]], ["strike"], 2], "Favorites in the order marked, never left out, not listed twice, and not counted as hidden; a Favorite that is no row is nothing");
   same([plain.left.map(r => r.slug), all.left.map(r => r.slug), fav.left.map(r => r.slug)], [["stand", "grapple", "cast"], ["stand", "grapple", "cast"], ["stand", "cast"]], "the rows left out, whichever way the list is shown");
   same(arrangeManeuvers(null), { favorites: [], rest: [], left: [], hidden: 0 }, "no rows");
+});
+
+/* -------------------------------------------- */
+/*  Applying Effects (0.32.0)                   */
+/* -------------------------------------------- */
+
+console.log("\nApplying Effects (0.32.0)");
+
+const applyRule = (cell, context = onRowOf) => bonusRule(cell, context);
+const applyError = (cell, context = onRowOf) => bonusError(cell, context);
+const TRIP_CELL = [
+  "[EFFECT APPLY: prone, target; IF: RESULT(critical success)]",
+  "[EFFECT APPLY: prone, target; IF: RESULT(success)]",
+  "[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]"
+].join("\n");
+const tripRow = maneuverWith("Trip ❶", TRIP_CELL);
+const DEMORALIZE_CELL = [
+  "[EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]",
+  "[EFFECT APPLY: frightened 1, target; IF: RESULT(success); IF: COST(1)]",
+  "[EFFECT APPLY: frightened 3, target; IF: RESULT(critical success); IF: COST(3)]",
+  "[EFFECT APPLY: frightened 2, target; IF: RESULT(success); IF: COST(3)]"
+].join("\n");
+const demoralizeRow = maneuverWith("Demoralize ❶ or ❸", DEMORALIZE_CELL);
+const standRow = maneuverWith("Stand ❶", "[EFFECT REMOVE: prone]");
+const coverRow = maneuverWith("Take Cover ❶", "[EFFECT APPLY: Taking Cover]");
+
+check("apply: registered at the applies hook alone, with the APPLY and REMOVE tags, and it draws no Use control (ruling 311)", () => {
+  const kind = kindOf("apply");
+  must(kind && kind.id === "apply", "kindOf('apply')");
+  same([kind.aliases, Object.keys(kind.hooks)], [[], ["applies"]], "no aliases, and the one hook: a use hook would send the row down the use-rule path, a card hook would call it paid elsewhere");
+  same([EFFECT_TAGS.apply, EFFECT_TAGS.remove], ["apply", "apply"], "two tags, one kind");
+  must(CONDITIONS.includes("COST"), "COST is a condition word");
+  must(!usableByRule(tripRow) && !usableByRule(standRow), "a row with APPLY or REMOVE lines is used as any row");
+  must(EFFECT_KINDS.includes("apply"), "and its lines are switched on the Effects tab");
+});
+
+check("apply: every accepted form on a Maneuver's row, stored whole, and its summary", () => {
+  const trip = applyRule("[EFFECT APPLY: prone, target; IF: RESULT(success)]");
+  same([trip.kind, trip.op, trip.effect, trip.who, trip.until, trip.cost], ["apply", "apply", { name: "Prone", slug: "prone", condition: "prone" }, "target", null, null], "a Condition on the target, by degree");
+  same(trip.when, [{ outcome: "success", name: "Success" }], "the degree is the line's one RESULT");
+  must(summarize(trip) === "puts Prone on the target, on a Success", `the summary: "${summarize(trip)}"`);
+  const over = applyRule("[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]");
+  same([over.effect.condition, over.who, over.until], ["offGuard", "self", { who: "giver", n: 1 }], "yourself is the default, with a window");
+  must(summarize(over) === "puts Off-Guard on you until your next Opportunity, on a Critical Failure", `the summary: "${summarize(over)}"`);
+  const fright = applyRule("[EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]");
+  same([fright.effect, fright.cost], [{ name: "Frightened", slug: "frightened", condition: "frightened", value: 2 }, 1], "a Condition with a value, and the cost it waits on");
+  must(summarize(fright) === "puts Frightened 2 on the target, on a Critical Success, when 1 action is paid", `the summary: "${summarize(fright)}"`);
+  same(applyRule("[EFFECT APPLY: frightened]").effect.value, 1, "a Condition that carries a value is 1 when none is written");
+  const cover = applyRule("[EFFECT APPLY: Taking Cover]");
+  same([cover.effect, cover.who, cover.when, cover.until], [{ name: "Taking Cover", slug: "taking-cover", condition: null }, "self", null, null], "a named Effect, on use, until removed");
+  must(summarize(cover) === "puts Taking Cover on you", `the summary: "${summarize(cover)}"`);
+  const stand = applyRule("[EFFECT REMOVE: prone]");
+  same([stand.op, stand.effect.condition, stand.until], ["remove", "prone", null], "REMOVE takes a Condition off");
+  must(summarize(stand) === "takes Prone off you", `the summary: "${summarize(stand)}"`);
+  same(applyRule("[EFFECT REMOVE: grabbed; IF: RESULT(success)]").when, [{ outcome: "success", name: "Success" }], "a REMOVE by degree (Escape)");
+  // The windows, with the edges only an APPLY line may write.
+  const until = cell => applyRule(`[EFFECT APPLY: Marked, target; UNTIL: ${cell}; IF: RESULT(success)]`).until;
+  same([until("giver opportunity"), until("giver opportunity end"), until("recipient opportunity"), until("recipient opportunity start"), until("recipient opportunity 2"), until("encounter")],
+    [{ who: "giver", n: 1 }, { who: "giver", n: 1, edge: "end" }, { who: "recipient", n: 1 }, { who: "recipient", n: 1, edge: "begin" }, { who: "recipient", n: 2 }, { who: "encounter", n: 0 }], "the windows: a giver's ends as it begins and a recipient's as it ends, unless the edge is written");
+  must(summarize(applyRule("[EFFECT APPLY: grabbed, target; UNTIL: giver opportunity end; IF: RESULT(success)]")) === "puts Grabbed on the target through your next Opportunity, on a Success", "an edge in words");
+  // A rank condition rides beside the degree.
+  same(applyRule("[EFFECT APPLY: prone, target; IF: RESULT(success); IF: RANK(roll >= expert)]").when.length, 2, "a rank beside the degree");
+});
+
+check("apply: the refusals, each by its message (rulings 317 and 321)", () => {
+  must(/APPLY is written on the Maneuver's own row/.test(applyError("[EFFECT APPLY: prone]", { resolve, itemType: "talent" })), "never on a Talent");
+  must(/REMOVE is written on the Maneuver's own row/.test(applyError("[EFFECT REMOVE: prone]", { resolve, itemType: "talent" })), "nor a REMOVE");
+  // An aura block still reads its ring; the APPLY inside it is the one error.
+  const inAura = parseAutomation("[AURA 15 allies; APPLY: prone]", onRowOf);
+  must((inAura.errors.length === 1) && /cannot ride an \[AURA/.test(inAura.errors[0].message), "never inside an aura");
+  must(/APPLY names the Effect/.test(applyError("[EFFECT APPLY:]")) || /names the Effect|is written/.test(applyError("[EFFECT APPLY: ]")), "an empty APPLY");
+  must(/after the Effect comes `self`/.test(applyError("[EFFECT APPLY: prone, ally; IF: RESULT(success)]")), "the second descriptor is self or target");
+  must(/not 3 descriptors/.test(applyError("[EFFECT APPLY: prone, target, self; IF: RESULT(success)]")), "two descriptors at most");
+  must(/APPLY on a target lands from the card of the Maneuver's check/.test(applyError("[EFFECT APPLY: prone, target]")), "a target line names its result (ruling 321)");
+  must(/takes one `IF: RESULT\(\.\.\.\)` \(2 given\)/.test(applyError("[EFFECT APPLY: prone, target; IF: RESULT(success); IF: RESULT(critical success)]")), "one degree to a line");
+  for (const id of ["bound", "controlling", "controlled", "wounded", "dying", "dead", "spent", "preparing"]) {
+    must(/the system runs that Condition itself/.test(applyError(`[EFFECT APPLY: ${id}]`)), `${id} is the system's own`);
+  }
+  must(/Exposed Zone/.test(applyError("[EFFECT APPLY: exposed head]")), "an Exposed Zone is the Zone's own");
+  must(/Prone carries no value/.test(applyError("[EFFECT APPLY: prone 2]")), "a number after a Condition with no value");
+  must(/REMOVE takes a Condition off whole/.test(applyError("[EFFECT REMOVE: frightened 2]")), "a REMOVE names no value");
+  must(/APPLY takes no UNTIL beside a Condition with a value/.test(applyError("[EFFECT APPLY: frightened 2; UNTIL: encounter]")), "a Condition with a value moves by its own rule (ruling 317)");
+  must(applyError("[EFFECT REMOVE: prone; UNTIL: encounter]") === "REMOVE does not take UNTIL", "a REMOVE has no window");
+  must(/cannot be an Effect's name/.test(applyError("[EFFECT APPLY: target]")), "a reserved word is no name");
+  // The review of 0.32.0: a forgotten comma read as a named Effect called "prone target" on the user.
+  must(applyError("[EFFECT APPLY: prone target; IF: RESULT(success)]") === '"prone target": a comma goes before `target`, as in `APPLY: prone, target`', "a forgotten comma before target");
+  must(/a comma goes before `self`, as in `APPLY: off-guard, self`/.test(applyError("[EFFECT APPLY: off-guard self]")) && /as in `REMOVE: grabbed, target`/.test(applyError("[EFFECT REMOVE: grabbed Target; IF: RESULT(success)]")) && /as in `APPLY: frightened 2, target`/.test(applyError("[EFFECT APPLY: frightened 2 target; IF: RESULT(success)]")), "and before self, after REMOVE, and after a value");
+  // A name that begins with a Condition's name is a named Effect, and is said.
+  const slip = parseAutomation("[EFFECT APPLY: frightened two]", onRowOf);
+  must((slip.errors.length === 0) && (slip.rules[0].effect.condition === null) && (slip.warnings.length === 1) && /is read as a named Effect of its own, not the Condition Frightened; for the Condition write `frightened`, with a whole number for its value/.test(slip.warnings[0].message ?? slip.warnings[0]), `a name that begins with a Condition's: ${JSON.stringify(slip.warnings)}`);
+  same([parseAutomation("[EFFECT APPLY: Taking Cover]", onRowOf).warnings.length, parseAutomation("[EFFECT APPLY: frightened 2, target; IF: RESULT(success)]", onRowOf).warnings.length], [0, 0], "a plain named Effect and a Condition with its value say nothing");
+  for (const [cell, word] of [["FOR: allies 0", "FOR"], ["LIMIT: round", "LIMIT"], ["IF: CLAIM(when it suits)", "CLAIM"], ["IFT: MARKED", "MARKED"], ["IF: EFFECT(prone)", "EFFECT"]]) {
+    must(new RegExp(`APPLY does not take .*${word}`).test(applyError(`[EFFECT APPLY: prone; ${cell}]`)), `APPLY refuses ${word} by name`);
+  }
+  must(/COST is written `COST\(<n>\)`/.test(applyError("[EFFECT APPLY: prone; IF: COST(two)]")) && /COST is given twice/.test(applyError("[EFFECT APPLY: prone; IF: COST(1); IF: COST(2)]")), "COST's own shape");
+  // Every other kind refuses COST by name, and UNTIL's edges are an APPLY line's alone.
+  must(giveError("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); IF: COST(1)]") === "GIVE does not take IF: COST(<n>)", "GIVE refuses COST");
+  must(/ATK does not take IF: COST\(<n>\)/.test(applyError("[EFFECT ATK: 1 situation; IF: COST(2)]", { resolve, itemType: "talent" })), "and a bonus line");
+  must(/"end": a window's edge is written after APPLY alone/.test(giveError("[EFFECT GIVE: 1 situation, chosen; UNTIL: giver opportunity end; IF: RESULT(success)]")), "a GIVE window names no edge, and is told so");
+  must(/"later" is not a count of Opportunities/.test(applyError("[EFFECT APPLY: Marked; UNTIL: giver opportunity later]")) && /`giver opportunity end`/.test(applyError("[EFFECT APPLY: Marked; UNTIL: recipient]")), "an APPLY window's own slips, the second told every shape");
+});
+
+check("applied: linesFor chooses by degree and by the cost paid, and the lines of no degree always stand", () => {
+  const line = (slug, extra = {}) => ({ op: "apply", effect: { name: slug, slug, condition: null }, who: "self", until: null, degree: null, cost: null, ...extra });
+  const lines = [line("always"), line("on-success", { degree: "success" }), line("on-crit", { degree: "critSuccess" }), line("one", { degree: "success", cost: 1 }), line("three", { degree: "success", cost: 3 }), line("paid-two", { cost: 2 })];
+  const slugs = use => linesFor(lines, use).map(l => l.effect.slug);
+  same(slugs({ degree: "success", cost: 1 }), ["always", "on-success", "one"], "a Success paid with one action");
+  same(slugs({ degree: "success", cost: 3 }), ["always", "on-success", "three"], "the same degree at three");
+  same(slugs({ degree: "critSuccess", cost: 2 }), ["always", "on-crit", "paid-two"], "another degree, and a line that waits on the cost alone");
+  same(slugs({ degree: null, cost: 1 }), ["always"], "no degree (no Threshold, or no check): only the lines that wait on none");
+  same(slugs({ degree: "success", cost: null }), ["always", "on-success"], "no cost known: a line that waits on one does not stand");
+  same(slugs({ degree: "success", cost: 0 }), ["always", "on-success"], "nought is a cost, and is not one");
+  same([linesFor(null), linesFor([null, {}, { effect: null }])], [[], []], "nothing in, nothing out");
+  same([needsCost(lines), needsCost([line("x")]), needsCost(null)], [true, false, false], "does any line wait on the cost?");
+});
+
+check("ruleApplies: the row's lines at the rank rolled, from an Item the user does not own; Off drops a line and Skip sets it aside", () => {
+  const tess = rulesActor([], { athletics: "trained" });
+  const asked = ruleApplies(tess, { item: tripRow, rank: "trained" });
+  same(asked.lines.map(l => [l.op, l.effect.slug, l.who, l.degree, l.cost, l.until]), [["apply", "prone", "target", "critSuccess", null, null], ["apply", "prone", "target", "success", null, null], ["apply", "offguard", "self", "critFail", null, { who: "giver", n: 1 }]], "Trip's three lines, each with its degree");
+  same(asked.skipped, [], "nothing on Skip");
+  same(ruleApplies(tess, { item: demoralizeRow, rank: "trained" }).lines.map(l => [l.effect.value, l.degree, l.cost]), [[2, "critSuccess", 1], [1, "success", 1], [3, "critSuccess", 3], [2, "success", 3]], "Demoralize: a table for each cost");
+  same(ruleApplies(tess, { item: standRow, rank: null }).lines.map(l => [l.op, l.effect.slug, l.degree]), [["remove", "prone", null]], "Stand: a use with no check");
+  same([ruleApplies(tess, { item: null }), ruleApplies(null, { item: tripRow }), ruleApplies(tess, { item: { ...tripRow, type: "talent" } })].map(a => a.lines.length), [0, 0, 0], "no Item, no user, and only a Maneuver's Item applies");
+  // A rank condition: the owner's, and the rank rolled.
+  const gated = maneuverWith("Shove ❶", ["[EFFECT APPLY: prone, target; IF: RESULT(success); IF: RANK(Athletics >= expert)]", "[EFFECT APPLY: off-guard, target; IF: RESULT(success); IF: RANK(roll >= master)]"].join("\n"));
+  same(ruleApplies(tess, { item: gated, rank: "trained" }).lines.length, 0, "neither rank is met");
+  same(ruleApplies(rulesActor([], { athletics: "expert" }), { item: gated, rank: "trained" }).lines.map(l => l.effect.slug), ["prone"], "the owner's rank");
+  same(ruleApplies(tess, { item: gated, rank: "master" }).lines.map(l => l.effect.slug), ["offguard"], "the rank rolled");
+  same(ruleApplies(tess, { item: gated, rank: null }).lines.length, 0, "with no roll, a line that reads the rank rolled does not hold");
+  // An owned copy carries a state; a compendium Item is always on.
+  const owned = { ...tripRow, id: "trip0001" };
+  const state = (rule, value) => ({ starwrought: { rules: { state: { [ruleStateKey(owned, rule)]: value } } } });
+  const off = rulesActor([owned]);
+  off.flags = state(owned.system.rules[2], "off");
+  same(ruleApplies(off, { item: owned, rank: "trained" }).lines.map(l => l.degree), ["critSuccess", "success"], "Off: the line never arrives");
+  const skip = rulesActor([owned]);
+  skip.flags = state(owned.system.rules[2], "skip");
+  const set = ruleApplies(skip, { item: owned, rank: "trained" });
+  same([set.lines.map(l => l.degree), set.skipped.map(s => [s.line.degree, s.marks])], [["critSuccess", "success"], [["critFail", [{ key: ruleStateKey(owned, owned.system.rules[2]), per: "state" }]]]], "Skip: set aside with the mark that clears it, for the caller to file when the line would have stood");
+  const stranger = rulesActor([]);
+  stranger.flags = state(owned.system.rules[2], "off");
+  same(ruleApplies(stranger, { item: owned, rank: "trained" }).lines.length, 3, "an Item the user does not own is always on");
+  // A kind whose hook throws costs nothing.
+  const cracked = { type: "action", name: "Cracked", system: { rules: [{ kind: "apply", op: "apply", effect: null, line: 1 }, ...tripRow.system.rules] } };
+  same(ruleApplies(tess, { item: cracked, rank: "trained" }).lines.length, 3, "a rule with no Effect is passed over");
+});
+
+check("applied: the record, its window, and what each turn change does to it (rulings 314 and 316)", () => {
+  const giver = { uuid: "Actor.tess", name: "Tess" };
+  const maneuver = { slug: "trip", name: "Trip" };
+  const effect = { name: "Off-Guard", slug: "offguard", condition: "offGuard" };
+  const who = { giverCombatant: "cTess", recipientCombatant: "cBandit" };
+  same(appliedWindow(null, who), null, "no UNTIL, no window: the Effect lasts until removed");
+  same(appliedWindow({ who: "giver", n: 1 }, who), { who: "giver", edge: "begin", combatant: "cTess", n: 1, begun: 0 }, "a giver's window ends as the Opportunity begins");
+  same(appliedWindow({ who: "giver", n: 1, edge: "end" }, who), { who: "giver", edge: "end", combatant: "cTess", n: 1, begun: 0 }, "unless the line says its end");
+  same(appliedWindow({ who: "recipient", n: 2 }, who), { who: "recipient", edge: "end", combatant: "cBandit", n: 2, begun: 0 }, "a recipient's ends as its last one ends");
+  same(appliedWindow({ who: "recipient", n: 1, edge: "begin" }, who), { who: "recipient", edge: "begin", combatant: "cBandit", n: 1, begun: 0 }, "unless the line says its start");
+  const whole = { who: "encounter", edge: null, combatant: null, n: 0, begun: 0 };
+  same([appliedWindow({ who: "encounter", n: 0 }, who), appliedWindow({ who: "giver", n: 1 }, { recipientCombatant: "cBandit" }), appliedWindow({ who: "recipient", n: 1 }, {})], [whole, whole, whole], "the encounter's window, and one whose Opportunities cannot be counted, last the encounter");
+  const record = (until, extra = {}) => appliedRecord({ effect, maneuver, giver, combat: "c1", until: appliedWindow(until, who), from: "msg1", ...extra });
+  const base = record({ who: "giver", n: 1 });
+  same(Object.keys(base), ["slug", "name", "condition", "by", "byName", "maneuver", "maneuverName", "combat", "until", "from"], "every key, always");
+  same(Object.keys(appliedRecord({ effect: { name: "Taking Cover", slug: "taking-cover" }, maneuver, giver })), Object.keys(base), "the same keys with no window, no Combat and no card");
+  same([isAppliedRecord(base), isAppliedRecord({}), isAppliedRecord(null), isAppliedRecord({ slug: "" })], [true, false, false, false], "what a record is");
+  same([appliedBy(base, "Actor.tess"), appliedBy(base, "Actor.wren"), appliedBy(null, "Actor.tess"), appliedBy(base, "")], [true, false, false, false], "who put it there");
+  // What a window's end asks before it takes an Effect off (the review of 0.32.0): is this still
+  // the application the verdict was made on? A later APPLY gives the Effect a new record.
+  const counted1 = { ...base, until: { ...base.until, begun: 1 } };
+  same([sameApplication(base, { ...base }), sameApplication(base, counted1), sameApplication(base, { ...base, from: "msg2" }), sameApplication(base, { ...base, by: "Actor.wren" }), sameApplication(base, record({ who: "giver", n: 1, edge: "end" })), sameApplication(base, record(null)), sameApplication(base, null), sameApplication(null, null)],
+    [true, true, false, false, false, false, false, false], "the same card, giver and window, whatever the count; another card, another giver, another window or none is another application");
+  const at = change => ({ combat: "c1", ...change });
+  // An overcommit's Off-Guard: until the giver's next Opportunity begins.
+  same([settleApplied(base, at({ ended: "cTess" })), settleApplied(base, at({ began: "cBandit" })), settleApplied(base, at({ began: "cTess" }))], ["keep", "keep", "expire"], "a giver's window: kept through the rest of the round, gone as the next Opportunity begins");
+  same(settleApplied(base, { combat: "c2", began: "cTess" }), "keep", "another Combat's turns are not this Effect's");
+  // Grabbed until the end of the giver's next Opportunity.
+  const end = record({ who: "giver", n: 1, edge: "end" });
+  const counted = (r, begun) => ({ ...r, until: { ...r.until, begun } });
+  same([settleApplied(end, at({ ended: "cTess" })), settleApplied(end, at({ began: "cTess" })), settleApplied(counted(end, 1), at({ ended: "cTess" }))], ["keep", { begun: 1 }, "expire"], "the Opportunity running when it was applied is not counted; the next is, and its end closes the window");
+  // Until the recipient's next Opportunity begins.
+  const start = record({ who: "recipient", n: 1, edge: "begin" });
+  same([settleApplied(start, at({ began: "cTess" })), settleApplied(start, at({ began: "cBandit" }))], ["keep", "expire"], "a recipient's window that ends as their Opportunity begins");
+  same(settleApplied(record({ who: "encounter", n: 0 }), at({ began: "cTess", ended: "cBandit" })), "keep", "the encounter's window closes with the Combat, not with a turn");
+  same(settleApplied(record(null), at({ began: "cTess" })), "keep", "no window: no turn takes it off");
+  same([settleApplied(null, at({})), settleApplied({}, at({}))], ["keep", "keep"], "nothing in, nothing done");
+  // GIVE's windows settle exactly as before the edges existed.
+  const pending = { combat: "c1", until: { who: "giver", combatant: "cTess", n: 1, begun: 0 } };
+  const patient = { combat: "c1", until: { who: "recipient", combatant: "cWren", n: 2, begun: 2 } };
+  same([settle(pending, at({ began: "cTess" })), settle(patient, at({ ended: "cWren" })), settle({ ...patient, until: { ...patient.until, begun: 1 } }, at({ ended: "cWren" }))], ["expire", "expire", "keep"], "a pending result's window names no edge and settles as it did");
+});
+
+check("applied: `mine` holds only for an Effect the one asking put there (ruling 319)", () => {
+  const record = by => ({ slug: "wrongfooted", name: "Wrong-Footed", condition: "wrongFooted", by, byName: "", maneuver: "feint", maneuverName: "Feint", combat: null, until: null, from: null });
+  const list = effectList({
+    statuses: ["wrongFooted", "prone"],
+    effects: [
+      { name: "Wrong-Footed", statuses: ["wrongFooted"], applied: record("Actor.tess") },
+      { name: "Prone", statuses: ["prone"] },
+      { name: "Marked", applied: { ...record("Actor.wren"), slug: "marked", name: "Marked", condition: null } },
+      { name: "Blessed" }
+    ]
+  });
+  const mine = name => ({ ...readEffectName(name), mine: true });
+  same([listHas(list, mine("wrong-footed"), { by: "Actor.tess" }), listHas(list, mine("wrong-footed"), { by: "Actor.wren" }), listHas(list, mine("wrong-footed"))], [true, false, false], "a Condition you applied; one another applied; nobody asking");
+  same([listHas(list, mine("prone"), { by: "Actor.tess" }), listHas(list, readEffectName("prone"), { by: "Actor.tess" })], [false, true], "a Condition put on by other means is nobody's, and is still there for the plain form");
+  same([listHas(list, mine("Marked"), { by: "Actor.wren" }), listHas(list, mine("Marked"), { by: "Actor.tess" }), listHas(list, mine("Blessed"), { by: "Actor.tess" })], [true, false, false], "a named Effect the same way; a hand-made one is nobody's");
+  same(listHas(list, mine("grabbed"), { by: "Actor.tess" }), false, "one that is not there at all");
+  // The line: read after either prefix, stored on the entry, said in the summary.
+  const feint = talentWith("Feinting Step", "[EFFECT ATK: 1 situation; IFT: EFFECT(wrong-footed, mine)]");
+  same(feint.system.rules[0].has, [{ name: "Wrong-Footed", slug: "wrongfooted", condition: "wrongFooted", on: "other", mine: true }], "stored with the word");
+  must(/you made Wrong-Footed/.test(summarize(feint.system.rules[0])), `the summary says whose: "${summarize(feint.system.rules[0])}"`);
+  const lists = (by, other) => ({ self: effectList({}), other, by });
+  same([effectHolds(feint.system.rules[0], lists("Actor.tess", list)), effectHolds(feint.system.rules[0], lists("Actor.wren", list)), effectHolds(feint.system.rules[0], lists("Actor.tess", effectList({})))], [true, false, false], "the bonus holds against a creature you Wrong-Footed, and no other");
+  same(effectHolds(feint.system.rules[0], lists("Actor.tess", null)), false, "with no other party it does not hold, as MARKED does not");
+});
+
+check("applied: the words a card and a sheet say, and the build's census (ruling 321)", () => {
+  same([effectWords({ name: "Prone" }), effectWords({ name: "Frightened", value: 2 }), effectWords({ slug: "taking-cover" })], ["Prone", "Frightened 2", "taking-cover"], "an Effect as a card names it");
+  const line = extra => ({ op: "apply", effect: { name: "Off-Guard", slug: "offguard", condition: "offGuard" }, who: "self", until: null, degree: null, cost: null, ...extra });
+  same([lineWords(line()), lineWords(line({ until: { who: "giver", n: 1 } }), { giver: "Tess", recipient: "Tess" }), lineWords(line({ op: "remove" }))], ["Off-Guard", "Off-Guard until Tess's next Opportunity", "no longer Off-Guard"], "a line in a few words, for the button");
+  same(untilWords({ who: "giver", n: 1, edge: "end" }, { giver: "you" }), "through your next Opportunity", "a card that speaks to its reader says `your`");
+  same([untilWords({ who: "giver", n: 1 }, { giver: "they" }), untilWords({ who: "recipient", n: 2 }, { recipient: "they" })], ["until their next Opportunity", "through their second upcoming Opportunity"], "and `their` for a creature the sentence has already named");
+  // The census.
+  const carrier = (name, type, cell) => ({ source: `Sheet / ${name}`, name, type, rules: parseAutomation(cell, { resolve, itemName: name, itemType: type }).rules });
+  const carriers = [
+    carrier("Take Cover ❶", "action", "[EFFECT APPLY: Taking Cover]"),
+    carrier("Hunker", "talent", "[EFFECT DEF: 1 situation; IF: EFFECT(Taking Cover)]"),
+    carrier("Opportunist", "talent", "[EFFECT ATK: 1 situation; IFT: EFFECT(prone)]\n[EFFECT ATK: 1 situation; IFT: EFFECT(Marked for Death)]"),
+    carrier("Finish Them ❶", "action", "[REQUIRES foe in reach with effect Marked for Death]\n[REQUIRES effect Bloodied]"),
+    carrier("Rush ❷", "action", "[EFFECT APPLY: off-guard; UNTIL: giver opportunity]"),
+    carrier("Stand ❶", "action", "[EFFECT REMOVE: prone]")
+  ];
+  const warnings = effectCensus(carriers, { runsElsewhere: slug => slug === "rush", slugOf: name => slugify(plainName(name)) });
+  same(warnings.length, 3, `three warnings: ${warnings.join(" | ")}`);
+  must(/^Sheet \/ Rush ❷: this Maneuver is run by the system another way/.test(warnings[0]), "an APPLY on a row the system runs another way");
+  must(/^EFFECT\(Marked for Death\): no Maneuver applies an Effect of that name \(read by Sheet \/ Opportunist, Sheet \/ Finish Them ❶\)/.test(warnings[1]), "a named Effect read twice and applied nowhere, each reader named once");
+  must(/^EFFECT\(Bloodied\): no Maneuver applies/.test(warnings[2]), "and one a REQUIRES asks for");
+  must(!warnings.some(w => /Taking Cover|prone|Prone/.test(w)), "an Effect that is applied, and a Condition, are never warned about");
+  same(effectCensus(null), [], "nothing read, nothing said");
+  // The review of 0.32.0: a line that waits on a result, on a Maneuver that rolls no check.
+  const waits = "[EFFECT APPLY: prone; IF: RESULT(critical failure)]\n[EFFECT APPLY: off-guard; IF: RESULT(failure)]";
+  const noCheck = effectCensus([{ ...carrier("Brace ❶", "action", waits), rolls: false }, { ...carrier("Trip ❶", "action", waits), rolls: true }, carrier("Shove ❶", "action", waits), { ...carrier("Stand ❶", "action", "[EFFECT REMOVE: prone]"), rolls: false }]);
+  same(noCheck.length, 1, `one warning, for the row known to roll nothing: ${noCheck.join(" | ")}`);
+  must(/^Sheet \/ Brace ❶: this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result/.test(noCheck[0]), "said once for the row, and never for a row that rolls, one the build cannot tell, or a line that waits on nothing");
 });
 
 /* -------------------------------------------- */

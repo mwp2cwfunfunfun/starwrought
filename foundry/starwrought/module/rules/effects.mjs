@@ -57,7 +57,12 @@ export const EFFECT_TAGS = Object.freeze({
   permit: "permit",
   // 0.25.0: `SUBORDINATE: <Maneuver>` on a Maneuver's own row: using it performs the named
   // Maneuver as part of it, at this row's own cost (Mike's Subordinate Maneuver rule).
-  subordinate: "subordinate"
+  subordinate: "subordinate",
+  // 0.32.0: `APPLY: <Effect>[, self | target]; UNTIL: <window>; IF: RESULT(<degree>)` and
+  // `REMOVE: <Effect>[, self | target]` on a Maneuver's own row: using it puts a Condition or a
+  // named Effect on a creature, or takes one off. Two tags, one kind, as CHECK, ATK and DEF share
+  // `bonus` (Mike's choice of words, 2026-11-17).
+  apply: "apply", remove: "apply"
 });
 
 /** The modifier tags: a value and a bonus type come first. */
@@ -69,14 +74,17 @@ export const MODIFIER_TAGS = Object.freeze(["check", "atk", "def", "init", "spee
  */
 export const COMPONENTS = Object.freeze(["IF", "IFT", "FOR", "LIMIT", "UNTIL", "VALUE"]);
 
-/** The one tag each of the two 0.22.0 components may follow. */
-const COMPONENT_TAG = Object.freeze({ UNTIL: "give", VALUE: "alter" });
+/** The tags each of the two 0.22.0 components may follow (`UNTIL` after `APPLY` too since 0.32.0). */
+const COMPONENT_TAG = Object.freeze({ UNTIL: ["give", "apply"], VALUE: ["alter"] });
 
-/** The condition words inside IF and IFT. */
-export const CONDITIONS = Object.freeze(["RANK", "SEEN", "ALLIES", "ENEMIES", "ALL", "CLAIM", "RESULT", "TRAIT", "MARKED", "BLOW", "BLAST", "BLIGHT", "BEGUILEMENT", "MELEE", "RANGED", "CHECK", "EFFECT"]);
+/** The condition words inside IF and IFT. `COST` since 0.32.0. */
+export const CONDITIONS = Object.freeze(["RANK", "SEEN", "ALLIES", "ENEMIES", "ALL", "CLAIM", "RESULT", "TRAIT", "MARKED", "BLOW", "BLAST", "BLIGHT", "BEGUILEMENT", "MELEE", "RANGED", "CHECK", "EFFECT", "COST"]);
 
-/** The one state `EFFECT(<name>, <state>)` reads in this version: a roll has just used the Effect up. */
-export const EFFECT_STATES = Object.freeze(["used"]);
+/**
+ * The second words `EFFECT(<name>, <word>)` reads: `used`, a roll has just used the Effect up
+ * (0.25.0); `mine`, the creature has it and the one asking put it there (0.32.0).
+ */
+export const EFFECT_STATES = Object.freeze(["used", "mine"]);
 
 const CALL = /^([A-Za-z]+)\s*\(([\s\S]*)\)$/;
 
@@ -164,13 +172,14 @@ function readComponent(component, ops, context, tag = "") {
   const match = component.match(/^([A-Za-z]+)\s*:\s*([\s\S]*)$/);
   const word = match?.[1]?.toUpperCase() ?? "";
   const inside = match?.[2]?.trim() ?? "";
-  if (Object.hasOwn(COMPONENT_TAG, word) && (COMPONENT_TAG[word] !== tag)) {
+  if (Object.hasOwn(COMPONENT_TAG, word) && !COMPONENT_TAG[word].includes(tag)) {
     throw new RuleSyntaxError(`${tag.toUpperCase()} does not take ${word}`);
   }
   switch (word) {
     case "UNTIL":
       if (ops.until) throw new RuleSyntaxError("UNTIL is given twice");
-      ops.until = readUntil(inside);
+      // An APPLY line's window may name its edge (0.32.0); a GIVE's keeps the two it always had.
+      ops.until = readUntil(inside, { edges: tag === "apply" });
       return;
     case "VALUE":
       if (ops.set !== null) throw new RuleSyntaxError("VALUE is given twice");
@@ -207,7 +216,7 @@ function readComponent(component, ops, context, tag = "") {
       // Origin; aid`), so the message says which mark does what (0.21.0).
       // GIVE and ALTER (0.22.0) are told their own components, so a `PRESERVE:` after an ALTER is
       // not sent looking for a FOR.
-      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come ${tag === "give" ? "IF: and UNTIL:" : tag === "alter" ? "VALUE: and IF:" : "IF:, IFT:, FOR: and LIMIT:"}${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
+      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come ${(tag === "give") || (tag === "apply") ? "IF: and UNTIL:" : tag === "remove" ? "IF:" : tag === "alter" ? "VALUE: and IF:" : "IF:, IFT:, FOR: and LIMIT:"}${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
   }
 }
 
@@ -308,17 +317,25 @@ function readCondition(inside, ops, context, prefix) {
       //   EFFECT(<name>, used)  0.25.0, step one: a roll of the owner's has just used up the
       //                         Effect of that name, which is the Maneuver that gave it (Aid).
       //                         Stored in `ops.used`, unchanged, and the owner's alone.
-      const shape = "EFFECT is written `EFFECT(<name>)` or `EFFECT(<name>, used)`, as in `IF: EFFECT(Taking Cover)`, `IFT: EFFECT(prone)` or `IF: EFFECT(Aid, used)`";
+      const shape = "EFFECT is written `EFFECT(<name>)`, `EFFECT(<name>, mine)` or `EFFECT(<name>, used)`, as in `IF: EFFECT(Taking Cover)`, `IFT: EFFECT(prone)`, `IFT: EFFECT(wrong-footed, mine)` or `IF: EFFECT(Aid, used)`";
       // An empty part (`EFFECT(, used)`) is a slip in the shape, not a name: the splitter drops it,
       // which would read the state as the name.
       if ((arg == null) || !arg.trim() || /^\s*,|,\s*,|,\s*$/.test(arg)) throw new RuleSyntaxError(shape);
       const parts = splitOperands(arg).map(p => p.trim());
       const written = parts[0] ?? "";
       if (!written || (parts.length > 2)) throw new RuleSyntaxError(shape);
+      // `mine` (0.32.0; ruling 319): the plain form, narrowed to an Effect the one asking put
+      // there (its applied record names them). "Wrong-Footed to you" is `IFT: EFFECT(wrong-footed,
+      // mine)`. It is a word on the plain form, so it reads after either prefix.
+      let mine = false;
+      if ((parts.length === 2) && (parts[1].toLowerCase() === "mine")) {
+        mine = true;
+        parts.pop();
+      }
       if (parts.length === 2) {
         const state = parts[1].toLowerCase();
-        if (!EFFECT_STATES.includes(state)) {
-          throw new RuleSyntaxError(`"${parts[1]}": the one state read is \`used\`, as in \`EFFECT(${written}, used)\`; an Effect a creature has now is written \`EFFECT(${written})\``);
+        if (state !== "used") {
+          throw new RuleSyntaxError(`"${parts[1]}": the second word is \`used\` (a roll of yours has just used the Effect up) or \`mine\` (you put it there); an Effect a creature has now is written \`EFFECT(${written})\``);
         }
         if (prefix === "IFT") {
           throw new RuleSyntaxError(`IFT: EFFECT(${written}, used) is not read: a used Effect is your own roll's, so it is written \`IF: EFFECT(${written}, used)\``);
@@ -339,7 +356,19 @@ function readCondition(inside, ops, context, prefix) {
       if (has.some(h => (h.on === on) && (h.slug === read.slug) && ((h.condition ?? null) === read.condition))) {
         throw new RuleSyntaxError(`${prefix}: EFFECT(${read.name}) is given twice`);
       }
-      has.push({ name: read.name, slug: read.slug, condition: read.condition, on });
+      has.push({ name: read.name, slug: read.slug, condition: read.condition, on, ...(mine ? { mine: true } : {}) });
+      return;
+    }
+    case "COST": {
+      // 0.32.0 (ruling 318): the number of actions the Maneuver was paid with. Trip, Grapple,
+      // Demoralize and others print a table of results for each cost, so a line may wait on it.
+      // Read by `apply` alone; every other kind refuses it by name.
+      if ((ops.cost !== null) && (ops.cost !== undefined)) throw new RuleSyntaxError("COST is given twice");
+      const written = String(arg ?? "").trim();
+      if (!/^\d{1,2}$/.test(written) || (Number(written) > 12)) {
+        throw new RuleSyntaxError("COST is written `COST(<n>)`, the number of actions the Maneuver was paid with, as in `IF: COST(2)`");
+      }
+      ops.cost = Number(written);
       return;
     }
     default:

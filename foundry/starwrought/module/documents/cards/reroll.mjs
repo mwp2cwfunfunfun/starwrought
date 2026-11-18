@@ -212,6 +212,10 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     substituted: flags.substituted ?? null,
     // What the Maneuver gives (0.22.0), read above.
     given,
+    // What the Maneuver puts on a creature (0.32.0): the first card's lines hold every degree, so
+    // the new card carries them as they stand. `postResult` then takes back what the first die put
+    // on the roller and lands the new degree's (cards/apply.mjs, `applyOwnFromCard`).
+    applied: flags.applies?.lines?.length ? foundry.utils.deepClone(flags.applies) : null,
     // A Gain Control's record (0.27.0): the new card's degree is read for the same Bind.
     // Its `state` is the side its user holds NOW: the first card's result may be written already,
     // and the new die's is offered against the Bind as it stands.

@@ -1,4 +1,38 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0)
+
+**0.32.0 (2026-11-17).** The twenty-fourth kind, `apply` (rulings 311 to 321), and the seventh
+hook point, `applies`: named Effects, step two, the writing half. Two tags name the one kind,
+`APPLY` and `REMOVE` (`effects.mjs`, `EFFECT_TAGS`), on a Maneuver's own row. The pure half is
+`applied.mjs` (a LINE as a roll carries it, `{ op, effect, who, until, degree, cost }`; the RECORD
+an applied Effect carries, `flags.starwrought.applied`; `linesFor`, `appliedWindow`,
+`settleApplied`, `effectCensus`). **`applies` is calculated**: `ruleApplies(actor, { item, rank })`
+in `engine.mjs` hands each kind its rules ON THE ITEM behind the use (as `ruleGives` does: a
+Basic Maneuver is in nobody's index), honours Off and Skip on an owned copy (a Skip comes back
+under `skipped` with its mark, for the caller to file when the line would have stood), and
+answers every line whatever its degree and cost, so the caller chooses with `linesFor` and a
+reroll reads the card with no Item to ask. **The kind has no `use` hook and no `card` hook, on
+purpose**: `usableByRule` would send the row down `#useWithRules`, which never rolls its check,
+and `paidElsewhere` would call the row paid from its card. The callers: `SwItem#applyOnUse` (a
+row with no check; `force`, ruling 315), `SwCheck.roll` (the card's `flags.starwrought.applies`)
+and `documents/cards/apply.mjs`, which is the TRIGGERED half: the roller's own lines land on the
+roller's client as the card is posted, a target's by the card's button on the creature's one
+writer (`writerFor`, as a give), over `effect:apply` / `effect:done` / `effect:refused`; the event
+is the check card's id and the side, and a record card (`kind: "applied"`, `from`, `who`) is what
+makes it once. The writes are `applyEffectTo` and `removeEffectFrom` in `effects-state.mjs`;
+`setCondition` took an `applied` option, decided inside its write queue, so a Condition put on
+by other means is returned untouched. **Expiry was built before anything could apply**:
+`settleAppliedEffects` runs where `settleBindWindows` does and at the encounter's end, and
+`settle` in `given.mjs` reads a window's edge through `untilEdge`, with the old meanings as the
+defaults, so a pending result's window settles as it did. Two words beside the kind: the
+condition `COST(<n>)` (`ops.cost`, read by `apply` alone, refused by name elsewhere; `bonus`
+refuses it in a line of its own, since its parse reads its ops with no refusal list) and `mine`
+on `EFFECT(<name>, mine)` (a flag on the `has` entry; `listHas(list, ref, { by })`). **"In an
+encounter" for a window is a started Combat the user or the recipient is a fighter in**, found
+by membership among `game.combats` and never by what a client views (found live: Mike's own
+Combat was on screen; and by the review: the writing client is the GM's, which may be viewing
+another). **The roller's own side has one writer, the roller's client**: the card offers a
+button for it on a blind roll alone, and a relayed request for it is served for a blind roll
+alone; a card that names its target is held to it.
 
 **0.31.0 (2026-11-17).** No new kind and no new hook point: the Effects list, and three readers
 of it (rulings 305 to 310). Mike: "assuming each Actor has an Effects list of whatever effects
@@ -372,9 +406,10 @@ A hook point is a moment in the engine where every registered kind is asked one 
 its own rules on an Actor. The engine's call sites exist once per hook point; a kind takes part by
 naming the point in its `hooks`, and a new kind that wants an existing moment adds no engine code
 (ruling 124). A new moment is still defined with the first kind that needs it (ruling 119). There
-are six: `modifiers` (0.10.0, calculated), `prevent` (0.13.0, triggered), `use` and `card` (0.15.0,
-both triggered), `substitutions` (0.21.0, calculated) and `gives` (0.22.0, calculated; the give it
-feeds is a triggered moment of its own, with its three answers in that section).
+are seven: `modifiers` (0.10.0, calculated), `prevent` (0.13.0, triggered), `use` and `card` (0.15.0,
+both triggered), `substitutions` (0.21.0, calculated), `gives` (0.22.0, calculated; the give it
+feeds is a triggered moment of its own, with its three answers in that section) and `applies`
+(0.32.0, calculated; the application it feeds is triggered too, in its section).
 
 ### Calculated and triggered
 
@@ -385,7 +420,7 @@ below, and a kind's hook keeps to it.
 - **Calculated.** The engine asks a question and the hook answers with data: modifiers, an
   adjustment, a list of what applies. The hook writes no document, posts no card, and may be
   called on any client and any number of times with the same answer. `modifiers` is one,
-  `substitutions` (0.21.0) another and `gives` (0.22.0) the third. A failure is isolated to the kind that failed: the
+  `substitutions` (0.21.0) another, `gives` (0.22.0) the third and `applies` (0.32.0) the fourth. A failure is isolated to the kind that failed: the
   dispatcher reports it once and takes nothing from that kind, and the roll or the sheet goes on
   with the rest. Stacking and ordering are the caller's, through the rule the caller already has
   (`SW.resolveModifiers` for a roll: since PHB v4.21 every bonus adds and a circumstance is counted
@@ -735,6 +770,64 @@ Actors and tells every other client over the socket (`rules:step`, served by `on
 checking the asker, the Combat and that the step was a lone one). `deleteCombat` clears every
 result of that Combat. `holdersOf` finds the holders among the Combat's fighters, the tokens on
 its scene (an unlinked token's Actor) and the world's Actors.
+
+### `applies` (0.32.0)
+
+Calculated. `hooks.applies(entries, context, actor) -> [{ line }]`, dispatched by
+`ruleApplies(actor, context)` in `engine.mjs`, which returns `{ lines, skipped }`. Defined with the
+`apply` kind (rulings 311 to 321), the seventh hook point and the fourth calculated one: "this
+Maneuver was used; what does each line of its row put on a creature, or take off?"
+
+- **When the engine calls it.** Twice, by two callers, never both for one use. `SwItem#applyOnUse`
+  (`module/documents/item.mjs`): a Maneuver with no check, once its cost is paid, and a Maneuver
+  with a use rule, once the use has stood; `rank` is null. `SwCheck.roll`
+  (`module/dice/check.mjs`): a check a character makes from an action Item whose use handed over
+  `cfg.applies` (the cost paid and the creature targeted), after the die and before the card;
+  `rank` is the rank ROLLED. A row the system runs another way (a built-in, `paidElsewhere`) hands
+  nothing over and is never asked (ruling 321).
+- **What it is handed.** `entries`: the kind's rules ON THE ITEM behind the use, owned or not, one
+  entry a call, each `{ rule, item, owner, from: "item", skip? }`. A line switched Off on an owned
+  copy never arrives. `context`: `{ item, maneuver, rank }`. `actor`: the creature using it.
+- **What it may return.** `{ line: { op: "apply" | "remove", effect: { name, slug, condition,
+  value? }, who: "self" | "target", until, degree, cost, line } }` for every line whose RANK
+  conditions hold, WHATEVER its degree and cost: the answer is whole, as the `gives` table is,
+  because the card keeps it and a reroll reads it with no Item to ask. The caller chooses with
+  `linesFor(lines, { degree, cost })` (`applied.mjs`). The hook writes nothing.
+- **What the dispatcher does.** Answers nothing for no actor, no Item or an Item that is not an
+  action; walks `KINDS`; calls each hook inside try/catch (`STARWROUGHT | the "<id>" kind's
+  applies hook failed:`); drops an answer that is no line, has no Effect, or names a degree that
+  is none. A Skip entry's lines come back under `skipped`, each with the mark that clears the
+  state (`traceMarks`), and the caller files it when that line would have stood for this use.
+
+**The application itself is triggered** (`module/documents/cards/apply.mjs`), and these are its
+three answers. **Who writes:** the roller's own client for the roller's own lines, at once, as
+the card is posted (never from a blind roll); for a target, ONE client (`writerFor`, the give's),
+asked over the system socket as `effect:apply` and answered `effect:done` or `effect:refused` to
+the asker alone, with one application of a card's side at a time on it. The request is trusted for
+which side and which creature; the lines, the degree, the cost and the Maneuver are read again
+from the check card, and the asker, from the server's stamp, must own the card's roller. **The
+event:** the check card's id and the side, `self` or `target`. A record card names both (`kind:
+"applied"`, `from`, `who`), which is what makes a result applied once on every client and after a
+reload; each applied Effect's own record names the card too (`from`), so a reroll takes back what
+the first die put on the roller (`removeAppliedFrom`). **Failure:** a line that cannot be written
+is said on the record card with why (prevented, already there by other means, a window with no
+encounter to count in); a request that cannot be served writes nothing, posts nothing and tells
+the presser.
+
+**An applied Effect** is an ActiveEffect with `flags.starwrought.applied` (`appliedRecord`: `slug`,
+`name`, `condition`, `by`, `byName`, `maneuver`, `maneuverName`, `combat`, `until`, `from`, every
+key always). A Condition's own effect carries it when an APPLY put the Condition on; a named
+Effect is created with it. The record is how the system knows what is ITS to refresh and to end:
+`setCondition(..., { applied: true })` returns a Condition put on by other means untouched, so a
+window never takes off the GM's own Off-Guard (ruling 313). Two more options are decided in the
+same write queue: `raise` (a value is only ever raised, and a Condition already on keeps whose
+it was) and `only` (a Condition goes off only while its effect still carries that application,
+`sameApplication` in `applied.mjs`), so of two APPLYs in one moment the later window stands and
+the earlier one's end takes nothing off. An effect that is switched off is not ON the creature:
+any write that puts the Condition on switches it on again. **The window** is the pending result's
+(`settle`), with an edge: `until: { who, edge, combatant, n, begun }`, counted by
+`settleAppliedEffects` on each creature's responsible client at every turn change and closed for
+all at the encounter's end.
 
 ## Adding a rule kind
 

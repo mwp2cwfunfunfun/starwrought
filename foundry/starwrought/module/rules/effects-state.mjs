@@ -32,6 +32,11 @@ import { settle, isGivenKey, givenFlagKey, usedEntry, usedLive, usedEffects, isU
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, recordLive } from "./maneuver-move.mjs";
 // The Bind's two windows (0.27.0), counted on the same change of Opportunity; pure.
 import { momentaryStep, MOMENTARY_FLAG, PRESSED_FLAG } from "../combat/bind-rules.mjs";
+// 0.32.0: the Effects an APPLY line put on a creature, and their windows (./applied.mjs is the
+// pure half; ./effect-list.mjs says what a named Effect is).
+import { settleApplied, isAppliedRecord, sameApplication, APPLIED_ICON } from "./applied.mjs";
+import { namedEffectOf } from "./effect-list.mjs";
+import { CONDITIONS } from "../config.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
@@ -403,6 +408,8 @@ export async function settleGivenResults(combat, change = {}) {
   // that every path that settles the pending results settles them too: the turn change, a lone
   // fighter's step and its socket echo.
   await settleBindWindows(combat, change);
+  // 0.32.0: and the windows of the Effects an APPLY line put on, for the same reason.
+  await settleAppliedEffects(combat, change);
   for (const actor of holdersOf(combat)) {
     try {
       if (!responsibleFor(actor)) continue;
@@ -597,6 +604,203 @@ export async function onStepSocket(message, senderId) {
 }
 
 /* -------------------------------------------- */
+/*  Applied Effects (0.32.0)                    */
+/* -------------------------------------------- */
+
+/** An effect's applied record, or null: `flags.starwrought.applied` (./applied.mjs). */
+export function appliedOf(effect) {
+  const record = effect?.flags?.[SYSTEM_ID]?.applied ?? null;
+  return isAppliedRecord(record) ? record : null;
+}
+
+/** The effects on an actor that an APPLY line put there. */
+export function appliedEffectsOn(actor) {
+  return [...(actor?.effects ?? [])].filter(e => !!appliedOf(e));
+}
+
+/** The one Condition an effect is the own effect of, or null (the Effects list's test). */
+function conditionOf(effect) {
+  const statuses = [...(effect?.statuses ?? [])];
+  return ((statuses.length === 1) && Object.hasOwn(CONDITIONS, statuses[0])) ? statuses[0] : null;
+}
+
+/**
+ * Put one line's Effect on a creature (the `apply` kind; rulings 313 to 317). Run on a client
+ * that may write the creature: its owner's for a line about the user, the recipient's one writer
+ * for a line about a target (documents/cards/apply.mjs).
+ *
+ *  - A CONDITION goes through `setCondition`, so an `IMMUNE` line is asked and says so on its own
+ *    card (unless `force`: a voluntary act is not prevented, ruling 315). It goes on only when it
+ *    is absent, or refreshes the one an APPLY put there; one that anything else put on is left
+ *    alone and answers `already`. A Condition with a VALUE is set only when that raises it.
+ *  - A NAMED EFFECT is one ActiveEffect of that name with the record on it; an applied one already
+ *    there is given the new record (the later window stands, ruling 314); a hand-made one of the
+ *    name that is switched on is left alone.
+ *  - A line with a window, outside an encounter, is not applied (`window`).
+ *
+ * @param {Actor} actor
+ * @param {object} line     `{ op: "apply", effect: { name, slug, condition, value }, until }`.
+ * @param {object} record   `appliedRecord(...)`: who, which Maneuver, the Combat, the window, the card.
+ * @param {{force?: boolean}} [options]
+ * @returns {Promise<{ok?: true, refreshed?: boolean, skipped?: "window"|"prevented"|"already"|"stronger"}>}
+ */
+export async function applyEffectTo(actor, line, record, { force = false } = {}) {
+  if (!actor || !line?.effect || !isAppliedRecord(record)) return { skipped: "already" };
+  if (line.until && !record.combat) return { skipped: "window" };
+  const id = line.effect.condition ?? null;
+  if (id && CONDITIONS[id]) {
+    if (CONDITIONS[id].numeric) {
+      const want = Math.max(1, Number(line.effect.value) || 1);
+      const have = actor.statuses?.has(id) ? (Number(actor.conditionValue?.(id)) || 1) : 0;
+      if (have >= want) return { skipped: "stronger" };
+      // The record rides on a Condition this line put on fresh, so `mine` reads it and a reroll can
+      // take it back; one that was already there is raised and keeps whose it was. Both are
+      // decided inside the Condition's write queue (`raise`), so of two writes in one moment the
+      // higher value stands, whichever lands last.
+      const effect = await actor.setCondition(id, want, { flags: { [SYSTEM_ID]: { applied: record } } }, { force, raise: true });
+      if (!effect) return { skipped: "prevented" };
+      if ((Number(effect.getFlag?.(SYSTEM_ID, "value")) || 1) > want) return { skipped: "stronger" };
+      // Raised or put on: either way the value is new, so the card says "is Frightened 3".
+      return { ok: true, refreshed: false };
+    }
+    const before = !!actor.statuses?.has(id);
+    const effect = await actor.setCondition(id, true, { flags: { [SYSTEM_ID]: { applied: record } } }, { force, applied: true });
+    if (!effect) return { skipped: "prevented" };
+    // The writer returned the effect it found untouched when something else had put it on.
+    const landed = appliedOf(effect);
+    if (!landed || (landed.from !== record.from) || (landed.by !== record.by)) return { skipped: "already" };
+    return { ok: true, refreshed: before };
+  }
+  const slug = String(line.effect.slug ?? "");
+  if (!slug) return { skipped: "already" };
+  const same = [...actor.effects].filter(e => !conditionOf(e) && (namedEffectOf(e.name)?.slug === slug));
+  const applied = same.find(e => !!appliedOf(e));
+  if (applied) {
+    await applied.update({ disabled: false, [`flags.${SYSTEM_ID}.applied`]: record }, { swAnnounced: true });
+    return { ok: true, refreshed: true };
+  }
+  if (same.some(e => !e.disabled)) return { skipped: "already" };
+  await actor.createEmbeddedDocuments("ActiveEffect", [{
+    name: String(line.effect.name ?? slug), img: APPLIED_ICON, flags: { [SYSTEM_ID]: { applied: record } }
+  }], { swAnnounced: true });
+  return { ok: true, refreshed: false };
+}
+
+/**
+ * Take one line's Effect off a creature (`REMOVE`). A Condition goes off whoever put it on, since
+ * a REMOVE is the Maneuver's own act (Stand ends Prone); the one exception is an Off-Guard that a
+ * Critical Hit or a Gain Control holds there, which has an end of its own. A named Effect of that
+ * name goes, applied or hand-made.
+ * @param {Actor} actor
+ * @param {object} line  `{ op: "remove", effect: { name, slug, condition } }`.
+ * @returns {Promise<{ok?: true, skipped?: "absent"|"held"}>}
+ */
+export async function removeEffectFrom(actor, line) {
+  if (!actor || !line?.effect) return { skipped: "absent" };
+  const id = line.effect.condition ?? null;
+  if (id && CONDITIONS[id]) {
+    if (!actor.statuses?.has(id)) return { skipped: "absent" };
+    const held = [...actor.effects].some(e => e.statuses?.has(id)
+      && (e.getFlag?.(SYSTEM_ID, "criticalHit") || e.getFlag?.(SYSTEM_ID, PRESSED_FLAG)));
+    if (held) return { skipped: "held" };
+    await actor.setCondition(id, CONDITIONS[id].numeric ? 0 : false);
+    // Still there: the status comes from an effect that is not the Condition's own (an authored
+    // effect carrying several statuses, a net that is Prone and Restrained), which is the GM's.
+    if (actor.statuses?.has(id)) return { skipped: "held" };
+    return { ok: true };
+  }
+  const slug = String(line.effect.slug ?? "");
+  const same = [...actor.effects].filter(e => !conditionOf(e) && (namedEffectOf(e.name)?.slug === slug));
+  if (!slug || !same.length) return { skipped: "absent" };
+  await actor.deleteEmbeddedDocuments("ActiveEffect", same.map(e => e.id), { swAnnounced: true });
+  return { ok: true };
+}
+
+/**
+ * Take off what one card put on a creature (a reroll replaces a card: what the first die applied
+ * to the roller goes before the second die's result lands). Only an Effect whose record names that
+ * card, so a later APPLY that refreshed it keeps it.
+ * @param {Actor} actor
+ * @param {string} from  The card's id.
+ * @returns {Promise<number>}  How many went.
+ */
+export async function removeAppliedFrom(actor, from) {
+  if (!actor || !from) return 0;
+  let count = 0;
+  for (const effect of appliedEffectsOn(actor)) {
+    const record = appliedOf(effect);
+    if (record?.from !== from) continue;
+    if (await endApplied(actor, effect, record)) count += 1;
+  }
+  return count;
+}
+
+/**
+ * End one applied Effect, if it still carries the application the caller decided on (`record`,
+ * read when the verdict was made): a later APPLY may have given it a new record, and a new
+ * window, a moment ago (ruling 314). A Condition is asked again INSIDE its write queue (`only`),
+ * where a refresh queued ahead of this has already landed; a named Effect just before it goes.
+ * @param {Actor} actor
+ * @param {ActiveEffect} effect
+ * @param {object} record  The applied record the caller's verdict was made on.
+ * @returns {Promise<boolean>}  It went.
+ */
+async function endApplied(actor, effect, record) {
+  const live = actor.effects.get(effect.id);
+  if (!record || !live || !sameApplication(appliedOf(live), record)) return false;
+  const id = conditionOf(live);
+  if (id) {
+    await actor.setCondition(id, false, {}, { only: record });
+    return !actor.effects.get(effect.id);
+  }
+  await live.delete({ swAnnounced: true });
+  return true;
+}
+
+/**
+ * A turn changed, or the encounter ended: settle the windows of the Effects APPLY lines put on in
+ * this Combat (./applied.mjs, `settleApplied`). The count rides on the record and this is its one
+ * writer, on each creature's responsible client, as for the pending results above. The holders are
+ * looked for beyond the tracker, since a target need not be a fighter: the Combat's fighters, the
+ * scene's tokens and the world's Actors. Says nothing in chat: a window closing is not an event.
+ * @param {Combat} combat
+ * @param {{ended?: string|null, began?: string|null}} [change]  Combatant ids.
+ * @param {{over?: boolean}} [options]  The encounter itself has ended: every window closes.
+ */
+export async function settleAppliedEffects(combat, change = {}, { over = false } = {}) {
+  if (!combat) return;
+  const seen = new Set();
+  const holders = [];
+  const consider = actor => {
+    if (!actor || seen.has(actor.uuid)) return;
+    seen.add(actor.uuid);
+    if (appliedEffectsOn(actor).some(e => { const r = appliedOf(e); return (r.combat === combat.id) && !!r.until; })) holders.push(actor);
+  };
+  for (const combatant of combat.combatants ?? []) consider(combatant?.actor);
+  for (const token of (combat.scene ?? globalThis.canvas?.scene)?.tokens ?? []) consider(token?.actor);
+  for (const actor of globalThis.game?.actors ?? []) consider(actor);
+  for (const actor of holders) {
+    try {
+      if (!responsibleFor(actor)) continue;
+      for (const effect of appliedEffectsOn(actor)) {
+        const record = appliedOf(effect);
+        if ((record.combat !== combat.id) || !record.until) continue;
+        const verdict = over ? "expire" : settleApplied(record, { combat: combat.id, ended: change?.ended ?? null, began: change?.began ?? null });
+        if (verdict === "keep") continue;
+        if (verdict === "expire") {
+          await endApplied(actor, effect, record);
+        } else if (sameApplication(appliedOf(actor.effects.get(effect.id)), record)) {
+          // The count goes on the window it was made for, never on one a later APPLY just set.
+          await effect.update({ [`flags.${SYSTEM_ID}.applied.until.begun`]: verdict.begun }, { swAnnounced: true });
+        }
+      }
+    } catch (error) {
+      console.error(`STARWROUGHT | the applied Effects on ${actor?.name ?? "an actor"} could not be settled:`, error);
+    }
+  }
+}
+
+/* -------------------------------------------- */
 /*  The encounter's end                         */
 /* -------------------------------------------- */
 
@@ -645,6 +849,9 @@ export async function endEncounterEffects(combat) {
   // 0.27.0: the Bind's two windows close with the encounter: a Gain Control's Off-Guard goes, and
   // a momentary Control falls back to a neutral Bind.
   await settleBindWindows(combat, {}, { over: true });
+  // 0.32.0: every window ends with the encounter, an applied Effect's too. One with no window
+  // (Prone from a Trip) lasts until something takes it off, and stays.
+  await settleAppliedEffects(combat, {}, { over: true });
   // 0.25.0: a used Effect of this Combat goes with it wherever its holder is by now. The sweep
   // above walks the fighters; one whose Combatant or token was removed while it held the Effect
   // is no fighter any more, and its record would otherwise stay listed for good (the review of

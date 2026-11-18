@@ -153,6 +153,8 @@ export function effectList({ statuses = [], conditionValue = null, effects = [],
     conditions.set(key, Number.isFinite(value) && (value > 0) ? value : 1);
   }
   const names = new Map();
+  /** Condition id -> the record of the APPLY line that put it on (0.32.0), where one did. */
+  const applied = new Map();
   // Only a name a line could write is on the list (`namedEffectOf`), so what a rule matches and
   // what the sheet's tag says are one answer.
   const add = (name, extra) => {
@@ -164,11 +166,17 @@ export function effectList({ statuses = [], conditionValue = null, effects = [],
     // A Condition's own effect (the system's, or one toggled from the token) gives no name: its
     // name is the Condition's, with the value for a numeric one ("Fatigued 2").
     const own = [...(effect.statuses ?? [])];
-    if ((own.length === 1) && Object.hasOwn(CONDITIONS, own[0])) continue;
-    add(effect.name, { applied: (effect.applied && (typeof effect.applied === "object")) ? effect.applied : null });
+    const record = (effect.applied && (typeof effect.applied === "object")) ? effect.applied : null;
+    if ((own.length === 1) && Object.hasOwn(CONDITIONS, own[0])) {
+      // ... but it keeps the record of the APPLY line that put the Condition on (0.32.0), which is
+      // how `EFFECT(<Condition>, mine)` knows whose doing it is.
+      if (record) applied.set(own[0], record);
+      continue;
+    }
+    add(effect.name, { applied: record });
   }
   for (const row of rows ?? []) add(row?.label, { applied: null, row: true });
-  return { conditions, names };
+  return { conditions, names, applied };
 }
 
 /**
@@ -205,13 +213,21 @@ export function effectsOn(actor) {
  * Does a list hold what a rule names? True or false; null when there is no list to read, which a
  * caller treats as "cannot tell" (REQUIRES) or as "does not hold" (a bonus).
  * @param {EffectList|null} list
- * @param {{slug?: string, condition?: string|null}} ref  A `readEffectName` answer.
+ * @param {{slug?: string, condition?: string|null, mine?: boolean}} ref  A `readEffectName` answer; `mine` narrows it.
+ * @param {{by?: string|null}} [options]  The uuid of the creature asking, for `mine`.
  * @returns {boolean|null}
  */
-export function listHas(list, ref) {
+export function listHas(list, ref, { by = null } = {}) {
   if (!list || !ref) return null;
-  if (ref.condition) return list.conditions.has(ref.condition);
-  return !!ref.slug && list.names.has(ref.slug);
+  const held = ref.condition ? list.conditions.has(ref.condition) : (!!ref.slug && list.names.has(ref.slug));
+  if (!held) return false;
+  // `mine` (0.32.0): held, AND put there by the one asking. Only an APPLY line leaves a record, so
+  // a Condition the GM toggled, or a hand-made effect, is nobody's.
+  if (ref.mine) {
+    const record = ref.condition ? (list.applied?.get(ref.condition) ?? null) : (list.names.get(ref.slug)?.applied ?? null);
+    return !!record && !!by && (record.by === by);
+  }
+  return true;
 }
 
 /** The named Effects of a list, by name, for a screen: `[{ slug, name, applied, row }]`. */

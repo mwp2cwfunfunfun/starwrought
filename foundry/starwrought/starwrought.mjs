@@ -34,6 +34,7 @@ import { onRulesSocket } from "./module/rules/scene.mjs";
 import { invalidateExplorationActivities, registerRoadHooks } from "./module/helpers/party.mjs";
 import { registerEffectsHooks } from "./module/rules/effects-state.mjs";
 import { registerGiveCards } from "./module/documents/cards/give.mjs";
+import { registerApplyCards } from "./module/documents/cards/apply.mjs";
 // Gain Control (0.27.0): its card's button follows the Bind it speaks of.
 import { registerGainControlCards } from "./module/documents/cards/gain-control.mjs";
 import { registerMovementTracking } from "./module/documents/movement.mjs";
@@ -276,7 +277,8 @@ Hooks.once("ready", async () => {
   game.socket.on(`system.${SW.SYSTEM_ID}`, (message, senderId) => {
     const type = String(message?.type ?? "");
     // `give:*` (0.22.0): a Maneuver's result given to another player's character, on a client that may write it.
-    if (/^(damage|reroll|expose|give):/.test(type)) return onChatSocket(message, senderId);
+    // `effect:*` (0.32.0): what a Maneuver puts on another creature, written on the client that may write it.
+    if (/^(damage|reroll|expose|give|effect):/.test(type)) return onChatSocket(message, senderId);
     if (/^party:/.test(type)) return onPartySocket(message, senderId);
     if (/^rules:/.test(type)) return onRulesSocket(message, senderId);
     return AttackCoordinator.onSocket(message, senderId);
@@ -311,6 +313,7 @@ Hooks.once("ready", async () => {
   registerRoadHooks();
   registerEffectsHooks();   // CHARACTER EFFECTS (0.16.0): an encounter-long custom effect ends with its Combat.
   registerGiveCards();      // 0.22.0: a check card's Give button follows the give card that answers it.
+  registerApplyCards();     // 0.32.0: a check card's Apply button follows the record card that answers it.
   registerRuleOfferCards(); // 0.25.0: a card's rule buttons follow the roller's used Effects and limits.
   registerGainControlCards(); // 0.27.0: a Gain Control card's button follows the Bind, and a request its answer.
 

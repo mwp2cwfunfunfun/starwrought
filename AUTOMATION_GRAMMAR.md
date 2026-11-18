@@ -66,17 +66,23 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]` | on a Talent: one property of that Maneuver is changed (a result to nothing, a window with `Aid.beneficial-duration`, its movement to a Step with `Move Together.movement; VALUE: step`, or how often it may be used with `Pay It Forward.limit; VALUE: round`) | 3 |
 | `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]` | on a Maneuver's own row: using it lets the adjacent ally you target make one Move now, outside its Opportunity, once a round | 3 |
 | `[EFFECT SUBORDINATE: Aid; LIMIT: encounter]` | on a Maneuver's own row: using it performs that Maneuver as part of it, at this row's own cost and never the other's (the Subordinate Maneuver rule) | 3 |
-| `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter` | 3 |
+| `[EFFECT APPLY: prone, target; IF: RESULT(success)]` | on a Maneuver's own row: that result of its check puts a Condition or a named Effect on the creature it was used on, by a button on the card (0.32.0) | 3 |
+| `[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]` | ... or on yourself, at once, for a time | 3 |
+| `[EFFECT APPLY: Taking Cover]` | ... or whenever the Maneuver is used, when no result is named | 3 |
+| `[EFFECT REMOVE: prone]` | on a Maneuver's own row: using it takes the Condition or the named Effect off (0.32.0) | 3 |
+| `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
 | `; IF: RANK(roll = untrained)` | ... while the rank the roll is made at is that (the borrowed Constellation's when a `USE` stands; on a `USE` line itself, the check's own rank before the swap) | 3 |
 | `; IF: SEEN` | ... for a recipient who can see the owner | 3 |
 | `; IF: ALLIES(>=1, 0)` | ... while that many allies stand within the range (`ENEMIES`, `ALL`) | 3 |
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
-| `; IF: RESULT(critical failure)` | ... on that degree (REROLL and GIVE only) | 3 |
+| `; IF: RESULT(critical failure)` | ... on that degree (REROLL, GIVE, APPLY and REMOVE only) | 3 |
+| `; IF: COST(2)` | ... when the Maneuver was paid for with that many actions (APPLY and REMOVE only; 0.32.0) | 3 |
 | `; IF: EFFECT(Aid, used)` | ... once a roll of yours at your own Opportunity has used up a bonus another creature's Aid gave you (SUBORDINATE only) | 3 |
 | `; IF: EFFECT(Taking Cover)` | ... while YOU have that Condition or named Effect (CHECK, ATK, DEF, INIT and SPEED lines; 0.31.0) | 3 |
 | `; IFT: EFFECT(prone)` | ... while the roll's OTHER PARTY has that Condition or named Effect (the same lines; 0.31.0) | 3 |
+| `; IFT: EFFECT(wrong-footed, mine)` | ... and only when YOU put it there with a Maneuver's APPLY (0.32.0) | 3 |
 | `; IFT: TRAIT(Fear)` | ... against an attack carrying the trait | 3 |
 | `; IFT: MARKED` | ... against the creature the MARK named | 3 |
 | `; IFT: BLOW` (`BLAST`, `BLIGHT`, `BEGUILEMENT`, `MELEE`, `RANGED`) | ... against that Threat, or a Blow by its reach | 3 |
@@ -184,9 +190,9 @@ Trigger, Requirements and Effect from the row. A name that is no row fails the b
 The **tag** names what is modified. A **modifier tag** (`CHECK`, `ATK`, `DEF`, `INIT`, `SPEED`,
 `GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
 book's three; FG's `[bonus]`), then at most one descriptor after a comma (`GIVE` exactly one). The
-other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`, `PERMIT`, `SUBORDINATE`) take
-descriptors alone; `USE` takes exactly three and `ALTER`, `PERMIT` and `SUBORDINATE` exactly one,
-and never a value or a type. No bonus is untyped.
+other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`, `PERMIT`, `SUBORDINATE`, `APPLY`,
+`REMOVE`) take descriptors alone; `USE` takes exactly three, `ALTER`, `PERMIT` and `SUBORDINATE`
+exactly one, `APPLY` and `REMOVE` one or two, and never a value or a type. No bonus is untyped.
 
 | tag | modifies | descriptor | stored kind |
 |---|---|---|---|
@@ -204,6 +210,8 @@ and never a value or a type. No bonus is untyped.
 | `ALTER: Aid.critical-failure` | one property of a Maneuver, changed by a Talent: `ALTER: <Maneuver>.<property>; VALUE: <value>`. The properties read are in the Property vocabulary below (0.22.0; `movement` since 0.24.0, `limit` since 0.25.0) | exactly one: the Maneuver by name, a dot, the property | `alter` |
 | `PERMIT: move` | using this Maneuver lets the creature you target make one Move now, outside its Opportunity, paying for it itself; your own next drag is the Maneuver's Move, already paid. Written on the Maneuver's own row, with `FOR:` saying who may be permitted and how near (`FOR: allies 0` is an adjacent ally) and `LIMIT:` its Frequency (0.24.0) | exactly one: what is permitted (`move`) | `permit` |
 | `SUBORDINATE: Aid` | using this Maneuver performs the named Maneuver as part of it. The named Maneuver keeps its own check, results and requirements; its own cost is never charged, and the cost printed on THIS row is the only one paid (the Subordinate Maneuver rule, below). Written on the Maneuver's own row, with `IF: EFFECT(<name>, used)` its trigger when it has one and `LIMIT:` its Frequency (0.25.0) | exactly one: the Maneuver performed, by name | `subordinate` |
+| `APPLY: prone, target` | using this Maneuver puts a Condition or a named Effect on a creature: `APPLY: <Effect>[, self \| target]`. With `IF: RESULT(<degree>)` on that result of its check, with none whenever it is used; `UNTIL:` says how long. On yourself it lands at once; on a target by a button on the card. Written on the Maneuver's own row (0.32.0) | the Effect (a Condition, `frightened 2` for one with a value, or a name of your own), then `self` (the default) or `target` | `apply` |
+| `REMOVE: prone` | using this Maneuver takes a Condition or a named Effect off a creature: `REMOVE: <Effect>[, self \| target]`, with the same `IF:` components and no `UNTIL:`. Written on the Maneuver's own row (0.32.0) | the Effect, then `self` (the default) or `target` | `apply` |
 
 **The Subordinate Maneuver rule** (Mike, 2026-11-15; ruling 245). When a Maneuver says to perform
 another Maneuver as part of it, the other is done at the first Maneuver's listed cost: it costs no
@@ -229,7 +237,7 @@ default when the swapped total is strictly higher (rulings 218 and 219; section 
 | `FOR: allies 15` | who receives it: `self` (the default), `allies`, `enemies`, `all`, `self+allies`, within that range of the owner; `FOR: self` takes no range |
 | `LIMIT: round` | the first time it would apply to each recipient in a round, and not again until the next round |
 | `LIMIT: encounter` | the first time in an encounter, and not again until the next. Outside an encounter either applies every time, said on the card |
-| `UNTIL: recipient opportunity 2` | after `GIVE` alone: the window in which the result may be used (the Window vocabulary below). With none, `giver opportunity`. Every other tag refuses it by name |
+| `UNTIL: recipient opportunity 2` | after `GIVE`: the window in which the result may be used (the Window vocabulary below); with none, `giver opportunity`. After `APPLY` (0.32.0): how long the Effect stays, where the window may also name its edge (`giver opportunity end`, `recipient opportunity start`); with none the Effect stays until something takes it off. Every other tag refuses it by name, `REMOVE` included |
 | `VALUE: nothing` | after `ALTER` alone: what the property becomes, `nothing` for a result and a window for a duration (`VALUE: recipient opportunity 2`). Every other tag refuses it by name |
 
 Both `IF:` and `IFT:` accept every condition (FG's own users mix them); the idiomatic prefix is the
@@ -244,9 +252,11 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | `ENEMIES(>=2, 15)` | how many enemies stand within the range | `IF:` |
 | `ALL(>=3, 5)` | how many creatures of either side stand within the range | `IF:` |
 | `CLAIM(when trading)` | the player decides: the bonus is a checkbox in the roll dialog with these words as its hint, unticked; the Effects tab's "Apply to next roll" and the pin on the Talent's row arm it for the next roll (ruling 174) | `IF:` |
-| `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again) and `GIVE` (the degree that gives the result) read it | `IF:` |
+| `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again), `GIVE` (the degree that gives the result) and `APPLY` and `REMOVE` (the degree that puts the Effect on, or takes it off) read it | `IF:` |
+| `COST(2)` | the number of actions the Maneuver was paid with (0.32.0; ruling 318), for a row that prints a table of results for each cost (Trip, Grapple, Demoralize). 0 to 12. Only `APPLY` and `REMOVE` read it. Where nothing is paid (outside an encounter, or with action tracking off) a row with one cost reads that cost, and a row with a range asks which version this use is | `IF:` |
 | `EFFECT(Aid, used)` | a used Effect (0.25.0): a roll of yours, made at your own Opportunity that is still running, has used up the Effect of that name, and it was a bonus another creature gave you. The name is the Maneuver whose result it was. Only `SUBORDINATE` reads it, and only after `IF:` | `IF:` |
 | `EFFECT(Taking Cover)`, `EFFECT(prone)` | a creature HAS it now (0.31.0): a Condition by its name, or a named Effect, anything on the creature that is no Condition (the Effects list, below). **The prefix says whose: `IF:` is the creature rolling, `IFT:` the roll's other party.** A line may hold one of each. Only the `bonus` lines read it (CHECK, ATK, DEF, INIT, SPEED), and not beside a `FOR` that reaches others, an aura's ring included. After `IFT:` it is refused on an INIT or a SPEED line (neither has another party) and beside `IF: CLAIM(...)` (a claim is asked before the other party is known) | `IF:` or `IFT:` |
+| `EFFECT(wrong-footed, mine)` | the same, narrowed to an Effect that the creature rolling put there with a Maneuver's `APPLY` (0.32.0; ruling 319): "Wrong-Footed to you". An Effect put on by any other means (a GM's hand, a Critical Hit, another creature's Maneuver) is not yours. Read after either prefix, by the same lines | `IFT:` |
 | `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171) | `IFT:` |
 | `MARKED` | the other party is the creature this Talent's or Maneuver's `MARK` named (FG's `IFT: CUSTOM(Hunt Prey)`) | `IFT:` |
 | `BLOW` | the Threat answered is a Blow (a weapon's Strike, an adversary's attack row) | `IFT:` |
@@ -275,6 +285,23 @@ the second. `recipient opportunity 2` runs through the END of the recipient's se
 Opportunity (an Opportunity already running when the result is given is not counted). `encounter`
 is until the encounter ends. Every window also ends with the encounter, and outside an encounter a
 result lasts until it is used, replaced or removed.
+
+After `UNTIL:` on an `APPLY` line (0.32.0) the same words say how long the Effect stays on the
+creature, and the window may name its edge, which a `GIVE` window never does:
+
+| window | the Effect stays |
+|---|---|
+| `giver opportunity` | until the next Opportunity of the creature that used the Maneuver BEGINS ("until your next Opportunity") |
+| `giver opportunity end` | through the END of that creature's next Opportunity ("until the end of your next Opportunity") |
+| `recipient opportunity` | through the END of the next Opportunity of the creature the Effect is on |
+| `recipient opportunity start` | until that creature's next Opportunity BEGINS |
+| `giver opportunity 2`, `recipient opportunity 2 start` | the same, counting to the second |
+| `encounter` | until the encounter ends |
+| no `UNTIL:` | until something takes it off: a `REMOVE` line, or a hand |
+
+An Opportunity already running when the Effect is applied is never the one counted. A window is
+counted in an encounter, so a line with `UNTIL:` is not applied outside one, and its card says so
+(ruling 316). `start` may also be written `begin`.
 
 **Property** (0.22.0). What an `ALTER` may change of the results a Maneuver gives, after the dot:
 `duration` (every result's window), `beneficial-duration` (the window of the results that give a
@@ -311,8 +338,8 @@ not read as an Effect.
 Three lines read the list: `[REQUIRES ...]` on a Maneuver's row (section 4), and `IF: EFFECT(...)`
 and `IFT: EFFECT(...)` on a bonus line (the table above). A rule reads a named Effect off any
 creature. The hover card shows one made by hand to the creature's owner and the GM alone (a GM
-may keep a private note as an effect on an adversary); one a Maneuver applies, from the next
-release, will show to everyone, as a Condition does (ruling 309).
+may keep a private note as an effect on an adversary); one a Maneuver applies (0.32.0) shows to
+everyone, as a Condition does (rulings 309 and 320).
 
 What the name may not be: `not` in front (it turns a whole condition round: `[REQUIRES not effect
 Blessed]`; a bonus line has no `not` yet); a Condition with a number (`Fatigued 2`: a value is
@@ -324,14 +351,14 @@ see it.
 
 | what | where it shows | read by |
 |---|---|---|
-| a Condition or a named Effect ON a creature | the token, the hover card, the Effects tab's Active Effects | `EFFECT(<name>)`, `[REQUIRES <condition>]`, `[REQUIRES effect <Name>]` |
+| a Condition or a named Effect ON a creature, put there by a hand, by the system or by a Maneuver's `APPLY` | the token, the hover card, the Effects tab's Active Effects (an applied one wears an Applied tag) | `EFFECT(<name>)`, `[REQUIRES <condition>]`, `[REQUIRES effect <Name>]` |
 | a pending result ("Aid from Wren") and a used Effect ("Aid from Wren (used)") | the Effects tab's Pending results | the next roll with its Constellation; `EFFECT(Aid, used)` on a `SUBORDINATE` line |
 | a line of Automation (an `[EFFECT ...]` block on a Talent, or a custom effect row's lines) | the Effects tab's rule lines, with On, Skip, Off | nothing reads a line; a line reads the roll |
 
 So `EFFECT(Aid)` does not see a pending "Aid from Wren"; a custom effect row LABELLED "Rage" is the
 named Effect Rage, whatever its lines say.
 
-**Named Effect** (0.25.0, step one; 0.31.0, the reading half of step two). Mike, 2026-11-15, after
+**Named Effect** (0.25.0, step one; 0.31.0, the reading half of step two; 0.32.0, the writing half). Mike, 2026-11-15, after
 Fantasy Grounds: "using a Maneuver can grant a custom Effect on a target (with a specific
 duration), and other modifiers/effects can be applied IF that custom Effect field is on the
 target." Step one is an Effect the SYSTEM leaves: when a roll of yours uses up a bonus another
@@ -340,9 +367,9 @@ with "(used)" after it (**Aid from Wren (used)**) until that Opportunity ends, l
 Effects tab under Pending results. `IF: EFFECT(<Maneuver>, used)` reads it. A penalty a roll
 swallowed, a roll on another fighter's Opportunity, an Initiative, and a result the GM binned or
 whose window closed leave nothing. Since 0.31.0 a bonus line reads an Effect a creature has
-(`IF: EFFECT(<name>)`, `IFT: EFFECT(<name>)`), and until the next release such an Effect is put on
-by hand. Not built yet, and next: a Maneuver that puts one on (`APPLY`) and takes one off
-(`REMOVE`), with a window.
+(`IF: EFFECT(<name>)`, `IFT: EFFECT(<name>)`). Since 0.32.0 a Maneuver puts one on (`APPLY`) and
+takes one off (`REMOVE`), with a window, and `EFFECT(<name>, mine)` asks whether you were the one
+who put it there (section 4, `apply`).
 
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
@@ -727,6 +754,140 @@ built-in (Recenter, Raise a Shield, the visor, Pass), one the system pays anothe
 Cast, a Move, a Step, a Leap), a parent row whose own cost is three or more (it would be Prepared),
 a second `SUBORDINATE` line on one row, and a subordinate that names a subordinate of its own.
 
+### `apply`
+Using this Maneuver puts a Condition or a named Effect on a creature, or takes one off (0.32.0;
+rulings 311 to 321). Made by `[EFFECT APPLY: ...]` and `[EFFECT REMOVE: ...]` on a Maneuver's own
+row: two tags, one kind. This is the writing half of named Effects (Mike, 2026-11-15: "using a
+Maneuver can grant a custom Effect on a target (with a specific duration)"; and 2026-11-17, by
+question: the tags are APPLY and REMOVE, and an Effect on yourself lands at once while one on
+another creature is a button on the card).
+
+```
+[EFFECT APPLY: <Effect>[, self | target]; UNTIL: <window>; IF: RESULT(<degree>); IF: COST(<n>)]
+[EFFECT REMOVE: <Effect>[, self | target]; IF: RESULT(<degree>); IF: COST(<n>)]
+
+[EFFECT APPLY: prone, target; IF: RESULT(success)]                                  Trip
+[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]   an overcommit
+[EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]     Demoralize ❶
+[EFFECT APPLY: Taking Cover]                                                        Take Cover
+[EFFECT REMOVE: prone]                                                              Stand
+```
+
+- **The Effect** is a Condition by its name, or any other name, which is a named Effect (section 3,
+  the Effects list). A Condition that carries a value takes a number, `frightened 2`, and is 1
+  with none. A named Effect's name is letters, digits, spaces, hyphens and apostrophes, in the
+  casing you want it shown in.
+- **Who** is `self` (the default: the creature using the Maneuver) or `target` (the one creature
+  it is used on).
+- **`IF: RESULT(<degree>)`**: on that result of the Maneuver's check, one line for each degree. A
+  row may hold several lines for one degree. With none, the line stands whenever the Maneuver is
+  used.
+- **`IF: COST(<n>)`**: only when the Maneuver was paid for with that many actions.
+- **`UNTIL:`** on an APPLY line: how long (section 3, Window). With none, until something takes
+  it off.
+- **`IF: RANK(...)`** reads the owner's rank, and `RANK(roll ...)` the rank rolled.
+
+Written on a Maneuver's own row and nowhere else, as `GIVE` is. Refused, each by its message:
+
+- **The Conditions the system itself runs**: `bound`, `controlling`, `controlled`, `wounded`,
+  `dying`, `dead`, `spent`, `preparing`, and an Exposed Zone. They follow what happens to the
+  creature.
+- **`UNTIL:` beside a Condition with a value** (ruling 317): Frightened and the like move by
+  their own rule. And `UNTIL:` after `REMOVE`.
+- **A `target` line with no `IF: RESULT(...)`** (ruling 321): a target's Effect lands from the
+  card of the Maneuver's check, and a Maneuver with no check has no such card.
+- **A number after a Condition with no value** (`prone 2`), and a number after `REMOVE`.
+- `FOR`, `LIMIT`, `VALUE`, `IF: CLAIM(...)`, `IF: EFFECT(...)`, `IF: SEEN`, every condition about
+  the other party, and an APPLY after the ring of an `[AURA ...]` block.
+
+**As read:** `puts Prone on the target, on a Success`; `puts Off-Guard on you until your next
+Opportunity, on a Critical Failure`; `puts Frightened 2 on the target, on a Critical Success, when
+1 action is paid`; `takes Prone off you`.
+
+In play:
+
+- **On yourself it lands at once** (ruling 312). A Maneuver with no check applies its lines as it
+  is used, once its cost is paid, and says so on its own card ("Tess is no longer Prone."). A
+  Maneuver with a check applies your own lines for the degree rolled as its card is posted, and a
+  small card under it says what landed.
+- **On another creature it is a button on the card**, for the roller's owner and the GM: "Apply
+  to Bandit: Prone". The creature is the one token you had targeted when you used the Maneuver;
+  with none, the button reads "Apply to your target" and takes the one token the presser has
+  targeted then. One client writes for a creature, the GM's when a GM is connected, else its
+  owner's; a player's press is carried to it. A small card records what was applied, and the
+  button gives way to its words on every screen, so a result is applied once.
+- **Never from a blind roll.** The roller may not know the degree, so nothing lands by itself;
+  the GM's card has the button for the roller's own lines too. That is the only card with a
+  button for the roller's own side: on every other the roller's client has already landed it.
+- **A card that names its target is held to it.** The button puts the result on the creature
+  that was targeted at the roll and on no other; only a card with nobody targeted takes the
+  presser's target.
+- **A private roll's record is seen by whoever saw the roll**, the roller included.
+- **A Condition that is already on by other means is left alone** (ruling 313). The GM's hand, a
+  Critical Hit and a Bind put Conditions on too: an APPLY adds nothing to such a Condition, its
+  window takes nothing off, and the card says "already ... by other means". A Condition whose
+  effect is SWITCHED OFF on the Effects tab is not on: an APPLY switches it on again and it
+  becomes the line's.
+- **Of two APPLYs of one Effect, the later one's window stands** (ruling 314).
+- **An `IMMUNE` line still stops it.** Stubborn Footing refuses the Prone from a Trip, with its own
+  card, as it refuses one from the token palette. The exception is your own act with no check
+  (ruling 315): Dropping Prone by choice is not stopped by an `IMMUNE` line and does not use it up.
+- **A window is counted in an encounter** (ruling 316): a started Combat that the creature using
+  the Maneuver, or the one the Effect goes on, is a fighter in, whatever Combat or scene the
+  writing client has on screen. A line with `UNTIL:` is not applied outside one, and the card
+  says so. Every window ends with the encounter.
+- **A Condition's value** (ruling 317): `frightened 2` on a creature already Frightened 3 changes
+  nothing; on one Frightened 1 it raises it to 2.
+- **`REMOVE`** takes a Condition off whoever put it on, since it is the Maneuver's own act (Stand
+  ends Prone). The exceptions, each said on the card as "something else holds it there": an
+  Off-Guard that a Critical Hit or a Gain Control holds, which has an end of its own, and a
+  Condition that comes from an effect of the GM's carrying several (a net that is Prone and
+  Restrained). A named Effect of that name goes, applied or made by hand.
+- **A reroll** is a new card. What the first die put on YOU is taken back before the new result
+  lands; what it put on another creature stays, for the GM to take off.
+- **A check with no Threshold has no result**, so its lines that wait on one apply nothing, and
+  the card says so.
+- **The cost** (ruling 318) is what the use was paid at. Where nothing is paid (outside an
+  encounter, or with action tracking off) a row with one cost reads that cost, and a row with a
+  range of costs whose lines wait on the cost asks which version this use is. A Prepared Maneuver
+  applies at Finish, with the cost it was Prepared at. A Reaction reads the cost of its Reaction
+  half where the row prints one, and a Maneuver performed as part of another reads its parent's
+  cost, as it is paid at.
+- **Applied Effects are public** (ruling 320): the hover card lists one for everyone, as it lists
+  a Condition. On the Effects tab an applied Effect wears an **Applied** tag whose tooltip says
+  who put it there, with which Maneuver, and until when.
+- **"Applied by me"** (ruling 319): `IFT: EFFECT(wrong-footed, mine)` on a bonus line holds only
+  against a creature YOU put the Effect on. That is how "Wrong-Footed to you" is written.
+- **On / Skip / Off** on the Effects tab, for a copy of the Maneuver the character owns: Off, the
+  line applies nothing; Skip, it is passed over once, by the use it would have stood for.
+
+What this version does not do:
+
+- **A row the system runs another way applies nothing** (ruling 321): a built-in (Strike,
+  Recenter, Raise a Shield, Reload, Pass, Gain Control) and a row another act pays for (Cast, Move,
+  Step, Crawl, Rush, Leap, Squeeze, Close). A Rush is the drag, not a use of its row, so Rush's
+  Off-Guard is by hand. The build warns about such a line.
+- **A row with a use rule** (`MARK`, `PERMIT`) does not roll its own check, so only its lines with
+  no `IF: RESULT` apply. **A row with a `SUBORDINATE` line applies none of its own**: its use IS
+  the other Maneuver's, so the lines belong on that Maneuver's row.
+- **A row that rolls no check** never meets an `IF: RESULT`. The build warns about such a line.
+- **Ends that are events** are by hand: "until you Move, Step or Attack" (Take Cover), "until they
+  Interact" (Disarm), Sustained, minutes. Write no `UNTIL:` and the Effect stays until removed.
+- **An adversary's row applies nothing by degree**: an adversary rolls flat. An APPLY can put
+  Effects ON an adversary, and `IFT:` and `with` read them.
+- **Trip and Grapple know their result only when a Threshold is given.** Their rows say "vs. Evade
+  or Guard", and the system reads a target's Threshold by itself only when a row names one Defense
+  (Demoralize against Guard); otherwise type the Threshold in the roll dialog.
+- **A Basic Maneuver's row cannot carry a reading line for everyone.** "It takes -2 to its next
+  Attack against you" needs a line on the creature that reads the Effect; such a line lives on a
+  Talent or on a Maneuver a character owns. An Effect that carries its own lines is not built.
+- **A value is applied, never compared**: `EFFECT(frightened)` reads any value.
+
+The build warns, and does not fail, in four cases (section 8 has the words): a line reads a named
+Effect that no Maneuver applies (a typo of the name, or an Effect meant to be added by hand); an
+APPLY sits on a row the system runs another way; a line waits on a result on a row that rolls no
+check; a name begins with a Condition's name and so reads as a named Effect of its own.
+
 ### `requires`
 
 What a Maneuver needs before it can be used (0.28.0; rulings 281 to 289). Mike, of the Maneuvers
@@ -1089,8 +1250,73 @@ And on a Talent or a Maneuver a character owns, a bonus that waits on an Effect:
   [EFFECT CHECK: 1 situation, intimidation; IFT: EFFECT(frightened)]   +1 to Intimidation against the Frightened
 ```
 
-Until the next release puts Effects on by a Maneuver's result, an Effect that is no Condition is
-put on by hand: the plus beside "Active Effects" on the Effects tab of either sheet, then its name.
+An Effect that is no Condition is put on by a Maneuver's `APPLY` line (below), or by hand: the plus
+beside "Active Effects" on the Effects tab of either sheet, then its name.
+
+### Putting Effects on (0.32.0)
+
+What the rows of `data/actions_maneuvers.xlsx` say today, written with `APPLY` and `REMOVE`. They
+are for Mike to paste: no workbook was written. Each block goes on a line of its own in the row's
+Automation cell, beside any `[REQUIRES ...]` block the row has.
+
+```
+  Stand ❶          [EFFECT REMOVE: prone]
+
+  Drop Prone ⓿     [EFFECT APPLY: prone]
+
+  Take Cover ❶     [EFFECT APPLY: Taking Cover]
+                   (its end, "until you Move, Step or Attack", is an event: take it off by hand)
+
+  Trip ❶ to ❷      [EFFECT APPLY: prone, target; IF: RESULT(critical success)]
+                   [EFFECT APPLY: prone, target; IF: RESULT(success)]
+                   [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(failure); IF: COST(2)]
+
+  Shove ❶ to ❷     [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(failure); IF: COST(2)]
+
+  Disarm ❷ to ❸    [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(failure); IF: COST(3)]
+
+  Grapple          [EFFECT APPLY: restrained, target; UNTIL: giver opportunity; IF: RESULT(critical success)]
+                   [EFFECT APPLY: grabbed, target; UNTIL: giver opportunity; IF: RESULT(success)]
+                   [EFFECT APPLY: prone, target; IF: RESULT(critical success); IF: COST(2)]
+                   [EFFECT APPLY: prone, target; IF: RESULT(success); IF: COST(2)]
+                   [EFFECT APPLY: prone; IF: RESULT(success); IF: COST(2)]
+                   [EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure); IF: COST(1)]
+                   [EFFECT APPLY: prone; IF: RESULT(critical failure); IF: COST(2)]
+                   (its Cost cell reads 0 today; the COST lines wait for it to read "1 to 2")
+
+  Demoralize       [EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]
+  ❶ to ❸           [EFFECT APPLY: frightened 1, target; IF: RESULT(success); IF: COST(1)]
+                   [EFFECT APPLY: frightened 3, target; IF: RESULT(critical success); IF: COST(3)]
+                   [EFFECT APPLY: heedless, target; UNTIL: giver opportunity; IF: RESULT(critical success); IF: COST(3)]
+                   [EFFECT APPLY: frightened 2, target; IF: RESULT(success); IF: COST(3)]
+                   (❷ Break Them, many creatures at once, is by hand: a card has one target)
+
+  Feint ❶          [EFFECT APPLY: wrong-footed, target; UNTIL: giver opportunity end; IF: RESULT(critical success)]
+                   [EFFECT APPLY: wrong-footed, target; UNTIL: giver opportunity; IF: RESULT(success)]
+                   [EFFECT APPLY: wrong-footed; UNTIL: giver opportunity; IF: RESULT(critical failure)]
+
+  Escape ❶ to ❷    [EFFECT REMOVE: grabbed; IF: RESULT(critical success)]
+                   [EFFECT REMOVE: restrained; IF: RESULT(critical success)]
+                   [EFFECT REMOVE: grabbed; IF: RESULT(success)]
+                   [EFFECT REMOVE: restrained; IF: RESULT(success)]
+```
+
+And on a Talent, a line that reads what a Maneuver of yours put on a creature:
+
+```
+  [EFFECT ATK: 1 situation; IFT: EFFECT(wrong-footed, mine)]      +1 to attacks against a creature you Wrong-Footed
+  [EFFECT DEF: 1 situation; IF: EFFECT(Taking Cover)]             +1 to Defenses while you have Taking Cover
+```
+
+What these rows say that a line cannot yet: "Wrong-Footed TO a creature" on yourself (the
+Condition goes on you; whom it is to is the table's), a window that ends with ANOTHER creature's
+Opportunity on an Effect that is on you (Tumble Through's Critical Failure), damage, pushes and
+movement, a result applied to each of several creatures (Hide, Sneak, Captivate), "its next Attack
+against you" (Talk Them Down, Anticipate, Bolster: a Basic row cannot carry the line that reads
+it), and a degree raised by an Exposed Zone (Trip's Special).
 
 ## 6. Character Effects
 
@@ -1300,13 +1526,28 @@ written on the Maneuver's row.
   check read against one creature's Threshold. An adversary's Effects are read as a character's
   are. A `[REQUIRES effect ...]` block and a `with` are read by the Maneuvers tab, which looks
   again whenever an effect on any creature changes (a custom effect row on ANOTHER character is
-  the one change it does not hear until something else moves). Nothing puts a named Effect on yet
-  but a hand: the Effects tab's Active Effects, where a player's change is said in chat (a custom
-  effect row's label is not: the row is the player's own, as its lines are). The hover card lists
-  a creature's hand-made Effects for its owner and the GM. Where one Talent has a line on the
+  the one change it does not hear until something else moves). A named Effect is put on by a
+  Maneuver's `APPLY` (below) or by a hand: the Effects tab's Active Effects, where a player's
+  change is said in chat (a custom effect row's label is not: the row is the player's own, as its
+  lines are). The hover card lists a creature's hand-made Effects for its owner and the GM, and
+  an applied one for everyone. Where one Talent has a line on the
   attack die and another line that waits on the defender (`ATK: 1` and `ATK: 2; IFT:
   EFFECT(prone)`), the two are one circumstance, counted once: +2 against a Prone defender, not
   +3.
+- **A Maneuver puts Effects on, and takes them off** (0.32.0; rulings 311 to 321; section 4,
+  `apply`). An `APPLY` or `REMOVE` line on a Maneuver's own row acts when the Maneuver is used
+  from its row: with no `IF: RESULT`, as the cost is paid, on the Maneuver's own card; with one,
+  after the check, on the creature using it at once and on the creature targeted by the button on
+  the card ("Apply to Bandit: Prone"), which the roller's owner or the GM presses once. The
+  client that writes a target is the GM's, or its owner's with no GM; with neither connected the
+  presser is told and nothing lands. An `IMMUNE` line stops a Condition as it stops one from the
+  token palette. A Condition already on by other means is left alone. A window (`UNTIL:`) is
+  counted in the encounter the Effect was applied in and closes on the turn change it names; the
+  Effect goes then with no card, and every window ends with the encounter. Outside an encounter a
+  line with a window is not applied. `EFFECT(<name>, mine)` on a bonus line holds only for an
+  Effect the creature rolling applied. Nothing is applied by a Maneuver the system runs another
+  way (a Strike, a Rush's drag), by an adversary's roll, from a blind roll by itself, or by a
+  check that had no Threshold.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
   every clause with no line for it is the table's.
 - **Adversaries.** A rule on an adversary's Item is indexed but no adversary roll asks for
@@ -1340,8 +1581,28 @@ written on the Maneuver's row.
 | `"<words>": a Condition's value is not compared yet; write \`fatigued\`, which is any value` | a Condition's name with a number after it, `EFFECT(Fatigued 2)` (0.31.0) |
 | `<TAG> has no other party, so IFT: EFFECT(<name>) could never hold; for an Effect of your own write \`IF: EFFECT(<name>)\`` | `IFT: EFFECT(...)` on an INIT or a SPEED line (0.31.0) |
 | `<TAG> does not read IFT: EFFECT(<name>) beside IF: CLAIM(...): a claim is asked at the die, before the other party is known` | the two on one line (0.31.0) |
-| `EFFECT is written \`EFFECT(<name>)\` or \`EFFECT(<name>, used)\`, as in ...` | an `EFFECT` with no name, an empty part, or three parts |
-| `"<word>": the one state read is \`used\`, as in \`EFFECT(<name>, used)\`; an Effect a creature has now is written \`EFFECT(<name>)\`` | a second word that is not `used` |
+| `EFFECT is written \`EFFECT(<name>)\`, \`EFFECT(<name>, mine)\` or \`EFFECT(<name>, used)\`, as in ...` | an `EFFECT` with no name, an empty part, or three parts |
+| `"<word>": the second word is \`used\` (a roll of yours has just used the Effect up) or \`mine\` (you put it there); an Effect a creature has now is written \`EFFECT(<name>)\`` | a second word that is neither |
+| `APPLY is written on the Maneuver's own row: it says what using that Maneuver puts on a creature or takes off. A line that READS an Effect goes on a Talent, as in ...` | an `APPLY` or a `REMOVE` on a Talent or a custom effect row (0.32.0) |
+| `APPLY names the Effect: a Condition (\`prone\`, \`frightened 2\`) or a name of your own (\`Taking Cover\`), as in ...` | an `APPLY` or `REMOVE` with nothing after the colon |
+| `"<word>": after the Effect comes \`self\` (you, and the default) or \`target\` (the creature the Maneuver is used on)` | a second descriptor that is neither; also what `APPLY: 1 situation, prone` is told, since APPLY takes no value |
+| `"prone target": a comma goes before \`target\`, as in \`APPLY: prone, target\`` | the comma left out before `self` or `target`; without this the line would read as a named Effect called "prone target" on yourself |
+| WARNING: `"frightened two" is read as a named Effect of its own, not the Condition Frightened; for the Condition write \`frightened\`, with a whole number for its value` | a name that BEGINS with a Condition's name: the line reads, as a named Effect, and the build says so in case the Condition was meant |
+| WARNING: `<row>: this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result (IF: RESULT) never stand; ...` | an `IF: RESULT` line on a row whose Effect names no check |
+| WARNING: `<row>: this Maneuver is run by the system another way ..., so its APPLY and REMOVE lines apply nothing` | a line on a built-in or on a row another act pays for |
+| WARNING: `EFFECT(<Name>): no Maneuver applies an Effect of that name (read by ...); ...` | a named Effect that a line reads and no row's `APPLY` puts on |
+| `APPLY on a target lands from the card of the Maneuver's check, so it names the result: add \`IF: RESULT(<degree>)\`, as in ...` | `APPLY: ..., target` with no degree (ruling 321) |
+| `APPLY takes one \`IF: RESULT(...)\` (2 given): write one line for each degree` | two degrees on one line |
+| `APPLY cannot put on Bound: the system runs that Condition itself (the Bind, Wounds, Dying, Spent and Preparing follow what happens to the creature)` | `bound`, `controlling`, `controlled`, `wounded`, `dying`, `dead`, `spent`, `preparing` after APPLY or REMOVE |
+| `"prone 2": Prone carries no value; write \`prone\`` | a number after a Condition that has none |
+| `REMOVE takes a Condition off whole: write \`REMOVE: frightened\`` | a number after `REMOVE` |
+| `APPLY takes no UNTIL beside a Condition with a value: Frightened 2 moves by its own rule` | `UNTIL:` on a numeric Condition (ruling 317) |
+| `REMOVE does not take UNTIL` | a window on a `REMOVE` |
+| `APPLY is what using a Maneuver does and cannot ride an [AURA ...] block; write it on the Maneuver's row as ...` | an `APPLY` after an aura's ring |
+| `COST is written \`COST(<n>)\`, the number of actions the Maneuver was paid with, as in \`IF: COST(2)\`` / `COST is given twice` | the contents of `COST`: a whole number from 0 to 12, once |
+| `<TAG> does not take IF: COST(<n>)` | `COST` on any line but an `APPLY` or a `REMOVE`; a bonus line adds "the cost a Maneuver was paid with is read by APPLY and REMOVE" |
+| `"end": a window's edge is written after APPLY alone; here a giver's window ends as that Opportunity begins and a recipient's as it ends` | `end`, `start` or `begin` in a `GIVE` window or an `ALTER` of a duration |
+| `"APPLY" is a tag and begins its own line; one effect per line, ...` | `APPLY:` written as a component of another line (a draft of Coordinated Footwork's did) |
 | `IFT: EFFECT(<name>, used) is not read: a used Effect is your own roll's, so it is written \`IF: EFFECT(<name>, used)\`` | the used form after `IFT:` |
 | `<TAG> does not take EFFECT(<name>)` | the plain form on a line that is no bonus (IMMUNE, USE, REROLL, MARK, IGNORE, GIVE, ALTER, PERMIT, SUBORDINATE) |
 | `<TAG> does not take IF: EFFECT(<name>, used): a used Effect is what a SUBORDINATE line waits for. For an Effect you have now, write \`IF: EFFECT(<name>)\`` | the used form on a bonus line |
@@ -1607,3 +1868,16 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   and `EFFECT(Hunter's Mark)` were errors; and one Talent's lines split between the attack die
   and the pairing with a defender both counted, where one circumstance counts once. The writing
   half, `APPLY` and `REMOVE` on a Maneuver's own row, is the next release.
+- **0.32.0** (2026-11-17): a Maneuver puts Effects on and takes them off, the writing half of
+  named Effects, by Mike's three answers when both halves were planned: the tags are `APPLY` and
+  `REMOVE`, an Effect on yourself lands at once, and one on another creature is a button on the
+  card. The `apply` kind, the twenty-fourth (rulings 311 to 321), on a Maneuver's own row:
+  `APPLY: <Effect>[, self | target]` with `UNTIL:` for how long and `IF: RESULT(<degree>)` for
+  which result, `REMOVE:` the same with no window. Two additions to the vocabulary beside it:
+  the condition `COST(<n>)`, the number of actions the Maneuver was paid with, for rows that
+  print a table for each cost (318); and `mine` as the second word of `EFFECT(<name>, mine)`, an
+  Effect the creature rolling applied (319). A window after `APPLY` may name its edge (`giver
+  opportunity end`, `recipient opportunity start`); a `GIVE` window may not, and reads as it did.
+  The seventh hook point, `applies`, calculated, defined with the kind. The build warns when a
+  line reads a named Effect no Maneuver applies, and when an `APPLY` sits on a row the system
+  runs another way.

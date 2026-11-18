@@ -29,7 +29,7 @@ import { summarize } from "../rules/grammar.mjs";
 import { usableByRule } from "../rules/engine.mjs";
 // CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0), its state
 // switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
-import { effectsContext, armClaimLine, effectReadAs } from "../helpers/effects.mjs";
+import { effectsContext, armClaimLine, effectReadAs, effectAppliedTag } from "../helpers/effects.mjs";
 import { cycleRuleState, addEffect, removeEffect, removeGiven, removeUsed } from "../rules/effects-state.mjs";
 // THE MANEUVERS TAB (0.28.0): which Maneuvers apply now, the Favorites first, no row twice.
 import { situationOf, statusOf } from "../helpers/situation.mjs";
@@ -444,7 +444,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // The rules page a condition's row opens, when its condition has one (0.5.1, T6).
       rulesPage: rulesPageOf(e),
       // How a line of Automation reads it (0.31.0): `prone`, or `EFFECT(Blessed)`.
-      readAs: effectReadAs(e)
+      readAs: effectReadAs(e),
+      // Put there by a Maneuver's APPLY line (0.32.0): who, with what, until when.
+      applied: effectAppliedTag(e)
     }));
 
     // The wizard's own state, so a half-built character says so instead of looking broken.

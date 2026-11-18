@@ -930,6 +930,99 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.32.0 (Mike, 2026-11-17; rulings 311 to 321): a Maneuver puts Effects on, and takes them off.**
+Mike: "Build 0.32.0", the writing half of named Effects, planned with 0.31.0
+(`dazzling-floating-simon.md`; his decisions by question: the tags are APPLY and REMOVE, an Effect
+on yourself lands at once, one on another creature is a button on the card). **The `apply` kind,
+the twenty-fourth** (`module/rules/kinds/apply.mjs`), two tags for one kind, on a MANEUVER'S OWN
+ROW and nowhere else: `[EFFECT APPLY: <Effect>[, self | target]; UNTIL: <window>; IF:
+RESULT(<degree>); IF: COST(<n>)]` and `[EFFECT REMOVE: <Effect>[, self | target]; IF: ...]`; the
+Effect a Condition (`frightened 2` for one with a value, 1 with none) or a named Effect; stored
+`{ kind: "apply", op: "apply" | "remove", effect: { name, slug, condition, value? }, who, when,
+until, cost }`. Refused: the Conditions the system runs (`SYSTEM_CONDITIONS` in
+`module/rules/applied.mjs`: the Bind's three, wounded, dying, dead, spent, preparing; an Exposed
+Zone by `readEffectName`), `UNTIL` beside a numeric Condition and after `REMOVE`, a `target` line
+with no `IF: RESULT` (ruling 321), a number after a Condition with no value or after `REMOVE`,
+an APPLY inside `[AURA ...]`. **It has ONE hook, `applies`, the seventh hook point, calculated**
+(`ruleApplies(actor, { item, rank })` in `module/rules/engine.mjs` -> `{ lines, skipped }`: the
+rules on the Item behind the use, as `ruleGives`; every line whose rank conditions hold, WHATEVER
+its degree and cost; Off dropped, a Skip under `skipped` with its mark). **NO `use` AND NO `card`
+HOOK, on purpose**: `usableByRule` would send the row down `#useWithRules`, which never rolls its
+check, and `paidElsewhere` would call it paid from its card. **The pure half is
+`module/rules/applied.mjs`**: a LINE (`{ op, effect, who, until, degree, cost }`), `linesFor(lines,
+{ degree, cost })` (lines of no degree always stand; a cost line only when the cost paid is
+known and equal), `needsCost`, `appliedWindow`, `appliedRecord` (every key always: `slug`, `name`,
+`condition`, `by`, `byName`, `maneuver`, `maneuverName`, `combat`, `until`, `from`),
+`settleApplied`, `appliedBy`, `effectCensus`, the words. **An applied Effect is an ActiveEffect
+with `flags.starwrought.applied`**: that record is how the system knows what is ITS to refresh
+and to end. **A Condition already on by other means is left alone** (ruling 313):
+`setCondition(id, value, data, { force, applied })` in `documents/actor/conditions.mjs`, where
+`applied: true` returns an effect with no record untouched, decided inside the write queue.
+**The writes** (`module/rules/effects-state.mjs`): `applyEffectTo(actor, line, record, { force })`
+-> `{ ok, refreshed }` or `{ skipped: "window" | "prevented" | "already" | "stronger" }` (a
+numeric Condition only when it raises the value, the record only on one put on fresh),
+`removeEffectFrom` (`absent`, `held` for an Off-Guard a Critical Hit or a Gain Control holds),
+`removeAppliedFrom(actor, from)`, `settleAppliedEffects(combat, change, { over })`, called by
+`settleGivenResults` after `settleBindWindows` and by `endEncounterEffects`: **expiry was built
+before anything could apply**. **Windows** (rulings 314, 316): `readUntil(text, { edges })` in
+`operators.mjs` reads `end`, `start`, `begin` only for `apply` (`COMPONENT_TAG.UNTIL` is `["give",
+"apply"]`); `untilEdge(until)` is the explicit edge, else a giver's `begin` and a recipient's
+`end`; `settle` in `given.mjs` reads it, so a pending result's window (no `edge` key) settles as
+it did; the applied window is `{ who, edge, combatant, n, begun }` on the record. **"In an
+encounter" for a window is a started Combat the user or the recipient is a combatant in**
+(`runningCombat(giver, recipient, preferred)` in `documents/cards/apply.mjs`: the Combat the
+check card recorded, then the one viewed, then every other in `game.combats`), BY MEMBERSHIP
+and never by what a client views (found live with Mike's own Combat on screen, and by the review
+for a GM viewing another Combat); outside one a line with `UNTIL` is `skipped: "window"`.
+**Three options of `setCondition` are decided INSIDE its write queue**: `applied` (above; an
+effect that is switched off is not on, so it is switched on and becomes the line's), `raise`
+(a numeric value is only ever raised, and one already on keeps whose it was) and `only` (a
+Condition goes off only while its effect still carries THAT application: `sameApplication` in
+`applied.mjs`, which `endApplied` and the `begun` write ask, so a later APPLY's refresh is never
+taken off by the earlier window). **Any write that puts a Condition on now switches a
+switched-off effect on again** (older than 0.32.0: `setCondition` merged onto it and left it
+off). **The use** (`documents/item.mjs`): `applying` is `!elsewhere` and an apply
+rule (a built-in returns before it), so a row the system runs another way applies nothing
+(ruling 321); `#applyCost(plan, paid)` (Finish's `paid`, else `plan.n`, `#chargePlan` now
+answering `picked`, else the row's one cost, else `pickCost` when a line waits on the cost,
+undefined for a closed pick; ruling 318); `#applyTarget` (the one targeted token, never the
+user's own body); `#applyOnUse(actor, { cost })`, the no-check path and `#useWithRules`, lines of
+no degree about the user, `force: true` (ruling 315), said on the Maneuver's own card;
+`finishPrepared` passes `paid: prep.cost`. **The roll** (`dice/check.mjs`): asked only when the
+use handed over `cfg.applies { cost, target }`; `cfg.applied` becomes `flags.starwrought.applies
+{ lines, maneuver, target, cost, combat }` (`check/card.mjs`); `#applyOwnLines` after
+`toMessage` and after `postResult`; `rerollCheck` copies the flags. **The card**
+(`documents/cards/apply.mjs`, modelled on `give.mjs`, whose `sameBody`, `wasRerolled` and
+`writerFor` it imports): `applyLinesTo` (the one write every path shares, plain-text words),
+`applyOwnFromCard` (the roller's lines at once, never when `message.blind`; a reroll's card
+first takes back what `rerollOf` put on the roller), `drawApplyWidget` (class `sw-card-effects`:
+`sw-card-apply` was the damage and Expose widgets' already; **the roller's own side has a button
+on a blind roll's card alone**, since the roller's client is that side's one writer everywhere
+else), `applyFromCard`, `applyLines` (one side of one card at a time, `applying`; **a card that
+names its target is held to it**, and a `self` request is served for a blind roll alone),
+`effect:apply` / `effect:done` / `effect:refused` routed in `chat.mjs` and `starwrought.mjs`,
+the record card `{ kind: "applied", from, who, words }` read by `appliedRecords(messageId)`
+and whispered to whoever saw the check PLUS the check's author (`recordWhisper`; the give card
+too since 0.32.0), `registerApplyCards`. **`COST(<n>)`** is a
+condition (`ops.cost`, 0 to 12), read by `apply` alone; `bonus` refuses it in a line of its own.
+**`mine`** (ruling 319): `EFFECT(<name>, mine)` stores `mine: true` on the `has` entry;
+`listHas(list, ref, { by })` and `effectHolds(rule, { self, other, by })`; `effectList` keeps a
+Condition's own record under `applied`. **Screens**: `effectAppliedTag` in `helpers/effects.mjs`
+(the Applied tag on both sheets' Effects rows), the glance's `full || e.applied` (ruling 320),
+`apply` in `EFFECT_KINDS`. **The parse refuses a forgotten comma** (`APPLY: prone target`, which
+read as a named Effect "prone target" on the user) and WARNS through `context.warn` on a name
+that begins with a Condition's (`frightened two`). **The build**: `effectCensus` in
+`assets/build_foundry.mjs` (a named Effect read and never applied; an APPLY on a built-in or
+paid-elsewhere row; an `IF: RESULT` line on a row that rolls no check, known from `rolls` on the
+carrier), each with its row in `RULES` in `build_report.py`. A subordinate reads its parent's
+cost and a Reaction its Reaction half's (`#applyCost`); a row with a `SUBORDINATE` line applies
+none of its own APPLY lines. **A new card widget class must not reuse `sw-card-apply`**, and
+**a pinned die in the test world is `CONFIG.Dice.randomUniform = () => 0.001` for a natural 20
+and `0.999` for a natural 1.** The release carries the kind alone: the cells for Stand, Drop
+Prone, Take Cover, Trip, Shove, Disarm, Grapple, Demoralize, Feint and Escape are printed in the
+0.32.0 changelog entry and `AUTOMATION_GRAMMAR.md` section 5 for Mike to paste, and his four
+workbooks were not converted, built, staged or written.
+
 **0.31.0 (Mike, 2026-11-17; rulings 305 to 310): Effects are read by name.** Mike, writing
 `[REQUIRES ...]` cells down the Basic Actions list: "even the [REQUIRES] grammar should be
 effects-based ... assuming each Actor has an Effects list of whatever effects they have,
@@ -939,7 +1032,7 @@ by question: the writing tags will be APPLY and REMOVE, an Effect on yourself la
 one on another creature by a button on the card, a named Effect in REQUIRES has the word `effect`
 in front). **Built as two releases; 0.31.0 is the READING half and adds no kind, tag or hook
 point. 0.32.0, the `apply` kind (`APPLY` and `REMOVE` on a Maneuver's own row, the `applies` hook
-point, windows, the `effect:*` relay), is planned in the same file and NOT BUILT.**
+point, windows, the `effect:*` relay), was planned in the same file and is built (above).**
 **The Effects list** (ruling 305; `module/rules/effect-list.mjs`, pure): a creature's Conditions
 (its statuses, each with its value) and its NAMED EFFECTS, every other active effect on it by
 `slugify(plainName(name))`, plus a character's custom effect rows by their label. Nothing new is
@@ -2088,10 +2181,11 @@ content build writes them again.
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
   (0.31.0 added no kind: it gave the grammar a condition, `EFFECT(<name>)`, and `requires` three
-  words.) Twenty-three kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
-  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0, `reach` since 0.30.0): the effect
+  words.) Twenty-four kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0, `reach` since 0.30.0,
+  `apply` since 0.32.0): the effect
   kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`,
-  `subordinate`, the creation kinds `grant` and `aura`,
+  `subordinate`, `apply`, the creation kinds `grant` and `aura`,
   the feature kinds `trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`,
   `talent`, `choice`, and `requires`, the block on a Maneuver's own row that the Maneuvers tab reads; the
   level-1 Human, the two Cultures, the
@@ -2118,16 +2212,16 @@ content build writes them again.
   row, a subordinate chosen when the Maneuver is used (Shared Demonstration), one Aid check for
   several allies (Common Purpose, United Effort), Aid before an ally's roll (Timely Aid), Back on
   Track, a row that charges extra for its subordinate ("unless otherwise specified" has no word
-  yet), and NAMED EFFECTS, STEP TWO. Its READING half is built (0.31.0: the plain
-  `EFFECT(<name>)` after `IF:` and `IFT:` on the bonus lines, and `[REQUIRES effect <Name>]`).
-  Its WRITING half is planned and approved in `dazzling-floating-simon.md` and is the next
-  release, 0.32.0: the `apply` kind, `[EFFECT APPLY: <Effect>[, self | target]; UNTIL: <window>;
-  IF: RESULT(<degree>); IF: COST(<n>)]` and `[EFFECT REMOVE: ...]` on a Maneuver's own row, an
-  Effect on yourself landing at once and one on another creature by a button on the card, the
-  `mine` word (`IFT: EFFECT(Wrong-Footed, mine)`), the `applies` hook point and the `effect:*`
-  relay. After it, and not planned: an Effect that carries its own lines (a Basic Maneuver's row
-  cannot carry a reading line for everyone), a Condition's value compared, an Effect read inside
-  an aura. **The 0.13.0 form is refused since 0.17.0**
+  yet). NAMED EFFECTS, STEP TWO, is built whole: its reading half (0.31.0: the plain
+  `EFFECT(<name>)` after `IF:` and `IFT:` on the bonus lines, and `[REQUIRES effect <Name>]`)
+  and its writing half (0.32.0: the `apply` kind, `APPLY` and `REMOVE` on a Maneuver's own row,
+  `COST(<n>)` and `mine`). Not planned, and what the next rows will ask for: an Effect that
+  carries its own lines (a Basic Maneuver's row cannot carry a reading line for everyone: Talk
+  Them Down, Anticipate, Bolster), the Wrong-Footed Condition's own effect and "Wrong-Footed TO a
+  creature" on yourself, a window that ends with another creature's Opportunity on an Effect
+  that is on you, ends that are events, a result for each of several creatures, a target who
+  chooses between two Defenses, a Condition's value compared, an Effect read inside an aura.
+  **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
   (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
@@ -2231,9 +2325,37 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
-- **0.31.0 leaves to the table or to Mike** (Effects read by name): nothing puts a named Effect
-  on or takes one off but a hand, until 0.32.0; a Condition's value is not compared; "applied by
-  me" is not asked; no kind but `bonus` reads `EFFECT(<name>)`; an adversary's own rolls are
+- **0.32.0 leaves to the table or to Mike** (a Maneuver puts Effects on): **the cells wait for
+  him to paste** into `data/actions_maneuvers.xlsx` (the 0.32.0 changelog entry and
+  `AUTOMATION_GRAMMAR.md` section 5: Stand, Drop Prone, Take Cover, Trip, Shove, Disarm, Grapple,
+  Demoralize, Feint, Escape); until a row has its lines it applies nothing. Three things about
+  his rows as saved: Grapple's Cost cell reads 0 (its `COST` lines wait for "1 to 2"), Drop Prone
+  is not enabled, and Trip, Shove, Disarm and Grapple say "vs. Evade or Guard", of which the
+  build reads Evade. Rulings 313 to 318, 320 and 321 are Claude's readings and his to overrule
+  (a Condition by other means left alone; the later window stands; a voluntary act never
+  prevented; no window outside an encounter; the higher value kept; COST; an applied Effect
+  public; a target line needs a check). Not built: an Effect that carries its own lines, the
+  Wrong-Footed Condition's own effect, ends that are events, several targets from one card,
+  damage, pushes and movement, an adversary's row applying by degree, a reroll taking back what
+  the first die put on ANOTHER creature. Rush's Off-Guard is still by hand (the drag is not a
+  use of the row). Not driven live: a table with no GM (the owner's client as the one writer), a
+  Skip or an Off on an owned copy's line, a REMOVE by degree. **The test world keeps fixtures
+  from the 0.32.0 drive on purpose** (flagged `testFixture: "0.32.0"`): world Maneuvers Trip,
+  Demoralize, Take Cover and Drop Prone with the cells above, the APPLY and REMOVE lines added
+  to the world Feint and Stand of 0.28.0, and the Talent "Applied Reader (0.32.0 fixture)" on
+  Tess (`ATK: 1 situation; IFT: EFFECT(wrong-footed, mine)` and `DEF: 1 situation, guard; IF:
+  EFFECT(Taking Cover)`). They shadow the pack's rows in that world until deleted. To try
+  0.32.0 there: start a Combat with Tess and the Bandit, target the Bandit, use Demoralize from
+  Tess's Maneuvers tab and press "Apply to Bandit" on the card when it is a Success; use Take
+  Cover and watch Tess's Guard and her Effects tab; use Drop Prone and then Stand. The drive
+  deleted its Combats and the 49 cards it posted over two passes (431 messages), then ran Sync
+  content, which brought the Grammar journal and the 31 Equipment Items that world was behind on
+  (the weapons and shields built with 0.31.0: its Equipment compendium holds all 62 now) and
+  left one "Content synced" card (432 messages); it took off everything it had put
+  on Tess, Wren and the Bandit (the Bandit's Prone left as found), and left Mike's Combat with
+  testpc8 the active one at round 4 and the tokens where they were.
+- **0.31.0 leaves to the table or to Mike** (Effects read by name): a hand made the only named
+  Effects until 0.32.0; a Condition's value is not compared; no kind but `bonus` reads `EFFECT(<name>)`; an adversary's own rolls are
   flat, though its Effects are read by `IFT` and `with`. Rulings 305 (a custom effect row counts
   as a named Effect by its label; a Condition's name is reserved), 309 (named Effects are public)
   and 310 (a player's hand change is an Adjusted card, a Condition toggle is not) are Claude's
@@ -2255,8 +2377,8 @@ content build writes them again.
   4 and the tokens where they were, and Foundry running on 0.31.0 with the GM joined. **Foundry
   was found closed at the commit**, after the equipment sheet was rebuilt, so that world's
   Equipment compendium is one build behind (it holds Arrows, Bolts and Bullets and one weapon):
-  the GM is offered the sync at the next load, which brings the 28 other weapons and the 3
-  shields. The shipped ranged weapons were not driven live.
+  the 0.32.0 drive ran that sync (the 28 other weapons and the 3 shields are there now). The
+  shipped ranged weapons were not driven live.
 - **0.30.0 leaves to the table or to Mike** (ammunition, `[REACH N]`, the equipment build):
   (when 0.30.0 was built his saved sheet enabled only the Unarmed Strike among weapons, so
   Dagger, Shortsword and Spear left the pack; **he has since enabled every row, built and
@@ -2508,6 +2630,37 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-17 (a Maneuver puts Effects on, and takes them off, system 0.32.0; rulings 311 to
+321 in the 0.32.0 changelog entry; planned with 0.31.0 in `dazzling-floating-simon.md`, Mike's
+decisions by question: APPLY and REMOVE, at once on yourself and a button for another creature;
+then "Build 0.32.0"): Trip's Prone, Demoralize's Frightened and a Grapple's Grabbed, prose on the
+card and put on by hand, now `[EFFECT APPLY: prone, target; IF: RESULT(success)]` on the
+Maneuver's own row (the `apply` kind, the twenty-fourth, on the `applies` hook point, the
+seventh) and a button on the check's card, written once by the creature's one writer with a
+record card behind it; an overcommit's Off-Guard, by hand twice, now landing on the roller as
+the card is posted and going as its window closes; Stand and Drop Prone, cards only, now taking
+Prone off and putting it on; a named Effect, made by hand, now applied by a row and tagged on
+the Effects tab with who, what and until when; a result that depends on the actions paid, now
+`IF: COST(<n>)`; "Wrong-Footed to you", now `IFT: EFFECT(wrong-footed, mine)`; a window's edge,
+now written out after APPLY while a GIVE window reads as it did. Found by the live drive and
+mended: a Combat on screen that the creature was no part of counted a window. Mended beside it,
+older than the release and found by the review: `setCondition` merged onto a switched-off
+Condition and left it off; the give card of a private roll was hidden from its roller. Checked
+by 227 self-test checks, `node --check` on 177 modules, `build_all.mjs --check`, the style check
+(one failure, the em-dash in Dwarf Lore B13), `build_foundry.mjs --no-compile` (the Grammar
+journal alone moves), an independent review of the finished change (no crash, no double
+application, GIVE's windows unchanged; eleven smaller findings, all mended but two parts that are
+stated: a `SUBORDINATE` row's own APPLY lines, and a line on a row with an attack of its own) and
+live in the test world with a GM tab and a player tab, before the review and again for its mends
+(the 0.32.0 changelog entry lists what, and what was not driven: a table with no GM, a Skip or
+an Off on an owned copy's line, a REMOVE by degree). Not built, and said so: an Effect that
+carries its own lines, the Wrong-Footed Condition's own effect, ends that are events, several
+targets from one card. The release carries the kind alone: the cells for ten rows are Mike's to
+paste, his four workbooks were not converted, built, staged or written, and one pack document
+moved. No handbook moved and `data/SYNC.json` is untouched. Committed on 2026-11-18 at his word
+and tagged `v0.32.0`, his edits to the four workbooks and the v4.24 draft left out; not pushed
+until he says.
 
 Cleared 2026-11-17 (Effects read by name, system 0.31.0; rulings 305 to 310 in the 0.31.0
 changelog entry; planned in `dazzling-floating-simon.md` with 0.32.0, Mike's decisions by

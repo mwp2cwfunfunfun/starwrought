@@ -5,6 +5,8 @@
 
 import * as SW from "../../config.mjs";
 import { conditionPrevented } from "../../rules/prevent.mjs";
+// 0.32.0: whether an effect still carries the application a window's end was decided on (pure).
+import { sameApplication } from "../../rules/applied.mjs";
 
 /** Actor uuid -> the condition write in flight on this client, so they queue (see setCondition). */
 const conditionWrites = new Map();
@@ -49,9 +51,28 @@ export const ConditionsMixin = Base => class extends Base {
    *                         Prone, once each encounter) otherwise stops a Condition going ON, with a
    *                         card saying which Talent did; off is never prevented, and a Zone's
    *                         Exposed mirror is the Zone's, answered at the Expose offer instead.
+   * @param {boolean} [options.applied]  The write is an `APPLY` line's (0.32.0): the Condition
+   *                         goes on only when it is ABSENT, or when the effect already there was
+   *                         itself applied (its `flags.starwrought.applied`), which is then given
+   *                         the new record. An effect put on by any other means (the GM's hand, a
+   *                         Critical Hit, a Bind) is returned untouched: without this `data` is
+   *                         merged onto whatever is there, which would stamp the GM's own Off-Guard
+   *                         and let a window take it off. Decided inside the write queue, so a
+   *                         write that lands between the caller's look and this one is seen.
+   *                         An effect that is SWITCHED OFF is not on: it is switched on again and
+   *                         becomes the line's.
+   * @param {boolean} [options.raise]  For a Condition with a value (0.32.0, ruling 317): the
+   *                         value is written only when that RAISES it, decided inside the queue,
+   *                         so two writes in one moment never leave the lower one standing. A
+   *                         Condition already on is raised and keeps whose it was (the record in
+   *                         `data` is dropped); one put on fresh carries the record.
+   * @param {object|null} [options.only]  For a Condition going OFF (0.32.0): take it off only
+   *                         while its effect still carries THIS applied record. A window's end
+   *                         passes the record its verdict was made on, so a later APPLY that
+   *                         refreshed the Condition a moment ago keeps it.
    * @returns {Promise<ActiveEffect|null>}  The effect carrying the condition, or null when off or prevented.
    */
-  async setCondition(id, value = true, data = {}, { force = false } = {}) {
+  async setCondition(id, value = true, data = {}, { force = false, applied = false, raise = false, only = null } = {}) {
     const config = SW.CONDITIONS[id];
     if (!config) return null;
     const turningOn = !((value === false) || (config.numeric && Number(value) <= 0));
@@ -63,7 +84,7 @@ export const ConditionsMixin = Base => class extends Base {
       if (prevented) return null;
     }
     const prior = conditionWrites.get(this.uuid) ?? Promise.resolve();
-    const run = prior.catch(() => null).then(() => this.#writeCondition(id, value, data));
+    const run = prior.catch(() => null).then(() => this.#writeCondition(id, value, data, { applied, raise, only }));
     conditionWrites.set(this.uuid, run);
     try {
       return await run;
@@ -73,7 +94,7 @@ export const ConditionsMixin = Base => class extends Base {
   }
 
   /** One queued condition write; the rules are in setCondition's note. */
-  async #writeCondition(id, value, data) {
+  async #writeCondition(id, value, data, { applied = false, raise = false, only = null } = {}) {
     const config = SW.CONDITIONS[id];
     const staticId = SW.statusEffectId(id);
     // Foundry's own ownership rule for a status: the effect under its static id, or a single-status
@@ -84,7 +105,10 @@ export const ConditionsMixin = Base => class extends Base {
     const off = (value === false) || (config.numeric && Number(value) <= 0);
 
     if (off) {
-      if (matching.length) await this.deleteEmbeddedDocuments("ActiveEffect", matching.map(e => e.id));
+      // `only` (0.32.0): a window's end, which goes ahead only for an effect that still carries
+      // the application it was decided on.
+      const going = only ? matching.filter(e => sameApplication(e.getFlag(SW.SYSTEM_ID, "applied"), only)) : matching;
+      if (going.length) await this.deleteEmbeddedDocuments("ActiveEffect", going.map(e => e.id));
       return null;
     }
 
@@ -100,6 +124,21 @@ export const ConditionsMixin = Base => class extends Base {
       foundry.utils.setProperty(update, `flags.${SW.SYSTEM_ID}.value`, n);
     }
     if (existing) {
+      // An effect that is switched off (the Effects tab's toggle) is not ON the creature:
+      // `actor.statuses` leaves it out. Any write that puts the Condition on switches it on again
+      // (0.32.0; through 0.31.0 the data was merged and the effect stayed off, so the caller
+      // believed a Condition was on that was not).
+      const live = !existing.disabled;
+      // An APPLY line's write (0.32.0) leaves alone a Condition that anything else put on.
+      if (applied && live && !existing.getFlag(SW.SYSTEM_ID, "applied")) return existing;
+      // A value is only ever raised by an APPLY (ruling 317), and a Condition already on keeps
+      // whose it was.
+      if (raise && live && config.numeric) {
+        const current = Number(existing.getFlag(SW.SYSTEM_ID, "value")) || 1;
+        if (current >= (Number(value) || 1)) return existing;
+        if (update.flags?.[SW.SYSTEM_ID]) delete update.flags[SW.SYSTEM_ID].applied;
+      }
+      if (!live) update.disabled = false;
       if (!foundry.utils.isEmpty(update)) await existing.update(update);
       return existing;
     }

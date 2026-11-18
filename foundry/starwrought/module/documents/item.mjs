@@ -189,7 +189,9 @@ export class SwItem extends Item {
     // roll dialog reads `cfg.prepared` for a Committed Strike. `partOf` (0.25.0) is the same:
     // this Maneuver is being performed as part of another (`#performSubordinate`), which names
     // the spend, sets the cost and hands over the marks to file once the use stands.
-    const { prepared = false, partOf = null, ...config } = rest;
+    // `paid` (0.32.0) is Finish's too: the cost the Prepared Maneuver was paid at, which the row's
+    // `IF: COST(<n>)` lines read, since nothing is charged on the way back in.
+    const { prepared = false, partOf = null, paid = null, ...config } = rest;
     const plain = SW.plainName(this.name);
     const slug = SW.slugify(SW.plainName(this.name));
     // A built-in that is a character's alone (Reload: it loads a weapon Item) is passed by for an
@@ -209,10 +211,24 @@ export class SwItem extends Item {
     // player's pick, and a pick that is closed must not have spent the GM's permit. A subordinate
     // (0.25.0; Mike's Subordinate Maneuver rule) is paid at its parent's listed cost and never
     // its own: ⓿ for an Aid made as part of Pay It Forward.
+    // `picked` (0.32.0): the number IS the cost of this use, nought included, which a line that
+    // waits on the cost paid reads. A subordinate's is its parent's wherever actions are counted.
+    const counted = !!actor?.inEncounter && !!actor.system?.actions && setting("trackActions", true);
     const plan = (prepared || byRule) ? { n: 0, note: null, cancelled: false }
-      : partOf ? { n: this.#subordinateCost(actor, partOf), note: null, cancelled: false }
+      : partOf ? { n: this.#subordinateCost(actor, partOf), note: null, cancelled: false, picked: counted }
         : await this.#chargePlan(actor, elsewhere);
     if (plan.cancelled) return null;
+    // What the row's APPLY and REMOVE lines will read (0.32.0; rulings 318 and 321). Never on a
+    // row the system runs another way (a Rush is the drag, not a use of its row): such a row
+    // applies nothing, and the build warns about the line. The cost is the one this use is paid
+    // at; where nothing is paid (outside an encounter, or with `trackActions` off) a row whose
+    // lines wait on the cost is asked which version this is, and a closed pick ends the use.
+    const applying = !!actor && !elsewhere && (this.system.rules ?? []).some(r => r?.kind === "apply");
+    let applyCost = null;
+    if (applying) {
+      applyCost = await this.#applyCost(plan, paid);
+      if (applyCost === undefined) return null;
+    }
     // The label carries the number chosen: a range row's own glyph is "❶ to ❸". A subordinate is
     // named for its parent, which is what the table is paying for.
     const label = partOf ? String(partOf.label ?? plain)
@@ -240,7 +256,7 @@ export class SwItem extends Item {
     // the answer is no, after the refusals, so a use the rules refuse outright (Pay It Forward
     // off-turn, which its trigger can never allow) no longer asks the GM for leave it cannot use.
     if (gated && !byRule && !(atRoll && actor.canActNow()) && !(await actor.mayActNow({ label }))) return null;
-    if (byRule) return this.#useWithRules(actor, { gate: gated, label, dialog: config.dialog, partOf });
+    if (byRule) return this.#useWithRules(actor, { gate: gated, label, dialog: config.dialog, partOf, applyCost: applying ? applyCost : undefined });
     if (this.system.reaction && actor && !elsewhere && !partOf) {
       // A Reaction with a cost of its own pays that one; otherwise the cost printed. One whose
       // rule pays from a card button is left to that button (0.23.0), or the row and the
@@ -284,6 +300,10 @@ export class SwItem extends Item {
     // What the card says of the cost: the Maneuver's own glyph and group, or (a subordinate) the
     // Maneuver it is part of, since that is who paid.
     const subtitle = partOf?.note ? String(partOf.note) : `${this.system.glyph} ${this.system.category}`.trim();
+    // What the roll hands the check engine for the row's APPLY and REMOVE lines (0.32.0): the cost
+    // paid and the one creature targeted. The engine reads the lines after the die and the card
+    // carries them (dice/check.mjs; documents/cards/apply.mjs).
+    const applies = applying ? { applies: { cost: applyCost, target: this.#applyTarget(actor) } } : {};
     if (this.system.check.enabled && actor && !this.system.check.constellation) {
       // A Relevant Check: the picker chooses the Constellation and says why, the Maneuver
       // rides along as the roll's Item, and the card is called by the Maneuver's name. An
@@ -296,7 +316,8 @@ export class SwItem extends Item {
         // subordinate's line rides beside it as a note.
         ...(partOf?.note ? { note: String(partOf.note) } : {}),
         outcomes: this.#outcomeList(),
-        ...this.#allyFor(actor)
+        ...this.#allyFor(actor),
+        ...applies
       }, config, { inplace: false }));
     }
     if (this.system.check.enabled && actor) {
@@ -316,6 +337,7 @@ export class SwItem extends Item {
         subtitle,
         outcomes: this.#outcomeList(),
         ...this.#allyFor(actor),
+        ...applies,
         ...(read ?? {})
       }, config, { inplace: false }));
     }
@@ -337,7 +359,94 @@ export class SwItem extends Item {
       await this.#fileSubordinateMarks(actor, partOf);
       if (partOf.note) lines.push(String(partOf.note));
     }
+    // What using it puts on the user, and takes off (0.32.0): the row's lines of no degree, now
+    // that the use has stood and its cost is paid (Stand ends Prone; Drop Prone begins it).
+    if (applying) lines.push(...(await this.#applyOnUse(actor, { cost: applyCost })));
     return this.toMessage({ actor, lines });
+  }
+
+  /**
+   * The cost a use's `IF: COST(<n>)` lines read (0.32.0; ruling 318): what Finish says was paid,
+   * else what this use is paid at, else (nothing is paid here: outside an encounter, or with the
+   * `trackActions` setting off) the row's one cost, or the player's pick of the version when the
+   * row prints a range and a line waits on it. Null when no line asks and nothing was paid;
+   * undefined when the pick was closed, which ends the use.
+   * @param {{n: number, picked?: boolean}} plan  `#chargePlan`'s answer.
+   * @param {number|null} paid                    The cost a Prepared Maneuver was paid at.
+   * @returns {Promise<number|null|undefined>}
+   */
+  async #applyCost(plan, paid) {
+    if (Number.isInteger(paid) && (paid >= 0)) return paid;
+    if (plan?.picked || plan?.n) return plan.n;
+    // A Reaction pays its own half where the row prints one ("❶ (⓿↺)" pays nought), and that
+    // is the cost its lines read, in an encounter or out of one.
+    if (this.system.reaction) {
+      const own = this.system.reactionCost;
+      return SW.actionCostValue((own !== undefined && own !== null && own !== "") ? own : this.system.cost);
+    }
+    const waits = (this.system.rules ?? []).some(r => (r?.kind === "apply") && (r.cost !== null) && (r.cost !== undefined));
+    if (!waits) return null;
+    const options = SW.actionCostOptions(this.system);
+    if (!options.length) return null;
+    if (options.length === 1) return options[0];
+    const { pickCost } = await import("../apps/cost-picker.mjs");
+    const n = await pickCost({ name: SW.plainName(this.name), options });
+    return (n === null) ? undefined : n;
+  }
+
+  /**
+   * The one creature a Maneuver's `APPLY: ..., target` lines are about (0.32.0), read when the
+   * Maneuver is used: the one token the user has targeted, when it is not the user's own body.
+   * Any creature, an adversary too. Null with no target or several; the card's button then reads
+   * the presser's target when it is pressed.
+   * @param {Actor} actor  Who is using the Maneuver.
+   * @returns {{uuid: string, name: string}|null}
+   */
+  #applyTarget(actor) {
+    const token = SwCheck.currentTarget();
+    const target = token?.actor;
+    if (!target || (target.uuid === actor?.uuid)) return null;
+    if ((target.id === actor?.id) && !(target.isToken && actor?.isToken)) return null;
+    return { uuid: target.uuid, name: token.name };
+  }
+
+  /**
+   * Apply a row's lines that wait on no result, as the Maneuver is used (0.32.0; rulings 315 and
+   * 321): every `APPLY` and `REMOVE` line with no `IF: RESULT`, about the user (a line about a
+   * target needs a check and its card). Called where the use has stood and its cost is paid, by
+   * the no-check path and by `#useWithRules`; a movement row could call it later. The user's own
+   * act is never prevented (`force`): Dropping Prone by choice is not stopped by an `IMMUNE` line
+   * and does not use it up. Answers the lines for the Maneuver's own card.
+   * @param {Actor} actor
+   * @param {{cost?: number|null}} [use]
+   * @returns {Promise<string[]>}
+   */
+  async #applyOnUse(actor, { cost = null } = {}) {
+    if (!actor || !(actor.isOwner || game.user.isGM)) return [];
+    try {
+      const { ruleApplies } = await import("../rules/engine.mjs");
+      const { linesFor } = await import("../rules/applied.mjs");
+      const asked = ruleApplies(actor, { item: this, rank: null });
+      const own = line => line.who !== "target";
+      // A line on Skip is passed over once, by the use it would have stood for.
+      const skipped = asked.skipped.filter(s => own(s.line) && linesFor([s.line], { degree: null, cost }).length);
+      if (skipped.length) {
+        const { writeRuleMarks } = await import("../rules/scene.mjs");
+        await writeRuleMarks(actor, skipped.flatMap(s => s.marks));
+      }
+      const standing = linesFor(asked.lines.filter(own), { degree: null, cost });
+      if (!standing.length) return [];
+      const { applyLinesTo } = await import("./cards/apply.mjs");
+      const done = await applyLinesTo(actor, standing, {
+        giver: actor,
+        maneuver: { slug: SW.slugify(SW.plainName(this.name)), name: SW.plainName(this.name) },
+        from: null, force: true
+      });
+      return done.map(d => d.words);
+    } catch (error) {
+      console.error(`STARWROUGHT | ${this.name}: what the Maneuver applies could not be written:`, error);
+      return [];
+    }
   }
 
   /**
@@ -388,10 +497,12 @@ export class SwItem extends Item {
     if (this.system.reaction) return none;
     const options = SW.actionCostOptions(this.system);
     if (!options.length) return none;
-    if (options.length === 1) return { ...none, n: options[0] };
+    // `picked` (0.32.0): this number IS the cost of the use, nought included, so a line that
+    // waits on the cost paid reads it and nothing asks a second time.
+    if (options.length === 1) return { ...none, n: options[0], picked: true };
     const { pickCost } = await import("../apps/cost-picker.mjs");
     const n = await pickCost({ name: SW.plainName(this.name), options });
-    return (n === null) ? { ...none, cancelled: true } : { ...none, n };
+    return (n === null) ? { ...none, cancelled: true } : { ...none, n, picked: true };
   }
 
   /**
@@ -425,7 +536,7 @@ export class SwItem extends Item {
    * @param {boolean} [options.dialog]      Handed on to a subordinate's roll (false on a Shift-click).
    * @param {object|null} [options.partOf]  This Item is being performed as part of another.
    */
-  async #useWithRules(actor, { gate = false, label = "", dialog = undefined, partOf = null } = {}) {
+  async #useWithRules(actor, { gate = false, label = "", dialog = undefined, partOf = null, applyCost = undefined } = {}) {
     const { ruleUses } = await import("../rules/engine.mjs");
     const { encounterContext, sceneContextFor, writeRuleMarks } = await import("../rules/scene.mjs");
     const targetToken = SwCheck.currentTarget();
@@ -478,6 +589,9 @@ export class SwItem extends Item {
       if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
       if (marks.length) await writeRuleMarks(actor, marks, encounter);
     }
+    // A Maneuver with a use rule and APPLY lines of no degree (0.32.0): they stand with the use.
+    // (`applyCost` is handed over only by a Maneuver's row; a Talent used this way has no such line.)
+    if (applyCost !== undefined) lines.push(...(await this.#applyOnUse(actor, { cost: applyCost ?? (n || null) })));
     return this.toMessage({ actor, lines, warns });
   }
 

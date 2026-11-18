@@ -7,10 +7,10 @@ project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
-297 to 304 and the 0.31.0 entry 305 to 310). Since
+297 to 304, the 0.31.0 entry 305 to 310 and the 0.32.0 entry 311 to 321). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
-their only source. System version **0.31.0**.
+their only source. System version **0.32.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -1550,7 +1550,7 @@ glance and nothing else, where through 0.18.1 they saw every tab read-only. An O
 full read-only sheet. Since 0.31.0 the card also lists the creature's **named Effects**, what is
 on it that is no Condition (section 7), to its owner and the GM: one made by hand is not shown to
 anyone else, since a GM may keep a private note as an effect on an adversary; one a Maneuver
-applies, from the next release, will show to everyone as a Condition does (ruling 309). The card
+applies (0.32.0) shows to everyone as a Condition does (rulings 309 and 320). The card
 now follows a Condition or an Effect going on or off while it is shown, which it did not before.
 
 ### The Token HUD at any zoom
@@ -2385,17 +2385,18 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-three kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-four kinds
 
 **What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
-the eighteenth and nineteenth, 0.24.0 for the twentieth, 0.25.0 for the twenty-first and 0.28.0
-for the twenty-second; rulings 118 to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289). Since
+the eighteenth and nineteenth, 0.24.0 for the twentieth, 0.25.0 for the twenty-first, 0.28.0
+for the twenty-second, 0.30.0 for the twenty-third and 0.32.0 for the twenty-fourth; rulings 118
+to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289, 301, 311 to 321). Since
 0.9.0 every
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Twenty-three kinds read it: ten effect kinds that act in play (`bonus`, `prevent`, `mark`,
-`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`), two creation kinds
+sheet. Twenty-four kinds read it: eleven effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, `apply`), two creation kinds
 (`grant`, `aura`), ten feature kinds
 (`trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character, and `requires` (0.28.0), a block on a Maneuver's own
@@ -2443,9 +2444,70 @@ but letters, digits, spaces, hyphens and apostrophes ("Blessed!"): no line could
 so it is on no list. A rule reads a named Effect off any creature; the hover card shows a
 hand-made one to its owner and the GM only (ruling 309). A player who adds, removes, renames or
 switches one by hand is said in chat with an Adjusted card, since that now changes what the
-rules see; a Condition toggled on a token is as silent as it was. **Nothing puts a named Effect
-on yet but a hand.** A Maneuver that does (`APPLY`, and `REMOVE` to take one off) is the next
-release.
+rules see; a Condition toggled on a token is as silent as it was. A named Effect is put on by a
+hand or, since 0.32.0, by a Maneuver.
+
+**A Maneuver puts Effects on, and takes them off** (0.32.0; rulings 311 to 321; the `apply` kind,
+the twenty-fourth; Mike, 2026-11-15: "using a Maneuver can grant a custom Effect on a target
+(with a specific duration)", and by question on 2026-11-17: the tags are APPLY and REMOVE, an
+Effect on yourself lands at once, one on another creature is a button on the card). Two tags on
+a Maneuver's own row:
+
+```
+[EFFECT APPLY: <Effect>[, self | target]; UNTIL: <window>; IF: RESULT(<degree>); IF: COST(<n>)]
+[EFFECT REMOVE: <Effect>[, self | target]; IF: RESULT(<degree>); IF: COST(<n>)]
+```
+
+The Effect is a Condition (`prone`, `off-guard`, `frightened 2`) or a name of your own, which
+becomes a named Effect. What a player and a GM see:
+
+- **A Maneuver with no check** (Stand's `[EFFECT REMOVE: prone]`, Drop Prone's `[EFFECT APPLY:
+  prone]`, Take Cover's `[EFFECT APPLY: Taking Cover]`) applies as it is used, once its cost is
+  paid, and its own card says so: "Tess is no longer Prone." Your own act is never prevented:
+  Dropping Prone by choice is not stopped by an `IMMUNE` line and does not use it up.
+- **A Maneuver with a check** applies by the degree rolled. What lands on the roller lands at
+  once, as the card is posted: "Tess is Off-Guard until their next Opportunity." What lands on
+  the creature targeted is a **button on the card**, for the roller's owner and the GM: "Apply
+  to Bandit: Prone". The GM's client writes it (the creature's owner's, with no GM connected),
+  whoever pressed; a small card records it, and the button gives way to the record's words on
+  every screen, so a result is applied once. With nobody targeted at the roll the button reads
+  "Apply to your target" and takes the presser's one target then.
+- **Never from a blind roll**: nothing lands by itself, the player sees no widget, and the GM's
+  card has the button for the roller's own lines as well (the only card that does). A private
+  roll's record is seen by whoever saw the roll, the roller included. A card that names its
+  target puts the result on that creature and no other.
+- **By the cost paid.** `IF: COST(2)` is the version of the Maneuver paid for with two actions
+  (Trip, Grapple, Disarm and Demoralize print a table for each cost). Outside an encounter a row
+  whose lines wait on the cost asks which version this use is. A Prepared Maneuver applies at
+  Finish, with the cost it was Prepared at.
+- **How long.** `UNTIL: giver opportunity` is until the user's next Opportunity begins, `giver
+  opportunity end` through its end, `recipient opportunity` through the end of the next
+  Opportunity of the creature the Effect is on, `recipient opportunity start` until it begins,
+  `encounter` until the encounter ends; with none the Effect stays until something takes it off.
+  The count rides on the Effect and closes on the turn change it names, with no card. A window
+  is counted in an encounter the user or the recipient is fighting in, whatever Combat or scene
+  the GM has on screen, so outside one such a line is not applied and the card says why. Every
+  window ends with the encounter.
+- **What is already there.** A Condition the GM's hand, a Critical Hit or a Bind put on is left
+  alone: the APPLY adds nothing, its window takes nothing off, and the card says "already ... by
+  other means". A Condition whose effect was switched off on the Effects tab is not on: an APPLY
+  switches it on again and it becomes the line's. `frightened 2` on a creature already
+  Frightened 3 changes nothing, and a value is only ever raised. An `IMMUNE`
+  line stops a Condition by degree as it stops one from the token palette, with its own card.
+- **A reroll** takes back what the first die put on the roller before the new result lands.
+- **"Applied by me".** `[EFFECT ATK: 1 situation; IFT: EFFECT(wrong-footed, mine)]` on a Talent
+  holds only against a creature the roller Wrong-Footed. That is how "Wrong-Footed to you" is
+  written.
+- **On the Effects tab** an applied Effect wears an **Applied** tag whose tooltip says who put it
+  there, with which Maneuver, and until when. The hover card lists an applied named Effect for
+  everyone (ruling 320).
+
+The Conditions the system itself runs (the Bind's three, Wounded, Dying, Dead, Spent, Preparing,
+an Exposed Zone) are refused. A Maneuver the system runs another way applies nothing (a Strike, a
+Cast, Recenter, Raise a Shield, Reload, a Move, a Rush's drag: ruling 321), and the build warns
+about such a line; it also warns when a line reads a named Effect that no Maneuver applies, when
+a line waits on a result on a row that rolls no check, and when a name begins with a Condition's
+name and so reads as a named Effect of its own. A comma left out before `target` is an error.
 
 Three older things were mended beside it. **An `INIT` line now reaches the default Initiative**:
 a bonus to Initiative never applied to one rolled with Awareness, since 0.13.0. **An apostrophe
@@ -3327,10 +3389,20 @@ before; the sources and the index are.
   the Controller that ends nearer the foe; a Disarm, "after its first benefit is used" and two
   adversaries contesting a Bind are by hand; an undo of a move does not bring a Bind back (Form a
   Bind does); and a Cast was not driven live, since no spell ships enabled.
-- **What reading Effects leaves to the table** (0.31.0): nothing puts a named Effect on but a
-  hand, and nothing ends one (a Maneuver that applies one, with a window, is the next release); a
-  Condition's value is not compared (`EFFECT(frightened)` is any value); "applied by me" is not
-  asked, so "Wrong-Footed to you" reads as Wrong-Footed; an Effect is not read inside an aura or
+- **What applying Effects leaves to the table** (0.32.0): the Wrong-Footed Condition's own effect
+  (Off-Guard against that creature only) is still the table's, and "Wrong-Footed TO a creature"
+  on yourself cannot be said (the Condition goes on you; whom it is to is remembered); an Effect
+  on you cannot end with ANOTHER creature's Opportunity; ends that are events ("until you Move,
+  Step or Attack", "until they Interact", Sustained, minutes) are by hand; "it takes -2 to its
+  next Attack against you" from a Basic Maneuver's row needs an Effect that carries its own
+  lines, which is not built; a result for each of several creatures (Hide, Sneak, Break Them) is
+  one card with one target; damage, pushes and movement are prose; Trip, Shove, Disarm and
+  Grapple read Evade by themselves where the row says "Evade or Guard"; an adversary's row
+  applies nothing by degree; a reroll does not take back what the first die put on another
+  creature; with no GM and no owner of the creature connected the button writes nothing and says
+  so; and a table with no GM was not driven live.
+- **What reading Effects leaves to the table** (0.31.0): a
+  Condition's value is not compared (`EFFECT(frightened)` is any value); an Effect is not read inside an aura or
   beside a `FOR` that reaches others; no kind but a bonus reads one (an `IMMUNE`, a `REROLL` and
   the rest refuse the condition by name); an adversary's own rolls are still flat, though its
   Effects are read; a pending result ("Aid from Wren") is not an Effect a line can name; the

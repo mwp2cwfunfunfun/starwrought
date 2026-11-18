@@ -232,6 +232,11 @@ export function cardFlags(result, position) {
     // The render pass draws the give button from it (documents/cards/give.mjs), and a reroll
     // copies it across, since the table already holds every degree.
     if (cfg.given?.table) flags.given = cfg.given;
+    // What this Maneuver puts on a creature, and takes off (0.32.0): every APPLY and REMOVE line
+    // of its row at the rank rolled, each with the degree and the cost it waits on, the cost this
+    // use was paid at, the creature targeted and the Combat. documents/cards/apply.mjs applies the
+    // roller's own from it and draws the button for a target's; a reroll copies it across.
+    if (cfg.applied?.lines?.length) flags.applies = cfg.applied;
     // A Gain Control (0.27.0): the Bind it was rolled for, the two fighters, the side of the one
     // who used it before the roll, and whether the degree is read from the other side (an
     // adversary's, rolled as the partner's Guard). documents/cards/gain-control.mjs draws the

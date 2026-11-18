@@ -194,6 +194,13 @@ registerKind(subordinate);
 import requires from "./requires.mjs";
 registerKind(requires);
 
+// 0.32.0: named Effects, step two, the writing half. `[EFFECT APPLY: prone, target; IF:
+// RESULT(success)]` and `[EFFECT REMOVE: prone]` on the Maneuver's own row. `apply` answers the
+// `applies` hook point (the seventh, calculated; ../engine.mjs, `ruleApplies`): what each line of
+// the row says for this use. It has no `use` and no `card` hook on purpose (its header says why).
+import apply from "./apply.mjs";
+registerKind(apply);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";

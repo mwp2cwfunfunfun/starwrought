@@ -32,7 +32,7 @@
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS. It imports ./operators.mjs (pure) and nothing else.
  */
 
-import { untilWords, titled, DEGREE_NAMES } from "./operators.mjs";
+import { untilWords, untilEdge, titled, DEGREE_NAMES } from "./operators.mjs";
 
 /** The four degrees, in the Result table's order. */
 export const GIVE_DEGREES = Object.freeze(["critSuccess", "success", "fail", "critFail"]);
@@ -472,7 +472,10 @@ export function settle(entry, { combat = null, ended = null, began = null } = {}
   if (!until.combatant) return "keep";
   const begun = Math.max(0, Number(until.begun) || 0);
   const n = Math.max(1, Number(until.n) || 1);
-  if (until.who === "giver") {
+  // Which edge of the Nth Opportunity closes the window (0.32.0; `untilEdge` in ./operators.mjs):
+  // a giver's as it begins and a recipient's as it ends, unless the window names the other, which
+  // only an APPLY line's may. A window stored before 0.32.0 names none and settles as it did.
+  if (untilEdge(until) === "begin") {
     if (began !== until.combatant) return "keep";
     return (begun + 1 >= n) ? "expire" : { begun: begun + 1 };
   }

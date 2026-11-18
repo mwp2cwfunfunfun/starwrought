@@ -74,7 +74,11 @@ export function emptyOps() {
     // on }`: a creature HAS the Condition or the named Effect now, `on` "self" for the roller (IF)
     // and "other" for the roll's other party (IFT). Under its own key for the same reason; null
     // when the line asks for none, so a stored rule that asks for none carries nothing new.
-    has: null
+    // Since 0.32.0 an entry may carry `mine: true` (`EFFECT(<name>, mine)`): the one asking put it there.
+    has: null,
+    // 0.32.0: `IF: COST(<n>)`, the number of actions the Maneuver was paid with. Read by `apply`
+    // alone; null when the line names none.
+    cost: null
   };
 }
 
@@ -99,6 +103,10 @@ export function readBonusType(word) {
 
 /** The shapes a window is written in, for messages. */
 const UNTIL_SHAPES = "`giver opportunity`, `recipient opportunity <N>` or `encounter`";
+/** The same where a last word may name the edge (an APPLY line's window, 0.32.0). */
+const UNTIL_EDGE_SHAPES = "`giver opportunity`, `giver opportunity end`, `recipient opportunity`, `recipient opportunity start` or `encounter`";
+/** The last word of a window with edges, to the edge it names. */
+const UNTIL_EDGES = Object.freeze({ end: "end", start: "begin", begin: "begin" });
 
 /**
  * A window (0.22.0): how long a result a Maneuver GIVES stays pending on its recipient. Written
@@ -110,18 +118,47 @@ const UNTIL_SHAPES = "`giver opportunity`, `recipient opportunity <N>` or `encou
  *
  * Every window also ends with the encounter; outside one, a result lasts until it is used,
  * replaced or removed.
+ *
+ * WITH `edges` (0.32.0; an `APPLY` line's window alone asks for them) a last word says which edge
+ * of that Opportunity closes the window, so all four are writable:
+ *
+ *   giver opportunity            as above: it BEGINS            ("until your next Opportunity")
+ *   giver opportunity end        it ENDS                        ("until the end of your next Opportunity")
+ *   recipient opportunity        as above: it ENDS              ("through its next Opportunity")
+ *   recipient opportunity start  it BEGINS                      ("until its next Opportunity")
+ *
+ * The edge is stored only when written (`edge: "begin" | "end"`), so a window with none reads as
+ * it always did. Opt-in because GIVE and ALTER share this reader and what they store and settle
+ * (./given.mjs) keeps no edge: read there, the word would be accepted and lost.
  * @param {string} text
- * @returns {{who: "giver"|"recipient"|"encounter", n: number}}
+ * @param {{edges?: boolean}} [options]
+ * @returns {{who: "giver"|"recipient"|"encounter", n: number, edge?: "begin"|"end"}}
  */
-export function readUntil(text) {
+export function readUntil(text, { edges = false } = {}) {
   const words = String(text ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shapes = edges ? UNTIL_EDGE_SHAPES : UNTIL_SHAPES;
   if ((words.length === 1) && (words[0] === "encounter")) return { who: "encounter", n: 0 };
-  if (["giver", "recipient"].includes(words[0]) && (words[1] === "opportunity") && (words.length <= 3)) {
-    const n = (words.length === 3) ? Number(words[2]) : 1;
-    if (Number.isInteger(n) && (n >= 1) && (n <= 9)) return { who: words[0], n };
-    throw new RuleSyntaxError(`"${words[2]}" is not a count of Opportunities: write a whole number from 1 to 9, as in \`recipient opportunity 2\``);
+  if (["giver", "recipient"].includes(words[0]) && (words[1] === "opportunity")) {
+    const rest = words.slice(2);
+    let edge = null;
+    if (edges && rest.length && Object.hasOwn(UNTIL_EDGES, rest.at(-1))) edge = UNTIL_EDGES[rest.pop()];
+    // An edge where none is read (GIVE, ALTER) is told so, rather than called a bad count.
+    if (!edges && rest.length && Object.hasOwn(UNTIL_EDGES, rest.at(-1))) {
+      throw new RuleSyntaxError(`"${rest.at(-1)}": a window's edge is written after APPLY alone; here a giver's window ends as that Opportunity begins and a recipient's as it ends`);
+    }
+    if (rest.length <= 1) {
+      const n = rest.length ? Number(rest[0]) : 1;
+      if (Number.isInteger(n) && (n >= 1) && (n <= 9)) return edge ? { who: words[0], n, edge } : { who: words[0], n };
+      throw new RuleSyntaxError(`"${rest[0]}" is not a count of Opportunities: write a whole number from 1 to 9, as in \`recipient opportunity 2\``);
+    }
   }
-  throw new RuleSyntaxError(`a window is written ${UNTIL_SHAPES}, not "${String(text ?? "").trim()}"`);
+  throw new RuleSyntaxError(`a window is written ${shapes}, not "${String(text ?? "").trim()}"`);
+}
+
+/** The edge a window closes on when it names none: a giver's as it begins, a recipient's as it ends. */
+export function untilEdge(until) {
+  if (until?.edge === "begin" || until?.edge === "end") return until.edge;
+  return (until?.who === "recipient") ? "end" : "begin";
 }
 
 /** "second", "third": the ordinal a window's words print; a plain number above ninth. */
@@ -138,14 +175,15 @@ function ordinal(n) {
  * @returns {string}
  */
 export function untilWords(until, { giver = "the giver", recipient = "the recipient" } = {}) {
-  const possessive = name => `${name}'s`;
-  if (!until || (until.who === "giver")) {
+  // "your" for a card that speaks to its reader, "their" for a creature the sentence has already
+  // named (0.32.0); any other name takes 's.
+  const possessive = name => ((name === "you") ? "your" : ((name === "they") ? "their" : `${name}'s`));
+  if (!until || (until.who === "giver") || (until.who === "recipient")) {
+    const whose = possessive((until?.who === "recipient") ? recipient : giver);
     const n = Math.max(1, Number(until?.n) || 1);
-    return n === 1 ? `until ${possessive(giver)} next Opportunity` : `until ${possessive(giver)} ${ordinal(n)} Opportunity from now`;
-  }
-  if (until.who === "recipient") {
-    const n = Math.max(1, Number(until.n) || 1);
-    return n === 1 ? `through ${possessive(recipient)} next Opportunity` : `through ${possessive(recipient)} ${ordinal(n)} upcoming Opportunity`;
+    // The edge decides the word (0.32.0): "until" it begins, "through" its end.
+    if (untilEdge(until) === "end") return n === 1 ? `through ${whose} next Opportunity` : `through ${whose} ${ordinal(n)} upcoming Opportunity`;
+    return n === 1 ? `until ${whose} next Opportunity` : `until ${whose} ${ordinal(n)} Opportunity from now`;
   }
   return "until the encounter ends";
 }
@@ -423,7 +461,7 @@ export function readDegree(word) {
  * @returns {object}            The same ops.
  */
 export function refuseComponents(ops, tag, allowed) {
-  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE", used: "IF: EFFECT(...)", has: "EFFECT(<name>)" };
+  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE", used: "IF: EFFECT(...)", has: "EFFECT(<name>)", cost: "IF: COST(<n>)" };
   const empty = emptyOps();
   for (const [key, value] of Object.entries(ops ?? {})) {
     if (allowed.includes(key)) continue;
@@ -588,7 +626,8 @@ export function effectHolds(rule, lists) {
   const has = effectConditions(rule);
   if (has === null) return false;
   for (const h of has) {
-    if (listHas((h.on === "other") ? lists?.other : lists?.self, h) !== true) return false;
+    // `mine` (0.32.0) is asked of the creature whose roll this is: `lists.by` is its uuid.
+    if (listHas((h.on === "other") ? lists?.other : lists?.self, h, { by: lists?.by ?? null }) !== true) return false;
   }
   return true;
 }
@@ -685,8 +724,9 @@ export function summarizeOperators(rule) {
   // IS ("while you are Prone"); a named Effect something it HAS ("while you have Taking Cover").
   for (const h of effectConditions(rule) ?? []) {
     const name = h.name ?? h.slug;
-    if (h.on === "other") bits.push(h.condition ? `against a creature that is ${name}` : `against a creature with ${name}`);
-    else bits.push(h.condition ? `while you are ${name}` : `while you have ${name}`);
+    // `mine` (0.32.0): the one asking put it there.
+    if (h.on === "other") bits.push(h.mine ? (h.condition ? `against a creature you made ${name}` : `against a creature with your ${name}`) : (h.condition ? `against a creature that is ${name}` : `against a creature with ${name}`));
+    else bits.push(h.mine ? (h.condition ? `while you are ${name} by your own doing` : `while you have your own ${name}`) : (h.condition ? `while you are ${name}` : `while you have ${name}`));
   }
   // 0.25.0: `IF: EFFECT(<name>, used)`. An object alone: a hand-stored rule with any other value
   // under the key says nothing here.
