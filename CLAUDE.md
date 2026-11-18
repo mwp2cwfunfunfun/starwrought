@@ -2237,9 +2237,10 @@ content build writes them again.
   flat, though its Effects are read by `IFT` and `with`. Rulings 305 (a custom effect row counts
   as a named Effect by its label; a Condition's name is reserved), 309 (named Effects are public)
   and 310 (a player's hand change is an Adjusted card, a Condition toggle is not) are Claude's
-  readings and his to overrule. **0.30.0 and 0.31.0 are both uncommitted in the working tree**
-  (he approved the plan without asking for a commit): one commit may carry both, or 0.30.0's
-  files can be told apart by its changelog entry. Not driven live: a full Strike clicked through
+  readings and his to overrule. **0.30.0 and 0.31.0 went in as one commit on 2026-11-17, tagged
+  `v0.31.0` alone** (no `v0.30.0` tag: the release workflow would package 0.31.0's files under
+  it); the four workbooks in progress are in it as renames with their last committed content,
+  his edits unstaged. Not driven live: a full Strike clicked through
   the Combat window against a Prone defender (the pairing was read through the function the
   coordinator calls, with the real actors), the hover card on screen, a LIMITED user's sheet.
   **The test world keeps one fixture from the 0.31.0 drive on purpose**: the Talent "Effects
