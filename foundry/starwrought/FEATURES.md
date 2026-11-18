@@ -6,9 +6,11 @@ project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 `v4.21-sync-report.md` has 125 to 158, the 0.12.0 changelog entry 159 to 163, the
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
-entry 269 to 280, the 0.28.0 entry 281 to 289 and the 0.29.0 entry 290 to 296). Since
-v4.25 the handbook no longer prints what each Talent and each Maneuver says: `data/*.xlsx` is
-their only source. System version **0.29.0**.
+entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
+297 to 304 and the 0.31.0 entry 305 to 310). Since
+v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
+2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
+their only source. System version **0.31.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -155,12 +157,12 @@ row later restores the same UUID, and a character who already owns a Talent of a
 Constellation keeps it: `content/constellations.json` carries every Constellation with its flag so
 names, categories, attributes and parents still resolve. `game.starwrought.rules` reports the
 enabled counts beside the authored ones. Aid is the one Maneuver row enabled: Mike moved it into
-`data/maneuvers.xlsx` with `Enabled? = Yes` on 2026-10-03 (it had been the single row of his
+`data/actions_maneuvers.xlsx` with `Enabled? = Yes` on 2026-10-03 (it had been the single row of his
 untracked `data/actions.xlsx`, not enabled, so nothing shipped for it through 0.9.0), and because
 the sheet is authoritative for any action it names, the roster's Aid row stays retired and the
 sheet's Aid ships under its document id. Since 0.6.1 the **Endure Constellation
 ships with its Root alone** (Mike enabled Endure Training on the Endure sheet of
-`data/defenses.xlsx`; the other four Endure Talents stay blank; sync report ruling 77), so Endure
+`data/talents_defenses.xlsx`; the other four Endure Talents stay blank; sync report ruling 77), so Endure
 relief is reachable in play, and since 0.6.2 **Awareness ships the
 same way** (Mike enabled Awareness Training on the Awareness sheet; its other four rows stay blank;
 ruling 83), so every one of the four Defenses is one the wizard's Defenses step can Train; the
@@ -412,7 +414,7 @@ sheet can see, so they stay with the table.
 ### Spells and the four Threats
 
 Since PHB v4.21 the book has five magical Constellations (Elementalism, Forceweaving, Vitalism,
-Mindweaving, Spiritcraft) with two specialties each, authored in `data/magic.xlsx` with structured
+Mindweaving, Spiritcraft) with two specialties each, authored in `data/talents_magic.xlsx` with structured
 spell columns beside the Talent's text (Threat, Delivery, Range, Die, Damage, Targets, Quick,
 Focused, Committed, Defenses; `data/README.txt`). A Talent with a Threat is a **spell**, and its row
 on the Constellations tab and its Item sheet carry the **Cast ❷ ❸ ❹** (Quick, Focused, Committed;
@@ -810,9 +812,26 @@ in the book. Bolas has no Reload and never needs loading. It holds its Capacity,
 - **By hand.** A click on the chip corrects the count: an empty weapon is made full, anything else
   gives up one shot. The weapon's own sheet has the number. Neither costs anything. A player's
   correction is said in the Adjusted card ("loaded 4 to 3 of 5").
-- **Not counted yet:** ammunition itself. Arrows, bolts and bullets are not items in the book or
-  the data, so a Reload never runs out. That is the next step, and one function, the one that
-  loads a weapon, is where it will be taken.
+- **Ammunition is counted** (0.30.0, rulings 298 to 300; Mike: "Count ammunition too"). Arrows,
+  Bolts and Bullets are items in the Equipment compendium, ten to a stack, each naming the Weapon
+  Group it feeds (Bows, Crossbows, Slings).
+  - **A Reload takes one piece for each shot it loads**, from the ammunition the character
+    carries for that weapon's Group, wherever it is carried. A Repeating Crossbow at 2 of 5 takes
+    three Bolts. The Reload's card says so: "Arrows: 1 used, 9 left."
+  - **Which stack.** One that is In hand first, then by name, as the tab lists them. So with
+    Arrows and Silver Arrows both carried, take the Silver ones in hand to shoot them.
+  - **With none left the weapon is still loaded** (Mike's choice: warn and go on). The card says
+    what was missing ("No Arrows left for Shortbow. Loaded anyway; whether it stands is the
+    table's call.") and you get a notice.
+  - **Only a Reload takes ammunition.** A Strike does not (the weapon was loaded), nor the chip's
+    correction, nor the shot a cancelled attack returns. A weapon starts loaded, so a new bow's
+    first shot costs no arrow. A weapon with no Weapon Group is fed by nothing and counts nothing.
+  - **The count, by hand.** An ammunition row on this tab shows its count ("x9") with a minus and
+    a plus beside it: one piece each, at no cost. That is how arrows recovered after a fight are
+    put back; nothing counts what was shot. A player's change is said in the Adjusted card. The
+    weapon's Loaded chip says on hover how much is carried for it.
+  - **Making ammunition.** Any gear Item is ammunition once its sheet's "Ammunition for (Weapon
+    Group)" field names a group; the field suggests the book's.
 
 ### Armor and load
 
@@ -987,7 +1006,7 @@ Three bands, from the inside out:
 | Band | Colour | What it is |
 |---|---|---|
 | Unwieldy | red | The inner dead zone of a long weapon. Unwieldy N is a −2 Situation penalty against a target within N feet, so it is drawn as a warning rather than as reach. Absent unless the weapon in hand has the trait |
-| Natural Reach | faint blue | What your body reaches, set by your Size |
+| Natural Reach | faint blue | What your body reaches: your Size's (Medium 2 ft), unless your Ancestry's Root sets it with `[REACH N]`; a Talent's `[REACH +1]` adjusts it (0.30.0, ruling 301; section 7) |
 | Total Reach | gold | Natural Reach plus the longest melee weapon in hand. The one that matters |
 
 A cell is filled in the innermost band it belongs to, so the colours do not stack into mud, but
@@ -1528,7 +1547,11 @@ the zoom never shrinks it; it follows the actor's changes while shown, goes as t
 the canvas pans, and is switched off by the client setting `showGlance`. The same panel is a
 **LIMITED user's whole sheet** (both actor sheets): a user the GM gave LIMITED permission opens the
 glance and nothing else, where through 0.18.1 they saw every tab read-only. An Observer keeps the
-full read-only sheet.
+full read-only sheet. Since 0.31.0 the card also lists the creature's **named Effects**, what is
+on it that is no Condition (section 7), to its owner and the GM: one made by hand is not shown to
+anyone else, since a GM may keep a private note as an effect on an adversary; one a Maneuver
+applies, from the next release, will show to everyone as a Condition does (ruling 309). The card
+now follows a Condition or an Effect going on or off while it is shown, which it did not before.
 
 ### The Token HUD at any zoom
 
@@ -1676,7 +1699,7 @@ font's: those are ❶ to ❹, which were never uneven.
 **The Maneuvers tab** (the tab keeps its id `actions` in code). It opens with the **Basic
 Maneuvers**: what every character can do, grouped by category in the book's order and foldable,
 read straight from the Maneuvers compendium rather than copied onto the sheet, so a rewrite in
-`data/maneuvers.xlsx` (the workbook that authors them, with its own `Enabled?` column; only a row
+`data/actions_maneuvers.xlsx` (the workbook that authors them, with its own `Enabled?` column; only a row
 Mike enables ships, and Aid is the one so far, since 2026-10-03, so the panel carries Aid under
 Watching, Deceiving & Helping and says so when nothing is enabled) reaches every character on the
 next build. Clicking a name uses it as that
@@ -1931,7 +1954,7 @@ member's owner or the GM (an owner may write their own Actor, so unlike a Take i
 and no GM connected), announced with `swAnnounced` so the Adjusted card never doubles it, and said
 in one line spoken by the member ("Wren's Activity is now Search (Half)."; "Toric Investigates
 with Lore (Warfare)."). The Activity Items themselves carry what each Activity does, written by the
-pipeline from the rows of `data/activities.xlsx` (0.20.0, PHB v4.24's Activities table; the
+pipeline from the rows of `data/actions_activities.xlsx` (0.20.0, PHB v4.24's Activities table; the
 roster's hand-kept `explorationActions` rows through 0.19.0; rulings 103, 104 and 209): a row's
 Type `Activity` makes it an Exploration Mode Item wherever it sits (Treat Wounds on the Medicine
 sheet too), its Movement Speed, Check and Initiative columns become
@@ -2087,10 +2110,10 @@ Mode action; Downtime Activities through v4.21) print from the Actions pack's Do
 (`downtimeActivities` in `helpers/party.mjs`, the category read off the Item; cached per session as
 the Exploration Activities are and forgotten with them when a world action Item changes; a world
 Item of the same name and category replaces the printed one), one row each with the Duration tag
-from the Item's `duration` (the Duration column of `data/endeavors.xlsx`; the Requirements field
+from the Item's `duration` (the Duration column of `data/actions_endeavors.xlsx`; the Requirements field
 through 0.19.0) and the Effect: Retrain (1 month), Train (7 days). Provision left the book's table
 in v4.24 and the panel with it (ruling 211). The panel holds no table of its own, so a row Mike
-adds to `data/endeavors.xlsx`, or a row typed `Endeavor` on any action sheet (Train Animal,
+adds to `data/actions_endeavors.xlsx`, or a row typed `Endeavor` on any action sheet (Train Animal,
 Convalescent Care), appears with no code change, and an empty folder says so. **Train** is the
 one control: under the Activities, one entry per member (portrait, name, Train), live for the
 member's owner and for the GM and offered to nobody else. It opens the shared Flare picker with no
@@ -2362,7 +2385,7 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-two kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-three kinds
 
 **What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
 the eighteenth and nineteenth, 0.24.0 for the twentieth, 0.25.0 for the twenty-first and 0.28.0
@@ -2371,21 +2394,65 @@ for the twenty-second; rulings 118 to 124, 164 to 188, 215 to 230, 239 to 251, 2
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Twenty-two kinds read it: ten effect kinds that act in play (`bonus`, `prevent`, `mark`,
+sheet. Twenty-three kinds read it: ten effect kinds that act in play (`bonus`, `prevent`, `mark`,
 `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`), two creation kinds
-(`grant`, `aura`), nine feature kinds
-(`trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
+(`grant`, `aura`), ten feature kinds
+(`trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character, and `requires` (0.28.0), a block on a Maneuver's own
 row that says what the Maneuver needs before it can be used: `[REQUIRES prone or supine]`,
 `[REQUIRES free hand or weapon grapple][REQUIRES creature in reach]`. Every block on the row must
 hold, `or` inside one gives alternatives, `not` turns a word round; the words are a Condition's
 name, `supine`, `bind`, `spell`, `shield`, `shield raised`, `rigid`, `free hand`, `holding`,
 `weapon` (with `melee`, `ranged` or a trait), `foe`, `ally` or `creature` with `adjacent`, `in
-reach` or `within <feet>`, and `encounter`. It acts at no roll and refuses nothing: the character
+reach` or `within <feet>`, and `encounter`; and since 0.31.0 `effect <Name>` (a named Effect),
+`bind, neutral` (the Bind in one state) and `with` after a nearness word (`creature adjacent with
+dying`). It acts at no roll and refuses nothing: the character
 sheet's Maneuvers tab reads it and lists the row only while it holds (section 3), and the Item
 window's As read line says `needs: Prone or Supine`. Nothing else reads a rule: no Strike's commitment,
 no damage step, because no kind for them exists, and Mike's instruction stands ("we will build
 automation syntax hooks one at a time").
+
+**Effects are read by name** (0.31.0; rulings 305 to 310; Mike, 2026-11-17: "assuming each Actor
+has an Effects list of whatever effects they have, conditions, etc., REQUIRES should just look
+for a string in that Effects list"). A creature's Effects are its Conditions (the Bind's three
+states, Preparing, Spent, Wounded and Dying among them, as they always were) and every other
+active effect on it by its name; nothing new is stored. So a **named Effect** is anything on a
+creature that is no Condition: the GM, or a player on their own sheet, presses the plus beside
+Active Effects on the Effects tab and names it ("Blessed"), and the tag beside it says how a line
+reads it, `EFFECT(Blessed)`; a character's custom effect row counts by its label; one switched
+off counts for nothing. Three lines read the list.
+
+- **`[REQUIRES effect Blessed]`** on a Maneuver's row lists the row only while the character has
+  it; `[REQUIRES bind, neutral]` only in a neutral Bind; `[REQUIRES creature adjacent with dying]`
+  only beside a Dying creature. A bare word is still a Condition or a known word, so a mistyped
+  one is an error and its cell shows red.
+- **`IF: EFFECT(Blessed)`** on a bonus line (CHECK, ATK, DEF, INIT, SPEED) holds while the
+  creature rolling has it. Such a bonus is in the sheet's own Threshold for as long as the Effect
+  is on: with `[EFFECT DEF: 2 situation, guard; IF: EFFECT(Blessed)]` on a Talent, Guard reads two
+  higher the moment Blessed goes on and two lower the moment it is switched off.
+- **`IFT: EFFECT(prone)`** holds while the roll's other party has it, an adversary included. It
+  is read where there is another party: the Combat window's preview and the card for a Defense
+  (`[EFFECT DEF: 1 situation, evade; IFT: EFFECT(prone)]` is +1 Evade against a Prone attacker),
+  each defender's own result of a Strike (never the blind attack die, which knows nobody), and a
+  check read against one creature's Threshold. That last needed a mend (ruling 308): such a check
+  knew its target's token and not the creature, so nothing about the creature could be asked.
+
+A Condition's name is reserved: `EFFECT(prone)` is the Condition, and an effect merely called
+"Prone" is read by nothing, which its tag says. So does the tag of an effect named with anything
+but letters, digits, spaces, hyphens and apostrophes ("Blessed!"): no line could write that name,
+so it is on no list. A rule reads a named Effect off any creature; the hover card shows a
+hand-made one to its owner and the GM only (ruling 309). A player who adds, removes, renames or
+switches one by hand is said in chat with an Adjusted card, since that now changes what the
+rules see; a Condition toggled on a token is as silent as it was. **Nothing puts a named Effect
+on yet but a hand.** A Maneuver that does (`APPLY`, and `REMOVE` to take one off) is the next
+release.
+
+Three older things were mended beside it. **An `INIT` line now reaches the default Initiative**:
+a bonus to Initiative never applied to one rolled with Awareness, since 0.13.0. **An apostrophe
+inside parentheses is no longer an opening quote**, so `CLAIM(when it's raining)` reads. And
+**one Talent's lines on the attack die and at the pairing count once**: `ATK: 1` with `ATK: 2;
+IFT: EFFECT(prone)` is +2 against a Prone defender through the Combat window, as on any roll,
+where the two were resolved apart and gave +3 (the same held for `MARKED` since 0.15.0).
 
 **The shape is Fantasy Grounds'** (0.16.0; ruling 182; Mike: "I REALLY, REALLY like the
 FantasyGrounds effects automation ... can we use syntax substantially similar to this"). Two
@@ -2563,7 +2630,7 @@ the lists, so a Talent that adds a trait or a language works without the wizard.
 
 **Talent Maneuvers** (0.16.0; rulings 184 and 185; Mike: the Talent "only adding the Maneuver").
 A Talent that says "You gain the X Maneuver" carries `[MANEUVER X]`, and X is a row of the new
-"Talent Maneuvers" sheet of `data/maneuvers.xlsx` with its own Cost and Automation (Steady the Line
+"Talent Maneuvers" sheet of `data/actions_maneuvers.xlsx` with its own Cost and Automation (Steady the Line
 ❶↺ `IMMUNE: expose; FOR: allies 0`; Oathbound ❶ `MARK: enemies` with its two `IFT: MARKED` lines;
 Quick Tongue ❶↺ `REROLL: diplomacy; IF: RESULT(critical failure)`). When the Talent lands on a
 character (dragged onto the sheet, picked in the wizard, or refreshed by Sync content, after which
@@ -2649,7 +2716,7 @@ Constellation chosen is a Relevant Check: using it opens the Relevant Check pick
 Maneuver's name as the roll's label and the Maneuver itself behind the roll, so Aid's roll is Aid's
 and a `bonus ... to Aid` is applied to it rather than offered. The build sets this on a sheet
 action whose Effect says "Relevant Check" and names no check, and Aid ships with it set since Mike
-enabled its row in `data/maneuvers.xlsx` on 2026-10-03, so an Aid used from the Maneuvers tab opens
+enabled its row in `data/actions_maneuvers.xlsx` on 2026-10-03, so an Aid used from the Maneuvers tab opens
 the picker and the roll's card reads "Aid". The Item sheet's "Rolls a check" panel says so under
 its fields.
 
@@ -2963,6 +3030,28 @@ the list of shipped kinds, so a kind cannot ship unannounced.
 
 ## 8. Keeping the content in step: the content loop
 
+**The workbooks, by name** (since 2026-11-15). A talent workbook is `data/talents_<what>.xlsx`
+(ancestries, cultures, callings, skills, defenses, combat_styles, magic, and martial for what was
+`weapons.xlsx`) and an actions workbook `data/actions_<what>.xlsx` (maneuvers, activities,
+endeavors); `backgrounds.xlsx`, `languages.xlsx` and `equipment.xlsx` kept their names. The
+converter tells a workbook by what is in it, so the names decide nothing.
+
+**The equipment build** (0.30.0, ruling 302; Mike, with the talent and action sheets still being
+written and unable to pass the loop below: "Equipment only"). A double-click on
+`sync_equipment.cmd`, or `node assets/build_all.mjs --equipment`, converts `data/equipment.xlsx`
+ALONE: weapons, armor, shields and ammunition into `assets/equipment.json` and the roster's four
+equipment blocks, then the web app, the pack sources and the style check on that one workbook. No
+other workbook is converted and no tree, action, background or language file is written (the
+build report at the end still reads every workbook, read-only). Then Sync content, as below.
+`data/equipment.xlsx` is the ONLY source for a weapon, a piece of armor, a shield and ammunition
+since the handbook dropped its Chapter 5 tables (ruling 297); a piece of armor's Description
+reaches its Item since 0.30.0.
+
+**Sync content refuses sources newer than the running system** (0.30.0, ruling 304). After a
+system update, restart Foundry before syncing: a world still running the older code would write
+the new content through a data model that does not know its new fields, and lose them. The sync
+says so and writes nothing.
+
 **One command, two outputs, no restart** (0.8.0; rulings 115 to 117). The spreadsheets in
 `data/*.xlsx` are the content, and the web app and the Foundry compendia are two readers of it.
 Through 0.7.5 getting a new row into Foundry meant stopping the server, running the pipeline,
@@ -3238,15 +3327,39 @@ before; the sources and the index are.
   the Controller that ends nearer the foe; a Disarm, "after its first benefit is used" and two
   adversaries contesting a Bind are by hand; an undo of a move does not bring a Bind back (Form a
   Bind does); and a Cast was not driven live, since no spell ships enabled.
-- **What loading leaves to the table** (0.29.0): ammunition is not counted, so a Reload never runs
-  out (the next step); an empty weapon is never refused, only said; a weapon does not reload
+- **What reading Effects leaves to the table** (0.31.0): nothing puts a named Effect on but a
+  hand, and nothing ends one (a Maneuver that applies one, with a window, is the next release); a
+  Condition's value is not compared (`EFFECT(frightened)` is any value); "applied by me" is not
+  asked, so "Wrong-Footed to you" reads as Wrong-Footed; an Effect is not read inside an aura or
+  beside a `FOR` that reaches others; no kind but a bonus reads one (an `IMMUNE`, a `REROLL` and
+  the rest refuse the condition by name); an adversary's own rolls are still flat, though its
+  Effects are read; a pending result ("Aid from Wren") is not an Effect a line can name; the
+  Off-Guard a first Torso Wound makes lasting is a number on the Defenses and not the Condition,
+  so `EFFECT(off-guard)` does not see it; a player who adds or renames a custom effect row is
+  not said in chat, though its label counts as a named Effect (the row is the player's own, as
+  its lines are); the Maneuvers tab does not look again when ANOTHER character's custom effect
+  row changes; an effect an Item carries counts however the Item is carried; where a pairing's
+  line and the die's are one circumstance the card lists both and the total counts the stronger;
+  and a full Strike through the Combat window against a Prone defender was read through the
+  function the window calls, not clicked through.
+- **What ammunition and `[REACH N]` leave to the table** (0.30.0): a Strike takes no ammunition
+  and a weapon starts loaded, so only a Reload costs a piece; running out is said and never
+  refused; two stacks of one kind are two rows and nothing merges them; recovery after a fight is
+  by hand; each minus or plus by a player is one Adjusted card; the web app and the compendium
+  document list neither ammunition nor a ranged weapon's price. (When 0.30.0 was built the saved
+  sheet enabled ammunition and no weapon that takes it; as saved since, and built with 0.31.0,
+  every row is enabled, the eight ranged weapons among them.) A set `[REACH N]` stands over
+  Size, so it does not move when a character's Size is changed by hand; an adversary's reach is
+  its Size's; no workbook that was built holds a `[REACH N]` yet.
+- **What loading leaves to the table** (0.29.0; ammunition is counted since 0.30.0): an empty weapon is never refused, only said; a weapon does not reload
   itself when an encounter ends; outside an encounter and with the six-action round untracked
   Reload costs nothing; the Crossbow Fighting Talents that bend reloading (Practiced Loader, Crank
   and Move, Snap Shot, Covered Reload) are not enabled and not built; an adversary's attack rows
   have no ammunition. `in sight` is line of sight and two statuses, as every sight reading
   is: light and sight range are not read, and a Blinded character's rows stay listed. Cast has no
-  chooser of its own yet. No ranged weapon is enabled in `data/equipment.xlsx`, so loading acts on
-  nothing shipped until a bow's row says Yes.
+  chooser of its own yet. Since the equipment sheet built with 0.31.0, the eight ranged weapons
+  ship (two bows, four crossbows, the Sling and the Bolas), so loading and ammunition act on
+  shipped content; through 0.30.0 none was enabled.
 - **What the Maneuvers tab leaves to the table** (0.28.0): it lists and it never refuses, so a
   Maneuver used when it does not apply is the table's. A row with no `[REQUIRES ...]` block is
   always listed, and the blocks are Mike's to paste. Not read: Size limits ("no more than one

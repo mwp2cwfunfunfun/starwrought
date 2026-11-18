@@ -49,6 +49,7 @@
 
 import { RuleSyntaxError } from "./syntax.mjs";
 import { RANKS, THREATS, DEGREES, isLoreSlug, flagKey, ruleCarrierKey, slugify, plainName, LEGACY_BONUS_TYPES } from "../config.mjs";
+import { listHas } from "./effect-list.mjs";
 
 /**
  * The operator names of the 0.13.0 form (`kind: arg, arg, OP(...)`), refused since 0.17.0. The
@@ -68,7 +69,12 @@ export function emptyOps() {
     // 0.25.0: `IF: EFFECT(<name>, used)`, `{ name, slug }`: a roll of the owner's has just used up
     // the Effect of that name. Under its own key and never in `when`, where every kind reads rank
     // conditions: a kind with no use for it then refuses it by name (`refuseComponents`).
-    used: null
+    used: null,
+    // 0.31.0: `IF: EFFECT(<name>)` and `IFT: EFFECT(<name>)`, a list of `{ name, slug, condition,
+    // on }`: a creature HAS the Condition or the named Effect now, `on` "self" for the roller (IF)
+    // and "other" for the roll's other party (IFT). Under its own key for the same reason; null
+    // when the line asks for none, so a stored rule that asks for none carries nothing new.
+    has: null
   };
 }
 
@@ -179,6 +185,9 @@ export function titled(word) {
 /*  Splitting                                   */
 /* -------------------------------------------- */
 
+/** A letter or a digit: an apostrophe that follows one is inside a word (`Hunter's`), not a quote. */
+export const WORD_CHAR = /[\p{L}\p{N}]/u;
+
 /**
  * Split a line's arguments on the commas at parenthesis depth 0 and outside quotes, each part
  * trimmed, empty parts dropped. `splitArgs` in syntax.mjs knows quotes but not parentheses, and an
@@ -192,13 +201,18 @@ export function splitOperands(text) {
   let current = "";
   let depth = 0;
   let quote = null;
+  let before = "";
   for (const ch of String(text ?? "")) {
+    const prev = before;
+    before = ch;
     if (quote) {
       current += ch;
       if (ch === quote) quote = null;
       continue;
     }
-    if ((ch === '"') || (ch === "'")) {
+    // An apostrophe inside a word is a letter of it, never an opening quote (0.31.0, the review):
+    // `EFFECT(Hunter's Mark)` and `CLAIM(when it's raining)` read.
+    if ((ch === '"') || ((ch === "'") && !WORD_CHAR.test(prev))) {
       quote = ch;
       current += ch;
       continue;
@@ -409,7 +423,7 @@ export function readDegree(word) {
  * @returns {object}            The same ops.
  */
 export function refuseComponents(ops, tag, allowed) {
-  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE", used: "IF: EFFECT(...)" };
+  const names = { when: "IF", for: "FOR", while: "IF: ALLIES(...)", against: "IFT: <Threat>", seen: "IF: SEEN", limit: "LIMIT", claim: "IF: CLAIM(...)", marked: "IFT: MARKED", until: "UNTIL", set: "VALUE", used: "IF: EFFECT(...)", has: "EFFECT(<name>)" };
   const empty = emptyOps();
   for (const [key, value] of Object.entries(ops ?? {})) {
     if (allowed.includes(key)) continue;
@@ -541,6 +555,45 @@ export function markedHolds(rule, entry, context) {
 }
 
 /**
+ * A rule's `EFFECT(<name>)` conditions (0.31.0), as a list: empty when it asks for none, and null
+ * when what is stored under `has` is not a list of well-formed entries. A rule in that state can
+ * never be said to hold, so it is left out rather than applied always.
+ * @param {object} rule
+ * @returns {Array<{name: string, slug: string, condition: string|null, on: string}>|null}
+ */
+export function effectConditions(rule) {
+  const has = rule?.has;
+  if ((has === null) || (has === undefined)) return [];
+  if (!Array.isArray(has)) return null;
+  for (const h of has) {
+    if (!h || (typeof h !== "object") || !h.slug || !["self", "other"].includes(h.on)) return null;
+  }
+  return has;
+}
+
+/** Does this rule ask about the roll's other party's Effects (`IFT: EFFECT(...)`)? */
+export function readsOtherEffects(rule) {
+  return (effectConditions(rule) ?? []).some(h => h.on === "other");
+}
+
+/**
+ * Do a rule's `EFFECT(<name>)` conditions hold (0.31.0; ruling 307)? `IF:` asks the roller's list
+ * and `IFT:` the other party's (./effect-list.mjs). A rule without one holds; one that asks about
+ * a creature whose list is not known does not, as MARKED does not hold with no other party.
+ * @param {object} rule
+ * @param {{self?: object|null, other?: object|null}} lists  Each an `EffectList`, or null.
+ * @returns {boolean}
+ */
+export function effectHolds(rule, lists) {
+  const has = effectConditions(rule);
+  if (has === null) return false;
+  for (const h of has) {
+    if (listHas((h.on === "other") ? lists?.other : lists?.self, h) !== true) return false;
+  }
+  return true;
+}
+
+/**
  * The key a rule's LIMIT mark is filed under: the carrier and the line, as the `bonus` and
  * `substitute` kinds key theirs. One reading for the kinds that act when a Maneuver is used
  * (`permit`, `subordinate`; 0.25.0, through 0.24.0 it was `permit`'s own).
@@ -595,6 +648,10 @@ export function needsMoment(rule) {
   if (rule.for && (rule.for.who !== "self")) return true;
   const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
   if (whens.some(w => w?.trait || w?.outcome)) return true;
+  // 0.31.0: an Effect on the roll's OTHER party is known only where there is one. An Effect on
+  // the roller is the sheet's to read (its own effects are known when it is prepared), so a bonus
+  // that waits on one shows in the sheet's Threshold while the Effect is on.
+  if (readsOtherEffects(rule)) return true;
   return !!(rule.while || rule.against || rule.limit || rule.seen || rule.claim || rule.marked);
 }
 
@@ -624,6 +681,13 @@ export function summarizeOperators(rule) {
     else bits.push(rule.against.reach ? `against a ${rule.against.reach} Blow` : `against a ${titled(rule.against.threat)}`);
   }
   if (rule?.marked) bits.push("against the creature you marked");
+  // 0.31.0: `IF: EFFECT(<name>)` and `IFT: EFFECT(<name>)`. A Condition is something a creature
+  // IS ("while you are Prone"); a named Effect something it HAS ("while you have Taking Cover").
+  for (const h of effectConditions(rule) ?? []) {
+    const name = h.name ?? h.slug;
+    if (h.on === "other") bits.push(h.condition ? `against a creature that is ${name}` : `against a creature with ${name}`);
+    else bits.push(h.condition ? `while you are ${name}` : `while you have ${name}`);
+  }
   // 0.25.0: `IF: EFFECT(<name>, used)`. An object alone: a hand-stored rule with any other value
   // under the key says nothing here.
   if (rule?.used && (typeof rule.used === "object")) {

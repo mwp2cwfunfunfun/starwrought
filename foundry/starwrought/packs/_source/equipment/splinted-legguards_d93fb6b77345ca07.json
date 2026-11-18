@@ -12,7 +12,7 @@
     "price": "9 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Metal strips secured to padded or leather supports over the thighs and shins, with separate knee protection. They provide efficient partial armor that can be repaired without an armorer’s forge.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "0a5c94967519b5a7"
+      "contentHash": "d99925b82fdb6f40"
     }
   },
   "effects": [],

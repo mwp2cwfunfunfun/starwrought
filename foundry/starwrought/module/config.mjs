@@ -47,7 +47,7 @@ export {
   PHYSICAL_DAMAGE, DAMAGE_TYPES, DAMAGE_ABBR, DELIVERIES, ARMOR_TYPES, LEGACY_ARMOR_TYPES
 } from "./config/zones.mjs";
 
-export { SIZES, SIZE_ORDER, MOMENTARY_SIZE_GAP, GAIN_CONTROL_SIZE_GAP, COVER, DETECTION } from "./config/sizes.mjs";
+export { SIZES, SIZE_ORDER, MOMENTARY_SIZE_GAP, GAIN_CONTROL_SIZE_GAP, COVER, DETECTION, naturalReach } from "./config/sizes.mjs";
 
 export { HANDLING, WEAPON_GROUPS, WEAPON_DICE_BY_RANK, weaponDice } from "./config/weapons.mjs";
 

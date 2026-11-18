@@ -19,6 +19,11 @@
       <select name="system.size">{{selectOptions choices.sizes selected=system.size}}</select></label>
     <label class="sw-field" data-tooltip="STARWROUGHT.Field.speedHint"><span>{{localize "STARWROUGHT.Field.speed"}}</span>
       <input type="number" name="system.speed" value="{{system.speed}}" min="0"></label>
+    {{!-- Natural Reach (0.30.0): an Ancestry's, set by its Root's [REACH N]; blank means "by Size". --}}
+    {{#if (eq system.kind "ancestry")}}
+    <label class="sw-field" data-tooltip="STARWROUGHT.Field.naturalReachHint"><span>{{localize "STARWROUGHT.Field.naturalReach"}}</span>
+      <input type="number" name="system.reach" value="{{system.reach}}" min="0" placeholder="{{localize 'STARWROUGHT.Field.bySize'}}"></label>
+    {{/if}}
     <label class="sw-field sw-wide"><span>{{localize "STARWROUGHT.Field.senses"}}</span>
       <input type="text" name="system.senses" value="{{system.senses}}"></label>
     {{!-- Only a Culture grants a language, so only a Culture shows the field (0.13.0). --}}

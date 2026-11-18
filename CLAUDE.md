@@ -52,6 +52,7 @@ node assets/build_all.mjs --check      # only the drift check
 node assets/build_all.mjs --skip-slow  # skip the plates, the sheets, and the compendium docx
 node assets/build_all.mjs --accept-phb # record the current handbook as synced, once the work is done
 node assets/build_all.mjs --content    # the content loop (0.8.0): spreadsheets to the web app and the pack sources, no compile, drift a warning
+node assets/build_all.mjs --equipment  # the equipment workbook ALONE (0.30.0): equipment.json, the roster's four blocks, the web app, the pack sources
 ```
 
 **THE HANDBOOK RULE (Mike, 2026-08-27, standing).** When the PHB moves, everything downstream moves
@@ -70,6 +71,15 @@ authoritative for the general rules and for the tables it still prints** (Chapte
 moves everything downstream as above; **`data/*.xlsx` is the ONLY source for what a Talent, a
 Maneuver, an Activity or an Endeavor says**, a change there is the content loop's and never a
 handbook sync, and no handbook redline is proposed for one.
+
+**And a third part since 2026-11-15 (Mike; ruling 297): the equipment tables left the book.** "I
+removed the armor and put in a placeholder ... Same for Shields ... And weapons": Chapter 5's
+Armor Pieces, Shields, Melee Weapons and Ranged Weapons tables now read "This section will be
+populated from the Spreadsheets in the StarWrought data folder". So **`data/equipment.xlsx` is
+the ONLY source for a weapon, a piece of armor, a shield and a kind of ammunition**; the Weapon
+Traits and Armor Traits tables and Chapter 5's prose are still the handbook's. Where this file
+says above that the handbook is authoritative for "Chapter 5's equipment", read: for its trait
+tables and its prose.
 
 The individual steps, from the project root, in this order. They need `openpyxl`, `matplotlib`,
 `reportlab`, `python-docx`, and the `docx` npm package; all are installed.
@@ -920,6 +930,131 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.31.0 (Mike, 2026-11-17; rulings 305 to 310): Effects are read by name.** Mike, writing
+`[REQUIRES ...]` cells down the Basic Actions list: "even the [REQUIRES] grammar should be
+effects-based ... assuming each Actor has an Effects list of whatever effects they have,
+conditions, etc., REQUIRES should just look for a string in that Effects list", then "Plan both
+together" with named Effects, step two. Planned first (`dazzling-floating-simon.md`; his decisions
+by question: the writing tags will be APPLY and REMOVE, an Effect on yourself lands at once and
+one on another creature by a button on the card, a named Effect in REQUIRES has the word `effect`
+in front). **Built as two releases; 0.31.0 is the READING half and adds no kind, tag or hook
+point. 0.32.0, the `apply` kind (`APPLY` and `REMOVE` on a Maneuver's own row, the `applies` hook
+point, windows, the `effect:*` relay), is planned in the same file and NOT BUILT.**
+**The Effects list** (ruling 305; `module/rules/effect-list.mjs`, pure): a creature's Conditions
+(its statuses, each with its value) and its NAMED EFFECTS, every other active effect on it by
+`slugify(plainName(name))`, plus a character's custom effect rows by their label. Nothing new is
+stored; a named Effect is an ActiveEffect with a name (the sheets' "new effect" control), carries
+NO status id, and a disabled or suppressed one counts for nothing. `effectsOn(actor)` gathers it
+(`statuses`, `appliedEffects` else `effects`, `system.effects`); `readEffectName(written)` reads a
+name a cell writes (**a Condition's name is reserved**: `EFFECT(prone)` is the Condition; an
+Exposed Zone is refused; a name is letters, digits, spaces, hyphens and apostrophes, never a word
+of the grammar); `listHas`, `namedEffects`. **Bind states were already Conditions** (`bound` is a
+neutral Bind, `controlling`, `controlled`), which Claude had told Mike were missing and corrected.
+**REQUIRES** (ruling 306; `module/rules/requires.mjs`): `effect <Name>` (`{ test: "effect", slug,
+name }`; a bare word stays a Condition or a known word, so a typo is still an error and fails
+open), `bind, <state>` (`{ test: "bind", state }`; the comma is taken out in `readRequires`, the
+one comma a block reads) and `<who> <distance> with <Condition | effect Name>` (`with` on the
+`near` term; a creature whose Effects were not given is "cannot tell"). `situationOf`
+(`module/helpers/situation.mjs`) gives `effects` and each `near` entry its `conditions` and
+`effects`. **`EFFECT(<name>)`** (ruling 307; `readCondition` in `module/rules/effects.mjs`) is
+stored under its own ops key, `has = [{ name, slug, condition, on }]`, apart from step one's
+`used`: **the prefix decides whose, `IF:` the creature rolling (`on: "self"`) and `IFT:` the
+roll's other party (`on: "other"`), the one condition of which that is true.** `operators.mjs`:
+`effectConditions`, `readsOtherEffects`, `effectHolds`; `needsMoment` is true for an other-party
+rule, so a self rule is in the sheet's Threshold while the Effect is on and an other-party rule
+is read at the Threshold read, the Defense roll, a Strike's pairing (`pairingOnly` lets it
+through beside `MARKED`; the blind die knows nobody) and a check against a target. Read by the
+`bonus` kind alone (`parse` copies `has` only when set, so a rule that asks for none is stored
+as before; **`bonus`'s `parse` returns a fixed list of fields, so a new ops key not copied there
+is dropped in silence**); refused beside a `FOR` that reaches others (an aura's ring included)
+and by every other kind through `refuseComponents`. **A check read against one creature's
+Threshold has that creature as its other party** (ruling 308; `otherOf` in
+`module/dice/check/modifiers.mjs` falls back to `cfg.targetActor`). **A rule reads a named Effect
+off any creature; the glance shows a hand-made one to its owner and the GM alone** (ruling 309,
+narrowed by the review from the plan's "as public as Conditions": a GM may keep a private note
+as an effect on an adversary; one a Maneuver applies in 0.32.0, with `applied` on it, shows to
+everyone; `module/canvas/glance.mjs`, which now also redraws on the three ActiveEffect hooks),
+and `with` may still show a player that an adversary carries one. **One function decides what
+is a named Effect, `namedEffectOf(name)`** (glyphs out, then `readEffectName`'s shape): the
+list, the sheets' tag and the glance share it, so an effect called "Blessed!" is on no list.
+`readEffectName` refuses `not` in front, a Condition with a number (`Fatigued 2`) and an Exposed
+Zone however spaced; `bonus` refuses `IFT: EFFECT` on INIT and SPEED lines and beside `CLAIM`.
+**Three older defects the review found were mended**: an `INIT` line never reached an Initiative
+rolled with a Defense Constellation, the default one (the `momentOnly` skip in `bonus.mjs`, since
+0.13.0); an apostrophe after a letter opened a quote in `splitOperands` and `splitComponents`
+(`WORD_CHAR` in `operators.mjs`); and `SwCheck.resolveAgainst` resolved the pairing's modifiers
+apart from the die's, so one Talent's lines on both counted twice (it adds the difference now).
+**A player's hand change to a named Effect is an Adjusted card** (ruling 310;
+`module/documents/audit.mjs`: created, deleted, renamed, switched; never a Condition's own
+effect, the GM, or a write passing `swAnnounced` or `swChecked`). The Effects tab's Active
+Effects rows of both sheets carry a tag saying how a line reads each (`effectReadAs` in
+`module/helpers/effects.mjs`: `prone`, `EFFECT(Blessed)`, or "not read" with why). **An option
+of a pure function is never named `valueOf`** (destructuring finds Object's own; the self-test
+caught it). His four workbooks in progress were not converted, built, staged or written. **The
+equipment sheet was rebuilt at the commit** (2026-11-17): `data/equipment.xlsx` had been saved
+after 0.30.0's last equipment build with EVERY row enabled (29 weapons, 8 ranged; 27 armor; 3
+shields; 3 ammunition), so `build_all.mjs --equipment` was run before it was committed, and the
+pack sources hold all 62 rows. **Before committing `data/equipment.xlsx`, run the equipment-only
+converter and see whether `assets/equipment.json` moves; if it does, run the equipment build.**
+
+**0.30.0 (Mike, 2026-11-15; rulings 297 to 304): ammunition, `[REACH N]`, the equipment build, and
+the workbooks' new names.** Mike, after 0.29.0: he took the armor, shield and weapon tables out of
+the handbook (the third part of the HANDBOOK RULE, above), renamed eleven workbooks (the table
+under Where the source of truth lives), added an Ammunition tab to `data/equipment.xlsx`, and
+asked for "a [REACH N] Automation Grammar, where N is the natural reach for the ancestry".
+Planned first (`dazzling-floating-simon.md`; his decisions by question: an equipment-only build,
+out of ammunition warn and go on, `[REACH N]` set and adjust, recovery left to the table).
+**The equipment build** (ruling 302): `python assets/xlsx_to_trees.py --equipment`
+(`equipment_only`; the equipment workbook is told from the others by the sheet names in its
+package, `sheet_names` and `is_equipment_workbook`, so no other workbook is loaded; it shares
+`write_equipment` with the full run) and `node assets/build_all.mjs --equipment`
+(`sync_equipment.cmd`): that step, `inject`, `test_rules`, `build_foundry --no-compile` and
+`check_style --quiet --equipment` (of the spreadsheets, the equipment workbook alone); a step
+names its `equipment` shape in `STEPS` or is skipped; drift is a warning; it takes no other flag.
+The build report at the end of every build still reads every workbook, read-only. **Use it while
+Mike's talent and action workbooks cannot pass the content loop; it is the one build allowed on
+his data today, and `data/equipment.xlsx` is therefore a built, committed workbook.**
+**Ammunition** (rulings 298 to 300): the converter reads the Ammunition sheet (`AMMUNITION_SHEET`,
+`BUNDLE`: "Arrows (10)" is Arrows, ten to a stack) into `equipment.json`'s `ammunition`, with
+`check_ammunition`'s three warnings (each has its row in `RULES` in `build_report.py`);
+`build_foundry.mjs` ships a `gear` Item for each enabled row (`system.ammunition` the Weapon
+Group, `quantity` the stack, the price said "per 10"). In play the gear model has `ammunition`
+and `isAmmunition` (`module/data/items/gear.mjs`); `ammunitionFor` (the character's stacks for a
+weapon's Group: one In hand first, then by name) and `takeAmmunition` (`takes`, `used`, `short`,
+`left`, `kind`, `kinds`) are pure, in `module/data/items/weapon-traits.mjs`; **`loadWeapon` in
+`documents/actor/carrying.mjs`, the one place a weapon is loaded, is the one place ammunition is
+taken**: one piece for each shot it adds, the quantities written with `swAnnounced`, and the
+weapon LOADED FULL whatever was found (Mike: warn and go on); `reloadWeapon` prints a line for
+each kind used and, when short, the `Ammunition.short*` line and a notice. Never taken by a
+Strike, the chip or a refund; a weapon with no Weapon Group counts nothing. The Equipment tab's
+ammunition row has a count and `adjustQuantity` minus and plus (a player's change is the audit's
+existing `quantity` line); the Loaded chip's tooltip says what is carried.
+**`[REACH N]`** (ruling 301; the `reach` kind, the twenty-third, a feature block with no hook):
+`[REACH 2]` sets Natural Reach in feet (0 allowed), `[REACH +1]` adjusts it (0 refused);
+`naturalReach(size, { set, add })` in `module/config/sizes.mjs` (in the barrel) is the one
+computation; `_prepareRules` collects `features.reach` (the highest set among the owned Talents,
+the sum of the adds) and `data/character/offense.mjs` sets `system.reach` from it, which every
+reader of Natural Reach already goes through. **Read live off the Talents owned, never stored at
+creation** (unlike Speed), so a character follows its Root's block once Sync content refreshes
+its copy; an adversary's reach is its Size's. For display only, `ancestryFacts` in
+`assets/parse_rules.mjs` writes a Root's set as the roster record's `reach`, and the chassis
+model (`reach`, nullable), `CHASSIS_FIELDS`, the wizard's card, the chassis sheet, the web app
+and `build_phb.js` print it.
+**Sync content refuses sources newer than the running code** (ruling 304): `planContentSync`
+throws (`swVersionMismatch`) when `index.system` is newer than `SW.SYSTEM_VERSION`, since an
+older client would write the new documents through a data model that drops their new fields and
+record them level. **A release that adds a field to an Item needs Foundry restarted before the
+sync, and a live drive of one must restart Foundry first.** The guard protects from 0.30.0 on: a
+world still running older code has none, so both loops end by saying to restart Foundry after a
+system update (`RESTART_FIRST` in `build_all.mjs`). **The equipment build runs no `parse_rules`**:
+`build_foundry` reads the `rules` the last full or content build left in `trees.json`, so never
+run the strict `parse_rules` on Mike's sheets in progress before it (a strict failure strips
+them). The sheet as 0.30.0 built it enabled ammunition
+and no weapon that takes it, with Dagger, Shortsword and Spear switched off (Mike enabled every
+row afterwards; built with 0.31.0); 27 armor pieces gained their descriptions. What takes ammunition is one rule in two
+languages: `takes_ammunition` in the converter and `ammunitionOf` in the system (ranged, and a
+Reload or a Capacity above 0).
+
 **0.29.0 (Mike, 2026-11-15; rulings 290 to 296): Strike from the Maneuvers tab, loaded weapons, an
 Unarmed Strike for everyone, and "in sight".** Mike, on writing Strike's `[REQUIRES ...]` cell: "I
 can foresee many situations in the future where we need some sort of 'if you can see an ally' or
@@ -1610,6 +1745,26 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
 
 ## Where the source of truth lives
 
+**THE WORKBOOKS WERE RENAMED ON 2026-11-15 (Mike; system 0.30.0, ruling 303).** A talent workbook
+is `data/talents_<what>.xlsx` and an actions workbook `data/actions_<what>.xlsx`:
+
+| Was | Is |
+|---|---|
+| `maneuvers.xlsx`, `activities.xlsx`, `endeavors.xlsx` | `actions_maneuvers.xlsx`, `actions_activities.xlsx`, `actions_endeavors.xlsx` |
+| `ancestries.xlsx`, `cultures.xlsx`, `callings.xlsx`, `skills.xlsx` | `talents_ancestries.xlsx`, `talents_cultures.xlsx`, `talents_callings.xlsx`, `talents_skills.xlsx` |
+| `defenses.xlsx`, `combat_styles.xlsx`, `magic.xlsx` | `talents_defenses.xlsx`, `talents_combat_styles.xlsx`, `talents_magic.xlsx` |
+| `weapons.xlsx` | `talents_martial.xlsx` |
+| `backgrounds.xlsx`, `languages.xlsx`, `equipment.xlsx` | unchanged |
+
+The converter tells a workbook by what is in it, never by its name, so the names decide
+nothing; `assets/index_sheets.py` reads the Category from the name with its prefix removed
+(`workbook_key`), and `carry_over_absent` knows the three actions workbooks by either name
+(`RENAMED_WORKBOOKS`). This section and Known outstanding work name the files as they are NOW.
+**The dated release paragraphs under Standing design rules and the Cleared paragraphs name them
+as they were then**: read `data/maneuvers.xlsx` there as `data/actions_maneuvers.xlsx`, and so on.
+`actions.json` and the action documents keep the old names inside them until the next full
+content build writes them again.
+
 - **The highest-numbered `Starwrought_Players_Handbook_v*.docx` is authoritative for the general
   rules and for the tables it still prints; since v4.25 it no longer says what a Talent or a
   Maneuver does, and `data/*.xlsx` is their only source** (the HANDBOOK RULE, above; ruling 264).
@@ -1663,7 +1818,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   creation menus, all 30 constellations, and the reference appendices, every table read from
   `trees.json` and `roster.json`. That is content that must track the data exactly.
 - `data/*.xlsx` holds all game content. One `_Tree Index` sheet per workbook.
-- Ancestry rows in `data/ancestries.xlsx` `_Tree Index` also carry Vigor (the header may still read
+- Ancestry rows in `data/talents_ancestries.xlsx` `_Tree Index` also carry Vigor (the header may still read
   HP), Size, Speed (feet per Move; a Human's is 6), Senses and, since 0.14.0, Traits (the creature
   traits the chassis confers). The pipeline reads those and
   generates the `ancestries` block of `roster.json` (keys `vigor`, and `hp` for one release), so
@@ -1673,7 +1828,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   third column of the hand-kept `callings` block of `roster.json`, and since PHB v4.11 that column
   is the Calling's **Opening Vigor** (paid once, at 1st level, by the first Calling), not Vigor per
   level; every consumer indexes `[2]`. The Ancestry's Vigor stays per level.
-- Culture rows in `data/cultures.xlsx` `_Tree Index` generate the `cultures` block of `roster.json`
+- Culture rows in `data/talents_cultures.xlsx` `_Tree Index` generate the `cultures` block of `roster.json`
   since 0.15.0 (objects: name, enabled, attribute, languages, blurb, lore, traits, tree; ruling
   180): the optional **`Languages`** column (comma separated; written 2026-11-05) and `Traits`, the
   Lore sheet's Summary row as the blurb; while a workbook has no `Languages` column the converter
@@ -1707,7 +1862,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   (a Combat Style within Melee or Ranged, a magical specialty within its discipline), written as
   `group: true`, and the converter errors on a Parent that names no tree or has a parent of its
   own. The index's `Feeds` column is **`Primary Attribute`** since 0.13.0 (both read). **The spell
-  columns** (v4.21; `data/magic.xlsx`): `Threat`, `Delivery`, `Range`, `Die`,
+  columns** (v4.21; `data/talents_magic.xlsx`): `Threat`, `Delivery`, `Range`, `Die`,
   `Damage`, `Targets`, `Quick`, `Focused`, `Committed`, `Defenses`; a row with a Threat is a spell,
   validated against the vocabulary in `data/README.txt` and written as `node.spell`, which
   `build_foundry.mjs` puts on the Talent as `system.spell`. Action glyphs ride in the Talent name in the
@@ -1738,15 +1893,24 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Shields: Shield, Bonus, Hardness, Load, Price, Note, Enabled?. The converter writes
   `assets/equipment.json` and regenerates the roster's four equipment blocks from it (every row),
   so the app and the compendium docx keep reading the roster unchanged; `build_foundry.mjs` reads
-  `equipment.json` and ships only the enabled rows under the same document ids. Built from the
-  handbook's Chapter 5 tables; the handbook wins when they disagree, and the sheet needs a pass.
+  `equipment.json` and ships only the enabled rows under the same document ids. It was built from the
+  handbook's Chapter 5 tables, which left the book on 2026-11-15: **the sheet is the only source
+  now** (ruling 297), and there is nothing in the handbook for it to disagree with. Since 0.30.0
+  it has a fourth sheet, **Ammunition**: Ammunition (or Item, or Weapon) | Group | Price |
+  Description | Enabled?, one kind per row, a trailing "(10)" in the name the stack, Group the
+  Weapon Group it feeds; written as `equipment.json`'s `ammunition` list (never a roster block:
+  the web app and the docx do not list it) and shipped as `gear` Items (`gear:<slug>`) in an
+  Ammunition folder of the Equipment pack. The Armor sheet's Description reaches the armor Item
+  since 0.30.0. **`node assets/build_all.mjs --equipment` (`sync_equipment.cmd`) builds this
+  workbook alone**, for a build made while the talent and action workbooks cannot pass the
+  content loop.
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
 - **The three actions workbooks since 0.20.0 (PHB v4.24, Chapter 8; Mike's restructure of
-  2026-11-07, read as written, rulings 206 to 210):** `data/maneuvers.xlsx` (a Basic Actions sheet
+  2026-11-07, read as written, rulings 206 to 210):** `data/actions_maneuvers.xlsx` (a Basic Actions sheet
   whose Category column carries the book groups, Ancestry and Culture Actions sheets, one
-  `<Skill> Actions` sheet per Skill, every row naming its Constellation), `data/activities.xlsx`
+  `<Skill> Actions` sheet per Skill, every row naming its Constellation), `data/actions_activities.xlsx`
   (the eight Exploration Activities: Activity, Movement Speed, Check, Initiative) and
-  `data/endeavors.xlsx` (Retrain and Train, with a Duration). An actions workbook is a `_Tree
+  `data/actions_endeavors.xlsx` (Retrain and Train, with a Duration). An actions workbook is a `_Tree
   Index` with a Name column and no Tree column; its Type column is any header containing "type"
   (`Type`, `Action Type`; `Category/Type` is the Category) and optional: the row's own Type cell
   types it (Maneuver, Talent Maneuver, Activity, Endeavor), the index is the fallback, the sheet
@@ -1764,9 +1928,9 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Maneuver`). The Constellation column is the check the row rolls when the Effect attempts or
   rolls one, the Defense read from "vs." or "against" in the Effect (ruling 210). The "(LORE_NAME)"
   placeholder is stripped from names and Constellation cells, and the index's `Lore` row reads
-  skills.xlsx's `Lore (LORE_NAME)` sheet (ruling 208; `lore.xlsx` deleted by Mike). What follows
+  talents_skills.xlsx's `Lore (LORE_NAME)` sheet (ruling 208; `lore.xlsx` deleted by Mike). What follows
   is the history of the one workbook through 0.19.0.
-- **`data/maneuvers.xlsx` was the one actions workbook** (the format Mike's, 2026-09-26, as
+- **`data/actions_maneuvers.xlsx` was the one actions workbook** (the format Mike's, 2026-09-26, as
   `data/actions.xlsx`; the file his since 2026-10-01, 0.5.1, T17; the only one 2026-10-03 to
   2026-11-07). The converter recognised an actions workbook by its `_Tree Index` carrying
   `Name | Type | Meta note` instead of `Tree | Category`; every other sheet in it holds one action
@@ -1795,7 +1959,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   nowhere until its row reads Yes. **Aid moved here on 2026-10-03**, during the 0.10.0 build: Mike
   authored it on the sheet "Watching, Deceiving & Helping" (row 9) with `Enabled? = Yes` and
   deleted `data/actions.xlsx`, which had never been committed. The converter handled the move
-  ("'Aid' was actions.xlsx's and is now defined in maneuvers.xlsx, which wins"), `assets/actions.json`
+  ("'Aid' was actions.xlsx's and is now defined in actions_maneuvers.xlsx, which wins"), `assets/actions.json`
   lists 40 actions from this workbook alone, Aid the one enabled, and Aid ships for the first time,
   under the document id the roster's row had (`packs/_source/actions/aid_30d830c3ca03647e.json`,
   with `check` set from its Effect). Aid is not yet in the `_Tree Index`, so the converter types
@@ -1823,7 +1987,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
 - **Armored Fighting's Key Attribute is contradictory and was still open in v4.14** (not rechecked
   cell by cell in v4.21; its Layered Guard still names Scale, which v4.21's armor table dropped). Its section heading
   says *Combat Style • Presence*; the Combat Styles summary table says **Might**. The data uses
-  Presence, following the heading, as Shield Fighting was resolved. One cell in `combat_styles.xlsx`
+  Presence, following the heading, as Shield Fighting was resolved. One cell in `talents_combat_styles.xlsx`
   either way. **This is the tree-level `Feeds` only.** Armored Fighting's per-talent `Feeds`
   overrides are deliberate and mixed (Mike, 2026-08-27): six Might including the root, three
   Presence, two Wits, two Agility. Resolving the heading-vs-table question must not flatten them.
@@ -1852,10 +2016,10 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   the Cairnward Talent names it. Brace an Object sits on the Crafting and the Guile sheets (the
   first stands).
   Lower the Visor and Raise the Visor have system behaviour behind them (`documents/maneuvers.mjs`)
-  and no row yet. Murovian is indexed in `cultures.xlsx` with no sheet and the book has no
+  and no row yet. Murovian is indexed in `talents_cultures.xlsx` with no sheet and the book has no
   Murovian Culture: Mike's to write or to delete.
 - **Two `Enabled?` loose ends for Mike:** Drilled is enabled while the Weapon Familiarity it hands
-  over free is not (the converter warns), and the Lore template sheet in `skills.xlsx` has no
+  over free is not (the converter warns), and the Lore template sheet in `talents_skills.xlsx` has no
   column, so Lore ships whole.
 - **Sleeping in armor without Comfort is not implemented.** v4.21: Fatigued equal to your Load
   Strain, to a maximum of 3, on waking. The rest card restores Vigor and clears Fatigued and
@@ -1923,12 +2087,13 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   having no weapon Item to strike back with. A new Reaction in the book is one row in the table
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
-  Twenty-two kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
-  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0): the effect
+  (0.31.0 added no kind: it gave the grammar a condition, `EFFECT(<name>)`, and `requires` three
+  words.) Twenty-three kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0, `reach` since 0.30.0): the effect
   kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`,
   `subordinate`, the creation kinds `grant` and `aura`,
-  the feature kinds `trait`, `size`, `speed`, `vigor`, `sense`, `language`, `maneuver`, `talent`,
-  `choice`, and `requires`, the block on a Maneuver's own row that the Maneuvers tab reads; the
+  the feature kinds `trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`,
+  `talent`, `choice`, and `requires`, the block on a Maneuver's own row that the Maneuvers tab reads; the
   level-1 Human, the two Cultures, the
   three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
   Fantasy Grounds shape. What the grammar does not yet read: a `prevent` of a Condition on an ally
@@ -1953,9 +2118,16 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   row, a subordinate chosen when the Maneuver is used (Shared Demonstration), one Aid check for
   several allies (Common Purpose, United Effort), Aid before an ally's roll (Timely Aid), Back on
   Track, a row that charges extra for its subordinate ("unless otherwise specified" has no word
-  yet), and NAMED EFFECTS, STEP TWO, which Mike chose to plan on its own: a Maneuver that puts a
-  named Effect on its target for a duration, the plain `EFFECT(<name>)`, `IFT: EFFECT(...)`, and
-  `CHECK`, `DEF` and `ATK` lines reading either. **The 0.13.0 form is refused since 0.17.0**
+  yet), and NAMED EFFECTS, STEP TWO. Its READING half is built (0.31.0: the plain
+  `EFFECT(<name>)` after `IF:` and `IFT:` on the bonus lines, and `[REQUIRES effect <Name>]`).
+  Its WRITING half is planned and approved in `dazzling-floating-simon.md` and is the next
+  release, 0.32.0: the `apply` kind, `[EFFECT APPLY: <Effect>[, self | target]; UNTIL: <window>;
+  IF: RESULT(<degree>); IF: COST(<n>)]` and `[EFFECT REMOVE: ...]` on a Maneuver's own row, an
+  Effect on yourself landing at once and one on another creature by a button on the card, the
+  `mine` word (`IFT: EFFECT(Wrong-Footed, mine)`), the `applies` hook point and the `effect:*`
+  relay. After it, and not planned: an Effect that carries its own lines (a Basic Maneuver's row
+  cannot carry a reading line for everyone), a Condition's value compared, an Effect read inside
+  an aura. **The 0.13.0 form is refused since 0.17.0**
   (a GM's world Item still in it shows the refusal on its sheet and its lines are skipped). **A
   bare effect line in a cell and the `visible` word of `[AURA ...]` are refused since 0.18.0**
   (both warned in 0.17.0); the custom effects field keeps the bare form. **A terrain kind is a
@@ -1970,15 +2142,15 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   (`spendSkips`), never a render.
   **The retired columns** (the index's Vigor/HP, Size, Speed, Senses,
   Traits, Languages, the Callings' Skills, the tree sheets' Choice and Free Talent, the roster's
-  Opening Vigor) are read this release with a warning and refused next; `weapons.xlsx`'s Melee
+  Opening Vigor) are read this release with a warning and refused next; `talents_martial.xlsx`'s Melee
   sheet still carries Weapon Familiarity's Choice "Weapon Group or Technical Weapon" in the column
   and no Automation column, Mike's to move into `[CHOICE Weapon Group or Technical Weapon]`. **Fear
   is carried by nothing in the data** (no weapon, attack or spell Talent has the trait), so the
   Rally Aura reads and fires on nothing until one is authored; the build warns. **Iron Etiquette's
   Intimidation line fires on nothing shipped** until the Demoralize row (or Feint, Talk Them Down)
-  is enabled in `data/maneuvers.xlsx`; a world Item with a Defense named reads it today. **Rally ❶
+  is enabled in `data/actions_maneuvers.xlsx`; a world Item with a Defense named reads it today. **Rally ❶
   and Battle Cry ⓿↺** are Talents that grant Maneuvers; Mike enabled their Constellations
-  (Diplomacy, Intimidation, with Guile and Stealth) in `data/skills.xlsx` on 2026-11-05, so the
+  (Diplomacy, Intimidation, with Guile and Stealth) in `data/talents_skills.xlsx` on 2026-11-05, so the
   Talents ship, but their rows on the Talent Maneuvers sheet and their `[MANEUVER X]` cells are
   still to be written, as the Steady the Line, Oathbound and Quick Tongue rows were. The Jack of All
   Trades rename gives the Talent a new document id; a character who owned "Jack of Trades" keeps
@@ -1994,7 +2166,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   structured columns are data the engine reads directly (the Aura precedent), not a kind; a
   spell's text effects are candidates for kinds later.
 - **Mike's Human sheet is in progress (2026-11-10), reported and not changed by 0.21.0.**
-  `data/ancestries.xlsx` and `data/maneuvers.xlsx` are his, mid-edit by hand and uncommitted, and
+  `data/talents_ancestries.xlsx` and `data/actions_maneuvers.xlsx` are his, mid-edit by hand and uncommitted, and
   were not converted, built or staged; Cooperative Instinct, the `substitute` kind's example, is a
   Talent on that sheet and not a shipped one. Five things wait there for him: Dwarf Lore B13 holds
   an em-dash, which fails the style check (`check_style.py` exits 1 on that one cell); Impossible
@@ -2011,14 +2183,14 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   and ALTER) the next time the content loop runs. **0.22.0 (2026-11-14) did not touch the two
   workbooks either.** Three cells wait for him to paste, printed in the 0.22.0 changelog entry and
   in `AUTOMATION_GRAMMAR.md` section 5: Aid's five `GIVE` lines (Basic Actions row of
-  `data/maneuvers.xlsx`, whose Automation cell is empty), and Patient Assistance's and Sure
+  `data/actions_maneuvers.xlsx`, whose Automation cell is empty), and Patient Assistance's and Sure
   Assistance's `ALTER` lines (the Human sheet), whose `# PROPOSED` drafts do not read as written
   (`Aid.duration` with `recipient-opportunity-end(1)`, and `VALUE: no-effect; PRESERVE:
   original-degree`): each is told the word that does. Until Aid's row carries its lines the two
   Talents change nothing, and Aid's card offers no Give button. **0.24.0 (2026-11-14) did not
   touch them either, and two more cells wait**, printed in the 0.24.0 changelog entry and in
   `AUTOMATION_GRAMMAR.md` section 5: `[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]` on Move
-  Together's row (Ancestry Actions sheet of `data/maneuvers.xlsx`) and `[EFFECT ALTER: Move
+  Together's row (Ancestry Actions sheet of `data/actions_maneuvers.xlsx`) and `[EFFECT ALTER: Move
   Together.movement; VALUE: step]` on Coordinated Footwork (the Human sheet), whose `# PROPOSED`
   draft (`VALUE: choose(Move, Step); APPLY: both-participants`) is told what to write. Until Move
   Together's row carries its line the ally's drag asks the GM as before. **By 2026-11-15 his saved
@@ -2027,7 +2199,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   still has an empty Automation cell**, so no Aid gives a result on shipped content. **0.25.0
   (2026-11-15) did not touch the workbooks either, and three things wait**, printed in the 0.25.0
   changelog entry and in `AUTOMATION_GRAMMAR.md` section 5: Aid's five `GIVE` lines; Pay It
-  Forward's ROW, which is on no sheet of `data/maneuvers.xlsx` yet (its text is in his draft
+  Forward's ROW, which is on no sheet of `data/actions_maneuvers.xlsx` yet (its text is in his draft
   workbook: Cost 0, Frequency "Once per encounter"), with `[EFFECT SUBORDINATE: Aid; IF:
   EFFECT(Aid, used); LIMIT: encounter]`; and `[EFFECT ALTER: Pay It Forward.limit; VALUE: round]`
   on Reciprocal Effort (the Human sheet), whose `# PROPOSED` draft (`VALUE: owner round`) is told
@@ -2055,29 +2227,69 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Prone alone; building it is a condition (Off-Guard, −2 to Attacks except melee against an
   adjacent creature, +2 Evade against ranged, no movement but forced) and two rows of his,
   **Roll Over ❶** (Motion: "Change from Prone to Supine, or from Supine to Prone") and Drop
-  Prone's choice, on `data/maneuvers.xlsx`, where a Maneuver now lives. Still in the book and
+  Prone's choice, on `data/actions_maneuvers.xlsx`, where a Maneuver now lives. Still in the book and
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
-- **0.29.0 leaves to the table or to Mike** (Strike, loading, the fist): **AMMUNITION IS THE NEXT
-  STEP, and it is planned on its own** (Mike, by question: "Count ammunition too"): the book and
-  the data have no arrows, bolts or bullets, so it opens with questions for him (the items and
-  which weapon takes which, bundle size and price, refuse or warn with none left, recovery), and
-  `loadWeapon` in `documents/actor/carrying.mjs` is where it is taken. **Strike's cell waits for
+- **0.31.0 leaves to the table or to Mike** (Effects read by name): nothing puts a named Effect
+  on or takes one off but a hand, until 0.32.0; a Condition's value is not compared; "applied by
+  me" is not asked; no kind but `bonus` reads `EFFECT(<name>)`; an adversary's own rolls are
+  flat, though its Effects are read by `IFT` and `with`. Rulings 305 (a custom effect row counts
+  as a named Effect by its label; a Condition's name is reserved), 309 (named Effects are public)
+  and 310 (a player's hand change is an Adjusted card, a Condition toggle is not) are Claude's
+  readings and his to overrule. **0.30.0 and 0.31.0 are both uncommitted in the working tree**
+  (he approved the plan without asking for a commit): one commit may carry both, or 0.30.0's
+  files can be told apart by its changelog entry. Not driven live: a full Strike clicked through
+  the Combat window against a Prone defender (the pairing was read through the function the
+  coordinator calls, with the real actors), the hover card on screen, a LIMITED user's sheet.
+  **The test world keeps one fixture from the 0.31.0 drive on purpose**: the Talent "Effects
+  Reader (0.31.0 fixture)" on Tess (flagged `testFixture: "0.31.0"`), four lines: +1 to attacks
+  and +1 Evade against a Prone creature, +2 Guard while Tess has an effect named Blessed, +1
+  Intimidation against a Frightened one. To try 0.31.0 there: open Tess's Effects tab, press the
+  plus beside Active Effects, name the effect Blessed, and watch Guard go from 16 to 18; write
+  `[REQUIRES effect Blessed]` in the Automation box of any Maneuver she owns and watch it leave
+  the Maneuvers tab when the effect is switched off. The drive deleted its probe rows, its
+  effects and the five Adjusted cards it posted, ran Sync content for the Grammar journal (one
+  "Content synced" card: 431 messages), left Mike's Combat with testpc8 the active one at round
+  4 and the tokens where they were, and Foundry running on 0.31.0 with the GM joined. **Foundry
+  was found closed at the commit**, after the equipment sheet was rebuilt, so that world's
+  Equipment compendium is one build behind (it holds Arrows, Bolts and Bullets and one weapon):
+  the GM is offered the sync at the next load, which brings the 28 other weapons and the 3
+  shields. The shipped ranged weapons were not driven live.
+- **0.30.0 leaves to the table or to Mike** (ammunition, `[REACH N]`, the equipment build):
+  (when 0.30.0 was built his saved sheet enabled only the Unarmed Strike among weapons, so
+  Dagger, Shortsword and Spear left the pack; **he has since enabled every row, built and
+  committed with 0.31.0 on 2026-11-17**, so all 29 weapons, the 3 shields and the ammunition
+  ship and the converter's three ammunition warnings are quiet). Rulings 298
+  (a stack In hand first, then by name; ammunition taken at the Reload and never at the Strike)
+  and 304 are Claude's readings and his to overrule. The About sheet of `data/equipment.xlsx`
+  still says it follows the handbook's Chapter 5 and ignores sheets other than Weapons, Armor
+  and Shields: his to reword. Not built: recovery after a fight or any count of shots spent
+  (his choice), merging two stacks, ammunition and ranged prices in the web app and the docx
+  (the roster's ranged block has no price column), a `[REACH N]` that follows a Size changed by
+  hand, reach rules on an adversary. **`[REACH N]` ships as the kind alone**: no built workbook
+  holds one, so its display code runs for the first time at his next full content build. The
+  four workbooks he is still editing (`actions_maneuvers`, `talents_ancestries`,
+  `talents_callings`, `talents_skills`) are NOT to be converted, built, staged or written; the
+  equipment build is the one that may run.
+- **0.29.0 leaves to the table or to Mike** (Strike, loading, the fist; ammunition was the next
+  step and is built, 0.30.0). **Strike's cell waits for
   him to paste** (the 0.29.0 changelog entry and `AUTOMATION_GRAMMAR.md` section 5: `[REQUIRES foe
   in reach or ranged weapon loaded or weapon thrown]`, `[REQUIRES foe in sight]`, `[REQUIRES not
   restrained]`, `[REQUIRES not unconscious]`); until then the tab always lists Strike. Rulings
   292, 293 and 294 are Claude's readings and his to overrule (Reload at the weapon's own cost and
   free outside an encounter; the chip's free correction; an archer with a fist threatening at 2
-  ft, and the Finesse fist always rolling Agility). No ranged weapon is enabled in
-  `data/equipment.xlsx`, so loading acts on nothing shipped. Not built: the Crossbow Fighting
+  ft, and the Finesse fist always rolling Agility). The eight ranged weapons ship since the
+  equipment sheet built with 0.31.0 (none did through 0.30.0), so loading acts on shipped
+  content; it was driven live only with test weapons of the same traits. Not built: the Crossbow Fighting
   Talents that bend reloading (Practiced Loader, Crank and Move, Snap Shot, Covered Reload), a
   Cast chooser, ammunition on an adversary's attack rows, a weapon reloading itself when an
   encounter ends. The Reload [N] trait says "N Interact actions" where the sheet has a Reload
-  Maneuver: a wording pass in Word, by hand (the cell nests a table the redline tool refuses).
+  Maneuver (Mike, 2026-11-15, confirmed the trait's words stand): a wording pass in Word, by
+  hand, if he wants one (the cell nests a table the redline tool refuses).
 - **0.28.0 leaves to the table or to Mike** (the Maneuvers tab; since 0.29.0 the Reload block of
   the list below is WITHDRAWN, Reload's condition being in code, so twenty-seven remain): **the twenty-eight
-  `[REQUIRES ...]` blocks wait for him to paste** into `data/maneuvers.xlsx` (the 0.28.0 changelog
+  `[REQUIRES ...]` blocks wait for him to paste** into `data/actions_maneuvers.xlsx` (the 0.28.0 changelog
   entry and `AUTOMATION_GRAMMAR.md` section 5 print them; Reload, Crawl, Drop Prone, Stand, Steady
   the Line, Move Together, Rescue Haul, Escape, Tumble Through, Kip Up, Calm Animal, Direct Animal,
   Disarm, Grapple, Reposition, Shove, Trip, Reliable Anchor, Rally, Talk Them Down, Command the
@@ -2119,7 +2331,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   none does today.
 - **0.26.0 leaves to the table or to Mike:** a Talent that "specifies otherwise" and asks for one
   roll for all its targets (no column says so; none exists); a spell's own area (its shape and
-  size as data, the Cast placing the template and removing it: columns for `data/magic.xlsx`,
+  size as data, the Cast placing the template and removing it: columns for `data/talents_magic.xlsx`,
   planned on its own); telling an area Attack from another, so its Critical Hit effect is the
   GM's to switch off on the Zone; one Reaction at a time beyond the attack's one answer (his
   choice, ruling 262); the order of the dice when a Controlled weapon is swept at the Bind
@@ -2134,7 +2346,7 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   still stay out of a Defense rolled as a check (Wind's Endure, a Recovery, a Search with
   Awareness): nothing is applied and nothing is offered there. Recommended: yes, as its own
   ruling, with a Wind roll driven live, because it changes numbers outside Aid.
-- **The five caster Callings are disabled in `data/callings.xlsx`** as Mike saved it on 2026-11-05
+- **The five caster Callings are disabled in `data/talents_callings.xlsx`** as Mike saved it on 2026-11-05
   (their `Enabled?` cells blank), so Spellshaper, Blood Mage, Necromancer, Summoner and Spellblade
   and their Talents left the pack sources in 0.13.0; setting the rows to Yes restores them under
   the same ids. Whether that was meant is his to say.
@@ -2237,7 +2449,20 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   Maneuvers tab (the Bandit is in Wren's reach; with the fixture's cell Tess, a sword in hand and
   no foe in reach, does not list Strike, which is the cell working) and press ❶ on the Strike row:
   the chooser lists the Shortsword and the Unarmed Strike; hide the Bandit, or drag it away, and
-  watch Strike leave the tab.
+  watch Strike leave the tab. **The 0.30.0 drive (2026-11-15) found the world used by Mike since**
+  (his Combat with testpc8 at round 4; 428 messages) and left that as found. Foundry was restarted
+  for the 0.30.0 manifest, and Sync content was run: the Equipment compendium there now holds
+  Arrows, Bolts and Bullets and no longer Dagger, Shortsword or Spear (Tess and Wren keep the
+  Shortswords they hold), and the armor pieces carry their descriptions. The drive's Combat, its
+  test weapons, ammunition and Talents on Tess and its ten cards were removed (429 messages: the
+  one "Content synced" card stays). **Foundry was found closed again before the drive's last
+  step**, so the Grammar journal in that world is one build behind: the GM is offered the sync at
+  the next load. Left on purpose, as before: the world Items Strike (0.29.0), Stand, Grapple and
+  Feint (0.28.0), Aid, Move Together and Pay It Forward. To try 0.30.0 there: drag Arrows from
+  the Equipment compendium onto Tess, make a world weapon with the group Bows and the traits
+  `Ranged 120` and `Reload 1`, put it in her hand in an encounter, Strike and Reload, and watch
+  the Arrows row count down; write `[REACH 3]` in the Automation box of any Talent she owns and
+  watch Natural Reach on the Overview.
 - **0.25.0 leaves to the table or to Mike:** that the ally Aided by Pay It Forward is willing and
   that Aid's own requirements are met; "immediately after that check", read as the rest of that
   Opportunity (ruling 248), so a Move or another Maneuver between the check and the Aid is not
@@ -2282,6 +2507,64 @@ zoom counter-scale (`--sw-hud-scale`) are UI with no ruling.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-17 (Effects read by name, system 0.31.0; rulings 305 to 310 in the 0.31.0
+changelog entry; planned in `dazzling-floating-simon.md` with 0.32.0, Mike's decisions by
+question: APPLY and REMOVE, at once on yourself and a button for another creature, the word
+`effect` in front): a state that is no Condition, which nothing could name, now a named Effect,
+any active effect on a creature by its name; `[REQUIRES ...]` asking only for Conditions and
+fixed words, now also `effect <Name>`, `bind, <state>` and what a nearby creature has (`with`);
+a bonus that waits on a Condition or an Effect, refused as "not read yet" since 0.25.0, now
+`IF: EFFECT(<name>)` for the roller and `IFT: EFFECT(<name>)` for the other party; a check read
+against one creature's Threshold knowing only its token, now the creature; the hover card stale
+when a Condition changed under it, now following it and listing named Effects for the owner and
+the GM; a player's hand-made effect silent, now an Adjusted card; Claude's wrong word to Mike
+that the Bind's states had no REQUIRES words, corrected. Mended beside it, older than the
+release and found by the review: an `INIT` line never reaching the default Initiative (since
+0.13.0), an apostrophe inside parentheses opening a quote, and one Talent's lines on the attack
+die and at the pairing both counting. Checked by 219 self-test checks, `node --check` on 174
+modules, `build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13),
+`build_foundry.mjs --no-compile` (the Grammar journal alone moves), a second reader on the design
+before the plan was shown (nine corrections), an independent review of the finished change (no
+crash and no double count; eleven smaller findings, eight mended and the rest stated) and live
+in the test world with a GM tab and a player tab, before the review and again for its mends
+(the 0.31.0 changelog entry lists what, and what was not driven: a full Strike clicked through
+the Combat window, the hover card on screen, a LIMITED sheet). Not built, and next: 0.32.0, the
+`apply` kind. Mike's four workbooks in progress were not converted, built, staged or written;
+the equipment sheet, which he had saved with every row enabled after 0.30.0 was built, was
+rebuilt with the equipment build at the commit (62 of 62 rows ship). No handbook moved and
+`data/SYNC.json` is untouched. Committed with 0.30.0 in one commit, tagged `v0.31.0`.
+
+Cleared 2026-11-15 (ammunition, `[REACH N]`, the equipment build and the workbooks' new names,
+system 0.30.0; rulings 297 to 304 in the 0.30.0 changelog entry; planned in
+`dazzling-floating-simon.md`, Mike's decisions by question: an equipment-only build, out of
+ammunition warn and go on, `[REACH N]` set and adjust, recovery left to the table): ammunition
+that did not exist, so a Reload never ran out, now Arrows, Bolts and Bullets from the Ammunition
+tab of `data/equipment.xlsx`, a Reload taking one piece for each shot it loads and saying what is
+left, loading anyway and saying so with none; Natural Reach as the Size's alone, now the
+`[REACH N]` block (the `reach` kind, the twenty-third) read live off the Talents a character
+owns; no way to build while the talent and action sheets cannot pass the content loop, now
+`build_all.mjs --equipment` and `sync_equipment.cmd`, which built `data/equipment.xlsx` (3
+ammunition Items in, Dagger, Shortsword and Spear out as his sheet says, 27 armor pieces given
+their descriptions); tools and messages naming workbooks that were renamed, now the names of
+today, the index tool reading the Category through the prefix and the converter knowing the
+three actions workbooks by either name; the handbook's equipment tables, now gone from the book
+and the sheet the only source (the HANDBOOK RULE's third part), the saved file compared (four
+places, the four tables) and stamped with `--check --accept-phb`; Sync content writing new
+content through older code, now refused. Mike's note that the Reload trait has words in the
+book: agreed, nothing changed. Checked by 215 self-test checks, `node --check` on every module,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13 of
+`data/talents_ancestries.xlsx`), the equipment build run for real three times with no workbook
+written, a second reader on the design (sixteen points: the guard, "per 10", the armor
+descriptions, the stack order, the report's mode and the "not opened" claim corrected), an
+independent review of the diff (no blocking defect; seven findings, five mended and two stated:
+the guard cannot protect the release that introduces it, and a renamed duplicate of the pack's
+Arrows is renamed back by a copies refresh) and live in the test world with a GM tab and a
+player tab after a restart of Foundry (the 0.30.0 changelog entry lists what, and what was not
+driven: a `[REACH N]` on a real Root, a world on 0.29.0 syncing 0.30.0's content). Not built,
+and said so: recovery or any count of shots spent, merging stacks, ammunition and ranged prices
+in the web app and the docx, reach rules on an adversary. The four workbooks Mike is still
+editing were not converted, built, staged or written.
 
 Cleared 2026-11-15 (Strike from the Maneuvers tab, loaded weapons, an Unarmed Strike for everyone
 and "in sight", system 0.29.0; rulings 290 to 296 in the 0.29.0 changelog entry; planned in

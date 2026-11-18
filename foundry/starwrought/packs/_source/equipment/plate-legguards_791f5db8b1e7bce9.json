@@ -14,7 +14,7 @@
     "price": "12 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Fitted steel plates protecting the knees, shins, and exposed portions of the thighs while omitting some enclosing plates. They retain most of plate’s defensive value at reduced Load.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "22b4efe5234bdeec"
+      "contentHash": "181bd69f745a28d7"
     }
   },
   "effects": [],

@@ -704,6 +704,9 @@ for (const ancestry of roster.ancestries ?? []) {
       vigor: ancestry.vigor ?? ancestry.hp ?? 0,
       size: String(ancestry.size ?? "Medium").toLowerCase(),
       speed: parseReach(ancestry.speed),
+      // Natural Reach, only where the Root sets one with [REACH N] (0.30.0): the field is left out
+      // otherwise, so an Ancestry with no block builds the document it always did.
+      ...(ancestry.reach ? { reach: parseReach(ancestry.reach) } : {}),
       senses: ancestry.senses === "—" ? "" : (ancestry.senses ?? ""),
       description: `<p>${ancestry.blurb ?? ""}</p>`,
       // The "<Ancestry> Lore" sheet (0.13.0): the player-facing sections in the author's order,
@@ -859,9 +862,9 @@ const equipment = fs.existsSync(equipmentPath) ? read("equipment.json") : null;
 const equipmentSource = equipment ? "data/equipment.xlsx" : "STARWROUGHT Playtest v4.24";
 
 // The roster blocks read into the sheet's row shape, so one builder per type serves both sources.
-// The ranged block has no price column, and neither does the book's Ranged Weapons table, so a
-// ranged weapon's price is blank from either source; the sheet's Price column is filled only for
-// melee weapons (Unarmed Strike excepted), and priceOf turns the blank into "".
+// The roster's ranged block has no price column (the book's Ranged Weapons table had none), so a
+// ranged weapon read from the roster has no price; from the sheet it has the Price cell, which
+// Mike fills for ranged weapons too since 2026-11-15. priceOf turns a blank into "".
 const rosterEquipment = {
   weapons: [
     ...(roster.weaponsMelee ?? []).map(([name, handling, group, damage, reach, traits, price]) =>
@@ -884,12 +887,13 @@ const priceOf = price => (price == null || price === "—" || price === "-") ? "
 /** A whole number from either source; a blank cell reads as 0. */
 const whole = value => Number(value ?? 0) || 0;
 
-// The four folders always ship, so the sidebar has a place to say nothing is enabled under them.
+// The five folders always ship, so the sidebar has a place to say nothing is enabled under them.
 const equipFolders = {
   melee: folder("equipment", "Melee Weapons", { sort: 0, color: "#5a2f2f" }),
   ranged: folder("equipment", "Ranged Weapons", { sort: 1, color: "#5a2f2f" }),
   armor: folder("equipment", "Armor", { sort: 2, color: "#2f4a5a" }),
-  shields: folder("equipment", "Shields", { sort: 3, color: "#2f4a5a" })
+  shields: folder("equipment", "Shields", { sort: 3, color: "#2f4a5a" }),
+  ammunition: folder("equipment", "Ammunition", { sort: 4, color: "#5a2f2f" })
 };
 
 for (const row of equipmentRows("weapons")) {
@@ -938,7 +942,10 @@ for (const row of equipmentRows("armor")) {
       price: priceOf(row.price),
       quantity: 1,
       state: "carried",
-      description: "",
+      // The sheet's Description column (0.30.0). The handbook no longer prints the armor table
+      // (Mike, 2026-11-15), so the sheet is where a piece is described, and through 0.29.0 the
+      // converter read the column and this build dropped it.
+      description: row.description ? `<p>${row.description}</p>` : "",
       source: equipmentSource
     }
   });
@@ -963,6 +970,35 @@ for (const row of equipmentRows("shields")) {
       state: "carried",
       traits: [],
       description: note ? `<p>${note}</p>` : "",
+      source: equipmentSource
+    }
+  });
+}
+
+// AMMUNITION (0.30.0, ruling 297; Mike added the Ammunition sheet to data/equipment.xlsx on
+// 2026-11-15, and by question: "Count ammunition too"). One gear Item per enabled row, keyed
+// `gear:<slug>` of its name. `system.ammunition` is the Weapon Group it feeds, which is how a
+// Reload finds it (documents/actor/carrying.mjs, `loadWeapon`), and `quantity` is the stack the
+// sheet's name gave ("Arrows (10)" is Arrows, ten of them, at the row's Price).
+for (const row of equipmentRows("ammunition")) {
+  if (!count("equipment", isEnabled(row))) continue;
+  const group = String(row.group ?? "").trim();
+  const stack = Math.max(1, whole(row.bundle) || 1);
+  item("equipment", {
+    key: `gear:${slugify(row.name)}`,
+    name: row.name,
+    type: "gear",
+    folder: equipFolders.ammunition,
+    system: {
+      ammunition: group,
+      quantity: stack,
+      // The sheet's Price is the stack's: said so, since the count on a character's copy moves.
+      price: priceOf(row.price) && (stack > 1) ? `${priceOf(row.price)} per ${stack}` : priceOf(row.price),
+      load: 0,
+      state: "carried",
+      traits: [],
+      description: row.description ? `<p>${row.description}</p>`
+        : `<p>Ammunition for weapons of the ${group} group, ${stack} to a stack. A Reload takes one for each shot it loads.</p>`,
       source: equipmentSource
     }
   });
@@ -1137,7 +1173,7 @@ function activityConstellation(cell, activity, column) {
   if (text.toLowerCase() === ACTIVITY_CHOICE) return ACTIVITY_CHOICE;
   const slug = activityConstellations.get(text.toLowerCase());
   if (!slug) {
-    fail(`data/activities.xlsx: "${activity}" names "${text}" in its ${column} column, which is neither a `
+    fail(`data/actions_activities.xlsx: "${activity}" names "${text}" in its ${column} column, which is neither a `
       + `Constellation in trees.json nor a Defense (nor "${ACTIVITY_CHOICE}"; a Lore is the member's own pick, `
       + `so write "${ACTIVITY_CHOICE}" for one).`);
   }
@@ -1193,7 +1229,7 @@ function explorationOf(a) {
   if (modeOf(a) !== "exploration") return {};
   const travel = String(a.speed ?? "").trim().toLowerCase();
   if (travel && !ACTIVITY_SPEEDS[travel]) {
-    fail(`data/activities.xlsx: "${a.name}" has Movement Speed "${a.speed}"; it must be one of `
+    fail(`${actionSource(a)}: "${a.name}" has Movement Speed "${a.speed}"; it must be one of `
       + `${Object.keys(ACTIVITY_SPEEDS).map(k => k[0].toUpperCase() + k.slice(1)).join(", ")}, or blank.`);
   }
   const check = activityConstellation(a.check, a.name, "Check") || rolledConstellation(a);

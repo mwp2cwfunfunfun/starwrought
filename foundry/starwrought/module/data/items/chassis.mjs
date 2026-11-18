@@ -33,6 +33,12 @@ export class SwChassisData extends SwItemData {
       size: new fields.StringField({ required: true, choices: Object.keys(SW.SIZES), initial: "medium" }),
       /** Feet per Move. A Human's is 6. */
       speed: new fields.NumberField({ required: true, integer: true, min: 0, initial: SW.DEFAULT_SPEED }),
+      /**
+       * Natural Reach in feet, when the Ancestry's Root sets one with `[REACH N]` (0.30.0, ruling
+       * 301); null means "by Size". For the cards to print: a character reads the block off the
+       * Root Talent it owns, never from here.
+       */
+      reach: new fields.NumberField({ required: false, nullable: true, integer: true, min: 0, initial: null }),
       senses: new fields.StringField({ initial: "" }),
       languages: new fields.StringField({ initial: "" }),
       /** The Skills or Constellations this choice grants Training in. */

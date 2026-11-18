@@ -358,6 +358,8 @@ async function offerContentSync() {
     });
     if (yes) await ContentSync.open({ plan });
   } catch (err) {
+    // Sources built for a newer release than this client is running: say so, where a GM sees it.
+    if (err?.swVersionMismatch) ui.notifications.warn(err.message, { permanent: true });
     console.error("STARWROUGHT | the content sync offer failed", err);
   }
 }

@@ -15,7 +15,7 @@
     "price": "4 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Interlocking metal rings covering the head, neck, and shoulders. Its broad, flexible coverage resists cuts well, but adds weight and does little to stop the force of a heavy blow.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "254716540c05ea63"
+      "contentHash": "fc862b36b289bf28"
     }
   },
   "effects": [],

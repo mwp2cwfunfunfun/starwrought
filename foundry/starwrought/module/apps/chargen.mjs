@@ -828,7 +828,9 @@ export class SwChargen extends HandlebarsApplicationMixin(ApplicationV2) {
       lines: [
         `${a.vigor} ${game.i18n.localize("STARWROUGHT.Field.vigorPerLevel")}`,
         game.i18n.localize(SW.SIZES[a.size]?.label ?? ""),
-        `${game.i18n.localize("STARWROUGHT.Field.speed")} ${a.speed} ft`
+        `${game.i18n.localize("STARWROUGHT.Field.speed")} ${a.speed} ft`,
+        // Natural Reach, where the Ancestry's Root sets one (0.30.0); by Size otherwise, unsaid.
+        ((a.reach !== null) && (a.reach !== undefined)) ? `${game.i18n.localize("STARWROUGHT.Field.naturalReach")} ${a.reach} ft` : ""
       ].filter(Boolean),
       description: a.description
     }));

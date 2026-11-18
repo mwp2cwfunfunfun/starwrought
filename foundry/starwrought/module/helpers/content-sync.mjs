@@ -173,6 +173,18 @@ function diffEntries(wanted, stored) {
  * @returns {Promise<object>}  See the shape assembled below; `empty` when no pack has work.
  */
 export async function planContentSync(index) {
+  // THE SOURCES MUST NOT BE NEWER THAN THE CODE THAT WRITES THEM (0.30.0; the design check). A
+  // release that adds a field (a gear Item's `ammunition`) ships code and content together. A
+  // client still running the older code would write each pack document through its own data
+  // model, which drops the field it does not know, and stamp the document with the source's hash:
+  // the pack would then read level and never mend. So a world running older code than the index
+  // was built for is told to restart, and nothing is planned.
+  const built = String(index?.system ?? "");
+  if (built && foundry.utils.isNewerVersion(built, SW.SYSTEM_VERSION)) {
+    const error = new Error(game.i18n.format("STARWROUGHT.Content.versionMismatch", { built, running: SW.SYSTEM_VERSION }));
+    error.swVersionMismatch = true;
+    throw error;
+  }
   const plan = {
     build: String(index?.build ?? ""),
     stamp: String(index?.stamp ?? ""),

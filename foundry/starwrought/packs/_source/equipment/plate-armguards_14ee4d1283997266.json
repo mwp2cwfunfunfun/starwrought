@@ -14,7 +14,7 @@
     "price": "10 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Articulated steel protecting the shoulders, elbows, and forearms while leaving selected inner surfaces or the hands less enclosed. They give efficient protection without the full Load of complete arm harness.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "12d15f4012b9bb15"
+      "contentHash": "32cf10119a519b96"
     }
   },
   "effects": [],

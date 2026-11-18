@@ -20,6 +20,7 @@ import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults } from "../rules/engine
 import { pendingRule, pendingWindowWords, appliesNow, usedEffects, usedLive } from "../rules/given.mjs";
 import { stateOf, RULE_STATES } from "../rules/effects-state.mjs";
 import { claimsOf, isArmed } from "../rules/claims.mjs";
+import { conditionTitle, readEffectName } from "../rules/effect-list.mjs";
 
 // The sheet's action (`armClaimLine`) is the one writer in module/rules/claims.mjs.
 export { armClaim as armClaimLine } from "../rules/claims.mjs";
@@ -37,6 +38,35 @@ export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll",
 
 const L = key => game.i18n.localize(key);
 const F = (key, data) => game.i18n.format(key, data);
+
+/**
+ * How a line of Automation reads one ActiveEffect (0.31.0; module/rules/effect-list.mjs), for the
+ * tag beside it on a sheet's Effects list: a Condition's own effect by the Condition's name, any
+ * other by `EFFECT(<its name>)`. Null for a Zone's Exposed mirror, which is the Zone's own.
+ * `unread` when no line can read it as it is named: a name that is a Condition's (reserved, and
+ * this effect carries no such status) or one a cell could not write (a comma, a bracket).
+ * @param {ActiveEffect|object} effect
+ * @returns {{words: string, tip: string, condition?: boolean, unread?: boolean}|null}
+ */
+export function effectReadAs(effect) {
+  const statuses = [...(effect?.statuses ?? [])];
+  if ((statuses.length === 1) && Object.hasOwn(SW.CONDITIONS, statuses[0])) {
+    const condition = SW.CONDITIONS[statuses[0]];
+    if (condition.zone) return null;
+    const words = conditionTitle(condition.id).toLowerCase();
+    return { words, tip: F("STARWROUGHT.Effects.readAsCondition", { name: words }), condition: true };
+  }
+  // The same reading the Effects list makes (`namedEffectOf`: glyphs out, then the name's shape),
+  // so the tag never says "not read" of an effect a rule matches, nor the reverse.
+  try {
+    const read = readEffectName(SW.plainName(String(effect?.name ?? "")));
+    if (read.condition) return { words: "", tip: F("STARWROUGHT.Effects.readAsReserved", { name: read.name }), unread: true };
+    return { words: `EFFECT(${read.name})`, tip: F("STARWROUGHT.Effects.readAs", { name: read.name }) };
+  } catch (error) {
+    // The reason quotes the effect's own name, and a tooltip is read back as HTML: escaped here.
+    return { words: "", tip: F("STARWROUGHT.Effects.readAsNone", { reason: foundry.utils.escapeHTML(String(error?.message ?? "")) }), unread: true };
+  }
+}
 
 /** The three states as the switch shows them: label, icon and the next state's name for the hint. */
 const STATE_LOOK = Object.freeze({

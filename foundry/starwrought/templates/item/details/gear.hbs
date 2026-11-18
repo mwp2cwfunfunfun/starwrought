@@ -1,3 +1,15 @@
-{{!-- Gear has no fields of its own beyond the shared physical panel. --}}
+{{!-- Gear: the shared physical panel, and since 0.30.0 the one field of its own: the Weapon Group
+      a stack of ammunition feeds. --}}
 
 {{> "systems/starwrought/templates/item/details/physical.hbs"}}
+
+<div class="sw-panel">
+  <h3 class="sw-panel-title">{{localize "STARWROUGHT.Ammunition.title"}}</h3>
+  <div class="sw-body-grid">
+    <label class="sw-field" data-tooltip="{{localize 'STARWROUGHT.Ammunition.fieldHint'}}"><span>{{localize "STARWROUGHT.Ammunition.field"}}</span>
+      <input type="text" name="system.ammunition" value="{{system.ammunition}}" list="sw-weapon-groups-{{item.id}}" placeholder="{{localize 'STARWROUGHT.Ammunition.fieldPlaceholder'}}"></label>
+    {{!-- The book's Weapon Groups as suggestions: a typo feeds nothing, a homebrew group is typed freely. --}}
+    <datalist id="sw-weapon-groups-{{item.id}}">{{#each choices.weaponGroups as |group|}}<option value="{{group}}"></option>{{/each}}</datalist>
+  </div>
+  <p class="sw-note">{{localize "STARWROUGHT.Ammunition.fieldNote"}}</p>
+</div>

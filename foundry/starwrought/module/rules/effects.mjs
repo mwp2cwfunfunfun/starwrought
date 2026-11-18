@@ -37,9 +37,10 @@
 import { RuleSyntaxError } from "./syntax.mjs";
 import {
   emptyOps, splitOperands, readRank, readRange, readWho, readDegree, readAgainst, splitComparison, traitKey,
-  WHO_FOR, WHO_WHILE, titled, readUntil, readTargetName
+  WHO_FOR, WHO_WHILE, titled, readUntil, readTargetName, WORD_CHAR
 } from "./operators.mjs";
 import { THREATS, isLoreSlug } from "../config.mjs";
+import { readEffectName } from "./effect-list.mjs";
 
 /** The tags an effect line may begin with, each to the kind that reads it. Upper case in the document; case blind here. */
 export const EFFECT_TAGS = Object.freeze({
@@ -136,9 +137,13 @@ export function splitComponents(line) {
   let current = "";
   let depth = 0;
   let quote = null;
+  let before = "";
   for (const ch of line) {
+    const prev = before;
+    before = ch;
     if (quote) { current += ch; if (ch === quote) quote = null; continue; }
-    if ((ch === '"') || (ch === "'")) { quote = ch; current += ch; continue; }
+    // An apostrophe inside a word is no opening quote (0.31.0; `splitOperands` reads the same).
+    if ((ch === '"') || ((ch === "'") && !WORD_CHAR.test(prev))) { quote = ch; current += ch; continue; }
     if (ch === "(") depth += 1;
     else if (ch === ")") { depth -= 1; if (depth < 0) throw new RuleSyntaxError("a ) has no ( before it"); }
     if ((ch === ";") && (depth === 0)) { parts.push(current); current = ""; continue; }
@@ -207,9 +212,11 @@ function readComponent(component, ops, context, tag = "") {
 }
 
 /**
- * A condition inside IF or IFT. The condition decides what it is about, not the prefix: RANK, SEEN,
- * the counts and CLAIM are the owner's or the roll's, TRAIT, MARKED, a Threat word and CHECK are
- * the other party's; FG's own effects mix the two, so both prefixes read.
+ * A condition inside IF or IFT. For every condition but one, the condition decides what it is
+ * about, not the prefix: RANK, SEEN, the counts and CLAIM are the owner's or the roll's, TRAIT,
+ * MARKED, a Threat word and CHECK are the other party's; FG's own effects mix the two, so both
+ * prefixes read. THE ONE EXCEPTION IS `EFFECT(<name>)` (0.31.0; ruling 307), which can be asked of
+ * either side, so there the prefix is the answer: `IF:` is the roller, `IFT:` the other party.
  */
 function readCondition(inside, ops, context, prefix) {
   const call = inside.match(CALL);
@@ -291,34 +298,48 @@ function readCondition(inside, ops, context, prefix) {
       return;
     }
     case "EFFECT": {
-      // 0.25.0, named Effects, step one (Mike, 2026-11-15: "other modifiers/effects can be applied
-      // IF that custom Effect field is on the target"; built in two steps by his choice). The one
-      // form read now is `EFFECT(<name>, used)`: a roll of the owner's has just used up the Effect
-      // of that name, which is the Maneuver that gave it (Aid). The forms of step two are told so.
-      if (ops.used) throw new RuleSyntaxError("EFFECT is given twice");
-      const example = "`IF: EFFECT(Aid, used)`";
+      // Named Effects (Mike, 2026-11-15: "other modifiers/effects can be applied IF that custom
+      // Effect field is on the target"; built in two steps by his choice).
+      //
+      //   EFFECT(<name>)        0.31.0 (ruling 307): the creature HAS it now, a Condition or a
+      //                         named Effect (./effect-list.mjs). THE PREFIX DECIDES WHOSE: after
+      //                         `IF:` the roller's own, after `IFT:` the roll's other party's.
+      //                         Stored in `ops.has`, one entry for each, so a line may ask both.
+      //   EFFECT(<name>, used)  0.25.0, step one: a roll of the owner's has just used up the
+      //                         Effect of that name, which is the Maneuver that gave it (Aid).
+      //                         Stored in `ops.used`, unchanged, and the owner's alone.
+      const shape = "EFFECT is written `EFFECT(<name>)` or `EFFECT(<name>, used)`, as in `IF: EFFECT(Taking Cover)`, `IFT: EFFECT(prone)` or `IF: EFFECT(Aid, used)`";
       // An empty part (`EFFECT(, used)`) is a slip in the shape, not a name: the splitter drops it,
       // which would read the state as the name.
-      if ((arg == null) || !arg.trim() || /^\s*,|,\s*,|,\s*$/.test(arg)) throw new RuleSyntaxError(`EFFECT is written \`EFFECT(<name>, used)\`, as in ${example}`);
+      if ((arg == null) || !arg.trim() || /^\s*,|,\s*,|,\s*$/.test(arg)) throw new RuleSyntaxError(shape);
       const parts = splitOperands(arg).map(p => p.trim());
       const written = parts[0] ?? "";
-      if (!written || (parts.length > 2)) throw new RuleSyntaxError(`EFFECT is written \`EFFECT(<name>, used)\`, as in ${example}`);
-      if (prefix === "IFT") {
-        throw new RuleSyntaxError(`IFT: EFFECT(...), an Effect on the other party, is not read yet: it comes with the named Effects a Maneuver can give a target. What is read is ${example}`);
+      if (!written || (parts.length > 2)) throw new RuleSyntaxError(shape);
+      if (parts.length === 2) {
+        const state = parts[1].toLowerCase();
+        if (!EFFECT_STATES.includes(state)) {
+          throw new RuleSyntaxError(`"${parts[1]}": the one state read is \`used\`, as in \`EFFECT(${written}, used)\`; an Effect a creature has now is written \`EFFECT(${written})\``);
+        }
+        if (prefix === "IFT") {
+          throw new RuleSyntaxError(`IFT: EFFECT(${written}, used) is not read: a used Effect is your own roll's, so it is written \`IF: EFFECT(${written}, used)\``);
+        }
+        if (ops.used) throw new RuleSyntaxError("EFFECT(..., used) is given twice");
+        const example = "`IF: EFFECT(Aid, used)`";
+        const read = readTargetName(written, context?.resolve);
+        if (!read || !read.slug) throw new RuleSyntaxError(`"${written}" names no Maneuver: a used Effect is named for the Maneuver that gave it, as in ${example}`);
+        if (read.type === "constellation") {
+          throw new RuleSyntaxError(`"${read.name}" is a Constellation: a used Effect is named for the Maneuver that gave it, as in ${example}`);
+        }
+        ops.used = { name: read.name, slug: read.slug };
+        return;
       }
-      if (parts.length === 1) {
-        throw new RuleSyntaxError(`EFFECT(${written}), an Effect you hold now, is not read yet: it comes with the named Effects a Maneuver can give a target. Write \`EFFECT(${written}, used)\` for a roll of yours that has just used it up`);
+      const read = readEffectName(written);
+      const on = (prefix === "IFT") ? "other" : "self";
+      const has = (ops.has ??= []);
+      if (has.some(h => (h.on === on) && (h.slug === read.slug) && ((h.condition ?? null) === read.condition))) {
+        throw new RuleSyntaxError(`${prefix}: EFFECT(${read.name}) is given twice`);
       }
-      const state = parts[1].toLowerCase();
-      if (!EFFECT_STATES.includes(state)) {
-        throw new RuleSyntaxError(`"${parts[1]}": the one state read is \`used\`, as in \`EFFECT(${written}, used)\``);
-      }
-      const read = readTargetName(written, context?.resolve);
-      if (!read || !read.slug) throw new RuleSyntaxError(`"${written}" names no Maneuver: a used Effect is named for the Maneuver that gave it, as in ${example}`);
-      if (read.type === "constellation") {
-        throw new RuleSyntaxError(`"${read.name}" is a Constellation: a used Effect is named for the Maneuver that gave it, as in ${example}`);
-      }
-      ops.used = { name: read.name, slug: read.slug };
+      has.push({ name: read.name, slug: read.slug, condition: read.condition, on });
       return;
     }
     default:

@@ -13,11 +13,11 @@ What it does, per workbook with a `_Tree Index` sheet:
   TREE WORKBOOKS (index headed Tree | Category | ...): every sheet that is not the index, an
     About sheet, a Backgrounds or Languages table, or a `<Tree> Lore` sheet is a tree and gets an
     index row if none names it: Tree = the sheet's name, Category inferred from the workbook
-    (ancestries.xlsx -> Ancestry, cultures -> Culture, callings -> Calling, skills -> Skill,
+    (talents_ancestries.xlsx -> Ancestry, cultures -> Culture, callings -> Calling, skills -> Skill,
     defenses -> Defense, weapons -> Weapon, combat_styles -> Combat Style, magic -> Magic), every
     other cell left blank and NAMED in the report, because Primary Attribute, Parent and the rest
     are hand-kept and the tool never guesses them. A sheet named `Lore (anything)` is the Lore
-    template and belongs to the index's `Lore` row (skills.xlsx, 0.20.0), not to a row of its own.
+    template and belongs to the index's `Lore` row (talents_skills.xlsx, 0.20.0), not to a row of its own.
     An index row whose sheet is missing is REPORTED with the nearest sheet name, never dropped
     (Mike's rows are his); so is a `<X> Lore` sheet whose X is no tree of the workbook
     (`Halfline Lore`: "did you mean Halfling?").
@@ -47,8 +47,24 @@ BACKUP = os.path.join(ROOT, "backup")
 # The Category a tree sheet gets from the workbook it sits in (the converter's CATEGORIES).
 CATEGORY_BY_WORKBOOK = {
     "ancestries": "Ancestry", "cultures": "Culture", "callings": "Calling", "skills": "Skill",
-    "defenses": "Defense", "weapons": "Weapon", "combat_styles": "Combat Style", "magic": "Magic",
+    "defenses": "Defense", "weapons": "Weapon", "martial": "Weapon", "combat_styles": "Combat Style",
+    "magic": "Magic",
 }
+# Mike renamed the workbooks on 2026-11-15: a tree workbook is talents_<what>.xlsx and an actions
+# workbook actions_<what>.xlsx (weapons.xlsx became talents_martial.xlsx). The Category is looked
+# up by <what>, so a workbook reads the same under either name.
+WORKBOOK_PREFIXES = ("talents_", "actions_")
+
+
+def workbook_key(fname):
+    """'talents_ancestries.xlsx' and 'ancestries.xlsx' -> 'ancestries'."""
+    stem = os.path.splitext(os.path.basename(fname))[0].lower()
+    for prefix in WORKBOOK_PREFIXES:
+        if stem.startswith(prefix):
+            return stem[len(prefix):]
+    return stem
+
+
 SKIP_SHEETS = ("_Tree Index", "About", "Backgrounds", "Languages")
 LORE_SHEET = re.compile(r"^(.+?)\s+Lore$")
 LORE_TEMPLATE = re.compile(r"^Lore\s*\(.*\)\s*$", re.I)
@@ -115,7 +131,7 @@ def index_tree_workbook(wb, fname, report):
     feeds_col = find_col(hdrs, starts=("feeds", "primary"))
     if not tree_col or not cat_col:
         report.append(f"{fname}: _Tree Index needs Tree and Category columns; skipped"); return []
-    category = CATEGORY_BY_WORKBOOK.get(os.path.splitext(fname)[0].lower())
+    category = CATEGORY_BY_WORKBOOK.get(workbook_key(fname))
     indexed = {}
     for r in range(2, idx.max_row + 1):
         n = txt(idx, r, tree_col)

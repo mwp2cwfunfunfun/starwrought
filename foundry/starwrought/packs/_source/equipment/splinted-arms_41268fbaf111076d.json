@@ -12,7 +12,7 @@
     "price": "8 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Narrow metal strips fixed to a leather or textile backing over the upper arms and forearms, with joint protection at the elbows. They are affordable and field-repairable but leave more gaps than complete plate.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "fea4c8f7ce498f52"
+      "contentHash": "3938548b48a2afd6"
     }
   },
   "effects": [],

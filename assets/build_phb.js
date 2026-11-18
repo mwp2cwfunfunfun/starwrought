@@ -280,7 +280,9 @@ kids.push(stripedTable(["Ancestry", "Vigor/lvl", "Size", "Speed", "Senses", "Tra
     a.senses || "—", (a.traits || []).join(", ") || "—", (trees[a.tree] || {}).feeds || "—"]), [2000, 1000, 1200, 1200, 1700, 1200, 1060]));
 for (const a of (R.ancestries || [])) {
   const t = trees[a.tree]; if (!t) continue;
-  kids.push(h3(a.name + ": Vigor " + vigorOf(a) + " • " + (a.size || "Medium") + " • " + a.speed));
+  // Natural Reach where the Ancestry's Root sets one ([REACH N], 0.30.0); by Size otherwise, unsaid.
+  kids.push(h3(a.name + ": Vigor " + vigorOf(a) + " • " + (a.size || "Medium") + " • " + a.speed
+    + (a.reach ? " • Reach " + a.reach : "")));
   kids.push(para([run(a.blurb, { italics: true, color: TEAL })]));
   const bl = t.nodes.filter(n => n[5]);
   if (bl.length) kids.push(stripedTable(["Bloodline (choose one; root granted free)", "Grants"],

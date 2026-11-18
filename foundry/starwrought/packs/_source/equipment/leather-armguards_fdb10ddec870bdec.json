@@ -12,7 +12,7 @@
     "price": "4 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Shaped leather defenses covering the exposed portions of the upper arms, elbows, and forearms while leaving the hands free. Gaps preserve mobility but remain vulnerable to precise attacks.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f7f5a907f9a71c19"
+      "contentHash": "a672617d36810235"
     }
   },
   "effects": [],

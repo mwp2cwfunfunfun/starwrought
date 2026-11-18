@@ -5,8 +5,13 @@
 #   2. IP hygiene: mechanics may echo pf2e (ORC-licensed), but names and prose must be original.
 #      No Golarion proper nouns in anything that ships.
 #
-#   run:  python assets/check_style.py            exit 0 clean, exit 1 on a violation
-#         python assets/check_style.py --quiet    only print violations
+#   run:  python assets/check_style.py              exit 0 clean, exit 1 on a violation
+#         python assets/check_style.py --quiet      only print violations
+#         python assets/check_style.py --equipment  of the spreadsheets, scan the equipment workbook
+#                                                   alone (0.30.0: the equipment-only build, made while
+#                                                   the other workbooks are still being authored and one
+#                                                   of them holds a known violation); everything
+#                                                   generated is scanned as always
 #
 # Scope is SHIPPING content: the spreadsheets, the injected JSON, the templates, and the two built
 # HTML files. Deliberately not scanned: backup/, node_modules/, the sync reports and design notes
@@ -17,6 +22,7 @@ import io, json, os, re, sys, glob, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 QUIET = "--quiet" in sys.argv
+EQUIPMENT_ONLY = "--equipment" in sys.argv
 EM = "—"
 
 errors, notes = [], []
@@ -101,9 +107,19 @@ def walk_json(path):
 # ── the spreadsheets ────────────────────────────────────────────────────────────────────────────
 try:
     import openpyxl
+    if EQUIPMENT_ONLY:
+        # The converter's own recognition (a Weapons, Armor, Shields or Ammunition sheet and no
+        # _Tree Index), read from the package's sheet names, so no other workbook is scanned.
+        sys.path.insert(0, HERE)
+        import xlsx_to_trees as _xt
+        notes.append(("limited", "data/*.xlsx", "--equipment: only the equipment workbook was scanned"))
     for p in sorted(glob.glob(os.path.join(ROOT, "data", "*.xlsx"))):
         if os.path.basename(p).startswith("~$"):
             continue
+        if EQUIPMENT_ONLY:
+            _names = _xt.sheet_names(p)
+            if "_Tree Index" in _names or not _xt.is_equipment_workbook(_names):
+                continue
         wb = openpyxl.load_workbook(p, data_only=True)
         for ws in wb.worksheets:
             for row in ws.iter_rows():

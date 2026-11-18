@@ -121,11 +121,23 @@ RULES = [
     (r"IF\(Trait=([^)]+)\): no shipping weapon, attack or Talent carries the trait", "Note", "Data",
      "The rule reads and waits: author a weapon, adversary attack or spell Talent carrying the {1} trait, or leave it until one exists."),
     (r"granted by a Talent, so not basic though typed \"Maneuver\"", "Fix", "Data",
-     "Retype the row 'Talent Maneuver' in data/maneuvers.xlsx; the build reads it as granted meanwhile, so nothing ships wrong."),
+     "Retype the row 'Talent Maneuver' in data/actions_maneuvers.xlsx; the build reads it as granted meanwhile, so nothing ships wrong."),
     (r"retired by a disabled sheet row or an index name with no row", "Note", "Data",
      "These actions ship nowhere until their row reads Enabled? = Yes (Drop Prone) or has a row at all; intended for the retired Reactions."),
     (r"was actions\.xlsx's and is now defined|also defined in ([\w.]+xlsx), which stands", "Note", "Data",
      "The same name in two workbooks: the first read stands. Delete the other once the move is done."),
+    (r"needs a Group, the Weapon Group it feeds", "Error", "Data",
+     "Fill the Group cell of the Ammunition row with the Weapon Group it feeds, as the Weapons sheet spells it (Bows, Crossbows, Slings)."),
+    (r"a stack is 1 or more", "Error", "Data",
+     "The number in brackets after an ammunition's name is how many make a stack: write 1 or more, as in Arrows (10), or drop the brackets."),
+    (r"its Group '([^']+)' is the Weapon Group of no weapon", "Fix", "Data",
+     "Make the Ammunition row's Group read as a Weapon Group on the Weapons sheet does (Bows, Crossbows, Slings), or no Reload will find it."),
+    (r"Ammunition: no row feeds the Weapon Group '([^']+)'", "Fix", "Data",
+     "Add an Ammunition row whose Group is {1}; until then those weapons Reload with nothing to take, and say so each time."),
+    (r"ship to Foundry, but no weapon that takes them is enabled", "Note", "Data",
+     "Nothing is wrong: the ammunition ships and waits. Set Enabled? = Yes on a bow, crossbow or sling on the Weapons sheet when it should be usable in Foundry."),
+    (r"is now ([\w.]+xlsx) \(renamed", "Note", "Data",
+     "Nothing to do: the workbook was renamed and its actions are read under the new name. The line goes once a full content build has written actions.json again."),
     (r"also defined in ([\w.]+xlsx)$|also defined in ([\w.]+xlsx)\b(?!, which)", "Error", "Data",
      "The same action in two workbooks is an error: keep one row."),
     (r"no Cost column on (.+?); an action with no glyph", "Fix", "Data",
@@ -146,8 +158,8 @@ RULES = [
     (r"requires unknown '([^']+)'", "Error", "Data", "The Requires/Prerequisites cell names '{1}', which is no Talent of the sheet: fix the spelling or move the text to Prerequisites prose."),
     (r"the roster's callings row reads (\d+) Opening Vigor but the Root's \[VIGOR opening\] says (\d+)", "Fix", "Data",
      "Make the roster's callings row and the Root's [VIGOR opening {2}] agree (the Root's block is the authoring)."),
-    (r"names no row of the actions workbook", "Fix", "Automation cell",
-     "The @Maneuver[...] marker names no row of data/maneuvers.xlsx: fix the name or add the row."),
+    (r"names no row of the actions workbooks?", "Fix", "Automation cell",
+     "The @Maneuver[...] marker names no row of data/actions_maneuvers.xlsx: fix the name or add the row."),
     (r"did not read\.|AUTOMATION ERRORS", None, None, None),      # banners, skipped
     (r"HANDBOOK DRIFT", "Decision", "Handbook", "A newer handbook is on the shelf: plan and run the sync, then node assets/build_all.mjs --accept-phb."),
     (r"VERSION STAMPS DISAGREE", "Fix", "Build", "Bump the stamp named to the system.json version."),
@@ -237,7 +249,7 @@ def findings_from_step(step):
             names = [n.strip() for n in s.split(":", 1)[1].split(",") if n.strip()]
             sev, cat, rec = classify(s)
             for n in names:
-                out.append(Finding(sev, cat, "data/maneuvers.xlsx", n, "typed \"Maneuver\" though a Talent grants it (read as a Talent Maneuver)", rec, step["name"]))
+                out.append(Finding(sev, cat, "data/actions_maneuvers.xlsx", n, "typed \"Maneuver\" though a Talent grants it (read as a Talent Maneuver)", rec, step["name"]))
             continue
         if s.startswith("- automation:") or s.startswith("automation:"):
             # "automation: <source>, line n: <message> ("text")" from parse_rules or build_foundry.
@@ -405,7 +417,10 @@ def main():
         notes.append(f"red cells not analysed: {e}")
         traceback.print_exc()
     try:
-        converter_ran = any(s.get("name") == "xlsx_to_trees" and s.get("status") == 0 for s in log.get("steps", []))
+        # The equipment-only run (0.30.0) is the converter's step by name and reads no tree or action,
+        # so it prints none of the index lines this flag would otherwise take as already said.
+        converter_ran = (log.get("mode") != "equipment") and any(
+            s.get("name") == "xlsx_to_trees" and s.get("status") == 0 for s in log.get("steps", []))
         for f in index_findings():
             # When the converter ran it already said which index rows have no sheet or no row, in
             # its own words; the analysis adds only what the converter does not say.

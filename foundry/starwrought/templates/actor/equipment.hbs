@@ -38,9 +38,17 @@
         {{#if thing.raised}}<span class="sw-item-tag sw-good-tag">{{localize "STARWROUGHT.Action.raised"}}</span>{{/if}}
         {{else}}
         <a class="sw-item-name" data-action="itemChat">{{thing.name}}</a>
+        {{#if thing.isAmmunition}}
+        <span class="sw-item-tag sw-ammo-count" data-tooltip="{{thing.ammunitionTip}}">&times;{{thing.quantity}}</span>
+        {{/if}}
         {{/if}}
 
         <div class="sw-item-controls">
+          {{!-- AMMUNITION (0.30.0): the count corrected by hand, one piece at a time. --}}
+          {{#if thing.isAmmunition}}{{#if @root.editable}}
+          <a data-action="adjustQuantity" data-delta="-1" data-tooltip="STARWROUGHT.Ammunition.less"><i class="fa-solid fa-minus"></i></a>
+          <a data-action="adjustQuantity" data-delta="1" data-tooltip="STARWROUGHT.Ammunition.more"><i class="fa-solid fa-plus"></i></a>
+          {{/if}}{{/if}}
           {{#if thing.isWeapon}}
           {{!-- Three Strikes: the count of actions is how much of yourself is behind the blow. The
                 glyph is the large gold one the Maneuvers tab uses (0.5.1, T1): the count is what
@@ -184,8 +192,16 @@
         {{/if}}
         {{#if thing.isWeapon}}<span class="sw-item-tag">{{thing.damage}}</span>{{/if}}
         {{#if thing.isShield}}<span class="sw-item-tag">{{localize "STARWROUGHT.Defense.guard"}} {{swSigned thing.bonus}}</span>{{/if}}
+        {{!-- AMMUNITION (0.30.0): a stack's count, with a minus and a plus beside it. --}}
+        {{#if thing.isAmmunition}}
+        <span class="sw-item-tag sw-ammo-count" data-tooltip="{{thing.ammunitionTip}}">&times;{{thing.quantity}}</span>
+        {{/if}}
 
         <div class="sw-item-controls">
+          {{#if thing.isAmmunition}}{{#if @root.editable}}
+          <a data-action="adjustQuantity" data-delta="-1" data-tooltip="STARWROUGHT.Ammunition.less"><i class="fa-solid fa-minus"></i></a>
+          <a data-action="adjustQuantity" data-delta="1" data-tooltip="STARWROUGHT.Ammunition.more"><i class="fa-solid fa-plus"></i></a>
+          {{/if}}{{/if}}
           {{#if thing.isArmor}}
           <a data-action="setCarry" data-state="worn" data-tooltip="STARWROUGHT.Carry.wearHint">
             <i class="fa-solid fa-shirt"></i>

@@ -55,7 +55,8 @@
  */
 
 import { RuleSyntaxError } from "../syntax.mjs";
-import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, refuseOutcome, summarizeOperators, titled, readTargetName, readBonusType } from "../operators.mjs";
+import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, effectHolds, readsOtherEffects, refuseOutcome, summarizeOperators, titled, readTargetName, readBonusType } from "../operators.mjs";
+import { effectsOn } from "../effect-list.mjs";
 import { slugify, plainName, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
 
 const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
@@ -148,11 +149,31 @@ export default {
       // 0.25.0: this kind reads its ops without a refusal list, so the one condition it has no
       // reading for is refused here by name rather than dropped in silence.
       if (e.ops.used) {
-        throw new RuleSyntaxError(`${TAG} does not read IF: EFFECT(...) yet: a bonus that depends on a named Effect comes with the named Effects a Maneuver can give a target`);
+        throw new RuleSyntaxError(`${TAG} does not take IF: EFFECT(${e.ops.used.name}, used): a used Effect is what a SUBORDINATE line waits for. For an Effect you have now, write \`IF: EFFECT(${e.ops.used.name})\``);
       }
+      // 0.31.0 (ruling 307): `IF: EFFECT(<name>)` and `IFT: EFFECT(<name>)`. With a FOR that
+      // reaches others (an `[AURA ...]` block's ring is one) "you" would be two creatures, the
+      // owner and whoever stands in the ring, so the pair is refused until a Talent wants it.
+      if (e.ops.has && e.ops.for && (e.ops.for.who !== "self")) {
+        throw new RuleSyntaxError(`${TAG} does not read EFFECT(...) beside a FOR that reaches others (an aura's ring is one): it is not read yet whether the Effect would be the owner's or the recipient's`);
+      }
+      // Two places an `IFT: EFFECT(...)` could never hold are refused rather than stored (the
+      // review of 0.31.0): an Initiative and a Move have no other party; and a claim is asked at
+      // the die, which through the attack flow knows nobody, while the pairing that does know
+      // drops an offer.
+      const other = (e.ops.has ?? []).find(h => h.on === "other");
+      if (other && ["init", "speed"].includes(e.tag)) {
+        throw new RuleSyntaxError(`${TAG} has no other party, so IFT: EFFECT(${other.name}) could never hold; for an Effect of your own write \`IF: EFFECT(${other.name})\``);
+      }
+      if (other && e.ops.claim) {
+        throw new RuleSyntaxError(`${TAG} does not read IFT: EFFECT(${other.name}) beside IF: CLAIM(...): a claim is asked at the die, before the other party is known`);
+      }
+      // THE RETURN IS A FIXED LIST OF FIELDS: a component this kind reads must be copied here, or
+      // it is dropped in silence and the bonus applies always. `has` rides only when the line asks
+      // for one, so a rule that asks for none is stored exactly as it was before 0.31.0.
       return {
         value: e.value, type, to, when: e.ops.when, for: e.ops.for, while: e.ops.while, against: e.ops.against, seen: e.ops.seen, limit: e.ops.limit,
-        claim: e.ops.claim, marked: e.ops.marked
+        claim: e.ops.claim, marked: e.ops.marked, ...(e.ops.has ? { has: e.ops.has } : {})
       };
     }
     // A bonus is an effect: a feature block names no bonus, and the 0.13.0 form is refused by the
@@ -188,6 +209,8 @@ export default {
       const scene = context?.scene ?? null;
       const encounter = context?.encounter ?? null;
       const rollManeuver = (rollItem?.type === "action") ? slugify(plainName(rollItem.name)) : null;
+      // The Effects lists of the roller and of the other party (0.31.0), read when a rule asks.
+      let lists = null;
 
       for (const entry of entries ?? []) {
         const rule = entry?.rule;
@@ -208,13 +231,26 @@ export default {
           const byManeuver = (rollKind === "check") && (rollManeuver !== null)
             && ((to.type === "action") || (to.type == null)) && (rollManeuver === to.slug)
             && !((to.type == null) && rollSlug && (rollSlug === to.slug));
-          if (!byManeuver) continue;
+          // And a second (0.31.0, the review; a defect since 0.13.0): a bonus to INITIATIVE, on an
+          // Initiative rolled with a Defense Constellation, which the default Initiative is
+          // (Awareness). The Defense pass folds in what is a bonus to that Defense; an `INIT` line
+          // is to no Defense, so it was in neither half and never applied.
+          const toInitiative = (rollKind === "initiative") && (to.type === "scope") && (to.slug === "initiative");
+          if (!byManeuver && !toInitiative) continue;
         }
         // A pairing asks for the rules about the other party alone (0.15.0, ruling 175): the one
-        // blind die already carried everything else, and a claim was the dialog's.
-        if (context?.pairingOnly && !rule.marked) continue;
+        // blind die already carried everything else, and a claim was the dialog's. Since 0.31.0 a
+        // rule that reads the other party's Effects (`IFT: EFFECT(...)`) is one of them.
+        if (context?.pairingOnly && !(rule.marked || readsOtherEffects(rule))) continue;
         // MARKED (0.15.0): the other party must be the creature this Talent marked.
         if (!markedHolds(rule, { item: carrier, owner }, context)) continue;
+        // EFFECT (0.31.0; ruling 307): the roller has it (`IF:`), the other party has it (`IFT:`).
+        // The lists are read once for the call, and only when a rule asks. With no other party
+        // known (the blind attack die) an `IFT:` rule does not hold, and the pairing reads it.
+        if (rule.has !== undefined && rule.has !== null) {
+          lists ??= { self: effectsOn(actor), other: effectsOn(context?.other?.actor ?? null) };
+          if (!effectHolds(rule, lists)) continue;
+        }
 
         // IF: every condition holds for the OWNER, the roll's own rank for `Rank`, the attack
         // answered for `Trait` (0.14.0; no attack known, no match).

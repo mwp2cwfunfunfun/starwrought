@@ -123,6 +123,13 @@
       <li class="sw-item-row {{#if effect.disabled}}sw-disabled{{/if}}" data-effect-id="{{effect.id}}">
         <img src="{{effect.img}}" alt="{{effect.name}}">
         <a class="sw-item-name" data-action="effectEdit">{{effect.name}}</a>
+        {{!-- How a line of Automation reads this effect (0.31.0): a Condition by its name, any other
+              by EFFECT(<its name>); a name no line can read is marked. --}}
+        {{#if effect.readAs}}
+        <span class="sw-item-tag sw-effect-readas {{#if effect.readAs.unread}}sw-effect-unread{{/if}}" data-tooltip="{{effect.readAs.tip}}">
+          {{#if effect.readAs.unread}}<i class="fa-solid fa-triangle-exclamation"></i> {{localize "STARWROUGHT.Effects.unread"}}{{else}}{{effect.readAs.words}}{{/if}}
+        </span>
+        {{/if}}
         {{!-- A condition with a rules page (the Bind, Exposed) opens it from its row (0.5.1, T6). --}}
         {{#if effect.rulesPage}}
         <a class="sw-rules-link sw-effect-rules" data-action="rulesPage" data-page="{{effect.rulesPage}}"

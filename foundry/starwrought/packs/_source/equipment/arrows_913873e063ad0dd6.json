@@ -1,0 +1,31 @@
+{
+  "_id": "913873e063ad0dd6",
+  "name": "Arrows",
+  "type": "gear",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "ammunition": "Bows",
+    "quantity": 10,
+    "price": "1 gp per 10",
+    "load": 0,
+    "state": "carried",
+    "traits": [],
+    "description": "<p>Ammunition for weapons of the Bows group, 10 to a stack. A Reload takes one for each shot it loads.</p>",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "b1b5b5c4488ca258",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "8099d1541ba4cd93"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!913873e063ad0dd6"
+}

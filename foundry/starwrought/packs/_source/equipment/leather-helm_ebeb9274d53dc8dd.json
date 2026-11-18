@@ -12,7 +12,7 @@
     "price": "3 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Thick leather shaped and hardened around the skull while leaving the face and ears open. It provides unobtrusive protection without metal weight or noise.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "2a61c7e29d397145"
+      "contentHash": "c23e95c7ab29c337"
     }
   },
   "effects": [],

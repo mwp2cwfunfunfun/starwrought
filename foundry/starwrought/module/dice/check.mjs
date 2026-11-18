@@ -355,7 +355,15 @@ export class SwCheck {
     const pairing = (Array.isArray(pairingModifiers) ? pairingModifiers : [])
       .filter(m => Number.isNumeric(m?.value) && (Number(m.value) !== 0))
       .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null, ...(m.source ? { source: m.source } : {}) }));
-    const pairingTotal = pairing.length ? SW.resolveModifiers(pairing).total : 0;
+    // What the pairing is worth is what it ADDS to the die's own modifiers, the two resolved as
+    // the one roll they are (0.31.0, the review; PHB v4.21: one circumstance is counted once,
+    // ruling 125). A Talent with `ATK: 1` and `ATK: 2; IFT: EFFECT(prone)` is +2 against a Prone
+    // defender, as it is on a roll that knows its target from the start, and never +3: resolved
+    // alone, the pairing's line and the die's shared a source and both counted.
+    const submitted = (Array.isArray(modifiers) ? modifiers : []).filter(m => Number.isNumeric(m?.value));
+    const pairingTotal = !pairing.length ? 0
+      : submitted.length ? (SW.resolveModifiers([...submitted, ...pairing]).total - SW.resolveModifiers(submitted).total)
+        : SW.resolveModifiers(pairing).total;
     const total = roll.total + pairingTotal;
 
     let degree = null;

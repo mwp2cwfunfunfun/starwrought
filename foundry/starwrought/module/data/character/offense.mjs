@@ -43,7 +43,9 @@ export function prepareOffense(data) {
     slug: SW.DEFENSES.awareness.slug,
     visor: data.visorPenalty
   };
-  data.reach = SW.SIZES[data.size]?.reach ?? 2;
+  // Natural Reach: the Size's own, unless a `[REACH N]` block on an owned Talent says otherwise
+  // (0.30.0, ruling 301; config/sizes.mjs).
+  data.reach = SW.naturalReach(data.size, data.features?.reach);
   data.space = SW.SIZES[data.size]?.space ?? 3;
 
   // Total Reach is your Natural Reach plus the weapon's, measured from the edge of your space

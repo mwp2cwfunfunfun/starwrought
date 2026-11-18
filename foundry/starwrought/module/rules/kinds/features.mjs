@@ -10,6 +10,7 @@
  *   [TRAIT Human]                   trait     { name }
  *   [SIZE Medium]                   size      { size }          a key of SW.SIZES
  *   [SPEED 6]  [SPEED +1]           speed     { feet, mode }    mode "set" | "add"
+ *   [REACH 2]  [REACH +1]           reach     { feet, mode }    mode "set" | "add" (0.30.0)
  *   [VIGOR 8]  [VIGOR opening 12]   vigor     { value, scope }  scope "level" | "opening"
  *   [SENSES Low-light vision]       sense     { name }
  *   [LANGUAGE Common, Serrovine]    language  { languages }
@@ -79,6 +80,34 @@ export const speed = {
   hooks: {}
 };
 
+/**
+ * `[REACH N]` (0.30.0, ruling 301; Mike, 2026-11-15: "for Automation, I want to have a [REACH N]
+ * Automation Grammar, where N is the natural reach for the ancestry"; by question, "Set and
+ * adjust"). `[REACH 2]` on an Ancestry's Root SETS the Natural Reach in feet, where through 0.29.0
+ * it came from Size alone; `[REACH +1]` on any Talent ADJUSTS it, as `[SPEED +1]` does a Speed. A
+ * set of 0 is a Tiny creature's reach and is allowed; an adjustment of 0 says nothing. No hook: the
+ * character's data model reads the owned Talents' blocks at prepare (data/actor.mjs,
+ * `_prepareRules`; config/sizes.mjs, `naturalReach`), so a character follows the block on the Root
+ * it owns, and the build carries a Root's set to the Ancestry's record for the cards to print.
+ */
+export const reach = {
+  id: "reach",
+  aliases: [],
+  parse(args, context = {}) {
+    const text = blockData(args, context, "REACH", "[REACH 2] or [REACH +1]").replace(/\s*(ft\.?|feet|foot)$/i, "").trim();
+    const m = text.match(/^([+-]?)(\d+)$/);
+    if (!m) throw new RuleSyntaxError(`REACH is written \`[REACH 2]\` (the Natural Reach in feet) or \`[REACH +1]\` (an adjustment), not "${text}"`);
+    const feet = Number(m[2]) * (m[1] === "-" ? -1 : 1);
+    const mode = m[1] ? "add" : "set";
+    if ((mode === "add") && (feet === 0)) throw new RuleSyntaxError("an adjustment of 0 does nothing");
+    return { feet, mode };
+  },
+  summary(rule) {
+    return rule?.mode === "add" ? `Natural Reach ${rule.feet > 0 ? "+" : ""}${rule.feet} ft` : `Natural Reach ${rule?.feet ?? ""} ft`;
+  },
+  hooks: {}
+};
+
 export const vigor = {
   id: "vigor",
   aliases: [],
@@ -126,7 +155,7 @@ export const maneuver = {
     const resolve = context?.resolve;
     if (typeof resolve === "function") {
       const found = resolve(name);
-      if (!found || (found.type !== "action") || !found.slug) throw new RuleSyntaxError(`"${name}" is not a Maneuver: a [MANEUVER ...] names a row of data/maneuvers.xlsx`);
+      if (!found || (found.type !== "action") || !found.slug) throw new RuleSyntaxError(`"${name}" is not a Maneuver: a [MANEUVER ...] names a row of data/actions_maneuvers.xlsx`);
       return { name: String(found.name ?? name), slug: String(found.slug), enabled: found.enabled !== false };
     }
     return { name, slug: slugify(plainName(name)), enabled: true };
@@ -155,4 +184,4 @@ export const choice = {
   hooks: {}
 };
 
-export const FEATURE_KINDS = Object.freeze([trait, size, speed, vigor, sense, language, maneuver, talent, choice]);
+export const FEATURE_KINDS = Object.freeze([trait, size, speed, reach, vigor, sense, language, maneuver, talent, choice]);

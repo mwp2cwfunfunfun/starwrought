@@ -32,7 +32,7 @@ ROOT = os.path.dirname(HERE)
 DATA = os.path.join(ROOT, "data")
 ROSTER = os.path.join(HERE, "roster.json")
 ACTIONS_JSON = os.path.join(HERE, "actions.json")
-OUT = os.path.join(DATA, "maneuvers.xlsx")
+OUT = os.path.join(DATA, "actions_maneuvers.xlsx")
 WORKBOOK = os.path.basename(OUT)
 
 # The converter's own name and cost readers, so the two never disagree about what a name is.
@@ -180,7 +180,8 @@ def taken_elsewhere():
     out = {}
     for a in data.get("actions", []):
         wb = a.get("workbook") or sole or "another actions workbook"
-        if wb != WORKBOOK:
+        # The last actions.json may still stamp the workbook by its name before 2026-11-15.
+        if wb not in (WORKBOOK, "maneuvers.xlsx"):
             out[action_bare(a["name"]).lower()] = wb
     return out
 
@@ -264,9 +265,9 @@ def build(roster, skip):
 def main():
     for s in (sys.stdout, sys.stderr):
         if hasattr(s, "reconfigure"): s.reconfigure(encoding="utf-8", errors="replace")
-    ap = argparse.ArgumentParser(description="Scaffold data/maneuvers.xlsx from roster.json's Maneuver tables. One shot.")
+    ap = argparse.ArgumentParser(description="Scaffold data/actions_maneuvers.xlsx from roster.json's Maneuver tables. One shot.")
     ap.add_argument("--force", action="store_true", help="overwrite an existing workbook (every edit in it is lost)")
-    ap.add_argument("--out", default=OUT, help="write here instead of data/maneuvers.xlsx")
+    ap.add_argument("--out", default=OUT, help="write here instead of data/actions_maneuvers.xlsx")
     args = ap.parse_args()
     out = os.path.abspath(args.out)
     lock = os.path.join(os.path.dirname(out), "~$" + os.path.basename(out))

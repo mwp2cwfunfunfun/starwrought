@@ -30,6 +30,7 @@ import { reachesOf } from "../canvas/reach.mjs";
 import { hasPermit } from "../documents/cards/opportunity.mjs";
 import { ENGINE_REQUIRES } from "../documents/maneuvers.mjs";
 import { freeHands, requiresFor, maneuverStatus } from "../rules/requires.mjs";
+import { effectsOn } from "../rules/effect-list.mjs";
 import { setting } from "./settings.mjs";
 
 /** The Bind states a character may be in; anything else is no Bind. */
@@ -77,7 +78,14 @@ function nearOf(actor) {
     if (!canSeeToken(own, doc)) continue;
     let gap;
     try { gap = gapBetween(own, doc); } catch { continue; }
-    near.push({ relation: relation(own, doc), gap, inReach: gap <= reach });
+    // What that creature has (0.31.0), for `creature adjacent with dying`: its Conditions and its
+    // named Effects, which are as public as its Conditions (ruling 309).
+    const list = effectsOn(other);
+    near.push({
+      relation: relation(own, doc), gap, inReach: gap <= reach,
+      conditions: [...(list?.conditions.keys() ?? [])],
+      effects: [...(list?.names.keys() ?? [])]
+    });
   }
   return near;
 }
@@ -109,6 +117,8 @@ export function situationOf(actor) {
       return near;
     },
     conditions: [...(actor.statuses ?? [])],
+    // The character's named Effects (0.31.0): what is on it that is no Condition, by slug.
+    effects: [...(effectsOn(actor)?.names.keys() ?? [])],
     bind: BIND_STATES.includes(state) ? state : null,
     spells: items.filter(i => (i.type === "talent") && i.system.isSpell).length,
     shield: { held: shields.length > 0, raised: shields.some(s => !!s.system.raised) },

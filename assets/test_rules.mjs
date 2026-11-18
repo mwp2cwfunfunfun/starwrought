@@ -33,7 +33,7 @@ import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/i
 import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
 // 0.24.0: the Move made as part of a Maneuver, pure, shared by the charge and the ruler.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, MOVE_USED_KEPT, moveRecord, recordLive, moveRoleFor, asManeuverMove, usedNonces, withUsed } from "../foundry/starwrought/module/rules/maneuver-move.mjs";
-import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType, limitKey, limitSpent } from "../foundry/starwrought/module/rules/operators.mjs";
+import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType, limitKey, limitSpent, effectHolds, readsOtherEffects, effectConditions, emptyOps } from "../foundry/starwrought/module/rules/operators.mjs";
 // 0.22.0: what a Maneuver gives. The table, the pending result and the window are pure data, and
 // the mark that removes a used result is read off a plain actor.
 import {
@@ -60,7 +60,7 @@ import { terrainKindOf, terrainKindName, registerTerrainKinds } from "../foundry
 registerTerrainKinds([["Mud", "", 2, "#6b4a2b"], ["Shallow Water", "", 2, "#2f7fb8"], ["Decking", "", 2, "#9a7a4a"], ["Loose Stone", "", 2, "#7d7d7d"], ["Rubble", "", 2, "#5c5c5c"], ["Undergrowth", "", 2, "#3f7a3a"], ["Snow", "", 2, "#cfe3f2"], ["Ice", "", 2, "#9fd3e8"], ["Sand", "", 2, "#d8b56a"], ["Other", "", 2, "#8a6fb0"]]);
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
-import { slugify, plainName, resolveModifiers, ACTION_GLYPHS, actionCostOptions, costGlyphs, costParts, costPipsHtml } from "../foundry/starwrought/module/config.mjs";
+import { slugify, plainName, resolveModifiers, ACTION_GLYPHS, actionCostOptions, costGlyphs, costParts, costPipsHtml, naturalReach } from "../foundry/starwrought/module/config.mjs";
 // Multipliers and Divisors, the Legs' Speed and the Arms' Critical Hit penalty (0.26.0; PHB v4.25).
 import {
   combineFactors, applyFactors, combineDifficulties, speedAfterLegs, ARMS_CRITICAL_PENALTY, ACTIVITY_SPEEDS, TERRAIN
@@ -78,9 +78,10 @@ import {
 // The Maneuvers the system implements and the ones it pays for elsewhere (0.23.0): the module
 // imports nothing, which this import is the check of.
 import { BUILT_IN_MANEUVERS, CHARACTER_BUILT_INS, PAID_ELSEWHERE, ENGINE_REQUIRES } from "../foundry/starwrought/module/documents/maneuvers.mjs";
-import { readRequires, requireWords, termWords, checkCondition, availability, requiresFor, maneuverStatus, freeHands, arrangeManeuvers, STATUS_REASONS } from "../foundry/starwrought/module/rules/requires.mjs";
+import { readRequires, requireWords, termWords, checkCondition, availability, requiresFor, maneuverStatus, freeHands, arrangeManeuvers, STATUS_REASONS, BIND_STATES } from "../foundry/starwrought/module/rules/requires.mjs";
+import { effectList, effectsOn, readEffectName, listHas, namedEffects, namedEffectOf, effectSlug, conditionTitle } from "../foundry/starwrought/module/rules/effect-list.mjs";
 // 0.29.0: what a ranged weapon holds to shoot, and what a Strike does to it.
-import { parseWeaponTraits, splitTraits, ammunitionOf, shotPlan, nextLoaded, longestMelee, strikeOptions, reloadOptions, isNaturalGroup, hasNaturalWeapon } from "../foundry/starwrought/module/data/items/weapon-traits.mjs";
+import { parseWeaponTraits, splitTraits, ammunitionOf, shotPlan, nextLoaded, longestMelee, strikeOptions, reloadOptions, isNaturalGroup, hasNaturalWeapon, ammunitionFor, takeAmmunition } from "../foundry/starwrought/module/data/items/weapon-traits.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -92,7 +93,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -2067,6 +2068,137 @@ check("bonus: MARKED applies against the marked creature alone, on a Defense and
   must(/IF\(Outcome=\.\.\.\) is only read/.test(bonusError("[EFFECT MARK: enemies; IF: RESULT(success)]")), "and a mark");
 });
 
+check("0.31.0: EFFECT(<name>) is read into its own key, the roller's after IF and the other party's after IFT (ruling 307)", () => {
+  same(emptyOps().has, null, "the empty record asks for none");
+  same(readEffectLine("ATK: 1 situation; IFT: EFFECT(prone)").ops.has, [{ name: "Prone", slug: "prone", condition: "prone", on: "other" }], "IFT: a Condition on the other party");
+  same(readEffectLine("DEF: 1 situation; IF: EFFECT(Taking Cover)").ops.has, [{ name: "Taking Cover", slug: "taking-cover", condition: null, on: "self" }], "IF: a named Effect on the roller");
+  same(readEffectLine("DEF: 1 situation; IF: EFFECT( off guard )").ops.has[0], { name: "Off-Guard", slug: "offguard", condition: "offGuard", on: "self" }, "a Condition however it is spaced");
+  same(readEffectLine("ATK: 1 situation; IF: EFFECT(Blessed); IFT: EFFECT(prone)").ops.has.map(h => [h.slug, h.on]), [["blessed", "self"], ["prone", "other"]], "one of each on a line");
+  same(readEffectLine("ATK: 1 situation; IF: EFFECT(prone); IFT: EFFECT(prone)").ops.has.length, 2, "the same name on both sides is two conditions");
+  const both = readEffectLine("SUBORDINATE: Aid; IF: EFFECT(Aid, used); IF: EFFECT(Blessed)", { context: { resolve } }).ops;
+  same([both.used, both.has.map(h => h.slug)], [{ name: "Aid", slug: "aid" }, ["blessed"]], "`used` and the plain form are apart, and one line may hold both");
+  throws(() => readEffectLine("ATK: 1 situation; IF: EFFECT(prone); IF: EFFECT(Prone)"), /IF: EFFECT\(Prone\) is given twice/, "twice on one side");
+  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(exposed head)"), /Exposed Zone/, "an Exposed Zone is no Effect");
+  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(Rock or Roll)"), /joins conditions/, "a name that holds `or`");
+  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(none)"), /cannot be an Effect's name/, "a word that means something else");
+  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(prone, mine)"), /the one state read is `used`/, "another second word");
+  // The review of 0.31.0.
+  throws(() => readEffectLine("ATK: 1 situation; IF: EFFECT(not prone)"), /`not` goes in front of the whole condition/, "`not` is no part of a name: a bonus line has none yet");
+  throws(() => readEffectLine("ATK: 1 situation; IFT: EFFECT(Fatigued 2)"), /a Condition's value is not compared yet/, "a value is not compared");
+  same(readEffectLine("ATK: 1 situation; IFT: EFFECT(Hunter's Mark)").ops.has[0], { name: "Hunter's Mark", slug: "hunter-s-mark", condition: null, on: "other" }, "a straight apostrophe inside a word is no opening quote");
+  same([readEffectLine("CHECK: 1 situation, guile; IF: CLAIM(when it's raining)").ops.claim.text, readEffectLine("CHECK: 1 situation, guile; IF: CLAIM('when trading')").ops.claim.text], ["when it's raining", "when trading"], "nor in a claim's words, and a quoted claim still reads");
+  throws(() => readEffectLine("CHECK: 1 situation, guile; IF: CLAIM('when trading)"), /an opening ' has no closing '/, "an opening quote that never closes is still told so");
+  must(/INIT has no other party, so IFT: EFFECT\(Prone\) could never hold/.test(bonusError("[EFFECT INIT: 1 situation; IFT: EFFECT(prone)]")), "an Initiative has no other party");
+  must(/SPEED has no other party/.test(bonusError("[EFFECT SPEED: 1 situation; IFT: EFFECT(prone)]")), "nor has a Move");
+  same(bonusRule("[EFFECT INIT: 1 situation; IF: EFFECT(Blessed)]").has[0].on, "self", "an Effect of your own on an INIT line is fine");
+  must(/does not read IFT: EFFECT\(Prone\) beside IF: CLAIM/.test(bonusError("[EFFECT ATK: 1 situation; IF: CLAIM(when flanking); IFT: EFFECT(prone)]")), "a claim is asked before the other party is known");
+  same(bonusRule("[EFFECT ATK: 1 situation; IF: CLAIM(when flanking); IF: EFFECT(Blessed)]").has[0].on, "self", "a claim beside an Effect of your own is fine");
+
+  // The stored rule: `has` rides only when the line asks for one.
+  const prone = bonusRule("[EFFECT ATK: 1 situation; IFT: EFFECT(prone)]");
+  const cover = bonusRule("[EFFECT DEF: 2 situation; IF: EFFECT(Taking Cover)]");
+  same(prone.has, [{ name: "Prone", slug: "prone", condition: "prone", on: "other" }], "copied onto the bonus rule");
+  must(!("has" in bonusRule("[EFFECT ATK: 1 situation]")), "a rule that asks for none is stored exactly as before");
+  same([summarize(prone), summarize(cover), summarize(bonusRule("[EFFECT DEF: 1 situation; IF: EFFECT(prone)]")), summarize(bonusRule("[EFFECT ATK: 1 situation; IFT: EFFECT(Marked)]"))],
+    ["+1 Situation bonus to Attacks, against a creature that is Prone", "+2 Situation bonus to Defenses, while you have Taking Cover", "+1 Situation bonus to Defenses, while you are Prone", "+1 Situation bonus to Attacks, against a creature with Marked"], "As read");
+  same(bonusRule("[EFFECT DEF: 1 situation; FOR: self; IF: EFFECT(prone)]").has.length, 1, "a FOR that names the owner alone is fine");
+
+  // Refused beside a FOR that reaches others, an aura's ring included, and by every other kind.
+  must(/beside a FOR that reaches others/.test(bonusError("[EFFECT DEF: 1 situation; FOR: allies 15; IF: EFFECT(prone)]")), "a FOR that reaches others");
+  const ring = parseAutomation("[AURA 15 allies; DEF: 1 situation; IFT: EFFECT(prone)]", { resolve, itemType: "talent" });
+  must(ring.errors.length === 1 && /beside a FOR that reaches others/.test(ring.errors[0].message), "and so an `[AURA ...]` block");
+  const onRow = cell => parseAutomation(cell, { resolve, itemType: "effect" }).errors[0]?.message ?? "";
+  for (const [cell, tag] of [["IMMUNE: prone", "IMMUNE"], ["USE: Presence, Origin, aid", "USE"], ["REROLL: diplomacy; IF: RESULT(critical failure)", "REROLL"], ["MARK: enemies", "MARK"], ["IGNORE: terrain", "IGNORE"]]) {
+    must(onRow(`${cell}; IF: EFFECT(Blessed)`) === `${tag} does not take EFFECT(<name>)`, `${tag} refuses it after IF`);
+    must(onRow(`${cell}; IFT: EFFECT(prone)`) === `${tag} does not take EFFECT(<name>)`, `${tag} refuses it after IFT`);
+  }
+  // (GIVE, PERMIT, ALTER and SUBORDINATE are asserted beside their `used` refusals, further down.)
+
+  // What the helpers say of a rule.
+  same([needsMoment(cover), needsMoment(prone), readsOtherEffects(cover), readsOtherEffects(prone), readsOtherEffects({})], [false, true, false, true, false], "an Effect on the roller is the sheet's; one on the other party needs the moment");
+  same([effectConditions({}), effectConditions({ has: null }), effectConditions({ has: "prone" }), effectConditions({ has: [{ slug: "prone" }] }), effectConditions({ has: [{ slug: "prone", on: "self" }] }).length], [[], [], null, null, 1], "none; and a hand-stored value that is no list of entries is not one");
+  const lists = (self, other) => ({ self: self ? effectList(self) : null, other: other ? effectList(other) : null });
+  same([effectHolds({}, lists(null, null)), effectHolds(cover, lists({ effects: [{ name: "Taking Cover" }] }, null)), effectHolds(cover, lists({ effects: [] }, null)), effectHolds(cover, lists(null, { effects: [{ name: "Taking Cover" }] }))],
+    [true, true, false, false], "a rule that asks for none holds; the roller has it; has not; it is on the wrong side");
+  same([effectHolds(prone, lists({}, { statuses: ["prone"] })), effectHolds(prone, lists({ statuses: ["prone"] }, { statuses: [] })), effectHolds(prone, lists({}, null)), effectHolds({ has: "prone" }, lists({ statuses: ["prone"] }, { statuses: ["prone"] }))],
+    [true, false, false, false], "the other party is Prone; only the roller is; nobody known; a malformed rule never holds");
+});
+
+check("0.31.0: a bonus waits on an Effect: the sheet reads the roller's, the roll reads the other party's (rulings 307 and 308)", () => {
+  const talent = talentWith("Opportunist", [
+    "[EFFECT ATK: 1 situation; IFT: EFFECT(prone)]",
+    "[EFFECT DEF: 2 situation, guard; IF: EFFECT(Taking Cover)]",
+    "[EFFECT CHECK: 1 situation, intimidation; IFT: EFFECT(frightened)]",
+    "[EFFECT ATK: 3 situation; IF: EFFECT(Blessed); IFT: EFFECT(Marked)]"
+  ].join("\n"));
+  const actor = rulesActor([talent]);
+  actor.statuses = new Set();
+  actor.effects = [];
+  const creature = (statuses = [], effects = [], extra = {}) => ({ actor: { statuses: new Set(statuses), effects: effects.map(name => ({ name })) }, uuid: "Actor.bandit", tokenUuid: "Scene.s.Token.b", name: "Bandit", ...extra });
+  const values = (context) => ruleModifiers(actor, context).applied.map(m => [m.label, m.value]);
+
+  // IFT: the other party's list, where there is one.
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature(["prone"]) }), [["Opportunist", 1]], "an attack at a Prone creature");
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature([]) }), [], "not at a standing one");
+  same(values({ kind: "attack", slug: "melee", item: null, other: null }), [], "the blind die knows nobody");
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature(["prone"]), pairingOnly: true }), [["Opportunist", 1]], "the pairing reads it, as it reads MARKED");
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature([]), pairingOnly: true }), [], "and not against a standing defender");
+  same(values({ kind: "attack", slug: "melee", item: null, other: { actor: null, uuid: null, tokenUuid: "Scene.s.Token.b", name: "Bandit" } }), [], "a token with no Actor known has no list");
+  // Ruling 308: a check read against a target's Threshold has that creature as its other party.
+  same(values({ kind: "check", slug: "intimidation", item: null, other: creature(["frightened"]) }), [["Opportunist", 1]], "a check against a Frightened creature");
+  same(values({ kind: "check", slug: "intimidation", item: null, other: creature(["prone"]) }), [], "not against one that is merely Prone");
+
+  // IF: the roller's own list, which the sheet knows.
+  const guard = { kind: "defense", slug: "guard", item: null };
+  same(values({ ...guard, staticOnly: true }), [], "no Effect, no bonus in the sheet's Threshold");
+  actor.effects = [{ name: "Taking Cover" }];
+  same(values({ ...guard, staticOnly: true }), [["Opportunist", 2]], "the Effect is on: the sheet's Threshold has it");
+  same(values({ ...guard, momentOnly: true, other: creature([]) }), [], "and the roll does not count it a second time");
+  actor.effects = [{ name: "Taking Cover", disabled: true }];
+  same(values({ ...guard, staticOnly: true }), [], "a disabled effect is not on");
+  actor.effects = [];
+  actor.system.effects = [{ label: "Taking Cover" }];
+  same(values({ ...guard, staticOnly: true }), [["Opportunist", 2]], "a custom effect row of that label counts");
+  actor.system.effects = [];
+  same(ruleModifiers(actor, { kind: "attack", slug: "melee", item: null, other: creature(["prone"]), staticOnly: true }).applied, [], "the sheet's pass never reads the other party");
+
+  // Both on one line: each side must hold.
+  actor.effects = [{ name: "Blessed" }];
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature([], ["Marked"]) }), [["Opportunist", 3]], "you are Blessed and it is Marked");
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature([], []) }), [], "it is not Marked");
+  actor.effects = [];
+  same(values({ kind: "attack", slug: "melee", item: null, other: creature([], ["Marked"]) }), [], "you are not Blessed");
+
+  // A rule stored by hand with something that is no list under `has` is left out, never applied always.
+  const broken = { type: "talent", name: "Broken", system: { rules: [{ kind: "bonus", line: 1, text: "", value: 5, type: "situation", to: { name: "Attacks", slug: "attacks", type: "scope" }, has: "prone" }] } };
+  const other = rulesActor([broken]);
+  same(ruleModifiers(other, { kind: "attack", slug: "melee", item: null, other: creature(["prone"]) }).applied, [], "a malformed `has` never holds");
+
+  // The review of 0.31.0, a defect since 0.13.0: an `INIT` line on the DEFAULT Initiative, which
+  // is rolled with a Defense Constellation (Awareness) and so asked with `momentOnly`. A bonus to
+  // Initiative is to no Defense, so the sheet's Defense pass never folded it in either.
+  const quick = talentWith("Quick", "[EFFECT INIT: 1 situation]\n[EFFECT INIT: 2 situation; IF: EFFECT(Blessed)]\n[EFFECT DEF: 1 situation, awareness]");
+  const runner = rulesActor([quick]);
+  runner.statuses = new Set();
+  runner.effects = [];
+  const got = context => ruleModifiers(runner, context).applied.map(m => m.value);
+  same(got({ kind: "initiative", slug: "awareness", item: null, momentOnly: true }), [1], "an INIT line reaches an Initiative rolled with Awareness; the Defense's own bonus was the sheet's already");
+  same(got({ kind: "initiative", slug: "stealth", item: null }), [1], "as it always reached one rolled with a Skill");
+  runner.effects = [{ name: "Blessed" }];
+  same(got({ kind: "initiative", slug: "awareness", item: null, momentOnly: true }), [1, 2], "and one that waits on an Effect of your own");
+  same(got({ kind: "defense", slug: "awareness", item: null, momentOnly: true }), [], "never on the Defense itself: a Threshold read and a Defense roll are no Initiative");
+  same(got({ kind: "defense", slug: "awareness", item: null, staticOnly: true }), [1], "where the sheet's pass has the Defense's own bonus and no INIT line");
+
+  // The pairing is resolved with the die's own modifiers, as the one roll they are (the review;
+  // ruling 125: one circumstance is counted once). `SwCheck.resolveAgainst` adds the difference.
+  const die = [{ label: "Might", value: 2 }, { label: "Opportunist", value: 1, type: "situation", source: "rule:Opportunist:attacks" }];
+  const pairing = [{ label: "Opportunist", value: 2, type: "situation", source: "rule:Opportunist:attacks" }];
+  same([resolveModifiers(die).total, resolveModifiers([...die, ...pairing]).total - resolveModifiers(die).total, resolveModifiers(pairing).total], [3, 1, 2],
+    "a Talent's +1 on the die and its +2 against a Prone defender are +2 in all, so the pairing adds 1 and not 2");
+  const stranger = [{ label: "Oathbound", value: 1, type: "condition", source: "rule:Oathbound:attacks" }];
+  same(resolveModifiers([...die, ...stranger]).total - resolveModifiers(die).total, 1, "another Talent's line at the pairing adds its whole worth");
+});
+
 check("bonus: Speed is a scope read with kind move, and Iron Etiquette's IFT: CHECK(intimidation)", () => {
   const river = talentWith("Riverfoot", "[EFFECT SPEED: 1 situation; LIMIT: encounter]", { resolve });
   const actor = rulesActor([river]);
@@ -2316,6 +2448,27 @@ check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of 
   same(mixed.map(r => [r.kind, r.text, r.line]), [["trait", "[TRAIT Human]", 1], ["bonus", "[EFFECT CHECK: 1 condition, aid]", 1], ["aura", "[AURA 15 allies]", 1], ["prevent", "[EFFECT IMMUNE: prone]", 1]], "four blocks, four rules, each under its own text");
   const partly = parseAutomation("[TRAIT Human][EFFECT CHECK: 0 condition, aid][SIZE Medium]", { resolve });
   same([partly.rules.map(r => r.kind), partly.errors.map(e => [e.text, e.message])], [["trait", "size"], [["[EFFECT CHECK: 0 condition, aid]", "a bonus of 0 does nothing"]]], "a bad block fails alone; its neighbours still parse");
+});
+
+check("0.30.0: [REACH N] sets Natural Reach and [REACH +N] adjusts it (ruling 301)", () => {
+  same(bare(cellRules("[REACH 2]")[0]), { feet: 2, mode: "set", kind: "reach", line: 1 }, "an Ancestry's Natural Reach");
+  same(bare(cellRules("[REACH 0]")[0]), { feet: 0, mode: "set", kind: "reach", line: 1 }, "a Tiny creature's reach is 0, and a set of 0 says so");
+  same(bare(cellRules("[REACH 3 ft]")[0]).feet, 3, "feet may be written");
+  same([bare(cellRules("[REACH +1]")[0]), bare(cellRules("[REACH -1]")[0])].map(r => [r.feet, r.mode]), [[1, "add"], [-1, "add"]], "an adjustment, either way");
+  same(cellRules("[TRAIT Human][SIZE Medium][REACH 2][SPEED 6]").map(r => r.kind), ["trait", "size", "reach", "speed"], "beside the other chassis blocks");
+  const refused = text => parseAutomation(text, { resolve, itemName: "test", itemType: "talent" }).errors[0]?.message ?? "";
+  must(/an adjustment of 0 does nothing/.test(refused("[REACH +0]")), "an adjustment of 0 is refused");
+  must(/REACH is written `\[REACH 2\]`/.test(refused("[REACH long]")), "a word is told the shape");
+  must(/REACH is written `\[REACH 2\] or \[REACH \+1\]`/.test(refused("[REACH]")), "an empty block is told the shape");
+  must(/REACH is a block of its own, not an effect/.test(refused("[EFFECT REACH: 2]")), "wrapped in EFFECT it is told its own block");
+  const summary = text => summarize(cellRules(text)[0]);
+  same([summary("[REACH 2]"), summary("[REACH +1]"), summary("[REACH -1]")], ["Natural Reach 2 ft", "Natural Reach +1 ft", "Natural Reach -1 ft"], "As read");
+  // The arithmetic the character's data model uses (config/sizes.mjs).
+  same([naturalReach("medium"), naturalReach("small"), naturalReach("tiny"), naturalReach("large"), naturalReach("nonsense")], [2, 1, 0, 4, 2], "with no block, the Size's own");
+  same([naturalReach("medium", { set: 3 }), naturalReach("small", { set: 2 }), naturalReach("large", { set: 0 })], [3, 2, 0], "a set stands over the Size, 0 included");
+  same([naturalReach("medium", { add: 1 }), naturalReach("medium", { set: 3, add: 1 }), naturalReach("small", { set: null, add: -1 })], [3, 4, 0], "an adjustment adds to either");
+  same(naturalReach("tiny", { add: -2 }), 0, "never below 0");
+  same([naturalReach("medium", {}), naturalReach("medium", { set: undefined, add: undefined })], [2, 2], "nothing said is nothing changed");
 });
 
 check("0.16.0: feature lines, one rule per block", () => {
@@ -3535,24 +3688,26 @@ check("subordinate: the refusals, each by its message", () => {
   must((ridden.errors.length === 1) && ridden.rules.every(r => r.kind !== "subordinate"), `it cannot ride an aura's ring: ${ridden.errors.map(e => e.message).join("; ")}`);
 });
 
-check("EFFECT(<name>, used) is read under its own key by SUBORDINATE alone; the forms of step two and every other kind say so", () => {
+check("EFFECT(<name>, used) is read under its own key by SUBORDINATE alone, and every other kind says so", () => {
   const ops = readEffectLine("SUBORDINATE: Aid; IF: EFFECT(Aid, used)", { context: { resolve } }).ops;
-  same([ops.used, ops.when], [{ name: "Aid", slug: "aid" }, null], "its own key, never a rank condition");
-  const later = "it comes with the named Effects a Maneuver can give a target";
-  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid)]") === `EFFECT(Aid), an Effect you hold now, is not read yet: ${later}. Write \`EFFECT(Aid, used)\` for a roll of yours that has just used it up`, "the plain form is step two");
-  must(subError("[EFFECT SUBORDINATE: Aid; IFT: EFFECT(Aid, used)]") === `IFT: EFFECT(...), an Effect on the other party, is not read yet: ${later}. What is read is \`IF: EFFECT(Aid, used)\``, "an Effect on the other party is step two");
-  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, spent)]") === '"spent": the one state read is `used`, as in `EFFECT(Aid, used)`', "another state");
+  same([ops.used, ops.when, ops.has], [{ name: "Aid", slug: "aid" }, null, null], "its own key, never a rank condition, never the plain form's");
+  // Since 0.31.0 the plain form reads (it is the Effect a creature HAS), so SUBORDINATE refuses
+  // it as a component it has no use for, by name.
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid)]") === "SUBORDINATE does not take EFFECT(<name>)", "the plain form is another condition, which SUBORDINATE does not take");
+  must(subError("[EFFECT SUBORDINATE: Aid; IFT: EFFECT(Aid, used)]") === "IFT: EFFECT(Aid, used) is not read: a used Effect is your own roll's, so it is written `IF: EFFECT(Aid, used)`", "a used Effect is never the other party's");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, spent)]") === '"spent": the one state read is `used`, as in `EFFECT(Aid, used)`; an Effect a creature has now is written `EFFECT(Aid)`', "another state");
+  const shape = "EFFECT is written `EFFECT(<name>)` or `EFFECT(<name>, used)`, as in `IF: EFFECT(Taking Cover)`, `IFT: EFFECT(prone)` or `IF: EFFECT(Aid, used)`";
   for (const [inside, why] of [["EFFECT", "bare"], ["EFFECT()", "empty"], ["EFFECT(Aid, used, twice)", "three parts"], ["EFFECT(, used)", "no name"]]) {
-    must(subError(`[EFFECT SUBORDINATE: Aid; IF: ${inside}]`) === "EFFECT is written `EFFECT(<name>, used)`, as in `IF: EFFECT(Aid, used)`", `${why}: "${inside}"`);
+    must(subError(`[EFFECT SUBORDINATE: Aid; IF: ${inside}]`) === shape, `${why}: "${inside}"`);
   }
   must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aidd, used)]") === '"Aidd" names no Maneuver: a used Effect is named for the Maneuver that gave it, as in `IF: EFFECT(Aid, used)`', "an unknown name");
   must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Stealth, used)]") === '"Stealth" is a Constellation: a used Effect is named for the Maneuver that gave it, as in `IF: EFFECT(Aid, used)`', "a Constellation");
-  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); IF: EFFECT(Search, used)]") === "EFFECT is given twice", "twice");
+  must(subError("[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); IF: EFFECT(Search, used)]") === "EFFECT(..., used) is given twice", "twice");
   // Every other kind refuses it by name: under its own key it can never hold by accident as a
   // rank condition would for an Untrained owner.
   const onRow = cell => parseAutomation(cell, { resolve, itemType: "effect" }).errors[0]?.message ?? "";
   for (const [cell, tag] of [["CHECK: 1 condition, aid", "CHECK"], ["DEF: 1 situation, guard", "DEF"]]) {
-    must(onRow(`${cell}; IF: EFFECT(Aid, used)`) === `${tag} does not read IF: EFFECT(...) yet: a bonus that depends on a named Effect comes with the named Effects a Maneuver can give a target`, `${tag}: a bonus line is told when`);
+    must(onRow(`${cell}; IF: EFFECT(Aid, used)`) === `${tag} does not take IF: EFFECT(Aid, used): a used Effect is what a SUBORDINATE line waits for. For an Effect you have now, write \`IF: EFFECT(Aid)\``, `${tag}: a bonus line is told the form it reads`);
   }
   for (const [cell, tag] of [["IMMUNE: prone", "IMMUNE"], ["USE: Presence, Origin, aid", "USE"], ["REROLL: diplomacy; IF: RESULT(critical failure)", "REROLL"], ["MARK: enemies", "MARK"], ["IGNORE: terrain", "IGNORE"]]) {
     must(onRow(`${cell}; IF: EFFECT(Aid, used)`) === `${tag} does not take IF: EFFECT(...)`, `${tag} refuses it`);
@@ -3560,6 +3715,10 @@ check("EFFECT(<name>, used) is read under its own key by SUBORDINATE alone; the 
   must(giveError("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); IF: EFFECT(Aid, used)]") === "GIVE does not take IF: EFFECT(...)", "GIVE");
   must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IF: EFFECT(Aid, used)]") === "PERMIT does not take IF: EFFECT(...)", "PERMIT");
   must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; IF: EFFECT(Aid, used)]") === "ALTER does not take IF: EFFECT(...)", "ALTER");
+  // 0.31.0: and the plain form, which a bonus line alone reads.
+  must(giveError("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); IF: EFFECT(Blessed)]") === "GIVE does not take EFFECT(<name>)", "GIVE refuses the plain form");
+  must(permitError("[EFFECT PERMIT: move; FOR: allies 0; IFT: EFFECT(prone)]") === "PERMIT does not take EFFECT(<name>)", "PERMIT refuses it");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; IF: EFFECT(Blessed)]") === "ALTER does not take EFFECT(<name>)", "ALTER refuses it");
 });
 
 check("the used Effect: what leaves one, and that it is held only for the Opportunity it was left in (ruling 247)", () => {
@@ -3860,6 +4019,137 @@ check("requires: sight alone, and a weapon loaded or to reload (0.29.0)", () => 
     [true, false, true, false, false, false], "a foe in reach; out of reach with only fists; out of reach with a loaded bow; with an empty bow; nobody in sight; Restrained");
 });
 
+check("0.31.0: the Effects list is a creature's Conditions and every other active effect by name (ruling 305)", () => {
+  const list = effectList({
+    statuses: ["prone", "fatigued", "bound"],
+    conditionValue: id => (id === "fatigued" ? 2 : 1),
+    effects: [
+      { name: "Blessed" }, { name: "Taking  Cover" }, { name: "Cursed", disabled: true }, { name: "Dormant", suppressed: true },
+      { name: "Fatigued 2", statuses: ["fatigued"] }, { name: "Bind: Bandit's sword", statuses: ["bound"] },
+      { name: "Net", statuses: ["prone", "restrained"] }, { name: "Prone" }, { name: "" },
+      { name: "Shaken", applied: { by: "Actor.a", slug: "shaken" } }
+    ],
+    rows: [{ label: "Rage" }, { label: "Blessed" }, { label: "" }]
+  });
+  same([...list.conditions], [["prone", 1], ["fatigued", 2], ["bound", 1]], "Conditions are the statuses, each with its value");
+  same([...effectList({ statuses: ["prone"] }).conditions], [["prone", 1]], "with no reader of values every Condition counts 1 (an option named `valueOf` would have found Object's own)");
+  same([...list.names.keys()], ["blessed", "taking-cover", "net", "shaken", "rage"], "names: every other active effect by its slug, then the custom rows; a disabled or suppressed one, a Condition's own effect and an effect merely called Prone give none");
+  same([list.names.get("shaken").applied, list.names.get("blessed").applied, list.names.get("rage").row], [{ by: "Actor.a", slug: "shaken" }, null, true], "an applied Effect keeps its record; a row says it is one; the first of a name stands");
+  same([effectSlug("Taking Cover"), effectSlug("  taking   cover "), effectSlug("Hunter's Mark"), effectSlug("")], ["taking-cover", "taking-cover", "hunter-s-mark", ""], "the slug a name is matched by");
+  same([conditionTitle("prone"), conditionTitle("offGuard"), conditionTitle("wrongFooted")], ["Prone", "Off-Guard", "Wrong-Footed"], "a Condition's printed name");
+
+  // A name as a cell writes it: a Condition first, else a named Effect.
+  same(readEffectName("Prone"), { name: "Prone", slug: "prone", condition: "prone" }, "a Condition by its name");
+  same([readEffectName("off guard").condition, readEffectName("Off-Guard").condition, readEffectName("offGuard").condition], ["offGuard", "offGuard", "offGuard"], "however it is spaced");
+  same(readEffectName(" Taking  Cover "), { name: "Taking Cover", slug: "taking-cover", condition: null }, "anything else is a named Effect, in its own casing");
+  const refused = name => { try { readEffectName(name); return ""; } catch (error) { return error.message; } };
+  must(/Exposed Zone/.test(refused("exposed head")) && /Exposed Zone/.test(refused("Exposed")), "an Exposed Zone is the Zone's own");
+  must(["or", "and", "self", "target", "mine", "used", "with", "NA", "n/a", "None", "-", "--"].every(w => /cannot be an Effect's name/.test(refused(w))), "a word that means something else is no name");
+  // The review of 0.31.0: `not` is never part of a name, a Condition's value is not compared, and
+  // an Exposed Zone is refused however it is spaced.
+  must(["not", "not Blessed", "Not prone"].every(w => /`not` goes in front of the whole condition/.test(refused(w))), "`not` begins no name: it would read as an Effect nobody has");
+  must(/a Condition's value is not compared yet; write `fatigued`/.test(refused("Fatigued 2")) && /write `frightened`/.test(refused("frightened 3")), "a Condition with a number is told the value is not compared");
+  same(refused("Cover 2"), "", "a number after a name that is no Condition is part of the name");
+  must(["exposedHead", "Exposed-Head", "exposed  torso"].every(w => /Exposed Zone/.test(refused(w))), "an Exposed Zone, however it is spaced");
+  must(/joins conditions/.test(refused("Rock or Roll")) && /joins conditions/.test(refused("Salt and Pepper")), "nor is a name that holds `or` or `and` as a word");
+  must(/letters, digits, spaces, hyphens and apostrophes/.test(refused("A, B")) && /letters, digits/.test(refused("Cover (Greater)")) && /letters, digits/.test(refused("-Cover")), "a name is letters, digits, spaces, hyphens and apostrophes");
+  must(/has a name/.test(refused("")) && /has a name/.test(refused("   ")), "and it is never empty");
+  same([refused("Hunter's Mark"), refused("Half-Cover 2")], ["", ""], "an apostrophe, a hyphen and a digit are fine");
+
+  // Reading a list.
+  same([listHas(list, readEffectName("blessed")), listHas(list, readEffectName("Cursed")), listHas(list, readEffectName("prone")), listHas(list, readEffectName("grabbed")), listHas(null, readEffectName("prone")), listHas(list, null)],
+    [true, false, true, false, null, null], "a name on the list; one that is not; a Condition on it and off it; no list, and no name, cannot be told");
+  same(namedEffects(list).map(e => e.name), ["Blessed", "Net", "Rage", "Shaken", "Taking Cover"], "for a screen: the names in order, their spacing tidied");
+  same(namedEffects(null), [], "no list, no names");
+
+  // One reading for the list and the sheet's tag (the review of 0.31.0): only a name a line could
+  // write is on the list, so `EFFECT(Blessed)` never matches an effect its tag calls unreadable.
+  same([namedEffectOf("Blessed"), namedEffectOf("Taking  Cover ❶"), namedEffectOf("Blessed!"), namedEffectOf("Cover, Greater"), namedEffectOf("Blessed (2 rounds)"), namedEffectOf("Prone"), namedEffectOf("not Blessed"), namedEffectOf("")],
+    [{ name: "Blessed", slug: "blessed" }, { name: "Taking Cover", slug: "taking-cover" }, null, null, null, null, null, null], "a name a cell could write, glyphs out; punctuation, a Condition's name, `not` and nothing give none");
+  const odd = effectList({ effects: [{ name: "Blessed!" }, { name: "Cover, Greater" }, { name: "Hunter's Mark" }], rows: [{ label: "Rage (1/day)" }] });
+  same([...odd.names.keys()], ["hunter-s-mark"], "an effect named with punctuation is on no list");
+  same([listHas(odd, readEffectName("Blessed")), listHas(odd, readEffectName("Hunter's Mark"))], [false, true], "so a rule does not match it, and matches the one it can write");
+
+  // From an Actor: `appliedEffects` where it has one (an Item's transferred effect counts, a
+  // disabled one is gone already), else `effects`; the applied record from the flag.
+  const actor = {
+    statuses: new Set(["dying"]),
+    conditionValue: id => (id === "dying" ? 3 : 0),
+    appliedEffects: [{ name: "Blessed", flags: { starwrought: { applied: { by: "Actor.b" } } } }, { name: "Dying 3", statuses: new Set(["dying"]) }],
+    effects: [{ name: "Never read" }],
+    system: { effects: [{ label: "Rage" }] }
+  };
+  const mine = effectsOn(actor);
+  same([[...mine.conditions], [...mine.names.keys()], mine.names.get("blessed").applied], [[["dying", 3]], ["blessed", "rage"], { by: "Actor.b" }], "an Actor's list");
+  same([...effectsOn({ statuses: [], effects: [{ name: "Hexed" }, { name: "Asleep", disabled: true }, { name: "Held", isSuppressed: true }] }).names.keys()], ["hexed"], "with no `appliedEffects` the effects are read, less the disabled and the suppressed");
+  same(effectsOn(null), null, "no creature, no list");
+  same([...effectsOn({}).conditions, ...effectsOn({}).names], [], "a creature with nothing on it has an empty list, which is known");
+});
+
+check("0.31.0: REQUIRES reads a named Effect, a Bind's state, and what a nearby creature has (ruling 306)", () => {
+  const words = cell => requireWords(requiresRule(cell));
+  // effect <Name>
+  same(anyOf("[REQUIRES effect Taking Cover]"), [{ test: "effect", slug: "taking-cover", name: "Taking Cover" }], "a named Effect, in its own casing");
+  same([anyOf("[REQUIRES EFFECT taking cover]")[0].slug, anyOf("[REQUIRES effects Taking Cover]")[0].slug], ["taking-cover", "taking-cover"], "the word in any case, and its plural");
+  same(anyOf("[REQUIRES not effect Taking Cover]"), [{ test: "effect", slug: "taking-cover", name: "Taking Cover", not: true }], "not");
+  same(anyOf("[REQUIRES effect prone]"), [{ test: "condition", id: "prone" }], "a Condition's name is reserved: `effect prone` is the Condition");
+  same(anyOf("[REQUIRES effect Blessed or prone]"), [{ test: "effect", slug: "blessed", name: "Blessed" }, { test: "condition", id: "prone" }], "beside another alternative");
+  same([words("[REQUIRES effect Taking Cover]"), words("[REQUIRES not effect Taking Cover]")], ["Taking Cover", "not Taking Cover"], "said in English");
+  must(/name the Effect/.test(requiresError("[REQUIRES effect]")), "the word alone is told to name one");
+  must(/Exposed Zone/.test(requiresError("[REQUIRES effect exposed head]")), "an Exposed Zone is no Effect");
+  must(/is not something REQUIRES can check/.test(requiresError("[REQUIRES Taking Cover]")), "a bare name that is no Condition is still an error, so a typo shows");
+  must(/is not something REQUIRES can check/.test(requiresError("[REQUIRES prnoe]")), "and so is a mistyped Condition");
+  const having = (cell, effects) => checkCondition(anyOf(cell)[0], effects === undefined ? {} : { effects });
+  same([having("[REQUIRES effect Blessed]", ["blessed"]), having("[REQUIRES effect Blessed]", new Set(["blessed"])), having("[REQUIRES effect Blessed]", []), having("[REQUIRES effect Blessed]", undefined), having("[REQUIRES not effect Blessed]", []), having("[REQUIRES not effect Blessed]", undefined)],
+    [true, true, false, null, true, null], "held; not held; not known, and `not` of not known");
+
+  // bind, <state>
+  same(BIND_STATES, ["neutral", "controlling", "controlled"], "the three states");
+  same([anyOf("[REQUIRES bind, neutral]"), anyOf("[REQUIRES bind neutral]"), anyOf("[REQUIRES Bind,controlling]"), anyOf("[REQUIRES not bind, controlled]")],
+    [[{ test: "bind", state: "neutral" }], [{ test: "bind", state: "neutral" }], [{ test: "bind", state: "controlling" }], [{ test: "bind", state: "controlled", not: true }]], "Mike's `bind, neutral`, with the comma or without");
+  same(anyOf("[REQUIRES bind, controlling or bind, neutral]"), [{ test: "bind", state: "controlling" }, { test: "bind", state: "neutral" }], "two states in one block");
+  same(anyOf("[REQUIRES bind]"), [{ test: "bind" }], "`bind` alone is still any Bind");
+  must(/a Bind's state is neutral, controlling, controlled/.test(requiresError("[REQUIRES bind, prone]")), "a state that is none");
+  // The review of 0.31.0: the comma is read only where `bind` begins an alternative, and `not`
+  // is never swallowed into an Effect's name.
+  same(anyOf("[REQUIRES prone or not bind, controlled]"), [{ test: "condition", id: "prone" }, { test: "bind", state: "controlled", not: true }], "after `or` and after `not`");
+  must(/second block/.test(requiresError("[REQUIRES effect Spirit Bind, prone]")) && /second block/.test(requiresError("[REQUIRES effect Hold-bind, neutral]")), "an Effect whose name ends in bind keeps its comma's refusal");
+  must(/`not` goes in front of the whole condition/.test(requiresError("[REQUIRES effect not Blessed]")), "`effect not Blessed` is told where the `not` goes");
+  same(anyOf("[REQUIRES effect Hunter's Mark]")[0].slug, "hunter-s-mark", "an apostrophe in a name");
+  must(/a Condition's value is not compared yet/.test(requiresError("[REQUIRES effect Fatigued 2]")) && /a Condition's value is not compared yet/.test(requiresError("[REQUIRES creature adjacent with effect frightened 2]")), "a Condition's value is not compared, here either");
+  must(/second block/.test(requiresError("[REQUIRES prone, supine]")) && /second block/.test(requiresError("[REQUIRES bind, neutral, prone]")), "every other comma keeps its message");
+  same([words("[REQUIRES bind, neutral]"), words("[REQUIRES not bind, neutral]"), words("[REQUIRES bind, controlling]"), words("[REQUIRES bind, controlled]")],
+    ["in a neutral Bind", "not in a neutral Bind", "Controlling a weapon in a Bind", "Controlled in a Bind"], "said in English");
+  const bound = (cell, bind) => checkCondition(anyOf(cell)[0], bind === undefined ? {} : { bind });
+  same([bound("[REQUIRES bind, neutral]", "neutral"), bound("[REQUIRES bind, neutral]", "controlling"), bound("[REQUIRES bind, neutral]", null), bound("[REQUIRES bind, neutral]", undefined), bound("[REQUIRES not bind, controlled]", "neutral"), bound("[REQUIRES bind]", "controlled")],
+    [true, false, false, null, true, true], "the state asked for; another; no Bind; not known; not; any Bind");
+
+  // ... with <Condition> | effect <Name>
+  same(anyOf("[REQUIRES creature adjacent with dying]"), [{ test: "near", who: "any", range: 0, with: { condition: "dying" } }], "Stabilize: an adjacent creature that is Dying");
+  same(anyOf("[REQUIRES foe in reach with effect Marked]"), [{ test: "near", who: "enemy", range: "reach", with: { slug: "marked", name: "Marked" } }], "a foe in reach with a named Effect");
+  same([anyOf("[REQUIRES ally within 30 with off-guard]")[0], anyOf("[REQUIRES foe in sight with effect prone]")[0], anyOf("[REQUIRES foe within 30 ft with frightened]")[0]],
+    [{ test: "near", who: "ally", range: 30, with: { condition: "offGuard" } }, { test: "near", who: "enemy", range: "sight", with: { condition: "prone" } }, { test: "near", who: "enemy", range: 30, with: { condition: "frightened" } }], "after any distance; `within` is never read as `with`");
+  same(anyOf("[REQUIRES not foe adjacent with effect Dances with Wolves]"), [{ test: "near", who: "enemy", range: 0, with: { slug: "dances-with-wolves", name: "Dances with Wolves" }, not: true }], "a name that itself holds `with`");
+  must(/after `with` write a Condition/.test(requiresError("[REQUIRES creature adjacent with nonsense]")), "what follows `with` is a Condition or `effect <Name>`");
+  must(/say how near/.test(requiresError("[REQUIRES foe with prone]")), "and the distance is still asked for");
+  same([words("[REQUIRES creature adjacent with dying]"), words("[REQUIRES foe in reach with effect Marked]"), words("[REQUIRES not ally within 30 with prone]")],
+    ["an adjacent creature that is Dying", "a foe in reach with Marked", "no ally within 30 ft that is Prone"], "said in English");
+  const seen = (relation, gap, extra = {}) => ({ relation, gap, inReach: gap <= 3, ...extra });
+  const at = (cell, near) => checkCondition(anyOf(cell)[0], { near });
+  const stabilize = "[REQUIRES creature adjacent with dying]";
+  same([at(stabilize, [seen("ally", 0, { conditions: ["dying"], effects: [] })]), at(stabilize, [seen("ally", 0, { conditions: ["prone"], effects: [] })]), at(stabilize, [seen("ally", 20, { conditions: ["dying"], effects: [] })]), at(stabilize, []), at(stabilize, null)],
+    [true, false, false, false, null], "the adjacent creature is Dying; it is not; the Dying one is too far; nobody near; no token on the map");
+  same([at(stabilize, [seen("ally", 0)]), at(stabilize, [seen("ally", 0), seen("enemy", 0, { conditions: ["dying"], effects: [] })]), at("[REQUIRES not creature adjacent with dying]", [seen("ally", 0)])],
+    [null, true, null], "a creature whose Effects were not given cannot be told, and is no `no`; one that is known Dying settles it");
+  same([at("[REQUIRES foe in reach with effect Marked]", [seen("enemy", 2, { conditions: [], effects: ["marked"] })]), at("[REQUIRES foe in reach with effect Marked]", [seen("ally", 2, { conditions: [], effects: ["marked"] })]), at("[REQUIRES foe in reach with effect Marked]", [seen("enemy", 2, { conditions: [], effects: [] })])],
+    [true, false, false], "a named Effect on a foe; on an ally it is no foe's; a foe without it");
+  // A whole row: Stabilize's two blocks.
+  const row = parseAutomation("[REQUIRES creature adjacent with dying]\n[REQUIRES not effect Shaken]", onRowOf);
+  same([row.errors.length, row.rules.map(summarize)], [0, ["needs: an adjacent creature that is Dying", "needs: not Shaken"]], "the blocks read");
+  same([availability(row.rules, { effects: [], near: [seen("ally", 0, { conditions: ["dying"], effects: [] })] }).ok, availability(row.rules, { effects: ["shaken"], near: [seen("ally", 0, { conditions: ["dying"], effects: [] })] }).ok],
+    [true, false], "and hold or fail together");
+});
+
 check("loaded: what a ranged weapon holds, from its Reload and Capacity traits (rulings 290 to 292)", () => {
   const ammo = (traits, loaded) => ammunitionOf(parseWeaponTraits(splitTraits(traits)), loaded);
   // The book's ranged weapons, by their Trait lines.
@@ -3913,6 +4203,43 @@ check("in hand: the fist never stands in front of a weapon (ruling 294)", () => 
   // What Reload may load.
   same(reloadOptions([sword, bow, { id: "c", name: "Crossbow", held: true, takesAmmunition: true, full: true }, { id: "w", name: "Arbalest", held: false, takesAmmunition: true, full: false }, { id: "a", name: "Arbalest", held: true, takesAmmunition: true, full: false }]).map(id), ["a", "b"], "in hand, takes ammunition, not full; by name");
   same(reloadOptions(null), [], "nothing");
+});
+
+check("ammunition: which stacks feed a weapon, and what a Reload takes (rulings 298 and 299)", () => {
+  const arrows = { id: "a1", name: "Arrows", ammunition: "Bows", quantity: 3 };
+  const more = { id: "a2", name: "Arrows", ammunition: "bows ", quantity: 10 };
+  const silver = { id: "s1", name: "Silver Arrows", ammunition: "Bows", quantity: 2 };
+  const bolts = { id: "b1", name: "Bolts", ammunition: "Crossbows", quantity: 10 };
+  const spent = { id: "a0", name: "Arrows", ammunition: "Bows", quantity: 0 };
+  const rope = { id: "r", name: "Rope", ammunition: "", quantity: 1 };
+  const ids = list => list.map(s => s.id);
+  // By Weapon Group, case and outer spaces aside, the empty stacks included; in the order they
+  // are used: a stack In hand first, then by name, then as given.
+  same(ids(ammunitionFor("Bows", [rope, silver, spent, arrows, bolts, more])), ["a0", "a1", "a2", "s1"], "a bow's stacks, by name, as the sheet lists them");
+  same(ids(ammunitionFor("Bows", [arrows, { ...silver, held: true }, more])), ["s1", "a1", "a2"], "the kind taken In hand is used first: that is how a player chooses");
+  same(ids(ammunitionFor("crossbows", [arrows, bolts])), ["b1"], "a crossbow's");
+  same([ammunitionFor("Slings", [arrows, bolts]).length, ammunitionFor("", [arrows]).length, ammunitionFor("Bows", null).length], [0, 0, 0], "nothing feeds a Group nobody carries for, or a weapon with no Group");
+  // One piece for each shot loaded, each stack emptied before the next.
+  same(takeAmmunition([arrows, more], 1), {
+    takes: [{ id: "a1", name: "Arrows", from: 3, to: 2 }], used: 1, short: 0, left: 12, kind: "Arrows",
+    kinds: [{ name: "Arrows", used: 1, left: 12 }]
+  }, "a bow takes one, and the card says how many Arrows are left in all");
+  same(takeAmmunition([arrows, more], 5), {
+    takes: [{ id: "a1", name: "Arrows", from: 3, to: 0 }, { id: "a2", name: "Arrows", from: 10, to: 8 }], used: 5, short: 0, left: 8, kind: "Arrows",
+    kinds: [{ name: "Arrows", used: 5, left: 8 }]
+  }, "a repeater takes five, across two stacks of one kind");
+  same(takeAmmunition([arrows, silver], 4).kinds, [{ name: "Arrows", used: 3, left: 0 }, { name: "Silver Arrows", used: 1, left: 1 }], "a Reload that spans two kinds says each");
+  same(takeAmmunition([spent, arrows], 1).takes, [{ id: "a1", name: "Arrows", from: 3, to: 2 }], "an empty stack is passed over");
+  // Not enough: what there is is taken, and `short` is what the card says was missing.
+  same(takeAmmunition([arrows], 5), {
+    takes: [{ id: "a1", name: "Arrows", from: 3, to: 0 }], used: 3, short: 2, left: 0, kind: "Arrows",
+    kinds: [{ name: "Arrows", used: 3, left: 0 }]
+  }, "three of five");
+  same(takeAmmunition([spent], 1), { takes: [], used: 0, short: 1, left: 0, kind: "Arrows", kinds: [] }, "none left: the empty stack still names what was wanted");
+  same(takeAmmunition([], 1), { takes: [], used: 0, short: 1, left: 0, kind: "", kinds: [] }, "nothing carried at all");
+  same(takeAmmunition([arrows], 0), { takes: [], used: 0, short: 0, left: 3, kind: "Arrows", kinds: [] }, "a full weapon takes nothing");
+  same(takeAmmunition(null, 2).short, 2, "no list");
+  same([arrows.quantity, more.quantity], [3, 10], "the stacks given are not written: the caller writes `takes`");
 });
 
 check("in hand: who already has a natural weapon, so nobody is given a second Unarmed Strike (ruling 294)", () => {

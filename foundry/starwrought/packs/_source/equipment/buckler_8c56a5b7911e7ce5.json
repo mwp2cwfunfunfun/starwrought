@@ -1,0 +1,33 @@
+{
+  "_id": "8c56a5b7911e7ce5",
+  "name": "Buckler",
+  "type": "shield",
+  "img": "icons/svg/shield.svg",
+  "system": {
+    "bonus": 1,
+    "hardness": 3,
+    "load": 0,
+    "cover": false,
+    "price": "1 gp",
+    "quantity": 1,
+    "state": "carried",
+    "traits": [],
+    "description": "",
+    "source": "data/equipment.xlsx"
+  },
+  "folder": "d39fe6c898bb12d2",
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "starwrought": {
+      "contentHash": "e87decafa1e08536"
+    }
+  },
+  "effects": [],
+  "_stats": {
+    "systemId": "starwrought"
+  },
+  "_key": "!items!8c56a5b7911e7ce5"
+}

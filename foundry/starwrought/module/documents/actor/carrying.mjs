@@ -6,8 +6,9 @@
 
 import * as SW from "../../config.mjs";
 import { setting } from "../../helpers/settings.mjs";
-// What Reload may load (0.29.0), pure: the weapons in hand that take ammunition and are not full.
-import { reloadOptions } from "../../data/items/weapon-traits.mjs";
+// What Reload may load (0.29.0), pure: the weapons in hand that take ammunition and are not full;
+// and what it takes from the pack to load them (0.30.0).
+import { reloadOptions, ammunitionFor, takeAmmunition } from "../../data/items/weapon-traits.mjs";
 
 /** @param {typeof Actor} Base */
 export const CarryingMixin = Base => class extends Base {
@@ -143,10 +144,28 @@ export const CarryingMixin = Base => class extends Base {
       }
     }
     if (prepared) lines.push(L("STARWROUGHT.Cost.preparedPaid"));
-    const shots = await this.loadWeapon(weapon);
+    const loaded = await this.loadWeapon(weapon);
     lines.push((weapon.system.magazine > 1)
-      ? F("STARWROUGHT.Reload.loadedCount", { name: this.name, weapon: weapon.name, n: shots, max: weapon.system.magazine })
+      ? F("STARWROUGHT.Reload.loadedCount", { name: this.name, weapon: weapon.name, n: loaded.shots, max: weapon.system.magazine })
       : F("STARWROUGHT.Reload.loaded", { name: this.name, weapon: weapon.name }));
+    // AMMUNITION (0.30.0, rulings 298 and 299): what the Reload took from the pack, and what it
+    // could not find. With none left the weapon is loaded all the same (Mike: "Warn and go on"),
+    // and the card and a notice say so.
+    if (loaded.counted) {
+      // One line for each kind taken from (a Reload may span two: the last Arrows, then Silver ones).
+      for (const kind of loaded.kinds ?? []) {
+        lines.push(F("STARWROUGHT.Ammunition.used", { kind: kind.name, n: kind.used, left: kind.left }));
+      }
+      if (loaded.short) {
+        // Some were found; an empty stack names what ran out; else nothing is carried for it.
+        lines.push(loaded.used
+          ? F("STARWROUGHT.Ammunition.shortSome", { kind: loaded.kind, short: loaded.short })
+          : (loaded.kind
+            ? F("STARWROUGHT.Ammunition.shortKind", { kind: loaded.kind, weapon: weapon.name })
+            : F("STARWROUGHT.Ammunition.shortAll", { weapon: weapon.name, group: loaded.group })));
+        ui.notifications.warn(F("STARWROUGHT.Ammunition.shortNotice", { name: this.name, weapon: weapon.name }));
+      }
+    }
     if (item && (typeof item.toMessage === "function")) return item.toMessage({ actor: this, lines });
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
@@ -156,16 +175,32 @@ export const CarryingMixin = Base => class extends Base {
   }
 
   /**
-   * THE ONE PLACE A WEAPON IS LOADED (0.29.0): fill it to its magazine. Counting ammunition is the
-   * next step Mike asked for (arrows and bolts as counted gear), and this is where a Reload will
-   * take it from the pack and stop short when there is not enough.
+   * THE ONE PLACE A WEAPON IS LOADED (0.29.0), and so the one place AMMUNITION IS TAKEN (0.30.0;
+   * Mike, by question: "Count ammunition too"; rulings 298 and 299). The weapon is filled to its
+   * magazine, and one piece of ammunition leaves the pack for each shot that adds: from the gear
+   * the character carries whose `ammunition` names the weapon's Weapon Group (Arrows for a bow),
+   * wherever it is carried, each stack emptied before the next. With not enough the weapon is
+   * loaded all the same and `short` says how many were missing: the caller says so, and the table
+   * decides whether it stands. A weapon with no Weapon Group is fed by nothing, so nothing is
+   * counted for it. Ammunition is taken HERE and nowhere else: never by a Strike, the chip's
+   * correction or a cancelled attack's returned shot.
    * @param {Item} weapon  A weapon that takes ammunition.
-   * @returns {Promise<number>}  The shots now in it.
+   * @returns {Promise<{shots: number, counted: boolean, used: number, short: number, left: number,
+   *                    kind: string, group: string}>}
    */
   async loadWeapon(weapon) {
     const magazine = Math.max(1, Number(weapon?.system?.magazine) || 1);
+    const group = String(weapon?.system?.group ?? "").trim();
+    const need = Math.max(0, magazine - (Number(weapon?.system?.shots) || 0));
+    const stacks = ammunitionFor(group, this.items.filter(i => i.type === "gear").map(i => ({
+      id: i.id, name: i.name, ammunition: i.system.ammunition, quantity: i.system.quantity, held: !!i.system.held
+    })));
+    const plan = takeAmmunition(stacks, need);
     // swAnnounced: the Reload card says it; the audit speaks only of a count corrected by hand.
+    if (plan.takes.length) {
+      await this.updateEmbeddedDocuments("Item", plan.takes.map(take => ({ _id: take.id, "system.quantity": take.to })), { swAnnounced: true });
+    }
     await weapon.update({ "system.loaded": magazine }, { swAnnounced: true });
-    return magazine;
+    return { shots: magazine, counted: !!group, used: plan.used, short: group ? plan.short : 0, left: plan.left, kind: plan.kind, kinds: plan.kinds, group };
   }
 };

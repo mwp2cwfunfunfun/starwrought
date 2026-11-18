@@ -1494,7 +1494,8 @@ export class AttackCoordinator {
 
   /**
    * The attacker's rules about one defender (0.15.0, ruling 175): asked with `pairingOnly`, so
-   * only a rule that needs the other party (`MARKED`) answers; the blind die carried the rest. A
+   * only a rule that needs the other party (`MARKED`, and since 0.31.0 `IFT: EFFECT(...)`, which
+   * reads this defender's own Effects off `other.actor`) answers; the blind die carried the rest. A
    * character's rules only: an adversary rolls flat. The Item and the slug are the attack's, as
    * `resolveArgs` reads them, so a `bonus ... Attacks, MARKED` and a Constellation-targeted one
    * both match as they would on the die.

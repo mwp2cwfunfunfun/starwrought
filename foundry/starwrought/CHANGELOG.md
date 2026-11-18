@@ -7,6 +7,451 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.31.0 (2026-11-17): Effects are read by name
+
+Built from **Player's Handbook v4.25**, which did not move. Rulings 305 to 310. No kind, tag or
+hook point is new: the grammar gains one condition, `EFFECT(<name>)`, and `[REQUIRES ...]` three
+forms, and `AUTOMATION_GRAMMAR.md` carries them (sections 0, 3, 4, 5, 7, 8 and 10). None of the
+four workbooks Mike is editing was converted, built, staged or written. The equipment sheet, which
+he saved again after 0.30.0 was built, is rebuilt and in this commit ("The equipment sheet",
+below); of the rest of the pack content only the Grammar journal moved.
+
+Mike, 2026-11-17, writing `[REQUIRES ...]` cells down the Basic Actions list: "The more I think
+about this, the more I think even the [REQUIRES] grammar should be effects-based... so for example
+assuming each Actor has an Effects list of whatever effects they have - conditions, etc., REQUIRES
+should just look for a string in that Effects list. So for example, if entering a Bind (and being
+Controlled, Neutral, or In Control) become Effects on that list, it becomes very easy to use the
+[REQUIRES] grammar to say [REQUIRES bind] ... or maybe even [REQUIRES bind, neutral]". Then: "Plan
+both together", with named Effects, step two, which 0.25.0 had set aside. Planned first
+(`dazzling-floating-simon.md`); his decisions by question: the tags that put an Effect on and
+take it off will be APPLY and REMOVE; an Effect on yourself lands at once and one on another
+creature by a button on the card; a named Effect in REQUIRES is written with the word `effect` in
+front. **Built as two releases. This is the reading half. The writing half (0.32.0: `APPLY` and
+`REMOVE` on a Maneuver's own row) is planned in the same file and not built.**
+
+What the plan found first: most of his list already existed. Every Condition is an effect on the
+creature, the Bind already puts its three states on as Conditions (`bound` for a neutral Bind,
+`controlling`, `controlled`), and REQUIRES already looked a Condition's name up there. (Claude had
+told him `neutral` and `controlled` had no word; they had, and the plan corrected it.) What was
+missing was a name for anything that is not a Condition, and lines that read one.
+
+| | Through 0.30.0 | 0.31.0 |
+|---|---|---|
+| Something on a creature that is no Condition | Nothing could name it | A named Effect: any active effect, by its name |
+| `[REQUIRES ...]` asking for one | Not possible | `[REQUIRES effect Taking Cover]` |
+| `[REQUIRES ...]` asking for a Bind's state | `bound`, `controlling`, `controlled` | Those, and `bind, neutral`, `bind, controlling`, `bind, controlled` |
+| `[REQUIRES ...]` asking what a nearby creature has | Not possible: who is near, never what they have | `creature adjacent with dying`, `foe in reach with effect Marked` |
+| A bonus that waits on a Condition or an Effect | Refused: "not read yet" | `IF: EFFECT(<name>)` for you, `IFT: EFFECT(<name>)` for the other party |
+| A check read against one creature's Threshold | Knew the target's token, not the creature | Has the creature as its other party |
+| The hover card | Conditions; stale if one changed while it was shown | Named Effects too, for the owner and the GM, and it follows a change |
+| A bonus to Initiative (`INIT`) | Never applied to an Initiative rolled with Awareness, the default one | Applies |
+| `CLAIM(when it's raining)`, `EFFECT(Hunter's Mark)` | An error: the apostrophe opened a quote | Read |
+| One Talent with a line on the attack die and another that waits on the defender | Both counted through the Combat window | Counted once, as one circumstance |
+| A player adding, removing or switching an effect by hand | Silent | An Adjusted card, for a named Effect |
+| An effect's row on the Effects tab | Its name | Its name and how a line reads it: `prone`, `EFFECT(Blessed)`, or "not read" |
+
+### The rulings
+
+- **305. The Effects list** (Mike's idea; the shape is Claude's). A creature's Effects are its
+  Conditions and every other active effect on it by its name. Nothing new is stored: a named
+  Effect is an effect with a name, made by hand on the Effects tab's Active Effects until a
+  Maneuver can apply one. A character's custom effect row counts too, by its label. An effect
+  switched off counts for nothing. **A Condition's name is reserved:** `EFFECT(prone)` is always
+  the Condition, so an effect merely called "Prone" is read by nothing, and its row says so. An
+  Exposed Zone is the Zone's own and is not read as an Effect. A pending result ("Aid from Wren"),
+  a used Effect, a mark and a Zone's Critical Hit effect are not on the list and keep their own
+  words.
+- **306. REQUIRES reads the list in three new forms** (Mike). `effect <Name>` for a named Effect:
+  the word in front is his choice, so that a bare word stays a Condition or one of the known
+  words and a mistyped word is still an error, with its cell red and its row always listed.
+  `bind, <state>` is his example; the comma may be left out, and it is the one comma a block
+  reads. `with` after a nearness word asks what that creature has, a Condition or `effect
+  <Name>`; a creature whose Effects the system cannot read is "cannot tell", never a "no".
+- **307. `EFFECT(<name>)`: `IF:` is you, `IFT:` is the other party** (Claude's reading of his
+  Fantasy Grounds note: "other modifiers/effects can be applied IF that custom Effect field is on
+  the target"). It is the first condition whose prefix decides its meaning. Read by the bonus
+  lines alone (CHECK, ATK, DEF, INIT, SPEED). A bonus that waits on your own Effect is in the
+  sheet's Threshold while the Effect is on. One that waits on the other party's is read where
+  there is another party: a Threshold read, a Defense roll, each defender's own result of a
+  Strike (never the blind attack die), a check against one creature. Refused beside a `FOR` that
+  reaches others, an aura's ring included, until a Talent says whose Effect that would be.
+- **308. A check read against one creature's Threshold has that creature as its other party**
+  (a mend). Demoralize against Guard read the target's live Threshold and carried only its token,
+  so `MARKED` matched by the token alone and nothing about the creature could be asked.
+- **309. A rule reads a named Effect off any creature; the hover card shows a hand-made one to
+  its owner and the GM alone** (Claude's; narrower than the plan, which said "as public as
+  Conditions", after the review). A GM may keep a private note as an effect on an adversary, and
+  nothing announced it, so a stranger's hover does not show it. One a Maneuver applies, from the
+  next release, is announced by its card and will show to everyone as a Condition does. A `with`
+  block may still show a player, by a row appearing, that an adversary carries one.
+- **310. A player's hand change to a named Effect is said in chat** (Claude's). Adding one,
+  removing one, renaming one or switching one now changes what the rules see, so it is an
+  Adjusted card, as a hand change to Temporary Vigor is. A Condition toggled on a token is as
+  silent as it was, the GM's changes are silent, and the system's own are its cards'.
+
+### In the code
+
+- **New, pure:** `module/rules/effect-list.mjs` (`effectList`, `effectsOn`, `readEffectName`,
+  `listHas`, `namedEffects`, `effectSlug`, `conditionTitle`).
+- **REQUIRES:** `module/rules/requires.mjs` (the three forms, `BIND_STATES`, the words in
+  English, the three answers for `with`); `module/helpers/situation.mjs` (`effects` on the
+  situation, and each nearby creature's Conditions and names).
+- **The condition:** `module/rules/effects.mjs` (`readCondition`, the plain form into
+  `ops.has`, apart from `ops.used`); `module/rules/operators.mjs` (`emptyOps`,
+  `refuseComponents`, `effectConditions`, `readsOtherEffects`, `effectHolds`, `needsMoment`,
+  `summarizeOperators`); `module/rules/kinds/bonus.mjs` (the parse copies `has` only when the line
+  asks for one, so every rule that asks for none is stored exactly as before; the hook).
+- **The other party:** `module/dice/check/modifiers.mjs` (`otherOf`).
+- **Screens:** `module/canvas/glance.mjs`, `templates/actor/glance.hbs`;
+  `module/helpers/effects.mjs` (`effectReadAs`), `templates/actor/effects.hbs`, both actor
+  sheets; `module/documents/audit.mjs`; `styles/character.css`; `lang/en.json`.
+
+### Mended on the way
+
+- The hover card did not follow a Condition that went on or off while it was shown (since
+  0.19.0): it heard the Actor's and its Items' updates and never an effect's.
+- Ruling 308, above.
+- Found by the self-test before it left the workshop: an option of the new module was named
+  `valueOf`, which every object already has, so its default was never used.
+
+### The design check, before the build
+
+A second reader took the first design against the code and found nine places it would have gone
+wrong. The ones that touched this release: the bonus kind's parse returns a fixed list of fields,
+so the new condition would have been dropped in silence and the bonus applied always; a check
+against a target's Threshold had no creature for `IFT:` to ask (ruling 308); the first sketch of
+the list read `actor.effects` and would have missed an Item's transferred effect, where
+REQUIRES's Conditions already count one. The rest shape 0.32.0 and are in the plan.
+
+### The review, after the build
+
+An independent reader took the finished change and found no crash and no double count in the
+attack flow, and eleven smaller things. Mended:
+
+- **The tag and the list disagreed.** The list took any name by its slug, so an effect called
+  "Blessed!" was matched by `EFFECT(Blessed)` while its tag said nothing could read it. One
+  function now decides both (`namedEffectOf`): only a name a line could write is on the list.
+- **`not` was swallowed into a name.** `[REQUIRES effect not Blessed]` read as an Effect called
+  "not Blessed", said in the same words as the block that was meant, and hid its row for good.
+  Refused, with where the `not` goes.
+- **A Condition with a number** (`EFFECT(Fatigued 2)`) read as an Effect nobody could have.
+  Refused: a value is not compared yet. An Exposed Zone is now refused however it is spaced.
+- **`IFT: EFFECT(...)` where it could never hold** is refused: on an INIT or a SPEED line, and
+  beside `IF: CLAIM(...)`.
+- **The `bind,` comma** was read anywhere a word ended in "bind". It is read only where `bind`
+  begins an alternative.
+- **A tooltip carried an effect's own name unescaped.** Escaped.
+- **The hover card showed a GM's hand-made effect on an adversary to everyone** (ruling 309,
+  narrowed).
+- Three defects older than this release, which it would have made easy to meet:
+  - **An `INIT` line never reached the default Initiative.** An Initiative rolled with Awareness
+    is asked as a Defense is, for the rules the sheet did not fold in; a bonus to Initiative is
+    to no Defense, so it was in neither half. Since 0.13.0.
+  - **A straight apostrophe inside parentheses opened a quote.** `CLAIM(when it's raining)` and
+    `EFFECT(Hunter's Mark)` were "an opening ' has no closing '". An apostrophe after a letter or
+    a digit is now a letter of the word.
+  - **One Talent's lines on the attack die and at the pairing both counted.** The pairing's
+    modifiers were resolved apart from the die's, so two lines of one source did not collapse:
+    `ATK: 1` with `ATK: 2; IFT: EFFECT(prone)` gave +3 where every other roll gives +2. The same
+    held for `MARKED` since 0.15.0. The pairing now adds what it is worth beside the die's own.
+
+Stated, not changed: a player who adds or renames a custom effect row is not said in chat,
+though its label counts as a named Effect (the row and its lines were always the player's own);
+the Maneuvers tab does not look again when another character's custom effect row changes; the
+Off-Guard a first Torso Wound makes lasting is a number and not the Condition, so
+`EFFECT(off-guard)` does not see it; an effect an Item carries counts however the Item is
+carried; two effects updated in one batch would post one set of Adjusted lines twice (the sheets
+update one at a time); where a pairing's line and the die's are one circumstance, the card lists
+both and the total counts the stronger.
+
+### Verified
+
+- `node assets/test_rules.mjs`: 219 checks pass (four are new, with the review's cases in them:
+  the list, the three REQUIRES forms, the condition and its refusals, the hook with and without
+  the other party, the INIT mend, the pairing's arithmetic). `node --check` on all 174 modules.
+  `node assets/build_all.mjs --check` passes. The style check has its one known failure, the
+  em-dash in Dwarf Lore B13 of `data/talents_ancestries.xlsx`. `build_foundry.mjs --no-compile`:
+  the Grammar journal alone moves.
+- **Live in the test world on 0.31.0**, a GM tab and a player tab, with the real actors:
+  - a hand-made effect "Blessed" on Tess turned a `[REQUIRES effect Blessed]` row on, switched
+    off turned it off, renamed "Prone" was read by nothing and its tag said why;
+  - with `[EFFECT DEF: 2 situation, guard; IF: EFFECT(Blessed)]` on a Talent, Tess's Guard on
+    the sheet went 16, 18, 16 as the effect went on and off, and a custom effect row labelled
+    Blessed did the same;
+  - `[REQUIRES bind, neutral]` held in a neutral Bind with the Bandit and not after it ended;
+    `with prone` followed the Bandit's Prone; `with dying` followed Wren's Dying;
+  - against the Prone Bandit, `IFT: EFFECT(prone)` gave +1 on an attack that knows its target
+    and at the pairing, nothing on the blind die, nothing once the Bandit stood; Tess's Evade
+    read against the Bandit as attacker was 14 Prone and 13 standing; an Intimidation check
+    read against the Bandit gained +1 only while it was Frightened;
+  - the Effects tab showed the tag `EFFECT(Blessed)`, and the Maneuvers tab listed the rows that
+    held and the row whose block was an error;
+  - as the player: adding, renaming, switching off, switching on and removing an effect posted
+    five Adjusted cards; toggling a Condition posted none;
+  - after the review: "Blessed!" was on no list and moved nothing; a stranger's hover card
+    showed none of an adversary's hand-made effects and the GM's showed it; an `INIT` line
+    raised an Initiative rolled with Awareness by 1; `EFFECT(Hunter's Mark)` read.
+- **Not driven:** a full Strike clicked through the Combat window against a Prone defender (the
+  pairing was read through the function the coordinator calls, with the real actors, and the
+  new arithmetic by the self-test); the hover card on screen; a LIMITED user's sheet.
+- The test world was left as found (Mike's Combat with testpc8 the active one, the tokens where
+  they were, every probe and its cards removed), plus two things: one fixture on purpose, the
+  Talent "Effects Reader (0.31.0 fixture)" on Tess, so the new lines can be tried at once; and
+  one "Content synced" card, from syncing the Grammar journal (431 messages).
+
+### The equipment sheet, as Mike saved it
+
+Found at the commit, 2026-11-17: `data/equipment.xlsx` had been saved after the last equipment
+build of 0.30.0, with **every row enabled** (29 weapons, 8 of them ranged; 27 armor pieces; 3
+shields; 3 kinds of ammunition), where the sheet 0.30.0 built enabled one weapon, the Unarmed
+Strike. Committing the sheet with stale outputs beside it would have left the repository out of
+step with its own source, so the equipment build was run (`node assets/build_all.mjs
+--equipment`: that workbook alone, no other read by the converter, none written): 62 of 62 rows
+ship. Dagger, Shortsword and Spear are back under the ids they had, 25 more weapons and the 3
+shields join them, and the ammunition now has the weapons it feeds (Arrows the two bows, Bolts
+the four crossbows, Bullets the Sling), with no warning from the converter. So the loading and
+ammunition of 0.29.0 and 0.30.0 act on shipped content for the first time. The 0.30.0 entry
+below describes the sheet as it stood when that release was built. Not driven live with the
+shipped weapons: 0.30.0's drive used test weapons with the same traits. An open world takes the
+new Items by Sync content.
+
+### Not built
+
+The writing half, which is the next release: a Maneuver that puts an Effect on (`APPLY`) or
+takes one off (`REMOVE`), with a window, by the degree of its check and the cost paid; "applied
+by me". And after it: an Effect that carries its own lines, a Condition's value compared, an
+Effect read inside an aura, any kind but a bonus reading one.
+
+## 0.30.0 (2026-11-15): ammunition, `[REACH N]`, the equipment build, and the workbooks' new names
+
+(This entry describes the equipment sheet as it stood when 0.30.0 was built. Mike saved it again
+afterwards with every row enabled; that sheet is built and committed with 0.31.0, above.)
+
+Built from **Player's Handbook v4.25** as Mike saved it on 2026-11-15, with the Armor, Shield,
+Melee Weapon and Ranged Weapon tables taken out of Chapter 5: `data/equipment.xlsx` is now their
+only source (ruling 297). Rulings 297 to 304. One rule kind is new, `reach`, the twenty-third, and
+`AUTOMATION_GRAMMAR.md` carries it (sections 0, 2, 4, 8 and 10). `data/equipment.xlsx` was built
+with the new equipment-only build; no other workbook was converted, built, staged or written.
+
+Mike, 2026-11-15, after 0.29.0: "I removed the armor and put in a placeholder ... Same for
+Shields ... And weapons ... I also renamed many of the spreadsheets to actions_X and talents_X. I
+added an Ammunition tab to the equipment.xlsx spreadsheet. The reload trait already does have
+words in the book", and then: "for Automation, I want to have a [REACH N] Automation Grammar,
+where N is the natural reach for the ancestry." Planned first (`dazzling-floating-simon.md`); his
+decisions by question: the Ammunition tab reaches Foundry by an equipment-only build; out of
+ammunition a Reload warns and goes on; `[REACH N]` reads set and adjust; recovery after a fight
+is left to the table.
+
+| | Through 0.29.0 | 0.30.0 |
+|---|---|---|
+| Arrows, Bolts, Bullets | Not in the game; a Reload never ran out | Items in the Equipment compendium, ten to a stack; a Reload takes one for each shot it loads |
+| A Reload with no ammunition left | (nothing counted) | The weapon is loaded anyway; the card and a notice say there was none |
+| An Ancestry's Natural Reach | Its Size's, always | Its Root's `[REACH N]` when it has one; any Talent's `[REACH +1]` adjusts it |
+| Building while the talent and action sheets are unfinished | Not possible: the content loop stops on them | `sync_equipment.cmd` builds the equipment workbook alone |
+| Armor, shields and weapons | The handbook's Chapter 5 tables, with the sheet a copy | The sheet alone; the book has a placeholder |
+| A piece of armor's description | Read by the converter, dropped by the build | On the armor Item |
+| Build messages and recommendations | Named `data/maneuvers.xlsx` and the other old names | Name the workbooks as they are now |
+| Sync content, in a world still running the older system | Wrote the new content through the old code, losing new fields | Refuses, and says to restart Foundry |
+
+### The rulings
+
+- **297. The equipment tables left the handbook; the sheet is the only source** (Mike). The
+  Armor Pieces, Shields, Melee Weapons and Ranged Weapons tables are gone from Chapter 5, each with
+  the placeholder "This section will be populated from the Spreadsheets in the StarWrought data
+  folder". So what a weapon, a piece of armor, a shield or a kind of ammunition IS comes from
+  `data/equipment.xlsx` and nowhere else, as a Talent's and a Maneuver's text has since v4.25. The
+  Weapon Traits and Armor Traits tables, and Chapter 5's prose, are still the book's. This is the
+  handbook rule's third part. The saved file changed in exactly those four places.
+- **298. Ammunition is equipment, and a Reload takes one piece for each shot it loads** (Mike:
+  "Count ammunition too", and the Ammunition tab). A row is one kind of ammunition: its name, the
+  **Weapon Group** it feeds, its price. A trailing "(10)" in the name is the stack: Arrows, ten of
+  them. In play a Reload takes one piece for each shot it adds to the weapon (a Repeating Crossbow
+  at 2 of 5 takes three), from the gear the character carries whose Group is the weapon's,
+  wherever it is carried. A stack **In hand** is used first, then by name, as the Equipment tab
+  lists them (Claude's: that is how a player chooses Silver Arrows over Arrows). Ammunition is
+  taken when the weapon is loaded and at no other time: not by a Strike, not by the chip's hand
+  correction, not by the shot a cancelled attack returns. A weapon with no Weapon Group is fed by
+  nothing, so nothing is counted for it. A weapon starts loaded, so the first shot of a new bow
+  costs no arrow.
+- **299. Out of ammunition, a Reload warns and goes on** (Mike, by question). The weapon is loaded
+  all the same. The Reload's card says what was missing ("No Arrows left for Shortbow. Loaded
+  anyway; whether it stands is the table's call."), and the player gets a notice. Nothing is
+  refused, as with an empty weapon (ruling 291).
+- **300. Recovering ammunition is the table's** (Mike, by question). Nothing counts what was shot
+  in a fight. An ammunition row on the Equipment tab shows its count with a minus and a plus
+  beside it, each one piece, at no cost; a player's change is a line of the Adjusted card
+  ("Arrows: quantity 4 to 5"), as any quantity's is.
+- **301. `[REACH N]` sets Natural Reach, and `[REACH +N]` adjusts it** (Mike; by question, "Set
+  and adjust"). `[REACH 2]` on an Ancestry's Root is its Natural Reach in feet; `[REACH +1]` or
+  `[REACH -1]` on any Talent adjusts it; `[REACH 0]` is allowed and an adjustment of 0 is refused.
+  With no block, Natural Reach is the Size's, as it always was. A character reads the blocks off
+  the Talents it owns, live (the highest set, should two Talents set one, plus every adjustment,
+  never below 0), so an existing character follows the block when Sync content refreshes its copy
+  of the Root; nothing is stored at creation. An adversary's reach is its Size's.
+- **302. The equipment build** (Mike, by question, with the talent and action sheets unable to
+  pass the content loop: "Equipment only"). `sync_equipment.cmd`, or `node assets/build_all.mjs
+  --equipment`, converts `data/equipment.xlsx` alone and brings the web app and the Equipment
+  pack sources up to it. No other workbook is converted and no tree, action, background or
+  language file is written. Handbook drift is a warning, as in the content loop.
+- **303. The workbooks' new names change nothing the pipeline decides** (Mike renamed them:
+  `actions_maneuvers`, `actions_activities`, `actions_endeavors`, `talents_ancestries`,
+  `talents_callings`, `talents_combat_styles`, `talents_cultures`, `talents_defenses`,
+  `talents_magic`, `talents_skills`, and `talents_martial` for what was `weapons.xlsx`). The
+  converter tells a workbook by what is in it. The index tool reads the Category from the name
+  with its prefix removed; the converter treats an actions workbook under its new name as the
+  workbook it was; every message names the file as it is now.
+- **304. Sync content refuses sources built for a newer system than the world is running**
+  (Claude's, from the design check). A release that adds a field ships code and content together.
+  A world still running the older code would write each pack document through its own data
+  model, which drops the field it does not know, and then record the document as level with the
+  sources, so it would never mend. The sync now compares the index's system version with the
+  running code and, when the index is newer, says to restart Foundry and writes nothing.
+
+### How it is built
+
+- **The converter** (`assets/xlsx_to_trees.py`): the `Ammunition` sheet (`AMMUNITION_SHEET`,
+  `BUNDLE`, the `ammunition` entry of `EQUIPMENT_COLUMNS`; a name column headed Ammunition, Item or
+  Weapon), written as the `ammunition` list of `equipment.json`; `check_ammunition` (a Group no
+  weapon carries; a weapon with Reload whose Group has no ammunition; ammunition that ships while
+  no weapon that takes it is enabled); `equipment_only()` behind `--equipment`, which tells the
+  equipment workbook from the others by the sheet names in its package (`sheet_names`,
+  `is_equipment_workbook`) and shares `write_equipment` with the full run; `RENAMED_WORKBOOKS` in
+  `carry_over_absent`.
+- **The build** (`assets/build_all.mjs`): the `--equipment` mode, a step's `equipment` shape (a
+  step that names none is skipped), the mode in the build log; `assets/check_style.py --equipment`
+  limits the spreadsheet scan to the equipment workbook; `sync_equipment.cmd`. The build report
+  that ends every build still reads every workbook, read-only, for its red-cell and index sheets.
+- **The pack** (`assets/build_foundry.mjs`): an Ammunition folder and a `gear` Item for each
+  enabled row (`gear:<slug>`; `system.ammunition`, `quantity` the stack, the price said "per 10");
+  an armor Item's description from the sheet; the Ancestry chassis's `reach` only where its Root
+  sets one.
+- **Ammunition in play**: `ammunition` and `isAmmunition` on the gear model
+  (`module/data/items/gear.mjs`) with a field on its sheet that suggests the book's Weapon Groups;
+  `ammunitionFor` and `takeAmmunition` in `module/data/items/weapon-traits.mjs` (pure, driven by
+  the self-test); `loadWeapon` in `module/documents/actor/carrying.mjs`, still the one place a
+  weapon is loaded, takes the ammunition and reports what was used and what was short, and
+  `reloadWeapon` puts it on the Reload card; the count, its two controls (`adjustQuantity`) and
+  the chip's "Carried for it" on the Equipment tab.
+- **`reach`** (`module/rules/features.mjs`, `module/rules/kinds/features.mjs`): the keyword and
+  the kind, a feature block with no hook. `naturalReach` in `module/config/sizes.mjs` is the one
+  computation; `_prepareRules` in `module/data/actor.mjs` collects `features.reach` and
+  `module/data/character/offense.mjs` uses it, so Total Reach, the reach ring, "in reach", Support
+  and Intercept follow. For the cards: `ancestryFacts` in `assets/parse_rules.mjs` carries a
+  Root's set to the Ancestry's record; the chassis model, the wizard's card, the chassis sheet, the
+  web app and the compendium document print it.
+- **The guard** (`planContentSync` in `module/helpers/content-sync.mjs`; the load offer in
+  `starwrought.mjs` shows its message).
+- **The names**: `workbook_key` in `assets/index_sheets.py`; `assets/make_maneuvers_xlsx.py`
+  targets the Maneuvers workbook under its name of today, so it still refuses to overwrite it;
+  the messages of `assets/parse_rules.mjs`, `assets/highlight_automation.py`,
+  `assets/build_report.py`, `assets/build_foundry.mjs` and the `maneuver` kind; `data/README.txt`
+  and the grammar document. `actions.json` and the action documents keep the old names inside
+  them until the next full content build writes them again: they are generated, and the full
+  converter is not run on the sheets in progress.
+
+### What the equipment build changed
+
+`data/equipment.xlsx` as saved: 1 of 29 weapons enabled (the Unarmed Strike), 27 of 27 armor, 0
+of 3 shields, 3 of 3 ammunition. So the pack sources gained Arrows, Bolts and Bullets and their
+folder, **lost Dagger, Shortsword and Spear** (switched off in the sheet; a character who holds
+one keeps it), and 27 armor pieces gained their descriptions. The Grammar journal moved with the
+grammar document. No other pack document moved. The converter warns that the three kinds of
+ammunition ship while no weapon that takes them is enabled.
+
+### Left to the table, and not built
+
+- A weapon starts loaded and a Strike takes no ammunition: only a Reload does.
+- Two stacks of one kind are two Items; nothing merges them. A Reload empties the first before
+  the second.
+- Recovery after a fight, and any count of what was shot.
+- The web app and the compendium document list neither ammunition nor a ranged weapon's price
+  (their ranged table has no price column).
+- A set `[REACH N]` does not move when the character's Size is changed by hand: the block stands
+  over Size. An adversary's reach is its Size's.
+- `[REACH N]` ships as the kind alone: no workbook that was built holds one, so the card, the web
+  app and the document print none until the ancestry workbook goes through a full build.
+- Each minus or plus by a player is one Adjusted card.
+- The About sheet of `data/equipment.xlsx` still says it follows the handbook's Chapter 5 and
+  that sheets other than Weapons, Armor and Shields are ignored: Mike's to reword.
+- A new kind of ammunition is its own gear Item (Create gear, then name the Weapon Group on its
+  sheet). One made by duplicating the compendium's Arrows remembers where it came from, and
+  takes the name "Arrows" back the next time the copies are refreshed, as any renamed copy does.
+- **The sync's guard protects from 0.30.0 on.** A world still running 0.29.0 or earlier has no
+  such guard: if this release's content is synced into it before Foundry is restarted, the three
+  ammunition Items are created without their Weapon Group and then read as level. The build's
+  last line says to restart first; a world it happened to is mended by `node
+  assets/build_foundry.mjs` with Foundry closed, which compiles the packs again from the sources.
+- The equipment build does not run `parse_rules`: it reads the `rules` the last full or content
+  build left in `trees.json`.
+- `actions.json` and the 83 action documents still carry `data/maneuvers.xlsx` as their source;
+  the next full content build writes the new names, and every action document moves once then.
+
+### The design check and the review
+
+**Before the build**, a second reader went over the design. Folded in: the sync's guard (304);
+the price said "per 10"; the armor descriptions; a stack In hand first, then by name, so a
+player can choose between two kinds; the Weapon Groups offered on the gear sheet's field; the
+warning for ammunition that ships with no weapon to take it; the build report knowing an
+equipment run; and one correction to what the plan said: the build report at the end of every
+build reads every workbook, read-only, so "no other workbook is opened" became "no other
+workbook is converted".
+
+**After it**, an independent reader went over the whole diff with the change's intent and none
+of its conclusions. No blocking defect. It compared the old converter with the new on the
+committed data: every output byte for byte the same but `equipment.json`'s new, empty
+`ammunition` list. Seven findings, all mended or stated:
+
+1. **The guard cannot protect the release that introduces it** (medium). Stated above, and the
+   builds now end with "If the SYSTEM was updated since Foundry was started, restart Foundry
+   before you sync."
+2. **A player-facing string still named `data/maneuvers.xlsx`** (the Maneuvers tab's empty-list
+   hint). Mended.
+3. **The converter and the system disagreed on what takes ammunition**: the converter looked for
+   a Reload trait, the system for Reload or Capacity above 0. Mended: one rule (`takes_ammunition`).
+4. **A Group column headed "Weapon Group" was refused**, because the name column may be headed
+   Weapon. Mended.
+5. **The one-time Maneuvers scaffold compared against the old workbook name.** Mended.
+6. **A renamed duplicate of the compendium's Arrows is renamed back by a copies refresh.** The
+   existing refresh rule; stated above.
+7. **The Ammunition sheet's two errors had no recommendation in the build report.** Mended.
+   Also: the Natural Reach field shows on an Ancestry's sheet alone, and the rules README lists
+   the kind.
+
+### Verified
+
+215 self-test checks (2 new: the `reach` kind with its refusals and the Natural Reach
+arithmetic; which stacks feed a weapon, their order, and what a Reload takes and leaves),
+`node --check` on all 173 modules, `build_all.mjs --check`, the style check (one failure, the
+em-dash in Dwarf Lore B13 of `data/talents_ancestries.xlsx`, a workbook in progress; the
+equipment build's own style check passes), the equipment build run for real three times with no
+workbook's date or size changed, and the index tool and the red-cell tool run dry on a scratch
+copy of the renamed workbooks. A trial of the full content loop on a scratch copy stops at
+`parse_rules` on the Human sheet, as before: the reason for the equipment build.
+
+**Driven live, a GM tab and a player tab**, Foundry restarted for the 0.30.0 manifest. Sync
+content: 3 created, 27 updated, 3 deleted and the folder, the Arrows document carrying its
+Weapon Group, a stack of 10 and "1 gp per 10", the armor descriptions in, Tess keeping the
+Shortsword the pack lost. The guard refusing an index stamped 0.31.0 with its message. In an
+encounter, with test weapons: a bow's Reload taking one Arrow and saying "Arrows: 1 used, 9
+left."; the last Arrow; a Reload with an empty stack loading the bow anyway, with the card's
+line and the notice; Silver Arrows In hand used before Arrows, and Arrows first once they were
+packed; a weapon with no Weapon Group counting nothing and saying nothing; a Repeating Crossbow
+at 2 of 5 Prepared, and three Bolts leaving at Finish; the row's count with its minus and plus;
+the chip's "Carried for it: 6 (Bolts)"; a player's plus as "Adjusted Arrows: quantity 4 to 5".
+`[REACH 3]` on a test Talent making Natural Reach and Total Reach 3, `[REACH +1]` on another
+making them 4, `[REACH 0]` with it 1, `[REACH long]` and `[REACH +0]` stored as errors with what
+to write, and the reach back to 2 when the Talents were removed.
+
+**Not driven:** a `[REACH N]` on a real Ancestry Root and its print on the wizard's card, the
+web app and the document (no built workbook holds one); a world on 0.29.0 syncing 0.30.0's
+content; the equipment build from the double-click itself.
+
+The test world was left as found (Mike's Combat with testpc8 untouched), with the three
+ammunition Items in its Equipment compendium, the three weapons gone from it, and a "Content
+synced" card.
+
+---
+
 ## 0.29.0 (2026-11-15): Strike from the Maneuvers tab, loaded weapons, an Unarmed Strike for everyone, and "in sight"
 
 Built from **Player's Handbook v4.25**; no rule in the handbook moved. Rulings 290 to 296. No rule

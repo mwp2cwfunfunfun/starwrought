@@ -14,7 +14,7 @@
     "price": "6 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>A steel helmet with a broad, sloping brim that shelters the head from descending blows, missiles, and falling debris. The open face preserves awareness and breathing.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "16d86d2d352ceb63"
+      "contentHash": "8a0b88276f9d0ac7"
     }
   },
   "effects": [],

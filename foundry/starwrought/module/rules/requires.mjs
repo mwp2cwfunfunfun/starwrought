@@ -20,6 +20,8 @@
  *   <Condition>               the character has the Condition (prone, grabbed, hidden, controlling)
  *   supine                    accepted, and never true until Supine is built
  *   bind                      in a Bind, of any kind
+ *   bind, <state>             in a Bind in that state: neutral, controlling, controlled (0.31.0)
+ *   effect <Name>             the character has a named Effect (0.31.0)
  *   spell                     owns a spell Talent
  *   shield, shield raised     a shield in hand; and it is Raised
  *   rigid                     a rigid implement in hand
@@ -27,7 +29,18 @@
  *   weapon, melee weapon, ranged weapon, weapon <trait>
  *   weapon loaded, ranged weapon loaded, weapon unloaded   (0.29.0: ready to shoot; to reload)
  *   foe | ally | creature, then adjacent | in reach | in sight | within <feet>
+ *   ... with <Condition>, ... with effect <Name>   and that creature has it (0.31.0)
  *   encounter                 a fighter in a running encounter
+ *
+ * EFFECTS-BASED (0.31.0; rulings 305 to 310; Mike, 2026-11-17: "REQUIRES should just look for a
+ * string in that Effects list"). A Condition's name has always been looked up in the character's
+ * statuses, and the Bind, Preparing, Spent, Wounded and Dying are Conditions, so most of the list
+ * was already read here. Three forms were missing. `effect <Name>` reads a named Effect, anything
+ * on the creature that is no Condition (./effect-list.mjs): the word in front is Mike's choice,
+ * so that a bare word stays a Condition or one of the words above and a typo is still an error.
+ * `bind, neutral` (his example; the comma may be left out) reads the Bind's own record, where
+ * `bound`, `controlling` and `controlled` read the Conditions that mirror it. And `with` asks
+ * about the creature that is near: `creature adjacent with dying` is Stabilize's.
  *
  * `in sight` (0.29.0; Mike: "I can foresee many situations ... 'if you can see an ally' or 'if you
  * can see an enemy'") is sight alone, at any distance. The list of who is near already holds only
@@ -50,7 +63,8 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { CONDITIONS, conditionIdOf, conditionWords } from "../config.mjs";
+import { conditionIdOf, conditionWords } from "../config.mjs";
+import { conditionTitle, readEffectName } from "./effect-list.mjs";
 
 /* -------------------------------------------- */
 /*  Reading the block                           */
@@ -63,8 +77,12 @@ const EXAMPLE = "[REQUIRES prone or supine]";
 export const REQUIRE_WORDS = Object.freeze([
   "supine", "bind", "spell", "shield", "shield raised", "rigid", "free hand", "holding",
   "weapon", "melee weapon", "ranged weapon", "weapon <trait>", "weapon loaded", "weapon unloaded",
-  "foe adjacent", "foe in reach", "foe in sight", "foe within <feet>", "ally ...", "creature ...", "encounter"
+  "foe adjacent", "foe in reach", "foe in sight", "foe within <feet>", "ally ...", "creature ...", "encounter",
+  "bind, <state>", "effect <Name>", "creature adjacent with <Condition>"
 ]);
+
+/** The states a Bind may be asked for by name (0.31.0): `bind, neutral`. */
+export const BIND_STATES = Object.freeze(["neutral", "controlling", "controlled"]);
 
 /**
  * The two words after `weapon` that are a state and not a trait (0.29.0): `loaded`, the weapon is
@@ -103,9 +121,45 @@ function readTerm(written) {
   return not ? { ...term, not: true } : term;
 }
 
+/**
+ * What follows `with` on a nearness word (0.31.0): a Condition by its name, or `effect <Name>`.
+ * @param {string} words    The words after `with`, lower-cased.
+ * @param {string} written  The same words as they were written, for a named Effect's own casing.
+ * @returns {{condition: string}|{slug: string, name: string}}
+ */
+function readWith(words, written) {
+  const named = written.match(/^effects?\s+(.+)$/i);
+  if (named) {
+    const read = readEffectName(named[1]);
+    return read.condition ? { condition: read.condition } : { slug: read.slug, name: read.name };
+  }
+  const id = conditionIdOf(words);
+  if (id) return { condition: id };
+  throw new RuleSyntaxError(`"${written}": after \`with\` write a Condition (\`creature adjacent with dying\`) or a named Effect (\`foe in reach with effect Marked\`)`);
+}
+
 function readBareTerm(words, written) {
   if (words === "supine") return { test: "supine" };
   if (words === "bind") return { test: "bind" };
+  // `bind, neutral` (0.31.0; Mike's example): the Bind in one state. The comma has been taken out
+  // by `readRequires`, so `bind neutral` reads the same.
+  let m = words.match(/^bind (\S+)$/);
+  if (m) {
+    if (!BIND_STATES.includes(m[1])) throw new RuleSyntaxError(`"${written}": a Bind's state is ${BIND_STATES.join(", ")}, as in \`bind, neutral\``);
+    return { test: "bind", state: m[1] };
+  }
+  // `effect <Name>` (0.31.0): a named Effect. A Condition's name is reserved, so `effect prone` is
+  // the Condition and never an Effect called Prone.
+  // (`written` still carries a leading `not`; the name is read in its own casing without it.)
+  const own = written.replace(/^not\s+/i, "");
+  m = own.match(/^effects?\s+(.+)$/i);
+  if (m) {
+    const read = readEffectName(m[1]);
+    return read.condition ? { test: "condition", id: read.condition } : { test: "effect", slug: read.slug, name: read.name };
+  }
+  if ((words === "effect") || (words === "effects")) {
+    throw new RuleSyntaxError(`"${written}": name the Effect, as in \`effect Taking Cover\``);
+  }
   if ((words === "spell") || (words === "spells")) return { test: "spell" };
   if (words === "shield") return { test: "shield" };
   if ((words === "shield raised") || (words === "raised shield")) return { test: "shield", raised: true };
@@ -114,7 +168,7 @@ function readBareTerm(words, written) {
   if (words === "holding") return { test: "holding" };
   if (words === "encounter") return { test: "encounter" };
 
-  let m = words.match(/^(?:(melee|ranged) )?weapon(?: ([a-z][a-z-]*))?$/);
+  m = words.match(/^(?:(melee|ranged) )?weapon(?: ([a-z][a-z-]*))?$/);
   if (m) {
     const term = { test: "weapon" };
     if (m[1]) term.reach = m[1];
@@ -123,13 +177,14 @@ function readBareTerm(words, written) {
     return term;
   }
 
-  m = words.match(/^([a-z]+) (adjacent|in reach|in sight|within (\d+) ?(?:ft\.?|feet|foot)?)$/);
+  // Who is near, and (0.31.0) what that creature has: `creature adjacent with dying`. Only the
+  // whole word `with` begins it, so `within 30` is never read as one.
+  m = words.match(/^([a-z]+) (adjacent|in reach|in sight|within (\d+) ?(?:ft\.?|feet|foot)?)(?: with (.+))?$/);
   if (m && Object.hasOwn(NEAR_WHO, m[1])) {
     const who = NEAR_WHO[m[1]];
-    if (m[2] === "adjacent") return { test: "near", who, range: 0 };
-    if (m[2] === "in reach") return { test: "near", who, range: "reach" };
-    if (m[2] === "in sight") return { test: "near", who, range: "sight" };
-    return { test: "near", who, range: Number(m[3]) };
+    const term = { test: "near", who, range: (m[2] === "adjacent") ? 0 : (m[2] === "in reach") ? "reach" : (m[2] === "in sight") ? "sight" : Number(m[3]) };
+    if (m[4]) term.with = readWith(m[4], own.replace(/^.*?\swith\s+/i, ""));
+    return term;
   }
   if (Object.hasOwn(NEAR_WHO, words.split(" ")[0])) {
     throw new RuleSyntaxError(`"${written}": say how near, as in \`foe adjacent\`, \`foe in reach\`, \`foe in sight\` or \`ally within 30\``);
@@ -146,8 +201,13 @@ function readBareTerm(words, written) {
  * @returns {{any: object[]}}
  */
 export function readRequires(data) {
-  const text = String(data ?? "").trim().replace(/\.$/, "").trim();
+  let text = String(data ?? "").trim().replace(/\.$/, "").trim();
   if (!text) throw new RuleSyntaxError(`REQUIRES is written \`${SHAPE}\`, as in \`${EXAMPLE}\``);
+  // `bind, neutral` (0.31.0): the one place a comma is read, a name and then its state, as
+  // `EFFECT(Aid, used)` is written. It is taken out here so every other comma keeps its message,
+  // and only where `bind` BEGINS an alternative (the block's start, after `or`, after `not`): an
+  // Effect whose name ends in "bind" keeps its comma's refusal (the review of 0.31.0).
+  text = text.replace(/(^|\bor\s+)(not\s+)?bind\s*,\s*(?=\S)/gi, "$1$2bind ");
   if (/[,;]/.test(text)) {
     throw new RuleSyntaxError(`REQUIRES joins alternatives with \`or\`, and a condition that must ALSO hold is a second block: \`[REQUIRES free hand or weapon grapple][REQUIRES creature in reach]\``);
   }
@@ -174,10 +234,15 @@ const CONDITION_PHRASES = Object.freeze({ controlling: "Controlling a weapon" })
 /** A Condition's printed name from its id: "Prone", "Off-Guard". */
 function conditionName(id) {
   if (Object.hasOwn(CONDITION_PHRASES, id)) return CONDITION_PHRASES[id];
-  const word = String(CONDITIONS[id]?.name ?? id).split(".").at(-1);
-  const spaced = word.replace(/([a-z])([A-Z])/g, "$1-$2");
-  return spaced ? spaced[0].toUpperCase() + spaced.slice(1) : String(id);
+  return conditionTitle(id);
 }
+
+/** A Bind in one state, in words (0.31.0). */
+const BIND_STATE_WORDS = Object.freeze({
+  neutral: ["in a neutral Bind", "not in a neutral Bind"],
+  controlling: ["Controlling a weapon in a Bind", "not Controlling a weapon in a Bind"],
+  controlled: ["Controlled in a Bind", "not Controlled in a Bind"]
+});
 
 /** "a foe", "an ally", "a creature". */
 function nearNoun(who) {
@@ -196,7 +261,12 @@ export function termWords(term) {
   switch (term?.test) {
     case "condition": return `${not ? "not " : ""}${conditionName(term.id)}`;
     case "supine": return `${not ? "not " : ""}Supine`;
-    case "bind": return not ? "not in a Bind" : "in a Bind";
+    case "bind": {
+      const words = BIND_STATE_WORDS[term.state];
+      if (words) return words[not ? 1 : 0];
+      return not ? "not in a Bind" : "in a Bind";
+    }
+    case "effect": return `${not ? "not " : ""}${term.name ?? term.slug ?? ""}`;
     case "spell": return noun("spell");
     case "shield": return term.raised ? noun("Raised shield") : noun("shield in hand");
     case "rigid": return noun("rigid implement in hand");
@@ -212,10 +282,13 @@ export function termWords(term) {
     }
     case "near": {
       const who = nearNoun(term.who);
-      if (term.range === 0) return noun(`adjacent ${who}`);
-      if (term.range === "reach") return noun(`${who} in reach`);
-      if (term.range === "sight") return noun(`${who} in sight`);
-      return noun(`${who} within ${term.range} ft`);
+      // What that creature has (0.31.0): "an adjacent creature that is Dying", "a foe in reach
+      // with Marked".
+      const having = !term.with ? "" : term.with.condition ? ` that is ${conditionName(term.with.condition)}` : ` with ${term.with.name ?? term.with.slug ?? ""}`;
+      if (term.range === 0) return noun(`adjacent ${who}${having}`);
+      if (term.range === "reach") return noun(`${who} in reach${having}`);
+      if (term.range === "sight") return noun(`${who} in sight${having}`);
+      return noun(`${who} within ${term.range} ft${having}`);
     }
     default: return "";
   }
@@ -234,6 +307,8 @@ export function requireWords(rule) {
  * @typedef {object} Situation  What is known of the character now. A member left out (undefined)
  *   or null is "cannot tell", never "no".
  * @property {string[]|Set<string>} [conditions]  The Condition ids the character has.
+ * @property {string[]|Set<string>} [effects]  The slugs of the character's named Effects (0.31.0;
+ *   ./effect-list.mjs): what is on it that is no Condition.
  * @property {string|null} [bind]       The Bind's state (neutral, controlling, controlled), or null for none.
  * @property {number} [spells]          How many spell Talents the character owns.
  * @property {{held: boolean, raised: boolean}} [shield]
@@ -242,10 +317,11 @@ export function requireWords(rule) {
  * @property {Array<{reach: "melee"|"ranged", traits: string[], natural?: boolean, takesAmmunition?: boolean, loaded?: boolean, full?: boolean}>} [weapons]
  *   The weapons in hand: `natural` for the bare fist, which takes no hand and is no "weapon in
  *   hand"; `takesAmmunition`, `loaded` (a shot is in it, or it needs none) and `full` since 0.29.0.
- * @property {Array<{relation: string, gap: number, inReach: boolean}>|null} [near]  The other
+ * @property {Array<{relation: string, gap: number, inReach: boolean, conditions?: string[], effects?: string[]}>|null} [near]  The other
  *   tokens the character can see, each with its relation to the character's (ally, enemy, neutral),
- *   the gap in feet, edge to edge, and whether that is within the character's reach; null when the
- *   character has no token on the viewed scene.
+ *   the gap in feet, edge to edge, whether that is within the character's reach, and (0.31.0) the
+ *   Condition ids and named-Effect slugs on that creature, for `with`; null when the character
+ *   has no token on the viewed scene.
  * @property {boolean} [encounter]      A fighter in a running encounter.
  * @property {boolean} [tracking]       The `trackActions` setting.
  * @property {number} [actionsLeft]     Free actions this round.
@@ -262,7 +338,12 @@ function bare(term, s) {
     // Supine is in the book's Conditions table and not in the system (ruling 266): the word is
     // accepted so a cell can be written once, and it is known false until the Condition exists.
     case "supine": return false;
-    case "bind": return (s?.bind === undefined) ? null : !!s.bind;
+    case "bind": {
+      if (s?.bind === undefined) return null;
+      return term.state ? (s.bind === term.state) : !!s.bind;
+    }
+    // A named Effect (0.31.0): the slugs of what is on the character that is no Condition.
+    case "effect": return has(s?.effects, term.slug);
     case "spell": return ((s?.spells === undefined) || (s.spells === null)) ? null : (Number(s.spells) > 0);
     case "shield": {
       if (!s?.shield) return null;
@@ -290,14 +371,21 @@ function bare(term, s) {
     }
     case "near": {
       if (!Array.isArray(s?.near)) return null;
-      return s.near.some(t => {
-        if ((term.who === "enemy") && (t?.relation !== "enemy")) return false;
-        if ((term.who === "ally") && (t?.relation !== "ally")) return false;
-        if (term.range === "reach") return !!t?.inReach;
+      // `with` (0.31.0): the creature that is near must also have a Condition or a named Effect.
+      // One whose Effects were not given cannot be told, and is never taken for a "no".
+      let unsure = false;
+      for (const t of s.near) {
+        if ((term.who === "enemy") && (t?.relation !== "enemy")) continue;
+        if ((term.who === "ally") && (t?.relation !== "ally")) continue;
         // `in sight`: the list holds only the tokens the character can see, at any distance.
-        if (term.range === "sight") return true;
-        return Number(t?.gap) <= term.range;
-      });
+        const placed = (term.range === "reach") ? !!t?.inReach : (term.range === "sight") ? true : (Number(t?.gap) <= term.range);
+        if (!placed) continue;
+        if (!term.with) return true;
+        const held = term.with.condition ? has(t?.conditions, term.with.condition) : has(t?.effects, term.with.slug);
+        if (held === true) return true;
+        if (held === null) unsure = true;
+      }
+      return unsure ? null : false;
     }
     default: return null;
   }

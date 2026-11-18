@@ -194,6 +194,9 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         or: game.i18n.localize("STARWROUGHT.Field.costModeOr")
       },
       sizes: this.#choices(SW.SIZES),
+      // The Weapon Groups the book names, offered (never imposed) on a gear Item's Ammunition
+      // field (0.30.0): a typo there feeds nothing, and a homebrew group is still typed freely.
+      weaponGroups: [...SW.WEAPON_GROUPS],
       defenses: this.#choices(SW.DEFENSES),
       // A spell's Threat and Delivery (PHB v4.21), for the Talent sheet's spell panel.
       threats: this.#choices(SW.THREATS),

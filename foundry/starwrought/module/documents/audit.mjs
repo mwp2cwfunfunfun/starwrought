@@ -30,6 +30,15 @@ export function registerAudit() {
   Hooks.on("deleteItem", onDeleteItem);
   Hooks.on("preUpdateItem", onPreUpdateItem);
   Hooks.on("updateItem", onUpdateItem);
+  // A named Effect changed by hand (0.31.0; ruling 310). Since 0.31.0 a line of Automation may
+  // read any effect on a creature by its name (`IF: EFFECT(Blessed)`, `[REQUIRES effect Blessed]`),
+  // so a player who adds one, removes one, switches one or renames one has changed what the rules
+  // see, and it is said as every other hand change is. A Condition's own effect is not read here:
+  // a status toggled from the token has always been silent, and the system's own are its cards'.
+  Hooks.on("createActiveEffect", onCreateEffect);
+  Hooks.on("deleteActiveEffect", onDeleteEffect);
+  Hooks.on("preUpdateActiveEffect", onPreUpdateEffect);
+  Hooks.on("updateActiveEffect", onUpdateEffect);
 }
 
 /* -------------------------------------------- */
@@ -251,6 +260,71 @@ function onUpdateItem(item, changes, options, userId) {
   const lines = options?.swAudit;
   if (!Array.isArray(lines) || !lines.length) return;
   const actor = gearOwner(item);
+  if (!actor) return;
+  postAudit(actor, lines).catch(err => console.error("STARWROUGHT | the adjustment card could not be posted", err));
+}
+
+/* -------------------------------------------- */
+/*  Named Effects (0.31.0)                      */
+/* -------------------------------------------- */
+
+/** The Actor an effect is on: its own parent, or the Actor that owns the Item it is on. */
+function effectOwner(effect) {
+  const parent = effect?.parent;
+  if (parent?.documentName === "Actor") return parent;
+  if ((parent?.documentName === "Item") && (parent.parent?.documentName === "Actor")) return parent.parent;
+  return null;
+}
+
+/**
+ * Is this effect a named Effect, and not a Condition's own? The same test the Effects list makes
+ * (module/rules/effect-list.mjs): one status, a Condition's, is that Condition's effect.
+ */
+function isNamedEffect(effect) {
+  const statuses = [...(effect?.statuses ?? [])];
+  return !((statuses.length === 1) && Object.hasOwn(SW.CONDITIONS, statuses[0]));
+}
+
+/** The Actor to speak for, when this is a player's own hand change to a named Effect. */
+function effectAuditActor(effect, options, userId) {
+  if (!mine(options, userId) || options?.swChecked) return null;
+  if (!isNamedEffect(effect)) return null;
+  const actor = effectOwner(effect);
+  if (!actor || (actor.type === SW.PARTY_TYPE) || inChargen(actor)) return null;
+  return actor;
+}
+
+function onCreateEffect(effect, options, userId) {
+  const actor = effectAuditActor(effect, options, userId);
+  if (!actor) return;
+  const line = escapeHTML(format("STARWROUGHT.Audit.effectAdded", { effect: effect.name }));
+  postAudit(actor, [line]).catch(err => console.error("STARWROUGHT | the adjustment card could not be posted", err));
+}
+
+function onDeleteEffect(effect, options, userId) {
+  const actor = effectAuditActor(effect, options, userId);
+  if (!actor) return;
+  const line = escapeHTML(format("STARWROUGHT.Audit.effectRemoved", { effect: effect.name }));
+  postAudit(actor, [line]).catch(err => console.error("STARWROUGHT | the adjustment card could not be posted", err));
+}
+
+function onPreUpdateEffect(effect, changes, options, userId) {
+  if (!effectAuditActor(effect, options, userId)) return;
+  const lines = [];
+  if ((changes.name !== undefined) && (String(changes.name) !== String(effect.name))) {
+    lines.push(escapeHTML(format("STARWROUGHT.Audit.effectRenamed", { from: effect.name, to: changes.name })));
+  }
+  if ((changes.disabled !== undefined) && (!!changes.disabled !== !!effect.disabled)) {
+    lines.push(escapeHTML(format(changes.disabled ? "STARWROUGHT.Audit.effectOff" : "STARWROUGHT.Audit.effectOn", { effect: changes.name ?? effect.name })));
+  }
+  if (lines.length) options.swAudit = lines;
+}
+
+function onUpdateEffect(effect, changes, options, userId) {
+  if (userId !== game.user.id) return;
+  const lines = options?.swAudit;
+  if (!Array.isArray(lines) || !lines.length) return;
+  const actor = effectOwner(effect);
   if (!actor) return;
   postAudit(actor, lines).catch(err => console.error("STARWROUGHT | the adjustment card could not be posted", err));
 }

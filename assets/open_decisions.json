@@ -1,20 +1,60 @@
 [
   {
-    "id": "ammunition-counted",
+    "id": "equipment-sheet-enables-no-ranged-weapon",
+    "since": "2026-11-15",
+    "status": "decided",
+    "category": "Data",
+    "where": "data/equipment.xlsx, the Enabled? column of the Weapons sheet; the converter's warning each build",
+    "question": "The saved equipment sheet enables one weapon, the Unarmed Strike. So the 0.30.0 equipment build took Dagger, Shortsword and Spear out of the Equipment pack (characters who hold one keep it), and Arrows, Bolts and Bullets ship with no weapon that takes them.",
+    "recommendation": "If that was not meant, set Enabled? = Yes on the weapons that should be usable in Foundry (the three melee ones, and a bow or a crossbow to use the ammunition) and double-click sync_equipment.cmd.",
+    "decidedBy": "Mike's sheet as saved after the 0.30.0 build: every row reads Yes (29 weapons, 27 armor, 3 shields, 3 ammunition). Built with the equipment build on 2026-11-17 and committed with 0.31.0"
+  },
+  {
+    "id": "0.30.0-claudes-readings",
     "since": "2026-11-15",
     "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.30.0, rulings 298 and 304",
+    "question": "Two readings 0.30.0 makes that Mike did not rule on. 298: ammunition is taken when the weapon is loaded and never at the Strike (a weapon starts loaded, so a new bow's first shot costs no arrow), and with two kinds carried for one Weapon Group the stack In hand is used first, then by name. 304: Sync content refuses sources built for a newer system than the world is running, and says to restart Foundry.",
+    "recommendation": "Leave both. Say so if a Strike should take the arrow instead of the Reload: it is one change, in loadWeapon's caller and the Strike's shot.",
+    "decidedBy": ""
+  },
+  {
+    "id": "equipment-about-sheet-stale",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Data",
+    "where": "data/equipment.xlsx, the About sheet",
+    "question": "The About sheet still says the workbook follows the Player's Handbook v4.10 Chapter 5 and that sheets other than Weapons, Armor and Shields are ignored. Since 2026-11-15 the handbook prints none of those tables and the workbook is their only source, and the Ammunition sheet is read.",
+    "recommendation": "Reword the About sheet when convenient; nothing reads it.",
+    "decidedBy": ""
+  },
+  {
+    "id": "ammunition-in-the-app-and-docx",
+    "since": "2026-11-15",
+    "status": "open",
+    "category": "Data",
+    "where": "assets/xlsx_to_trees.py (write_equipment), assets/app_template.html, assets/build_phb.js",
+    "question": "The web app and the Constellation Compendium docx print the roster's four equipment blocks, so they list neither ammunition nor a ranged weapon's price (the ranged table has no price column, and the sheet now prices ranged weapons).",
+    "recommendation": "Decide when the equipment is finalized: a fifth roster block for ammunition and a price column on the ranged table are a small change in the converter, the app and the docx builder.",
+    "decidedBy": ""
+  },
+  {
+    "id": "ammunition-counted",
+    "since": "2026-11-15",
+    "status": "decided",
     "category": "Rules decision",
     "where": "module/documents/actor/carrying.mjs, loadWeapon (the one place a weapon is loaded); data/equipment.xlsx (no ammunition rows); PHB v4.25 Chapter 5 (no arrows, bolts or bullets printed)",
     "question": "0.29.0 tracks whether a ranged weapon is loaded and Mike chose to count ammunition too, as its own step. The book and the data have no ammunition: no item, no price, no bundle size. So a Reload never runs out today.",
     "recommendation": "Plan it next, with four answers from Mike first: what the ammunition items are (arrows, bolts, sling bullets) and which weapon takes which; the bundle size and price; whether a Reload with none left is refused or warned (the empty weapon's rule is warn and go on); and whether a shot can be recovered after a fight. Then a gear row for each, a link from weapon to ammunition, and loadWeapon takes it from the pack.",
-    "decidedBy": ""
+    "decidedBy": "Mike, 2026-11-15: he added the Ammunition tab to data/equipment.xlsx (Arrows, Bolts and Bullets, ten to a stack, 1 gp, by Weapon Group) and chose, by question, warn and go on with none left and recovery left to the table; built as 0.30.0 (rulings 298 to 300)"
   },
   {
     "id": "strike-requires-cell",
     "since": "2026-11-15",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx, Basic Actions sheet, the Strike row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.29.0) and AUTOMATION_GRAMMAR.md section 5",
+    "where": "data/actions_maneuvers.xlsx, Basic Actions sheet, the Strike row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.29.0) and AUTOMATION_GRAMMAR.md section 5",
     "question": "Strike's conditions are a cell for Mike to paste: [REQUIRES foe in reach or ranged weapon loaded or weapon thrown] [REQUIRES foe in sight] [REQUIRES not restrained] [REQUIRES not unconscious]. Until the row carries it the Maneuvers tab always lists Strike. The [REQUIRES weapon reload] printed for Reload with 0.28.0 is withdrawn: Reload's condition is in code now.",
     "recommendation": "Paste the four blocks in place of the N/A and run sync_content.cmd. Do not paste the Reload block from the 0.28.0 list.",
     "decidedBy": ""
@@ -32,19 +72,19 @@
   {
     "id": "reload-trait-names-interact",
     "since": "2026-11-15",
-    "status": "open",
+    "status": "decided",
     "category": "Handbook",
     "where": "Starwrought_Players_Handbook_v4.25.docx, Chapter 5, Weapon Traits, Reload [N] (the text is in a table nested in the cell); data/maneuvers.xlsx, the Reload row",
     "question": "The Reload [N] trait says \"After firing, you must spend N Interact actions before the weapon can fire again\", while data/maneuvers.xlsx has a Reload Maneuver of its own (none to six actions). The system pays the Reload Maneuver at N. The two agree on the cost and differ on the name.",
     "recommendation": "One wording pass in Word when convenient: \"you must Reload (N actions) before the weapon can fire again\". The cell nests a table, which the redline tool will not edit, so it is a hand edit.",
-    "decidedBy": ""
+    "decidedBy": "Mike, 2026-11-15: \"The reload trait already does have words in the book\"; the trait's wording stands and the system pays the Reload Maneuver at N, so nothing changes"
   },
   {
     "id": "maneuver-requires-cells",
     "since": "2026-11-15",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx, the Automation cells of 28 rows; the blocks are printed in foundry/starwrought/CHANGELOG.md (0.28.0) and AUTOMATION_GRAMMAR.md section 5",
+    "where": "data/actions_maneuvers.xlsx, the Automation cells of 28 rows; the blocks are printed in foundry/starwrought/CHANGELOG.md (0.28.0) and AUTOMATION_GRAMMAR.md section 5",
     "question": "The Maneuvers tab lists only what applies now, and a Maneuver's own conditions are a [REQUIRES ...] block in its row's Automation cell. Until a row has its block the tab always lists it. Twenty-eight rows have a block written for them (Stand and Kip Up: [REQUIRES prone or supine]; Grapple: [REQUIRES free hand or weapon grapple][REQUIRES creature in reach]; and the rest), and three more are a judgement about how the table plays (Release, Sneak, Battle Cry).",
     "recommendation": "Paste the 28 in place of the N/A or empty cells and run sync_content.cmd; leave Release, Sneak and Battle Cry unwritten unless the table tracks what they ask (a Grab held with an empty hand, Hidden as a Condition on the token). Since 0.29.0 the Reload block of that list is withdrawn (Reload's condition is in code), so 27 remain; Strike's cell is its own row here.",
     "decidedBy": ""
@@ -124,7 +164,7 @@
     "since": "2026-11-10",
     "status": "open",
     "category": "Automation cell",
-    "where": "data/ancestries.xlsx, the Human sheet in progress (Mike's, uncommitted)",
+    "where": "data/talents_ancestries.xlsx, the Human sheet in progress (Mike's, uncommitted)",
     "question": "16 Automation cells on the Human sheet hold only '# PROPOSED' notes naming tags the grammar does not have (ALTER, PREPARE, CONDITION and extra IF conditions), Jack of All Trades' and Quick Study's among them, so those Talents automate nothing once the sheet builds; and Torchbearer Human's cell no longer carries the Rally Aura. Which comes first?",
     "recommendation": "Pick the next kind from them with Claude, one at a time (ruling 119), from the Talent that wants it most; the others stay '#' notes, which the grammar reads as comments, until their kind exists. Cells that can be written today are printed in the 0.22.0, 0.24.0 and 0.25.0 changelog entries and in AUTOMATION_GRAMMAR.md section 5. Four are already on the saved sheets (Patient Assistance, Sure Assistance, Coordinated Footwork, Move Together's row). Three things wait: Aid's five GIVE lines on its row (0.22.0; its Automation cell is still empty, so no Aid gives a result), a ROW for Pay It Forward on the Ancestry Actions sheet (Cost 0, Frequency 'Once per encounter', text from the draft workbook) with '[EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]', and '[EFFECT ALTER: Pay It Forward.limit; VALUE: round]' on Reciprocal Effort (0.25.0).",
     "decidedBy": ""
@@ -134,7 +174,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Rules decision",
-    "where": "PHB v4.25, Conditions table (Mike's final wording, 2026-11-15); data/maneuvers.xlsx, Drop Prone, Stand, Kip Up and a Roll Over row to come",
+    "where": "PHB v4.25, Conditions table (Mike's final wording, 2026-11-15); data/actions_maneuvers.xlsx, Drop Prone, Stand, Kip Up and a Roll Over row to come",
     "question": "Supine is defined in the handbook's Conditions table: Off-Guard; -2 Situation to Attacks except melee against an adjacent creature (Grapples included); +2 Situation to Evade against ranged; no Move, Step, Rush, Leap or Crawl; Stand or Roll Over to clear. Mike did not take the sentence saying Supine is not Prone, so whether a rule that names Prone also means Supine is unsaid. The Prone row now ends \"or Roll Over to become Prone\", which reads like a slip for Supine. The system still has Prone alone (ruling 266).",
     "recommendation": "Mend the Prone row's last word in Word (Supine), add the Roll Over row (Cost 1, Traits Motion, Requirements \"You are Prone or Supine.\", Effect \"Change from Prone to Supine, or from Supine to Prone.\") and enable Drop Prone on the Basic Actions sheet, say whether a rule naming Prone reaches Supine, then have Supine built: a condition beside Prone, the attack penalty read against the gap to the target, the movement refusal in the drag, and Roll Over as a Maneuver the system implements.",
     "decidedBy": ""
@@ -144,7 +184,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Index",
-    "where": "data/cultures.xlsx _Tree Index row 6",
+    "where": "data/talents_cultures.xlsx _Tree Index row 6",
     "question": "Murovian is indexed with no sheet, and PHB v4.24 has no Murovian Culture. Is a sheet coming, or should the row go?",
     "recommendation": "Write the Murovian sheet and its Lore sheet when the Culture is authored; until then the row costs one warning a run. Delete it only if the Culture is dropped.",
     "decidedBy": ""
@@ -174,7 +214,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx, 17 rows",
+    "where": "data/actions_maneuvers.xlsx, 17 rows",
     "question": "Steady the Line, Quench the Ember, Glimmer, Quick Tongue, Oathbound, Tumbling Retreat, Kip Up, Sure Seat, Bull Rush, Reliable Anchor, Rally, Talk Them Down, Command the Field, Feinting Step, Battle Cry, No Quarter and Lost in the Dark are typed 'Maneuver' though a Talent grants each.",
     "recommendation": "Retype them 'Talent Maneuver'. The build reads them as granted meanwhile (ruling 207), so nothing ships wrong; the retype just silences the build line.",
     "decidedBy": ""
@@ -184,7 +224,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx Culture Actions / Rescue Haul; data/cultures.xlsx Cairnward",
+    "where": "data/actions_maneuvers.xlsx Culture Actions / Rescue Haul; data/talents_cultures.xlsx Cairnward",
     "question": "Rescue Haul is a Cairnward Maneuver, but no Cairnward Talent's Automation carries [MANEUVER Rescue Haul] or its Effect @Maneuver[Rescue Haul], so it is basic and on every character's Actions tab.",
     "recommendation": "Add [MANEUVER Rescue Haul] to the Cairnward Talent that grants it and @Maneuver[Rescue Haul] to its Effect, as Steady the Line's and Oathbound's do.",
     "decidedBy": ""
@@ -194,7 +234,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx Crafting Actions and Guile Actions",
+    "where": "data/actions_maneuvers.xlsx Crafting Actions and Guile Actions",
     "question": "Brace an Object sits on both sheets with Constellation Crafting; the Crafting row stands and the Guile row is dropped with a warning each run.",
     "recommendation": "Delete the Guile Actions row.",
     "decidedBy": ""
@@ -204,7 +244,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx Basic Actions / Drop Prone",
+    "where": "data/actions_maneuvers.xlsx Basic Actions / Drop Prone",
     "question": "Drop Prone's Enabled? cell is blank, so it ships nowhere while the book lists it (Drop Prone ⓿) and Stand and Kip Up refer to it.",
     "recommendation": "Set Enabled? = Yes unless the omission is deliberate.",
     "decidedBy": ""
@@ -214,7 +254,7 @@
     "since": "2026-11-08",
     "status": "open",
     "category": "Automation cell",
-    "where": "ancestries.xlsx (Dwarf, Elf, Gnome, Halfling), maneuvers.xlsx Ancestry Actions",
+    "where": "talents_ancestries.xlsx (Dwarf, Elf, Gnome, Halfling), actions_maneuvers.xlsx Ancestry Actions",
     "question": "Eight Automation lines want something the grammar has no kind for: a forced-movement cap (Hold Your Ground), a degree-of-success downgrade (Unclouded Mind), a Size condition (Small Opening), a Swim Speed (Riverkin), ending Persistent damage (Quench the Ember), a terrain kind 'roots' (Greenblood), a check target 'repair' (Small Ingenuity), a bare REROLL with a CLAIM (Halfling Fortune). In release mode parse_rules stops on the first of them.",
     "recommendation": "Pick the next kind to author with Claude, one at a time (ruling 119), from the Talent that wants it most; rewrite the others as prose (or blank the cell) until their kind exists, so the release pipeline passes. Greenblood's 'roots' is a terrainKinds row in assets/roster.json, no code.",
     "decidedBy": ""
@@ -244,7 +284,7 @@
     "since": "2026-11-05",
     "status": "open",
     "category": "Data",
-    "where": "data/callings.xlsx, Enabled? on Spellshaper, Blood Mage, Necromancer, Summoner, Spellblade",
+    "where": "data/talents_callings.xlsx, Enabled? on Spellshaper, Blood Mage, Necromancer, Summoner, Spellblade",
     "question": "The five caster Callings are disabled (blank Enabled?), so they and their Talents are not in the Foundry packs. Deliberate?",
     "recommendation": "Set Enabled? = Yes when they are ready to playtest; they return under the same document ids.",
     "decidedBy": ""
@@ -264,7 +304,7 @@
     "since": "2026-10-01",
     "status": "open",
     "category": "Data",
-    "where": "data/weapons.xlsx Melee",
+    "where": "data/talents_martial.xlsx Melee",
     "question": "Drilled is enabled while the Weapon Familiarity it hands over free is not, and its Choice column is retired in favour of [CHOICE Weapon Group or Technical Weapon].",
     "recommendation": "Enable Weapon Familiarity and move the Choice cell into its Automation block.",
     "decidedBy": ""
@@ -284,7 +324,7 @@
     "since": "2026-11-14",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx Athletics Actions, Grapple",
+    "where": "data/actions_maneuvers.xlsx Athletics Actions, Grapple",
     "question": "Grapple prints a cost of nought with an Athletics check against Evade, so since 0.23.0 it is the one Maneuver that rolls an attack-like check and pays nothing. Shove, Trip and Reposition beside it cost one or two.",
     "recommendation": "Read as a slip: give Grapple the cost the book prints for it, and the row pays it the next time the content builds.",
     "decidedBy": ""
@@ -294,7 +334,7 @@
     "since": "2026-11-14",
     "status": "open",
     "category": "Data",
-    "where": "data/maneuvers.xlsx Cost cells: Battle Cry, Lost in the Dark, Reliable Anchor, Steady the Line, Sure Seat, Quick Tongue, No Quarter, Grab an Edge",
+    "where": "data/actions_maneuvers.xlsx Cost cells: Battle Cry, Lost in the Dark, Reliable Anchor, Steady the Line, Sure Seat, Quick Tongue, No Quarter, Grab an Edge",
     "question": "These rows have a Trigger and no Reaction glyph in their Cost, so the system reads each as a plain Maneuver. Since 0.23.0 a plain Maneuver used from the sheet pays its cost, so the five that cost one action pay it from their row and wait for the GM off-turn (Quick Tongue pays from its card button; the two at nought pay nothing). The same is true of any row whose empty Cost cell reads as one action.",
     "recommendation": "Write the cost with its Reaction glyph in each Cost cell (Battle Cry is nought with the glyph in the book). A Reaction is paid the moment it is used and never waits for the GM.",
     "decidedBy": ""
@@ -355,7 +395,7 @@
     "decidedBy": "",
     "id": "area-attacks-as-data",
     "category": "Automation",
-    "where": "data/magic.xlsx (the Targets column is prose); module/canvas/area-targets.mjs; PHB v4.25, Area Attacks",
+    "where": "data/talents_magic.xlsx (the Targets column is prose); module/canvas/area-targets.mjs; PHB v4.25, Area Attacks",
     "question": "0.26.0 aims an area and rules none of it: a template you draw targets what is inside, and the attack rolls once for each target. The book's own clauses wait for data: \"Unless the Talent specifies otherwise\" (no Talent can ask for one roll for all), a spell's own shape and size, and \"an area Attack does not automatically gain these location-specific effects\" (the system cannot tell an area Attack from another, so its Critical Hit effect is the GM's to switch off).",
     "recommendation": "Plan it on its own when the first area spell is authored: two columns on the spell rows (Area: shape and size; Rolls: each or one), the Cast placing the template and removing it when the attack ends, and the Critical Hit effect withheld for an attack that came from one."
   },

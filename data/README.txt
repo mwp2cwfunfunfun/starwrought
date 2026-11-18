@@ -7,13 +7,23 @@ sheets missing from their file's index are ignored with a warning. A workbook op
 (~$lock file present) is converted from its last saved version, with a warning saying so.
   THE INDEX TOOL (0.20.0; Mike, 2026-11-08: "generate/re-generate/update the _Tree Index tabs
   in all of them"): python assets/index_sheets.py brings every workbook's _Tree Index up to the
-  sheets it holds. A tree sheet with no row gets one with its Category (ancestries.xlsx ->
-  Ancestry, skills.xlsx -> Skill, and so on) and its other cells blank and named in the report
+  sheets it holds. A tree sheet with no row gets one with its Category (talents_ancestries.xlsx ->
+  Ancestry, talents_skills.xlsx -> Skill, and so on) and its other cells blank and named in the report
   (Primary Attribute and Parent are hand-kept, so the tool never guesses them); an actions
   workbook's index gets one row per action with the row's Type and the sheet's Category or name;
   an index row whose sheet or row is gone is REPORTED with the nearest name, never dropped;
   filled cells are never touched; a workbook is saved only when a cell changed, after a copy to
   backup/index-<date>/. --dry-run reports only. A workbook open in Excel is skipped.
+
+THE WORKBOOKS' NAMES (Mike, 2026-11-15; system 0.30.0)
+  A talent workbook is talents_<what>.xlsx and an actions workbook actions_<what>.xlsx:
+    talents_ancestries, talents_cultures, talents_callings, talents_skills, talents_defenses,
+    talents_combat_styles, talents_magic, talents_martial (weapons.xlsx until the rename);
+    actions_maneuvers, actions_activities, actions_endeavors.
+  backgrounds.xlsx, languages.xlsx and equipment.xlsx kept their names. The converter tells a
+  workbook by what is in it, never by its name, so a rename breaks nothing; the index tool reads
+  the Category from the name with its prefix removed. Older notes in this file and in the
+  changelog name the files as they were then.
 
 THESE WORKBOOKS ARE THE ONLY SOURCE FOR TALENTS AND MANEUVERS (Mike, 2026-11-15; PHB v4.25)
   "I removed ALL Talent details in Chapter 6 as well as ALL of the Maneuver details from Chapter 8
@@ -23,11 +33,26 @@ THESE WORKBOOKS ARE THE ONLY SOURCE FOR TALENTS AND MANEUVERS (Mike, 2026-11-15;
   says: there is no handbook text for it to disagree with, a change to a row is the content loop's
   and never a handbook sync, and no handbook redline is proposed for one. The handbook is still
   the word for the general rules and for the tables it still prints (the Conditions and Traits
-  tables, Chapter 3's creation tables, Chapter 5's equipment): where a sheet restates one of
-  those and the two disagree, the handbook wins and the sheet needs a pass. A new Maneuver that a
+  tables, Chapter 3's creation tables): where a sheet restates one of those and the two
+  disagree, the handbook wins and the sheet needs a pass. SINCE 2026-11-15 THE SAME HOLDS FOR
+  EQUIPMENT: Mike took the Armor, Shield, Melee Weapon and Ranged Weapon tables out of Chapter 5
+  ("This section will be populated from the Spreadsheets in the StarWrought data folder"), so
+  equipment.xlsx is the only source for a weapon, a piece of armor, a shield and ammunition. The
+  Weapon Traits and Armor Traits tables are still the book's. A new Maneuver that a
   rule in the book names (Roll Over, for Supine) is a row here, not a paragraph there.
 
 ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
+  EQUIPMENT ALONE (0.30.0; Mike, 2026-11-15, with the talent and action workbooks still being
+  authored and unable to pass the loop below): double-click sync_equipment.cmd, or run
+    node assets/build_all.mjs --equipment
+  It converts equipment.xlsx ALONE (equipment.json and the roster's four equipment blocks),
+  rebuilds the web app, writes the Foundry pack sources and runs the style check on that one
+  workbook. No other workbook is converted, and no tree, action, background or language file is
+  written. (The build report at the end still reads every workbook, read-only.) Then Sync
+  content in the open world, as below. AFTER A SYSTEM UPDATE RESTART FOUNDRY FIRST: content is
+  written through the code the world is running, and older code drops the fields it does not
+  know. From 0.30.0 the sync refuses sources built for a newer release than the world runs; a
+  world still on 0.29.0 or earlier does not, which is why the build's last line says it too.
   Add rows to a sheet, a sheet to a workbook, or a whole new workbook in this folder. A new
   workbook needs its own "_Tree Index" sheet naming the trees inside it, as the first paragraph
   says; an actions workbook carries a  Name | Type | Category  index instead (ACTIONS WORKBOOKS,
@@ -83,7 +108,7 @@ Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence
   ERRORS on a Parent that names no tree, or one that has a parent of its own.
   Category must be one of: Skill, Defense, Weapon, Combat Style, Armor, Calling, Ancestry,
   Culture, Bloodline, Background, Magic (v4.21: the five disciplines and their specialties, in
-  magic.xlsx). The v1.8 spellings Save and Heritage still convert, as aliases
+  talents_magic.xlsx). The v1.8 spellings Save and Heritage still convert, as aliases
   for Defense and Bloodline (CATALIAS in xlsx_to_trees.py), and are normalised on the way in.
   Skill / Defense / Weapon / Combat Style / Armor / Magic trees REQUIRE a tree-level Feeds (untrained fallback).
   Ancestry rows may also carry: Vigor (or HP) | Size | Speed | Senses; those generate the
@@ -102,7 +127,7 @@ Index columns:  Tree | Category | Primary Attribute (Might/Agility/Wits/Presence
   Culture rows (0.15.0) generate the "cultures" block of assets/roster.json, as Ancestry rows
   generate the ancestries block: one record per Culture tree, every row with its enabled flag
   (name, attribute, languages, blurb, lore, traits, tree), so hand edits to that block are
-  pointless. The _Tree Index of cultures.xlsx may carry Languages (comma separated, "Serrovine,
+  pointless. The _Tree Index of talents_cultures.xlsx may carry Languages (comma separated, "Serrovine,
   Common"; " • " also reads) and Traits (the creature traits the Culture confers, as on an
   Ancestry). While it has no Languages column the converter carries each Culture's languages from
   the previous roster row and WARNS once naming the column to add; with no row to carry from the
@@ -156,6 +181,10 @@ Tree columns:   Talent | Tier (T/E/M/L) | Root | Requires | Prerequisites | Desc
         change to the code, and the build fails when a kind, a tag, a component or a keyword it
         knows is not named there. In short, a line is blocks in square brackets:
               [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]                the chassis, on the Root
+              [REACH 2]   [REACH +1]                                      Natural Reach in feet (0.30.0):
+                                                                          set on an Ancestry's Root, adjusted
+                                                                          on any Talent; with no block it is
+                                                                          the Size's (Medium 2)
               [LANGUAGE Common, Serrovine]  [SENSES Low-light vision]
               [Acrobatics trained]  [POINT Calling]  [POINT 2 Skill different]   points at creation
               [MANEUVER Steady the Line]  [TALENT Weapon Familiarity]  [CHOICE Weapon Group]
@@ -308,9 +337,10 @@ BACKGROUNDS (backgrounds.xlsx)
   to assets/backgrounds.json with its flag. The converter WARNS when an enabled Background grants
   a Skill whose constellation root is disabled, since that Training point has nowhere to land.
 
-ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's three kinds)
+ACTIONS WORKBOOKS (actions_maneuvers.xlsx, actions_activities.xlsx, actions_endeavors.xlsx; PHB v4.24's three kinds)
   Recognised by a _Tree Index carrying a Name column and no Tree column:  Name | Type | Category
-  (activities.xlsx, endeavors.xlsx) or Mike's  Name | Action Type | Category/Type  (maneuvers.xlsx)
+  (actions_activities.xlsx, actions_endeavors.xlsx) or Mike's  Name | Action Type | Category/Type
+  (actions_maneuvers.xlsx)
   both read, the Type column being any header containing "type" and OPTIONAL since 0.20.0 (the
   index is a fallback for a row with no Type cell, and python assets/index_sheets.py keeps it
   filled). Any number of them are read; the same action in two of them is an ERROR, a duplicate on
@@ -342,7 +372,7 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
   Frequency, Range, Target, Duration (0.20.0): strings carried to the Item and printed on its
     sheet, its card, the app and the docx. Duration is an Endeavor's clock on the Downtime panel
     ("7 days"); Movement Speed is an Activity's Travel Speed word (Full, Half, Double; blank reads
-    as Full); Check and Initiative (activities.xlsx) name the Constellation or Defense an Activity
+    as Full); Check and Initiative (actions_activities.xlsx) name the Constellation or Defense an Activity
     rolls now and for Initiative, "choice" for the member's own pick (Investigate), blank for
     nothing now and Awareness for Initiative. Scout's bonus and Defend's shield are effects set by
     the row's name.
@@ -397,13 +427,27 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
           [EFFECT SUBORDINATE: Aid; IF: EFFECT(Aid, used); LIMIT: encounter]
     One descriptor, the Maneuver performed, by name. IF: EFFECT(<Maneuver>, used) is the trigger,
     when the row has one: a roll of yours at your own Opportunity has just used up a bonus another
-    creature's Maneuver of that name gave you (a NAMED EFFECT, the first; the plain EFFECT(<name>)
-    and IFT: EFFECT(...) are not read yet). LIMIT: round or encounter is the row's Frequency, which
+    creature's Maneuver of that name gave you (a USED EFFECT; the plain EFFECT(<name>) is another
+    condition, below, and a SUBORDINATE line does not take it). LIMIT: round or encounter is the row's Frequency, which
     a talent's ALTER of its limit replaces. IF: RANK(...) reads the owner's rank. In Foundry the
     row and a button on the card of the roll that used the bonus up both open the subordinate
     Maneuver's own roll, named for this row; nothing is spent until that roll is made. With no
     trigger, or within the LIMIT, the use is refused. For this to work Aid's own row must carry
     its GIVE lines, or no Aid gives a result to use up.
+  EFFECTS BY NAME (0.31.0; Mike, 2026-11-17: "REQUIRES should just look for a string in that
+    Effects list"). A creature's Effects are its Conditions (prone, off-guard, and the Bind's
+    bound, controlling and controlled among them) and every other active effect on it, by its
+    name: a NAMED EFFECT, which for now is put on by hand in Foundry (the plus beside Active
+    Effects on a sheet's Effects tab). Three ways to read one:
+          [REQUIRES effect Taking Cover]             on an action's row: listed only with that Effect
+          [REQUIRES bind, neutral]                   ... only in a neutral Bind (controlling, controlled)
+          [REQUIRES creature adjacent with dying]    ... only beside a creature that has it
+          [EFFECT DEF: 1 situation; IF: EFFECT(Taking Cover)]     a bonus while YOU have it
+          [EFFECT ATK: 1 situation; IFT: EFFECT(prone)]           a bonus while the OTHER PARTY has it
+    IF: is the creature rolling and IFT: the roll's other party; only CHECK, ATK, DEF, INIT and
+    SPEED lines read EFFECT(<name>). A bare word in [REQUIRES ...] is still a Condition or a known
+    word, so a named Effect there always has the word "effect" in front, and a typo is an error.
+    A Condition's name is reserved: EFFECT(prone) is always the Condition.
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.
@@ -411,7 +455,7 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     THE SHEET WINS: any action it names retires the roster.json row of the same name from the
     compendium, the app and the compendium docx, under the same document id. Roster rows no sheet
     carries yet stay (none today: the roster's Exploration and Downtime blocks went with 0.20.0,
-    replaced by activities.xlsx and endeavors.xlsx, and every Encounter row is named by a sheet).
+    replaced by actions_activities.xlsx and actions_endeavors.xlsx, and every Encounter row is named by a sheet).
     Basic rows (above) appear on every character's Actions tab in Foundry, read from the
     compendium rather than copied.
   Enabled? works as on a tree sheet: "Yes" ships the action to Foundry, anything else keeps it
@@ -419,12 +463,14 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     actions.json with its flag. A disabled action STILL retires the roster row of the same name
     (the sheet is authoritative for any action it names), so a blank Maneuver row ships nowhere in
     Foundry and keeps the roster's row out too. Aid reads Yes (Mike, 2026-10-03) and ships.
-  maneuvers.xlsx (Mike, 2026-10-01, T17; restructured 2026-11-07 for PHB v4.24) holds the
+  actions_maneuvers.xlsx (maneuvers.xlsx until 2026-11-15; Mike, 2026-10-01, T17; restructured
+  2026-11-07 for PHB v4.24) holds the
     Maneuvers: a Basic Actions sheet whose Category column carries the book's Chapter 8 groups
     (Movement, Attack, Defense & Recovery, Other Basic Maneuvers), an Ancestry Actions and a
     Culture Actions sheet for the Talent-granted Maneuvers, and one "<Skill> Actions" sheet per
     Skill Constellation for the book's Skill action tables, each row naming its Constellation.
-    activities.xlsx holds the eight Exploration Activities and endeavors.xlsx the two Endeavors
+    actions_activities.xlsx holds the eight Exploration Activities and actions_endeavors.xlsx the
+    two Endeavors
     (Retrain, Train; Provision left the book in v4.24). It was scaffolded ONCE from the roster's Maneuver tables by
     assets/make_maneuvers_xlsx.py: names written plain with the glyphs moved to Cost, the
     "Requirements" and "Trigger" lines lifted out of the Effect into their columns, Type "Basic
@@ -451,15 +497,29 @@ ACTIONS WORKBOOKS (maneuvers.xlsx, activities.xlsx, endeavors.xlsx; PHB v4.24's 
     nothing to carry today.
 
 EQUIPMENT WORKBOOK (equipment.xlsx)
-  Authoritative for weapons, armor and shields (Mike, 2026-10-01; v4.10 sync report ruling 64),
-  built from the handbook's Chapter 5 tables. It has NO _Tree Index: the converter recognises it
-  by its Weapons, Armor and Shields sheets, and ignores any other sheet in it (About). Shields are
-  their own sheet because the book keeps them apart from armor and their columns differ. One
-  piece per row. Columns (first word wins, order free):
+  The ONLY source for weapons, armor, shields and ammunition (Mike, 2026-10-01, v4.10 sync
+  report ruling 64; the only source since 2026-11-15, when the handbook's Chapter 5 tables it
+  was built from left the book). It has NO _Tree Index: the converter recognises it by its
+  Weapons, Armor, Shields and Ammunition sheets, and ignores any other sheet in it (About).
+  Shields are their own sheet because their columns differ from armor's. One piece per row.
+  Columns (first word wins, order free):
     Weapons: Weapon | Kind | Handling | Group | Damage | Reach | Range | Traits | Price | Notes | Enabled?
     Armor:   Piece | Zone | Protection | Load | Price | Traits | Type | Description | Enabled?
              (Type was headed Material through v4.15; both headers read)
     Shields: Shield | Bonus | Hardness | Load | Price | Note | Enabled?
+    Ammunition: Ammunition | Group | Price | Description | Enabled?   (0.30.0; the name column
+             may also be headed Item or Weapon)
+  AMMUNITION (0.30.0; Mike added the sheet on 2026-11-15, the system counting what a Reload
+    uses). One kind per row. A trailing "(10)" in the name is the stack: "Arrows (10)" is the
+    item Arrows, ten to a stack, and Price is the stack's ("1 gp" ships as "1 gp per 10"). Group
+    is the WEAPON GROUP it feeds, spelled as the Weapons sheet spells it (Bows, Crossbows,
+    Slings): that is how a Reload finds it, one piece for each shot it loads, from whatever the
+    character carries for that Group, a stack In hand first and then by name. With none left the
+    weapon is loaded anyway and the Reload's card says so. A Group is required (ERROR); the
+    converter WARNS on a Group no weapon carries, on a weapon with the Reload trait whose Group
+    has no ammunition, and on ammunition that ships while no weapon that takes it is enabled.
+    Written as the `ammunition` list of equipment.json and as gear Items in an Ammunition folder
+    of the Equipment pack; the web app and the compendium docx do not list it.
   Kind is Melee or Ranged, and decides which roster table the weapon lands in. Handling is
     Intuitive, Practiced or Technical. Damage is dice, a space and a type letter ("1d8 S"; B, P
     or S). Group is the weapon group the Combat Styles name ("Swords", "Crossbows").
@@ -476,7 +536,8 @@ EQUIPMENT WORKBOOK (equipment.xlsx)
     migrates a stored scale piece to lamellar). Blank, it is derived from the first Trait, which is
     how the older books printed a piece ("Padded, Comfort" is Padded); a first Trait that is no
     type is then an ERROR, and a Type that disagrees with the first Trait is a WARNING. Description
-    is the piece's one line of prose from the v4.21 table, carried to the Item and the tables.
+    is the piece's one line of prose, carried to the armor Item's description (since 0.30.0;
+    through 0.29.0 the converter read it and the Foundry build dropped it).
     Zone is Head, Torso, Arms or Legs. The Visored and Fitted traits are what the system acts on
     since 0.11.0 (a lowered visor, an adjusted harness); Comfort, Noisy, Quiet and Attended read as
     before.
@@ -485,7 +546,8 @@ EQUIPMENT WORKBOOK (equipment.xlsx)
     (Weapons) is free prose: Unarmed Strike carries the book's "Varies; typically" remark there,
     with the typical values in the data columns. Price is "5 gp" or blank.
   Duplicate names on a sheet, and the same piece in two workbooks, are ERRORS.
-  Writes assets/equipment.json (weapons, armor, shields; every row with its enabled flag) AND
+  Writes assets/equipment.json (weapons, armor, shields, ammunition; every row with its enabled
+    flag) AND
     regenerates the roster.json blocks weaponsMelee, weaponsRanged, armorPieces and shields from
     EVERY row, enabled or not, in the positional shapes the web app, the Constellation Compendium
     docx and the Foundry build already read. Those four blocks are generated the way the

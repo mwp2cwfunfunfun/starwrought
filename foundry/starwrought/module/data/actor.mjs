@@ -388,7 +388,16 @@ export class SwActorData extends foundry.abstract.TypeDataModel {
     const byKind = this.rules?.byKind ?? {};
     const texts = kind => (byKind[kind] ?? []).map(e => e.rule).filter(Boolean);
     const uniq = list => [...new Set(list.map(s => String(s ?? "").trim()).filter(Boolean))];
+    // Natural Reach (0.30.0, ruling 301): a `[REACH N]` sets it (the Ancestry's Root; the highest
+    // when two Talents set one) and every `[REACH +N]` adjusts it. Read live off the Talents owned,
+    // so a character follows its Root's block as soon as its copy carries it.
+    const reaches = texts("reach");
+    const reachSets = reaches.filter(r => r.mode === "set").map(r => Number(r.feet)).filter(Number.isFinite);
     this.features = {
+      reach: {
+        set: reachSets.length ? Math.max(...reachSets) : null,
+        add: reaches.filter(r => r.mode === "add").reduce((n, r) => n + (Number(r.feet) || 0), 0)
+      },
       speed: texts("speed").filter(r => r.mode === "add").reduce((n, r) => n + (Number(r.feet) || 0), 0),
       traits: uniq(texts("trait").map(r => r.name)),
       languages: uniq(texts("language").flatMap(r => r.languages ?? [])),

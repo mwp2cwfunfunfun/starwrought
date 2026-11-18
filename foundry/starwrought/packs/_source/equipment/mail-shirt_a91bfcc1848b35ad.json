@@ -15,7 +15,7 @@
     "price": "10 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Interlocking metal rings protecting the torso, shoulders, and upper arms. It moves naturally with the body and resists cuts exceptionally well, but requires padding and remains vulnerable to purpose-made narrow points.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "0b8d9217472386e3"
+      "contentHash": "60283762b31de613"
     }
   },
   "effects": [],

@@ -15,7 +15,7 @@
     "price": "1 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>A lightly quilted coat protecting the torso and hips without burdening movement. It may be worn alone or serve as the foundation beneath other armor.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "295c5322dd5ae83f"
+      "contentHash": "062b092efc7a72e3"
     }
   },
   "effects": [],

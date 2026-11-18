@@ -439,7 +439,7 @@ function derive(ch){
     // PHB v4.21 (Wind; ruling 150): with Load Strain of at least 1 the Endure check comes at the end of every
     // round against 10 + Load Strain, with no exemption; a failure raises Fatigued by 1, a critical failure by 2.
     wind:{threshold:10+strain, endureThreshold:DT.Endure, due:strain>=1},
-    shield:sh, shieldBonus:sh?sh[1]:0, natReach:NATREACH[size]||"2 ft",
+    shield:sh, shieldBonus:sh?sh[1]:0, natReach:anc.reach||NATREACH[size]||"2 ft", // the Root's [REACH N] where it sets one (0.30.0), else the Size's
     init:D.Awareness, helmPen, senses:anc.senses,
     speed, speedBase, step:Math.floor(speed/2), rush:Math.max(0,speed*3-strain), // Rush ❷: three times your Speed in a straight line, less Load Strain
     leap:{quick:Math.max(0,Math.floor(speed/2)-strain), standing:Math.max(0,speed-strain), running:Math.max(0,Math.floor(speed*1.5)-strain)}, // Leap ❶ ❷ ❸

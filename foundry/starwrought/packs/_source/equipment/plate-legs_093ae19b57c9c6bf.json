@@ -16,7 +16,7 @@
     "price": "16 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Articulated steel plates protecting the thighs, knees, and lower legs. The components are fitted and joined so the legs can bend and move while remaining substantially enclosed.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -26,7 +26,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "2e20bb35443c11cb"
+      "contentHash": "491919e12f382651"
     }
   },
   "effects": [],

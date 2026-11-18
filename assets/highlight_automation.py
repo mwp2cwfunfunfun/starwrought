@@ -306,8 +306,8 @@ def parse_cells(data):
         for rule in r["rules"]:
             if rule.get("kind") == "maneuver" and rule.get("enabled") is False and c.enabled:
                 c.failures.append((rule.get("line", 0), rule.get("text", ""),
-                                   f"[MANEUVER {rule.get('name')}] names a Maneuver whose row is not enabled (Enabled? in "
-                                   f"data/maneuvers.xlsx); Foundry cannot grant it"))
+                                   f"[MANEUVER {rule.get('name')}] names a Maneuver whose row is not enabled (Enabled? on its row in "
+                                   f"data/actions_maneuvers.xlsx); Foundry cannot grant it"))
     # The markers: a name that is no Maneuver row is an error naming the cell (parse_rules.mjs).
     for c in data["cells"]:
         if c.kind != "effect":
@@ -315,7 +315,7 @@ def parse_cells(data):
         for m in MARKER.finditer(c.text):
             key = xt.action_key(m.group(1))
             if key not in data["actions"]:
-                c.failures.append((0, m.group(0), f"@Maneuver[{m.group(1).strip()}] names no row of the actions workbook (data/maneuvers.xlsx)"))
+                c.failures.append((0, m.group(0), f"@Maneuver[{m.group(1).strip()}] names no row of the actions workbooks (data/actions_maneuvers.xlsx)"))
     return reply["vocabulary"]
 
 

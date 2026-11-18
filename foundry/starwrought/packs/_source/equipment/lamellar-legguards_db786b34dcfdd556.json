@@ -12,7 +12,7 @@
     "price": "10 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Small overlapping plates laced into panels protecting the thighs and other exposed portions of the legs. They provide broad, repairable protection but are bulkier than partial plate.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "04c778e8e9d8b129"
+      "contentHash": "bc888b24f9c55650"
     }
   },
   "effects": [],

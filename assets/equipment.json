@@ -52,7 +52,7 @@
    ],
    "price": "1 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Shortsword",
@@ -83,7 +83,7 @@
    ],
    "price": "1 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Spear",
@@ -116,7 +116,7 @@
    ],
    "price": "1 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Rapier",
@@ -133,7 +133,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Longsword",
@@ -149,7 +149,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Battleaxe",
@@ -165,7 +165,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Warhammer",
@@ -180,7 +180,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Greatsword",
@@ -196,7 +196,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Greataxe",
@@ -212,7 +212,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Halberd",
@@ -230,7 +230,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Maul",
@@ -245,7 +245,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Longspear",
@@ -261,7 +261,7 @@
    ],
    "price": "7 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Flail",
@@ -278,7 +278,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Whip",
@@ -297,7 +297,7 @@
    ],
    "price": "1 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Estoc",
@@ -314,7 +314,7 @@
    ],
    "price": "3 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Chain Flail",
@@ -333,7 +333,7 @@
    ],
    "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "War Pick",
@@ -349,7 +349,7 @@
    ],
    "price": "3 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Sling",
@@ -363,9 +363,9 @@
     "Ranged 60",
     "Reload 1"
    ],
-   "price": "",
+   "price": "1 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Light Crossbow",
@@ -381,9 +381,9 @@
     "Reload 2",
     "Two-Handed"
    ],
-   "price": "",
+   "price": "3 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Shortbow",
@@ -399,9 +399,9 @@
     "Two-Handed",
     "Unwieldy 10"
    ],
-   "price": "",
+   "price": "5 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Longbow",
@@ -417,9 +417,9 @@
     "Two-Handed",
     "Unwieldy 20"
    ],
-   "price": "",
+   "price": "7 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Heavy Crossbow",
@@ -436,9 +436,9 @@
     "Armor-Piercing 1",
     "Two-Handed"
    ],
-   "price": "",
+   "price": "9 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Hand Crossbow",
@@ -454,9 +454,9 @@
     "Reload 2",
     "Close"
    ],
-   "price": "",
+   "price": "11 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Repeating Crossbow",
@@ -473,9 +473,9 @@
     "Reload 3",
     "Two-Handed"
    ],
-   "price": "",
+   "price": "13 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Bolas",
@@ -490,9 +490,9 @@
     "Nonlethal",
     "Trip"
    ],
-   "price": "",
+   "price": "2 gp",
    "notes": "",
-   "enabled": false
+   "enabled": true
   }
  ],
  "armor": [
@@ -851,7 +851,7 @@
    "load": 0,
    "price": "1 gp",
    "note": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Shield",
@@ -860,7 +860,7 @@
    "load": 1,
    "price": "5 gp",
    "note": "",
-   "enabled": false
+   "enabled": true
   },
   {
    "name": "Tower Shield",
@@ -869,7 +869,30 @@
    "load": 2,
    "price": "10 gp",
    "note": "No Gear bonus to Guard. Gives you Cover when Raised, and Greater Cover if you Take Cover while it is Raised.",
-   "enabled": false
+   "enabled": true
+  }
+ ],
+ "ammunition": [
+  {
+   "name": "Arrows",
+   "bundle": 10,
+   "group": "Bows",
+   "price": "1 gp",
+   "enabled": true
+  },
+  {
+   "name": "Bolts",
+   "bundle": 10,
+   "group": "Crossbows",
+   "price": "1 gp",
+   "enabled": true
+  },
+  {
+   "name": "Bullets",
+   "bundle": 10,
+   "group": "Slings",
+   "price": "1 gp",
+   "enabled": true
   }
  ]
 }

@@ -15,7 +15,7 @@
     "price": "7 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Interlocking rings protecting the arms through their full range of motion. They resist cuts without rigid joints, but their weight is noticeable during prolonged weapon use.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "756760cbc40267f2"
+      "contentHash": "172a57705b133757"
     }
   },
   "effects": [],

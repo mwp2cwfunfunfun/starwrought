@@ -14,7 +14,7 @@
     "price": "4 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>A close-fitting steel cap protecting the crown and sides of the skull while leaving the face and neck exposed. It can be hidden beneath a hood or large hat.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "807fc0ebcf7fae43"
+      "contentHash": "e663845655c3fb78"
     }
   },
   "effects": [],

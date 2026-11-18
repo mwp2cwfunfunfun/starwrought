@@ -14,7 +14,7 @@
     "price": "8 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>A fitted steel helmet protecting the skull, temples, cheeks, and nape while leaving the face open. It offers strong all-purpose protection without substantially restricting sight or breathing.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7a49d624375ca3c8"
+      "contentHash": "07ca7c40c29489a1"
     }
   },
   "effects": [],

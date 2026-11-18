@@ -55,3 +55,17 @@ export const DETECTION = Object.freeze({
   hidden: { label: "STARWROUGHT.Detection.hidden", bonus: 4, order: 1 },
   undetected: { label: "STARWROUGHT.Detection.undetected", bonus: 4, order: 0 }
 });
+
+/**
+ * Natural Reach in feet (0.30.0, ruling 301). The Size's own (`SIZES[size].reach`; 2 for anything
+ * unknown), unless a `[REACH N]` block on a Talent the character owns sets it (the Ancestry's
+ * Root), plus every `[REACH +N]` adjustment; never below 0. The one computation, for the
+ * character's data model and the self-test.
+ * @param {string} size  A key of SIZES.
+ * @param {{set?: number|null, add?: number}} [reach]  From the owned Talents' `reach` rules.
+ * @returns {number}
+ */
+export function naturalReach(size, { set = null, add = 0 } = {}) {
+  const own = ((set === null) || (set === undefined) || !Number.isFinite(Number(set))) ? (SIZES[size]?.reach ?? 2) : Number(set);
+  return Math.max(0, own + (Number(add) || 0));
+}

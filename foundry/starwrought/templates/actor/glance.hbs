@@ -42,4 +42,14 @@
     {{/each}}
   </div>
   {{/if}}
+
+  {{!-- Named Effects (0.31.0): what is on the creature that is no Condition, as public as one. --}}
+  {{#if effects.length}}
+  <div class="sw-glance-section">
+    <span class="sw-glance-label">{{localize "STARWROUGHT.Glance.effects"}}</span>
+    {{#each effects as |e|}}
+    <span class="sw-item-tag sw-glance-effect">{{e.name}}</span>
+    {{/each}}
+  </div>
+  {{/if}}
 </div>

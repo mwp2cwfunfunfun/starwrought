@@ -1,0 +1,16 @@
+{
+  "_id": "b1b5b5c4488ca258",
+  "name": "Ammunition",
+  "type": "Item",
+  "description": "",
+  "folder": null,
+  "sorting": "a",
+  "sort": 4,
+  "color": "#5a2f2f",
+  "flags": {
+    "starwrought": {
+      "contentHash": "b03f5848cfd070cd"
+    }
+  },
+  "_key": "!folders!b1b5b5c4488ca258"
+}

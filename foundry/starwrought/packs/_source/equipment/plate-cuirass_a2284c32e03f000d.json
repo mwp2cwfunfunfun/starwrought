@@ -15,7 +15,7 @@
     "price": "20 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Shaped steel plates protecting the chest, back, abdomen, and often the hips. Its rigid surfaces deflect and distribute blows extremely well, but the cuirass works best when fitted to its wearer.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "f1a6a8492073d6bd"
+      "contentHash": "7ed5df7ead8f3184"
     }
   },
   "effects": [],

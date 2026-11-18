@@ -14,7 +14,7 @@
     "price": "3 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>A thick, densely layered quilted coat designed to absorb impact as armor in its own right. It remains quiet and comfortable but is hotter and bulkier than a light gambeson.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "1d52ee52b96a1c29"
+      "contentHash": "4dd31d50e248213e"
     }
   },
   "effects": [],

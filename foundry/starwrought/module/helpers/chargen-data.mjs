@@ -23,7 +23,7 @@ const TALENT_FIELDS = [
 // before the rename reads as zero Vigor rather than as a crash; `vigorOf` below picks whichever is set.
 const CHASSIS_FIELDS = [
   "system.kind", "system.constellation", "system.attribute", "system.vigor", "system.hp",
-  "system.size", "system.speed", "system.senses", "system.languages", "system.grants",
+  "system.size", "system.speed", "system.reach", "system.senses", "system.languages", "system.grants",
   "system.specialAbility", "system.description", "system.lore"
 ];
 

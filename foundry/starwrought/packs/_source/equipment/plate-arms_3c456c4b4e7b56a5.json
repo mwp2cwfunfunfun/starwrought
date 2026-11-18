@@ -16,7 +16,7 @@
     "price": "14 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Articulated steel plates protecting the shoulders, upper arms, elbows, forearms, and hands.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -26,7 +26,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "dd1fdc51a44b9dbf"
+      "contentHash": "eb17cd931f2e9c33"
     }
   },
   "effects": [],

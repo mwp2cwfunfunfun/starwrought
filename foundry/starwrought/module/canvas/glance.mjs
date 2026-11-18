@@ -17,6 +17,7 @@
  */
 
 import * as SW from "../config.mjs";
+import { effectsOn, namedEffects } from "../rules/effect-list.mjs";
 
 const ELEMENT_ID = "sw-glance";
 const TEMPLATE = "systems/starwrought/templates/actor/glance.hbs";
@@ -38,6 +39,16 @@ export function registerGlance() {
   Hooks.on("updateItem", item => {
     if (shown && (item.parent === shown.actor)) refreshGlance();
   });
+  // A Condition or a named Effect going on or off while the card is shown (0.31.0): an effect is
+  // the Actor's own, or an Item's of the Actor's. Through 0.30.0 a Condition toggled under the
+  // mouse left the card as it was until the mouse came back.
+  for (const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"]) {
+    Hooks.on(hook, effect => {
+      if (!shown) return;
+      const parent = effect?.parent;
+      if ((parent === shown.actor) || (parent?.parent === shown.actor)) refreshGlance();
+    });
+  }
 }
 
 /** Is the hover card switched on for this user? Read defensively for a build without the setting. */
@@ -108,6 +119,15 @@ export function glanceData(actor, { full = false } = {}) {
     })
     .sort((a, b) => a.label.localeCompare(b.label));
 
+  // The named Effects (0.31.0; ruling 309): what is on the creature that is no Condition, by its
+  // name. One a Maneuver applied is as public as a Condition (its card said so; 0.32.0). One MADE
+  // BY HAND is shown to the creature's owner and the GM alone: a GM may keep a private note as an
+  // effect on an adversary, and nothing announced it (the review of 0.31.0). A rule still reads
+  // either off any creature.
+  const effects = namedEffects(effectsOn(actor))
+    .filter(e => full || !!e.applied)
+    .map(e => ({ slug: e.slug, name: e.name }));
+
   return {
     name: actor.name,
     img: actor.img,
@@ -116,6 +136,7 @@ export function glanceData(actor, { full = false } = {}) {
     held,
     zones,
     conditions,
+    effects,
     vigor: full && sys.vigor ? { value: sys.vigor.value ?? 0, max: sys.vigor.max ?? 0 } : null,
     anyWorn: zones.some(z => z.piece)
   };

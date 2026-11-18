@@ -151,6 +151,78 @@ export function nextLoaded(ammunition) {
 }
 
 /* -------------------------------------------- */
+/*  Ammunition in the pack (0.30.0)             */
+/* -------------------------------------------- */
+
+/** A Weapon Group as it is compared: case and outer spaces do not matter. */
+const groupKey = group => String(group ?? "").trim().toLowerCase();
+
+/**
+ * The stacks of ammunition that feed a weapon (0.30.0, ruling 298): the character's gear whose
+ * `ammunition` names the weapon's Weapon Group ("Bows" for a Shortbow's Arrows), the empty ones
+ * included, since an empty stack still says what the weapon wants. THE ORDER IS THE ORDER THEY ARE
+ * USED IN: a stack that is In hand first, then by name, as the Equipment tab lists them. So with
+ * two kinds for one Group (Arrows and Silver Arrows) the player chooses by taking the one to
+ * shoot in hand; left to itself a Reload takes the first by name. A weapon with no Group is fed
+ * by nothing, and nothing is counted for it.
+ * @param {string} group  The weapon's Weapon Group.
+ * @param {Array<{id: string, name: string, ammunition?: string, quantity?: number, held?: boolean}>} stacks
+ * @returns {object[]}  The entries given, filtered and ordered.
+ */
+export function ammunitionFor(group, stacks) {
+  const key = groupKey(group);
+  if (!key) return [];
+  return [...(stacks ?? [])]
+    .filter(stack => stack && (groupKey(stack.ammunition) === key))
+    .map((stack, index) => ({ stack, index }))
+    .sort((a, b) => ((a.stack.held ? 0 : 1) - (b.stack.held ? 0 : 1))
+      || String(a.stack.name ?? "").localeCompare(String(b.stack.name ?? ""))
+      || (a.index - b.index))
+    .map(entry => entry.stack);
+}
+
+/**
+ * What a Reload takes from the pack (rulings 298 and 299): `need` pieces, one for each shot it
+ * loads, from the stacks that feed the weapon, each stack emptied before the next is touched.
+ * When there are not enough the weapon is STILL loaded (Mike, by question: "Warn and go on"):
+ * `short` says how many were missing, for the card and the notice, and nothing is refused.
+ * @param {Array<{id: string, name: string, quantity?: number}>} stacks  `ammunitionFor`.
+ * @param {number} need  The shots the Reload adds.
+ * @returns {{takes: Array<{id: string, name: string, from: number, to: number}>, used: number,
+ *            short: number, left: number, kind: string, kinds: Array<{name: string, used: number, left: number}>}}
+ *   `takes` are the stacks to write; `left` is what all the stacks hold afterwards; `kind` is the
+ *   name of the ammunition (the first stack taken from, else the first stack), "" with none;
+ *   `kinds` says, for each name taken from, how many were used and how many of that name are left,
+ *   which is what the Reload's card prints (one line for each kind, should a Reload span two).
+ */
+export function takeAmmunition(stacks, need) {
+  const list = [...(stacks ?? [])].filter(Boolean);
+  let wanted = Math.max(0, Math.floor(Number(need) || 0));
+  const takes = [];
+  let left = 0;
+  for (const stack of list) {
+    const from = Math.max(0, Math.floor(Number(stack.quantity) || 0));
+    const taken = Math.min(from, wanted);
+    if (taken > 0) takes.push({ id: stack.id, name: stack.name, from, to: from - taken });
+    wanted -= taken;
+    left += from - taken;
+  }
+  const used = takes.reduce((sum, take) => sum + (take.from - take.to), 0);
+  const kinds = [];
+  for (const take of takes) {
+    let entry = kinds.find(k => k.name === take.name);
+    if (!entry) {
+      // What is left of a kind is every stack of that name, taken from or not.
+      const after = list.filter(s => s.name === take.name)
+        .reduce((sum, s) => sum + (takes.find(t => t.id === s.id)?.to ?? Math.max(0, Math.floor(Number(s.quantity) || 0))), 0);
+      kinds.push(entry = { name: take.name, used: 0, left: after });
+    }
+    entry.used += take.from - take.to;
+  }
+  return { takes, used, short: wanted, left, kind: takes[0]?.name ?? list[0]?.name ?? "", kinds };
+}
+
+/* -------------------------------------------- */
 /*  What is in hand (0.29.0)                    */
 /* -------------------------------------------- */
 

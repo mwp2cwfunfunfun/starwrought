@@ -29,13 +29,13 @@ import { summarize } from "../rules/grammar.mjs";
 import { usableByRule } from "../rules/engine.mjs";
 // CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0), its state
 // switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
-import { effectsContext, armClaimLine } from "../helpers/effects.mjs";
+import { effectsContext, armClaimLine, effectReadAs } from "../helpers/effects.mjs";
 import { cycleRuleState, addEffect, removeEffect, removeGiven, removeUsed } from "../rules/effects-state.mjs";
 // THE MANEUVERS TAB (0.28.0): which Maneuvers apply now, the Favorites first, no row twice.
 import { situationOf, statusOf } from "../helpers/situation.mjs";
 import { arrangeManeuvers } from "../rules/requires.mjs";
 // 0.29.0: the hand-correction of a ranged weapon's shots, and the chooser behind the Strike row.
-import { nextLoaded } from "../data/items/weapon-traits.mjs";
+import { nextLoaded, ammunitionFor } from "../data/items/weapon-traits.mjs";
 
 /** The character flag that holds the Favorites (0.28.0): the slugs of the bookmarked Maneuvers, in the order marked. */
 const FAVORITES_FLAG = "favoriteManeuvers";
@@ -176,6 +176,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // 0.29.0: the Loaded chip on a ranged weapon's row, and the Strike row's three buttons.
       toggleLoaded: SwCharacterSheet.#onToggleLoaded,
       strikeWith: SwCharacterSheet.#onStrikeWith,
+      adjustQuantity: SwCharacterSheet.#onAdjustQuantity,
       setCarry: SwCharacterSheet.#onSetCarry,
       wearArmor: SwCharacterSheet.#onWearArmor,
       setActions: SwCharacterSheet.#onSetActions,
@@ -441,7 +442,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       id: e.id, name: e.name, img: e.img, disabled: e.disabled,
       description: e.description, isSuppressed: e.isSuppressed,
       // The rules page a condition's row opens, when its condition has one (0.5.1, T6).
-      rulesPage: rulesPageOf(e)
+      rulesPage: rulesPageOf(e),
+      // How a line of Automation reads it (0.31.0): `prone`, or `EFFECT(Blessed)`.
+      readAs: effectReadAs(e)
     }));
 
     // The wizard's own state, so a half-built character says so instead of looking broken.
@@ -874,6 +877,11 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       state: item.system.state,
       stateLabel: game.i18n.localize(item.system.stateLabel ?? ""),
       quantity: item.system.quantity,
+      // AMMUNITION (0.30.0): a stack of it shows its count on the row, with a minus and a plus.
+      isAmmunition: (item.type === "gear") && !!item.system.isAmmunition,
+      ammunitionTip: (item.type === "gear") && item.system.isAmmunition
+        ? game.i18n.format("STARWROUGHT.Ammunition.rowHint", { group: item.system.ammunition })
+        : "",
       price: item.system.price,
       load: item.system.load,
       raised: item.system.raised,
@@ -940,13 +948,22 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const sys = item.system;
     if (!sys.takesAmmunition) return { takesAmmunition: false };
     const several = sys.magazine > 1;
+    // What is carried for it (0.30.0): the stacks that feed its Weapon Group, all told.
+    const stacks = ammunitionFor(sys.group, this.document.items.filter(i => i.type === "gear").map(i => ({
+      id: i.id, name: i.name, ammunition: i.system.ammunition, quantity: i.system.quantity, held: !!i.system.held
+    })));
+    const carried = stacks.reduce((sum, stack) => sum + (Number(stack.quantity) || 0), 0);
+    const carriedTip = !String(sys.group ?? "").trim() ? ""
+      : (stacks.length
+        ? game.i18n.format("STARWROUGHT.Ammunition.carried", { n: carried, kind: stacks[0].name })
+        : game.i18n.format("STARWROUGHT.Ammunition.carriedNone", { group: sys.group }));
     return {
       takesAmmunition: true,
       isLoaded: !!sys.isLoaded,
       loadedLabel: several
         ? game.i18n.format("STARWROUGHT.Loaded.count", { n: sys.shots, max: sys.magazine })
         : game.i18n.localize(sys.isLoaded ? "STARWROUGHT.Loaded.loaded" : "STARWROUGHT.Loaded.empty"),
-      loadedTip: game.i18n.format("STARWROUGHT.Loaded.chipHint", { cost: SW.ACTION_GLYPHS[sys.reloadCost] ?? String(sys.reloadCost) })
+      loadedTip: `${game.i18n.format("STARWROUGHT.Loaded.chipHint", { cost: SW.ACTION_GLYPHS[sys.reloadCost] ?? String(sys.reloadCost) })} ${carriedTip}`.trim()
     };
   }
 
@@ -1458,6 +1475,20 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       : (row?.dataset.uuid ? await fromUuid(row.dataset.uuid) : null);
     if (item?.type === "action") return item.use({ actor: this.document, strike, dialog });
     return this.document.strikeWith({ strike, dialog });
+  }
+
+  /**
+   * The minus and the plus on an ammunition row (0.30.0): the count corrected by hand, one piece
+   * at a time, at no cost. Recovering arrows after a fight is the table's (Mike, by question), and
+   * this is how it is done. A player's change is an Adjusted line, as any quantity's is.
+   */
+  static async #onAdjustQuantity(event, target) {
+    const item = this.#getItem(target);
+    if (!item || !SW.PHYSICAL_TYPES.includes(item.type)) return null;
+    const delta = Number(target.dataset.delta) || 0;
+    const next = Math.max(0, (Number(item.system.quantity) || 0) + delta);
+    if (!delta || (next === item.system.quantity)) return null;
+    return item.update({ "system.quantity": next });
   }
 
   /**

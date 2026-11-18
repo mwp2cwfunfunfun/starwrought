@@ -8,6 +8,7 @@
 
 import * as SW from "../config.mjs";
 import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "../helpers/actor-context.mjs";
+import { effectReadAs } from "../helpers/effects.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
 import { auraRowsByItem, rangeFor } from "../canvas/auras.mjs";
@@ -162,7 +163,9 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     context.effects = actor.effects.map(e => ({
       id: e.id, name: e.name, img: e.img, disabled: e.disabled,
       // The rules page a condition's row opens, when its condition has one (0.5.1, T6).
-      rulesPage: rulesPageOf(e)
+      rulesPage: rulesPageOf(e),
+      // How a line of Automation reads it (0.31.0): `prone`, or `EFFECT(Blessed)`.
+      readAs: effectReadAs(e)
     }));
 
     context.sizeChoices = Object.fromEntries(

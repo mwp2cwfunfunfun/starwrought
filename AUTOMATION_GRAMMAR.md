@@ -37,6 +37,7 @@ Every block the cell reads, one example each. Case never matters.
 | `[TRAIT Human]` | the character has the trait | 2 |
 | `[SIZE Medium]` | the body's Size | 2 |
 | `[SPEED 6]`, `[SPEED +1]` | Speed in feet per Move, or an adjustment to it | 2 |
+| `[REACH 2]`, `[REACH +1]` | Natural Reach in feet, or an adjustment to it | 2 |
 | `[VIGOR 8]`, `[VIGOR opening 12]` | Vigor per level; a Calling's Opening Vigor | 2 |
 | `[SENSES Low-light vision]` | a sense | 2 |
 | `[LANGUAGE Common, Serrovine]` | languages known | 2 |
@@ -48,6 +49,9 @@ Every block the cell reads, one example each. Case never matters.
 | `[AURA 15 allies]` | a ring on the map, preview-only until shown | 2 |
 | `[AURA 15 allies; DEF: 1 situation; IF: SEEN]` | a ring that carries its effect: the ring is the effect's FOR | 2 |
 | `[REQUIRES prone or supine]` | on a Maneuver's own row: what the Maneuver needs before it can be used; the Maneuvers tab lists the row only while it holds | 2 |
+| `[REQUIRES effect Taking Cover]` | ... you have a named Effect, anything on you that is no Condition (0.31.0) | 2 |
+| `[REQUIRES bind, neutral]` | ... you are in a Bind in that state: `neutral`, `controlling`, `controlled` (0.31.0) | 2 |
+| `[REQUIRES creature adjacent with dying]` | ... a creature that near has a Condition, or `with effect <Name>` a named Effect (0.31.0) | 2 |
 | `[EFFECT CHECK: 1 condition, aid]` | a bonus to checks of a Constellation or Maneuver (none named: every check) | 3 |
 | `[EFFECT ATK: 1 condition]` | a bonus to every Strike and Cast | 3 |
 | `[EFFECT DEF: 1 situation, guard]` | a bonus to a Defense (none named: all four) | 3 |
@@ -71,6 +75,8 @@ Every block the cell reads, one example each. Case never matters.
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
 | `; IF: RESULT(critical failure)` | ... on that degree (REROLL and GIVE only) | 3 |
 | `; IF: EFFECT(Aid, used)` | ... once a roll of yours at your own Opportunity has used up a bonus another creature's Aid gave you (SUBORDINATE only) | 3 |
+| `; IF: EFFECT(Taking Cover)` | ... while YOU have that Condition or named Effect (CHECK, ATK, DEF, INIT and SPEED lines; 0.31.0) | 3 |
+| `; IFT: EFFECT(prone)` | ... while the roll's OTHER PARTY has that Condition or named Effect (the same lines; 0.31.0) | 3 |
 | `; IFT: TRAIT(Fear)` | ... against an attack carrying the trait | 3 |
 | `; IFT: MARKED` | ... against the creature the MARK named | 3 |
 | `; IFT: BLOW` (`BLAST`, `BLIGHT`, `BEGUILEMENT`, `MELEE`, `RANGED`) | ... against that Threat, or a Blow by its reach | 3 |
@@ -142,12 +148,13 @@ Each block is one rule.
 | `[TRAIT Human]` | the character has the trait (the Ancestry's on its Root; any Talent may add one) | `trait` |
 | `[SIZE Medium]` | the body's Size: Tiny, Small, Medium, Large, Huge, Gargantuan | `size` |
 | `[SPEED 6]` | Speed in feet per Move; `[SPEED +1]` or `[SPEED -1]` adjusts it | `speed` |
+| `[REACH 2]` | Natural Reach in feet, an Ancestry's own, written on its Root (0.30.0); `[REACH +1]` or `[REACH -1]` on any Talent adjusts it. With no block, Natural Reach comes from Size | `reach` |
 | `[VIGOR 8]` | Vigor per level (the Ancestry's); `[VIGOR opening 12]` a Calling's Opening Vigor | `vigor` |
 | `[SENSES Low-light vision]` | a sense, added to the list | `sense` |
 | `[LANGUAGE Common, Serrovine]` | languages known, comma separated | `language` |
 | `[Acrobatics trained]` | a Trained Root in that Constellation at creation, FG's own form for a proficiency: one directed Talent Point that buys the Root (a Background's, a Calling's). `[Lore trained]` lets the player name the Lore. Only `trained` reads: nothing grants a higher rank at creation | `grant` |
 | `[POINT Skill]` | a Talent Point at creation, by scope: `Opening` (a Root of a Constellation not yet opened), `Calling`, `Skill` (a Lore included), `Lore`, `Defense`, `Combat Style`, `Comet` (anywhere you qualify); `[POINT 2 Skill different]` is two points in different Constellations | `grant` |
-| `[MANEUVER Steady the Line]` | the Maneuver of that name, a row of `data/maneuvers.xlsx`, is the character's: copied onto the sheet when the Talent lands, listed under "From your Talents", used from there, gone with the Talent. The row's own Cost and Automation are the Maneuver's | `maneuver` |
+| `[MANEUVER Steady the Line]` | the Maneuver of that name, a row of `data/actions_maneuvers.xlsx`, is the character's: copied onto the sheet when the Talent lands, listed under "From your Talents", used from there, gone with the Talent. The row's own Cost and Automation are the Maneuver's | `maneuver` |
 | `[TALENT Weapon Familiarity]` | a Talent handed over free, no point spent (the Free Talent column's successor) | `talent` |
 | `[CHOICE Weapon Group]` | a build-time pick the Talent demands (the Choice column's successor) | `choice` |
 | `[AURA 15 allies]` | the ring on the map: range in feet, whom it is about (`allies`, `enemies`, `all`). Every ring is preview-only until its owner shows it from the Auras window (0.17.0; the old `visible` word is refused) | `aura` |
@@ -238,7 +245,8 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | `ALL(>=3, 5)` | how many creatures of either side stand within the range | `IF:` |
 | `CLAIM(when trading)` | the player decides: the bonus is a checkbox in the roll dialog with these words as its hint, unticked; the Effects tab's "Apply to next roll" and the pin on the Talent's row arm it for the next roll (ruling 174) | `IF:` |
 | `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again) and `GIVE` (the degree that gives the result) read it | `IF:` |
-| `EFFECT(Aid, used)` | a named Effect (0.25.0, step one of two): a roll of yours, made at your own Opportunity that is still running, has used up the Effect of that name, and it was a bonus another creature gave you. The name is the Maneuver whose result it was. Only `SUBORDINATE` reads it. The plain `EFFECT(<name>)` (an Effect you hold now) and `IFT: EFFECT(...)` (one on the other party) are refused as not read yet: they come with the named Effects a Maneuver can give a target | `IF:` |
+| `EFFECT(Aid, used)` | a used Effect (0.25.0): a roll of yours, made at your own Opportunity that is still running, has used up the Effect of that name, and it was a bonus another creature gave you. The name is the Maneuver whose result it was. Only `SUBORDINATE` reads it, and only after `IF:` | `IF:` |
+| `EFFECT(Taking Cover)`, `EFFECT(prone)` | a creature HAS it now (0.31.0): a Condition by its name, or a named Effect, anything on the creature that is no Condition (the Effects list, below). **The prefix says whose: `IF:` is the creature rolling, `IFT:` the roll's other party.** A line may hold one of each. Only the `bonus` lines read it (CHECK, ATK, DEF, INIT, SPEED), and not beside a `FOR` that reaches others, an aura's ring included. After `IFT:` it is refused on an INIT or a SPEED line (neither has another party) and beside `IF: CLAIM(...)` (a claim is asked before the other party is known) | `IF:` or `IFT:` |
 | `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171) | `IFT:` |
 | `MARKED` | the other party is the creature this Talent's or Maneuver's `MARK` named (FG's `IFT: CUSTOM(Hunt Prey)`) | `IFT:` |
 | `BLOW` | the Threat answered is a Blow (a weapon's Strike, an adversary's attack row) | `IFT:` |
@@ -280,17 +288,61 @@ once an encounter); it never adds a use, and a row with no `LIMIT:` stays unlimi
 property is refused as not read yet. Where two lines change one Maneuver, `beneficial-duration`
 stands over `duration` in either order, and of two changes to one property the later stands.
 
-**Named Effect** (0.25.0, step one). Mike, 2026-11-15, after Fantasy Grounds: "using a Maneuver can
-grant a custom Effect on a target (with a specific duration), and other modifiers/effects can be
-applied IF that custom Effect field is on the target." Built in two steps by his choice. Step one
-is an Effect the SYSTEM leaves: when a roll of yours uses up a bonus another creature's Maneuver
-gave you, at your own Opportunity, you hold an Effect named for that result with "(used)" after it
-(**Aid from Wren (used)**) until that Opportunity ends, listed on the Effects tab under Pending
-results. `IF: EFFECT(<Maneuver>,
-used)` reads it. A penalty a roll swallowed, a roll on another fighter's Opportunity, an Initiative,
-and a result the GM binned or whose window closed leave nothing. Step two, not built: a Maneuver
-that puts a named Effect on its target for a duration, and `CHECK`, `DEF` and `ATK` lines reading
-`IF: EFFECT(<name>)` on the owner and `IFT: EFFECT(<name>)` on the other party.
+**The Effects list** (0.31.0; rulings 305 to 310). Mike, 2026-11-17: "assuming each Actor has an
+Effects list of whatever effects they have, conditions, etc., REQUIRES should just look for a
+string in that Effects list." A creature's Effects are two things, and nothing new is stored for
+either:
+
+- **Its Conditions.** Every Condition is an effect on the creature, and so are the Bind's three
+  states (`bound` for a neutral Bind, `controlling`, `controlled`), Preparing, Spent, Wounded and
+  Dying. A line names one by the book's name; spaces, hyphens and case do not matter.
+- **Its named Effects:** every other active effect on it, by its name. The GM (or the player, on
+  their own sheet) adds one on the Effects tab with the plus beside "Active Effects" and names it
+  ("Blessed"); the tag beside it says how a line reads it, `EFFECT(Blessed)`. A character's custom
+  effect rows count too, by their label. An effect that is switched off counts for nothing. A
+  name is letters, digits, spaces, hyphens and apostrophes, and case and spacing do not matter
+  when it is read. An effect named with anything else ("Blessed!", "Cover, Greater") is on no
+  list, since no line could write its name, and its tag says "not read".
+
+A Condition's name is reserved: `EFFECT(prone)` is always the Condition, so an effect that is only
+CALLED "Prone" is read by nothing, and its tag says so. An Exposed Zone is the Zone's own and is
+not read as an Effect.
+
+Three lines read the list: `[REQUIRES ...]` on a Maneuver's row (section 4), and `IF: EFFECT(...)`
+and `IFT: EFFECT(...)` on a bonus line (the table above). A rule reads a named Effect off any
+creature. The hover card shows one made by hand to the creature's owner and the GM alone (a GM
+may keep a private note as an effect on an adversary); one a Maneuver applies, from the next
+release, will show to everyone, as a Condition does (ruling 309).
+
+What the name may not be: `not` in front (it turns a whole condition round: `[REQUIRES not effect
+Blessed]`; a bonus line has no `not` yet); a Condition with a number (`Fatigued 2`: a value is
+not compared, so write `fatigued`); `or` or `and` as a word. The Off-Guard a first Torso Wound
+makes lasting is a number on the Defenses and not the Condition, so `EFFECT(off-guard)` does not
+see it.
+
+**Three things are called an effect, and a line reads only the first by `EFFECT(<name>)`:**
+
+| what | where it shows | read by |
+|---|---|---|
+| a Condition or a named Effect ON a creature | the token, the hover card, the Effects tab's Active Effects | `EFFECT(<name>)`, `[REQUIRES <condition>]`, `[REQUIRES effect <Name>]` |
+| a pending result ("Aid from Wren") and a used Effect ("Aid from Wren (used)") | the Effects tab's Pending results | the next roll with its Constellation; `EFFECT(Aid, used)` on a `SUBORDINATE` line |
+| a line of Automation (an `[EFFECT ...]` block on a Talent, or a custom effect row's lines) | the Effects tab's rule lines, with On, Skip, Off | nothing reads a line; a line reads the roll |
+
+So `EFFECT(Aid)` does not see a pending "Aid from Wren"; a custom effect row LABELLED "Rage" is the
+named Effect Rage, whatever its lines say.
+
+**Named Effect** (0.25.0, step one; 0.31.0, the reading half of step two). Mike, 2026-11-15, after
+Fantasy Grounds: "using a Maneuver can grant a custom Effect on a target (with a specific
+duration), and other modifiers/effects can be applied IF that custom Effect field is on the
+target." Step one is an Effect the SYSTEM leaves: when a roll of yours uses up a bonus another
+creature's Maneuver gave you, at your own Opportunity, you hold an Effect named for that result
+with "(used)" after it (**Aid from Wren (used)**) until that Opportunity ends, listed on the
+Effects tab under Pending results. `IF: EFFECT(<Maneuver>, used)` reads it. A penalty a roll
+swallowed, a roll on another fighter's Opportunity, an Initiative, and a result the GM binned or
+whose window closed leave nothing. Since 0.31.0 a bonus line reads an Effect a creature has
+(`IF: EFFECT(<name>)`, `IFT: EFFECT(<name>)`), and until the next release such an Effect is put on
+by hand. Not built yet, and next: a Maneuver that puts one on (`APPLY`) and takes one off
+(`REMOVE`), with a window.
 
 **Trait.** Any word; the attack's traits are the weapon's Traits column, the adversary attack Item's
 Traits, or the spell Talent's `Traits` column on its tree sheet.
@@ -708,6 +760,8 @@ The words:
 | a Condition's name: `prone`, `grabbed`, `restrained`, `hidden`, `undetected`, `off-guard`, `controlling`, `controlled`, `bound`, ... | the character has that Condition. Spaces, hyphens and case do not matter |
 | `supine` | accepted now, and never true until Supine is built, so `[REQUIRES prone or supine]` can be written once |
 | `bind` | the character is in a Bind, of any kind (`bound` is the neutral Bind alone) |
+| `bind, neutral`, `bind, controlling`, `bind, controlled` | the character is in a Bind in that state (0.31.0). The comma may be left out, and it is the one comma a block reads. The same as the Conditions `bound`, `controlling` and `controlled`, read off the Bind's own record |
+| `effect <Name>` | the character has a named Effect (0.31.0): anything on it that is no Condition, by its name (`effect Taking Cover`; section 3, the Effects list). The word in front keeps a bare word a Condition or one of these words, so a mistyped word is still an error. `effect prone` is the Condition |
 | `spell` | the character owns a spell |
 | `shield`, `shield raised` | a shield is in hand; it is in hand and Raised |
 | `rigid` | a rigid implement is in hand: a weapon that is neither Flexible nor a natural weapon, or a shield |
@@ -721,6 +775,7 @@ The words:
 | `foe in reach` (`ally`, `creature`) | such a token is within the character's reach |
 | `foe within 30` (`ally`, `creature`; any number of feet) | such a token is within that many feet, edge to edge |
 | `foe in sight` (`ally`, `creature`) | the character can see such a token, at any distance (0.29.0). Sight is the reading every nearness word already uses: a clear line between the two tokens past the walls, and the other not Hidden or Undetected. For a Blinded character the system does not guess, and the row stays listed |
+| `... with <Condition>`, `... with effect <Name>` | after any of the four nearness words (0.31.0): such a token is that near AND has the Condition or the named Effect. `creature adjacent with dying` is Stabilize's; `foe in reach with effect Marked` |
 | `encounter` | the character is a fighter in a running encounter |
 
 `foe` is a token of the opposite disposition, `ally` one of the same, `creature` any other token.
@@ -747,7 +802,10 @@ Strike buttons and asks what to Strike with), and its conditions are a cell, pri
 
 **Not read, and the table's:** Size limits ("no more than one Size larger"), cover and concealment,
 tools and supplies, mounts and animals, "can hear you", "willing", what a Reaction's Trigger needs,
-and anything about the creature TARGETED rather than who is near.
+and anything about the creature TARGETED rather than who is near. Since 0.31.0 a block may ask
+what a creature that is near HAS (`with`), which is as close as it comes: Stabilize's row is
+listed beside any Dying creature, whichever one is then targeted. A Condition's value is not
+compared (`frightened` is any value).
 
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
@@ -763,6 +821,36 @@ The ring on the map, `[AURA ...]`. A drawing: what happens inside it is the Tale
 
 ### `speed`
 `[SPEED N]` or `[SPEED +N]`.
+
+### `reach`
+`[REACH N]` or `[REACH +N]` (0.30.0; ruling 301). Mike: "for Automation, I want to have a
+`[REACH N]` Automation Grammar, where N is the natural reach for the ancestry."
+
+```
+[TRAIT Human][SIZE Medium][REACH 2][SPEED 6][VIGOR 8]     the Human's Root
+[REACH 1]                                                  a short-armed Ancestry, whatever its Size
+[REACH +1]                                                 a Talent that lengthens the reach
+```
+
+- **`[REACH N]` sets Natural Reach**, in feet: the distance a creature reaches with nothing in
+  hand, to which a weapon's own Reach is added for Total Reach. It belongs on the Ancestry's Root.
+  `[REACH 0]` is allowed (a Tiny creature's). `ft` may be written.
+- **`[REACH +N]` and `[REACH -N]` adjust it**, on any Talent. An adjustment of 0 is refused.
+- **With no block, Natural Reach comes from Size**, as it always did: Tiny 0, Small 1, Medium 2,
+  Large 4, Huge 8, Gargantuan 12. A block stands over that, so an Ancestry's reach no longer has
+  to follow its Size.
+- **A character reads it off the Talents it owns**, live: the Root's `[REACH N]` (the highest,
+  should two Talents set one) plus every adjustment, never below 0. So an existing character
+  follows the block as soon as its copy of the Root carries it (Sync content refreshes the copy);
+  nothing is stored at creation. Everything that uses Natural Reach follows: Total Reach, the reach
+  ring, "in reach" in a `[REQUIRES ...]` block, Support, Intercept.
+- **For the cards.** The build carries a Root's `[REACH N]` to the Ancestry's record, and the
+  Ancestry's card in Character Creation, its Item sheet, the web app and the compendium document
+  print it. An Ancestry with no block prints nothing, since its reach is its Size's.
+- **A set stands over Size.** `[REACH 2]` on a Medium Ancestry's Root is still 2 when that
+  character's Size is changed by hand to Large. Write the block where an Ancestry's reach is not
+  its Size's, or accept that the block, not the Size, is the word.
+- An adversary's reach is its Size's: rules do not reach adversaries.
 
 ### `vigor`
 `[VIGOR N]` or `[VIGOR opening N]`.
@@ -836,7 +924,7 @@ Berserker Calling      [Athletics trained][VIGOR opening 12]
 (every other Calling Root: its Trained Skill and its Opening Vigor the same way)
 ```
 
-### The Talent Maneuvers (the "Talent Maneuvers" sheet of `data/maneuvers.xlsx`)
+### The Talent Maneuvers (the "Talent Maneuvers" sheet of `data/actions_maneuvers.xlsx`)
 
 ```
 Steady the Line  ❶↺   [EFFECT IMMUNE: expose; FOR: allies 0]
@@ -858,7 +946,7 @@ Patient Assistance    [EFFECT ALTER: Aid.beneficial-duration; VALUE: recipient o
 Sure Assistance       [EFFECT ALTER: Aid.critical-failure; VALUE: nothing]
 ```
 
-The five lines are Aid's row on the Basic Actions sheet of `data/maneuvers.xlsx`; the two Talents
+The five lines are Aid's row on the Basic Actions sheet of `data/actions_maneuvers.xlsx`; the two Talents
 are the Human's. These cells are Mike's to paste: the 0.22.0 release carries the kinds, and both
 workbooks were in his hands when it was cut. What the system does not read of Aid, and the table
 does: its Threshold ("typically 15") and whether the help makes sense. (Its ❶ is paid when the roll
@@ -871,7 +959,7 @@ Move Together  ❶      [EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]
 Coordinated Footwork  [EFFECT ALTER: Move Together.movement; VALUE: step]
 ```
 
-The first line is Move Together's row on the Ancestry Actions sheet of `data/maneuvers.xlsx`; the
+The first line is Move Together's row on the Ancestry Actions sheet of `data/actions_maneuvers.xlsx`; the
 second is the Human Talent's cell. Both are Mike's to paste: the 0.24.0 release carries the kind,
 and both workbooks were in his hands when it was cut. What the system does not read of Move
 Together, and the table does: that both routes are declared before either moves, that you move
@@ -885,7 +973,7 @@ Reciprocal Effort     [EFFECT ALTER: Pay It Forward.limit; VALUE: round]
 ```
 
 The first line is Pay It Forward's row, which is not yet on the Ancestry Actions sheet of
-`data/maneuvers.xlsx` (its text is in Mike's draft workbook); the second is the Human Talent's
+`data/actions_maneuvers.xlsx` (its text is in Mike's draft workbook); the second is the Human Talent's
 cell. Both are Mike's to add: the 0.25.0 release carries the kind, and both workbooks were in his
 hands when it was cut. Pay It Forward needs Aid's own five `GIVE` lines above to be on Aid's row,
 since without them no Aid gives a result to use up. What the system does not read of Pay It
@@ -901,7 +989,7 @@ v4.21's stacking collapses one source).
 
 ### What each Maneuver needs (0.28.0)
 
-The `[REQUIRES ...]` block for every row of `data/maneuvers.xlsx` whose Requirements, Target or
+The `[REQUIRES ...]` block for every row of `data/actions_maneuvers.xlsx` whose Requirements, Target or
 Effect names something the system can check. They are Mike's to paste: the 0.28.0 release carries
 the kind, and the workbook was in his hands when it was cut. Each goes in the row's Automation
 cell, in place of an `N/A` or an empty cell, or on a line of its own beside the row's other blocks.
@@ -981,6 +1069,28 @@ Device, Pick Lock, Stabilize's supplies (tools), Aid ("willing"), Quench the Emb
 word for a kind of Persistent Damage), Sure Seat (a mount), Grab an Edge (Releasing an item is part
 of it), Quick Tongue (a settlement), Look Harmless (the party sheet already warns), and every Size
 limit.
+
+### Reading Effects (0.31.0)
+
+What the three new forms of `[REQUIRES ...]` and the `EFFECT(<name>)` condition let a row say. The
+blocks above still read as printed; these are sharper where a row asks for a state.
+
+```
+  Close                     [REQUIRES bind, controlling]            (in code already; a cell replaces it)
+  Stabilize                 [REQUIRES creature adjacent with dying]  in place of [REQUIRES creature adjacent]
+  Take Cover (a judgement)  [REQUIRES not effect Taking Cover]       once the Effect is put on by hand
+```
+
+And on a Talent or a Maneuver a character owns, a bonus that waits on an Effect:
+
+```
+  [EFFECT ATK: 1 situation; IFT: EFFECT(prone)]              +1 to attacks against a Prone creature
+  [EFFECT DEF: 1 situation; IF: EFFECT(Taking Cover)]        +1 to Defenses while you have Taking Cover
+  [EFFECT CHECK: 1 situation, intimidation; IFT: EFFECT(frightened)]   +1 to Intimidation against the Frightened
+```
+
+Until the next release puts Effects on by a Maneuver's result, an Effect that is no Condition is
+put on by hand: the plus beside "Active Effects" on the Effects tab of either sheet, then its name.
 
 ## 6. Character Effects
 
@@ -1182,6 +1292,21 @@ written on the Maneuver's row.
   on its Equipment row corrects it by hand. A Strike with an empty weapon still happens and its
   card says so. Outside an encounter nothing is counted. Ammunition itself (arrows, bolts) is not
   counted yet.
+- **An Effect is read where it stands** (0.31.0; rulings 305 to 310). `IF: EFFECT(<name>)` asks
+  the creature rolling, and a bonus that waits on it is in the sheet's Threshold for as long as
+  the Effect is on: put Taking Cover on and Guard moves on the sheet. `IFT: EFFECT(<name>)` asks
+  the roll's other party, so it is read only where there is one: the Combat window's preview, the
+  card, a Strike's pairing with each defender (never the blind attack die), a Defense roll, and a
+  check read against one creature's Threshold. An adversary's Effects are read as a character's
+  are. A `[REQUIRES effect ...]` block and a `with` are read by the Maneuvers tab, which looks
+  again whenever an effect on any creature changes (a custom effect row on ANOTHER character is
+  the one change it does not hear until something else moves). Nothing puts a named Effect on yet
+  but a hand: the Effects tab's Active Effects, where a player's change is said in chat (a custom
+  effect row's label is not: the row is the player's own, as its lines are). The hover card lists
+  a creature's hand-made Effects for its owner and the GM. Where one Talent has a line on the
+  attack die and another line that waits on the defender (`ATK: 1` and `ATK: 2; IFT:
+  EFFECT(prone)`), the two are one circumstance, counted once: +2 against a Prone defender, not
+  +3.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
   every clause with no line for it is the table's.
 - **Adversaries.** A rule on an adversary's Item is indexed but no adversary roll asks for
@@ -1199,13 +1324,29 @@ written on the Maneuver's row.
 | `after the ring, an AURA block carries one effect, \`[AURA <N> <who>; <tag>: ...]\`` | what follows the ring's semicolon is no effect line |
 | `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: CHECK, ATK, ...` | the word after EFFECT is no tag |
 | `EFFECT is written \`[EFFECT <tag>: ...]\`, as in \`[EFFECT IMMUNE: prone; LIMIT: encounter]\`` | an empty `[EFFECT]` |
-| `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, EFFECT, or [<Constellation> trained]` | the block's first word |
+| `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, REACH, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, EFFECT, or [<Constellation> trained]` | the block's first word |
 | `REQUIRES is a block of its own, not an effect: write \`[REQUIRES prone]\`` | a feature keyword wrapped in `[EFFECT ...]` (0.28.0); every keyword is told the same in its own word |
 | `REQUIRES is written on the Maneuver's own row: it says when that Maneuver can be used, and the Maneuvers tab lists the row only then` | a `[REQUIRES ...]` block on a Talent or a custom effect |
 | `"<word>" is not something REQUIRES can check: write a Condition (...), supine, bind, spell, shield, shield raised, rigid, free hand, holding, weapon, ...` | a word section 4's table does not list |
 | `"<words>": say how near, as in \`foe adjacent\`, \`foe in reach\`, \`foe in sight\` or \`ally within 30\`` | `foe`, `ally` or `creature` with no distance, or one that is none |
 | `REQUIRES joins alternatives with \`or\`, and a condition that must ALSO hold is a second block` / `REQUIRES has no \`and\`` | a comma, a semicolon or an `and` inside the block |
 | `"<words>": one \`not\` is enough` / `an \`or\` has nothing beside it` | a doubled `not`; a dangling `or` |
+| `"<words>": a Bind's state is neutral, controlling, controlled, as in \`bind, neutral\`` | a word after `bind` that is no state (0.31.0) |
+| `"<words>": name the Effect, as in \`effect Taking Cover\`` | the word `effect` with nothing after it (0.31.0) |
+| `"<words>": after \`with\` write a Condition (\`creature adjacent with dying\`) or a named Effect (\`foe in reach with effect Marked\`)` | what follows `with` is neither (0.31.0); a bare name is not read as an Effect there either |
+| `"<name>" cannot be an Effect's name: ...` | a name that is a word of the grammar (`or`, `not`, `self`, `target`, `none`, a dash), that holds `or` or `and` as a word, or that has a character other than letters, digits, spaces, hyphens and apostrophes (0.31.0) |
+| `"<words>": an Exposed Zone is read off the Zone, not as an Effect; no line reads it yet` | `effect exposed head`, `EFFECT(exposed)` (0.31.0) |
+| `"<words>": \`not\` goes in front of the whole condition, as in \`[REQUIRES not effect Blessed]\`; a bonus line has no \`not\` yet` | `effect not Blessed`, `EFFECT(not prone)`: `not` is never part of a name (0.31.0) |
+| `"<words>": a Condition's value is not compared yet; write \`fatigued\`, which is any value` | a Condition's name with a number after it, `EFFECT(Fatigued 2)` (0.31.0) |
+| `<TAG> has no other party, so IFT: EFFECT(<name>) could never hold; for an Effect of your own write \`IF: EFFECT(<name>)\`` | `IFT: EFFECT(...)` on an INIT or a SPEED line (0.31.0) |
+| `<TAG> does not read IFT: EFFECT(<name>) beside IF: CLAIM(...): a claim is asked at the die, before the other party is known` | the two on one line (0.31.0) |
+| `EFFECT is written \`EFFECT(<name>)\` or \`EFFECT(<name>, used)\`, as in ...` | an `EFFECT` with no name, an empty part, or three parts |
+| `"<word>": the one state read is \`used\`, as in \`EFFECT(<name>, used)\`; an Effect a creature has now is written \`EFFECT(<name>)\`` | a second word that is not `used` |
+| `IFT: EFFECT(<name>, used) is not read: a used Effect is your own roll's, so it is written \`IF: EFFECT(<name>, used)\`` | the used form after `IFT:` |
+| `<TAG> does not take EFFECT(<name>)` | the plain form on a line that is no bonus (IMMUNE, USE, REROLL, MARK, IGNORE, GIVE, ALTER, PERMIT, SUBORDINATE) |
+| `<TAG> does not take IF: EFFECT(<name>, used): a used Effect is what a SUBORDINATE line waits for. For an Effect you have now, write \`IF: EFFECT(<name>)\`` | the used form on a bonus line |
+| `<TAG> does not read EFFECT(...) beside a FOR that reaches others (an aura's ring is one): ...` | `EFFECT(...)` with `FOR: allies ...`, or inside an `[AURA ...]` block (0.31.0) |
+| `IF: EFFECT(<name>) is given twice` | the same name twice after the same prefix; one after `IF:` and one after `IFT:` is fine |
 | `TRAIT is a feature and is written in brackets: \`[TRAIT Human]\`` | a feature keyword typed as a line, without its brackets |
 | `"substitute" is the kind's name, and its tag is USE: write \`[EFFECT USE: Presence, Origin, aid]\`` | a kind's stored name typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): an effect is written with its tag. On a custom effect row the message offers the bare `USE: Presence, Origin, aid` |
 | `USE is an effect tag and takes a colon: write \`[EFFECT USE: Presence, Origin, aid]\`` | a tag typed without its colon (`use Presence, Origin, aid`; 0.21.0); any tag is told the same in its own word (`CHECK is an effect tag and takes a colon: ...`), but `SPEED`, which is a feature keyword first |
@@ -1288,11 +1429,12 @@ written on the Maneuver's row.
 | `"<name>" is a Constellation: USE reads a Maneuver's check in this version, as in \`USE: Presence, Origin, aid\`; a Constellation's own checks are not read yet` | a Constellation as the third descriptor: not built, section 7 |
 | `USE does not take FOR` / `USE does not take IF: SEEN` / `USE does not take IF: ALLIES(...)` / `USE does not take IFT: <Threat>` / `USE does not take IFT: MARKED` / `USE does not take IF: CLAIM(...)` / `USE does not take IFT: TRAIT(...)` | a component `USE` has no use for: it takes `IF: RANK(...)` and `LIMIT:` alone. `IFT: CHECK(...)` is told `IFT: <Threat>`, and an `IF: RESULT(...)` gets the reroll message above |
 | `a substitution is the owner's own roll and cannot ride an [AURA ...] block; write it as its own \`[EFFECT USE: Presence, Origin, aid]\`` | a `USE` after the ring's semicolon in an `[AURA ...]` block |
-| `"<name>" is not a Maneuver: a [MANEUVER ...] names a row of data/maneuvers.xlsx` | the Maneuver's row is missing, or (the build) not enabled |
+| `"<name>" is not a Maneuver: a [MANEUVER ...] names a row of data/actions_maneuvers.xlsx` | the Maneuver's row is missing, or (the build) not enabled |
 | `"<name>" is not a Constellation` | `[<name> trained]` names no Constellation; the same words answer a `RANK(...)` or the second descriptor of a `USE` that names none |
 | `[<name> expert]: a Root is Trained; nothing grants Expert at creation` | only `trained` reads |
 | `POINT is written \`[POINT <N> <Scope> [different]]\`` / `"<word>" is not a grant scope: write Opening, Calling, Skill, Lore, Defense, Combat Style or Comet` | the point block |
 | `SPEED is written \`[SPEED 6]\` ... or \`[SPEED +1]\`` / `VIGOR is written \`[VIGOR 8]\` ... or \`[VIGOR opening 12]\`` | the chassis blocks |
+| `REACH is written \`[REACH 2]\` (the Natural Reach in feet) or \`[REACH +1]\` (an adjustment), not "<text>"` / `an adjustment of 0 does nothing` | a `[REACH ...]` block that is no number, or `[REACH +0]` (0.30.0) |
 | `"<word>" is not a Size: write Tiny, Small, Medium, Large, Huge or Gargantuan` | the Size block |
 | `AURA is written \`[AURA <N> <who>]\`` | the ring block |
 | `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
@@ -1443,3 +1585,25 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   every character now has (294). Reload joins the Maneuvers the system runs, so its block is in
   code and the one printed with 0.28.0 is withdrawn; Strike's cell is printed in section 5 (295).
   No new kind, tag or hook point.
+- **0.30.0** (2026-11-15): the `[REACH N]` block and the `reach` kind, the twenty-third, at Mike's
+  asking ("where N is the natural reach for the ancestry"): `[REACH 2]` sets Natural Reach on an
+  Ancestry's Root and `[REACH +1]` adjusts it on any Talent, his choice of the two forms (ruling
+  301); with no block Natural Reach is still the Size's. A feature block with no hook: the
+  character reads it off the Talents it owns. Also in this release, and no part of the grammar:
+  the workbooks were renamed (`data/actions_maneuvers.xlsx`, `data/talents_ancestries.xlsx` and
+  the rest), so the examples here name them as they are now.
+- **0.31.0** (2026-11-17): Effects are read by name, from Mike's thought while writing REQUIRES
+  cells ("REQUIRES should just look for a string in that Effects list") and his "Plan both
+  together" with named Effects, step two. The Effects list (ruling 305): a creature's Conditions,
+  and every other active effect on it by its name, with nothing new stored. `[REQUIRES ...]` gains
+  `effect <Name>` (the word in front is his choice, so a mistyped bare word is still an error),
+  `bind, <state>` (his example) and `with` after a nearness word (306). `EFFECT(<name>)` is read
+  after `IF:` for the creature rolling and after `IFT:` for the roll's other party, by the bonus
+  lines alone; it is the first condition whose prefix decides its meaning (307). A check read
+  against a target's Threshold now has that creature as its other party (308). No new kind, tag
+  or hook point. Three older things mended beside it, found by the review: an `INIT` line never
+  reached an Initiative rolled with Awareness, which is the default one (since 0.13.0); a straight
+  apostrophe inside parentheses opened a quote that never closed, so `CLAIM(when it's raining)`
+  and `EFFECT(Hunter's Mark)` were errors; and one Talent's lines split between the attack die
+  and the pairing with a defender both counted, where one circumstance counts once. The writing
+  half, `APPLY` and `REMOVE` on a Maneuver's own row, is the next release.

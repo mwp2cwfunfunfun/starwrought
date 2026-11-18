@@ -3,6 +3,7 @@
  * character, in the shape of Fantasy Grounds' PC feature automation, blocks in square brackets:
  *
  *   [TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]
+ *   [REACH 2]  [REACH +1]                         (0.30.0: Natural Reach, set or adjusted)
  *   [LANGUAGE Common, Serrovine]
  *   [Acrobatics trained][Athletics trained][Lore trained]
  *   [POINT Calling]  [POINT 2 Skill different]  [POINT Opening]
@@ -32,6 +33,9 @@ export const FEATURE_KEYWORDS = Object.freeze({
   trait: "trait",
   size: "size",
   speed: "speed",
+  // 0.30.0: Natural Reach in feet, an Ancestry's own (Mike: "a [REACH N] Automation Grammar, where
+  // N is the natural reach for the ancestry"), or an adjustment to it.
+  reach: "reach",
   vigor: "vigor",
   senses: "sense", sense: "sense",
   language: "language", languages: "language",
@@ -48,7 +52,7 @@ export const FEATURE_KEYWORDS = Object.freeze({
 export const EFFECT_KEYWORD = "effect";
 
 /** The keywords as the document lists them, one per kind, for messages. */
-export const FEATURE_KEYWORD_LIST = Object.freeze(["TRAIT", "SIZE", "SPEED", "VIGOR", "SENSES", "LANGUAGE", "POINT", "MANEUVER", "TALENT", "CHOICE", "AURA", "REQUIRES", "EFFECT"]);
+export const FEATURE_KEYWORD_LIST = Object.freeze(["TRAIT", "SIZE", "SPEED", "REACH", "VIGOR", "SENSES", "LANGUAGE", "POINT", "MANEUVER", "TALENT", "CHOICE", "AURA", "REQUIRES", "EFFECT"]);
 
 /** Is this trimmed line a feature line? */
 export function isFeatureLine(line) {

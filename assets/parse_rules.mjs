@@ -157,7 +157,7 @@ function parseCell(carrier, context) {
     tally.kinds.add(rule.kind);
     if ((rule.kind === "maneuver") && (rule.enabled === false)) {
       const message = `${context.source}: [MANEUVER ${rule.name}] names a Maneuver whose row is not enabled `
-        + `(Enabled? in data/maneuvers.xlsx); Foundry cannot grant it`;
+        + `(Enabled? on its row in data/actions_maneuvers.xlsx); Foundry cannot grant it`;
       (carrier.enabled === false ? warnings : errors).push(message);
     }
   }
@@ -264,6 +264,13 @@ function ancestryFacts(record) {
     shown: v => String(v), agrees: (a, b) => parseInt(String(a), 10) === parseInt(String(b), 10),
     isDefault: v => parseInt(String(v), 10) === 6
   });
+
+  // Natural Reach (0.30.0, ruling 301): a Root's `[REACH N]`, for the cards to print. There was
+  // never a column for it, so there is nothing to agree with: the record carries it when the Root
+  // sets one and not otherwise (with no block, Natural Reach is the Size's).
+  const reach = single(rules, "reach", where, "REACH", r => r.mode === "set");
+  if (reach) { record.reach = `${reach.feet} ft`; supplied += 1; }
+  else delete record.reach;
 
   const senses = rules.filter(r => r.kind === "sense").map(r => r.name);
   supplied += fact({
@@ -386,7 +393,7 @@ function expandMarkers(carrier, where) {
   const expanded = source.replace(MARKER, (whole, name) => {
     const action = actionsByName.get(plainName(name).trim().toLowerCase());
     if (!action) {
-      errors.push(`${where}: @Maneuver[${name.trim()}] names no row of the actions workbook (data/maneuvers.xlsx)`);
+      errors.push(`${where}: @Maneuver[${name.trim()}] names no row of the actions workbooks (data/actions_maneuvers.xlsx)`);
       failed = true;
       return whole;
     }

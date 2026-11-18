@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.29.0"; }
+:root { --sw-css-version-character: "0.31.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -774,4 +774,10 @@
    used. The kind slot holds where it came from ("Aid from Tess"), in the gold and unshouted; the
    line has no switch, and the bin is the GM's. */
 .starwrought .sw-effects-given-title { margin-top: 0.5rem; }
+
+/* How a line of Automation reads an effect (0.31.0): the tag beside its name on the Effects list
+   of both sheets, `prone` for a Condition's own and `EFFECT(Blessed)` for any other; in the gold
+   with a warning mark when no line can read the name as it stands. */
+.starwrought .sw-effect-readas { font-family: var(--font-monospace, monospace); font-size: 0.72rem; white-space: nowrap; }
+.starwrought .sw-effect-readas.sw-effect-unread { font-family: inherit; color: var(--sw-gold); border-color: var(--sw-gold-dim); }
 .starwrought .sw-given-line .sw-effect-kind { text-transform: none; letter-spacing: 0; color: var(--sw-gold); border-color: var(--sw-gold-dim); }

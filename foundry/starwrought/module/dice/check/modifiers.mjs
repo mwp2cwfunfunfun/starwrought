@@ -157,11 +157,16 @@ export function substitutionLine(record) {
  * (`cfg.attacker`), the defender an immediate attack names (`cfg.defender`), with the token the
  * card calls the target (`cfg.targetUuid`). Null when nobody is known, as on the attack flow's
  * blind die, whose pairings ask again as each resolves.
+ *
+ * Since 0.31.0 (ruling 308) also the creature a check is READ AGAINST (`cfg.targetActor`, which
+ * helpers/threshold-read.mjs sets for a Maneuver that names one Defense: Demoralize against
+ * Guard). Through 0.30.0 such a check had the target's token and no Actor, so a rule about the
+ * other party's own state could not hold on it; `IFT: EFFECT(...)` is the first that asks.
  * @param {object} cfg
  * @returns {{actor: object|null, uuid: string|null, tokenUuid: string|null, name: string}|null}
  */
 export function otherOf(cfg) {
-  const actor = cfg?.attacker ?? cfg?.defender ?? null;
+  const actor = cfg?.attacker ?? cfg?.defender ?? cfg?.targetActor ?? null;
   const tokenUuid = cfg?.targetUuid || null;
   if (!actor && !tokenUuid) return null;
   return { actor, uuid: actor?.uuid ?? null, tokenUuid, name: String(cfg?.targetName ?? actor?.name ?? "") };

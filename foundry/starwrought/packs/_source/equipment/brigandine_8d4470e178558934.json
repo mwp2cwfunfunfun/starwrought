@@ -12,7 +12,7 @@
     "price": "16 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Overlapping steel plates riveted inside a fitted cloth or leather garment. It combines strong protection with more give and less exposed metal than a plate cuirass.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "adc38b4b7d8a0ce3"
+      "contentHash": "c47031f3bba56422"
     }
   },
   "effects": [],

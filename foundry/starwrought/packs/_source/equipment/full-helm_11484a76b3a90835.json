@@ -15,7 +15,7 @@
     "price": "12 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>An enclosing steel helmet with movable face protection. Lowering the visor gives excellent head and facial protection at the cost of peripheral awareness; raising it restores an open view.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -25,7 +25,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "7b80b4f384f3d719"
+      "contentHash": "727a88757772aa50"
     }
   },
   "effects": [],

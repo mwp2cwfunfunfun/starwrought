@@ -12,7 +12,7 @@
     "price": "11 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Overlapping rows of small rigid plates laced together around the torso. Lamellar needs no supporting fabric for its structure.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "a47f807f9b5c234e"
+      "contentHash": "aa1e6c611020ac80"
     }
   },
   "effects": [],

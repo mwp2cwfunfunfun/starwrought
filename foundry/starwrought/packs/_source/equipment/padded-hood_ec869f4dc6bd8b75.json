@@ -14,7 +14,7 @@
     "price": "1 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Layers of quilted cloth protecting the head and neck. Light, quiet, and comfortable, but intended to soften blows rather than stop powerful weapons outright.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -24,7 +24,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "5f52e595b8e30f77"
+      "contentHash": "f4226855ec09e473"
     }
   },
   "effects": [],

@@ -12,7 +12,7 @@
     "price": "5 gp",
     "quantity": 1,
     "state": "carried",
-    "description": "",
+    "description": "<p>Thick, shaped, and hardened leather protecting the chest, back, and abdomen. “Leather” here means armor-grade hardened hide: not ordinary clothing leather.</p>",
     "source": "data/equipment.xlsx"
   },
   "folder": "95f00e73201b3e15",
@@ -22,7 +22,7 @@
   },
   "flags": {
     "starwrought": {
-      "contentHash": "4fe3fc6f7796f5b9"
+      "contentHash": "4fb0c9dd19248268"
     }
   },
   "effects": [],
