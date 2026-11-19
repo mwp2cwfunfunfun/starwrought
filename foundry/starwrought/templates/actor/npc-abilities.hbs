@@ -21,6 +21,10 @@
            data-tooltip="{{aura.tooltip}}" style="--sw-aura-color: {{aura.color}}"><i class="fa-solid fa-circle-dot"></i></a>
         {{/with}}
         <div class="sw-item-controls">
+          {{!-- USE (0.34.0): through 0.33.0 an adversary's Maneuver could only be shown. Using it
+               pays its cost in an encounter and rolls its check; against a player's character the
+               player rolls instead (ruling 340). The name still shows the card. --}}
+          <a data-action="itemUse" data-tooltip="STARWROUGHT.Hint.npcUse"><i class="fa-solid fa-dice-d20"></i></a>
           <a data-action="itemEdit"><i class="fa-solid fa-pen"></i></a>
           <a data-action="itemDelete"><i class="fa-solid fa-trash"></i></a>
         </div>

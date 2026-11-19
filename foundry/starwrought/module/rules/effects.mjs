@@ -138,7 +138,10 @@ export function readEffectLine(text, { context = {} } = {}) {
     } else if (!words.length || !/^[+-]?\d+$/.test(words[0])) {
       // An example is a line that reads: a GIVE needs its degree (the review of 2026-11-14).
       const example = tag === "give" ? "1 situation, chosen; IF: RESULT(success)" : `1 condition${tag === "check" ? ", aid" : tag === "def" ? ", guard" : ""}`;
-      throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: <value> <type>, <descriptor>\`, as in \`${tag.toUpperCase()}: ${example}\`: a signed whole number first, not "${first}"`);
+      // `[EFFECT CHECK: Athletics vs Evade]` (0.34.0): the check a Maneuver rolls, written as the
+      // bonus tag. Told its own block, beside the tag's shape.
+      const block = (tag === "check") ? ". The check a Maneuver rolls is a block of its own, with no EFFECT and no colon: `[CHECK Athletics vs Evade]`" : "";
+      throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: <value> <type>, <descriptor>\`, as in \`${tag.toUpperCase()}: ${example}\`: a signed whole number first, not "${first}"${block}`);
     } else {
       value = Number(words[0]);
       if (value === 0) throw new RuleSyntaxError("a bonus of 0 does nothing");

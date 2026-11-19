@@ -86,7 +86,48 @@ export const ChecksMixin = Base => class extends Base {
     // options over the chosen slug, so a `slug` left in them would roll it whatever the player picked.
     // `note` (0.25.0) is this method's own too: a line set beside the picker's subtitle (an Aid
     // made as part of Pay It Forward says so there), never a key of the roll's config.
-    const { slug: preselect = "", note = "", ...passed } = options;
+    // `only` (0.34.0) narrows the list, and is the picker's alone as well.
+    const { slug: preselect = "", note = "", only = null, ...passed } = options;
+    const picked = await this.pickConstellation({
+      only, slug: preselect, item: passed.item ?? null, threshold: passed.threshold, dialog: passed.dialog
+    });
+    if (!picked) return null;
+    const opts = {
+      ...passed,
+      // A Maneuver's name when one was used (Aid), else the book's term for the roll.
+      label: passed.label ?? game.i18n.localize("STARWROUGHT.Roll.relevantCheck"),
+      // The card's subtitle is the approval surface: which Constellation, and the reason given;
+      // then the caller's note, when it has one (0.25.0: whose part a subordinate Maneuver is).
+      subtitle: [picked.line, String(note ?? "").trim()].filter(Boolean).join(" · ")
+    };
+    if (picked.threshold !== null) opts.threshold = picked.threshold;
+    return this.rollCheck(picked.slug, opts);
+  }
+
+  /**
+   * The picker alone (0.34.0; the body of `rollRelevantCheck` through 0.33.0): which Constellation
+   * a check is rolled with, and why. A Maneuver whose `[CHECK ...]` block names two or more
+   * (`[CHECK Athletics or Acrobatics]`, the user's own pick: ruling 338) opens it on those alone,
+   * with no reason asked, since the row itself allows each; `[CHECK relevant]` opens it whole, as
+   * a Relevant Check always has. The number beside each is the check engine's own preview, so the
+   * list ranks as the dice will see it.
+   * @param {object} [options]
+   * @param {string[]|null} [options.only]  The Constellations offered; every one that ships when null.
+   * @param {string} [options.slug]         Opens the picker on this Constellation.
+   * @param {Item|null} [options.item]      The Maneuver behind the roll, for the preview.
+   * @param {number|string|null} [options.threshold]  Prefills the Threshold box.
+   * @param {boolean} [options.askThreshold=true]  False when a Defense will be read, so no number is typed.
+   * @param {boolean} [options.dialog]      False when the roll to come has no dialog (the swap note's wording).
+   * @returns {Promise<{slug: string, name: string, why: string, line: string, threshold: number|null}|null>}
+   *   `line` is the card's subtitle: the Constellation, and the reason when one was given.
+   */
+  async pickConstellation({ only = null, slug: preselect = "", item = null, threshold = null, askThreshold = true, dialog } = {}) {
+    if (this.type !== "character") {
+      ui.notifications.warn(game.i18n.localize("STARWROUGHT.Roll.relevantNpc"));
+      return null;
+    }
+    const passed = { item, threshold, dialog };
+    const offered = Array.isArray(only) ? [...new Set(only.filter(Boolean))] : null;
     const sys = this.system;
     // The number beside each Constellation is the one the roll dialog will open with, computed
     // by the check engine itself, so Load Strain on a Stealth check or a Frightened value shows
@@ -115,15 +156,24 @@ export const ChecksMixin = Base => class extends Base {
     // the character's own Constellations are added below, so an owned one that has since been
     // disabled still appears. The Lore template is not itself rollable; the Lores this character
     // has opened are on the character.
-    const rows = enabledConstellations()
-      .filter(c => c.slug && (c.slug !== "lore"))
-      .map(c => {
-        const p = sys.proficiency(c.slug);
-        return row(c.slug, p.name ?? c.name, p.rank, p.attribute);
-      });
-    for (const [slug, con] of Object.entries(sys.constellations ?? {})) {
-      if (rows.some(r => r.slug === slug)) continue;
-      rows.push(row(slug, con.name, con.rank, con.attribute));
+    // A Maneuver's own choice (0.34.0): the Constellations its row names, and no others.
+    const rows = offered
+      ? offered.map(slug => {
+        const p = sys.proficiency(slug);
+        const meta = sys.constellations?.[slug] ?? SW.getConstellation(slug);
+        return row(slug, p?.name ?? meta?.name ?? slug, p?.rank ?? "untrained", p?.attribute ?? meta?.attribute);
+      })
+      : enabledConstellations()
+        .filter(c => c.slug && (c.slug !== "lore"))
+        .map(c => {
+          const p = sys.proficiency(c.slug);
+          return row(c.slug, p.name ?? c.name, p.rank, p.attribute);
+        });
+    if (!offered) {
+      for (const [slug, con] of Object.entries(sys.constellations ?? {})) {
+        if (rows.some(r => r.slug === slug)) continue;
+        rows.push(row(slug, con.name, con.rank, con.attribute));
+      }
     }
     rows.sort((a, b) => (Number(b.trained) - Number(a.trained)) || (b.mod - a.mod) || a.name.localeCompare(b.name));
     // A preselection the list cannot offer (a Lore this character has not opened) opens nowhere in
@@ -134,6 +184,10 @@ export const ChecksMixin = Base => class extends Base {
       trained: rows.filter(r => r.trained),
       untrained: rows.filter(r => !r.trained),
       threshold: Number.isNumeric(passed.threshold) ? passed.threshold : "",
+      // A Maneuver's own choice asks no reason (the row allows each), and no Threshold when the
+      // check will be read against a creature's Defense (0.34.0).
+      restricted: !!offered,
+      askThreshold: askThreshold !== false,
       // The marked rows' explanation: with the roll dialog to come the box can be unticked there;
       // on a Shift-click there is no dialog, and the Effects tab's switch is the way to decline.
       swapNote: swapped.size
@@ -144,7 +198,12 @@ export const ChecksMixin = Base => class extends Base {
         : ""
     });
     const answer = await DialogV2.wait({
-      window: { title: game.i18n.localize("STARWROUGHT.Roll.relevantCheck"), icon: "fa-solid fa-scale-balanced" },
+      window: {
+        title: offered
+          ? game.i18n.format("STARWROUGHT.Roll.pickCheckTitle", { name: item ? SW.plainName(item.name) : game.i18n.localize("STARWROUGHT.Roll.check") })
+          : game.i18n.localize("STARWROUGHT.Roll.relevantCheck"),
+        icon: "fa-solid fa-scale-balanced"
+      },
       classes: ["starwrought", "check-dialog"],
       position: { width: 460 },
       content,
@@ -168,15 +227,12 @@ export const ChecksMixin = Base => class extends Base {
     const chosen = rows.find(r => r.slug === answer.slug);
     if (!chosen) return null;
     const why = String(answer.why ?? "").trim();
-    const opts = {
-      ...passed,
-      // A Maneuver's name when one was used (Aid), else the book's term for the roll.
-      label: passed.label ?? game.i18n.localize("STARWROUGHT.Roll.relevantCheck"),
-      // The card's subtitle is the approval surface: which Constellation, and the reason given;
-      // then the caller's note, when it has one (0.25.0: whose part a subordinate Maneuver is).
-      subtitle: [why ? `${chosen.name}: ${why}` : chosen.name, String(note ?? "").trim()].filter(Boolean).join(" · ")
+    return {
+      slug: chosen.slug,
+      name: chosen.name,
+      why,
+      line: why ? `${chosen.name}: ${why}` : chosen.name,
+      threshold: Number.isNumeric(answer.threshold) ? Number(answer.threshold) : null
     };
-    if (Number.isNumeric(answer.threshold)) opts.threshold = Number(answer.threshold);
-    return this.rollCheck(chosen.slug, opts);
   }
 };

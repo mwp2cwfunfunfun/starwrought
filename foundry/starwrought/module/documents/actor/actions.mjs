@@ -292,6 +292,17 @@ export const ActionsMixin = Base => class extends Base {
   }
 
   /**
+   * A Prepared Maneuver is finished: the reserve is spent and the condition comes off. Called by
+   * `finishPrepared`, and (0.34.0) by the roll that answers a check's request, which is the
+   * finishing of a Prepared Maneuver whose check waited on its target.
+   */
+  async settlePreparation() {
+    await this.update({ "system.actions.reserved": 0, "system.actions.preparing": null });
+    await this.setCondition("preparing", false);
+    if (this.isTurn) game.combat?.registerAction?.(this.combatant);
+  }
+
+  /**
    * Finish a Prepared Maneuver at your Opportunity: the reserved actions are spent (they left the
    * pool when the preparation began) and the Maneuver resolves. A Committed Strike rolls now,
    * already paid for. Range, line of effect and requirements are the table's to check again.
@@ -312,11 +323,7 @@ export const ActionsMixin = Base => class extends Base {
       return null;
     }
     // The preparation is over: the reserve is spent and the condition comes off.
-    const settle = async () => {
-      await this.update({ "system.actions.reserved": 0, "system.actions.preparing": null });
-      await this.setCondition("preparing", false);
-      if (this.isTurn) game.combat?.registerAction?.(this.combatant);
-    };
+    const settle = () => this.settlePreparation();
 
     // A Maneuver Prepared from its own Item (0.23.0, ruling 234): the Item is used again, already
     // paid, and that is the roll or the card. It is used BEFORE the preparation is settled, so a
@@ -327,6 +334,16 @@ export const ActionsMixin = Base => class extends Base {
       let item = null;
       try { item = await fromUuid(prep.itemUuid); } catch { item = null; }
       if (item && (typeof item.use === "function")) {
+        // One preparation has one request at a time (0.34.0; the review): while the request it
+        // posted still waits on its target or on the roll, Finish posts no second one. A request
+        // that was withdrawn, rolled or lost with its card lets Finish ask again.
+        if (prep.request) {
+          const { requestWaiting } = await import("../cards/check-request.mjs");
+          if (requestWaiting(prep.request)) {
+            ui.notifications.info(game.i18n.format("STARWROUGHT.CheckRequest.alreadyAsked", { what: prep.label ?? "" }));
+            return null;
+          }
+        }
         // The preparation must still be standing when the die is thrown: with the roll dialog
         // open, an Abandon (the player's, a Wound's, the round's end) returns the reserve, and a
         // roll made after that would be a Maneuver done for the two actions already lost. A
@@ -338,6 +355,21 @@ export const ActionsMixin = Base => class extends Base {
           beforeRoll: () => this.system.actions?.preparing?.itemUuid === prep.itemUuid
         });
         if ((done === null) || (done === undefined)) return null;
+        // The check waits on its target's pick of a Defense (0.34.0; Disarm at three actions is
+        // "vs Evade or Guard"): a request went out, nothing has rolled, and the Maneuver is still
+        // Prepared. The roll that answers the request settles it (`SwItem#resumeCheck`), and an
+        // Abandon before then returns the reserve as it always does.
+        // The request is tied to THIS preparation by its card's id, which the roll asks for
+        // (`resumeCheck`): a card left over from an earlier preparation of the same Maneuver
+        // finishes nothing. (An adversary's request to a player has settled the preparation
+        // already, so there is nothing left to mark.)
+        if (done.pending === true) {
+          const standing = this.system.actions?.preparing;
+          if (done.message?.id && standing && (standing.itemUuid === prep.itemUuid)) {
+            await this.update({ "system.actions.preparing": { ...foundry.utils.deepClone(standing), request: done.message.id } }, { swAnnounced: true });
+          }
+          return done;
+        }
         await settle();
         return done;
       }

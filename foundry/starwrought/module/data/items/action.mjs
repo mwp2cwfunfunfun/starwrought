@@ -12,6 +12,7 @@ import { costFields, migrateCost, prepareCost } from "./cost.mjs";
 // base model's migration never ran for a Maneuver.
 import { auraFields, prepareAura, applyAuraRule, migrateAuraVisible } from "./aura.mjs";
 import { rulesFields, prepareRules } from "./rules.mjs";
+import { planOf } from "../../rules/check.mjs";
 
 const fields = foundry.data.fields;
 
@@ -127,6 +128,11 @@ export class SwActionData extends SwItemData {
     // Downtime panel's list.
     this.isDowntime = this.category === "Downtime Mode";
     prepareRules(this);
+    // THE CHECK THIS MANEUVER ROLLS (0.34.0; rules/check.mjs): the row's `[CHECK ...]` block when
+    // it has one, else the three stored fields above, as the build has always written them. Every
+    // reader asks this plan, so a world Item whose Automation box gains or loses a block follows
+    // at once, with no build: `{ enabled, declared, relevant, rolls, defenses, threshold, extra }`.
+    this.checkPlan = planOf(this.rules, this.check);
   }
 
   /** The rules, when the action has them written separately from its flavour. */

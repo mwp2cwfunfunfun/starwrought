@@ -509,6 +509,28 @@ ACTIONS WORKBOOKS (actions_maneuvers.xlsx, actions_activities.xlsx, actions_ende
     at once and one on a target is a button on the check's card. A target line needs
     IF: RESULT(...). A line that reads what you put on a creature: IFT: EFFECT(wrong-footed, mine).
     Not for the rows the system runs itself (Strike, Cast, Recenter, Reload, Move, Step, Rush).
+  THE CHECK IT ROLLS (0.34.0; Mike, 2026-11-19: "wouldn't it make sense if the check was also
+    using automation grammar, as well as the success/failure effects?"). On an action's own row,
+    one block that says what it rolls and what the roll is read against:
+          [CHECK Athletics]                           roll Athletics; the Threshold is typed
+          [CHECK Athletics vs Guard]                  against the target's Guard
+          [CHECK Athletics or Acrobatics vs Guard]    whoever USES it picks which is rolled
+          [CHECK Athletics vs Evade or Guard]         the TARGET picks which Defense answers
+          [CHECK relevant]                            any Constellation, picked when rolled (Aid)
+          [CHECK Crafting vs 15]                      a Threshold of 15, which the roll may change
+    Left of "vs": relevant, or Constellations by the names the trees print (a Skill, a Defense,
+    Melee, Ranged, a Combat Style; never a Lore, never a Maneuver). Right of "vs": Defenses, or a
+    whole number. "or" is a choice, made by whoever it affects: left of "vs" the one using it,
+    right of "vs" the target. One CHECK block to a row. In Foundry the target's pick is a card
+    with a button for each Defense, pressed by the target's player (the GM for an adversary); and
+    when an adversary uses the action on a player's character, the player rolls the Defense they
+    pick against the adversary's number for that Constellation (typed on the adversary's sheet).
+    A row with NO block keeps the old guess from its prose (the Constellation column, "attempt
+    ... check" in the Effect, the word after "vs."), and the build lists those rows by name.
+    CHECK with no colon is this block. CHECK: with a colon, inside [EFFECT ...], is still a bonus
+    to checks. Not for an Activity (its Check column, else its Constellation column, is the
+    source) or an Endeavor, and nothing reads it on the rows the system runs itself (Strike,
+    Gain Control, Recenter, Reload, Pass, Raise a Shield).
   Aura (0.5.1): the range the action draws around its user, in the same grammar as on a talent
     sheet: "30 ft", "15 ft allies", "15 ft enemies", "visible" appended to show the ring by
     default, "none" when the Effect's "within N feet" is centred elsewhere, blank for no aura.

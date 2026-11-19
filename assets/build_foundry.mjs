@@ -72,7 +72,9 @@ import { markdownToHtml, splitSections } from "./lib/markdown.mjs";
 // mapping lives in the kind file, so the build and the Talent model derive the same field.
 import { toGrantField } from "../foundry/starwrought/module/rules/kinds/grant.mjs";
 import { toAuraField } from "../foundry/starwrought/module/rules/kinds/aura.mjs";
-import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
+import { knownKinds, kindOf } from "../foundry/starwrought/module/rules/kinds/index.mjs";
+// 0.34.0: the check a Maneuver's row declares, and the three stored fields it comes to.
+import { planOf, storedCheck, checkWords } from "../foundry/starwrought/module/rules/check.mjs";
 import { traitKey } from "../foundry/starwrought/module/rules/operators.mjs";
 // The system's own Trait-line splitter (0.10.1), pure as the grammar is, so the build and the
 // client read a Trait cell the same way; through 0.10.0 this file carried a copy of it.
@@ -1196,6 +1198,8 @@ for (const treeName of Object.keys(trees)) {
   activityConstellations.set(treeName.trim().toLowerCase(), slug);
 }
 for (const slug of Object.keys(DEFENSES)) activityConstellations.set(slug, slug);
+/** A Constellation's printed name by its slug, for the build's own messages (0.34.0). */
+const activityNames = new Map(Object.keys(trees).map(treeName => [slugify(treeName), treeName.trim()]));
 
 /**
  * One Activity column (data/activities.xlsx `Check` and `Initiative`; 0.20.0, the roster's two
@@ -1242,11 +1246,76 @@ function rolledConstellation(a) {
   if (!ROLLS_A_CHECK.test(plainText(a.effect))) return "";
   return activityConstellations.get(named.toLowerCase()) ?? "";
 }
-function checkOf(a) {
+function guessedCheck(a) {
   const text = plainText(a.effect);
   if (/relevant\s+check/i.test(text)) return { check: { enabled: true, constellation: "", defense: defenseIn(text) } };
   const slug = rolledConstellation(a);
   return slug ? { check: { enabled: true, constellation: slug, defense: defenseIn(text) } } : {};
+}
+
+/**
+ * THE CHECK A ROW DECLARES (0.34.0; rulings 337 to 349). Mike, 2026-11-19: "when I add new talents
+ * I don't want to hard-code what the check is. So wouldn't it make sense if the check was also
+ * using automation grammar". A `[CHECK ...]` block in the row's Automation cell is the word, and
+ * the guess above stays for a row with none. The block's rule goes onto the Item with its other
+ * rules, and the Item's own plan reads it (`system.checkPlan`, module/rules/check.mjs); the three
+ * stored fields are written from it as well, for every reader that has only ever had them.
+ *
+ * Said once at the end of the build: the rows whose block and prose disagree (the block is the
+ * one read), and how many rows are still guessed, by name, so Mike can see which are left.
+ */
+const checkNotes = { declared: [], guessed: [], warnings: [] };
+const CHECKS = new Map();
+function declaredChecks(a) {
+  let rules = a.rules;
+  if (!Array.isArray(rules)) {
+    // A JSON no step pre-parsed (written by hand, or the converter run alone): read the cell here,
+    // with the grammar and the resolver the rest of the build uses. Errors are `automationOf`'s to say.
+    const cell = String(a.automation ?? "");
+    rules = (cell.trim() && !isNotApplicableCell(cell))
+      ? parseAutomation(cell, { itemName: a.name, itemType: "action", resolve: resolveRuleTarget }).rules
+      : [];
+  }
+  return rules.filter(rule => rule && !rule.error && (rule.kind === "check"));
+}
+function checkOf(a) {
+  if (CHECKS.has(a)) return CHECKS.get(a);
+  const where = `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`;
+  const declared = declaredChecks(a);
+  const guessed = guessedCheck(a);
+  let answer = guessed;
+  if (declared.length > 1) {
+    fail(`${where}: the row has ${declared.length} CHECK blocks; a Maneuver rolls one check, and a choice is written with \`or\` inside the one block`);
+  } else if (declared.length) {
+    const plan = planOf(declared);
+    answer = { check: storedCheck(plan) };
+    checkNotes.declared.push(a.name);
+    const nameOf = slug => activityNames.get(slug) ?? "";
+    const prose = guessed.check ? planOf([], guessed.check) : null;
+    // What the guess is made of is the row's Constellation column and its Effect. The two are
+    // compared only where both speak (the review of 0.34.0):
+    //  - a Constellation the block does not roll, unless the Effect itself names the block's
+    //    ("an Athletics check" on a row whose column says Cairnward: the column is not the check);
+    //  - a Defense the block does not name, only when the block names one at all (Hide's
+    //    `[CHECK Stealth]` leaves "each watcher's Awareness" unsaid on purpose).
+    const effectText = plainText(a.effect).toLowerCase();
+    const saidInEffect = plan.rolls.some(roll => {
+      const name = String(roll.name || nameOf(roll.slug) || "").toLowerCase();
+      return !!name && effectText.includes(`${name} check`);
+    });
+    const differs = prose && (
+      (prose.relevant !== plan.relevant)
+      || (prose.rolls.length && !plan.rolls.some(roll => roll.slug === prose.rolls[0].slug) && !saidInEffect)
+      || (prose.defenses.length && plan.defenses.length && !plan.defenses.includes(prose.defenses[0]))
+    );
+    if (differs) {
+      checkNotes.warnings.push(`${where}: the CHECK block says "${checkWords(plan, nameOf)}" and the row's Constellation column and Effect read as "${checkWords(prose, nameOf)}"; the block is the one read, so mend whichever is wrong`);
+    }
+  } else if (guessed.check) {
+    checkNotes.guessed.push(a.name);
+  }
+  CHECKS.set(a, answer);
+  return answer;
 }
 
 /**
@@ -1291,6 +1360,16 @@ for (const a of shippedSheetActions) {
 }
 let actionAutomation;
 for (const a of shippedSheetActions) {
+  // An Activity's check is its row's Check column, else its Constellation column and Effect,
+  // which the road reads (ruling 104), and an Endeavor rolls nothing through the system: a
+  // `[CHECK ...]` block on either would be read by nothing, so it is refused here, where the
+  // row's mode is known (0.34.0; the kind cannot see it).
+  if (modeOf(a) && declaredChecks(a).length) {
+    fail(`${actionSource(a)} / ${actionGroup(a)} / ${a.name}: a CHECK block is written on a Maneuver's row. `
+      + (modeOf(a) === "exploration"
+        ? "An Activity's check is its Check column where the sheet has one, else its Constellation column, which the party's road reads; take the block out and name the Constellation there"
+        : "An Endeavor rolls no check through the system; take the block out"));
+  }
   item("actions", {
     key: actionKey(a),
     name: a.name,
@@ -1322,8 +1401,10 @@ for (const a of shippedSheetActions) {
         itemName: a.name, constellation: actionGroup(a), itemType: "action",
         source: `${actionSource(a)} / ${actionGroup(a)} / ${a.name}`,
         resolve: resolveRuleTarget,
-        // For the Effects census (0.32.0): does the Maneuver roll a check of its own?
-        rolls: !modeOf(a) && !!checkOf(a).check?.enabled
+        // For the Effects census (0.32.0): does the Maneuver roll a check of its own? An Activity
+        // or an Endeavor is not asked: its check is the road's, and "declare a CHECK block" would
+        // be advice the build then refuses (the review of 0.34.0).
+        ...(modeOf(a) ? {} : { rolls: !!checkOf(a).check?.enabled })
       }, a.rules)),
       // An action's ring may be an `aura:` line too (0.13.0), as a Talent's.
       ...auraOf(a, actionAutomation.rules),
@@ -1946,9 +2027,24 @@ if (automationTally.traitsAsked.size) {
 // lines would apply nothing (ruling 321). Warnings, never failures: the cells read.
 {
   const runsElsewhere = slug => Object.hasOwn(BUILT_IN_MANEUVERS, slug) || Object.hasOwn(PAID_ELSEWHERE, slug);
-  for (const warning of effectCensus(automationTally.carriers, { runsElsewhere, slugOf: name => slugify(plainName(name)) })) {
+  // A kind with a `use` hook takes the whole use of its row (MARK, PERMIT, SUBORDINATE), so a
+  // CHECK block beside one is never rolled (0.34.0): asked of the registry, so a later kind that
+  // gains the hook is covered with no change here.
+  const takesUse = kind => typeof kindOf(kind)?.hooks?.use === "function";
+  // A built-in never reaches its row's check; a row another act pays for (Leap's drag, Cast's
+  // spell) is still used from its row and rolls a declared check, so it is not warned about.
+  const runsItself = slug => Object.hasOwn(BUILT_IN_MANEUVERS, slug);
+  for (const warning of effectCensus(automationTally.carriers, { runsElsewhere, runsItself, takesUse, slugOf: name => slugify(plainName(name)) })) {
     console.warn(`  WARNING: ${warning}`);
   }
+}
+
+// The declared checks (0.34.0): a block and a prose that disagree, and which rows are still read
+// from their Effect's prose, by name, so the author can see which are left to declare.
+for (const warning of checkNotes.warnings) console.warn(`  WARNING: ${warning}`);
+if (checkNotes.declared.length || checkNotes.guessed.length) {
+  console.log(`  checks: ${plural(checkNotes.declared.length, "row")} declare the check with a CHECK block`
+    + (checkNotes.guessed.length ? `; ${checkNotes.guessed.length} still read from the Effect's prose (${checkNotes.guessed.join(", ")})` : ""));
 }
 
 // --no-compile is the content loop's way in (build_all.mjs --content): the sources and the index

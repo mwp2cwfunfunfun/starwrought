@@ -125,7 +125,20 @@ RULES = [
     (r"this Maneuver is run by the system another way .* so its APPLY and REMOVE lines apply nothing", "Fix", "Data",
      "Move the APPLY or REMOVE line to a Maneuver that is used from its own row, or ask for the built-in to apply the Effect itself; the line reads and does nothing where it is."),
     (r"this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result", "Fix", "Data",
-     "The build reads a check from the row's Effect ('Attempt an Athletics check vs. Evade'): word the Effect so, or remove IF: RESULT from the line so it stands whenever the Maneuver is used."),
+     "Declare the check on the row with a block, as in [CHECK Athletics vs Evade or Guard] (0.34.0), or remove IF: RESULT from the line so it stands whenever the Maneuver is used."),
+    # 0.34.0: a Maneuver's check, declared.
+    (r"the CHECK block says \"([^\"]*)\" and the row's Constellation column and Effect read as \"([^\"]*)\"", "Fix", "Data",
+     "The block is the one read ('{1}'). If the row's column and Effect are right ('{2}'), change the block; if the block is right, mend the Constellation column or reword the Effect so they agree."),
+    (r"the system runs this Maneuver itself .* so its CHECK block is read by nothing", "Fix", "Data",
+     "Take the [CHECK ...] block off this row: the system runs the Maneuver itself (its own button or method) and never reads the row's check."),
+    (r"a ([A-Z]+) line takes the whole use of this Maneuver, so the check its CHECK block declares is never rolled", "Fix", "Data",
+     "A row with a {1} line is used through that line and rolls nothing. Take the [CHECK ...] block off, or move the check to a Maneuver of its own."),
+    (r"the row has (\d+) CHECK blocks; a Maneuver rolls one check", "Error", "Data",
+     "Keep one [CHECK ...] block on the row. A choice is written inside it with 'or', as in [CHECK Athletics or Acrobatics vs Evade or Guard]."),
+    (r"a CHECK block is written on a Maneuver's row\. An (Activity|Endeavor)", "Error", "Data",
+     "Take the [CHECK ...] block off this {1}'s row. An Activity's check is its Check column where the sheet has one, else its Constellation column; an Endeavor rolls nothing through the system."),
+    (r"checks: \d+ rows? declare the check with a CHECK block; (\d+) still read from the Effect's prose", "Note", "Data",
+     "{1} rows still have their check guessed from prose. AUTOMATION_GRAMMAR.md section 5, 'Declaring a check', prints the block for each; paste them when you reach those rows."),
     (r"is read as a named Effect of its own, not the Condition", "Fix", "Data",
      "Write the Condition's own name, with a whole number after one that carries a value (frightened 2); if a named Effect was meant, give it a name that does not begin with a Condition's."),
     (r"granted by a Talent, so not basic though typed \"Maneuver\"", "Fix", "Data",
@@ -292,7 +305,9 @@ def findings_from_step(step):
         if SKIP.match(raw) or SKIP.match(s):
             continue
         is_finding = (s.startswith("WARNING") or s.startswith("- ") or "exited" in s or banner in ("rule", "automation")
-                      or s.startswith("granted by a Talent") or "error" in s.lower())
+                      or s.startswith("granted by a Talent") or "error" in s.lower()
+                      # 0.34.0: build_foundry's two CHECK failures and its checks summary carry no prefix.
+                      or "CHECK block" in s or s.startswith("checks: "))
         if not is_finding:
             continue
         if s.startswith("granted by a Talent"):

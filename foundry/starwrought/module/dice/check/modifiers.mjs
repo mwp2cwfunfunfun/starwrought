@@ -194,7 +194,9 @@ export function baseModifiers(actor, cfg, candidate = null) {
   // in 0.10.0 (it has no Constellations to be ranked in, and it carries Thresholds, not
   // bonuses), so the early return stands as it was.
   if (actor.type === "npc") {
-    if (cfg.flatBonus) parts.push({ label: cfg.label, value: cfg.flatBonus });
+    // The bonus the caller hands over: an attack row's, or (0.34.0, ruling 341) the adversary's
+    // typed number for the Constellation its Maneuver rolls, less 10, named for that Constellation.
+    if (cfg.flatBonus) parts.push({ label: cfg.flatLabel ?? cfg.label, value: cfg.flatBonus });
     // THE CONDITIONS IT HAS (0.33.0; rulings 324 and 335): the one thing that reaches an
     // adversary's die. A Frightened 2 Bandit's attack roll is at -2, as its Attack Threshold is
     // when a player's Defense answers it (combat/attack-source.mjs), so the two faces of one

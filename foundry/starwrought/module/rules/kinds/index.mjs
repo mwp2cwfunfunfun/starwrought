@@ -201,6 +201,13 @@ registerKind(requires);
 import apply from "./apply.mjs";
 registerKind(apply);
 
+// 0.34.0: the check a Maneuver rolls, declared: `[CHECK Athletics or Acrobatics vs Evade or
+// Guard]` on the Maneuver's own row (left of `vs` the user's pick, right of it the target's).
+// `check` has no hook, on purpose: the Maneuver's own use reads the plan off its Item
+// (../check.mjs, `planOf`), and a `use` hook would take the whole use away from the roll.
+import check from "./check.mjs";
+registerKind(check);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";

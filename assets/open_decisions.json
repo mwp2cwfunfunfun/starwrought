@@ -1,5 +1,35 @@
 [
   {
+    "id": "0.34.0-check-claudes-readings",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.34.0, rulings 341 to 349",
+    "question": "Readings 0.34.0 makes that Mike did not rule on. 341 (his: a typed number for each Skill) with Claude's additions: Melee and Ranged have one too, a Defense on the left of vs reads the adversary's typed Defense Threshold, and the GM's own die for an adversary takes the typed number less 10. 342: a row's [CHECK ...] block is the word whatever its Constellation column and Effect say; a row with none keeps the build's guess. 343: the user picks first and the target answers knowing the pick. 344: nobody is asked when the target can use exactly one of the Defenses named. 345: a row that names one Defense reads it even when the target cannot use it, and the card says so (it used to be read against Awareness with nothing said). 346: nothing is paid until the roll; a request can be withdrawn before an answer, lapses with its Combat, gives one roll, and stands after the user's Opportunity has ended; an adversary pays when its request goes out. 347: the first valid answer card in the chat log stands, and an answer counts only from the target's owner or the GM. 348: an adversary's result is its own card, read from the player's roll, with the APPLY buttons the GM's. 349: the block is read on a Maneuver's own row alone.",
+    "recommendation": "Leave them. The two to know are 345 (a Grabbed target is now read against Evade when the row says only Evade, where it used to be read against Awareness) and 346 (a request stands after the user's Opportunity has ended; say if it should lapse with that Opportunity instead).",
+    "decidedBy": ""
+  },
+  {
+    "id": "check-against-something-that-is-no-defense",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Automation",
+    "where": "data/actions_maneuvers.xlsx: Seek, Anticipate, Stabilize, Hide, Sneak; AUTOMATION_GRAMMAR.md, section 5, Declaring a check",
+    "question": "The right side of vs reads a Defense or a number. Five rows are read against something else: Seek against the hider's Stealth, Anticipate against the foe's Guile, Stabilize against 10 + Dying + Wounds, Hide and Sneak against each watcher's Awareness. Their blocks can name what is rolled, and the Threshold is then typed.",
+    "recommendation": "Paste the blocks that name what is rolled ([CHECK Awareness], [CHECK Insight], [CHECK Medicine], [CHECK Stealth]) and type the Threshold at the table. If a Constellation on the right of vs is wanted (the target's Stealth or Guile as a Threshold of 10 plus its bonus), say so and it is the next word after the Bind's.",
+    "decidedBy": ""
+  },
+  {
+    "id": "gain-control-in-the-grammar",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Automation",
+    "where": "foundry/starwrought/module/documents/actor/bind.mjs; data/actions_maneuvers.xlsx, the Gain Control row",
+    "question": "Gain Control's check and its results are still code (0.27.0). With [CHECK Melee vs Guard] sayable since 0.34.0, what is missing is a word for what each degree does to the Bind (Controlling, neutral, the foe Controlling).",
+    "recommendation": "Leave N/A in Gain Control's Automation cell for now. The next release gives the grammar one word for Bind results, and the row is then written as [CHECK Melee vs Guard] with one result line for each degree.",
+    "decidedBy": ""
+  },
+  {
     "id": "0.33.0-conditions-claudes-readings",
     "since": "2026-11-18",
     "status": "open",
@@ -164,9 +194,9 @@
     "since": "2026-11-15",
     "status": "open",
     "category": "Rules decision",
-    "where": "System 0.27.0, rulings 276, 277 and 280 (foundry/starwrought/CHANGELOG.md)",
-    "question": "Three rulings of 0.27.0 are Claude's readings, not Mike's answers. 276: a Strike that \"resolves before the Bind ends\" keeps the Zone the Control held open on its own result card, and the Bind ends before that card (a damage button may never be pressed). 277: Close needs no click, any Step by the Controller that ends nearer the foe is the Close. 280: Gain Control takes no -2 for a Controlled implement, and a fighter who already Controls cannot use it. Do they stand?",
-    "recommendation": "Let all three stand. 276 and 277 remove a decision and a click with no cost; for 280, say so if a Controlled fighter's Gain Control should be the harder roll, and the -2 is one line.",
+    "where": "System 0.27.0, rulings 276 and 280 (foundry/starwrought/CHANGELOG.md)",
+    "question": "Two rulings of 0.27.0 are Claude's readings, not Mike's answers. 276: a Strike that \"resolves before the Bind ends\" keeps the Zone the Control held open on its own result card, and the Bind ends before that card (a damage button may never be pressed). 280: Gain Control takes no -2 for a Controlled implement, and a fighter who already Controls cannot use it. Do they stand? (Ruling 277 is settled: Mike, 2026-11-19, \"Keep as is\". Close needs no click and is the Controller's Step alone; a Step closer by a fighter who is not Controlling ends the Bind.)",
+    "recommendation": "Let both stand. 276 removes a decision with no cost; for 280, say so if a Controlled fighter's Gain Control should be the harder roll, and the -2 is one line.",
     "decidedBy": ""
   },
   {

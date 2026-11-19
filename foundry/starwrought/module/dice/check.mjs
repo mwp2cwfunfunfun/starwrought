@@ -227,7 +227,9 @@ export class SwCheck {
     // on the card, whatever its degree, with the cost and the target, so the card's button, a
     // reroll to another degree and a reload all read one record. Nothing is written here: the
     // roller's own lines land once the card is posted, below; a target's wait for the button.
-    if ((cfg.kind === "check") && (cfg.item?.type === "action") && (actor.type === "character") && cfg.applies) {
+    // An adversary's own roll reads them too since 0.34.0 (its Maneuver against another
+    // adversary, which the GM rolls): it has no rank, so only the lines that ask for none stand.
+    if ((cfg.kind === "check") && (cfg.item?.type === "action") && ["character", "npc"].includes(actor.type) && cfg.applies) {
       const asked = ruleApplies(actor, { item: cfg.item, rank: cfg.rank ?? "untrained" });
       const cost = cfg.applies.cost ?? null;
       if (asked.lines.length) {

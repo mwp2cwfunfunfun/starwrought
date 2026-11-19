@@ -37,6 +37,7 @@ import { registerGiveCards } from "./module/documents/cards/give.mjs";
 import { registerApplyCards } from "./module/documents/cards/apply.mjs";
 // Gain Control (0.27.0): its card's button follows the Bind it speaks of.
 import { registerGainControlCards } from "./module/documents/cards/gain-control.mjs";
+import { registerCheckRequestCards } from "./module/documents/cards/check-request.mjs";
 import { registerMovementTracking } from "./module/documents/movement.mjs";
 import { registerTrackerReadout } from "./module/apps/combat-tracker.mjs";
 import { registerAudit } from "./module/documents/audit.mjs";
@@ -330,6 +331,7 @@ Hooks.once("ready", async () => {
   registerApplyCards();     // 0.32.0: a check card's Apply button follows the record card that answers it.
   registerRuleOfferCards(); // 0.25.0: a card's rule buttons follow the roller's used Effects and limits.
   registerGainControlCards(); // 0.27.0: a Gain Control card's button follows the Bind, and a request its answer.
+  registerCheckRequestCards(); // 0.34.0: a check's request follows the cards that answer it; the GM's client posts an adversary's result.
 
   // THE CONTENT LOOP (0.8.0): with the migration done and everything above in place, offer the GM
   // a Sync when the sources on disk are newer than what this world last synced. Not awaited: the

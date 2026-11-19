@@ -93,7 +93,12 @@ import {
   conditionWords, conditionHasRules, statusEffectId, newStatusId, newConditionId, conditionRowName, readInclude,
   RESERVED_CONDITION_NAMES, CONDITION_TAKES, DEFAULT_CONDITION_ICON, ZONE_CONDITIONS
 } from "../foundry/starwrought/module/config.mjs";
-import { CONDITION_ROW, CONDITION_ROW_TAGS } from "../foundry/starwrought/module/rules/syntax.mjs";
+import { CONDITION_ROW, CONDITION_ROW_TAGS, splitAlternatives } from "../foundry/starwrought/module/rules/syntax.mjs";
+// 0.34.0: the check a Maneuver rolls, declared (the `check` kind and its plan).
+import { readCheck, checkWords, checkSummary, planOf, storedCheck, userPicks, targetPicks, defenseKeyOf, defenseNames, RELEVANT, BONUS_FORM, isBonusShape } from "../foundry/starwrought/module/rules/check.mjs";
+import { CHECK_REQUEST, CHECK_ANSWER, REQUEST_MODES, usableDefenses, validRequest, validAnswer, standingAnswer, requestState, userDegree, adversaryCheck } from "../foundry/starwrought/module/rules/check-request.mjs";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { closeConditions, conditionSetOf, holdsCondition, heldIds, heldIdsFor } from "../foundry/starwrought/module/rules/condition-set.mjs";
 import { conditionCarriers, conditionModifiers, isConditionCarrier, CONDITION_CARRIER_TYPE } from "../foundry/starwrought/module/rules/engine.mjs";
 import { conditionIdsFor, conditionOfRef } from "../foundry/starwrought/module/rules/effect-list.mjs";
@@ -111,7 +116,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "check", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -2457,7 +2462,10 @@ check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of 
   must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
-  must(err("[EFFECT CHECK]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
+  must(err("[EFFECT IMMUNE]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
+  // CHECK is a block of its own since 0.34.0, as SPEED has been since 0.16.0: without its colon
+  // inside EFFECT it is told its block.
+  must(err("[EFFECT CHECK]").message.startsWith("CHECK is a block of its own, not an effect"), "CHECK without its colon is told its own block");
   must(err("[EFFECT CHECK: 1 condition, aid").message === "a [ has no closing ]", "an unclosed block");
   same(FEATURE_KEYWORD_LIST.at(-1), "EFFECT", "FEATURE_KEYWORD_LIST ends with EFFECT");
   must(/EFFECT/.test(err("[FLY 30]").message) && /an effect goes in `\[EFFECT <tag>: \.\.\.\]`/.test(err("[FLY 30]").message), "the keyword refusal names EFFECT");
@@ -3948,7 +3956,7 @@ check("requires: the kind is registered with no hook, read from its block on a M
   same(rule.any, [{ test: "condition", id: "prone" }, { test: "supine" }], "its alternatives");
   same(summarize(rule), "needs: Prone or Supine", "As read");
   same(requiresRule("[requires PRONE]").any, [{ test: "condition", id: "prone" }], "case never matters");
-  must(/"REQUIRE" is not a feature keyword: write .*REQUIRES, EFFECT/.test(requiresError("[REQUIRE prone]")), "one keyword, one spelling: the singular is told the list");
+  must(/"REQUIRE" is not a feature keyword: write .*REQUIRES, CHECK, EFFECT/.test(requiresError("[REQUIRE prone]")), "one keyword, one spelling: the singular is told the list");
   const two = parseAutomation("[REQUIRES free hand or weapon grapple][REQUIRES foe in reach]", onRowOf);
   same([two.errors.length, two.rules.map(r => r.kind), two.rules.map(summarize)], [0, ["requires", "requires"], ["needs: a free hand or a weapon with the Grapple trait", "needs: a foe in reach"]], "two blocks on a line are two rules");
   must(/Maneuver's own row/.test(requiresError("[REQUIRES prone]", { resolve, itemType: "talent" })), "refused on a Talent");
@@ -5091,6 +5099,261 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     registerConditions([]);
   }
   must(!conditionsRegistered(), "the registry is put back for whatever runs next");
+});
+
+/* -------------------------------------------- */
+/*  A Maneuver's check, declared (0.34.0)       */
+/* -------------------------------------------- */
+
+console.log("\nA Maneuver's check, declared (0.34.0)");
+
+/** Parse one cell on a Maneuver's own row and return its one rule, or its one error's message. */
+const checkRule = (cell, context = onRowOf) => bonusRule(cell, context);
+const checkError = (cell, context = onRowOf) => bonusError(cell, context);
+
+check("check: the kind is registered with no hook, read from its block on a Maneuver's own row", () => {
+  const kind = kindOf("check");
+  must(kind && (kind.id === "check"), "the check kind is registered");
+  same(Object.keys(kind.hooks ?? {}), [], "it has no hook: a use hook would take the whole use away from the roll");
+  must(!EFFECT_KINDS.includes("check"), "it is no effect: the Effects tab has no switch for it");
+  same([FEATURE_KEYWORD_LIST.includes("CHECK"), FEATURE_KEYWORD_LIST.at(-1)], [true, "EFFECT"], "the keyword is listed, and EFFECT stays last");
+  same(EFFECT_TAGS.check, "bonus", "CHECK: with its colon is still the tag of a bonus to checks");
+  const rule = checkRule("[CHECK Athletics vs Evade or Guard]");
+  same([rule.kind, rule.line, rule.text], ["check", 1, "[CHECK Athletics vs Evade or Guard]"], "the stored rule");
+  same([rule.rolls, rule.against], [[{ slug: "athletics", name: "Athletics" }], { defenses: ["evade", "guard"] }], "what is rolled, and what it is read against");
+  same(summarize(rule), "rolls Athletics vs Evade or Guard (the target picks the Defense)", "As read");
+  must(/Maneuver's own row/.test(checkError("[CHECK Athletics]", { resolve, itemType: "talent" })), "refused on a Talent, which grants a Maneuver for a roll");
+  must(/Maneuver's own row/.test(checkError("[CHECK Athletics]", { resolve, itemType: "effect" })), "and on a custom effect row");
+  must(/Condition's row/.test(checkError("[CHECK Athletics]", { resolve, itemType: CONDITION_ROW })), "and on a Condition's row");
+  same(parseAutomation("[CHECK Athletics]", {}).errors.length, 0, "with no carrier named it reads");
+  // Beside the row's other blocks, each its own rule.
+  const row = parseAutomation("[REQUIRES foe in reach][CHECK Athletics vs Evade or Guard]\n[EFFECT APPLY: prone, target; IF: RESULT(success)]", onRowOf);
+  same([row.errors, row.rules.map(r => r.kind)], [[], ["requires", "check", "apply"]], "a whole row: when it is listed, what it rolls, what a result does");
+});
+
+check("check: every form reads (rulings 337 and 338)", () => {
+  const read = cell => { const { kind, line, text, ...rest } = checkRule(cell); return rest; };
+  same(read("[CHECK Athletics]"), { rolls: [{ slug: "athletics", name: "Athletics" }], against: null }, "a check with a typed Threshold");
+  same(read("[CHECK Athletics vs Guard]"), { rolls: [{ slug: "athletics", name: "Athletics" }], against: { defenses: ["guard"] } }, "against one Defense");
+  same(read("[CHECK Athletics or Acrobatics vs Guard]").rolls.map(r => r.slug), ["athletics", "acrobatics"], "the user's pick, in the order written");
+  same(read("[CHECK Athletics vs Evade or Guard or Endure]").against, { defenses: ["evade", "guard", "endure"] }, "the target's pick may be of three");
+  same(read("[CHECK relevant]"), { rolls: RELEVANT, against: null }, "a Relevant Check");
+  same(read("[CHECK Relevant Check vs Guard]"), { rolls: RELEVANT, against: { defenses: ["guard"] } }, "a Relevant Check against a Defense");
+  same(read("[CHECK Stealth vs 15]"), { rolls: [{ slug: "stealth", name: "Stealth" }], against: { threshold: 15 } }, "a Threshold the row names");
+  same(read("[check athletics VS. guard]"), read("[CHECK Athletics vs Guard]"), "case blind, and `vs.` with its full stop reads");
+  same(read("[CHECK Guard vs 12]").rolls, [{ slug: "guard", name: "Guard" }], "a Defense may be what is rolled");
+  same(read("[CHECK Archery vs Guard]").rolls, [{ slug: "archery", name: "Archery" }], "a Combat Style rolls, wearing its parent's rank");
+  same(read("[CHECK Armored Fighting vs Guard]").rolls[0].name, "Armored Fighting", "a name of two words");
+  // With no resolver (a caller that has none) the names are taken as written.
+  const { rules } = parseAutomation("[CHECK Brawling or Athletics vs Awareness]", { itemType: "action" });
+  same([rules[0].rolls, rules[0].against], [[{ slug: "brawling", name: "Brawling" }, { slug: "athletics", name: "Athletics" }], { defenses: ["awareness"] }], "no resolver: slugs from the names");
+  // The four Defenses are a closed list, read without the resolver.
+  same([defenseKeyOf("Evade"), defenseKeyOf("guard"), defenseKeyOf("Endure"), defenseKeyOf("AWARENESS"), defenseKeyOf("Athletics")], ["evade", "guard", "endure", "awareness", null], "the Defenses by name");
+  same([...defenseNames()].sort(), ["Awareness", "Endure", "Evade", "Guard"], "the four are named");
+});
+
+check("check: every slip is told what to write", () => {
+  must(/CHECK is written `\[CHECK <Constellation> or <Constellation> vs <Defense> or <Defense>\]`/.test(checkError("[CHECK]")), "an empty block is told the shape");
+  must(/"Juggling" names no Constellation/.test(checkError("[CHECK Juggling vs Guard]")), "a name nobody knows");
+  must(/"Aid" is a Maneuver: CHECK names the Constellation that is rolled/.test(checkError("[CHECK Aid]")), "a Maneuver on the left");
+  must(/a Lore is each character's own/.test(checkError("[CHECK Lore vs 15]")), "a Lore is told `relevant`");
+  must(/Origin is a rank a rule may ask about/.test(checkError("[CHECK Origin]")), "Origin is no check");
+  must(/"Stealth" is not a Defense: after `vs` CHECK names Awareness, Evade, Guard, Endure, or a number/.test(checkError("[CHECK Athletics vs Stealth]")), "a Constellation that is no Defense on the right");
+  must(/an `or` has nothing beside it/.test(checkError("[CHECK Athletics or vs Guard]")) && /an `or` has nothing beside it/.test(checkError("[CHECK Athletics vs Guard or]")), "a dangling `or`, either side");
+  must(/names what is rolled before `vs`/.test(checkError("[CHECK vs Guard]")), "nothing before `vs`");
+  must(/names a Defense or a number after `vs`/.test(checkError("[CHECK Athletics vs]")), "nothing after `vs`");
+  must(/CHECK has one `vs`/.test(checkError("[CHECK Athletics vs Guard vs Evade]")), "two `vs`");
+  must(/"against": CHECK writes it `vs`/.test(checkError("[CHECK Athletics against Guard]")) && /"versus": CHECK writes it `vs`/.test(checkError("[CHECK Athletics versus Guard]")), "the word is `vs`");
+  must(/with no comma/.test(checkError("[CHECK Athletics, Acrobatics vs Guard]")), "a comma is told `or`");
+  must(/CHECK has no `and`/.test(checkError("[CHECK Athletics and Acrobatics]")), "`and` is told one check");
+  must(/"Athletics" is named twice/.test(checkError("[CHECK Athletics or Athletics]")) && /"Guard" is named twice/.test(checkError("[CHECK Athletics vs Guard or Guard]")), "a name given twice");
+  must(/`relevant` already means any Constellation/.test(checkError("[CHECK relevant or Athletics]")), "`relevant` stands alone");
+  must(/a Threshold is a whole number from 1 to 60, not 0/.test(checkError("[CHECK Athletics vs 0]")) && /not 99/.test(checkError("[CHECK Athletics vs 99]")), "a Threshold out of range");
+  must(/after `vs` a number stands alone/.test(checkError("[CHECK Athletics vs 15 or Guard]")), "a number is not one of a choice");
+  // The two forms that share the word, each written as the other.
+  same(checkError("[CHECK 1 condition aid]"), BONUS_FORM, "a bonus written as the block is told the effect");
+  must(/"CHECK:" begins an effect line, and an effect goes in an EFFECT block: write `\[EFFECT CHECK: 1 condition, aid\]`; the check a Maneuver rolls has no colon/.test(checkError("[CHECK: 1 condition, aid]")), "the tag without its EFFECT is told both forms");
+  must(/"IMMUNE:" begins an effect line.*write `\[EFFECT IMMUNE: prone\]`$/.test(checkError("[IMMUNE: prone]")), "any tag that lost its EFFECT is told to wrap it");
+  must(/CHECK is written `CHECK: <value> <type>, <descriptor>`.*The check a Maneuver rolls is a block of its own, with no EFFECT and no colon: `\[CHECK Athletics vs Evade\]`/.test(checkError("[EFFECT CHECK: Athletics vs Evade]")), "the block written as the tag is told its own block");
+  must(/CHECK is a block of its own, not an effect: write `\[CHECK Athletics vs Guard\]`/.test(checkError("[EFFECT CHECK Athletics vs Guard]")), "wrapped in EFFECT with no colon");
+  same(bonusRule("[EFFECT CHECK: 1 condition, aid]", { resolve, itemType: "talent" }).kind, "bonus", "and the bonus to checks reads as it always has");
+  // A bonus to checks is told its own form wherever it was written, and on whatever carrier
+  // (the review of 0.34.0: on a Talent it was sent to a Maneuver's row, and never told the form).
+  const onTalent = { resolve, itemType: "talent" };
+  const onCustom = { resolve, itemType: "effect" };
+  same([checkError("[CHECK 1 condition, aid]"), checkError("[CHECK 1 condition, aid]", onTalent), checkError("[CHECK +2 situation]", onCustom), checkError("[CHECK -N condition]", onTalent)],
+    [BONUS_FORM, BONUS_FORM, BONUS_FORM, BONUS_FORM], "the bonus written as the block, on every carrier");
+  same([isBonusShape(": 1 condition, aid"), isBonusShape("1 condition, aid"), isBonusShape("-N condition"), isBonusShape("Athletics vs 15"), isBonusShape("15"), isBonusShape("")], [true, true, true, false, false, false], "what reads like a bonus");
+  must(/^CHECK is an effect tag and takes a colon: write `\[EFFECT CHECK: 1 condition, aid\]`$/.test(checkError("[EFFECT CHECK 1 condition, aid]", onTalent)), "wrapped in EFFECT with its colon lost: told the colon, not the block");
+  must(/^CHECK is an effect tag and takes a colon: write `\[EFFECT CHECK: 1 condition, aid\]`$/.test(checkError("check 1 condition, aid", onTalent)), "the tag typed as a line in a cell");
+  must(/^CHECK is an effect tag and takes a colon: write `CHECK: 1 condition, aid`$/.test(checkError("check 1 condition, aid", onCustom)), "and in the custom effects field, in its bare form");
+  must(/^CHECK is a feature and is written in brackets: `\[CHECK Athletics vs Guard\]`$/.test(checkError("check Athletics vs Guard")), "the block typed as a line is still told its brackets");
+  // Only an effect TAG with a colon is an effect line that lost its EFFECT: these keep the old
+  // message, which the red-cell tool reads (`is not a feature keyword`).
+  for (const cell of ["[EFFECT: End Persistent Fire Damage; LIMIT: encounter]", "[SPEED: 6]", "[TRAIT: Human]", "[NOTE: ask Mike]"]) {
+    must(/is not a feature keyword/.test(checkError(cell, onTalent)), `${cell} is told the keywords, not to wrap it in EFFECT`);
+  }
+  // A number that stands alone and is not a whole one in range.
+  must(/a Threshold is a whole number from 1 to 60, with no sign.*not -5$/.test(checkError("[CHECK Athletics vs -5]")) && /not 15\.5$/.test(checkError("[CHECK Athletics vs 15.5]")) && /not \+15$/.test(checkError("[CHECK Athletics vs +15]")), "a signed or a fractional Threshold is told the range");
+  // `and` is a word of some names: with a resolver the names decide.
+  const withAnd = { itemType: "action", resolve: name => (slugify(plainName(name)) === "spear-and-polearm-fighting") ? { type: "constellation", slug: "spear-and-polearm-fighting", name: "Spear and Polearm Fighting" } : resolve(name) };
+  same(checkRule("[CHECK Spear and Polearm Fighting vs Guard]", withAnd).rolls, [{ slug: "spear-and-polearm-fighting", name: "Spear and Polearm Fighting" }], "a Constellation whose name holds `and` reads");
+  must(/CHECK has no `and`/.test(checkError("[CHECK Athletics and Acrobatics vs Guard]", withAnd)) && /CHECK has no `and`/.test(checkError("[CHECK Athletics vs Evade and Guard]", withAnd)), "and an `and` that joins is still refused, either side");
+  must(/CHECK has no `and`/.test(checkError("[CHECK Athletics and Acrobatics]", { itemType: "action" })), "with no resolver nothing can tell, so it is refused");
+});
+
+check("check: `or` splits on the whole word alone, and no shipped name carries the grammar's words", () => {
+  same(splitAlternatives("Athletics or Acrobatics"), ["Athletics", "Acrobatics"], "two alternatives");
+  same(splitAlternatives("Armored Fighting OR Lore or Warrior"), ["Armored Fighting", "Lore", "Warrior"], "a word that only contains the letters is left whole");
+  same(splitAlternatives("prone or"), ["prone", ""], "a dangling `or` is an empty alternative, for the reader to refuse");
+  same(splitAlternatives("  "), [""], "nothing at all is one empty alternative");
+  // The names the cells write: were a Constellation or a Maneuver called "Hide or Seek" or
+  // "Man vs Beast", the block could not name it.
+  // A block names Constellations and Defenses, never a Maneuver, so only the trees are asked;
+  // `and` is no joiner (a name may hold it). A build with no trees.json yet has nothing to ask.
+  let trees = [];
+  try {
+    trees = Object.keys(JSON.parse(readFileSync(fileURLToPath(new URL("./trees.json", import.meta.url)), "utf8")));
+  } catch { trees = []; }
+  const clash = trees.filter(name => /(^|\s)(vs\.?|or|relevant|versus|against)(\s|$)/i.test(name));
+  same(clash, [], "no Constellation is named with `vs`, `or`, `against` or `relevant` as a word");
+  same([...defenseNames()].filter(name => /(^|\s)(vs\.?|or|relevant)(\s|$)/i.test(name)), [], "and no Defense is");
+});
+
+check("check: the plan is the row's rule, else the three stored fields (planOf)", () => {
+  const rules = cell => parseAutomation(cell, onRowOf).rules;
+  const declared = planOf(rules("[CHECK Athletics or Acrobatics vs Evade or Guard]"), { enabled: true, constellation: "stealth", defense: "endure" });
+  same(declared, { enabled: true, declared: true, relevant: false, rolls: [{ slug: "athletics", name: "Athletics" }, { slug: "acrobatics", name: "Acrobatics" }], defenses: ["evade", "guard"], threshold: null, extra: 0 }, "a rule stands over whatever is stored");
+  same([userPicks(declared), targetPicks(declared)], [true, true], "both sides pick");
+  const one = planOf(rules("[CHECK Intimidation vs Guard]"));
+  same([one.rolls.map(r => r.slug), one.defenses, userPicks(one), targetPicks(one)], [["intimidation"], ["guard"], false, false], "one of each: nobody picks");
+  const relevant = planOf(rules("[CHECK relevant vs Guard]"));
+  same([relevant.relevant, relevant.rolls, relevant.defenses, userPicks(relevant)], [true, [], ["guard"], true], "a Relevant Check is the user's pick");
+  const fixed = planOf(rules("[CHECK Stealth vs 15]"));
+  same([fixed.threshold, fixed.defenses, targetPicks(fixed)], [15, [], false], "a Threshold, and no Defense");
+  // Declared even on a row whose stored fields say "not enabled": the block is the word.
+  same(planOf(rules("[CHECK Athletics]"), { enabled: false, constellation: "", defense: "" }).enabled, true, "a block enables the check by itself");
+  // No block: the stored fields, as they have always been read.
+  same(planOf([], { enabled: true, constellation: "athletics", defense: "evade" }), { enabled: true, declared: false, relevant: false, rolls: [{ slug: "athletics", name: "" }], defenses: ["evade"], threshold: null, extra: 0 }, "a named check from the fields");
+  same(planOf([], { enabled: true, constellation: "", defense: "guard" }).relevant, true, "enabled with no Constellation is a Relevant Check");
+  same(planOf([{ kind: "requires", any: [] }], { enabled: false, constellation: "evade", defense: "evade" }), { enabled: false, declared: false, relevant: false, rolls: [], defenses: [], threshold: null, extra: 0 }, "a row that is not enabled has no check, whatever it stores (a Posture's row)");
+  same(planOf(null, null).enabled, false, "nothing at all is no check");
+  same(planOf([], { enabled: true, constellation: "athletics", defense: "nonsense" }).defenses, [], "a Defense nobody knows is none");
+  // A hand that typed two blocks: the first stands and the rest are counted.
+  same(planOf(rules("[CHECK Athletics][CHECK Stealth]")).extra, 1, "a second block is counted, for the build to refuse and the sheet to say");
+  // An error entry is no rule.
+  same(planOf([{ error: "x", line: 1, text: "[CHECK Juggling]" }], { enabled: true, constellation: "stealth", defense: "" }).rolls[0].slug, "stealth", "an unread line is not a declared check");
+  // The words, from a rule and from a plan built from slugs alone.
+  same([checkWords(declared), checkWords(relevant), checkWords(fixed), checkWords(planOf([], { enabled: true, constellation: "armored-fighting", defense: "evade" }))],
+    ["Athletics or Acrobatics vs Evade or Guard", "a Relevant Check vs Guard", "Stealth vs 15", "Armored fighting vs Evade"], "said in the cell's own words");
+  same(checkWords(planOf([], { enabled: true, constellation: "armored-fighting", defense: "" }), () => "Armored Fighting"), "Armored Fighting", "a caller may hand over the printed names");
+  same([checkSummary({ rolls: RELEVANT, against: null }), checkSummary(rules("[CHECK Athletics or Acrobatics]")[0]), checkSummary(rules("[CHECK Stealth vs 15]")[0])],
+    ["rolls a Relevant Check (the Constellation is picked when it is rolled)", "rolls Athletics or Acrobatics (the one using the Maneuver picks which is rolled)", "rolls Stealth vs 15 (the roll may change the Threshold)"], "As read, with whose each choice is");
+  // The three fields a plan comes to, for the build and the old readers.
+  same([storedCheck(one), storedCheck(declared), storedCheck(relevant), storedCheck(planOf([], null))],
+    [{ enabled: true, constellation: "intimidation", defense: "guard" }, { enabled: true, constellation: "", defense: "" }, { enabled: true, constellation: "", defense: "guard" }, { enabled: false, constellation: "", defense: "" }], "a choice stores no single answer");
+});
+
+check("check: the build is told when a CHECK block is never rolled (effectCensus)", () => {
+  const rules = cell => parseAutomation(cell, { itemType: "action" }).rules;
+  const slugOf = name => slugify(plainName(name));
+  const options = { runsElsewhere: slug => ["strike", "leap"].includes(slug), runsItself: slug => slug === "strike", takesUse: kind => ["mark", "permit", "subordinate"].includes(kind), slugOf };
+  const said = effectCensus([
+    { source: "Sheet / Strike", name: "Strike ❶", type: "action", rules: rules("[CHECK Melee vs Evade or Guard]"), rolls: true },
+    { source: "Sheet / Move Together", name: "Move Together", type: "action", rules: rules("[CHECK Athletics]\n[EFFECT PERMIT: move; FOR: allies 0; LIMIT: round]"), rolls: true },
+    { source: "Sheet / Trip", name: "Trip", type: "action", rules: rules("[CHECK Athletics vs Evade or Guard]\n[EFFECT APPLY: prone, target; IF: RESULT(success)]"), rolls: true },
+    { source: "Human / Talent", name: "Strike", type: "talent", rules: [{ kind: "check", rolls: "relevant", against: null }] },
+    // Leap is paid by the drag and still used from its row: its declared check IS rolled.
+    { source: "Sheet / Leap", name: "Leap ❶ to ❸", type: "action", rules: rules("[CHECK Athletics]"), rolls: true }
+  ], options);
+  same(said.length, 2, "two rows are told; a row that rolls its check, one another act pays for, and a carrier that is no Maneuver are not");
+  must(/^Sheet \/ Strike: the system runs this Maneuver itself .*so its CHECK block is read by nothing$/.test(said[0]), "a row the system runs itself");
+  must(/^Sheet \/ Move Together: a PERMIT line takes the whole use of this Maneuver, so the check its CHECK block declares is never rolled$/.test(said[1]), "a row whose use a line takes whole");
+  // A declared row that waits on a result is never told it rolls no check; one that rolls none still is.
+  const waiting = effectCensus([{ source: "Sheet / Brace", name: "Brace", type: "action", rules: rules("[EFFECT APPLY: prone, target; IF: RESULT(success)]"), rolls: false }], options);
+  must(/declare the check with a \[CHECK \.\.\.\] block on the row/.test(waiting[0] ?? ""), "the advice for a row with no check names the block");
+  // A row that DECLARES its check rolls one, whatever the build made of its prose (`rolls: false`
+  // handed over on purpose: the assertion is the census's own reading, not the caller's flag).
+  const declared = effectCensus([{ source: "Sheet / Trip", name: "Trip", type: "action", rules: rules("[CHECK Athletics vs Evade or Guard]\n[EFFECT APPLY: prone, target; IF: RESULT(success)]"), rolls: false }], options);
+  same(declared, [], "a declared row that waits on a result is never told it rolls no check");
+  // A caller that knows only `runsElsewhere` gets the wider answer, as 0.32.0's callers do.
+  const older = effectCensus([{ source: "Sheet / Leap", name: "Leap", type: "action", rules: rules("[CHECK Athletics]"), rolls: true }], { runsElsewhere: slug => slug === "leap", slugOf });
+  same(older.length, 1, "with no `runsItself` the census falls back to `runsElsewhere`");
+});
+
+check("check request: who may answer, which answer stands, and where a request is (rulings 339 and 159)", () => {
+  const request = { mode: "answer", defenses: ["evade", "guard"] };
+  // A Defense the row offered, from the target's side.
+  same([
+    validAnswer(request, { defense: "guard" }, { ownsTarget: true }),
+    validAnswer(request, { defense: "guard" }, { isGM: true }),
+    validAnswer(request, { defense: "guard" }, { ownsUser: true }),
+    validAnswer(request, { defense: "endure" }, { ownsTarget: true }),
+    validAnswer(request, { defense: "guard" }, {}),
+    validAnswer(request, null, { isGM: true }),
+    validAnswer(null, { defense: "guard" }, { isGM: true })
+  ], [true, true, false, false, false, false, false], "the target's player or the GM, with a Defense the request offered; never the user's own player");
+  // A withdrawal is the user's side.
+  same([validAnswer(request, { withdrawn: true }, { ownsUser: true }), validAnswer(request, { withdrawn: true }, { ownsTarget: true }), validAnswer(request, { withdrawn: true }, { isGM: true })], [true, false, true], "a withdrawal, from the user's side");
+  // The first valid answer in log order stands; a card with the right flags and the wrong author is passed over.
+  const log = [
+    { id: "a", answer: { defense: "evade" }, author: { ownsUser: true } },
+    { id: "b", answer: { defense: "endure" }, author: { ownsTarget: true } },
+    { id: "c", answer: { defense: "guard" }, author: { ownsTarget: true } },
+    { id: "d", answer: { defense: "evade" }, author: { isGM: true } }
+  ];
+  same(standingAnswer(request, log), { id: "c", answer: { defense: "guard" } }, "the first VALID answer, never merely the first");
+  same([standingAnswer(request, []), standingAnswer(request, null), standingAnswer(request, log.slice(0, 2))], [null, null, null], "no valid answer is none: nothing is ever chosen for the target");
+  same(standingAnswer(request, [{ id: "w", answer: { withdrawn: true }, author: { ownsUser: true } }, ...log])?.id, "w", "a withdrawal that came first stands");
+  // Where a request is.
+  same([
+    requestState({}),
+    requestState({ answer: { defense: "guard" } }),
+    requestState({ answer: { defense: "guard" }, rolled: true }),
+    requestState({ answer: { withdrawn: true } }),
+    requestState({ combatGone: true }),
+    requestState({ answer: { defense: "guard" }, combatGone: true }),
+    requestState({ rolled: true, combatGone: true })
+  ], ["open", "answered", "rolled", "withdrawn", "lapsed", "answered", "rolled"], "open, answered, rolled, withdrawn, lapsed; an answer outlives its Combat, and a roll closes everything");
+  same([...REQUEST_MODES], ["answer", "roll"], "the two requests");
+});
+
+check("check request: a request counts only from its user's side (the review of 0.34.0)", () => {
+  const answer = { mode: "answer", defenses: ["evade", "guard"] };
+  const roll = { mode: "roll", defenses: ["guard"] };
+  same([
+    validRequest(answer, { ownsUser: true }),
+    validRequest(answer, { isGM: true }),
+    validRequest(answer, {}),
+    validRequest(answer, { ownsUser: false, userIsCharacter: true }),
+    validRequest(roll, { isGM: true }),
+    validRequest(roll, { ownsUser: true }),
+    validRequest(roll, {})
+  ], [true, true, false, false, true, true, false], "the GM, or an owner of the creature using the Maneuver; never somebody who owns neither");
+  // The forged pair the review found: a player names an adversary as the user and their own
+  // character as the target. They own the target and not the user, so it is no request.
+  must(!validRequest(roll, { isGM: false, ownsUser: false }), "a player cannot post a request in an adversary's name");
+  // A `roll` request is an adversary's alone: a character's Maneuver is rolled by its own player.
+  same([validRequest(roll, { ownsUser: true, userIsCharacter: true }), validRequest(roll, { isGM: true, userIsCharacter: true })], [false, false], "no `roll` request names a character as the Maneuver's user");
+  same([validRequest(null, { isGM: true }), validRequest({ mode: "nonsense" }, { isGM: true }), validRequest({}, { isGM: true })], [false, false, false], "a record with no mode the system knows is no request");
+});
+
+check("check request: the Defenses a target can use, and nobody asked when there is one (ruling 344)", () => {
+  const grabbed = key => (key === "evade" ? "Grabbed" : null);
+  same(usableDefenses(["evade", "guard"]), ["evade", "guard"], "both usable: the target is asked");
+  same(usableDefenses(["evade", "guard"], grabbed), ["guard"], "Evade is unavailable: one is left, and nobody is asked");
+  same(usableDefenses(["evade"], grabbed), ["evade"], "the one named stays the one read when it cannot be used; the read says so");
+  same(usableDefenses(["evade", "evade", "nonsense", "guard"]), ["evade", "guard"], "named once each, and only Defenses");
+  same([usableDefenses([]), usableDefenses(null)], [[], []], "none named is none");
+});
+
+check("check request: an adversary's Maneuver is read from the other side, against its typed number (rulings 340 and 341)", () => {
+  same(["critSuccess", "success", "fail", "critFail", null, ""].map(userDegree), ["critFail", "fail", "success", "critSuccess", null, null], "the player's Critical Success is the Maneuver's Critical Failure");
+  same([adversaryCheck(14), adversaryCheck(null), adversaryCheck(undefined), adversaryCheck(""), adversaryCheck("nonsense"), adversaryCheck("16")],
+    [{ base: 14, threshold: 14, shift: 0 }, { base: 10, threshold: 10, shift: 0 }, { base: 10, threshold: 10, shift: 0 }, { base: 10, threshold: 10, shift: 0 }, { base: 10, threshold: 10, shift: 0 }, { base: 16, threshold: 16, shift: 0 }], "a typed number, and blank reads as 10");
+  same([adversaryCheck(14, -2), adversaryCheck(null, -2), adversaryCheck(0, 3)], [{ base: 14, threshold: 12, shift: -2 }, { base: 10, threshold: 8, shift: -2 }, { base: 0, threshold: 3, shift: 3 }], "its Conditions move the number in effect, never the one typed");
+  // The card kinds the render pass and the socket of nothing read: two words, never the same.
+  must(CHECK_REQUEST !== CHECK_ANSWER, "a request and an answer are different cards");
 });
 
 /* -------------------------------------------- */

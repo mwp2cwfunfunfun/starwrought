@@ -1,8 +1,10 @@
 {{!-- A Relevant Check: the actor names the Constellation and the reason, and the card carries both. --}}
+{{!-- The same window picks one of the Constellations a Maneuver's `[CHECK A or B]` names (0.34.0;
+      `restricted`): the list is those alone, and no reason is asked, since the row allows each. --}}
 {{!-- A div, not a form: DialogV2 supplies the form, and a nested one is dropped by the parser. --}}
 <div class="check-dialog-form sw-relevant">
 
-  <p class="sw-relevant-intro">{{localize "STARWROUGHT.Roll.relevantIntro"}}</p>
+  <p class="sw-relevant-intro">{{#if restricted}}{{localize "STARWROUGHT.Roll.pickCheckIntro"}}{{else}}{{localize "STARWROUGHT.Roll.relevantIntro"}}{{/if}}</p>
 
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.relevantWhich"}}</label>
@@ -15,24 +17,29 @@
           {{/each}}
         </optgroup>
         {{/if}}
+        {{#if untrained.length}}
         <optgroup label="{{localize 'STARWROUGHT.Roll.relevantUntrained'}}">
           {{#each untrained as |c|}}
           <option value="{{c.slug}}">{{c.glyph}} {{c.name}} · {{c.rankLabel}} {{swSigned c.mod}}{{#if c.swapped}} *{{/if}}</option>
           {{/each}}
         </optgroup>
+        {{/if}}
       </select>
     </div>
   </div>
   {{!-- A number marked * is made with other terms (0.21.0, the USE tag): the line says whose. --}}
   {{#if swapNote}}<p class="hint sw-relevant-swap">{{swapNote}}</p>{{/if}}
 
+  {{#unless restricted}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Roll.relevantWhy"}}</label>
     <div class="form-fields">
       <input type="text" name="why" placeholder="{{localize 'STARWROUGHT.Roll.relevantWhyPlaceholder'}}">
     </div>
   </div>
+  {{/unless}}
 
+  {{#if askThreshold}}
   <div class="form-group">
     <label>{{localize "STARWROUGHT.Field.threshold"}}</label>
     <div class="form-fields">
@@ -40,7 +47,8 @@
              placeholder="{{localize 'STARWROUGHT.Roll.thresholdPlaceholder'}}">
     </div>
   </div>
+  {{/if}}
 
-  <p class="hint">{{localize "STARWROUGHT.Roll.relevantHint"}}</p>
+  {{#unless restricted}}<p class="hint">{{localize "STARWROUGHT.Roll.relevantHint"}}</p>{{/unless}}
 
 </div>

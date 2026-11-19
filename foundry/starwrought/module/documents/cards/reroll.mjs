@@ -16,6 +16,8 @@ import { AttackCoordinator } from "../../combat/attack-coordinator.mjs";
 import { resolveActor, SOCKET, replyTo } from "./shared.mjs";
 // An adversary's Gain Control, rolled as its partner's Guard (0.27.0): the Threshold to read again.
 import { gainControlThreshold, gainControlForReroll } from "./gain-control.mjs";
+// 0.34.0: an adversary's number for a check, which a player's roll for its Maneuver was read against.
+import { checkRequestThreshold } from "./check-request.mjs";
 
 const REROLL_REFUSALS = {
   noCard: "STARWROUGHT.Reroll.refusedNoCard",
@@ -131,6 +133,10 @@ export async function rerollByRule(message, flags, button) {
 export async function rerollCheck(message, flags, { roll, reason = "", rule = null } = {}) {
   const roller = resolveActor(flags.actorUuid);
   if (!roller || !roll) return null;
+  // An adversary's result card (0.34.0) is a player's roll read from the other side: it has no
+  // Threshold of its own, so thrown again it would come back with no degree and take the result
+  // off the table. The roll to throw again is the player's, whose reroll posts a new result.
+  if (flags.check?.resultOf) return null;
   // The Item behind the check, whole (0.22.0): a basic Maneuver is rolled straight from the
   // compendium, where `fromUuidSync` answers the pack's index entry, which has no `system` for the
   // new card to print its text from.
@@ -154,7 +160,9 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     if (actor && (typeof actor.defenseThresholdFor === "function")) {
       try {
         const read = actor.defenseThresholdFor({
-          defense: flags.targetDefense, permitted: Object.keys(SW.DEFENSES),
+          // The Defense the first die was read against, and no other (0.34.0): the read does not
+          // move to one nobody named or chose (helpers/threshold-read.mjs).
+          defense: flags.targetDefense, permitted: [flags.targetDefense],
           threat: { threat: "check", melee: false, traits: item?.system?.traits ?? [], check: flags.slug ?? null },
           attacker: roller.tokenOnScene?.() ?? roller
         });
@@ -177,6 +185,17 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
       threshold = again;
       // Withheld whoever rerolls, as on the first card: it is public, and an adversary's Attack
       // Threshold is never printed on a card the table reads.
+      withhold = true;
+    }
+  }
+
+  // A player's Defense rolled for an adversary's Maneuver (0.34.0, ruling 340): the withheld
+  // number is the adversary's number for the Constellation its Maneuver rolls, in effect now,
+  // which no Defense read gives back either.
+  if ((threshold === null) && flags.withheldThreshold && flags.check?.inverted) {
+    const again = checkRequestThreshold(flags.check);
+    if (Number.isFinite(again)) {
+      threshold = again;
       withhold = true;
     }
   }
@@ -220,6 +239,10 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     // Its `state` is the side its user holds NOW: the first card's result may be written already,
     // and the new die's is offered against the Bind as it stands.
     gainControl: gainControlForReroll(flags.gainControl ?? null),
+    // A check that answered a request (0.34.0): the new card names the same request, and a
+    // player's roll for an adversary's Maneuver is still read from the other side, so the GM's
+    // client posts a new result for it (documents/cards/check-request.mjs).
+    checkRequest: (flags.check && !flags.check.resultOf) ? { ...flags.check } : null,
     label: foundry.utils.unescapeHTML?.(label) ?? label,
     subtitle: "",
     threshold: withhold ? null : threshold,

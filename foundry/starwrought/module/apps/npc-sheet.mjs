@@ -14,6 +14,8 @@ import { openRulesPage } from "../documents/chat.mjs";
 import { auraRowsByItem, rangeFor } from "../canvas/auras.mjs";
 // THE GLANCE (0.19.0): the panel a LIMITED user's sheet shows alone.
 import { glanceData } from "../canvas/glance.mjs";
+// 0.34.0: the Skills that ship, for the Checks block.
+import { enabledConstellations } from "../helpers/content.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -124,6 +126,39 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       inEffect: game.i18n.format("STARWROUGHT.Conditions.inEffect", { n: def.threshold }),
       inEffectHint: game.i18n.format("STARWROUGHT.Conditions.inEffectHint", { typed: def.base, n: def.threshold, by: movedBy(def.conditions) })
     }));
+    // THE NUMBERS IT CHECKS WITH (0.34.0; ruling 341): one typed number for each Skill that
+    // ships, then Melee and Ranged, blank reading as 10; beside it the number in effect while the
+    // creature's Conditions move it. A player's Defense roll is read against these when the
+    // adversary uses a Maneuver on their character.
+    const skills = enabledConstellations()
+      .filter(c => c.slug && (c.category === "skill") && !SW.isLoreSlug(c.slug))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const martial = [SW.MELEE_SLUG, SW.RANGED_SLUG].map(slug => ({ slug, name: SW.getConstellation(slug)?.name ?? slug }));
+    // And whatever else its own Maneuvers roll (a Combat Style, a discipline): a Constellation
+    // with no row here could not be typed, and would always read 10 (the review of 0.34.0).
+    const listed = new Set([...skills, ...martial].map(c => c.slug));
+    const own = [];
+    for (const item of actor.items) {
+      if (item.type !== "action") continue;
+      for (const roll of item.system.checkPlan?.rolls ?? []) {
+        if (!roll.slug || listed.has(roll.slug) || SW.DEFENSES[roll.slug] || SW.isLoreSlug(roll.slug)) continue;
+        listed.add(roll.slug);
+        own.push({ slug: roll.slug, name: roll.name || SW.getConstellation(roll.slug)?.name || roll.slug });
+      }
+    }
+    context.checks = [...skills, ...martial, ...own].map(c => {
+      const number = sys.checkNumber(c.slug);
+      const typed = sys.checks?.[c.slug];
+      return {
+        slug: c.slug,
+        name: c.name,
+        typed: Number.isFinite(Number(typed)) && (typed !== null) && (typed !== "") ? Number(typed) : "",
+        moved: !!number.shift,
+        inEffect: game.i18n.format("STARWROUGHT.Conditions.inEffect", { n: number.threshold }),
+        inEffectHint: game.i18n.format("STARWROUGHT.Conditions.inEffectHint", { typed: number.base, n: number.threshold, by: movedBy(number.conditions) })
+      };
+    });
+
     context.bind = bindContext(actor);
     // Form a Bind by hand (0.27.0, ruling 279): offered in an encounter while in none.
     context.canFormBind = !context.bind && this.isEditable && !!actor.inEncounter;

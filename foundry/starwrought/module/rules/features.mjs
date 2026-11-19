@@ -27,6 +27,7 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
+import { EFFECT_TAGS } from "./effects.mjs";
 
 /** The keywords a block may begin with, each to the kind that reads it. */
 export const FEATURE_KEYWORDS = Object.freeze({
@@ -45,14 +46,17 @@ export const FEATURE_KEYWORDS = Object.freeze({
   choice: "choice",
   aura: "aura",
   // 0.28.0: what a Maneuver needs before it can be used, on the Maneuver's own row.
-  requires: "requires"
+  requires: "requires",
+  // 0.34.0: the check a Maneuver rolls, on the Maneuver's own row. `CHECK:` with a colon stays the
+  // tag of a bonus to checks, inside an EFFECT block.
+  check: "check"
 });
 
 /** The block that wraps an effect line (0.17.0). */
 export const EFFECT_KEYWORD = "effect";
 
 /** The keywords as the document lists them, one per kind, for messages. */
-export const FEATURE_KEYWORD_LIST = Object.freeze(["TRAIT", "SIZE", "SPEED", "REACH", "VIGOR", "SENSES", "LANGUAGE", "POINT", "MANEUVER", "TALENT", "CHOICE", "AURA", "REQUIRES", "EFFECT"]);
+export const FEATURE_KEYWORD_LIST = Object.freeze(["TRAIT", "SIZE", "SPEED", "REACH", "VIGOR", "SENSES", "LANGUAGE", "POINT", "MANEUVER", "TALENT", "CHOICE", "AURA", "REQUIRES", "CHECK", "EFFECT"]);
 
 /** Is this trimmed line a feature line? */
 export function isFeatureLine(line) {
@@ -120,6 +124,16 @@ function readBlock(inner) {
   if ((words.length >= 2) && ["trained", "expert", "master", "legendary"].includes(last)) {
     if (last !== "trained") throw new RuleSyntaxError(`[${inner}]: a Root is Trained; nothing grants ${titled(last)} at creation`);
     return { keyword: "trained", kind: "grant", data: inner.slice(0, inner.length - words.at(-1).length).trim(), text, trained: true };
+  }
+  // An effect TAG with its colon (`[CHECK: 1 condition, aid]`, `[IMMUNE: prone]`) is an effect line
+  // that lost its EFFECT (0.34.0). `CHECK` is told both forms, since the word alone is now a block.
+  // Only a word that IS a tag is told so: `[EFFECT: ...]`, `[TRAIT: Human]` and `[NOTE: ...]` are
+  // not effect lines, and a word that is also a feature keyword (`[SPEED: 6]`) is as likely the
+  // feature with a stray colon, so those keep the message below (the review of 0.34.0).
+  const tag = keyword.endsWith(":") ? keyword.slice(0, -1) : "";
+  if (tag && Object.hasOwn(EFFECT_TAGS, tag) && ((tag === "check") || !Object.hasOwn(FEATURE_KEYWORDS, tag))) {
+    const also = (tag === "check") ? "; the check a Maneuver rolls has no colon, as in `[CHECK Athletics vs Guard]`" : "";
+    throw new RuleSyntaxError(`"${words[0]}" begins an effect line, and an effect goes in an EFFECT block: write \`[EFFECT ${inner}]\`${also}`);
   }
   throw new RuleSyntaxError(`"${words[0]}" is not a feature keyword: write ${FEATURE_KEYWORD_LIST.join(", ")}, or \`[<Constellation> trained]\`; an effect goes in \`[EFFECT <tag>: ...]\``);
 }

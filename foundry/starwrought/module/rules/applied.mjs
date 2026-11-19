@@ -190,11 +190,18 @@ export function appliedBy(record, uuid) {
  * @param {Array<{source: string, name: string, type: string, rules: object[], rolls?: boolean}>} carriers
  *        Every Item the build read, with the rules its cell parsed to; `rolls` on a Maneuver says
  *        whether it rolls a check of its own, when the build knows.
- * @param {{runsElsewhere?: (slug: string) => boolean, slugOf?: (name: string) => string}} [options]
- *        `runsElsewhere` answers for a Maneuver's slug; `slugOf` makes that slug from its name.
+ * @param {{runsElsewhere?: (slug: string) => boolean, runsItself?: (slug: string) => boolean, takesUse?: (kind: string) => boolean, slugOf?: (name: string) => string}} [options]
+ *        `runsElsewhere` answers for a Maneuver's slug (a built-in, or a row another act pays
+ *        for); `runsItself` for a built-in alone; `takesUse` for a kind whose line takes the whole
+ *        use; `slugOf` makes that slug from its name.
  * @returns {string[]}  The warnings, in the order found.
  */
-export function effectCensus(carriers, { runsElsewhere = () => false, slugOf = name => String(name ?? "") } = {}) {
+export function effectCensus(carriers, { runsElsewhere = () => false, runsItself = null, takesUse = () => false, slugOf = name => String(name ?? "") } = {}) {
+  // A row the system runs ITSELF (a built-in: Strike, Recenter, Gain Control) never reaches its
+  // check. A row whose cost another act pays (Leap is the drag, Cast the spell) is still used from
+  // its row and does roll a declared check, so only the first is told its CHECK block is unread
+  // (the review of 0.34.0). A caller that knows only `runsElsewhere` gets the wider answer.
+  const builtIn = (typeof runsItself === "function") ? runsItself : runsElsewhere;
   const applied = new Set();
   const read = new Map();
   const warnings = [];
@@ -207,6 +214,20 @@ export function effectCensus(carriers, { runsElsewhere = () => false, slugOf = n
     const source = String(carrier?.source ?? carrier?.name ?? "");
     let said = false;
     let saidNoCheck = false;
+    // A CHECK BLOCK THAT IS NEVER ROLLED (0.34.0): on a row the system runs itself, or beside a
+    // line whose kind takes the whole use (MARK, PERMIT, SUBORDINATE: `takesUse`).
+    const rules = (carrier?.rules ?? []).filter(rule => rule && (typeof rule === "object") && !rule.error);
+    const declares = (carrier?.type === "action") && rules.some(rule => rule.kind === "check");
+    // A row that declares its check rolls one, whatever the build made of its prose.
+    const rollsNone = (carrier?.rolls === false) && !declares;
+    if (declares) {
+      if (builtIn(slugOf(carrier.name))) {
+        warnings.push(`${source}: the system runs this Maneuver itself (its own button or method), so its CHECK block is read by nothing`);
+      } else {
+        const taker = rules.find(rule => (rule.kind !== "check") && takesUse(rule.kind));
+        if (taker) warnings.push(`${source}: a ${String(taker.kind).toUpperCase()} line takes the whole use of this Maneuver, so the check its CHECK block declares is never rolled`);
+      }
+    }
     for (const rule of carrier?.rules ?? []) {
       if (!rule || (typeof rule !== "object") || rule.error) continue;
       if (rule.kind === "apply") {
@@ -217,9 +238,9 @@ export function effectCensus(carriers, { runsElsewhere = () => false, slugOf = n
           warnings.push(`${source}: this Maneuver is run by the system another way (its own button, the drag or the spell), so its APPLY and REMOVE lines apply nothing`);
         }
         const whens = Array.isArray(rule.when) ? rule.when : (rule.when ? [rule.when] : []);
-        if (!saidNoCheck && !elsewhere && (carrier.type === "action") && (carrier.rolls === false) && whens.some(w => w?.outcome)) {
+        if (!saidNoCheck && !elsewhere && (carrier.type === "action") && rollsNone && whens.some(w => w?.outcome)) {
           saidNoCheck = true;
-          warnings.push(`${source}: this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result (IF: RESULT) never stand; name the check in the row's Effect, or drop the IF: RESULT`);
+          warnings.push(`${source}: this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result (IF: RESULT) never stand; declare the check with a [CHECK ...] block on the row, or drop the IF: RESULT`);
         }
         continue;
       }

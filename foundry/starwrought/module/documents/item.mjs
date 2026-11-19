@@ -17,6 +17,10 @@ import { kindOf } from "../rules/kinds/index.mjs";
 import { setting } from "../helpers/settings.mjs";
 // A check read against another creature's Threshold (0.15.0; shared with Gain Control since 0.27.0).
 import { readTargetThreshold } from "../helpers/threshold-read.mjs";
+// 0.34.0: the check a Maneuver's row declares, and the request its target answers first.
+import { planOf } from "../rules/check.mjs";
+import { usableDefenses } from "../rules/check-request.mjs";
+import { actorFromUuid } from "../helpers/cards.mjs";
 
 /**
  * Is this Maneuver's cost taken somewhere other than its own row (0.23.0, ruling 235)? The i18n
@@ -233,7 +237,10 @@ export class SwItem extends Item {
     // named for its parent, which is what the table is paying for.
     const label = partOf ? String(partOf.label ?? plain)
       : `${plain} ${plan.n ? (SW.ACTION_GLYPHS[plan.n] ?? "") : (this.system.glyph ?? "")}`.trim();
-    const rolls = !!actor && !!this.system.check?.enabled;
+    // The check this Maneuver rolls (0.34.0): its `[CHECK ...]` block, else the three stored
+    // fields (rules/check.mjs, `planOf`; the data model derives it as `system.checkPlan`).
+    const check = this.system.checkPlan ?? planOf(this.system.rules, this.system.check);
+    const rolls = !!actor && check.enabled;
     // Outside the actor's Opportunity a Maneuver that is not a Reaction waits for the GM
     // (0.19.0, the gate in documents/actor/actions.mjs); a Reaction is the book's own
     // out-of-turn Maneuver and goes straight on, and so does Finish, which was never gated.
@@ -304,42 +311,17 @@ export class SwItem extends Item {
     // paid and the one creature targeted. The engine reads the lines after the die and the card
     // carries them (dice/check.mjs; documents/cards/apply.mjs).
     const applies = applying ? { applies: { cost: applyCost, target: this.#applyTarget(actor) } } : {};
-    if (this.system.check.enabled && actor && !this.system.check.constellation) {
-      // A Relevant Check: the picker chooses the Constellation and says why, the Maneuver
-      // rides along as the roll's Item, and the card is called by the Maneuver's name. An
-      // adversary gets rollRelevantCheck's own warning and null (it carries Thresholds).
-      return actor.rollRelevantCheck(foundry.utils.mergeObject({
-        item: this,
-        label: plain,
-        subtitle,
-        // The picker writes the subtitle itself (the Constellation and the reason given), so a
-        // subordinate's line rides beside it as a note.
-        ...(partOf?.note ? { note: String(partOf.note) } : {}),
-        outcomes: this.#outcomeList(),
-        ...this.#allyFor(actor),
-        ...applies
-      }, config, { inplace: false }));
-    }
-    if (this.system.check.enabled && actor) {
-      // A check against a target's Threshold (0.15.0, ruling 179): a Maneuver whose check names
-      // a Defense (Demoralize against Guard), used with exactly one target, reads that target's
-      // live Threshold through the fold the attack flow uses (`defenseThresholdFor`, with the
-      // check's Constellation as the Threat and the roller as the other party, so
-      // `AGAINST(Intimidation)` and `MARKED` apply); the number prints for a character target
-      // or a GM roller and is withheld for an adversary as the flow withholds it.
-      const read = this.#targetThreshold(actor);
-      return SwCheck.roll(foundry.utils.mergeObject({
-        actor,
-        item: this,
-        kind: "check",
-        slug: this.system.check.constellation,
-        label: plain,
-        subtitle,
-        outcomes: this.#outcomeList(),
-        ...this.#allyFor(actor),
-        ...applies,
-        ...(read ?? {})
-      }, config, { inplace: false }));
+    // The check (0.34.0): what is rolled is the user's pick where the row names a choice, what
+    // it is read against is the target's; `#startCheck` settles both and rolls, or posts the
+    // request the target answers first (documents/cards/check-request.mjs).
+    if (rolls) {
+      return this.#startCheck(actor, {
+        check, config, subtitle, note: partOf?.note ? String(partOf.note) : "", applies,
+        cost: plan.n, label, prepared, paid, partOf,
+        // How the resumed roll passes the gate: not at all when this use has passed it already
+        // (or needs none); else at the roll, as a use with no request does.
+        gate: atRoll ? "roll" : "none"
+      });
     }
     // No check: the card is the Maneuver. One or two actions are paid here and said on the
     // card itself, as Recenter and Raise a Shield say theirs, so the table reads one card; a
@@ -697,22 +679,323 @@ export class SwItem extends Item {
     return { ally: { uuid: target.uuid, name: token.name } };
   }
 
+  /* -------------------------------------------- */
+  /*  The check a Maneuver rolls (0.34.0)         */
+  /* -------------------------------------------- */
+
   /**
-   * The target's Threshold a check Maneuver reads (0.15.0, ruling 179), as roll config: the
-   * Threshold, its label, `targetDefense` for the dialog, `withholdThreshold` for an adversary's
-   * number when the roller is not the GM, and the read's marks to write on the target. Null when
-   * the Maneuver names no Defense or there is not exactly one target with an Actor.
+   * Settle a Maneuver's check and roll it (0.34.0; rulings 337 to 349), from the plan its row
+   * declares (`[CHECK Athletics or Acrobatics vs Evade or Guard]`) or its stored fields come to.
+   *
+   *  - WHAT IS ROLLED is the user's own pick where the row names a choice (ruling 338): a short
+   *    window lists those Constellations with their totals; `relevant` opens the whole list, with
+   *    its reason, as a Relevant Check always has.
+   *  - WHAT IT IS READ AGAINST is the target's pick where the row names two Defenses: with one
+   *    token targeted, a request card goes out and the target's player answers it (the GM for an
+   *    adversary), and the roll follows the answer (`resumeCheck`). No Defense is ever chosen by
+   *    the system (ruling 159): only when the target can use exactly ONE of those named is nobody
+   *    asked. One Defense named is read as it stands, unavailable or not, and the card says so.
+   *  - With no token targeted nothing is read and the Threshold is typed, as it always was.
+   *
+   * An adversary's Maneuver goes its own way (`#startAdversaryCheck`): players always roll
+   * against adversaries (ruling 340).
+   *
+   * @returns {Promise<object|null>}  The roll's result; `{ pending: true, message }` when a
+   *   request went out and the roll waits on its answer; null when a window was closed.
    */
-  #targetThreshold(actor) {
-    const defense = this.system.check?.defense;
-    if (!defense || !SW.DEFENSES[defense]) return null;
+  async #startCheck(actor, how) {
+    // A roll, a payment and a request are the creature's owner's to make (the review of 0.34.0:
+    // an Observer could press an adversary's new Use control).
+    if (!actor.isOwner) return void ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+    if (actor.type !== "character") return this.#startAdversaryCheck(actor, how);
+    const { check, config, subtitle, note, applies } = how;
     const token = SwCheck.currentTarget();
-    if (!token?.actor) return null;
-    // The read itself is shared with Gain Control since 0.27.0 (helpers/threshold-read.mjs).
-    return readTargetThreshold({
-      roller: actor, token, defense,
-      check: this.system.check.constellation || null,
-      traits: this.system.traits ?? []
+    const target = token?.actor ?? null;
+    const facing = !!target && (check.defenses.length > 0);
+
+    // The user's own pick.
+    let rolled = (!check.relevant && (check.rolls.length === 1)) ? check.rolls[0] : null;
+    let line = "";
+    let typed = check.threshold;
+    let typedInPicker = false;
+    if (!rolled) {
+      const picked = await actor.pickConstellation({
+        only: check.relevant ? null : check.rolls.map(roll => roll.slug),
+        // A caller's `slug` is what the picker opens on, as it always was for a Relevant Check.
+        slug: config.slug ?? null,
+        item: this,
+        threshold: check.threshold ?? config.threshold ?? null,
+        // A Defense is about to be read, so no number is typed.
+        askThreshold: !facing,
+        dialog: config.dialog
+      });
+      if (!picked) return null;
+      rolled = { slug: picked.slug, name: picked.name };
+      line = picked.line;
+      if (picked.threshold !== null) {
+        typed = picked.threshold;
+        typedInPicker = true;
+      }
+    }
+    // The picker's line is the approval surface (which Constellation, and why); a subordinate's
+    // note rides beside it. With no pick the card says the Maneuver's own cost and group.
+    const said = line ? [line, String(note ?? "").trim()].filter(Boolean).join(" · ") : subtitle;
+
+    // The target's pick.
+    let defense = null;
+    if (facing) {
+      const usable = usableDefenses(check.defenses, key => target.system?.defenses?.[key]?.unavailable);
+      if (check.defenses.length === 1) defense = check.defenses[0];
+      else if (usable.length === 1) defense = usable[0];
+      else return this.#askTarget(actor, how, { token: token.document, rolled, line: said });
+    }
+    return this.#rollPlanned(actor, {
+      rolled, defense, permitted: check.defenses, token: token?.document ?? null,
+      threshold: typed, typed: typedInPicker, subtitle: said, applies, ally: this.#allyFor(actor), config
+    });
+  }
+
+  /**
+   * The row names two Defenses the target can use: ask the target (0.34.0; rulings 338 and 339).
+   * A request card goes out with a button for each, the target's player answers it (the GM for a
+   * creature no player owns), and the roll follows the answer (`resumeCheck`).
+   * @returns {Promise<{pending: true, message: ChatMessage}|null>}
+   */
+  async #askTarget(actor, how, { token, rolled, line }) {
+    // A Maneuver performed as part of another hands over marks to file when the roll is made
+    // (the parent's LIMIT, the Effect it spends): a roll that waits on another player's answer
+    // is the most intricate road for those, and no row needs it yet.
+    if (how.partOf) {
+      ui.notifications.warn(game.i18n.format("STARWROUGHT.CheckRequest.notAsPart", { name: SW.plainName(this.name), parent: how.partOf.label ?? "" }));
+      return null;
+    }
+    const { postCheckRequest } = await import("./cards/check-request.mjs");
+    return postCheckRequest({
+      mode: "answer", user: actor, item: this, token, rolled, line,
+      defenses: how.check.defenses,
+      cost: how.cost, label: how.label,
+      // Where the gate is still to be passed (a Maneuver that rolls passes it at the roll): begun
+      // at the user's own Opportunity, the request stands whenever the answer comes; begun on
+      // the GM's leave, that leave is spent when the roll is made.
+      gate: (how.gate !== "roll") ? "none" : ((game.user.isGM || !actor.inEncounter || actor.isTurn) ? "turn" : "permit"),
+      applies: how.applies?.applies ?? null, ally: this.#allyFor(actor).ally ?? null,
+      prepared: how.prepared === true, paid: how.paid ?? null,
+      dialog: how.config?.dialog
+    });
+  }
+
+  /**
+   * Roll the check, everything settled (0.34.0): the Constellation, the Defense read (when a
+   * creature is targeted and one was named or answered), else the Threshold the row or the
+   * window gave. A check against a target's Threshold (0.15.0, ruling 179) reads that target's
+   * live number through the fold the attack flow uses (`defenseThresholdFor`, with the check's
+   * Constellation as the Threat and the roller as the other party, so `AGAINST(Intimidation)` and
+   * `MARKED` apply); the number prints for a character target or a GM roller and is withheld for
+   * an adversary as the flow withholds it.
+   * @param {Actor} actor
+   * @param {object} how
+   * @param {{slug: string, name: string}} how.rolled
+   * @param {string|null} [how.defense]     The Defense read, a key of SW.DEFENSES.
+   * @param {string[]} [how.permitted]      The Defenses the row names.
+   * @param {TokenDocument|null} [how.token]  The target.
+   * @param {number|null} [how.threshold]   A Threshold to open on, when no Defense is read.
+   * @param {string} [how.subtitle]
+   * @param {object} [how.applies]          `{ applies: { cost, target } }`, or `{}`.
+   * @param {object} [how.ally]             `{ ally }`, or `{}`.
+   * @param {boolean} [how.typed]           The Threshold was typed in this use's own picker, so
+   *   it stands over a caller's.
+   * @param {boolean} [how.answered]        The Defense is the target's own answer to a request.
+   * @param {object} [how.config]           The caller's roll options (`beforeRoll`, `dialog`, ...).
+   * @param {object} [how.extra]            More roll config (`checkRequest`).
+   */
+  async #rollPlanned(actor, how) {
+    const read = (how.defense && how.token?.actor)
+      // The read itself is shared with Gain Control since 0.27.0 (helpers/threshold-read.mjs).
+      ? readTargetThreshold({
+        roller: actor, token: how.token, defense: how.defense,
+        permitted: how.permitted ?? [how.defense],
+        answered: how.answered === true,
+        check: how.rolled.slug, traits: this.system.traits ?? []
+      })
+      : null;
+    const typed = (!read && Number.isFinite(how.threshold)) ? { threshold: Number(how.threshold) } : {};
+    // An adversary rolls flat (dice/check/modifiers.mjs): its typed number for this Constellation
+    // gives the die's bonus, named for the Constellation; its Conditions' lines are added there,
+    // so the typed number is handed over and never the one in effect. Its card is read by the
+    // table: another adversary's Threshold is never printed on it, though the GM is the one
+    // rolling (the attack flow's rule, kept here). Here, so every road to an adversary's own roll
+    // has them (the GM's window, and a request its target's player answered).
+    const flat = (actor.type !== "character") ? {
+      flatBonus: (actor.system.checkBase?.(how.rolled.slug) ?? 10) - 10,
+      flatLabel: how.rolled.name || SW.getConstellation(how.rolled.slug)?.name || how.rolled.slug,
+      ...((read && (how.token.actor.type !== "character")) ? { withholdThreshold: true } : {})
+    } : {};
+    const cfg = foundry.utils.mergeObject({
+      actor,
+      item: this,
+      kind: "check",
+      slug: how.rolled.slug,
+      label: SW.plainName(this.name),
+      subtitle: how.subtitle ?? "",
+      outcomes: this.#outcomeList(),
+      ...(how.ally ?? {}),
+      ...(how.applies ?? {}),
+      ...typed,
+      ...(read ?? {}),
+      ...flat,
+      ...(how.extra ?? {})
+    }, how.config ?? {}, { inplace: false });
+    // What this use settled stands over a caller's own options: the Constellation picked or
+    // declared, and a Threshold typed in this use's picker (the review of 0.34.0).
+    cfg.slug = how.rolled.slug;
+    if (how.typed && typed.threshold !== undefined) cfg.threshold = typed.threshold;
+    return SwCheck.roll(cfg);
+  }
+
+  /**
+   * Roll the check a request was waiting on (0.34.0), once its target has answered: the roll
+   * `#startCheck` would have made, from what the request card stored, so it is the same after a
+   * reload and never re-enters `use` (which would ask the cost and pay a Reaction again).
+   *
+   * The gate and the cost are settled as the roll is made, as for any rolled Maneuver (ruling
+   * 232): a roll window that is closed has spent nothing. The request is checked once more there,
+   * since two clients of one user could each have the window open: one request gives one roll.
+   *
+   * @param {object} request     The request card's `checkRequest` record.
+   * @param {object} given
+   * @param {string} given.requestId  The request card's id.
+   * @param {string} given.defense    The Defense the target answered with.
+   * @returns {Promise<object|null>}
+   */
+  async resumeCheck(request, { requestId, defense } = {}) {
+    const actor = await actorFromUuid(request?.userUuid);
+    if (!actor) return void ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.noActor"));
+    if (!actor.isOwner) return void ui.notifications.warn(game.i18n.localize("STARWROUGHT.Notify.notOwner"));
+    const key = `${actor.uuid}|${this.uuid}`;
+    if (USING.has(key)) return null;
+    USING.add(key);
+    try {
+      const { requestStillWaits } = await import("./cards/check-request.mjs");
+      let token = null;
+      try { token = request.tokenUuid ? fromUuidSync(request.tokenUuid) : null; } catch { token = null; }
+      const label = String(request.label ?? SW.plainName(this.name));
+      const beforeRoll = async () => {
+        // One request gives one roll, and only while its answer stands: it may have been rolled
+        // from another client, or its Combat ended, while this window stood open.
+        if (!requestStillWaits(requestId, { mode: "answer", defense })) return false;
+        // A Prepared Maneuver must still be standing when the die is thrown, as at Finish, and
+        // this must be the request THAT preparation posted (`finishPrepared` writes its id on
+        // the preparation): a card left over from an earlier one finishes nothing.
+        const prep = actor.system.actions?.preparing;
+        if (request.prepared && ((prep?.itemUuid !== this.uuid) || (prep?.request !== requestId))) {
+          ui.notifications.warn(game.i18n.format("STARWROUGHT.CheckRequest.notPrepared", { name: SW.plainName(this.name) }));
+          return false;
+        }
+        // The gate (0.19.0), where this use had not passed it: a request made at the user's own
+        // Opportunity stands though that Opportunity has since ended (the Maneuver was begun in
+        // it, and the wait was the target's); one made on the GM's leave spends that leave now.
+        if ((request.gate === "permit") && !(await actor.mayActNow({ label }))) return false;
+        if (request.cost) await actor.spendActions(request.cost, { label });
+        return true;
+      };
+      const result = await this.#rollPlanned(actor, {
+        rolled: request.rolled,
+        defense,
+        // The answer is the answer: the read stays on it, and says so if the target can no
+        // longer use it, never moving to another Defense the row names (ruling 159).
+        permitted: [defense],
+        answered: true,
+        token: token?.actor ? token : null,
+        subtitle: request.line ?? "",
+        applies: request.applies ? { applies: request.applies } : {},
+        ally: request.ally ? { ally: request.ally } : {},
+        config: { beforeRoll, ...((request.dialog === false) ? { dialog: false } : {}) },
+        extra: { checkRequest: { from: requestId } }
+      });
+      // A Prepared Maneuver is finished by its roll, as Finish would have finished it.
+      if (result && request.prepared) await actor.settlePreparation?.();
+      return result;
+    } finally {
+      USING.delete(key);
+    }
+  }
+
+  /**
+   * An adversary's Maneuver with a check (0.34.0; rulings 340 and 341). Mike: "players ALWAYS
+   * roll vs. NPCs".
+   *
+   *  - AGAINST A PLAYER'S CHARACTER, where the row names a Defense: the adversary pays at once,
+   *    as its Gain Control does, and a request card asks the character's player to roll, one
+   *    button for each Defense named (the target's own pick, made by rolling it). The roll is read
+   *    against the adversary's typed number for the Constellation, and the GM's client then posts
+   *    the Maneuver's result, read from the other side (documents/cards/check-request.mjs).
+   *  - AGAINST ANOTHER ADVERSARY, or with nobody's Defense to read: the GM rolls for it, the
+   *    die's bonus the typed number less 10. The GM answers for both sides, so the Constellation
+   *    (where the row names a choice) and the target's Defense (where it names two) are asked in
+   *    one window.
+   *  - WHERE THE ONE WINDOW WOULD HAVE THE WRONG PERSON PICK the Defense (the user is no GM: a
+   *    player-owned adversary; or the target is a creature a player owns that is no character: a
+   *    companion), the target is asked by the request card, as for a character's Maneuver.
+   */
+  async #startAdversaryCheck(actor, how) {
+    const { check, config, subtitle, applies } = how;
+    const token = SwCheck.currentTarget();
+    const target = token?.actor ?? null;
+    const facing = !!target && (check.defenses.length > 0);
+    const playerRolls = facing && (target.type === "character");
+    const usable = facing ? usableDefenses(check.defenses, key => target.system?.defenses?.[key]?.unavailable) : [];
+    const needRoll = check.relevant || (check.rolls.length > 1);
+    // Two Defenses named and both usable: the target's own pick. The GM answers in the window
+    // for a creature no player owns; anybody else's is asked by the card.
+    const twoWays = facing && !playerRolls && (check.defenses.length > 1) && (usable.length > 1);
+    const needDefense = twoWays && game.user.isGM && !target.hasPlayerOwner;
+
+    let rolled = needRoll ? null : (check.rolls[0] ?? null);
+    let defense = null;
+    if (needRoll || needDefense) {
+      const { pickAdversaryCheck } = await import("../apps/check-picker.mjs");
+      const picked = await pickAdversaryCheck(actor, {
+        name: SW.plainName(this.name),
+        rolls: needRoll ? (check.relevant ? null : check.rolls) : undefined,
+        defenses: needDefense ? usable : undefined,
+        targetName: token?.name ?? target?.name ?? ""
+      });
+      if (!picked) return null;
+      if (picked.rolled) rolled = picked.rolled;
+      if (picked.defense) defense = picked.defense;
+    }
+    if (!rolled?.slug) return this.toMessage({ actor });
+    const rolledName = rolled.name || SW.getConstellation(rolled.slug)?.name || rolled.slug;
+    rolled = { slug: rolled.slug, name: rolledName };
+    const said = needRoll ? rolledName : subtitle;
+
+    if (playerRolls) {
+      // The gate, where this use has still to pass it (a player-owned adversary outside its
+      // Opportunity): passed as the adversary pays, since no roll of its own follows.
+      if ((how.gate === "roll") && !(await actor.mayActNow({ label: how.label }))) return null;
+      if (how.cost) await actor.spendActions(how.cost, { label: how.label });
+      const { postCheckRequest } = await import("./cards/check-request.mjs");
+      const posted = await postCheckRequest({
+        mode: "roll", user: actor, item: this, token: token.document,
+        rolled, line: said,
+        defenses: check.defenses,
+        cost: 0, label: how.label, gate: "none",
+        applies: applies?.applies ?? null, ally: null,
+        prepared: false, paid: how.paid ?? null,
+        dialog: config.dialog
+      });
+      // A Prepared Maneuver is finished as its request goes out: the adversary's part is done,
+      // and the roll is the player's (the review of 0.34.0: it stayed Preparing, since only a
+      // roll of the adversary's own settled it).
+      if (posted && how.prepared) await actor.settlePreparation?.();
+      return posted;
+    }
+    if (twoWays && !needDefense) return this.#askTarget(actor, how, { token: token.document, rolled, line: said });
+    // One Defense named is the one read; of two, the one the target can use (ruling 344).
+    if (facing && !defense) defense = (check.defenses.length === 1) ? check.defenses[0] : (usable[0] ?? null);
+    return this.#rollPlanned(actor, {
+      rolled, defense, permitted: check.defenses, token: token?.document ?? null,
+      threshold: check.threshold, subtitle: said, applies, ally: {}, config
     });
   }
 
@@ -848,6 +1131,14 @@ export class SwItem extends Item {
       default:
         return "";
     }
+  }
+
+  /**
+   * The four degrees, for a card built outside this class (0.34.0: the result of an adversary's
+   * Maneuver, read from the player's roll; documents/cards/check-request.mjs).
+   */
+  get checkOutcomes() {
+    return this.#outcomeList();
   }
 
   /** The four degrees, when a Maneuver prints them. */

@@ -52,6 +52,9 @@ Every block the cell reads, one example each. Case never matters.
 | `[REQUIRES effect Taking Cover]` | ... you have a named Effect, anything on you that is no Condition (0.31.0) | 2 |
 | `[REQUIRES bind, neutral]` | ... you are in a Bind in that state: `neutral`, `controlling`, `controlled` (0.31.0) | 2 |
 | `[REQUIRES creature adjacent with dying]` | ... a creature that near has a Condition, or `with effect <Name>` a named Effect (0.31.0) | 2 |
+| `[CHECK Athletics vs Guard]` | on a Maneuver's own row: the check the Maneuver rolls, and the Defense it is read against (0.34.0) | 2 |
+| `[CHECK Athletics or Acrobatics vs Evade or Guard]` | ... `or` is a choice, made by whoever it affects: left of `vs` the one using the Maneuver, right of it the target | 2 |
+| `[CHECK relevant]`, `[CHECK Crafting vs 15]` | ... any Constellation, picked when it is rolled; a Threshold the row names | 2 |
 | `[EFFECT CHECK: 1 condition, aid]` | a bonus to checks of a Constellation or Maneuver (none named: every check) | 3 |
 | `[EFFECT ATK: 1 condition]` | a bonus to every Strike and Cast | 3 |
 | `[EFFECT DEF: 1 situation, guard]` | a bonus to a Defense (none named: all four) | 3 |
@@ -167,6 +170,7 @@ Each block is one rule.
 | `[AURA 15 allies]` | the ring on the map: range in feet, whom it is about (`allies`, `enemies`, `all`). Every ring is preview-only until its owner shows it from the Auras window (0.17.0; the old `visible` word is refused) | `aura` |
 | `[AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]` | the ring **carrying its effect** (0.18.0): after the semicolon, one effect line (section 3) whose `FOR` is the ring, so "15 feet, allies" is said once; a `FOR:` inside the block is refused. Stored as two rules, the ring and the effect. A second effect on the same ring is a second block with the same range and audience, drawn once; two rings on one Talent draw the first | `aura`, and the effect's kind |
 | `[REQUIRES prone or supine]` | on a **Maneuver's own row**: what the Maneuver needs before it can be used (0.28.0). The Maneuvers tab lists the row only while every block on it holds; `or` inside a block gives alternatives, `not` turns a word round, and a second block is a condition that must also hold. The words are in section 4 | `requires` |
+| `[CHECK Athletics vs Evade or Guard]` | on a **Maneuver's own row**: the check the Maneuver rolls (0.34.0). Left of `vs`, what is rolled: a Constellation, several joined by `or` (the user's own pick), or `relevant`. Right of it, what the roll is read against: a Defense, several joined by `or` (the target's pick), or a number. With no `vs` the Threshold is typed when it is rolled. The forms are in section 4. `CHECK:` with a colon, inside `[EFFECT ...]`, is a different thing: a bonus to checks (section 3) | `check` |
 | `[EFFECT ...]` | an effect block: section 3 | the tag's kind |
 
 **The chassis is written on the Root.** The Human's `[TRAIT Human][SIZE Medium][SPEED 6][VIGOR 8]`
@@ -969,6 +973,95 @@ what a creature that is near HAS (`with`), which is as close as it comes: Stabil
 listed beside any Dying creature, whichever one is then targeted. A Condition's value is not
 compared (`frightened` is any value).
 
+### `check`
+
+The check a Maneuver rolls, declared (0.34.0; rulings 337 to 349). Mike, of Gain Control and of the
+Talents still to be written: "when I add new talents I don't want to hard-code what the check is.
+So wouldn't it make sense if the check was also using automation grammar, as well as the
+success/failure effects?", and: "make sure there is room for the Checker to choose (eg Athletics or
+Acrobatics) or for the Checked to choose". Through 0.33.0 the build GUESSED a row's check from its
+prose (the Constellation column, the words "attempt ... check" in the Effect and the word after
+"vs."), and the guess read "vs. Evade or Guard" as Evade alone, rolled nothing for a cell that
+names two Constellations, and could not say a Threshold.
+
+```
+[CHECK Athletics]                           roll Athletics; the Threshold is typed when it is rolled
+[CHECK Athletics vs Guard]                  against the target's Guard
+[CHECK Athletics or Acrobatics vs Guard]    the one using the Maneuver picks which is rolled
+[CHECK Athletics vs Evade or Guard]         the target picks which Defense answers
+[CHECK relevant]                            any Constellation, picked when it is rolled (Aid)
+[CHECK relevant vs Guard]                   the same, against the target's Guard
+[CHECK Crafting vs 15]                      a Threshold of 15, which the roll window may still change
+```
+
+- **Where.** On a Maneuver's own row, beside its `REQUIRES` and `EFFECT` blocks, and nowhere
+  else: on a Talent or a custom effect it is refused. A Maneuver a Talent grants is a copy of its
+  row, so a Talent that needs a roll grants one (`[MANEUVER <Name>]`) and the row carries the check.
+- **Left of `vs`: what is rolled.** `relevant`, or a Constellation by the name the trees print: a
+  Skill, a Defense, Melee, Ranged, a Combat Style. Never a Maneuver, never Origin, and never a
+  Lore, which is each character's own (write `relevant`, and the Lore is picked when it is rolled).
+- **Right of `vs`: what the roll is read against.** One of the four Defenses, or a whole number
+  from 1 to 60. With no `vs` the Threshold is typed in the roll window, as it always was.
+- **`or` is a choice, and whoever it affects makes it** (ruling 338; Mike: "on the left side of
+  the 'vs' the actor chooses. On the right side of the 'vs' the target chooses"). No word hands a
+  choice to the other side. There is no `and` and no comma.
+- **One block a row.** A Maneuver rolls one check; a second block stops the build.
+- **`CHECK` and `CHECK:` are two things.** `[CHECK Athletics vs Guard]` declares the check;
+  `[EFFECT CHECK: 1 condition, aid]` is a bonus to checks, as it has been since 0.16.0. Mike chose
+  the word because it does not say who rolls (ruling 337). Each written the other way is told the
+  form that was meant.
+
+**In play, for a character.** One Constellation and one Defense roll exactly as before. A choice
+on the left opens a short window listing those Constellations, each with its total, before the
+roll. A choice on the right, with one creature targeted, posts a request card: "Tess uses Trip
+(Athletics) on the Bandit. The Bandit answers with:", and a button for each Defense, which only
+the target's player can press (the GM for an adversary, or for a player who is away). The answer
+is its own card, with a Roll button for the user's player; the roll and its result are the normal
+check card, with its APPLY buttons. Nothing is paid until that roll is made.
+
+- **No Defense is ever chosen by the system.** A request has buttons and no default, and the
+  first answer from the target's side stands. Only when the target can use exactly ONE of the
+  Defenses named (Evade is unavailable while Grabbed) is nobody asked, and that one is read.
+- **One Defense named is the one read**, even when the target cannot use it, and the card says
+  so. Through 0.33.0 such a check moved by itself to another Defense.
+- **The user picks first, the target answers second**, knowing the pick: declare, then defend.
+- **A request** can be withdrawn before it is answered, lapses with the encounter it was made
+  in, and gives one roll. One made at the user's own Opportunity stands though that Opportunity
+  has since ended.
+- **With no token targeted** nothing is asked and the Threshold is typed. One target at a time.
+
+**In play, for an adversary** (ruling 340; Mike: "players ALWAYS roll vs. NPCs"). Used on a
+player's character, where the row names a Defense: the adversary pays at once, and the request
+card has a Roll button for each Defense. The character's player presses one and rolls that
+Defense, against the adversary's number for the Constellation the Maneuver rolls (a typed number
+for each Skill, and for Melee and Ranged, on the adversary sheet's Checks block; blank is 10; its
+Conditions move it; ruling 341), which stays hidden. A second card follows, spoken by the
+adversary: the Maneuver's result, read from the other side (the player's Failure is its Success),
+with its result row and its APPLY buttons for the GM. Used on another adversary, or with nobody's
+Defense to read, the GM rolls for it: the die's bonus is the typed number less 10, and one window
+asks whatever the row leaves to choose.
+
+**A row with no block works as it did.** The build still guesses its check from the row's
+Constellation column and its Effect, lists those rows once, and warns when a block names a
+Constellation or a Defense other than the one that guess reads (the block is the one read; a
+block that names no Defense where the Effect names one is taken as meant). The
+Item carries the plan every reader asks (`system.checkPlan`): the block when there is one, else
+the three fields the build has always written. The Maneuver's own window shows a declared check
+in its check panel.
+
+**The build says so** when a block is on a row the system runs itself (Strike, Gain Control,
+Recenter, Reload, Pass, Raise a Shield: nothing reads it) or beside a line that takes the whole
+use (`MARK`, `PERMIT`, `SUBORDINATE`: the check is never rolled), and it refuses one on an
+Activity (its check is its Check column where the sheet has one, else its Constellation column)
+and on an Endeavor. A row the system only PAYS for another way (Leap, whose cost is the drag's)
+is still used from its row, and does roll a declared check.
+
+**Not read, and the table's:** the Threshold of a Constellation that is no Defense (Seek against
+Stealth, Anticipate against Guile); a Threshold worked out from the target (Stabilize's 10 + Dying
++ Wounds); a check compared against each of several creatures (Hide, Sneak, Captivate); a choice
+kept secret from the other side; an `ALTER` of a Maneuver's check; a Maneuver performed as part
+of another whose check asks its target to choose, which is refused with the reason.
+
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
 
@@ -1275,6 +1368,47 @@ Grabbed (the system marks that itself), a value that drops by 1 each round (Frig
 Stunned's and Slowed's lost actions, Heedless's extra action, what Blind and Deafened cannot
 perceive, and Fatigued's maximum, Wind check and rests, which stay the system's.
 
+### Declaring a check (0.34.0)
+
+The rows of `data/actions_maneuvers.xlsx` whose check the build still guesses, each with the block
+that says it. Paste the block into the row's Automation cell, beside what is there.
+
+```
+  Aid                                         [CHECK relevant vs 15]
+  Recall Knowledge                            [CHECK relevant]
+  Seek                                        [CHECK Awareness]
+  Balance                                     [CHECK Acrobatics]
+  Tumble Through                              [CHECK Acrobatics vs Awareness]
+  Calm Animal, Direct Animal                  [CHECK Animal Handling vs Guard]
+  Climb, Swim                                 [CHECK Athletics]
+  Disarm, Grapple, Reposition, Shove, Trip    [CHECK Athletics vs Evade or Guard]
+  Reliable Anchor, Rescue Haul                [CHECK Athletics vs 15]
+  Brace an Object, Field Patch                [CHECK Crafting]
+  Rally, Command the Field                    [CHECK Diplomacy vs 15]
+  Talk Them Down                              [CHECK Diplomacy vs Guard]
+  Feint                                       [CHECK Guile vs Awareness]
+  Anticipate                                  [CHECK Insight]
+  Demoralize                                  [CHECK Intimidation vs Guard]
+  Stabilize                                   [CHECK Medicine]
+  Bolster                                     [CHECK Performance vs 15]
+  Captivate                                   [CHECK Performance vs Awareness]
+  Hide, Sneak                                 [CHECK Stealth]
+  Find Footing                                [CHECK Survival]
+  Disable Device, Pick Lock                   [CHECK Thievery]
+```
+
+Ten of these change what the build reads today. Trip, Shove, Disarm, Grapple and Reposition say
+"Evade or Guard" and are guessed as Evade alone; with the block the target picks. Calm Animal and
+Direct Animal say "against the animal's Guard", which the guess does not catch, so today no
+Defense is read; with the block a targeted animal's Guard is. Rescue Haul says "an Athletics
+check" and its Constellation column says Cairnward, so it is guessed as a Cairnward check; the
+block says Athletics. Hide and Sneak are guessed as against one target's Awareness; `[CHECK
+Stealth]` stops that. Aid, Rally, Command the Field, Bolster and Reliable Anchor name a
+Threshold ("typically 15"), which the roll window then opens on. Seek (against Stealth),
+Anticipate (against Guile), Stabilize (10 + Dying + Wounds) and Hide and Sneak (each watcher's
+Awareness) are read against something the block cannot say yet, so their blocks name what is
+rolled and the Threshold is typed.
+
 ## 6. Character Effects
 
 The character sheet's **Effects** tab (0.16.0, the Overview's panel through 0.16.0; Mike: FG's
@@ -1522,9 +1656,27 @@ written on the Maneuver's row.
 | `after the ring, an AURA block carries one effect, \`[AURA <N> <who>; <tag>: ...]\`` | what follows the ring's semicolon is no effect line |
 | `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: CHECK, ATK, ...` | the word after EFFECT is no tag |
 | `EFFECT is written \`[EFFECT <tag>: ...]\`, as in \`[EFFECT IMMUNE: prone; LIMIT: encounter]\`` | an empty `[EFFECT]` |
-| `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, REACH, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, EFFECT, or [<Constellation> trained]` | the block's first word |
+| `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, REACH, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, CHECK, EFFECT, or [<Constellation> trained]` | the block's first word |
 | `REQUIRES is a block of its own, not an effect: write \`[REQUIRES prone]\`` | a feature keyword wrapped in `[EFFECT ...]` (0.28.0); every keyword is told the same in its own word |
 | `REQUIRES is written on the Maneuver's own row: it says when that Maneuver can be used, and the Maneuvers tab lists the row only then` | a `[REQUIRES ...]` block on a Talent or a custom effect |
+| `CHECK is written on the Maneuver's own row: it says what that Maneuver rolls. A Talent that needs a roll grants a Maneuver, ...` | a `[CHECK ...]` block on a Talent or a custom effect (0.34.0) |
+| `CHECK is written \`[CHECK <Constellation> or <Constellation> vs <Defense> or <Defense>]\`, as in \`[CHECK Athletics vs Evade or Guard]\`` | an empty block; with `: an \`or\` has nothing beside it`, a dangling `or` |
+| `"<name>" names no Constellation: CHECK rolls a Skill, a Defense, Melee, Ranged or a Combat Style by the name the trees print, or \`relevant\`` | a name left of `vs` that is no Constellation |
+| `"<name>" is a Maneuver: CHECK names the Constellation that is rolled` / `a Lore is each character's own ...` / `Origin is a rank a rule may ask about ...` | a Maneuver, a Lore or Origin left of `vs` |
+| `"<name>" is not a Defense: after \`vs\` CHECK names Awareness, Evade, Guard, Endure, or a number; the Threshold of another Constellation is not read yet` | a Constellation that is no Defense right of `vs` |
+| `CHECK has one \`vs\`` / `"against": CHECK writes it \`vs\`` / `CHECK names what is rolled before \`vs\`` / `CHECK names a Defense or a number after \`vs\`` | two `vs`; `against` or `versus`; nothing on one side of it |
+| `CHECK joins alternatives with \`or\` ... with no comma` / `CHECK has no \`and\`` / `"<name>" is named twice` / `\`relevant\` already means any Constellation ...` | a comma or an `and`; a name given twice; `relevant` beside another name |
+| `a Threshold is a whole number from 1 to 60, not <n>` / `a Threshold is a whole number from 1 to 60, with no sign, ..., not <n>` / `after \`vs\` a number stands alone` | a number out of range; a signed or fractional number; a number as one of a choice |
+| `a bonus to checks is an effect: write \`[EFFECT CHECK: 1 condition, aid]\`. The check a Maneuver rolls is \`[CHECK Athletics vs Guard]\`, with no colon and no number first` | `[CHECK 1 condition, aid]`: the bonus written as the block, on a Maneuver, a Talent or a custom effect alike |
+| `CHECK is an effect tag and takes a colon: write \`[EFFECT CHECK: 1 condition, aid]\`` | `[EFFECT CHECK 1 condition, aid]`, or `check 1 condition, aid` typed as a line: the bonus with its colon lost |
+| `"CHECK:" begins an effect line, and an effect goes in an EFFECT block: write \`[EFFECT CHECK: ...]\`; the check a Maneuver rolls has no colon, as in \`[CHECK Athletics vs Guard]\`` | `[CHECK: 1 condition, aid]`: a tag that lost its EFFECT (any effect tag is told to wrap itself; a word that is no tag, such as `[TRAIT: Human]`, or is a feature keyword first, such as `[SPEED: 6]`, is told the keywords) |
+| `CHECK is written \`CHECK: <value> <type>, <descriptor>\` ... The check a Maneuver rolls is a block of its own, with no EFFECT and no colon: \`[CHECK Athletics vs Evade]\`` | `[EFFECT CHECK: Athletics vs Evade]`: the block written as the tag |
+| `<row>: the row has 2 CHECK blocks; a Maneuver rolls one check, and a choice is written with \`or\` inside the one block` | two `[CHECK ...]` blocks on one row; the build stops |
+| `<row>: a CHECK block is written on a Maneuver's row. An Activity's check is its Check column where the sheet has one, else its Constellation column ...` / `An Endeavor rolls no check through the system ...` | a `[CHECK ...]` block on an Activity or an Endeavor; the build stops |
+| WARNING: `<row>: the CHECK block says "<check>" and the row's Constellation column and Effect read as "<check>"; the block is the one read, so mend whichever is wrong` | a block names a Constellation or a Defense other than the one the row's column and Effect read as |
+| WARNING: `<row>: the system runs this Maneuver itself (its own button or method), so its CHECK block is read by nothing` | a block on Strike, Gain Control, Recenter, Reload, Pass or Raise a Shield |
+| WARNING: `<row>: a PERMIT line takes the whole use of this Maneuver, so the check its CHECK block declares is never rolled` | a block beside a `MARK`, `PERMIT` or `SUBORDINATE` line |
+| `checks: <n> rows declare the check with a CHECK block; <m> still read from the Effect's prose (<names>)` | not an error: which rows are left to declare |
 | `"<word>" is not something REQUIRES can check: write a Condition (...), supine, bind, spell, shield, shield raised, rigid, free hand, holding, weapon, ...` | a word section 4's table does not list |
 | `"<words>": say how near, as in \`foe adjacent\`, \`foe in reach\`, \`foe in sight\` or \`ally within 30\`` | `foe`, `ally` or `creature` with no distance, or one that is none |
 | `REQUIRES joins alternatives with \`or\`, and a condition that must ALSO hold is a second block` / `REQUIRES has no \`and\`` | a comma, a semicolon or an `and` inside the block |
@@ -1545,7 +1697,7 @@ written on the Maneuver's row.
 | `"<word>": after the Effect comes \`self\` (you, and the default) or \`target\` (the creature the Maneuver is used on)` | a second descriptor that is neither; also what `APPLY: 1 situation, prone` is told, since APPLY takes no value |
 | `"prone target": a comma goes before \`target\`, as in \`APPLY: prone, target\`` | the comma left out before `self` or `target`; without this the line would read as a named Effect called "prone target" on yourself |
 | WARNING: `"frightened two" is read as a named Effect of its own, not the Condition Frightened; for the Condition write \`frightened\`, with a whole number for its value` | a name that BEGINS with a Condition's name: the line reads, as a named Effect, and the build says so in case the Condition was meant |
-| WARNING: `<row>: this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result (IF: RESULT) never stand; ...` | an `IF: RESULT` line on a row whose Effect names no check |
+| WARNING: `<row>: this Maneuver rolls no check, so its APPLY and REMOVE lines that wait on a result (IF: RESULT) never stand; declare the check with a [CHECK ...] block on the row, or drop the IF: RESULT` | an `IF: RESULT` line on a row that declares no check and whose prose names none |
 | WARNING: `<row>: this Maneuver is run by the system another way ..., so its APPLY and REMOVE lines apply nothing` | a line on a built-in or on a row another act pays for |
 | WARNING: `EFFECT(<Name>): no Maneuver applies an Effect of that name (read by ...); ...` | a named Effect that a line reads and no row's `APPLY` puts on |
 | `APPLY on a target lands from the card of the Maneuver's check, so it names the result: add \`IF: RESULT(<degree>)\`, as in ...` | `APPLY: ..., target` with no degree (ruling 321) |
@@ -1567,7 +1719,7 @@ written on the Maneuver's row.
 | `IF: EFFECT(<name>) is given twice` | the same name twice after the same prefix; one after `IF:` and one after `IFT:` is fine |
 | `TRAIT is a feature and is written in brackets: \`[TRAIT Human]\`` | a feature keyword typed as a line, without its brackets |
 | `"substitute" is the kind's name, and its tag is USE: write \`[EFFECT USE: Presence, Origin, aid]\`` | a kind's stored name typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): an effect is written with its tag. On a custom effect row the message offers the bare `USE: Presence, Origin, aid` |
-| `USE is an effect tag and takes a colon: write \`[EFFECT USE: Presence, Origin, aid]\`` | a tag typed without its colon (`use Presence, Origin, aid`; 0.21.0); any tag is told the same in its own word (`CHECK is an effect tag and takes a colon: ...`), but `SPEED`, which is a feature keyword first |
+| `USE is an effect tag and takes a colon: write \`[EFFECT USE: Presence, Origin, aid]\`` | a tag typed without its colon (`use Presence, Origin, aid`; 0.21.0); any tag is told the same in its own word (`CHECK is an effect tag and takes a colon: ...` when what follows reads like a bonus; `check Athletics vs Guard` is told its brackets), but `SPEED`, which is a feature keyword first |
 | `a [ has no closing ]` | a bracket left open |
 | `CHECK is written \`CHECK: <value> <type>, <descriptor>\` ... a signed whole number first` | the value is missing or not a number. `GIVE` is told the same with its own example, `GIVE: 1 situation, chosen; IF: RESULT(success)` |
 | `no Talent bonus is untyped; name situation, condition or gear after the value` | the bonus type is missing |
@@ -1866,6 +2018,15 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   alone. And a row's **Includes** cell says which Conditions it also counts as (ruling 325), with
   `against X` for one that holds only against the creature that put it on (328). Supine is the
   first Condition a row makes (333). Section 11 is the workbook.
+
+- **0.34.0** (2026-11-19): a Maneuver's check is declared, from Mike's question about Gain
+  Control ("wouldn't it make sense if the check was also using automation grammar, as well as the
+  success/failure effects?") and his answers: the word is `CHECK` (ruling 337), `or` is the
+  choice of whoever it affects (338), the target chooses by buttons on a chat card (339), players
+  always roll against adversaries (340), and an adversary has a typed number for each Skill (341).
+  One kind, the twenty-fifth: `check`, a feature block on a Maneuver's own row, with no hook.
+  The build's guess from prose stays for a row with no block. Gain Control itself stays in code
+  until a word says what a result does to a Bind.
 
 ## 11. The Conditions workbook
 

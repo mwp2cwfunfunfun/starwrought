@@ -120,6 +120,9 @@ export async function cardContext(result, position) {
     // Why the defender answered with a Defense other than the one they named (Evade while
     // Grabbed), if they did. The card is where the answer is revealed, so the reason belongs here.
     defenseNote: cfg.defenseNote ?? "",
+    // A check read against the one Defense its row names, which the target cannot use now
+    // (0.34.0): said whether or not the Threshold itself is printed.
+    targetNote: cfg.targetNote ?? "",
     rangeNote: cfg.rangeNote ?? "",
     // The Zone the attacker's Control held open (0.27.0): the Bind ended as the attack resolved,
     // and this attack's damage may still be placed there.
@@ -248,6 +251,11 @@ export function cardFlags(result, position) {
     // adversary's, rolled as the partner's Guard). documents/cards/gain-control.mjs draws the
     // result and its button from this and the Bind as it stands; a reroll copies it.
     if (cfg.gainControl) flags.gainControl = cfg.gainControl;
+    // A check that answers a request (0.34.0; documents/cards/check-request.mjs): `from` names the
+    // request card, so one request gives one roll; `inverted` with `defense`, `userUuid`,
+    // `itemUuid` and `slug` on a player's Defense rolled for an adversary's Maneuver, whose degree
+    // is read from the other side; `resultOf` on the Maneuver's result card, naming that roll.
+    if (cfg.checkRequest && (typeof cfg.checkRequest === "object")) flags.check = { ...cfg.checkRequest };
     if (cfg.withholdThreshold === true) flags.withheldThreshold = true;
     if (cfg.targetDefenseKey) flags.targetDefense = cfg.targetDefenseKey;
     if (cfg.rerollOf) flags.rerollRule = cfg.rerollRule ?? null;

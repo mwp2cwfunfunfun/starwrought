@@ -113,17 +113,22 @@
 
   {{#if targetDefense}}
   {{!-- The defender committed a Defense in the Combat Prompt; it is revealed on the card, never here. --}}
+  {{!-- A check read against a creature (0.15.0) says its own words since 0.34.0 (`heading`,
+       `note`, `hint`): which number the die meets and why it is not shown, where through 0.33.0
+       it borrowed the attack flow's sentence about the Combat Prompt. --}}
   <div class="form-group">
-    <label>{{localize "STARWROUGHT.Roll.targetDefense"}}{{#if targetName}} · {{targetName}}{{/if}}</label>
+    <label>{{#if targetDefense.heading}}{{targetDefense.heading}}{{else}}{{localize "STARWROUGHT.Roll.targetDefense"}}{{/if}}{{#if targetName}} · {{targetName}}{{/if}}</label>
     <div class="form-fields sw-answering">
       {{#if targetDefense.label}}
       <strong>{{targetDefense.label}}</strong>
       {{else}}
-      <span class="sw-answering-note"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Roll.defenseCommitted"}}</span>
+      <span class="sw-answering-note"><i class="fa-solid fa-eye-slash"></i> {{#if targetDefense.note}}{{targetDefense.note}}{{else}}{{localize "STARWROUGHT.Roll.defenseCommitted"}}{{/if}}</span>
       {{/if}}
     </div>
   </div>
-  <p class="hint">{{localize "STARWROUGHT.Roll.defenseCommittedHint"}}</p>
+  {{#if targetDefense.unavailable}}<p class="hint sw-warn">{{targetDefense.unavailable}}</p>{{/if}}
+  {{#if targetDefense.hint}}<p class="hint">{{targetDefense.hint}}</p>
+  {{else}}{{#unless targetDefense.label}}<p class="hint">{{localize "STARWROUGHT.Roll.defenseCommittedHint"}}</p>{{/unless}}{{/if}}
   {{else if thresholdWithheld}}
   {{!-- The attack flow's Defense roll: the Attack Threshold is the coordinator's, read on the card. --}}
   <p class="hint"><i class="fa-solid fa-eye-slash"></i> {{localize "STARWROUGHT.Roll.thresholdWithheld"}}</p>

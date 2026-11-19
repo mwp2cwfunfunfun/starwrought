@@ -63,7 +63,7 @@
  * from Node). It imports ./syntax.mjs and the config.
  */
 
-import { RuleSyntaxError } from "./syntax.mjs";
+import { RuleSyntaxError, splitAlternatives } from "./syntax.mjs";
 import { conditionIdOf, conditionWords } from "../config.mjs";
 import { conditionTitle, readEffectName } from "./effect-list.mjs";
 
@@ -217,12 +217,7 @@ export function readRequires(data) {
   }
   // Split on the word `or` wherever it stands, so one left dangling ("prone or") is an empty
   // alternative and is told so, never a Condition called "prone or".
-  const alternatives = [[]];
-  for (const word of text.split(/\s+/)) {
-    if (word.toLowerCase() === "or") alternatives.push([]);
-    else alternatives.at(-1).push(word);
-  }
-  return { any: alternatives.map(words => readTerm(words.join(" "))) };
+  return { any: splitAlternatives(text).map(readTerm) };
 }
 
 /* -------------------------------------------- */

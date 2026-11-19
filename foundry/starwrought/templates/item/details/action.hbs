@@ -41,16 +41,22 @@
 
 <div class="sw-panel">
   <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.actionCheck"}}</h3>
+  {{!-- The check declared in the Automation box (0.34.0; a `[CHECK ...]` block) is the one read.
+        The three fields below are then the fallback, kept as they are and not edited here. --}}
+  {{#if declaredCheck}}
+  <p class="sw-note sw-check-declared"><i class="fa-solid fa-dice-d20"></i> {{localize "STARWROUGHT.Hint.checkDeclared" check=declaredCheck.words}}</p>
+  {{#if declaredCheck.twice}}<p class="sw-note sw-warn">{{localize "STARWROUGHT.Hint.checkDeclaredTwice"}}</p>{{/if}}
+  {{/if}}
   <div class="sw-body-grid">
     <label class="sw-field"><span>{{localize "STARWROUGHT.Field.rollsCheck"}}</span>
-      <input type="checkbox" name="system.check.enabled" {{checked system.check.enabled}}></label>
+      <input type="checkbox" name="system.check.enabled" {{checked system.check.enabled}} {{#if declaredCheck}}disabled{{/if}}></label>
     <label class="sw-field"><span>{{localize "STARWROUGHT.Field.constellation"}}</span>
-      <select name="system.check.constellation">{{selectOptions choices.constellations selected=system.check.constellation blank=""}}</select></label>
+      <select name="system.check.constellation" {{#if declaredCheck}}disabled{{/if}}>{{selectOptions choices.constellations selected=system.check.constellation blank=""}}</select></label>
     <label class="sw-field"><span>{{localize "STARWROUGHT.Field.againstDefense"}}</span>
-      <select name="system.check.defense">{{selectOptions choices.defenses selected=system.check.defense blank=""}}</select></label>
+      <select name="system.check.defense" {{#if declaredCheck}}disabled{{/if}}>{{selectOptions choices.defenses selected=system.check.defense blank=""}}</select></label>
   </div>
   {{!-- A Relevant Check (0.10.0; ruling 123): enabled with no Constellation chosen, the picker opens with the Maneuver behind it. --}}
-  <p class="sw-note">{{localize "STARWROUGHT.Hint.relevantCheck"}}</p>
+  {{#unless declaredCheck}}<p class="sw-note">{{localize "STARWROUGHT.Hint.relevantCheck"}}</p>{{/unless}}
 </div>
 
 <div class="sw-panel">

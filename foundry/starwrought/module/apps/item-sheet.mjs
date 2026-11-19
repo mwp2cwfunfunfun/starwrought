@@ -12,6 +12,7 @@ import * as SW from "../config.mjs";
 import { enabledConstellations } from "../helpers/content.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 import { promptForChoice } from "./chargen.mjs";
+import { checkWords } from "../rules/check.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
@@ -165,6 +166,16 @@ export class SwItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       // carry `automation` and `rules`, and the engine collects from the same three.
       ruleLines: item.system.ruleLines ?? []
     });
+
+    // The check a Maneuver rolls, when its Automation box declares it (0.34.0): shown in the
+    // check panel, whose three fields are then the fallback and are not edited.
+    const plan = (item.type === "action") ? item.system.checkPlan : null;
+    context.declaredCheck = plan?.declared
+      ? {
+        words: checkWords(plan, slug => SW.getConstellation(slug)?.name ?? ""),
+        twice: plan.extra > 0
+      }
+      : null;
 
     // Choice lists, localized once here so the templates stay declarative.
     const costs = Object.fromEntries(Object.keys(SW.ACTION_COSTS).map(k => [k, costLabel(k)]));

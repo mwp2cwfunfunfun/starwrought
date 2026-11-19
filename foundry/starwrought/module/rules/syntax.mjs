@@ -158,6 +158,23 @@ export function keyValues(parts) {
   return { pairs, rest };
 }
 
+/**
+ * Split text on the WORD `or`, wherever it stands, into its alternatives (0.28.0 for REQUIRES;
+ * shared with CHECK since 0.34.0). One left dangling ("prone or") gives an empty alternative, so
+ * the reader can say so, and never a name that ends in "or". A word that merely contains the
+ * letters (Armor, Lore, Warrior) is left alone: only the whole word splits.
+ * @param {string} text
+ * @returns {string[]}  Each alternative, its words joined by one space; "" for an empty one.
+ */
+export function splitAlternatives(text) {
+  const alternatives = [[]];
+  for (const word of String(text ?? "").trim().split(/\s+/)) {
+    if (word.toLowerCase() === "or") alternatives.push([]);
+    else if (word) alternatives.at(-1).push(word);
+  }
+  return alternatives.map(words => words.join(" "));
+}
+
 /** A string wholly inside one pair of matching quotes, without them; anything else as it is. */
 function unquote(text) {
   if ((text.length >= 2) && ((text[0] === '"') || (text[0] === "'")) && (text.at(-1) === text[0])) {

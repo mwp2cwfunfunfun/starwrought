@@ -943,6 +943,116 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.34.0 (Mike, 2026-11-19; rulings 337 to 349): a Maneuver's check is declared.** Mike: "when
+I add new talents I don't want to hard-code what the check is. So wouldn't it make sense if the
+check was also using automation grammar, as well as the success/failure effects?", then "make
+sure there is room for the Checker to choose (eg Athletics or Acrobatics) or for the Checked to
+choose". Planned first (`dazzling-floating-simon.md`; his decisions by question: the word is
+CHECK; "'or' should always mean the actor being affected by the choice chooses", left of `vs`
+the user and right of it the target; the target chooses by buttons on a chat card; "players
+ALWAYS roll vs. NPCs"; an adversary has a typed number for each Skill). **The `check` kind, the
+twenty-fifth, is a feature block on a MANEUVER'S OWN ROW with NO HOOK and no hook point**
+(`module/rules/kinds/check.mjs`, a wrapper; `check` in `FEATURE_KEYWORDS`, `CHECK` before
+`EFFECT` in `FEATURE_KEYWORD_LIST`; never in `EFFECT_TAGS` or `EFFECT_KINDS`): `[CHECK
+<Constellation> or <Constellation> vs <Defense> or <Defense>]`, `relevant` on the left for any
+Constellation, one number on the right for a fixed Threshold; stored `{ kind: "check", rolls:
+"relevant" | [{ slug, name }], against: null | { defenses: [keys] } | { threshold: n } }`. **The
+pure half is `module/rules/check.mjs`**: `readCheck` (split on the word `vs`; a Maneuver, a
+Lore, the Origin and a duplicate refused, with `against`, `versus`, a comma and `and` told what
+to write), `checkWords`, `checkSummary`, and **`planOf(rules, stored)`, the ONE reading of what
+a Maneuver rolls** (`{ enabled, declared, relevant, rolls, defenses, threshold, extra }`: the
+row's rule, else the three stored fields `system.check`, which stay for a row with no block),
+`storedCheck(plan)`, `userPicks`, `targetPicks`. The action model derives `system.checkPlan`.
+**A new reader of "what does this Maneuver roll" asks the plan, never `system.check`**
+(`#useManeuver`, `maneuverAttributeOf`, the Item window's `declaredCheck`, the build's
+`checkOf`). `splitAlternatives` in `module/rules/syntax.mjs` is the one reading of `a or b`,
+shared with `requires.mjs`. **A bonus to checks stays `[EFFECT CHECK: 1 condition, aid]`**, and
+each form written the other way is told the right one (`effects.mjs`; `readBlock` in
+`features.mjs` for a first word ending in a colon). **The use** (`module/documents/item.mjs`):
+the two old forks of `#useManeuver` are `#startCheck(actor, { check, config, subtitle, note,
+applies, cost, label, prepared, paid, partOf, gate })`: the user's pick
+(`SwActor#pickConstellation({ only, item, threshold, askThreshold, dialog })` in
+`documents/actor/checks.mjs`, split out of `rollRelevantCheck`), then the target's
+(`usableDefenses`: one Defense named is read as it stands, ruling 345; exactly one usable is
+read, ruling 344; else a request), then `#rollPlanned`, the one roll function
+(`readTargetThreshold({ ..., permitted })` in `helpers/threshold-read.mjs` is told the Defenses
+the row names, never all four, and answers `targetNote` when the one read is unavailable).
+**The request** (rulings 346, 347): `module/rules/check-request.mjs` (pure: `usableDefenses`,
+`validAnswer`, `standingAnswer`, `requestState` open / answered / rolled / withdrawn / lapsed,
+`userDegree`, `adversaryCheck`) and `module/documents/cards/check-request.mjs`
+(`postCheckRequest`, `answerOf`, `resultOf`, `resultCardOf`, `stateOf`, the handlers
+`answerFromCard`, `withdrawFromCard`, `rollFromCard`, `defendFromCard`, `postResultFromCard`,
+`postManeuverResult`, `drawCheckRequest`, `registerCheckRequestCards`), modelled on the Gain
+Control request. **NOTHING IS WRITTEN TO A REQUEST AFTER IT IS POSTED**: its state is the cards
+that name it (`flags.starwrought.kind` `checkRequest` with the record `checkRequest`;
+`checkAnswer { from, defense }` or `{ from, withdrawn }`; a check card's `flags.check { from }`),
+the first valid one in log order, the author checked every time. `SwItem#resumeCheck(request,
+{ requestId, defense })` makes the roll from what the request stored and never re-enters `use`;
+its `beforeRoll` asks `resultOf` again (one request, one roll), that a Prepared Maneuver still
+stands, `mayActNow` only for `gate: "permit"`, and pays `request.cost`; a Prepared Maneuver's
+Finish returns early on `{ pending: true }` and `SwActor#settlePreparation()`
+(`documents/actor/actions.mjs`) settles it after the roll. **Adversaries** (rulings 340, 341,
+348): the npc model has `checks` (an `ObjectField`, written `system.checks.<slug>`),
+`checkBase(slug)` and `checkNumber(slug) -> { base, threshold, shift, conditions }` (blank 10; a
+Defense slug reads the typed Defense Threshold; `conditionModifiers` moves it); the sheet's
+Checks block (every enabled Skill, Melee, Ranged) and a Use control on its own Maneuvers
+(`itemUse`); `#startAdversaryCheck`: against a player's character with a Defense named the
+adversary pays and a `mode: "roll"` request goes out, the player's Defense is rolled as `kind:
+"check"`, withheld, against `checkRequestThreshold`, with `flags.check { from, inverted: true,
+defense, userUuid, itemUuid, slug }`, and **the active GM's client posts the adversary's own
+result card** (`postManeuverResult`: the same die, `userDegree`, `ruleApplies(user, { item,
+rank: "untrained" })`, `flags.check { from, resultOf }`, `rerollOf` the result it replaces; the
+`checkResult` button is the GM's when none was connected); else the GM rolls flat (`flatBonus:
+checkBase - 10`, `flatLabel`), the Constellation and the target's Defense asked in one window
+(`module/apps/check-picker.mjs`, `pickAdversaryCheck`; the Defense opens on nothing), with
+`withholdThreshold` when the target is an adversary. `SwCheck.roll` reads APPLY lines for an
+npc too; `rerollCheck` re-reads an inverted card through `checkRequestThreshold`. **The build**
+(`assets/build_foundry.mjs`): `checkOf(a)` reads the block first (`declaredChecks`; two blocks
+fail the build), else `guessedCheck(a)`, the old prose guess; warns when block and prose
+disagree; refuses a block on an Activity or Endeavor row; prints `checks: N rows declare ...;
+M still read from the Effect's prose (names)`; `effectCensus` takes `takesUse` (a kind with a
+`use` hook) and warns on a CHECK block nothing reads; each message has its row in `RULES`. **A
+kind that takes the whole use (a `use` hook: MARK, PERMIT, SUBORDINATE) and a `CHECK` block on
+one row do not combine.** **What the review of 0.34.0 added (two readers, nineteen findings, one
+high), and a later change must keep**: **a REQUEST'S OWN AUTHOR is checked** (`validRequest` in
+`rules/check-request.mjs`, read by `recordOf`: the GM, or an owner of the creature using the
+Maneuver; a `roll` request never names a character as its user), because this is the first card
+chain that acts UNASKED on the GM's client (a player's roll card makes it post the adversary's
+result), so a card with a request's flags from anybody else is no request and `validRoll`
+answers false with no request behind it; `postManeuverResult` posts only for such a request in
+`mode: "roll"`, not withdrawn, and only for its ONE roll or that roll thrown again
+(`countsForRequest`, which walks `rerollOf`; a second roll's card says it does not count);
+`requestStillWaits(requestId, { mode, defense })` is asked AGAIN as the die is thrown, by
+`defendFromCard` and `resumeCheck` (rolled, withdrawn or lapsed while the window stood open);
+`#startCheck` refuses anyone who does not own the actor; **a Prepared Maneuver's request is
+tied to its preparation** (`finishPrepared` writes the request card's id as
+`preparing.request`, refuses a second Finish while `requestWaiting(id)`, and `resumeCheck`
+wants `preparing.request === requestId`), and an adversary's Prepared Maneuver is settled as
+its `roll` request goes out; **the GM's one window answers only for a creature no player owns**
+(`needDefense = twoWays && game.user.isGM && !target.hasPlayerOwner`; otherwise `#askTarget`,
+the one place a request for an answer is posted, for a character and an adversary alike), a
+player-owned adversary passes `mayActNow` as it pays, and **an adversary's flat bonus is built
+in `#rollPlanned`** for every road to its own roll; the request's `combat` is the Combat its
+user is a fighter in (`fightOf`, by membership, never `game.combat`); an answered Defense is
+read with `permitted: [defense], answered: true`; `rerollCheck` refuses a card with
+`check.resultOf` and the chat pass offers no rule button on one; the adversary sheet's Checks
+block adds any Constellation its own Maneuvers roll. In the grammar: **`isBonusShape`
+(`rules/check.mjs`) is asked FIRST wherever a `CHECK` is read** (the kind before its carrier
+refusal, `grammar.mjs`'s two branches), so a bonus with its colon lost is told the effect form
+on any carrier; `readBlock` tells only a word that IS an effect tag and no feature keyword to
+wrap itself in EFFECT (`[EFFECT: ...]`, `[SPEED: 6]`, `[TRAIT: Human]` keep "is not a feature
+keyword", which `highlight_automation.py` keys on); `and` is a word of some names, so with a
+resolver the names decide; `effectCensus` takes `runsItself` (a built-in alone is told its
+CHECK block is unread: a row another act pays for, Leap, is still used from its row and rolls)
+and reads a declared row as rolling whatever `rolls` it is handed; the build compares a block
+with its guess only where both speak; **a build line with no WARNING in front needs its
+substring in `is_finding` in `build_report.py`, or its `RULES` row is never reached.** **The
+release carries the kind alone**: the cells for 32 rows are in
+the 0.34.0 changelog entry and `AUTOMATION_GRAMMAR.md` section 5 for Mike to paste; his four
+workbooks were not converted, built, staged or written. **Next, by his word: Gain Control in
+the grammar (one new word for Bind results), then the words for what a Condition forbids and
+how it fades.**
+
 **0.33.0 (Mike, 2026-11-18; rulings 322 to 336): the Conditions workbook.** Mike: "can we build
 a conditions.xlsx that includes every condition, and the automation effects (if any) of it?",
 then "Yes, the source". Planned first (`dazzling-floating-simon.md`; his decisions by question:
@@ -2085,7 +2195,9 @@ content build writes them again.
   line per rule, copied through as text by the converter and parsed by `assets/parse_rules.mjs` and
   `build_foundry.mjs`, which fail on a line they do not know; **`N/A` alone in the cell is Mike's
   mark that the row needs no automation** (0.26.1: skipped by the grammar, an empty cell to the
-  build, never red, counted apart by the red-cell tool; a blank cell is a row not reached yet);
+  build, never red, counted apart by the red-cell tool; a blank cell is a row not reached yet); **on a Maneuver's row the
+  cell also declares the check it rolls, `[CHECK Athletics vs Evade or Guard]`** (0.34.0;
+  a row with no block rolls what the build guesses from its Constellation column and Effect);
   an Effect cell may carry
   `@Maneuver[Name]`, expanded by the step), **Traits** (0.14.0, optional, comma separated:
   `system.traits` on the Talent, so a spell can carry the trait a defender's `IFT: TRAIT(...)`
@@ -2182,7 +2294,9 @@ content build writes them again.
   `explorationActions` and `downtimeActions` blocks are gone. Basic (ruling 207): every Maneuver,
   Activity or Endeavor a Talent does not grant (`[MANEUVER X]`, `@Maneuver[X]`, or Type `Talent
   Maneuver`). The Constellation column is the check the row rolls when the Effect attempts or
-  rolls one, the Defense read from "vs." or "against" in the Effect (ruling 210). The "(LORE_NAME)"
+  rolls one, the Defense read from "vs." or "against" in the Effect (ruling 210); **since
+  0.34.0 that is only the guess for a row with no `[CHECK ...]` block in its Automation
+  cell, and the block is the word** (ruling 342). The "(LORE_NAME)"
   placeholder is stripped from names and Constellation cells, and the index's `Lore` row reads
   talents_skills.xlsx's `Lore (LORE_NAME)` sheet (ruling 208; `lore.xlsx` deleted by Mike). What follows
   is the history of the one workbook through 0.19.0.
@@ -2344,13 +2458,14 @@ content build writes them again.
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
   (0.31.0 added no kind: it gave the grammar a condition, `EFFECT(<name>)`, and `requires` three
-  words.) Twenty-four kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  words.) Twenty-five kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
   0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0, `reach` since 0.30.0,
-  `apply` since 0.32.0): the effect
+  `apply` since 0.32.0, `check` since 0.34.0): the effect
   kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`,
   `subordinate`, `apply`, the creation kinds `grant` and `aura`,
   the feature kinds `trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`,
-  `talent`, `choice`, and `requires`, the block on a Maneuver's own row that the Maneuvers tab reads; the
+  `talent`, `choice`, and `requires` and `check`, the blocks on a Maneuver's own row that the
+  Maneuvers tab and the use read; the
   level-1 Human, the two Cultures, the
   three Backgrounds, the Calling Roots and the three Talent Maneuvers are written whole in the
   Fantasy Grounds shape. What the grammar does not yet read: a `prevent` of a Condition on an ally
@@ -2488,8 +2603,40 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.34.0 leaves to the table or to Mike** (a Maneuver's check, declared): **the cells wait
+  for him to paste** into `data/actions_maneuvers.xlsx` (the 0.34.0 changelog entry and
+  `AUTOMATION_GRAMMAR.md` section 5, "Declaring a check": 32 rows; ten change what is read
+  today: Trip, Shove, Disarm, Grapple and Reposition, whose target then picks Evade or Guard;
+  Calm Animal and Direct Animal, which then read the animal's Guard; Rescue Haul, guessed as a
+  Cairnward check; Hide and Sneak, guessed against one target's Awareness); until a row has its
+  block it rolls the build's guess. Gain Control's cell stays `N/A`. Rulings 342 to 349 and the
+  additions to 341 are Claude's readings and his to overrule (`assets/open_decisions.json`); the
+  two to know are 345 (a Grabbed target is read against Evade when the row says only Evade,
+  with a note, where it was read against Awareness in silence) and 346 (a request stands after
+  the user's Opportunity has ended). Not built: an `ALTER` of a check, several targets from one
+  use, a Constellation that is no Defense on the right of `vs` (Seek, Anticipate, Stabilize,
+  Hide and Sneak keep a typed Threshold; an open decision), a pick kept secret, a subordinate
+  whose check asks the target, a Talent carrying `CHECK`, an adversary's own Talents and
+  bonuses on its number. An adversary uses only Maneuvers it owns, and nothing fills its
+  numbers. Stated by the review and not changed: the degree on a player's own roll card is
+  taken as the card says it; a Reaction pays at the click, before its request, and a Withdraw
+  returns nothing; a request made outside an encounter never lapses. Not driven live: a table
+  with no GM, a player-owned adversary or companion (mended by reading), a rule's reroll button
+  on a requested roll, two real windows of one player rolling at once. **The test world keeps
+  fixtures from the 0.34.0 drive on purpose**: the world Trip (`[CHECK Athletics vs Evade or
+  Guard]` above its 0.32.0 APPLY lines), the world Demoralize (`[CHECK Intimidation vs
+  Guard]`), a world Disarm (flagged `testFixture: "0.34.0"`, `[CHECK Athletics vs Evade or
+  Guard]`, cost 2 to 3), the Bandit's own copy of Trip and its typed Athletics 14. To try
+  0.34.0 there: target the Bandit and use Trip from Tess's Maneuvers tab (the request card,
+  the GM's answer, then Roll); open the Bandit's sheet, target Tess and press Use on its Trip
+  (Tess's player gets the Roll buttons, and the Bandit's result card follows). The drive
+  deleted its Combats, its probe Items and token and every card it posted (434 messages), then
+  ran Sync content for the Grammar journal, which left one "Content synced" card (435); it left
+  Mike's Combat with testpc8 the active one at round 4 and the tokens where they were, and
+  Foundry running on 0.34.0 with the GM joined.
 - **0.33.0 leaves to the table or to Mike** (the Conditions workbook). **What a Condition
-  FORBIDS and how it FADES have no word yet** (0.34.0, one word at a time with him, with the
+  FORBIDS and how it FADES have no word yet** (planned as 0.34.0, which became the `[CHECK
+  ...]` block; now after Gain Control's grammar, one word at a time with him, with the
   named Effects sheet he set aside): Supine does not stop movement and its -2 has no exception
   for melee Attacks against adjacent creatures; "cannot Move or Step" and "no action other than
   Escape" are by hand; Frightened and Slowed do not drop by 1 at a round's end; Stunned,
@@ -2526,7 +2673,7 @@ content build writes them again.
   Demoralize, Feint, Escape); until a row has its lines it applies nothing. Three things about
   his rows as saved: Grapple's Cost cell reads 0 (its `COST` lines wait for "1 to 2"), Drop Prone
   is not enabled, and Trip, Shove, Disarm and Grapple say "vs. Evade or Guard", of which the
-  build reads Evade. Rulings 313 to 318, 320 and 321 are Claude's readings and his to overrule
+  build reads Evade until the row carries `[CHECK Athletics vs Evade or Guard]` (0.34.0). Rulings 313 to 318, 320 and 321 are Claude's readings and his to overrule
   (a Condition by other means left alone; the later window stands; a voluntary act never
   prevented; no window outside an encounter; the higher value kept; COST; an applied Effect
   public; a target line needs a check). Not built: an Effect that carries its own lines, the
@@ -2633,8 +2780,8 @@ content build writes them again.
 - **0.27.0 leaves to the table or to Mike** (the Bind): the four tracked changes of
   `PROPOSALS["bind"]` wait in `Starwrought_Players_Handbook_v4.25.docx` for him to accept or
   reject (compare with the committed file and re-stamp when he saves, as for every redline);
-  rulings 276, 277 and 280 are Claude's readings and his to overrule (the Zone kept on the
-  card, Close with no click, no -2 on Gain Control); giving ground, a Shove and a GM's
+  rulings 276 and 280 are Claude's readings and his to overrule (the Zone kept on the card,
+  no -2 on Gain Control) and 277 is his (2026-11-19, "Keep as is": Close is the Controller's Step alone); giving ground, a Shove and a GM's
   repositioning end no Bind; a fighter holds ONE Bind, where the book allows one for each
   implement ("Track no more than one Bind per implement"); a held shield is always the implement
   a card's Bind names (`rigidImplement`), so a shield-bearer's neutral Bind ends on a sword
@@ -2826,6 +2973,35 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (a Maneuver's check is declared, system 0.34.0; rulings 337 to 349 in the
+0.34.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:
+the word is CHECK, `or` is whoever it affects, buttons on a chat card, players always roll
+against adversaries, a typed number for each Skill): the check a Maneuver rolls, guessed by the
+build from the row's Constellation column and its Effect's prose, now declared on the row as
+`[CHECK <Constellation> or <Constellation> vs <Defense> or <Defense>]` (the `check` kind, the
+twenty-fifth, with no hook), with the guess kept for a row that has no block; "vs. Evade or
+Guard" read as Evade alone, now the target's pick by buttons on a request card; a row naming two
+Constellations rolling nothing, now the user's pick in a short window; a fixed Threshold, now
+`vs 15`; "vs Evade" against a target that cannot use Evade read against Awareness in silence,
+the last place the system chose a Defense, now read against Evade and said; an adversary's
+Maneuver that could only be shown, now used from its sheet, rolled by the player against the
+adversary's typed number when it is used on a character, and by the GM otherwise; an
+adversary's row applying nothing by degree, now applying from its result card. Also recorded:
+ruling 277 is Mike's ("Keep as is": Close is the Controller's Step alone). Checked by 245
+self-test checks, `node --check` on every module, `build_all.mjs --check`, the style check (one
+failure, the em-dash in Dwarf Lore B13), the smoke test, `build_foundry.mjs --no-compile` (the
+Grammar journal alone moves; the 120 action documents byte for byte as they were), an
+independent review by two readers (nineteen findings, one high: a request's author was never
+checked, so a player could have the GM's client post an adversary's result; all mended but
+three stated) and live in the test world with a GM tab and a player tab, before the review and
+again for its mends (the 0.34.0 changelog entry lists what, and what was not driven). Not
+built, and next by his word: Gain Control in the grammar, with one word for Bind results; then
+the words for what a Condition forbids and how it fades. The release carries the kind alone:
+the 32 cells are his to paste, and his four workbooks were not converted, built, staged or
+written. No handbook moved and `data/SYNC.json` is untouched. Committed on 2026-11-19 at his
+word and tagged `v0.34.0`, his edits to the four workbooks and the v4.24 draft left out; not
+pushed until he says.
 
 Cleared 2026-11-18 (the Conditions workbook, system 0.33.0; rulings 322 to 336 in the 0.33.0
 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: the

@@ -18,6 +18,22 @@
     </div>
   </div>
 
+  {{!-- THE NUMBERS IT CHECKS WITH (0.34.0; ruling 341): one for each Skill, and for Melee and
+       Ranged. A player's Defense roll is read against the one its Maneuver rolls. Blank is 10. --}}
+  <div class="sw-panel">
+    <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.npcChecks"}}</h3>
+    <p class="sw-note">{{localize "STARWROUGHT.Hint.npcChecks"}}</p>
+    <div class="sw-defense-grid sw-npc-checks">
+      {{#each checks as |c|}}
+      <div class="sw-defense sw-npc-defense sw-npc-check">
+        <span class="sw-defense-name">{{c.name}}</span>
+        <input type="number" name="system.checks.{{c.slug}}" value="{{c.typed}}" placeholder="10">
+        {{#if c.moved}}<span class="sw-in-effect" data-tooltip="{{c.inEffectHint}}">{{c.inEffect}}</span>{{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
   <div class="sw-panel">
     <h3 class="sw-panel-title">
       {{localize "STARWROUGHT.Section.attacks"}}

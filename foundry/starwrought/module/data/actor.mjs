@@ -16,6 +16,8 @@
 import * as SW from "../config.mjs";
 import { rangesOf } from "../helpers/ranges.mjs";
 import { collectRules, conditionModifiers } from "../rules/engine.mjs";
+// 0.34.0: an adversary's number for a check, typed and in effect.
+import { adversaryCheck } from "../rules/check-request.mjs";
 // The character's derived-data passes, one module each (0.10.1), called in order by
 // SwCharacterData#prepareDerivedData below; the adversary shares the Evade availability.
 import { prepareConstellations } from "./character/constellations.mjs";
@@ -764,7 +766,12 @@ export class SwCharacterData extends SwActorData {
       return (fromSky in SW.ATTRIBUTES) ? fromSky : null;
     }
     if (item.type === "action") {
-      const slug = item.system.check?.enabled ? item.system.check.constellation : "";
+      // The plan (0.34.0): the row's `[CHECK ...]` block, else the stored fields. A Maneuver
+      // whose check is a choice of Constellations, or a Relevant Check, lends no one Attribute.
+      const plan = item.system.checkPlan;
+      const slug = plan
+        ? ((plan.enabled && !plan.relevant && (plan.rolls.length === 1)) ? plan.rolls[0].slug : "")
+        : (item.system.check?.enabled ? item.system.check.constellation : "");
       if (!slug) return null;
       const attribute = this.constellations[slug]?.attribute ?? SW.getConstellation(slug)?.attribute;
       return (attribute in SW.ATTRIBUTES) ? attribute : null;
@@ -852,6 +859,17 @@ export class SwNpcData extends SwActorData {
           initiative: new fields.NumberField({ required: true, integer: true, initial: 10 })
         })
       ),
+
+      /**
+       * THE NUMBERS IT CHECKS WITH (0.34.0; ruling 341; Mike, by question: "A number for each
+       * Skill"). An adversary rolls nothing against a player's character: when it uses a Maneuver
+       * on one, the player rolls a Defense against the adversary's number for the Constellation
+       * the Maneuver rolls (`[CHECK Athletics vs Evade or Guard]`: its Athletics). Typed as a
+       * Threshold, like its Defenses, by Constellation slug; a Constellation with nothing typed
+       * reads as 10. An object written by dotted keys (`system.checks.athletics`), as the auras'
+       * switches are, so a Skill added to the sheets later needs no schema change.
+       */
+      checks: new fields.ObjectField({ initial: {} }),
 
       /** Feet per Move. */
       speed: new fields.NumberField({ required: true, integer: true, min: 0, initial: SW.DEFAULT_SPEED }),
@@ -988,5 +1006,35 @@ export class SwNpcData extends SwActorData {
     // Every ring the map can draw (0.5.1): reach from the attacks above, and the auras of any
     // Talent or Maneuver the adversary owns.
     this.ranges = rangesOf(this.parent);
+  }
+
+  /* -------------------------------------------- */
+  /*  The numbers it checks with (0.34.0)         */
+  /* -------------------------------------------- */
+
+  /**
+   * The number TYPED for a Constellation (ruling 341): `system.checks.<slug>`, 10 when nothing is
+   * typed; a Defense's own typed Threshold when the Constellation is a Defense. The GM's own die
+   * for the adversary takes its bonus from this (the number less 10), and never from the number
+   * in effect, since the die adds the Conditions' lines itself (dice/check/modifiers.mjs).
+   * @param {string} slug
+   * @returns {number}
+   */
+  checkBase(slug) {
+    if (SW.DEFENSES[slug]) return Number(this.thresholds?.[slug]) || 10;
+    return adversaryCheck(this.checks?.[slug]).base;
+  }
+
+  /**
+   * The number IN EFFECT for a Constellation: the typed one with what the creature's Conditions
+   * put on a check (Frightened's -N), which is what a player's Defense roll is read against when
+   * this adversary uses a Maneuver on their character (documents/cards/check-request.mjs).
+   * @param {string} slug
+   * @returns {{base: number, threshold: number, shift: number, conditions: object[]}}
+   */
+  checkNumber(slug) {
+    const conditions = conditionModifiers(this.parent, { kind: "check", slug: String(slug ?? ""), item: null });
+    const shift = conditions.length ? SW.resolveModifiers(conditions).total : 0;
+    return { ...adversaryCheck(this.checkBase(slug), shift), conditions };
   }
 }

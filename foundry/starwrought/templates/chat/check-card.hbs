@@ -37,6 +37,8 @@
   </div>
   {{#if defenseNote}}<p class="sw-card-note">{{defenseNote}}</p>{{/if}}
   {{/if}}
+  {{!-- A check read against a Defense the target cannot use now (0.34.0): the row names no other. --}}
+  {{#if targetNote}}<p class="sw-card-note sw-warn sw-target-note">{{targetNote}}</p>{{/if}}
 
   {{#if reactionLabel}}
   {{!-- The Reaction behind the Defense. On an attack card it is the defender's committed one, charged

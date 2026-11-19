@@ -43,6 +43,7 @@ import { RuleSyntaxError, isNotApplicable, CONDITION_ROW, CONDITION_ROW_TAGS } f
 // 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
 import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
 import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS } from "./effects.mjs";
+import { isBonusShape } from "./check.mjs";
 
 /**
  * The kind words of the 0.13.0 form (`kind: arg, arg, OP(...)`) that have no tag of their own in
@@ -212,11 +213,16 @@ export function parseAutomation(text, context = {}) {
             // own block rather than the list of tags, none of which it is.
             const inner = splitLine(block.data);
             const keyword = FEATURE_KEYWORD_LIST.find(k => (k !== "EFFECT") && (k.toLowerCase() === inner.word));
+            // CHECK is both a block and a tag (0.34.0): `[EFFECT CHECK 1 condition, aid]` is the
+            // bonus with its colon lost, and is told the colon, not the block.
+            const bonus = (keyword === "CHECK") && isBonusShape(inner.args);
             errors.push({
               line, text: block.text,
-              message: keyword
-                ? `${keyword} is a block of its own, not an effect: write \`[${keyword} ${inner.args || "..."}]\``
-                : `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}`
+              message: bonus
+                ? `CHECK is an effect tag and takes a colon: write \`[EFFECT CHECK: ${inner.args}]\``
+                : keyword
+                  ? `${keyword} is a block of its own, not an effect: write \`[${keyword} ${inner.args || "..."}]\``
+                  : `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}`
             });
           } else if (looksLegacy(splitLine(block.data).args)) {
             errors.push({ line, text: block.text, message: LEGACY_REFUSAL });
@@ -296,7 +302,8 @@ export function parseAutomation(text, context = {}) {
       return;
     }
     // A feature keyword typed as a line (`trait: Human`): never the 0.13.0 form, just unbracketed.
-    const keyword = FEATURE_KEYWORD_LIST.find(k => k.toLowerCase() === word);
+    // (`check 1 condition, aid` is the bonus's tag with its colon lost, not the CHECK block: 0.34.0.)
+    const keyword = FEATURE_KEYWORD_LIST.find(k => (k.toLowerCase() === word) && !((k === "CHECK") && isBonusShape(args)));
     // An effect kind's own id typed as a line (`substitute: Presence, Origin, aid`; 0.21.0): the
     // kind is read through its tag, so the message names the tag and not a block that does not
     // exist. `bonus` and `prevent` never reach here (the retired form, above), and `mark`, `reroll`

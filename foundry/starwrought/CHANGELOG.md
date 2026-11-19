@@ -7,6 +7,297 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.34.0 (2026-11-19): a Maneuver's check is declared
+
+Built from **Player's Handbook v4.25**, which did not move. Mike, of Gain Control and of new
+Talents: "when I add new talents I don't want to hard-code what the check is. So wouldn't it make
+sense if the check was also using automation grammar, as well as the success/failure effects?",
+then "make sure there is room for the Checker to choose (eg Athletics or Acrobatics) or for the
+Checked to choose". Planned first; his decisions, by question: the word is `CHECK` ("it might be
+a roll performed by the actor if the actor is a PC, or it might be a roll performed by the target
+if the actor is an NPC"); "'or' should always mean the actor being affected by the choice
+chooses. So on the left side of the 'vs' the actor chooses. on the right side of the 'vs' the
+target chooses."; the target chooses with buttons on a chat card; an adversary's Maneuver against
+a player's character is rolled by the player "in this release because players ALWAYS roll vs.
+NPCs"; and an adversary gets a typed number for each Skill. **One rule kind is new, `check`, the
+twenty-fifth; no hook point is.** None of his four workbooks in progress was converted, built,
+staged or written: the release carries the kind alone, and the cells are printed below for him
+to paste. Of the pack content the Grammar journal moved.
+
+Through 0.33.0 the check a Maneuver rolls was guessed by the build, from the row's Constellation
+column and the words of its Effect. It is declared now, in one block on the Maneuver's own row,
+beside its `REQUIRES` and `EFFECT` blocks:
+
+| You write | It means |
+|---|---|
+| `[CHECK Athletics]` | Roll Athletics. The Threshold is typed when it is rolled. |
+| `[CHECK Athletics vs Guard]` | Roll Athletics against the target's Guard. |
+| `[CHECK Athletics or Acrobatics vs Guard]` | The one using the Maneuver picks Athletics or Acrobatics. |
+| `[CHECK Athletics vs Evade or Guard]` | The target picks Evade or Guard. |
+| `[CHECK relevant]` | Any Constellation, picked when it is rolled (Aid, Recall Knowledge). |
+| `[CHECK relevant vs Guard]` | The same, against the target's Guard. |
+| `[CHECK Crafting vs 15]` | Against a Threshold of 15, which the roll window can still change. |
+
+| | 0.33.0 | 0.34.0 |
+|---|---|---|
+| What a Maneuver rolls | Guessed by the build from the Constellation column and the Effect's prose | The row's `[CHECK ...]` block; a row with none keeps the guess, and the build lists those rows |
+| "vs. Evade or Guard" (Trip, Shove, Disarm, Grapple, Reposition) | Read as Evade alone | The target picks, by buttons on a card |
+| A row naming two Constellations | Rolled nothing | The one using the Maneuver picks, in a short window with each total |
+| A fixed Threshold ("typically 15") | Could not be said | `vs 15`: the roll window opens on it |
+| A Relevant Check against a target | Never read a Defense | `[CHECK relevant vs Guard]` reads it |
+| "vs Evade" against a target that cannot use Evade | Read against Awareness, with nothing said | Read against Evade, and the card and the roll window say it is unavailable |
+| An adversary's Maneuver | Could only be shown from its sheet | A Use control; against a player's character the player rolls |
+| An adversary's number for a check | None | A typed number for each Skill, and for Melee and Ranged; blank is 10; its Conditions move it |
+| An adversary's row with APPLY lines | Applied nothing by degree | Applies from its result card, by the GM's button |
+| The Maneuver's window | Three check fields | The declared check in words, the three fields locked while a block stands |
+
+**What a player and a GM see.**
+
+- **A character, one Constellation, one Defense**: as before.
+- **`Athletics or Acrobatics`**: a short window lists only those, each with its total. Then the
+  roll.
+- **`vs Evade or Guard`, one token targeted**: a card, "Tess uses Trip (Athletics) on the
+  Bandit", with an Evade button and a Guard button. Only the target's player may press one; the
+  GM presses for an adversary or an absent player. An answer card follows ("The Bandit answers
+  with Guard") with a Roll button for Tess's player. The roll and its result are the normal
+  check card, with its APPLY buttons and rerolls.
+- **An adversary on a player's character**: the adversary pays, and a card, "The Bandit uses
+  Trip (Athletics) on Tess", has a Roll Evade and a Roll Guard button for Tess's player. She
+  rolls that Defense against the Bandit's Athletics number, which stays the GM's to know. A
+  second card follows, spoken by the Bandit: its Trip read from her roll (her Failure is its
+  Success), the Maneuver's result row marked, and the APPLY buttons for the GM.
+- **An adversary on an adversary, or with nobody targeted**: the GM rolls for it, in one window
+  that also asks the target's Defense when the row names two. The die's bonus is the typed
+  number less 10. The window answers only for a creature no player owns; a target a player
+  owns that is no character, or an adversary used by a player who owns it, goes by the card.
+- **The adversary sheet** has a Checks block (the typed number, and the one in effect beside it)
+  and a Use control on each of its own Maneuvers.
+
+**The rulings** (337 to 341 are Mike's, by question; the rest are Claude's readings and his to
+overrule).
+
+- **337. The word is `CHECK`** (Mike). It does not say who rolls, which is the point: a player
+  rolls it for a character and against an adversary. `[CHECK ...]` is a block of its own, with
+  no `EFFECT` and no colon; a bonus to checks stays `[EFFECT CHECK: 1 condition, aid]`. Each
+  form written the other way is told the right one.
+- **338. `or` means whoever is affected chooses** (Mike). Left of `vs` the one using the
+  Maneuver picks what is rolled; right of `vs` the target picks the Defense it is read against.
+- **339. The target chooses with buttons on a chat card** (Mike). No window opens on another
+  player's screen, and the pick is public.
+- **340. Players always roll against adversaries** (Mike). When an adversary uses a Maneuver
+  with a check on a player's character and the row names a Defense, the player rolls that
+  Defense as a check against the adversary's number, and the Maneuver's result is that roll
+  read from the other side: a Critical Success is its Critical Failure, a Success its Failure,
+  a Failure its Success, a Critical Failure its Critical Success.
+- **341. An adversary has a typed number for each Skill** (Mike). Blank reads as 10. Claude's
+  additions: Melee and Ranged have one too; a Defense on the left of `vs` reads the adversary's
+  typed Defense Threshold; the number is moved by its Conditions as its Thresholds are (0.33.0),
+  with the one in effect shown beside the typed one; and when the GM rolls for it, the die's
+  bonus is the typed number less 10.
+- **342. The block is the word.** A row with a block rolls what the block says, whatever its
+  Constellation column and its Effect say (the build warns when they disagree). A row with none
+  rolls what the build guessed, as before. One block a row: two is an error.
+- **343. The user picks first, and the target answers knowing the pick.** That is the order of
+  an attack: declare, then defend. The request card names the Constellation rolled.
+- **344. Nobody is asked when the target can use exactly one of the Defenses named.** That one
+  is read. (Only Evade can be unavailable today: Grabbed, Restrained.)
+- **345. A row that names one Defense reads that Defense, even when the target cannot use it**,
+  and the card and the roll window say so. Through 0.33.0 "vs Evade" against a Grabbed target
+  was read against Awareness with nothing said, the one place left where the system chose a
+  Defense by itself (ruling 159).
+- **346. Nothing is paid until the roll.** A request nobody answers costs nothing. The user's
+  side can Withdraw it before an answer stands. It lapses when the Combat it was made in ends.
+  It gives one roll. It stands after the user's Opportunity has ended, and the roll then asks no
+  second leave; one begun on the GM's leave outside the user's Opportunity spends that leave
+  when the roll is made. A Maneuver Prepared at three actions stays Preparing until that roll,
+  and its Finish posts one request at a time, tied to that preparation. An adversary pays when
+  its request goes out, as its Gain Control does, and its Prepared Maneuver is finished then. A
+  Reaction pays at the click, as it always has, so one whose check waits on its target has
+  paid before the request.
+- **347. An answer is a card, and the first valid one in the chat log stands.** Nothing is
+  written to a request after it is posted, so a reload, a second client and a late press all
+  read one record. A request counts only from the GM or an owner of the creature using the
+  Maneuver; an answer only from someone who owns the target, or from the GM; a roll only from
+  the side that should have rolled, and only the first (a second roll for one request counts
+  for nothing, and its card says so). With no GM connected, a request to an
+  adversary waits for one, and says so.
+- **348. An adversary's result is its own card.** The GM's client posts it as the player's roll
+  arrives (a button on the player's card posts it when no GM was connected). It is spoken by the
+  adversary, carries the Maneuver's result rows, and its APPLY buttons are the GM's. A reroll of
+  the player's roll posts a new result, which replaces the first and takes back what the first
+  put on the adversary itself.
+- **349. Where the block is read, and where it is not.** On a Maneuver's own row alone. Refused
+  on an Activity and an Endeavor (an Activity's own columns stay the source), on a Talent, and
+  for a Lore or the Origin on the left. Warned about on a row the system runs itself (Strike,
+  Gain Control, Recenter, Reload, Pass, Raise a Shield) and beside a line that takes the whole
+  use (`MARK`, `PERMIT`, `SUBORDINATE`), where nothing reads it. A row the system only pays
+  for another way (Leap, whose cost is the drag's) is still used from its row and does roll a
+  declared check. A Maneuver performed as part of
+  another whose check needs the target to choose is refused at use, with the reason. A fixed
+  Threshold is what the window opens on and can be changed there. An adversary's public card
+  never prints another adversary's Threshold, though the GM is the one rolling.
+
+**The cells to paste.** The rows of `data/actions_maneuvers.xlsx` whose check the build still
+guesses, each with the block that says it (also in `AUTOMATION_GRAMMAR.md`, section 5). Paste
+the block into the row's Automation cell, beside what is there.
+
+```
+  Aid                                         [CHECK relevant vs 15]
+  Recall Knowledge                            [CHECK relevant]
+  Seek                                        [CHECK Awareness]
+  Balance                                     [CHECK Acrobatics]
+  Tumble Through                              [CHECK Acrobatics vs Awareness]
+  Calm Animal, Direct Animal                  [CHECK Animal Handling vs Guard]
+  Climb, Swim                                 [CHECK Athletics]
+  Disarm, Grapple, Reposition, Shove, Trip    [CHECK Athletics vs Evade or Guard]
+  Reliable Anchor, Rescue Haul                [CHECK Athletics vs 15]
+  Brace an Object, Field Patch                [CHECK Crafting]
+  Rally, Command the Field                    [CHECK Diplomacy vs 15]
+  Talk Them Down                              [CHECK Diplomacy vs Guard]
+  Feint                                       [CHECK Guile vs Awareness]
+  Anticipate                                  [CHECK Insight]
+  Demoralize                                  [CHECK Intimidation vs Guard]
+  Stabilize                                   [CHECK Medicine]
+  Bolster                                     [CHECK Performance vs 15]
+  Captivate                                   [CHECK Performance vs Awareness]
+  Hide, Sneak                                 [CHECK Stealth]
+  Find Footing                                [CHECK Survival]
+  Disable Device, Pick Lock                   [CHECK Thievery]
+```
+
+Ten of these change what the build reads today. Trip, Shove, Disarm, Grapple and Reposition say
+"Evade or Guard" and are guessed as Evade alone; with the block the target picks. Calm Animal and
+Direct Animal say "against the animal's Guard", which the guess does not catch, so today no
+Defense is read; with the block a targeted animal's Guard is. Rescue Haul says "an Athletics
+check" and its Constellation column says Cairnward, so it is guessed as a Cairnward check; the
+block says Athletics. Hide and Sneak are guessed as against one target's Awareness; `[CHECK
+Stealth]` stops that. Aid, Rally, Command the Field, Bolster and Reliable Anchor name a
+Threshold ("typically 15"), which the roll window then opens on. Seek (against Stealth),
+Anticipate (against Guile), Stabilize (10 + Dying + Wounds) and Hide and Sneak (each watcher's
+Awareness) are read against something the block cannot say yet, so their blocks name what is
+rolled and the Threshold is typed. Gain Control's cell stays `N/A` this release: the
+system runs it.
+
+**Worth knowing.**
+
+- **An adversary uses only Maneuvers it owns.** To let the Bandit Trip, drag Trip from the
+  compendium onto it. Its sheet does not list every Basic Maneuver as a character's does.
+- **Nothing fills an adversary's numbers.** They are typed on each adversary; blank is 10.
+- **Two cards when a player rolls for an adversary's Maneuver**: the player's roll, then the
+  adversary's result.
+- **With no token targeted** the Threshold is typed, as before. One target at a time.
+- **The three check fields on a Maneuver stay**, for a row with no block and for a world Item
+  made by hand; they are locked while a block declares the check.
+
+**In the code.** `module/rules/check.mjs` (pure: `readCheck`, the words, `planOf(rules,
+stored)`, the one reading of what a Maneuver rolls) and `module/rules/kinds/check.mjs` (a
+wrapper with no hook, as `requires` is: a `use` hook would send the row down the path that never
+rolls); `splitAlternatives` in `module/rules/syntax.mjs`, shared with `requires`; `system.checkPlan`
+derived on the action model; `SwItem#startCheck`, `#rollPlanned`, `resumeCheck` and
+`#startAdversaryCheck` in `module/documents/item.mjs`; `pickConstellation({ only })` split out of
+`rollRelevantCheck`; `module/rules/check-request.mjs` (pure: which answer is valid, which stands,
+the request's state, the reading from the other side, an adversary's number) and
+`module/documents/cards/check-request.mjs` (the request, answer and result cards, modelled on the
+Gain Control request); `module/apps/check-picker.mjs` (the GM's one window for an adversary);
+`system.checks`, `checkBase` and `checkNumber` on the adversary's model; `readTargetThreshold`
+told which Defenses the row names; `settlePreparation` on the Actor; `checkOf` in
+`assets/build_foundry.mjs` reading the block first, with the build's new messages in
+`assets/build_report.py`.
+
+**Not built.** An `ALTER` of a Maneuver's check. Several targets from one use. A Constellation
+that is no Defense on the right of `vs` (Seek against Stealth, Anticipate against Guile). A pick
+kept secret from the other side. A Maneuver performed as part of another whose check needs the
+target to choose. A Talent carrying `CHECK` itself (a Talent that needs a roll still grants a
+Maneuver row). An adversary's own Talents and bonuses on its number. Gain Control in the grammar,
+which is the next step and needs one new word for Bind results; after it, the words for what a
+Condition forbids and how it fades.
+
+**The review.** Two independent readers went through the finished change, one the runtime and
+one the grammar, the build and the documents. Nineteen findings, one of them high; all are
+mended but the three stated at the end.
+
+- **A request card's author was never checked** (high). A player could post a request in an
+  adversary's name against their own character, then a roll for it, and the GM's client would
+  post the adversary's result and land its own lines with nobody pressing anything. A request
+  now counts only from the GM or an owner of the creature using the Maneuver (`validRequest`),
+  a result is posted only for such a request, and a roll, a payment and a request are refused
+  to anyone who does not own the creature (an Observer could press an adversary's Use control).
+- **An adversary's Prepared Maneuver against a player's character stayed Preparing for ever**:
+  only a roll of its own settled it. It is finished as its request goes out.
+- **Who picked a Defense went by the Actor's type.** A player-owned adversary's window asked
+  its player for the GM's creature's Defense, and the GM's window answered for a companion a
+  player owns. The one window now answers only for a creature no player owns; the rest go by
+  the request card. A player-owned adversary outside its Opportunity passes the gate as it pays.
+- **The GM's client did not ask whether a roll was the request's one roll.** Two presses in one
+  moment each got a result; a roll whose window stood open over a Withdraw went through. A
+  second roll now counts for nothing and its card says so, and the request is asked again as
+  the die is thrown.
+- **A Prepared Maneuver's request was not tied to its preparation.** Finish pressed twice posted
+  two, and a card left from an earlier preparation could finish a later one in the Opportunity
+  it was Prepared. The request's id is kept on the preparation, and Finish posts one at a time.
+- **A request recorded the Combat on the posting client's screen**, so one made while the GM
+  viewed another Combat never lapsed. It records the Combat its user is fighting in.
+- **A player rolling a Defense the row names alone was not told it was unavailable.** The window
+  and the card say so, as a character's own use does.
+- **A rule's reroll button on an adversary's result card** would have thrown a die with no
+  Threshold and wiped the result. It is not offered, and refused.
+- Beside those: an answered Defense stays the one read if the target can no longer use it; a
+  Threshold typed in the picker stands over a caller's; and the adversary sheet lists a
+  Constellation one of its own Maneuvers rolls (a Combat Style), which otherwise read 10 always.
+- **`[EFFECT: ...]`, `[SPEED: 6]` and `[TRAIT: Human]` were told to wrap themselves in EFFECT**,
+  two of them cells in the current data, which also took their reading from the red-cell tool.
+  Only a word that is an effect tag, and no feature keyword, is told so.
+- **A bonus to checks written with a slip was sent the wrong way**: `check 1 condition, aid` was
+  told the block, and on a Talent `[CHECK 1 condition, aid]` was told to move to a Maneuver's
+  row. The bonus's shape is now asked first, wherever a `CHECK` is read.
+- **Three of the build report's new rows could never be reached** (the build's two CHECK
+  failures and its summary print with no WARNING in front).
+- **The self-test read `actions.json`** and would have stopped every build over a Maneuver named
+  with "and" or "against". It asks the Constellations alone, and a missing file is no failure.
+- **Pasting the printed cells would have left three standing warnings** (Rescue Haul, Hide,
+  Sneak): the block and the guess are now compared only where both speak.
+- **"Its CHECK block is read by nothing" was false for a row another act pays for** (Leap): such
+  a row is used from its row and rolls. Only a built-in is told so.
+- **"Six rows change" undercounted.** Ten do; Calm Animal and Direct Animal were not named.
+- A lone bad number (`vs -5`) was told a number "stands alone"; an Activity was told to declare
+  a block the build then refuses; a Constellation named with "and" could not be written; and
+  six statements in the documents did not match the code.
+- **Stated, not changed.** The degree on a player's own roll card is taken as the card says it,
+  as a player's own roll always is. A Reaction pays at the click, before its request. A
+  player-owned adversary or companion was mended by reading and not driven live.
+
+**Checked.** 245 self-test checks (ten for the kind: every form, every slip, the plan, the
+build's census, who may post a request, who may answer, which answer stands, the reading from
+the other side, an adversary's number); `node --check` on every module; `build_all.mjs --check`;
+the style check (one failure, the em-dash in Dwarf Lore B13 of Mike's uncommitted workbook); the
+smoke test on the app; and `build_foundry.mjs --no-compile`, where one document moves, the
+Grammar journal: the 120 action documents are byte for byte what they were, so no row's guessed
+check changed. **Live in the test world with a GM tab and a player tab, before the review and
+again for its mends.** Before: the plan on world Items and the grammar's errors on the Item
+window; Trip with `vs Evade or Guard` from request to answer to roll to "Apply to Bandit:
+Prone"; a second roll refused; a Grabbed target not asked, and "vs Evade" staying on Evade with
+its note; the short picker for two Constellations; the Bandit's Trip on Tess rolled by her
+player, the result card from the GM's client, a reroll replacing it; the Bandit against a second
+adversary in the GM's one window; nothing paid until the roll; Disarm Prepared at three actions
+through Finish, request, answer and roll; a player's seat (an adversary's buttons hidden, a
+forged answer ignored, the Threshold withheld); a reload in the middle of a request; `vs 15`;
+`relevant vs Guard`; Withdraw; no target; two answers; a request lapsing with its Combat. After
+the mends: the forged request and roll doing nothing on the GM's client; a roll made after a
+Withdraw refused at the die; a second roll card getting no result and saying so; a reroll still
+posting a new result that replaces the first, and the result card itself refused a reroll; a
+request recording the Combat its user fights in while the GM views another; Finish pressed twice
+posting one request, a card left over from an abandoned preparation unable to finish the next,
+and the roll settling the preparation; an adversary's Prepared Maneuver finished as its request
+goes out; a Grabbed Tess rolling "vs Evade" for an adversary's Maneuver with the note in the
+window and on the card; a character's request paid once, at the roll; the adversary against an
+adversary after the rework (the window opening on nothing, "Athletics +4", no Threshold
+printed); and the adversary sheet listing Archery for a Maneuver of its own that rolls it. **Not
+driven**: a table with no GM connected; a player-owned adversary or companion; a rule's reroll
+button on a requested roll; two real windows of one player rolling in the same moment (a second
+card stood in for it).
+
+---
+
 ## 0.33.0 (2026-11-18): the Conditions workbook
 
 Built from **Player's Handbook v4.25**, which did not move. Mike: "can we build a

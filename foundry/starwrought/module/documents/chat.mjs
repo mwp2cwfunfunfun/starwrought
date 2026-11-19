@@ -45,6 +45,9 @@ import { drawGiveWidget, giveFromCard, onGiveSocket } from "./cards/give.mjs";
 import { drawApplyWidget, applyFromCard, onApplySocket } from "./cards/apply.mjs";
 // Gain Control (0.27.0): the result under its check card, its button, and an adversary's request.
 import { drawGainControlWidget, drawGainControlRequest, applyGainControlFromCard, rollGuardFromCard, answerTo } from "./cards/gain-control.mjs";
+// 0.34.0: a Maneuver's check that waits on another player (the target's pick of a Defense, and
+// a player's roll for an adversary's Maneuver).
+import { drawCheckRequest, answerFromCard, withdrawFromCard, rollFromCard, defendFromCard, postResultFromCard } from "./cards/check-request.mjs";
 
 /** The resolvers, under the names other modules imported from here through 0.10.0. */
 export { resolveActor, resolveTokenDoc, ownedActor } from "./cards/shared.mjs";
@@ -199,7 +202,9 @@ export function onRenderChatMessage(message, html) {
   // a Defense roll, never the attack flow's own workflow card): a roll of any of the three may use
   // up a result another creature's Aid gave, which is what Pay It Forward's button answers
   // (rules/kinds/subordinate.mjs). The `reroll` kind still answers a check card alone.
-  if (RULE_OFFER_CARDS.includes(flags.kind) && !flags.superseded && flags.actorUuid && (message.isContentVisible !== false)) {
+  // Nor on an adversary's result card (0.34.0): it is another creature's roll read from the other
+  // side, with no die and no Threshold of its own to throw again; the roll to reroll is the player's.
+  if (RULE_OFFER_CARDS.includes(flags.kind) && !flags.superseded && !flags.check?.resultOf && flags.actorUuid && (message.isContentVisible !== false)) {
     const roller = resolveActor(flags.actorUuid);
     if (roller && (roller.isOwner || game.user.isGM)) {
       const offers = ruleCardOffers(roller, flags, { encounter: encounterContext() });
@@ -238,6 +243,9 @@ export function onRenderChatMessage(message, html) {
   // request for its partner's Guard roll, which loses its button once answered.
   drawGainControlWidget(message, html, flags);
   drawGainControlRequest(message, html, flags);
+  // A Maneuver's check that waits on another player (0.34.0): the request, its answer and a
+  // player's roll for an adversary's Maneuver, each drawn from the cards that name it.
+  drawCheckRequest(message, html, flags);
   // Parry's free Gain Control is one attempt for a card: the button goes once a roll names it.
   if (html.querySelector("[data-sw-action='gainControlFree']") && answerTo(message.id)) {
     for (const el of html.querySelectorAll("[data-sw-action='gainControlFree']")) el.remove();
@@ -282,6 +290,12 @@ async function onCardButton(event, message, flags) {
       case "gainControlApply": return await applyGainControlFromCard(message);
       case "gainControlGuard": return await rollGuardFromCard(message, flags);
       case "gainControlFree": return await gainControlFromCard(message, flags, button);
+      // A check that waits on another player (0.34.0; documents/cards/check-request.mjs).
+      case "checkAnswer": return await answerFromCard(message, flags, button);
+      case "checkWithdraw": return await withdrawFromCard(message);
+      case "checkRoll": return await rollFromCard(message, flags);
+      case "checkDefend": return await defendFromCard(message, flags, button);
+      case "checkResult": return await postResultFromCard(message);
       case "expose":
       case "exposeZone": return await exposeFromCard(message, flags, button);
       case "preventExpose": return await preventExposeFromCard(message, flags, button);
